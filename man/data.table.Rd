@@ -34,13 +34,13 @@ data.table creates a data.table from its arguments just as data.frame does. DT()
 often used instead of as.data.table().
 
 A data.table is a list of vectors, just like a data.frame, however :
-%\enumerate{
-%\item{1}{ it \emph{never} has rownames. Instead it may have an optional \dfn{key} of one or more columns using \code{\link{setkey}}. This key can be used for row indexing instead of rownames }
-%\item{2}{ when the data.table has over 20 rows the print method displays column names at the bottom as well as at
-%the top to save scrolling up at the console. }
-%\item{3}{ character vectors may be passed in but they are automatically converted to factor. A data.table does not allow character columns for time and space reasons. }
-%\item{4}{ \emph{the main difference} is enhanced functionality in \code{\link{[.data.table}} where most documentation for this package lives. }
-%}
+\enumerate{
+\item it \emph{never} has rownames. Instead it may have an optional \dfn{key} of one or more columns using \code{\link{setkey}}. This key can be used for row indexing instead of rownames.
+\item when the data.table has over 20 rows the print method displays column names at the bottom as well as at
+the top to save scrolling up at the console.
+\item character vectors may be passed in but they are automatically converted to factor. A data.table does not allow character columns for time and space reasons.
+\item however \emph{the main difference} is enhanced functionality in \code{\link{[.data.table}} where most documentation for this package lives.
+}
 }
 \value{
    A data.table.
@@ -51,7 +51,7 @@ A data.table is a list of vectors, just like a data.frame, however :
 the \dots. \R does not allow partial argument names after \dots. For example \code{data.table(DF,keep=TRUE)} will create a
 column called 'keep' containing TRUE and this is correct behaviour. Most likely \code{data.table(DF,keep.rownames=TRUE)} was intended.
 }
-\seealso{ \code{\link{data.frame}}, \code{\link{tables}}, \code{\link{setkey}} }
+\seealso{ \code{\link{data.frame}}, \code{\link{tables}}, \code{\link{setkey}}, \code{\link{[.data.table}} }
 \examples{
 DF = data.frame(a=1:5, b=letters[1:5])
 DT = data.table(a=1:5, b=letters[1:5])
@@ -65,5 +65,9 @@ identical(DT(DT,DT), cbind(DT,DT))
 DT2=rbind(DT,DT)
 DT3 = data.table(A=DT, B=DT, key="A.b")
 tables()
+test.data.table()
+\dontrun{
+example("[.data.table")
+}
 }
 \keyword{ data }

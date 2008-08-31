@@ -3,7 +3,7 @@
 \alias{[.data.table}
 \title{ Query a data table }
 \description{
-  Like [.data.frame but i and j can be expressions of column names directly. i may also be a data.table and this invokes a fast table join using binary search in O(log n) time. Allowing i to be data.table is consistent with subsetting an n-dimension array by an n-column matrix in base \R.
+  Like \code{[.data.frame} but i and j can be expressions of column names directly. i may also be a data.table and this invokes a fast table join using binary search in O(log n) time. Allowing i to be data.table is consistent with subsetting an n-dimension array by an n-column matrix in base \R.
 }
 \usage{
 \method{[}{data.table}(x, i, j, by, \dots, with=TRUE, nomatch = NA, 
@@ -65,10 +65,10 @@ The remaining arguments below are only applicable for joins i.e. when i is a dat
 }
 \details{
 Builds on base R functionality to reduce 2 types of time :
-%\enumerate{
-%\item{1}{programming time (easier to write, read, debug and maintain)}
-%\item{2}{compute time}
-%}
+\enumerate{
+\item programming time (easier to write, read, debug and maintain)
+\item compute time
+}
 when combining database like operations (\code{\link{subset}}, \code{\link{with}} and \code{\link{by}}) and provides similar joins that \code{\link{merge}} provides but faster. This is achieved by using R's column based ordered in-memory
 data.frame, eval within the environment of a list (i.e. with), the [.data.table mechanism to condense the
 features and compiled C to make certain operations fast.
@@ -98,10 +98,10 @@ When j is used for its side effects only, NULL is returned.
 \author{ Matthew Dowle }
 \note{
 \enumerate{
-\item{1}{ All arguments other than i,j and by, must be written in full since they appear after the \dots. \R does not allow partial argument names after \dots.}
-\item{2}{ Some examples use dates stored as integer format yyyymmdd but this is not imposed. Nothing in data.table is specific to any particular datetime class, only that storage.mode is numeric in key columns. }
-\item{3}{ Grouping is currently very inefficient }
-\item{4}{ Whilst it is possible to create a data.table of ff objects, and subset it by integer row numbers (see examples), keys and joins are not currently implemented when the data.table contains ff objects. }
+\item All arguments other than i,j and by, must be written in full since they appear after the \dots. \R does not allow partial argument names after \dots.
+\item Some examples use dates stored as integer format yyyymmdd but this is not imposed. Nothing in data.table is specific to any particular datetime class, only that storage.mode is numeric in key columns.
+\item Grouping is currently inefficient.
+\item Whilst it is possible to create a data.table of ff objects, and subset it by integer row numbers (see examples), keys and joins are not currently implemented when the data.table contains ff objects.
 }
 }
 \seealso{ \code{\link{data.table}}, \code{\link{setkey}}, \code{\link{J}}, \code{\link{test.data.table}}, \code{\link{like}}, \code{\link{between}} }
