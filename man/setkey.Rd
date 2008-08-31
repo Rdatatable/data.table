@@ -1,0 +1,31 @@
+\name{setkey}
+\alias{setkey}
+\title{ Create key on a data table }
+\description{
+  Sorts a data.table and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always.
+}
+\usage{
+setkey(x, ..., loc=parent.frame())
+}
+\arguments{
+  \item{x}{ A data.table. }
+  \item{\dots}{ The columns to sort by. Do not quote the column names. If \dots is missing all the columns are used. }
+  \item{loc}{ The data.table must already exist in this frame, and it is sorted by reference in this frame. loc=.GlobalEnv is often useful within functions. }
+}
+\details{
+}
+\value{
+    No value is returned. The data.table is modified by reference. If you require a copy, take a copy first. A working copy is currently taken internally.
+}
+\references{ }
+\author{ Matthew Dowle }
+\note{ }
+\seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{[.data.table}}, \code{\link{J}} }
+\examples{
+    DT = data.table(A=5:1,B=letters[5:1])
+    DT # before
+    setkey(DT,B)  # re-orders table and marks it sorted.
+    DT # after
+    tables()      # KEY column reports the key'd columns
+}
+\keyword{ data }

@@ -1,0 +1,11 @@
+Package: data.table
+Type: Package
+Title: Extension of data.frame to allow i and j to be expressions of column names.
+Version: 1.1
+Date: 2008-08-19
+Author: Matthew Dowle
+Maintainer: Matthew Dowle <mdowle@mdowle.plus.com>
+Depends: R (>= 2.4.0), ref
+Description: Like a data.frame but i and j may be expressions evaluated within the frame. i is then like base::with and j like select in base::subset. When i is itself a data.table, a join is invoked similar to base::merge.
+License: GPL
+Packaged: Tue Aug 18 20:38:37 2008; mdowle

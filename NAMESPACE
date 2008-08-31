@@ -1,0 +1,40 @@
+useDynLib(data.table)
+
+export(data.table, tables, setkey, J, CJ, SJ, DT)
+export(as.data.table,is.data.table,test.data.table,last,like,"%like%",between,"%between%")
+
+S3method("[", data.table)
+S3method(print, data.table)
+S3method(as.data.table, data.table)
+S3method(as.data.table, data.frame)
+S3method(as.data.table, matrix)
+S3method(as.data.frame, data.table)
+S3method(as.matrix, data.table)
+S3method(cbind, data.table)
+S3method(rbind, data.table)
+S3method(dim, data.table)
+S3method(dimnames, data.table)
+S3method("dimnames<-", data.table)
+S3method("$<-", data.table)
+
+import(utils)
+S3method(tail, data.table)
+S3method(head, data.table)
+
+# [.factor
+# [<-.data.table
+# C
+# c.factor
+# dt
+# duplist
+# getdots
+# NCOL
+# NROW
+# sortedmatch
+# take
+# time.taken
+# trim
+# vecref
+# which.first
+# which.last
+# words
