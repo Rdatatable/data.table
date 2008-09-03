@@ -35,11 +35,11 @@
 It is good practive to include "j=" or imagine it there before the 'j clause'. This avoids the mistake DT[,MySum=sum(v)] when attempting to create a data.table result containing a column named MySum. The MySum is treated as an argument name by [.data.table which doesn't exist. DT[,DT(MySum=sum(v))] was intended, or DT[,j=DT(MySum=sum(v))].
 }
 F
-  \item{by}{ Optional. character vector length 1. Contains column names or expressions of column names seperated by comma to perform aggregation by. Apply the j expression by the by. Agreggation for a subset of known groups can be achieved more efficiently by passing those groups as an i data.table and using mult="all". This is analogous to 'having' clause in SQL. See simplify below and examples. 
+  \item{by}{ Optional. character vector length 1. Contains column names or expressions of column names separated by comma to perform aggregation by. Apply the j expression by the by. Agreggation for a subset of known groups can be achieved more efficiently by passing those groups as an i data.table and using mult="all". This is analogous to 'having' clause in SQL. See simplify below and examples. 
    NOTE: \code{by} is currently implemented inefficiently. On large datasets is may appear to hang. This is a known problem to be resolved.
 }
 
-  \item{\dots}{ reserved for future use. At some point j may be allowed to be function where the \dots argument(s) are passed on to a j function which takes data.table input e.g. DT[,tail,by="ColA",n=3] where n=3 is passed on to tail.}
+  \item{\dots}{ not yet used. In future j may be allowed to be a function where the \dots argument(s) are passed on to this j function which takes data.table input e.g. DT[,tail,by="ColA",n=3] where n=3 is passed on to tail since the argument n is not one of the [.data.table arguments. This is standard \R practice, for example when \code{mean} is applied \code{na.rm=TRUE} may be passed on via the \dots argument of \code{\link{apply}}().}
 
   \item{with}{ by default j is evaluated within the frame of x so the column names are seen as variables. See \code{\link{with}}. DT[,"ColA"] returns the column as expected, as does DT[,1]. However DT[,1:2], DT[,c(1,2)] and DT[,c("a","b")] all return the j vector itself without looking up the column contents. Setting with=FALSE resolves this. Note that DT[,DT(ColA,ColB)] is preferred to DT[,c("ColA","ColB"),with=FALSE]. If column integers or character names are held in a variable, with=FALSE is also required e.g. DT[,colsVar,with=FALSE].}
 
