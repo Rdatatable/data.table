@@ -294,8 +294,7 @@ test.data.table = function()
 
 ###     # Test for [.factor masked and dropping unused factor levels ok.
 ###     X = factor(letters[1:10])
-###     if (!identical(levels(data.table:::"[.factor"(X,4:6)),
-###                    letters[4:6])) stop("Test 67 failed")
+###     checkIdentical(levels(X[4:6]), letters[4:6], "Test 67 failed")
 
     # NAME is returned as a factor in which we look for the string
     if (!"TESTDT" %in% tables(silent=TRUE)[,NAME]) stop("Test 68 failed")
