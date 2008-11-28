@@ -14,14 +14,14 @@ tables(mb = FALSE, order.col = "NAME", width = 80, env=parent.frame(), silent=FA
   \item{env}{ Usually tables() is executed at the prompt where parent.frame() returns .GlobalEnv. tables() may also be useful inside functions where parent.frame() is the local scope of the function, or set it to .GlobalEnv }
   \item{silent}{ By default tables() is expected to be called at the prompt for its compact print output. silent=TRUE prints nothing. The data statistics are returned as a data.table, silently, whether silent is TRUE or FALSE }
 }
-\details{
-}
+% \details{
+% }
 \value{
     A data.table containing the information printed.
 }
-\references{ }
+% \references{ }
 \author{ Matthew Dowle }
-\note{ }
+% \note{ }
 \seealso{ \code{\link{data.table}}, \code{\link{setkey}}, \code{\link{ls}}, \code{\link{objects}}, \code{\link{object.size}} }
 \examples{
     DT = data.table(A=1:10,B=letters[1:10])

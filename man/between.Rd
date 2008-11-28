@@ -15,12 +15,12 @@ x %between% c(lower,upper)
    \item{upper}{ Upper range bound. }
    \item{incbounds}{ TRUE means inclusive bounds i.e. [lower,upper]. FALSE means exclusive bounds i.e. (lower,upper). }
 }
-\details{
-}
+% \details{
+% }
 \value{
     Integer vector containing the locations of x which lie within the range [lower,upper] or (lower,upper).
 }
-\references{ }
+% \references{ }
 \author{ Matthew Dowle }
 \note{ Current implementation does not make use of sorted keys. }
 \seealso{ \code{\link{data.table}}, \code{\link{like}} }

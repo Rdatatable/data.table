@@ -45,7 +45,7 @@ the top to save scrolling up at the console.
 \value{
    A data.table.
 }
-\references{  }
+% \references{  }
 \author{ Matthew Dowle }
 \note{ \code{keep.rownames} and \code{check.names}, if suppplied, must be written in full since they appear after
 the \dots. \R does not allow partial argument names after \dots. For example \code{data.table(DF,keep=TRUE)} will create a

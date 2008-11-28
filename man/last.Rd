@@ -10,16 +10,16 @@ last(x)
 \arguments{
   \item{x}{ A vector, matrix, data.frame or data.table }
 }
-\details{
-}
+% \details{
+% }
 \value{
     The last item. If x is a data.table, the last row is returned at a one row data.table.
 }
-\references{ }
+% \references{ }
 \author{ Matt Dowle }
-\note{ }
+% \note{ }
 \seealso{ \code{\link{NROW}} }
-\examples{
-}
+% \examples{
+% }
 \keyword{ data }
 

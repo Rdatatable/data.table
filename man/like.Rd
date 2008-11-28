@@ -13,12 +13,12 @@ vector %like% pattern
    \item{vector}{ Either a character vector or a factor. A factor is faster (as you must have in a data.table). }
    \item{pattern}{ Passed on to \code{\link{regexpr}}. }
 }
-\details{
-}
+% \details{
+% }
 \value{
     Integer vector containing the locations of vector which match the pattern using regexpr.
 }
-\references{ }
+% \references{ }
 \author{ Matthew Dowle }
 \note{ Current implementation does not make use of sorted keys. }
 \seealso{ \code{\link{data.table}}, \code{\link{regexpr}} }

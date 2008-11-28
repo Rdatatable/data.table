@@ -8,17 +8,17 @@
 \usage{
 test.data.table()
 }
-\arguments{
-}
+% \arguments{
+% }
 \details{
    Runs a series of tests. These can be used to see features and examples of usage - type 'test.data.table' to see the tests.
 }
 \value{
     TRUE if all tests were successful. FALSE otherwise.
 }
-\references{ }
+% \references{ }
 \author{ Matthew Dowle }
-\note{ }
+% \note{ }
 \seealso{ \code{\link{data.table}} }
 \examples{
     test.data.table()
