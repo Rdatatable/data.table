@@ -11,7 +11,7 @@ setkey = function(x, ..., loc=parent.frame())
     if (!exists(name, env=loc)) loc=.GlobalEnv
     x = list(name=name, loc=loc)
     class(x) = "ref"
-    if (class(deref(x))!="data.table") stop("first argument must be a data.table")
+    if (!is.data.table(deref(x))) stop("first argument must be a data.table")
     if (any(sapply(deref(x),is.ff))) stop("joining to a table with ff columns is not yet implemented")
     cols = getdots()
     if (!length(cols)) {

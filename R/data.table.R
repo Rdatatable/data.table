@@ -868,7 +868,7 @@ rbind.data.table = function (...) {
     if (n == 0)
         return(structure(list(), class = "data.table"))
 
-    if (any(sapply(allargs, class) != "data.table")) stop("All arguments must be data.tables")
+    if (!all(sapply(allargs, is.data.table))) stop("All arguments must be data.tables")
     if (length(unique(sapply(allargs, ncol))) != 1) stop("All data.tables must have the same number of columns")
 
     l = list()
