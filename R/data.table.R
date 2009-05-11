@@ -49,7 +49,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # DONE: allow silent repition of input arguments, like data.frame() does
     # DONE: expression text is checked to be strict name before using as a column name.
     # DONE: if M is a matrix with cols a,b and c,  data.table(A=M,B=M) will create colnames A.a,A.b,A.c,B.a,B,b,B.c.  Also  data.table(M,M) will use make.names to make the columns unique (adds .1,.2,.3)
-    # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then class(l)="data.table" at the expense of checking. 
+    # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then class(l)="data.table" at the expense of checking.
     x <- list(...)
     if (identical(x, list(NULL))) return( structure(NULL,class="data.table") )
     if (length(x) == 1 && is.list(x[[1]]) && !is.data.frame(x[[1]]) && !is.data.table(x[[1]]) && !is.ff(x[[1]])) {
@@ -152,9 +152,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         value = x
     }
     vnames <- unlist(vnames)
-    if (check.names) 
+    if (check.names)
         vnames <- make.names(vnames, unique = TRUE)
-    names(value) <- vnames    
+    names(value) <- vnames
     attr(value, "class") <- "data.table"
     if (!is.null(key)) {
       if (!is.character(key) || !length(key)==1) stop("key must be character vector length 1 containing comma seperated column names")
@@ -184,7 +184,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (substring(deparse(substitute(i))[1],1,2) %in% c("J(","SJ","CJ")) {
                 # We want the join table to be constructed in the frame of the caller, not inside the data.table.
                 # If "ids" exists as a column name of x, we don't want those to be used by the join function.
-                # It doesn't matter if there are no column names the same as variables in the caller. 
+                # It doesn't matter if there are no column names the same as variables in the caller.
                 i = try(eval(substitute(i), envir=parent.frame(), enclos=parent.frame()),silent=TRUE)
             } else {
                 # Usual where clause via vector scan, no join. For example  DT[id=="A"]
@@ -281,7 +281,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # If you want columns 4:5, or c("colC","colE"), as you would in a data.frame, then these are expression of mode "call" and
             # if passed in raw would eval literally.  To avoid this set with=FALSE. Alternatives e.g. wrapping j argument with I() was investigated
             # but with=FALSE seems more R-like and more reliable.
-            # Similarly do not write DT[,c(colA,colB)] as this will return a single column, instead write DT[,list(colA,colB)]. 
+            # Similarly do not write DT[,c(colA,colB)] as this will return a single column, instead write DT[,list(colA,colB)].
             # The "__" postfix in the following code is to avoid scoping conflicts with column names.
             if (mult=="all" && missing(by)) {
                 f__ = idx.start
@@ -308,13 +308,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 if (!is.character(by) || length(by)!=1) stop("by must be character vector length 1 containing comma seperated columns or expressions")
                 # Note that 'by' may be a variable in the calling frame which evaluates to the character string to group by. Therefore, do not test for mode(substitute(by)=="character").
                 # You can pass functions and factors into j for 'by'ing. Anything that can be evaluated inside the subset frame. Those also see parameters in the calling frame.
-                
+
                 # bysplit = strsplit(by,split=",")[[1]]
                 # The parse line below is similar in spirit to the strsplit above. However it copes with 'by' expressions such as  by="grp=rep('ALL',length(o)),d" which have named arguments, and comma's inside each column, so the text has to be evaluated and then split
                 bysplit = as.list(as.list(parse(text=paste("c(",by,")",sep="")))[[1]])[-1]
                 for (jj in bysplit) if (!with(x, storage.mode(eval(jj)))%in%c("integer","character","logical")) stop("by expression '",deparse(jj),"' is not integer") # numeric, even when appearing to be integer, cause uniqueness problems due to numerical precision.
                 by = paste(bysplit,collapse=",")        # in simple cases of comma seperated column names, by ends up the same.  With named arguments in the 'by', the names are discarded by this.
-    
+
                 if (length(bysplit)<=length(attr(x,"sorted")) && identical(as.character(bysplit),head(attr(x,"sorted"),length(bysplit)))) {
                     # table is already sorted by the group criteria
                     # if an expression is passed in the by string, this clause will never happen, and we will have to sort by 'by' in the alternative
@@ -471,7 +471,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     ans
 }
 
-"[.factor" = function(x, ...) 
+"[.factor" = function(x, ...)
 {
     # change default action of factors to drop unused levels. This saves memory space and copying. It also makes tapply() work as you expect since the levels contain the unique values only, otherwise you get many NAs for the unused factor levels.
     # The base::"[.factor" first creates the integer subset, but with the full levels attached (i.e. copied),  then *if* drop calls factor() on that to then remove the unused levels.
@@ -506,21 +506,21 @@ as.matrix.data.table = function(x,...)
         if (is.ff(X[[j]])) X[[j]] <- X[[j]][]   # to bring the ff into memory, since we need to create a matrix in memory
         xj <- X[[j]]
         if (length(dj <- dim(xj)) == 2 && dj[2] > 1) {
-            if (inherits(xj, "data.table")) 
+            if (inherits(xj, "data.table"))
                 xj <- X[[j]] <- as.matrix(X[[j]])
             dnj <- dimnames(xj)[[2]]
-            collabs[[j]] <- paste(collabs[[j]], if (length(dnj) > 
-                0) 
+            collabs[[j]] <- paste(collabs[[j]], if (length(dnj) >
+                0)
                 dnj
             else 1:dj[2], sep = ".")
         }
-        if (!is.logical(xj)) 
+        if (!is.logical(xj))
             all.logical <- FALSE
-        if (length(levels(xj)) > 0 || !(is.numeric(xj) || is.complex(xj)) || 
-            (!is.null(cl <- attr(xj, "class")) && any(cl %in% 
-                c("Date", "POSIXct", "POSIXlt")))) 
+        if (length(levels(xj)) > 0 || !(is.numeric(xj) || is.complex(xj)) ||
+            (!is.null(cl <- attr(xj, "class")) && any(cl %in%
+                c("Date", "POSIXct", "POSIXlt"))))
             non.numeric <- TRUE
-        if (!is.atomic(xj)) 
+        if (!is.atomic(xj))
             non.atomic <- TRUE
     }
     if (non.atomic) {
@@ -535,11 +535,11 @@ as.matrix.data.table = function(x,...)
     }
     else if (non.numeric) {
         for (j in 1:p) {
-            if (is.character(X[[j]])) 
+            if (is.character(X[[j]]))
                 next
             xj <- X[[j]]
             miss <- is.na(xj)
-            xj <- if (length(levels(xj))) 
+            xj <- if (length(levels(xj)))
                 as.vector(xj)
             else format(xj)
             is.na(xj) <- miss
@@ -562,7 +562,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
     ic <- seq(length = ncols)
     dn <- dimnames(x)
     collabs <- dn[[2]]
-    if (any(empty <- nchar(collabs) == 0)) 
+    if (any(empty <- nchar(collabs) == 0))
         collabs[empty] <- paste("V", ic, sep = "")[empty]
     value <- vector("list", ncols)
     if (mode(x) == "character") {
@@ -571,7 +571,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
     else {
         for (i in ic) value[[i]] <- as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
     }
-    if (length(collabs) == ncols) 
+    if (length(collabs) == ncols)
         names(value) <- collabs
     else
         names(value) <- paste("V", ic, sep = "")
@@ -595,7 +595,7 @@ tail.data.table = function(x, n=6, ...) x[seq(to=nrow(x), length=min(n, nrow(x))
 # TO DO: [[ assignment
 
 "[<-.data.table" <-
-function (x, i, j, value) 
+function (x, i, j, value)
 {
     # TO DO: copied from [<-.data.frame,  remove out all uses of row.names and data.frame
     # TO DO: test this method of assignment as I've tended to use $ on the left hand side.
@@ -605,23 +605,23 @@ function (x, i, j, value)
         has.j <- !missing(j)
     }
     else if (nA == 3) {
-        if (is.atomic(value)) 
+        if (is.atomic(value))
             names(value) <- NULL
         if (missing(i) && missing(j)) {
             i <- j <- NULL
             has.i <- has.j <- FALSE
-            if (is.null(value)) 
+            if (is.null(value))
                 return(x[logical(0)])
         }
         else {
             if (is.logical(i) && is.matrix(i) && all(dim(i) == dim(x))) {
                 nreplace <- sum(i, na.rm = TRUE)
-                if (!nreplace) 
+                if (!nreplace)
                   return(x)
                 N <- length(value)
-                if (N > 0 && N < nreplace && (nreplace %% N) == 0) 
+                if (N > 0 && N < nreplace && (nreplace %% N) == 0)
                   value <- rep(value, length.out = nreplace)
-                if (length(value) != nreplace) 
+                if (length(value) != nreplace)
                   stop("rhs is the wrong length for indexing by a logical matrix")
                 n <- 0
                 nv <- nrow(x)
@@ -629,7 +629,7 @@ function (x, i, j, value)
                   thisvar <- i[, v, drop = TRUE]
                   nv <- sum(thisvar, na.rm = TRUE)
                   if (nv) {
-                    if (is.matrix(x[[v]])) 
+                    if (is.matrix(x[[v]]))
                       x[[v]][thisvar, ] <- value[n + (1:nv)]
                     else x[[v]][thisvar] <- value[n + (1:nv)]
                   }
@@ -637,7 +637,7 @@ function (x, i, j, value)
                 }
                 return(x)
             }
-            if (is.matrix(i)) 
+            if (is.matrix(i))
                 stop("only logical matrix subscripts are allowed in replacement")
             j <- i
             i <- NULL
@@ -648,7 +648,7 @@ function (x, i, j, value)
     else {
         stop("need 0, 1, or 2 subscripts")
     }
-    if (has.j && length(j) == 0) 
+    if (has.j && length(j) == 0)
         return(x)
     cl <- oldClass(x)
     class(x) <- NULL
@@ -657,7 +657,7 @@ function (x, i, j, value)
     nvars <- length(x)
     nrows <- length(rows)
     if (has.i) {
-        if (any(is.na(i))) 
+        if (any(is.na(i)))
             stop("missing values are not allowed in subscripted assignments of data frames")
         if (char.i <- is.character(i)) {
             ii <- match(i, rows)
@@ -671,12 +671,12 @@ function (x, i, j, value)
         if (all(i >= 0) && (nn <- max(i)) > nrows) {
             if (!char.i) {
                 nrr <- as.character((nrows + 1):nn)
-                if (inherits(value, "data.frame") && (dim(value)[1]) >= 
+                if (inherits(value, "data.frame") && (dim(value)[1]) >=
                   length(nrr)) {
                   new.rows <- attr(value, "row.names")[1:length(nrr)]
-                  repl <- duplicated(new.rows) | match(new.rows, 
+                  repl <- duplicated(new.rows) | match(new.rows,
                     rows, 0)
-                  if (any(repl)) 
+                  if (any(repl))
                     new.rows[repl] <- nrr[repl]
                 }
                 else new.rows <- nrr
@@ -686,12 +686,12 @@ function (x, i, j, value)
             nrows <- length(rows)
         }
         iseq <- seq(along = rows)[i]
-        if (any(is.na(iseq))) 
+        if (any(is.na(iseq)))
             stop("non-existent rows not allowed")
     }
     else iseq <- NULL
     if (has.j) {
-        if (any(is.na(j))) 
+        if (any(is.na(j)))
             stop("missing values are not allowed in subscripted assignments of data frames")
         if (is.character(j)) {
             jj <- match(j, names(x))
@@ -703,18 +703,18 @@ function (x, i, j, value)
             }
             jseq <- jj
         }
-        else if (is.logical(j) || min(j) < 0) 
+        else if (is.logical(j) || min(j) < 0)
             jseq <- seq(along = x)[j]
         else {
             jseq <- j
             if (max(jseq) > nvars) {
-                new.cols <- paste("V", seq(from = nvars + 1, 
+                new.cols <- paste("V", seq(from = nvars + 1,
                   to = max(jseq)), sep = "")
-                if (length(new.cols) != sum(jseq > nvars)) 
+                if (length(new.cols) != sum(jseq > nvars))
                   stop("new columns would leave holes after existing columns")
                 if (is.list(value) && !is.null(vnm <- names(value))) {
                   p <- length(jseq)
-                  if (length(vnm) < p) 
+                  if (length(vnm) < p)
                     vnm <- rep(vnm, length.out = p)
                   new.cols <- vnm[jseq > nvars]
                 }
@@ -722,30 +722,30 @@ function (x, i, j, value)
         }
     }
     else jseq <- seq(along = x)
-    if (any(duplicated(jseq))) 
+    if (any(duplicated(jseq)))
         stop("duplicate subscripts for columns")
     n <- length(iseq)
-    if (n == 0) 
+    if (n == 0)
         n <- nrows
     p <- length(jseq)
     m <- length(value)
     if (!is.list(value)) {
         if (p == 1) {
             N <- NROW(value)
-            if (N > n) 
-                stop(gettextf("replacement has %d rows, data has %d", 
+            if (N > n)
+                stop(gettextf("replacement has %d rows, data has %d",
                   N, n), domain = NA)
-            if (N < n && N > 0) 
-                if (n%%N == 0 && length(dim(value)) <= 1) 
+            if (N < n && N > 0)
+                if (n%%N == 0 && length(dim(value)) <= 1)
                   value <- rep(value, length.out = n)
-                else stop(gettextf("replacement has %d rows, data has %d", 
+                else stop(gettextf("replacement has %d rows, data has %d",
                   N, n), domain = NA)
             names(value) <- NULL
             value <- list(value)
         }
         else {
-            if (m < n * p && (n * p)%%m) 
-                stop(gettextf("replacement has %d items, need %d", 
+            if (m < n * p && (n * p)%%m)
+                stop(gettextf("replacement has %d items, need %d",
                   m, n * p), domain = NA)
             value <- matrix(value, n, p)
             value <- split(value, col(value))
@@ -757,16 +757,16 @@ function (x, i, j, value)
         lens <- sapply(value, NROW)
         for (k in seq(along = lens)) {
             N <- lens[k]
-            if (n != N && length(dim(value[[k]])) == 2) 
-                stop(gettextf("replacement element %d is a matrix/data frame of %d rows, need %d", 
+            if (n != N && length(dim(value[[k]])) == 2)
+                stop(gettextf("replacement element %d is a matrix/data frame of %d rows, need %d",
                   k, N, n), domain = NA)
-            if (N > 0 && N < n && n%%N) 
-                stop(gettextf("replacement element %d has %d rows, need %d", 
+            if (N > 0 && N < n && n%%N)
+                stop(gettextf("replacement element %d has %d rows, need %d",
                   k, N, n), domain = NA)
-            if (N > 0 && N < n) 
+            if (N > 0 && N < n)
                 value[[k]] <- rep(value[[k]], length.out = n)
             if (N > n) {
-                warning(gettextf("replacement element %d has %d rows to replace %d rows", 
+                warning(gettextf("replacement element %d has %d rows to replace %d rows",
                   k, N, n), domain = NA)
                 value[[k]] <- value[[k]][1:n]
             }
@@ -775,20 +775,20 @@ function (x, i, j, value)
     }
     nrowv <- dimv[1]
     if (nrowv < n && nrowv > 0) {
-        if (n%%nrowv == 0) 
+        if (n%%nrowv == 0)
             value <- value[rep(1:nrowv, length.out = n), , drop = FALSE]
-        else stop(gettextf("%d rows in value to replace %d rows", 
+        else stop(gettextf("%d rows in value to replace %d rows",
             nrowv, n), domain = NA)
     }
-    else if (nrowv > n) 
-        warning(gettextf("replacement data has %d rows to replace %d rows", 
+    else if (nrowv > n)
+        warning(gettextf("replacement data has %d rows to replace %d rows",
             nrowv, n), domain = NA)
     ncolv <- dimv[2]
     jvseq <- seq(len = p)
-    if (ncolv < p) 
+    if (ncolv < p)
         jvseq <- rep(1:ncolv, length.out = p)
-    else if (ncolv > p) 
-        warning(gettextf("provided %d variables to replace %d variables", 
+    else if (ncolv > p)
+        warning(gettextf("provided %d variables to replace %d variables",
             ncolv, p), domain = NA)
     if (length(new.cols)) {
         nm <- names(x)
@@ -797,12 +797,12 @@ function (x, i, j, value)
         names(x) <- c(nm, new.cols)
         attr(x, "row.names") <- rows
     }
-    if (has.i) 
+    if (has.i)
         for (jjj in seq(len = p)) {
             jj <- jseq[jjj]
             vjj <- value[[jvseq[[jjj]]]]
             if (jj <= nvars) {
-                if (length(dim(x[jj])) != 2) 
+                if (length(dim(x[jj])) != 2)
                   x[[jj]][iseq] <- vjj
                 else x[[jj]][iseq, ] <- vjj
             }
@@ -811,38 +811,38 @@ function (x, i, j, value)
                 x[[jj]] <- vjj
             }
         }
-    else if (p > 0) 
+    else if (p > 0)
         for (jjj in p:1) {
             jj <- jseq[jjj]
             x[[jj]] <- value[[jvseq[[jjj]]]]
-            if (is.atomic(x[[jj]])) 
+            if (is.atomic(x[[jj]]))
                 names(x[[jj]]) <- NULL
         }
     if (length(new.cols) > 0) {
         new.cols <- names(x)
-        if (any(duplicated(new.cols))) 
+        if (any(duplicated(new.cols)))
             names(x) <- make.unique(new.cols)
     }
     class(x) <- cl
     x
 }
 
-"$<-.data.table" = function (x, i, value) 
+"$<-.data.table" = function (x, i, value)
 {
     cl <- oldClass(x)
     nrows <- nrow(x)
     class(x) <- NULL
     if (!is.null(value)) {
         N <- NROW(value)
-        if (N > nrows) 
-            stop(gettextf("replacement has %d rows, data has %d", 
+        if (N > nrows)
+            stop(gettextf("replacement has %d rows, data has %d",
                 N, nrows), domain = NA)
-        if (N < nrows && N > 0) 
-            if (nrows%%N == 0 && length(dim(value)) <= 1) 
+        if (N < nrows && N > 0)
+            if (nrows%%N == 0 && length(dim(value)) <= 1)
                 value <- rep(value, length.out = nrows)
-            else stop(gettextf("replacement has %d rows, data has %d", 
+            else stop(gettextf("replacement has %d rows, data has %d",
                 N, nrows), domain = NA)
-        if (is.atomic(value)) 
+        if (is.atomic(value))
             names(value) <- NULL
     }
     x[[i]] <- value
@@ -855,11 +855,11 @@ cbind.data.table = function(...) data.table(...)    # for ease of use basically 
 
 rbind.data.table = function (...) {
     match.names <- function(clabs, nmi) {
-        if (all(clabs == nmi)) 
+        if (all(clabs == nmi))
             NULL
-        else if (all(nii <- match(nmi, clabs, 0))) 
+        else if (all(nii <- match(nmi, clabs, 0)))
             nii
-        else stop("names don't match previous names:\n\t", paste(nmi[nii == 
+        else stop("names don't match previous names:\n\t", paste(nmi[nii ==
             0], collapse = ", "))
     }
     allargs <- list(...)
@@ -867,10 +867,10 @@ rbind.data.table = function (...) {
     n <- length(allargs)
     if (n == 0)
         return(structure(list(), class = "data.table"))
-        
+
     if (any(sapply(allargs, class) != "data.table")) stop("All arguments must be data.tables")
     if (length(unique(sapply(allargs, ncol))) != 1) stop("All data.tables must have the same number of columns")
-    
+
     l = list()
     nm = names(allargs[[1]])
     if (length(nm) && n>1) {
@@ -895,10 +895,7 @@ as.data.table = function(x, keep.rownames=FALSE)
 
 as.data.frame.data.table = function(x, ...)
 {
-    attr(x,"row.names") = as.character(1:nrow(x))
-    # The row names alone may create a data.frame 10 times larger in memory than the data.table.
-    # This is why data.tables can be 10 times faster, and can hold 10 times as many rows in the same amount of memory.
-    # row names cannot be dropped from the data.frame class itself because the White Book defines them. See Prof Ripley's r-devel response 12 Dec 05.
+    attr(x,"row.names") = 1:nrow(x) # since R 2.4.0, data.frames can have non-character row names
     class(x) = "data.frame"
     x
 }
