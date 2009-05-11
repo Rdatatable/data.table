@@ -18,6 +18,7 @@ S3method("dimnames<-", data.table)
 S3method("$<-", data.table)
 S3method(duplicated, data.table)
 S3method(unique, data.table)
+S3method(merge, data.table)
 
 import(utils)
 S3method(tail, data.table)
