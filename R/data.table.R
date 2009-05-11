@@ -65,7 +65,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     }
     if (is.null(vnames)) vnames = rep("",length(x))
     vnames[is.na(vnames)] = ""
-    re = "^[a-zA-Z]+[a-zA-Z0-9_]*$"  # valid column names. expressions can be built on column names so need to be strict here.
+    re = "^[a-zA-Z]+[a-zA-Z0-9_\\.]*$"  # valid column names. expressions can be built on column names so need to be strict here.
     novname = vnames==""
     if (any(!novname)) {
         tt = regexpr(re, vnames[!novname]) < 1
@@ -98,7 +98,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                hascols[i] = FALSE
             else if ((is.atomic(xi) || is.factor(xi) || is.array(xi)) && !is.list(xi)) {     # is.atomic is true for vectors with attributed (such as that returned from idtocode()), but is.vector() is FALSE. this is why we use is.atomic rather than is.vector
                 # the is.array is required when, for example, you have a tapply inside a j=data.table(...) expression
-                if (is.atomic(xi) || is.array(xi)) xi = as.vector(xi)   # to remove any vector names, or dimnames in an array, or attributes (such as that returned from idtocode()), otherwise they get silently retaining in the data.table list members, thus bloating memory
+##                 if (is.atomic(xi) || is.array(xi)) xi = as.vector(xi)   # to remove any vector names, or dimnames in an array, or attributes (such as that returned from idtocode()), otherwise they get silently retaining in the data.table list members, thus bloating memory
                 hascols[i] = FALSE
                 if (is.character(xi) && class(xi)!="AsIs") xi = factor(xi)      # coerce characters to factor unless wrapped in I()
                 x[[i]] = xi
