@@ -6,7 +6,7 @@
   Like \code{[.data.frame} but i and j can be expressions of column names directly. i may also be a data.table and this invokes a fast table join using binary search in O(log n) time. Allowing i to be data.table is consistent with subsetting an n-dimension array by an n-column matrix in base \R.
 }
 \usage{
-\method{[}{data.table}(x, i, j, by, \dots, with=TRUE, nomatch = NA, 
+\method{[}{data.table}(x, i, j, by, \dots, with=TRUE, nomatch = NA,
   mult = "first", roll = FALSE, rolltolast = FALSE, simplify = TRUE,
   which = FALSE, incbycols = !bysameorder, bysameorder = FALSE,
   verbose = FALSE)
@@ -14,16 +14,16 @@
 \arguments{
   \item{x}{ A data.table }
   \item{i}{ Optional. i may be integer, logical, expression, data.table or character.
-  
+
   integer and logical work in the same way as for data.frame row selection, see \code{with} below. However, i is generally either an expression or a data.table ...
-  
+
   When i is an expression, it is evaluated within the frame of the data.table. The expression can 'see' column names as variables, objects in the calling frame and objects in frames above that up to and including .GlobalEnv in \R's usual way provided by \code{\link{eval}}. The expression should evaluate to integer or logical. The fact that i (and j) can be expressions of column names is the reason data.table's column names should obey \R's object name rules e.g. no spaces. There is nothing new here that subset() doesn't already provide in base \R, other than not needing to call it. i is analogous to the 'where' clause in SQL. i expressions (e.g. DT[Name=="JONES"]) will generally lead to a \emph{vector scan} i.e. every value in the column is read. Also a new logical vector has to be allocated by R, as long as the number of rows in the data.table, which is then populated before being used to subset the table. Although \code{[.data.table} allows vector scanning i expressions, \emph{joins} are preferred ...
-  
+
   When i is a data.table, x must have a key, meaning \emph{join} i to x and return the rows in x that match. An equi-join is performed between each column in i to each column in x's key in order. This is similar to base R functionality of subsetting a matrix by a 2-column matrix, and in higher dimensions subsetting an n-dimensional array by an n-column matrix. ncol(i) columns are used in the join and i is subject to ncol(i)<=ncol(key(x)).  From \code{help(\"[\",package=\"base\")} :
     "When indexing arrays by \code{[} a single argument \code{i} can be a
     matrix with as many columns as there are dimensions of \code{x}; the
     result is then a vector with elements corresponding to the sets of
-    indices in each row of \code{i}."  
+    indices in each row of \code{i}."
   Furthermore, join criteria in SQL is placed in the 'where' clause (e.g. where tableA.id = tableB.id) so to place join criteria in the i argument is consistent. Joining is row subsetting via a match to another table. The match is a sorted match, or binary search, performed in compiled C with O(log n) search times. Using binary search not only reduces the number of evaluations of the criteria but also reduces the number of page fetches required from RAM to L2 cache.
   If a data.table is thought of as a flat sparse array (of dimension the number of columns in its key), allowing i to be a data.table in \R is natural.
   If i also has a key (as well as x) then i's key determines the columns from i to use in the sorted match. A \dfn{spliced binary search} is performed which avoids a full binary search on x for each row of i. This is marginally faster than a full binary search on x for each row of i.
@@ -31,12 +31,12 @@
 
   When i is character, x must have a key, and i will be matched to the first column of that key. The first column of x's key must therefore be factor in this case. data.table's \emph{never} have rownames. See \code{\link{data.table}}.
   }
-  \item{j}{ Optional. j is normally an expression of column names or list of expressions enclosed in DT(). It may also be a single integer column position or single character column name. To specify a vector of integer column positions or vector of character column names you must specify with=FALSE otherwise the vector itself is returned. j is like 'select' in SQL and and is evaluated within the frame of the data.table, the column names are variables. This is standard base R functionality using \code{\link{with}}() on a data.frame. A data.frame is a frame as in evaluation frame, not just as in a (rectangular) picture frame. 
+  \item{j}{ Optional. j is normally an expression of column names or list of expressions enclosed in DT(). It may also be a single integer column position or single character column name. To specify a vector of integer column positions or vector of character column names you must specify with=FALSE otherwise the vector itself is returned. j is like 'select' in SQL and and is evaluated within the frame of the data.table, the column names are variables. This is standard base R functionality using \code{\link{with}}() on a data.frame. A data.frame is a frame as in evaluation frame, not just as in a (rectangular) picture frame.
 It is good practive to include "j=" or imagine it there before the 'j clause'. This avoids the mistake DT[,MySum=sum(v)] when attempting to create a data.table result containing a column named MySum. The MySum is treated as an argument name by [.data.table which doesn't exist. DT[,DT(MySum=sum(v))] was intended, or DT[,j=DT(MySum=sum(v))].
 }
 F
-  \item{by}{ Optional. character vector length 1. Contains column names or expressions of column names separated by comma to perform aggregation by. Apply the j expression by the by. Agreggation for a subset of known groups can be achieved more efficiently by passing those groups as an i data.table and using mult="all". This is analogous to 'having' clause in SQL. See simplify below and examples. 
-   NOTE: \code{by} is currently implemented inefficiently. On large datasets is may appear to hang. This is a known problem to be resolved.
+  \item{by}{ Optional. character vector length 1. Contains column names or expressions of column names separated by comma to perform aggregation by. Apply the j expression by the by. Agreggation for a subset of known groups can be achieved more efficiently by passing those groups as an i data.table and using mult="all". This is analogous to 'having' clause in SQL. See simplify below and examples.
+   NOTE: \code{by} can efficiently group reasonable numbers of groups. If the number of groups is large, processing can take a long time.
 }
 
   \item{\dots}{ not yet used. In future j may be allowed to be a function where the \dots argument(s) are passed on to this j function which takes data.table input e.g. DT[,tail,by="ColA",n=3] where n=3 is passed on to tail since the argument n is not one of the [.data.table arguments. This is standard \R practice, for example when \code{mean} is applied \code{na.rm=TRUE} may be passed on via the \dots argument of \code{\link{apply}}().}
@@ -61,7 +61,7 @@ The remaining arguments below are only applicable for joins i.e. when i is a dat
 
   \item{bysameorder}{ Advanced. The by expression creates a data.table internally which is then key'd and passed in as the i clause using SJ() ( possibly created a different order of the groups than they appear in the table) and mult set to "all". But when groups are passed into i directly \code{bysameorder=TRUE} saves the \code{setkey} for efficiency. }
 
-  \item{verbose}{ TRUE turns on status and information mesages to the console in an attempt to aid debugging. }  
+  \item{verbose}{ TRUE turns on status and information mesages to the console in an attempt to aid debugging. }
 }
 \details{
 Builds on base R functionality to reduce 2 types of time :
@@ -80,7 +80,7 @@ Like a data.frame, the comma is optional inside [] when j is missing. However un
 As with a data.frame a 1 row subset returns a 1 row data.table. As with data.frame a 1 column subset (or in data.table an expression of column names returning a vector) returns a vector. However unlike data.frame there is no drop argument. The type of j's result determines the result e.g. DT[,b] returns a vector, DT[,DT(b)] returns a 1-column data.table. Note that DT the data.table object, and DT the function are different \R objects in these examples.  When no j clause is present, a data.table subset will always return a data.table even if only one row is returned (unlike matrix subsetting but like data.frame subsetting).
 
 As with data.frame subsetting mutliple queries can be concatenated on one line e.g. DT[a>3][order(b)] is analogous to 'select * from DT where a>3 order by b' in SQL. Ordering is a select of all the rows, but in a different order. Another analogy is DT[,sum(b),by="c"][c=="foo"] compared to "select sum(b) from DT group by c having c=='foo'". However, as noted under 'by' above this is more efficiently implemented using \code{setkey(DT,c);DT["foo",sum(b),mult="all"]}.
-  
+
 The j expression does not have to return data. Data.tables 'queries' can be used for their side effects. For example DT[,plot(colB,colC),by="colA"] produces a set of plots, perhaps to a PDF file, and returns no data. If the j expression returns data and has side-effects (e.g. \link{hist}()) but only the side-effects are required, the j expression can be wrapped with \code{\link{invisible}}().
 
 The j expression 'sees' variables in the calling frame and above including .GlobalEnv, see the examples. This is base R functionality from eval() and with().
@@ -100,7 +100,6 @@ When j is used for its side effects only, NULL is returned.
 \enumerate{
 \item All arguments other than i,j and by, must be written in full since they appear after the \dots. \R does not allow partial argument names after \dots.
 \item Some examples use dates stored as integer format yyyymmdd but this is not imposed. Nothing in data.table is specific to any particular datetime class, only that storage.mode is numeric in key columns.
-\item Grouping is currently inefficient.
 \item Whilst it is possible to create a data.table of ff objects, and subset it by integer row numbers (see examples), keys and joins are not currently implemented when the data.table contains ff objects.
 }
 }
@@ -163,7 +162,7 @@ dts = as.integer(gsub("-","",dts))
 ids = paste(rep(LETTERS,each=26),LETTERS,sep="")
 DT = data.table(CJ(id=ids, date=dts), v=rnorm(length(ids)*length(dts)))
 setkey(DT,id,date)
-system.time(tt <<- DT[id=="FD"])  # vector scan.   user 1.16  system 0.11  elapsed 1.27 
+system.time(tt <<- DT[id=="FD"])  # vector scan.   user 1.16  system 0.11  elapsed 1.27
 system.time(ss <<- DT["FD"])      # binary search. user 0.02  system 0.00  elapsed 0.02
 identical({setkey(tt,id,date);tt}, ss)
 tables(mb=TRUE)

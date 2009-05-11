@@ -12,8 +12,11 @@ setkey(x, ..., loc=parent.frame())
   \item{\dots}{ The columns to sort by. Do not quote the column names. If \dots is missing all the columns are used. }
   \item{loc}{ The data.table must already exist in this frame, and it is sorted by reference in this frame. loc=.GlobalEnv is often useful within functions. }
 }
-% \details{
-% }
+\details{
+  The sort is attempted with the very fast radix method in
+  \code{sort.list}. If that fails, the sort reverts to the default
+  method in \code{order}.
+}
 \value{
     No value is returned. The data.table is modified by reference. If you require a copy, take a copy first. A working copy is currently taken internally.
 }

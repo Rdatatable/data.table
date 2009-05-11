@@ -324,7 +324,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 } else {
                     if (bysameorder) stop("bysameorder=TRUE but table is not in same order as the 'by'") # this is when appending a column to a table using by. Specify 'bysameorder' as TRUE to make the assumption about table order explicitly checked.
                     if (verbose) cat("Creating secondary key sort order ...")
-                    o__ = with(x, eval(parse(text=paste("order(",by,")",sep=""))))
+                    o__ = with(x, eval(parse(text=paste("fastorder(",by,")",sep=""))))
                     f__ = with(x, eval(parse(text=paste("duplist(",by,",order=o__)",sep=""))))
                     if (f__[1] != 1) stop("Logical error in grouping by secondary key")
                     # TO DO: allows secondary keys to be stored, then we see if our by matches one, if so use it, and no need to sort again. TO DO: document multiple keys.

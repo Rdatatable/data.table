@@ -21,11 +21,27 @@ setkey = function(x, ..., loc=parent.frame())
         if (any(miss)) stop("some columns are not in the table: " %+% cols[miss])
     }
     if (!all( sapply(deref(x),storage.mode)[cols] == "integer")) stop("All keyed columns must be storage mode integer")
-    o = eval(parse(text=paste("deref(x)[,order(",paste(cols,collapse=","),",na.last=FALSE)]",sep="")))
+    o = eval(parse(text=paste("deref(x)[,fastorder(",paste(cols,collapse=","),",na.last=FALSE)]",sep="")))
     # We put NAs first because NA is internally a very large negative number. This is relied on in the C binary search.
     deref(x) = deref(x)[o]
     attr(deref(x),"sorted") = cols
     invisible()
+}
+
+fastorder <- function(..., na.last = FALSE, decreasing = FALSE) {
+    cols <- list(...)
+    err <- try(silent = TRUE, {
+        # Use a radix sort (fast and stable), but it will fail if there are more than 1e5 unique elements.
+        o <- sort.list(cols[[length(cols)]], na.last = na.last, method = 'radix', decreasing = decreasing)
+        # If there is more than one column, run through them back to front to group columns.
+        # The unclass(col) is so we don't try to mess with factors (factor sorting slows things down).
+        if (length(cols) > 1)
+            for (col in rev(take(cols)))
+                o <- o[sort.list(unclass(col)[o], na.last = na.last, method = "radix", decreasing = decreasing)]
+    })
+    if (inherits(err, "try-error"))
+        o <- order(..., na.last = na.last, decreasing = decreasing)
+    o
 }
 
 J = function(...,SORTFIRST=FALSE) {
