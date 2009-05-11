@@ -1,7 +1,7 @@
 test.data.table = function()
 {
     # TODO: Move this function to RUnit.
-    
+
     started.at = Sys.time()
     TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
     a=b=v=NAME=NA    # Otherwise R CMD check warns "no visible binding for global variable" on line below. setkey 'sees' the variables within the scope of its first argument, which R CMD check doesn't know.
@@ -40,7 +40,7 @@ test.data.table = function()
     if (!identical(TESTDT[SJ(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",rolltolast=TRUE][[3]], INT(1,3:4,4))) stop("Test 23 failed")
     if (!identical(TESTDT[SJ(c(1,NA,4,NA,NA,4,4),c(5,5,6,6,7,9,10)),v,mult="all",roll=TRUE][[3]], INT(1,3:4,5:6,6))) stop("Test 24 failed")  # The SJ sorted the NAs in the key to the end
     # Note that the NAs get sorted to the beginning by the SJ().
-    
+
     # i.e.       a b v      (same test matrix, repeating here for easier reading of the test cases below)
     #       [1,] 1 5 1
     #       [2,] 3 5 2
@@ -76,7 +76,7 @@ test.data.table = function()
 
     if (!identical(TESTDT[J(c(4,1,0,5,3,7,NA,4,1),c(6,5,1,10,5,2,1,6,NA)),v], INT(3,1,NA,NA,2,7,NA,3,NA))) stop("Test 49 failed")
     if (!identical(TESTDT[J(c(4,1,0,5,3,7,NA,4,1),c(6,5,1,10,5,2,1,6,NA)),v,mult="last"], INT(4,1,NA,NA,2,7,NA,4,NA))) stop("Test 50 failed")
-    
+
     TESTDT$a = factor(letters[TESTDT$a])
     # i.e.       a b v
     #       [1,] a 5 1
@@ -88,7 +88,7 @@ test.data.table = function()
     #       [7,] g 2 7
     if (!identical(TESTDT[SJ(c("d","d","e","g"),c(6,7,1,2)),v,mult="all",roll=TRUE][[3]], INT(3:4,4,7))) stop("Test 51 failed")   # will test sortedmatch for strings in the level match
     if (!identical(TESTDT[J(c("g","d","e","d"),c(6,6,1,2)),v,mult="all",roll=TRUE][[3]], INT(7,3:4))) stop("Test 52 failed")   # also will test sortedmatch for strings in the level match
-    
+
     TESTDT$b = factor(letters[TESTDT$b])
     # i.e.
     #         a b v
@@ -109,32 +109,32 @@ test.data.table = function()
     t = try(TESTDT[J(c("g","d","e","d"),c("b","g","a","f")),v,rolltolast=TRUE],silent=TRUE)
     if (!inherits(t,"try-error")) stop("Test 59 failed")
     if (!length(grep("Attempting roll join on factor column", t))) stop("Test 60 failed")
-    
+
     ##  Add tests on sortedmatch as well to nail it down even further,  even though its called above.
-    
+
     if (!identical(sortedmatch(c("a","h","f","h","j"), letters[1:8]), INT(1,8,6,8,NA))) stop("Test 61 failed")
     if (!identical(sortedmatch(INT(5,2,4,3,NA,7), INT(2,4,5,7)), INT(3,1,2,NA,NA,4))) stop("Test 62 failed")
     if (!identical(sortedmatch(1:3,INT(NULL)), INT(NA,NA,NA))) stop("Test 63 failed")
-    
+
     t = try(sortedmatch(c("a","h","f","j"), letters[8:1], check=TRUE), silent=TRUE)
     if (!inherits(t,"try-error")) stop("Test 64 failed")    # v2 is not sorted
     t = try(sortedmatch(letters[1:3], 1:3), silent=TRUE)
     if (!inherits(t,"try-error")) stop("Test 65 failed")    # v1 and v2 must be the same storage.mode
     t = try(sortedmatch(as.double(1:3), as.double(1:3)), silent=TRUE)
     if (!inherits(t,"try-error")) stop("Test 66 failed")    # only character or integer accepted
-    
+
     # Test for [.factor masked and dropping unused factor levels ok.
     X = factor(letters[1:10])
     if (!identical(levels(X[4:6]), letters[4:6])) stop("Test 67 failed")
-    
-    if (!"TESTDT" %in% tables(silent=TRUE)[,NAME]) stop("Test 68 failed")  # NAME is returned as a factor in which we look for the string 
+
+    if (!"TESTDT" %in% tables(silent=TRUE)[,NAME]) stop("Test 68 failed")  # NAME is returned as a factor in which we look for the string
     if (!"TESTDT" %in% tables(silent=TRUE)[,as.character(NAME)]) stop("Test 69 failed") # can (so will in this test function) convet the factor column to character first, but don't need to
-    
+
     a = "d"     # Variable Twister.  a in this scope has same name as a inside DT scope.
     if (!identical(TESTDT[J(a),DT(v)], DT(a="d",v=3:6))) stop("Test 70 failed")  # J(a) means use a we just set above,  not a inside the DT which would result in a self join of the whole table. Would only occur if there is a variable name conflict as deliberately created here.
     if (!identical(TESTDT[SJ(a),DT(v)], DT(a="d",v=3:6,key="a"))) stop("Test 71 failed")
     if (!identical(TESTDT[CJ(a),DT(v)], DT(a="d",v=3:6,key="a"))) stop("Test 72 failed")
-    
+
     if (!identical(TESTDT[,v], 1:7)) stop("Test 73 failed")
     if (!identical(TESTDT[,3], DT(v=INT(1:7)))) stop("Test 74 failed")
     if (!identical(TESTDT[,"v"], DT(v=INT(1:7)))) stop("Test 75 failed")
@@ -144,12 +144,12 @@ test.data.table = function()
     colsVar = c("b","v")
     if (!identical(TESTDT[,colsVar], colsVar)) stop("Test 79 failed")
     if (!identical(TESTDT[,colsVar,with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))) stop("Test 80 failed")
-    
+
     if (!identical(TESTDT[1:2,c(a,b)], factor(c("a","c","e","e")))) stop("Test 81 failed")
     # It is expected the above to be common source of confusion. c(a,b) is evaluated within
     # the frame of TESTDT, and c() creates one long vector, not 2 column subset as in data.frame's.
     # Instead of c(a,b) use DT(a,b).
-    
+
     if (!identical(TESTDT[,c("a","b")], c("a","b"))) stop("Test 82 failed")
     if (!identical(TESTDT[,list("a","b")], list("a","b"))) stop("Test 83 failed")
     if (!identical(TESTDT[1:2,list(a,b)], list(factor(c("a","c")), factor(c("e","e"))))) stop("Test 84 failed")
@@ -159,23 +159,26 @@ test.data.table = function()
     if (!identical(TESTDT[,DT(MySum=sum(v)),by="b"], DT(b=c("b","e","f","i"),MySum=INT(7,3,7,11)))) stop("Test 87 failed")
     if (!identical(TESTDT[,DT(MySum=sum(v),Sq=v*v),by="b"][1:2], DT(b=c("b","e"),MySum=INT(7,3),Sq=INT(49,1)))) stop("Test 88 failed")   # silent repetition of MySum to match the v*v vector
     if (!identical(TESTDT[,sum(v),by="b",simplify=FALSE], list(7L,3L,7L,11L))) stop("Test 89 failed")
-    
+
     setkey(TESTDT,b)
     if (!identical(TESTDT[J(c("f","i")),sum(v),mult="all"], DT(b=c("f","i"),V1=c(7L,11L)))) stop("Test 90 failed")  # aggregation via groups passed into i and mult="all"
     if (!identical(TESTDT[SJ(c("f","i")),sum(v),mult="all"], DT(b=c("f","i"),V1=c(7L,11L),key="b"))) stop("Test 91 failed")  # aggregation via groups passed into i and mult="all"
     if (!identical(TESTDT[J(c("f","i")),sum(v),mult="all",simplify=FALSE], list(7L,11L))) stop("Test 92 failed")
-    
+
     if (!identical(TESTDT[J(c("f","i")), which=TRUE], INT(4,6))) stop("Test 93 failed")
     if (!identical(TESTDT[J(c("i","f")), mult="last", which=TRUE], INT(7,5))) stop("Test 94 failed")
-    
+
     if (!identical(TESTDT["f",v], 3L)) stop("Test 95 failed")
     if (!identical(TESTDT["f",v,mult="all"], DT(b="f",V1=3:4))) stop("Test 96 failed")
     if (!identical(TESTDT[c("f","i","b"),DT(GroupSum=sum(v)),mult="all"], DT(b=c("f","i","b"), GroupSum=c(7L,11L,7L)))) stop("Test 97 failed")  # mult="all" is required here since only b is key'd
     # that line above doesn't create a key on the result so that the order fib is preserved.
     if (!identical(TESTDT[SJ(c("f","i","b")),DT(GroupSum=sum(v)),mult="all"], DT(b=c("b","f","i"), GroupSum=c(7L,7L,11L), key="b"))) stop("Test 98 failed")
     # line above is the way to group, sort by group and setkey on the result by group.
-    
-    cat("All 98 tests in test.data.table() completed ok in",time.taken(started.at),"\n")    
+
+    (dt <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B"))
+    if (!identical(unique(dt), DT(dt[c(1L, 4L, 5L, 7L, 9L, 10L)], key="A,B")))  stop("Test 99 failed")
+
+    cat("All 99 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
     # should normally complete in under 1 sec, unless perhaps if a gc was triggered
     invisible()
 }
