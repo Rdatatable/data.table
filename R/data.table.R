@@ -255,7 +255,12 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 .Call(paste(cfunct,"first",sep=""), i, x, as.integer(leftcols-1), as.integer(rightcols-1), idx.start, as.integer(roll), as.integer(rolltolast),PACKAGE="data.table")
                 idx.end = integer(nrow(i))
                 .Call(paste(cfunct,"last",sep=""), i, x, as.integer(leftcols-1), as.integer(rightcols-1), idx.end, as.integer(roll), as.integer(rolltolast),PACKAGE="data.table")
-                irows = as.vector(unlist(mapply(seq, idx.start, idx.end,SIMPLIFY=FALSE)))
+##                 irows = as.vector(unlist(mapply(seq, idx.start, idx.end,SIMPLIFY=FALSE))) # replaced by the cumsum'ing below
+                lengths = idx.end - idx.start + 1
+                idx.diff = rep(1L, sum(lengths))
+                idx.diff[head(cumsum(lengths), -1) + 1] = tail(idx.start, -1) - head(idx.end, -1)
+                idx.diff[1] = idx.start[1]
+                irows = cumsum(idx.diff)
             } else {
                 cfunct = paste(cfunct,mult,sep="")
                 idx = integer(nrow(i))
