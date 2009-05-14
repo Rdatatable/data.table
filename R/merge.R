@@ -39,7 +39,7 @@ merge.data.table <- function(x, y, all = FALSE, all.x = all, all.y = all, ...) {
                               y[missingyidx, othercolsy, with = FALSE]))
         }
     }
-    if (nrow(dt) > 0)
+    if (nrow(dt) > 0 && (all.x || all.y))
         eval(parse(text=paste("setkey(dt,", paste(key, collapse=","), ")",sep="")))
     dt
 }

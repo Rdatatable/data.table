@@ -5,7 +5,7 @@
      Relatively quick merge of data tables based on common keys.
 }
 \usage{
-\method{merge}{data.table}(x, all = FALSE, all.x = all, all.y = all, ...)
+\method{merge}{data.table}(x, y, all = FALSE, all.x = all, all.y = all, ...)
 
 }
 \arguments{
@@ -40,7 +40,7 @@
     (dt1 <- data.table(A = letters[1:10], X = 1:10, key = "A"))
     (dt2 <- data.table(A = letters[5:14], Y = 1:10, key = "A"))
     merge(dt1, dt2)
-    merge(dt1, dt2, all = T)
+    merge(dt1, dt2, all = TRUE)
 
     (dt1 <- data.table(A = letters[rep(1:3, 2)], X = 1:6, key = "A"))
     (dt2 <- data.table(A = letters[rep(2:4, 2)], Y = 6:1, key = "A"))
