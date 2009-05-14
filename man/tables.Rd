@@ -5,10 +5,11 @@
   Lists all data.table's in memory, including number of rows, column names and any keys.
 }
 \usage{
-tables(mb = FALSE, order.col = "NAME", width = 80, env=parent.frame(), silent=FALSE)
+tables(mb = TRUE, order.col = "NAME", width = 80, env=parent.frame(), silent=FALSE)
 }
 \arguments{
-  \item{mb}{ TRUE adds size of the data.table in MB to the output. Calls object.size which appears slow. To be resolved.  }
+  \item{mb}{ TRUE adds size of the data.table in MB to the output (slow
+    in older versions of R).  }
   \item{order.col}{ Quoted column name to sort the output by }
   \item{width}{ Number of characters to truncate the COLS output }
   \item{env}{ Usually tables() is executed at the prompt where parent.frame() returns .GlobalEnv. tables() may also be useful inside functions where parent.frame() is the local scope of the function, or set it to .GlobalEnv }
