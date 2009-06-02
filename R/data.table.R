@@ -655,46 +655,18 @@ function (x, i, j, value)
     }
     if (has.j && length(j) == 0)
         return(x)
+    n <- 0
+    nrows <- nrow(x)
     cl <- oldClass(x)
     class(x) <- NULL
-    rows <- attr(x, "row.names")
     new.cols <- NULL
     nvars <- length(x)
-    nrows <- length(rows)
     if (has.i) {
-        if (any(is.na(i)))
-            stop("missing values are not allowed in subscripted assignments of data frames")
-        if (char.i <- is.character(i)) {
-            ii <- match(i, rows)
-            nextra <- sum(new.rows <- is.na(ii))
-            if (nextra > 0) {
-                ii[new.rows] <- seq(from = nrows + 1, length = nextra)
-                new.rows <- i[new.rows]
-            }
-            i <- ii
-        }
-        if (all(i >= 0) && (nn <- max(i)) > nrows) {
-            if (!char.i) {
-                nrr <- as.character((nrows + 1):nn)
-                if (inherits(value, "data.frame") && (dim(value)[1]) >=
-                  length(nrr)) {
-                  new.rows <- attr(value, "row.names")[1:length(nrr)]
-                  repl <- duplicated(new.rows) | match(new.rows,
-                    rows, 0)
-                  if (any(repl))
-                    new.rows[repl] <- nrr[repl]
-                }
-                else new.rows <- nrr
-            }
-            x <- xpdrows.data.frame(x, rows, new.rows)
-            rows <- attr(x, "row.names")
-            nrows <- length(rows)
-        }
-        iseq <- seq(along = rows)[i]
-        if (any(is.na(iseq)))
-            stop("non-existent rows not allowed")
+        stop("i not supported, yet")
     }
     else iseq <- NULL
+    if (n == 0L)
+        n <- nrows
     if (has.j) {
         if (any(is.na(j)))
             stop("missing values are not allowed in subscripted assignments of data frames")
@@ -919,4 +891,35 @@ dimnames.data.table = function(x) list(NULL, names(x))
 
 last = function(x) x[NROW(x)]     # last row for a data.table, last element for a vector.
 
-# test.data.table()
+within.data.table <- function (data, expr, keep.key = FALSE, ...) # basically within.list but with a check to avoid messing up the key
+{
+    parent <- parent.frame()
+    e <- evalq(environment(), data, parent)
+    eval(substitute(expr), e)
+    l <- as.list(e)
+    l <- l[!sapply(l, is.null)]
+    nD <- length(del <- setdiff(names(data), (nl <- names(l))))
+    data[nl] <- l
+    if (nD)
+        data[del] <- if (nD == 1)
+            NULL
+        else vector("list", nD)
+    if (!keep.key) attr(data,"sorted") <- NULL
+    data
+}
+
+
+transform.data.table <- function (`_data`, ...) # basically transform.data.frame with data.table instead of data.frame
+{
+    e <- eval(substitute(list(...)), `_data`, parent.frame())
+    tags <- names(e)
+    inx <- match(tags, names(`_data`))
+    matched <- !is.na(inx)
+    if (any(matched)) {
+        `_data`[inx[matched]] <- e[matched]
+        `_data` <- data.table(`_data`)
+    }
+    if (!all(matched))
+        do.call("data.table", c(list(`_data`), e[!matched]))
+    else `_data`
+}

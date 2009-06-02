@@ -20,7 +20,7 @@ if(require("RUnit", quietly = TRUE)) {
 
   path <- system.file("unitTests", package = pkg)
 
-  stopifnot(file.exists(path), file.info(path.expand(path))$isdir)
+##   stopifnot(file.exists(path), file.info(path.expand(path))$isdir)
 
-  source(file.path(path, "runTests.R"), echo = TRUE)
+##   source(file.path(path, "runTests.R"), echo = TRUE)
 }

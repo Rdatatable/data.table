@@ -19,6 +19,8 @@ S3method("$<-", data.table)
 S3method(duplicated, data.table)
 S3method(unique, data.table)
 S3method(merge, data.table)
+S3method(transform, data.table)
+S3method(within, data.table)
 
 import(utils)
 S3method(tail, data.table)

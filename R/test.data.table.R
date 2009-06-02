@@ -178,7 +178,15 @@ test.data.table = function()
     (dt <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B"))
     if (!identical(unique(dt), DT(dt[c(1L, 4L, 5L, 7L, 9L, 10L)], key="A,B")))  stop("Test 99 failed")
 
-    cat("All 99 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
+    # test [<- for column assignment (row assignment is still messed up)
+    dt1 <- dt2 <- dt
+    if (!identical({dt1["A"] <- 3; dt1}, {dt2$A <- 3; dt2}))  stop("Test 100 failed")
+
+    # test transform and within
+    if (!identical(within(dt, {D <- B^2}), transform(dt, D = B^2)))  stop("Test 101 failed")
+    if (!identical(within(dt, {A <- B^2}), transform(dt, A = B^2)))  stop("Test 102 failed")
+
+    cat("All 102 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
     # should normally complete in under 1 sec, unless perhaps if a gc was triggered
     invisible()
 }
