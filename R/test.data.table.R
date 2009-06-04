@@ -186,7 +186,11 @@ test.data.table = function()
     if (!identical(within(dt, {D <- B^2}), transform(dt, D = B^2)))  stop("Test 101 failed")
     if (!identical(within(dt, {A <- B^2}), transform(dt, A = B^2)))  stop("Test 102 failed")
 
-    cat("All 102 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
+    # test j as a function ala Hadley's plyr
+    if (!identical(dt[, function(x) sum(x$B), by = "A"], dt[, sum(B), by = "A"]))  stop("Test 103 failed")
+    if (!identical(dt[, transform, D = min(B), by = "A"], dt[, DT(A,B,C,D=min(B)), by = "A"]))  stop("Test 104 failed")
+
+    cat("All 103 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
     # should normally complete in under 1 sec, unless perhaps if a gc was triggered
     invisible()
 }

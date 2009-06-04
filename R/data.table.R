@@ -340,34 +340,45 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # Now we have the rows for each group, we look to the j expressions, and evaluate it WITHIN the list frame WITHOUT copying *all* the columns.
             # By replacing the column names with the [subset] afterwards,  you also only reference the columns required, ignoring columns not used in the expression, for efficiency.
             # TODO: This code for grouping has efficiency problems and likely would be better in C.
-            ws = unique(words(deparse(substitute(j))))
-            vars = ws[ws %in% colnames(x)]
-            if (!length(vars)) stop("No column names used in j expression. If j is a function, columns must be passed explicity.")
-            cp__ = parse(text=paste(vars,"COL__=",vars,ifelse(bysameorder,"","[o__]"),sep="",collapse=";"))    # make a reference to the original entire vector cp=copy but doesn't really copy. If secondary key, then we'll reorder the columns the expression needs only. Then the rest of the code is the same.
-            e__ = paste(vars,"=vecref(",vars,"COL__,f__[g__],len__[g__])",sep="",collapse=";")
-            if (mult=="all") {
-                # Each row in the i table is one per group. This branch allows you to use variables which are in i but which are not in the join columns, inside the j expression. Really very useful. Call this "join inherited scoping" and document it (TO DO).
-                ivars = ws[(!ws %in% vars) & ws %in% colnames(i)]
-                if (length(ivars)) {
-                    if (!missing(by)) stop("Cannot use join inherited scope when by is supplied. Remove the by argument.")  # TO DO: document "join inherited scoping"
-                    e__ = paste(e__,paste(ivars,"=i$",ivars,"[g__]",sep="", collapse=";"), sep=";")    # so its important that i is still the data.table at this point
-                }
-            }
-            jtxt = as.character(substitute(j))
-            if (jtxt[1]=="list") {
-                # take out the names of the named arguments (and store them for later), so each ans element doesn't duplicate the names many times
-                jvnames = names(as.list(substitute(j)))[-1]
-                e__ = parse(text=paste(e__,";list(",paste(jtxt[-1],collapse=","),")",sep=""))
+            #
+            isfun <- try(is.function(j), silent = TRUE)
+            if (!inherits(isfun, "try-error") && isfun) {
+                # Allow j as a function with ... passed as parameters to that function
+                # Right now, the ... are not evaluated within the data.table environment
+                if (bysameorder) # no resorting needed
+                    ans = lapply(1:length(f__), function(g__) j(x[f__[g__] + 1:len__[g__] - 1], ...))
+                else
+                    ans = lapply(1:length(f__), function(g__) j(x[o__[f__[g__] + 1:len__[g__] - 1]], ...))
             } else {
-                jvnames = NULL
-                e__ = parse(text=paste(e__,";",paste(trim(deparse(substitute(j))),collapse=""),sep=""))
-                # e__ = parse(text=paste(e__,";",paste(trim(deparse(substitute(j))),collapse=";"),sep=""))
-                # The collapse=";" is for when {} is passed in as the j expression e.g. "{browser();sum(a)}", or "{param=2;sum(a+param)}"
+                ws = unique(words(deparse(substitute(j))))
+                vars = ws[ws %in% colnames(x)]
+                if (!length(vars)) stop("No column names used in j expression. If j is a function, columns must be passed explicity.")
+                cp__ = parse(text=paste(vars,"COL__=",vars,ifelse(bysameorder,"","[o__]"),sep="",collapse=";"))    # make a reference to the original entire vector cp=copy but doesn't really copy. If secondary key, then we'll reorder the columns the expression needs only. Then the rest of the code is the same.
+                e__ = paste(vars,"=vecref(",vars,"COL__,f__[g__],len__[g__])",sep="",collapse=";")
+                if (mult=="all") {
+                    # Each row in the i table is one per group. This branch allows you to use variables which are in i but which are not in the join columns, inside the j expression. Really very useful. Call this "join inherited scoping" and document it (TO DO).
+                    ivars = ws[(!ws %in% vars) & ws %in% colnames(i)]
+                    if (length(ivars)) {
+                        if (!missing(by)) stop("Cannot use join inherited scope when by is supplied. Remove the by argument.")  # TO DO: document "join inherited scoping"
+                        e__ = paste(e__,paste(ivars,"=i$",ivars,"[g__]",sep="", collapse=";"), sep=";")    # so its important that i is still the data.table at this point
+                    }
+                }
+                jtxt = as.character(substitute(j))
+                if (jtxt[1]=="list") {
+                    # take out the names of the named arguments (and store them for later), so each ans element doesn't duplicate the names many times
+                    jvnames = names(as.list(substitute(j)))[-1]
+                    e__ = parse(text=paste(e__,";list(",paste(jtxt[-1],collapse=","),")",sep=""))
+                } else {
+                    jvnames = NULL
+                    e__ = parse(text=paste(e__,";",paste(trim(deparse(substitute(j))),collapse=""),sep=""))
+                    # e__ = parse(text=paste(e__,";",paste(trim(deparse(substitute(j))),collapse=";"),sep=""))
+                    # The collapse=";" is for when {} is passed in as the j expression e.g. "{browser();sum(a)}", or "{param=2;sum(a+param)}"
+                }
+                # new method above allows a subset once, for only the columns we need, as before, but solves the named data.table column problem
+                # old method ...e = parse(text=gsubwords(colnames(x), paste(colnames(x),"[groups[[g]]]",sep=""), paste(trim(deparse(substitute(j))),collapse="")))
+                # we used to allow functions such as head, or last, but other easier ways to do that, so no longer available here to keep things simple.
+                ans = with(x, {eval(cp__); lapply(1:length(f__),function(g__)eval(e__))})
             }
-            # new method above allows a subset once, for only the columns we need, as before, but solves the named data.table column problem
-            # old method ...e = parse(text=gsubwords(colnames(x), paste(colnames(x),"[groups[[g]]]",sep=""), paste(trim(deparse(substitute(j))),collapse="")))
-            # we used to allow functions such as head, or last, but other easier ways to do that, so no longer available here to keep things simple.
-            ans = with(x, {eval(cp__); lapply(1:length(f__),function(g__)eval(e__))})
             # TO DO: port this into C, ignoring names etc
             # TO DO: add the following lines into the C (too slow up here in R) :
             #  grouping.started.at = proc.time()
@@ -922,4 +933,25 @@ transform.data.table <- function (`_data`, ...) # basically transform.data.frame
     if (!all(matched))
         do.call("data.table", c(list(`_data`), e[!matched]))
     else `_data`
+}
+
+subset.data.table <- function (x, subset, select, ...) # not exported or documented, yet
+{
+    if (missing(subset))
+        r <- TRUE
+    else {
+        e <- substitute(subset)
+        r <- eval(e, x, parent.frame())
+        if (!is.logical(r))
+            stop("'subset' must evaluate to logical")
+        r <- r & !is.na(r)
+    }
+    if (missing(select))
+        vars <- 1:ncol(x)
+    else {
+        nl <- as.list(1L:ncol(x))
+        names(nl) <- names(x)
+        vars <- eval(substitute(select), nl, parent.frame())
+    }
+    x[r, vars, with = FALSE]
 }

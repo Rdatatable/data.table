@@ -31,7 +31,9 @@
 
   When i is character, x must have a key, and i will be matched to the first column of that key. The first column of x's key must therefore be factor in this case. data.table's \emph{never} have rownames. See \code{\link{data.table}}.
   }
-  \item{j}{ Optional. j is normally an expression of column names or list of expressions enclosed in DT(). It may also be a single integer column position or single character column name. To specify a vector of integer column positions or vector of character column names you must specify with=FALSE otherwise the vector itself is returned. j is like 'select' in SQL and and is evaluated within the frame of the data.table, the column names are variables. This is standard base R functionality using \code{\link{with}}() on a data.frame. A data.frame is a frame as in evaluation frame, not just as in a (rectangular) picture frame.
+  \item{j}{ Optional. j is normally an expression of column names or
+  list of expressions enclosed in DT(). It may also be a single integer
+  column position, a single character column name, or a function. To specify a vector of integer column positions or vector of character column names you must specify with=FALSE otherwise the vector itself is returned. j is like 'select' in SQL and and is evaluated within the frame of the data.table, the column names are variables. This is standard base R functionality using \code{\link{with}}() on a data.frame. A data.frame is a frame as in evaluation frame, not just as in a (rectangular) picture frame.
 It is good practive to include "j=" or imagine it there before the 'j clause'. This avoids the mistake DT[,MySum=sum(v)] when attempting to create a data.table result containing a column named MySum. The MySum is treated as an argument name by [.data.table which doesn't exist. DT[,DT(MySum=sum(v))] was intended, or DT[,j=DT(MySum=sum(v))].
 }
 F
@@ -39,7 +41,7 @@ F
    NOTE: \code{by} can efficiently group reasonable numbers of groups. If the number of groups is large, processing can take a long time.
 }
 
-  \item{\dots}{ not yet used. In future j may be allowed to be a function where the \dots argument(s) are passed on to this j function which takes data.table input e.g. DT[,tail,by="ColA",n=3] where n=3 is passed on to tail since the argument n is not one of the [.data.table arguments. This is standard \R practice, for example when \code{mean} is applied \code{na.rm=TRUE} may be passed on via the \dots argument of \code{\link{apply}}().}
+  \item{\dots}{ if \code{j} is a function, the \dots argument(s) are passed on to this \code{j} function which takes data.table input e.g. DT[,tail,by="ColA",n=3] where n=3 is passed on to tail since the argument n is not one of the [.data.table arguments. This is standard \R practice, for example when \code{mean} is applied \code{na.rm=TRUE} may be passed on via the \dots argument of \code{\link{apply}}().}
 
   \item{with}{ by default j is evaluated within the frame of x so the column names are seen as variables. See \code{\link{with}}. DT[,"ColA"] returns the column as expected, as does DT[,1]. However DT[,1:2], DT[,c(1,2)] and DT[,c("a","b")] all return the j vector itself without looking up the column contents. Setting with=FALSE resolves this. Note that DT[,DT(ColA,ColB)] is preferred to DT[,c("ColA","ColB"),with=FALSE]. If column integers or character names are held in a variable, with=FALSE is also required e.g. DT[,colsVar,with=FALSE].}
 
@@ -84,6 +86,8 @@ As with data.frame subsetting mutliple queries can be concatenated on one line e
 The j expression does not have to return data. Data.tables 'queries' can be used for their side effects. For example DT[,plot(colB,colC),by="colA"] produces a set of plots, perhaps to a PDF file, and returns no data. If the j expression returns data and has side-effects (e.g. \link{hist}()) but only the side-effects are required, the j expression can be wrapped with \code{\link{invisible}}().
 
 The j expression 'sees' variables in the calling frame and above including .GlobalEnv, see the examples. This is base R functionality from eval() and with().
+
+The j expression can also be a function allowing access to the full data.table as in Hadley's plyr package.
 
 When i is a logical expression e.g. DT[a==3], R must first create new memory to hold a logical vector as long as the rows in DT to hold the result of a==3. This is then used to subset DT. We call this a \dfn{vector scan} since every value of column a must be read. For large datasets (or repetitive algorithms on small datasets) vector scans have poor performance. Instead join to DT using setkey(DT,a) then DT[J(3),mult="all"].
 }
@@ -173,6 +177,11 @@ ss = DT[c("FD","FE"),mean(v)]             # more efficient way to group for know
 identical(tt, ss)
 
 tt = DT[c("FD","FE")][,mean(v),by="id,month=as.integer(date/100)"]
+
+dt <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6))
+dt[, head, n = 2, by="B"]
+dt[, transform, D = mean(A), by="B"]
+dt[, subset, A == min(A), by="B"]
 
 \dontrun{
 # Ensure you have at least 2.7GB free disk space comfortably before running this
