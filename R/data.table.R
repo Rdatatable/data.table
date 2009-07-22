@@ -456,7 +456,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # if (!is.null(dim(x[[j[s]]]))) stop("data.tables should only have vectors as columns")
             # ans[[s]] = x[[c(j[s],i)]]  ideal but this fails because [[ can only return 1 result.
             # NA in the i are allowed, returning NA in those postions. 0 is allowed, returning no row for that position.
-            if (paste(version[c("major","minor")],collapse=".") >= "2.4.0") {
+            if (getRversion() >= "2.4.0") {
                 ans[[s]] = x[[j[s]]][irows]
                 # Prof Ripley changed [[ as from 2.4.0 (as a result of MD's postings) so that a copy no longer is taken unless necessary.
             } else {
