@@ -345,10 +345,12 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (!inherits(isfun, "try-error") && isfun) {
                 # Allow j as a function with ... passed as parameters to that function
                 # Right now, the ... are not evaluated within the data.table environment
+                f2__ <- f__ + len__ - 1
                 if (bysameorder) # no resorting needed
-                    ans = lapply(1:length(f__), function(g__) j(x[f__[g__] + 1:len__[g__] - 1], ...))
+                    xo__ = x
                 else
-                    ans = lapply(1:length(f__), function(g__) j(x[o__[f__[g__] + 1:len__[g__] - 1]], ...))
+                    xo__ = x[o__]
+                ans = lapply(1:length(f__), function(g__) j(xo__[f__[g__]:f2__[g__]], ...))
             } else {
                 ws = unique(words(deparse(substitute(j))))
                 vars = ws[ws %in% colnames(x)]
@@ -367,17 +369,18 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 if (jtxt[1]=="list") {
                     # take out the names of the named arguments (and store them for later), so each ans element doesn't duplicate the names many times
                     jvnames = names(as.list(substitute(j)))[-1]
-                    e__ = parse(text=paste(e__,";list(",paste(jtxt[-1],collapse=","),")",sep=""))
+                    e__ = paste(e__,";list(",paste(jtxt[-1],collapse=","),")",sep="")
                 } else {
                     jvnames = NULL
-                    e__ = parse(text=paste(e__,";",paste(trim(deparse(substitute(j))),collapse=""),sep=""))
+                    e__ = paste(e__,";",paste(trim(deparse(substitute(j))),collapse=""),sep="")
                     # e__ = parse(text=paste(e__,";",paste(trim(deparse(substitute(j))),collapse=";"),sep=""))
                     # The collapse=";" is for when {} is passed in as the j expression e.g. "{browser();sum(a)}", or "{param=2;sum(a+param)}"
                 }
                 # new method above allows a subset once, for only the columns we need, as before, but solves the named data.table column problem
                 # old method ...e = parse(text=gsubwords(colnames(x), paste(colnames(x),"[groups[[g]]]",sep=""), paste(trim(deparse(substitute(j))),collapse="")))
                 # we used to allow functions such as head, or last, but other easier ways to do that, so no longer available here to keep things simple.
-                ans = with(x, {eval(cp__); lapply(1:length(f__),function(g__)eval(e__))})
+##                 ans = with(x, {eval(cp__); lapply(1:length(f__),function(g__)eval(e__))})
+                ans = with(x, {eval(cp__); eval(parse(text = paste("lapply(1:length(f__),function(g__) {", e__, "})")))})
             }
             # TO DO: port this into C, ignoring names etc
             # TO DO: add the following lines into the C (too slow up here in R) :
@@ -456,14 +459,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # if (!is.null(dim(x[[j[s]]]))) stop("data.tables should only have vectors as columns")
             # ans[[s]] = x[[c(j[s],i)]]  ideal but this fails because [[ can only return 1 result.
             # NA in the i are allowed, returning NA in those postions. 0 is allowed, returning no row for that position.
-            if (getRversion() >= "2.4.0") {
-                ans[[s]] = x[[j[s]]][irows]
-                # Prof Ripley changed [[ as from 2.4.0 (as a result of MD's postings) so that a copy no longer is taken unless necessary.
-            } else {
-                warning("This R session is < 2.4.0. Please upgrade to 2.4.0+.")
-                txt = paste("x$'",names(x)[j[s]],"'[irows]",sep="")
-                ans[[s]] = eval(parse(text=txt))    # $colA syntax doesn't copy in versions prior to 2.4, but "[[" does.
-            }
+            ans[[s]] = x[[j[s]]][irows]
+            # Prof Ripley changed [[ as from 2.4.0 (as a result of MD's postings) so that a copy no longer is taken unless necessary.
             #x[[j]] <- if (length(dim(xj)) != 2)
             #    xj[i]
             #else xj[i, , drop = FALSE]  TO DO: reinstate in future to allow data.table's to have a matrix as a column. Would be nice to have binary search on a key'd matrix.
