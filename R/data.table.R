@@ -261,6 +261,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 idx.diff[head(cumsum(lengths), -1) + 1] = tail(idx.start, -1) - head(idx.end, -1)
                 idx.diff[1] = idx.start[1]
                 irows = cumsum(idx.diff)
+                ##  I also tried the following for a speed increase, but it appears to be slower
+##                 irows = 1:sum(lengths) - 1 + rep.int(idx.start, lengths) -
+##                     rep.int(c(0L,cumsum(lengths[1:(length(lengths)-1)])), lengths)
             } else {
                 cfunct = paste(cfunct,mult,sep="")
                 idx = integer(nrow(i))
@@ -273,7 +276,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (!is.logical(i)) {
                if (!is.numeric(i)) stop("i has not evaluated to integer or double")
                # i was passed in as integer row numbers, or the i expression evaluation to integer rows, which we should therefore check for our of bounds.
-               if (any(abs(i) > nrow(x), na.rm=TRUE)) stop("i out of bounds")  # 0 is allowed to select an empty table e.g. copy a table structure
+##                if (any(abs(i) > nrow(x), na.rm=TRUE)) stop("i out of bounds")  # 0 is allowed to select an empty table e.g. copy a table structure
             }
             irows = i
         }
@@ -357,6 +360,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 if (!length(vars)) stop("No column names used in j expression. If j is a function, columns must be passed explicity.")
                 cp__ = parse(text=paste(vars,"COL__=",vars,ifelse(bysameorder,"","[o__]"),sep="",collapse=";"))    # make a reference to the original entire vector cp=copy but doesn't really copy. If secondary key, then we'll reorder the columns the expression needs only. Then the rest of the code is the same.
                 e__ = paste(vars,"=vecref(",vars,"COL__,f__[g__],len__[g__])",sep="",collapse=";")
+##                 e__ = paste(vars,"=.Call('vecref',",vars,"COL__,f__[g__],len__[g__],PACKAGE='data.table')",sep="",collapse=";")
                 if (mult=="all") {
                     # Each row in the i table is one per group. This branch allows you to use variables which are in i but which are not in the join columns, inside the j expression. Really very useful. Call this "join inherited scoping" and document it (TO DO).
                     ivars = ws[(!ws %in% vars) & ws %in% colnames(i)]
@@ -459,11 +463,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # if (!is.null(dim(x[[j[s]]]))) stop("data.tables should only have vectors as columns")
             # ans[[s]] = x[[c(j[s],i)]]  ideal but this fails because [[ can only return 1 result.
             # NA in the i are allowed, returning NA in those postions. 0 is allowed, returning no row for that position.
-            ans[[s]] = x[[j[s]]][irows]
-            # Prof Ripley changed [[ as from 2.4.0 (as a result of MD's postings) so that a copy no longer is taken unless necessary.
-            #x[[j]] <- if (length(dim(xj)) != 2)
-            #    xj[i]
-            #else xj[i, , drop = FALSE]  TO DO: reinstate in future to allow data.table's to have a matrix as a column. Would be nice to have binary search on a key'd matrix.
+            ans[[s]] = if (length(dim(x[[j[s]]])) != 2) x[[j[s]]][irows] else x[[j[s]]][irows, , drop = FALSE]
         }
         names(ans) = names(x)[j]
         if (is.logical(irows) || length(irows)==1 || !is.null(attr(i,"sorted")) || (is.data.table(i) && nrow(i)==1)) {
@@ -952,3 +952,86 @@ subset.data.table <- function (x, subset, select, ...) # not exported or documen
     }
     x[r, vars, with = FALSE]
 }
+
+na.omit.data.table <- stats:::na.omit.data.frame
+
+is.na.data.table <- function (x) {
+    do.call("cbind", lapply(x, "is.na"))
+}
+
+t.data.table <- t.data.frame
+
+Math.data.table <- Math.data.frame
+
+Ops.data.table <- function (e1, e2 = NULL)
+{
+    isList <- function(x) !is.null(x) && is.list(x)
+    unary <- nargs() == 1L
+    lclass <- nzchar(.Method[1L])
+    rclass <- !unary && (nzchar(.Method[2L]))
+    value <- list()
+    rn <- NULL
+    FUN <- get(.Generic, envir = parent.frame(), mode = "function")
+    f <- if (unary)
+        quote(FUN(left))
+    else quote(FUN(left, right))
+    lscalar <- rscalar <- FALSE
+    if (lclass && rclass) {
+        nr <- nrow(e1)
+        cn <- names(e1)
+        if (any(dim(e2) != dim(e1)))
+            stop(.Generic, " only defined for equally-sized data frames")
+    }
+    else if (lclass) {
+        nr <- nrow(e1)
+        cn <- names(e1)
+        rscalar <- length(e2) <= 1L
+        if (isList(e2)) {
+            if (rscalar)
+                e2 <- e2[[1L]]
+            else if (length(e2) != ncol(e1))
+                stop(gettextf("list of length %d not meaningful",
+                  length(e2)), domain = NA)
+        }
+        else {
+            if (!rscalar)
+                e2 <- split(rep(as.vector(e2), length.out = prod(dim(e1))),
+                  rep.int(seq_len(ncol(e1)), rep.int(nrow(e1),
+                    ncol(e1))))
+        }
+    }
+    else {
+        nr <- nrow(e2)
+        cn <- names(e2)
+        lscalar <- length(e1) <= 1L
+        if (isList(e1)) {
+            if (lscalar)
+                e1 <- e1[[1L]]
+            else if (length(e1) != ncol(e2))
+                stop(gettextf("list of length %d not meaningful",
+                  length(e1)), domain = NA)
+        }
+        else {
+            if (!lscalar)
+                e1 <- split(rep(as.vector(e1), length.out = prod(dim(e2))),
+                  rep.int(seq_len(ncol(e2)), rep.int(nrow(e2),
+                    ncol(e2))))
+        }
+    }
+    for (j in seq_along(cn)) {
+        left <- if (!lscalar)
+            e1[[j]]
+        else e1
+        right <- if (!rscalar)
+            e2[[j]]
+        else e2
+        value[[j]] <- eval(f)
+    }
+    if (.Generic %in% c("+", "-", "*", "/", "%%", "%/%")) {
+        names(value) <- cn
+        data.table(value, check.names = FALSE)
+    }
+    else matrix(unlist(value, recursive = FALSE, use.names = FALSE),
+        nrow = nr, dimnames = list(NULL, cn))
+}
+

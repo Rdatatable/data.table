@@ -190,7 +190,37 @@ test.data.table = function()
     if (!identical(dt[, function(x) sum(x$B), by = "A"], dt[, sum(B), by = "A"]))  stop("Test 103 failed")
     if (!identical(dt[, transform, D = min(B), by = "A"], dt[, DT(A,B,C,D=min(B)), by = "A"]))  stop("Test 104 failed")
 
-    cat("All 103 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
+    # test numeric and comparison operations on a data table
+    if (!all(dt + dt > dt))  stop("Test 105 failed")
+    if (!all(dt + dt > 1))  stop("Test 106 failed")
+    if (!identical(dt + dt, dt * 2L))  stop("Test 107 failed")
+
+    # test a few other generics:
+    if (!identical(dt, data.table(t(t(dt)), key="A,B")))  stop("Test 108 failed")
+    if (any(is.na(dt)))  stop("Test 109 failed")
+    dt2 <- dt
+    dt2$A[1] <- NA
+    if (sum(is.na(dt2)) != 1L)  stop("Test 110 failed")
+    if (!identical(dt, na.omit(dt)))  stop("Test 111 failed")
+    if (!identical(dt2[2:nrow(dt2),A], na.omit(dt2)$A))  stop("Test 112 failed")
+
+    # test [<- assignment:
+    dt2[is.na(dt2)] <- 1L
+    if (!identical(dt, dt2))  stop("Test 113 failed")
+    dt2[, c("A", "B")] <- dt1[, c("A", "B"), with = FALSE]
+    if (!identical(dt1, dt2))  stop("Test 114 failed")
+    ## doesn't work, yet:
+    ##     dt2[rep(TRUE, nrow(dt)), c("A", "B")] <- dt1[, c("A", "B"), with = FALSE]
+    ##     dt2[rep(TRUE, nrow(dt)), c("A")] <- dt1[, c("A"), with = FALSE]
+    ##     if (!identical(dt, dt2))  stop("Test 112 failed")
+
+    # test the alternate form of setkey:
+    dt1 <- dt2 <- dt
+    setkey(dt1, "A")
+    setkey("dt2", "A", alternative = TRUE)
+    if (!identical(dt1, dt2))  stop("Test 115 failed")
+
+    cat("All 114 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
     # should normally complete in under 1 sec, unless perhaps if a gc was triggered
     invisible()
 }

@@ -1,4 +1,4 @@
-setkey = function(x, ..., loc=parent.frame())
+setkey = function(x, ..., loc=parent.frame(), alternative = FALSE)
 {
     # sorts table by the columns, and sets the key to be those columns
     # example of use:   setkey(tbl,colA,colC,colB)
@@ -7,13 +7,19 @@ setkey = function(x, ..., loc=parent.frame())
     # TO DO: allow secondary index, which stores the sorted key + a column of integer rows in the primary sorted table. Interesting when it comes to table updates to maintain the keys.
     # TO DO: if key is already set, don't reset it.
     require(ref)
-    name = deparse(substitute(x))
+    if (alternative)
+        name = x
+    else
+        name = deparse(substitute(x))
     if (!exists(name, env=loc)) loc=.GlobalEnv
     x = list(name=name, loc=loc)
     class(x) = "ref"
     if (!is.data.table(deref(x))) stop("first argument must be a data.table")
     if (any(sapply(deref(x),is.ff))) stop("joining to a table with ff columns is not yet implemented")
-    cols = getdots()
+    if (alternative)
+        cols = c(...)
+    else
+        cols = getdots()
     if (!length(cols)) {
         cols = colnames(deref(x))   #stop("Must supply one or more columns for the key")
     } else {
@@ -71,3 +77,5 @@ CJ = function(...)
 }
 
 # TO DO:  reliably mark tables as sorted so we don't need to sort again.  maybe this is simple one line change above to check for $sorted
+
+getkey <- function(x, ...) attributes(x)$sorted

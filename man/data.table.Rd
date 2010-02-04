@@ -3,6 +3,11 @@
 \alias{DT}
 \alias{as.data.table}
 \alias{is.data.table}
+\alias{Ops.data.table}
+\alias{na.omit.data.table}
+\alias{is.na.data.table}
+\alias{t.data.table}
+\alias{na.omit.data.table}
 \title{ Enhanced data.frame }
 \description{
    Same internal structure as data.frame (i.e. list of vectors) but enhanced extract methods.
@@ -14,10 +19,10 @@ DT(...)
 \arguments{
   \item{\dots}{ Just as \dots in \code{\link{data.frame}}. These arguments are of either the form value
   or tag = value. Column names are created based on the tag (if present) or the deparsed argument itself.
-  
+
   The data.table can be formed from one or more of (mixed type) vector, matrix, data.frame, data.table, etc. Usual
   recycling rules are applied to vectors of different lengths.
-  
+
   \code{\link{make.names}} is used to resolve any column name conflicts in the union of the column names of these objects
   and the tag will be prefixed to the column name.
   }
@@ -26,7 +31,7 @@ DT(...)
   than one matrix or data.frame appear in \dots all rownames from all those objects will be kept in multiple rn.<n> columns. }
   \item{check.names}{ Just as check.names in \code{\link{data.frame}}(). For example this replaces spaces in column names with
   period and ensures column names are valid \R object names. }
-  
+
   \item{key}{ Character vector of length 1 containing one or more column names separated by comma which is passed to \code{\link{setkey}} }
 }
 \details{
@@ -41,7 +46,12 @@ the top to save scrolling up at the console.
 \item character vectors may be passed in but they are automatically converted to factor. A data.table does not allow character columns for time and space reasons.
 \item however \emph{the main difference} is enhanced functionality in \code{\link{[.data.table}} where most documentation for this package lives.
 }
+
+Several methods are provided for data tables, including \code{is.na}, \code{na.omit},
+\code{t}, and others.
+
 }
+
 \value{
    A data.table.
 }
