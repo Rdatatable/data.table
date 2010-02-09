@@ -189,7 +189,7 @@ test.data.table = function()
     # test .SD object rather than j as function
     if (!identical(dt[, sum(.SD$B), by = "A"], dt[, sum(B), by = "A"]))  stop("Test 103 failed")
 		# TO DO: use .SD for test 104 ? :
-	  #  if (!identical(dt[, transform, D = min(B), by = "A"], dt[, DT(A,B,C,D=min(B)), by = "A"]))  stop("Test 104 failed")
+	if (!identical(dt[, transform(.SD, D = min(B)), by = "A"], dt[, DT(A,B,C,D=min(B)), by = "A"]))  stop("Test 104 failed")
 
     # test numeric and comparison operations on a data table
     if (!all(dt + dt > dt))  stop("Test 105 failed")
