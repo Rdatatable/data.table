@@ -164,7 +164,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     value
 }
 
-"[.data.table" = function (x, i, j, by, ..., with=TRUE, nomatch=NA, mult="first", roll=FALSE, rolltolast=FALSE, simplify=TRUE, which=FALSE, incbycols=!bysameorder, bysameorder=FALSE, verbose=FALSE)
+"[.data.table" = function (x, i, j, by, with=TRUE, nomatch=NA, mult="first", roll=FALSE, rolltolast=FALSE, simplify=TRUE, which=FALSE, incbycols=!bysameorder, bysameorder=FALSE, verbose=FALSE)
 {
   # TODO: DT[i,"colA"] will return a one-column data.table. To get a vector do DT[i,"colA"][[1]].  Neater than DT[i,"colA",drop=TRUE]. Instead of DT[,"colA"][[1]], just do DT$colA, if there is no subset i required.
   # TODO: So drop=FALSE is always implicitly the case.  Its nice for joins to simply say RT[LT[,"val"]] for example.
@@ -416,6 +416,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 			biggest = max(len__)
 			.SD = x[1:biggest, vars, with=FALSE]   # single object we will re-use when grouping, for only the columns the j needs.
 			xcols = as.integer(match(vars,colnames(x)))
+			#browser()
+			for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) levels(.SD[[col]]) = levels(x[[xcols[col]]])  # careful not to use i as counter here, for() leaves i set to last value.
       if (verbose) {cat(deparse(je),"\n");last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
       # ans = with(x, {eval(cp__); eval(parse(text = paste("lapply(1:length(f__),function(g__) {", e__, "})")))})
 			# browser()
@@ -440,7 +442,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (is.null(dim(ans[[fnn]]))) {
         	if (!is.list(ans[[fnn]])) {
         		r = sapply(ans,NROW)
-            ans = data.table(unlist(ans,use.names=FALSE))     # most usually the vector result of sum(<colA>) or similar. We always return a data.table from a data.table subset, so we always know where we are, and don't need to test the result for single case. Unless each j returns a matrix in which case we rbind the matrices together below.
+            ans = data.table(do.call("c",ans)) #,use.names=FALSE))     # most usually the vector result of sum(<colA>) or similar. We always return a data.table from a data.table subset, so we always know where we are, and don't need to test the result for single case. Unless each j returns a matrix in which case we rbind the matrices together below.
         	} else {
         		r = sapply(ans,function(l)length(l[[1]]))     # we assume each list item is the same length
         	  l = lapply(1:length(ans[[1]]), function(l) unlist(lapply(ans,"[[",l)))
@@ -809,7 +811,7 @@ function (x, i, j, value)
     nrowv <- dimv[1]
     if (nrowv < n && nrowv > 0) {
         if (n%%nrowv == 0)
-            value <- value[rep(1:nrowv, length.out = n), , drop = FALSE]
+            value <- value[rep(1:nrowv, length.out = n),] # drop = FALSE
         else stop(gettextf("%d rows in value to replace %d rows",
             nrowv, n), domain = NA)
     }
@@ -1001,7 +1003,14 @@ subset.data.table <- function (x, subset, select, ...) # not exported or documen
     x[r, vars, with = FALSE]
 }
 
-na.omit.data.table <- stats:::na.omit.data.frame
+na.omit.data.table <- function (dt) 
+{
+		omit = FALSE
+		for (i in seq_len(ncol(dt))) omit = omit | is.na(dt[[i]])
+		dt[!omit]
+		# compare the above to stats:::na.omit.data.frame
+}
+
 
 is.na.data.table <- function (x) {
     do.call("cbind", lapply(x, "is.na"))

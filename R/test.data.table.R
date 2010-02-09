@@ -188,14 +188,13 @@ test.data.table = function()
 
     # test .SD object rather than j as function
     if (!identical(dt[, sum(.SD$B), by = "A"], dt[, sum(B), by = "A"]))  stop("Test 103 failed")
-		# TO DO: use .SD for test 104 ? :
-	if (!identical(dt[, transform(.SD, D = min(B)), by = "A"], dt[, DT(A,B,C,D=min(B)), by = "A"]))  stop("Test 104 failed")
+		if (!identical(dt[, transform(.SD, D = min(B)), by = "A"], dt[, DT(A,B,C,D=min(B)), by = "A"]))  stop("Test 104 failed")
 
     # test numeric and comparison operations on a data table
     if (!all(dt + dt > dt))  stop("Test 105 failed")
     if (!all(dt + dt > 1))  stop("Test 106 failed")
     if (!identical(dt + dt, dt * 2L))  stop("Test 107 failed")
-
+    
     # test a few other generics:
     if (!identical(dt, data.table(t(t(dt)), key="A,B")))  stop("Test 108 failed")
     if (any(is.na(dt)))  stop("Test 109 failed")
@@ -221,7 +220,25 @@ test.data.table = function()
     setkey("dt2", "A", alternative = TRUE)
     if (!identical(dt1, dt2))  stop("Test 115 failed")
 
-    cat("All 114 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
-    # should normally complete in under 1 sec, unless perhaps if a gc was triggered
+		# Test dogroups works correctly for factor columns
+		if(!identical(TESTDT[,a[1],by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d","d"), key="b"))) stop("Test 116 failed")
+
+		# We no longer check i for out of bounds, for consistency with data.frame. NA rows should be returned for i>nrow
+		if (!identical(TESTDT[8], data.table(a=factor(NA), b=factor(NA), v=as.integer(NA), key="b"))) stop("Test 117 failed")
+		if (!identical(TESTDT[6:9], data.table(a=factor(c("d","d",NA,NA)), b=factor(c("i","i",NA,NA)), v=as.integer(c(5,6,NA,NA))))) stop("Test 118 failed")
+
+		n=10000
+		grp1=sample(1:50,n,replace=TRUE)
+		grp2=sample(1:50,n,replace=TRUE)
+		dt=data.table(x=rnorm(n),y=rnorm(n),grp1=grp1,grp2=grp2)
+		tt = system.time({ans = dt[,list(.Internal(mean(x)),.Internal(mean(y))),by="grp1,grp2"]})
+		if (tt[1] > 0.5) stop("Test 119 failed. Took too long.")  # actually takes more like 0.068
+		i = sample(nrow(ans),1)
+		if (!identical(ans[i,c(V1,V2)], dt[grp1==ans[i,grp1] & grp2==ans[i,grp2], c(mean(x),mean(y))])) stop("Test 120 failed")
+		# To DO: add a data.frame aggregate method here and check data.table is faster
+
+		
+    cat("All 120 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
+    # should normally complete in under 2 sec, unless perhaps if a gc was triggered
     invisible()
 }
