@@ -222,23 +222,24 @@ test.data.table = function()
 
 		# Test dogroups works correctly for factor columns
 		if(!identical(TESTDT[,a[1],by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d","d"), key="b"))) stop("Test 116 failed")
+		if(!identical(TESTDT[,list(a[1],v[1]),by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d","d"), V2=INT(7,1,3,5), key="b"))) stop("Test 117 failed")
 
 		# We no longer check i for out of bounds, for consistency with data.frame. NA rows should be returned for i>nrow
-		if (!identical(TESTDT[8], data.table(a=factor(NA), b=factor(NA), v=as.integer(NA), key="b"))) stop("Test 117 failed")
-		if (!identical(TESTDT[6:9], data.table(a=factor(c("d","d",NA,NA)), b=factor(c("i","i",NA,NA)), v=as.integer(c(5,6,NA,NA))))) stop("Test 118 failed")
+		if (!identical(TESTDT[8], data.table(a=factor(NA), b=factor(NA), v=as.integer(NA), key="b"))) stop("Test 118 failed")
+		if (!identical(TESTDT[6:9], data.table(a=factor(c("d","d",NA,NA)), b=factor(c("i","i",NA,NA)), v=as.integer(c(5,6,NA,NA))))) stop("Test 119 failed")
 
 		n=10000
 		grp1=sample(1:50,n,replace=TRUE)
 		grp2=sample(1:50,n,replace=TRUE)
 		dt=data.table(x=rnorm(n),y=rnorm(n),grp1=grp1,grp2=grp2)
 		tt = system.time({ans = dt[,list(.Internal(mean(x)),.Internal(mean(y))),by="grp1,grp2"]})
-		if (tt[1] > 0.5) stop("Test 119 failed. Took too long.")  # actually takes more like 0.068
+		if (tt[1] > 0.5) stop("Test 120 failed. Took too long.")  # actually takes more like 0.068
 		i = sample(nrow(ans),1)
-		if (!identical(ans[i,c(V1,V2)], dt[grp1==ans[i,grp1] & grp2==ans[i,grp2], c(mean(x),mean(y))])) stop("Test 120 failed")
+		if (!identical(ans[i,c(V1,V2)], dt[grp1==ans[i,grp1] & grp2==ans[i,grp2], c(mean(x),mean(y))])) stop("Test 121 failed")
 		# To DO: add a data.frame aggregate method here and check data.table is faster
 
 		
-    cat("All 120 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
+    cat("All 121 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
     # should normally complete in under 2 sec, unless perhaps if a gc was triggered
     invisible()
 }
