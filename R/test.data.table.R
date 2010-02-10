@@ -186,9 +186,9 @@ test.data.table = function()
     if (!identical(within(dt, {D <- B^2}), transform(dt, D = B^2)))  stop("Test 101 failed")
     if (!identical(within(dt, {A <- B^2}), transform(dt, A = B^2)))  stop("Test 102 failed")
 
-    # test .SD object rather than j as function
+    # test .SD object
     if (!identical(dt[, sum(.SD$B), by = "A"], dt[, sum(B), by = "A"]))  stop("Test 103 failed")
-		if (!identical(dt[, transform(.SD, D = min(B)), by = "A"], dt[, DT(A,B,C,D=min(B)), by = "A"]))  stop("Test 104 failed")
+	if (!identical(dt[, transform(.SD, D = min(B)), by = "A"], dt[, DT(A,B,C,D=min(B)), by = "A"]))  stop("Test 104 failed")
 
     # test numeric and comparison operations on a data table
     if (!all(dt + dt > dt))  stop("Test 105 failed")

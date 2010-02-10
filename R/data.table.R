@@ -1092,4 +1092,4 @@ Ops.data.table <- function (e1, e2 = NULL)
         nrow = nr, dimnames = list(NULL, cn))
 }
 
-
+summary.data.table <- summary.data.frame
