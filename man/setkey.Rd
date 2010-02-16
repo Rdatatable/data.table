@@ -5,12 +5,13 @@
   Sorts a data.table and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always.
 }
 \usage{
-setkey(x, ..., loc=parent.frame())
+setkey(x, ..., loc=parent.frame(), alternative = FALSE)
 }
 \arguments{
   \item{x}{ A data.table. }
   \item{\dots}{ The columns to sort by. Do not quote the column names. If \dots is missing all the columns are used. }
   \item{loc}{ The data.table must already exist in this frame, and it is sorted by reference in this frame. loc=.GlobalEnv is often useful within functions. }
+  \item{alternative}{ Easier way to programatically call setkey. TO DO - further document and add example }
 }
 \details{
   The sort is attempted with the very fast radix method in

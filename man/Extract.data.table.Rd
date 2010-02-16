@@ -6,7 +6,7 @@
   Like \code{[.data.frame} but i and j can be expressions of column names directly. i may also be a data.table and this invokes a fast table join using binary search in O(log n) time. Allowing i to be data.table is consistent with subsetting an n-dimension array by an n-column matrix in base \R.
 }
 \usage{
-\method{[}{data.table}(x, i, j, by, \dots, with=TRUE, nomatch = NA,
+\method{[}{data.table}(x, i, j, by, with=TRUE, nomatch = NA,
   mult = "first", roll = FALSE, rolltolast = FALSE, simplify = TRUE,
   which = FALSE, incbycols = !bysameorder, bysameorder = FALSE,
   verbose = FALSE)
@@ -179,9 +179,9 @@ identical(tt, ss)
 tt = DT[c("FD","FE")][,mean(v),by="id,month=as.integer(date/100)"]
 
 dt <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6))
-dt[, head, n = 2, by="B"]
-dt[, transform, D = mean(A), by="B"]
-dt[, subset, A == min(A), by="B"]
+dt[, head(.SD,n=2), by="B"]
+dt[, transform(.SD,D=mean(A)), by="B"]
+dt[, subset(.SD,A==min(A)), by="B"]
 
 \dontrun{
 # Ensure you have at least 2.7GB free disk space comfortably before running this
