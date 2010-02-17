@@ -1,12 +1,11 @@
 Package: data.table
-Type: Package
-Title: Extension of data.frame. i and j expressions, keys and binary search.
 Version: 1.3
-Date: 2008-08-19
+Title: Extension of data.frame. i and j expressions, keys and binary search.
 Author: Matthew Dowle
 Maintainer: Matthew Dowle <mdowle@mdowle.plus.com>
-Depends: R (>= 2.4.0), ref
+Depends: R (>= 2.6.2), ref
 Suggests: RUnit,svSocket
-Description: Like a data.frame but i and j may be expressions of column names directly. When i is itself a data.table, a join is invoked which is much faster than merge.
+Description: Like a data.frame but with built in fast database like column operations, where 'fast' means faster to develop as well as faster to compute.
 License: GPL
-Packaged: Tue Aug 18 20:38:37 2008; mdowle
+URL: http://datatable.r-forge.r-project.org/
+
