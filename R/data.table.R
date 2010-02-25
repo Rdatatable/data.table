@@ -445,8 +445,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             ans = data.table(do.call("c",ans)) #,use.names=FALSE))     # most usually the vector result of sum(<colA>) or similar. We always return a data.table from a data.table subset, so we always know where we are, and don't need to test the result for single case. Unless each j returns a matrix in which case we rbind the matrices together below.
         	} else {
         		r = sapply(ans,function(l)length(l[[1]]))     # we assume each list item is the same length
-        	  l = lapply(1:length(ans[[1]]), function(l) do.call("c",lapply(ans,"[[",l)))
-            # the above is not too bad speed wise.  This is why j=list(...) is quicker than j=data.table(...)
+                l = lapply(1:length(ans[[1]]), function(l) unlist(lapply(ans,"[[",l)))
+                # the above is not too bad speed wise.  This is why j=list(...) is quicker than j=data.table(...)
             names(l) = jvnames
             ans = data.table(l)
           }
@@ -464,7 +464,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         	if (missing(by)) bysplit = iby  # only occurs when mult="all" and by is missing.
         	if (!bysameorder) f__=o__[f__]
           tt = paste("(",as.character(bysplit),")[f__]",sep="")
-          re = "^[a-zA-Z]+[a-zA-Z0-9_]*$"  # copied from data.table(). Should have global variable in one place ideally.
+          re = "^[a-zA-Z]+[a-zA-Z0-9_\\.]*$"  # copied from data.table(). Should have global variable in one place ideally.
           bynames = as.character(bysplit)
           if (!is.null(names(bysplit))) {
         		xx = names(bysplit)!=""
@@ -544,7 +544,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # R's default [.factor assings constrasts also. Not considered here.
     y <- NextMethod("[")
     u = unique(y)
-    su = sort(u)
+    su = u[fastorder(u, na.last = NA)]
     attr(y, "levels") = attr(x, "levels")[su]  # relying on the original factor levels being sorted
     y[] = sortedmatch(y, su)
     class(y) = oldClass(x)
@@ -911,8 +911,8 @@ rbind.data.table = function (...) {
     if (length(nm) && n>1) {
         for (i in 2:n) if (length(names(allargs[[i]])) && !all(names(allargs[[i]]) == nm)) warning("colnames of argument ",i," don't match colnames of argument 1")
     }
-    #for (i in 1:length(allargs[[1]])) l[[i]] = unlist(lapply(allargs, "[[", i))
-    for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
+    for (i in 1:length(allargs[[1]])) l[[i]] = unlist(lapply(allargs, "[[", i))
+    ## for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
     # Changed from unlist to do.call("c",...) so that c.factor is called on factor columns
     names(l) = nm
     class(l) = "data.table"
@@ -1093,3 +1093,20 @@ Ops.data.table <- function (e1, e2 = NULL)
 }
 
 summary.data.table <- summary.data.frame
+
+unlist <- function (x, recursive = TRUE, use.names = TRUE) {
+    if (.Internal(islistfactor(x, recursive))) {
+        lv <- unique(.Internal(unlist(lapply(x, levels), recursive, 
+            FALSE)))
+        ind <- fastorder(lv)
+        lv <- lv[ind]
+        nm <- if (use.names) 
+            names(.Internal(unlist(x, recursive, use.names)))
+        res <- .Internal(unlist(lapply(x, as.character), recursive, 
+            FALSE))
+        res <- match(res, lv)
+        structure(res, levels = lv, names = nm, class = "factor")
+    }
+    else .Internal(unlist(x, recursive, use.names))
+}
+

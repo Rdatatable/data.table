@@ -238,8 +238,13 @@ test.data.table = function()
 		if (!identical(ans[i,c(V1,V2)], dt[grp1==ans[i,grp1] & grp2==ans[i,grp2], c(mean(x),mean(y))])) stop("Test 121 failed")
 		# To DO: add a data.frame aggregate method here and check data.table is faster
 
+    # tests on data table names
+    #dt = data.table(a.1 = 1, b_1 = 2, "1b" = 3) # "1b" doesn't work
+    dt = data.table(a.1 = 1L, b_1 = 2L)
+    if (!identical(dt, as.data.table(as.data.frame(dt)))) stop("Test 122 failed")
+    if (!identical(dt[,b_1, by="a.1"], data.table(a.1=1L,V1=2L))) stop("Test 123 failed")
 		
-    cat("All 121 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
+    cat("All 123 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
     # should normally complete in under 2 sec, unless perhaps if a gc was triggered
     invisible()
 }
