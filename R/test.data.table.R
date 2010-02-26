@@ -239,12 +239,18 @@ test.data.table = function()
 		# To DO: add a data.frame aggregate method here and check data.table is faster
 
     # tests on data table names
-    #dt = data.table(a.1 = 1, b_1 = 2, "1b" = 3) # "1b" doesn't work
-    dt = data.table(a.1 = 1L, b_1 = 2L)
-    if (!identical(dt, as.data.table(as.data.frame(dt)))) stop("Test 122 failed")
-    if (!identical(dt[,b_1, by="a.1"], data.table(a.1=1L,V1=2L))) stop("Test 123 failed")
-		
-    cat("All 123 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
+    x = 2L; `1x` = 4L
+    dt = data.table(a.1 = 1L, b_1 = 2L, "1b" = 3L, `a 1` = 4L, x, `1x`, 2*x) 
+    if (!identical(names(dt), c("a.1", "b_1", "X1b", "a.1.1", "x", "V6", "V7"))) stop("Test 122 failed")
+
+    dt = data.table(a.1 = 1L, b_1 = 2L, "1b" = 3L, `a 1` = 4L, x, `1x`, 2*x, check.names = FALSE)    
+    if (!identical(names(dt), c("a.1", "b_1", "1b", "a 1", "x", "V6", "V7"))) stop("Test 123 failed") # the last two terms differ from data.frame()
+
+    if (!identical(dt[,b_1,   by="a.1"],   data.table(a.1=1L,V1=2L))) stop("Test 124 failed")
+    if (!identical(dt[,`a 1`, by="a.1"],   data.table(a.1=1L,V1=4L))) stop("Test 125 failed")
+    if (!identical(dt[,a.1,   by="`a 1`"], data.table(`a 1`=4L,V1=1L, check.names = FALSE))) stop("Test 126 failed")     
+    
+    cat("All 126 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
     # should normally complete in under 2 sec, unless perhaps if a gc was triggered
     invisible()
 }

@@ -65,15 +65,12 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     }
     if (is.null(vnames)) vnames = rep("",length(x))
     vnames[is.na(vnames)] = ""
-    re = "^[a-zA-Z]+[a-zA-Z0-9_\\.]*$"  # valid column names. expressions can be built on column names so need to be strict here.
     novname = vnames==""
     if (any(!novname)) {
 		if (any(vnames[!novname] %in% c(".SD",".SDF"))) stop("A column may not be called .SD or .SDF, those are reserved")
-        tt = regexpr(re, vnames[!novname]) < 1
-        if (any(tt)) stop("invalid explicit column name supplied (",paste('"',vnames[!novname][tt],'"',sep="",collapse=","),"). Must match regular expression ",re)
     }
     if (any(novname) && length(exptxt)==length(vnames)) {
-        okexptxt = regexpr(re, exptxt[novname])==1
+        okexptxt = exptxt[novname] == make.names(exptxt[novname])
         vnames[novname][okexptxt] = exptxt[novname][okexptxt]
     }
     tt = vnames==""
@@ -370,13 +367,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
       #} else {
 			if (mode(jsub)=="name") {
 				# j is a single unquoted column name
-				jsub = parse(text=paste("c(",jsub,")",sep=""))[[1]]
+				jsub = substitute(c(x), list(x = jsub))
 				# if we didn't turn names into calls at this point, the dogroups in C
 				# would not evaluate the expression and create memory for each answer.
 				# Test 19 is the first test to fail if this isn't done.
 				# It is unusual in practice for j to be a single name.				
 			}
-      ws = unique(words(deparse(jsub)))
+      ws = all.names(jsub)
 			if (any(c(".SD",".SDF") %in% ws))
 				vars = colnames(x)		# just using .SD or .SDF triggers using all columns in the subset. We don't try and detect which columns of .SD are being used.
 			else 
@@ -464,22 +461,20 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         	if (missing(by)) bysplit = iby  # only occurs when mult="all" and by is missing.
         	if (!bysameorder) f__=o__[f__]
           tt = paste("(",as.character(bysplit),")[f__]",sep="")
-          re = "^[a-zA-Z]+[a-zA-Z0-9_\\.]*$"  # copied from data.table(). Should have global variable in one place ideally.
           bynames = as.character(bysplit)
           if (!is.null(names(bysplit))) {
         		xx = names(bysplit)!=""
             bynames[xx] = names(bysplit)[xx]
         	}
-          bynames[regexpr(re, bynames) < 1] = ""  # when unnamed expressions are passed into by, this line blanks off the line since / * etc are not allowed in column names.
           havenames = bynames != ""
           if (any(havenames)) tt[havenames] = paste( bynames[havenames],"=",tt[havenames],sep="")
           # because we appended the "[f__]" above, data.table() will no longer be able to deduce the column name so we need to append the "<colname>="
           tt = paste(tt,collapse=",")
-          e__ = parse(text=paste("data.table(",tt,")",sep=""))
+          e__ = parse(text=paste("data.table(",tt,", check.names = FALSE)",sep=""))
           grps = with(x, eval(e__))
           key = if ((!missing(by) && bysameorder) || (!missing(i) && !is.null(attr(i,"sorted")))) paste(names(grps),collapse=",") else NULL
           # either a spliced join, likely i was SJ() or a table already with a key,  or a by to the key columns in order
-          ans = data.table(grps, ans, key=key)
+          ans = data.table(grps, ans, key=key, check.names = FALSE)
 		    	if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
         }
       } else {
@@ -932,6 +927,7 @@ as.data.frame.data.table = function(x, ...)
 {
     attr(x,"row.names") = 1:nrow(x) # since R 2.4.0, data.frames can have non-character row names
     class(x) = "data.frame"
+    attr(x,"sorted") = NULL  # remove so if you convert to df, do something, and convert back, it's not sorted
     x
 }
 
