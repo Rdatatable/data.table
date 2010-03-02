@@ -249,8 +249,13 @@ test.data.table = function()
     if (!identical(dt[,b_1,   by="a.1"],   data.table(a.1=1L,V1=2L))) stop("Test 124 failed")
     if (!identical(dt[,`a 1`, by="a.1"],   data.table(a.1=1L,V1=4L))) stop("Test 125 failed")
     if (!identical(dt[,a.1,   by="`a 1`"], data.table(`a 1`=4L,V1=1L, check.names = FALSE))) stop("Test 126 failed")     
+
+    # tests with NA's in factors
+    dt = data.table(a = c(NA, letters[1:5]), b = 1:6)
+    if (!identical(dt[,sum(b), by="a"], data.table(a = c(NA, letters[1:5]), V1 = 1:6))) stop("Test 127 failed")     
     
-    cat("All 126 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
+    
+    cat("All 127 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
     # should normally complete in under 2 sec, unless perhaps if a gc was triggered
     invisible()
 }

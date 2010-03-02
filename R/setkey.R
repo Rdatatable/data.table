@@ -34,16 +34,25 @@ setkey = function(x, ..., loc=parent.frame(), alternative = FALSE)
     invisible()
 }
 
+radixorder1 <- function(x, na.last = FALSE, decreasing = FALSE) {
+    if(!typeof(x) == "integer") # do want to allow factors here
+        stop("radixorder1 is only for integer 'x'")
+    if(is.na(na.last)) 
+        return(.Internal(radixsort(x, TRUE, decreasing))[seq_len(sum(!is.na(x)))])
+    else
+        return(.Internal(radixsort(x, na.last, decreasing)))
+}
+
 fastorder <- function(..., na.last = FALSE, decreasing = FALSE) {
     cols <- list(...)
     err <- try(silent = TRUE, {
         # Use a radix sort (fast and stable), but it will fail if there are more than 1e5 unique elements.
-        o <- sort.list(cols[[length(cols)]], na.last = na.last, method = 'radix', decreasing = decreasing)
+        o <- radixorder1(cols[[length(cols)]], na.last = na.last, decreasing = decreasing)
         # If there is more than one column, run through them back to front to group columns.
         # The unclass(col) is so we don't try to mess with factors (factor sorting slows things down).
         if (length(cols) > 1)
             for (col in rev(take(cols)))
-                o <- o[sort.list(unclass(col)[o], na.last = na.last, method = "radix", decreasing = decreasing)]
+                o <- o[radixorder1(unclass(col)[o], na.last = na.last, decreasing = decreasing)]
     })
     if (inherits(err, "try-error"))
         o <- order(..., na.last = na.last, decreasing = decreasing)
