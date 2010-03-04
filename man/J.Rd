@@ -32,6 +32,6 @@ CJ(...)
 \examples{
     DT = data.table(A=5:1,B=letters[5:1])
     setkey(DT,B)  # re-orders table and marks it sorted.
-    DT[J("B")]  # returns the 2nd row
+    DT[J("b")]  # returns the 2nd row
 }
 \keyword{ data }
