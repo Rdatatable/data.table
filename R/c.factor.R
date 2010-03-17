@@ -12,3 +12,16 @@ c.factor = function(...)
     class(ans) = "factor"
     ans
 }
+
+c.factor <- function(...)
+{
+    args <- list(...)
+    lv <- unique(.Internal(unlist(lapply(args, levels),
+                                  recursive, FALSE)))
+    ind <- fastorder(lv)
+    lv <- lv[ind]
+    nm <- names(.Internal(unlist(args)))
+    res <- .Internal(unlist(lapply(args, as.character)))
+    res <- match(res, lv)
+    structure(res, levels = lv, names = nm, class = "factor")
+}
