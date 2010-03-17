@@ -254,8 +254,12 @@ test.data.table = function()
     dt = data.table(a = c(NA, letters[1:5]), b = 1:6)
     if (!identical(dt[,sum(b), by="a"], data.table(a = c(NA, letters[1:5]), V1 = 1:6))) stop("Test 127 failed")     
     
+    # tests to make sure rbind and grouping keep classes
+    dt = data.table(a = rep(as.Date("2010-01-01"), 4), b = rep("a",4))
+    if (!identical(rbind(dt,dt), data.table(a = rep(as.Date("2010-01-01"), 8), b = rep("a",8)))) stop("Test 128 failed")     
+    if (!identical(dt[,list(a=a), by="b"], dt[,2:1, with = FALSE])) stop("Test 129 failed") # doesn't work, yet
     
-    cat("All 127 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
+    cat("All 129 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
     # should normally complete in under 2 sec, unless perhaps if a gc was triggered
     invisible()
 }

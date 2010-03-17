@@ -442,7 +442,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             ans = data.table(do.call("c",ans)) #,use.names=FALSE))     # most usually the vector result of sum(<colA>) or similar. We always return a data.table from a data.table subset, so we always know where we are, and don't need to test the result for single case. Unless each j returns a matrix in which case we rbind the matrices together below.
         	} else {
         		r = sapply(ans,function(l)length(l[[1]]))     # we assume each list item is the same length
-                l = lapply(1:length(ans[[1]]), function(l) unlist(lapply(ans,"[[",l)))
+                ## l = lapply(1:length(ans[[1]]), function(l) unlist(lapply(ans,"[[",l)))
+                        l = lapply(1:length(ans[[1]]), function(l) do.call("c",lapply(ans,"[[",l)))
                 # the above is not too bad speed wise.  This is why j=list(...) is quicker than j=data.table(...)
             names(l) = jvnames
             ans = data.table(l)

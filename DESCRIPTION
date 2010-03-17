@@ -4,7 +4,7 @@ Title: Extension of data.frame. i and j expressions, keys and binary search.
 Author: Matthew Dowle
 Maintainer: Matthew Dowle <mdowle@mdowle.plus.com>
 Depends: R (>= 2.6.2), ref
-Suggests: RUnit,svSocket
+Suggests: RUnit
 Description: Like a data.frame but with built in fast database like column operations, where 'fast' means faster to develop as well as faster to compute.
 License: GPL
 URL: http://datatable.r-forge.r-project.org/
