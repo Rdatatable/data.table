@@ -906,8 +906,8 @@ rbind.data.table = function (...) {
     if (length(nm) && n>1) {
         for (i in 2:n) if (length(names(allargs[[i]])) && !all(names(allargs[[i]]) == nm)) warning("colnames of argument ",i," don't match colnames of argument 1")
     }
-    for (i in 1:length(allargs[[1]])) l[[i]] = unlist(lapply(allargs, "[[", i))
-    ## for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
+    ## for (i in 1:length(allargs[[1]])) l[[i]] = unlist(lapply(allargs, "[[", i))
+    for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
     # Changed from unlist to do.call("c",...) so that c.factor is called on factor columns
     names(l) = nm
     class(l) = "data.table"
