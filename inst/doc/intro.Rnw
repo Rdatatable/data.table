@@ -1,3 +1,6 @@
+%% Sweave("intro.Rnw")
+%% tools::texi2dvi("intro.tex", pdf=TRUE)
+
 \documentclass[a4paper]{article}
 
 \usepackage[margin=2cm]{geometry}
@@ -9,12 +12,13 @@
 \newcommand{\code}[1]{\mbox{\texttt{#1}}}
 \newcommand{\pkg}[1]{{\normalfont\fontseries{b}\selectfont #1}}
 \newcommand{\proglang}[1]{\textsf{#1}}
-
+\SweaveOpts{keep.source=TRUE}
 %% \VignetteIndexEntry{Introduction to the data.table Package}
 
 \begin{document}
 <<echo=FALSE,results=hide>>=
 library("data.table")
+rm(list=as.character(tables()$NAME))  # for development when repeatedly run Sweave
 @
 \title{Introduction to the \pkg{data.table} Package in \proglang{R}}
 \author{Matthew Dowle}
@@ -24,83 +28,66 @@ library("data.table")
 
 This vignette is aimed at those who are already familiar with \proglang{R}, in
 particular creating and using objects of class data.frame. We aim for this quick introduction
-to be readable in {\bf10 minutes}, covering the main features in brief. The main features are the section
-titles which you can flick through now : 1.Keys, 2.Fast Merging, 3.Fast Grouping
+to be readable in {\bf10 minutes}, covering the main features in brief. The main features are the 3 numbered
+section titles: 1.Keys, 2.Fast Grouping, 3.Fast Merging/Joining. For the context that this document sits please 
+briefly check the last section, Further Resources.
 
-data.table is not \emph{automatically} better or faster. Although syntax and techniques on a
-data.frame may also work with a data.table, it is your responsibility to make yourself
-aware of the features, to experiment, and to use the features well.
+data.table is not \emph{automatically} better or faster. The user has to climb a short learning
+curve, experiment, and then use the features well. For example this document explains the difference
+between a \emph{vector scan} and a \emph{binary search}. Both extract methods are available. If a user
+continues to use vector scans though, as they are used to in a data.frame, it will work, but they will 
+miss out on the benefits that the package provides.
 
 \section*{Creation}
 
-Recall that we create a \code{data.frame} like this :
-<<keep.source=TRUE>>=
-df = data.frame(a=c("b","b","b","a","a"),b=1:5)
+Recall that we create a \code{data.frame} using the function \code{data.frame()}.
+<<>>=
+df = data.frame(x=c("b","b","b","a","a"),v=rnorm(5))
 df
 @
-We create a data.table in exactly the same way, like this :
-<<keep.source=TRUE>>=
-dt = data.table(a=c("b","b","b","a","a"),b=1:5)
+We create a \code{data.table} in exactly the same way.
+<<>>=
+dt = data.table(x=c("b","b","b","a","a"),v=rnorm(5))
 dt
 @
 Observe that a data.table prints the row numbers slightly differently. There is nothing
 significant about that.
-We can also convert existing data.frame objects to data.table like this :
-<<keep.source=TRUE>>=
-irisdt = data.table(iris)
-head(irisdt)
+We can also convert existing data.frame objects to data.table.
+<<>>=
+cars = data.table(cars)
+head(cars)
 @
-We have just created two data.tables. It is often useful to see a list of all our
-data.tables in memory :
-<<keep.source=TRUE>>=
+We have just created two data.tables: dt and cars. It is often useful to see a list of all our
+data.tables in memory.
+<<>>=
 tables()
 @
-
-Some users work will 20 or perhaps 100+ data.table's in memory, rather like a database. The result is itself
-a data.table, returned silently, so tables() is also sometimes used in programs. tables() is unrelated to 
-the base function table().
 
 The MB column is useful to quickly assess memory use and to spot if any redundant tables can be
 removed to free up memory. Just like data.frame's, data.table's must fit inside RAM. 
 
-You may have noticed the empty KEY column. This is the subject of the next section.
+Some users regularly work with 20 or more tables in memory, rather like a database. The result of tables()
+is itself a data.table, returned silently, so that tables() can be used in programs. tables() is unrelated to 
+the base function table().
+
+You may have noticed the empty column KEY. This is the subject of the next section, the first of the 3 main features
+of the package.
 
 
 \section*{1. Keys}
 
 Lets start by considering data.frame, specifically ''rownames''. Or in English ''row names''. That is, the
-multiple names belonging to the single row.  Hang on, what was that just written?  The multiple names belonging
+multiple names belonging to the single row.  The multiple names belonging
 to the single row?  No, that is not what we are used to in a data.frame. We know that each row has at
 most one name, but never \emph{more} than one name.  A person has at least two names, a first name and a second
-name, but rows in a data.frame can only have one name.  Why only one name?
+name. That is useful to organise a phone directory of people. But each row in a data.frame can only have one name.
 
-A \emph{key} is several columns of rownames. These columns may be integer, factor or other classes, not
-just character. Furthermore, the rows are guaranteed to be sorted by the columns in the key.
+A \emph{key} is one or more columns of rownames. These columns may be integer, factor or other classes, not
+just character. Furthermore, the rows are sorted by the key. Therefore a data.table can have at most one key,
+because it cannot be sorted in more than one way.
 
-More formally :
-
-A data.table by default has no key.  If it has a key then its key :
-\begin{itemize}
-\item	is an ordered list of one or more column names
-\item   defines the order of the rows in the table
-\end{itemize}
-
-Note here that uniqueness is not enforced i.e. duplicate key values are allowed. However, since
+Uniqueness is not enforced i.e. duplicate key values are allowed. Since
 the rows are sorted by the key, any duplicates in the key will appear consecutively.
-
-Why are keys useful ?  Lets first consider an analogy before moving on to demonstrate using examples.
-Some people don't like analogies, some do. The former should skip the following paragraph.
-
-A traditional door key has a sequence of notches which uniquely identify one door. By \emph{notch},
-think \emph{name}. By \emph{door} think \emph{row}. The key
-opens no other doors, and the door responds to no other keys. In a hotel with 5 floors, management may wish to
-allow housemaid Emily access to all rooms on floor 1 but no other floors. Similarly management may wish to assign
-housemaid Sophie to floor 2, etc.  This may be considered by management a good incentive to disuade housemaids from
-stealing from the guests.  A door key could be designed with up to 3 notches.  Guests would be given a key with 3
-notches which only opened their room.  Housemaids would have a key with 2 notches, which opened all the rooms on their
-floor.  Management would have a key with 1 notch which would open all rooms on all floors.  The more notches in the key,
-the more specifically it identifies the rooms.  Each room is identified by more than one notch in the key. You do not
-need to use all the notches (management use 1, housemaids use 2, guests use 3).
 
 Lets remind ourselves of our tables :
 <<>>=
@@ -108,36 +95,41 @@ tables()
 dt
 @
 
-No keys have been set yet.  We \emph{can} do data.frame like operations without a key :
+No keys have been set yet.  We \emph{can} use data.frame syntax without a key.
 
 <<>>=
 dt[2,]
-dt[ dt$a == "a", ]
+dt[ dt$x == "a", ]
 @
 
-But since there are no rownames the following does not work :
+But since there are no rownames the following does not work.
 <<>>=
 cat(try(dt["b",]))
 @
 
-The error message tells us we need to use setkey()
+The error message tells us we need to use setkey().
 
 <<>>=
-setkey(dt,a)
+setkey(dt,x)
 dt
+@
+
+Notice that the rows in dt have been re-ordered by x. The 2 ''a'' rows have moved to the top.
+We can confirm that dt does indeed have a key using haskey(), key(),
+attributes(), or just running tables().
+
+<<>>=
 tables()
 @
 
-The data.table dt now has a key of one column, a.  sekey re-ordered
-the rows, and marked the table as sorted by a.  A key is therefore very simple.
-
-Lets try again :
+Now we are sure that dt has a key, lets try again.
 
 <<>>=
 dt["b",]
 @
 
-Since there are duplicates in this key, the subset returns the first by default. The mult argument controls this.
+Since there are duplicates in this key (i.e. repeated values) the subset returns the first, by default. The
+\code{mult} argument (short for \emph{multiple}) controls this.
 
 <<>>=
 dt["b",mult="first"]
@@ -145,7 +137,19 @@ dt["b",mult="last"]
 dt["b",mult="all"]
 @
 
-TO DO- example with two columns in the key, make it large and explain difference between vector scan and binary search. Advise to unlearn ==.
+Lets now create a data.table with a 2 column key. We can do this in one step this time by using the key argument of data.table(). 
+We will also make it large enough to demonstrate the difference between a vector scan and a binary search.
+<<>>=
+n=1e6
+dt2 = data.table(x=sample(LETTERS,n,replace=TRUE),
+                 y=sample(LETTERS,n,replace=TRUE),
+                 v=rnorm(n),
+                 key="x,y")
+head(dt2)
+tables()
+@
+
+TO DO- explain difference between vector scan and binary search. Advise to unlearn ==.
 
 First section was to do with i. Second section to do with j.
 
@@ -175,6 +179,10 @@ This was a quick start guide. Further resources include :
 \item The FAQs deal with distinct topics in an easy to digest manner
 \item The performance tests are more complex real world examples
 \item test.data.table contains over 100 low level tests of the features.
+\item Presentations
+\item YouTube Demo
+\item R-Forge commit logs.
+\item Website. Will be updated more regularly
 \end{itemize}
 
 \end{document}
