@@ -1,6 +1,5 @@
 \name{data.table}
 \alias{data.table}
-\alias{DT}
 \alias{as.data.table}
 \alias{is.data.table}
 \alias{Ops.data.table}
@@ -10,11 +9,10 @@
 \alias{na.omit.data.table}
 \title{ Enhanced data.frame }
 \description{
-   Same internal structure as data.frame (i.e. list of vectors) but enhanced extract methods.
+   Same internal structure as data.frame (i.e. list of vectors) but fast subset, fast merge, and fast grouping. 
 }
 \usage{
 data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
-DT(...)
 }
 \arguments{
   \item{\dots}{ Just as \dots in \code{\link{data.frame}}. These arguments are of either the form value
@@ -66,12 +64,12 @@ column called 'keep' containing TRUE and this is correct behaviour. Most likely 
 DF = data.frame(a=1:5, b=letters[1:5])
 DT = data.table(a=1:5, b=letters[1:5])
 identical(as.data.table(DF), DT)
-identical(DT(DF), DT)
+identical(data.table(DF), DT)
 identical(dim(DT),dim(DF))
 identical(DF$a, DT$a)
 DT
 tables()
-identical(DT(DT,DT), cbind(DT,DT))
+identical(data.table(DT,DT), cbind(DT,DT))
 DT2=rbind(DT,DT)
 DT3 = data.table(A=DT, B=DT, key="A.b")
 tables()
@@ -81,3 +79,4 @@ example("[.data.table")
 }
 }
 \keyword{ data }
+

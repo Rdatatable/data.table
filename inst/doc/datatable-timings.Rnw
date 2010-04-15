@@ -1,0 +1,82 @@
+\documentclass[a4paper]{article}
+
+\usepackage[margin=3cm]{geometry}
+%%\usepackage[round]{natbib}
+\usepackage[colorlinks=true,urlcolor=blue]{hyperref}
+
+%%\newcommand{\acronym}[1]{\textsc{#1}}
+%%\newcommand{\class}[1]{\mbox{\textsf{#1}}}
+\newcommand{\code}[1]{\mbox{\texttt{#1}}}
+\newcommand{\pkg}[1]{{\normalfont\fontseries{b}\selectfont #1}}
+\newcommand{\proglang}[1]{\textsf{#1}}
+\SweaveOpts{keep.source=TRUE}
+%% \VignetteIndexEntry{Timings of common tasks - data.table}
+
+\begin{document}
+<<echo=FALSE,results=hide>>=
+if (!exists("data.table",.GlobalEnv)) library(data.table)  # see Intro.Rnw for comments on these two lines
+rm(list=as.character(tables()$NAME))
+options(width=70)  # so lines wrap round
+@
+
+
+\title{Timings of common tasks using the \pkg{data.table} package in \proglang{R}}
+\author{Matthew Dowle}
+\maketitle
+
+This document contains a series of tests, followed by a summary table of various timings
+and comparisons. Please go straight to the summary table first <here> in which each row has
+a link back to the test.
+
+This document is reproducible. Simply run the .Rnw file yourself in your environment to confirm
+the results. Also see ?vignette, which says that edit(vignette("datatable-timings")) will extract
+the code from this document so you can easily work with it.
+
+The .Rnw included in the package has N=10,000,000.  This is a small number so that 'R CMD build'
+completes in a reasonable time (about 5 minutes). We don't want the nightly builds on R-Forge
+and CRAN to slow down just to run long timing comparisons.  We have increased this to
+N=100,000,000 ourselves, and included the output on the datatable homepage (<link>).
+
+\tableofcontents
+\section{Timing tests}
+
+\subsection{Extraction}
+This is a repeat of the test in section 1 of the Introduction vignette. The syntax is explained there.
+This demonstrates the large difference
+in speed between vector scans and binary search. Therefore, please avoid using \code{==} in the \code{i}
+expression.
+
+<<>>=
+n = ceiling(1e7/26^2)   # 10 million rows
+DT = data.table(x=rep(LETTERS,each=26*n),
+                y=rep(letters,each=n),
+                v=rnorm(n*26^2),
+                key="x,y")
+tables()
+
+tt=system.time(ans1 <- DT[DT$x=="R" & DT$y=="h",]); tt
+ss=system.time(ans2 <- DT[J("R","h"),mult="all"]); ss
+if(!identical(ans1,ans2)) stop("Test 1 not identical")
+
+@
+
+\subsection{Grouping}
+
+Repeat from Introduction.
+
+\section{Summary table}
+
+<<>>=
+tt[3]
+ss[3]
+@
+
+<<results=tex>>=
+toLatex(sessionInfo())
+@
+
+\end{document}
+
+
+
+

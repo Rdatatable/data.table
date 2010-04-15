@@ -15,13 +15,13 @@ merge.data.table <- function(x, y, all = FALSE, all.x = all, all.y = all, ...) {
         dt <- cbind(x[sort(xidx)],
                     y[yidx, setdiff(names(y), key), with = FALSE])
     else # nothing in common between the two data tables
-        dt <- DT() # NULL data table
+        dt <- data.table() # NULL data table
 
     if (all.x) {
         missingxidx <- setdiff(1:nrow(x), xidx)
         if (length(missingxidx) > 0) {
             othercols <- setdiff(names(y), key)
-            if (length(othercols) < 1) othercols = DT()
+            if (length(othercols) < 1) othercols = data.table()
             dt <- rbind(cbind(x[missingxidx], y[rep(1, length(missingxidx)), othercols, with = FALSE][NA]),
                         dt)
         }
@@ -30,9 +30,9 @@ merge.data.table <- function(x, y, all = FALSE, all.x = all, all.y = all, ...) {
         missingyidx <- setdiff(1:nrow(y), yidx)
         if (length(missingyidx) > 0) {
             othercolsx <- setdiff(names(x), key)
-            if (length(othercolsx) < 1) othercolsx <- DT()
+            if (length(othercolsx) < 1) othercolsx <- data.table()
             othercolsy <- setdiff(names(y), key)
-            if (length(othercolsy) < 1) othercolsy <- DT()
+            if (length(othercolsy) < 1) othercolsy <- data.table()
             dt <- rbind(dt,
                         cbind(y[missingyidx, key, with = FALSE],
                               x[rep(1, length(missingyidx)), othercolsx, with = FALSE][NA],

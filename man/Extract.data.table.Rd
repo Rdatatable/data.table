@@ -6,10 +6,10 @@
   Like \code{[.data.frame} but i and j can be expressions of column names directly. i may also be a data.table and this invokes a fast table join using binary search in O(log n) time. Allowing i to be data.table is consistent with subsetting an n-dimension array by an n-column matrix in base \R.
 }
 \usage{
-\method{[}{data.table}(x, i, j, by, with=TRUE, nomatch = NA,
-  mult = "first", roll = FALSE, rolltolast = FALSE, simplify = TRUE,
-  which = FALSE, incbycols = !bysameorder, bysameorder = FALSE,
-  verbose = FALSE)
+\method{[}{data.table}(x, i, j, by=NULL, with=TRUE, nomatch = NA,
+  mult = "first", roll = FALSE, rolltolast = FALSE,
+  which = FALSE, bysameorder = FALSE,
+  verbose=getOption("datatable.verbose",FALSE))
 }
 \arguments{
   \item{x}{ A data.table }
@@ -38,10 +38,8 @@ It is good practive to include "j=" or imagine it there before the 'j clause'. T
 }
 F
   \item{by}{ Optional. character vector length 1. Contains column names or expressions of column names separated by comma to perform aggregation by. Apply the j expression by the by. Agreggation for a subset of known groups can be achieved more efficiently by passing those groups as an i data.table and using mult="all". This is analogous to 'having' clause in SQL. See simplify below and examples.
-   NOTE: \code{by} can efficiently group reasonable numbers of groups. If the number of groups is large, processing can take a long time.
+   NOTE: \code{by} is now very fast, faster than base methods. See \code{vignette("datatable-timings")}.
 }
-
-  \item{\dots}{ if \code{j} is a function, the \dots argument(s) are passed on to this \code{j} function which takes data.table input e.g. DT[,tail,by="ColA",n=3] where n=3 is passed on to tail since the argument n is not one of the [.data.table arguments. This is standard \R practice, for example when \code{mean} is applied \code{na.rm=TRUE} may be passed on via the \dots argument of \code{\link{apply}}().}
 
   \item{with}{ by default j is evaluated within the frame of x so the column names are seen as variables. See \code{\link{with}}. DT[,"ColA"] returns the column as expected, as does DT[,1]. However DT[,1:2], DT[,c(1,2)] and DT[,c("a","b")] all return the j vector itself without looking up the column contents. Setting with=FALSE resolves this. Note that DT[,DT(ColA,ColB)] is preferred to DT[,c("ColA","ColB"),with=FALSE]. If column integers or character names are held in a variable, with=FALSE is also required e.g. DT[,colsVar,with=FALSE].}
 
@@ -55,14 +53,12 @@ The remaining arguments below are only applicable for joins i.e. when i is a dat
 
   \item{rolltolast}{ Like roll but the time series data is not rolled past the last observation. In finance this is useful when a stock is delisted and we do not want to roll the last price forward creating a flat line. \code{nomatch} determines whether NA is returned, or no rows are returned for the period after the last price. roll and rolltolast may not both be TRUE. }
 
-  \item{simplify}{ Control's the result when grouping j is achieved by passing i in with mult="all" rather than using the 'by' argument. See by above. TRUE collapses the result to a single data.table key'd by the groups. FALSE returns a raw list, one item per group, which is also the same length as the number of rows in i. }
-
   \item{which}{ By default the subset of rows in x matching i are returned. TRUE returns the row numbers only as a vector. These row numbers can be stored and passed in as the i directly in further data.table queries for efficiency, or used in further logic. }
 
-  \item{incbycols}{ Advanced. By default the groups created by the by expression are returned as the first column(s) of the result. The alternative way to group is by passing groups in the i data.table if the grouping corresponds to x's key and setting mult="all". FALSE omits the i columns from the result for efficiency in the 2nd case when writing multiple queries with the same grouping. }
+%%  \item{incbycols}{ Advanced. By default the groups created by the by expression are returned as the first column(s) of the result. The alternative way to group is by passing groups in the i data.table if the grouping corresponds to x's key and setting mult="all". FALSE omits the i columns from the result for efficiency in the 2nd case when writing multiple queries with the same grouping. }
 
   \item{bysameorder}{ Advanced. The by expression creates a data.table internally which is then key'd and passed in as the i clause using SJ() ( possibly created a different order of the groups than they appear in the table) and mult set to "all". But when groups are passed into i directly \code{bysameorder=TRUE} saves the \code{setkey} for efficiency. }
-
+  
   \item{verbose}{ TRUE turns on status and information mesages to the console in an attempt to aid debugging. }
 }
 \details{
@@ -158,7 +154,7 @@ DT[J("A",dts)]                             # 3 dates match exactly
 DT[J("A",dts),roll=TRUE]                   # roll previous data forward
 DT[J("A",dts),rolltolast=TRUE]             # roll all but last observation forward
 DT[J("A",dts),rolltolast=TRUE,nomatch=0]   # remove time series after last
-DT(DT[J("A",dts),roll=TRUE],dts)           # joined to date from dts
+cbind(DT[J("A",dts),roll=TRUE],dts)        # joined to date from dts
 
 
 dts = rev(seq(as.Date("2008-06-30"), by=-1, length=5000))
@@ -169,7 +165,7 @@ setkey(DT,id,date)
 system.time(tt <<- DT[id=="FD"])  # vector scan.   user 1.16  system 0.11  elapsed 1.27
 system.time(ss <<- DT["FD"])      # binary search. user 0.02  system 0.00  elapsed 0.02
 identical({setkey(tt,id,date);tt}, ss)
-tables(mb=TRUE)
+tables()
 
 
 tt = DT[,mean(v),by="id"][c("FD","FE")]   # select mean(v) from DT group by id having id in ('FD','FE')
@@ -198,7 +194,15 @@ rm(DT)
 gc()  # return memory to OS
 }
 
-# See over 90 further examples in \link{test.data.table}()
+# See over 140 further examples in \link{test.data.table}()
+test.data.table()
 
+\dontrun{
+vignette("datatable-intro")
+vignette("datatable-faq")
+vignette("datatable-timings")
+}
 }
 \keyword{ data }
+
+

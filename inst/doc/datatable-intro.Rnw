@@ -1,0 +1,336 @@
+\documentclass[a4paper]{article}
+
+\usepackage[margin=3cm]{geometry}
+\usepackage[round]{natbib}
+\usepackage{url}
+\usepackage{hyperref}
+
+%%\newcommand{\acronym}[1]{\textsc{#1}}
+%%\newcommand{\class}[1]{\mbox{\textsf{#1}}}
+\newcommand{\code}[1]{\mbox{\texttt{#1}}}
+\newcommand{\pkg}[1]{{\normalfont\fontseries{b}\selectfont #1}}
+\newcommand{\proglang}[1]{\textsf{#1}}
+\SweaveOpts{keep.source=TRUE, strip.white=all}
+%% \VignetteIndexEntry{Introduction to the data.table Package}
+
+<<echo=FALSE,results=hide>>=
+if (!exists("data.table",.GlobalEnv)) library(data.table)  # In devel won't call library, but R CMD build/check will.
+rm(list=as.character(tables()$NAME))  # for development when we Sweave this file repeatedly. Otherwise first tables() shows tables from last run
+@
+
+\begin{document}
+\title{Introduction to the \pkg{data.table} Package in \proglang{R}}
+\author{Matthew Dowle}
+\maketitle
+
+\section*{Introduction}
+
+This vignette is aimed at those who are already familiar with \proglang{R}, in
+particular creating and using objects of class data.frame. We aim for this quick introduction
+to be readable in {\bf10 minutes}, covering the main features in brief. The main features are the 3 numbered
+section titles: 1.Keys, 2.Fast Grouping, 3.Fast Merging/Joining. For the context that this document sits please 
+briefly check the last section, Further Resources.
+
+data.table is not \emph{automatically} better or faster. The user has to climb a short learning
+curve, experiment, and then use the features well. For example this document explains the difference
+between a \emph{vector scan} and a \emph{binary search}. Both extract methods are available. If a user
+continues to use vector scans though, as they are used to in a data.frame, it will work, but they will 
+miss out on the benefits that the package provides.
+
+\section*{Creation}
+
+Recall that we create a \code{data.frame} using the function \code{data.frame()}.
+<<>>=
+df = data.frame(x=c("b","b","b","a","a"),v=rnorm(5))
+df
+@
+We create a \code{data.table} in exactly the same way.
+<<>>=
+dt = data.table(x=c("b","b","b","a","a"),v=rnorm(5))
+dt
+@
+Observe that a data.table prints the row numbers slightly differently. There is nothing
+significant about that.
+We can also convert existing data.frame objects to data.table.
+<<>>=
+cars = data.table(cars)
+head(cars)
+@
+We have just created two data.tables: dt and cars. It is often useful to see a list of all our
+data.tables in memory.
+<<>>=
+tables()
+@
+
+The MB column is useful to quickly assess memory use and to spot if any redundant tables can be
+removed to free up memory. Just like data.frame's, data.table's must fit inside RAM. 
+
+Some users regularly work with 20 or more tables in memory, rather like a database. The result of tables()
+is itself a data.table, returned silently, so that tables() can be used in programs. tables() is unrelated to 
+the base function table().
+
+Also note that data.table() automatically converts character vectors to factor.
+
+<<>>=
+sapply(dt,class)
+@
+
+As the user you should vary rarely need know that this has occurred. See \code{?factor} if you are unfamiliar
+with factors. Factors will appear to you as though they are character columns. You can refer to them just as
+though they are character.
+
+You may have noticed the empty column KEY from \code{tables()} above. This is the subject of the next section,
+the first of the 3 main features of the package.
+
+
+\section*{1. Keys}
+
+Lets start by considering \code{data.frame}, specifically \code{rownames}. Or in English \emph{row names}. That is, the
+multiple names belonging to the single row.  The multiple names belonging
+to the single row?  That is not what we are used to in a \code{data.frame}. We know that each row has at
+most one name. A person has at least two names, a first name and a second
+name. That is useful to organise a telephone directory for example which is sorted by surname then first name.
+But each row in a data.frame can only have one name.
+
+A \emph{key} is one or more columns of rownames. These columns may be integer, factor or other classes, not
+just character. Furthermore, the rows are sorted by the key. Therefore a data.table can have at most one key,
+because it cannot be sorted in more than one way.
+
+Uniqueness is not enforced i.e. duplicate key values are allowed. Since
+the rows are sorted by the key, any duplicates in the key will appear consecutively.
+
+Lets remind ourselves of our tables.
+<<>>=
+tables()
+dt
+@
+
+No keys have been set yet.  We can use \code{data.frame} syntax in a \code{data.table} too.
+
+<<>>=
+dt[2,]
+dt[ dt$x == "b", ]
+@
+
+But since there are no rownames the following does not work.
+<<>>=
+cat(try(dt["b",]))
+@
+
+The error message tells us we need to use setkey().
+<<>>=
+setkey(dt,x)
+dt
+@
+
+Notice that the rows in dt have been re-ordered by x. The two ''a'' rows have moved to the top.
+We can confirm that dt does indeed have a key using \code{haskey()}, \code{key()},
+\code{attributes()}, or just running \code{tables()}.
+
+<<>>=
+tables()
+@
+
+Now we are sure that dt has a key, lets try again.
+
+<<>>=
+dt["b",]
+@
+
+Since there are duplicates in this key (i.e. repeated values of ''b'') the subset returns the first row in that group, by default. The
+\code{mult} argument (short for \emph{multiple}) controls this.
+
+<<>>=
+dt["b",mult="first"]
+dt["b",mult="last"]
+dt["b",mult="all"]
+@
+
+Lets now create a new \code{data.frame}. We will make it large enough to demonstrate the
+difference between a \emph{vector scan} and a \emph{binary search}.
+<<print=TRUE>>=
+grpsize = ceiling(1e7/26^2)   # 10 million rows, 676 groups
+tt=system.time( DF <- data.frame(
+  x=rep(factor(LETTERS),each=26*grpsize),
+  y=rep(factor(letters),each=grpsize),
+  v=runif(grpsize*26^2))
+)
+head(DF,3)
+tail(DF,3)
+dim(DF)
+@
+
+We might say that \proglang{R} has created a 3 column table and \emph{inserted}
+\Sexpr{format(nrow(DF),big.mark=",",scientific=FALSE)} rows. It took \Sexpr{format(tt[3],nsmall=3)} secs, so it inserted
+\Sexpr{format(as.integer(nrow(DF)/tt[3]),big.mark=",",scientific=FALSE)} rows per second. That is normal in base \proglang{R}.
+
+Lets extract an arbitrary group from the data.frame \code{DF}.
+
+<<print=TRUE>>=
+tt=system.time(ans1 <- DF[DF$x=="R" & DF$y=="h",])   # 'vector scan'
+head(ans1,3)
+dim(ans1)
+@
+
+Now we convert to a data.table and extract the same group.
+
+<<>>=
+DT = data.table(DF)
+setkey(DT,x,y)
+@
+<<print=TRUE>>=
+ss=system.time(ans2 <- DT[J("R","h"),mult="all"])   # 'binary search'
+mapply(identical,ans1,ans2)
+@
+
+At \Sexpr{format(ss[3],nsmall=3)} seconds, this was {\bf\Sexpr{as.integer(tt[3]/ss[3])}} times faster than \Sexpr{format(tt[3],nsmall=3)} seconds,
+and produced precisely the same result. If you are thinking that a few seconds is not much to save, its the relative speedup thats important. The
+vector scan is linear, but the binary search is O(log n). It scales. If a task taking 10 hours is sped up by 100 times to 6 minutes, that is
+significant\footnote{We wonder how many people are deploying parallel techniques to code that is vector scanning}.
+
+What does the J() do? 
+
+Was it really this, or was it something slow about using data.frame syntax in a data.table?  Its exactly the same :
+
+We can do vector scans in data.table too.
+
+<<>>=
+system.time(ans1 <- DF[DF$x=="R" & DF$y=="h",])
+system.time(ans2 <- DT[DT$x=="R" & DT$y=="h",])
+mapply(identical,ans1,ans2)
+system.time(ans3 <- DT[x=="R" & y=="h",])
+identical(ans2,ans3)
+@
+
+
+
+If
+the phone book analogy helped, then this should not be surprising. We use the key. We take advantage of the fact that the table is sorted and
+we use binary search to find the matching rows. We didn't vector scan; we didn't use \code{==}.
+
+
+
+
+When we used \code{DT\$x=="R"} we \emph{scanned} the entire column x, testing each and every value to see it equalled "R". We did
+that again in the y column, testing for "h". Then \code{\&} combined the two logical results to create a single logical vector which was
+passed to the \code{[} method which searched it for \code{TRUE} and returned those rows. These were \emph{vectorized} operations. They
+occurred internally in R and were very fast, but they were scans. \emph{We} did those scans because \emph{we} wrote that R code.
+
+
+
+
+When i is itself a data.table, we say that we are \emph{joining} the two data.table's. In this case we are joining DT to the
+1 row, 2 column table returned by \code{data.table("R","h")}. Since we do this a lot, there is an alias for \code{data.table} called \code{J()},
+short for join.
+
+<<>>=
+identical( DT[J("R","h"),mult="all"],
+           DT[data.table("R","h"),mult="all"] )
+@
+
+Both vector scanning, and binary search, are available in \code{data.table}, but one way of using data.table is much better than the other.
+
+The join syntax is short, fast to write and easy to maintain. Passing a data.table into a data.table subset, is similar to base \proglang{R}
+which allows a matrix to be passed into a matrix subset. \footnote{Subsetting a key'd data.table by an n-column data.table is consistent with
+subsetting a n-dimension array by an n-column matrix}. There are
+other types of join and further arguments which are beyond the scope of this quick introduction.
+
+This first section has been about the first argument to the \code{[}, namely \code{i}. The next section is do with the 2nd argument.
+
+
+\section*{2. Fast grouping}
+
+
+The second argument to \code{[} is \code{j} and may be
+one or more expressions of column names, as if the column names were variables.
+
+<<>>=
+dt[,sum(v)]
+@
+
+When we supply a j expression and a 'by' list of expressions, the j expression is repeated for each group defined
+by the 'by'.
+
+<<>>=
+dt[,sum(v),by=x]
+@
+
+The 'by' in data.table is fast.  Lets compare to tapply.
+
+<<>>=
+ttt=system.time(tt <- tapply(DT$v,DT$x,sum)); ttt
+sss=system.time(ss <- DT[,sum(v),by=x]); sss
+head(tt)
+head(ss)
+identical(as.vector(tt), ss$V1)
+@
+
+At \Sexpr{sprintf("%0.3f",sss[3])}sec, this was {\bf\Sexpr{as.integer(ttt[3]/sss[3])}} times faster than \Sexpr{sprintf("%0.3f",ttt[3])}sec,
+and produced precisely the same result.
+
+Lets group by two columns.
+
+<<>>=
+ttt=system.time(tt <- tapply(DT$v,list(DT$x,DT$y),sum)); ttt
+sss=system.time(ss <- DT[,sum(v),by="x,y"]); sss
+tt[1:5,1:5]
+head(ss)
+identical(as.vector(t(tt)), ss$V1)
+@
+
+This was {\bf\Sexpr{as.integer(ttt[3]/sss[3])}} times faster, and the syntax a little simpler and easier to read.
+
+
+To return several expressions, pass a list() to j.
+TO DO - Example
+
+The list is auto-recycled within each group. Do a condition on that.
+To DO - Example.
+
+You can pass expressions to by too. And for this its cleaner to pass a list() to by, instead of character.
+TO DO - Example.
+
+There is a super-charge option for advanced users. Use the dropfactor.
+To DO - Example.
+
+
+\section*{3. Fast joining/merging of irregularly spaced ordered observation}
+
+
+Recap :
+x[i] is a join between x and data.table i
+x[,j,by=list()] is grouping
+
+This section now combines together i, j and by together in one query. We also introduce roll.
+
+merge(x,y) is the same but contains the union of columns.  When merge is passed data.table's, it operates much
+faster than base merge on data.frame's.
+TO DO - example.
+
+Grouping without setting a key  :
+1. Fast temporary key creation due to fast radix.
+2. Using key without 'by'.
+
+Fast roll join.
+TO DO - example.
+
+
+\section*{Other resources}
+
+This was a quick start guide. Further resources include :
+\begin{itemize}
+\item The help page describes each and every argument \code{?"[.data.table"}
+\item The FAQs deal with distinct topics in an easy to digest manner
+\item The performance tests are more complex real world examples
+\item test.data.table contains over 100 low level tests of the features.
+\item Presentations
+\item YouTube Demo
+\item R-Forge commit logs: \url{http://lists.r-forge.r-project.org/pipermail/datatable-commits/}
+\item Website: \url{http://datatable.r-forge.r-project.org/}
+\item Mailing list : \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help@lists.r-forge.r-project.org}
+
+\end{itemize}
+
+\end{document}
+
+

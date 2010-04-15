@@ -1,7 +1,7 @@
-time.taken <- function(started.at)
+timetaken <- function(started.at)
 {
-   if (!is.vector(started.at)) {
-      # assume started.at=Sys.time(). Slower method due to POSIXt.
+   if (inherits(started.at,"POSIXct")) {
+      # started.at was Sys.time(). Slower method due to POSIXt.
       secs <- as.double(difftime(Sys.time(), started.at, units="secs"))
    } else {
       # new faster method using started.at = proc.time()

@@ -1,11 +1,10 @@
 Package: data.table
-Version: 1.3
-Title: Extension of data.frame. i and j expressions, keys and binary search.
-Author: Matthew Dowle
-Maintainer: Matthew Dowle <mdowle@mdowle.plus.com>
-Depends: R (>= 2.6.2), ref
-Suggests: RUnit
-Description: Like a data.frame but with built in fast database like column operations, where 'fast' means faster to develop as well as faster to compute.
+Version: 1.4
+Title: Extension of data.frame for fast subset, fast merge and fast grouping.
+Author: Matthew Dowle with many contributions from Tom Short.  See SVN commit logs on R-Forge.
+Maintainer: Developers <datatable-help@lists.r-forge.r-project.org>
+Depends: R (>= 2.6.2)
+Description: An exhanced data.frame. Multi-column keys instead of rownames. Fast binary search and fast grouping in a short and flexible syntax. i and j may be expressions of column names directly, for faster development.  Example: data[a>3,sum(b*c),by=d] where data has 4 columns (a,b,c,d).
 License: GPL
 URL: http://datatable.r-forge.r-project.org/
 

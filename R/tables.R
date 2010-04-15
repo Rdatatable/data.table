@@ -2,7 +2,7 @@ tables = function(mb=TRUE,order.col="NAME",width=80,env=parent.frame(),silent=FA
 {
     # Prints name, size and colnames of all data.tables in the calling environment by default
     tt = objects(env=env, all.names=TRUE)
-    ss = which(sapply(tt, function(x) is.data.table(get(x,envir=env))))
+    ss = which(as.logical(sapply(tt, function(x) is.data.table(get(x,envir=env)))))
     if (!length(ss)) {
         if (!silent) cat("No objects of class data.table exist in .GlobalEnv\n")
         return(invisible(data.table(NULL)))

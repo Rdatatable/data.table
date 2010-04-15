@@ -21,6 +21,9 @@ test.data.table()
 % \note{ }
 \seealso{ \code{\link{data.table}} }
 \examples{
-    test.data.table()
+    test.data.table()		# this will run inside the data.table namespace
+    eval(body(test.data.table))		# as though you copied and pasted its body into the console
+		# there may be differences (e.g. the first may find non-exported functions inside data.table)
+		# whereas the 2nd is a truer test.  We do both ways for full robustness.
 }
 \keyword{ data }
