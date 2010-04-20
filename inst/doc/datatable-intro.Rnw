@@ -11,7 +11,7 @@
 \newcommand{\pkg}[1]{{\normalfont\fontseries{b}\selectfont #1}}
 \newcommand{\proglang}[1]{\textsf{#1}}
 \SweaveOpts{keep.source=TRUE, strip.white=all}
-%% \VignetteIndexEntry{Introduction to the data.table Package}
+%% \VignetteIndexEntry{Quick introduction}
 
 <<echo=FALSE,results=hide>>=
 if (!exists("data.table",.GlobalEnv)) library(data.table)  # In devel won't call library, but R CMD build/check will.

@@ -319,21 +319,25 @@ test.data.table = function()
     test(144, dt[, .SD[3,], by=b], tt)
     
     DT = data.table(x=rep(c("a","b"),c(2,3)),y=1:5)
-    test(145, DT[,{print(x);sum(y)},by=x], data.table(x=c("a","b"),V1=c(3L,12L)))
+    xx = capture.output(ans <- DT[,{print(x);sum(y)},by=x])
+    test(145, xx, c("[1] a a","Levels: a b","[1] b b b","Levels: a b"))
+    test(146, ans, data.table(x=c("a","b"),V1=c(3L,12L)))
     
-    tt = try(DT[,MySum=sum(v)], silent=TRUE)    # Feature Request #204 to detect the error
-    test(146, inherits(t,"try-error") && length(grep("unused argument", tt)))   # user meant DT[,list(MySum=sum(v))]
+    tt = try(DT[,MySum=sum(v)], silent=TRUE)    # feature request #204 done.
+    test(147, inherits(t,"try-error") && length(grep("unused argument", tt)))   # user meant DT[,list(MySum=sum(v))]
     
+    dt = data.table(a=c(1L,4L,5L), b=1:3, key="a")
+    test(148, dt[CJ(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L),key="a"))
+    test(149, dt[J(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L)))
 
     ##########################
-    if (nfail == 0) {
-        cat("All",ntest,"tests in test.data.table() completed ok in",timetaken(started.at),"\n")
-    } else {
+    if (nfail > 0) {
         stop(nfail," errors in test.data.table()")
         # important to stop here, so than 'R CMD check' fails, via the call
         # to test.data.table() in the examples section of Extract.data.table.Rd
     }
-    invisible()
+    cat("All",ntest,"tests in test.data.table() completed ok in",timetaken(started.at),"\n")
+    invisible(TRUE)
 }
 
 

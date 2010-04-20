@@ -10,7 +10,7 @@
 \newcommand{\pkg}[1]{{\normalfont\fontseries{b}\selectfont #1}}
 \newcommand{\proglang}[1]{\textsf{#1}}
 \SweaveOpts{keep.source=TRUE}
-%% \VignetteIndexEntry{Timings of common tasks - data.table}
+%% \VignetteIndexEntry{Timings of common tasks}
 
 \begin{document}
 <<echo=FALSE,results=hide>>=
@@ -56,7 +56,11 @@ tables()
 
 tt=system.time(ans1 <- DT[DT$x=="R" & DT$y=="h",]); tt
 ss=system.time(ans2 <- DT[J("R","h"),mult="all"]); ss
+identical(ans1,ans2)
+@
+<<echo=FALSE>>=
 if(!identical(ans1,ans2)) stop("Test 1 not identical")
+<<>>=
 
 @
 

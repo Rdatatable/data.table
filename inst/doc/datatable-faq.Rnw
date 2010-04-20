@@ -10,7 +10,7 @@
 \newcommand{\pkg}[1]{{\normalfont\fontseries{b}\selectfont #1}}
 \newcommand{\proglang}[1]{\textsf{#1}}
 \SweaveOpts{keep.source=TRUE}
-%% \VignetteIndexEntry{FAQs - data.table}
+%% \VignetteIndexEntry{Frequently asked questions}
 
 <<echo=FALSE,results=hide>>=
 if (!exists("data.table",.GlobalEnv)) library(data.table)  # see Intro.Rnw for comments on these two lines
@@ -146,10 +146,23 @@ Yes. If your complex table is called DT, try DT[0].
 No. Despite the print method indicating otherwise. Strictly speaking its not possible to have is.null(data.table(NULL))
 returns FALSE.  Perhaps look at this?
 
-\subsection{Why has the DT alias been removed?}
-It hasn't been removed, yet. It is no longer encouraged or mentioned in the docs or examples. We now use and encourage
-list() to be passed as the j.  list() is a primitive and is much faster than passing DT() or data.table() as the j, especially when
-there are many groups.  Internally this was a non trivial change, but the speedups are very large.
+\subsection{Why has the \code{DT()} alias been removed?}\label{faq:DTremove1}
+DT was introduced originally to use as the wrapper for a list of j expressions. Since \code{DT} was an alias for \code{data.table}, this
+was a convenient way to take care of silent recycling in cases where each item of the j list had different lengths. Its important to do
+this recycling within each group.  However, it was one reason grouping was slow.
+As from v1.3, list() should be passed as the j. list() is a primitive and is much faster, especially when
+there are many groups. Internally this was a non trivial change. Vector recycling is done internally, along with
+several other speed enhancements for grouping.
+Some users have come to rely on the DT alias though. If there is a lot of code that depends on DT(), you can easily create
+the alias yourself.
+\code{DT = function(...) data.table(...)}
+
+\subsection{But my code uses \code{j=DT(...)} and it works. The previous FAQ says that DT has been removed.}\label{faq:DTremove2}
+\pkg{data.table} inspects the j expression that is passed to it. If it finds that the expression starts with a call
+to \code{DT()} it automatically replaces it with a call to \code{list()}.
+If users do create their own DT alias to avoid changing to j=list(), performance will be very bad. So we detect
+use of j=DT() and change it to j=list() automatically to help existing users.  We cannot do this
+when DT is used to create a data.table for example, only when a DT call is passed to [.data.table.
 
 \subsection{What are the scoping rules for j expression?}
 Think of the subset as an environment where all the column names are
@@ -180,6 +193,9 @@ DT[,{
 },by=x]
 @
 
+\subsection{Only the first 10 rows are printed, how do I print more?}
+Try \code{print(DT,nrows=Inf)} to print all rows, or set nrows to the number of rows you require.
+
 \section{Questions relating to compute time}
 
 \subsection{I have 20 columns in data.table x.  Why is x[,sum(V1),by=grp] so quick?}
@@ -195,14 +211,15 @@ data.table uses radix sorting for integer vectors. This is significantly faster 
 Unfortunately radix is restricted to integer only. See {?sort.list(method="radix")}.
 This is also one reason why \code{setkey()} is quick.
 
+\section{Errors messages}
+\subsection{\code{Could not find function "DT"}}
+See FAQ \ref{faq:DTremove1} and FAQ \ref{faq:DTremove2}.
 
 \section{General questions about the package}
 
 \subsection{v1.3 appears to be missing from the CRAN archive ?}
-That is correct. v1.2 was released to CRAN in Aug 2008. Development of v1.3 then continued on r-forge, from
-which users installed the latest nightly build, and were very helpful giving feedback and suggestions. As
-many versions of v1.3 are in use, we released v1.4 to CRAN as a clean line in the sand.
-From now on our hope is to have a more regular release cycle to CRAN.
+That is correct. v1.3 was available on R-forge only. There were several large
+changes internally and these took some time to test in development.
 
 \subsection{Is data.table compatible with S-plus ?}
 Not currently.
@@ -212,11 +229,18 @@ Not currently.
 \href{http://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping}{R FAQ 3.3.1}.
 \end{itemize}
 
-\subsection{I think its great. How do I suggest it to other people ?}
-Thank you. Please put your comments on \url{http://crantastic.org/}
+\subsection{I think its great. What can I do?}
+There are no download statistics for packages, so it can really help encourage developers of packages to simply
+know that people use them. Its quick and easy to say you use it on \url{http://crantastic.org/}. If you have time
+to vote and write a comment too (e.g. say in what situation you use the package, how long it took you to learn
+it etc) then that can help others in the community even more.
+
+You can send comments, suggestions, bug reports and enhancement requests to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help@lists.r-forge.r-project.org}.
+
+If you are a developer and wish to contribute, you can join the project.
 
 \subsection{I think its not great. How do I warn others about my experience ?}
-Please put your comments on \url{http://crantastic.org/}. Try to make it constructive so we have a chance to improve.
+Please put your vote and comments on \url{http://crantastic.org/}. Make it constructive, so we have a chance to improve.
 
 \subsection{I have a question. I know the posting guide tells me to contact the maintainer, but thats just one person. Isn't
 there a group of people I can ask ?}
@@ -239,6 +263,7 @@ This FAQ is a vignette and as such is written using Sweave. The benefits include
 package will have its own FAQ file which will be relevant for that version.  Contrast to a single website, which can be ambiguous if the answer
 depends on the version.
 \item You can open it offline, from your R prompt using vignette().
+\item You can extract the code from the document and play with it using edit(vignette("datatable-timings")).
 \item It prints out easily.
 \item Its quicker and easier for us to write and maintain the FAQ in .Rnw form.
 \end{itemize}

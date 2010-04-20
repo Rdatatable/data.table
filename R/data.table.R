@@ -13,7 +13,7 @@ print.data.table = function (x, digits = NULL, quote = FALSE, right = TRUE, nrow
     }
     if (nrow(x)>nrows) {
         if (missing(nrows)) nrows=10
-        msg=paste(nrows,"of",nrow(x),"printed")
+        msg=paste("First",nrows,"rows of",nrow(x),"printed.")
         toprint = head(x,nrows)
     } else {
         toprint = x

@@ -16,6 +16,6 @@ timetaken <- function(started.at)
        if (days >= 1) res = sprintf("%d days ", as.integer(days)) else res=""
        paste(res,sprintf("%02.0f:%02.0f:%02.0f", hrs, mins, secs %% 60),sep="")
    } else {
-       sprintf("%1.4fsec", secs)
+       sprintf("%1.3fsec", secs)
    }
 }
