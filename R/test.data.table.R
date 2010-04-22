@@ -1,7 +1,7 @@
 test.data.table = function()
 {
     nfail = ntest = 0
-    test = function(num,x,y) {
+    test = function(num,x,y=NULL) {
         assign("ntest",num,envir=parent.frame())
         if (inherits(err<-try(x,TRUE),"try-error") || inherits(err<-try(y,TRUE),"try-error")) {
             cat("Test",num,err)

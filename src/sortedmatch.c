@@ -31,7 +31,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     // If the left table is large and the right table is large, then sorting the left table first may be
     // quicker depending on how long to sort the left table. This is up to user via use of J() or SJ()
     
-    int lr,nr,low,mid,upp,coln,col,d,noteq,prevcolupp,lci,rci;
+    int lr,nr,low,mid,upp,coln,col,lci,rci;
     int prevlow, prevupp, type, newlow, newupp, size;
     union {
         int i;
@@ -42,8 +42,8 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     coln = LENGTH(leftcols);    // there may be more sorted columns in the right table, but we just need up to the number in the left.
     low=-1;
     for (lr=0; lr < LENGTH(VECTOR_ELT(left,0)); lr++) {  // left row
-        upp = nr;
-        low = (LOGICAL(isorted)[0]) ? low : -1;
+        upp = prevupp = nr;
+        low = prevlow = (LOGICAL(isorted)[0]) ? low : -1;
         INTEGER(retFirst)[lr] = INTEGER(retLast)[lr] = 0;   // default to no match for 2 goto's below
         for(col=0; col<coln && low<upp-1; col++) {
             lci = INTEGER(leftcols)[col];
@@ -125,7 +125,7 @@ SEXP sortedstringmatch (SEXP ans, SEXP left, SEXP right, SEXP nomatch)
     // Neither left or right have duplicates, or any NAs, as is the case for factor levels.
     // ans is the result, the locations of left in right, possibly including NA
 
-    int lr,nr,low,mid,upp,d;
+    int lr,nr,low,mid,upp;
     nr = length(right);
     for (lr=0; lr < length(left); lr++) {
         low = -1;   // TO DO: leave low alone if left is sorted
@@ -147,7 +147,7 @@ SEXP sortedstringmatch (SEXP ans, SEXP left, SEXP right, SEXP nomatch)
 SEXP sortedintegermatch (SEXP ans, SEXP left, SEXP right, SEXP nomatch)
 {
     // As sortedstringmatch, see comments above, but for integers.
-    int lr,nr,low,mid,upp,d;
+    int lr,nr,low,mid,upp;
     if (NA_INTEGER > 0) error("expected internal value of NA_INTEGER %d to be negative",NA_INTEGER);
     nr = length(right); 
     for (lr=0; lr < length(left); lr++) {
