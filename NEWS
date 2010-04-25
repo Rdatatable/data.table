@@ -1,0 +1,141 @@
+
+The ChangeLog for data.table is the SVN commit log itself :
+    svn log svn://svn.r-forge.r-project.org/svnroot/datatable
+
+This NEWS file summarises the main changes.
+
+
+
+
+        *******************************************
+        **                                       **
+        **   CHANGES IN DATA.TABLE VERSION 1.4   **
+        **                                       **
+        *******************************************
+
+
+NEW FEATURES
+
+    o   'by' faster. Memory is allocated first for the result, then
+    populated directly by the result of j for each group. Can be 10
+    or more times faster than tapply() and aggregate(), see
+    timings vignette.
+    
+    o   j should now be a list(), not DT(), of expressions. Use of
+    j=DT(...) is caught internally and replaced with j=list(...).
+    
+    o   'by' may be a list() of expressions, and a single column name
+    no longer has to be quoted. A comma separated string is ok too,
+    as before. 
+    
+    o   key() and key<- added. More R-style alternatives to getkey()
+    and setkey().
+    
+    o   haskey() added. Returns TRUE if a table has a key.
+    
+    o   radix sorting is now column by column where possible, was
+    previously all or nothing. Helps with keys of many columns.
+    
+    o   Added format method.
+    
+    o   22 tests added to test.data.table(), now 149.
+    
+    o   Three vignettes added : FAQ, Intro & Timings
+
+
+DEPRECATED & DEFUNCT
+
+    o   The DT alias is removed. Use 'data.table' instead to create
+    objects. See 2nd new feature above.
+    
+    o   RUnit framework removed.
+    test.data.table() is called from examples in .Rd so 'R CMD check'
+    will run it. Simpler. An eval(body(test.data.table))
+    is also in the .Rd, to catch namespace issues.
+    
+    o   Dependency on package 'ref' removed.
+    
+    o   Arguments removed:  simplify, incbycols and byretn.
+    Grouping is simpler now, these are superfluous.
+    
+    
+BUG FIXES
+
+    o   Column classes are now retained by subset and grouping.
+    
+    o   tail no longer fails when a column 'x' exists.
+        
+
+NOTES
+
+    o   v1.4 was essentially the branch at rev 44, reintegrated
+    at rev 78.
+
+
+
+
+        *******************************************
+        **                                       **
+        **   CHANGES IN DATA.TABLE VERSION 1.3   **
+        **                                       **
+        *******************************************
+        
+        
+NEW FEATURES
+
+    o   Radix sorting added. Speeds up setkey and add-hoc 'by'
+    by factor of 10 or more.
+    
+    o   Merge method added, much faster than base::merge method
+    of data.frame.
+    
+    o   'by' faster. Logic moved from R into C. Memory is
+    allocated for the largest group only, then re-used.
+    
+    o   The Sub Data is accessible as a whole by j using object
+    .SD. This should only be used in rare circumstances. See FAQ.
+    
+    o   Methods added : duplicated, unique, transform, within,
+    [<-, t, Math, Ops, is.na, na.omit, summary
+    
+    o   Column name rules improved e.g. dots now allowed.
+    
+    o   as.data.frame.data.table rownames improved.
+    
+    o   29 tests added to test.data.table(), now 127.
+        
+        
+USER-VISIBLE CHANGES
+
+    o   Default of mb changed, now tables(mb=TRUE)
+
+
+DEPRECATED & DEFUNCT
+
+    o   ... removed in [.data.table.
+    j may not be a function, so this is now superfluous.
+    
+    
+BUG FIXES
+
+    o   Incorrect version warning with R 2.10+ fixed.
+    
+    o   j enclosure raised one level. This fixes some bugs
+    where the j expression previously saw internal variable
+    names. It also speeds up grouping a little.
+
+
+NOTES
+
+    o   v1.3 was not released to CRAN. R-Forge repository only.
+
+
+
+
+        ********************************************
+        **                                        **
+        **   VERSION 1.2 RELEASED CRAN AUG 2008   **
+        **                                        **
+        ********************************************
+
+

@@ -12,7 +12,7 @@ EXPORT SEXP dogroups();
 
 SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval)
 {
-    R_len_t i, j, k, n, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen;
+    R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen;
     SEXP names, ans, sizes, jval, jsizes, bysizes;
     if (TYPEOF(order) != INTSXP) error("order not integer");
     if (TYPEOF(starts) != INTSXP) error("starts not integer");
