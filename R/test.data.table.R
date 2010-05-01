@@ -329,6 +329,14 @@ test.data.table = function()
     dt = data.table(a=c(1L,4L,5L), b=1:3, key="a")
     test(148, dt[CJ(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L),key="a"))
     test(149, dt[J(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L)))
+    
+    # 150 & 151 test out of order factor levels in key columns
+    dt = data.table(x=factor(c("c","b","a"),levels=c("b","a","c")),y=1:3)
+    key(dt) = "x"
+    test(150, dt["b",y], 2L)
+    # from Tom's post :
+    a = data.table(a=rep(1:5, 2), b=factor(letters[rep(1:5, each =2)], levels=letters[5:1]), key="b")  
+    test(151, a[J("b"),a], 3L)
 
     ##########################
     if (nfail > 0) {

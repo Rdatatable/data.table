@@ -25,6 +25,17 @@ setkey = function(x, ..., loc=parent.frame())
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
     if (!all( sapply(x,storage.mode)[cols] == "integer")) stop("All keyed columns must be storage mode integer")
+    for (i in cols) {
+        # if key columns don't already have sorted levels, sort them, test 150
+        if (is.factor(x[[i]])) {
+            l = levels(x[[i]])
+            if (is.unsorted(l)) {
+                r = rank(l)
+                l[r] = l
+                x[[i]] = structure(r[as.integer(x[[i]])], levels=l, class="factor")
+            }
+        }
+    }
     o = fastorder(x, cols, na.last=FALSE)
     # We put NAs first because NA is internally a very large negative number. This is relied on in the C binary search.
     ans = x[o]   # TO DO: implement column by column re-order here, so only memory for one column is required, rather than copy of whole table.
