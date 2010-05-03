@@ -7,6 +7,26 @@ This NEWS file summarises the main changes.
 
 
 
+        *********************************************
+        **                                         **
+        **   CHANGES IN DATA.TABLE VERSION 1.4.1   **
+        **                                         **
+        *********************************************
+
+
+NEW FEATURES
+
+    o   Vignettes tidied up.
+    
+        
+BUG FIXES
+
+    o   Out of order levels in key columns are now sorted by
+        setkey. Thanks to Steve Lianoglou for reporting.
+
+        
+
+
         *******************************************
         **                                       **
         **   CHANGES IN DATA.TABLE VERSION 1.4   **
@@ -64,7 +84,13 @@ BUG FIXES
     o   Column classes are now retained by subset and grouping.
     
     o   tail no longer fails when a column 'x' exists.
-        
+
+    
+KNOWN PROBLEMS
+
+    o   Minor : Join Inherited Scope not working, contrary
+        to the documentation.
+
 
 NOTES
 

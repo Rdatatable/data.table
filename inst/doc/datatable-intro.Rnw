@@ -28,13 +28,13 @@ rm(list=as.character(tables()$NAME))  # for development when we Sweave this file
 This vignette is aimed at those who are already familiar with \proglang{R}, in
 particular creating and using objects of class data.frame. We aim for this quick introduction
 to be readable in {\bf10 minutes}, covering the main features in brief. The main features are the 3 numbered
-section titles: 1.Keys, 2.Fast Grouping, 3.Fast Merging/Joining. For the context that this document sits please 
+section titles: 1.Keys, 2.Fast Grouping, 3.Fast time series join. For the context that this document sits please 
 briefly check the last section, Further Resources.
 
 data.table is not \emph{automatically} better or faster. The user has to climb a short learning
 curve, experiment, and then use the features well. For example this document explains the difference
 between a \emph{vector scan} and a \emph{binary search}. Both extract methods are available. If a user
-continues to use vector scans though, as they are used to in a data.frame, it will work, but they will 
+continues to use vector scans though, as they are used to in a data.frame, it will work but they will 
 miss out on the benefits that the package provides.
 
 \section*{Creation}
@@ -114,16 +114,16 @@ dt[ dt$x == "b", ]
 
 But since there are no rownames the following does not work.
 <<>>=
-cat(try(dt["b",]))
+cat(try(dt["b",],silent=TRUE))
 @
 
 The error message tells us we need to use setkey().
 <<>>=
-setkey(dt,x)
+setkey(dt,x)   # or key(dt)="x" if you prefer
 dt
 @
 
-Notice that the rows in dt have been re-ordered by x. The two ''a'' rows have moved to the top.
+Notice that the rows in dt have been re-ordered by x. The two \code{"a"} rows have moved to the top.
 We can confirm that dt does indeed have a key using \code{haskey()}, \code{key()},
 \code{attributes()}, or just running \code{tables()}.
 
@@ -137,7 +137,7 @@ Now we are sure that dt has a key, lets try again.
 dt["b",]
 @
 
-Since there are duplicates in this key (i.e. repeated values of ''b'') the subset returns the first row in that group, by default. The
+Since there are duplicates in this key (i.e. repeated values of \code{"b"}) the subset returns the first row in that group, by default. The
 \code{mult} argument (short for \emph{multiple}) controls this.
 
 <<>>=
@@ -235,6 +235,8 @@ which allows a matrix to be passed into a matrix subset. \footnote{Subsetting a 
 subsetting a n-dimension array by an n-column matrix}. There are
 other types of join and further arguments which are beyond the scope of this quick introduction.
 
+The merge method of \code{data.table} is essentially \code{x[y]}, but where the columns of \code{x} are included in the result. See FAQ 1.10.
+
 This first section has been about the first argument to the \code{[}, namely \code{i}. The next section is do with the 2nd argument.
 
 
@@ -281,54 +283,53 @@ identical(as.vector(t(tt)), ss$V1)
 This was {\bf\Sexpr{as.integer(ttt[3]/sss[3])}} times faster, and the syntax a little simpler and easier to read.
 
 
-To return several expressions, pass a list() to j.
-TO DO - Example
+The following features are mentioned only briefly here. Further examples are in the FAQs.
 
-The list is auto-recycled within each group. Do a condition on that.
-To DO - Example.
-
-You can pass expressions to by too. And for this its cleaner to pass a list() to by, instead of character.
-TO DO - Example.
-
-There is a super-charge option for advanced users. Use the dropfactor.
-To DO - Example.
+\begin{itemize}
+\item To return several expressions, pass a list() to j.
+\item Each item of the list is recycled to match the length of the longest item.
+\item You can pass a list() of expressions of column names to by.
+\end{itemize}
 
 
-\section*{3. Fast joining/merging of irregularly spaced ordered observation}
 
+\section*{3. Fast time series join}
 
-Recap :
-x[i] is a join between x and data.table i
-x[,j,by=list()] is grouping
+This is also known as last observation carried forward (LOCF) or a \emph{rolling join}.
 
-This section now combines together i, j and by together in one query. We also introduce roll.
+Recall that x[i] is a join between data.table x and data.table i.  If i has 2 columns, the first column is matched
+to the first column of the key of x, and the 2nd column to the 2nd.  An equi-join is performed, meaning that
+the values must be equal.
 
-merge(x,y) is the same but contains the union of columns.  When merge is passed data.table's, it operates much
-faster than base merge on data.frame's.
-TO DO - example.
+The syntax for fast rolling join is
 
-Grouping without setting a key  :
-1. Fast temporary key creation due to fast radix.
-2. Using key without 'by'.
+\code{x[i,roll=TRUE]}
 
-Fast roll join.
-TO DO - example.
+As before the first column of i is matched to x where the values are equal. The last column of i though, the 2nd one in
+this example, is treated specially. If no match is found, then the row before is returned, provided the first
+column still matches.
+
+For examples see \code{example("[.data.table")}
+
 
 
 \section*{Other resources}
 
 This was a quick start guide. Further resources include :
 \begin{itemize}
-\item The help page describes each and every argument \code{?"[.data.table"}
-\item The FAQs deal with distinct topics in an easy to digest manner
-\item The performance tests are more complex real world examples
-\item test.data.table contains over 100 low level tests of the features.
-\item Presentations
-\item YouTube Demo
+\item The help page describes each and every argument: \code{?"[.data.table"}
+\item The FAQs deal with distinct topics: \code{vignette("datatable-faq")}
+\item The performance tests contain more examples: \code{vignette("datatable-timings")}
+\item test.data.table contains over 150 low level tests of the features: \code{test.data.table()}
+\item Website (no content yet): \url{http://datatable.r-forge.r-project.org/}
+\item Presentations:
+\begin{itemize}
+\item \url{http://files.meetup.com/1406240/Data%20munging%20with%20SQL%20and%20R.pdf}
+\item \url{http://www.londonr.org/LondonR-20090331/data.table.LondonR.pdf}
+\end{itemize}
+\item YouTube Demo: \url{http://www.youtube.com/watch?v=rvT8XThGA8o}
 \item R-Forge commit logs: \url{http://lists.r-forge.r-project.org/pipermail/datatable-commits/}
-\item Website: \url{http://datatable.r-forge.r-project.org/}
 \item Mailing list : \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help@lists.r-forge.r-project.org}
-
 \end{itemize}
 
 \end{document}

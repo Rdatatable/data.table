@@ -24,6 +24,8 @@ options(width=70)  # so lines wrap round
 \author{Matthew Dowle}
 \maketitle
 
+* WORK IN PROGRESS *
+
 This document contains a series of tests, followed by a summary table of various timings
 and comparisons. Please go straight to the summary table first <here> in which each row has
 a link back to the test.
@@ -37,6 +39,7 @@ completes in a reasonable time (about 5 minutes). We don't want the nightly buil
 and CRAN to slow down just to run long timing comparisons.  We have increased this to
 N=100,000,000 ourselves, and included the output on the datatable homepage (<link>).
 
+
 \tableofcontents
 \section{Timing tests}
 
@@ -48,31 +51,49 @@ expression.
 
 <<>>=
 n = ceiling(1e7/26^2)   # 10 million rows
-DT = data.table(x=rep(LETTERS,each=26*n),
+DF = data.frame(x=rep(LETTERS,each=26*n),
                 y=rep(letters,each=n),
-                v=rnorm(n*26^2),
-                key="x,y")
+                v=rnorm(n*26^2))
+DT = data.table(DF,key="x,y")
 tables()
 
-tt=system.time(ans1 <- DT[DT$x=="R" & DT$y=="h",]); tt
+tt=system.time(ans1 <- DF[DF$x=="R" & DF$y=="h",]); tt
 ss=system.time(ans2 <- DT[J("R","h"),mult="all"]); ss
-identical(ans1,ans2)
+mapply(identical,ans1,ans2)
 @
 <<echo=FALSE>>=
-if(!identical(ans1,ans2)) stop("Test 1 not identical")
-<<>>=
-
+if(!all(mapply(identical,ans1,ans2))) stop("Test 1 not identical")
 @
 
 \subsection{Grouping}
 
-Repeat from Introduction.
+This is a repeat of the test in section 2 of the Introduction vignette. The syntax is explained there.
+
+<<>>=
+ttt=system.time(ans1 <- tapply(DF$v,DF$x,sum)); ttt
+sss=system.time(ans2 <- DT[,sum(v),by=x]); sss
+identical(as.vector(ans1), ans2$V1)
+@
+<<echo=FALSE>>=
+if(!identical(as.vector(ans1), ans2$V1)) stop("Test 2 not identical")
+@
+
+\subsection{Test 3}
+
+\subsection{Test 4}
+
+\subsection{Test 5}
 
 \section{Summary table}
 
+<<echo=FALSE>>=
+ans = matrix(c(tt[3],ss[3],ttt[3],sss[3]),byrow=TRUE,ncol=2)
+rownames(ans)=c("==","tapply")
+colnames(ans)=c("base","data.table")
+ans = cbind(ans,"times faster"=as.integer(ans[,1]/ans[,2]))
+
 <<>>=
-tt[3]
-ss[3]
+ans
 @
 
 <<results=tex>>=

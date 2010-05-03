@@ -32,34 +32,34 @@
   When i is character, x must have a key, and i will be matched to the first column of that key. The first column of x's key must therefore be factor in this case. data.table's \emph{never} have rownames. See \code{\link{data.table}}.
   }
   \item{j}{ Optional. j is normally an expression of column names or
-  list of expressions enclosed in DT(). It may also be a single integer
+  list of expressions enclosed in list(). It may also be a single integer
   column position, a single character column name, or a function. To specify a vector of integer column positions or vector of character column names you must specify with=FALSE otherwise the vector itself is returned. j is like 'select' in SQL and and is evaluated within the frame of the data.table, the column names are variables. This is standard base R functionality using \code{\link{with}}() on a data.frame. A data.frame is a frame as in evaluation frame, not just as in a (rectangular) picture frame.
-It is good practive to include "j=" or imagine it there before the 'j clause'. This avoids the mistake DT[,MySum=sum(v)] when attempting to create a data.table result containing a column named MySum. The MySum is treated as an argument name by [.data.table which doesn't exist. DT[,DT(MySum=sum(v))] was intended, or DT[,j=DT(MySum=sum(v))].
+It is good practive to include "j=" or imagine it there before the 'j clause'. This avoids the mistake DT[,MySum=sum(v)] when attempting to create a data.table result containing a column named MySum. The MySum is treated as an argument name by [.data.table which doesn't exist. DT[,list(MySum=sum(v))] was intended, or DT[,j=list(MySum=sum(v))].
 }
-F
-  \item{by}{ Optional. character vector length 1. Contains column names or expressions of column names separated by comma to perform aggregation by. Apply the j expression by the by. Agreggation for a subset of known groups can be achieved more efficiently by passing those groups as an i data.table and using mult="all". This is analogous to 'having' clause in SQL. See simplify below and examples.
-   NOTE: \code{by} is now very fast, faster than base methods. See \code{vignette("datatable-timings")}.
+  \item{by}{ Optional. An unquoted column name, or a \code{list()} of unquoted column names, or a \code{list()} of expressions of column names. If \code{by} is supplied, the table is split up by the by criteria and the j expression run on each group. May also be a character vector length 1, with comma separated column names or expressions, for backwards compatability.
+  Advanced: Agreggation for a subset of known groups can be achieved more efficiently by passing those groups as an i data.table and using mult="all". See examples.  
+   NOTE: \code{by} is now very fast, faster than tapply. See \code{vignette("datatable-timings")}.
 }
 
-  \item{with}{ by default j is evaluated within the frame of x so the column names are seen as variables. See \code{\link{with}}. DT[,"ColA"] returns the column as expected, as does DT[,1]. However DT[,1:2], DT[,c(1,2)] and DT[,c("a","b")] all return the j vector itself without looking up the column contents. Setting with=FALSE resolves this. Note that DT[,DT(ColA,ColB)] is preferred to DT[,c("ColA","ColB"),with=FALSE]. If column integers or character names are held in a variable, with=FALSE is also required e.g. DT[,colsVar,with=FALSE].}
+  \item{with}{ by default j is evaluated within the frame of x so the column names are seen as variables. See \code{\link{with}}. DT[,"ColA"] returns the column as expected, as does DT[,1]. However DT[,1:2], DT[,c(1,2)] and DT[,c("a","b")] all return the j vector itself without looking up the column contents. Setting with=FALSE resolves this. Note that DT[,list(ColA,ColB)] is preferred to DT[,c("ColA","ColB"),with=FALSE]. If column integers or character names are held in a variable, with=FALSE is also required e.g. DT[,colsVar,with=FALSE].}
 
-The remaining arguments below are only applicable for joins i.e. when i is a data.table.
+The remaining arguments are only applicable for joins i.e. when i is a data.table.
 
   \item{nomatch}{ Same as nomatch in \code{\link{match}}. nomatch=NA is like an outer join in SQL i.e. rows containing NA are returned for rows in i not in x. nomatch=0 is like an inner join in SQL i.e. no rows are returned for rows in i not in x. }
 
-  \item{mult}{ "first","last" or "all". Controls what to return when there is more than one row in x matching the row in i. "all" is analogous to inner join behaviour in SQL. SQL has no first and last concept since it's data is inherently unordered (note that select top x * can not reliably return the same rows over time in SQL). The reason the default for mult is not "all" is efficiency. When x has a unique key (normally true for time series) and all the columns in the key are joined to, then the 3 options return the same result. But "first" (or "last") is more efficient internally than "all" in that case because mult="all" calls "first" and then "last" and returns the rows inbetween. When not all the columns in x's key are joined to (i.e. ncol(i)<ncol(key(x))), mult is defaulted to "all". }
+  \item{mult}{ "first","last" or "all". Controls what to return when there is more than one row in x matching the row in i. "all" is analogous to inner join behaviour in SQL. SQL has no first and last concept since it's data is inherently unordered (note that select top x * can not reliably return the same rows over time in SQL).
+  
+   When not all the columns in x's key are joined to (i.e. ncol(i)<ncol(key(x))), mult is defaulted to "all". }
 
-  \item{roll}{ By default an equi-join is performed on each column in turn. For example given x=DT(id,datetime), where the datetime is irregular, we look for the exact datetime in the i table occurring in the x table. In R we often roll data on through missing periods using a function such as fill.na so that we can then equi-join to the regular time series. However this takes programming time, compute time and storage space, sometimes very significantly. roll=TRUE applies to the last column of x's key. It returns the last available observation \emph{on or before} the datetime (or any numeric) in the last column of the i table. The datetimes in x that are joined \emph{to} are returned, as this is useful information. This may at first seem like an error (since duplicates are returned when roll=TRUE) but is correct. If the dates in the i table are required, these can be appended afterwards, but this is rarely needed in practice. See examples. }
+  \item{roll}{ By default an equi-join is performed on each column in turn. For example given x=data.table(id,datetime), where the datetime is irregular, we look for the exact datetime in the i table occurring in the x table. In R we often roll data on through missing periods using a function such as fill.na so that we can then equi-join to the regular time series. However this takes programming time, compute time and storage space, sometimes very significantly. roll=TRUE applies to the last column of x's key. It returns the last available observation \emph{on or before} the datetime (or any numeric) in the last column of the i table. The datetimes in x that are joined \emph{to} are returned, as this is useful information. This may at first seem like an error (since duplicates are returned when roll=TRUE) but is correct. If the dates in the i table are required, these can be appended afterwards, but this is rarely needed in practice. See examples. }
 
   \item{rolltolast}{ Like roll but the time series data is not rolled past the last observation. In finance this is useful when a stock is delisted and we do not want to roll the last price forward creating a flat line. \code{nomatch} determines whether NA is returned, or no rows are returned for the period after the last price. roll and rolltolast may not both be TRUE. }
 
   \item{which}{ By default the subset of rows in x matching i are returned. TRUE returns the row numbers only as a vector. These row numbers can be stored and passed in as the i directly in further data.table queries for efficiency, or used in further logic. }
 
-%%  \item{incbycols}{ Advanced. By default the groups created by the by expression are returned as the first column(s) of the result. The alternative way to group is by passing groups in the i data.table if the grouping corresponds to x's key and setting mult="all". FALSE omits the i columns from the result for efficiency in the 2nd case when writing multiple queries with the same grouping. }
-
-  \item{bysameorder}{ Advanced. The by expression creates a data.table internally which is then key'd and passed in as the i clause using SJ() ( possibly created a different order of the groups than they appear in the table) and mult set to "all". But when groups are passed into i directly \code{bysameorder=TRUE} saves the \code{setkey} for efficiency. }
-  
-  \item{verbose}{ TRUE turns on status and information mesages to the console in an attempt to aid debugging. }
+  \item{bysameorder}{ Advanced. Tells data.table that the by expression keeps the groups in the same order as the key, allowing some speed ups. Do not set if unsure. }
+    
+  \item{verbose}{ TRUE turns on status and information mesages to the console. }
 }
 \details{
 Builds on base R functionality to reduce 2 types of time :
@@ -75,7 +75,7 @@ The package can be used solely for development time benefits on small datasets. 
 
 Like a data.frame, the comma is optional inside [] when j is missing. However unlike with a data.frame a single unnamed argument refers to i rather than j. For example DT[3] returns the 3rd row as a 1 row data.table rather than DF[3] which returns the 3rd column as a vector. DT[3] is identical to DT[3,] unlike data.frame's. The i argument of matrix, data.frame and data.table subsetting using '[' is analogous to the 'where' clause in SQL. In data.table's when long expressions of column names appear as the i, or a join expression, we do not have to remember the comma at the end of the line. In a data.table if the i is missing, thats when you have to remember the comma, but at the beginning, so that the argument aligns to the j (j is analogous to 'select' clause in SQL). data.table's can be treated as a list (since they are a list as are data.frame's) by column index using [[ just as a data.frame e.g. DT[[3]] is identical to DF[3] and DF[[3]].
 
-As with a data.frame a 1 row subset returns a 1 row data.table. As with data.frame a 1 column subset (or in data.table an expression of column names returning a vector) returns a vector. However unlike data.frame there is no drop argument. The type of j's result determines the result e.g. DT[,b] returns a vector, DT[,DT(b)] returns a 1-column data.table. Note that DT the data.table object, and DT the function are different \R objects in these examples.  When no j clause is present, a data.table subset will always return a data.table even if only one row is returned (unlike matrix subsetting but like data.frame subsetting).
+As with a data.frame a 1 row subset returns a 1 row data.table. As with data.frame a 1 column subset (or in data.table an expression of column names returning a vector) returns a vector. However unlike data.frame there is no drop argument. The type of j's result determines the result e.g. DT[,b] returns a vector, DT[,list(b)] returns a 1-column data.table. When no j clause is present, a data.table subset will always return a data.table even if only one row is returned (unlike matrix subsetting, but like data.frame subsetting).
 
 As with data.frame subsetting mutliple queries can be concatenated on one line e.g. DT[a>3][order(b)] is analogous to 'select * from DT where a>3 order by b' in SQL. Ordering is a select of all the rows, but in a different order. Another analogy is DT[,sum(b),by="c"][c=="foo"] compared to "select sum(b) from DT group by c having c=='foo'". However, as noted under 'by' above this is more efficiently implemented using \code{setkey(DT,c);DT["foo",sum(b),mult="all"]}.
 
@@ -132,8 +132,8 @@ tt = DF[with(DF,a \%in\% Lkp),]
 ss = DT[a \%in\% Lkp]
 identical(as.data.table(tt), ss)
 
-# Examples above all use vector scans.
-# Examples below all use binary search.
+# Examples above all use vector scans (bad)
+# Examples below all use binary search (good)
 
 DT = data.table(a=letters[1:5], b=6:10)
 setkey(DT,a)
@@ -194,7 +194,7 @@ rm(DT)
 gc()  # return memory to OS
 }
 
-# See over 140 further examples in \link{test.data.table}()
+# See over 150 further examples in \link{test.data.table}()
 test.data.table()
 
 \dontrun{

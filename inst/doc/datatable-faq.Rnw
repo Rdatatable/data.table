@@ -30,19 +30,19 @@ be read before reading the Introduction vignette.
 \tableofcontents
 \section{Beginner FAQs}
 
-\subsection{Why does DT[,5] return 5 ?}
-Because, by default, unlike with a data.frame the 2nd argument is an <italic>expression</italic>
+\subsection{Why does \code{DT[,5]} return \code{5} ?}
+Because, by default, unlike with a data.frame the 2nd argument is an \emph{expression}
 which is evaluated within the scope of DT. 5 evaluates to 5. It is generally bad practice to refer
 to columns by number rather than name. If someone else comes along and reads your code later, they
 may have to hunt around to find out which column is number 5. Furthermore, if you, or someone else
 changes the column ordering of DT higher up in your R program, you might get bugs if you forget to
 change all the places in your code which refer to column number 5.
 
-Say column 5 is called ''region'', just do DT[,region] instead. Notice there are no quotes around
+Say column 5 is called ''region'', just do \code{DT[,region]} instead. Notice there are no quotes around
 the column name. This is what we mean by j being evaluated within the scope of the data.table. That
 scope consists of an environment where the column names are variables.
 
-Having said this, there are some circumstances where refering to a column by number is ok, particular
+Having said this, there are some circumstances where referring to a column by number is ok, particular
 a sequence of columns. In these situations just do DT[,5:10,with=FALSE] or DT[,c(1,4,10),with=FALSE].
 See ?''[.data.table'' for an explanation of the 'with' argument.
 
@@ -50,12 +50,12 @@ Note that with() has been a base function for a long time.  Thats why we say tha
 upon base functionality. There is nothing new here really, data.table is just making use of with()
 and building it into the syntax.
 
-\subsection{Why does DT[,''region''] return ''region''?}
-See answer to 1.1 above. Try DT[,region] instead. Or if you must then DT[,''region'',with=FALSE].
+\subsection{Why does \code{DT[,"region"]} return \code{"region"}?}
+See answer to 1.1 above. Try DT[,region] instead. Or \code{DT[,"region",with=FALSE]}.
 
 
-\subsection{Why does DT[,region] return a vector?  I want a 1-column data.table. There is no drop argument like I'm used to in data.frame.}
-Try DT[,list(region)] instead.
+\subsection{Why does DT[,region] return a vector?  I'd like a 1-column data.table. There is no drop argument like I'm used to in data.frame.}
+Try \code{DT[,list(region)]} instead.
 
 \subsection{Why does DT[,x,y,z] not work? I wanted the 3 columns x,y and z.}
 The j expression is the 2nd argument. The correct way to do this is DT[,list(x,y,z)].
@@ -112,7 +112,7 @@ x[y,foo*boo] quick to program and quick to run, than a merge step followed by an
 There is a special .SD object, which stands for Sub Data.  The j expression can use column names as variables, as you know, but it can
 also use .SD which refers to the sub data.table as a whole.  So to sum up all your columns its just DT[,lapply(.SD,sum),by=grp]. It might
 seem tricky, but its fast to write and fast to run. Notice you don't have to create an anonymous function(). See the timing vignette and
-comparison to other methods. The .SD object is efficently implemented internally, its more efficient than passing an argument to a function.
+comparison to other methods. The .SD object is efficiently implemented internally, its more efficient than passing an argument to a function.
 Please don't do this though :   DT[,.SD[,''sales'',with=FALSE],by=grp]. That works but its very inefficient and inelegant. This is what
 was intended : DT[,sum(x),by=grp] and could be 100's of times faster if DT contains many columns. No data.table may contain a column
 called .SD, thats why it has a ''.'' at the start as you are unlikely to really want a column called ''.SD''.
@@ -135,8 +135,26 @@ unique and for efficiency either "first" or "last" are faster than "all", so we 
 Note that when i (or i's key if it has one) has less columns that x's key,  mult is automatically set to "all". This is why
 grouping by i works i.e. DT[J(grp),mean(v)] where key(DT) has 2 or more columns.
 
-\subsection{Comment from test 81}
-
+\subsection{I'm using \code{c()} in the j and getting strange results.}
+It is expected this to be a common source of confusion. In data.frame
+you are used to for example :
+<<>>=
+df = data.frame(x=1:3,y=4:6,z=7:9)
+df
+df[,c("y","z")]
+@
+which returns the two columns. In data.table you know you can use the column names directly
+and might try :
+<<>>=
+dt = data.table(df)
+dt[,c(y,z)]
+@
+but this returns one vector.  Remember that the j expression is evaluated within the frame of dt,
+and c() returns one vector.  If 2 columns were required use list() :
+<<>>=
+dt[,list(y,z)]
+@
+c() can be useful too, but is different.
 
 \subsection{I have build up a complex table with many columns.  I want to use it as a template for a new table i.e. create
 a new table with no rows, but with the columns types copied from my table. Can I do that easily?}
@@ -158,11 +176,9 @@ the alias yourself.
 \code{DT = function(...) data.table(...)}
 
 \subsection{But my code uses \code{j=DT(...)} and it works. The previous FAQ says that DT has been removed.}\label{faq:DTremove2}
-\pkg{data.table} inspects the j expression that is passed to it. If it finds that the expression starts with a call
-to \code{DT()} it automatically replaces it with a call to \code{list()}.
-If users do create their own DT alias to avoid changing to j=list(), performance will be very bad. So we detect
-use of j=DT() and change it to j=list() automatically to help existing users.  We cannot do this
-when DT is used to create a data.table for example, only when a DT call is passed to [.data.table.
+\code{[.data.table} inspects the j expression that is passed to it. If it finds that the expression starts with a call
+to \code{DT()} it automatically replaces it with a call to \code{list()}. This is to help existing users. Please don't
+use \code{j=data.table(...)} as that may be slow. Use \code{j=list(...)}.
 
 \subsection{What are the scoping rules for j expression?}
 Think of the subset as an environment where all the column names are
@@ -170,46 +186,65 @@ variables. When a variable is used in the j expression, it is looked for in the 
 \begin{enumerate}
 \item The scope of the subset i.e. the column names
 \item The scope of the calling frame e.g. the line that appears before the data.table query
-\item TO CHECK. Does it ripple up or go straight to .GlobalEnv?
-\item The global environment
+\item Exercise for reader: does it then ripple up or go straight to .GlobalEnv?
+\item The global environment .GlobalEnv
 \end{enumerate}
-This is ''lexical scoping'' explained by \href{http://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping}{R FAQ 3.3.1}.
-Note that the environment that the function was created is not relevant though, because no anonymous function is passed
-to the j. Note that an anonymous body can be passed to the j, for example:
+This is \emph{lexical scoping} explained by \href{http://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping}{R FAQ 3.3.1}.
+The environment that the function was created is not relevant though, because there is no function. No anonymous \emph{function}
+is passed to the j. An anonymous \emph{body} is passed to the j. For example:
 <<>>=
 DT = data.table(x=rep(c("a","b"),c(2,3)),y=1:5)
 DT
-DT[,{print(x);list(sum(y))},by="x"]
+DT[,{z=sum(y);z+3},by=x]
 @
 
-
-\subsection{Can I trace my code as it runs through the groups?}
+\subsection{Can I trace the j expression as it runs through the groups?}
 Try something this :
 <<>>=
 DT[,{
-  cat("Trace:",as.character(x[1]),length(y),"\n");
-  print(objects());
+  cat("Objects:",paste(objects(),collapse=","),"\n")
+  cat("Trace: x=",as.character(x)," y=",y,"\n")
   sum(y)
 },by=x]
 @
+
+
+\subsection{Inside each group, why is the group variable a long vector containing the same value repeated?}
+This is correct. We saw that in the previous FAQ. x was \code{"a"} repeated twice in the first group, and \code{"b"}
+repeated three times in the second group. When you group, think of the
+data being split up. Sometimes we want to use the value of the group in
+the expression though. In that case we just use the first value.
+<<>>=
+DT[,list(g=1,h=2,i=3,j=4,repeatgroupname=x,sum(y)),by=x]     # not intended
+DT[,list(g=1,h=2,i=3,j=4,repeatgroupname=x[1],sum(y)),by=x]  # intended
+@
+In the first attempt, the aggregate \code{sum(y)} was recycled to match the length of \code{x}.  Recycling can be useful, but
+wasn't intended here.
 
 \subsection{Only the first 10 rows are printed, how do I print more?}
 Try \code{print(DT,nrows=Inf)} to print all rows, or set nrows to the number of rows you require.
 
 \section{Questions relating to compute time}
 
-\subsection{I have 20 columns in data.table x.  Why is x[,sum(V1),by=grp] so quick?}
-Several reasons.
+\subsection{I have 20 columns in data.table x. Why is an expression of one column so quick?}
+Several reasons:
 \begin{itemize}
-\item Only the V1 column is grouped, the other 19 are ignored because \code{data.table} detects that j expression doesn't use them.
-\item One memory allocation is made for the largest group of V1 only,  then that memory is re-used for the other groups, there is very little garbage to collect.
-\item R is an in memory column store i.e. V1 is contiguous in RAM. Page fetches from RAM into L2 cache are minimised.
+\item Only that column is grouped, the other 19 are ignored because \code{data.table} inspects the j expression and realises it doesn't use the other columns.
+\item One memory allocation is made for the largest group only, then that memory is re-used for the other groups, there is very little garbage to collect.
+\item R is an in memory column store i.e. the columns are contiguous in RAM. Page fetches from RAM into L2 cache are minimised.
 \end{itemize}
 
 \subsection{I don't have a key on a large table, but grouping is still really quick. Why is that?}
-data.table uses radix sorting for integer vectors. This is significantly faster than other sort algorithims.
-Unfortunately radix is restricted to integer only. See {?sort.list(method="radix")}.
+data.table uses radix sorting. This is significantly faster than other sort algorithms.
+radix is specifically for integers only, see {?sort.list(method="radix")}.
+
 This is also one reason why \code{setkey()} is quick.
+
+When no key is set, or we group in a different order to the key, we call it an \emph{ad hoc by}.
+
+\subsection{Why is grouping by columns in the key faster than an ad hoc by?}
+Because each groups is contiguous in RAM, minimising page fetches, and the memory can be
+copied in bulk rather than loops.
 
 \section{Errors messages}
 \subsection{\code{Could not find function "DT"}}
@@ -229,15 +264,17 @@ Not currently.
 \href{http://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping}{R FAQ 3.3.1}.
 \end{itemize}
 
+\subsection{Is it available for Linux, Mac and Windows?}
+Yes. On both 32bit and 64bit on all platforms. Thanks to CRAN and R-Forge. There are no special or OS specific libraries used.
+
 \subsection{I think its great. What can I do?}
-There are no download statistics for packages, so it can really help encourage developers of packages to simply
-know that people use them. Its quick and easy to say you use it on \url{http://crantastic.org/}. If you have time
-to vote and write a comment too (e.g. say in what situation you use the package, how long it took you to learn
-it etc) then that can help others in the community even more.
+Please send suggestions, bug reports and enhancement requests to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help@lists.r-forge.r-project.org}. This helps make the package better. The list is public and archived.
 
-You can send comments, suggestions, bug reports and enhancement requests to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help@lists.r-forge.r-project.org}.
+You can vote for packages at \url{http://crantastic.org/}. This helps encourage the developers. If
+you have time to write a comment too, that helps others in the community e.g. some users have
+mentioned the types of data they use data.table to analyse.
 
-If you are a developer and wish to contribute, you can join the project.
+You can join the project and change the code and/or documentation yourself.
 
 \subsection{I think its not great. How do I warn others about my experience ?}
 Please put your vote and comments on \url{http://crantastic.org/}. Make it constructive, so we have a chance to improve.
@@ -251,10 +288,10 @@ like r-help, but just for this package. Feel free to answer questions there too.
 \url{http://lists.r-forge.r-project.org/pipermail/datatable-help/}
 
 \subsection{I'd prefer not to contact datatable-help, can I mail just one or two people privately?}
-Sure.
+Sure. You're more likely to get a faster answer from datatable-help though.
 
 \subsection{Why is this FAQ a pdf? Can we have the FAQ on a website?}
-This FAQ is a vignette and as such is written using Sweave. The benefits include:
+This FAQ is a vignette written using Sweave. The benefits of Sweave include:
 \begin{itemize}
 \item We include R code in the answers. This is actually run when the file is created, its not copy and pasted. 
 \item This document is reproducible. Grab the .Rnw and you can run it yourself.
