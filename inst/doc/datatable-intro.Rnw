@@ -330,6 +330,8 @@ This was a quick start guide. Further resources include :
 \item YouTube Demo: \url{http://www.youtube.com/watch?v=rvT8XThGA8o}
 \item R-Forge commit logs: \url{http://lists.r-forge.r-project.org/pipermail/datatable-commits/}
 \item Mailing list : \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help@lists.r-forge.r-project.org}
+\item User reviews : \url{http://crantastic.org/packages/data-table}
+
 \end{itemize}
 
 \end{document}
