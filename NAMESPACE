@@ -35,6 +35,38 @@ S3method(head, data.table)
 import(stats)
 S3method(na.omit, data.table)
 
+# IDateTime support:
+export(as.IDate,as.ITime,IDateTime)
+export(hour,yday,wday,mday,week,month,quarter,year)
+
+export(as.chron.IDate,as.chron.ITime)
+
+S3method(as.character, ITime)
+## S3method(as.chron, IDate)
+## S3method(as.chron, ITime)
+S3method(as.Date, IDate)
+S3method(as.IDate, Date)
+S3method(as.IDate, default)
+S3method(as.ITime, character)
+S3method(as.ITime, default)
+S3method(as.ITime, POSIXlt)
+S3method(as.ITime, times)
+S3method(as.list, IDate)
+S3method(as.POSIXct, IDate)
+S3method(as.POSIXct, ITime)
+S3method(as.POSIXlt, ITime)
+S3method(c, IDate)
+S3method(cut, IDate)
+S3method(format, ITime)
+S3method(IDateTime, default)
+S3method(mean, IDate)
+S3method(print, ITime)
+S3method(rep, IDate)
+S3method(rep, ITime)
+S3method(seq, IDate)
+S3method(split, IDate)
+
+
 # [.factor
 # c.factor
 # duplist
