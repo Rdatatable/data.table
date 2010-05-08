@@ -424,8 +424,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # will be no need to grow it as the 'by' proceeds, or use memory for a temporary list of the results.
             itestj = seq(f__[1],length=len__[1])
             if (length(o__)) itestj = o__[itestj]
-            .SD = x[itestj, vars, with=FALSE]
-            testj = with(.SD, eval(jsub))    # our test is now the first group. problems before with the largest being repeated.
+            SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
+            SDenv$.SD = x[itestj, vars, with=FALSE]
+            testj = eval(jsub, SDenv$.SD, enclos = SDenv)    # our test is now the first group. problems before with the largest being repeated.
             maxn=0
             if (!is.null(testj)) {
                 if (is.atomic(testj)) {
