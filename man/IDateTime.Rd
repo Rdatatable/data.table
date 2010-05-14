@@ -26,6 +26,7 @@
 \alias{print.ITime}
 \alias{rep.IDate}
 \alias{rep.ITime}
+\alias{round.IDate}
 \alias{seq.IDate}
 \alias{split.IDate}
 \alias{hour}   
@@ -49,6 +50,7 @@ as.IDate(x, ...)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, time = 0, tz = "UTC", \dots)
 \method{as.chron}{IDate}(x, time = NULL, \dots)
+\method{round}{IDate}(x, units = c("weeks", "months", "quarters", "years"))
 
 as.ITime(x, ...)
 \method{as.ITime}{default}(x, \dots)
@@ -79,7 +81,7 @@ year(x)
   \item{tz}{time zone (see \code{strptime}).}
   \item{date}{date object convertable with \code{as.IDate}.}
   \item{time}{time-of-day object convertable with \code{as.ITime}.}
-
+  \item{units}{one of the units listed for rounding. May be abbreviated.}
 }
 \details{
 \code{IDate} is a date class derived from \code{Date}. It has the same
@@ -113,13 +115,16 @@ keys. With positive integers with a range less than 100,000, grouping
 and sorting is fast because radix sorting can be used (see
 \code{sort.list}).
 
-To group or extract by hour, month, or other time or other date-time
-interval, \code{as.POSIXlt} is useful. For example,
-\code{as.POSIXlt(x)$mon} is the integer month, and
-\code{as.POSIXlt(x)$hour} is the integer hour of the day. The R base
-convenience functions \code{weekdays}, \code{months}, and
-\code{quarters} can also be used, but these return character values, so
-they must be converted to factors for use with data.table.
+Several convenience functions like \code{hour} and \code{quarter} are
+provided to group or extract by hour, month, and other date-time
+intervals. \code{as.POSIXlt} is also useful. For example,
+\code{as.POSIXlt(x)$mon} is the integer month. The R base convenience
+functions \code{weekdays}, \code{months}, and \code{quarters} can also
+be used, but these return character values, so they must be converted to
+factors for use with data.table.
+
+The \code{round} method for IDate's is useful for grouping and plotting. It can
+round to weeks, months, quarters, and years.
 
 }
 
@@ -130,12 +135,13 @@ they must be converted to factors for use with data.table.
    For \code{as.ITime}, a class of \code{ITime}
    stored as the number of seconds in the day.
 
-   For \code{IDateTime}, a data table with columns \code{date} and
-   \code{time} in \code{IDate} and \code{ITime} format.
+   For \code{IDateTime}, a data table with columns \code{idate} and
+   \code{itime} in \code{IDate} and \code{ITime} format.
 
-\code{hour}, code{yday}, \code{wday}, \code{mday}, \code{week},
-\code{month}, \code{quarter}, and \code{year} return integer values for
-hour, day of year, day of week, day of month, week, month, quarter, and year.
+   \code{hour}, code{yday}, \code{wday}, \code{mday}, \code{week},
+   \code{month}, \code{quarter}, and \code{year} return integer values
+   for hour, day of year, day of week, day of month, week, month,
+   quarter, and year.
    
 }
 \references{
@@ -169,20 +175,23 @@ hour, day of year, day of week, day of month, week, month, quarter, and year.
     as.POSIXct("2001-01-01") + as.ITime("10:45")
 
     datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "5 hour")    
-    (af <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,date,time"))
+    (af <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,idate,itime"))
 
-    af[, mean(a), by = "time"]
-    af[, mean(a), by = "hour = hour(time)"]
-    af[, mean(a), by = "wday = factor(weekdays(date))"] 
-    af[, mean(a), by = "wday = wday(date)"] 
+    af[, mean(a), by = "itime"]
+    af[, mean(a), by = "hour = hour(itime)"]
+    af[, mean(a), by = "wday = factor(weekdays(idate))"] 
+    af[, mean(a), by = "wday = wday(idate)"] 
 
-    as.POSIXct(af$date) 
-    as.POSIXct(af$date, time = af$time) 
-    as.POSIXct(af$date, af$time) 
-    as.POSIXct(af$date, time = af$time, tz = "GMT") 
+    as.POSIXct(af$idate) 
+    as.POSIXct(af$idate, time = af$itime) 
+    as.POSIXct(af$idate, af$itime) 
+    as.POSIXct(af$idate, time = af$itime, tz = "GMT") 
     
-    as.POSIXct(af$time, af$date)
-    as.POSIXct(af$time) # uses today's date
+    as.POSIXct(af$itime, af$idate)
+    as.POSIXct(af$itime) # uses today's date
+
+    (seqdates <- seq(as.IDate("2001-01-01"), as.IDate("2001-08-03"), by = "3 weeks"))
+    round(seqdates, "months")
     
     if (require(chron)) {
         as.chron(as.IDate("2000-01-01"))

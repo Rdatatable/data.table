@@ -30,6 +30,16 @@ as.list.IDate <-
         as.IDate(NextMethod())
     }
 
+# rounding -- good for graphing / subsetting
+round.IDate <- function (x, units = c("weeks", "months", "quarters", "years")) {
+    units <- match.arg(units)
+    as.IDate(switch(units,
+                    weeks  = round(x, "year") + 7 * (yday(x) %/% 7),
+                    months = ISOdate(year(x), month(x), 1),
+                    quarters = ISOdate(year(x), 3 * (quarter(x)-1) + 1, 1),
+                    years = ISOdate(year(x), 1, 1)))
+}
+
 ###################################################################
 # ITime -- Integer time-of-day class
 #          Stored as seconds in the day
@@ -93,7 +103,7 @@ rep.ITime <- function (x, ...)
 
 IDateTime <- function(x, ...) UseMethod("IDateTime")
 IDateTime.default <- function(x, ...) {
-    data.table(date = as.IDate(x), time = as.ITime(x))
+    data.table(idate = as.IDate(x), itime = as.ITime(x))
 }
 
 # POSIXt support
@@ -155,6 +165,8 @@ month   <- function(x) as.POSIXlt(x)$mon + 1L
 quarter <- function(x) as.POSIXlt(x)$mon %/% 3L + 1L
 year    <- function(x) as.POSIXlt(x)$year + 1900L
 
+
+
 ###################################################################
 # Examples
 ###################################################################
@@ -179,24 +191,29 @@ examples.IDateTime <- function() {
     is.integer(d)
 
     datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "5 hour")    
-    (a <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,date,time"))
+    (a <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,idate,itime"))
 
-    a[, mean(a), by = "time"]
-    a[, mean(a), by = "date"]
+    a[, mean(a), by = "itime"]
+    a[, mean(a), by = "idate"]
     
     datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "6 hour")
-    (af <- data.table(IDateTime(datetime), a = rep(1:3, 3), key = "a,date,time"))
-    af[, mean(a), by = "time"] 
-    af[, mean(a), by = "wday = factor(weekdays(date))"] 
-    af[, mean(a), by = "wday = wday(date)"] 
-
-    as.POSIXct(af$date) 
-    as.POSIXct(af$date, time = af$time) 
-    as.POSIXct(af$date, af$time) 
-    as.POSIXct(af$date, time = af$time, tz = "GMT") 
+    (af <- data.table(IDateTime(datetime), a = rep(1:3, 3), key = "a,idate,itime"))
+    af[, mean(a), by = "itime"] 
+    af[, mean(a), by = "wday = factor(weekdays(idate))"] 
+    af[, mean(a), by = "wday = wday(idate)"] 
     
-    as.POSIXct(af$time, af$date)
-    as.POSIXct(af$time) # uses today's date
+    as.POSIXct(af$idate) 
+    as.POSIXct(af$idate, time = af$itime) 
+    as.POSIXct(af$idate, af$itime) 
+    as.POSIXct(af$idate, time = af$itime, tz = "GMT") 
+                   
+    as.POSIXct(af$itime, af$idate)
+    as.POSIXct(af$itime) # uses today's date
+
+    (seqdates <- seq(as.IDate("2001-01-01"), as.IDate("2001-08-03"), by = "3 weeks"))
+    round(seqdates, "months")
+
+    paste(as.IDate("2010-10-01"),as.ITime("10:45")[1]) # works on latest version on windows but not on linux
     
     if (require(chron)) {
         as.chron(as.IDate("2000-01-01"))
