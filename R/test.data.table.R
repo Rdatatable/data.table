@@ -165,8 +165,9 @@ test.data.table = function()
     test(72, TESTDT[CJ(a),DT(v)], data.table(a="d",v=3:6,key="a"))
 
     test(73, TESTDT[,v], 1:7)
-    test(74, TESTDT[,3], data.table(v=INT(1:7)))
-    test(75, TESTDT[,"v"], data.table(v=INT(1:7)))
+    test(74, TESTDT[,3], 3)
+    test(74.5, TESTDT[,3L], 3L)
+    test(75, TESTDT[,"v"], "v")
     test(76, TESTDT[,2:3], 2:3)  # See ?[.data.table that with=FALSE is required for the likely intended result
     test(77, TESTDT[,2:3,with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
     test(78, TESTDT[,c("b","v"),with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))

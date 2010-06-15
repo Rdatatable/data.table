@@ -4,7 +4,26 @@ The ChangeLog for data.table is the SVN commit log itself :
 
 This NEWS file summarises the main changes.
 
+        *********************************************
+        **                                         **
+        **   CHANGES IN DATA.TABLE VERSION 1.4.2   **
+        **                                         **
+        *********************************************
 
+
+NEW FEATURES
+
+    o   
+    
+        
+BUG FIXES
+
+    o   DT[,5] now returns 5 as FAQ 1.1 says, for
+        consistency with DT[,c(5)] and DT[,5+0].
+        DT[,"region"] now returns "region" as FAQ 1.2 says.
+        Thanks to Harish V for reporting.
+
+    
 
 
         *********************************************

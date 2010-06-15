@@ -287,9 +287,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     if (!missing(j)) {
         jsub = substitute(j)
         o__ = as.integer(NULL)
-        if (with && mode(jsub) %in% c("call","name")) {
-            # Note that virtually every expression is either call or name. So really the only
-            # way not to get to this point is setting with=FALSE.
+        if (with) {
+            # j will be evaluated within the frame of data.table, even if it is a single column number or character name, see FAQ 1.1 and 1.2
             if (mult=="all" && missing(by)) {
                 # Like a 'by' but without using 'by'.  The groupings come instead from each row of the i data.table.
                 # Useful for a few known groups rather than a 'by' on the whole table followed by a subset afterwards.
