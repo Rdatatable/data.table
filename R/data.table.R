@@ -340,7 +340,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     # TO DO++: hash the key so sorting never required (hence shash query to r-devel)
                 }
                 if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}        
-                byval = with(x, eval(bysub))
+                #byval = with(x, eval(bysub))
+                byval = eval(bysub, x, parent.frame())
                 if (!is.list(byval)) stop("by must evaluate to list")
                 for (jj in seq_len(length(byval))) if (storage.mode(byval[[jj]]) != "integer") stop("column ",jj," of 'by' list does not evaluate to integer e.g. the by should be a list of expressions. Do not quote column names when using by=list(...).")
                 tt = sapply(byval,length)

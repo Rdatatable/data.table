@@ -351,7 +351,16 @@ test.data.table = function()
     test(156, is.unsorted(levels(a$y)), TRUE)   # non-key columns are ok to have unsorted levels
     test(157, a[,sum(z),by=x][1,paste(x,V1)], "a 3")
     test(158, a[,sum(z),by=y], before)
-    
+
+    # tests of by expression variables
+    DT = data.table( a=1:5, b=11:50, d=c("A","B","C","D") )
+    f = quote( list(d) )
+    test(159, DT[,mean(b),by=eval(f)], DT[,mean(b),by=list(f=d)])
+    foo = function( grp ) {
+       DT[,mean(b),by=eval(grp)]
+    }
+    test(160, foo(quote(list(d))), DT[,mean(b),by=list(grp=d)])
+        
 
     ##########################
     if (nfail > 0) {
