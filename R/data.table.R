@@ -330,17 +330,12 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 # Note that 'by' may be a variable in the calling frame if for example several groupings are
                 # required with the same long and complicated 'by' but different j.  This used to be a character
                 # vector length one,  but from v1.3 is e.g. bycriteria = quote(list(colA,colB%%100)); DT[...,by=bycriteria]
-            
-                byvars = all.vars(bysub)   # not a perfect test but works most of the time
-                if (missing(bysameorder) && length(byvars) <= length(key(x)) && identical(byvars,head(key(x),length(byvars)))) {
-                    bysameorder=TRUE
-                    # table is already sorted by the group criteria, no need to sort
-                    # fastorder is so fast though that maybe this is not worth worrying about, especially if fastorder is even faster if its already sorted.
-                    # TO DO: turn off bysameorder, and always call fastorder ?
-                    # TO DO++: hash the key so sorting never required (hence shash query to r-devel)
+                
+                bysubl = as.list(bysub)
+                if (identical(bysubl[[1]],quote(eval))) {
+                    bysub = eval(bysubl[[2]],parent.frame())  # [[2]] might be say 'grp' holding an expression. Its done this way so it still works if there happens to be a column called grp.                  
+                    bysubl = as.list(bysub)
                 }
-                if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}        
-                #byval = with(x, eval(bysub))
                 byval = eval(bysub, x, parent.frame())
                 if (!is.list(byval)) stop("by must evaluate to list")
                 for (jj in seq_len(length(byval))) if (storage.mode(byval[[jj]]) != "integer") stop("column ",jj," of 'by' list does not evaluate to integer e.g. the by should be a list of expressions. Do not quote column names when using by=list(...).")
@@ -349,13 +344,22 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 bynames = names(byval)
                 if (is.null(bynames)) bynames = rep("",length(byval))
                 if (any(bynames=="")) {
-                    bysubl = as.list(bysub)
                     if (length(bysubl)<2) stop("When by is list() we expect something inside the brackets")
                     for (jj in seq_along(bynames)) {
                         if (bynames[jj]=="") bynames[jj] = all.vars(bysubl[[jj+1]])[1]
                     }
                     names(byval) = bynames
                 }
+                byvars = all.vars(bysub)   # not a perfect test but works most of the time. When it doesn't work, it just misses opportunity not to re-sort.
+                if (missing(bysameorder) && length(byvars) <= length(key(x)) && identical(byvars,head(key(x),length(byvars)))) {
+                    bysameorder=TRUE
+                    # table is already sorted by the group criteria, no need to sort
+                    # fastorder is so fast though that maybe this is not worth worrying about, especially if fastorder is even faster if its already sorted.
+                    # TO DO: turn off bysameorder, and always call fastorder ?
+                    # TO DO++: hash the key so sorting never required (hence shash query to r-devel)
+                }
+                if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}
+
                 if (bysameorder) {
                     f__ = duplist(byval)
                     for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][f__]

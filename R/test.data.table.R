@@ -353,14 +353,18 @@ test.data.table = function()
     test(158, a[,sum(z),by=y], before)
 
     # tests of by expression variables
-    DT = data.table( a=1:5, b=11:50, d=c("A","B","C","D") )
+    DT = data.table( a=1:5, b=11:50, d=c("A","B","C","D"), f=1:5, grp=1:5 )
     f = quote( list(d) )
-    test(159, DT[,mean(b),by=eval(f)], DT[,mean(b),by=list(f=d)])
+    test(159, DT[,mean(b),by=eval(f)], DT[,mean(b),by=list(d)])  # column f doesn't get in the way of expression f
     foo = function( grp ) {
        DT[,mean(b),by=eval(grp)]
     }
-    test(160, foo(quote(list(d))), DT[,mean(b),by=list(grp=d)])
-        
+    test(160, foo(quote(list(d))), DT[,mean(b),by=list(d)])
+    test(161, foo(quote(list(d,a))), DT[,mean(b),by=list(d,a)])
+    test(162, foo(quote(list(f))), DT[,mean(b),by=list(f)])
+    test(163, foo(quote(list(grp))), DT[,mean(b),by=list(grp)])  # grp local variable in foo doesn't conflict with column grp
+    test(164, foo(f), DT[,mean(b),by=d])
+    
 
     ##########################
     if (nfail > 0) {
