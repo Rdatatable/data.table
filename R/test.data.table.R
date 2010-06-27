@@ -16,6 +16,8 @@ test.data.table = function()
                 # drop unused levels in factors
                 for (i in which(sapply(x,is.factor))) x[[i]] = factor(x[[i]])
                 for (i in which(sapply(y,is.factor))) y[[i]] = factor(y[[i]])
+                if (length(attr(x,"row.names"))) attr(x,"row.names") = integer(0)  # for test 165+
+                if (length(attr(y,"row.names"))) attr(y,"row.names") = integer(0)
                 if (identical(x,y)) return()
             }
             if (is.factor(x) && is.factor(y)) {
@@ -30,7 +32,7 @@ test.data.table = function()
     }
     started.at = Sys.time()
     TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
-    a=b=v=z=NAME=DT=B=.SD=y=V1=V2=b_1=`a 1`=a.1=NA    # For R CMD check "no visible binding for global variable"
+    a=b=v=z=NAME=DT=B=.SD=y=V1=V2=b_1=`a 1`=a.1=d=grp=NA    # For R CMD check "no visible binding for global variable"
     setkey(TESTDT,a,b)
     # i.e.       a b v
     #       [1,] 1 5 1
@@ -365,6 +367,22 @@ test.data.table = function()
     test(163, foo(quote(list(grp))), DT[,mean(b),by=list(grp)])  # grp local variable in foo doesn't conflict with column grp
     test(164, foo(f), DT[,mean(b),by=d])
     
+    # checks that data.table inherits methods from data.frame in base ok
+    test(165, subset(DT,a>2), DT[a>2])
+    test(166, suppressWarnings(split(DT,DT$grp)[[2]]), DT[grp==2])
+    if ("package:ggplot2" %in% search()) {
+        test(167,print(ggplot(DT,aes(b,f))+geom_point()),NULL)  # how to programmatically test it not only doesn't error but correct output, binary diff to pre-prepared pdf ?
+        test(168,DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],NULL)  # %%2 because there are 5 groups in DT data at this stage, just need 2 to test
+        # if (dev.cur()>1) dev.off()
+    } else {
+        cat("Tests 167 and 168 not run. If required call library(ggplot2) first.\n")
+        # ggplot takes a long time e.g. increases runtime of test.data.table from under 1 second to over 10 seconds. So we don't include these by default.
+        # From examples, the library(ggplot2) is done first, so that 'R CMD check' does include tests 167 and 168 
+    }
+    # test of . in formula, using inheritance
+    # never mind that grp column is included (NA coef), thats another todo for later.
+    DT = data.table(y=1:100,x=101:200,y=201:300,grp=1:5)
+    test(169,DT[,as.list(lm(y~0+.,.SD)$coef),by=grp][2,x]-2<1e-10, TRUE)
 
     ##########################
     if (nfail > 0) {

@@ -4,7 +4,7 @@ Title: Extension of data.frame for fast subset, fast merge and fast grouping.
 Author: Matthew Dowle with many contributions from Tom Short.  See SVN logs on R-Forge.
 Maintainer: Developers <datatable-help@lists.r-forge.r-project.org>
 Depends: R (>= 2.6.2)
-Suggests: chron
+Suggests: chron,ggplot2
 Description: Enhanced data.frame. Fast subset, grouping and merge in a short and flexible syntax. i and j may be expressions of column names directly, for faster development.  Example: data[a>3,sum(b*c),by=d] where data has 4 columns (a,b,c,d).
 License: GPL
 URL: http://datatable.r-forge.r-project.org/

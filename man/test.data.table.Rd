@@ -21,6 +21,7 @@ test.data.table()
 % \note{ }
 \seealso{ \code{\link{data.table}} }
 \examples{
+    try(library(ggplot2))
     test.data.table()		# this will run inside the data.table namespace
     eval(body(test.data.table))		# as though you copied and pasted its body into the console
 		# there may be differences (e.g. the first may find non-exported functions inside data.table)

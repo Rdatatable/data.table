@@ -9,7 +9,7 @@
 \method{[}{data.table}(x, i, j, by=NULL, with=TRUE, nomatch = NA,
   mult = "first", roll = FALSE, rolltolast = FALSE,
   which = FALSE, bysameorder = FALSE,
-  verbose=getOption("datatable.verbose",FALSE))
+  verbose=getOption("datatable.verbose",FALSE), drop=NULL)
 }
 \arguments{
   \item{x}{ A data.table }
@@ -60,6 +60,8 @@ The remaining arguments are only applicable for joins i.e. when i is a data.tabl
   \item{bysameorder}{ Advanced. Tells data.table that the by expression keeps the groups in the same order as the key, allowing some speed ups. Do not set if unsure. }
     
   \item{verbose}{ TRUE turns on status and information mesages to the console. }
+  
+  \item{drop}{ Never used by data.table. Do not use. See data.table FAQ for why its here. }
 }
 \details{
 Builds on base R functionality to reduce 2 types of time :

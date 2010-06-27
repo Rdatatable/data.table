@@ -250,6 +250,20 @@ copied in bulk rather than loops.
 \subsection{\code{Could not find function "DT"}}
 See FAQ \ref{faq:DTremove1} and FAQ \ref{faq:DTremove2}.
 
+\subsection{I have created a package that depends on data.table. It works fine in development when when I release it as a package I get data.frame errors.}
+Make sure you use \code{require(data.table)} rather than just \code{library(data.table)}. The \code{require}
+function is very similar to \code{libary} but also adds data.table to the hidden .required vector and this makes
+your package \emph{data.table aware}. This is important from v1.5 when data.table started to
+inherit from data.frame. Calls to [.data.table from non data.table aware packages, such as base
+and ggplot2, are redirected to [.data.frame,  so that data.table can inherit methods from data.fame.
+
+\subsection{Why does \code{[.data.table} now have a \code{drop} argument from v1.5?}
+So that data.table can inherit from data.frame without using \code{...}. If we used \code{...} then
+invalid argument names would not be caught and the convenience of test 147 would be lost.
+
+The drop argument is never used by \code{[.data.table}.
+
+
 \section{General questions about the package}
 
 \subsection{v1.3 appears to be missing from the CRAN archive ?}

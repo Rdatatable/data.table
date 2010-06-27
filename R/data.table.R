@@ -63,7 +63,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # DONE: if M is a matrix with cols a,b and c,  data.table(A=M,B=M) will create colnames A.a,A.b,A.c,B.a,B,b,B.c.  Also  data.table(M,M) will use make.names to make the columns unique (adds .1,.2,.3)
     # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then class(l)="data.table" at the expense of checking.
     x <- list(...)
-    if (identical(x, list(NULL))) return( structure(NULL,class="data.table") )
+    if (identical(x, list(NULL))) return( structure(NULL,class=c("data.table","data.frame"),row.names=integer()) )
     if (length(x) == 1 && is.list(x[[1]]) && !is.data.frame(x[[1]]) && !is.data.table(x[[1]]) && !is.ff(x[[1]])) {
         # a list was passed in. Constructing a list and passing it in, should be the same result as passing in each column as arguments to the function.
         x = x[[1]]
@@ -90,7 +90,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # so now finally we have good column names. We also will use novname later to know which were explicitly supplied in the call.
     n <- length(x)
     if (n < 1)
-        return(structure(list(), class = "data.table"))
+        return(structure(list(), class = c("data.table","data.frame"), row.names=integer()))
     if (length(vnames) != n) stop("logical error in vnames")
     vnames <- as.list(vnames)
     # ncols <- integer(n)        # the nrows and ncols of each of the inputs (could be varying lengths)
@@ -168,7 +168,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     if (check.names)
         vnames <- make.names(vnames, unique = TRUE)
     names(value) <- vnames
-    attr(value, "class") <- "data.table"
+    attr(value, "class") <- c("data.table","data.frame")
+    attr(value,"row.names") = integer()
     if (!is.null(key)) {
       if (!is.character(key) || !length(key)==1) stop("key must be character vector length 1 containing comma seperated column names")
       eval(parse(text=paste("setkey(value,",paste(key,collapse=","),")",sep="")))
@@ -177,9 +178,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 }
 
 
-"[.data.table" = function (x, i, j, by=NULL, with=TRUE, nomatch=NA, mult="first", roll=FALSE, rolltolast=FALSE, which=FALSE, bysameorder=FALSE, verbose=getOption("datatable.verbose",FALSE))
+"[.data.table" = function (x, i, j, by=NULL, with=TRUE, nomatch=NA, mult="first", roll=FALSE, rolltolast=FALSE, which=FALSE, bysameorder=FALSE, verbose=getOption("datatable.verbose",FALSE), drop=NULL)  # the drop is to sink drop argument when dispatch to [.data.frame, but we don't use ... as that stops test 147
 {
-    # To add to documentation: DT[i,"colA"] will return a one-column data.table. To get a vector do DT[i,"colA"][[1]].  Neater than DT[i,"colA",drop=TRUE]. Instead of DT[,"colA"][[1]], just do DT$colA, if there is no subset i required.
+    if (cendta()) {
+        if (missing(drop)) return(`[.data.frame`(x,i,j))
+        else return(`[.data.frame`(x,i,j,drop))
+    }
+    # To add to documentation: DT[i,colA] will return a one-column data.table. To get a vector do DT[i,colA][[1]].  Neater than DT[i,colA,drop=TRUE]. Instead of DT[,colA][[1]], just do DT$colA, if there is no subset i required.
     if (!missing(by) && missing(j)) stop("'by' is supplied but not j")
     if (!mult %in% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")   # Since SQL inherently is not ordered it can't do first or last without another sub-query and compute time.
     if (roll && rolltolast) stop("roll and rolltolast cannot both be true")
@@ -206,7 +211,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             }
             if (is.logical(i)) i[is.na(i)] = FALSE  # To simplify statement so don't have to do TABLE[!is.na(ColA) & ColA==ColB]
         }
-        if (is.null(i)) return(structure(NULL,class="data.table"))
+        if (is.null(i)) return(structure(NULL,class=c("data.table","data.frame"),row.names=integer()))
         if (is.character(i)) {
             # user can feel like they are using rownames if they like
             if (!haskey(x)) stop("The data.table has no key but i is character. Call setkey first, see ?setkey.")
@@ -481,7 +486,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             for (jj in seq_along(byval)) class(ans[[jj]]) = class(byval[[jj]])
             for (jj in seq_along(testj)) class(ans[[length(byval)+jj]]) = class(testj[[jj]])            
 
-            class(ans) = "data.table"
+            class(ans) = c("data.table","data.frame")
+            attr(ans,"row.names") = integer()
             #if (!incbycols) {
             #    warning("Removing by cols now for backwards compatibility. incbycols will be deprecated in future since 'by' is now fast.")
             #    ans = ans[,-seq_len(length(byval)),with=FALSE]
@@ -530,10 +536,28 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             stop("i and j cannot both be missing in a data.table subset. If you want 'select *', just use the data.table name alone i.e. no []")
         }
     }
-    class(ans) = "data.table"
+    class(ans) = c("data.table","data.frame")
+    attr(ans,"row.names") = integer()
     ans
 }
 
+
+"[[.data.table" = function(x,...) {
+    if (cendta()) return(`[[.data.frame`(x,...))
+    class(x)=NULL
+    x[[...]]
+}
+
+"[[<-.data.table" = function(x,i,j,value) {
+    if (cendta()) return(`[[<-.data.frame`(x,i,j,value))
+    if (!missing(j)) stop("[[i,j]] assignment not available in data.table, put assignment(s) in [i,{...}] instead, more powerful")
+    cl = oldClass(x)  # [[<-.data.frame uses oldClass rather than class, don't know why but we'll follow suit
+    class(x) = NULL
+    x[[i]] = value
+    class(x) = cl
+    x
+}
+    
 
 as.matrix.data.table = function(x,...)
 {
@@ -621,34 +645,38 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
         names(value) <- collabs
     else
         names(value) <- paste("V", ic, sep = "")
-    class(value) <- "data.table"
+    class(value) <- c("data.table","data.frame")
+    attr(value,"row.names") = integer()
     value
 }
 
 as.data.table.data.frame = function(x, keep.rownames=FALSE)
 {
     if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
-    attr(x,"row.names") = NULL
-    class(x) = "data.table"
+    attr(x,"row.names") = integer()
+    class(x) = c("data.table","data.frame")
     x
 }
 
 as.data.table.data.table = function(x, keep.rownames=FALSE) return(x)
 
 head.data.table = function(x, n=6, ...) {
+    if (cendta()) return(NextMethod())
     i = seq(len=min(n,nrow(x)))
     x[i]
 }
 tail.data.table = function(x, n=6, ...) {
+    if (cendta()) return(NextMethod())
     i = seq(to=nrow(x), length=min(n, nrow(x)))
     x[i]
 }
 
-# TO DO: [[ assignment
-
 "[<-.data.table" <-
 function (x, i, j, value)
 {
+    # TO DO: test thoroughly as inherit from data.frame is new.
+    if (cendta()) return(`[<-.data.frame`(x,i,j,value))
+
     # TO DO: copied from [<-.data.frame,  remove out all uses of row.names and data.frame
     # TO DO: test this method of assignment as I've tended to use $ on the left hand side.
     nA <- nargs()
@@ -853,6 +881,9 @@ function (x, i, j, value)
 
 "$<-.data.table" = function (x, i, value)
 {
+    if (cendta()) return(`$<-.data.frame`(x,i,value))
+    # TO DO, revisit this as $<-.data.frame now uses .row_names_info
+    # Can we just use the $<- for data.frame always? or does it effect rownames
     cl <- oldClass(x)
     nrows <- nrow(x)
     class(x) <- NULL
@@ -875,9 +906,11 @@ function (x, i, j, value)
 }
 
 
-cbind.data.table = function(...) data.table(...)    # for ease of use basically since people often think its like a matrix.
+cbind.data.table = function(...) {
+    data.table(...)    # for ease of use basically since people often think its like a matrix.
+}
 
-rbind.data.table = function (...) {
+rbind.data.table = function (..., deparse.level=1) {
     match.names <- function(clabs, nmi) {
         if (all(clabs == nmi))
             NULL
@@ -890,7 +923,7 @@ rbind.data.table = function (...) {
     allargs <- allargs[sapply(allargs, length) > 0]
     n <- length(allargs)
     if (n == 0)
-        return(structure(list(), class = "data.table"))
+        return(structure(list(), class=c("data.table","data.frame"), row.names=integer()))
 
     if (!all(sapply(allargs, is.data.table))) stop("All arguments must be data.tables")
     if (length(unique(sapply(allargs, ncol))) != 1) stop("All data.tables must have the same number of columns")
@@ -904,7 +937,8 @@ rbind.data.table = function (...) {
     for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
     # This is why we currently still need c.factor.
     names(l) = nm
-    class(l) = "data.table"
+    class(l) = c("data.table","data.frame")
+    attr(l,"row.names")=integer()
     return(l)
     # return(data.table(l))
     # much of the code in rbind.data.frame that follows this point is either to do with row.names, or coercing various types (and silent rep) which is already done by data.table. therefore removed.
@@ -921,15 +955,19 @@ as.data.frame.data.table = function(x, ...)
 {
     attr(x,"row.names") = 1:nrow(x) # since R 2.4.0, data.frames can have non-character row names
     class(x) = "data.frame"
-    attr(x,"sorted") = NULL  # remove so if you convert to df, do something, and convert back, it's not sorted
+    attr(x,"sorted") = NULL  # remove so if you convert to df, do something, and convert back, it is not sorted
     x
 }
 
 
-dimnames.data.table = function(x) list(NULL, names(x))
+dimnames.data.table = function(x) {
+    if (cendta()) return(`dimnames.data.frame`(x))
+    list(NULL, names(x))
+}
 
 "dimnames<-.data.table" = function (x, value)   # so that can do  colnames(dt)=<..>  as well as names(dt)=<..>
 {
+    if (cendta()) return(`dimnames<-.data.frame`(x,value))
     if (!is.list(value) || length(value) != 2) stop("attempting to assign invalid object to dimnames of a data.table")
     if (!is.null(value[[1]])) stop("data.tables do not have rownames")
     if (ncol(x) != length(value[[2]])) stop("can't assign",length(value[[2]]),"colnames to a",ncol(x),"column data.table")
@@ -941,6 +979,7 @@ last = function(x) x[NROW(x)]     # last row for a data.table, last element for 
 
 within.data.table <- function (data, expr, keep.key = FALSE, ...) # basically within.list but with a check to avoid messing up the key
 {
+    if (cendta()) return(NextMethod())
     parent <- parent.frame()
     e <- evalq(environment(), data, parent)
     eval(substitute(expr), e)
@@ -959,6 +998,7 @@ within.data.table <- function (data, expr, keep.key = FALSE, ...) # basically wi
 
 transform.data.table <- function (`_data`, ...) # basically transform.data.frame with data.table instead of data.frame
 {
+    if (cendta()) return(NextMethod())
     e <- eval(substitute(list(...)), `_data`, parent.frame())
     tags <- names(e)
     inx <- match(tags, names(`_data`))
@@ -972,29 +1012,30 @@ transform.data.table <- function (`_data`, ...) # basically transform.data.frame
     else `_data`
 }
 
-subset.data.table <- function (x, subset, select, ...) # not exported or documented, yet
-{
-    if (missing(subset))
-        r <- TRUE
-    else {
-        e <- substitute(subset)
-        r <- eval(e, x, parent.frame())
-        if (!is.logical(r))
-            stop("'subset' must evaluate to logical")
-        r <- r & !is.na(r)
-    }
-    if (missing(select))
-        vars <- 1:ncol(x)
-    else {
-        nl <- as.list(1L:ncol(x))
-        names(nl) <- names(x)
-        vars <- eval(substitute(select), nl, parent.frame())
-    }
-    x[r, vars, with = FALSE]
-}
+#subset.data.table <- function (x, subset, select, ...) # not exported or documented, yet
+#{
+#    if (missing(subset))
+#        r <- TRUE
+#    else {
+#        e <- substitute(subset)
+#        r <- eval(e, x, parent.frame())
+#        if (!is.logical(r))
+#            stop("'subset' must evaluate to logical")
+#        r <- r & !is.na(r)
+#    }
+#    if (missing(select))
+#        vars <- 1:ncol(x)
+#    else {
+#        nl <- as.list(1L:ncol(x))
+#        names(nl) <- names(x)
+#        vars <- eval(substitute(select), nl, parent.frame())
+#    }
+#    x[r, vars, with = FALSE]
+#}
 
 na.omit.data.table <- function (object, ...) 
 {
+    if (cendta()) return(NextMethod())
     omit = FALSE
     for (i in seq_len(ncol(object))) omit = omit | is.na(object[[i]])
     object[!omit]
@@ -1002,15 +1043,19 @@ na.omit.data.table <- function (object, ...)
 }
 
 is.na.data.table <- function (x) {
+    if (cendta()) return(`is.na.data.frame`(x))
     do.call("cbind", lapply(x, "is.na"))
 }
 
-t.data.table <- t.data.frame
-
-Math.data.table <- Math.data.frame
+# not longer needed as inherits ...
+#    t.data.table <- t.data.frame
+#    Math.data.table <- Math.data.frame
+#    summary.data.table <- summary.data.frame
 
 Ops.data.table <- function (e1, e2 = NULL)
 {
+    if (cendta()) return(`Ops.data.frame`(e1,e2))
+    # TO DO, revisit below,  if the same as Ops.data.frame can we leave it to inheritance?
     isList <- function(x) !is.null(x) && is.list(x)
     unary <- nargs() == 1L
     lclass <- nzchar(.Method[1L])
@@ -1080,7 +1125,16 @@ Ops.data.table <- function (e1, e2 = NULL)
     else matrix(unlist(value, recursive = FALSE, use.names = FALSE),
         nrow = nr, dimnames = list(NULL, cn))
 }
+ 
 
-summary.data.table <- summary.data.frame
+split.data.table = function(...) {
+    if (!cendta() && getOption("datatable.dfdispatchwarn",TRUE))  # or user can use suppressWarnings
+        warning("split is inefficient. It copies memory. Please use [,j,by=list(...)] syntax. See data.table FAQ.")
+    NextMethod()  # allow user to do it though, split object will be data.table's with 'NA' repeated in row.names silently
+}
+
+# TO DO, add more warnings e.g. for by(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
+
+
 
 
