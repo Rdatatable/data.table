@@ -41,6 +41,7 @@ export(hour,yday,wday,mday,week,month,quarter,year)
 
 export(as.chron.IDate,as.chron.ITime)
 
+S3method("[", ITime)
 S3method(as.character, ITime)
 ## S3method(as.chron, IDate)
 ## S3method(as.chron, ITime)
