@@ -24,11 +24,14 @@ BUG FIXES
         with DT[,c(5)] and DT[,5+0]. DT[,"region"] now returns
         "region" as FAQ 1.2 says. Thanks to Harish V for reporting.
         
-    o   when a quoted expression q is passed to by using
+    o   When a quoted expression q is passed to by using
         by=eval(q), the group column names now come from the list
         in the expression rather than the name 'q' (bug #974) and,
-        multiple items work (#975). Thanks to Harish V for
+        multiple items work (bug #975). Thanks to Harish V for
         reporting. 
+        
+    o   Quoted j expressions receive similar fix, bug #977. Thanks
+        to Harish V for reporting.
 
     
 

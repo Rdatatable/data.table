@@ -309,6 +309,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 if (!missing(i)) x = x[irows, nomatch=nomatch, roll=roll, rolltolast=rolltolast, mult=mult]   # note this is a once only recursive call to [.data.table since j is missed here
                 # TO DO: can speed up, when i is present, by not taking a subset of the whole table first, just the grouping columns.
                 if (missing(by)) {
+                    jsubl = as.list(jsub)
+                    if (identical(jsubl[[1]],quote(eval))) {
+                        jsub = eval(jsubl[[2]],parent.frame())  # same reason doing it this way as comment further down for bysubl
+                    }
                     if (mode(jsub)!="name" && as.character(jsub[[1]]) %in% c("list","DT")) {
                         jdep = deparse(jsub)
                         jdep = gsub("^list","data.table",jdep)   # we need data.table here because i) it grabs the column names from objects and ii) it does the vector expansion 

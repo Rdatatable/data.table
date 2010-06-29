@@ -383,6 +383,10 @@ test.data.table = function()
     # never mind that grp column is included (NA coef), thats another todo for later.
     DT = data.table(y=1:100,x=101:200,y=201:300,grp=1:5)
     test(169,DT[,as.list(lm(y~0+.,.SD)$coef),by=grp][2,x]-2<1e-10, TRUE)
+    
+    DT <- data.table( a=1:4, d=c("A","B","C","D") )
+    g <- quote( list( d ) )
+    test(170, DT[,list(d)], DT[,eval(g)])
 
     ##########################
     if (nfail > 0) {
