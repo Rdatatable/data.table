@@ -16,8 +16,8 @@ test.data.table = function()
                 # drop unused levels in factors
                 for (i in which(sapply(x,is.factor))) x[[i]] = factor(x[[i]])
                 for (i in which(sapply(y,is.factor))) y[[i]] = factor(y[[i]])
-                if (length(attr(x,"row.names"))) attr(x,"row.names") = integer(0)  # for test 165+
-                if (length(attr(y,"row.names"))) attr(y,"row.names") = integer(0)
+                if (length(attr(x,"row.names"))) attr(x,"row.names") = NULL  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
+                if (length(attr(y,"row.names"))) attr(y,"row.names") = NULL
                 if (identical(x,y)) return()
             }
             if (is.factor(x) && is.factor(y)) {
