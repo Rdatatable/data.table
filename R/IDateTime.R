@@ -109,7 +109,8 @@ IDateTime.default <- function(x, ...) {
 # POSIXt support
 
 as.POSIXct.IDate <- function(x, time = 0, tz = "UTC", ...) {
-    as.POSIXct(as.POSIXlt(x, tz, ...), tz, ...) + time
+    if (tz == "") tz <- "UTC"
+    as.POSIXct(as.POSIXlt(x, ...), tz, ...) + time
 }
 
 as.POSIXct.ITime <- function(x, date = as.Date(Sys.time()), tz = "UTC", ...) {
