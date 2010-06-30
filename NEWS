@@ -17,6 +17,12 @@ NEW FEATURES
         packages which _only_ accept data.frame, saving time and
         memory of conversion. is.data.frame() now returns TRUE.
     
+    o   Integer-based date and time-of-day classes have been 
+        introduced. This allows dates and times to be used as keys
+        more easily. See as.IDate, as.ITime, and IDateTime.
+        Conversions to and from POSIXct, Date, and chron are
+        supported.
+    
         
 BUG FIXES
 
