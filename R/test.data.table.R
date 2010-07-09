@@ -387,6 +387,11 @@ test.data.table = function()
     DT <- data.table( a=1:4, d=c("A","B","C","D") )
     g <- quote( list( d ) )
     test(170, DT[,list(d)], DT[,eval(g)])
+    
+    DT = data.table(A=c(25L,85L,25L,25L,85L), B=c("a","a","b","c","c"), C=c(2,65,9,82,823))
+    test(171, DT[ , data.table( A, C )[ A==25, C ] + data.table( A, C )[ A==85, C ], by=B ], data.table(B=c("a","c"),V1=c(67,905)))
+    
+    test(172, DT[ , list(3,data.table( A, C )[ A==25, C ] + data.table( A, C )[ A==85, C ]), by=B ], data.table(B=c("a","b","c"),V1=3,V2=c(67,NA,905)))
 
     ##########################
     if (nfail > 0) {

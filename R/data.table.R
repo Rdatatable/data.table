@@ -490,7 +490,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             for (jj in seq_along(byval)) class(ans[[jj]]) = class(byval[[jj]])
             for (jj in seq_along(testj)) class(ans[[length(byval)+jj]]) = class(testj[[jj]])            
             
-            attr(ans,"row.names") = integer(length(ans[[1]]))
+            attr(ans,"row.names") = .set_row_names(length(ans[[1]]))
             class(ans) = c("data.table","data.frame")
             #if (!incbycols) {
             #    warning("Removing by cols now for backwards compatibility. incbycols will be deprecated in future since 'by' is now fast.")
@@ -941,7 +941,7 @@ rbind.data.table = function (..., deparse.level=1) {
     for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
     # This is why we currently still need c.factor.
     names(l) = nm
-    attr(l,"row.names")=integer(length(l[[1]]))
+    attr(l,"row.names")=.set_row_names(length(l[[1]]))
     class(l) = c("data.table","data.frame")
     return(l)
     # return(data.table(l))

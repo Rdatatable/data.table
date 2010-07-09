@@ -12,8 +12,8 @@ EXPORT SEXP dogroups();
 
 SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval)
 {
-    R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen;
-    SEXP names, ans, sizes, jval, jsizes, bysizes;
+    R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0;
+    SEXP names, ans, sizes, jval, jsizes, bysizes, naint, nareal;
     if (TYPEOF(order) != INTSXP) error("order not integer");
     if (TYPEOF(starts) != INTSXP) error("starts not integer");
     if (TYPEOF(lens) != INTSXP) error("lens not integer");
@@ -53,6 +53,13 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
     PROTECT(ans = allocVector(VECSXP, nbyval + njval));
     PROTECT(bysizes = allocVector(INTSXP, nbyval));
     PROTECT(jsizes = allocVector(INTSXP, njval));
+    
+    PROTECT(naint = allocVector(INTSXP, 1));
+    INTEGER(naint)[0] = NA_INTEGER;
+    
+    PROTECT(nareal = allocVector(REALSXP, 1));
+    REAL(nareal)[0] = NA_REAL;
+    
     for(i = 0; i < nbyval; i++) {
         SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(byval, i)), INTEGER(byretn)[0]));
         switch (TYPEOF(VECTOR_ELT(byval, i))) {   // this structure is more for the future when by could contain character for example
@@ -85,32 +92,57 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
     // copy existing result for first group into ans
     ansloc = 0;
     maxn = 0;
+    any0 = 0;
     for (j=0; j<njval; j++) {
         thislen = LENGTH(VECTOR_ELT(testj,j));
         maxn = thislen>maxn ? thislen : maxn;
+        if (thislen == 0) any0 = 1;
     }
-    // if maxn is 0 the following loops will fall through  (for side-effect only j)
-    if (ansloc + maxn > INTEGER(byretn)[0]) error("Didn't allocate enough rows for result of first group.");
-    for (j=0; j<nbyval; j++) {
-        for (r=0; r<maxn; r++) {
-        memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*INTEGER(bysizes)[j],
+    if (maxn>0 && any0) {
+        for (j=0; j<njval; j++) {
+            thislen = LENGTH(VECTOR_ELT(testj,j));        
+            if (thislen == 0) {
+                // replace the 0-length vector with a 1-length NA to be recycled below to fit.
+                switch (TYPEOF(VECTOR_ELT(testj, i))) {
+                case LGLSXP :
+                case INTSXP :
+                    SET_VECTOR_ELT(testj,j,naint);
+                    break;
+                case REALSXP :
+                    SET_VECTOR_ELT(testj,j,nareal);
+                    break;
+                case STRSXP :
+                    SET_VECTOR_ELT(testj,j,NA_STRING);
+                    break;
+                default:
+                    error("Logical error. Type of column should have been checked by now");
+                }
+            }
+        }
+    }
+    if (maxn > 0) {
+        if (ansloc + maxn > INTEGER(byretn)[0]) error("Didn't allocate enough rows for result of first group.");
+        for (j=0; j<nbyval; j++) {
+            for (r=0; r<maxn; r++) {
+            memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*INTEGER(bysizes)[j],
                (char *)DATAPTR(VECTOR_ELT(byval,j)) + 0*INTEGER(bysizes)[j],    // this is why byval must be subset in the calling R to the first row of each group, to be consistent with i join grouping
                1 * INTEGER(bysizes)[j]);
+            }
         }
-    }
-    for (j=0; j<njval; j++) {
-        thisansloc = ansloc;
-        thislen = LENGTH(VECTOR_ELT(testj,j));
-        if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen); 
-        for (r=0; r<(maxn/thislen); r++) {
-            memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+nbyval)) + thisansloc*INTEGER(jsizes)[j],
+        for (j=0; j<njval; j++) {
+            thisansloc = ansloc;
+            thislen = LENGTH(VECTOR_ELT(testj,j)); // never length 0 as replaced with NA above.
+            if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen); 
+            for (r=0; r<(maxn/thislen); r++) {
+                memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+nbyval)) + thisansloc*INTEGER(jsizes)[j],
                    (char *)DATAPTR(VECTOR_ELT(testj,j)),
                    thislen * INTEGER(jsizes)[j]);
-            thisansloc += thislen;
+                thisansloc += thislen;
+            }
         }
+        ansloc += maxn;
     }
     // end copy of testj into result
-    ansloc += maxn;
     
     for(i = 1; i < ngrp; i++) {  // 2nd group onwards
         if (length(order)==0) {
@@ -133,32 +165,58 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
         PROTECT(jval = eval(jexp, env));
         if (length(byval)+length(jval) != length(ans)) error("j doesn't evaluate to the same number of columns for each group");  // this would be a problem even if we unlisted afterwards. This way the user finds out earlier though so he can fix and rerun sooner.
         maxn = 0;
+        any0 = 0;
         for (j=0; j<njval; j++) {
             thislen = LENGTH(VECTOR_ELT(jval,j));
             maxn = thislen>maxn ? thislen : maxn;
             if (TYPEOF(VECTOR_ELT(jval, j)) != TYPEOF(VECTOR_ELT(ans, j+nbyval))) error("columns of j don't evaluate to consistent types for each group");
+            if (thislen == 0) any0 = 1;
+        }
+        if (maxn>0 && any0) {
+            for (j=0; j<njval; j++) {
+                thislen = LENGTH(VECTOR_ELT(jval,j));        
+                if (thislen == 0) {
+                    // replace the 0-length vector with a 1-length NA to be recycled below to fit.
+                    switch (TYPEOF(VECTOR_ELT(jval, i))) {
+                    case LGLSXP :
+                    case INTSXP :
+                        SET_VECTOR_ELT(jval,j,naint);
+                        break;
+                    case REALSXP :
+                        SET_VECTOR_ELT(jval,j,nareal);
+                        break;
+                    case STRSXP :
+                        SET_VECTOR_ELT(jval,j,NA_STRING);
+                        break;
+                    default:
+                        error("Logical error. Type of column should have been checked by now");
+                    }
+                }
+            }
         }
         if (ansloc + maxn > INTEGER(byretn)[0]) error("Didn't allocate enough rows. Must grow ans (to implement as we don't want default slow grow)");
         // TO DO: implement R_realloc(?) here
-        for (j=0; j<nbyval; j++) {
-            for (r=0; r<maxn; r++) {
-            memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*INTEGER(bysizes)[j],
-                   (char *)DATAPTR(VECTOR_ELT(byval,j)) + i*INTEGER(bysizes)[j],    // this is why byval must be subset in the calling R to the first row of each group, to be consistent with i join grouping
-                   1 * INTEGER(bysizes)[j]);
+        if (maxn > 0) {
+            for (j=0; j<nbyval; j++) {
+                for (r=0; r<maxn; r++) {
+                    memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*INTEGER(bysizes)[j],
+                        (char *)DATAPTR(VECTOR_ELT(byval,j)) + i*INTEGER(bysizes)[j],    // this is why byval must be subset in the calling R to the first row of each group, to be consistent with i join grouping
+                        1 * INTEGER(bysizes)[j]);
+                }
             }
-        }
-        for (j=0; j<njval; j++) {
-            thisansloc = ansloc;
-            thislen = LENGTH(VECTOR_ELT(jval,j));
-            if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen); 
-            for (r=0; r<(maxn/thislen); r++) {
-                memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+nbyval)) + thisansloc*INTEGER(jsizes)[j],
+            for (j=0; j<njval; j++) {
+                thisansloc = ansloc;
+                thislen = LENGTH(VECTOR_ELT(jval,j));
+                if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen); 
+                for (r=0; r<(maxn/thislen); r++) {
+                    memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+nbyval)) + thisansloc*INTEGER(jsizes)[j],
                        (char *)DATAPTR(VECTOR_ELT(jval,j)),
                        thislen * INTEGER(jsizes)[j]);
-                thisansloc += thislen;
+                    thisansloc += thislen;
+                }
             }
+            ansloc += maxn; 
         }
-        ansloc += maxn; 
         UNPROTECT(1);  // do we really need the PROTECT/UNPROTECT given the macros above won't gc() ?
     }
     if (ansloc > INTEGER(byretn)[0]) error("Logical error as we should have stopped above before writing the last jval");
@@ -166,7 +224,7 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
         // warning("Wrote less rows than allocated. byretn=%d but wrote %d rows",INTEGER(byretn)[0],ansloc);
         for (j=0; j<length(ans); j++) SETLENGTH(VECTOR_ELT(ans,j),ansloc);
     }
-    UNPROTECT(4);
+    UNPROTECT(6);
     return(ans);
 }
 
