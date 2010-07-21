@@ -6,7 +6,7 @@ This NEWS file summarises the main changes.
 
         *********************************************
         **                                         **
-        **   CHANGES IN DATA.TABLE VERSION 1.4.2   **
+        **   CHANGES IN DATA.TABLE VERSION 1.5     **
         **                                         **
         *********************************************
 
@@ -38,6 +38,9 @@ BUG FIXES
         
     o   Quoted j expressions receive similar fix, bug #977. Thanks
         to Harish V for reporting.
+        
+    o   Multiple errors (grammar, format and spelling) in intro.Rnw
+        and faqs.Rnw corrected by Dennis Murphy. Thank you.
 
     
 

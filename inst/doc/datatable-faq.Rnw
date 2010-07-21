@@ -31,39 +31,38 @@ be read before reading the Introduction vignette.
 \section{Beginner FAQs}
 
 \subsection{Why does \code{DT[,5]} return \code{5} ?}
-Because, by default, unlike a data.frame, the 2nd argument is an \emph{expression}
-which is evaluated within the scope of DT. 5 evaluates to 5. It is generally bad practice 
-in \pkg{data.table} to refer
+Because, by default, unlike a \code{data.frame}, the 2nd argument is an \emph{expression}
+which is evaluated within the scope of \code{DT}. 5 evaluates to 5. It is generally bad practice to refer
 to columns by number rather than name. If someone else comes along and reads your code later, they
 may have to hunt around to find out which column is number 5. Furthermore, if you or someone else
-changes the column ordering of DT higher up in your R program, you might get bugs if you forget to
+changes the column ordering of \code{DT} higher up in your R program, you might get bugs if you forget to
 change all the places in your code which refer to column number 5.
 
 Say column 5 is called ''region'', just do \code{DT[,region]} instead. Notice there are no quotes around
-the column name. This is what we mean by j being evaluated within the scope of the data.table. That
+the column name. This is what we mean by j being evaluated within the scope of the \code{data.table}. That
 scope consists of an environment where the column names are variables.
 
-Having said this, there are some circumstances where referring to a column by number is ok, such as
-a sequence of columns. In these situations just do DT[,5:10,with=FALSE] or DT[,c(1,4,10),with=FALSE].
-See ?''[.data.table'' for an explanation of the 'with' argument.
+You can write \emph{any} R expression in the \code{j} e.g. \code{DT[,colA*colB/2]}. Further, \code{j} may be a \code{list()} of many R expressions, including calls to any R package e.g. \code{DT[,fitdistr(d1-d1,"normal")]}.
 
-Note that with() has been a base function for a long time.  That's why we say \pkg{data.table} builds
-upon base functionality. There is nothing new here really, \pkg{data.table} is just making use of \code{with()}
+Having said this, there are some circumstances where referring to a column by number is ok, such as
+a sequence of columns. In these situations just do \code{DT[,5:10,with=FALSE]} or \newline \code{DT[,c(1,4,10),with=FALSE]}.
+See \code{?"[.data.table"} for an explanation of the \code{with} argument.
+
+Note that \code{with()} has been a base function for a long time.  That's one reason we say \code{data.table} builds
+upon base functionality. There is little new here really, \code{data.table} is just making use of \code{with()}
 and building it into the syntax.
 
 \subsection{Why does \code{DT[,"region"]} return \code{"region"}?}
 See answer to 1.1 above. Try \code{DT[,region]} instead. Or \code{DT[,"region",with=FALSE]}.
 
 
-\subsection{Why does \code{DT[,region]} return a vector?  I'd like a 1-column data.table. 
-            There is no drop argument like I'm used to in data.frame.}
+\subsection{Why does \code{DT[,region]} return a vector?  I'd like a 1-column \code{data.table}. There is no drop argument like I'm used to in \code{data.frame}.}
 Try \code{DT[,list(region)]} instead.
 
 \subsection{Why does \code{DT[,x,y,z]} not work? I wanted the 3 columns x,y and z.}
 The \code{j} expression is the 2nd argument. The correct way to do this is \code{DT[,list(x,y,z)]}.
 
-\subsection{I assigned a variable \code{mycol=''x''} but then \code{DT[,mycol]} returns ''x''.  
-            How do I get it to look up the column name contained in the mycol variable?}
+\subsection{I assigned a variable \code{mycol="x"} but then \code{DT[,mycol]} returns \code{"x"}. How do I get it to look up the column name contained in the \code{mycol} variable?}
 This is what we mean when we say the \code{j} expression 'sees' objects in the calling scope.  Because 'mycol' does not exist as a column name of
 DT, R then looked in the calling scope and found mycol there, and returned its value. This is correct behaviour. Had ''mycol'' been a column name,
 then that column's data would have been returned. What you probably meant was \code{DT[,mycol,with=FALSE]}, which will return the region column's 
@@ -76,15 +75,13 @@ to \code{i}. You have been used to \code{i} being row numbers or row names only.
 What does that mean? Well, it
 just runs the \code{j} expression on the set of rows where the \code{i} expression is true. \code{i} can be any expression of column names 
 that evaluates to logical. You don't even need to return data, e.g., \code{DT[x>1000, plot(y,z)]}. 
-When we get to compound table joins we will see how \code{i} (and \code{j}) can themselves be other data.table queries. 
+When we get to compound table joins we will see how \code{i} (and \code{j}) can themselves be other \code{data.table} queries. 
 We are going to stretch \code{i} and \code{j} much further than this, but to get there we need you on board first with FAQs 1.1-1.5.
 
-\subsection{OK, I'm starting to see what \pkg{data.table} is about, but why didn't you enhance data.frame? Why does it have to be a new package?}
-As FAQ 1.1 highlights, \code{j} in data.table is fundamentally different from j in data.frame. Even something as simple as DF[,1] 
-would break existing code in many packages and user code.  This is by design, and we want it to work this way for more complicated syntax to work. 
-There are other differences, too.
-\newline
-To convert a data.frame DF to a data.table, just write \code{data.table(DF)}.
+\subsection{OK, I'm starting to see what \code{data.table} is about, but why didn't you enhance \code{data.frame} in \proglang{R}? Why does it have to be a new package?}
+As FAQ 1.1 highlights, \code{j} in \code{[.data.table} is fundamentally different from \code{j} in \code{[.data.frame}. Even something as simple as \code{DF[,1]} would break existing code in many packages and user code.  This is by design, and we want it to work this way for more complicated syntax to work. There are other differences, too.
+
+However, we \emph{have} proposed enhancements to \proglang{R} wherever possible, and some of these have been accepted and included. We intend to continue attempts to contribute to \proglang{R} itself whenever an opportunity arises.
 
 \subsection{Why are the defaults the way they are? Why does it work the way it does?}
 The simple answer is because the author designed it for his own use, and he wanted it that way. He finds it a more natural, faster way to
@@ -98,89 +95,85 @@ less code required, and executes many times faster if used correctly.
 Good question.  The thinking was that, more often than not, you don't actually want the columns from y which aren't in the key. By
 default, we try to keep things efficient.  In general, we don't want to create memory for the union of things, only to select out a
 few columns from it in the end. So if you want the computer to do more work, then you need to tell it do more work. You can either do
-\code{cbind(y,x[y])} or \code{merge(x,y)}.  There are many different ways to do the same thing in \pkg{data.table}.  It's your choice to understand the
+\code{cbind(y,x[y])} or \code{merge(x,y)}.  There are many different ways to do the same thing in \code{data.table}.  It's your choice to understand the
 differences and write good code.
 The other consideration is that \code{x[y]} is after all a subset of x. The ''['' operator does mean subset. 
 By default, we thought it was more consistent with base R for \code{x[y]} to just return the columns from x.
 However, it is now apparent that \code{x[y]} returning all columns from both tables would be useful, so an argument \code{inci} will be added. We
-mentioned the merge method for data.table too, but does \code{merge(x,y)} mean x[y] or y[x]?  Those are different things. Again, it is
+mentioned the merge method for \code{data.table} too, but does \code{merge(x,y)} mean \code{x[y]} or \code{y[x]}?  Those are different things. Again, it is
 your choice which syntax you prefer and find clearer.\newline
 Finally, although it appears as though \code{x[y]} does not return the columns in y, you can actually use the columns from y in the \code{j}
-expression.  This is what we mean by `join inherited scope'ù.  Why not just return the union of all the columns from x and y and
+expression.  This is what we mean by \emph{join inherited scope}.  Why not just return the union of all the columns from x and y and
 then run expressions on that?  It boils down to efficiency of code and what is quicker to program.  When you write \code{x[y,foo*boo]}, 
-\pkg{data.table} automatically inspects the \code{j} expression to see which columns it uses.  It will only subset, or group, those columns only.  Memory
+\code{data.table} automatically inspects the \code{j} expression to see which columns it uses.  It will only subset, or group, those columns only.  Memory
 is only created for the columns the \code{j} uses.  Let's say foo is in x, and boo is in y (along with 20 other columns in y). Isn't
 x[y,foo*boo] quicker to program and quicker to run than a merge step followed by another subset step ?
 
 
 \section{General syntax}
 
-\subsection{How can I avoid writing a really long j expression? You've said I should use the column names, but I've got loads of them.}
+\subsection{How can I avoid writing a really long \code{j} expression? You've said I should use the column names, but I've got loads of them.}
 There is a special \code{.SD} object, which stands for Sub Data.  The \code{j} expression can use column names as variables, as you know, but it can
-also use \code{.SD}, which refers to the sub data.table as a whole.  So to sum up all your columns its just DT[,lapply(.SD,sum),by=grp]. It might
+also use \code{.SD}, which refers to the sub \code{data.table} as a whole.  So to sum up all your columns it's just \code{DT[,lapply(.SD,sum),by=grp]}. It might
 seem tricky, but it's fast to write and fast to run. Notice you don't have to create an anonymous function(). See the timing vignette and
 comparison to other methods. The \code{.SD} object is efficiently implemented internally and more efficient than passing an argument to a function.
-Please don't do this though :   \code{DT[,.SD[,''sales'',with=FALSE],by=grp]}. That `works', but is very inefficient and inelegant. This is what
-was intended: \code{DT[,sum(x),by=grp]} and could be 100's of times faster if DT contains many columns. No data.table may contain a column
+Please don't do this though :   \code{DT[,.SD[,"sales",with=FALSE],by=grp]}. That `works', but is very inefficient and inelegant. This is what
+was intended: \code{DT[,sum(x),by=grp]} and could be 100's of times faster if DT contains many columns. No \code{data.table} may contain a column
 called .SD, that's why it has a ''.'' at the start as you are unlikely to really want a column called ''.SD''.
 
 
 \subsection{Why is the default for mult "first" ?  If there are duplicates in the key, shouldn't it return them all by default?}
-If there are no duplicates then "all" does no harm but in general, "all" is slower. Internally, "all" is implemented by joining 
-using "first", then again using "last", after which does a diff between them to work out the spans of groups.  
-Almost always we work with unique keys, and we prefer maximum
-performance for the majority of situations.  If you are working with a non-unique key then you need to specify "all".
+Possibly, yes. The default might be changed to "all".
 
-A future version may allow a distinction between a key and a unique key. The mult argument could then be defaulted more
-wisely.  \pkg{data.table} would then need to add checks on insert and update to make sure a unique key is maintained. That would be
-one of the advantages to the user of specifying a unique key; i.e., data.table would make sure a duplicate could not be inserted.
+In versions up to v1.3, "all" was slower. Internally, "all" was implemented by joining using "first", then again using "last", after which a diff between them was performed to work out the span of the matches in \code{x} for each row in \code{i}. Most often we join to single rows, though, where "first","last" and "all" return the same result. We prefer maximum
+performance for the majority of situations so the default chosen was "first". If you are working with a non-unique key then you need to specify "all".
 
-Currently, there is no distinction.  Almost always the key will be
-unique, and for efficiency, either "first" or "last" are faster than "all", so we chose "first" as the default.
+A future version of \code{data.table} may allow a distinction between a key and a unique key. The \code{mult} argument could then be defaulted more
+wisely.  \code{data.table} would then need to add checks on insert and update to make sure a unique key is maintained. That would be
+one of the advantages to the user of specifying a unique key; i.e., \code{data.table} would make sure a duplicate could not be inserted.
 
-Note that when \code{i} (or i's key if it has one) has fewer columns than x's key,  mult is automatically set to "all". This is why
-grouping by \code{i} works; e.g., \code{DT[J(grp),mean(v)]} where key(DT) has 2 or more columns.
+
+Note that when \code{i} (or \code{i}'s key if it has one) has fewer columns than x's key,  mult is automatically set to "all". This is why
+grouping by \code{i} works; e.g., \code{DT[J(id),mean(v)]} where \code{key(DT)} has 2 or more columns.
 
 \subsection{I'm using \code{c()} in the j and getting strange results.}
-This is a common source of confusion. In data.frame you are used to, for example:
+This is a common source of confusion. In \code{data.frame} you are used to, for example:
 <<>>=
 df = data.frame(x=1:3,y=4:6,z=7:9)
 df
 df[,c("y","z")]
 @
-which returns the two columns. In data.table you know you can use the column names directly
-and might try :
+which returns the two columns. In \code{data.table} you know you can use the column names directly and might try :
 <<>>=
 dt = data.table(df)
 dt[,c(y,z)]
 @
-but this returns one vector.  Remember that the \code{j} expression is evaluated within the environment of dt,
-and \code{c()} returns a vector.  If 2 columns or more columns are required, use list() instead:
+but this returns one vector.  Remember that the \code{j} expression is evaluated within the environment of \code{dt},
+and \code{c()} returns a vector.  If 2 or more columns are required, use list() instead:
 <<>>=
 dt[,list(y,z)]
 @
-\code{c()} can be useful in a data.table too, but its behaviour is different from that in a data.frame.
+\code{c()} can be useful in a \code{data.table} too, but its behaviour is different from that in a \code{data.frame}.
 
 \subsection{I have built up a complex table with many columns.  I want to use it as a template for a new table; i.e., create
 a new table with no rows, but with the column types copied from my table. Can I do that easily?}
-Yes. If your complex table is called DT, try DT[0].
+Yes. If your complex table is called \code{DT}, try \code{DT[0]}.
 
-\subsection{Is a NULL data.table the same as DT[0]?}
+\subsection{Is a NULL \code{data.table} the same as \code{DT[0]}?}
 No, despite the print method indicating otherwise. Strictly speaking, it's not possible to have \code{is.null(data.table(NULL))}
-return FALSE.  [Perhaps look at this?]
+return FALSE.  [Perhaps look at this again.]
 
 \subsection{Why has the \code{DT()} alias been removed?}\label{faq:DTremove1}
-DT was introduced originally as a wrapper for a list of \code{j} expressions. Since \code{DT} was an alias for \code{data.table}, this
-was a convenient way to take care of silent recycling in cases where each item of the \code{j} list had different lengths. 
-Although it's important to do this recycling within each group, it was one reason grouping was slow.
+\code{DT} was introduced originally as a wrapper for a list of \code{j} expressions. Since \code{DT} was an alias for \code{data.table}, this
+was a convenient way to take care of silent recycling in cases where each item of the \code{j} list evaluated to different lengths. The alias was one reason grouping was slow, though.
 As of v1.3, list() should be passed instead to the \code{j} argument. list() is a primitive and is much faster, especially when
 there are many groups. Internally, this was a nontrivial change. Vector recycling is done internally, along with
 several other speed enhancements for grouping.
-Some users have come to rely on the DT alias, though. If there is a lot of code that depends on DT(), you can easily create
+Some users have come to rely on the \code{DT} alias, though. If there is a lot of code that depends on \code{DT()}, you can easily create
 the alias yourself:
 \code{DT = function(...) data.table(...)}
 
-\subsection{But my code uses \code{j=DT(...)} and it works. The previous FAQ says that DT has been removed.}\label{faq:DTremove2}
+\subsection{But my code uses \code{j=DT(...)} and it works. The previous FAQ says that \code{DT()} has been removed.}\label{faq:DTremove2}
 \code{[.data.table} inspects the \code{j} expression that is passed to it. If it finds that the expression starts with a call
 to \code{DT()} it automatically replaces it with a call to \code{list()}. This is to help existing users. Please don't
 use \code{j=data.table(...)} as that may be slow. Use \code{j=list(...)}.
@@ -190,7 +183,7 @@ Think of the subset as an environment where all the column names are
 variables. When a variable is used in the \code{j} expression, it is looked for in the following order :
 \begin{enumerate}
 \item The scope of the subset, i.e., the column names.
-\item The scope of the calling frame; e.g., the line that appears before the data.table query.
+\item The scope of the calling frame; e.g., the line that appears before the \code{data.table} query.
 \item Exercise for reader: does it then ripple up or go straight to .GlobalEnv?
 \item The global environment .GlobalEnv
 \end{enumerate}
@@ -231,7 +224,7 @@ Try \code{print(DT,nrows=Inf)} to print all rows, or set nrows to the number of 
 
 \section{Questions relating to compute time}
 
-\subsection{I have 20 columns in data.table x. Why is an expression of one column so quick?}
+\subsection{I have 20 columns in \code{data.table} x. Why is an expression of one column so quick?}
 Several reasons:
 \begin{itemize}
 \item Only that column is grouped, the other 19 are ignored because \code{data.table} inspects the j expression and realises it doesn't use the other columns.
@@ -240,8 +233,8 @@ Several reasons:
 \end{itemize}
 
 \subsection{I don't have a key on a large table, but grouping is still really quick. Why is that?}
-data.table uses radix sorting. This is significantly faster than other sort algorithms.
-radix is specifically for integers only, see {?sort.list(method="radix")}.
+\code{data.table} uses radix sorting. This is significantly faster than other sort algorithms.
+Radix is specifically for integers only, see \code{?base::sort.list(x,method="radix")}.
 
 This is also one reason why \code{setkey()} is quick.
 
@@ -249,24 +242,24 @@ When no key is set, or we group in a different order from that of the key, we ca
 
 \subsection{Why is grouping by columns in the key faster than an ad hoc by?}
 Because each group is contiguous in RAM, thereby minimising page fetches, and memory can be
-copied in bulk rather than loops.
+copied in bulk rather than looping.
 
 \section{Error messages}
 \subsection{\code{Could not find function "DT"}}
 See FAQ \ref{faq:DTremove1} and FAQ \ref{faq:DTremove2}.
 
-\subsection{I have created a package that depends on data.table. It works fine in development when when I release it as a package I get data.frame errors.}
-Make sure you use \code{require(data.table)} rather than just \code{library(data.table)}. The \code{require}
-function is very similar to \code{libary} but also adds data.table to the hidden .required vector and this makes
-your package \emph{data.table aware}. This is important from v1.5 when data.table started to
-inherit from data.frame. Calls to [.data.table from non data.table aware packages, such as base
-and ggplot2, are redirected to [.data.frame,  so that data.table can inherit methods from data.fame.
+\subsection{I have created a package that depends on \code{data.table}. It works fine in development but when I release it as a package I get \code{data.frame} errors.}
+Make sure you use \code{require(data.table)} rather than \code{library(data.table)}. The \code{require()}
+function is very similar to \code{libary()} but also adds \code{data.table} to the hidden \code{.required} vector and this makes
+your package \emph{data.table aware}. This is important from v1.5 when \code{data.table} started to
+inherit from \code{data.frame}. Calls to \code{[.data.table} from non \code{data.table} aware packages, such as base
+and ggplot2, are redirected to \code{[.data.frame} by \code{[.data.table}. When those packages use the usual \code{[.data.frame} syntax (e.g. \code{x[,5]}) when x is a \code{data.table}, x appears to behave as a \code{data.frame} would. You have likely been developing and testing your package in .GlobalEnv which is always considered \code{data.table} aware by \code{data.table}.
 
 \subsection{Why does \code{[.data.table} now have a \code{drop} argument from v1.5?}
-So that data.table can inherit from data.frame without using \code{...}. If we used \code{...} then
+So that \code{data.table} can inherit from \code{data.frame} without using \code{...}. If we used \code{...} then
 invalid argument names would not be caught and the convenience of test 147 would be lost.
 
-The drop argument is never used by \code{[.data.table}.
+The drop argument is never used by \code{[.data.table}; it is a placeholder for non \code{data.table} aware packages when they treat the \code{data.table} as if it were a \code{data.frame}. See previous FAQ.
 
 
 \section{General questions about the package}
@@ -275,10 +268,10 @@ The drop argument is never used by \code{[.data.table}.
 That is correct. v1.3 was available on R-forge only. There were several large
 changes internally and these took some time to test in development.
 
-\subsection{Is data.table compatible with S-plus ?}
+\subsection{Is \code{data.table} compatible with S-plus ?}
 Not currently.
 \begin{itemize}
-\item A few core parts of the package are written in C and use internal functions and structures.
+\item A few core parts of the package are written in C and use internal \proglang{R} functions and \proglang{R} structures.
 \item The package uses lexical scoping which is one of the differences between R and S-plus explained by
 \href{http://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping}{R FAQ 3.3.1}.
 \end{itemize}
@@ -292,7 +285,7 @@ This helps make the package better. The list is public and archived.
 
 You can vote for packages at \url{http://crantastic.org/}. This helps encourage the developers. If
 you have time to write a comment too, that helps others in the community; e.g., some users have
-mentioned the types of data they use data.table to analyse.
+mentioned the types of data they use \code{data.table} to analyse.
 
 You can join the project and change the code and/or documentation yourself.
 
@@ -320,7 +313,7 @@ This FAQ is a vignette written using Sweave. The benefits of Sweave include the 
 package will have its own FAQ file which will be relevant for that version.  Contrast this to a single website, which can be ambiguous if the answer
 depends on the version.
 \item You can open it offline, from your R prompt using vignette().
-\item You can extract the code from the document and play with it using edit(vignette("datatable-timings")).
+\item You can extract the code from the document and play with it using\newline \code{edit(vignette("datatable-timings"))}.
 \item It prints out easily.
 \item It's quicker and easier for us to write and maintain the FAQ in .Rnw form.
 \end{itemize}
