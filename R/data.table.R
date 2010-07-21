@@ -545,22 +545,27 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     ans
 }
 
+#  [[.data.frame is now dispatched due to inheritance.
+#  The code below tried to avoid that but made things
+#  very slow (462 times faster down to 1 in the timings test).
+#  TO DO. Reintroduce the bvelow but dispatch straight to
+#  .C("do_subset2") or better.
 
-"[[.data.table" = function(x,...) {
-    if (cendta()) return(`[[.data.frame`(x,...))
-    class(x)=NULL
-    x[[...]]
-}
+#"[[.data.table" = function(x,...) {
+#    if (cendta()) return(`[[.data.frame`(x,...))
+#    class(x)=NULL
+#    x[[...]]
+#}
 
-"[[<-.data.table" = function(x,i,j,value) {
-    if (cendta()) return(`[[<-.data.frame`(x,i,j,value))
-    if (!missing(j)) stop("[[i,j]] assignment not available in data.table, put assignment(s) in [i,{...}] instead, more powerful")
-    cl = oldClass(x)  # [[<-.data.frame uses oldClass rather than class, don't know why but we'll follow suit
-    class(x) = NULL
-    x[[i]] = value
-    class(x) = cl
-    x
-}
+#"[[<-.data.table" = function(x,i,j,value) {
+#    if (cendta()) return(`[[<-.data.frame`(x,i,j,value))
+#    if (!missing(j)) stop("[[i,j]] assignment not available in data.table, put assignment(s) in [i,{...}] instead, more powerful")
+#    cl = oldClass(x)  # [[<-.data.frame uses oldClass rather than class, don't know why but we'll follow suit
+#    class(x) = NULL
+#    x[[i]] = value
+#    class(x) = cl
+#    x
+#}
     
 
 as.matrix.data.table = function(x,...)
