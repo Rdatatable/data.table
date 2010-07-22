@@ -432,7 +432,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             }
 
             
-            if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
+            if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ...\n");flush.console()}
             # byretn is all about trying to allocate the right amount of memory for the result, first time. Then there
             # will be no need to grow it as the 'by' proceeds, or use memory for a temporary list of the results.
             itestj = seq(f__[1],length=len__[1])
@@ -473,11 +473,11 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             xcols = as.integer(match(vars,colnames(x)))
             #browser()
             
-            ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,jsub,new.env(parent=parent.frame()),testj,byretn,byval,PACKAGE="data.table")
+            ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,jsub,new.env(parent=parent.frame()),testj,byretn,byval,verbose,PACKAGE="data.table")
             
             # TO DO : play with hash and size arguments of the new.env().
-            if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
-            if (byretn==0) return(NULL)  # user wanted side effects only (e.g. plotting).
+            if (verbose) {cat("... done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+            # if (byretn==0) return(NULL)  # user wanted side effects only (e.g. plotting).
             ww = which(jvnames=="")
             if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
             names(ans) = c(names(byval), jvnames)

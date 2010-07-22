@@ -10,9 +10,11 @@
 EXPORT SEXP dogroups();
 #endif
 
-SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval)
+static SEXP growVector(SEXP x, R_len_t newlen, int size);
+
+SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval, SEXP verbose)
 {
-    R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0;
+    R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0, newlen;
     SEXP names, ans, sizes, jval, jsizes, bysizes, naint, nareal;
     if (TYPEOF(order) != INTSXP) error("order not integer");
     if (TYPEOF(starts) != INTSXP) error("starts not integer");
@@ -121,7 +123,7 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
         }
     }
     if (maxn > 0) {
-        if (ansloc + maxn > INTEGER(byretn)[0]) error("Didn't allocate enough rows for result of first group.");
+        if (ansloc + maxn > length(VECTOR_ELT(ans,0))) error("Didn't allocate enough rows for result of first group.");
         for (j=0; j<nbyval; j++) {
             for (r=0; r<maxn; r++) {
             memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*INTEGER(bysizes)[j],
@@ -194,8 +196,15 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
                 }
             }
         }
-        if (ansloc + maxn > INTEGER(byretn)[0]) error("Didn't allocate enough rows. Must grow ans (to implement as we don't want default slow grow)");
-        // TO DO: implement R_realloc(?) here
+        if (ansloc + maxn > length(VECTOR_ELT(ans,0))) {
+            newlen = ansloc+maxn;
+            if (LOGICAL(verbose)[0]) Rprintf("dogroups: growing from %d to %d rows\n", length(VECTOR_ELT(ans,0)), newlen);
+            for (j=0; j<nbyval; j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), newlen, INTEGER(bysizes)[j]));
+            for (j=0; j<njval; j++) SET_VECTOR_ELT(ans, j+nbyval, growVector(VECTOR_ELT(ans,j+nbyval), newlen, INTEGER(jsizes)[j]));
+            // TO DO: implement R_realloc(?) here
+            // TO DO: more sophisticated newlen estimate based on new group's size
+            // TO DO: possibly inline it.
+        }
         if (maxn > 0) {
             for (j=0; j<nbyval; j++) {
                 for (r=0; r<maxn; r++) {
@@ -219,13 +228,29 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
         }
         UNPROTECT(1);  // do we really need the PROTECT/UNPROTECT given the macros above won't gc() ?
     }
-    if (ansloc > INTEGER(byretn)[0]) error("Logical error as we should have stopped above before writing the last jval");
-    if (ansloc < INTEGER(byretn)[0]) {
+    if (ansloc < length(VECTOR_ELT(ans,0))) {
         // warning("Wrote less rows than allocated. byretn=%d but wrote %d rows",INTEGER(byretn)[0],ansloc);
         for (j=0; j<length(ans); j++) SETLENGTH(VECTOR_ELT(ans,j),ansloc);
     }
     UNPROTECT(6);
     return(ans);
+}
+
+
+static SEXP growVector(SEXP x, R_len_t newlen, int size)
+{
+    // similar to EnlargeVector in src/main/subassign.c.
+    // * replaced switch and loops with one memcpy
+    // * no need to cater for names
+    // * much shorter and faster
+    R_len_t len;
+    SEXP newx;
+    len = length(x);
+    PROTECT(x);
+    PROTECT(newx = allocVector(TYPEOF(x), newlen));
+    memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*size);
+    UNPROTECT(2);
+    return newx;
 }
 
 

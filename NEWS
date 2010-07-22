@@ -41,8 +41,11 @@ BUG FIXES
         
     o   Multiple errors (grammar, format and spelling) in intro.Rnw
         and faqs.Rnw corrected by Dennis Murphy. Thank you.
-
-    
+        
+    o   Memory is now reallocated in rare cases when the up front
+        allocate for the result of grouping is insufficient. Bug
+        #952 raised by Georg V, and also reported by Harish. Thank
+        you.
 
 
         *********************************************

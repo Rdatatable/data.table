@@ -392,6 +392,21 @@ test.data.table = function()
     test(171, DT[ , data.table( A, C )[ A==25, C ] + data.table( A, C )[ A==85, C ], by=B ], data.table(B=c("a","c"),V1=c(67,905)))
     
     test(172, DT[ , list(3,data.table( A, C )[ A==25, C ] + data.table( A, C )[ A==85, C ]), by=B ], data.table(B=c("a","b","c"),V1=3,V2=c(67,NA,905)))
+    
+    # Test growing result in memory. Usually the guess is good though.
+    # This example returns no rows for first group so guess for up-front allocate needs a reallocate
+    DT = data.table(A=c(1L,1L,2L,2L,3L,3L), B=1:6)
+    test(173, DT[,B[B>3],by=A][,V1], c(4L,5L,6L))
+
+    # Example taken from Harish post to datatable-help on 11 July
+    DT <- data.table(
+         A=c("a","a","b","b","d","c","a","d"),
+         B=c("x1","x2","x2","x1","x2","x1","x1","x2"),
+         C=c(5,2,3,4,9,5,1,9)
+         )
+    test(174, DT[,C[C-min(C)<3],by=list(A,B)][,V1], c(1,2,4,3,5,9,9))
+    test(175, DT[,C[C-min(C)<5],by=list(A,B)][,V1], c(5,1,2,4,3,5,9,9))
+    
 
     ##########################
     if (nfail > 0) {
