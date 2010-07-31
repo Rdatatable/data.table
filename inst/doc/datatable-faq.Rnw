@@ -125,8 +125,10 @@ called .SD, that's why it has a ''.'' at the start as you are unlikely to really
 \subsection{Why is the default for mult "first" ?  If there are duplicates in the key, shouldn't it return them all by default?}
 Possibly, yes. The default might be changed to "all".
 
-In versions up to v1.3, "all" was slower. Internally, "all" was implemented by joining using "first", then again using "last", after which a diff between them was performed to work out the span of the matches in \code{x} for each row in \code{i}. Most often we join to single rows, though, where "first","last" and "all" return the same result. We prefer maximum
+In versions up to v1.3, "all" was slower. Internally, "all" was implemented by joining using "first", then again from scratch using "last", after which a diff between them was performed to work out the span of the matches in \code{x} for each row in \code{i}. Most often we join to single rows, though, where "first","last" and "all" return the same result. We prefer maximum
 performance for the majority of situations so the default chosen was "first". If you are working with a non-unique key then you need to specify "all".
+
+In v1.4 the binary search in C was changed to branch at the deepest level to find first and last. Note that branch will likely occur within the same final pages. So there should no longer be a speed disadvantage in defaulting mult to 'all'. The 'all' default would be simpler and easier for the user as this FAQ comes up quite often.
 
 A future version of \code{data.table} may allow a distinction between a key and a unique key. The \code{mult} argument could then be defaulted more
 wisely.  \code{data.table} would then need to add checks on insert and update to make sure a unique key is maintained. That would be
