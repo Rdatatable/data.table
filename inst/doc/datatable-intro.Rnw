@@ -319,7 +319,7 @@ This was a quick start guide. Further resources include :
 \item The FAQs deal with distinct topics: \code{vignette("datatable-faq")}
 \item The performance tests contain more examples: \code{vignette("datatable-timings")}
 \item test.data.table contains over 150 low level tests of the features: \code{test.data.table()}
-\item Website (no content yet): \url{http://datatable.r-forge.r-project.org/}
+\item Website: \url{http://datatable.r-forge.r-project.org/}
 \item Presentations:
 \begin{itemize}
 \item \url{http://files.meetup.com/1406240/Data%20munging%20with%20SQL%20and%20R.pdf}
