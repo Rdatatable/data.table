@@ -23,6 +23,10 @@ NEW FEATURES
         Conversions to and from POSIXct, Date, and chron are
         supported.
     
+    o   [<-.data.table and $<-.data.table were revised to check for
+        changes to the key-ed columns. [<-.data.table also now allows
+        data.table-style indexing for i. Both of these changes may
+        introduce incompatibilities for existing code.
         
 BUG FIXES
 
