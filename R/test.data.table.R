@@ -406,8 +406,28 @@ test.data.table = function()
          )
     test(174, DT[,C[C-min(C)<3],by=list(A,B)][,V1], c(1,2,4,3,5,9,9))
     test(175, DT[,C[C-min(C)<5],by=list(A,B)][,V1], c(5,1,2,4,3,5,9,9))
-    
 
+    # Tests of data.table sub-assignments: $<-.data.table & [<-.data.table
+    DT <- data.table(a = c("A", "Z"), b = 1:10, key = "a")
+    DT[J("A"),2] <- 100
+    DT[J("A"),"b"] <- 1:5
+    DT[1:3,"b"] <- 33
+    test(176, DT,  data.table(a = rep(c("A", "Z"), each = 5),
+                              b = c(rep(33, 3), 4:5, seq(2, 10, by = 2)),
+                              key = "a"))
+    DT[J("A"),"a"] <- "Z"
+    test(177, key(DT), NULL )
+
+    DT <- data.table(a = c("A", "Z"), b = 1:10, key = "a")
+    DT$b[1:5] <- 1:5
+    DT$b[1:3] <- 33
+    test(178, DT,  data.table(a = rep(c("A", "Z"), each = 5),
+                              b = c(rep(33, 3), 4:5, seq(2, 10, by = 2)),
+                              key = "a"))
+    DT$a <- 10:1
+    test(179, key(DT), NULL )
+
+    
     ##########################
     if (nfail > 0) {
         stop(nfail," errors in test.data.table()")
