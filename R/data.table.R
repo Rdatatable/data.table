@@ -680,240 +680,28 @@ tail.data.table = function(x, n=6, ...) {
     x[i]
 }
 
-"[<-.data.table" <-
-function (x, i, j, value)
-{
-    # TO DO: test thoroughly as inherit from data.frame is new.
-    if (cendta()) return(`[<-.data.frame`(x,i,j,value))
-
-    # TO DO: copied from [<-.data.frame,  remove out all uses of row.names and data.frame
-    # TO DO: test this method of assignment as I've tended to use $ on the left hand side.
-    nA <- nargs()
-    if (nA == 4) {
-        has.i <- !missing(i)
-        has.j <- !missing(j)
-    }
-    else if (nA == 3) {
-        if (is.atomic(value))
-            names(value) <- NULL
-        if (missing(i) && missing(j)) {
-            i <- j <- NULL
-            has.i <- has.j <- FALSE
-            if (is.null(value))
-                return(x[logical(0)])
-        }
-        else {
-            if (is.logical(i) && is.matrix(i) && all(dim(i) == dim(x))) {
-                nreplace <- sum(i, na.rm = TRUE)
-                if (!nreplace)
-                  return(x)
-                N <- length(value)
-                if (N > 0 && N < nreplace && (nreplace %% N) == 0)
-                  value <- rep(value, length.out = nreplace)
-                if (length(value) != nreplace)
-                  stop("rhs is the wrong length for indexing by a logical matrix")
-                n <- 0
-                nv <- nrow(x)
-                for (v in seq(len = dim(i)[2])) {
-                  thisvar <- i[, v, drop = TRUE]
-                  nv <- sum(thisvar, na.rm = TRUE)
-                  if (nv) {
-                    if (is.matrix(x[[v]]))
-                      x[[v]][thisvar, ] <- value[n + (1:nv)]
-                    else x[[v]][thisvar] <- value[n + (1:nv)]
-                  }
-                  n <- n + nv
-                }
-                return(x)
-            }
-            if (is.matrix(i))
-                stop("only logical matrix subscripts are allowed in replacement")
-            j <- i
-            i <- NULL
-            has.i <- FALSE
-            has.j <- TRUE
-        }
-    }
+"[<-.data.table" = function (x, i, j, value) {
+    res <- `[<-.data.frame`(x, i, j, value)
+    keycol <- match(key(x), names(x))
+    if (missing(j)) j <- seq_along(x)
+    if (is.character(j)) {
+        jseq <- match(j, names(x))
+    } else if (is.logical(j) || min(j) < 0L) 
+        jseq <- seq_along(x)[j]
     else {
-        stop("need 0, 1, or 2 subscripts")
+        jseq <- j
     }
-    if (has.j && length(j) == 0)
-        return(x)
-    n <- 0
-    nrows <- nrow(x)
-    cl <- oldClass(x)
-    class(x) <- NULL
-    new.cols <- NULL
-    nvars <- length(x)
-    if (has.i) {
-        stop("i not supported, yet")
-    }
-    else iseq <- NULL
-    if (n == 0L)
-        n <- nrows
-    if (has.j) {
-        if (any(is.na(j)))
-            stop("missing values are not allowed in subscripted assignments of data frames")
-        if (is.character(j)) {
-            jj <- match(j, names(x))
-            nnew <- sum(is.na(jj))
-            if (nnew > 0) {
-                n <- is.na(jj)
-                jj[n] <- nvars + 1:nnew
-                new.cols <- j[n]
-            }
-            jseq <- jj
-        }
-        else if (is.logical(j) || min(j) < 0)
-            jseq <- seq(along = x)[j]
-        else {
-            jseq <- j
-            if (max(jseq) > nvars) {
-                new.cols <- paste("V", seq(from = nvars + 1,
-                  to = max(jseq)), sep = "")
-                if (length(new.cols) != sum(jseq > nvars))
-                  stop("new columns would leave holes after existing columns")
-                if (is.list(value) && !is.null(vnm <- names(value))) {
-                  p <- length(jseq)
-                  if (length(vnm) < p)
-                    vnm <- rep(vnm, length.out = p)
-                  new.cols <- vnm[jseq > nvars]
-                }
-            }
-        }
-    }
-    else jseq <- seq(along = x)
-    if (any(duplicated(jseq)))
-        stop("duplicate subscripts for columns")
-    n <- length(iseq)
-    if (n == 0)
-        n <- nrows
-    p <- length(jseq)
-    m <- length(value)
-    if (!is.list(value)) {
-        if (p == 1) {
-            N <- NROW(value)
-            if (N > n)
-                stop(gettextf("replacement has %d rows, data has %d",
-                  N, n), domain = NA)
-            if (N < n && N > 0)
-                if (n%%N == 0 && length(dim(value)) <= 1)
-                  value <- rep(value, length.out = n)
-                else stop(gettextf("replacement has %d rows, data has %d",
-                  N, n), domain = NA)
-            names(value) <- NULL
-            value <- list(value)
-        }
-        else {
-            if (m < n * p && (n * p)%%m)
-                stop(gettextf("replacement has %d items, need %d",
-                  m, n * p), domain = NA)
-            value <- matrix(value, n, p)
-            value <- split(value, col(value))
-        }
-        dimv <- c(n, p)
-    }
-    else {
-        value <- unclass(value)
-        lens <- sapply(value, NROW)
-        for (k in seq(along = lens)) {
-            N <- lens[k]
-            if (n != N && length(dim(value[[k]])) == 2)
-                stop(gettextf("replacement element %d is a matrix/data frame of %d rows, need %d",
-                  k, N, n), domain = NA)
-            if (N > 0 && N < n && n%%N)
-                stop(gettextf("replacement element %d has %d rows, need %d",
-                  k, N, n), domain = NA)
-            if (N > 0 && N < n)
-                value[[k]] <- rep(value[[k]], length.out = n)
-            if (N > n) {
-                warning(gettextf("replacement element %d has %d rows to replace %d rows",
-                  k, N, n), domain = NA)
-                value[[k]] <- value[[k]][1:n]
-            }
-        }
-        dimv <- c(n, length(value))
-    }
-    nrowv <- dimv[1]
-    if (nrowv < n && nrowv > 0) {
-        if (n%%nrowv == 0)
-            value <- value[rep(1:nrowv, length.out = n),] # drop = FALSE
-        else stop(gettextf("%d rows in value to replace %d rows",
-            nrowv, n), domain = NA)
-    }
-    else if (nrowv > n)
-        warning(gettextf("replacement data has %d rows to replace %d rows",
-            nrowv, n), domain = NA)
-    ncolv <- dimv[2]
-    jvseq <- seq(len = p)
-    if (ncolv < p)
-        jvseq <- rep(1:ncolv, length.out = p)
-    else if (ncolv > p)
-        warning(gettextf("provided %d variables to replace %d variables",
-            ncolv, p), domain = NA)
-    if (length(new.cols)) {
-        nm <- names(x)
-        rows <- attr(x, "row.names")
-        x <- c(x, vector("list", length(new.cols)))
-        names(x) <- c(nm, new.cols)
-        attr(x, "row.names") <- rows
-    }
-    if (has.i)
-        for (jjj in seq(len = p)) {
-            jj <- jseq[jjj]
-            vjj <- value[[jvseq[[jjj]]]]
-            if (jj <= nvars) {
-                if (length(dim(x[jj])) != 2)
-                  x[[jj]][iseq] <- vjj
-                else x[[jj]][iseq, ] <- vjj
-            }
-            else {
-                length(vjj) <- nrows
-                x[[jj]] <- vjj
-            }
-        }
-    else if (p > 0)
-        for (jjj in p:1) {
-            jj <- jseq[jjj]
-            x[[jj]] <- value[[jvseq[[jjj]]]]
-            if (is.atomic(x[[jj]]))
-                names(x[[jj]]) <- NULL
-        }
-    if (length(new.cols) > 0) {
-        new.cols <- names(x)
-        if (any(duplicated(new.cols)))
-            names(x) <- make.unique(new.cols)
-    }
-    class(x) <- cl
-    x
+    if (any( jseq %in% keycol ))
+        key(res) <- NULL
+    res
 }
 
-"$<-.data.table" = function (x, i, value)
-{
-    if (cendta()) return(`$<-.data.frame`(x,i,value))
-    # TO DO, revisit this as $<-.data.frame now uses .row_names_info
-    # Can we just use the $<- for data.frame always? or does it effect rownames
-    cl <- oldClass(x)
-    nrows <- nrow(x)
-    class(x) <- NULL
-    if (!is.null(value)) {
-        N <- NROW(value)
-        if (N > nrows)
-            stop(gettextf("replacement has %d rows, data has %d",
-                N, nrows), domain = NA)
-        if (N < nrows && N > 0)
-            if (nrows%%N == 0 && length(dim(value)) <= 1)
-                value <- rep(value, length.out = nrows)
-            else stop(gettextf("replacement has %d rows, data has %d",
-                N, nrows), domain = NA)
-        if (is.atomic(value))
-            names(value) <- NULL
-    }
-    x[[i]] <- value
-    class(x) <- cl
-    return(x)
+"$<-.data.table" = function (x, name, value) {
+    res <- `$<-.data.frame`(x, name, value)
+    if (any(name %in% key(x)))
+        key(res) <- NULL
+    res
 }
-
 
 cbind.data.table = function(...) {
     data.table(...)    # for ease of use basically since people often think its like a matrix.
