@@ -681,6 +681,9 @@ tail.data.table = function(x, n=6, ...) {
 }
 
 "[<-.data.table" = function (x, i, j, value) {
+    if (!cendta()) { # get i based on data.table-style indexing
+        i <- x[i, which=TRUE, mult="all"]
+    }
     res <- `[<-.data.frame`(x, i, j, value)
     keycol <- match(key(x), names(x))
     if (missing(j)) j <- seq_along(x)
