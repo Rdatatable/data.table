@@ -50,6 +50,12 @@ BUG FIXES
         allocate for the result of grouping is insufficient. Bug
         #952 raised by Georg V, and also reported by Harish. Thank
         you.
+        
+NOTES
+
+    o   The package uses the 'default' option of base::getOption,
+        and is therefore dependent on R 2.10.0. Updated DESCRIPTION
+        file accordingly. Thanks to Christian Hudon for reporting.
 
 
         *********************************************
