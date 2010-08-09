@@ -786,9 +786,9 @@ within.data.table <- function (data, expr, keep.key = FALSE, ...) # basically wi
     l <- as.list(e)
     l <- l[!sapply(l, is.null)]
     nD <- length(del <- setdiff(names(data), (nl <- names(l))))
-    data[nl] <- l
+    data[,nl] <- l
     if (nD)
-        data[del] <- if (nD == 1)
+        data[,del] <- if (nD == 1)
             NULL
         else vector("list", nD)
     if (!keep.key) attr(data,"sorted") <- NULL
@@ -804,7 +804,7 @@ transform.data.table <- function (`_data`, ...) # basically transform.data.frame
     inx <- match(tags, names(`_data`))
     matched <- !is.na(inx)
     if (any(matched)) {
-        `_data`[inx[matched]] <- e[matched]
+        `_data`[,inx[matched]] <- e[matched]
         `_data` <- data.table(`_data`)
     }
     if (!all(matched))

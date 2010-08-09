@@ -108,6 +108,7 @@ test.data.table = function()
     test(50, TESTDT[J(c(4,1,0,5,3,7,NA,4,1),c(6,5,1,10,5,2,1,6,NA)),v,mult="last"], INT(4,1,NA,NA,2,7,NA,4,NA))
 
     TESTDT$a = factor(letters[TESTDT$a])
+    setkey(TESTDT,a,b)
     # i.e.       a b v
     #       [1,] a 5 1
     #       [2,] c 5 2
@@ -120,6 +121,7 @@ test.data.table = function()
     test(52, TESTDT[J(c("g","d","e","d"),c(6,6,1,2)),v,mult="all",roll=TRUE][[3]], INT(7,3:4))  # also will test sortedmatch for strings in the level match
 
     TESTDT$b = factor(letters[TESTDT$b])
+    setkey(TESTDT,a,b)
     # i.e.
     #         a b v
     #    [1,] a e 1
@@ -210,9 +212,9 @@ test.data.table = function()
     (dt <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B"))
     test(99, unique(dt), data.table(dt[c(1L, 4L, 5L, 7L, 9L, 10L)], key="A,B"))
 
-    # test [<- for column assignment (row assignment is still messed up)
+    # test [<- for column assignment 
     dt1 <- dt2 <- dt
-    test(100, {dt1["A"] <- 3; dt1}, {dt2$A <- 3; dt2})
+    test(100, {dt1[,"A"] <- 3; dt1}, {dt2$A <- 3; dt2})
 
     # test transform and within
     test(101, within(dt, {D <- B^2}), transform(dt, D = B^2))
@@ -238,6 +240,7 @@ test.data.table = function()
 
     # test [<- assignment:
     dt2[is.na(dt2)] <- 1L
+    setkey(dt2, A, B)
     test(113, dt, dt2)
     dt2[, c("A", "B")] <- dt1[, c("A", "B"), with = FALSE]
     test(114, dt1, dt2)
