@@ -14,8 +14,8 @@ test.data.table = function()
             if (identical(x,y)) return()
             if (is.data.table(x) && is.data.table(y)) {
                 # drop unused levels in factors
-                for (i in which(sapply(x,is.factor))) x[[i]] = factor(x[[i]])
-                for (i in which(sapply(y,is.factor))) y[[i]] = factor(y[[i]])
+                if (length(x)) for (i in which(sapply(x,is.factor))) x[[i]] = factor(x[[i]])
+                if (length(y)) for (i in which(sapply(y,is.factor))) y[[i]] = factor(y[[i]])
                 if (length(attr(x,"row.names"))) attr(x,"row.names") = NULL  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
                 if (length(attr(y,"row.names"))) attr(y,"row.names") = NULL
                 if (identical(x,y)) return()
@@ -375,7 +375,7 @@ test.data.table = function()
     test(166, suppressWarnings(split(DT,DT$grp)[[2]]), DT[grp==2])
     if ("package:ggplot2" %in% search()) {
         test(167,print(ggplot(DT,aes(b,f))+geom_point()),NULL)  # how to programmatically test it not only doesn't error but correct output, binary diff to pre-prepared pdf ?
-        test(168,DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],NULL)  # %%2 because there are 5 groups in DT data at this stage, just need 2 to test
+        test(168,DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 because there are 5 groups in DT data at this stage, just need 2 to test
         # if (dev.cur()>1) dev.off()
     } else {
         cat("Tests 167 and 168 not run. If required call library(ggplot2) first.\n")

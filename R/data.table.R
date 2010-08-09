@@ -481,15 +481,16 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             ww = which(jvnames=="")
             if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
             names(ans) = c(names(byval), jvnames)
-            ww = which(sapply(byval,is.factor))
-            for (jj in ww) {levels(ans[[jj]]) = levels(byval[[jj]]); class(ans[[jj]])="factor"}
-            ww = which(sapply(testj,is.factor))
-            for (jj in ww) {levels(ans[[length(byval)+jj]]) = levels(testj[[jj]]); class(ans[[length(byval)+jj]])="factor"}
+            if (length(ans[[1]])) {
+                ww = which(sapply(byval,is.factor))
+                for (jj in ww) {levels(ans[[jj]]) = levels(byval[[jj]]); class(ans[[jj]])="factor"}
+                ww = which(sapply(testj,is.factor))
+                for (jj in ww) {levels(ans[[length(byval)+jj]]) = levels(testj[[jj]]); class(ans[[length(byval)+jj]])="factor"}
             
-            # bit of a klude to retain the classes. Rather than allocating in C, we could allocate ans in R before dogroups, and create the right class at that stage
-            for (jj in seq_along(byval)) class(ans[[jj]]) = class(byval[[jj]])
-            for (jj in seq_along(testj)) class(ans[[length(byval)+jj]]) = class(testj[[jj]])            
-            
+                # bit of a klude to retain the classes. Rather than allocating in C, we could allocate ans in R before dogroups, and create the right class at that stage
+                for (jj in seq_along(byval)) class(ans[[jj]]) = class(byval[[jj]])
+                for (jj in seq_along(testj)) class(ans[[length(byval)+jj]]) = class(testj[[jj]])            
+            }
             attr(ans,"row.names") = .set_row_names(length(ans[[1]]))
             class(ans) = c("data.table","data.frame")
             #if (!incbycols) {
@@ -681,7 +682,7 @@ tail.data.table = function(x, n=6, ...) {
 }
 
 "[<-.data.table" = function (x, i, j, value) {
-    if (!cendta() && !missing(i)) { # get i based on data.table-style indexing
+    if (!missing(i) && !cendta()) { # get i based on data.table-style indexing
         i <- x[i, which=TRUE, mult="all"]
     }
     res <- `[<-.data.frame`(x, i, j, value)
