@@ -681,7 +681,7 @@ tail.data.table = function(x, n=6, ...) {
 }
 
 "[<-.data.table" = function (x, i, j, value) {
-    if (!cendta()) { # get i based on data.table-style indexing
+    if (!cendta() && !missing(i)) { # get i based on data.table-style indexing
         i <- x[i, which=TRUE, mult="all"]
     }
     res <- `[<-.data.frame`(x, i, j, value)
