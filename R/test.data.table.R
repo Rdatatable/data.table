@@ -434,6 +434,7 @@ test.data.table = function()
     DT = data.table(a=rep(1:3,each=2),b=c(TRUE,FALSE),v=1:6)
     setkey(DT,a,b)
     test(180, DT[J(2,FALSE),v], 4L)
+    test(181, DT[,sum(v),by=b][,V1], c(12L,9L))
 
     
     ##########################

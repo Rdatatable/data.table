@@ -28,7 +28,9 @@ NEW FEATURES
         data.table-style indexing for i. Both of these changes may
         introduce incompatibilities for existing code.
         
-    o   logical vectors are now allowed in keys
+    o   Logical columns are now allowed in keys. Logical columns (and
+        expressions that evaluate to logical) are now allowed in
+        ad hoc by.
     
         
 BUG FIXES

@@ -66,11 +66,12 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
         SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(byval, i)), INTEGER(byretn)[0]));
         switch (TYPEOF(VECTOR_ELT(byval, i))) {   // this structure is more for the future when by could contain character for example
             case INTSXP :
+            case LGLSXP :
                 INTEGER(bysizes)[i] = sizeof(int);
                 break;
-            case LGLSXP : case REALSXP : case STRSXP :
+            case REALSXP : case STRSXP :
             default:
-                error("by currently must only be integer columns.");
+                error("by columns must be internally integer");
         }
     }
     for(i = 0; i < njval; i++) {

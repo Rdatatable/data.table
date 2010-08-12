@@ -347,7 +347,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 }
                 byval = eval(bysub, x, parent.frame())
                 if (!is.list(byval)) stop("by must evaluate to list")
-                for (jj in seq_len(length(byval))) if (storage.mode(byval[[jj]]) != "integer") stop("column ",jj," of 'by' list does not evaluate to integer e.g. the by should be a list of expressions. Do not quote column names when using by=list(...).")
+                for (jj in seq_len(length(byval))) if (!typeof(byval[[jj]]) %in% c("integer","logical")) stop("column or expression ",jj," of 'by' list is not internally type integer. Do not quote column names. Example of correct use: by=list(colA,month(colB),...).")
                 tt = sapply(byval,length)
                 if (any(tt!=nrow(x))) stop("Each item in the 'by' list must be same length as rows in x (",nrow(x),"): ",paste(tt,collapse=","))
                 bynames = names(byval)

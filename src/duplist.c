@@ -24,7 +24,7 @@ SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order)
     if (INTEGER(order)[0] == -1) {      // i.e. order is missing, same order as row order. Using MISSING() does not seem stable under windows. Always having arguments passed in seems a good idea anyway.
         for (i=1; i<nrow; i++) {
             j = ncol;  // the last columns varies the most frequently so check that first and work backwards
-            while (--j>=0 && INTEGER(VECTOR_ELT(l,j))[i] == INTEGER(VECTOR_ELT(l,j))[i-1]);
+            while (--j>=0 && INTEGER(VECTOR_ELT(l,j))[i] == INTEGER(VECTOR_ELT(l,j))[i-1]);    // INTEGER() will be used here for LOGICAL too (logical now allowed in keys and 'by' from Aug 2010) [ok now, but not future proof] TO DO: revisit
             if (j>=0) INTEGER(ans)[len++] = i+1;
         }
     } else {
