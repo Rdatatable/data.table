@@ -29,8 +29,7 @@ NEW FEATURES
         introduce incompatibilities for existing code.
         
     o   Logical columns are now allowed in keys. Logical columns (and
-        expressions that evaluate to logical) are now allowed in
-        ad hoc by.
+        expressions that evaluate to logical) are now allowed in 'by'.
     
         
 BUG FIXES
