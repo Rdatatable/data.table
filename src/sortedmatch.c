@@ -50,20 +50,27 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             rci = INTEGER(rightcols)[col];
             type = TYPEOF(VECTOR_ELT(left, lci));
             switch (type) {
-            case INTSXP :
+            case INTSXP : 
                 lval.i = INTEGER(VECTOR_ELT(left,lci))[lr];        // factors are also INTSXP but we won't see factors here
                 if (lval.i==NA_INTEGER) goto nextlr;
                 size=sizeof(int);  // e.g. 4
                 break;
-            case STRSXP :
-                lval.str = STRING_ELT(VECTOR_ELT(left,lci),lr);
-                if (lval.str==NA_STRING) goto nextlr;
-                size=sizeof(SEXP);    // e.g. 4 (since SEXP is a pointer)
+            case LGLSXP :
+                lval.i = LOGICAL(VECTOR_ELT(left,lci))[lr];
+                if (lval.i==NA_LOGICAL) goto nextlr;
+                size=sizeof(int);  // e.g. 4
                 break;
+            case STRSXP :
+                //To revisit:
+                //lval.str = STRING_ELT(VECTOR_ELT(left,lci),lr);
+                //if (lval.str==NA_STRING) goto nextlr;
+                //size=sizeof(SEXP);    // e.g. 4 (since SEXP is a pointer)
+                //break;
             case REALSXP :
                 // ************* TO DO *******************
+                // Have discussed a decimal() class - fixed decimal points stored as integer
             default:
-                error("only integer and character cols allowed in key. Type %d found", type);
+                error("only types internally integer are allowed in key. Type %d found", type);
             }
             if (type != TYPEOF(VECTOR_ELT(right, rci))) error("column %d of x has different type to column %d of i", rci, lci);
             prevlow = low;
@@ -90,7 +97,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                     }
                     break;   // stop the while for this group and go to next column. If its the last column low and upp will surround the group
                 }
-                if (type==INTSXP ? rval.i<lval.i : Rf_Scollate(rval.str, lval.str)<0) {        // for strings, we can jump to last line of scmp since we already dealt with NA and == above.
+                if (rval.i<lval.i) {   // if (type==INTSXP ? rval.i<lval.i : Rf_Scollate(rval.str, lval.str)<0) {  // for strings, we can jump to last line of scmp since we already dealt with NA and == above.
                     low=mid;
                 } else {
                     upp=mid;

@@ -28,6 +28,9 @@ NEW FEATURES
         data.table-style indexing for i. Both of these changes may
         introduce incompatibilities for existing code.
         
+    o   logical vectors are now allowed in keys
+    
+        
 BUG FIXES
 
     o   DT[,5] now returns 5 as FAQ 1.1 says, for consistency

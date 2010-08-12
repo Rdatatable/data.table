@@ -429,6 +429,11 @@ test.data.table = function()
                               key = "a"))
     DT$a <- 10:1
     test(179, key(DT), NULL )
+    
+    # Test logical in a key
+    DT = data.table(a=rep(1:3,each=2),b=c(TRUE,FALSE),v=1:6)
+    setkey(DT,a,b)
+    test(180, DT[J(2,FALSE),v], 4L)
 
     
     ##########################

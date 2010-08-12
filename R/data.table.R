@@ -222,7 +222,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (!haskey(x)) stop("When i is a data.table, x must be sorted to avoid a vector scan of x per row of i")
             rightcols = match(key(x),colnames(x))
             if (any(is.na(rightcols))) stop("sorted columns of x don't exist in the colnames. data.table is not a valid data.table")
-            for (a in rightcols) if (!storage.mode(x[[a]]) %in% c("integer")) stop("sorted column ",colnames(x)[a], " in x is not storage.mode integer")
+            for (a in rightcols) if (!typeof(x[[a]]) %in% c("integer","logical")) stop("sorted column ",colnames(x)[a], " in x is not internally type integer")
             if (haskey(i)) {
                 leftcols = match(key(i),colnames(i))
                 if (any(is.na(leftcols))) stop("sorted columns of i don't exist in the colnames of i. data.table is not a valid data.table")
@@ -232,7 +232,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     # When/if we move to character, this entire for() will not be required.
                     lc = leftcols[a]
                     rc = rightcols[a]
-                    if (storage.mode(i[[lc]])!="integer") stop("sorted column ",colnames(i)[lc], " of i must be storage.mode integer")
+                    if (!typeof(i[[lc]])%in%c("integer","logical")) stop("sorted column ",colnames(i)[lc], " of i must be internally type integer")
                     if (is.factor(i[[lc]])) {
                         if ((roll || rolltolast) && a==length(leftcols)) stop("Attempting roll join on factor column i.",colnames(i)[lc],". Only integer columns (i.e. not factors) may be roll joined.")   # because the sortedmatch a few lines below returns NA for missing chars in x (rather than some integer greater than existing). Using character rather than factor solves this if we get over the speed issues with character.
                         if (!is.factor(x[[rc]])) stop("i.",colnames(i)[lc]," is a factor joining to x.",colnames(x)[rc]," which is not a factor. Factors must join to factors.")
@@ -254,7 +254,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 for (lc in leftcols) {
                     # When/if we move to character, this entire for() will not be required.
                     rc = rightcols[lc]
-                    if (storage.mode(i[[lc]])!="integer") stop("unsorted column ",colnames(i)[lc], " of i is not storage.mode integer.")
+                    if (!typeof(i[[lc]])%in%c("integer","logical")) stop("unsorted column ",colnames(i)[lc], " of i is not internally type integer.")
                     if (is.factor(i[[lc]])) {
                         if ((roll || rolltolast) && lc==last(leftcols)) stop("Attempting roll join on factor column i.",colnames(i)[lc],". Only integer columns (i.e. not factors) may be roll joined.")
                         if (!is.factor(x[[rc]])) stop("i.",colnames(i)[lc]," is a factor but the corresponding x.",colnames(x)[rc]," is not a factor, Factors must join to factors.")
