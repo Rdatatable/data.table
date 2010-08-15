@@ -30,6 +30,7 @@ NEW FEATURES
         
     o   Logical columns are now allowed in keys. Logical columns (and
         expressions that evaluate to logical) are now allowed in 'by'.
+        Thanks to David Winsemius for highlighting.
     
         
 BUG FIXES
@@ -38,7 +39,7 @@ BUG FIXES
         with DT[,c(5)] and DT[,5+0]. DT[,"region"] now returns
         "region" as FAQ 1.2 says. Thanks to Harish V for reporting.
         
-    o   When a quoted expression q is passed to by using
+    o   When a quoted expression q is passed to 'by' using
         by=eval(q), the group column names now come from the list
         in the expression rather than the name 'q' (bug #974) and,
         multiple items work (bug #975). Thanks to Harish V for
@@ -54,6 +55,11 @@ BUG FIXES
         allocate for the result of grouping is insufficient. Bug
         #952 raised by Georg V, and also reported by Harish. Thank
         you.
+        
+    o   A function call foo(arg=sum(b)) now finds b in DT when foo
+        contains DT[,eval(substitute(arg)),by=a], fixing bug #1026.
+        Thanks to Harish V for reporting.
+        
         
 NOTES
 

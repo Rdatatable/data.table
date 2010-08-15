@@ -27,12 +27,14 @@ test.data.table = function()
             }
             
         }
-        cat("Test",num,"failed\n")
+        cat("Test",num,"ran without errors but failed check:\n")
+        print(x)
+        print(y)
         assign("nfail",nfail+1,envir=parent.frame())
     }
     started.at = Sys.time()
     TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
-    a=b=v=z=NAME=DT=B=.SD=y=V1=V2=b_1=`a 1`=a.1=d=grp=NA    # For R CMD check "no visible binding for global variable"
+    a=b=v=z=NAME=DT=B=.SD=y=V1=V2=b_1=`a 1`=a.1=d=grp=buniquename314=NA    # For R CMD check "no visible binding for global variable"
     setkey(TESTDT,a,b)
     # i.e.       a b v
     #       [1,] 1 5 1
@@ -436,6 +438,17 @@ test.data.table = function()
     test(180, DT[J(2,FALSE),v], 4L)
     test(181, DT[,sum(v),by=b][,V1], c(12L,9L))
 
+    # Test fix for bug 1026 reported by Harish
+    rm(buniquename314)
+    colnames(DT)[2] = "buniquename314"  # this test needed a unique var name to generate error 'object 'b' not found'. Otherwise it finds 'b' in local scope.   
+    boo = function( data, fcn ) {
+        q = substitute( fcn )
+        xx = data[,eval(q),by=a]
+        yy = data[,eval(substitute(fcn)),by=a]
+        identical(xx,yy)
+    }
+    test(182, boo( DT, sum(buniquename314) ), TRUE)
+    
     
     ##########################
     if (nfail > 0) {
