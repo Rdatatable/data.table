@@ -165,10 +165,12 @@ test.data.table = function()
     test(68, "TESTDT" %in% tables(silent=TRUE)[,NAME])  # NAME is returned as a column in which we look for the string 
     test(69, "TESTDT" %in% tables(silent=TRUE)[,as.character(NAME)]) # an old test (from when NAME was factor) but no harm in keeping it
 
-    a = "d"     # Variable Twister.  a in this scope has same name as a inside DT scope.
-    test(70, TESTDT[J(a),DT(v)], data.table(a="d",v=3:6)) # J(a) means use a we just set above,  not a inside the DT which would result in a self join of the whole table. Would only occur if there is a variable name conflict as deliberately created here.
-    test(71, TESTDT[SJ(a),DT(v)], data.table(a="d",v=3:6,key="a"))
-    test(72, TESTDT[CJ(a),DT(v)], data.table(a="d",v=3:6,key="a"))
+    a = "d"
+    # Variable Twister.  a in this scope has same name as a inside DT scope.
+    # Aug 2010 : As a result of bug 1005, and consistency with 'j' and 'by' we now allow self joins (test 183) in 'i'.
+    test(70, TESTDT[eval(J(a)),v], data.table(a="d",v=3:6))   # the eval() enabled you to use the 'a' in the calling scope, not 'a' in the TESTDT
+    test(71, TESTDT[eval(SJ(a)),v], data.table(a="d",v=3:6,key="a"))
+    test(72, TESTDT[eval(CJ(a)),v], data.table(a="d",v=3:6,key="a"))
 
     test(73, TESTDT[,v], 1:7)
     test(74, TESTDT[,3], 3)
@@ -438,7 +440,7 @@ test.data.table = function()
     test(180, DT[J(2,FALSE),v], 4L)
     test(181, DT[,sum(v),by=b][,V1], c(12L,9L))
 
-    # Test fix for bug 1026 reported by Harish
+    # Test fix for bug 1026 reported by Harish V
     rm(buniquename314)
     colnames(DT)[2] = "buniquename314"  # this test needed a unique var name to generate error 'object 'b' not found'. Otherwise it finds 'b' in local scope.   
     boo = function( data, fcn ) {
@@ -449,6 +451,9 @@ test.data.table = function()
     }
     test(182, boo( DT, sum(buniquename314) ), TRUE)
     
+    # Test bug 1005 reported by Branson O
+    DT = data.table(A = c("o", "x"), B = 1:10, key = "A")
+    test(183, DT[J(unique(A)), B], 1:2)
     
     ##########################
     if (nfail > 0) {

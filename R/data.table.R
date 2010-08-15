@@ -193,24 +193,19 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     if (which && !missing(j)) stop("'which' is true but 'j' is also supplied")
     cols <- names(x)
     if (!missing(i)) {
-        if (mode(substitute(i))=="call") {
-            # so 'i' can be any expression of column names, like the 'where' clause of SQL.
-            # i can also include objects from the calling frame e.g. TABLE[ColA %in% Lkp] where Lkp is a vector defined in the calling frame.
-            if (substring(deparse(substitute(i))[1],1,2) %in% c("J(","SJ","CJ")) {
-                # We want the join table to be constructed in the frame of the caller, not inside the data.table.
-                # If "ids" exists as a column name of x, we don't want those to be used by the join function.
-                # It doesn't matter if there are no column names the same as variables in the caller.
-                i = try(eval(substitute(i), envir=parent.frame(), enclos=parent.frame()),silent=TRUE)
-            } else {
-                # Usual where clause via vector scan, no join. For example  DT[id=="A"]
-                i = try(eval(substitute(i), envir=x, enclos=parent.frame()),silent=TRUE)
-            }
-            if (inherits(i,"try-error")) {
-                cat("Error hint: the i expression sees the column variables. Column names (variables) will mask variables in the calling frame. Check for any conflicts.\n")
-                stop(i)
-            }
-            if (is.logical(i)) i[is.na(i)] = FALSE  # To simplify statement so don't have to do TABLE[!is.na(ColA) & ColA==ColB]
+        isub = substitute(i)
+        isubl = as.list(isub)
+        if (identical(isubl[[1]],quote(eval))) {
+            i = try(eval(isubl[[2]],parent.frame()), silent=TRUE)  # same reason doing it this way as comment further down for bysub
+        } else {
+            i = try(eval(isub, envir=x, enclos=parent.frame()), silent=TRUE)
         }
+        if (inherits(i,"try-error")) {
+            cat("Error hint: the i expression sees the column variables. Column names (variables) will mask variables in the calling frame. Check for any conflicts.\n")
+            stop(i)
+        }
+        if (is.logical(i) && !identical(isub,quote(NA))) i[is.na(i)] = FALSE  
+        # To simplify statement so don't have to do TABLE[!is.na(ColA) & ColA==ColB], but still to allow DT[NA] meaning one NA row. The NA literal has type logical, remember.
         if (is.null(i)) return(structure(NULL,class=c("data.table","data.frame"),row.names=.set_row_names(0)))
         if (is.character(i)) {
             # user can feel like they are using rownames if they like

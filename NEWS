@@ -60,6 +60,9 @@ BUG FIXES
         contains DT[,eval(substitute(arg)),by=a], fixing bug #1026.
         Thanks to Harish V for reporting.
         
+    o   If DT contains column 'a' then DT[J(unique(a))] now finds
+        'a', fixing bug #1005. Thanks to Branson Owen for reporting.
+        
         
 NOTES
 
