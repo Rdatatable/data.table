@@ -455,6 +455,11 @@ test.data.table = function()
     DT = data.table(A = c("o", "x"), B = 1:10, key = "A")
     test(183, DT[J(unique(A)), B], 1:2)
     
+    # Test bug 709
+    xx = data.table(a=1:5,b=6:10)
+    test(184, xx[a>6,sum(b),by=a], 0L)   # aside: consistent with sum(NULL)==0
+    
+    
     ##########################
     if (nfail > 0) {
         stop(nfail," errors in test.data.table()")

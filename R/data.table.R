@@ -277,7 +277,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (is.na(nomatch) || nomatch!=0) irows[irows==0] = nomatch   # typically you would say nomatch=NA to obtain an outer join, and nomatch=0 for an inner join (i.e. to remove rows with no match)
         } else {
             # i is not a data.table
-            if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to integer or double")
+            if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
             # i was passed in as integer row numbers, or the i expression evaluation to integer rows
             # i out of bounds is now allowed and just returns NA as a data.frame does. i==0 returns an empty template (see FAQ 2.03)
             irows = i
@@ -305,9 +305,11 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 bysameorder = haskey(i) #TRUE  # think of a mult='all' as by'ing by the join. Setting 'bysameorder' now is more of a fudge to avoid the o__[f__] later.
                 if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by' is missing")
             } else {
-                if (!missing(i)) x = x[irows, nomatch=nomatch, roll=roll, rolltolast=rolltolast, mult=mult]   # note this is a once only recursive call to [.data.table since j is missed here
-                # TO DO: can speed up, when i is present, by not taking a subset of the whole table first, just the grouping columns.
-                if (missing(by)) {
+                if (!missing(i)) {
+                    x = x[irows, nomatch=nomatch, roll=roll, rolltolast=rolltolast, mult=mult]   # note this is a once only recursive call to [.data.table since j is not passed into this call
+                    # TO DO: can speed up when i is present by not taking a subset of the whole table first, just the grouping columns.
+                }
+                if (missing(by) || nrow(x)<1) {
                     if (mode(jsub)!="name" && as.character(jsub[[1]]) %in% c("list","DT")) {
                         jdep = deparse(jsub)
                         jdep = gsub("^list","data.table",jdep)   # we need data.table here because i) it grabs the column names from objects and ii) it does the vector expansion 

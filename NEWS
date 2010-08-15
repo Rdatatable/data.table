@@ -63,6 +63,9 @@ BUG FIXES
     o   If DT contains column 'a' then DT[J(unique(a))] now finds
         'a', fixing bug #1005. Thanks to Branson Owen for reporting.
         
+    o   'by' on no data (for example when 'i' returns no rows) now
+        works. Bug #709 fixed.
+        
         
 NOTES
 
