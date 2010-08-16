@@ -267,7 +267,7 @@ The drop argument is never used by \code{[.data.table}; it is a placeholder for 
 \section{General questions about the package}
 
 \subsection{v1.3 appears to be missing from the CRAN archive ?}
-That is correct. v1.3 was available on R-forge only. There were several large
+That is correct. v1.3 was available on R-Forge only. There were several large
 changes internally and these took some time to test in development.
 
 \subsection{Is \code{data.table} compatible with S-plus ?}
@@ -310,7 +310,7 @@ This FAQ is a vignette written using Sweave. The benefits of Sweave include the 
 \begin{itemize}
 \item We include R code in the answers. This is actually run when the file is created, not copy and pasted. 
 \item This document is reproducible. Grab the .Rnw and you can run it yourself.
-\item This file is built every night on R-forge so it's another way we check the package.
+\item This file is built every night on R-Forge so it's another way we check the package.
 \item This file is bound into each version of the package. The package is not accepted on CRAN unless this file passes checks. Each version of the
 package will have its own FAQ file which will be relevant for that version.  Contrast this to a single website, which can be ambiguous if the answer
 depends on the version.
