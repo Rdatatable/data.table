@@ -218,6 +218,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             rightcols = match(key(x),colnames(x))
             if (any(is.na(rightcols))) stop("sorted columns of x don't exist in the colnames. data.table is not a valid data.table")
             for (a in rightcols) if (!typeof(x[[a]]) %in% c("integer","logical")) stop("sorted column ",colnames(x)[a], " in x is not internally type integer")
+            byval = i
             if (haskey(i)) {
                 leftcols = match(key(i),colnames(i))
                 if (any(is.na(leftcols))) stop("sorted columns of i don't exist in the colnames of i. data.table is not a valid data.table")
@@ -298,10 +299,15 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 # Useful for a few known groups rather than a 'by' on the whole table followed by a subset afterwards.
                 f__ = idx.start
                 len__ = as.integer(idx.end-idx.start+1)
-                len__ = len__[f__>0]
-                byval = i[f__>0]  # the levels on x trickle through to byval here, via the trickle above where i factors are mapped to x factors.
-                names(byval) = iby  # the names of the group columns come from x since those are the cols we're joining to.  inci argument might later include i columns as they are.
-                f__ = f__[f__>0]
+                #len__[idx.start==0] = 0L
+                # byval = i
+                names(byval) = iby
+                #if (!is.na(nomatch) && nomatch==0) {
+                #    len__ = len__[f__>0]
+                #    byval = i[f__>0]  # the levels on x trickle through to byval here, via the trickle above where i factors are mapped to x factors.
+                #    #names(byval) = iby  # the names of the group columns come from x since those are the cols we're joining to.  inci argument might later include i columns as they are.
+                #    f__ = f__[f__>0]
+                #}
                 bysameorder = haskey(i) #TRUE  # think of a mult='all' as by'ing by the join. Setting 'bysameorder' now is more of a fudge to avoid the o__[f__] later.
                 if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by' is missing")
             } else {
@@ -432,8 +438,12 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ...\n");flush.console()}
             # byretn is all about trying to allocate the right amount of memory for the result, first time. Then there
             # will be no need to grow it as the 'by' proceeds, or use memory for a temporary list of the results.
-            itestj = seq(f__[1],length=len__[1])
-            if (length(o__)) itestj = o__[itestj]
+            if (f__[1]==0 && is.na(nomatch)) {
+                itestj = NA_integer_  # this can be NA after next change
+            } else {
+                itestj = seq(f__[1],length=len__[1])
+                if (length(o__)) itestj = o__[itestj]
+            }
             SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
             SDenv$.SD = x[itestj, vars, with=FALSE]
             testj = eval(jsub, SDenv$.SD, enclos = SDenv)    # our test is now the first group. problems before with the largest being repeated.
@@ -470,7 +480,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             xcols = as.integer(match(vars,colnames(x)))
             # browser()
             
-            ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,jsub,new.env(parent=parent.frame()),testj,byretn,byval,verbose,PACKAGE="data.table")
+            ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,jsub,new.env(parent=parent.frame()),testj,byretn,byval,is.na(nomatch),verbose,PACKAGE="data.table")
             
             # TO DO : play with hash and size arguments of the new.env().
             if (verbose) {cat("... done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
@@ -490,15 +500,11 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             }
             attr(ans,"row.names") = .set_row_names(length(ans[[1]]))
             class(ans) = c("data.table","data.frame")
-            #if (!incbycols) {
-            #    warning("Removing by cols now for backwards compatibility. incbycols will be deprecated in future since 'by' is now fast.")
-            #    ans = ans[,-seq_len(length(byval)),with=FALSE]
-            #} else {
-                if ((!missing(by) && bysameorder) || (!missing(i) && haskey(i))) {
-                    # either a spliced join, likely i was SJ() or a table already with a key,  or a by to the key columns in order
-                    setkey("ans",colnames(ans)[seq_along(byval)])
-                }
-            #}   
+            if ((!missing(by) && bysameorder) || (!missing(i) && haskey(i))) {
+                # either a spliced join, likely i was SJ() or a table already with a key,  or a by to the key columns in order
+                setkey("ans",colnames(ans)[seq_along(byval)])
+                # TO DO - just mark as sorted, does it really need to be re-sorted ?
+            }
             # To delete .. for (s in seq_len(ncol(ans))) if (is.factor(ans[[s]])) ans[[s]] = factor(ans[[s]])  # drop unused levels
             return(ans)
             ##

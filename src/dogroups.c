@@ -12,14 +12,14 @@ EXPORT SEXP dogroups();
 
 static SEXP growVector(SEXP x, R_len_t newlen, int size);
 
-SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval, SEXP verbose)
+SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval, SEXP nomatchNA, SEXP verbose)
 {
     R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0, newlen;
     SEXP names, ans, sizes, jval, jsizes, bysizes, naint, nareal;
     if (TYPEOF(order) != INTSXP) error("order not integer");
     if (TYPEOF(starts) != INTSXP) error("starts not integer");
     if (TYPEOF(lens) != INTSXP) error("lens not integer");
-    if (INTEGER(starts)[0]<1 || INTEGER(lens)[0]<1) error("starts[1]<1 or lens[1]<1");
+    if (INTEGER(starts)[0]<0 || INTEGER(lens)[0]<1) error("starts[1]<0 or lens[1]<1");
     if(!isEnvironment(env)) error("’env’ should be an environment");
     ngrp = length(starts);  // the number of groups
     njval = length(testj);  // testj is now the result of j on the first group
@@ -148,23 +148,50 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
     // end copy of testj into result
     
     for(i = 1; i < ngrp; i++) {  // 2nd group onwards
-        if (length(order)==0) {
-            for (j=0; j<length(SD); j++) {
-                memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),
-                       (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+(INTEGER(starts)[i]-1)*INTEGER(sizes)[j],
-                       INTEGER(lens)[i]*INTEGER(sizes)[j]);
+        thislen = INTEGER(lens)[i]; 
+        if (INTEGER(starts)[i] == 0) {
+            if (LOGICAL(nomatchNA)[0]) {   // the is.na(nomatch) is up in R as its easier to cope with NA(logical), NA_integer_, 0L and 0 up there.
+                for (j=0; j<length(SD); j++) {
+                    switch (TYPEOF(VECTOR_ELT(SD, j))) {
+                    case LGLSXP :
+                        LOGICAL(VECTOR_ELT(SD,j))[0] = NA_LOGICAL;
+                        break;
+                    case INTSXP :
+                        INTEGER(VECTOR_ELT(SD,j))[0] = NA_INTEGER;
+                        break;
+                    case REALSXP :
+                        REAL(VECTOR_ELT(SD,j))[0] = NA_REAL;
+                        break;
+                    case STRSXP :
+                        SET_STRING_ELT(VECTOR_ELT(SD,j),0,NA_STRING);
+                        break;
+                    default:
+                        error("Logical error. Type of column should have been checked by now");
+                    }
+                }
+                thislen = 1;
+            } else {
+                thislen = 0;
             }
         } else {
-            for (k=0; k<INTEGER(lens)[i]; k++) {
-                rownum = INTEGER(order)[ INTEGER(starts)[i] -1 + k ] -1;
-                for (j=0; j<length(SD); j++) {    
-                    memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)) + k*INTEGER(sizes)[j],
+            if (length(order)==0) {
+                for (j=0; j<length(SD); j++) {
+                    memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),
+                       (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+(INTEGER(starts)[i]-1)*INTEGER(sizes)[j],
+                       thislen*INTEGER(sizes)[j]);
+                }
+            } else {
+                for (k=0; k<thislen; k++) {
+                    rownum = INTEGER(order)[ INTEGER(starts)[i] -1 + k ] -1;
+                    for (j=0; j<length(SD); j++) {    
+                        memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)) + k*INTEGER(sizes)[j],
                            (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1)) + rownum*INTEGER(sizes)[j],
                            INTEGER(sizes)[j]);
+                    }
                 }
             }
         }
-        for (j=0; j<length(SD); j++) SETLENGTH(VECTOR_ELT(SD,j),INTEGER(lens)[i]);
+        for (j=0; j<length(SD); j++) SETLENGTH(VECTOR_ELT(SD,j),thislen);
         PROTECT(jval = eval(jexp, env));
         if (length(byval)+length(jval) != length(ans)) error("j doesn't evaluate to the same number of columns for each group");  // this would be a problem even if we unlisted afterwards. This way the user finds out earlier though so he can fix and rerun sooner.
         maxn = 0;

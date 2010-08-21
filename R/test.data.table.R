@@ -64,13 +64,20 @@ test.data.table = function()
     test(15, TESTDT[SJ(c(-3,2,4,4,5,7,8)),v,mult="last",nomatch=0], INT(6,6,7))
     test(16, TESTDT[SJ(c(4)),v][[2]], INT(3,4,5,6))
     #test(17, suppressWarnings(TESTDT[SJ(c(4,4)),v,mult="all",incbycols=FALSE][[1]]), INT(3:6,3:6))
-    test(18, TESTDT[SJ(c(-3,2,4,8)),v,mult="all"][[2]], INT(3:6))
-    test(19, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",roll=TRUE][[2]], INT(1,3:6,7))
-    test(20, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",rolltolast=TRUE][[2]], INT(1,3:6))
-    test(21, TESTDT[SJ(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all"][[3]], INT(1,3:4))
-    test(22, TESTDT[SJ(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",roll=TRUE][[3]], INT(1,3:4,4,6))
-    test(23, TESTDT[SJ(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",rolltolast=TRUE][[3]], INT(1,3:4,4))
-    test(24, TESTDT[SJ(c(1,NA,4,NA,NA,4,4),c(5,5,6,6,7,9,10)),v,mult="all",roll=TRUE][[3]], INT(1,3:4,5:6,6)) # The SJ sorted the NAs in the key to the end
+    test(18, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",nomatch=0][[2]], INT(3:6))
+    test(185, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",nomatch=NA][[2]], INT(NA,NA,3:6,NA))
+    test(19, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",roll=TRUE,nomatch=0][[2]], INT(1,3:6,7))
+    test(186, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",roll=TRUE,nomatch=NA][[2]], INT(NA,1,3:6,7))
+    test(20, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",rolltolast=TRUE,nomatch=0][[2]], INT(1,3:6))
+    test(187, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",rolltolast=TRUE,nomatch=NA][[2]], INT(NA,1,3:6,NA))
+    test(21, TESTDT[SJ(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",nomatch=0][[3]], INT(1,3:4))
+    test(188, TESTDT[SJ(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",nomatch=NA][[3]], INT(NA,1,NA,3:4,NA,NA,NA))
+    test(22, TESTDT[SJ(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",roll=TRUE,nomatch=0][[3]], INT(1,3:4,4,6))
+    test(189, TESTDT[SJ(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",roll=TRUE,nomatch=NA][[3]], INT(NA,1,NA,3:4,4,6,NA))
+    test(23, TESTDT[SJ(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",rolltolast=TRUE,nomatch=0][[3]], INT(1,3:4,4))
+    test(190, TESTDT[SJ(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",rolltolast=TRUE,nomatch=NA][[3]], INT(NA,1,NA,3:4,4,NA,NA))
+    test(24, TESTDT[SJ(c(1,NA,4,NA,NA,4,4),c(5,5,6,6,7,9,10)),v,mult="all",roll=TRUE,nomatch=0][[3]], INT(1,3:4,5:6,6))
+    test(191, TESTDT[SJ(c(1,NA,4,NA,NA,4,4),c(5,5,6,6,7,9,10)),v,mult="all",roll=TRUE,nomatch=NA][[3]], INT(NA,NA,NA,1,3:4,5:6,6))
     # Note that the NAs get sorted to the beginning by the SJ().
 
     # i.e.       a b v      (same test matrix, repeating here for easier reading of the test cases below)
@@ -98,17 +105,24 @@ test.data.table = function()
     test(39, TESTDT[J(c(5,4,-3,8,4,7,2)),v,mult="last",nomatch=0], INT(6,6,7))
     test(40, TESTDT[J(c(4)),v,mult="all"][[2]], INT(3,4,5,6))
     test(41, TESTDT[J(c(4,4)),v,mult="all"][[2]], INT(3:6,3:6))
-    test(42, TESTDT[J(c(8,2,4,-3)),v,mult="all"][[2]], INT(3:6))
-    test(43, TESTDT[J(c(8,2,4,-3)),v,mult="all",roll=TRUE][[2]], INT(7,1,3:6))
+    test(42, TESTDT[J(c(8,2,4,-3)),v,mult="all",nomatch=0][[2]], INT(3:6))
+    test(192, TESTDT[J(c(8,2,4,-3)),v,mult="all",nomatch=NA][[2]], INT(NA,NA,3:6,NA))
+    test(43, TESTDT[J(c(8,2,4,-3)),v,mult="all",roll=TRUE,nomatch=0][[2]], INT(7,1,3:6))
+    test(193, TESTDT[J(c(8,2,4,-3)),v,mult="all",roll=TRUE,nomatch=NA][[2]], INT(7,1,3:6,NA))
     #test(44, suppressWarnings(TESTDT[J(c(8,4,2,-3)),v,mult="all",rolltolast=TRUE,incbycols=FALSE][[1]]), INT(3:6,1))
-    test(45, TESTDT[J(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all"][[3]], INT(1,3:4))
-    test(46, TESTDT[J(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",roll=TRUE][[3]], INT(1,3:4,4,6))
-    test(47, TESTDT[J(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",rolltolast=TRUE][[3]], INT(1,3:4,4))
-    test(48, TESTDT[J(c(-9,NA,4,NA,1,4,4),c(1,5,9,6,5,9,10)),v,mult="all",roll=TRUE][[3]], INT(5:6,1,5:6,6))  # this time the NAs stay where they are. Compare to test 24 above.
-
-    test(49, TESTDT[J(c(4,1,0,5,3,7,NA,4,1),c(6,5,1,10,5,2,1,6,NA)),v], INT(3,1,NA,NA,2,7,NA,3,NA))
-    test(50, TESTDT[J(c(4,1,0,5,3,7,NA,4,1),c(6,5,1,10,5,2,1,6,NA)),v,mult="last"], INT(4,1,NA,NA,2,7,NA,4,NA))
-
+    test(45, TESTDT[J(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",nomatch=0][[3]], INT(1,3:4))
+    test(194, TESTDT[J(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",nomatch=NA][[3]], INT(NA,1,NA,3:4,NA,NA,NA))
+    test(46, TESTDT[J(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",roll=TRUE,nomatch=0][[3]], INT(1,3:4,4,6))
+    test(195, TESTDT[J(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",roll=TRUE,nomatch=NA][[3]], INT(NA,1,NA,3:4,4,6,NA))
+    test(47, TESTDT[J(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",rolltolast=TRUE,nomatch=0][[3]], INT(1,3:4,4))
+    test(196, TESTDT[J(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",rolltolast=TRUE,nomatch=NA][[3]], INT(NA,1,NA,3:4,4,NA,NA))
+    test(48, TESTDT[J(c(-9,NA,4,NA,1,4,4),c(1,5,9,6,5,9,10)),v,mult="all",roll=TRUE,nomatch=0][[3]], INT(5:6,1,5:6,6))  # this time the NAs stay where they are. Compare to test 24 above.
+    test(197, TESTDT[J(c(-9,NA,4,NA,1,4,4),c(1,5,9,6,5,9,10)),v,mult="all",roll=TRUE,nomatch=NA][[3]], INT(NA,NA,5:6,NA,1,5:6,6))
+    test(49, TESTDT[J(c(4,1,0,5,3,7,NA,4,1),c(6,5,1,10,5,2,1,6,NA)),v,nomatch=0], INT(3,1,2,7,3))
+    test(198, TESTDT[J(c(4,1,0,5,3,7,NA,4,1),c(6,5,1,10,5,2,1,6,NA)),v,nomatch=NA], INT(3,1,NA,NA,2,7,NA,3,NA))
+    test(50, TESTDT[J(c(4,1,0,5,3,7,NA,4,1),c(6,5,1,10,5,2,1,6,NA)),v,mult="last",nomatch=0], INT(4,1,2,7,4))
+    test(199, TESTDT[J(c(4,1,0,5,3,7,NA,4,1),c(6,5,1,10,5,2,1,6,NA)),v,mult="last",nomatch=NA], INT(4,1,NA,NA,2,7,NA,4,NA))
+    
     TESTDT$a = factor(letters[TESTDT$a])
     setkey(TESTDT,a,b)
     # i.e.       a b v
@@ -119,8 +133,10 @@ test.data.table = function()
     #       [5,] d 9 5
     #       [6,] d 9 6
     #       [7,] g 2 7
-    test(51, TESTDT[SJ(c("d","d","e","g"),c(6,7,1,2)),v,mult="all",roll=TRUE][[3]], INT(3:4,4,7))  # will test sortedmatch for strings in the level match
-    test(52, TESTDT[J(c("g","d","e","d"),c(6,6,1,2)),v,mult="all",roll=TRUE][[3]], INT(7,3:4))  # also will test sortedmatch for strings in the level match
+    test(51, TESTDT[SJ(c("d","d","e","g"),c(6,7,1,2)),v,mult="all",roll=TRUE,nomatch=0][[3]], INT(3:4,4,7))  # will test sortedmatch for strings in the level match
+    test(200, TESTDT[SJ(c("d","d","e","g"),c(6,7,1,2)),v,mult="all",roll=TRUE,nomatch=NA][[3]], INT(3:4,4,NA,7))
+    test(52, TESTDT[J(c("g","d","e","d"),c(6,6,1,2)),v,mult="all",roll=TRUE,nomatch=0][[3]], INT(7,3:4))  # also will test sortedmatch for strings in the level match
+    test(201, TESTDT[J(c("g","d","e","d"),c(6,6,1,2)),v,mult="all",roll=TRUE,nomatch=NA][[3]], INT(7,3:4,NA,NA))
 
     TESTDT$b = factor(letters[TESTDT$b])
     setkey(TESTDT,a,b)
@@ -286,9 +302,9 @@ test.data.table = function()
     test(125, inherits(t,"try-error"))
     test(126, length(grep("The data.table has no key", t)))
 
-    TESTDT = data.table(a=3L,v=2,key="a")
+    TESTDT = data.table(a=3L,v=2,key="a")  # testing 1-row table
     test(127, TESTDT[J(3)], TESTDT)
-    test(128, TESTDT[J(4)], TESTDT[NA])
+    test(128, TESTDT[J(4)], TESTDT[NA])   # see tests 185-186 too re the [NA]
     test(129, TESTDT[J(4),roll=TRUE], TESTDT)
     test(130, TESTDT[J(4),rolltolast=TRUE], TESTDT[NA])
     test(131, TESTDT[J(-4),roll=TRUE], TESTDT[NA])
@@ -451,7 +467,7 @@ test.data.table = function()
     }
     test(182, boo( DT, sum(buniquename314) ), TRUE)
     
-    # Test bug 1005 reported by Branson O
+    # Test bug 1005 reported by Branson Owen
     DT = data.table(A = c("o", "x"), B = 1:10, key = "A")
     test(183, DT[J(unique(A)), B], 1:2)
     
@@ -459,6 +475,26 @@ test.data.table = function()
     xx = data.table(a=1:5,b=6:10)
     test(184, xx[a>6,sum(b),by=a], 0L)   # aside: consistent with sum(NULL)==0
     
+    # Tests of bug 1015 highlight by Harish
+    # See thread "'by without by' now heeds nomatch=NA"
+    # Tests 185-201 were added in above next to originals
+    x <- data.table(a=c("a","b","d","e"),b=c("A","A","B","B"),d=c(1,2,3,4), key="a,b")
+    y <- data.table(g=c("a","b","c","d"),h=c("A","A","A","A"))
+    test(202, x[y], x[y,mult="all"])
+    test(203, x[y,d], c(1,2,NA,NA))
+    test(204, x[y,list(d)][[1]], c(1,2,NA,NA))
+    test(205, x[y,list(d),mult="all"][,d], c(1,2,NA,NA))
+    
+    # Test [NA] returns one NA row. NA is type *logical* so prior to
+    # change in v1.5, NA would get silently recycled and the whole table would
+    # be returned all NA (rarely useful and often confusing, but consistent
+    # with data.frame).
+    #TESTDT = data.table(a=1:3,v=1:3,key="a")
+    #test(, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_,key="a"))
+    #key(TESTDT) = NULL
+    #test(, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_,key="a"))
+    
+
     
     ##########################
     if (nfail > 0) {
