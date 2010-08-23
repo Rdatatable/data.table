@@ -204,8 +204,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             cat("Error hint: the i expression sees the column variables. Column names (variables) will mask variables in the calling frame. Check for any conflicts.\n")
             stop(i)
         }
-        if (is.logical(i) && !identical(isub,quote(NA))) i[is.na(i)] = FALSE  
-        # To simplify statement so don't have to do TABLE[!is.na(ColA) & ColA==ColB], but still to allow DT[NA] meaning one NA row. The NA literal has type logical, remember.
+        if (is.logical(i)) {
+            if (identical(i,NA)) i = NA_integer_  # see DT[NA] thread re recycling of NA logical
+            else i[is.na(i)] = FALSE              # To simplify statement so don't have to do TABLE[!is.na(ColA) & ColA==ColB]
+        }    
         if (is.null(i)) return(structure(NULL,class=c("data.table","data.frame"),row.names=.set_row_names(0)))
         if (is.character(i)) {
             # user can feel like they are using rownames if they like
@@ -439,7 +441,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # byretn is all about trying to allocate the right amount of memory for the result, first time. Then there
             # will be no need to grow it as the 'by' proceeds, or use memory for a temporary list of the results.
             if (f__[1]==0 && is.na(nomatch)) {
-                itestj = NA_integer_  # this can be NA after next change
+                itestj = NA
             } else {
                 itestj = seq(f__[1],length=len__[1])
                 if (length(o__)) itestj = o__[itestj]

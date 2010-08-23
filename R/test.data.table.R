@@ -489,12 +489,11 @@ test.data.table = function()
     # change in v1.5, NA would get silently recycled and the whole table would
     # be returned all NA (rarely useful and often confusing, but consistent
     # with data.frame).
-    #TESTDT = data.table(a=1:3,v=1:3,key="a")
-    #test(, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_,key="a"))
-    #key(TESTDT) = NULL
-    #test(, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_,key="a"))
+    TESTDT = data.table(a=1:3,v=1:3,key="a")
+    test(206, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_,key="a"))
+    key(TESTDT) = NULL
+    test(207, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_))
     
-
     
     ##########################
     if (nfail > 0) {

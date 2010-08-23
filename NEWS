@@ -69,6 +69,11 @@ BUG FIXES
     o   'by without by' now heeds nomatch=NA, fixing bug #1015.
         Thanks to Harish V for reporting.
         
+    o   DT[NA] now returns 1 row of NA rather than the whole table
+        via standard NA logical recycling. A single NA logical is
+        a special case and is now replaced by NA_integer_. Thanks
+        to Branson Owen for highlighting the issue.
+        
         
 NOTES
 
