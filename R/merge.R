@@ -22,7 +22,7 @@ merge.data.table <- function(x, y, all = FALSE, all.x = all, all.y = all, ...) {
         if (length(missingxidx) > 0) {
             othercols <- setdiff(names(y), key)
             if (length(othercols) < 1) othercols = data.table()
-            dt <- rbind(cbind(x[missingxidx], y[rep(1, length(missingxidx)), othercols, with = FALSE][NA]),
+            dt <- rbind(cbind(x[missingxidx], y[NA, othercols, with = FALSE][rep(1, length(missingxidx))]),
                         dt)
         }
     }
@@ -35,7 +35,7 @@ merge.data.table <- function(x, y, all = FALSE, all.x = all, all.y = all, ...) {
             if (length(othercolsy) < 1) othercolsy <- data.table()
             dt <- rbind(dt,
                         cbind(y[missingyidx, key, with = FALSE],
-                              x[rep(1, length(missingyidx)), othercolsx, with = FALSE][NA],
+                              x[NA, othercolsx, with = FALSE][rep(1, length(missingyidx))],
                               y[missingyidx, othercolsy, with = FALSE]))
         }
     }

@@ -74,6 +74,10 @@ BUG FIXES
         a special case and is now replaced by NA_integer_. Thanks
         to Branson Owen for highlighting the issue.
         
+    o   NROW removed from data.table, since the is.data.frame() in
+        base::NROW now returns TRUE due to inheritance. Fixes bug
+        #1039 reported by Bradley Buchsbaum. Thank you.
+        
         
 NOTES
 

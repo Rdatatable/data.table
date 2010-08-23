@@ -39,17 +39,17 @@ format.data.table <- function (x, ..., justify = "none") {
 is.data.table = function(x) inherits(x, "data.table")
 is.ff = function(x) inherits(x, "ff")  # define this in data.table so that we don't have to require(ff), but if user is using ff we'd like it to work
 
-NCOL = function(x) {
-    # copied from base, but additionally covers data.table via is.list()
-    # because NCOL in base explicity tests using is.data.frame()
-    if (is.list(x) && !is.ff(x)) return(length(x))
-    if (is.array(x) && length(dim(x)) > 1) ncol(x) else as.integer(1)
-}
-NROW = function(x) {
-    if (is.data.frame(x) || is.data.table(x)) return(nrow(x))
-    if (is.list(x) && !is.ff(x)) stop("List is not a data.frame or data.table. Convert first before using NROW")   # list may have different length elements, which data.table and data.frame's resolve.
-    if (is.array(x)) nrow(x) else length(x)
-}
+#NCOL = function(x) {
+#    # copied from base, but additionally covers data.table via is.list()
+#    # because NCOL in base explicity tests using is.data.frame()
+#    if (is.list(x) && !is.ff(x)) return(length(x))
+#    if (is.array(x) && length(dim(x)) > 1) ncol(x) else as.integer(1)
+#}
+#NROW = function(x) {
+#    if (is.data.frame(x) || is.data.table(x)) return(nrow(x))
+#    if (is.list(x) && !is.ff(x)) stop("List is not a data.frame or data.table. Convert first before using NROW")   # list may have different length elements, which data.table and data.frame's resolve.
+#    if (is.array(x)) nrow(x) else length(x)
+#}
 
 # removed DT alias as j=list() is much faster with new dogroups ... DT = function(...) data.table(...)  # DT is alias for data.table intended for use in j expressions.
 

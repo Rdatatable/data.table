@@ -304,7 +304,7 @@ test.data.table = function()
 
     TESTDT = data.table(a=3L,v=2,key="a")  # testing 1-row table
     test(127, TESTDT[J(3)], TESTDT)
-    test(128, TESTDT[J(4)], TESTDT[NA])   # see tests 185-186 too re the [NA]
+    test(128, TESTDT[J(4)], TESTDT[NA])   # see tests 206-207 too re the [NA]
     test(129, TESTDT[J(4),roll=TRUE], TESTDT)
     test(130, TESTDT[J(4),rolltolast=TRUE], TESTDT[NA])
     test(131, TESTDT[J(-4),roll=TRUE], TESTDT[NA])
@@ -493,6 +493,12 @@ test.data.table = function()
     test(206, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_,key="a"))
     key(TESTDT) = NULL
     test(207, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_))
+    
+    # With inheritance, NROW and NCOL in base work nicely. No need for them in data.table.
+    test(208, NROW(TESTDT), 3L)
+    test(209, nrow(TESTDT), 3L)
+    test(210, NCOL(TESTDT), 2L)
+    test(211, ncol(TESTDT), 2L)
     
     
     ##########################
