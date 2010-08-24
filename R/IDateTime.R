@@ -31,8 +31,11 @@ as.list.IDate <-
     }
 
 # rounding -- good for graphing / subsetting
-round.IDate <- function (x, units = c("weeks", "months", "quarters", "years")) {
-    units <- match.arg(units)
+## round.IDate <- function (x, digits, units=digits, ...) {
+##     if (missing(digits)) digits <- units # workaround to provide a units argument to match the round generic and round.POSIXt
+##     units <- match.arg(digits, c("weeks", "months", "quarters", "years"))
+round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ...) {
+    units <- match.arg(digits)
     as.IDate(switch(units,
                     weeks  = round(x, "year") + 7 * (yday(x) %/% 7),
                     months = ISOdate(year(x), month(x), 1),
@@ -108,12 +111,20 @@ IDateTime.default <- function(x, ...) {
 
 # POSIXt support
 
-as.POSIXct.IDate <- function(x, time = 0, tz = "UTC", ...) {
+as.POSIXct.IDate <- function(x, tz = "UTC", time = 0, ...) {
+    if (missing(time) && inherits(tz, "ITime")) {
+        time <- tz # allows you to use time as the 2nd argument
+        tz <- "UTC"
+    }
     if (tz == "") tz <- "UTC"
     as.POSIXct(as.POSIXlt(x, ...), tz, ...) + time
 }
 
-as.POSIXct.ITime <- function(x, date = as.Date(Sys.time()), tz = "UTC", ...) {
+as.POSIXct.ITime <- function(x, tz = "UTC", date = as.Date(Sys.time()), ...) {
+    if (missing(date) && any(class(tz) %in% c("Date", "IDate", "POSIXt", "dates"))) {
+        date <- tz # allows you to use date as the 2nd argument
+        tz <- "UTC"
+    }
     as.POSIXct(as.POSIXlt(date), tz = tz) + x
 }
 

@@ -48,13 +48,13 @@ as.IDate(x, ...)
 \method{as.IDate}{default}(x, \dots)
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
-\method{as.POSIXct}{IDate}(x, time = 0, tz = "UTC", \dots)
+\method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
 \method{as.chron}{IDate}(x, time = NULL, \dots)
-\method{round}{IDate}(x, units = c("weeks", "months", "quarters", "years"))
+\method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), \ldots)
 
 as.ITime(x, ...)
 \method{as.ITime}{default}(x, \dots)
-\method{as.POSIXct}{ITime}(x, date = as.Date(Sys.time()), tz = "UTC", \dots)
+\method{as.POSIXct}{ITime}(x, tz = "UTC", date = as.Date(Sys.time()), \dots)
 \method{as.chron}{ITime}(x, date = NULL, \dots)
 \method{as.character}{ITime}(x, \dots)
 \method{format}{ITime}(x, \dots)
@@ -81,7 +81,7 @@ year(x)
   \item{tz}{time zone (see \code{strptime}).}
   \item{date}{date object convertable with \code{as.IDate}.}
   \item{time}{time-of-day object convertable with \code{as.ITime}.}
-  \item{units}{one of the units listed for rounding. May be abbreviated.}
+  \item{digits}{really \code{units}; one of the units listed for rounding. May be abbreviated.}
 }
 \details{
 \code{IDate} is a date class derived from \code{Date}. It has the same
@@ -106,6 +106,14 @@ formats are provided.
 \code{ITime} does not account for time zones. When converting
 \code{ITime} and \code{IDate} to POSIXct with \code{as.POSIXct}, a time
 zone may be specified.
+
+In \code{as.POSIXct} methods for \code{ITime} and \code{IDate}, the
+second argument is required to be \code{tz} based on the generic
+template, but to make converting easier, the second arguement is
+interpreted as a date instead of a time zone if it is of type
+\code{IDate} or \code{ITime}. Therefore, you can use either of the
+following: \code{as.POSIXct(time, date)} or \code{as.POSIXct(date,
+time)}.
 
 \code{IDateTime} takes a date-time input and returns a data table with
 columns \code{date} and \code{time}. 
