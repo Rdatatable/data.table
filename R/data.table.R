@@ -180,7 +180,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 
 "[.data.table" = function (x, i, j, by=NULL, with=TRUE, nomatch=NA, mult="first", roll=FALSE, rolltolast=FALSE, which=FALSE, bysameorder=FALSE, verbose=getOption("datatable.verbose",FALSE), drop=NULL)  # the drop is to sink drop argument when dispatch to [.data.frame, but we don't use ... as that stops test 147
 {
-    if (cendta()) {
+    if (!cedta()) {
         if (missing(drop)) return(`[.data.frame`(x,i,j))
         else return(`[.data.frame`(x,i,j,drop))
     }
@@ -558,13 +558,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 #  .C("do_subset2") or better.
 
 #"[[.data.table" = function(x,...) {
-#    if (cendta()) return(`[[.data.frame`(x,...))
+#    if (!cedta()) return(`[[.data.frame`(x,...))
 #    class(x)=NULL
 #    x[[...]]
 #}
 
 #"[[<-.data.table" = function(x,i,j,value) {
-#    if (cendta()) return(`[[<-.data.frame`(x,i,j,value))
+#    if (!cedta()) return(`[[<-.data.frame`(x,i,j,value))
 #    if (!missing(j)) stop("[[i,j]] assignment not available in data.table, put assignment(s) in [i,{...}] instead, more powerful")
 #    cl = oldClass(x)  # [[<-.data.frame uses oldClass rather than class, don't know why but we'll follow suit
 #    class(x) = NULL
@@ -676,18 +676,18 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE)
 as.data.table.data.table = function(x, keep.rownames=FALSE) return(x)
 
 head.data.table = function(x, n=6, ...) {
-    if (cendta()) return(NextMethod())
+    if (!cedta()) return(NextMethod())
     i = seq(len=min(n,nrow(x)))
     x[i]
 }
 tail.data.table = function(x, n=6, ...) {
-    if (cendta()) return(NextMethod())
+    if (!cedta()) return(NextMethod())
     i = seq(to=nrow(x), length=min(n, nrow(x)))
     x[i]
 }
 
 "[<-.data.table" = function (x, i, j, value) {
-    if (!missing(i) && !cendta()) { # get i based on data.table-style indexing
+    if (!missing(i) && cedta()) { # get i based on data.table-style indexing
         i <- x[i, which=TRUE, mult="all"]
     }
     res <- `[<-.data.frame`(x, i, j, value)
@@ -767,13 +767,13 @@ as.data.frame.data.table = function(x, ...)
 
 
 dimnames.data.table = function(x) {
-    if (cendta()) return(`dimnames.data.frame`(x))
+    if (!cedta()) return(`dimnames.data.frame`(x))
     list(NULL, names(x))
 }
 
 "dimnames<-.data.table" = function (x, value)   # so that can do  colnames(dt)=<..>  as well as names(dt)=<..>
 {
-    if (cendta()) return(`dimnames<-.data.frame`(x,value))
+    if (!cedta()) return(`dimnames<-.data.frame`(x,value))
     if (!is.list(value) || length(value) != 2) stop("attempting to assign invalid object to dimnames of a data.table")
     if (!is.null(value[[1]])) stop("data.tables do not have rownames")
     if (ncol(x) != length(value[[2]])) stop("can't assign",length(value[[2]]),"colnames to a",ncol(x),"column data.table")
@@ -785,7 +785,7 @@ last = function(x) x[NROW(x)]     # last row for a data.table, last element for 
 
 within.data.table <- function (data, expr, keep.key = FALSE, ...) # basically within.list but with a check to avoid messing up the key
 {
-    if (cendta()) return(NextMethod())
+    if (!cedta()) return(NextMethod())
     parent <- parent.frame()
     e <- evalq(environment(), data, parent)
     eval(substitute(expr), e)
@@ -804,7 +804,7 @@ within.data.table <- function (data, expr, keep.key = FALSE, ...) # basically wi
 
 transform.data.table <- function (`_data`, ...) # basically transform.data.frame with data.table instead of data.frame
 {
-    if (cendta()) return(NextMethod())
+    if (!cedta()) return(NextMethod())
     e <- eval(substitute(list(...)), `_data`, parent.frame())
     tags <- names(e)
     inx <- match(tags, names(`_data`))
@@ -841,7 +841,7 @@ transform.data.table <- function (`_data`, ...) # basically transform.data.frame
 
 na.omit.data.table <- function (object, ...) 
 {
-    if (cendta()) return(NextMethod())
+    if (!cedta()) return(NextMethod())
     omit = FALSE
     for (i in seq_len(ncol(object))) omit = omit | is.na(object[[i]])
     object[!omit]
@@ -849,7 +849,7 @@ na.omit.data.table <- function (object, ...)
 }
 
 is.na.data.table <- function (x) {
-    if (cendta()) return(`is.na.data.frame`(x))
+    if (!cedta()) return(`is.na.data.frame`(x))
     do.call("cbind", lapply(x, "is.na"))
 }
 
@@ -860,7 +860,7 @@ is.na.data.table <- function (x) {
 
 Ops.data.table <- function (e1, e2 = NULL)
 {
-    if (cendta()) return(`Ops.data.frame`(e1,e2))
+    if (!cedta()) return(`Ops.data.frame`(e1,e2))
     # TO DO, revisit below,  if the same as Ops.data.frame can we leave it to inheritance?
     isList <- function(x) !is.null(x) && is.list(x)
     unary <- nargs() == 1L
@@ -934,7 +934,7 @@ Ops.data.table <- function (e1, e2 = NULL)
  
 
 split.data.table = function(...) {
-    if (!cendta() && getOption("datatable.dfdispatchwarn",TRUE))  # or user can use suppressWarnings
+    if (cedta() && getOption("datatable.dfdispatchwarn",TRUE))  # or user can use suppressWarnings
         warning("split is inefficient. It copies memory. Please use [,j,by=list(...)] syntax. See data.table FAQ.")
     NextMethod()  # allow user to do it though, split object will be data.table's with 'NA' repeated in row.names silently
 }
