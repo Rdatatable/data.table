@@ -765,9 +765,11 @@ as.data.frame.data.table = function(x, ...)
     x
 }
 
-
 dimnames.data.table = function(x) {
-    if (!cedta()) return(`dimnames.data.frame`(x))
+    if (!cedta()) {
+        if (!identical(class(x),c("data.table","data.frame"))) stop("data.table inherits from data.frame (from v1.5) but this data.table does not. Has it been created manually (e.g. by using 'structure' rather than 'data.table') or saved to disk using a prior version of data.table? The correct class is c('data.table','data.frame').")
+        return(`dimnames.data.frame`(x))
+    }
     list(NULL, names(x))
 }
 

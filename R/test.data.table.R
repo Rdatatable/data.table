@@ -396,7 +396,7 @@ test.data.table = function()
     if ("package:ggplot2" %in% search()) {
         test(167,print(ggplot(DT,aes(b,f))+geom_point()),NULL)  # how to programmatically test it not only doesn't error but correct output, binary diff to pre-prepared pdf ?
         test(168,DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 because there are 5 groups in DT data at this stage, just need 2 to test
-        # if (dev.cur()>1) dev.off()
+        try(dev.off(),silent=TRUE)
     } else {
         cat("Tests 167 and 168 not run. If required call library(ggplot2) first.\n")
         # ggplot takes a long time e.g. increases runtime of test.data.table from under 1 second to over 10 seconds. So we don't include these by default.
@@ -500,6 +500,14 @@ test.data.table = function()
     test(210, NCOL(TESTDT), 2L)
     test(211, ncol(TESTDT), 2L)
     
+    # Test infinite recursion error is trapped when a pre-1.5 data.table
+    # is used with 1.5 (bug #1008)
+    DT = data.table(a=1:6,key="a")
+    test(212, DT[J(3),a], 3L) # correct class c("data.table","data.frame")
+    class(DT) = "data.table"  # incorrect class
+    tt = try(DT[J(3),a], silent=TRUE)
+    test(213, inherits(tt,"try-error"))
+    test(214, length(grep("data.table inherits from data.frame", tt)))
     
     ##########################
     if (nfail > 0) {
