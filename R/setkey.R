@@ -24,17 +24,30 @@ setkey = function(x, ..., loc=parent.frame())
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
-    if (!all( sapply(x,storage.mode)[cols] %in% c("integer","logical"))) stop("All keyed columns must be integer, factor, logical or any type stored as integer (such as IDate)")
     for (i in cols) {
-        # if key columns don't already have sorted levels, sort them, test 150
+        if (is.character(x[[i]])) {
+            x[[i]] = factor(x[[i]])
+            next
+        }
+        if (storage.mode(x[[i]]) == "double") {
+            toint = as.integer(x[[i]])
+            if (identical(all.equal(x[[i]],toint),TRUE)) {
+                x[[i]] = toint
+                next
+            }
+            stop("Column '",i,"' cannot be auto converted to integer without losing information.")
+        }
         if (is.factor(x[[i]])) {
+            # check levels are sorted, if not sort them, test 150
             l = levels(x[[i]])
             if (is.unsorted(l)) {
                 r = rank(l)
                 l[r] = l
                 x[[i]] = structure(r[as.integer(x[[i]])], levels=l, class="factor")
             }
+            next
         }
+        if (!storage.mode(x[[i]]) %in% c("integer","logical")) stop("Column '",i,"' is storage.mode '",storage.mode(x[[i]]),"' which is not accepted by setkey.")
     }
     o = fastorder(x, cols)
     # We put NAs first because NA is internally a very large negative number. This is relied on in the C binary search.

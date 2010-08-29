@@ -396,7 +396,7 @@ test.data.table = function()
     if ("package:ggplot2" %in% search()) {
         test(167,print(ggplot(DT,aes(b,f))+geom_point()),NULL)  # how to programmatically test it not only doesn't error but correct output, binary diff to pre-prepared pdf ?
         test(168,DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 because there are 5 groups in DT data at this stage, just need 2 to test
-        try(dev.off(),silent=TRUE)
+        #try(graphics.off(),silent=TRUE) # R CMD check doesn't like graphics it seems, even when inside try()
     } else {
         cat("Tests 167 and 168 not run. If required call library(ggplot2) first.\n")
         # ggplot takes a long time e.g. increases runtime of test.data.table from under 1 second to over 10 seconds. So we don't include these by default.
@@ -509,6 +509,21 @@ test.data.table = function()
     test(213, inherits(tt,"try-error"))
     test(214, length(grep("data.table inherits from data.frame", tt)))
     
+    # setkey now auto coerces double and character for convenience, and
+    # to solve bug #953
+    DF = data.frame(a=LETTERS[1:10], b=1:10, stringsAsFactors=FALSE)
+    DT = data.table(DF)
+    key(DT) = 'a'   # used to complain about character
+    test(215, DT["C",b], 3L)
+    DT = data.table(DF,key="a")
+    test(216, DT["C",b], 3L)
+    DT = data.table(a=c(1,2,3),v=1:3,key="a")
+    test(217, DT[J(2),v], 2L)
+    DT = data.table(a=c(1,2.1,3),v=1:3)
+    tt = try(setkey(DT,a), silent=TRUE)
+    test(218, inherits(tt,"try-error"))
+    test(219, length(grep("losing information", tt)))
+
     ##########################
     if (nfail > 0) {
         stop(nfail," errors in test.data.table()")

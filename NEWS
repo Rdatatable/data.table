@@ -31,7 +31,7 @@ NEW FEATURES
     o   Logical columns are now allowed in keys. Logical columns (and
         expressions that evaluate to logical) are now allowed in 'by'.
         Thanks to David Winsemius for highlighting.
-    
+            
         
 BUG FIXES
 
@@ -77,6 +77,10 @@ BUG FIXES
     o   NROW removed from data.table, since the is.data.frame() in
         base::NROW now returns TRUE due to inheritance. Fixes bug
         #1039 reported by Bradley Buchsbaum. Thank you.
+        
+    o   setkey now coerces character to factor and double to
+        integer [provided they are all.equal], fixing bug #953.
+        Thanks to Steve Lianoglou for reporting.
         
         
 NOTES
