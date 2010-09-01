@@ -63,20 +63,45 @@ Try \code{DT[,list(region)]} instead.
 The \code{j} expression is the 2nd argument. The correct way to do this is \code{DT[,list(x,y,z)]}.
 
 \subsection{I assigned a variable \code{mycol="x"} but then \code{DT[,mycol]} returns \code{"x"}. How do I get it to look up the column name contained in the \code{mycol} variable?}
-This is what we mean when we say the \code{j} expression 'sees' objects in the calling scope.  Because 'mycol' does not exist as a column name of
-DT, R then looked in the calling scope and found mycol there, and returned its value. This is correct behaviour. Had ''mycol'' been a column name,
-then that column's data would have been returned. What you probably meant was \code{DT[,mycol,with=FALSE]}, which will return the region column's 
-data as you wanted. Alternatively, you could do \code{DT[,eval(mycol)]}.
+This is what we mean when we say the \code{j} expression 'sees' objects in the calling scope. The variable \code{mycol} does not exist as a column name of
+DT so R then looked in the calling scope and found \code{mycol} there, and returned its value \code{"x"}. This is correct behaviour. Had \code{mycol} been a column name,
+then that column's data would have been returned. What you probably meant was \code{DT[,mycol,with=FALSE]}, which will return the \code{x} column's 
+data as you wanted. Alternatively, since a \code{data.table} is just a list, you can do \code{DT[["x"]]} or \code{DT[[mycol]]}.
+
+\subsection{Ok but I don't know the expressions in advance. How do I programatically pass them in?}
+To create expressions use the \code{quote()} function. We refer to these as \emph{quote()-ed} expressions to
+save confusion with the double quotes used to create a character vector such as \code{c("x")}. The simplest
+quote()-ed expression is just a column name on it's own :
+
+\code{q = quote(x)}
+
+\code{DT[,eval(q)]  \# returns the column x as a vector}
+
+\code{q = quote(list(x))}
+
+\code{DT[,eval(q)]  \# returns the column x as a 1-column data.table}
+\newline
+Since these are \emph{expressions}, we are not restricted to column names only :
+
+\code{q = quote(mean(x))}
+
+\code{DT[,eval(q)]  \# identical to DT[,mean(x)]}
+
+\code{q = quote(list(x,sd(y),mean(y*z)))}
+
+\code{DT[,eval(q)]  \# identical to DT[,list(x,sd(y),mean(y*z))]}
+\newline
+If it's just simply a vector of column names it may be simpler to pass a character vector to \code{j} and use \code{with=FALSE}.
 
 \subsection{This is really hard. What's the point ?}
 \code{j} doesn't have to be just column names. You can put any R expression of column names directly as the \code{j}, e.g., 
 \code{DT[,mean(x*y/z)]}.  The same applies
 to \code{i}. You have been used to \code{i} being row numbers or row names only. It's nice to simply write \code{DT[x>1000, sum(y*z)]}. 
-What does that mean? Well, it
+What does that mean? It
 just runs the \code{j} expression on the set of rows where the \code{i} expression is true. \code{i} can be any expression of column names 
 that evaluates to logical. You don't even need to return data, e.g., \code{DT[x>1000, plot(y,z)]}. 
-When we get to compound table joins we will see how \code{i} (and \code{j}) can themselves be other \code{data.table} queries. 
-We are going to stretch \code{i} and \code{j} much further than this, but to get there we need you on board first with FAQs 1.1-1.5.
+When we get to compound table joins we will see how \code{i} and \code{j} can themselves be other \code{data.table} queries. 
+We are going to stretch \code{i} and \code{j} much further than this, but to get there we need you on board first with FAQs 1.1-1.6.
 
 \subsection{OK, I'm starting to see what \code{data.table} is about, but why didn't you enhance \code{data.frame} in \proglang{R}? Why does it have to be a new package?}
 As FAQ 1.1 highlights, \code{j} in \code{[.data.table} is fundamentally different from \code{j} in \code{[.data.frame}. Even something as simple as \code{DF[,1]} would break existing code in many packages and user code.  This is by design, and we want it to work this way for more complicated syntax to work. There are other differences, too.
@@ -252,7 +277,7 @@ See FAQ \ref{faq:DTremove1} and FAQ \ref{faq:DTremove2}.
 
 \subsection{I have created a package that depends on \code{data.table}. It works fine in development but when I release it as a package I get \code{data.frame} errors.}
 Make sure you use \code{require(data.table)} rather than \code{library(data.table)}. The \code{require()}
-function is very similar to \code{libary()} but also adds \code{data.table} to the hidden \code{.required} vector and this makes
+function is very similar to \code{libary()} but also adds \code{data.table} to the hidden \code{.Depends} vector and this makes
 your package \emph{data.table aware}. This is important from v1.5 when \code{data.table} started to
 inherit from \code{data.frame}. Calls to \code{[.data.table} from non \code{data.table} aware packages, such as base
 and ggplot2, are redirected to \code{[.data.frame} by \code{[.data.table}. When those packages use the usual \code{[.data.frame} syntax (e.g. \code{x[,5]}) when x is a \code{data.table}, x appears to behave as a \code{data.frame} would. You have likely been developing and testing your package in .GlobalEnv which is always considered \code{data.table} aware by \code{data.table}.
