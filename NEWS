@@ -1,6 +1,6 @@
 
 The ChangeLog for data.table is the SVN commit log itself :
-    svn log svn://svn.r-forge.r-project.org/svnroot/datatable
+    $ svn log svn://svn.r-forge.r-project.org/svnroot/datatable
 
 This NEWS file summarises the main changes.
 
@@ -13,9 +13,10 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
-    o   data.table now inherits from data.frame, for functions and
+    o   data.table now *inherits* from data.frame, for functions and
         packages which _only_ accept data.frame, saving time and
-        memory of conversion. is.data.frame() now returns TRUE.
+        memory of conversion. A data.table is a data.frame too;
+        is.data.frame() now returns TRUE.
     
     o   Integer-based date and time-of-day classes have been 
         introduced. This allows dates and times to be used as keys
@@ -39,14 +40,14 @@ BUG FIXES
         with DT[,c(5)] and DT[,5+0]. DT[,"region"] now returns
         "region" as FAQ 1.2 says. Thanks to Harish V for reporting.
         
-    o   When a quoted expression q is passed to 'by' using
+    o   When a quote()-ed expression q is passed to 'by' using
         by=eval(q), the group column names now come from the list
         in the expression rather than the name 'q' (bug #974) and,
         multiple items work (bug #975). Thanks to Harish V for
-        reporting. 
+        reporting.
         
-    o   Quoted j expressions receive similar fix, bug #977. Thanks
-        to Harish V for reporting.
+    o   quote()-ed j expressions receive a similar fix, bug #977.
+        Thanks to Harish V for reporting.
         
     o   Multiple errors (grammar, format and spelling) in intro.Rnw
         and faqs.Rnw corrected by Dennis Murphy. Thank you.
@@ -79,7 +80,7 @@ BUG FIXES
         #1039 reported by Bradley Buchsbaum. Thank you.
         
     o   setkey now coerces character to factor and double to
-        integer [provided they are all.equal], fixing bug #953.
+        integer (provided they are all.equal), fixing bug #953.
         Thanks to Steve Lianoglou for reporting.
         
         
@@ -127,10 +128,14 @@ NEW FEATURES
     o   j should now be a list(), not DT(), of expressions. Use of
     j=DT(...) is caught internally and replaced with j=list(...).
     
-    o   'by' may be a list() of expressions, and a single column name
-    no longer has to be quoted. A comma separated string is ok too,
-    as before. 
-    
+    o   'by' may be a list() of expressions. A single column name
+    is automatically list()-ed for convenience. 'by' may still be
+    a comma separated character string, as before.
+        DT[,sum(x),by=region]                     # new
+        DT[,sum(x),by=list(region,month(date))]   # new
+        DT[,sum(x),by="region"]                   # old, ok too
+        DT[,sum(x),by="region,month(date)"]       # old, ok too
+         
     o   key() and key<- added. More R-style alternatives to getkey()
     and setkey().
     
