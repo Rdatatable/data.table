@@ -329,25 +329,30 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 
                 # by is not missing at this point, and mult may be any value ("all", "first" or "last")
                 # Find the groups, using by ...
-                bysub = substitute(by)
-                if (mode(bysub) %in% c("name","character")) {
-                    # name : j may be a single unquoted column name but it must evaluate to list so this is a convenience to users
-                    # character: for backwards compatibility with v1.2 syntax passing single character to 'by' rather than list()
-                    bysub = parse(text=paste("list(",bysub,")",sep=""))[[1]]
-                }
+                
                 # The by expression also see variables in the calling frame, just like j.
                 # Note that 'by' may be a variable in the calling frame if for example several groupings are
                 # required with the same long and complicated 'by' but different j.  This used to be a character
-                # vector length one,  but from v1.3 is e.g. bycriteria = quote(list(colA,colB%%100)); DT[...,by=bycriteria]
+                # vector length one,  but from v1.3 is e.g. bycriteria = quote(list(colA,colB%%100)); DT[...,by=eval(bycriteria)]
                 
+                bysub = substitute(by)
                 bysubl = as.list(bysub)
                 if (identical(bysubl[[1]],quote(eval))) {
-                    bysub = eval(bysubl[[2]],parent.frame())  # [[2]] might be say 'grp' holding an expression. Its done this way so it still works if there happens to be a column called grp.                  
+                    bysub = eval(bysubl[[2]],parent.frame())  # [[2]] might be say 'grp' holding an expression. Its done this way so it still works if there happens to be a column called grp [we know a column is data not an expression, so its the level above we look]                  
+                    bysubl = as.list(bysub)
+                }
+                if (mode(bysub) == "character") {
+                    # character: for backwards compatibility with v1.2 syntax passing single comma separated character to 'by' rather than list()
+                    bysub = parse(text=paste("list(",bysub,")",sep=""))[[1]]
                     bysubl = as.list(bysub)
                 }
                 byval = eval(bysub, x, parent.frame())
-                if (!is.list(byval)) stop("by must evaluate to list")
-                for (jj in seq_len(length(byval))) if (!typeof(byval[[jj]]) %in% c("integer","logical")) stop("column or expression ",jj," of 'by' list is not internally type integer. Do not quote column names. Example of correct use: by=list(colA,month(colB),...).")
+                if (is.atomic(byval)) {
+                    byval = list(byval) # name : by may be a single unquoted column name but it must evaluate to list so this is a convenience to users
+                    names(byval) = as.character(bysub)
+                }
+                if (!is.list(byval)) stop("by must evaluate to vector or list of vectors")
+                for (jj in seq_len(length(byval))) if (!typeof(byval[[jj]]) %in% c("integer","logical")) stop("column or expression ",jj," of 'by' is not internally type integer. Do not quote column names. Example: by=list(colA,month(colB))")
                 tt = sapply(byval,length)
                 if (any(tt!=nrow(x))) stop("Each item in the 'by' list must be same length as rows in x (",nrow(x),"): ",paste(tt,collapse=","))
                 bynames = names(byval)

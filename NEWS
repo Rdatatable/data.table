@@ -80,9 +80,13 @@ BUG FIXES
         base::NROW now returns TRUE due to inheritance. Fixes bug
         #1039 reported by Bradley Buchsbaum. Thank you.
         
-    o   setkey now coerces character to factor and double to
+    o   setkey() now coerces character to factor and double to
         integer (provided they are all.equal), fixing bug #953.
         Thanks to Steve Lianoglou for reporting.
+        
+    o   'by' now accepts lists from the calling scope without the
+        work around of wrapping with as.list() or {}, fixing bug
+        #1060. Thanks to Johann Hibschman for reporting.
         
         
 NOTES

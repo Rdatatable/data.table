@@ -531,6 +531,14 @@ test.data.table = function()
     test(221, DT[eval(parse(text="a>4")),b], 10L)
     test(222, DT[eval(parse(text="J(2)")),b], 7L)
     
+    # lists in calling scope should be ok as single names passed to by, bug #1060
+    DT = data.table(a=1:2,b=rnorm(10))
+    byfact = DT[,a]   # vector, ok before fix but check anyway
+    test(223, DT[,mean(b),by=byfact], DT[,mean(b),by=list(byfact)])
+    byfact = DT[,list(a)]  # this caused next line to fail before fix
+    test(224, DT[,mean(b),by=byfact], DT[,mean(b),by=as.list(byfact)])
+    test(225, DT[,mean(b),by=byfact], DT[,mean(b),by={byfact}])
+
 
     ##########################
     if (nfail > 0) {
