@@ -523,6 +523,14 @@ test.data.table = function()
     tt = try(setkey(DT,a), silent=TRUE)
     test(218, inherits(tt,"try-error"))
     test(219, length(grep("losing information", tt)))
+    
+    # tests of quote()-ed expressions in i. Bug #1058
+    DT = data.table(a=1:5,b=6:10,key="a")
+    q = quote(a>3)
+    test(220, DT[eval(q),b], 9:10)
+    test(221, DT[eval(parse(text="a>4")),b], 10L)
+    test(222, DT[eval(parse(text="J(2)")),b], 7L)
+    
 
     ##########################
     if (nfail > 0) {

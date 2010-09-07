@@ -46,8 +46,9 @@ BUG FIXES
         multiple items work (bug #975). Thanks to Harish V for
         reporting.
         
-    o   quote()-ed j expressions receive a similar fix, bug #977.
-        Thanks to Harish V for reporting.
+    o   quote()-ed i and j expressions receive similar fixes, bugs
+        #977 and #1058. Thanks to Harish V and Branson Owen for
+        reporting.
         
     o   Multiple errors (grammar, format and spelling) in intro.Rnw
         and faqs.Rnw corrected by Dennis Murphy. Thank you.

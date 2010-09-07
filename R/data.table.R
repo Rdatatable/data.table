@@ -196,14 +196,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         isub = substitute(i)
         isubl = as.list(isub)
         if (identical(isubl[[1]],quote(eval))) {
-            i = try(eval(isubl[[2]],parent.frame()), silent=TRUE)  # same reason doing it this way as comment further down for bysub
-        } else {
-            i = try(eval(isub, envir=x, enclos=parent.frame()), silent=TRUE)
-        }
-        if (inherits(i,"try-error")) {
-            cat("Error hint: the i expression sees the column variables. Column names (variables) will mask variables in the calling frame. Check for any conflicts.\n")
-            stop(i)
-        }
+            isub = eval(isubl[[2]],parent.frame())  # same reason doing it this way as comment further down for bysub
+        } 
+        i = eval(isub, envir=x, enclos=parent.frame())
         if (is.logical(i)) {
             if (identical(i,NA)) i = NA_integer_  # see DT[NA] thread re recycling of NA logical
             else i[is.na(i)] = FALSE              # To simplify statement so don't have to do TABLE[!is.na(ColA) & ColA==ColB]
