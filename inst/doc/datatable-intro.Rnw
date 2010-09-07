@@ -1,9 +1,8 @@
 \documentclass[a4paper]{article}
 
 \usepackage[margin=3cm]{geometry}
-\usepackage[round]{natbib}
-\usepackage{url}
-\usepackage{hyperref}
+%%\usepackage[round]{natbib}
+\usepackage[colorlinks=true,urlcolor=blue]{hyperref}
 
 %%\newcommand{\acronym}[1]{\textsc{#1}}
 %%\newcommand{\class}[1]{\mbox{\textsf{#1}}}
@@ -23,6 +22,7 @@ rm(list=as.character(tables()$NAME))
 \begin{document}
 \title{Introduction to the \pkg{data.table} Package in \proglang{R}}
 \author{Matthew Dowle}
+\date{\today\\(A later revision may be available on the \href{http://datatable.r-forge.r-project.org/}{homepage})}
 \maketitle
 
 \section*{Introduction}

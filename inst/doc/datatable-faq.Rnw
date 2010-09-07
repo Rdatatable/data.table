@@ -22,6 +22,7 @@ options(width=70)  # so lines wrap round
 \begin{document}
 \title{FAQs about the \pkg{data.table} package in \proglang{R}}
 \author{Matthew Dowle}
+\date{\today\\(A later revision may be available on the \href{http://datatable.r-forge.r-project.org/}{homepage})}
 \maketitle
 
 The first section, Beginner FAQs, is intended to be read in order from start to finish. It may
