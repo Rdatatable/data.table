@@ -184,7 +184,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (missing(drop)) return(`[.data.frame`(x,i,j))
         else return(`[.data.frame`(x,i,j,drop))
     }
-    # To add to documentation: DT[i,colA] will return a one-column data.table. To get a vector do DT[i,colA][[1]].  Neater than DT[i,colA,drop=TRUE]. Instead of DT[,colA][[1]], just do DT$colA, if there is no subset i required.
     if (!missing(by) && missing(j)) stop("'by' is supplied but not j")
     if (!mult %in% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")   # Since SQL inherently is not ordered it can't do first or last without another sub-query and compute time.
     if (roll && rolltolast) stop("roll and rolltolast cannot both be true")
@@ -687,7 +686,8 @@ tail.data.table = function(x, n=6, ...) {
 }
 
 "[<-.data.table" = function (x, i, j, value) {
-    if (!missing(i) && cedta()) { # get i based on data.table-style indexing
+    if (!cedta()) return(`[<-.data.frame`(x, i, j, value))
+    if (!missing(i)) { # get i based on data.table-style indexing
         i <- x[i, which=TRUE, mult="all"]
     }
     res <- `[<-.data.frame`(x, i, j, value)
