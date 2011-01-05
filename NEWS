@@ -17,6 +17,9 @@ BUG FIXES
     o   Fixed inheritance for packages importing data.table, bug
         #1093. Thanks to Koert Kuipers for reporting.
 
+    o   data.table queries can now be used at the debugger() prompt,
+        fixing bug #1131.
+
 NOTES
 
 
