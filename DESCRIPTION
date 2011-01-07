@@ -1,5 +1,5 @@
 Package: data.table
-Version: 1.5.1
+Version: 1.5.2
 Title: Extension of data.frame for fast subset, fast merge and fast grouping.
 Author: Matthew Dowle with many contributions from Tom Short.  See SVN logs on R-Forge.
 Maintainer: M Dowle and T Short <datatable-help@lists.r-forge.r-project.org>
