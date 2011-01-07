@@ -8,9 +8,12 @@ merge.data.table <- function(x, y, all = FALSE, all.x = all, all.y = all, ...) {
     keylen <- min(length(key1), length(key2))
     if (keylen == 0 || !all(key1[1:keylen] == key2[1:keylen])) stop("data table keys don't match")
     key <- key1[1:keylen]
-    xidx <- x[J(y[,key,with=FALSE]), nomatch = 0, mult = 'all', which = TRUE]
-    yidx <- y[J(x[,key,with=FALSE]), nomatch = 0, mult = 'all', which = TRUE]
+    ykey <- J(y[,key,with=FALSE])
+    xidx <- x[ykey, nomatch = 0, mult = 'all', which = TRUE]
+    xkey <- J(x[,key,with=FALSE])
+    yidx <- y[xkey, nomatch = 0, mult = 'all', which = TRUE]
 
+    
     if (any(xidx)) {
         xx <- x[sort(xidx)]
         yy <- y[yidx, setdiff(names(y), key), with = FALSE]
@@ -47,3 +50,4 @@ merge.data.table <- function(x, y, all = FALSE, all.x = all, all.y = all, ...) {
         eval(parse(text=paste("setkey(dt,", paste(key, collapse=","), ")",sep="")))
     dt
 }
+
