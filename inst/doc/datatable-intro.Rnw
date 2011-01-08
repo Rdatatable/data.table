@@ -190,25 +190,18 @@ mapply(identical,ans1,ans2)
 At \Sexpr{format(ss[3],nsmall=3)} seconds, this was {\bf\Sexpr{as.integer(tt[3]/ss[3])}} times faster than \Sexpr{format(tt[3],nsmall=3)} seconds,
 and produced precisely the same result. If you are thinking that a few seconds is not much to save, it's the relative speedup that's important. The
 vector scan is linear, but the binary search is O(log n). It scales. If a task taking 10 hours is sped up by 100 times to 6 minutes, that is
-significant\footnote{We wonder how many people are deploying parallel techniques to code that is vector scanning}.
+significant\footnote{We wonder how many people are deploying parallel techniques to code that is vector scanning}. 
 
-What does the \code{J()} do? 
+We can do vector scans in data.table, too. In other words we can use data.table \emph{badly}.
 
-Was it really this, or was it something slow about using data.frame syntax in a data.table?  It's exactly the same.
-
-We can do vector scans in data.table, too:
-
-<<>>=
-system.time(ans1 <- DF[DF$x=="R" & DF$y=="h",])
-system.time(ans2 <- DT[DT$x=="R" & DT$y=="h",])
+<<>>=    
+system.time(ans1 <- DT[x=="R" & y=="h",])   # works but is using data.table badly
+system.time(ans2 <- DF[DF$x=="R" & DF$y=="h",])   # the data.frame way
 mapply(identical,ans1,ans2)
-system.time(ans3 <- DT[x=="R" & y=="h",])
-identical(ans2,ans3)
 @
 
 
-
-If the phone book analogy helped, then this should not be surprising. We use the key to take advantage of the fact 
+If the phone book analogy helped, the {\bf\Sexpr{as.integer(tt[3]/ss[3])}} times speedup should not be surprising. We use the key to take advantage of the fact 
 that the table is sorted and use binary search to find the matching rows. We didn't vector scan; we didn't use \code{==}.
 
 When we used \code{DT\$x=="R"} we \emph{scanned} the entire column x, testing each and every value to see if it equalled "R". We did
