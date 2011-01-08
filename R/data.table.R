@@ -196,6 +196,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         isubl = as.list(isub)
         if (identical(isubl[[1]],quote(eval))) {
             isub = eval(isubl[[2]],parent.frame())  # same reason doing it this way as comment further down for bysub
+            if (is.expression(isub)) isub=isub[[1]]
         } 
         i = eval(isub, envir=x, enclos=parent.frame())
         if (is.logical(i)) {
@@ -286,6 +287,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         jsubl = as.list(jsub)
         if (identical(jsubl[[1]],quote(eval))) {
             jsub = eval(jsubl[[2]],parent.frame())  # same reason doing it this way as comment further down for bysub
+            if (is.expression(jsub)) jsub = jsub[[1]]
         }
         o__ = as.integer(NULL)
         if (with) {
@@ -337,7 +339,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 bysub = substitute(by)
                 bysubl = as.list(bysub)
                 if (identical(bysubl[[1]],quote(eval))) {
-                    bysub = eval(bysubl[[2]],parent.frame())  # [[2]] might be say 'grp' holding an expression. Its done this way so it still works if there happens to be a column called grp [we know a column is data not an expression, so its the level above we look]                  
+                    bysub = eval(bysubl[[2]],parent.frame())  # [[2]] might be say 'grp' holding an expression. Its done this way so it still works if there happens to be a column called grp [we know a column is data not an expression, so its the level above we look]    
+                    if (is.expression(bysub)) bysub=bysub[[1]]
                     bysubl = as.list(bysub)
                 }
                 if (mode(bysub) == "character") {
@@ -479,7 +482,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # the subset above keeps factor levels in full
             # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
             xcols = as.integer(match(vars,colnames(x)))
-            # browser()
             
             ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,jsub,new.env(parent=parent.frame()),testj,byretn,byval,is.na(nomatch),verbose,PACKAGE="data.table")
             

@@ -539,7 +539,15 @@ test.data.table = function()
     test(224, DT[,mean(b),by=byfact], DT[,mean(b),by=as.list(byfact)])
     test(225, DT[,mean(b),by=byfact], DT[,mean(b),by={byfact}])
 
-
+    # tests for building expressions via parse, bug #1243, thanks to Joseph Voelkel
+    dt1key<-data.table(A1=1:100,onekey=rep(1:2,each=50))
+    setkey(dt1key,onekey)
+    ASumExpr<-parse(text="quote(sum(A1))") # no need for quote but we test it anyway because that was work around when test 227 failed
+    ASumExprNoQ<-parse(text="sum(A1)")
+    ans = dt1key[,sum(A1),by=onekey]
+    test(226,ans,dt1key[,eval(eval(ASumExpr)),by=onekey])
+    test(227,ans,dt1key[,eval(ASumExprNoQ),by=onekey])
+    
     ##########################
     if (nfail > 0) {
         stop(nfail," errors in test.data.table()")
