@@ -476,8 +476,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                      else sum(len__)
             # TO DO: we might over allocate above e.g. if first group has 1 row and j is actually a single row aggregate
             # TO DO: user warning when it detects over-allocation is currently off in dogroups.c
+            byretn = max(byretn,maxn) # if the result for the first group is larger than the table itself(!) Unusual case where the optimisations for common query patterns. Probably a join is being done in the j via .SD and the 1-row table is an edge condition of bigger picture.
                 
-            byretn = as.integer(byretn) 
+            byretn = as.integer(byretn)
             .SD = x[seq(length=max(len__)), vars, with=FALSE]  # allocate enough for largest group, will re-use it, the data contents doesn't matter at this point
             # the subset above keeps factor levels in full
             # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])

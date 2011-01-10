@@ -547,6 +547,10 @@ test.data.table = function()
     ans = dt1key[,sum(A1),by=onekey]
     test(226,ans,dt1key[,eval(eval(ASumExpr)),by=onekey])
     test(227,ans,dt1key[,eval(ASumExprNoQ),by=onekey])
+
+    # test for uncommon grouping pattern on 1-row data.table, bug #1245
+    DT = data.table(a=1L,b=2L)
+    test(228,DT[,list(1:2),by=a],data.table(a=c(1L,1L),V1=1:2))
     
     ##########################
     if (nfail > 0) {
