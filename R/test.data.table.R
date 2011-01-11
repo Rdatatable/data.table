@@ -551,6 +551,12 @@ test.data.table = function()
     # test for uncommon grouping pattern on 1-row data.table, bug #1245
     DT = data.table(a=1L,b=2L)
     test(228,DT[,list(1:2),by=a],data.table(a=c(1L,1L),V1=1:2))
+
+    # special case j=.SD, bug #1247
+    DT = data.table(a=rep(1:2,each=2),b=1:4)
+    ans = DT[,list(a,a=a,b)]
+    colnames(ans)[2]="a"
+    test(229,DT[,.SD,by=a],ans)
     
     ##########################
     if (nfail > 0) {

@@ -400,9 +400,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             jvnames = NULL
             if (mode(jsub)=="name") {
                 # j is a single unquoted column name, convenience to use to auto wrap it with list()
-                jvnames = deparse(jsub)
-                jsub = call("list",jsub)
-                #jsub = parse(text=paste("list(`",jsub,"`)",sep=""))[[1]]  # the backtick is for when backtick'd names are passed in          
+                if (jsub!=".SD") {
+                    jvnames = deparse(jsub)
+                    jsub = call("list",jsub)  # this should handle backticked names ok too
+                }
             } else if (as.character(jsub[[1]]) %in% c("list","DT")) {
                 jsubl = as.list(jsub)
                 if (length(jsubl)<2) stop("When j is list() or DT() we expect something inside the brackets")
@@ -483,7 +484,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # the subset above keeps factor levels in full
             # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
             xcols = as.integer(match(vars,colnames(x)))
-            
             ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,jsub,new.env(parent=parent.frame()),testj,byretn,byval,is.na(nomatch),verbose,PACKAGE="data.table")
             
             # TO DO : play with hash and size arguments of the new.env().
