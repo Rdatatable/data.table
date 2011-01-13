@@ -12,6 +12,12 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
+   o    'by' now works when DT contains list() columns i.e.
+        where each value in a column may itself be vector
+        or where each value is a different type.
+        Implementing feature #1092.
+
+
 BUG FIXES
 
     o   eval of parse()-ed expressions now works without

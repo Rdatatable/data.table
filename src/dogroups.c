@@ -40,6 +40,9 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
             case STRSXP :
                 INTEGER(sizes)[i] = sizeof(SEXP);
                 break;
+            case VECSXP :
+                INTEGER(sizes)[i] = sizeof(SEXP *);
+                break;
             default:
                 error("only integer,double,logical and character vectors are allowed so far. Type %d would need to be added.", TYPEOF(VECTOR_ELT(SD, i)));
         }

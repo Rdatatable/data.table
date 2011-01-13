@@ -577,6 +577,12 @@ test.data.table = function()
     test(233,merge(y,DT),data.table(a=1L,b=1:3,key="a"))
     test(234,merge(y,DT,all=TRUE),data.table(a=rep(c(0L,1L,2L),c(1,3,3)),b=c(NA_integer_,1:6),key="a"))
 
+    # 'by' when DT contains list columns
+    DT = data.table(a=c(1,1,2,3,3),key="a")
+    DT$b=list(1:2,1:3,1:4,1:5,1:6)
+    test(235,DT[,mean(unlist(b)),by=a],data.table(a=1:3,V1=c(1.8,2.5,mean(c(1:5,1:6))),key="a"))
+    test(236,DT[,sapply(b,mean),by=a],data.table(a=c(1,1,2,3,3),V1=c(1.5,2.0,2.5,3.0,3.5),key="a"))
+
     ##########################
     if (nfail > 0) {
         stop(nfail," errors in test.data.table()")
