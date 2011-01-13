@@ -29,12 +29,14 @@ test.data.table = function()
         }
         cat("Test",num,"ran without errors but failed check:\n")
         print(x)
+        if (is.data.table(x)) print(key(x))
         print(y)
+        if (is.data.table(y)) print(key(y))
         assign("nfail",nfail+1,envir=parent.frame())
     }
     started.at = Sys.time()
     TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
-    a=b=v=z=NAME=DT=B=.SD=y=V1=V2=b_1=`a 1`=a.1=d=grp=buniquename314=NA    # For R CMD check "no visible binding for global variable"
+    a=b=v=z=NAME=DT=B=.SD=y=V1=V2=b_1=`a 1`=a.1=d=grp=buniquename314=onekey=A1=NA    # For R CMD check "no visible binding for global variable"
     setkey(TESTDT,a,b)
     # i.e.       a b v
     #       [1,] 1 5 1
@@ -539,7 +541,7 @@ test.data.table = function()
     test(224, DT[,mean(b),by=byfact], DT[,mean(b),by=as.list(byfact)])
     test(225, DT[,mean(b),by=byfact], DT[,mean(b),by={byfact}])
 
-    # tests for building expressions via parse, bug #1243, thanks to Joseph Voelkel
+    # tests for building expressions via parse, bug #1243
     dt1key<-data.table(A1=1:100,onekey=rep(1:2,each=50))
     setkey(dt1key,onekey)
     ASumExpr<-parse(text="quote(sum(A1))") # no need for quote but we test it anyway because that was work around when test 227 failed
@@ -557,7 +559,24 @@ test.data.table = function()
     ans = DT[,list(a,a=a,b)]
     colnames(ans)[2]="a"
     test(229,DT[,.SD,by=a],ans)
-    
+
+    # merge bug with column 'x', bug #1229
+    N <- 10
+    d1 <- data.table(x=sample(N,N), y1=rnorm(N), key="x")
+    d2 <- data.table(x=sample(N,N), y2=rnorm(N), key="x")
+    ans1=merge(d1, d2, by="x")
+    ans2=cbind(d1,y2=d2$y2);setkey(ans2,x)
+    test(230, ans1, ans2)
+
+    # one column merge, bug #1241
+    DT = data.table(a=rep(1:2,each=3),b=1:6,key="a")
+    y = J(a=c(0,1),bb=c(10,11),key="a")
+    test(231,merge(y,DT),data.table(a=1L,bb=11L,b=1:3,key="a"))
+    test(232,merge(y,DT,all=TRUE),data.table(a=rep(c(0L,1L,2L),c(1,3,3)),bb=rep(c(10L,11L,NA_integer_),c(1,3,3)),b=c(NA_integer_,1:6),key="a"))
+    y<-J(a=c(0,1),key="a") # y with only a key column
+    test(233,merge(y,DT),data.table(a=1L,b=1:3,key="a"))
+    test(234,merge(y,DT,all=TRUE),data.table(a=rep(c(0L,1L,2L),c(1,3,3)),b=c(NA_integer_,1:6),key="a"))
+
     ##########################
     if (nfail > 0) {
         stop(nfail," errors in test.data.table()")

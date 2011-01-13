@@ -19,8 +19,16 @@ BUG FIXES
         to Joseph Voelkel for reporting.
 
     o   the result from the first group alone may be bigger
-        than the table itself, fixing bug #1245. Thanks to
+        than the table itself, bug #1245. Thanks to
         Steve Lianoglou for reporting.
+
+    o   merge on a data.table with a single key'd column only
+        and all=TRUE now works, bug #1241. Thanks to
+        Joseph Voelkel for reporting.
+
+    o   merge()-ing by a column called "x" now works, bug
+        #1229 related to variable scope. Thanks to Steve
+        Lianoglou for reporting.
 
 
         *********************************************
