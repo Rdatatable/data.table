@@ -14,8 +14,9 @@ NEW FEATURES
 
    o    'by' now works when DT contains list() columns i.e.
         where each value in a column may itself be vector
-        or where each value is a different type.
-        Implementing feature #1092.
+        or where each value is a different type. FR#1092.
+
+   o    The result from merge() is now keyed. FR#1244.
 
 
 BUG FIXES
