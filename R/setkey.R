@@ -8,7 +8,7 @@ setkey = function(x, ..., loc=parent.frame())
     if (is.character(x)) {
         if (length(x)>1) stop("x is character vector length > 1")
         name = x
-        if (!exists(name, env=loc)) loc=.GlobalEnv
+        if (!exists(name, envir=loc)) loc=.GlobalEnv
         x = get(x,envir=loc,inherits=FALSE)
         cols=c(...)
     }  else {

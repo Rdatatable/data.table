@@ -36,7 +36,7 @@ test.data.table = function()
     }
     started.at = Sys.time()
     TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
-    a=b=v=z=NAME=DT=B=.SD=y=V1=V2=b_1=`a 1`=a.1=d=grp=buniquename314=onekey=A1=NA    # For R CMD check "no visible binding for global variable"
+    a=b=v=z=NAME=DT=B=.SD=y=V1=V2=b_1=`a 1`=a.1=d=grp=buniquename314=onekey=A1=xkey=NA    # For R CMD check "no visible binding for global variable"
     setkey(TESTDT,a,b)
     # i.e.       a b v
     #       [1,] 1 5 1

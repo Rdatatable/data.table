@@ -232,7 +232,7 @@ examples.IDateTime <- function() {
         as.chron(as.ITime("10:45"))
         as.chron(as.IDate("2000-01-01"), as.ITime("10:45"))
         as.chron(as.ITime("10:45"), as.IDate("2000-01-01"))
-        as.ITime(chron(times = "11:01:01"))
+        as.ITime(chron(times. = "11:01:01"))
         IDateTime(chron("12/31/98","10:45:00"))
     }
     
