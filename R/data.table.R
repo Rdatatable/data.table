@@ -198,7 +198,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             isub = eval(isubl[[2]],parent.frame())  # same reason doing it this way as comment further down for bysub
             if (is.expression(isub)) isub=isub[[1]]
         } 
-        i = eval(isub, envir=x, enclos=parent.frame())
+        if (!is.name(isub))
+            i = eval(isub, envir=x, enclos=parent.frame())
+        else 
+            i =eval(isub,parent.frame())
         if (is.logical(i)) {
             if (identical(i,NA)) i = NA_integer_  # see DT[NA] thread re recycling of NA logical
             else i[is.na(i)] = FALSE              # To simplify statement so don't have to do TABLE[!is.na(ColA) & ColA==ColB]

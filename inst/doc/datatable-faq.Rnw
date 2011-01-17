@@ -250,6 +250,12 @@ wasn't intended here.
 \subsection{Only the first 10 rows are printed, how do I print more?}
 Try \code{print(DT,nrows=Inf)} to print all rows, or set nrows to the number of rows you require.
 
+\subsection{With an \code{X[Y]} join, what if \code{X} contains a column called \code{"Y"}?}
+When \code{i} is a single name such as \code{Y} it is evaluated in the calling frame. In all other cases such as calls to \code{J()} or other expressions, \code{i} is evaluated within the scope of \code{X}. This facilitates easy \emph{self joins} such as \code{X[J(unique(colA)),mult="first"]}.
+
+\subsection{\code{X[Z[Y]]} is failing because \code{X} contains a column \code{"Y"}. I want it to use the table Y in calling scope.}
+The \code{Z[Y]} part is not a single name so that is evaluated within the frame of \code{X} and the problem occurs. Try \code{tmp=Z[Y];X[tmp]}. This is robust to \code{X} containing a column \code{"tmp"} because \code{tmp} is a single name. If you often encounter conflics of this type, one simple solution may be to name all tables in uppercase and all column names in lowercase, or some similar scheme.
+
 \section{Questions relating to compute time}
 
 \subsection{I have 20 columns in \code{data.table} x. Why is an expression of one column so quick?}
