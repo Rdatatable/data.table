@@ -79,7 +79,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     vnames[is.na(vnames)] = ""
     novname = vnames==""
     if (any(!novname)) {
-        if (any(vnames[!novname] %in% c(".SD",".SDF"))) stop("A column may not be called .SD or .SDF, those are reserved")
+        if (any(vnames[!novname] == ".SD")) stop("A column may not be called .SD. That has special meaning.")
     }
     if (any(novname) && length(exptxt)==length(vnames)) {
         okexptxt =  exptxt[novname] == make.names(exptxt[novname])
@@ -287,6 +287,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     } # end of  if !missing(i)
     if (!missing(j)) {
         jsub = substitute(j)
+        if (is.null(jsub)) return(NULL)
         jsubl = as.list(jsub)
         if (identical(jsubl[[1]],quote(eval))) {
             jsub = eval(jsubl[[2]],parent.frame())  # same reason doing it this way as comment further down for bysub
@@ -351,10 +352,22 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     bysub = parse(text=paste("list(",bysub,")",sep=""))[[1]]
                     bysubl = as.list(bysub)
                 }
+                byvars = all.vars(bysub)
+                # not a perfect test, but usual works to see if by is in the same order as the key, to save re-sorting further down. 
                 byval = eval(bysub, x, parent.frame())
+                if (is.null(byval)) stop("'by' has evaluated to NULL")
                 if (is.atomic(byval)) {
-                    byval = list(byval) # name : by may be a single unquoted column name but it must evaluate to list so this is a convenience to users
-                    names(byval) = as.character(bysub)
+                    if (length(byval) <= ncol(x) && length(byval)<nrow(x) && is.character(byval)) {
+		        # e.g. byval is the result of key(DT) or c("colA","colB")
+                        if (!all(byval %in% colnames(x))) {
+                            stop("'by' seems like a column name vector but these elements are not column names (first 5):",paste(head(byval[!byval%in%colnames(x)],5),collapse=""))
+                        }
+                        byvars = byval
+                        byval=x[,byval,with=FALSE]
+                    } else {
+                        byval = list(byval) # name : by may be a single unquoted column name but it must evaluate to list so this is a convenience to users
+                        names(byval) = as.character(bysub)
+                    }
                 }
                 if (!is.list(byval)) stop("by must evaluate to vector or list of vectors")
                 for (jj in seq_len(length(byval))) if (!typeof(byval[[jj]]) %in% c("integer","logical")) stop("column or expression ",jj," of 'by' is not internally type integer. Do not quote column names. Example: by=list(colA,month(colB))")
@@ -369,7 +382,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     }
                     names(byval) = bynames
                 }
-                byvars = all.vars(bysub)   # not a perfect test but works most of the time. When it doesn't work, it just misses opportunity not to re-sort.
                 if (missing(bysameorder) && length(byvars) <= length(key(x)) && identical(byvars,head(key(x),length(byvars)))) {
                     bysameorder=TRUE
                     # table is already sorted by the group criteria, no need to sort
@@ -419,12 +431,14 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 if(class(jsubl[[2]])!="{") jsub = parse(text=paste("list(",paste(as.character(jsub)[-1],collapse=","),")",sep=""))[[1]]  # this does two things : i) changes 'DT' to 'list' for backwards compatibility and ii) drops the names from the list so its faster to eval the j for each group
             } # else maybe a call to transform or something which returns a list.
             ws = all.vars(jsub)
-            if (any(c(".SD",".SDF") %in% ws))
-                vars = colnames(x)        # just using .SD or .SDF triggers using all columns in the subset. We don't try and detect which columns of .SD are being used.
-            else 
+            if (".SD" %in% ws) {
+                vars = colnames(x)        # just using .SD in j triggers all non-by columns in the subset even if some of those columns are not used. We don't try and detect whether the j expression does use all of the .SD columns or not.
+                vars = vars[!vars%in%byvars]
+            } else { 
                 vars = ws[ws %in% c(colnames(x))]  # using a few named columns will be faster
+            }
             if (!length(vars)) {
-                # stop("No column names appear in j expression. No use of .SD or .SDF either.")
+                # stop("No column names appear in j expression. No use of '.SD' either.")
                 # For macros :
                 vars=colnames(x)
             }

@@ -2,10 +2,10 @@ test.data.table = function()
 {
     nfail = ntest = 0
     test = function(num,x,y=NULL) {
-        assign("ntest",num,envir=parent.frame())
+        ntest <<- ntest + 1
         if (inherits(err<-try(x,TRUE),"try-error") || inherits(err<-try(y,TRUE),"try-error")) {
             cat("Test",num,err)
-            assign("nfail",nfail+1,envir=parent.frame())
+            nfail <<- nfail + 1
             return()
         }
         if (missing(y)) {
@@ -32,7 +32,7 @@ test.data.table = function()
         if (is.data.table(x)) print(key(x))
         print(y)
         if (is.data.table(y)) print(key(y))
-        assign("nfail",nfail+1,envir=parent.frame())
+        nfail <<- nfail + 1
     }
     started.at = Sys.time()
     TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
@@ -244,7 +244,7 @@ test.data.table = function()
 
     # test .SD object
     test(103, dt[, sum(.SD$B), by = "A"], dt[, sum(B), by = "A"])
-    test(104, dt[, transform(.SD, D = min(B)), by = "A"], dt[, DT(A,B,C,D=min(B)), by = "A"])
+    test(104, dt[, transform(.SD, D = min(B)), by = "A"], dt[, DT(B,C,D=min(B)), by = "A"])
 
     # test numeric and comparison operations on a data table
     test(105, all(dt + dt > dt))
@@ -342,9 +342,7 @@ test.data.table = function()
     test(143, tail(dt), dt)  # tail was failing if a column name was called x.
     
     dt <- data.table(a = rep(1:3, each = 4), b = LETTERS[1:4], b2 = LETTERS[1:4])
-    tt = data.table(b=LETTERS[1:4],a=3L,b=LETTERS[1:4], b2=LETTERS[1:4])
-    colnames(tt)[3] = "b"
-    test(144, dt[, .SD[3,], by=b], tt)
+    test(144, dt[, .SD[3,], by=b], data.table(b=LETTERS[1:4],a=3L,b2=LETTERS[1:4]))
     
     DT = data.table(x=rep(c("a","b"),c(2,3)),y=1:5)
     xx = capture.output(ans <- DT[,{print(x);sum(y)},by=x])
@@ -405,7 +403,6 @@ test.data.table = function()
         # From examples, the library(ggplot2) is done first, so that 'R CMD check' does include tests 167 and 168 
     }
     # test of . in formula, using inheritance
-    # never mind that grp column is included (NA coef), thats another todo for later.
     DT = data.table(y=1:100,x=101:200,y=201:300,grp=1:5)
     test(169,DT[,as.list(lm(y~0+.,.SD)$coef),by=grp][2,x]-2<1e-10, TRUE)
     
@@ -556,9 +553,9 @@ test.data.table = function()
 
     # special case j=.SD, bug #1247
     DT = data.table(a=rep(1:2,each=2),b=1:4)
-    ans = DT[,list(a,a=a,b)]
-    colnames(ans)[2]="a"
-    test(229,DT[,.SD,by=a],ans)
+    test(229,DT[,.SD,by=a],DT)
+    setkey(DT,a)
+    test(229.1,DT[,.SD,by=key(DT)],DT)
 
     # merge bug with column 'x', bug #1229
     d1 <- data.table(x=c(1,3,8),y1=rnorm(3), key="x")
@@ -592,7 +589,6 @@ test.data.table = function()
     d2 <- data.table(xkey=c(3,8,10),y2=rnorm(3), key="xkey")
     ans2=cbind(d1[2:3],y2=d2[1:2]$y2);setkey(ans2,xkey)
     test(238, merge(d1, d2, by="xkey"), ans2) 
-
 
     ##########################
     if (nfail > 0) {

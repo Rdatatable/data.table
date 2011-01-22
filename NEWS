@@ -13,6 +13,21 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
+   o    .SD no longer includes 'by' columns, FR#978. This resolves
+        the long standing annoyance of duplicated 'by' columns
+        when the j expression returns a subset of rows from .SD. 
+        For example, the following query no longer contains
+        a redundant 'colA.1' duplicate.
+            DT[,.SD[2],by=colA] #  2nd row of each group
+        Any existing code that uses .SD may require simple
+        changes to remove workarounds. If columns have been
+        referenced by name, as recommended where possible, then
+        no changes to existing code should be required.
+
+   o    'by' may now be a character vector of column names.
+        This allows syntax such as DT[,sum(x),by=key(DT)].
+
+
 BUG FIXES
 
 
