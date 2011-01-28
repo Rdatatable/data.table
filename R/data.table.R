@@ -267,6 +267,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             idx.end = integer(nrow(i))
             .Call("binarysearch", i, x, as.integer(leftcols-1), as.integer(rightcols-1), haskey(i), roll, rolltolast, idx.start, idx.end, PACKAGE="data.table")            
             if (mult=="all") {
+                # TO DO: move this inside binarysearch.c
                 lengths = idx.end - idx.start + 1
                 idx.diff = rep(1L, sum(lengths))
                 idx.diff[head(cumsum(lengths), -1) + 1] = tail(idx.start, -1) - head(idx.end, -1)
@@ -295,7 +296,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
         o__ = as.integer(NULL)
         if (with) {
-            # j will be evaluated within the frame of data.table, even if it is a single column number or character name, see FAQ 1.1 and 1.2
             if (mult=="all" && missing(by)) {
                 # Like a 'by' but without using 'by'.  The groupings come instead from each row of the i data.table.
                 # Useful for a few known groups rather than a 'by' on the whole table followed by a subset afterwards.
@@ -316,6 +316,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 if (!missing(i)) {
                     x = x[irows, nomatch=nomatch, roll=roll, rolltolast=rolltolast, mult=mult]   # note this is a once only recursive call to [.data.table since j is not passed into this call
                     # TO DO: can speed up when i is present by not taking a subset of the whole table first, just the grouping columns.
+                    # TO DO: remove subset above altogether
                 }
                 if (missing(by) || nrow(x)<1) {
                     if (mode(jsub)!="name" && as.character(jsub[[1]]) %in% c("list","DT")) {
@@ -432,31 +433,28 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             } # else maybe a call to transform or something which returns a list.
             ws = all.vars(jsub)
             if (".SD" %in% ws) {
-                vars = colnames(x)        # just using .SD in j triggers all non-by columns in the subset even if some of those columns are not used. We don't try and detect whether the j expression does use all of the .SD columns or not.
+                vars = colnames(x)        
                 vars = vars[!vars%in%byvars]
+                # just using .SD in j triggers all non-by columns in the subset even if some of
+                # those columns are not used. It would be tricky to detect whether the j expression
+                # really does use all of the .SD columns or not.
             } else { 
-                vars = ws[ws %in% c(colnames(x))]  # using a few named columns will be faster
+                vars = ws[ws %in% colnames(x)]  # using a few named columns will be faster
             }
             if (!length(vars)) {
-                # stop("No column names appear in j expression. No use of '.SD' either.")
-                # For macros :
+                # For macros such as DT[,macro(),by=...]. A macro is a function with no arguments
+                # evaluated within the scope of x.
+                # TO DO: inspect macro definition to discover columns it uses.
                 vars=colnames(x)
             }
             if (mult=="all") {
-                ####
-                #### TO DO -  revisit JIS w.r.t. dogroups logic
-                #### just install the symbols from the i environment into the new.env first, easy
-                ####
+                # JIS. Why only for 'all' though?
+                # TO DO: Also look at how first and last get done first, then a global j on the result (is that still right thing to do?)
                 # Each row in the i table is one per group. This branch allows you to use variables which are in i but which are not in the join columns, inside the j expression. Really very useful. This is called "join inherited scoping".
                 # stop("JIS turned off for the moment")
                 ivars = ws[(!ws %in% vars) & ws %in% colnames(i)]
-                if (length(ivars)) {
-                    if (!missing(by)) stop("Cannot use join inherited scope when by is supplied. Remove the by argument.")
-                    e__ = paste(e__,paste(ivars,"=i$",ivars,"[g__]",sep="", collapse=";"), sep=";")    # so its important that i is still the data.table at this point
-                }
-            }
+            } else ivars = NULL
 
-            
             if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ...\n");flush.console()}
             # byretn is all about trying to allocate the right amount of memory for the result, first time. Then there
             # will be no need to grow it as the 'by' proceeds, or use memory for a temporary list of the results.
@@ -468,13 +466,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             }
             SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
             SDenv$.SD = x[itestj, vars, with=FALSE]
-            testj = eval(jsub, SDenv$.SD, enclos = SDenv)    # our test is now the first group. problems before with the largest being repeated.
+            for (ii in ivars) assign(ii, i[[ii]][1], envir=SDenv)
+            testj = eval(jsub, SDenv$.SD, enclos = SDenv)
             maxn=0
             if (!is.null(testj)) {
                 if (is.atomic(testj)) {
                     jvnames = ""
                     jsub = call("list",jsub)
-                    # jsub = parse(text=paste("list(",deparse(jsub),")",sep=""))[[1]]
                     testj = list(testj)
                 } else if (is.list(testj)) {
                     if (is.null(jvnames))   # if we didn't deliberately drop the names and store them earlier
@@ -501,7 +499,18 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # the subset above keeps factor levels in full
             # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
             xcols = as.integer(match(vars,colnames(x)))
-            ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,jsub,new.env(parent=parent.frame()),testj,byretn,byval,is.na(nomatch),verbose,PACKAGE="data.table")
+            icols = NULL
+            if (!missing(i)) icols = as.integer(match(ivars,colnames(i)))
+            else i=NULL
+            ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,jsub,new.env(parent=parent.frame()),testj,byretn,byval,i,as.integer(icols),i[1,ivars,with=FALSE],is.na(nomatch),verbose,PACKAGE="data.table")
+
+            # why is byval copying data out of i? If there aren't any
+            # expressions of columns then it could just be i directly.
+            # This will reduce the 'many groups' timing vs sqldf even more.
+
+            # don't want to eval j for every row of i unless it really is mult='all'
+
+            # setkey could mark the key whether it is unique or not.
             
             # TO DO : play with hash and size arguments of the new.env().
             if (verbose) {cat("... done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}

@@ -12,10 +12,10 @@ EXPORT SEXP dogroups();
 
 static SEXP growVector(SEXP x, R_len_t newlen, int size);
 
-SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval, SEXP nomatchNA, SEXP verbose)
+SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval, SEXP itable, SEXP icols, SEXP iSD, SEXP nomatchNA, SEXP verbose)
 {
-    R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0, newlen;
-    SEXP names, ans, sizes, jval, jsizes, bysizes, naint, nareal;
+    R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0, newlen, icol;
+    SEXP names, inames, ans, sizes, isizes, jval, jsizes, bysizes, naint, nareal;
     if (TYPEOF(order) != INTSXP) error("order not integer");
     if (TYPEOF(starts) != INTSXP) error("starts not integer");
     if (TYPEOF(lens) != INTSXP) error("lens not integer");
@@ -54,6 +54,33 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
     // [.data.table, for robustness and efficiency. If it were local scope of [.data.table then user's j
     // may inadvertently see interal variables names (as it used to in v1.2) and we had to name them to avoid
     // conflict e.g. "o__".  That is no longer required and things are much cleaner now.
+
+    // Now for JIS, install the non-key variables in the SD too. The parent
+    // of SD isn't i, but it gives that appearance.
+
+    inames = getAttrib(itable, R_NamesSymbol);
+    PROTECT(isizes = allocVector(INTSXP, length(iSD)));
+    for(i = 0; i < length(icols); i++) {
+        icol = INTEGER(icols)[i]-1;
+        defineVar(install(CHAR(STRING_ELT(inames,icol))),VECTOR_ELT(iSD,i),env);
+        switch (TYPEOF(VECTOR_ELT(iSD, i))) {
+            case INTSXP :
+            case LGLSXP :
+                INTEGER(isizes)[i] = sizeof(int);
+                break;
+            case REALSXP :
+                INTEGER(isizes)[i] = sizeof(double);
+                break;
+            case STRSXP :
+                INTEGER(isizes)[i] = sizeof(SEXP);
+                break;
+            case VECSXP :
+                INTEGER(isizes)[i] = sizeof(SEXP *);
+                break;
+            default:
+                error("only integer,double,logical and character vectors are allowed so far in JIS columns. Type %d would need to be added.", TYPEOF(VECTOR_ELT(iSD, i)));
+        }
+    }
     
     PROTECT(ans = allocVector(VECSXP, nbyval + njval));
     PROTECT(bysizes = allocVector(INTSXP, nbyval));
@@ -151,7 +178,12 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
     // end copy of testj into result
     
     for(i = 1; i < ngrp; i++) {  // 2nd group onwards
-        thislen = INTEGER(lens)[i]; 
+        thislen = INTEGER(lens)[i];
+        for (j=0; j<length(iSD); j++) {
+             memcpy((char *)DATAPTR(VECTOR_ELT(iSD,j)),
+                    (char *)DATAPTR(VECTOR_ELT(itable,INTEGER(icols)[j]-1))+i*INTEGER(isizes)[j],
+                    INTEGER(isizes)[j]);
+        }
         if (INTEGER(starts)[i] == 0) {
             if (LOGICAL(nomatchNA)[0]) {   // the is.na(nomatch) is up in R as its easier to cope with NA(logical), NA_integer_, 0L and 0 up there.
                 for (j=0; j<length(SD); j++) {
@@ -263,7 +295,7 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
         // warning("Wrote less rows than allocated. byretn=%d but wrote %d rows",INTEGER(byretn)[0],ansloc);
         for (j=0; j<length(ans); j++) SETLENGTH(VECTOR_ELT(ans,j),ansloc);
     }
-    UNPROTECT(6);
+    UNPROTECT(7);
     return(ans);
 }
 

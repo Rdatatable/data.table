@@ -588,7 +588,18 @@ test.data.table = function()
     d1 <- data.table(xkey=c(1,3,8),y1=rnorm(3), key="xkey")
     d2 <- data.table(xkey=c(3,8,10),y2=rnorm(3), key="xkey")
     ans2=cbind(d1[2:3],y2=d2[1:2]$y2);setkey(ans2,xkey)
-    test(238, merge(d1, d2, by="xkey"), ans2) 
+    test(238, merge(d1, d2, by="xkey"), ans2)
+
+    # Join Inherited Scope returns
+    X=data.table(a=rep(1:3,c(3,3,2)),foo=1:8,key="a")
+    Y=data.table(a=2:3,boo=6:7)
+    test(239, X[Y,sum(foo),mult="all"]$V1, INT(15,15))
+    test(240, X[Y,sum(foo*boo),mult="all"]$V1, INT(90,105))
+    #X[Y,sum(foo*boo)] # about to change default of mult to all, so this will be the same 
+    #X[Y] about to change to return all Y's non-join columns too
+    #X[Y,sum(foo*boo),mult="first"]  doubt this is very useful  but if j should be run on
+    # the result as a whole then X[Y,list(foo,boo)][,sum(foo*boo)] is clearer 
+
 
     ##########################
     if (nfail > 0) {
