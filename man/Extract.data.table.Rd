@@ -7,7 +7,7 @@
 }
 \usage{
 \method{[}{data.table}(x, i, j, by=NULL, with=TRUE, nomatch = NA,
-  mult = "first", roll = FALSE, rolltolast = FALSE,
+  mult = "all", roll = FALSE, rolltolast = FALSE,
   which = FALSE, bysameorder = FALSE,
   verbose=getOption("datatable.verbose",FALSE), drop=NULL)
 }

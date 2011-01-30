@@ -29,6 +29,18 @@ NEW FEATURES
 BUG FIXES
 
 
+USER-VISIBLE CHANGES
+
+   o    The default for mult is now "all", as intended and
+        prior notice given in FAQ 2.2.
+
+
+DEPRECATED & DEFUNCT
+
+   o    The DT() alias is now fully deprecated, as warned
+        in NEWS for v1.4, and FAQs 2.6 and 2.7.
+
+
         *********************************************
         **                                         **
         **   CHANGES IN DATA.TABLE VERSION 1.5.2   **
