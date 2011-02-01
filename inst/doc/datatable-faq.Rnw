@@ -107,7 +107,7 @@ We are going to stretch \code{i} and \code{j} much further than this, but to get
 \subsection{OK, I'm starting to see what \code{data.table} is about, but why didn't you enhance \code{data.frame} in \proglang{R}? Why does it have to be a new package?}
 As FAQ 1.1 highlights, \code{j} in \code{[.data.table} is fundamentally different from \code{j} in \code{[.data.frame}. Even something as simple as \code{DF[,1]} would break existing code in many packages and user code.  This is by design, and we want it to work this way for more complicated syntax to work. There are other differences, too.
 
-However, we \emph{have} proposed enhancements to \proglang{R} wherever possible, and some of these have been accepted and included. We intend to continue attempts to contribute to \proglang{R} itself whenever an opportunity arises.
+However, we \emph{have} proposed enhancements to \proglang{R} wherever possible. Some of these have been accepted and included. We intend to continue attempts to contribute to \proglang{R} itself whenever an opportunity arises.
 
 \subsection{Why are the defaults the way they are? Why does it work the way it does?}
 The simple answer is because the author designed it for his own use, and he wanted it that way. He finds it a more natural, faster way to
@@ -118,14 +118,14 @@ Some of the features discussed so far are, yes. The package builds upon base fun
 less code required, and executes many times faster if used correctly.
 
 \subsection{Why does \code{X[Y]} return all the columns from Y too? Shouldn't it return a subset of X?}
-This was changed in v1.5.3. \code{X[Y]} now includes \code{Y}'s non-join columns. We refer to this feature as \emph{join inherited scope} because not only are X columns available to the j expression, so are Y columns. The downside is that \code{X[Y]} is less efficient since every item of Y's non-join columns are duplicated to match the (likely large) number of rows in X that match. We therefore strongly discourage \code{X[Y]} and instead strongly encourage \code{X[Y,j]}. See next FAQ. 
+This was changed in v1.5.3. \code{X[Y]} now includes \code{Y}'s non-join columns. We refer to this feature as \emph{join inherited scope} because not only are X columns available to the j expression, so are Y columns. The downside is that \code{X[Y]} is less efficient since every item of Y's non-join columns are duplicated to match the (likely large) number of rows in X that match. We therefore strongly encourage \code{X[Y,j]} instead of \code{X[Y]}. See next FAQ.
 
 \subsection{What is the difference between \code{X[Y]} and \code{merge(X,Y)}?}
-X[Y] is a join, looking up X's rows using Y as an index.\newline
-Y[X] is a join, looking up Y's rows using X as an index.\newline
-merge(X,Y) does both ways at the same time.
+X[Y] is a join, looking up X's rows using Y (or Y's key) as an index.\newline
+Y[X] is a join, looking up Y's rows using X (or X's key) as an index.\newline
+merge(X,Y) does both ways at the same time. The number of rows of X[Y] and Y[X] usually differ; the number of rows returned by merge(X,Y) and merge(Y,X) are the same.
 
-\emph{BUT} that misses the main point. Most tasks require something to be done on the data after a join or merge. Why join or merge all the columns of data, only to use a small subset of them afterwards? You may then try merge(X[,ColsNeeded1],Y[,ColsNeeded2]), but that takes copies of the subsets of data, and it requires the programmer to work out which columns are needed, and make no mistakes. \code{X[Y,j]} in data.table does all that in one step for you. When you write \code{X[Y,sum(foo*bar)]}, \code{data.table} automatically inspects the \code{j} expression to see which columns it uses.  It will only subset those columns only.  Memory is only created for the columns the \code{j} uses.  Let's say foo is in X, and bar is in Y (along with 20 other columns in Y). Isn't X[Y,sum(foo*bar)] quicker to program and quicker to run than a \code{merge()} step followed by a subset step?
+\emph{BUT} that misses the main point. Most tasks require something to be done on the data after a join or merge. Why join (or merge) all the columns of data, only to use a small subset of them afterwards? You may suggest \code{merge(X[,ColsNeeded1],Y[,ColsNeeded2])}, but that takes copies of the subsets of data, and it requires the programmer to work out which columns are needed. \code{X[Y,j]} in data.table does all that in one step for you. When you write \code{X[Y,sum(foo*bar)]}, \code{data.table} automatically inspects the \code{j} expression to see which columns it uses.  It will only subset those columns only. Memory is only created for the columns the \code{j} uses, and \code{Y} columns enjoy standard R recycling rules within the context of each group. Let's say foo is in X, and bar is in Y (along with 20 other columns in Y). Isn't \code{X[Y,sum(foo*bar)]} quicker to program and quicker to run than a merge followed by a subset?
 
 \subsection{Anything else about \code{X[Y,sum(foo*bar)]}?}
 Remember that \code{j} (in this case \code{sum(foo*bar)}) is run for each \emph{group} of \code{X} that each row of \code{Y} matches to. This feature is \emph{by without by}!
@@ -145,21 +145,16 @@ was intended: \code{DT[,sum(x),by=grp]} and could be 100's of times faster if DT
 called .SD, that's why it has a ''.'' at the start as you are unlikely to really want a column called ''.SD''.
 
 
-\subsection{Why is the default for mult "first" ?  If there are duplicates in the key, shouldn't it return them all by default?}
-Possibly, yes. The default might be changed to "all".
+\subsection{Why is the default for mult now "all"?}
+In v1.5.3 the default was changed to "all". When \code{i} (or \code{i}'s key if it has one) has fewer columns than x's key,  mult was already set to "all" automatically. Changing the default makes this clearer and easier for users as it came up quite often.
 
-In versions up to v1.3, "all" was slower. Internally, "all" was implemented by joining using "first", then again from scratch using "last", after which a diff between them was performed to work out the span of the matches in \code{x} for each row in \code{i}. Most often we join to single rows, though, where "first","last" and "all" return the same result. We prefer maximum
-performance for the majority of situations so the default chosen was "first". If you are working with a non-unique key then you need to specify "all".
+In versions up to v1.3, "all" was slower. Internally, "all" was implemented by joining using "first", then again from scratch using "last", after which a diff between them was performed to work out the span of the matches in \code{x} for each row in \code{i}. Most often we join to single rows, though, where "first","last" and "all" return the same result. We preferred maximum performance for the majority of situations so the default chosen was "first". When working with a non-unique key (generally a single column containing a grouping variable), DT["A"] returned the first row of that group so DT["A",mult="all"] was needed to return all the rows in that group.
 
-In v1.4 the binary search in C was changed to branch at the deepest level to find first and last. Note that branch will likely occur within the same final pages. So there should no longer be a speed disadvantage in defaulting mult to 'all'. The 'all' default would be simpler and easier for the user as this FAQ comes up quite often.
+In v1.4 the binary search in C was changed to branch at the deepest level to find first and last. That branch will likely occur within the same final pages of RAM so there should no longer be a speed disadvantage in defaulting mult to 'all'. We warned that the default might change, and made the change in v1.5.3.
 
-A future version of \code{data.table} may allow a distinction between a key and a unique key. The \code{mult} argument could then be defaulted more
-wisely.  \code{data.table} would then need to add checks on insert and update to make sure a unique key is maintained. That would be
-one of the advantages to the user of specifying a unique key; i.e., \code{data.table} would make sure a duplicate could not be inserted.
+A future version of \code{data.table} may allow a distinction between a key and a \emph{unique key}. Internally mult="all" would perform more like mult="first" in the case that all x's key columns were joined to, and x's key was a unique key. \code{data.table} would need checks on insert and update to make sure a unique key is maintained. An advantage of specifying a unique key would be that \code{data.table} would ensure no duplicates could be inserted.
 
 
-Note that when \code{i} (or \code{i}'s key if it has one) has fewer columns than x's key,  mult is automatically set to "all". This is why
-grouping by \code{i} works; e.g., \code{DT[J(id),mean(v)]} where \code{key(DT)} has 2 or more columns.
 
 \subsection{I'm using \code{c()} in the j and getting strange results.}
 This is a common source of confusion. In \code{data.frame} you are used to, for example:
@@ -199,21 +194,20 @@ the alias yourself:
 \code{DT = function(...) data.table(...)}
 
 \subsection{But my code uses \code{j=DT(...)} and it works. The previous FAQ says that \code{DT()} has been removed.}\label{faq:DTremove2}
-\code{[.data.table} inspects the \code{j} expression that is passed to it. If it finds that the expression starts with a call
-to \code{DT()} it automatically replaces it with a call to \code{list()}. This is to help existing users. Please don't
-use \code{j=data.table(...)} as that may be slow. Use \code{j=list(...)}.
+Then you are using a version prior to 1.5.3. Prior to 1.5.3 \code{[.data.table} detected use of DT() in the j and automatically replaced it with a call to \code{list()}. This was to help the transition for existing users. Please do not use \code{j=data.table(...)} as that may be slow. Please use \code{j=list(...)}.
 
 \subsection{What are the scoping rules for j expressions?}
 Think of the subset as an environment where all the column names are
-variables. When a variable is used in the \code{j} expression, it is looked for in the following order :
+variables. When a variable \code{foo} is used in the \code{j} of a query such as \code{X[Y,sum(foo)]}, \code{foo} is looked for in the following order :
 \begin{enumerate}
-\item The scope of the subset, i.e., the column names.
+\item The scope of X's subset, i.e., X's column names.
+\item The scope of each row of Y, i.e. Y's column names (known as Join Inherited Scope)
 \item The scope of the calling frame; e.g., the line that appears before the \code{data.table} query.
-\item Exercise for reader: does it then ripple up or go straight to .GlobalEnv?
+\item Exercise for reader: does it then ripple up the calling frames, or go straight to .GlobalEnv?
 \item The global environment .GlobalEnv
 \end{enumerate}
 This is \emph{lexical scoping} as explained in \href{http://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping}{R FAQ 3.3.1}.
-The environment that the function was created is not relevant, though, because there is no function. No anonymous \emph{function}
+The environment that the function was created is not relevant, though, because there is \emph{no function}. No anonymous \emph{function}
 is passed to the \code{j}. Instead, an anonymous \emph{body} is passed to the \code{j}; for example,
 <<>>=
 DT = data.table(x=rep(c("a","b"),c(2,3)),y=1:5)
