@@ -36,7 +36,8 @@ test.data.table = function()
     }
     started.at = Sys.time()
     TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
-    a=b=v=z=NAME=DT=B=.SD=y=V1=V2=b_1=`a 1`=a.1=d=grp=buniquename314=onekey=A1=xkey=NA    # For R CMD check "no visible binding for global variable"
+    a=b=v=z=NAME=DT=B=.SD=y=V1=V2=b_1=`a 1`=a.1=d=grp=buniquename314=onekey=A1=xkey=foo=bar=NA
+    # For R CMD check "no visible binding for global variable"
     setkey(TESTDT,a,b)
     # i.e.       a b v
     #       [1,] 1 5 1
@@ -458,13 +459,13 @@ test.data.table = function()
     # Test fix for bug 1026 reported by Harish V
     rm(buniquename314)
     colnames(DT)[2] = "buniquename314"  # this test needed a unique var name to generate error 'object 'b' not found'. Otherwise it finds 'b' in local scope.   
-    foo = function( data, fcn ) {
+    bar = function( data, fcn ) {
         q = substitute( fcn )
         xx = data[,eval(q),by=a]
         yy = data[,eval(substitute(fcn)),by=a]
         identical(xx,yy)
     }
-    test(182, foo( DT, sum(buniquename314) ), TRUE)
+    test(182, bar( DT, sum(buniquename314) ), TRUE)
     
     # Test bug 1005 reported by Branson Owen
     DT = data.table(A = c("o", "x"), B = 1:10, key = "A")
@@ -601,6 +602,12 @@ test.data.table = function()
     # not sure about these yet :
     # test(244, X[Y,sum(foo*bar),mult="first"], data.table(a=2:3,V1=c(24L,49L)))
     # test(245, X[Y,sum(foo*bar),mult="last"], data.table(a=2:3,V1=c(36L,56L)))
+
+    # joining to less than all X's key colums (in examples but can't see formal test)
+    X=data.table(a=rep(LETTERS[1:2],2:3),b=1:5,v=10:14,key="a,b")
+    test(246, X["A"], {tt=X[1:2];key(tt)=key(X);tt})  # key will be retained in future
+    test(247, X["C"]$v, NA_integer_)
+    test(248, nrow(X["C",nomatch=0]), 0L)
 
     ##########################
     if (nfail > 0) {

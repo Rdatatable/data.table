@@ -273,18 +273,14 @@ copied in bulk rather than looping.
 \subsection{\code{Could not find function "DT"}}
 See FAQ \ref{faq:DTremove1} and FAQ \ref{faq:DTremove2}.
 
-\subsection{I have created a package that depends on \code{data.table}. It works fine in development but when I release it as a package I get \code{data.frame} errors.}
-Make sure you use \code{require(data.table)} rather than \code{library(data.table)}. The \code{require()}
-function is very similar to \code{libary()} but also adds \code{data.table} to the hidden \code{.Depends} vector and this makes
-your package \emph{data.table aware}. This is important from v1.5 when \code{data.table} started to
-inherit from \code{data.frame}. Calls to \code{[.data.table} from non \code{data.table} aware packages, such as base
-and ggplot2, are redirected to \code{[.data.frame} by \code{[.data.table}. When those packages use the usual \code{[.data.frame} syntax (e.g. \code{x[,5]}) when x is a \code{data.table}, x appears to behave as a \code{data.frame} would. You have likely been developing and testing your package in .GlobalEnv which is always considered \code{data.table} aware by \code{data.table}.
+\subsection{I have created a package that depends on \code{data.table}. How do I ensure my package is datatable-aware so that inheritance from data.frame still works?}
+You don't need to do anything special. As long as your package imports or depends on data.table, your package is detected as datatable-aware.
 
 \subsection{Why does \code{[.data.table} now have a \code{drop} argument from v1.5?}
 So that \code{data.table} can inherit from \code{data.frame} without using \code{...}. If we used \code{...} then
 invalid argument names would not be caught and the convenience of test 147 would be lost.
 
-The drop argument is never used by \code{[.data.table}; it is a placeholder for non \code{data.table} aware packages when they treat the \code{data.table} as if it were a \code{data.frame}. See previous FAQ.
+The drop argument is never used by \code{[.data.table}; it is a placeholder for non \code{data.table} aware packages when they treat the \code{data.table} as if it were a \code{data.frame}.
 
 
 \section{General questions about the package}
@@ -308,19 +304,15 @@ Yes, for both 32-bit and 64-bit on all platforms. Thanks to CRAN and R-Forge. Th
 Please send suggestions, bug reports and enhancement requests to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help@lists.r-forge.r-project.org}. 
 This helps make the package better. The list is public and archived.
 
-You can vote for packages at \url{http://crantastic.org/}. This helps encourage the developers. If
-you have time to write a comment too, that helps others in the community; e.g., some users have
-mentioned the types of data they use \code{data.table} to analyse.
+Please do vote for the package at \url{http://crantastic.org/packages/data-table}. This helps encourage the developers. If you have time to write a comment too, that can help others in the community. Just simply clicking that you use the package, though, is much appreciated.
 
 You can join the project and change the code and/or documentation yourself.
 
 \subsection{I think it's not great. How do I warn others about my experience?}
-Please put your vote and comments on \url{http://crantastic.org/}. Make it constructive, so we have a chance to improve.
+Please put your vote and comments on \url{http://crantastic.org/packages/data-table}. Please make it constructive so we have a chance to improve.
 
-\subsection{I have a question. I know the posting guide tells me to contact the maintainer, but that's just one person. Isn't
-there a group of people I can ask ?}
-Yes. You can post to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help@lists.r-forge.r-project.org}. It's
-like r-help, but just for this package. Feel free to answer questions there, too.
+\subsection{I have a question. I know the posting guide tells me to contact the maintainer (\emph{NOT} r-help), but that's just two people. Is there a larger group of people I can ask?}
+Yes. You can post to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help@lists.r-forge.r-project.org}. It's like r-help, but just for this package. Feel free to answer questions there, too.
 
 \subsection{Where are the datatable-help archives?}
 \url{http://lists.r-forge.r-project.org/pipermail/datatable-help/}
@@ -328,21 +320,19 @@ like r-help, but just for this package. Feel free to answer questions there, too
 \subsection{I'd prefer not to contact datatable-help, can I mail just one or two people privately?}
 Sure. You're more likely to get a faster answer from datatable-help, though.
 
-\subsection{Why is this FAQ a pdf? Can we have the FAQ on a website?}
+\subsection{Why is this FAQ a pdf? Can the FAQ moved to a website?}
 This FAQ is a vignette written using Sweave. The benefits of Sweave include the following:
 \begin{itemize}
 \item We include R code in the answers. This is actually run when the file is created, not copy and pasted. 
-\item This document is reproducible. Grab the .Rnw and you can run it yourself.
+\item This document is \emph{reproducible}. Grab the .Rnw and you can run it yourself.
 \item This file is built every night on R-Forge so it's another way we check the package.
-\item This file is bound into each version of the package. The package is not accepted on CRAN unless this file passes checks. Each version of the
-package will have its own FAQ file which will be relevant for that version.  Contrast this to a single website, which can be ambiguous if the answer
-depends on the version.
-\item You can open it offline, from your R prompt using vignette().
-\item You can extract the code from the document and play with it using\newline \code{edit(vignette("datatable-timings"))}.
+\item This file is bound into each version of the package. The package is not accepted on CRAN unless this file passes checks. Each version of the package will have its own FAQ file which will be relevant for that version.  Contrast this to a single website, which can be ambiguous if the answer depends on the version.
+\item You can open it offline, from your R prompt using \code{vignette()}.
+\item You can extract the code from the document and play with it using\newline \code{edit(vignette("datatable-faq"))}.
 \item It prints out easily.
 \item It's quicker and easier for us to write and maintain the FAQ in .Rnw form.
 \end{itemize}
-
+Having said all that, it would be nice to have all those benefits in a wiki format so that users could contribute more easily. Does that exist?
 
 \end{document}
 

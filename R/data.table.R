@@ -284,6 +284,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 lengths=1L
             }
             if (is.na(nomatch) || nomatch!=0) irows[irows==0] = nomatch
+            else lengths[idx.start==0] = 0
             if (which) return(irows)
         } else {
             # i is not a data.table
@@ -301,7 +302,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     # TO DO: detect more ordered subset cases, e.g. if irows is monotonic
                 }
             } else {
-                if (length(leftcols)!=length(rightcols)) stop("logical error, leftcols!=rightcols")
                 ans = vector("list",ncol(i)+ncol(x)-length(leftcols))
                 inonjoin = seq_len(ncol(i))[-leftcols]
                 if (!all(lengths==1)) {
@@ -313,6 +313,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]]
                     for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]]
                 }
+                rightcols = head(rightcols,length(leftcols))
                 xnonjoin = seq_len(ncol(x))[-rightcols]
                 for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]
                 names(ans) = c(colnames(x)[rightcols],colnames(x)[-rightcols],colnames(i)[-leftcols])
