@@ -117,24 +117,21 @@ write code, which also executes more quickly.
 Some of the features discussed so far are, yes. The package builds upon base functionality. It does the same sorts of things but with
 less code required, and executes many times faster if used correctly.
 
-\subsection{Why does \code{x[y]} just return the columns from x? Shouldn't it return the y columns too?}
-Good question.  The thinking was that, more often than not, you don't actually want the columns from y which aren't in the key. By
-default, we try to keep things efficient.  In general, we don't want to create memory for the union of things, only to select out a
-few columns from it in the end. So if you want the computer to do more work, then you need to tell it do more work. You can either do
-\code{cbind(y,x[y])} or \code{merge(x,y)}.  There are many different ways to do the same thing in \code{data.table}.  It's your choice to understand the
-differences and write good code.
-The other consideration is that \code{x[y]} is after all a subset of x. The ''['' operator does mean subset. 
-By default, we thought it was more consistent with base R for \code{x[y]} to just return the columns from x.
-However, it is now apparent that \code{x[y]} returning all columns from both tables would be useful, so an argument \code{inci} will be added. We
-mentioned the merge method for \code{data.table} too, but does \code{merge(x,y)} mean \code{x[y]} or \code{y[x]}?  Those are different things. Again, it is
-your choice which syntax you prefer and find clearer.\newline
-Finally, although it appears as though \code{x[y]} does not return the columns in y, you can actually use the columns from y in the \code{j}
-expression.  This is what we mean by \emph{join inherited scope}.  Why not just return the union of all the columns from x and y and
-then run expressions on that?  It boils down to efficiency of code and what is quicker to program.  When you write \code{x[y,foo*boo]}, 
-\code{data.table} automatically inspects the \code{j} expression to see which columns it uses.  It will only subset, or group, those columns only.  Memory
-is only created for the columns the \code{j} uses.  Let's say foo is in x, and boo is in y (along with 20 other columns in y). Isn't
-x[y,foo*boo] quicker to program and quicker to run than a merge step followed by another subset step ?
+\subsection{Why does \code{X[Y]} return all the columns from Y too? Shouldn't it return a subset of X?}
+This was changed in v1.5.3. \code{X[Y]} now includes \code{Y}'s non-join columns. We refer to this feature as \emph{join inherited scope} because not only are X columns available to the j expression, so are Y columns. The downside is that \code{X[Y]} is less efficient since every item of Y's non-join columns are duplicated to match the (likely large) number of rows in X that match. We therefore strongly discourage \code{X[Y]} and instead strongly encourage \code{X[Y,j]}. See next FAQ. 
 
+\subsection{What is the difference between \code{X[Y]} and \code{merge(X,Y)}?}
+X[Y] is a join, looking up X's rows using Y as an index.\newline
+Y[X] is a join, looking up Y's rows using X as an index.\newline
+merge(X,Y) does both ways at the same time.
+
+\emph{BUT} that misses the main point. Most tasks require something to be done on the data after a join or merge. Why join or merge all the columns of data, only to use a small subset of them afterwards? You may then try merge(X[,ColsNeeded1],Y[,ColsNeeded2]), but that takes copies of the subsets of data, and it requires the programmer to work out which columns are needed, and make no mistakes. \code{X[Y,j]} in data.table does all that in one step for you. When you write \code{X[Y,sum(foo*bar)]}, \code{data.table} automatically inspects the \code{j} expression to see which columns it uses.  It will only subset those columns only.  Memory is only created for the columns the \code{j} uses.  Let's say foo is in X, and bar is in Y (along with 20 other columns in Y). Isn't X[Y,sum(foo*bar)] quicker to program and quicker to run than a \code{merge()} step followed by a subset step?
+
+\subsection{Anything else about \code{X[Y,sum(foo*bar)]}?}
+Remember that \code{j} (in this case \code{sum(foo*bar)}) is run for each \emph{group} of \code{X} that each row of \code{Y} matches to. This feature is \emph{by without by}!
+
+\subsection{That's nice but what if I don't want by without by?}
+Mostly, we think most users will most of the time. If you really want j to run once for the whole subset of X then try X[Y][,sum(foo*bar)]. If that needs to be efficient then you will have to work harder (since this is outside the common use-case) and try X[Y,list(foo,bar)][,sum(foo*bar)]. Since list(foo,bar) only needs foo and bar, only those columns will be in the join result.
 
 \section{General syntax}
 

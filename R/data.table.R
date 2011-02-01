@@ -224,11 +224,11 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             rightcols = match(key(x),colnames(x))
             if (any(is.na(rightcols))) stop("sorted columns of x don't exist in the colnames. data.table is not a valid data.table")
             for (a in rightcols) if (!typeof(x[[a]]) %in% c("integer","logical")) stop("sorted column ",colnames(x)[a], " in x is not internally type integer")
-            byval = i
             if (haskey(i)) {
                 leftcols = match(key(i),colnames(i))
                 if (any(is.na(leftcols))) stop("sorted columns of i don't exist in the colnames of i. data.table is not a valid data.table")
                 if (length(rightcols) < length(leftcols)) stop("i has more sorted columns than x has sorted columns, invalid sorted match")
+                byval = i[,leftcols,with=FALSE]
                 for (a in seq(along=leftcols)) {
                     # When/if we move to character, this entire for() will not be required.
                     lc = leftcols[a]
@@ -251,6 +251,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 iby = key(x)[seq(1,length(key(i)))]
             } else {
                 leftcols = 1:min(ncol(i),length(rightcols))     # The order of the columns in i must match to the order of the sorted columns in x
+                byval = i[,leftcols,with=FALSE]
                 for (lc in leftcols) {
                     # When/if we move to character, this entire for() will not be required.
                     rc = rightcols[lc]
@@ -265,7 +266,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                         if (is.factor(x[[rc]])) stop("x.",colnames(x)[rc]," is a factor but joining to i.",colnames(i)[lc]," which is not a factor. Factors must join to factors.")
                     }
                 }
-                iby = key(x)[seq(1,ncol(i))]
+                iby = key(x)[leftcols]
             }
             idx.start = integer(nrow(i))
             idx.end = integer(nrow(i))
@@ -291,14 +292,35 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             irows = i
         }
         if (missing(j)) {
-            ans = vector("list",ncol(x))
-            for (s in seq_len(ncol(x))) ans[[s]] = x[[s]][irows]
-            # TO DO: include i's non join columns when i is data.table
-            names(ans) = names(x)
-	    if (haskey(x) && (is.logical(irows) || length(irows)==1 || haskey(i) || (is.data.table(i) && nrow(i)==1))) {
-                attr(ans,"sorted") = key(x)
-                # TO DO: detect more ordered subset cases e.g. DT["A"] or DT[c("A","B")] where the
-                # irows are an ordered subset. Or just .C("isordered",irows) or inside sortedmatch
+            if (!is.data.table(i)) {
+            	ans = vector("list",ncol(x))
+                for (s in seq_len(ncol(x))) ans[[s]] = x[[s]][irows]
+                names(ans) = names(x)
+	        if (haskey(x) && (is.logical(irows) || length(irows)==1)) {
+                    attr(ans,"sorted") = key(x)
+                    # TO DO: detect more ordered subset cases, e.g. if irows is monotonic
+                }
+            } else {
+                if (length(leftcols)!=length(rightcols)) stop("logical error, leftcols!=rightcols")
+                ans = vector("list",ncol(i)+ncol(x)-length(leftcols))
+                inonjoin = seq_len(ncol(i))[-leftcols]
+                if (!all(lengths==1)) {
+                    ii = rep(1:nrow(i),lengths)
+                    for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]][ii]
+                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]][ii]
+                }
+                else {
+                    for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]]
+                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]]
+                }
+                xnonjoin = seq_len(ncol(x))[-rightcols]
+                for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]
+                names(ans) = c(colnames(x)[rightcols],colnames(x)[-rightcols],colnames(i)[-leftcols])
+                if (haskey(i) || nrow(i)==1)
+                    attr(ans,"sorted") = key(x)
+                    # TO DO: detect more ordered subset cases e.g. DT["A"] or DT[c("A","B")] where the
+                    # irows are an ordered subset. Or just .C("isordered",irows) or inside sortedmatch
+                    # The nrow(i)==1 is the simplest case and been there for a while (and tested)
             }
             class(ans) = c("data.table","data.frame")
             attr(ans,"row.names") = .set_row_names(nrow(ans))

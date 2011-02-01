@@ -25,6 +25,17 @@ NEW FEATURES
    o    'by' may now be a character vector of column names.
         This allows syntax such as DT[,sum(x),by=key(DT)].
 
+   o    X[Y] now includes Y's non-join columns, as most users
+        naturally expect. Please do use j in one step (i.e. X[Y,j])
+        since that merges just the columns j uses and is much more
+        efficient than X[Y][,j] or merge(X,Y)[,j].
+
+   o    The 'Join Inherited Scope' feature is back on. This is
+        consistent with X[Y] including Y's non-join columns, enabling
+        natural progression from X[Y] to X[Y,j]. j sees columns in X
+        first, and then Y. 
+        If the same column name exists in both X and Y, the data in
+        Y can be accessed via a prefix "i." (not yet implemented).
 
 BUG FIXES
 

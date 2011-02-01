@@ -304,15 +304,15 @@ test.data.table = function()
     test(125, inherits(t,"try-error"))
     test(126, length(grep("The data.table has no key", t)))
 
-    TESTDT = data.table(a=3L,v=2,key="a")  # testing 1-row table
+    TESTDT = data.table(a=3L,v=2L,key="a")  # testing 1-row table
     test(127, TESTDT[J(3)], TESTDT)
-    test(128, TESTDT[J(4)], TESTDT[NA])   # see tests 206-207 too re the [NA]
-    test(129, TESTDT[J(4),roll=TRUE], TESTDT)
-    test(130, TESTDT[J(4),rolltolast=TRUE], TESTDT[NA])
-    test(131, TESTDT[J(-4),roll=TRUE], TESTDT[NA])
+    test(128, TESTDT[J(4)], data.table(a=4L,v=NA_integer_,key="a"))   # see tests 206-207 too re the [NA]
+    test(129, TESTDT[J(4),roll=TRUE], data.table(a=4L,v=2L,key="a"))  # the i values are in the result now (which make more sense for rolling joins, the x.a can still be accessed if need be)
+    test(130, TESTDT[J(4),rolltolast=TRUE], data.table(a=4L,v=NA_integer_,key="a"))
+    test(131, TESTDT[J(-4),roll=TRUE], data.table(a=-4L,v=NA_integer_,key="a"))
 
     test(132, ncol(TESTDT[0]), 2L)
-    test(133, TESTDT[0][J(3)], TESTDT[NA])
+    test(133, TESTDT[0][J(3)], data.table(a=3L,v=NA_integer_,key="a"))
 
     # tests on data table names
     x = 2L; `1x` = 4L
@@ -353,8 +353,8 @@ test.data.table = function()
     test(147, inherits(t,"try-error") && length(grep("unused argument", tt)))   # user meant DT[,list(MySum=sum(v))]
     
     dt = data.table(a=c(1L,4L,5L), b=1:3, key="a")
-    test(148, dt[CJ(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L),key="a"))
-    test(149, dt[J(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L)))
+    test(148, dt[CJ(2:3),roll=TRUE], data.table(a=c(2L,3L),b=c(1L,1L),key="a"))
+    test(149, dt[J(2:3),roll=TRUE], data.table(a=c(2L,3L),b=c(1L,1L)))  # in future this will detect the subset is ordered and retain the key
     
     # 150:158 test out of order factor levels in key columns
     dt = data.table(x=factor(c("c","b","a"),levels=c("b","a","c")),y=1:3)
@@ -458,13 +458,13 @@ test.data.table = function()
     # Test fix for bug 1026 reported by Harish V
     rm(buniquename314)
     colnames(DT)[2] = "buniquename314"  # this test needed a unique var name to generate error 'object 'b' not found'. Otherwise it finds 'b' in local scope.   
-    boo = function( data, fcn ) {
+    foo = function( data, fcn ) {
         q = substitute( fcn )
         xx = data[,eval(q),by=a]
         yy = data[,eval(substitute(fcn)),by=a]
         identical(xx,yy)
     }
-    test(182, boo( DT, sum(buniquename314) ), TRUE)
+    test(182, foo( DT, sum(buniquename314) ), TRUE)
     
     # Test bug 1005 reported by Branson Owen
     DT = data.table(A = c("o", "x"), B = 1:10, key = "A")
@@ -590,16 +590,17 @@ test.data.table = function()
     ans2=cbind(d1[2:3],y2=d2[1:2]$y2);setkey(ans2,xkey)
     test(238, merge(d1, d2, by="xkey"), ans2)
 
-    # Join Inherited Scope returns
+    # Join Inherited Scope, and X[Y] including Y's non-join columns
     X=data.table(a=rep(1:3,c(3,3,2)),foo=1:8,key="a")
-    Y=data.table(a=2:3,boo=6:7)
-    test(239, X[Y,sum(foo),mult="all"]$V1, INT(15,15))
-    test(240, X[Y,sum(foo*boo),mult="all"]$V1, INT(90,105))
-    #X[Y,sum(foo*boo)] # about to change default of mult to all, so this will be the same 
-    #X[Y] about to change to return all Y's non-join columns too
-    #X[Y,sum(foo*boo),mult="first"]  doubt this is very useful  but if j should be run on
-    # the result as a whole then X[Y,list(foo,boo)][,sum(foo*boo)] is clearer 
-
+    Y=data.table(a=2:3,bar=6:7)
+    test(239, X[Y,sum(foo)], data.table(a=2:3,V1=c(15L,15L)))
+    test(240, X[Y,sum(foo*bar)], data.table(a=2:3,V1=c(90L,105L)))
+    test(241, X[Y], data.table(a=rep(2:3,3:2),foo=4:8,bar=rep(6:7,3:2)))
+    test(242, X[Y,list(foo,bar)][,sum(foo*bar)], 195L)
+    test(243, X[Y][,sum(foo*bar)], 195L)
+    # not sure about these yet :
+    # test(244, X[Y,sum(foo*bar),mult="first"], data.table(a=2:3,V1=c(24L,49L)))
+    # test(245, X[Y,sum(foo*bar),mult="last"], data.table(a=2:3,V1=c(36L,56L)))
 
     ##########################
     if (nfail > 0) {
