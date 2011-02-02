@@ -609,6 +609,13 @@ test.data.table = function()
     test(247, X["C"]$v, NA_integer_)
     test(248, nrow(X["C",nomatch=0]), 0L)
 
+    # 
+    x=data.table( a=c("a","b","c"), b=1:3, key="a" )
+    y=data.table( a=c("b","d","e"), d=c(8,9,10) )
+    test(249, x[y], data.table(a=c("b","d","e"),b=c(2L,NA,NA),d=c(8,9,10)))  # keeps i join cols
+    test(250, x[y,mult="first"], data.table(a=c("b","d","e"),b=c(2L,NA,NA),d=c(8,9,10))) # same in this data
+
+
     ##########################
     if (nfail > 0) {
         stop(nfail," errors in test.data.table()")

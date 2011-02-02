@@ -224,11 +224,14 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             rightcols = match(key(x),colnames(x))
             if (any(is.na(rightcols))) stop("sorted columns of x don't exist in the colnames. data.table is not a valid data.table")
             for (a in rightcols) if (!typeof(x[[a]]) %in% c("integer","logical")) stop("sorted column ",colnames(x)[a], " in x is not internally type integer")
+            origi = i  # TO DO. due to match between factor levels below. Time to try character() again?
+                       # This origi will copy, not nice.  Trouble with character in the binarysearch
+                       # is the if and Rf_Scollate we're trying to avoid.
             if (haskey(i)) {
                 leftcols = match(key(i),colnames(i))
                 if (any(is.na(leftcols))) stop("sorted columns of i don't exist in the colnames of i. data.table is not a valid data.table")
                 if (length(rightcols) < length(leftcols)) stop("i has more sorted columns than x has sorted columns, invalid sorted match")
-                byval = i[,leftcols,with=FALSE]
+                byval = i[,leftcols,with=FALSE]  # TO DO: remove this subset; just needs pointer
                 for (a in seq(along=leftcols)) {
                     # When/if we move to character, this entire for() will not be required.
                     lc = leftcols[a]
@@ -251,7 +254,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 iby = key(x)[seq(1,length(key(i)))]
             } else {
                 leftcols = 1:min(ncol(i),length(rightcols))     # The order of the columns in i must match to the order of the sorted columns in x
-                byval = i[,leftcols,with=FALSE]
+                byval = i[,leftcols,with=FALSE]  # TO DO: remove this subset; just needs pointer
                 for (lc in leftcols) {
                     # When/if we move to character, this entire for() will not be required.
                     rc = rightcols[lc]
@@ -306,12 +309,12 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 inonjoin = seq_len(ncol(i))[-leftcols]
                 if (!all(lengths==1)) {
                     ii = rep(1:nrow(i),lengths)
-                    for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]][ii]
-                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]][ii]
+                    for (s in seq_along(leftcols)) ans[[s]] = origi[[leftcols[s]]][ii]
+                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = origi[[inonjoin[s]]][ii]
                 }
                 else {
-                    for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]]
-                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]]
+                    for (s in seq_along(leftcols)) ans[[s]] = origi[[leftcols[s]]]
+                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = origi[[inonjoin[s]]]
                 }
                 rightcols = head(rightcols,length(leftcols))
                 xnonjoin = seq_len(ncol(x))[-rightcols]
