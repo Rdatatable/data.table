@@ -43,22 +43,22 @@ miss out on the benefits that \pkg{data.table} provides.
 
 Recall that we create a \code{data.frame} using the function \code{data.frame()}:
 <<>>=
-df = data.frame(x=c("b","b","b","a","a"),v=rnorm(5))
-df
+DF = data.frame(x=c("b","b","b","a","a"),v=rnorm(5))
+DF
 @
 A \code{data.table} is created in exactly the same way:
 <<>>=
-dt = data.table(x=c("b","b","b","a","a"),v=rnorm(5))
-dt
+DT = data.table(x=c("b","b","b","a","a"),v=rnorm(5))
+DT
 @
 Observe that a \code{data.table} prints the row numbers slightly differently. There is nothing
 significant about that.
-We can also convert existing \code{data.frame} objects to \code{data.table}.
+We can easily convert existing \code{data.frame} objects to \code{data.table}.
 <<>>=
-cars = data.table(cars)
-head(cars)
+CARS = data.table(cars)
+head(CARS)
 @
-We have just created two \code{data.table}s: dt and cars. It is often useful to see a list of all
+We have just created two \code{data.table}s: DT and CARS. It is often useful to see a list of all
 data.tables in memory:
 <<>>=
 tables()
@@ -74,15 +74,14 @@ can be used in programs. \code{tables()} is unrelated to the base function \code
 Also note that \code{data.table()} automatically converts character vectors to factors.
 
 <<>>=
-sapply(dt,class)
+sapply(DT,class)
 @
 
 Users should rarely need to know this has occurred. See \code{?factor} if you are unfamiliar
 with factors. Factors will appear to you as though they are character columns. You can refer to them just as
 though they are character.
 
-You may have noticed the empty column KEY from \code{tables()} above. This is the subject of the next section,
-the first of the 3 main features of the package.
+You may have noticed the empty column KEY in the result of \code{tables()} above. This is the subject of the next section, the first of the 3 main features of the package.
 
 
 \section*{1. Keys}
@@ -104,50 +103,53 @@ the rows are sorted by the key, any duplicates in the key will appear consecutiv
 Let's remind ourselves of our tables:
 <<>>=
 tables()
-dt
+DT
 @
 
 No keys have been set yet.  We can use \code{data.frame} syntax in a \code{data.table}, too.
 
 <<>>=
-dt[2,]
-dt[ dt$x == "b", ]
+DT[2,]
+DT[DT$x=="b",]
 @
 
 But since there are no rownames, the following does not work:
 <<>>=
-cat(try(dt["b",],silent=TRUE))
+cat(try(DT["b",],silent=TRUE))
 @
 
-The error message tells us we need to use setkey():
+The error message tells us we need to use \code{setkey()}:
 <<>>=
-setkey(dt,x)   # or key(dt)="x" if you prefer
-dt
+setkey(DT,x)   # or key(DT)="x" if you prefer
+DT
 @
 
-Notice that the rows in dt have been re-ordered according to the values of \code{x}. 
+Notice that the rows in \code{DT} have been re-ordered according to the values of \code{x}. 
 The two \code{"a"} rows have moved to the top.
-We can confirm that dt does indeed have a key using \code{haskey()}, \code{key()},
+We can confirm that \code{DT} does indeed have a key using \code{haskey()}, \code{key()},
 \code{attributes()}, or just running \code{tables()}.
 
 <<>>=
 tables()
 @
 
-Now that we are sure \code{dt} has a key, let's try again:
+Now that we are sure \code{DT} has a key, let's try again:
 
 <<>>=
-dt["b",]
+DT["b",]
 @
 
-Since there are duplicates in this key (i.e. repeated values of \code{"b"}) the subset 
-returns the first row in that group by default. The
-\code{mult} argument (short for \emph{multiple}) controls this.
+By default all the rows in the group are returned\footnote{In contrast to a data.frame where only the first rowname is returned when the rownames contain duplicates.}. The \code{mult} argument (short for \emph{multiple}) allows the first or last row of the group to be returned instead.
 
 <<>>=
-dt["b",mult="first"]
-dt["b",mult="last"]
-dt["b",mult="all"]
+DT["b",mult="first"]
+DT["b",mult="last"]
+@
+
+The comma is optional.
+
+<<>>=
+DT["b"]
 @
 
 Lets now create a new \code{data.frame}. We will make it large enough to demonstrate the
@@ -183,8 +185,13 @@ DT = data.table(DF)
 setkey(DT,x,y)
 @
 <<print=TRUE>>=
-ss=system.time(ans2 <- DT[J("R","h"),mult="all"])   # 'binary search'
-mapply(identical,ans1,ans2)
+ss=system.time(ans2 <- DT[J("R","h")])   # binary search
+head(ans2,3)
+dim(ans2)
+identical(ans1$v, ans2$v)
+@
+<<echo=FALSE>>=
+if(!identical(ans1$v, ans2$v)) stop("vector scan vs binary search not equal")
 @
 
 At \Sexpr{format(ss[3],nsmall=3)} seconds, this was {\bf\Sexpr{as.integer(tt[3]/ss[3])}} times faster than \Sexpr{format(tt[3],nsmall=3)} seconds,
@@ -194,7 +201,7 @@ significant\footnote{We wonder how many people are deploying parallel techniques
 
 We can do vector scans in data.table, too. In other words we can use data.table \emph{badly}.
 
-<<>>=    
+<<>>=
 system.time(ans1 <- DT[x=="R" & y=="h",])   # works but is using data.table badly
 system.time(ans2 <- DF[DF$x=="R" & DF$y=="h",])   # the data.frame way
 mapply(identical,ans1,ans2)
@@ -210,26 +217,25 @@ passed to the \code{[} method, which in turn searched it for \code{TRUE} and ret
 occurred internally in R and were very fast, but they were scans. \emph{We} did those scans because \emph{we} wrote that R code.
 
 
-When i is itself a data.table, we say that we are \emph{joining} the two data.tables. In this case, we are joining DT to the
-1 row, 2 column table returned by \code{data.table("R","h")}. Since we do this a lot, there is an alias for \code{data.table}s called \code{J()},
-short for join:
+When i is itself a data.table, we say that we are \emph{joining} the two data.tables. In this case, we are joining DT to the 1 row, 2 column table returned by \code{data.table("R","h")}. Since we do this a lot, there is an alias for \code{data.table}s called \code{J()}, short for join.
 
 <<>>=
-identical( DT[J("R","h"),mult="all"],
-           DT[data.table("R","h"),mult="all"] )
+identical( DT[J("R","h"),],
+           DT[data.table("R","h"),])
+@
+<<echo=FALSE>>=
+if(!identical(DT[J("R","h"),],DT[data.table("R","h"),])) stop("J != data.table check")
 @
 
 Both vector scanning and binary search are available in \code{data.table}, but one way of using \code{data.table} is much better than the other.
 
-The join syntax is short, fast to write and easy to maintain. Passing a data.table into a data.table subset is similar to 
-allowing a matrix to be passed into a matrix subset in base \proglang{R}.\footnote{Subsetting a keyed data.table by an n-column 
-data.table is consistent with subsetting a n-dimension array by an n-column matrix}. There are
+The join syntax is a short, fast to write and easy to maintain. Passing a data.table into a data.table subset is analogous to \code{A[B]} syntax in base \proglang{R} where \code{A} is a matrix and \code{B} is a 2-column matrix\footnote{Subsetting a keyed data.table by a n-column 
+data.table is consistent with subsetting a n-dimension array by a n-column matrix in base R}. In fact, the \code{A[B]} syntax in base R inspired the \code{data.table} package. There are
 other types of join and further arguments which are beyond the scope of this quick introduction.
 
-The merge method of \code{data.table} is essentially \code{x[y]}, but where the columns of \code{x} are included in the result. See FAQ 1.10.
+The merge method of \code{data.table} is very similar to \code{X[Y]}, but there are some differences. See FAQ 1.12.
 
-This first section has been about the first argument to the \code{[}, namely \code{i}. The next section has to do with the 2nd argument
-\code{j}.
+This first section has been about the first argument to \code{[}, namely \code{i}. The next section has to do with the 2nd argument \code{j}.
 
 
 \section*{2. Fast grouping}
@@ -239,16 +245,16 @@ The second argument to \code{[} is \code{j}, which may consist of
 one or more expressions whose arguments are (unquoted) column names, as if the column names were variables.
 
 <<>>=
-dt[,sum(v)]
+DT[,sum(v)]
 @
 
 When we supply a \code{j} expression and a 'by' list of expressions, the \code{j}expression is repeated for each 'by' group:
 
 <<>>=
-dt[,sum(v),by=x]
+DT[,sum(v),by=x]
 @
 
-The 'by' in data.table is fast.  Let's compare it to tapply:
+The \code{by} in data.table is fast.  Let's compare it to \code{tapply}.
 
 <<>>=
 ttt=system.time(tt <- tapply(DT$v,DT$x,sum)); ttt
@@ -256,6 +262,9 @@ sss=system.time(ss <- DT[,sum(v),by=x]); sss
 head(tt)
 head(ss)
 identical(as.vector(tt), ss$V1)
+@
+<<echo=FALSE>>=
+if(!identical(as.vector(tt), ss$V1)) stop("by check failed")
 @
 
 At \Sexpr{sprintf("%0.3f",sss[3])} sec, this was {\bf\Sexpr{as.integer(ttt[3]/sss[3])}} times faster than 
@@ -270,16 +279,22 @@ tt[1:5,1:5]
 head(ss)
 identical(as.vector(t(tt)), ss$V1)
 @
+<<echo=FALSE>>=
+if(!identical(as.vector(t(tt)), ss$V1)) stop("group check failed")
+@
 
 This was {\bf\Sexpr{as.integer(ttt[3]/sss[3])}} times faster, and the syntax a little simpler and easier to read.
-
+\newline
 
 The following features are mentioned only briefly here; further examples are in the FAQs.
 
 \begin{itemize}
-\item To return several expressions, pass a list() to j.
+\item To return several expressions, pass a \code{list()} to \code{j}.
 \item Each item of the list is recycled to match the length of the longest item.
-\item You can pass a list() of expressions of column names to by.
+\item You can pass a \code{list()} of \emph{expressions} of column names to \code{by} e.g.\newline
+\code{DT[,sum(v),by=list(month(dateCol),region)]}\newline
+where calling \code{month()} on \code{dateCol} is what we mean by expressions of column names.
+\item Any R functions from any package can be used in \code{j} and \code{by}.
 \end{itemize}
 
 
@@ -311,7 +326,7 @@ This was a quick start guide. Further resources include :
 \item The help page describes each and every argument: \code{?"[.data.table"}
 \item The FAQs deal with distinct topics: \code{vignette("datatable-faq")}
 \item The performance tests contain more examples: \code{vignette("datatable-timings")}
-\item test.data.table contains over 150 low level tests of the features: \code{test.data.table()}
+\item \code{test.data.table()} contains over 250 low level tests of the features
 \item Website: \url{http://datatable.r-forge.r-project.org/}
 \item Presentations:
 \begin{itemize}

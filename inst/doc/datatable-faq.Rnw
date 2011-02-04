@@ -159,19 +159,19 @@ A future version of \code{data.table} may allow a distinction between a key and 
 \subsection{I'm using \code{c()} in the j and getting strange results.}
 This is a common source of confusion. In \code{data.frame} you are used to, for example:
 <<>>=
-df = data.frame(x=1:3,y=4:6,z=7:9)
-df
-df[,c("y","z")]
+DF = data.frame(x=1:3,y=4:6,z=7:9)
+DF
+DF[,c("y","z")]
 @
 which returns the two columns. In \code{data.table} you know you can use the column names directly and might try :
 <<>>=
-dt = data.table(df)
-dt[,c(y,z)]
+DT = data.table(DF)
+DT[,c(y,z)]
 @
-but this returns one vector.  Remember that the \code{j} expression is evaluated within the environment of \code{dt},
+but this returns one vector.  Remember that the \code{j} expression is evaluated within the environment of \code{DT},
 and \code{c()} returns a vector.  If 2 or more columns are required, use list() instead:
 <<>>=
-dt[,list(y,z)]
+DT[,list(y,z)]
 @
 \code{c()} can be useful in a \code{data.table} too, but its behaviour is different from that in a \code{data.frame}.
 
@@ -321,21 +321,19 @@ Yes. You can post to \href{mailto:datatable-help@lists.r-forge.r-project.org}{da
 Sure. You're more likely to get a faster answer from datatable-help, though.
 
 \subsection{Why is this FAQ a pdf? Can the FAQ moved to a website?}
-This FAQ is a vignette written using Sweave. The benefits of Sweave include the following:
+This FAQ is a \emph{vignette} written using Sweave. The benefits of Sweave include the following:
 \begin{itemize}
-\item We include R code in the answers. This is actually run when the file is created, not copy and pasted. 
+\item We include R code in the vignettes. This code is \emph{actually run} when the file is created, not copy and pasted.
 \item This document is \emph{reproducible}. Grab the .Rnw and you can run it yourself.
-\item This file is built every night on R-Forge so it's another way we check the package.
+\item CRAN checks the package (including running vignettes) every night on Linux, Mac and Windows, both 32bit and 64bit. Results are posted to \url{http://cran.r-project.org/web/checks/check_results_data.table.html}. Included there are results from r-devel (i.e. not yet released R). That serves as a very useful early warning system for any potential future issues as R itself develops.
 \item This file is bound into each version of the package. The package is not accepted on CRAN unless this file passes checks. Each version of the package will have its own FAQ file which will be relevant for that version.  Contrast this to a single website, which can be ambiguous if the answer depends on the version.
 \item You can open it offline, from your R prompt using \code{vignette()}.
-\item You can extract the code from the document and play with it using\newline \code{edit(vignette("datatable-faq"))}.
+\item You can extract the code from the document and play with it using\newline \code{edit(vignette("datatable-faq"))} or \code{edit(vignette("datatable-timings"))}.
 \item It prints out easily.
 \item It's quicker and easier for us to write and maintain the FAQ in .Rnw form.
 \end{itemize}
-Having said all that, it would be nice to have all those benefits in a wiki format so that users could contribute more easily. Does that exist?
+Having said all that, a wiki format may be quicker and easier for users to contribute documentation and examples.
 
 \end{document}
-
-
 
 

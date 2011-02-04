@@ -59,11 +59,15 @@ DT = data.table(DF,key="x,y")
 tables()
 
 tt=system.time(ans1 <- DF[DF$x=="R" & DF$y=="h",]); tt
-ss=system.time(ans2 <- DT[J("R","h"),mult="all"]); ss
-mapply(identical,ans1,ans2)
+head(ans1)
+dim(ans1)
+ss=system.time(ans2 <- DT[J("R","h")]); ss
+head(ans2)
+dim(ans2)
+identical(ans1$v,ans2$v)
 @
 <<echo=FALSE>>=
-if(!all(mapply(identical,ans1,ans2))) stop("Test 1 not identical")
+if(!identical(ans1$v,ans2$v)) stop("Test 1 not identical")
 @
 
 \subsection{Grouping}
@@ -72,7 +76,9 @@ This is a repeat of the test in section 2 of the Introduction vignette. The synt
 
 <<>>=
 ttt=system.time(ans1 <- tapply(DF$v,DF$x,sum)); ttt
+head(ans1)
 sss=system.time(ans2 <- DT[,sum(v),by=x]); sss
+head(ans2)
 identical(as.vector(ans1), ans2$V1)
 @
 <<echo=FALSE>>=
