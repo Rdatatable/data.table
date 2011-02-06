@@ -37,6 +37,9 @@ NEW FEATURES
         If the same column name exists in both X and Y, the data in
         Y can be accessed via a prefix "i." (not yet implemented).
 
+   o    Ad hoc by now coerces double to integer provided they are
+        all.equal (FR#1051), as setkey already does.
+
 BUG FIXES
 
 

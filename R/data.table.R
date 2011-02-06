@@ -419,7 +419,17 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             }
         }
         if (!is.list(byval)) stop("by must evaluate to vector or list of vectors")
-        for (jj in seq_len(length(byval))) if (!typeof(byval[[jj]]) %in% c("integer","logical")) stop("column or expression ",jj," of 'by' is not internally type integer. Do not quote column names. Example: by=list(colA,month(colB))")
+        for (jj in seq_len(length(byval))) {
+            if (typeof(byval[[jj]]) == "double") {
+                toint = as.integer(byval[[jj]])
+                if (isTRUE(all.equal(byval[[jj]],toint))) {
+                    byval[[jj]] = toint
+                    next
+                }
+                else stop("Column ",jj," of 'by' is float and cannot be auto converted to integer without losing information.")
+            }
+            if (!typeof(byval[[jj]]) %in% c("integer","logical")) stop("column or expression ",jj," of 'by' is type ",typeof(byval[[jj]]),". Do not quote column names. Useage: DT[,sum(colC),by=list(colA,month(colB))]")
+        }
         tt = sapply(byval,length)
         if (any(tt!=nrow(x))) stop("Each item in the 'by' list must be same length as rows in x (",nrow(x),"): ",paste(tt,collapse=","))
         bynames = names(byval)

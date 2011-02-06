@@ -609,11 +609,18 @@ test.data.table = function()
     test(247, X["C"]$v, NA_integer_)
     test(248, nrow(X["C",nomatch=0]), 0L)
 
-    # 
     x=data.table( a=c("a","b","c"), b=1:3, key="a" )
     y=data.table( a=c("b","d","e"), d=c(8,9,10) )
     test(249, x[y], data.table(a=c("b","d","e"),b=c(2L,NA,NA),d=c(8,9,10)))  # keeps i join cols
-    test(250, x[y,mult="first"], data.table(a=c("b","d","e"),b=c(2L,NA,NA),d=c(8,9,10))) # same in this data
+    test(250, x[y,mult="first"], data.table(a=c("b","d","e"),b=c(2L,NA,NA),d=c(8,9,10))) # same
+
+    x=data.table( a=c("a","b","b","c"), b=1:4, key="a" )
+    y=data.table(a=c("b","d","b"), d=c(8,9,10))
+    test(251, x[y], data.table(a=c("b","b","d","b","b"),b=c(2:3,NA,2:3),d=c(8,8,9,10,10)))
+    
+    # auto coerce float to int in ad hoc by (just like setkey), FR#1051
+    DT = data.table(a=c(1,1,1,2,2),v=1:5)
+    test(252, DT[,sum(v),by=a], data.table(a=1:2,V1=c(6L,9L)))
 
 
     ##########################

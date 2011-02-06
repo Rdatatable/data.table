@@ -29,7 +29,7 @@ setkey = function(x, ..., loc=parent.frame())
             x[[i]] = factor(x[[i]])
             next
         }
-        if (storage.mode(x[[i]]) == "double") {
+        if (typeof(x[[i]]) == "double") {
             toint = as.integer(x[[i]])
             if (identical(all.equal(x[[i]],toint),TRUE)) {
                 x[[i]] = toint
@@ -47,7 +47,7 @@ setkey = function(x, ..., loc=parent.frame())
             }
             next
         }
-        if (!storage.mode(x[[i]]) %in% c("integer","logical")) stop("Column '",i,"' is storage.mode '",storage.mode(x[[i]]),"' which is not accepted by setkey.")
+        if (!typeof(x[[i]]) %in% c("integer","logical")) stop("Column '",i,"' is type '",typeof(x[[i]]),"' which is not accepted by setkey.")
     }
     o = fastorder(x, cols)
     # We put NAs first because NA is internally a very large negative number. This is relied on in the C binary search.
