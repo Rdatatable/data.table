@@ -420,6 +420,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
         if (!is.list(byval)) stop("by must evaluate to vector or list of vectors")
         for (jj in seq_len(length(byval))) {
+            if (is.character(byval[[jj]])) {
+                byval[[jj]] = factor(byval[[jj]])
+                next
+            }
             if (typeof(byval[[jj]]) == "double") {
                 toint = as.integer(byval[[jj]])
                 if (isTRUE(all.equal(byval[[jj]],toint))) {

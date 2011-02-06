@@ -33,12 +33,14 @@ NEW FEATURES
    o    The 'Join Inherited Scope' feature is back on, FR#1095. This
         is consistent with X[Y] including Y's non-join columns, enabling
         natural progression from X[Y] to X[Y,j]. j sees columns in X
-        first, and then Y. 
+        first then Y. 
         If the same column name exists in both X and Y, the data in
         Y can be accessed via a prefix "i." (not yet implemented).
 
-   o    Ad hoc by now coerces double to integer provided they are
-        all.equal (FR#1051), as setkey already does.
+   o    Ad hoc by now coerces double to integer (provided they are
+        all.equal) and character to factor, FR#1051, as setkey
+        already does.
+
 
 BUG FIXES
 

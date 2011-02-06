@@ -622,6 +622,10 @@ test.data.table = function()
     DT = data.table(a=c(1,1,1,2,2),v=1:5)
     test(252, DT[,sum(v),by=a], data.table(a=1:2,V1=c(6L,9L)))
 
+    # auto coerce character to factor in ad hoc by (just like setkey).
+    DT = data.table(a=c("A","A","A","B","B"),v=1:5)
+    DT$a = as.character(DT$a)  # because data.table() coerces to factor currently.
+    test(253, DT[,sum(v),by=a], data.table(a=factor(c("A","B")),V1=c(6L,9L)))
 
     ##########################
     if (nfail > 0) {
