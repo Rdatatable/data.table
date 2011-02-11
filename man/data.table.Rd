@@ -147,8 +147,7 @@ column called \code{"keep"} containing \code{TRUE} and this is correct behaviour
 
 \examples{
 \dontrun{
-  # run these examples at the prompt :
-  example(data.table)}
+example(data.table)  # to run these examples at the prompt}
 
 DF = data.frame(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9)
 DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9)
@@ -225,7 +224,7 @@ DT[,sum(v),x][order(-V1)]  # ordering results
 DT[,transform(.SD,m=mean(v)),by=x] 
 DT[,.SD[which.min(v)],by=x]
 
-# Over 250 further examples :
+# Over 200 further examples :
 test.data.table()
 
 # Follow posting guide, support is here (not r-help) :
