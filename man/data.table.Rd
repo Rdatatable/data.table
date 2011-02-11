@@ -234,7 +234,20 @@ maintainer("data.table")
 vignette("datatable-intro")
 vignette("datatable-faq")
 vignette("datatable-timings")}
+\if{html}{\out{<!-- Start of StatCounter Code -->
+<script type="text/javascript">
+var sc_project=6237851; 
+var sc_invisible=1; 
+var sc_security="518c93ca"; 
+</script>
+<script type="text/javascript"
+src="http://www.statcounter.com/counter/counter.js"></script>
+<noscript><div class="statcounter"><a title="web
+statistics" href="http://statcounter.com/free-web-stats/"
+target="_blank"><img class="statcounter"
+src="http://c.statcounter.com/6237851/0/518c93ca/1/"
+alt="web statistics"></a></div></noscript>
+<!-- End of StatCounter Code -->}}}
 
-}
 \keyword{ data }
 
