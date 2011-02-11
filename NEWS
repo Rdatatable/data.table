@@ -41,15 +41,13 @@ NEW FEATURES
         all.equal) and character to factor, FR#1051, as setkey
         already does.
 
-
-BUG FIXES
-
-
 USER-VISIBLE CHANGES
 
-   o    The default for mult is now "all", as intended and
+   o    The default for mult is now "all", as planned and
         prior notice given in FAQ 2.2.
 
+   o    ?[.data.table has been merged into ?data.table and updated,
+        simplified, corrected and formatted.
 
 DEPRECATED & DEFUNCT
 

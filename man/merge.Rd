@@ -32,9 +32,6 @@
 \value{
   A data table based on the merged data tables, sorted by the common keys.
 }
-% \references{ }
-\author{ Tom Short }
-% \note{ }
 \seealso{ \code{\link{data.table}}, \code{\link{merge}}}
 \examples{
     (dt1 <- data.table(A = letters[1:10], X = 1:10, key = "A"))

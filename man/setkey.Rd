@@ -12,25 +12,22 @@ key(x)
 key(x) <- value
 }
 \arguments{
-  \item{x}{ An unquoted name of a data.table. }
-  \item{\dots}{ The columns to sort by. Do not quote the column names. If \dots is missing all the columns are used. }
+  \item{x}{ An unquoted name of a \code{data.table}. }
+  \item{\dots}{ The columns to sort by. Do not quote the column names. If \code{\dots} is missing all the columns are used. }
   \item{value}{ A character vector of column names. }
-  \item{loc}{ The data.table must already exist in this frame, and it is sorted by reference in this frame. loc=.GlobalEnv is often useful within functions. }
+  \item{loc}{ The \code{data.table} must already exist in this frame and is sorted by reference in this frame. \code{loc=.GlobalEnv} is often useful within functions. }
 }
 \details{
   The sort is attempted with the very fast radix method in
-  \code{sort.list}. If that fails, the sort reverts to the default
-  method in \code{order}. That logic is repeated column by column.
+  \code{\link{sort.list}}. If that fails, the sort reverts to the default
+  method in \code{\link{order}}. That logic is repeated column by column.
   
-  If value is NULL, the key is removed.
+  If \code{value=NULL}, the key is removed.
   }
 \value{
-    No value is returned. The data.table is modified by reference. If you require a copy, take a copy first. A working copy is currently taken internally.
+    No value is returned. The data.table is modified by reference. If you require a copy, take a copy first.
 }
-% \references{ }
-\author{ Matthew Dowle }
-% \note{ }
-\seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{[.data.table}}, \code{\link{J}} }
+\seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}} }
 \examples{
     DT = data.table(A=5:1,B=letters[5:1])
     DT # before

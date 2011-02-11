@@ -31,9 +31,6 @@
 
      \code{unique} returns a data table with duplicated rows (by key) removed.
 }
-% \references{ }
-\author{ Tom Short }
-% \note{ }
 \seealso{ \code{\link{data.table}}, \code{\link{duplicated}}, \code{\link{unique}}}
 \examples{
     (dt <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B"))

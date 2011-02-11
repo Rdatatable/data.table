@@ -29,11 +29,7 @@ an option to keep it.
 \value{
    The modified value of \code{data}.
 }
-% \references{  }
-\author{ Tom Short }
-
 \seealso{ \code{\link{transform}} and \code{\link{within}} }
-
 \examples{
 dt <- data.table(a=rep(1:5, 1), b=1:10)
 

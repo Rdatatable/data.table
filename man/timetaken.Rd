@@ -15,8 +15,6 @@ timetaken(started.at)
 \value{
     A character vector of the form hh:mm:ss, or ss.mmm if under 60 seconds.
 }
-% \references{ }
-% \note{ }
 \examples{
 started.at=proc.time()
 Sys.sleep(1)

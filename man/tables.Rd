@@ -20,9 +20,6 @@ tables(mb = TRUE, order.col = "NAME", width = 80, env=parent.frame(), silent=FAL
 \value{
     A data.table containing the information printed.
 }
-% \references{ }
-\author{ Matthew Dowle }
-% \note{ }
 \seealso{ \code{\link{data.table}}, \code{\link{setkey}}, \code{\link{ls}}, \code{\link{objects}}, \code{\link{object.size}} }
 \examples{
     DT = data.table(A=1:10,B=letters[1:10])

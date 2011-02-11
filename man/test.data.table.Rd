@@ -2,8 +2,7 @@
 \alias{test.data.table}
 \title{ Runs a set of tests. }
 \description{
-  Runs a set of tests that data.table is working, 98 tests at the time of writing this text.
-  Ideally the this function should be ported to RUnit.
+  Runs a set of tests to check data.table is working correctly.
 }
 \usage{
 test.data.table()
@@ -16,9 +15,6 @@ test.data.table()
 \value{
     TRUE if all tests were successful. FALSE otherwise.
 }
-% \references{ }
-\author{ Matthew Dowle }
-% \note{ }
 \seealso{ \code{\link{data.table}} }
 \examples{
     try(library(ggplot2))

@@ -4,7 +4,7 @@
 \alias{CJ}
 \title{ Creates a Join data table }
 \description{
-  Creates a data table to be passed in as the i to a data.table join.
+  Creates a data.table to be passed in as the i to a [.data.table join.
 }
 \usage{
 J(...,SORTFIRST=FALSE)
@@ -25,10 +25,7 @@ CJ(...)
     SJ : (S)orted (J)oin. The same value as J() but additionally setkey() is called on all the columns in the order they were passed in to SJ. For efficiency.
     CJ : (C)ross (J)oin. A data.table is formed from the cross product of the vectors. For example, 10 ids, and 100 dates, CJ returns a 1000 row table containing all the dates for all the ids.
 }
-% \references{ }
-\author{ Matthew Dowle }
-% \note{ }
-\seealso{ \code{\link{data.table}}, \code{\link{[.data.table}}, \code{\link{test.data.table}} }
+\seealso{ \code{\link{data.table}}, \code{\link{test.data.table}} }
 \examples{
     DT = data.table(A=5:1,B=letters[5:1])
     setkey(DT,B)  # re-orders table and marks it sorted.

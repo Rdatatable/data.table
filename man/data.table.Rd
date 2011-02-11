@@ -58,9 +58,11 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 
   The \code{list()} of expressions is evaluated within the frame of the data.table (i.e. it sees column names as if they are variables). The data.table is then grouped by the \code{by} and \code{j} is evaluated within the frame of each group. \code{list()} may be omitted when there is just one expression, typically a single unquoted column name.
 
+  When \code{by} contains the first \code{n} columns of \code{x}'s key, we call this a \emph{keyed by}. In a keyed by the groups appear contiguously in RAM; memory is copied in bulk internally and this is faster. When the groups are not contiguous in the table we call it an \emph{ad hoc by}.
+
   Advanced: Agreggation for a subset of known groups is particularly efficient when passing those groups in \code{i}. When \code{i} is a \code{data.table}, \code{DT[i,j]} evaluates \code{j} for each row of \code{i}. We call this \emph{by without by} or \emph{grouping by i}. Hence the self join \code{DT[data.table(unique(colA)),j]} is identical to \code{DT[,j,by=colA]}.
 
-  Advanced: An object \code{.SD} may be used in the \code{j} expression. \code{.SD} is a \code{data.table} containing the subset of \code{x}'s data for each group, excluding the group column(s). \code{.SD} can be used when grouping by \code{i} and when grouping by \code{by}.
+  Advanced: An object \code{.SD} may be used in the \code{j} expression. \code{.SD} is a \code{data.table} containing the subset of \code{x}'s data for each group, excluding the group column(s). \code{.SD} can be used when grouping by \code{i}, when grouping by \code{by}, keyed by, and ad hoc by.
 
   Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, it's calling frame, and so on in the usual way up to and including the global environment.\cr\cr
 
@@ -102,7 +104,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 
 It combines database like operations such as \code{\link{subset}}, \code{\link{with}} and \code{\link{by}} and provides similar joins that \code{\link{merge}} provides but faster. This is achieved by using R's column based ordered in-memory \code{data.frame} structure, \code{eval} within the environment of a \code{list}, the \code{[.data.table} mechanism to condense the features, and compiled C to make certain operations fast.
 
-The package can be used just for rapid development (compact syntax) with small datasets. Largest compute time benefits are on 64bit platforms with plentiful RAM, or when smaller datasets are repeatedly queried within a loop, or when other methods use so much working memory that they fail with an out of memory error.
+The package can be used just for rapid programming (compact syntax). Largest compute time benefits are on 64bit platforms with plentiful RAM, or when smaller datasets are repeatedly queried within a loop, or when other methods use so much working memory that they fail with an out of memory error.
 
 As with \code{[.data.frame}, \emph{compound queries} can be concatenated on one line, e.g. 
 \preformatted{
@@ -127,7 +129,7 @@ A \code{data.table} is a \code{list} of vectors, just like a \code{data.frame}. 
 \item it has enhanced functionality in \code{[.data.table} for fast joins of keyed tables, fast aggregation, and fast last observation carried forward (LOCF).
 }
 
-Since a \code{list} \emph{is} a \code{vector}, both \code{data.frame} and \code{data.table} columns may be type \code{list}. Columns of type \code{list} can contain mixed types, and each item in a column of type \code{list} may be different lengths. See examples.
+Since a \code{list} \emph{is} a \code{vector}, \code{data.table} columns may be type \code{list}. Columns of type \code{list} can contain mixed types. Each item in a column of type \code{list} may be different lengths. This is true of \code{data.frame}, too.
 
 Several \emph{methods} are provided for \code{data.table}, including \code{is.na}, \code{na.omit},
 \code{t}, \code{rbind}, \code{cbind}, \code{merge} and others.
@@ -144,104 +146,95 @@ column called \code{"keep"} containing \code{TRUE} and this is correct behaviour
 \seealso{ \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}} }
 
 \examples{
-DF = data.frame(a=1:5, b=letters[1:5])
-DT = data.table(a=1:5, b=letters[1:5])
-identical(as.data.table(DF), DT)
-identical(data.table(DF), DT)
-identical(dim(DT),dim(DF))
-identical(DF$a, DT$a)
+\dontrun{
+  # run these examples at the prompt :
+  example(data.table)}
+
+DF = data.frame(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9)
+DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9)
+DF
 DT
+identical(dim(DT),dim(DF)) # TRUE
+identical(DF$a, DT$a)      # TRUE
+is.list(DF)                # TRUE
+is.list(DT)                # TRUE
+
+is.data.frame(DT)          # TRUE
+
 tables()
-identical(data.table(DT,DT), cbind(DT,DT))
-DT2=rbind(DT,DT)
-DT3 = data.table(A=DT, B=DT, key="A.b")
-tables()
 
-DF = data.frame(a=1:5, b=6:10)
-DT = data.table(a=1:5, b=6:10)
+DT[2]                      # 2nd row
+DT[,v]                     # v column (as vector)
+DT[,list(v)]               # v column (as data.table)
+DT[2:3,sum(v)]             # sum(v) over rows 2 and 3
+DT[2:5,cat(v,"\n")]        # just for j's side effect
+DT[c(FALSE,TRUE)]          # even rows (usual recycling)
 
-DT[2]             # select * from DT where row number = 2
-DT[2:3,sum(b)]    # select sum(b) from DT where row number in (2,3)
-DT[2:5,plot(a)]   # used for j's side effect only i.e. displaying the plot
-DT[c(FALSE,TRUE)] # extract all even numbered rows via standard R recycling
-
-DT[,2,with=FALSE]
+DT[,2,with=FALSE]          # 2nd column
 colNum = 2
-DT[,colNum,with=FALSE]
+DT[,colNum,with=FALSE]     # same
 
+setkey(DT,x)               # set a 1-column key
+key(DT) = "x"              # same
 
-tt = subset(DF,a==3)
-ss = DT[a==3]
-identical(as.data.table(tt), ss)
+DT["a"]                    # binary search (fast)
+DT[x=="a"]                 # vector scan (slow)
 
-tt = subset(DF,a==3,b)[[1]]+1
-ss = DT[a==3,b+1]
-identical(tt, ss)
+DT[,sum(v),by=x]           # keyed by
+DT[,sum(v),by=key(DT)]     # same
+DT[,sum(v),by=y]           # ad hoc by
 
-tt = with(subset(DF,a==3),a+b+1)
-ss = DT[a==3,a+b+1]
-identical(tt, ss)
+DT["a",sum(v)]             # j for one group
+DT[c("a","b"),sum(v)]      # j for two groups
 
-Lkp=1:3
-tt = DF[with(DF,a \%in\% Lkp),]
-ss = DT[a \%in\% Lkp]
-identical(as.data.table(tt), ss)
+X = data.table(c("b","c"),foo=c(4,2))
+X
 
-# Examples above all use vector scans (bad)
-# Examples below all use binary search (good)
+DT[X]                      # join
+DT[X,sum(v)]               # join and eval j for each row in i
+DT[X,mult="first"]         # first row of each group
+DT[X,mult="last"]          # last row of each group
+DT[X,sum(v)*foo]           # join inherited scope
 
-DT = data.table(a=letters[1:5], b=6:10)
-setkey(DT,a)
-identical(DT["d"],DT[4])
-identical(DT[J("d")], DT[4])
-identical(DT[c("c","d")], DT[J(c("c","d"))])
+J("a",2)                   # J() is alias for data.table()
+data.table("a",2)          # same
 
+setkey(DT,x,y)             # 2-column key
+key(DT) = c("x","y")       # same
 
-DT = data.table(id=rep(c("A","B"),each=3), date=c(20080501L,20080502L,20080506L), v=1:6)
-setkey(DT,id,date)
-DT
-DT["A"]                                    # all 3 rows for A
-DT[J("A",20080502L)]                       # date matches exactly
-DT[J("A",20080505L)]                       # NA since 5 May missing (outer join)
-DT[J("A",20080505L),nomatch=0]             # inner join
-dts = c(20080501L, 20080502L, 20080505L, 20080506L, 20080507L, 20080508L)
-DT[J("A",dts)]                             # 3 dates match exactly
-DT[J("A",dts),roll=TRUE]                   # roll previous data forward
-DT[J("A",dts),rolltolast=TRUE]             # roll all but last observation forward
-DT[J("A",dts),rolltolast=TRUE,nomatch=0]   # remove time series after last
-cbind(DT[J("A",dts),roll=TRUE],dts)        # joined to date from dts
+DT["a"]                    # join to 1st column of key
+DT[J("a")]                 # same
+DT[J("a",3)]               # join to 2 columns
+DT[J("a",3:6)]             # join 4 rows (2 missing)
+DT[J("a",3:6),nomatch=0]   # remove missing
+DT[J("a",3:6),roll=TRUE]   # rolling join (locf)
 
+DT[,sum(v),by=list(y\%\%2)]  # by expression
+DT[,.SD[2],by=x]           # 2nd row of each group
+DT[,tail(.SD,2),by=x]      # last 2 rows of each group
+DT[,lapply(.SD,sum),by=x]  # applying through columns by group
 
-dts = rev(seq(as.Date("2008-06-30"), by=-1, length=5000))
-dts = as.integer(gsub("-","",dts))
-ids = paste(rep(LETTERS,each=26),LETTERS,sep="")
-DT = data.table(CJ(id=ids, date=dts), v=rnorm(length(ids)*length(dts)))
-setkey(DT,id,date)
-system.time(tt <<- DT[id=="FD"])  # vector scan.   user 1.16  system 0.11  elapsed 1.27
-system.time(ss <<- DT["FD"])      # binary search. user 0.02  system 0.00  elapsed 0.02
-identical({setkey(tt,id,date);tt}, ss)
-tables()
+DT[,list(MySum=sum(v),
+         MyMin=min(v),
+         MyMax=max(v)),
+    by=list(x,y\%\%2)]       # by 2 expressions
 
+DT[,sum(v),x][V1<20]       # compound query
+DT[,sum(v),x][order(-V1)]  # ordering results
 
-tt = DT[,mean(v),by="id"][c("FD","FE")]   # select mean(v) from DT group by id having id in ('FD','FE')
-ss = DT[c("FD","FE"),mean(v)]             # more efficient way to group for known subgroups
-identical(tt, ss)
+DT[,transform(.SD,m=mean(v)),by=x] 
+DT[,.SD[which.min(v)],by=x]
 
-tt = DT[c("FD","FE")][,mean(v),by="id,month=as.integer(date/100)"]
-
-dt <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6))
-dt[, head(.SD,n=2), by="B"]
-dt[, transform(.SD,D=mean(A)), by="B"]
-dt[, subset(.SD,A==min(A)), by="B"]
-
-# See over 250 further examples here:
+# Over 250 further examples :
 test.data.table()
+
+# Follow posting guide, support is here (not r-help) :
+maintainer("data.table")
 
 \dontrun{
 vignette("datatable-intro")
 vignette("datatable-faq")
-vignette("datatable-timings")
-}
+vignette("datatable-timings")}
 
 }
 \keyword{ data }
