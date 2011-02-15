@@ -47,7 +47,7 @@ You can write \emph{any} R expression in the \code{j} e.g. \code{DT[,colA*colB/2
 
 Having said this, there are some circumstances where referring to a column by number is ok, such as
 a sequence of columns. In these situations just do \code{DT[,5:10,with=FALSE]} or \newline \code{DT[,c(1,4,10),with=FALSE]}.
-See \code{?"[.data.table"} for an explanation of the \code{with} argument.
+See \code{?data.table} for an explanation of the \code{with} argument.
 
 Note that \code{with()} has been a base function for a long time.  That's one reason we say \code{data.table} builds
 upon base functionality. There is little new here really, \code{data.table} is just making use of \code{with()}
