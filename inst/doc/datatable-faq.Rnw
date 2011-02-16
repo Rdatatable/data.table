@@ -299,7 +299,7 @@ The general form is : \newline
 \newline\newline
 A key advantage of column vectors in R is that they are \emph{ordered}, unlike SQL. We can use ordered functions in \code{data.table} queries, such as \code{diff()}, and we can use \emph{any} R function from any package, not just the functions that are defined in SQL. A disadvantage is that R objects must fit in memory, but with several R packages such as ff, bigmemory and indexing, this is changing.
 
-\subsection{ What are the smaller syntax differences between \code{data.frame} and \code{data.table}?}
+\subsection{What are the smaller syntax differences between \code{data.frame} and \code{data.table}?}
 \begin{itemize}
 \item{\code{DT[3]} refers to the 3rd row, but \code{DF[3]} refers to the 3rd column}
 \item{\code{DT[3,]} == \code{DT[3]}, but \code{DF[,3]} == \code{DF[3]} (somewhat confusingly)}
@@ -307,10 +307,12 @@ A key advantage of column vectors in R is that they are \emph{ordered}, unlike S
 \item{\code{DT[[3]]} == \code{DF[3]} == \code{DF[[3]]}}
 \item{\code{DT[i,]} where \code{i} is a single integer returns a single row, just like \code{DF[i,]}, but unlike a matrix single row subset which returns a vector.}
 \item{\code{DT[,j,with=FALSE]} where \code{j} is a single integer returns a one column \code{data.table}, unlike \code{DF[,j]} which returns a vector by default}
-\item{There is no \code{drop} in \code{DT}. Instead, \code{DT[,1][[1]]} == \code{DF[,1]}.}
-\item{\code{DT[,colname]} == \code{DF[,"colname"]}}
-\item{\code{DT[,list(colname)]} == \code{DF[,"colname",drop=FALSE]}}
+\item{\code{DT[,"colA",with=FALSE][[1]]} == \code{DF[,"colA"]}.}
+\item{\code{DT[,colA]} == \code{DF[,"colA"]}}
+\item{\code{DT[,list(colA)]} == \code{DF[,"colA",drop=FALSE]}}
 \end{itemize}
+In \code{[.data.frame} we very often set \code{drop=FALSE}. When we forget, bugs can arise in edge cases where single columns are selected and all of a sudden a vector is returned rather than a single column \code{data.frame}. In \code{[.data.table} we took the opportunity to make it consistent and drop \code{drop}.
+\newline\newline
 When you pass a \code{data.table} to a \code{data.table}-unaware package, that package it not concerned with any of these differences. It just works.
 
 \subsection{I'm using \code{j} for it's side effect only, but I'm still getting data returned. How do I stop that?}

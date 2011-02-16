@@ -70,10 +70,10 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; the column names can be used as variables. When \code{with=FALSE}, \code{j} works as it does in \code{[.data.frame}.
 
 }
-  \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}'s key, \code{nomatch=NA} means \code{NA} is returned for \code{x}'s non-join columns for that row of \code{i}. 0 means no rows will be returned for that row of \code{i}.
+  \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}'s key, \code{nomatch=NA} means \code{NA} is returned for \code{x}'s non-join columns for that row of \code{i}. \code{0} means no rows will be returned for that row of \code{i}.
 
 }
-  \item{mult}{ When \emph{multiple} rows in x matches to the row in i, \code{mult} controls which are returned: \code{"all"} (default), \code{"first"} or \code{"last"}.
+  \item{mult}{ When \emph{multiple} rows in \code{x} match to the row in \code{i}, \code{mult} controls which are returned: \code{"all"} (default), \code{"first"} or \code{"last"}.
 
 }
   \item{roll}{ Applies to the last column of \code{x}'s key, which is generally a date but can be any ordered variable, with gaps. When \code{roll=TRUE} if \code{i}'s row matches to all but the last column of \code{x}'s key, and the value of the last column falls in a gap (including after the last observation for that group), the prevailing value in \code{x} is \emph{rolled} forward. This operation is particular fast using a modified binary search. The operation is also known as last observation carried forward (LOCF).
@@ -143,7 +143,7 @@ User reviews: \url{http://crantastic.org/packages/data-table}\cr
 \note{ If \code{keep.rownames} or \code{check.names} are suppplied they must be written in full because \R does not allow partial argument names after \code{\dots}. For example \code{data.table(DF,keep=TRUE)} will create a
 column called \code{"keep"} containing \code{TRUE} and this is correct behaviour; \code{data.table(DF,keep.rownames=TRUE)} was intended.
 }
-\seealso{ \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}} }
+\seealso{ \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}} }
 
 \examples{
 \dontrun{
