@@ -5,19 +5,18 @@
 // A counting sort does seem to be ideal for factors.
 // Modified as follows :
 // + To work with character, not integer
-// + Requires sort(unique(x)) to be passed in as a hashed
-//   environment e.g. stored as attribute of the column.
+// + Requires sort(unique(x)) to be passed in as ordered
+//   character vector e.g. stored as attribute of the column.
 // + No need to scan for min and max. These are known in
-//   advance to be 1 and length(hash)
-// + No need for offset, removed.
-// + For each character, lookup hash to get integer
+//   advance to be 1 and length(charlevels)
+// + No need for range offset, removed.
 // + Always increasing so removed the decreasing option
 // + NA always first, so removed that option
-// + It's not really a sort, but an order that's returned
-// + Name change from do_radixsort to countingcharacterorder
+// + It's not really a sort, but an order that's returned so
+//   name change from do_radixsort to countingcharacterorder
 // + Changed to a direct .Call() signature.
 // + 100,000 range restriction removed.
-// + replaced counts alloc (and =0 loop) with a single calloc
+// + Replaced counts alloc (and =0 loop) with a single calloc
 
 #include <R.h>
 #define USE_RINTERNALS
@@ -28,23 +27,30 @@
 EXPORT SEXP countingcharacterorder();
 #endif
 
-SEXP countingcharacterorder(SEXP x, SEXP hash)
+SEXP countingcharacterorder(SEXP x, SEXP charlevels)
 {
-    SEXP ans;
-    unsigned int i, n, h, tmp, *counts;
-    if (TYPEOF(x) != CHARSXP) error("x is not character");
+    SEXP ans, tmp;
+    R_len_t i, n, h, *counts;
+    if (TYPEOF(x) != STRSXP) error("x is not character");
+    if (TYPEOF(charlevels) != STRSXP) error("charlevels is not character");
     n = LENGTH(x);
-    h = LENGTH(hash);
+    h = LENGTH(charlevels);
     PROTECT(ans = allocVector(INTSXP, n));
-    counts = calloc(h+1,sizeof(unsigned int));
+    counts = calloc(h+1,sizeof(R_len_t));
+    for(i=0; i<h; i++) TRUELENGTH(STRING_ELT(charlevels,i)) = i+1;
+    // Using truelength as spare storage. Code and runtime inspection revealed
+    // it unused and uninitiated in the global CHARSXP cache. Attrib is already
+    // used internally, and would be slower to fetch anyway.
+    // If r-core object, or R changes in future, we could store and restore 
+    // truelength at low cost.
     for(i = 0; i < n; i++) {
-        tmp = INTEGER(x)[i];  // TO DO: look up hash
-        counts[(tmp==NA_INTEGER) ? 0 : tmp]++;
+        tmp = STRING_ELT(x,i);
+        counts[(tmp==NA_STRING) ? 0 : TRUELENGTH(tmp)]++;
     }
     for(i = 1; i <= h; i++) counts[i] += counts[i-1];
     for(i = n-1; i >= 0; i--) {
-        tmp = INTEGER(x)[i];  // TO DO: look up hash
-	INTEGER(ans)[--counts[(tmp==NA_INTEGER) ? 0 : tmp]] = i+1;
+        tmp = STRING_ELT(x,i);
+        INTEGER(ans)[--counts[(tmp==NA_STRING) ? 0 : TRUELENGTH(tmp)]] = i+1;
     }
     UNPROTECT(1);
     free(counts);
