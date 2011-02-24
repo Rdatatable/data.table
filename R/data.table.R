@@ -391,7 +391,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     } else {
         # Find the groups, using 'by' ...
         if (missing(by)) stop("logical error, by is missing")
-                        
+        
         bysub = substitute(by)
         bysubl = as.list(bysub)
         if (identical(bysubl[[1]],quote(eval))) {
@@ -412,7 +412,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 if (!all(byval %in% colnames(x)))
                     stop("'by' seems like a column name vector but these elements are not column names (first 5):",paste(head(byval[!byval%in%colnames(x)],5),collapse=""))
                 byvars = byval
-                byval=x[,byval,with=FALSE]
+                byval=as.list(x[,byval,with=FALSE])
             } else {
                 byval = list(byval) # name : by may be a single unquoted column name but it must evaluate to list so this is a convenience to users
                 names(byval) = as.character(bysub)

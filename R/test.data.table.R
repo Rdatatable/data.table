@@ -627,6 +627,10 @@ test.data.table = function()
     DT$a = as.character(DT$a)  # because data.table() coerces to factor currently.
     test(253, DT[,sum(v),by=a], data.table(a=factor(c("A","B")),V1=c(6L,9L)))
 
+    # fix for bug #1298 with by=key(DT) and divisibility error.
+    DT=data.table(a=c(1,1,1,2,2),b=1:5,key="a")
+    test(254, DT[,sum(b),by=key(DT)]$V1, c(6L,9L))
+
     ##########################
     if (nfail > 0) {
         stop(nfail," errors in test.data.table()")
