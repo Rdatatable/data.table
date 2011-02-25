@@ -143,8 +143,21 @@ User reviews: \url{http://crantastic.org/packages/data-table}\cr
 \note{ If \code{keep.rownames} or \code{check.names} are suppplied they must be written in full because \R does not allow partial argument names after \code{\dots}. For example \code{data.table(DF,keep=TRUE)} will create a
 column called \code{"keep"} containing \code{TRUE} and this is correct behaviour; \code{data.table(DF,keep.rownames=TRUE)} was intended.
 }
-\seealso{ \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}} }
-
+\seealso{ \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}}
+\if{html}{\out{<!-- Start of StatCounter Code -->
+<script type="text/javascript">
+var sc_project=6237851; 
+var sc_invisible=1; 
+var sc_security="518c93ca"; 
+</script>
+<script type="text/javascript"
+src="http://www.statcounter.com/counter/counter.js"></script>
+<noscript><div class="statcounter"><a title="web
+statistics" href="http://statcounter.com/free-web-stats/"
+target="_blank"><img class="statcounter"
+src="http://c.statcounter.com/6237851/0/518c93ca/1/"
+alt="web statistics"></a></div></noscript>
+<!-- End of StatCounter Code -->}}}
 \examples{
 \dontrun{
 example(data.table)  # to run these examples at the prompt}
@@ -224,30 +237,17 @@ DT[,sum(v),x][order(-V1)]  # ordering results
 DT[,transform(.SD,m=mean(v)),by=x] 
 DT[,.SD[which.min(v)],by=x]
 
-# Over 200 further examples :
-test.data.table()
-
 # Follow posting guide, support is here (not r-help) :
 maintainer("data.table")
 
 \dontrun{
 vignette("datatable-intro")
 vignette("datatable-faq")
-vignette("datatable-timings")}
-\if{html}{\out{<!-- Start of StatCounter Code -->
-<script type="text/javascript">
-var sc_project=6237851; 
-var sc_invisible=1; 
-var sc_security="518c93ca"; 
-</script>
-<script type="text/javascript"
-src="http://www.statcounter.com/counter/counter.js"></script>
-<noscript><div class="statcounter"><a title="web
-statistics" href="http://statcounter.com/free-web-stats/"
-target="_blank"><img class="statcounter"
-src="http://c.statcounter.com/6237851/0/518c93ca/1/"
-alt="web statistics"></a></div></noscript>
-<!-- End of StatCounter Code -->}}}
+vignette("datatable-timings")
 
+test.data.table()          # over 200 low level tests
+
+update.packages()          # keep up to date
+}}
 \keyword{ data }
 
