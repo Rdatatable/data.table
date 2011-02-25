@@ -16,8 +16,8 @@ NEW FEATURES
 BUG FIXES
 
    o    by=key(DT) now works when the number of rows is not
-        divisible by the number of groups (an odd bug). Thanks
-        to Steve Lianoglou for reporting.
+        divisible by the number of groups (#1298, an odd bug).
+        Thanks to Steve Lianoglou for reporting.
 
 
 USER-VISIBLE CHANGES
