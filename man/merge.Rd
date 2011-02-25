@@ -5,7 +5,7 @@
      Relatively quick merge of data tables based on common keys.
 }
 \usage{
-\method{merge}{data.table}(x, y, all = FALSE, all.x = all, all.y = all, ...)
+\method{merge}{data.table}(x, y, all = FALSE, all.x = all, all.y = all, suffixes = c("", ".1"), ...)
 
 } 
 \arguments{

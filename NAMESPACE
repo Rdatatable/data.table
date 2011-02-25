@@ -1,5 +1,10 @@
 useDynLib(data.table)
 
+## For S4-ization
+import(methods)
+exportClasses(data.table)
+##
+
 export(data.table, tables, setkey, key, "key<-", J, CJ, SJ)
 export(as.data.table,is.data.table,test.data.table,last,like,"%like%",between,"%between%")
 export(timetaken)
