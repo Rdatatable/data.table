@@ -650,6 +650,9 @@ test(255, as.data.frame(dtm), dfm)
 ##   Found the following significant warnings:
 ##   Warning: undefined slot classes in definition of "S4Composition": info(class "data.table")
 
+## A class with a data.table slot
+setClass("S4Composition", representation(info="data.table"))
+
 DF = data.frame(a=sample(letters, 10), b=1:10)
 DT = as.data.table(DF)
 test(256, as(DF, 'data.table'), DT)
