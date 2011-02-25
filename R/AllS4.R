@@ -7,10 +7,10 @@ setOldClass(c('data.table', 'data.frame'))
 
 ## as(some.data.frame, "data.table")
 setAs("data.frame", "data.table", function(from) {
-  as.data.table(from)
+    as.data.table(from)
 })
 
 ## as(some.data.table, "data.frame")
 setAs("data.table", "data.frame", function(from) {
-  as.data.frame(from)
+    as.data.frame(from)
 })

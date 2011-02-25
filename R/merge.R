@@ -1,6 +1,6 @@
  
 merge.data.table <- function(x, y, all = FALSE, all.x = all, all.y = all,
-                             suffixes = c("", ".1"), ...) {
+                             suffixes = c(".x", ".y"), ...) {
     # Relatively quick merge by common keys
     # Keys must be in the same order
 
@@ -50,41 +50,52 @@ merge.data.table <- function(x, y, all = FALSE, all.x = all, all.y = all,
     }
     if (nrow(dt) > 0) key(dt) = key
     
-    ## Act like merge.data.frame does with respect to column names/suffixes.
+    ###########################################################################
+    ## Handle merging suffix behavior.
+    ## Enable ability to use "old" suffix behavior for now.
+    if (missing(suffixes)) {
+        pre.suffix <- options('datatable.pre.suffixes')[[1]]
+        if (!is.null(pre.suffix) && as.logical(pre.suffix)[1]) {
+            suffixes <- c("", ".1")
+        } else {
+            suffixes <- c(".x", ".y")
+        }
+    }
+    
     ## We expect that the result of dt.1[dt.2] adds a ".1" suffix to
     ## duplicate columns for dt.2 that are added by result of the implicit
-    ## merge.
+    ## merge. The (duplicate) names in dt.1 are not changed.
     ## 
     ## If the suffixes are c("", ".1") we don't have anything to do
     if (!all(suffixes == c("", ".1"))) {
-      col.names <- colnames(dt)
-      rename.y <- grep("\\.1$", col.names)
-      if (length(rename.y) > 0L) {
-          do.rename <- TRUE
-          renames <- col.names[rename.y]
-          base.names <- gsub("\\.1$", "", renames)
-
-          ## y
-          y.names <- paste(base.names, suffixes[2], sep="")
-          col.names[rename.y] <- y.names
-
-          ## x
-          xref <- match(base.names, col.names)
-          if (any(is.na(xref))) {
-            ## Houston we have a problem
-            do.rename <- FALSE
-          } else {
-            col.names[xref] <- paste(base.names, suffixes[1], sep="")
-          }
-
-          if (do.rename) {
-            colnames(dt) <- col.names
-          } else {
-            warning("There was a problem re-suffixing the merged data.table. ",
-                    "The merge was succesful, but the default column naming ",
-                    "been kept (suffixes ignored)")
-          }
-      }
+        col.names <- colnames(dt)
+        rename.y <- grep("\\.1$", col.names)
+        if (length(rename.y) > 0L) {
+            do.rename <- TRUE
+            renames <- col.names[rename.y]
+            base.names <- gsub("\\.1$", "", renames)
+            
+            ## y
+            y.names <- paste(base.names, suffixes[2], sep="")
+            col.names[rename.y] <- y.names
+            
+            ## x
+            xref <- match(base.names, col.names)
+            if (any(is.na(xref))) {
+                ## Houston we have a problem
+                do.rename <- FALSE
+            } else {
+                col.names[xref] <- paste(base.names, suffixes[1], sep="")
+            }
+            
+            if (do.rename) {
+                colnames(dt) <- col.names
+            } else {
+                warning("There was a problem re-suffixing the merged data.table. ",
+                        "The merge was succesful, but the default column naming ",
+                        "has been used (ie. suffixes were set to c('', '.1').")
+            }
+        }
     }
     
     dt

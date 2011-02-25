@@ -6,23 +6,6 @@ This NEWS file summarises the main changes.
 
         *********************************************
         **                                         **
-        **   CHANGES IN DATA.TABLE VERSION 1.5.5   **
-        **                                         **
-        *********************************************
-
-NEW FEATURES
-
-   o    Added suffixes argument to merge.data.table which behaves
-        similarly to the suffixes argument in merge.data.frame
-
-
-BUG FIXES
-
-    ...
-
-
-        *********************************************
-        **                                         **
         **   CHANGES IN DATA.TABLE VERSION 1.5.4   **
         **                                         **
         *********************************************
@@ -36,6 +19,9 @@ BUG FIXES
         divisible by the number of groups (#1298, an odd bug).
         Thanks to Steve Lianoglou for reporting.
 
+   o    merge.data.table suffixes are now consistent with merge.data.frame.
+        Existing users may set the datatable.pre.suffixes option to TRUE for
+        backwards compatibility, eg. `options(datatable.pre.suffixes=TRUE)`.
 
 USER-VISIBLE CHANGES
 

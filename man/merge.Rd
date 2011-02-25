@@ -5,7 +5,7 @@
      Relatively quick merge of data tables based on common keys.
 }
 \usage{
-\method{merge}{data.table}(x, y, all = FALSE, all.x = all, all.y = all, suffixes = c("", ".1"), ...)
+\method{merge}{data.table}(x, y, all = FALSE, all.x = all, all.y = all, suffixes = c(".x", ".y"), ...)
 
 } 
 \arguments{
@@ -24,11 +24,11 @@
 \item{all.y}{logical; analogous to \code{all.x} above.}
 
 \item{suffixes}{
-  \code{character(2)} specifying the suffixes to be used for making non-by
-  \code{names()} unique. Currently the suffixes default to making the result
-  of a merge the same as it was prior to data.table version 1.5.4.
-  The default will change to be \code{c(".x", ".y")} so that this function
-  behaves just like \code{\link{merge.data.frame}} in due time.
+  A \code{character(2)} specifying the suffixes to be used for making non-by
+  \code{names()} unique. The suffix behavior works in a similar fashion as
+  \code{\link{merge.data.frame}} does. Set
+  \code{options(datatable.pre.suffixes=TRUE)} to get suffix behavior that is
+  consistent with data.table <= 1.5.3
 }
 
 \item{\dots}{ Not used at this time. }
