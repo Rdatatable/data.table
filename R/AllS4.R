@@ -1,5 +1,7 @@
 ## Functions to let data.table play nicer with S4
 
+setClass("S4Composition", representation(info="data.table"))
+
 ## Allows data.table to be defined as an object of an S4 class,
 ## or even have data.table be a super class of an S4 class.
 setOldClass(c('data.frame'))

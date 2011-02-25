@@ -10,17 +10,15 @@ test.data.table()
 % \arguments{
 % }
 \details{
-   Runs a series of tests. These can be used to see features and examples of usage - type 'test.data.table' to see the tests.
+   Runs a series of tests. These can be used to see features and examples of usage, too. Running test.data.table will tell you the full location of the test file(s) to open.
 }
 \value{
     TRUE if all tests were successful. FALSE otherwise.
 }
 \seealso{ \code{\link{data.table}} }
 \examples{
-    try(library(ggplot2))
-    test.data.table()		# this will run inside the data.table namespace
-    eval(body(test.data.table))		# as though you copied and pasted its body into the console
-		# there may be differences (e.g. the first may find non-exported functions inside data.table)
-		# whereas the 2nd is a truer test.  We do both ways for full robustness.
-}
+\dontrun{
+test.data.table()
+}}
 \keyword{ data }
+
