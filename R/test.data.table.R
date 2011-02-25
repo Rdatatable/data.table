@@ -631,6 +631,14 @@ test.data.table = function()
     DT=data.table(a=c(1,1,1,2,2),b=1:5,key="a")
     test(254, DT[,sum(b),by=key(DT)]$V1, c(6L,9L))
 
+    ## Test that suffixes argument in merge.data.table acts the same way it does
+    ## in merge.data.frame
+    d1 <- data.table(a=sample(letters, 10), b=sample(1:100, 10), key='a')
+    d2 <- data.table(a=d1$a, b=sample(1:50, 10), c=rnorm(10), key='a')
+    dtm <- merge(d1, d2, by='a', suffixes=c(".x", ".y"))
+    dfm <- merge(as.data.frame(d1), as.data.frame(d2), by='a', suffixes=c('.x', '.y'))
+    test(255, as.data.frame(dtm), dfm)
+
     ##########################
     if (nfail > 0) {
         stop(nfail," errors in test.data.table()")

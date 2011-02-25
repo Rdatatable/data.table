@@ -23,6 +23,14 @@
 
 \item{all.y}{logical; analogous to \code{all.x} above.}
 
+\item{suffixes}{
+  \code{character(2)} specifying the suffixes to be used for making non-by
+  \code{names()} unique. Currently the suffixes default to making the result
+  of a merge the same as it was prior to data.table version 1.5.4.
+  The default will change to be \code{c(".x", ".y")} so that this function
+  behaves just like \code{\link{merge.data.frame}} in due time.
+}
+
 \item{\dots}{ Not used at this time. }
 }
 \details{
@@ -66,7 +74,7 @@
     merge(d1, d4) 
     merge(d4, d1) 
     merge(d1, d4, all=TRUE)
-    merge(d4, d1, all=TRUE)
+    merge(d4, d1, all=TRUE, suffixes=c(".x", ".y"))
 
 }
 \keyword{ data }
