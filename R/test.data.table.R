@@ -10,7 +10,7 @@ test.data.table = function() {
     }
     for (fn in dir(d,"*.[rR]$",full=TRUE)) {
         cat("Running",fn,"\n")
-        source(fn)
+        source(fn,local=TRUE)
     }
     invisible()
 }
