@@ -1,4 +1,5 @@
 ## Functions to let data.table play nicer with S4
+if ("package:data.table" %in% search()) stop("data.table package loaded. When developing don't load package")
 
 ## Allows data.table to be defined as an object of an S4 class,
 ## or even have data.table be a super class of an S4 class.
