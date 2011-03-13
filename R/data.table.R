@@ -136,15 +136,17 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     for (i in (1:n)[nrows < nr]) {
         xi <- x[[i]]
         if (nr%%nrows[i] == 0) {
-            if (is.vector(xi) || is.factor(xi)) {
+            if (is.atomic(xi) || is.factor(xi)) {   # is.atomic catches as.hexmode(1:100)
                 x[[i]] <- rep(xi, length.out = nr)
                 next
             }
-            if (is.character(xi) && class(xi) == "AsIs") {
-                cl <- class(xi)
-                x[[i]] <- list(structure(rep(xi, length.out = nr), class = cl))
-                next
-            }
+            # don't know why this is here, take it out and see what bites
+            # if (is.character(xi) && class(xi) == "AsIs") {
+            #    cl <- class(xi)
+            #    x[[i]] <- list(structure(rep(xi, length.out = nr), class = cl))
+            #    next
+            #}
+            stop("problem recycling column ",i,", try a simpler type")
         }
         stop("arguments cannot be silently repeated to match max nr: ", paste(unique(nrows), collapse = ", "))
     }
