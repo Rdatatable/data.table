@@ -9,6 +9,9 @@ export(data.table, tables, setkey, key, "key<-", J, CJ, SJ)
 export(as.data.table,is.data.table,test.data.table,last,like,"%like%",between,"%between%")
 export(timetaken)
 
+## utility functions for testing with test_that
+## export(is_equivalent_dt, expect_equivalent_dt)
+
 S3method("[", data.table)
 S3method("[<-", data.table)
 # S3method("[[", data.table)
@@ -33,6 +36,7 @@ S3method(within, data.table)
 S3method(is.na, data.table)
 S3method(format, data.table)
 S3method(Ops, data.table)
+S3method(all.equal, data.table)
 
 import(utils)
 S3method(tail, data.table)
