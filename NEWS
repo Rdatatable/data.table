@@ -16,7 +16,7 @@ NEW FEATURES
         (i) suffixes are now consistent with merge.data.frame.
         Existing users may set the datatable.pre.suffixes option to TRUE for
         backwards compatibility, eg. `options(datatable.pre.suffixes=TRUE)`.
-        (ii) support for `by` argument added.
+        (ii) support for `by` argument added (FR #1315).
 
 BUG FIXES
 
