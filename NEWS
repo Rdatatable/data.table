@@ -17,16 +17,27 @@ NEW FEATURES
         Existing users may set the datatable.pre.suffixes option to TRUE for
         backwards compatibility, eg. `options(datatable.pre.suffixes=TRUE)`.
         (ii) support for `by` argument added (FR #1315).
+        Note that X[Y] syntax is preferred; some users never use merge.
 
 BUG FIXES
 
    o    by=key(DT) now works when the number of rows is not
         divisible by the number of groups (#1298, an odd bug).
         Thanks to Steve Lianoglou for reporting.
+        
+   o    Combining i and by where i is logical or integer subset now
+        works, fixing bug #1294. Thanks to Johann Hibschman for
+        contributing a new test.
+   
+   o    Variables inside [[...]] now work. This can be useful
+        for looking up which function to call based on the data,
+        e.g. DT[,fns[[fn]],by=ID]. Thanks to Damian Betebenner
+        for finding and reporting.
 
 USER-VISIBLE CHANGES
 
-   o    Additions and updates to FAQ vignette
+   o    Additions and updates to FAQ vignette. Thanks to Dennis
+        Murphy for his thorough proof reading.
 
 
         *********************************************

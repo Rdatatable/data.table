@@ -302,7 +302,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             	ans = vector("list",ncol(x))
                 for (s in seq_len(ncol(x))) ans[[s]] = x[[s]][irows]
                 names(ans) = names(x)
-	        if (haskey(x) && (is.logical(irows) || length(irows)==1)) {
+                if (haskey(x) && (is.logical(irows) || length(irows)==1)) {
                     attr(ans,"sorted") = key(x)
                     # TO DO: detect more ordered subset cases, e.g. if irows is monotonic
                 }
@@ -477,7 +477,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             jvnames = deparse(jsub)
             jsub = call("list",jsub)  # this should handle backticked names ok too
         }
-    } else if (as.character(jsub[[1]]) %in% c("list","DT")) {
+    } else if (as.character(jsub[[1]])[1] %in% c("list","DT")) {
         jsubl = as.list(jsub)
         if (length(jsubl)<2) stop("When j is list() or DT() we expect something inside the brackets")
         jvnames = names(jsubl)[-1]   # check list(a=sum(v),v)
@@ -488,7 +488,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
         if(class(jsubl[[2]])!="{") jsub = parse(text=paste("list(",paste(as.character(jsub)[-1],collapse=","),")",sep=""))[[1]]  # this does two things : i) changes 'DT' to 'list' for backwards compatibility and ii) drops the names from the list so its faster to eval the j for each group
     } # else maybe a call to transform or something which returns a list.
-    ws = all.vars(jsub)
+    ws = all.vars(jsub,TRUE)  # TRUE to fix bug #1294 which didn't see b in j=fns[[b]](c)
     if (".SD" %in% ws) {
         vars = colnames(x)        
         vars = vars[!vars%in%byvars]
@@ -549,7 +549,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
     xcols = as.integer(match(vars,colnames(x)))
     icols = NULL
-    if (!missing(i)) icols = as.integer(match(ivars,colnames(i)))
+    if (!missing(i) && is.data.table(i)) icols = as.integer(match(ivars,colnames(i)))
     else i=NULL
     ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,jsub,new.env(parent=parent.frame()),testj,byretn,byval,i,as.integer(icols),i[1,ivars,with=FALSE],is.na(nomatch),verbose,PACKAGE="data.table")
 

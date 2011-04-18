@@ -219,6 +219,9 @@ test(87, TESTDT[,DT(MySum=sum(v)),by="b"], data.table(b=c("b","e","f","i"),MySum
 test(88, TESTDT[,DT(MySum=sum(v),Sq=v*v),by="b"][1:2], data.table(b=c("b","e"),MySum=INT(7,3),Sq=INT(49,1))) # silent repetition of MySum to match the v*v vector
 # Test 89 dropped. Simplify argument no longer exists. by is now fast and always returns a data.table  ... test(89, TESTDT[,sum(v),by="b",simplify=FALSE], list(7L,3L,7L,11L))
 
+# Test 88.5 contributed by Johann Hibschman (for bug fix #1294) :
+test(88.5, TESTDT[a=="d",list(MySum=sum(v)),by=list(b)], data.table(b=c("f","i"), MySum=INT(7,11)))
+
 setkey(TESTDT,b)
 test(90, TESTDT[J(c("f","i")),sum(v),mult="all"], data.table(b=c("f","i"),V1=c(7L,11L)))  # aggregation via groups passed into i and mult="all"
 test(91, TESTDT[SJ(c("f","i")),sum(v),mult="all"], data.table(b=c("f","i"),V1=c(7L,11L),key="b"))  # aggregation via groups passed into i and mult="all"
@@ -634,6 +637,25 @@ test(253, DT[,sum(v),by=a], data.table(a=factor(c("A","B")),V1=c(6L,9L)))
 # fix for bug #1298 with by=key(DT) and divisibility error.
 DT=data.table(a=c(1,1,1,2,2),b=1:5,key="a")
 test(254, DT[,sum(b),by=key(DT)]$V1, c(6L,9L))
+
+# for for bug #1294 (combining scanning i and by)
+# also see test 88.5 contributed by Johann Hibschman above.
+DT = data.table(a=1:12,b=1:2,c=1:4)
+test(255, DT[a>5,sum(c),by=b]$V1, c(7L,12L))
+
+# fix for bug #1301 (all.vars() doesn't appear to find fn in fns[[fn]] usage)
+DT = data.table(a=1:6,b=1:2,c=letters[1:2],d=1:6)
+fns = list(a=max,b=min)
+test(256, DT[,fns[[b[1]]](d),by=c]$V1, c(5L,2L))
+test(257, DT[,fns[[c[1]]](d),by=c]$V1, c(5L,2L))
+fns=c(max,min)
+
+DT = data.table(ID=1:10, SCORE_1=1:10, SCORE_2=11:20, SCORE_3=30:21, fn=c(rep(1, 5), rep(2, 5)))
+test(258, DT[,fns[[fn]](SCORE_1,SCORE_2,SCORE_3),by=ID]$V1, c(30:26,6:10))
+test(259, DT[,as.list(fns[[fn]](SCORE_1,SCORE_2,SCORE_3)),by=ID]$V1, c(30:26,6:10))
+test(260, DT[,list(fns[[fn]](SCORE_1,SCORE_2,SCORE_3)),by=ID]$V1, c(30:26,6:10))
+
+
 
 ## Test that suffixes argument in merge.data.table acts the same way it does
 ## in merge.data.frame
