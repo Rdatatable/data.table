@@ -38,6 +38,9 @@ USER-VISIBLE CHANGES
 
    o    Additions and updates to FAQ vignette. Thanks to Dennis
         Murphy for his thorough proof reading.
+        
+   o    Welcome to Steve Lianoglou who joins the project and has
+        contributed S4-ization and better testing using testthat.
 
 
         *********************************************
