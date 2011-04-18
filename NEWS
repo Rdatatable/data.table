@@ -41,6 +41,10 @@ USER-VISIBLE CHANGES
         
    o    Welcome to Steve Lianoglou who joins the project and has
         contributed S4-ization and better testing using testthat.
+        
+   o    IDateTime is now linked from ?data.table. data.table users
+        unaware of IDateTime, please do take a look. Tom added
+        IDateTime in v1.5 (see below).
 
 
         *********************************************
