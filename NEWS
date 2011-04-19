@@ -18,6 +18,12 @@ NEW FEATURES
         backwards compatibility, eg. `options(datatable.pre.suffixes=TRUE)`.
         (ii) support for `by` argument added (FR #1315).
         Note that X[Y] syntax is preferred; some users never use merge.
+  
+  o     Added ability for data.table objects to play nice with S4 classes.
+        Slots can be defined to be S4 objects, S4 classes can inherit from
+        data.table, and S4 function dispatch works on data.table objects.
+        See the tests in inst/tests/test-S4.R, and from the R prompt:
+        R> ?"data.table-class"
 
 BUG FIXES
 

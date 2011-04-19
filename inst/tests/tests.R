@@ -655,56 +655,7 @@ test(258, DT[,fns[[fn]](SCORE_1,SCORE_2,SCORE_3),by=ID]$V1, c(30:26,6:10))
 test(259, DT[,as.list(fns[[fn]](SCORE_1,SCORE_2,SCORE_3)),by=ID]$V1, c(30:26,6:10))
 test(260, DT[,list(fns[[fn]](SCORE_1,SCORE_2,SCORE_3)),by=ID]$V1, c(30:26,6:10))
 
-
-
-## Test that suffixes argument in merge.data.table acts the same way it does
-## in merge.data.frame
-# d1 <- data.table(a=sample(letters, 10), b=sample(1:100, 10), key='a')
-# d2 <- data.table(a=d1$a, b=sample(1:50, 10), c=rnorm(10), key='a')
-# dtm <- merge(d1, d2, by='a', suffixes=c(".x", ".y"))
-# dfm <- merge(as.data.frame(d1), as.data.frame(d2), by='a', suffixes=c('.x', '.y'))
-# test(255, as.data.frame(dtm), dfm)
-
-
-## Test S4-isms.
-## This copied over from Steve's file on github; used to test the locked binding issue
-## Steve - over to you on this bit. Maybe S4 should have it's own test file.
-## The locked binding error is gone, but R CMD check gives me :
-##   Found the following significant warnings:
-##   Warning: undefined slot classes in definition of "S4Composition": info(class "data.table")
-
-## A class with a data.table slot
-# setClass("S4Composition", representation(info="data.table"))
-# 
-# DF = data.frame(a=sample(letters, 10), b=1:10)
-# DT = as.data.table(DF)
-# test(256, as(DF, 'data.table'), DT)
-# test(257, as(DT, 'data.frame'), DF)
-# dt.comp <- new("S4Composition", info=DT)
-# test(258, dt.comp@info, DT)
-    
-# I put the setClass into AllS4.R, wasn't sure if that was right thing to do.
-# setClass("S4Composition", representation(info="data.table"))
-# dt.comp <- new("S4Composition", info=DT)
-# test(259, dt.comp@info, DT)
-## 
-## Test S4 method dispatching (?)
-## defining generic functions in here cuases errors in testing
-##
-# setGeneric("dtGet", function(x, what) standardGeneric("dtGet"))
-# setMethod("dtGet", c(x="S4Composition", what="missing"),
-# function(x, what) {
-#     x@info
-# })
-# setMethod("dtGet", c(x="S4Composition", what="ANY"),
-# function(x, what) {
-#    x@info[[what]]
-# })
-# test(260, dtGet(dt.comp), DT)
-# test(261, dtGet(dt.comp, 1), DT[[1]])
-# test(262, dtGet(dt.comp, 'b'), DT$b)
-
-
+## See test-* for more tests
 
 ##########################
 if (nfail > 0) {
