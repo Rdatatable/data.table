@@ -321,7 +321,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 rightcols = head(rightcols,length(leftcols))
                 xnonjoin = seq_len(ncol(x))[-rightcols]
                 for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]
-                names(ans) = c(colnames(x)[rightcols],colnames(x)[-rightcols],colnames(i)[-leftcols])
+                names(ans) = make.names(c(colnames(x)[rightcols],colnames(x)[-rightcols],colnames(i)[-leftcols]),unique=TRUE)
                 if (haskey(i) || nrow(i)==1)
                     attr(ans,"sorted") = key(x)
                     # TO DO: detect more ordered subset cases e.g. DT["A"] or DT[c("A","B")] where the

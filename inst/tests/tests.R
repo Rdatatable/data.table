@@ -655,6 +655,10 @@ test(258, DT[,fns[[fn]](SCORE_1,SCORE_2,SCORE_3),by=ID]$V1, c(30:26,6:10))
 test(259, DT[,as.list(fns[[fn]](SCORE_1,SCORE_2,SCORE_3)),by=ID]$V1, c(30:26,6:10))
 test(260, DT[,list(fns[[fn]](SCORE_1,SCORE_2,SCORE_3)),by=ID]$V1, c(30:26,6:10))
 
+# fix for bug #1340 - Duplicate column names in self-joins (but print ok)
+DT <- data.table(id=1:4, x1=c("a","a","b","c"), x2=c(1L,2L,3L,3L), key="x1")
+test(261, DT[DT][id < id.1]$x2.1, 2L)
+
 ## See test-* for more tests
 
 ##########################

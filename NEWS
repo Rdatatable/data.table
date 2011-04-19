@@ -35,10 +35,15 @@ BUG FIXES
         works, fixing bug #1294. Thanks to Johann Hibschman for
         contributing a new test.
    
-   o    Variables inside [[...]] now work. This can be useful
-        for looking up which function to call based on the data,
-        e.g. DT[,fns[[fn]],by=ID]. Thanks to Damian Betebenner
-        for finding and reporting.
+   o    Variables scope inside [[...]] now works without a workaround
+        required. This can be useful for looking up which function 
+        to call based on the data e.g. DT[,fns[[fn]](colA),by=ID].
+        Thanks to Damian Betebenner for reporting.
+        
+   o    Column names in self joins such as DT[DT] are no longer
+        duplicated, fixing bug #1340. Thanks to Andreas Borg for
+        reporting.
+        
 
 USER-VISIBLE CHANGES
 
