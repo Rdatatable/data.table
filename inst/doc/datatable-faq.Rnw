@@ -26,7 +26,7 @@ options(width=70)  # so lines wrap round
 \maketitle
 
 The first section, Beginner FAQs, is intended to be read in order, from start to finish. It may
-be read before reading the \href{http://datatable.r-forge.r-project.org/datatable-intro.pdf}{10 minute quick start introduction to \code{data.table}} vignette.
+be read before reading the \href{http://datatable.r-forge.r-project.org/datatable-intro.pdf}{10 minute introduction to data.table} vignette.
 
 \tableofcontents
 \section{Beginner FAQs}
@@ -389,18 +389,18 @@ Not currently.
 Yes, for both 32-bit and 64-bit on all platforms. Thanks to CRAN and R-Forge. There are no special or OS-specific libraries used.
 
 \subsection{I think it's great. What can I do?}
-Please send suggestions, bug reports and enhancement requests to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help@lists.r-forge.r-project.org}. 
+Please send suggestions, bug reports and enhancement requests to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help}. 
 This helps make the package better. The list is public and archived.
 
-Please do vote for the package at \url{http://crantastic.org/packages/data-table}. This helps encourage the developers, and helps others find the package. If you have time to write a comment too, that can help others in the community. Just simply clicking that you use the package, though, is much appreciated.
+Please do vote for the package on \href{http://crantastic.org/packages/data-table}{Crantastic}. This helps encourage the developers, and helps other \proglang{R} users find the package. If you have time to write a comment too, that can help others in the community. Just simply clicking that you use the package, though, is much appreciated.
 
 You can join the project and change the code and/or documentation yourself.
 
 \subsection{I think it's not great. How do I warn others about my experience?}
-Please put your vote and comments on \url{http://crantastic.org/packages/data-table}. Please make it constructive so we have a chance to improve.
+Please put your vote and comments on \href{http://crantastic.org/packages/data-table}{Crantastic}. Please make it constructive so we have a chance to improve.
 
 \subsection{I have a question. I know the posting guide tells me to contact the maintainer (not r-help), but is there a larger group of people I can ask?}
-Yes. You can post to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help@lists.r-forge.r-project.org}. It's like r-help, but just for this package. Feel free to answer questions there, too.
+Yes. You can post to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help}. It's like r-help, but just for this package. Feel free to answer questions there, too.
 \code{maintainer("<package name>")} returns the maintainer for any package and is where you should ask first (see \href{http://www.r-project.org/posting-guide.html}{R-help posting guide}). \code{maintainer("data.table")} returns datatable-help.
 
 \subsection{Where are the datatable-help archives?}

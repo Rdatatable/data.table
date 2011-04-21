@@ -20,9 +20,9 @@ rm(list=as.character(tables()$NAME))
 @
 
 \begin{document}
-\title{Introduction to the \pkg{data.table} Package in \proglang{R}}
+\title{Introduction to the \pkg{data.table} package in \proglang{R}}
 \author{Matthew Dowle}
-\date{\today\\(A later revision may be available on the \href{http://datatable.r-forge.r-project.org/}{homepage})}
+\date{Revised: \today\\(A later revision may be available on the \href{http://datatable.r-forge.r-project.org/}{homepage})}
 \maketitle
 
 \section*{Introduction}
@@ -30,14 +30,14 @@ rm(list=as.character(tables()$NAME))
 This vignette is aimed at those who are already familiar with \proglang{R}---in
 particular, creating and using objects of class \code{data.frame}. We aim for this quick introduction
 to be readable in {\bf 10 minutes}, covering the main features in brief, namely:
-1.\,Keys; 2.\,Fast Grouping; and 3.\,Fast time series join. For the context that this document sits, please 
+1.\,Keys; 2.\,Fast Grouping; and 3.\,Fast time series join. For the context in which this document sits, please 
 briefly check the last section, Further Resources.
 
-\pkg{data.table} is not \emph{automatically} better or faster. The user has to climb a short learning
+\code{data.table} is not \emph{automatically} better or faster. The user has to climb a short learning
 curve, experiment, and then use its features well. For example, this document explains the difference
 between a \emph{vector scan} and a \emph{binary search}. Although both extraction methods are available
-in data.table, if a user continues to use vector scans (as in a data.frame), it will `work', but one will 
-miss out on the benefits that \pkg{data.table} provides.
+in \code{data.table}, if a user continues to use vector scans (as in a \code{data.frame}), it will `work', but one will 
+miss out on the benefits that \code{data.table} provides.
 
 \section*{Creation}
 
@@ -58,8 +58,8 @@ We can easily convert existing \code{data.frame} objects to \code{data.table}.
 CARS = data.table(cars)
 head(CARS)
 @
-We have just created two \code{data.table}s: DT and CARS. It is often useful to see a list of all
-data.tables in memory:
+We have just created two \code{data.table}s: \code{DT} and \code{CARS}. It is often useful to see a list of all
+\code{data.table}s in memory:
 <<>>=
 tables()
 @
@@ -68,7 +68,7 @@ The MB column is useful to quickly assess memory use and to spot if any redundan
 removed to free up memory. Just like \code{data.frame}s, \code{data.table}s must fit inside RAM. 
 
 Some users regularly work with 20 or more tables in memory, rather like a database. 
-The result of \code{tables()} is itself a data.table, returned silently, so that \code{tables()} 
+The result of \code{tables()} is itself a \code{data.table}, returned silently, so that \code{tables()} 
 can be used in programs. \code{tables()} is unrelated to the base function \code{table()}.
 
 Also note that \code{data.table()} automatically converts character vectors to factors.
@@ -91,7 +91,7 @@ That is, the multiple names belonging to a single row.  The multiple names belon
 to the single row?  That is not what we are used to in a \code{data.frame}. We know that each row has at
 most one name. A person has at least two names, a first name and a second
 name. That is useful to organise a telephone directory, for example, which is sorted by surname, then first name.
-However, each row in a data.frame can only have one name.
+However, each row in a \code{data.frame} can only have one name.
 
 A \emph{key} consists of one or more columns of rownames, which may be integer, factor or some other class, not
 simply character. Furthermore, the rows are sorted by the key. Therefore, a \code{data.table} can have at most one key,
@@ -139,7 +139,7 @@ Now that we are sure \code{DT} has a key, let's try again:
 DT["b",]
 @
 
-By default all the rows in the group are returned\footnote{In contrast to a data.frame where only the first rowname is returned when the rownames contain duplicates.}. The \code{mult} argument (short for \emph{multiple}) allows the first or last row of the group to be returned instead.
+By default all the rows in the group are returned\footnote{In contrast to a \code{data.frame} where only the first rowname is returned when the rownames contain duplicates.}. The \code{mult} argument (short for \emph{multiple}) allows the first or last row of the group to be returned instead.
 
 <<>>=
 DT["b",mult="first"]
@@ -170,7 +170,7 @@ We might say that \proglang{R} has created a 3 column table and \emph{inserted}
 \Sexpr{format(nrow(DF),big.mark=",",scientific=FALSE)} rows. It took \Sexpr{format(tt[3],nsmall=3)} secs, so it inserted
 \Sexpr{format(as.integer(nrow(DF)/tt[3]),big.mark=",",scientific=FALSE)} rows per second. This is normal in base \proglang{R}.
 
-Let's extract an arbitrary group from the data.frame \code{DF}:
+Let's extract an arbitrary group from \code{DF}:
 
 <<print=TRUE>>=
 tt=system.time(ans1 <- DF[DF$x=="R" & DF$y=="h",])   # 'vector scan'
@@ -178,7 +178,7 @@ head(ans1,3)
 dim(ans1)
 @
 
-Now convert to a data.table and extract the same group:
+Now convert to a \code{data.table} and extract the same group:
 
 <<>>=
 DT = data.table(DF)
@@ -199,7 +199,7 @@ and produced precisely the same result. If you are thinking that a few seconds i
 vector scan is linear, but the binary search is O(log n). It scales. If a task taking 10 hours is sped up by 100 times to 6 minutes, that is
 significant\footnote{We wonder how many people are deploying parallel techniques to code that is vector scanning}. 
 
-We can do vector scans in data.table, too. In other words we can use data.table \emph{badly}.
+We can do vector scans in \code{data.table}, too. In other words we can use data.table \emph{badly}.
 
 <<>>=
 system.time(ans1 <- DT[x=="R" & y=="h",])   # works but is using data.table badly
@@ -217,7 +217,7 @@ passed to the \code{[} method, which in turn searched it for \code{TRUE} and ret
 occurred internally in R and were very fast, but they were scans. \emph{We} did those scans because \emph{we} wrote that R code.
 
 
-When i is itself a data.table, we say that we are \emph{joining} the two data.tables. In this case, we are joining DT to the 1 row, 2 column table returned by \code{data.table("R","h")}. Since we do this a lot, there is an alias for \code{data.table}s called \code{J()}, short for join.
+When \code{i} is itself a \code{data.table}, we say that we are \emph{joining} the two \code{data.table}s. In this case, we are joining DT to the 1 row, 2 column table returned by \code{data.table("R","h")}. Since we do this a lot, there is an alias for \code{data.table}s called \code{J()}, short for join.
 
 <<>>=
 identical( DT[J("R","h"),],
@@ -229,8 +229,8 @@ if(!identical(DT[J("R","h"),],DT[data.table("R","h"),])) stop("J != data.table c
 
 Both vector scanning and binary search are available in \code{data.table}, but one way of using \code{data.table} is much better than the other.
 
-The join syntax is a short, fast to write and easy to maintain. Passing a data.table into a data.table subset is analogous to \code{A[B]} syntax in base \proglang{R} where \code{A} is a matrix and \code{B} is a 2-column matrix\footnote{Subsetting a keyed data.table by a n-column 
-data.table is consistent with subsetting a n-dimension array by a n-column matrix in base R}. In fact, the \code{A[B]} syntax in base R inspired the \code{data.table} package. There are
+The join syntax is a short, fast to write and easy to maintain. Passing a \code{data.table} into a \code{data.table} subset is analogous to \code{A[B]} syntax in base \proglang{R} where \code{A} is a matrix and \code{B} is a 2-column matrix\footnote{Subsetting a keyed \code{data.table} by a n-column 
+\code{data.table} is consistent with subsetting a n-dimension array by a n-column matrix in base R}. In fact, the \code{A[B]} syntax in base R inspired the \code{data.table} package. There are
 other types of join and further arguments which are beyond the scope of this quick introduction.
 
 The merge method of \code{data.table} is very similar to \code{X[Y]}, but there are some differences. See FAQ 1.12.
@@ -248,13 +248,13 @@ one or more expressions whose arguments are (unquoted) column names, as if the c
 DT[,sum(v)]
 @
 
-When we supply a \code{j} expression and a 'by' list of expressions, the \code{j}expression is repeated for each 'by' group:
+When we supply a \code{j} expression and a 'by' list of expressions, the \code{j} expression is repeated for each 'by' group:
 
 <<>>=
 DT[,sum(v),by=x]
 @
 
-The \code{by} in data.table is fast.  Let's compare it to \code{tapply}.
+The \code{by} in \code{data.table} is fast.  Let's compare it to \code{tapply}.
 
 <<>>=
 ttt=system.time(tt <- tapply(DT$v,DT$x,sum)); ttt
@@ -283,10 +283,10 @@ identical(as.vector(t(tt)), ss$V1)
 if(!identical(as.vector(t(tt)), ss$V1)) stop("group check failed")
 @
 
-This was {\bf\Sexpr{as.integer(ttt[3]/sss[3])}} times faster, and the syntax a little simpler and easier to read.
+This was {\bf\Sexpr{as.integer(ttt[3]/sss[3])}} times faster, and the syntax is a little simpler and easier to read.
 \newline
 
-The following features are mentioned only briefly here; further examples are in the FAQs.
+\noindent The following features are mentioned only briefly here; further examples are in \code{?data.table} and the \href{http://datatable.r-forge.r-project.org/datatable-faq.pdf}{FAQ vignette}.
 
 \begin{itemize}
 \item To return several expressions, pass a \code{list()} to \code{j}.
@@ -303,7 +303,7 @@ where calling \code{month()} on \code{dateCol} is what we mean by expressions of
 
 This is also known as last observation carried forward (LOCF) or a \emph{rolling join}.
 
-Recall that x[i] is a join between data.table x and data.table i.  If i has 2 columns, the first column is matched
+Recall that x[i] is a join between \code{data.table} x and \code{data.table} i.  If i has 2 columns, the first column is matched
 to the first column of the key of x, and the 2nd column to the 2nd.  An equi-join is performed, meaning that
 the values must be equal.
 
@@ -323,7 +323,7 @@ For examples see \code{example("[.data.table")}
 
 This was a quick start guide. Further resources include :
 \begin{itemize}
-\item The help page describes each and every argument: \code{?"[.data.table"}
+\item The help page describes each and every argument: \code{?data.table}
 \item The FAQs deal with distinct topics: \code{vignette("datatable-faq")}
 \item The performance tests contain more examples: \code{vignette("datatable-timings")}
 \item \code{test.data.table()} contains over 250 low level tests of the features
