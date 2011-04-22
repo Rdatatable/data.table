@@ -12,18 +12,19 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
-   o    merge.data.table works more like merge.data.frame.
-        (i) suffixes are now consistent with merge.data.frame.
-        Existing users may set the datatable.pre.suffixes option to TRUE for
-        backwards compatibility, eg. `options(datatable.pre.suffixes=TRUE)`.
-        (ii) support for `by` argument added (FR #1315).
-        Note that X[Y] syntax is preferred; some users never use merge.
+   o    data.table now plays nicely with S4 classes. Slots can be
+        defined to be S4 objects, S4 classes can inherit from data.table,
+        and S4 function dispatch works on data.table objects. See the
+        tests in inst/tests/test-S4.R, and from the R prompt:
+        ?"data.table-class"
+
+   o    merge.data.table now works more like merge.data.frame:
+        (i) suffixes are consistent with merge.data.frame; existing users
+        may set options(datatable.pre.suffixes=TRUE) for backwards
+        compatibility.
+        (ii) support for 'by' argument added (FR #1315).
+        However, X[Y] syntax is preferred; some users never use merge.
   
-  o     Added ability for data.table objects to play nice with S4 classes.
-        Slots can be defined to be S4 objects, S4 classes can inherit from
-        data.table, and S4 function dispatch works on data.table objects.
-        See the tests in inst/tests/test-S4.R, and from the R prompt:
-        R> ?"data.table-class"
 
 BUG FIXES
 
@@ -35,7 +36,7 @@ BUG FIXES
         works, fixing bug #1294. Thanks to Johann Hibschman for
         contributing a new test.
    
-   o    Variables scope inside [[...]] now works without a workaround
+   o    Variable scope inside [[...]] now works without a workaround
         required. This can be useful for looking up which function 
         to call based on the data e.g. DT[,fns[[fn]](colA),by=ID].
         Thanks to Damian Betebenner for reporting.
@@ -50,8 +51,8 @@ USER-VISIBLE CHANGES
    o    Additions and updates to FAQ vignette. Thanks to Dennis
         Murphy for his thorough proof reading.
         
-   o    Welcome to Steve Lianoglou who joins the project and has
-        contributed S4-ization and better testing using testthat.
+   o    Welcome to Steve Lianoglou who joins the project
+        contributing S4-ization, testing using testthat, and more.
         
    o    IDateTime is now linked from ?data.table. data.table users
         unaware of IDateTime, please do take a look. Tom added
