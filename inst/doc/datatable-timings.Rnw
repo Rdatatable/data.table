@@ -22,7 +22,7 @@ options(width=70)  # so lines wrap round
 
 \title{Timings of common tasks using the \pkg{data.table} package in \proglang{R}}
 \author{Matthew Dowle}
-\date{\today\\(A later revision may be available on the \href{http://datatable.r-forge.r-project.org/}{homepage})}
+\date{Revised: \today\\(A later revision may be available on the \href{http://datatable.r-forge.r-project.org/}{homepage})}
 \maketitle
 
 * WORK IN PROGRESS *
