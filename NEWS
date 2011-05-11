@@ -10,6 +10,14 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
         
+NEW FEATURES
+
+   o    j's environment is now consistently reused so
+        that local variables may be set which persist
+        from group to group; e.g., incrementing a group
+        counter :
+            DT[,list(z,groupInd<-groupInd+1),by=x]
+        Thanks for Andreas Borg for reporting.
 
 
 

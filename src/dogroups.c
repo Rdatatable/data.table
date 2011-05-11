@@ -12,10 +12,10 @@ EXPORT SEXP dogroups();
 
 static SEXP growVector(SEXP x, R_len_t newlen, int size);
 
-SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval, SEXP itable, SEXP icols, SEXP iSD, SEXP nomatchNA, SEXP verbose)
+SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval, SEXP itable, SEXP icols, SEXP iSD, SEXP nomatchNA, SEXP verbose)
 {
     R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0, newlen, icol;
-    SEXP names, inames, ans, sizes, isizes, jval, jsizes, bysizes, naint, nareal;
+    SEXP names, inames, ans, sizes, isizes, jval, jsizes, bysizes, naint, nareal, SD;
     if (TYPEOF(order) != INTSXP) error("order not integer");
     if (TYPEOF(starts) != INTSXP) error("starts not integer");
     if (TYPEOF(lens) != INTSXP) error("lens not integer");
@@ -24,6 +24,7 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
     ngrp = length(starts);  // the number of groups
     njval = length(testj);  // testj is now the result of j on the first group
     nbyval = length(byval);
+    SD = findVar(install(".SD"), env);
     names = getAttrib(SD, R_NamesSymbol);
     // only the subset of column names that the j expression uses exist in SD, or if
     // the j uses .SD (or .SDF), then all the columns of dt (detected in the calling R). 
@@ -48,7 +49,7 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
         }
         defineVar(install(CHAR(STRING_ELT(names, i))), VECTOR_ELT(SD, i), env);
     }
-    defineVar(install(".SD"), SD, env);
+    // defineVar(install(".SD"), SD, env);
     // By installing .SD directly inside itself, R finds this symbol more quickly (if used). This then allows the
     // env's parent to be the one that called [.data.table, rather than the local scope of
     // [.data.table, for robustness and efficiency. If it were local scope of [.data.table then user's j

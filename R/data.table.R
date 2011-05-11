@@ -515,8 +515,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     }
     SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
     SDenv$.SD = x[itestj, vars, with=FALSE]
+    for (ii in names(SDenv$.SD)) assign(ii, SDenv$.SD[[ii]], envir=SDenv)
     for (ii in ivars) assign(ii, i[[ii]][1], envir=SDenv)
-    testj = eval(jsub, SDenv$.SD, enclos = SDenv)
+    testj = eval(jsub, SDenv)
     maxn=0
     if (!is.null(testj)) {
         if (is.atomic(testj)) {
@@ -542,16 +543,16 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # TO DO: we might over allocate above e.g. if first group has 1 row and j is actually a single row aggregate
     # TO DO: user warning when it detects over-allocation is currently off in dogroups.c
     byretn = max(byretn,maxn) # if the result for the first group is larger than the table itself(!) Unusual case where the optimisations for common query patterns. Probably a join is being done in the j via .SD and the 1-row table is an edge condition of bigger picture.
-                
+    
     byretn = as.integer(byretn)
-    .SD = x[seq(length=max(len__)), vars, with=FALSE]  # allocate enough for largest group, will re-use it, the data contents doesn't matter at this point
+    SDenv$.SD = x[seq(length=max(len__)), vars, with=FALSE]  # allocate enough for largest group, will re-use it, the data contents doesn't matter at this point
     # the subset above keeps factor levels in full
     # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
     xcols = as.integer(match(vars,colnames(x)))
     icols = NULL
     if (!missing(i) && is.data.table(i)) icols = as.integer(match(ivars,colnames(i)))
     else i=NULL
-    ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,jsub,new.env(parent=parent.frame()),testj,byretn,byval,i,as.integer(icols),i[1,ivars,with=FALSE],is.na(nomatch),verbose,PACKAGE="data.table")
+    ans = .Call("dogroups",x,xcols,o__,f__,len__,jsub,SDenv,testj,byretn,byval,i,as.integer(icols),i[1,ivars,with=FALSE],is.na(nomatch),verbose,PACKAGE="data.table")
 
     # why is byval copying data out of i? If there aren't any
     # expressions of columns then it could just be i directly.
@@ -560,7 +561,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # don't want to eval j for every row of i unless it really is mult='all'
 
     # setkey could mark the key whether it is unique or not.
-            
+
     # TO DO : play with hash and size arguments of the new.env().
     if (verbose) {cat("... done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
     # if (byretn==0) return(NULL)  # user wanted side effects only (e.g. plotting).

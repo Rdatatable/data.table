@@ -659,6 +659,16 @@ test(260, DT[,list(fns[[fn]](SCORE_1,SCORE_2,SCORE_3)),by=ID]$V1, c(30:26,6:10))
 DT <- data.table(id=1:4, x1=c("a","a","b","c"), x2=c(1L,2L,3L,3L), key="x1")
 test(261, DT[DT][id < id.1]$x2.1, 2L)
 
+# "<-" within j now assigns in the same environment for 1st group, as the rest
+# Thanks to Andeas Borg for highlighting on 11 May
+
+dt <- data.table(x=c(0,0,1,0,1,1), y=c(0,1,0,1,0,1), z=1:6)
+groupInd = 0
+test(262, dt[,list(z,groupInd<-groupInd+1),by=list(x,y)]$V2, c(1,2,2,3,3,4))
+test(263, groupInd, 0)
+test(264, dt[,list(z,groupInd<<-groupInd+1),by=list(x,y)]$V2, c(1,2,2,3,3,4))
+test(265, groupInd, 4)
+
 ## See test-* for more tests
 
 ##########################
