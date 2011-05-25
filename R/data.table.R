@@ -409,8 +409,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         byval = eval(bysub, x, parent.frame())
         if (is.null(byval)) stop("'by' has evaluated to NULL")
         if (is.atomic(byval)) {
-            if (length(byval) <= ncol(x) && length(byval)<nrow(x) && is.character(byval)) {
-                # e.g. by is key(DT) or c("colA","colB")
+            if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && byvars%in%colnames(x)) ) {
+                # e.g. by is key(DT) or c("colA","colB"), but not the value of a character column
                 if (!all(byval %in% colnames(x)))
                     stop("'by' seems like a column name vector but these elements are not column names (first 5):",paste(head(byval[!byval%in%colnames(x)],5),collapse=""))
                 byvars = byval

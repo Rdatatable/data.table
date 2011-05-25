@@ -32,9 +32,9 @@ test = function(num,x,y=NULL) {
     }
     cat("Test",num,"ran without errors but failed check:\n")
     print(x)
-    if (is.data.table(x)) print(key(x))
+    if (is.data.table(x)) {cat("Key: ",paste(key(x),collapse=","),"\n")}
     print(y)
-    if (is.data.table(y)) print(key(y))
+    if (is.data.table(y)) {cat("Key: ",paste(key(y),collapse=","),"\n")}
     nfail <<- nfail + 1
 }
 
@@ -668,6 +668,35 @@ test(262, dt[,list(z,groupInd<-groupInd+1),by=list(x,y)]$V2, c(1,2,2,3,3,4))
 test(263, groupInd, 0)
 test(264, dt[,list(z,groupInd<<-groupInd+1),by=list(x,y)]$V2, c(1,2,2,3,3,4))
 test(265, groupInd, 4)
+
+# Tests for passing 'by' expressions that evaluate to character column
+# names in the edge case of 1 row; the character 'by' vector could
+# feasibly be intended to be grouping values. Bug 1404; thanks to Andreas Borg
+# for the detailed report, suggested fix and tests.
+
+DT = data.frame(x=1,y="a",stringsAsFactors=FALSE)
+DT = as.data.table(DT)
+test(266,class(DT$y),"character") # just to check we setup the test correctly
+test(267,DT[,sum(x),by=y]$V1,1)
+test(268,DT[,sum(x),by="y"]$V1,1)
+colvars="y"
+test(269,DT[,sum(x),by=colvars]$V1,1)
+setkey(DT,y)
+test(270,DT[,sum(x),by=key(DT)]$V1,1)
+
+DT = data.table(x=1,y=2)
+key(DT) = names(DT)
+test(271, DT[,length(x),by=key(DT)]$V1, 1L)
+
+DT = data.table(x=c(1,2,1), y=c(2,3,2), z=1:3)
+key(DT) = names(DT)
+test(272, DT[,sum(z),by=key(DT)]$V1, c(1L,3L,2L))
+
+
+# In progress ... tests for .BY and implicit .BY
+# DT = data.table(a=1:6,b=1:2)
+# DT[,sum(a)*b,by=b]
+
 
 ## See test-* for more tests
 

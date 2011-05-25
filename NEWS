@@ -19,6 +19,13 @@ NEW FEATURES
             DT[,list(z,groupInd<-groupInd+1),by=x]
         Thanks for Andreas Borg for reporting.
 
+BUG FIXES
+
+   o    A 'by' character vector of column names now
+        works when there are less rows than columns; e.g.,
+            DT[,sum(x),by=key(DT)) where nrow(DT)==1.
+        Many thanks to Andreas Borg for report, proposed
+        fix and tests.
 
 
         *********************************************
