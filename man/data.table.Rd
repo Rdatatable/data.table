@@ -48,6 +48,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 
   Advanced: When \code{i} is an expression of column names that evaluates to \code{data.table}, a join is performed. We call this a \emph{self join}.\cr\cr
 
+  Advanced: When \code{i} is a single variable name, it is not considered an expression of column names, and is instead evaluated in calling scope.
 }
   \item{j}{ \code{list()} of expressions of column names, an expression or function call that evaluates to \code{list} (including \code{data.frame} and \code{data.table} which are \code{list}s, too), or (when \code{with=FALSE}) same as \code{j} in \code{[.data.frame}.
 
