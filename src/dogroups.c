@@ -10,12 +10,30 @@
 EXPORT SEXP dogroups();
 #endif
 
+int sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
+
 static SEXP growVector(SEXP x, R_len_t newlen, int size);
+int sizesSet=0;
+SEXP setSizes()
+{
+    int i;
+    for (0;i++;i<100) sizes[i]=0;
+    // only these types are currently allowed as column types :
+    sizes[INTSXP] = sizeof(int);     // integer and factor
+    sizes[LGLSXP] = sizeof(int);     // logical
+    sizes[REALSXP] = sizeof(double); // numeric
+    sizes[STRSXP] = sizeof(SEXP);    // character
+    sizes[VECSXP] = sizeof(SEXP *);  // a column itself can be a list()
+    sizesSet=1;
+    return(R_NilValue);
+}
+#define SIZEOF(x) sizes[TYPEOF(x)]
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval, SEXP itable, SEXP icols, SEXP iSD, SEXP nomatchNA, SEXP verbose)
 {
-    R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0, newlen, icol;
-    SEXP names, inames, ans, sizes, isizes, jval, jsizes, bysizes, naint, nareal, SD;
+    R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0, newlen, icol, size;
+    SEXP names, inames, bynames, ans, jval, naint, nareal, SD, BY;
+    if (!sizesSet) setSizes();
     if (TYPEOF(order) != INTSXP) error("order not integer");
     if (TYPEOF(starts) != INTSXP) error("starts not integer");
     if (TYPEOF(lens) != INTSXP) error("lens not integer");
@@ -25,67 +43,36 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     njval = length(testj);  // testj is now the result of j on the first group
     nbyval = length(byval);
     SD = findVar(install(".SD"), env);
+    BY = findVar(install(".BY"), env);
+    
     names = getAttrib(SD, R_NamesSymbol);
-    // only the subset of column names that the j expression uses exist in SD, or if
-    // the j uses .SD (or .SDF), then all the columns of dt (detected in the calling R). 
-    PROTECT(sizes = allocVector(INTSXP, length(SD)));
     for(i = 0; i < length(SD); i++) {
-        switch (TYPEOF(VECTOR_ELT(SD, i))) {
-            case INTSXP :
-            case LGLSXP :
-                INTEGER(sizes)[i] = sizeof(int);
-                break;
-            case REALSXP :
-                INTEGER(sizes)[i] = sizeof(double);
-                break;
-            case STRSXP :
-                INTEGER(sizes)[i] = sizeof(SEXP);
-                break;
-            case VECSXP :
-                INTEGER(sizes)[i] = sizeof(SEXP *);
-                break;
-            default:
-                error("only integer,double,logical and character vectors are allowed so far. Type %d would need to be added.", TYPEOF(VECTOR_ELT(SD, i)));
-        }
+        if (SIZEOF(VECTOR_ELT(SD, i))==0)
+            error("Type %d in .SD column %d", TYPEOF(VECTOR_ELT(SD, i)), i);
         defineVar(install(CHAR(STRING_ELT(names, i))), VECTOR_ELT(SD, i), env);
     }
     // defineVar(install(".SD"), SD, env);
-    // By installing .SD directly inside itself, R finds this symbol more quickly (if used). This then allows the
-    // env's parent to be the one that called [.data.table, rather than the local scope of
-    // [.data.table, for robustness and efficiency. If it were local scope of [.data.table then user's j
-    // may inadvertently see interal variables names (as it used to in v1.2) and we had to name them to avoid
-    // conflict e.g. "o__".  That is no longer required and things are much cleaner now.
-
-    // Now for JIS, install the non-key variables in the SD too. The parent
-    // of SD isn't i, but it gives that appearance.
+    // By installing .SD directly inside itself, R finds this symbol more quickly (if used).
 
     inames = getAttrib(itable, R_NamesSymbol);
-    PROTECT(isizes = allocVector(INTSXP, length(iSD)));
     for(i = 0; i < length(icols); i++) {
+        // JIS (used non-key variables of i). The parent of SD isn't i, but it gives that appearance.
         icol = INTEGER(icols)[i]-1;
         defineVar(install(CHAR(STRING_ELT(inames,icol))),VECTOR_ELT(iSD,i),env);
-        switch (TYPEOF(VECTOR_ELT(iSD, i))) {
-            case INTSXP :
-            case LGLSXP :
-                INTEGER(isizes)[i] = sizeof(int);
-                break;
-            case REALSXP :
-                INTEGER(isizes)[i] = sizeof(double);
-                break;
-            case STRSXP :
-                INTEGER(isizes)[i] = sizeof(SEXP);
-                break;
-            case VECSXP :
-                INTEGER(isizes)[i] = sizeof(SEXP *);
-                break;
-            default:
-                error("only integer,double,logical and character vectors are allowed so far in JIS columns. Type %d would need to be added.", TYPEOF(VECTOR_ELT(iSD, i)));
-        }
+        if (SIZEOF(VECTOR_ELT(iSD, i))==0)
+            error("Type %d in join inherited scope column %d", TYPEOF(VECTOR_ELT(iSD, i)), i);
+    }
+    bynames = getAttrib(BY, R_NamesSymbol);
+    for(i = 0; i < length(byval); i++) {
+        // by vars can be used by name or via .BY
+        defineVar(install(CHAR(STRING_ELT(bynames,i))),VECTOR_ELT(BY,i),env);
+        if (TYPEOF(VECTOR_ELT(BY,i)) != TYPEOF(VECTOR_ELT(byval,i)))
+            error("Type mismatch between .BY and byval, column %d",i);
+        if (SIZEOF(VECTOR_ELT(BY,i))==0)
+            error("Type %d in by column %d", TYPEOF(VECTOR_ELT(BY, i)), i);
     }
     
     PROTECT(ans = allocVector(VECSXP, nbyval + njval));
-    PROTECT(bysizes = allocVector(INTSXP, nbyval));
-    PROTECT(jsizes = allocVector(INTSXP, njval));
     
     PROTECT(naint = allocVector(INTSXP, 1));
     INTEGER(naint)[0] = NA_INTEGER;
@@ -98,29 +85,16 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         switch (TYPEOF(VECTOR_ELT(byval, i))) {   // this structure is more for the future when by could contain character for example
             case INTSXP :
             case LGLSXP :
-                INTEGER(bysizes)[i] = sizeof(int);
                 break;
             case REALSXP : case STRSXP :
             default:
-                error("by columns must be internally integer");
+                error("by columns must be integer (currently)");
         }
     }
     for(i = 0; i < njval; i++) {
         SET_VECTOR_ELT(ans, nbyval+i, allocVector(TYPEOF(VECTOR_ELT(testj, i)), INTEGER(byretn)[0]));
-        switch (TYPEOF(VECTOR_ELT(testj, i))) {  // TO DO : find a size table in a .h to use and save the switch (couldn't find one when looked)
-            case INTSXP :
-            case LGLSXP :
-                INTEGER(jsizes)[i] = sizeof(int);
-                break;
-            case REALSXP :
-                INTEGER(jsizes)[i] = sizeof(double);
-                break;
-            case STRSXP :
-                INTEGER(jsizes)[i] = sizeof(SEXP);
-                break;
-            default:
-                error("only integer,double,logical and character vectors are allowed in j expressions when 'by' is used. Type %d would need to be added.", TYPEOF(VECTOR_ELT(testj, i)));
-        }
+        if (SIZEOF(VECTOR_ELT(testj, i))==0)
+            error("Type %d in j column", TYPEOF(VECTOR_ELT(testj, i)));
     }
     
     // copy existing result for first group into ans
@@ -158,19 +132,21 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         if (ansloc + maxn > length(VECTOR_ELT(ans,0))) error("Didn't allocate enough rows for result of first group.");
         for (j=0; j<nbyval; j++) {
             for (r=0; r<maxn; r++) {
-            memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*INTEGER(bysizes)[j],
-               (char *)DATAPTR(VECTOR_ELT(byval,j)) + 0*INTEGER(bysizes)[j],    // this is why byval must be subset in the calling R to the first row of each group, to be consistent with i join grouping
-               1 * INTEGER(bysizes)[j]);
+                size = SIZEOF(VECTOR_ELT(byval, j));
+                memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*size,
+                       (char *)DATAPTR(VECTOR_ELT(byval,j)) + 0*size,    // this is why byval must be subset in the calling R to the first row of each group, to be consistent with i join grouping
+                       1 * size);
             }
         }
         for (j=0; j<njval; j++) {
             thisansloc = ansloc;
             thislen = LENGTH(VECTOR_ELT(testj,j)); // never length 0 as replaced with NA above.
             if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen); 
+            size = SIZEOF(VECTOR_ELT(testj, j));
             for (r=0; r<(maxn/thislen); r++) {
-                memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+nbyval)) + thisansloc*INTEGER(jsizes)[j],
+                memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+nbyval)) + thisansloc*size,
                    (char *)DATAPTR(VECTOR_ELT(testj,j)),
-                   thislen * INTEGER(jsizes)[j]);
+                   thislen * size);
                 thisansloc += thislen;
             }
         }
@@ -181,9 +157,16 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     for(i = 1; i < ngrp; i++) {  // 2nd group onwards
         thislen = INTEGER(lens)[i];
         for (j=0; j<length(iSD); j++) {
-             memcpy((char *)DATAPTR(VECTOR_ELT(iSD,j)),
-                    (char *)DATAPTR(VECTOR_ELT(itable,INTEGER(icols)[j]-1))+i*INTEGER(isizes)[j],
-                    INTEGER(isizes)[j]);
+            size = SIZEOF(VECTOR_ELT(iSD,j));
+            memcpy((char *)DATAPTR(VECTOR_ELT(iSD,j)),
+                   (char *)DATAPTR(VECTOR_ELT(itable,INTEGER(icols)[j]-1))+i*size,
+                   size);
+        }
+        for (j=0; j<length(BY); j++) {
+            size = SIZEOF(VECTOR_ELT(BY,j));
+            memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),
+                   (char *)DATAPTR(VECTOR_ELT(byval,j))+i*size,
+                   size);
         }
         if (INTEGER(starts)[i] == 0) {
             if (LOGICAL(nomatchNA)[0]) {   // the is.na(nomatch) is up in R as its easier to cope with NA(logical), NA_integer_, 0L and 0 up there.
@@ -212,17 +195,19 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         } else {
             if (length(order)==0) {
                 for (j=0; j<length(SD); j++) {
+                    size = SIZEOF(VECTOR_ELT(SD,j));
                     memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),
-                       (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+(INTEGER(starts)[i]-1)*INTEGER(sizes)[j],
-                       thislen*INTEGER(sizes)[j]);
+                       (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+(INTEGER(starts)[i]-1)*size,
+                       thislen*size);
                 }
             } else {
                 for (k=0; k<thislen; k++) {
                     rownum = INTEGER(order)[ INTEGER(starts)[i] -1 + k ] -1;
-                    for (j=0; j<length(SD); j++) {    
-                        memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)) + k*INTEGER(sizes)[j],
-                           (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1)) + rownum*INTEGER(sizes)[j],
-                           INTEGER(sizes)[j]);
+                    for (j=0; j<length(SD); j++) {
+                        size = SIZEOF(VECTOR_ELT(SD,j));
+                        memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)) + k*size,
+                           (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1)) + rownum*size,
+                           size);
                     }
                 }
             }
@@ -263,28 +248,30 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         if (ansloc + maxn > length(VECTOR_ELT(ans,0))) {
             newlen = ansloc+maxn;
             if (LOGICAL(verbose)[0]) Rprintf("dogroups: growing from %d to %d rows\n", length(VECTOR_ELT(ans,0)), newlen);
-            for (j=0; j<nbyval; j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), newlen, INTEGER(bysizes)[j]));
-            for (j=0; j<njval; j++) SET_VECTOR_ELT(ans, j+nbyval, growVector(VECTOR_ELT(ans,j+nbyval), newlen, INTEGER(jsizes)[j]));
+            for (j=0; j<nbyval; j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), newlen, SIZEOF(VECTOR_ELT(byval, j))));
+            for (j=0; j<njval; j++) SET_VECTOR_ELT(ans, j+nbyval, growVector(VECTOR_ELT(ans,j+nbyval), newlen, SIZEOF(VECTOR_ELT(testj,j))));
             // TO DO: implement R_realloc(?) here
             // TO DO: more sophisticated newlen estimate based on new group's size
             // TO DO: possibly inline it.
         }
         if (maxn > 0) {
             for (j=0; j<nbyval; j++) {
+                size = SIZEOF(VECTOR_ELT(byval, j));
                 for (r=0; r<maxn; r++) {
-                    memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*INTEGER(bysizes)[j],
-                        (char *)DATAPTR(VECTOR_ELT(byval,j)) + i*INTEGER(bysizes)[j],    // this is why byval must be subset in the calling R to the first row of each group, to be consistent with i join grouping
-                        1 * INTEGER(bysizes)[j]);
+                    memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*size,
+                        (char *)DATAPTR(VECTOR_ELT(byval,j)) + i*size,    // this is why byval must be subset in the calling R to the first row of each group, to be consistent with i join grouping
+                        1 * size);
                 }
             }
             for (j=0; j<njval; j++) {
                 thisansloc = ansloc;
                 thislen = LENGTH(VECTOR_ELT(jval,j));
-                if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen); 
+                if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen);
+                size = SIZEOF(VECTOR_ELT(testj,j));
                 for (r=0; r<(maxn/thislen); r++) {
-                    memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+nbyval)) + thisansloc*INTEGER(jsizes)[j],
+                    memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+nbyval)) + thisansloc*size,
                        (char *)DATAPTR(VECTOR_ELT(jval,j)),
-                       thislen * INTEGER(jsizes)[j]);
+                       thislen * size);
                     thisansloc += thislen;
                 }
             }
@@ -296,7 +283,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         // warning("Wrote less rows than allocated. byretn=%d but wrote %d rows",INTEGER(byretn)[0],ansloc);
         for (j=0; j<length(ans); j++) SETLENGTH(VECTOR_ELT(ans,j),ansloc);
     }
-    UNPROTECT(7);
+    UNPROTECT(3);
     return(ans);
 }
 
@@ -316,6 +303,8 @@ static SEXP growVector(SEXP x, R_len_t newlen, int size)
     UNPROTECT(2);
     return newx;
 }
+
+
 
 
 

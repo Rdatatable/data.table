@@ -18,6 +18,16 @@ NEW FEATURES
         counter :
             DT[,list(z,groupInd<-groupInd+1),by=x]
         Thanks for Andreas Borg for reporting.
+        
+   o    A new symbol .BY is available to j, containing 1 row
+        of the current 'by' variables, type list. 'by' variables
+        may also be used by name and they are now length 1, too.
+        This implements FR#1313.
+        For example :
+            DT[,sum(x)*.BY[[1]],by=y]
+            DT[,sum(x)*.BY[[1]],by=eval(byexp)]
+            DT[,sapply(.SD,sum)*y,by=y]
+            DT[,sapply(.SD,sum)*.BY[[2]],by=list(y,z)]
 
 BUG FIXES
 

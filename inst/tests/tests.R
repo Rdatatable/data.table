@@ -352,7 +352,7 @@ test(144, dt[, .SD[3,], by=b], data.table(b=LETTERS[1:4],a=3L,b2=LETTERS[1:4]))
 
 DT = data.table(x=rep(c("a","b"),c(2,3)),y=1:5)
 xx = capture.output(ans <- DT[,{print(x);sum(y)},by=x])
-test(145, xx, c("[1] a a","Levels: a b","[1] b b b","Levels: a b"))
+test(145, xx, c("[1] a","Levels: a b","[1] b","Levels: a b"))
 test(146, ans, data.table(x=c("a","b"),V1=c(3L,12L)))
 
 tt = try(DT[,MySum=sum(v)], silent=TRUE)    # feature request #204 done.
@@ -693,9 +693,15 @@ key(DT) = names(DT)
 test(272, DT[,sum(z),by=key(DT)]$V1, c(1L,3L,2L))
 
 
-# In progress ... tests for .BY and implicit .BY
-# DT = data.table(a=1:6,b=1:2)
-# DT[,sum(a)*b,by=b]
+# Tests for .BY and implicit .BY
+# .BY is a single row, and by variables are now, too. FAQ 2.10 has been changed accordingly (TO DO).
+DT = data.table(a=1:6,b=1:2)
+test(273, DT[,sum(a)*b,by=b]$V1, c(9L,24L))
+test(274, DT[,sum(a)*.BY[[1]],by=b], data.table(b=1:2,V1=c(9L,24L)))
+test(275, DT[,sum(a)*bcalc,by=list(bcalc=b+1)], data.table(bcalc=2:3,V1=c(18L,36L)))
+test(276, DT[,sapply(.SD,sum)*b,by=b], data.table(b=1:2,V1=c(9L,24L)))  # .SD should no longer include b, unlike v1.6 and before
+test(277, DT[,sapply(.SD,sum)*bcalc,by=list(bcalc=b+1)], data.table(bcalc=2:3,V1=c(18L,36L)))  # cols used in by expressions are excluded from .SD, but can still be used in j (by name only and may vary within the group e.g. DT[,max(diff(date)),by=month(date)]
+test(278, DT[,sum(a*b),by=list(bcalc=b+1)], data.table(bcalc=2:3,V1=c(9L,24L)))
 
 
 ## See test-* for more tests
