@@ -45,6 +45,10 @@ USER-VISIBLE CHANGES
         and DT[NA] returns 1 row of NA, unlike [.data.frame.
         Three points have been added to FAQ 2.17. Thanks to
         Johann Hibschman for highlighting.
+        
+    o   Startup banner now uses packageStartupMessage() so the
+        banner can be suppressed by those annoyed by banners,
+        whilst still being helpful to new users.
 
 
 
