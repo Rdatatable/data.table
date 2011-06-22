@@ -704,6 +704,23 @@ test(277, DT[,sapply(.SD,sum)*bcalc,by=list(bcalc=b+1)], data.table(bcalc=2:3,V1
 test(278, DT[,sum(a*b),by=list(bcalc=b+1)], data.table(bcalc=2:3,V1=c(9L,24L)))
 
 
+# Test x==y where either column contain NA.
+DT = data.table(x=c(1,2,NA,3,4),y=c(0,2,3,NA,4),z=1:5)
+test(279, DT[x==y,sum(z)], 7L)
+# In data.frame the equivalent is :
+# > DF = as.data.frame(DT)
+# > DF[DF$x==DF$y,]
+#       x  y  z
+# 2     2  2  2
+# NA   NA NA NA
+# NA.1 NA NA NA
+# 5     4  4  5
+# > DF[!is.na(DF$x) & !is.na(DF$y) & DF$x==DF$y,]
+#   x y z
+# 2 2 2 2
+# 5 4 4 5
+
+
 ## See test-* for more tests
 
 ##########################
