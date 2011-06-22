@@ -212,7 +212,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             i =eval(isub,parent.frame())
         if (is.logical(i)) {
             if (identical(i,NA)) i = NA_integer_  # see DT[NA] thread re recycling of NA logical
-            else i[is.na(i)] = FALSE              # avoids DT[!is.na(ColA) & ColA==ColB]
+            else i[is.na(i)] = FALSE              # avoids DT[!is.na(ColA) & !is.na(ColB) & ColA==ColB], just DT[ColA==ColB]
         }
         if (is.null(i)) return(structure(NULL,class=c("data.table","data.frame"),row.names=.set_row_names(0)))
         if (is.character(i)) {

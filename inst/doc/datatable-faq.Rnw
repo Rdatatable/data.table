@@ -326,6 +326,9 @@ A key advantage of column vectors in \proglang{R} is that they are \emph{ordered
 \item{\code{DT[,"colA",with=FALSE][[1]]} == \code{DF[,"colA"]}.}
 \item{\code{DT[,colA]} == \code{DF[,"colA"]}}
 \item{\code{DT[,list(colA)]} == \code{DF[,"colA",drop=FALSE]}}
+\item{\code{DT[NA]} returns 1 row of \code{NA}, but \code{DF[NA]} is a copy of \code{DF} containing \code{NA} throughout. The user probably forgot that \code{NA} is type logical in \R, and is therefore recycled by \code{[.data.frame}. Intention was probably \code{DF[NA_integer_]}. \code{[.data.table} does this automatically for convenience.]
+\item{\code{DT[c(TRUE,NA,FALSE)]} treats the \code{NA} as \code{FALSE}, but \code{DF[c(TRUE,NA,FALSE)]} returns \code{NA} rows for each \code{NA}.}
+\item{\code{DT[ColA==ColB]} == \code{DF[!is.na(ColA) & !is.na(ColB) & ColA==ColB,]}
 \end{itemize}
 In \code{[.data.frame} we very often set \code{drop=FALSE}. When we forget, bugs can arise in edge cases where single columns are selected and all of a sudden a vector is returned rather than a single column \code{data.frame}. In \code{[.data.table} we took the opportunity to make it consistent and drop \code{drop}.
 \newline\newline

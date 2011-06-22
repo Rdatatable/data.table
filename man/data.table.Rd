@@ -36,9 +36,9 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   \item{x}{ A \code{data.table}.
 
 }
-  \item{i}{ Integer, logical, character, expression of column names, or \code{data.table}.
+  \item{i}{ Integer, logical or character vectors, expression of column names, or \code{data.table}.
 
-  integer and logical work the same way they do in \code{\link{[.data.frame}}.
+  integer and logical vectors work the same way they do in \code{\link{[.data.frame}}. Other than \code{NA}s in logical \code{i} are treated as \code{FALSE}, and a single \code{NA} logical is not recycled to match the number of rows, as it is in \code{[.data.frame}. Rather, a 1-row table containing \code{NA} for all columns is returned.
 
   character is matched to the first column of \code{x}'s key.
 

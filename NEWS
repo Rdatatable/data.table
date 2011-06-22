@@ -36,6 +36,16 @@ BUG FIXES
             DT[,sum(x),by=key(DT)) where nrow(DT)==1.
         Many thanks to Andreas Borg for report, proposed
         fix and tests.
+        
+        
+USER-VISIBLE CHANGES
+
+    o   ?data.table now documents that logical i is not quite
+        the same as i in [.data.frame. NA are treated as FALSE,
+        and DT[NA] returns 1 row of NA, unlike [.data.frame.
+        Three points have been added to FAQ 2.17. Thanks to
+        Johann Hibschman for highlighting.
+
 
 
         *********************************************
