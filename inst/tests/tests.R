@@ -721,6 +721,14 @@ test(279, DT[x==y,sum(z)], 7L)
 # 5 4 4 5
 
 
+# Test that 0 length columns are expanded with NA to match non-0 length columns, bug fix #1431
+DT = data.table(pool = c(1L, 1L, 2L), bal = c(10, 20, 30))
+test(280, DT[, list(bal[0], bal[1]), by=pool], data.table(pool=1:2, V1=NA_real_, V2=c(10,30)))
+test(281, DT[, list(bal[1], bal[0]), by=pool], data.table(pool=1:2, V1=c(10,30), V2=NA_real_))
+# Test 2nd group too (the 1st is special) ...
+test(282, DT[, list(bal[ifelse(pool==1,1,0)], bal[1]), by=pool], data.table(pool=1:2, V1=c(10,NA), V2=c(10,30)))
+
+
 ## See test-* for more tests
 
 ##########################

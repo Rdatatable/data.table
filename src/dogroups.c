@@ -111,7 +111,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
             thislen = LENGTH(VECTOR_ELT(testj,j));        
             if (thislen == 0) {
                 // replace the 0-length vector with a 1-length NA to be recycled below to fit.
-                switch (TYPEOF(VECTOR_ELT(testj, i))) {
+                switch (TYPEOF(VECTOR_ELT(testj, j))) {
                 case LGLSXP :
                 case INTSXP :
                     SET_VECTOR_ELT(testj,j,naint);
@@ -228,7 +228,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
                 thislen = LENGTH(VECTOR_ELT(jval,j));        
                 if (thislen == 0) {
                     // replace the 0-length vector with a 1-length NA to be recycled below to fit.
-                    switch (TYPEOF(VECTOR_ELT(jval, i))) {
+                    switch (TYPEOF(VECTOR_ELT(jval, j))) {
                     case LGLSXP :
                     case INTSXP :
                         SET_VECTOR_ELT(jval,j,naint);

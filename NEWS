@@ -24,10 +24,8 @@ NEW FEATURES
         may also be used by name and they are now length 1, too.
         This implements FR#1313.
         For example :
-            DT[,sum(x)*.BY[[1]],by=y]
             DT[,sum(x)*.BY[[1]],by=eval(byexp)]
-            DT[,sapply(.SD,sum)*y,by=y]
-            DT[,sapply(.SD,sum)*.BY[[2]],by=list(y,z)]
+            DT[,sum(x)*LOOKUP[J(y),z],by=y]
 
 BUG FIXES
 
@@ -37,6 +35,11 @@ BUG FIXES
         Many thanks to Andreas Borg for report, proposed
         fix and tests.
         
+   o    Zero length columns in j no longer cause a crash in
+        some circumstances. Empty columns are filled with NA
+        to match the length of the longest column in j.
+        Thanks to Johann Hibschman for bug report #1431.
+                
         
 USER-VISIBLE CHANGES
 
