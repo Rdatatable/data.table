@@ -224,18 +224,15 @@ DT[,{
 },by=x]
 @
 
-
 \subsection{Inside each group, why is the group variable a long vector containing the same value repeated?}
-In the previous FAQ, x was \code{"a"} repeated twice in the first group, and \code{"b"}
-repeated three times in the second group. When you group, think of the
-data being split up. Sometimes we want to use the value of the group in
-the expression, though. In that case, we just use the first value.
+Please upgrade to v1.6.1 or later. This is no longer true. In the previous FAQ, \code{x} is a grouping variable
+and now has length 1 for efficiency and convenience. Prior to v1.6.1 \code{x} repeated the group value to match
+the number of rows in that group. There is no longer any difference between the following two statements.
 <<>>=
-DT[,list(g=1,h=2,i=3,j=4,repeatgroupname=x,sum(y)),by=x]     # not intended
-DT[,list(g=1,h=2,i=3,j=4,repeatgroupname=x[1],sum(y)),by=x]  # intended
+DT[,list(g=1,h=2,i=3,j=4,repeatgroupname=x,sum(y)),by=x]     
+DT[,list(g=1,h=2,i=3,j=4,repeatgroupname=x[1],sum(y)),by=x]
 @
-In the first attempt, the aggregate \code{sum(y)} was recycled to match the length of \code{x}.  Recycling can be useful, but
-wasn't intended here.
+Code written prior to v1.6.1 that uses \code{[1]} will still work, but the \code{[1]} is no longer necessary.
 
 \subsection{Only the first 10 rows are printed, how do I print more?}
 Try \code{print(DT,nrows=Inf)} to print all rows, or set nrows to the number of rows you require.
