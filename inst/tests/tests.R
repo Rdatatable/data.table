@@ -728,6 +728,17 @@ test(281, DT[, list(bal[1], bal[0]), by=pool], data.table(pool=1:2, V1=c(10,30),
 # Test 2nd group too (the 1st is special) ...
 test(282, DT[, list(bal[ifelse(pool==1,1,0)], bal[1]), by=pool], data.table(pool=1:2, V1=c(10,NA), V2=c(10,30)))
 
+# More tests based on Andreas Borg's post of 11 May 2011.
+DT = data.table(x=c(0,0,1,0,1,1), y=c(1,1,0,1,1,1), z=1:6)
+ans = data.table(x=c(0L,1L,1L),y=c(1L,0L,1L),V1=c(1L,1L,2L),V2=c(7L,3L,11L))
+test(283, DT[,list(sum(x[1], y[1]),sum(z)), by=list(x,y)], ans)
+test(284, DT[,list(sum(unlist(.BY)),sum(z)),by=list(x,y)], ans)
+groupCols = c("x", "y")
+test(285, DT[,list(sum(unlist(.BY)),sum(z)),by=groupCols], ans)
+groupExpr = quote(list(x,y))
+test(286, DT[,list(sum(unlist(.BY)),sum(z)),by=groupExpr], ans)
+
+
 
 ## See test-* for more tests
 

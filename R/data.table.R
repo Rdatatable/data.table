@@ -408,7 +408,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             bysubl = as.list(bysub)
         }
         if (mode(bysub) == "character") {
-            bysub = parse(text=paste("list(",bysub,")",sep=""))[[1]]
+            bysub = parse(text=paste("list(",paste(bysub,collapse=","),")",sep=""))[[1]]
             bysubl = as.list(bysub)
         }
         allbyvars = intersect(unlist(sapply(bysubl,all.vars,functions=TRUE)),colnames(x))
@@ -530,7 +530,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     for (ii in ivars) assign(ii, i[[ii]][1], envir=SDenv)
     for (ii in names(SDenv$.BY)) assign(ii, SDenv$.BY[[ii]], envir=SDenv)
     for (ii in xvars) assign(ii, SDenv$.SD[[ii]], envir=SDenv)
-    # browser()
     testj = eval(jsub, SDenv)
     maxn=0
     if (!is.null(testj)) {
