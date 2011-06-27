@@ -18,15 +18,24 @@ NEW FEATURES
         counter :
             DT[,list(z,groupInd<-groupInd+1),by=x]
         Thanks for Andreas Borg for reporting.
-        
+
    o    A new symbol .BY is now available to j, containing 1 row
         of the current 'by' variables, type list. 'by' variables
-        may also be used by name, and are length 1 now too. This
+        may also be used by name, and are now length 1 too. This
         implements FR#1313. FAQ 2.10 has been updated accordingly.
         Some examples :
             DT[,sum(x)*.BY[[1]],by=eval(byexp)]
             DT[,sum(x)*mylookuptable[J(y),z],by=y]
             DT[,list(sum(unlist(.BY)),sum(z)),by=list(x,y%%2)]
+
+   o    i may now be type list, and works the same as when i
+        is type data.table. This saves needing J() in as many
+        situations and may be a little more efficient. One
+        application is using .BY directly in j to join to a
+        relatively small lookup table, once per group, for space
+        and time efficiency. For example :
+            DT[,list(GROUPDATA[.BY]$name,sum(v)),by=grp]
+
 
 BUG FIXES
 
@@ -44,8 +53,9 @@ BUG FIXES
    o    unique.data.table now calls the same internal code
         (in C) that grouping calls. This fixes a bug when
         unique is called directly by user, and, NA exist
-        in the key. Thanks to Damian Betebenner for bug
-        report. unique should also now be faster.
+        in the key (which might be quite rare). Thanks to
+        Damian Betebenner for bug report. unique should also
+        now be faster.
         
    o    Variables in calling scope can now be used in j when
         i is logical or integer, fixing bug #1421.

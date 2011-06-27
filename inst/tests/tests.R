@@ -748,6 +748,15 @@ DT = data.table(A=c("a","b","b"),B=c(4,5,NA))
 myvar = 6
 test(288, DT[A=="b",B*myvar], c(30,NA))
 
+# Test new feature in 1.6.1 that i can be plain list (such as .BY)
+DT = data.table(grp=c("a","a","a","a","b","b","b"),v=1:7)
+mysinglelookup = data.table(grp=c("a","b"),s=c(42,84),grpname=c("California","New York"),key="grp")
+key(mysinglelookup) = "grp"
+test(289, DT[,sum(v*mysinglelookup[.BY]$s),by=grp], data.table(grp=c("a","b"),V1=c(420,1512)))
+# In v1.6.2 we will change so that single name j returns a vector, regardless of grouping
+test(290, DT[,list(mysinglelookup[.BY]$grpname,sum(v)),by=grp], data.table(grp=c("a","b"),V1=c("California","New York"),V2=c(10L,18L)))
+
+
 
 ## See test-* for more tests
 
