@@ -36,9 +36,9 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   \item{x}{ A \code{data.table}.
 
 }
-  \item{i}{ Integer, logical or character vectors, expression of column names, or \code{data.table}.
+  \item{i}{ Integer, logical or character vector, expression of column names, or \code{data.table}.
 
-  integer and logical vectors work the same way they do in \code{\link{[.data.frame}}. Other than \code{NA}s in logical \code{i} are treated as \code{FALSE}, and a single \code{NA} logical is not recycled to match the number of rows, as it is in \code{[.data.frame}. Rather, a 1-row table containing \code{NA} for all columns is returned.
+  integer and logical vectors work the same way they do in \code{\link{[.data.frame}}. Other than \code{NA}s in logical \code{i} are treated as \code{FALSE}, and a single \code{NA} logical is not recycled to match the number of rows, as it is in \code{[.data.frame}.
 
   character is matched to the first column of \code{x}'s key.
 
@@ -49,6 +49,8 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   Advanced: When \code{i} is an expression of column names that evaluates to \code{data.table}, a join is performed. We call this a \emph{self join}.\cr\cr
 
   Advanced: When \code{i} is a single variable name, it is not considered an expression of column names, and is instead evaluated in calling scope.
+  
+  Advanced: When \code{i} is a regular \code{list} (such as \code{.BY}), it is automatically converted to \code{data.table}.
 }
   \item{j}{ \code{list()} of expressions of column names, an expression or function call that evaluates to \code{list} (including \code{data.frame} and \code{data.table} which are \code{list}s, too), or (when \code{with=FALSE}) same as \code{j} in \code{[.data.frame}.
 
@@ -61,9 +63,11 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 
   When \code{by} contains the first \code{n} columns of \code{x}'s key, we call this a \emph{keyed by}. In a keyed by the groups appear contiguously in RAM; memory is copied in bulk internally and this is faster. When the groups are not contiguous in the table we call it an \emph{ad hoc by}.
 
-  Advanced: Agreggation for a subset of known groups is particularly efficient when passing those groups in \code{i}. When \code{i} is a \code{data.table}, \code{DT[i,j]} evaluates \code{j} for each row of \code{i}. We call this \emph{by without by} or \emph{grouping by i}. Hence the self join \code{DT[data.table(unique(colA)),j]} is identical to \code{DT[,j,by=colA]}.
+  Advanced: Aggregation for a subset of known groups is particularly efficient when passing those groups in \code{i}. When \code{i} is a \code{data.table}, \code{DT[i,j]} evaluates \code{j} for each row of \code{i}. We call this \emph{by without by} or \emph{grouping by i}. Hence the self join \code{DT[data.table(unique(colA)),j]} is identical to \code{DT[,j,by=colA]}.
 
   Advanced: An object \code{.SD} may be used in the \code{j} expression. \code{.SD} is a \code{data.table} containing the subset of \code{x}'s data for each group, excluding the group column(s). \code{.SD} can be used when grouping by \code{i}, when grouping by \code{by}, keyed by, and ad hoc by.
+
+  Advanced: An object \code{.BY} may be used in the \code{j} expression. \code{.BY} is a \code{list} containing a length 1 vector for each item in \code{by}. This can be useful when \code{by} is not known in advance.
 
   Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, it's calling frame, and so on in the usual way up to and including the global environment.\cr\cr
 
@@ -89,7 +93,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   \item{bysameorder}{ Advanced. \code{TRUE} tells \code{[.data.table} that the expressions in \code{by} are an order preserving map of \code{x}, allowing some efficiency gains. In most situations \code{bysameorder} is set to \code{TRUE} internally and there is no need to use this option. We hope to make this feature fully automatic in a future version and remove this argument.
 
 }
-  \item{verbose}{ \code{TRUE} turns on status and information mesages to the console. Turn this on by default using \code{options(datatable.verbose=TRUE)}. The quantity and types of verbosity may be expanded in future.
+  \item{verbose}{ \code{TRUE} turns on status and information messages to the console. Turn this on by default using \code{options(datatable.verbose=TRUE)}. The quantity and types of verbosity may be expanded in future.
 
 }  
   \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \code{vignette("datatable-faq")}.
@@ -141,7 +145,7 @@ User reviews: \url{http://crantastic.org/packages/data-table}\cr
 \url{http://en.wikipedia.org/wiki/Binary_search}\cr
 \url{http://en.wikipedia.org/wiki/Radix_sort}             
 }
-\note{ If \code{keep.rownames} or \code{check.names} are suppplied they must be written in full because \R does not allow partial argument names after \code{\dots}. For example \code{data.table(DF,keep=TRUE)} will create a
+\note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after \code{\dots}. For example \code{data.table(DF,keep=TRUE)} will create a
 column called \code{"keep"} containing \code{TRUE} and this is correct behaviour; \code{data.table(DF,keep.rownames=TRUE)} was intended.
 }
 \seealso{ \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}}
