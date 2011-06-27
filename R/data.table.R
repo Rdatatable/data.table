@@ -369,8 +369,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (is.expression(jsub)) jsub = jsub[[1]]
     }
     if ((missing(by) && !bywithoutby) || nrow(x)<1) {
-        if (!identical(irows,TRUE))
-            x = x[irows,all.vars(jsub),with=FALSE]
+        if (!identical(irows,TRUE)) {
+            jvars = intersect(all.vars(jsub,TRUE),colnames(x))
+            x = x[irows,jvars,with=FALSE]
+        }
         if (mode(jsub)!="name" && as.character(jsub[[1]]) == "list") {
             jdep = deparse(jsub)
             jdep = gsub("^list","data.table",jdep)   # we need data.table here because i) it grabs the column names from objects and ii) it does the vector expansion

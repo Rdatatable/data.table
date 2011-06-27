@@ -42,12 +42,14 @@ BUG FIXES
         Thanks to Johann Hibschman for bug report #1431.
         
    o    unique.data.table now calls the same internal code
-        (in C) that grouping calls. This fixes a bug with
-        NA in keys when unique is called directly and the key
-        contains NA (which may be quite rare). Thanks to
-        Damian Betebenner for bug report. unique should also
-        now be faster.
-                
+        (in C) that grouping calls. This fixes a bug when
+        unique is called directly by user, and, NA exist
+        in the key. Thanks to Damian Betebenner for bug
+        report. unique should also now be faster.
+        
+   o    Variables in calling scope can now be used in j when
+        i is logical or integer, fixing bug #1421.
+
         
 USER-VISIBLE CHANGES
 

@@ -743,6 +743,10 @@ DT = data.table(X=c(NA,1,2,3), Y=c(NA,2,1,3))
 key(DT)=c("X","Y")
 test(287, unique(DT), DT)
 
+# Bug fix #1421: using vars in calling scope in j when i is logical or integer.
+DT = data.table(A=c("a","b","b"),B=c(4,5,NA))
+myvar = 6
+test(288, DT[A=="b",B*myvar], c(30,NA))
 
 
 ## See test-* for more tests
