@@ -426,7 +426,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 names(byval) = as.character(bysuborig)
             }
         }
-        if (!is.list(byval)) stop("by must evaluate to vector or list of vectors")
+        if (!is.list(byval)) stop("by must evaluate to vector or list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
         for (jj in seq_len(length(byval))) {
             if (is.character(byval[[jj]])) {
                 byval[[jj]] = factor(byval[[jj]])

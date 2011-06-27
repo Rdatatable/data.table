@@ -738,6 +738,11 @@ test(285, DT[,list(sum(unlist(.BY)),sum(z)),by=groupCols], ans)
 groupExpr = quote(list(x,y))
 test(286, DT[,list(sum(unlist(.BY)),sum(z)),by=groupExpr], ans)
 
+# Bug fix from Damian B on 25 June 2011 :
+DT = data.table(X=c(NA,1,2,3), Y=c(NA,2,1,3))
+key(DT)=c("X","Y")
+test(287, unique(DT), DT)
+
 
 
 ## See test-* for more tests

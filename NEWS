@@ -40,6 +40,13 @@ BUG FIXES
         some circumstances. Empty columns are filled with NA
         to match the length of the longest column in j.
         Thanks to Johann Hibschman for bug report #1431.
+        
+   o    unique.data.table now calls the same internal code
+        (in C) that grouping calls. This fixes a bug with
+        NA in keys when unique is called directly and the key
+        contains NA (which may be quite rare). Thanks to
+        Damian Betebenner for bug report. unique should also
+        now be faster.
                 
         
 USER-VISIBLE CHANGES

@@ -4,16 +4,21 @@ duplicated.data.table <- function(x, ...) {
     if (!cedta()) return(NextMethod("duplicated"))
     keys <- attr(x, "sorted")
     if (is.null(keys)) stop("data table must have keys")
-    res <- c(FALSE, rep(TRUE, nrow(x) - 1))
-    idx <- 2:nrow(x)
-    for (key in keys)
-        res[idx] <- res[idx] & !diff(unclass(x[[key]]))
+    res <- rep(TRUE, nrow(x))
+    res[duplist(x[,key(x),with=FALSE])] = FALSE
     res
 }
 
 unique.data.table <- function(x, ...) {
     if (!cedta()) return(NextMethod("unique"))
-    x[!duplicated(x)]
+    # duplist is relatively quick, in C, and copes with NA
+    if (haskey(x)) { 
+        res = x[duplist(x[,key(x),with=FALSE])]
+        attr(res,"sorted") = key(x)
+    } else {
+        res = x[duplist(x)]
+    }
+    res
 }
 
 
