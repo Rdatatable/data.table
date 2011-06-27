@@ -694,7 +694,7 @@ test(272, DT[,sum(z),by=key(DT)]$V1, c(1L,3L,2L))
 
 
 # Tests for .BY and implicit .BY
-# .BY is a single row, and by variables are now, too. FAQ 2.10 has been changed accordingly (TO DO).
+# .BY is a single row, and by variables are now, too. FAQ 2.10 has been changed accordingly.
 DT = data.table(a=1:6,b=1:2)
 test(273, DT[,sum(a)*b,by=b]$V1, c(9L,24L))
 test(274, DT[,sum(a)*.BY[[1]],by=b], data.table(b=1:2,V1=c(9L,24L)))
