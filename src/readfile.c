@@ -23,11 +23,12 @@ SEXP readfile(SEXP fnam)
     c2=PROTECT(allocVector(INTSXP,1000000));
     SET_VECTOR_ELT(ans,0,c1);
     SET_VECTOR_ELT(ans,1,c2);
+    for (i=0;i<64;i++) p[i] = 0;
     p[0] = DATAPTR(c1);
     p[1] = DATAPTR(c2);
     char format[100]="%d,%d\n";
     while (fscanf(f,format, p[0], p[1], p[2], p[3])!=EOF) {
-        // Unused and uninitialized p[2], p[3] (, ..., p[64]
+        // Unused and zero'd p[2], p[3] (, ..., p[64]
         // to be added) is deliberate.
         // It isn't possible in C to construct a vargs
         // and pass it to fscanf in C or C99. A '...' can

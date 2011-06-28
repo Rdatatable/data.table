@@ -17,7 +17,7 @@ int sizesSet=0;
 SEXP setSizes()
 {
     int i;
-    for (0;i++;i<100) sizes[i]=0;
+    for (i=0;i++;i<100) sizes[i]=0;
     // only these types are currently allowed as column types :
     sizes[INTSXP] = sizeof(int);     // integer and factor
     sizes[LGLSXP] = sizeof(int);     // logical

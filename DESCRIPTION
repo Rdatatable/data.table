@@ -1,7 +1,7 @@
 Package: data.table
-Version: 1.6.2
+Version: 1.6.1
 Title: Extension of data.frame for fast indexing, fast ordered joins and fast grouping.
-Author: M Dowle, T Short, S Lianoglou.
+Author: M Dowle, T Short, S Lianoglou
 Maintainer: M Dowle <datatable-help@lists.r-forge.r-project.org>
 Depends: R (>= 2.10.0)
 Imports: methods

@@ -10,7 +10,7 @@ read = function(fnam="test.csv",primary=",") {   #,secondary=" ")
 
 if (FALSE) {
 # test speedup so far
-n=1e6
+n=1e7
 test = data.table(a=sample(1:1000,n,replace=TRUE), b=sample(1:1000,n,replace=TRUE))
 write.table(test,"test.csv",sep=",",row.names=FALSE,col.names=FALSE)
 
@@ -20,10 +20,10 @@ identical(yy$V1,xx$V1)  # TRUE
 identical(yy$V2,xx$V2)  # TRUE
 
 # with n=1e6 I got :
-#> system.time(xx <- read.csv("out.csv",header=FALSE))
+#> system.time(xx <- read.csv("test.csv",header=FALSE))
 #   user  system elapsed 
 #  5.388   0.092   5.486 
-#> system.time(yy <- read("out.csv"))
+#> system.time(yy <- read("test.csv"))
 #   user  system elapsed 
 #  1.276   0.052   1.329    
 #
