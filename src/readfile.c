@@ -15,7 +15,7 @@ SEXP readfile(SEXP fnam)
 {
     SEXP c1,c2,ans;
     void *p[64];
-    int i, res, nrow=0;
+    int i, nrow=0;
     FILE *f=fopen(CHAR(STRING_ELT(fnam,0)),"r");
     if (f == NULL) error("file not found");
     ans=PROTECT(allocVector(VECSXP,2));  // 2 column data.table, first steps
