@@ -26,7 +26,7 @@ NEW FEATURES
         from group to group; e.g., incrementing a group
         counter :
             DT[,list(z,groupInd<-groupInd+1),by=x]
-        Thanks for Andreas Borg for reporting.
+        Thanks to Andreas Borg for reporting.
 
    o    A new symbol .BY is now available to j, containing 1 row
         of the current 'by' variables, type list. 'by' variables
@@ -67,7 +67,8 @@ BUG FIXES
         now be faster.
         
    o    Variables in calling scope can now be used in j when
-        i is logical or integer, fixing bug #1421.
+        i is logical or integer, fixing bug #1421. Thanks
+        to Alexander Peterhansl for reporting.
 
         
 USER-VISIBLE CHANGES
