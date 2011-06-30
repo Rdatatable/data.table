@@ -10,8 +10,14 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
         
-        
+NEW FEATURES
 
+   o    setkey no longer copies the whole table and should be
+        faster for large tables. Each column is reordered by reference
+        (in C) using one column of working memory, FR#1006. User
+        defined attributes on the original table are now also
+        retained (thanks to Thell Fowler for reporting).
+        
 
         *********************************************
         **                                         **

@@ -14,7 +14,7 @@ int sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
 
 static SEXP growVector(SEXP x, R_len_t newlen, int size);
 int sizesSet=0;
-SEXP setSizes()
+void setSizes()
 {
     int i;
     for (i=0;i++;i<100) sizes[i]=0;
@@ -25,7 +25,6 @@ SEXP setSizes()
     sizes[STRSXP] = sizeof(SEXP);    // character
     sizes[VECSXP] = sizeof(SEXP *);  // a column itself can be a list()
     sizesSet=1;
-    return(R_NilValue);
 }
 #define SIZEOF(x) sizes[TYPEOF(x)]
 

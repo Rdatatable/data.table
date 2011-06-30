@@ -1,4 +1,4 @@
-setkey = function(x, ..., loc=parent.frame())
+setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbose",FALSE))
 {
     # sorts table by the columns, and sets the key to be those columns
     # example of use:   setkey(tbl,colA,colC,colB)
@@ -24,15 +24,18 @@ setkey = function(x, ..., loc=parent.frame())
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
+    copied = FALSE   # in future we hope to be able to setkeys on any type, this goes away, and saves more potential copies
     for (i in cols) {
         if (is.character(x[[i]])) {
             x[[i]] = factor(x[[i]])
+            copied=TRUE
             next
         }
         if (typeof(x[[i]]) == "double") {
             toint = as.integer(x[[i]])
             if (identical(all.equal(x[[i]],toint),TRUE)) {
                 x[[i]] = toint
+                copied=TRUE
                 next
             }
             stop("Column '",i,"' cannot be auto converted to integer without losing information.")
@@ -44,16 +47,24 @@ setkey = function(x, ..., loc=parent.frame())
                 r = rank(l)
                 l[r] = l
                 x[[i]] = structure(r[as.integer(x[[i]])], levels=l, class="factor")
+                copied=TRUE
             }
             next
         }
         if (!typeof(x[[i]]) %in% c("integer","logical")) stop("Column '",i,"' is type '",typeof(x[[i]]),"' which is not accepted by setkey.")
     }
+    if (copied) {
+        if (verbose) cat("setkey changed the type of a column, incurring a copy\n")
+        assign(name,x,envir=loc)
+        x = get(name,envir=loc)  # so the .Call("reorder" changes by reference a few lines below.
+    }
     o = fastorder(x, cols)
     # We put NAs first because NA is internally a very large negative number. This is relied on in the C binary search.
-    ans = x[o]   # TO DO: implement column by column re-order here, so only memory for one column is required, rather than copy of whole table.
-    attr(ans,"sorted") = cols
-    assign(name,ans,envir=loc)
+    .Call("reorder",x,o,cols)
+    # Was :
+    # ans = x[o]   # copy whole table
+    # attr(x,"sorted") <<- cols  # done inside reorder by reference
+    # assign(name,ans,envir=loc)
     invisible()
 }
 
