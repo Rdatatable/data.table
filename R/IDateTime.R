@@ -21,7 +21,6 @@ as.Date.IDate <- function(x, ...) {
 mean.IDate <-
 cut.IDate <-
 seq.IDate <-
-mean.IDate <-
 c.IDate <-
 rep.IDate <-
 split.IDate <-
