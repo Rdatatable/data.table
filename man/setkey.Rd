@@ -7,7 +7,7 @@
   Sorts a data.table and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always.
 }
 \usage{
-setkey(x, ..., loc=parent.frame())
+setkey(x, ..., loc=parent.frame(),verbose=getOption("datatable.verbose",FALSE))
 key(x)
 key(x) <- value
 }
@@ -16,6 +16,7 @@ key(x) <- value
   \item{\dots}{ The columns to sort by. Do not quote the column names. If \code{\dots} is missing all the columns are used. }
   \item{value}{ A character vector of column names. }
   \item{loc}{ The \code{data.table} must already exist in this frame and is sorted by reference in this frame. \code{loc=.GlobalEnv} is often useful within functions. }
+  \item{verbose}{ Output status and information. }
 }
 \details{
   The sort is attempted with the very fast radix method in
