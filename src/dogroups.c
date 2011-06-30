@@ -31,7 +31,7 @@ void setSizes()
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval, SEXP itable, SEXP icols, SEXP iSD, SEXP nomatchNA, SEXP verbose)
 {
     R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0, newlen, icol, size;
-    SEXP names, inames, bynames, ans, jval, naint, nareal, SD, BY;
+    SEXP names, inames, bynames, ans, jval, naint, nareal, SD, BY, N;
     if (!sizesSet) setSizes();
     if (TYPEOF(order) != INTSXP) error("order not integer");
     if (TYPEOF(starts) != INTSXP) error("starts not integer");
@@ -43,6 +43,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     nbyval = length(byval);
     SD = findVar(install(".SD"), env);
     BY = findVar(install(".BY"), env);
+    N = findVar(install(".N"), env);
     
     names = getAttrib(SD, R_NamesSymbol);
     for(i = 0; i < length(SD); i++) {
@@ -155,6 +156,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     
     for(i = 1; i < ngrp; i++) {  // 2nd group onwards
         thislen = INTEGER(lens)[i];
+        INTEGER(N)[0] = thislen;
         for (j=0; j<length(iSD); j++) {
             size = SIZEOF(VECTOR_ELT(iSD,j));
             memcpy((char *)DATAPTR(VECTOR_ELT(iSD,j)),

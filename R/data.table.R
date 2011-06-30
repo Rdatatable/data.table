@@ -529,7 +529,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     }
     SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
     SDenv$.SD = x[itestj, xvars, with=FALSE]
-    SDenv$.BY = lapply(byval,"[",1)  # byval is list() not data.table  
+    SDenv$.BY = lapply(byval,"[",1)  # byval is list() not data.table
+    SDenv$.N = as.integer(len__[1])
     for (ii in ivars) assign(ii, i[[ii]][1], envir=SDenv)
     for (ii in names(SDenv$.BY)) assign(ii, SDenv$.BY[[ii]], envir=SDenv)
     for (ii in xvars) assign(ii, SDenv$.SD[[ii]], envir=SDenv)

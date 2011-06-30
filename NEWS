@@ -9,7 +9,7 @@ This NEWS file summarises the main changes.
         **   CHANGES IN DATA.TABLE VERSION 1.6.2   **
         **                                         **
         *********************************************
-        
+
 NEW FEATURES
 
    o    setkey no longer copies the whole table and should be
@@ -17,6 +17,11 @@ NEW FEATURES
         (in C) using one column of working memory, FR#1006. User
         defined attributes on the original table are now also
         retained (thanks to Thell Fowler for reporting).
+        
+   o    A new symbol .N is now available to j, containing the
+        number of rows in the group. This may be useful when
+        the column names are not known in advance, for
+        convenience generally, and for efficiency.
         
 
         *********************************************

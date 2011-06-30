@@ -65,9 +65,10 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 
   Advanced: Aggregation for a subset of known groups is particularly efficient when passing those groups in \code{i}. When \code{i} is a \code{data.table}, \code{DT[i,j]} evaluates \code{j} for each row of \code{i}. We call this \emph{by without by} or \emph{grouping by i}. Hence the self join \code{DT[data.table(unique(colA)),j]} is identical to \code{DT[,j,by=colA]}.
 
-  Advanced: An object \code{.SD} may be used in the \code{j} expression. \code{.SD} is a \code{data.table} containing the subset of \code{x}'s data for each group, excluding the group column(s). \code{.SD} can be used when grouping by \code{i}, when grouping by \code{by}, keyed by, and ad hoc by.
-
-  Advanced: An object \code{.BY} may be used in the \code{j} expression. \code{.BY} is a \code{list} containing a length 1 vector for each item in \code{by}. This can be useful when \code{by} is not known in advance.
+  Advanced: Objects \code{.SD}, \code{.BY} and \code{.N} may be used in the \code{j} expression.
+  \code{.SD} is a \code{data.table} containing the subset of \code{x}'s data for each group, excluding the group column(s). It can be used when grouping by \code{i}, when grouping by \code{by}, keyed by, and ad hoc by.
+  \code{.BY} is a \code{list} containing a length 1 vector for each item in \code{by}. This can be useful when \code{by} is not known in advance.
+  \code{.N} is an integer, length 1, containing the number of rows in the group. This may be useful when the column names are not known in advance, and for convenience generally.
 
   Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, it's calling frame, and so on in the usual way up to and including the global environment.\cr\cr
 
