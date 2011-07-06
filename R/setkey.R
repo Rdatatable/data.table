@@ -17,7 +17,6 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
     }
     if (identical(key(x),cols)) return(invisible()) # table is already key'd by those columns
     if (!is.data.table(x)) stop("first argument must be a data.table")
-    if (any(sapply(x,is.ff))) stop("joining to a table with ff columns is not yet implemented")
     if (!length(cols)) {
         cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
     } else {
