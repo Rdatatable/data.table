@@ -15,7 +15,6 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
         name = deparse(substitute(x))
         cols = getdots()
     }
-    if (identical(key(x),cols)) return(invisible()) # table is already key'd by those columns
     if (!is.data.table(x)) stop("first argument must be a data.table")
     if (!length(cols)) {
         cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
@@ -23,6 +22,7 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
+    if (identical(key(x),cols)) return(invisible()) # table is already key'd by those columns
     copied = FALSE   # in future we hope to be able to setkeys on any type, this goes away, and saves more potential copies
     for (i in cols) {
         if (is.character(x[[i]])) {
