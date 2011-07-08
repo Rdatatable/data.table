@@ -11,6 +11,12 @@ This NEWS file summarises the main changes.
         *********************************************
 
 
+USER-VISIBLE CHANGES
+
+    o   The startup banner checks to see if a new version
+        is available and suggests upgrading if there is.
+        Suppressable with suppressPackageStartupMessages.
+
 
         *********************************************
         **                                         **
