@@ -181,7 +181,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 }
 
 
-"[.data.table" = function (x, i, j, by=NULL, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, bysameorder=FALSE, verbose=getOption("datatable.verbose",FALSE), drop=NULL)
+"[.data.table" = function (x, i, j, by=NULL, with=TRUE, within=getOption("datatable.within",TRUE), nomatch=NA, mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, bysameorder=FALSE, verbose=getOption("datatable.verbose",FALSE), drop=NULL)
 {
     # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
     if (!cedta()) {
@@ -358,13 +358,25 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         attr(ans,"row.names") = .set_row_names(nrow(ans))
         return(ans)
     }
+    jsub = substitute(j)
+    if (is.null(jsub)) return(NULL)
+    jsubl = as.list(jsub)
+    if (within && is.name(jsubl[[1]]) && as.character(jsubl[[1]])=="<-") {
+        # cat("New 'within' syntax is highly experimental. You have been warned!\n")
+        j = as.character(jsubl[[2]])
+        keycol = match(j,key(x))
+        m = match(j,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
+        if (!is.na(m)) j=m
+        # Can also add (and remove) columns via within (in future by setting RHS to NULL)
+        if (identical(irows,TRUE)) irows=as.integer(NULL)
+        else irows=as.integer(irows)
+        return(invisible(.Call("assign",x,irows,j,jsubl[[3]],keycol,PACKAGE="data.table")))
+        # Returning invisible is to allow compound queries. Don't need to return anything, though (changed by reference)
+    }
     if (!missing(by) && !missing(i)) {
         x = x[irows]
         # TO DO: efficiency gain by taking only the columns of x that j and by need.
     }
-    jsub = substitute(j)
-    if (is.null(jsub)) return(NULL)
-    jsubl = as.list(jsub)
     if (identical(jsubl[[1]],quote(eval))) {
         jsub = eval(jsubl[[2]],parent.frame())
         if (is.expression(jsub)) jsub = jsub[[1]]
@@ -739,30 +751,48 @@ tail.data.table = function(x, n=6, ...) {
 }
 
 "[<-.data.table" = function (x, i, j, value) {
-    if (!cedta()) return(`[<-.data.frame`(x, i, j, value))
-    if (!missing(i)) { # get i based on data.table-style indexing
-        i <- x[i, which=TRUE, mult="all"]
-    }
-    res <- `[<-.data.frame`(x, i, j, value)
-    keycol <- match(key(x), names(x))
-    if (missing(j)) j <- seq_along(x)
+    if (!cedta() || missing(j)) return(`[<-.data.frame`(x, i, j, value))
+    if (!missing(i)) {
+        if (is.atomic(i) && is.numeric(i)) {
+            i=as.integer(i)
+        } else {
+            # get i based on data.table-style indexing  
+            i = x[i, which=TRUE, mult="all"]
+        }
+    } else i = as.integer(NULL)   # meaning (to C code) all rows, without allocating 1:nrow(x) vector
+    if (!is.atomic(j)) stop("j must be atomic vector, see ?is.atomic")
+    if (any(is.na(j))) stop("NA in j")
     if (is.character(j)) {
-        jseq <- match(j, names(x))
-    } else if (is.logical(j) || min(j) < 0L) 
-        jseq <- seq_along(x)[j]
-    else {
-        jseq <- j
+        keycol = any(j %in% key(x))
+        m = match(j,names(x))
+        if (any(is.na(m))) {
+            if (!all(is.na(m))) stop("Some columns exist in this data.table, some don't. Can't mix.")
+        } else {
+            j=m    # signal to .Call assign (via j's type) that it's assignment to existing column(s), not adding
+        }
+    } else {
+        if (!is.numeric(j)) stop("j must be vector of column name or positions")
+        if (j>ncol(x)) stop("Attempt to assign to column position greater than ncol(x). Create the column by name, instead. This logic intends to catch most likely user errors.")
+        keycol = j %in% match(key(x),names(x))
+        j = as.integer(j)  # for convenience e.g. to convert 1 to 1L
     }
-    if (any( jseq %in% keycol ))
-        key(res) <- NULL
-    res
+    if (is.integer(j[1]) && is.character(value) && length(value)<nrow(x) && is.factor(x[[j[1]]])) {
+        # kludge. Doesn't cope with single character on RHS, and multiple columns of varying types on LHS.
+        value = match(value,levels(x[[j[1]]]))
+        if (any(is.na(value))) stop("Some or all RHS not present in factor column levels")
+        # The length(value)<nrow(x) is to allow coercion of factor columns to character, but we'll
+        # do away with factor columns (by default) soon anyway
+    }
+    .Call("assign",x,i,j,value,keycol,PACKAGE="data.table")
+    # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
+    # or uses data.table 'within' syntax; i.e. DT[i,j<-value]
+    # but, there is one copy by R in [<- dispatch to `*tmp*`; i.e. DT[i,j]<-value
+    # (IIUC, and, as of R 2.13.0)
 }
 
 "$<-.data.table" = function (x, name, value) {
-    res <- `$<-.data.frame`(x, name, value)
-    if (any(name %in% key(x)))
-        key(res) <- NULL
-    res
+    if (!cedta()) return(`$<-.data.frame`(x, name, value))
+    `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
 
 cbind.data.table = function(...) {
@@ -842,18 +872,18 @@ within.data.table <- function (data, expr, keep.key = FALSE, ...) # basically wi
 {
     if (!cedta()) return(NextMethod())
     parent <- parent.frame()
-    e <- evalq(environment(), data, parent)
+    e <- evalq(new.env(), data, parent) # new env inside data that sees column names
     eval(substitute(expr), e)
     l <- as.list(e)
-    l <- l[!sapply(l, is.null)]
-    nD <- length(del <- setdiff(names(data), (nl <- names(l))))
-    data[,nl] <- l
-    if (nD)
-        data[,del] <- if (nD == 1)
-            NULL
-        else vector("list", nD)
-    if (!keep.key) attr(data,"sorted") <- NULL
-    data
+    if (length(l)!=1) stop("Can only assign one column at a time currently via within")
+                      # TO DO: allow multiple RHS in assign.c
+                      # TO DO: allow NULL RHS to remove column (again, in assign.c)
+    value = l[[1]]
+    j = names(l)[1]
+    keycol = j %in% key(data)
+    m = match(j,names(data))
+    if (!is.na(m)) j=m
+    .Call("assign",data,i=as.integer(NULL),j,value,keycol,PACKAGE="data.table")
 }
 
 
@@ -861,16 +891,20 @@ transform.data.table <- function (`_data`, ...) # basically transform.data.frame
 {
     if (!cedta()) return(NextMethod())
     e <- eval(substitute(list(...)), `_data`, parent.frame())
+    if (length(e)>1) stop("Only 1 at a time")
     tags <- names(e)
     inx <- match(tags, names(`_data`))
     matched <- !is.na(inx)
     if (any(matched)) {
-        `_data`[,inx[matched]] <- e[matched]
-        `_data` <- data.table(`_data`)
+        j = inx[!is.na(inx)]
+        keycol = j %in% names(`_data`)
+        `_data` = .Call("assign",`_data`,i=as.integer(NULL),j,e[[1]],keycol,PACKAGE="data.table")
     }
-    if (!all(matched))
-        do.call("data.table", c(list(`_data`), e[!matched]))
-    else `_data`
+    if (!all(matched)) {
+        j = tags[is.na(inx)]        
+        `_data` = .Call("assign",`_data`,i=as.integer(NULL),j,e[[1]],keycol=FALSE,PACKAGE="data.table")
+    }
+    `_data`
 }
 
 #subset.data.table <- function (x, subset, select, ...) # not exported or documented, yet

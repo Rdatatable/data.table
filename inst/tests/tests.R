@@ -3,7 +3,7 @@ if (!exists(".devtesting")) {
     require(data.table)   # in dev the package should not be loaded
     require(ggplot2)      # the 2 ggplot tests take so long they get in the way
 }
-
+options(warn=2)
 nfail = ntest = 0
 test = function(num,x,y=NULL) {
     ntest <<- ntest + 1
@@ -32,9 +32,15 @@ test = function(num,x,y=NULL) {
     }
     cat("Test",num,"ran without errors but failed check:\n")
     print(x)
-    if (is.data.table(x)) {cat("Key: ",paste(key(x),collapse=","),"\n")}
+    if (is.data.table(x)) {
+        cat("Key: ",paste(key(x),collapse=","),"\n")
+        cat("Types: ",paste(sapply(x,class),collapse=","),"\n")
+    }
     print(y)
-    if (is.data.table(y)) {cat("Key: ",paste(key(y),collapse=","),"\n")}
+    if (is.data.table(y)) {
+        cat("Key: ",paste(key(y),collapse=","),"\n")
+        cat("Types: ",paste(sapply(y,class),collapse=","),"\n")
+    }
     nfail <<- nfail + 1
 }
 
@@ -242,7 +248,7 @@ test(99, unique(dt), data.table(dt[c(1L, 4L, 5L, 7L, 9L, 10L)], key="A,B"))
 
 # test [<- for column assignment 
 dt1 <- dt2 <- dt
-test(100, {dt1[,"A"] <- 3; dt1}, {dt2$A <- 3; dt2})
+test(100, {dt1[,"A"] <- 3L; dt1}, {dt2$A <- 3L; dt2})
 
 # test transform and within
 test(101, within(dt, {D <- B^2}), transform(dt, D = B^2))
@@ -258,7 +264,7 @@ test(106, all(dt + dt > 1))
 test(107, dt + dt, dt * 2L)
 
 # test a few other generics:
-test(108, dt, data.table(t(t(dt)), key="A,B"))
+test(108, dt, {tt=data.table(t(t(dt)));storage.mode(tt[[2]])="integer";storage.mode(tt[[3]])="integer";tt})
 test(109, all(!is.na(dt)))
 dt2 <- dt
 dt2$A[1] <- NA
@@ -268,10 +274,10 @@ test(112, dt2[2:nrow(dt2),A], na.omit(dt2)$A)
 
 # test [<- assignment:
 dt2[is.na(dt2)] <- 1L
-setkey(dt2, A, B)
 test(113, dt, dt2)
-dt2[, c("A", "B")] <- dt1[, c("A", "B"), with = FALSE]
-test(114, dt1, dt2)
+# want to discourage this going forward (inefficient to create RHS like this)
+# dt2[, c("A", "B")] <- dt1[, c("A", "B"), with = FALSE]
+# test(114, dt1, dt2)
 ## doesn't work, yet:
 ##     dt2[rep(TRUE, nrow(dt)), c("A", "B")] <- dt1[, c("A", "B"), with = FALSE]
 ##     dt2[rep(TRUE, nrow(dt)), c("A")] <- dt1[, c("A"), with = FALSE]
@@ -438,11 +444,11 @@ test(175, DT[,C[C-min(C)<5],by=list(A,B)][,V1], c(5,1,2,4,3,5,9,9))
 
 # Tests of data.table sub-assignments: $<-.data.table & [<-.data.table
 DT <- data.table(a = c("A", "Z"), b = 1:10, key = "a")
-DT[J("A"),2] <- 100
+DT[J("A"),2] <- 100L  # without L generates nice warning :-)
 DT[J("A"),"b"] <- 1:5
-DT[1:3,"b"] <- 33
+DT[1:3,"b"] <- 33L   
 test(176, DT,  data.table(a = rep(c("A", "Z"), each = 5),
-                          b = c(rep(33, 3), 4:5, seq(2, 10, by = 2)),
+                          b = as.integer(c(rep(33, 3), 4:5, seq(2, 10, by = 2))),
                           key = "a"))
 DT[J("A"),"a"] <- "Z"
 test(177, key(DT), NULL )
@@ -767,11 +773,23 @@ DT = data.table(a=c(1,1,1,1,2,2,2),b=c(3,3,3,4,4,4,4))
 test(292, DT[,.N,by=list(a,b)], data.table(a=c(1L,1L,2L),b=c(3L,4L,4L),.N=c(3L,1L,3L)))
 test(293, DT[,list(a+b,.N),by=list(a,b)],  data.table(a=c(1L,1L,2L),b=c(3L,4L,4L),V1=4:6,.N=c(3L,1L,3L)))
 
+# Test that setkey and within syntax really are by reference, even within functions. You
+# really do need to take a copy first, or force(x).
+
+DT = data.table(a=1:3,b=4:6)
+f = function(x){ setkey(x) }
+f(DT)
+test(294,key(DT),c("a","b"))  # The setkey didn't copy to a local variable. Need to copy first to local variable if required.
+
+f = function(x){ x[,a<-42L] }
+f(DT)
+test(295,DT,data.table(a=42L,b=4:6))  # within was by reference (fast) and dropped the key, too, because assigned to key column
 
 
 ## See test-* for more tests
 
 ##########################
+options(warn=0)
 if (nfail > 0) {
     stop(nfail," errors in test.data.table()")
     # important to stop here, so than 'R CMD check' fails

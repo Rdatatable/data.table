@@ -35,11 +35,11 @@ dt <- data.table(a=rep(1:5, 1), b=1:10)
 
 transform(dt, c = a^2)
 
-within(dt, {
-  b <- rev(b)
-  c <- a^2
-  rm(a)
-})
+#within(dt, {
+#  b <- rev(b)
+#  c <- a^2
+#  rm(a)
+#})
 
 # dt[, transform, c = max(b), by="a"]  # like "ave"
 

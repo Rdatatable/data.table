@@ -10,18 +10,61 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+NEW FEATURES
+
+    o   Fast update is now implemented, FR#200.
+        DT[i,j]<-value is now handled by data.table in C rather
+        than falling through to data.frame methods.
+        
+        Thanks to Ivo Welch for raising speed issues on r-devel,
+        to Simon Urbanek for the suggestion, and Luke Tierney and
+        Simon for information on R internals.
+
+        [<- syntax still incurs one working copy of the whole
+        table (as of R 2.13.0) due to R's [<- dispatch mechanism
+        copying to `*tmp*`, so, for ultimate speed and brevity,
+        'within' syntax is now available as follows.
+        
+    o   A new 'within' argument has been added to [.data.table,
+        by default TRUE. It is very similar to the within()
+        function in base R. If an assignment appears in j, it
+        assigns to the column of DT, by reference; e.g.,
+         
+            DT[i,colname<-value]
+        
+        This syntax makes no copies of any part of memory at all.
+        
+        > m = matrix(1,nrow=100000,ncol=100)
+        > DF = as.data.frame(m)
+        > DT = as.data.table(m)
+        > system.time(for (i in 1:1000) DF[1,1] <- 3)
+           user  system elapsed 
+        287.730 323.196 613.453 
+        > system.time(for (i in 1:1000) DT[1,V1 <- 3])
+           user  system elapsed 
+          1.152   0.004   1.161         # 528 times faster
+
+
+        Please note :
+        
+        ********************************************************
+        **  Within syntax is presently highly experimental.   **
+        **              You have been warned!                 **
+        ********************************************************
+
 
 BUG FIXES
 
-    o   `merge`-ing two data.table's with user-defined `suffixes`
-        was getting tripped up when column names in `x` ended in
-        "*.1". This resulted in the `suffixes` parameter being
+    o   merge()ing two data.table's with user-defined `suffixes`
+        was getting tripped up when column names in x ended in
+        '.1'. This resulted in the `suffixes` parameter being
         ignored.
+        
     
 USER-VISIBLE CHANGES
 
     o   The startup banner checks to see if a new version
-        is available and suggests upgrading if there is.
+        is available and if there is, suggests upgrading.
         Suppressable with suppressPackageStartupMessages.
 
 

@@ -15,7 +15,7 @@
 \usage{
 data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 
-\method{[}{data.table}(x, i, j, by=NULL, with=TRUE, nomatch = NA,
+\method{[}{data.table}(x, i, j, by=NULL, with=TRUE, within=getOption("datatable.within",TRUE), nomatch = NA,
   mult = "all", roll = FALSE, rolltolast = FALSE,
   which = FALSE, bysameorder = FALSE,
   verbose=getOption("datatable.verbose",FALSE), drop=NULL)
@@ -75,6 +75,9 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 }
   \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; the column names can be used as variables. When \code{with=FALSE}, \code{j} works as it does in \code{[.data.frame}.
 
+}
+  \item{within}{ When \code{TRUE}, \code{j} may contain assignment statements of the form \code{colname<-value}. These are applied by reference to \code{x}; i.e. modify it in place. This operation is extremely quick as no copies are made. If the column name does not exist, it is created (efficiently). If the value is NULL, that column (if it exists) is removed (efficiently). This option takes it's name from the base function \code{link{within}}. By default \code{TRUE}, unless the global option \code{datatable.within} is set to \code{FALSE}.
+  
 }
   \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}'s key, \code{nomatch=NA} means \code{NA} is returned for \code{x}'s non-join columns for that row of \code{i}. \code{0} means no rows will be returned for that row of \code{i}.
 
