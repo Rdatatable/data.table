@@ -11,6 +11,13 @@ This NEWS file summarises the main changes.
         *********************************************
 
 
+BUG FIXES
+
+    o   `merge`-ing two data.table's with user-defined `suffixes`
+        was getting tripped up when column names in `x` ended in
+        "*.1". This resulted in the `suffixes` parameter being
+        ignored.
+    
 USER-VISIBLE CHANGES
 
     o   The startup banner checks to see if a new version

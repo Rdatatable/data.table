@@ -59,7 +59,7 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
     }
     o = fastorder(x, cols)
     # We put NAs first because NA is internally a very large negative number. This is relied on in the C binary search.
-    .Call("reorder",x,o,cols)
+    .Call("reorder",x,o,cols, PACKAGE="data.table")
     # Was :
     # ans = x[o]   # copy whole table
     # attr(x,"sorted") <<- cols  # done inside reorder by reference

@@ -6,14 +6,14 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             by <- key(x)
         }
     }
-    
+
     ## Try to infer proper value for `by`
     if (is.null(by)) {
         by <- intersect(key(x), key(y))
     }
     if (is.null(by)) {
         by <- key(x)
-    }    
+    }
     if (is.null(by)) {
         stop("Can not match keys in x and y to automatically determine ",
              "appropriate `by` parameter. Please set `by` value explicitly.")
@@ -24,7 +24,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     if (!all(by %in% intersect(colnames(x), colnames(y)))) {
         stop("Elements listed in `by` must be valid column names in x and y")
     }
-    
+
     ## Checks to see that keys on dt are set and are in correct order
     .reset.keys <- function(dt, by) {
         dt.key <- key(dt)
@@ -106,6 +106,16 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     if (!all(suffixes == c("", ".1"))) {
         col.names <- colnames(dt)
         rename.y <- grep("\\.1$", col.names)
+
+        if (length(rename.y) > 0L) {
+            ## It's possible that some columns in `rename.y` are from `x`, if
+            ## the colnames from `x` end in *.1$ as well, so let's remove those
+            ## if they're there.
+            in.x <- which(col.names[rename.y] %in% colnames(x))
+            if (length(in.x) > 0) {
+                rename.y <- rename.y[-in.x]
+            }
+        }
         if (length(rename.y) > 0L) {
             do.rename <- TRUE
             renames <- col.names[rename.y]
@@ -127,9 +137,11 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             if (do.rename) {
                 colnames(dt) <- col.names
             } else {
-                warning("There was a problem re-suffixing the merged data.table. ",
-                        "The merge was succesful, but the default column naming ",
-                        "has been used (ie. suffixes were set to c('', '.1').")
+                warning("There was a problem re-suffixing the merged ",
+                        "data.table. The merge was successful, but the ",
+                        "default column naming has been used [ie. suffixes ",
+                        "were set to c('', '.1')].\nPlease consider filing ",
+                        "a bug report.")
             }
         }
     }
