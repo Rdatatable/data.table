@@ -15,7 +15,7 @@
                 packageStartupMessage("*** Version ",latestv," is released. Please upgrade by typing update.packages() ***")
             }
         },TRUE)
-        setTimeLimit()  # transient=TRUE should mean this isn't necessary, but no harm in calling anyway
+        setTimeLimit()
     }
 }
 
