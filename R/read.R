@@ -1,6 +1,6 @@
 
 read = function(fnam="test.csv",primary=",") {   #,secondary=" ")
-    ans = .Call("readfile",fnam,package="data.table")
+    ans = .Call("readfile",fnam,PACKAGE="data.table")
     nr = length(ans[[1]])
     attr(ans,"row.names") = .set_row_names(nr)
     attr(ans, "class") <- c("data.table","data.frame")
