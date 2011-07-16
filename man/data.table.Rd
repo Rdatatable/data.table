@@ -51,6 +51,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   Advanced: When \code{i} is a single variable name, it is not considered an expression of column names, and is instead evaluated in calling scope.
   
   Advanced: When \code{i} is a regular \code{list} (such as \code{.BY}), it is automatically converted to \code{data.table}.
+
 }
   \item{j}{ \code{list()} of expressions of column names, an expression or function call that evaluates to \code{list} (including \code{data.frame} and \code{data.table} which are \code{list}s, too), or (when \code{with=FALSE}) same as \code{j} in \code{[.data.frame}.
 
@@ -59,7 +60,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 }
   \item{by}{ \code{list()} of expressions of column names, or a single character string containing comma separated column names, or a character vector of column names.
 
-  The \code{list()} of expressions is evaluated within the frame of the data.table (i.e. it sees column names as if they are variables). The data.table is then grouped by the \code{by} and \code{j} is evaluated within the frame of each group. \code{list()} may be omitted when there is just one expression, typically a single unquoted column name.
+  The \code{list()} of expressions is evaluated within the frame of the data.table (i.e. it sees column names as if they are variables). The data.table is then grouped by the \code{by} and \code{j} is evaluated within the frame. The order of the rows within each group is preserved. \code{list()} may be omitted when there is just one expression, typically a single unquoted column name.
 
   When \code{by} contains the first \code{n} columns of \code{x}'s key, we call this a \emph{keyed by}. In a keyed by the groups appear contiguously in RAM; memory is copied in bulk internally and this is faster. When the groups are not contiguous in the table we call it an \emph{ad hoc by}.
 
