@@ -53,12 +53,13 @@ NEW FEATURES
         ********************************************************
         
         
-    o   Grouping now returns results in the same order the groups
-        occur in the table, rather than sorting the groups. As
-        before groups do not have to occur contiguously in the table;
-        the first row of each group determines the ordering of groups.
-        Thanks to Steve Lianoglou for highlighting. The order of the
-        rows within each group, always has, and alway will be preserved.
+    o   Ad hoc grouping now returns results in the same order each group
+        first appears in the table, rather than sorting the groups. As
+        before, groups do not have to occur contiguously in the   
+        table; the first row of each group determines the ordering of  
+        groups. Thanks to Steve Lianoglou for highlighting. The order of
+        the rows within each group, always has, and always will be 
+        preserved.
 
 
 BUG FIXES
