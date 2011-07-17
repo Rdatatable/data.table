@@ -51,6 +51,14 @@ NEW FEATURES
         **  Within syntax is presently highly experimental.   **
         **              You have been warned!                 **
         ********************************************************
+        
+        
+    o   Grouping now returns results in the same order the groups
+        occur in the table, rather than sorting the groups. As
+        before groups do not have to occur contiguously in the table;
+        the first row of each group determines the ordering of groups.
+        Thanks to Steve Lianoglou for highlighting. The order of the
+        rows within each group, always has, and alway will be preserved.
 
 
 BUG FIXES
@@ -60,12 +68,25 @@ BUG FIXES
         '.1'. This resulted in the `suffixes` parameter being
         ignored.
         
+    o   Mistakenly wrapping a j expression inside quotes; e.g.,
+            DT[,list("sum(a),sum(b)"),by=grp]
+        was appearing to work, but with wrong column names. This
+        now returns a character column (the quotes should not
+        be used). Thanks to Joseph Voelkel for reporting. 
+        
     
 USER-VISIBLE CHANGES
 
     o   The startup banner checks to see if a new version
         is available and if there is, suggests upgrading.
         Suppressable with suppressPackageStartupMessages.
+        
+        
+DEPRECATED & DEFUNCT
+
+   o    Use of the DT() alias in j is no longer caught and
+        replaced, and is now fully removed. As warned in NEWS
+        for v1.5.3, v1.4, and FAQs 2.6 and 2.7.
 
 
         *********************************************

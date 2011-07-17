@@ -60,9 +60,9 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 }
   \item{by}{ \code{list()} of expressions of column names, or a single character string containing comma separated column names, or a character vector of column names.
 
-  The \code{list()} of expressions is evaluated within the frame of the data.table (i.e. it sees column names as if they are variables). The data.table is then grouped by the \code{by} and \code{j} is evaluated within the frame. The order of the rows within each group is preserved. \code{list()} may be omitted when there is just one expression, typically a single unquoted column name.
+  The \code{list()} of expressions is evaluated within the frame of the data.table (i.e. it sees column names as if they are variables). The data.table is then grouped by the \code{by} and \code{j} is evaluated within the frame. The order of the rows within each group is preserved, as is the order of the groups. \code{list()} may be omitted when there is just one expression, typically a single unquoted column name.
 
-  When \code{by} contains the first \code{n} columns of \code{x}'s key, we call this a \emph{keyed by}. In a keyed by the groups appear contiguously in RAM; memory is copied in bulk internally and this is faster. When the groups are not contiguous in the table we call it an \emph{ad hoc by}.
+  When \code{by} contains the first \code{n} columns of \code{x}'s key, we call this a \emph{keyed by}. In a keyed by the groups appear contiguously in RAM; memory is copied in bulk internally and this is faster. Otherwise, we call it an \emph{ad hoc by}.
 
   Advanced: Aggregation for a subset of known groups is particularly efficient when passing those groups in \code{i}. When \code{i} is a \code{data.table}, \code{DT[i,j]} evaluates \code{j} for each row of \code{i}. We call this \emph{by without by} or \emph{grouping by i}. Hence the self join \code{DT[data.table(unique(colA)),j]} is identical to \code{DT[,j,by=colA]}.
 

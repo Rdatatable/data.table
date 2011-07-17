@@ -51,7 +51,6 @@ is.ff = function(x) inherits(x, "ff")  # define this in data.table so that we do
 #    if (is.array(x)) nrow(x) else length(x)
 #}
 
-# removed DT alias as j=list() is much faster with new dogroups ... DT = function(...) data.table(...)  # DT is alias for data.table intended for use in j expressions.
 # TO DO: now data.table inherits from data.frame, do we need data.table creation at all?
 
 data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
@@ -387,10 +386,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             x = x[irows,jvars,with=FALSE]
         }
         if (mode(jsub)!="name" && as.character(jsub[[1]]) == "list") {
-            jdep = deparse(jsub)
-            jdep = gsub("^list","data.table",jdep)   # we need data.table here because i) it grabs the column names from objects and ii) it does the vector expansion
-            jsub = parse(text=jdep)[[1]]
-            # TO DO: can we just set  jsub[[1]]=data.table
+            jsub[[1]]=as.name("data.table")
+            # we need data.table here because i) it grabs the column names from objects and ii) it does the vector expansion
         }
         return(eval(jsub, envir=x, enclos=parent.frame()))
     }
@@ -479,15 +476,20 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
         if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}
         if (bysameorder) {
-            f__ = duplist(byval)
+            f__ = duplist(byval)   # find group starts, assumes they are grouped. 
             for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][f__]
+            len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1))
         } else {
             o__ = fastorder(byval)
             f__ = duplist(byval,order=o__)
-            for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][o__[f__]]
+            len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1))
+            firstofeachgroup = o__[f__]
+            origorder = .Internal(radixsort(firstofeachgroup, na.last=FALSE, decreasing=FALSE))
+            f__ = f__[origorder]
+            len__ = len__[origorder]
+            firstofeachgroup = firstofeachgroup[origorder]
+            for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][firstofeachgroup]
         }
-        if (f__[1] != 1) stop("Logical error in grouping. First item of the first group should always be 1.")
-        len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1))
         if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
         # TO DO: allow secondary keys to be stored, then we see if our by matches one, if so use it, and no need to sort again. TO DO: document multiple keys.
     }
@@ -500,7 +502,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             jvnames = deparse(jsub)
             jsub = call("list",jsub)  # this should handle backticked names ok too
         }
-    } else if (as.character(jsub[[1]])[1] %in% c("list","DT")) {
+    } else if (as.character(jsub[[1]])[1] == "list") {
         jsubl = as.list(jsub)
         if (length(jsubl)<2) stop("When j is list() or DT() we expect something inside the brackets")
         jvnames = names(jsubl)[-1]   # check list(a=sum(v),v)
@@ -509,7 +511,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (jvnames[jj-1] == "" && mode(jsubl[[jj]])=="name") jvnames[jj-1] = deparse(jsubl[[jj]])
             # TO DO: if call to a[1] for example, then call it 'a' too
         }
-        if(class(jsubl[[2]])!="{") jsub = parse(text=paste("list(",paste(as.character(jsub)[-1],collapse=","),")",sep=""))[[1]]  # this does two things : i) changes 'DT' to 'list' for backwards compatibility and ii) drops the names from the list so its faster to eval the j for each group
+        names(jsub)=""  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.
     } # else maybe a call to transform or something which returns a list.
     ws = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
     if (".SD" %in% ws) {

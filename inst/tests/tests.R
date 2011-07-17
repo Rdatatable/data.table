@@ -217,12 +217,14 @@ test(80, TESTDT[,colsVar,with=FALSE], data.table(b=c("e","e","f","f","i","i","b"
 
 test(82, TESTDT[,c("a","b")], c("a","b"))
 test(83, TESTDT[,list("a","b")], data.table("a","b"))
+test(83.1, TESTDT[,list("sum(a),sum(b)")], data.table("sum(a),sum(b)"))
+test(83.2, TESTDT[,list("sum(a),sum(b)"),by=a], {tt=data.table(a=c("a","c","d","g"),V1="sum(a),sum(b)",key="a");tt$V1=as.character(tt$V1);tt})
 # test(84, TESTDT[1:2,list(a,b)], list(c("a","c"), c("e","e")))  # should be a data.table
 # test(85, TESTDT[1:2,DT(a,b)], data.table(a=c("a","c"), b=c("e","e")))  #DT now deprecated
 
-test(86, TESTDT[,sum(v),by="b"], data.table(b=c("b","e","f","i"),V1=INT(7,3,7,11)))  # TESTDT is key'd by a,b, so correct that grouping by b should not be key'd in the result by default
-test(87, TESTDT[,DT(MySum=sum(v)),by="b"], data.table(b=c("b","e","f","i"),MySum=INT(7,3,7,11)))
-test(88, TESTDT[,DT(MySum=sum(v),Sq=v*v),by="b"][1:2], data.table(b=c("b","e"),MySum=INT(7,3),Sq=INT(49,1))) # silent repetition of MySum to match the v*v vector
+test(86, TESTDT[,sum(v),by="b"], data.table(b=c("e","f","i","b"),V1=INT(3,7,11,7)))  # TESTDT is key'd by a,b, so correct that grouping by b should not be key'd in the result by default
+test(87, TESTDT[,list(MySum=sum(v)),by="b"], data.table(b=c("e","f","i","b"),MySum=INT(3,7,11,7)))
+test(88, TESTDT[,list(MySum=sum(v),Sq=v*v),by="b"][1:3], data.table(b=c("e","e","f"),MySum=INT(3,3,7),Sq=INT(1,4,9))) # silent repetition of MySum to match the v*v vector
 # Test 89 dropped. Simplify argument no longer exists. by is now fast and always returns a data.table  ... test(89, TESTDT[,sum(v),by="b",simplify=FALSE], list(7L,3L,7L,11L))
 
 # Test 88.5 contributed by Johann Hibschman (for bug fix #1294) :
@@ -238,9 +240,9 @@ test(94, TESTDT[c("i","f"), mult="last", which=TRUE], INT(7,5))
 
 test(95, TESTDT["f",v]$v, 3:4)
 test(96, TESTDT["f",v,mult="all"], data.table(b="f",v=3:4))
-test(97, TESTDT[c("f","i","b"),DT(GroupSum=sum(v)),mult="all"], data.table(b=c("f","i","b"), GroupSum=c(7L,11L,7L)))  # mult="all" is required here since only b is key'd
+test(97, TESTDT[c("f","i","b"),list(GroupSum=sum(v)),mult="all"], data.table(b=c("f","i","b"), GroupSum=c(7L,11L,7L)))  # mult="all" is required here since only b is key'd
 # that line above doesn't create a key on the result so that the order fib is preserved.
-test(98, TESTDT[SJ(c("f","i","b")),DT(GroupSum=sum(v)),mult="all"], data.table(b=c("b","f","i"), GroupSum=c(7L,7L,11L), key="b"))
+test(98, TESTDT[SJ(c("f","i","b")),list(GroupSum=sum(v)),mult="all"], data.table(b=c("b","f","i"), GroupSum=c(7L,7L,11L), key="b"))
 # line above is the way to group, sort by group and setkey on the result by group.
 
 (dt <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B"))
@@ -256,7 +258,7 @@ test(102, within(dt, {A <- B^2}), transform(dt, A = B^2))
 
 # test .SD object
 test(103, dt[, sum(.SD$B), by = "A"], dt[, sum(B), by = "A"])
-test(104, dt[, transform(.SD, D = min(B)), by = "A"], dt[, DT(B,C,D=min(B)), by = "A"])
+test(104, dt[, transform(.SD, D = min(B)), by = "A"], dt[, list(B,C,D=min(B)), by = "A"])
 
 # test numeric and comparison operations on a data table
 test(105, all(dt + dt > dt))
@@ -381,7 +383,7 @@ a = data.table(x=factor(letters[rep(1:5, each =2)], levels=letters[5:1]),
                z=1:10)
 test(152, is.unsorted(levels(a$x)), TRUE)
 test(153, is.unsorted(levels(a$y)), TRUE)
-test(154, a[,sum(z),by=x][1,paste(x,V1)], "e 19")
+test(154, a[,sum(z),by=x][1,paste(x,V1)], "a 3")  # this result seems more correct now that ad hoc by doesn't sort the groups
 before = a[,sum(z),by=y]
 setkey(a,x)
 test(155, is.unsorted(levels(a$x)), FALSE)
@@ -439,8 +441,8 @@ DT <- data.table(
      B=c("x1","x2","x2","x1","x2","x1","x1","x2"),
      C=c(5,2,3,4,9,5,1,9)
      )
-test(174, DT[,C[C-min(C)<3],by=list(A,B)][,V1], c(1,2,4,3,5,9,9))
-test(175, DT[,C[C-min(C)<5],by=list(A,B)][,V1], c(5,1,2,4,3,5,9,9))
+test(174, DT[,C[C-min(C)<3],by=list(A,B)][,V1], c(1,2,3,4,9,9,5))
+test(175, DT[,C[C-min(C)<5],by=list(A,B)][,V1], c(5,1,2,3,4,9,9,5))
 
 # Tests of data.table sub-assignments: $<-.data.table & [<-.data.table
 DT <- data.table(a = c("A", "Z"), b = 1:10, key = "a")
@@ -647,7 +649,7 @@ test(254, DT[,sum(b),by=key(DT)]$V1, c(6L,9L))
 # for for bug #1294 (combining scanning i and by)
 # also see test 88.5 contributed by Johann Hibschman above.
 DT = data.table(a=1:12,b=1:2,c=1:4)
-test(255, DT[a>5,sum(c),by=b]$V1, c(7L,12L))
+test(255, DT[a>5,sum(c),by=b]$V1, c(12L, 7L))
 
 # fix for bug #1301 (all.vars() doesn't appear to find fn in fns[[fn]] usage)
 DT = data.table(a=1:6,b=1:2,c=letters[1:2],d=1:6)
@@ -784,6 +786,12 @@ test(294,key(DT),c("a","b"))  # The setkey didn't copy to a local variable. Need
 f = function(x){ x[,a<-42L] }
 f(DT)
 test(295,DT,data.table(a=42L,b=4:6))  # within was by reference (fast) and dropped the key, too, because assigned to key column
+
+
+# Within syntax adding columns (doesn't assign currently), and removing columns via assigning to NULL
+# Mutiple assignments in j.
+# Update within group needs to go to original, not the .SD (should be ok).
+# Stop data.table converting character to factor by default.
 
 
 ## See test-* for more tests
