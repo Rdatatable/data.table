@@ -787,6 +787,8 @@ f = function(x){ x[,a<-42L] }
 f(DT)
 test(295,DT,data.table(a=42L,b=4:6))  # within was by reference (fast) and dropped the key, too, because assigned to key column
 
+# new feature added 1.6.3, that key can be vector.
+test(296,data.table(a=1:3,b=4:6,key="a,b"),data.table(a=1:3,b=4:6,key=c("a","b")))
 
 # Within syntax adding columns (doesn't assign currently), and removing columns via assigning to NULL
 # Mutiple assignments in j.

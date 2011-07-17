@@ -60,6 +60,10 @@ NEW FEATURES
         groups. Thanks to Steve Lianoglou for highlighting. The order of
         the rows within each group, always has, and always will be 
         preserved.
+        
+    o   The key argument of data.table() now accepts a vector of
+        column names in addition to a single comma separated string
+        of column names. Thanks to Steve Lianoglou for highlighting.
 
 
 BUG FIXES

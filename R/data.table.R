@@ -173,8 +173,11 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     attr(value,"row.names") = .set_row_names(nr)
     attr(value, "class") <- c("data.table","data.frame")
     if (!is.null(key)) {
-      if (!is.character(key) || !length(key)==1) stop("key must be character vector length 1 containing comma seperated column names")
-      eval(parse(text=paste("setkey(value,",paste(key,collapse=","),")",sep="")))
+      if (!is.character(key)) stop("key must be character") 
+      if (length(key)==1)
+          eval(parse(text=paste("setkey(value,",key,")",sep="")))    # e.g. key = "x,y"
+      else
+          key(value) = key     # e.g. key=c("col1","col2")
     }
     value
 }
