@@ -183,7 +183,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 }
 
 
-"[.data.table" = function (x, i, j, by=NULL, with=TRUE, within=getOption("datatable.within",TRUE), nomatch=NA, mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, bysameorder=FALSE, verbose=getOption("datatable.verbose",FALSE), drop=NULL)
+"[.data.table" = function (x, i, j, by=NULL, with=TRUE, within=getOption("datatable.within",TRUE), nomatch=NA, mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, bysameorder=FALSE, .SDcols, verbose=getOption("datatable.verbose",FALSE), drop=NULL)
 {
     # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
     if (!cedta()) {
@@ -518,11 +518,25 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     } # else maybe a call to transform or something which returns a list.
     ws = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
     if (".SD" %in% ws) {
-        xvars = setdiff(colnames(x),union(bynames,allbyvars))
-        # just using .SD in j triggers all non-by columns in the subset even if some of
-        # those columns are not used. It would be tricky to detect whether the j expression
-        # really does use all of the .SD columns or not.
+        if (missing(.SDcols)) {
+            xvars = setdiff(colnames(x),union(bynames,allbyvars))
+            # just using .SD in j triggers all non-by columns in the subset even if some of
+            # those columns are not used. It would be tricky to detect whether the j expression
+            # really does use all of the .SD columns or not, hence .SDcols for grouping
+            # over a subset of columns
+        } else {
+            if (is.numeric(.SDcols)) {
+                if (any(is.na(.SDcols)) || any(.SDcols>ncol(.SDcols)) || any(.SDcols<1)) stop(".SDcols is numeric but out of bounds (or NA)")
+                xvars = colnames(x)[.SDcols]
+            } else {
+                if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
+                if (any(is.na(.SDcols)) || any(!.SDcols %in% colnames(x))) stop("Some items of .SDcols are not column names (or are NA)")
+                xvars = .SDcols
+            }
+            # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols   
+        }
     } else {
+        if (!missing(.SDcols)) stop("j doesn't use .SD but .SDcols has been passed in")
         xvars = setdiff(intersect(ws,colnames(x)),bynames)
         # using a few named columns will be faster
         # Consider:   DT[,max(diff(date)),by=list(month=month(date))]

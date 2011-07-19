@@ -790,6 +790,12 @@ test(295,DT,data.table(a=42L,b=4:6))  # within was by reference (fast) and dropp
 # new feature added 1.6.3, that key can be vector.
 test(296,data.table(a=1:3,b=4:6,key="a,b"),data.table(a=1:3,b=4:6,key=c("a","b")))
 
+# test .SDcols (not speed, just operation)
+DT = data.table(grp=1:3,A1=1:9,A2=10:18,A3=19:27,B1=101:109,B2=110:118,B3=119:127,key="grp")
+test(297,DT[,list(A1=sum(A1),A2=sum(A2),A3=sum(A3)),by=grp], DT[,lapply(.SD,sum),by=grp,.SDcols=2:4]) 
+
+
+
 # Within syntax adding columns (doesn't assign currently), and removing columns via assigning to NULL
 # Mutiple assignments in j.
 # Update within group needs to go to original, not the .SD (should be ok).
