@@ -17,7 +17,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 
 \method{[}{data.table}(x, i, j, by=NULL, with=TRUE, within=getOption("datatable.within",TRUE), nomatch = NA,
   mult = "all", roll = FALSE, rolltolast = FALSE,
-  which = FALSE, bysameorder = FALSE,
+  which = FALSE, bysameorder = FALSE, .SDcols,
   verbose=getOption("datatable.verbose",FALSE), drop=NULL)
 }
 \arguments{
