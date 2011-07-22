@@ -20,8 +20,8 @@ key(x) <- value
 }
 \details{
   The sort is attempted with the very fast \code{"radix"} method in
-  \code{\link{base::sort.list}}. If that fails, the sort reverts to the default
-  method in \code{\link{base::order}}. That logic is repeated column by column.
+  \code{\link[base]{sort.list}}. If that fails, the sort reverts to the default
+  method in \code{\link[base]{order}}. That logic is repeated column by column.
   
   The sort is \emph{stable}; i.e., the order of ties (if any) is preserved.
   
@@ -36,7 +36,7 @@ key(x) <- value
 }
 \note{ \code{base::sort.list(x,method="radix")} actually invokes a \emph{counting sort}, not a radix sort. See do_radixsort in src/main/sort.c. A counting sort is particularly suitable for sorting integers and factors, however, and we like it. Anyway, this is one reason data.table 'likes' integers and factors.
 }
-\seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}}, \code{\link{base::sort.list}} }
+\seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}}, \code{\link[base]{sort.list}} }
 
 \examples{
     DT = data.table(A=5:1,B=letters[5:1])
