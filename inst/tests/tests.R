@@ -801,7 +801,13 @@ tt = try(DT$c <- as.character(DT$c), silent=TRUE)   # TO DO: should do nothing (
 test(299, inherits(tt,"try-error") && length(grep("zero length", tt)))
 
 
-# Within syntax adding columns (doesn't assign currently), and removing columns via assigning to NULL
+# Test bug fix #1468, combining i and by.
+DT = data.table(a=1:3,b=1:9,v=1:9,key="a,b")
+test(300, DT[J(1),sum(v),by=b], data.table(b=c(1L,4L,7L),V1=c(1L,4L,7L)))
+
+
+
+# Within syntax adding columns (doesn't assign currently), and removing columns via assigning to NULL (tests 298 and 299 above)
 # Mutiple assignments in j.
 # Update within group needs to go to original, not the .SD (should be ok).
 # Stop data.table converting character to factor by default.
