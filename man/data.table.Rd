@@ -31,7 +31,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   \item{check.names}{ Just as \code{check.names} in \code{\link{data.frame}}.
 
 }
-  \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkey}}. It be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. 
+  \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. 
 
 }
   \item{x}{ A \code{data.table}.
@@ -72,13 +72,13 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   \code{.BY} is a \code{list} containing a length 1 vector for each item in \code{by}. This can be useful when \code{by} is not known in advance.
   \code{.N} is an integer, length 1, containing the number of rows in the group. This may be useful when the column names are not known in advance, and for convenience generally.
 
-  Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, it's calling frame, and so on in the usual way up to and including the global environment.\cr\cr
+  Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.\cr\cr
 
 }
   \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; the column names can be used as variables. When \code{with=FALSE}, \code{j} works as it does in \code{[.data.frame}.
 
 }
-  \item{within}{ When \code{TRUE}, \code{j} may contain assignment statements of the form \code{colname<-value}. These are applied by reference to \code{x}; i.e. modify it in place. This operation is extremely quick as no copies are made. If the column name does not exist, it is created (efficiently). If the value is NULL, that column (if it exists) is removed (efficiently). This option takes it's name from the base function \code{link{within}}. By default \code{TRUE}, unless the global option \code{datatable.within} is set to \code{FALSE}.
+  \item{within}{ When \code{TRUE}, \code{j} may contain assignment statements of the form \code{colname<-value}. These are applied by reference to \code{x}; i.e. modify it in place. This operation is extremely quick as no copies are made. If the column name does not exist, it is created (efficiently). If the value is NULL, that column (if it exists) is removed (efficiently). This option takes its name from the base function \code{link{within}}. By default \code{TRUE}, unless the global option \code{datatable.within} is set to \code{FALSE}.
   
 }
   \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}'s key, \code{nomatch=NA} means \code{NA} is returned for \code{x}'s non-join columns for that row of \code{i}. \code{0} means no rows will be returned for that row of \code{i}.

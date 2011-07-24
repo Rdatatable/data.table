@@ -236,7 +236,7 @@ Code written prior to v1.6.1 that uses \code{[1]} will still work, but the \code
 
 \subsection{Only the first 10 rows are printed, how do I print more?}
 Try \code{print(DT,nrows=Inf)} to print all rows, or set nrows to the number of rows you require.
-Recall that when you forget a \code{data.frame} is large and type it's name at the \proglang{R} prompt, \proglang{R}
+Recall that when you forget a \code{data.frame} is large and type its name at the \proglang{R} prompt, \proglang{R}
 appears to hang for a long time while the entire table is formatted. \code{data.table} catches this and just prints
 the first 10 rows of large tables by default.  
 
