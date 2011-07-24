@@ -30,6 +30,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey)
     if (!isVectorAtomic(values) && !(isVector(values) && length(values)==targetlen))
         error("RHS of assignment is not an atomic vector (see ?is.atomic), or a list() column. In future may allow a list() of values, same length as j");
     vlen = length(values);
+    if (vlen<1) error("RHS of <- is zero length");
     if (targetlen%vlen != 0) error("tried to assign %d items to target of %d (can recycle but must be exact multiple)",vlen,targetlen);
     dtncol = length(dt);
     if (TYPEOF(cols)==STRSXP) {
