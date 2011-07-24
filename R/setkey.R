@@ -52,17 +52,16 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
         }
         if (!typeof(x[[i]]) %in% c("integer","logical")) stop("Column '",i,"' is type '",typeof(x[[i]]),"' which is not accepted by setkey.")
     }
+    if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
+    o = fastorder(x, cols)
+    .Call("reorder",x,o,cols, PACKAGE="data.table")
     if (copied) {
         if (verbose) cat("setkey changed the type of a column, incurring a copy\n")
         assign(name,x,envir=loc)
-        x = get(name,envir=loc)  # so the .Call("reorder" changes by reference a few lines below.
-    }
-    o = fastorder(x, cols)
-    # We put NAs first because NA is internally a very large negative number. This is relied on in the C binary search.
-    .Call("reorder",x,o,cols, PACKAGE="data.table")
+    }    
     # Was :
     # ans = x[o]   # copy whole table
-    # attr(x,"sorted") <<- cols  # done inside reorder by reference
+    # attr(x,"sorted") <<- cols  # now done inside reorder by reference
     # assign(name,ans,envir=loc)
     invisible()
 }

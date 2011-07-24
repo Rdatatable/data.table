@@ -69,7 +69,7 @@ NEW FEATURES
         may be character column names or numeric positions, and
         specifies the columns of x included in .SD. This is useful
         for speed when applying a function through a subset of
-        (possible very many) columns :
+        (possibly very many) columns :
             DT[,lapply(.SD,sum),by="x,y",.SDcols=301:350]
 
 
@@ -84,8 +84,13 @@ BUG FIXES
             DT[,list("sum(a),sum(b)"),by=grp]
         was appearing to work, but with wrong column names. This
         now returns a character column (the quotes should not
-        be used). Thanks to Joseph Voelkel for reporting. 
+        be used). Thanks to Joseph Voelkel for reporting.
         
+    o   setkey has been made robust in several ways in an attempt
+        to fix #1465 ('R crashes after sekey') reported by Eugene
+        Tyurin. We have been unable to reproduce the problem so
+        pending user confirm.
+                
     
 USER-VISIBLE CHANGES
 

@@ -21,12 +21,14 @@ SEXP reorder(SEXP dt, SEXP order, SEXP cols)
     char *tmp, *tmpp;
     int i, j, nrow, size;
     if (!sizesSet) setSizes();
+    if (TYPEOF(cols) != STRSXP) error("'cols' should be character vector at this point in reorder");
     nrow = length(VECTOR_ELT(dt,0));
     if (length(order) != nrow) error("logical error nrow(dt)!=length(order)");
     tmp=calloc(nrow,sizeof(double));  // sizeof largest type. 8 on all platforms?
     if (!tmp) error("unable to allocate temporary working memory for reordering data.table");
     for (i=0;i<length(dt);i++) {
         size=SIZEOF(VECTOR_ELT(dt,i));
+        if (!size) error("don't know how to reorder type %d of column %d. Please send this message to maintainer('data.table')",TYPEOF(VECTOR_ELT(dt,i)),i+1);
         tmpp=tmp;
         for (j=0;j<nrow;j++) {
             memcpy(tmpp, (char *)DATAPTR(VECTOR_ELT(dt,i)) + (INTEGER(order)[j]-1)*size, size);
