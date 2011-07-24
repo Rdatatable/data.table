@@ -9,8 +9,9 @@
 \alias{[.data.table}
 \title{ Enhanced data.frame }
 \description{
-   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast subset, fast grouping and fast ordered joins in a short and flexible syntax, for faster development. It was inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \bold{is} a \code{data.frame} it is compatible with \R functions and packages that \emph{only} accept \code{data.frame}.\cr
-   The 10 minute quick start guide to \code{data.table} may be a good place to start; type \code{vignette("datatable-intro")}.
+   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast subset, fast grouping and fast ordered joins in a short and flexible syntax, for faster development. It was inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that \emph{only} accept \code{data.frame}.\cr\cr
+   The 10 minute quick start guide to \code{data.table} may be a good place to start: type \code{vignette("datatable-intro")}.\cr\cr
+   Please check the \href{http://datatable.r-forge.r-project.org/}{homepage} for latest news.
 }
 \usage{
 data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
@@ -89,7 +90,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   \item{roll}{ Applies to the last join column, generally a date but can be any ordered variable, irregular and including gaps. If \code{roll=TRUE} and \code{i}'s row matches to all but the last \code{x} join column, and its value in the last \code{i} join column falls in a gap (including after the last observation in \code{x} for that group), then the \emph{prevailing} value in \code{x} is \emph{rolled} forward. This operation is particularly fast using a modified binary search. The operation is also known as last observation carried forward (LOCF). Usually, there should be no duplicates in \code{x}'s key, the last key column is a date (or time, or datetime) and all the columns of \code{x}'s key are joined to. A common idiom is to select a contemporaneous regular time series (\code{dts}) across a set of identifiers (\code{ids}):  \code{DT[CJ(ids,dts),roll=TRUE]} where \code{DT} has a 2-column key (id,date) and \code{\link{CJ}} stands for \emph{cross join}.
 
 }
-  \item{rolltolast}{ Like \code{roll} but the data is not rolled forward past the \emph{last} observation. The value of \code{i} must fall in a gap in \code{x} but not after the end of the data for that group defined by the \code{length(key(x))-1} columns of \code{x}'s key. \code{roll} and \code{rolltolast} may not both be \code{TRUE}.
+  \item{rolltolast}{ Like \code{roll} but the data is not rolled forward past the \emph{last} observation. The value of \code{i} must fall in a gap in \code{x} but not after the end of the data for that group defined by all but the last join column. \code{roll} and \code{rolltolast} may not both be \code{TRUE}.
 
 }
   \item{which}{ \code{TRUE} returns the integer row numbers of \code{x} that \code{i} matches to.

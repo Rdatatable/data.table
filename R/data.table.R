@@ -338,7 +338,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     } # end of  if !missing(i)
     if (missing(j)) stop("logical error, j missing")
     if (!with) {
-        if (!length(j)) return(NULL)
+        if (!length(j)) return(data.table(NULL))
         if (is.character(j)) j = match(j, names(x))
         # TO DO:  DT[,"-columntoremove",with=FALSE] might be nice
         if (any(is.na(j))) stop("undefined columns selected")  # TO DO: include which ones in msg

@@ -22,7 +22,7 @@ void setSizes()
     sizes[INTSXP] = sizeof(int);     // integer and factor
     sizes[LGLSXP] = sizeof(int);     // logical
     sizes[REALSXP] = sizeof(double); // numeric
-    sizes[STRSXP] = sizeof(SEXP);    // character
+    sizes[STRSXP] = sizeof(SEXP *);  // character
     sizes[VECSXP] = sizeof(SEXP *);  // a column itself can be a list()
     sizesSet=1;
 }

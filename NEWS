@@ -98,15 +98,13 @@ BUG FIXES
 
 USER-VISIBLE CHANGES
 
-    o   The startup banner checks to see if a new version
-        is available and if there is, suggests upgrading.
-        Suppressable with suppressPackageStartupMessages.
-        
-        
+    o   The startup banner has been shortened to one line.
+
+
 DEPRECATED & DEFUNCT
 
-   o    Use of the DT() alias in j is no longer caught and
-        replaced, and is now fully removed. As warned in NEWS
+   o    Use of the DT() alias in j is no longer caught for backwards
+        compatibility and is now fully removed. As warned in NEWS
         for v1.5.3, v1.4, and FAQs 2.6 and 2.7.
 
 
