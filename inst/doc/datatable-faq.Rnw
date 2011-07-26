@@ -92,7 +92,18 @@ Since these are \emph{expressions}, we are not restricted to column names only :
 
 \code{DT[,eval(q)]  \# identical to DT[,list(x,sd(y),mean(y*z))]}
 \newline
-However, if it's just simply a vector of column names it may be simpler to pass a character vector to \code{j} and use \code{with=FALSE}.
+However, if it's just simply a vector of column names you need, it may be simpler to pass a character vector to \code{j} and use \code{with=FALSE}.
+
+To pass an expression into your own function, one idiom is as follows :
+<<>>=
+DT = as.data.table(iris)
+setkey(DT,Species)
+myfunction = function(dt, expr) {
+    e = substitute(expr)
+    dt[,eval(e),by=Species]
+}
+myfunction(DT,sum(Sepal.Width))
+@        
 
 \subsection{This is really hard. What's the point?}
 \code{j} doesn't have to be just column names. You can write any \proglang{R} \emph{expression} of column names directly as the \code{j}; e.g., 
