@@ -53,7 +53,7 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
         if (!typeof(x[[i]]) %in% c("integer","logical")) stop("Column '",i,"' is type '",typeof(x[[i]]),"' which is not accepted by setkey.")
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
-    o = fastorder(x, cols)
+    o = fastorder(x, cols, verbose=verbose)
     .Call("reorder",x,o,cols, PACKAGE="data.table")
     if (copied) {
         if (verbose) cat("setkey changed the type of a column, incurring a copy\n")
@@ -93,24 +93,22 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
     # lst is a list or anything thats stored as a list and can be accessed with [[.
     # 'which' may be integers or names
     # Its easier to pass arguments around this way, and we know for sure that [[ doesn't take a copy but l=list(...) might do.
-    printdone=FALSE
     # Run through them back to front to group columns.
     w <- last(which)
-    err <- try(silent = TRUE, {
-        # Use a radix sort (fast and stable), but it will fail if there are more than 1e5 unique elements (or any negatives)
-        o <- radixorder1(lst[[w]])
-    })
-    if (inherits(err, "try-error"))
+    err <- try(o <- radixorder1(lst[[w]]), silent=TRUE)
+    # Use a radix sort (fast and stable), but it will fail if there are more than 1e5 unique elements (or any negatives)
+    if (inherits(err, "try-error")) {
+        if (verbose) cat("First column",w,"failed radixorder1, reverting to regularorder1\n")
         o <- regularorder1(lst[[w]])
+    }
     # If there is more than one column, run through them back to front to group columns.
     for (w in rev(take(which))) {
-        err <- try(silent = TRUE, {
-            o <- o[radixorder1(lst[[w]][o])]
-        })
-        if (inherits(err, "try-error"))
+        err <- try(o <- o[radixorder1(lst[[w]][o])], silent=TRUE)
+        if (inherits(err, "try-error")) {
+            if (verbose) cat("Non-first column",w,"failed radixorder1, reverting to regularorder1\n")
             o <- o[regularorder1(lst[[w]][o])]
+        }
     }
-    if (printdone) {cat("done\n");flush.console()}   # TO DO - add time taken
     o
 }
 

@@ -783,7 +783,7 @@ f = function(x){ setkey(x) }
 f(DT)
 test(294,key(DT),c("a","b"))  # The setkey didn't copy to a local variable. Need to copy first to local variable if required.
 
-f = function(x){ x[,a<-42L] }
+f = function(x){ x[,a:=42L] }
 f(DT)
 test(295,DT,data.table(a=42L,b=4:6))  # within was by reference (fast) and dropped the key, too, because assigned to key column
 
@@ -805,6 +805,9 @@ test(299, inherits(tt,"try-error") && length(grep("zero length", tt)))
 DT = data.table(a=1:3,b=1:9,v=1:9,key="a,b")
 test(300, DT[J(1),sum(v),by=b], data.table(b=c(1L,4L,7L),V1=c(1L,4L,7L)))
 
+# Test ad hoc by of more than 100,000 levels, see 2nd part of bug #1387
+DT = data.table(A=1:10,B=rnorm(10),C=paste("a",1:100010,sep=""))
+test(301, nrow(DT[,sum(B),by=C])==100010)
 
 
 # Within syntax adding columns (doesn't assign currently), and removing columns via assigning to NULL (tests 298 and 299 above)

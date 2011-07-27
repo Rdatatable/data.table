@@ -183,7 +183,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 }
 
 
-"[.data.table" = function (x, i, j, by=NULL, with=TRUE, within=getOption("datatable.within",TRUE), nomatch=NA, mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, bysameorder=FALSE, .SDcols, verbose=getOption("datatable.verbose",FALSE), drop=NULL)
+"[.data.table" = function (x, i, j, by=NULL, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, bysameorder=FALSE, .SDcols, verbose=getOption("datatable.verbose",FALSE), drop=NULL)
 {
     # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
     if (!cedta()) {
@@ -364,18 +364,50 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     jsub = substitute(j)
     if (is.null(jsub)) return(NULL)
     jsubl = as.list(jsub)
-    if (within && is.name(jsubl[[1]]) && as.character(jsubl[[1]])=="<-") {
-        # cat("New 'within' syntax is highly experimental. You have been warned!\n")
-        j = as.character(jsubl[[2]])
-        keycol = match(j,key(x))
-        m = match(j,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
-        if (!is.na(m)) j=m
+    
+    assign(":=",function(lhs,rhs) {
+        # there is no subassign for :=, implies even more natural to place in j, using i of [.data.table
+        print(substitute(lhs))
+        print(substitute(rhs))
+        print(irows)
+        lhs = as.character(substitute(lhs))
+        clearkey = any(!is.na(match(lhs,key(x))))
+        m = match(lhs,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
+        if (!is.na(m)) lhs=m      # signal to assign that it's not new column
+        if (identical(irows,TRUE)) ssrows=as.integer(NULL)
+        else ssrows=as.integer(irows)
         # Can also add (and remove) columns via within (in future by setting RHS to NULL)
-        if (identical(irows,TRUE)) irows=as.integer(NULL)
-        else irows=as.integer(irows)
-        return(invisible(.Call("assign",x,irows,j,jsubl[[3]],keycol,PACKAGE="data.table")))
+        .Call("assign",x,ssrows,lhs,rhs,clearkey,PACKAGE="data.table")
+        
+        # Next either := or not?  
+        
+        
+        NULL
+    }, envir=parent.frame())
+    #j = as.character(jsubl[[2]])
+    #keycol = match(j,key(x))
+    #m = match(j,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
+    #if (!is.na(m)) j=m
+        # Can also add (and remove) columns via within (in future by setting RHS to NULL)
+    #    if (identical(irows,TRUE)) irows=as.integer(NULL)
+    #    else irows=as.integer(irows)
+    #
         # Returning invisible is to allow compound queries. Don't need to return anything, though (changed by reference)
-    }
+    #}
+    
+    
+    #if (within && is.name(jsubl[[1]]) && as.character(jsubl[[1]])=="<-") {
+    #    # cat("New 'within' syntax is highly experimental. You have been warned!\n")
+    #    j = as.character(jsubl[[2]])
+    #    keycol = match(j,key(x))
+    #    m = match(j,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
+    #    if (!is.na(m)) j=m
+    #    # Can also add (and remove) columns via within (in future by setting RHS to NULL)
+    #    if (identical(irows,TRUE)) irows=as.integer(NULL)
+    #    else irows=as.integer(irows)
+    #    return(invisible(.Call("assign",x,irows,j,jsubl[[3]],keycol,PACKAGE="data.table")))
+    #    # Returning invisible is to allow compound queries. Don't need to return anything, though (changed by reference)
+    #}
     if (!missing(by) && !missing(i)) {
         x = x[irows]
         # TO DO: efficiency gain by taking only the columns of x that j and by need.
@@ -489,7 +521,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             f__ = duplist(byval,order=o__)
             len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1))
             firstofeachgroup = o__[f__]
-            origorder = .Internal(radixsort(firstofeachgroup, na.last=FALSE, decreasing=FALSE))
+            origorder = fastorder(list(firstofeachgroup),1L,verbose=verbose)
             f__ = f__[origorder]
             len__ = len__[origorder]
             firstofeachgroup = firstofeachgroup[origorder]
@@ -635,6 +667,22 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     }
     ans
 }
+
+
+# if (within && is.name(jsubl[[1]]) && as.character(jsubl[[1]])=="<-") {
+        # cat("New 'within' syntax is highly experimental. You have been warned!\n")
+dtassign = function(x,y,dt,irows) {
+# there is no subassign for :=, implies even more natural to place in j, using i of [.data.table
+    j = as.character(jsubl[[2]])
+    keycol = match(j,key(x))
+    m = match(j,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
+    if (!is.na(m)) j=m
+        # Can also add (and remove) columns via within (in future by setting RHS to NULL)
+        if (identical(irows,TRUE)) irows=as.integer(NULL)
+        else irows=as.integer(irows)
+    return(invisible(.Call("assign",x,irows,j,jsubl[[3]],keycol,PACKAGE="data.table")))
+        # Returning invisible is to allow compound queries. Don't need to return anything, though (changed by reference)
+    }
 
 #  [[.data.frame is now dispatched due to inheritance.
 #  The code below tried to avoid that but made things
