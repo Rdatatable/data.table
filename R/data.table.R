@@ -671,18 +671,18 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 
 # if (within && is.name(jsubl[[1]]) && as.character(jsubl[[1]])=="<-") {
         # cat("New 'within' syntax is highly experimental. You have been warned!\n")
-dtassign = function(x,y,dt,irows) {
+#dtassign = function(x,y,dt,irows) {
 # there is no subassign for :=, implies even more natural to place in j, using i of [.data.table
-    j = as.character(jsubl[[2]])
-    keycol = match(j,key(x))
-    m = match(j,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
-    if (!is.na(m)) j=m
-        # Can also add (and remove) columns via within (in future by setting RHS to NULL)
-        if (identical(irows,TRUE)) irows=as.integer(NULL)
-        else irows=as.integer(irows)
-    return(invisible(.Call("assign",x,irows,j,jsubl[[3]],keycol,PACKAGE="data.table")))
-        # Returning invisible is to allow compound queries. Don't need to return anything, though (changed by reference)
-    }
+#    j = as.character(jsubl[[2]])
+#    keycol = match(j,key(x))
+#    m = match(j,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
+#    if (!is.na(m)) j=m
+#        # Can also add (and remove) columns via within (in future by setting RHS to NULL)
+#        if (identical(irows,TRUE)) irows=as.integer(NULL)
+#        else irows=as.integer(irows)
+#    return(invisible(.Call("assign",x,irows,j,jsubl[[3]],keycol,PACKAGE="data.table")))
+#        # Returning invisible is to allow compound queries. Don't need to return anything, though (changed by reference)
+#    }
 
 #  [[.data.frame is now dispatched due to inheritance.
 #  The code below tried to avoid that but made things
