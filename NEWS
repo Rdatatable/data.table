@@ -91,10 +91,13 @@ BUG FIXES
         now returns a character column (the quotes should not
         be used). Thanks to Joseph Voelkel for reporting.
         
-    o   setkey has been made robust in several ways in an attempt
-        to fix #1465 ('R crashes after sekey') reported by Eugene
-        Tyurin. We have been unable to reproduce the problem so
-        pending user confirm.
+    o   setkey has been made robust in several ways to fix bug
+        #1465 ('R crashes after sekey') reported by Eugene
+        Tyurin and similar bug #1387 ('paste() by group to create
+        long comma separated strings can crash') reported by
+        Nicolas Servant and Jean-Francois Rami. This bug was not
+        reproducible so we are especially grateful for the patience
+        of these users in helping us find, fix and test it.
         
     o   Combining a join, j and by together in one query now works
         rather than giving an error, fixing bug #1468. Discovered
