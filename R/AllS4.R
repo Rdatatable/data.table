@@ -15,3 +15,9 @@ setAs("data.frame", "data.table", function(from) {
 setAs("data.table", "data.frame", function(from) {
     as.data.frame(from)
 })
+
+setOldClass("IDate")
+setOldClass("ITime")
+
+setAs("character", "IDate", function(from) as.IDate(from))
+setAs("character", "ITime", function(from) as.ITime(from))

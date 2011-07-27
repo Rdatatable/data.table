@@ -2,7 +2,7 @@ useDynLib(data.table)
 
 ## For S4-ization
 import(methods)
-exportClasses(data.table)
+exportClasses(data.table, IDate, ITime)
 ##
 
 export(data.table, tables, setkey, key, "key<-", J, CJ, SJ)

@@ -72,6 +72,11 @@ NEW FEATURES
         (possibly very many) columns :
             DT[,lapply(.SD,sum),by="x,y",.SDcols=301:350]
 
+    o   as(character, "IDate") and as(character, "ITime") coercion
+        functions have been added. Enables the user to declaring colClasses
+        as "IDate" and "ITime" in the various read.table (and sister)
+        functions. Thanks to Chris Neff for the suggestion.
+        
 
 BUG FIXES
 
