@@ -521,7 +521,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             f__ = duplist(byval,order=o__)
             len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1))
             firstofeachgroup = o__[f__]
-            origorder = fastorder(list(firstofeachgroup),1L,verbose=verbose)
+            origorder = .Internal(order(na.last=FALSE, decreasing=FALSE, firstofeachgroup))
+            # radixsort isn't appropriate in this case. 'firstofeachgroup' are row numbers from the
+            # (likely) large table so if nrow>100,000, range will be >100,000. Save time by not trying radix.
             f__ = f__[origorder]
             len__ = len__[origorder]
             firstofeachgroup = firstofeachgroup[origorder]
