@@ -37,6 +37,8 @@
 \alias{month}  
 \alias{quarter}
 \alias{year}
+\alias{IDate-class}
+\alias{ITime-class}
 
 \title{ Integer based date class }
 \description{
@@ -172,9 +174,15 @@ round to weeks, months, quarters, and years.
 
     # create IDate:
     (d <- as.IDate("2001-01-01"))
-
+    
+    # S4 coercion also works
+    identical(as.IDate("2001-01-01"), as("2001-01-01", "IDate"))
+     
     # create ITime:
     (t <- as.ITime("10:45"))
+
+    # S4 coercion also works
+    identical(as.ITime("10:45"), as("10:45", "ITime"))
 
     (t <- as.ITime("10:45:04"))
 
