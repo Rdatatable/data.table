@@ -776,17 +776,19 @@ DT = data.table(a=c(1,1,1,1,2,2,2),b=c(3,3,3,4,4,4,4))
 test(292, DT[,.N,by=list(a,b)], data.table(a=c(1L,1L,2L),b=c(3L,4L,4L),.N=c(3L,1L,3L)))
 test(293, DT[,list(a+b,.N),by=list(a,b)],  data.table(a=c(1L,1L,2L),b=c(3L,4L,4L),V1=4:6,.N=c(3L,1L,3L)))
 
-# Test that setkey and within syntax really are by reference, even within functions. You
-# really do need to take a copy first, or force(x).
+# Test that setkey and := syntax really are by reference, even within functions. You
+# really do need to take a copy first to a new name; force(x) isn't enough.
 
 DT = data.table(a=1:3,b=4:6)
-f = function(x){ setkey(x) }
+f = function(x){ force(x)
+                 setkey(x) }
 f(DT)
-test(294,key(DT),c("a","b"))  # The setkey didn't copy to a local variable. Need to copy first to local variable if required.
+test(294,key(DT),c("a","b"))  # The setkey didn't copy to a local variable. Need to copy first to local variable (with a new name) if required.
 
-f = function(x){ x[,a:=42L] }
+f = function(x){ force(x)
+                 x[,a:=42L] }
 f(DT)
-test(295,DT,data.table(a=42L,b=4:6))  # within was by reference (fast) and dropped the key, too, because assigned to key column
+test(295,DT,data.table(a=42L,b=4:6))  # := was by reference (fast) and dropped the key, too, because assigned to key column
 
 # new feature added 1.6.3, that key can be vector.
 test(296,data.table(a=1:3,b=4:6,key="a,b"),data.table(a=1:3,b=4:6,key=c("a","b")))
