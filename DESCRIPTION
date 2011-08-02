@@ -5,7 +5,7 @@ Author: M Dowle, T Short, S Lianoglou
 Maintainer: M Dowle <datatable-help@lists.r-forge.r-project.org>
 Depends: R (>= 2.12.0)
 Imports: methods
-Suggests: chron, ggplot2, testthat (>= 0.4)
+Suggests: chron, ggplot2, plyr, testthat (>= 0.4)
 Description: Enhanced data.frame. Fast indexing, fast ordered joins and fast grouping in a short and flexible syntax. i and j may be expressions of column names directly, for faster development.  Example: X[Y] is a fast join for large data.
 License: GPL
 URL: http://datatable.r-forge.r-project.org/, http://rwiki.sciviews.org/doku.php?id=packages:cran:data.table, http://www.inside-r.org/packages/cran/data.table

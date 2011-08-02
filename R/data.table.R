@@ -187,8 +187,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 {
     # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
     if (!cedta()) {
-        if (missing(drop)) return(`[.data.frame`(x,i,j))
-        else return(`[.data.frame`(x,i,j,drop))
+        ans = if (missing(drop)) `[.data.frame`(x,i,j) else `[.data.frame`(x,i,j,drop)
+        if (!missing(i)) key(ans)=NULL  # See test 304
+        return(ans)
     }
     if (!missing(by) && missing(j)) stop("'by' is supplied but not j")
     if (!mult %in% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")

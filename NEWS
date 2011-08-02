@@ -97,6 +97,14 @@ BUG FIXES
     o   Combining a join, j and by together in one query now works
         rather than giving an error, fixing bug #1468. Discovered
         indirectly thanks to a post from Jelmer Ypma.
+        
+    o   Invalid keys are no longer created when a non-data.table-aware
+        package reorders the data; e.g.,
+            setkey(DT,x,y)
+            plyr::arrange(DT,y)       # same as DT[order(y)]
+        This now drops the key to avoid incorrect results being
+        returned the next time the invalid key is joined to. Thanks
+        to Chris Neff for reporting this bug.
 
 
 USER-VISIBLE CHANGES

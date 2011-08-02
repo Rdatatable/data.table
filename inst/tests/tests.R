@@ -2,6 +2,7 @@
 if (!exists(".devtesting")) {
     require(data.table)   # in dev the package should not be loaded
     require(ggplot2)      # the 2 ggplot tests take so long they get in the way
+    require(plyr)
 }
 options(warn=2)
 nfail = ntest = 0
@@ -816,6 +817,13 @@ test(302, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,42L,6L,7L),key="a"))
 DT[J(2),b:=84L]
 test(303, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,84L,84L,7L),key="a"))
 
+# Test key is dropped when non-dt-aware packages reorder rows of data.table (for example)
+if ("package:plyr" %in% search()) {
+    DT = data.table(a=1:10,b=1:2,key="a")
+    test(304, haskey(arrange(DT,b)), FALSE)
+} else {
+    cat("Test 304 not run. If required call library(plyr) first.\n")
+}
 
 # TO DO:
 # Adding columns using :=, and removing columns via rhs=NULL (** tests 298 and 299 above **)
