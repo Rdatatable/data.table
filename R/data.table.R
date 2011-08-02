@@ -363,51 +363,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     }
     jsub = substitute(j)
     if (is.null(jsub)) return(NULL)
-    jsubl = as.list(jsub)
+    jsubl = as.list(jsub)    
     
-    assign(":=",function(lhs,rhs) {
-        # there is no subassign for :=, implies even more natural to place in j, using i of [.data.table
-        print(substitute(lhs))
-        print(substitute(rhs))
-        print(irows)
-        lhs = as.character(substitute(lhs))
-        clearkey = any(!is.na(match(lhs,key(x))))
-        m = match(lhs,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
-        if (!is.na(m)) lhs=m      # signal to assign that it's not new column
-        if (identical(irows,TRUE)) ssrows=as.integer(NULL)
-        else ssrows=as.integer(irows)
-        # Can also add (and remove) columns via within (in future by setting RHS to NULL)
-        .Call("assign",x,ssrows,lhs,rhs,clearkey,PACKAGE="data.table")
-        
-        # Next either := or not?  
-        
-        
-        NULL
-    }, envir=parent.frame())
-    #j = as.character(jsubl[[2]])
-    #keycol = match(j,key(x))
-    #m = match(j,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
-    #if (!is.na(m)) j=m
-        # Can also add (and remove) columns via within (in future by setting RHS to NULL)
-    #    if (identical(irows,TRUE)) irows=as.integer(NULL)
-    #    else irows=as.integer(irows)
-    #
-        # Returning invisible is to allow compound queries. Don't need to return anything, though (changed by reference)
-    #}
-    
-    
-    #if (within && is.name(jsubl[[1]]) && as.character(jsubl[[1]])=="<-") {
-    #    # cat("New 'within' syntax is highly experimental. You have been warned!\n")
-    #    j = as.character(jsubl[[2]])
-    #    keycol = match(j,key(x))
-    #    m = match(j,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
-    #    if (!is.na(m)) j=m
-    #    # Can also add (and remove) columns via within (in future by setting RHS to NULL)
-    #    if (identical(irows,TRUE)) irows=as.integer(NULL)
-    #    else irows=as.integer(irows)
-    #    return(invisible(.Call("assign",x,irows,j,jsubl[[3]],keycol,PACKAGE="data.table")))
-    #    # Returning invisible is to allow compound queries. Don't need to return anything, though (changed by reference)
-    #}
     if (!missing(by) && !missing(i)) {
         x = x[irows]
         # TO DO: efficiency gain by taking only the columns of x that j and by need.
@@ -417,9 +374,38 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         jsub = eval(jsubl[[2]],parent.frame())
         if (is.expression(jsub)) jsub = jsub[[1]]
     }
+    av = all.vars(jsub,TRUE)
+    if (":=" %in% av) {
+        if (!missing(by)) stop("Combining := in j with by is not yet implemented. Please let maintainer('data.table') know if you are interested in this.")
+        if (bywithoutby && nrow(i)>1) stop("combining bywithoutby with := in j is not yet implemented.")
+        if (as.character(jsub[[1]]) != ":=") stop("Currently only one `:=` may be present in j. This may be expanded in future.")
+        rhsav = all.vars(jsub[[3]],TRUE)
+        if (length(rhsav) && length(rhsvars <- intersect(rhsav,colnames(x)))) {
+            #rhsvars = intersect(rhsav,colnames(x))
+            #if (length(rhsvars)) {
+            tmpx = x[irows,rhsvars,with=FALSE]
+            rhs = eval(jsub[[3]], envir=tmpx, enclos=parent.frame())
+        } else {
+            rhs = eval(jsub[[3]], envir=parent.frame(), enclos=parent.frame())
+        }
+        lhs = as.character(jsub[[2]])
+        clearkey = any(!is.na(match(lhs,key(x))))
+        m = match(lhs,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
+        if (!is.na(m)) lhs=m      # signal to assign that it's not new column
+        if (identical(irows,TRUE)) ssrows=as.integer(NULL)
+        else ssrows=as.integer(irows)
+        # Can also add (and remove) columns via within (in future by setting RHS to NULL)
+        .Call("assign",x,ssrows,lhs,rhs,clearkey,PACKAGE="data.table")
+        if (!missing(verbose) && verbose) cat("Assigned",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")  # the !missing is for speed to avoid calling getOption() which then calls options().
+        return(x)  # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
+                   # Could return number of rows updated but even when wrapped in invisible() it seems
+                   # the [.class method doesn't respect invisible, which may be confusing to user.
+        # NB: Tried assign(":=",function(lhs,rhs) {...},envir=parent.frame()) which worked for whole columns
+        # but how to pass a subset of rows that way, or more crucially an assignment within groups (TO DO)
+    }
     if ((missing(by) && !bywithoutby) || nrow(x)<1) {
+        jvars = intersect(av,colnames(x))
         if (!identical(irows,TRUE)) {
-            jvars = intersect(all.vars(jsub,TRUE),colnames(x))
             x = x[irows,jvars,with=FALSE]
         }
         if (mode(jsub)!="name" && as.character(jsub[[1]]) == "list") {

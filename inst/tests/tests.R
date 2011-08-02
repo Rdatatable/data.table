@@ -809,10 +809,18 @@ test(300, DT[J(1),sum(v),by=b], data.table(b=c(1L,4L,7L),V1=c(1L,4L,7L)))
 DT = data.table(A=1:10,B=rnorm(10),C=paste("a",1:100010,sep=""))
 test(301, nrow(DT[,sum(B),by=C])==100010)
 
+# Test fast assign
+DT = data.table(a=c(1,2,2,3),b=4:7,key="a")
+DT[2,b:=42L]
+test(302, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,42L,6L,7L),key="a"))
+DT[J(2),b:=84L]
+test(303, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,84L,84L,7L),key="a"))
 
-# Within syntax adding columns (doesn't assign currently), and removing columns via assigning to NULL (tests 298 and 299 above)
+
+# TO DO:
+# Adding columns using :=, and removing columns via rhs=NULL (** tests 298 and 299 above **)
 # Mutiple assignments in j.
-# Update within group needs to go to original, not the .SD (should be ok).
+# := within group needs to update x by reference, not the .SD (should be ok).
 # Stop data.table converting character to factor by default.
 
 
