@@ -53,7 +53,7 @@ NEW FEATURES
             DT[i,colname:=value]
         
         This syntax makes no copies of any part of memory at all.
-         
+        
         m = matrix(1,nrow=100000,ncol=100)
         DF = as.data.frame(m)
         DT = as.data.table(m)
@@ -67,7 +67,8 @@ NEW FEATURES
             1.148   0.000   1.158     ( 511 times faster )
 
         := in j can be combined with all types of i, such as binary
-        search. Fast assigning within groups will be implemented in
+        search. It can be used to add and remove columns efficiently,
+        too. Fast assigning within groups will be implemented in
         future.
         
         *Please note*, := is new and experimental.
@@ -86,31 +87,37 @@ BUG FIXES
         now returns a character column (the quotes should not
         be used). Thanks to Joseph Voelkel for reporting.
         
-    o   setkey has been made robust in several ways to fix bug
-        #1465 ('R crashes after sekey') reported by Eugene
-        Tyurin and similar bug #1387 ('paste() by group to create
-        long comma separated strings can crash') reported by
-        Nicolas Servant and Jean-Francois Rami. This bug was not
-        reproducible so we are especially grateful for the patience
-        of these people in helping us find, fix and test it.
+    o   setkey has been made robust in several ways to fix issues
+        introduced in 1.6.2: #1465 ('R crashes after sekey')
+        reported by Eugene Tyurin and similar bug #1387 ('paste()
+        by group to create long comma separated strings can crash')
+        reported by Nicolas Servant and Jean-Francois Rami. This
+        bug was not reproducible so we are especially grateful for
+        the patience of these people in helping us find, fix and
+        test it.
         
     o   Combining a join, j and by together in one query now works
         rather than giving an error, fixing bug #1468. Discovered
         indirectly thanks to a post from Jelmer Ypma.
         
-    o   Invalid keys are no longer created when a non-data.table-aware
+    o   Invalid keys are no longer arise when a non-data.table-aware
         package reorders the data; e.g.,
             setkey(DT,x,y)
             plyr::arrange(DT,y)       # same as DT[order(y)]
         This now drops the key to avoid incorrect results being
         returned the next time the invalid key is joined to. Thanks
-        to Chris Neff for reporting this bug.
+        to Chris Neff for reporting.
 
 
 USER-VISIBLE CHANGES
 
     o   The startup banner has been shortened to one line.
-
+    
+    o   data.table does not support POSIXlt. Almost unbelievably
+        POSIXlt uses 40 bytes to store a single datetime. If it worked
+        before, that was unintentional. Please see ?IDateTime, or any
+        other date class that uses a single atomic vector.
+        
 
 DEPRECATED & DEFUNCT
 

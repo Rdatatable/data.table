@@ -15,26 +15,30 @@ void setSizes();
 #define SIZEOF(x) sizes[TYPEOF(x)]
 //
 
-SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey)
+SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name, SEXP rho)
 {
     // For internal use only by [<-.data.table.
     int i, size, targetlen, vlen, v, r, dtncol, coln;
-    SEXP targetcol, RHS, newdt, names, newnames;
+    SEXP targetcol, RHS, newdt, names, newnames, symbol;
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (length(rows)==0) {
-         targetlen = length(VECTOR_ELT(dt,0));
-         // fast way to assign to whole column, without creating 1:nrow(x) vector up in R, or here in C
+        targetlen = length(VECTOR_ELT(dt,0));
+        // fast way to assign to whole column, without creating 1:nrow(x) vector up in R, or here in C
     } else {
-         targetlen = length(rows);
+        targetlen = length(rows);
     }
-    if (!isVectorAtomic(values) && !(isVector(values) && length(values)==targetlen))
-        error("RHS of assignment is not an atomic vector (see ?is.atomic), or a list() column. In future may allow a list() of values, same length as j");
     vlen = length(values);
-    if (vlen<1) error("RHS of <- is zero length");
-    if (targetlen%vlen != 0) error("tried to assign %d items to target of %d (can recycle but must be exact multiple)",vlen,targetlen);
+    if (TYPEOF(values)==NILSXP) {
+        if (TYPEOF(cols)==STRSXP) error("Value of assignment is NULL, meaning delete column. But column is not present.");
+    } else {
+        if (vlen<1) error("RHS of assignment is zero length but not NULL. If you intend to delete the column use NULL. Otherwise the RHS must have length > 0");
+        if (!isVectorAtomic(values) && !(isVector(values) && length(values)==targetlen))
+            error("RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list() column. In future may allow a list() of values, same length as j");
+        if (targetlen%vlen != 0) error("Tried to assign %d items to target of %d (can recycle but must be exact multiple)",vlen,targetlen);
+    }
     dtncol = length(dt);
     if (TYPEOF(cols)==STRSXP) {
-        // calling R only passes STRSXP when adding new column(s) to end of table
+        // calling R passes STRSXP when adding new column(s) to end of table
         if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
         PROTECT(newdt = allocVector(VECSXP, length(dt)+length(cols)));
         memcpy(DATAPTR(newdt),DATAPTR(dt),length(dt)*sizeof(SEXP *));
@@ -50,15 +54,24 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey)
 	        SET_STRING_ELT(newnames, length(dt)+i, STRING_ELT(cols, i));
 	    setAttrib(newdt, R_NamesSymbol, newnames);
         copyMostAttrib(dt, newdt);
+        if (length(name)) {
+            // Called from := in j
+            // From R-ext section 5.9.8 :
+            if (!isString(name) || length(name)!=1) error("Internal data.table error in assign.c. name is not a single string");
+            if(!isEnvironment(rho)) error("Internal data.table error in assign.c. rho should be an environment");
+            symbol = install(CHAR(STRING_ELT(name, 0)));
+        } // else called from $<- or [<- where the slower (copying) `*tmp*` mechanism must be used (as of R 2.13.1)
         if (length(rows)==0 && targetlen==vlen) {
             for (i=0; i<length(cols); i++)
                 SET_VECTOR_ELT(newdt,length(dt)+i,values);
+            if (length(name)) setVar(symbol,newdt,rho);
             UNPROTECT(2);
             return(newdt);
         }
         // else allocate the column(s), and fall through to recycling subassignment later below
         for (i=0; i<length(cols); i++)
             SET_VECTOR_ELT(newdt,length(dt)+i,allocVector(TYPEOF(values),targetlen));
+        if (length(name)) setVar(symbol,newdt,rho);
         dt = newdt;
         UNPROTECT(2);
     } else {
@@ -67,8 +80,24 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey)
     for (i=0; i<length(cols); i++) {
         if (TYPEOF(cols)==STRSXP)
             coln = dtncol+i;                // each new column added above, dtncol=length(dt) before dt was enlarged
-        else
+        else {
             coln = INTEGER(cols)[i]-1;      // existing columns
+            if (TYPEOF(values)==NILSXP) {
+                // delete column
+                size=sizeof(SEXP *);
+                memmove(DATAPTR(dt)+coln*size,     
+                        DATAPTR(dt)+(coln+1)*size,
+                        (length(dt)-coln-1)*size);
+                SETLENGTH(dt,length(dt)-1);
+                // TO DO: mark column vector as unused so can be gc'd. Maybe UNPROTECT_PTR?
+                names = getAttrib(dt, R_NamesSymbol);
+                memmove(DATAPTR(names)+coln*size,     
+                        DATAPTR(names)+(coln+1)*size,
+                        (length(names)-coln-1)*size);
+                SETLENGTH(names,length(names)-1);
+                continue;
+            }
+        }
         if (length(rows)==0 && targetlen==vlen) {
             // replace the column by reference
             // i needs to be missing at R level, not set to 1:nrow(dt)
@@ -114,6 +143,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey)
         // Do this at C level to avoid any copies.
         setAttrib(dt, install("sorted"), R_NilValue);
     }
-    return(dt);   // should be able to return R_NilValue, going forward?
+    return(dt);  // needed for `*tmp*` mechanism, but also returns here when recycling := (setVar already called above so return(dt) is redundant, likely harmless)
 }
 

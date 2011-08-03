@@ -798,11 +798,14 @@ DT = data.table(grp=1:3,A1=1:9,A2=10:18,A3=19:27,B1=101:109,B2=110:118,B3=119:12
 test(297,DT[,list(A1=sum(A1),A2=sum(A2),A3=sum(A3)),by=grp], DT[,lapply(.SD,sum),by=grp,.SDcols=2:4]) 
 
 DT = data.table(a=1:3,b=4:6)
-tt = try(DT$b <- NULL, silent=TRUE)  # TO DO: should remove column
-test(298, inherits(tt,"try-error") && length(grep("not an atomic vector", tt)))
-tt = try(DT$c <- as.character(DT$c), silent=TRUE)   # TO DO: should do nothing (maybe warning that column didn't exist anyway)
-test(299, inherits(tt,"try-error") && length(grep("zero length", tt)))
-
+test(298, {DT$b<-NULL;DT}, data.table(a=1:3))  # delete column (efficiently)
+tt = try(DT$c <- as.character(DT$c), silent=TRUE)
+test(299, inherits(tt,"try-error") && length(grep("zero length", tt)))  # to simulate RHS which could (due to user error) be non NULL but zero length
+DT[,c:=42L]   # add column (efficiently)
+test(299.1, DT, data.table(a=1:3,c=42L))
+tt = try(DT[2,c:=42],silent=TRUE)
+test(299.2, inherits(tt,"try-error") && length(grep("(converted from warning).*Coerced numeric RHS to integer", tt)))  # to simulate RHS which could (due to user error) be non NULL but zero length
+# also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
 
 # Test bug fix #1468, combining i and by.
 DT = data.table(a=1:3,b=1:9,v=1:9,key="a,b")

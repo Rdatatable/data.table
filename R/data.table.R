@@ -392,11 +392,15 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         lhs = as.character(jsub[[2]])
         clearkey = any(!is.na(match(lhs,key(x))))
         m = match(lhs,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
-        if (!is.na(m)) lhs=m      # signal to assign that it's not new column
-        if (identical(irows,TRUE)) ssrows=as.integer(NULL)
-        else ssrows=as.integer(irows)
-        # Can also add (and remove) columns via within (in future by setting RHS to NULL)
-        .Call("assign",x,ssrows,lhs,rhs,clearkey,PACKAGE="data.table")
+        if (!is.na(m)) {
+            lhs=m      # type of lhs signals to assign that it's not new column
+            xname = rho = NULL
+        } else {
+            xname = as.character(substitute(x))
+            rho = parent.frame()
+        }
+        ssrows = if (identical(irows,TRUE)) as.integer(NULL) else as.integer(irows)
+        .Call("assign",x,ssrows,lhs,rhs,clearkey,xname,rho,PACKAGE="data.table")
         if (!missing(verbose) && verbose) cat("Assigned",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")  # the !missing is for speed to avoid calling getOption() which then calls options().
         return(x)  # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
                    # Could return number of rows updated but even when wrapped in invisible() it seems
@@ -658,21 +662,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 }
 
 
-# if (within && is.name(jsubl[[1]]) && as.character(jsubl[[1]])=="<-") {
-        # cat("New 'within' syntax is highly experimental. You have been warned!\n")
-#dtassign = function(x,y,dt,irows) {
-# there is no subassign for :=, implies even more natural to place in j, using i of [.data.table
-#    j = as.character(jsubl[[2]])
-#    keycol = match(j,key(x))
-#    m = match(j,names(x))    # TO DO: move this logic inside .Call assign as it's done a few times
-#    if (!is.na(m)) j=m
-#        # Can also add (and remove) columns via within (in future by setting RHS to NULL)
-#        if (identical(irows,TRUE)) irows=as.integer(NULL)
-#        else irows=as.integer(irows)
-#    return(invisible(.Call("assign",x,irows,j,jsubl[[3]],keycol,PACKAGE="data.table")))
-#        # Returning invisible is to allow compound queries. Don't need to return anything, though (changed by reference)
-#    }
-
 #  [[.data.frame is now dispatched due to inheritance.
 #  The code below tried to avoid that but made things
 #  very slow (462 times faster down to 1 in the timings test).
@@ -841,9 +830,9 @@ tail.data.table = function(x, n=6, ...) {
         # The length(value)<nrow(x) is to allow coercion of factor columns to character, but we'll
         # do away with factor columns (by default) soon anyway
     }
-    .Call("assign",x,i,j,value,keycol,PACKAGE="data.table")
+    .Call("assign",x,i,j,value,keycol,NULL,NULL,PACKAGE="data.table")
     # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
-    # or uses data.table 'within' syntax; i.e. DT[i,j<-value]
+    # or uses data.table := syntax; i.e. DT[i,j:=value]
     # but, there is one copy by R in [<- dispatch to `*tmp*`; i.e. DT[i,j]<-value
     # (IIUC, and, as of R 2.13.0)
 }
@@ -941,7 +930,7 @@ within.data.table <- function (data, expr, keep.key = FALSE, ...) # basically wi
     keycol = j %in% key(data)
     m = match(j,names(data))
     if (!is.na(m)) j=m
-    .Call("assign",data,i=as.integer(NULL),j,value,keycol,PACKAGE="data.table")
+    .Call("assign",data,i=as.integer(NULL),j,value,keycol,NULL,NULL,PACKAGE="data.table")
 }
 
 
@@ -956,11 +945,11 @@ transform.data.table <- function (`_data`, ...) # basically transform.data.frame
     if (any(matched)) {
         j = inx[!is.na(inx)]
         keycol = j %in% names(`_data`)
-        `_data` = .Call("assign",`_data`,i=as.integer(NULL),j,e[[1]],keycol,PACKAGE="data.table")
+        `_data` = .Call("assign",`_data`,i=as.integer(NULL),j,e[[1]],keycol,NULL,NULL,PACKAGE="data.table")
     }
     if (!all(matched)) {
         j = tags[is.na(inx)]        
-        `_data` = .Call("assign",`_data`,i=as.integer(NULL),j,e[[1]],keycol=FALSE,PACKAGE="data.table")
+        `_data` = .Call("assign",`_data`,i=as.integer(NULL),j,e[[1]],keycol=FALSE,NULL,NULL,PACKAGE="data.table")
     }
     `_data`
 }
