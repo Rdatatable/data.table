@@ -116,7 +116,9 @@ USER-VISIBLE CHANGES
     o   data.table does not support POSIXlt. Almost unbelievably
         POSIXlt uses 40 bytes to store a single datetime. If it worked
         before, that was unintentional. Please see ?IDateTime, or any
-        other date class that uses a single atomic vector.
+        other date class that uses a single atomic vector. This is
+        regardless of whether the POSIXlt is a key column, or not. This
+        resolves bug #1481 by documenting non support in ?data.table.
         
 
 DEPRECATED & DEFUNCT
