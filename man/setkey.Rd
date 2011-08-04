@@ -10,6 +10,7 @@
 setkey(x, ..., loc=parent.frame(),verbose=getOption("datatable.verbose",FALSE))
 key(x)
 key(x) <- value
+haskey(x)
 }
 \arguments{
   \item{x}{ An unquoted name of a \code{data.table}. }
@@ -28,7 +29,7 @@ key(x) <- value
   If \code{value=NULL}, the key is removed.
   }
 \value{
-    No value is returned. The data.table is modified by reference. If you require a copy, take a copy first.
+    No value is returned. The data.table is modified by reference. If you require a copy, take a copy first (using \code{DT2=data.table(DT)}.
 }
 \references{
 \url{http://en.wikipedia.org/wiki/Radix_sort}\cr
@@ -46,6 +47,16 @@ key(x) <- value
     tables()      # KEY column reports the key'd columns
     key(DT)
     key(DT) = "A"
+    
+    DT = data.table(A=5:1,B=letters[5:1])
+    DT2 = DT              # not enough to copy
+    setkey(DT2,B)         # so does not copy on write to DT2
+    identical(DT,DT2)     # TRUE. DT and DT2 are now the same keyed table
+    
+    DT = data.table(A=5:1,B=letters[5:1])
+    DT2 = data.table(DT)  # does make a copy
+    setkey(DT2,B)         # just changes DT2
+    identical(DT,DT2)     # FALSE
 }
 \keyword{ data }
 
