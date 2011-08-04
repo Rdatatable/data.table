@@ -18,7 +18,7 @@ void setSizes();
 SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name, SEXP rho)
 {
     // For internal use only by [<-.data.table.
-    int i, size, targetlen, vlen, v, r, dtncol, coln;
+    int i, size, targetlen, vlen, v, r, dtncol, coln, protecti=0;
     SEXP targetcol, RHS, newdt, names, newnames, symbol;
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (length(rows)==0) {
@@ -41,6 +41,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name
         // calling R passes STRSXP when adding new column(s) to end of table
         if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
         PROTECT(newdt = allocVector(VECSXP, length(dt)+length(cols)));
+        protecti++;
         memcpy(DATAPTR(newdt),DATAPTR(dt),length(dt)*sizeof(SEXP *));
         // maybe a loop instead if memcpy doesn't work out for some reason
         // for (i=0; i<length(dt); i++)
@@ -48,6 +49,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name
         names = getAttrib(dt, R_NamesSymbol);
         if (isNull(names)) error("names of data.table are null");
 	    PROTECT(newnames = allocVector(STRSXP, length(newdt)));
+	    protecti++;
 	    for (i=0; i<length(dt); i++)
 	        SET_STRING_ELT(newnames, i, STRING_ELT(names, i));
 	    for (i=0; i<length(cols); i++)
@@ -65,7 +67,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name
             for (i=0; i<length(cols); i++)
                 SET_VECTOR_ELT(newdt,length(dt)+i,values);
             if (length(name)) setVar(symbol,newdt,rho);
-            UNPROTECT(2);
+            UNPROTECT(protecti);
             return(newdt);
         }
         // else allocate the column(s), and fall through to recycling subassignment later below
@@ -73,7 +75,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name
             SET_VECTOR_ELT(newdt,length(dt)+i,allocVector(TYPEOF(values),targetlen));
         if (length(name)) setVar(symbol,newdt,rho);
         dt = newdt;
-        UNPROTECT(2);
     } else {
         if (TYPEOF(cols)!=INTSXP) error("Logical error in assign, TYPEOF(cols) is %d",TYPEOF(cols));  // Rinternals.h defines the type names/numbers 
     }
@@ -107,6 +108,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name
         } else {
             targetcol = VECTOR_ELT(dt,coln);
             PROTECT(RHS = coerceVector(values,TYPEOF(targetcol)));
+            protecti++;
             // i.e. coerce the RHS to match the type of the column (coerceVector returns early if already the same)
             // This is different to [<-.data.frame which changes the type of the column to match the RHS. A
             // data.table tends to be big so we don't want to do that! Also, typically the RHS is very small,
@@ -134,7 +136,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name
                     }
                 }
             }
-            UNPROTECT(1);
         }
     }
     if (LOGICAL(clearkey)[0]) {
@@ -143,6 +144,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name
         // Do this at C level to avoid any copies.
         setAttrib(dt, install("sorted"), R_NilValue);
     }
+    UNPROTECT(protecti);
     return(dt);  // needed for `*tmp*` mechanism, but also returns here when recycling := (setVar already called above so return(dt) is redundant, likely harmless)
 }
 

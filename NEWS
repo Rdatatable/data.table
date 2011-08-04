@@ -88,7 +88,7 @@ BUG FIXES
         be used). Thanks to Joseph Voelkel for reporting.
         
     o   setkey has been made robust in several ways to fix issues
-        introduced in 1.6.2: #1465 ('R crashes after sekey')
+        introduced in 1.6.2: #1465 ('R crashes after setkey')
         reported by Eugene Tyurin and similar bug #1387 ('paste()
         by group to create long comma separated strings can crash')
         reported by Nicolas Servant and Jean-Francois Rami. This

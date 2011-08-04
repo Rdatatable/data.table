@@ -830,12 +830,6 @@ if ("package:plyr" %in% search()) {
     cat("Test 304 not run. If required call library(plyr) first.\n")
 }
 
-# TO DO:
-# Adding columns using :=, and removing columns via rhs=NULL (** tests 298 and 299 above **)
-# Mutiple assignments in j.
-# := within group needs to update x by reference, not the .SD (should be ok).
-# Stop data.table converting character to factor by default.
-
 
 ## See test-* for more tests
 

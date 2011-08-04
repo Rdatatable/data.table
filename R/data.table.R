@@ -924,7 +924,6 @@ within.data.table <- function (data, expr, keep.key = FALSE, ...) # basically wi
     l <- as.list(e)
     if (length(l)!=1) stop("Can only assign one column at a time currently via within")
                       # TO DO: allow multiple RHS in assign.c
-                      # TO DO: allow NULL RHS to remove column (again, in assign.c)
     value = l[[1]]
     j = names(l)[1]
     keycol = j %in% key(data)
