@@ -2,6 +2,7 @@
 \alias{setkey}
 \alias{key}
 \alias{key<-}
+\alias{haskey}
 \title{ Create key on a data table }
 \description{
   Sorts a data.table and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always.
