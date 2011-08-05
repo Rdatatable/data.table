@@ -913,6 +913,24 @@ dimnames.data.table = function(x) {
     x
 }
 
+"names<-.data.table" = function(x,value)
+{
+    # if (!cedta())... not this time. When non data.table aware packages change names, we'd like to maintain the key, too.
+    if (!is.character(value)) stop("names must be type character")
+    if (length(value) != ncol(x)) stop("Can't assign ",length(value)," names to a ",ncol(x)," column data.table")
+    # If user calls names(DT)[2]="newname", R will (conveniently, for us) call this names<-.data.table function (notice no i) with 'value' same length as ncol 
+    m = match(key(x), attr(x,"names"))
+    attr(x,"names") = value  # TO DO: use setAttrib
+    if (haskey(x) && any(!is.na(m))) {
+        w = which(!is.na(m))
+        k = key(x)
+        k[w] = value[m[w]]
+        attr(x,"sorted") = k   # TO DO: use setAttrib
+    }
+    x
+}
+
+
 last = function(x) x[NROW(x)]     # last row for a data.table, last element for a vector.
 
 within.data.table <- function (data, expr, keep.key = FALSE, ...) # basically within.list but with a check to avoid messing up the key

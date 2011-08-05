@@ -10,7 +10,11 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+BUG FIXES
 
+    o   Changing a keyed column name now updates the key, too,
+        so an invalid key no longer arises, fixing #1495.
+        Thanks to Chris Neff for reporting.
 
 
         *********************************************
@@ -109,7 +113,7 @@ BUG FIXES
         rather than giving an error, fixing bug #1468. Discovered
         indirectly thanks to a post from Jelmer Ypma.
         
-    o   Invalid keys are no longer arise when a non-data.table-aware
+    o   Invalid keys no longer arise when a non-data.table-aware
         package reorders the data; e.g.,
             setkey(DT,x,y)
             plyr::arrange(DT,y)       # same as DT[order(y)]

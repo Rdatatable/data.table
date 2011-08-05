@@ -830,6 +830,24 @@ if ("package:plyr" %in% search()) {
     cat("Test 304 not run. If required call library(plyr) first.\n")
 }
 
+# Test that changing colnames keep key in sync.
+# TO DO: will have to do this for secondary keys, too, when implemented.
+DT = data.table(x=1:10,y=1:10,key="x")
+names(DT) <- c("a", "b")
+test(305, key(DT), "a")
+names(DT)[1] <- "R"
+test(306, key(DT), "R")
+names(DT)[2] <- "S"
+test(307, key(DT), "R")
+colnames(DT) = c("a","b")
+test(308, key(DT), "a")
+colnames(DT)[1] = "R"
+test(309, key(DT), "R")
+
+
+
+
+
 
 ## See test-* for more tests
 
