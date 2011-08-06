@@ -26,6 +26,11 @@ BUG FIXES
         column correctly, as well as changing DT by reference,
         fixing #1496. Thanks to Chris Neff for reporting.
         
+    o   :=NULL to remove a column (instantly, regardless of table
+        size) now works rather than causing a segfault in some
+        circumstances, fixing #1497. Thanks to Timothee Carayol
+        for reporting.
+        
         
         *********************************************
         **                                         **

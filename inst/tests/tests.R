@@ -798,7 +798,7 @@ DT = data.table(grp=1:3,A1=1:9,A2=10:18,A3=19:27,B1=101:109,B2=110:118,B3=119:12
 test(297,DT[,list(A1=sum(A1),A2=sum(A2),A3=sum(A3)),by=grp], DT[,lapply(.SD,sum),by=grp,.SDcols=2:4]) 
 
 DT = data.table(a=1:3,b=4:6)
-test(298, {DT$b<-NULL;DT}, data.table(a=1:3))  # delete column (efficiently)
+test(298, {DT$b<-NULL;DT}, data.table(a=1:3))  # delete column
 tt = try(DT$c <- as.character(DT$c), silent=TRUE) 
 test(299, inherits(tt,"try-error") && length(grep("zero length", tt)))  # to simulate RHS which could (due to user error) be non NULL but zero length
 test(299.1, DT[,c:=42L], data.table(a=1:3,c=42L))  # add column (efficiently), and check result is new table
@@ -844,6 +844,7 @@ names(DT) <- c("a", "b")
 test(305, key(DT), "a")
 names(DT)[1] <- "R"
 test(306, key(DT), "R")
+
 names(DT)[2] <- "S"
 test(307, key(DT), "R")
 colnames(DT) = c("a","b")
@@ -851,6 +852,18 @@ test(308, key(DT), "a")
 colnames(DT)[1] = "R"
 test(309, key(DT), "R")
 
+# Test :=NULL
+DT = data.table(x=1:5,y=6:10,z=11:15,key="y")
+test(310, DT[,x:=NULL], data.table(y=6:10,z=11:15,key="y"))  # delete first
+test(311, DT[,y:=NULL], data.table(z=11:15))    # deleting key column also removes key
+test(312, DT[,z:=NULL], data.table(NULL))      # deleting all
+tt = try(DT[,a:=1:3], silent=TRUE)
+test(313, inherits(tt,"try-error"))   # cannot := a new column to NULL data.table, currently. Must use data.table()
+DT = data.table(a=20:22)
+test(314, {DT[,b:=23:25];DT[,c:=26:28]}, data.table(a=20:22,b=23:25,c=26:28))   # add in series
+test(315, DT[,c:=NULL], data.table(a=20:22,b=23:25))   # delete last
+tt = try(DT[,c:=NULL],silent=TRUE)
+test(316, inherits(tt,"try-error") && length(grep("column is not present", tt)))
 
 
 

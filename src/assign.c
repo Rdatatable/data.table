@@ -19,7 +19,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name
 {
     // For internal use only by [<-.data.table.
     int i, size, targetlen, vlen, v, r, dtncol, coln, protecti=0;
-    SEXP targetcol, RHS, newdt, names, newnames, symbol;
+    SEXP targetcol, RHS, newdt, names, newnames, symbol, nullint;
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (length(rows)==0) {
         targetlen = length(VECTOR_ELT(dt,0));
@@ -86,16 +86,23 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name
             if (TYPEOF(values)==NILSXP) {
                 // delete column
                 size=sizeof(SEXP *);
-                memmove(DATAPTR(dt)+coln*size,     
-                        DATAPTR(dt)+(coln+1)*size,
+                memmove((char *)DATAPTR(dt)+coln*size,     
+                        (char *)DATAPTR(dt)+(coln+1)*size,
                         (length(dt)-coln-1)*size);
                 SETLENGTH(dt,length(dt)-1);
                 // TO DO: mark column vector as unused so can be gc'd. Maybe UNPROTECT_PTR?
                 names = getAttrib(dt, R_NamesSymbol);
-                memmove(DATAPTR(names)+coln*size,     
-                        DATAPTR(names)+(coln+1)*size,
+                memmove((char *)DATAPTR(names)+coln*size,     
+                        (char *)DATAPTR(names)+(coln+1)*size,
                         (length(names)-coln-1)*size);
                 SETLENGTH(names,length(names)-1);
+                if (length(names)==0) {
+                    // That was last column deleted, leaving NULL data.table, so we need to reset .row_names and names, so that it really is the NULL data.table.
+                    PROTECT(nullint=allocVector(INTSXP, 0));
+                    protecti++;
+                    setAttrib(dt, R_RowNamesSymbol, nullint);  // i.e. .set_row_names(0)
+                    setAttrib(dt, R_NamesSymbol, R_NilValue);
+                }
                 continue;
             }
         }
