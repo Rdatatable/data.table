@@ -15,6 +15,12 @@ BUG FIXES
     o   Changing a keyed column name now updates the key, too,
         so an invalid key no longer arises, fixing #1495.
         Thanks to Chris Neff for reporting.
+        
+    o   := already warned when a numeric RHS is coerced to
+        match an integer column's type. Now it also warns when
+        numeric is coerced to logical, and integer is coerced
+        to logical, fixing #1500. Thanks to Chris Neff for
+        reporting. 
 
 
         *********************************************

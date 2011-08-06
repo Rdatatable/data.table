@@ -799,13 +799,19 @@ test(297,DT[,list(A1=sum(A1),A2=sum(A2),A3=sum(A3)),by=grp], DT[,lapply(.SD,sum)
 
 DT = data.table(a=1:3,b=4:6)
 test(298, {DT$b<-NULL;DT}, data.table(a=1:3))  # delete column (efficiently)
-tt = try(DT$c <- as.character(DT$c), silent=TRUE)
+tt = try(DT$c <- as.character(DT$c), silent=TRUE) 
 test(299, inherits(tt,"try-error") && length(grep("zero length", tt)))  # to simulate RHS which could (due to user error) be non NULL but zero length
 DT[,c:=42L]   # add column (efficiently)
 test(299.1, DT, data.table(a=1:3,c=42L))
 tt = try(DT[2,c:=42],silent=TRUE)
-test(299.2, inherits(tt,"try-error") && length(grep("(converted from warning).*Coerced numeric RHS to integer", tt)))  # to simulate RHS which could (due to user error) be non NULL but zero length
+test(299.2, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*Coerced numeric RHS to integer to match the column's type.*length 3 [(]nrows of entire table[)]", tt)))  
 # also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
+test(299.3, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
+tt = try(DT[2,c:=42],silent=TRUE)
+test(299.4, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*Coerced numeric RHS to logical to match the column's type.*length 3 [(]nrows of entire table[)]", tt)))
+tt = try(DT[2,c:=42L],silent=TRUE)
+test(299.5, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*Coerced integer RHS to logical to match the column's type.*length 3 [(]nrows of entire table[)]", tt)))
+
 
 # Test bug fix #1468, combining i and by.
 DT = data.table(a=1:3,b=1:9,v=1:9,key="a,b")

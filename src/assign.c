@@ -116,8 +116,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name
             // then intent of user was very likely to coerce 42 to integer and then assign that to the integer column,
             // not the other way around like [.data.frame
             // Most usual reason for coercing RHS several times is when assigning NA to different typed columns on left in for example DT[i,]<-NA
-            if (TYPEOF(values)==REALSXP && TYPEOF(targetcol)==INTSXP) {
-                warning("Coerced numeric RHS to integer because the column is integer; may have truncated precision. Either change the column to numeric first (by assigning a full column RHS using vector(), or rep()ing RHS to match nrows), or (more likely) coerce RHS to integer yourself (e.g. 1L or as.integer) to make your intent clear (and for speed), or, set the column type correct up front when you create the table and stick to it, please.");
+            if (TYPEOF(values)==REALSXP && (TYPEOF(targetcol)==INTSXP || TYPEOF(targetcol)==LGLSXP)) {
+                warning("Coerced numeric RHS to %s to match the column's type; may have truncated precision. Either change the column to numeric first (by creating a new numeric vector length %d (nrows of entire table) yourself and assigning that; i.e. 'replace' column), or coerce RHS to integer yourself (e.g. 1L or as.integer) to make your intent clear (and for speed). Or, set the column type correctly up front when you create the table and stick to it, please.", TYPEOF(targetcol)==INTSXP ? "integer" : "logical", length(VECTOR_ELT(dt,0)));
+            }
+            if (TYPEOF(values)==INTSXP && TYPEOF(targetcol)==LGLSXP) {
+                warning("Coerced integer RHS to logical to match the column's type. Either change the column to integer first (by creating a new integer vector length %d (nrows of entire table) yourself and assigning that; i.e. 'replace' column), or coerce RHS to logical yourself (e.g. as.logical) to make your intent clear (and for speed). Or, set the column type correctly up front when you create the table and stick to it, please.", length(VECTOR_ELT(dt,0)));
             }
             size = SIZEOF(targetcol);
             if (length(rows)==0) {
