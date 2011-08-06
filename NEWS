@@ -22,7 +22,11 @@ BUG FIXES
         to logical, fixing #1500. Thanks to Chris Neff for
         reporting. 
 
-
+    o   The result of DT[,newcol:=3.14] now includes the new
+        column correctly, as well as changing DT by reference,
+        fixing #1496. Thanks to Chris Neff for reporting.
+        
+        
         *********************************************
         **                                         **
         **   CHANGES IN DATA.TABLE VERSION 1.6.3   **

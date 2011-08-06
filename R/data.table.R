@@ -400,11 +400,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             rho = parent.frame()
         }
         ssrows = if (identical(irows,TRUE)) as.integer(NULL) else as.integer(irows)
-        .Call("assign",x,ssrows,lhs,rhs,clearkey,xname,rho,PACKAGE="data.table")
-        if (!missing(verbose) && verbose) cat("Assigned",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")  # the !missing is for speed to avoid calling getOption() which then calls options().
-        return(x)  # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
-                   # Could return number of rows updated but even when wrapped in invisible() it seems
-                   # the [.class method doesn't respect invisible, which may be confusing to user.
+        if (!missing(verbose) && verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
+        # the !missing is for speed to avoid calling getOption() which then calls options().
+        # better to do verbosity before calling C, to make tracing easier if there's a problem in assign.c
+        return(.Call("assign",x,ssrows,lhs,rhs,clearkey,xname,rho,PACKAGE="data.table"))
+        # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
+        # Could return number of rows updated but even when wrapped in invisible() it seems
+        # the [.class method doesn't respect invisible, which may be confusing to user. 
         # NB: Tried assign(":=",function(lhs,rhs) {...},envir=parent.frame()) which worked for whole columns
         # but how to pass a subset of rows that way, or more crucially an assignment within groups (TO DO)
     }

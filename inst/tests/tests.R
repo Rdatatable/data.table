@@ -801,8 +801,9 @@ DT = data.table(a=1:3,b=4:6)
 test(298, {DT$b<-NULL;DT}, data.table(a=1:3))  # delete column (efficiently)
 tt = try(DT$c <- as.character(DT$c), silent=TRUE) 
 test(299, inherits(tt,"try-error") && length(grep("zero length", tt)))  # to simulate RHS which could (due to user error) be non NULL but zero length
-DT[,c:=42L]   # add column (efficiently)
-test(299.1, DT, data.table(a=1:3,c=42L))
+test(299.1, DT[,c:=42L], data.table(a=1:3,c=42L))  # add column (efficiently), and check result is new table
+test(299.15, DT, data.table(a=1:3,c=42L))   # the := was by reference
+
 tt = try(DT[2,c:=42],silent=TRUE)
 test(299.2, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*Coerced numeric RHS to integer to match the column's type.*length 3 [(]nrows of entire table[)]", tt)))  
 # also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
