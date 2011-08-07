@@ -31,6 +31,14 @@ BUG FIXES
         circumstances, fixing #1497. Thanks to Timothee Carayol
         for reporting.
         
+NOTES
+
+    o   The package uses two features (packageVersion() and \href in Rd) 
+        added to R 2.12.0 and is therefore dependent on that release.
+        A 'spurious warning' when checking a package using \href was
+        fixed in R 2.12.2 patched but we believe that warning can safely
+        be ignored in versions >= 2.12.0 and < 2.12.2 patched.
+        
         
         *********************************************
         **                                         **
