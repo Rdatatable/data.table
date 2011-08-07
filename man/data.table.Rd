@@ -9,9 +9,11 @@
 \alias{[.data.table}
 \title{ Enhanced data.frame }
 \description{
-   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast subset, fast grouping and fast ordered joins in a short and flexible syntax, for faster development. It was inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that \emph{only} accept \code{data.frame}.\cr\cr
-   The 10 minute quick start guide to \code{data.table} may be a good place to start: type \code{vignette("datatable-intro")}.\cr\cr
-   Please check the \href{http://datatable.r-forge.r-project.org/}{homepage} for latest news.
+   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast subset, fast grouping, fast update and fast ordered joins in a short and flexible syntax, for faster development. It was inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that \emph{only} accept \code{data.frame}.
+   
+   The 10 minute quick start guide to \code{data.table} may be a good place to start: type \code{vignette("datatable-intro")}.
+   
+   Please check the \href{http://datatable.r-forge.r-project.org/}{homepage} for up to the minute \href{http://r-forge.r-project.org/scm/viewvc.php/pkg/NEWS?view=markup&root=datatable}{news}.
 }
 \usage{
 data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
@@ -47,7 +49,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 
   When \code{i} is a \code{data.table}, \code{x} must have a key. \code{i} is \emph{joined} to \code{x} using the key and the rows in \code{x} that match are returned. An equi-join is performed between each column in \code{i} to each column in \code{x}'s key. The match is a binary search in compiled C in O(log n) time. If \code{i} has less columns than \code{x}'s key then many rows of \code{x} may match to each row of \code{i}. If \code{i} has more columns than \code{x}'s key, the columns of \code{i} not involved in the join are included in the result. If \code{i} also has a key, it is \code{i}'s key columns that are used to match to \code{x}'s key columns, and a binary merge of the two tables is carried out.
 
-  Advanced: When \code{i} is an expression of column names that evaluates to \code{data.table}, a join is performed. We call this a \emph{self join}.\cr\cr
+  Advanced: When \code{i} is an expression of column names that evaluates to \code{data.table}, a join is performed. We call this a \emph{self join}.
 
   Advanced: When \code{i} is a single variable name, it is not considered an expression of column names, and is instead evaluated in calling scope.
   
@@ -56,7 +58,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 }
   \item{j}{ \code{list()} of expressions of column names, an expression or function call that evaluates to \code{list} (including \code{data.frame} and \code{data.table} which are \code{list}s, too), or (when \code{with=FALSE}) same as \code{j} in \code{[.data.frame}.
 
-  \code{j} is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables). The result is returned. \code{list()} may be omitted when there is just one expression, for convenience.\cr\cr
+  \code{j} is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables). The result is returned. \code{list()} may be omitted when there is just one expression, for convenience.
 
 }
   \item{by}{ \code{list()} of expressions of column names, or a single character string containing comma separated column names, or a character vector of column names.
@@ -72,7 +74,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   \code{.BY} is a \code{list} containing a length 1 vector for each item in \code{by}. This can be useful when \code{by} is not known in advance.
   \code{.N} is an integer, length 1, containing the number of rows in the group. This may be useful when the column names are not known in advance, and for convenience generally.
 
-  Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.\cr\cr
+  Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.
 
 }
   \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; the column names can be used as variables. When \code{with=FALSE}, \code{j} works as it does in \code{[.data.frame}.
