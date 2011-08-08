@@ -103,9 +103,12 @@ NEW FEATURES
             1.148   0.000   1.158     ( 511 times faster )
 
         := in j can be combined with all types of i, such as binary
-        search. It can be used to add and remove columns efficiently,
-        too. Fast assigning within groups will be implemented in
-        future.
+        search, and used to add and remove columns efficiently.
+        Fast assigning within groups will be implemented in future.
+        
+        Reminder that data.frame and data.table both allow columns
+        of mixed types, including columns which themselves may be
+        type list; matrix may be one (atomic) type only.
         
         *Please note*, := is new and experimental.
         
