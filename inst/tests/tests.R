@@ -871,7 +871,7 @@ DT = data.table(a=1:6,b=1:6,c=1:6)
 DT[,c("a","c","d","e")] <- list(NULL,11:16,42L,21:26)
 test(317, DT, data.table(b=1:6,c=11:16,d=42L,e=21:26))
 
-# Other assignments
+# Other assignments (covers DT[x==2, y:=5] too, #1502)
 DT[e<24,"b"] <- 99L
 test(318, DT, data.table(b=c(99L,99L,99L,4L,5L,6L),c=11:16,d=42L,e=21:26))
 test(319, DT[b!=99L,b:=99L], data.table(b=99L,c=11:16,d=42L,e=21:26))
