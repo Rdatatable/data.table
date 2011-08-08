@@ -15,11 +15,13 @@ void setSizes();
 #define SIZEOF(x) sizes[TYPEOF(x)]
 //
 
-SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name, SEXP rho)
+SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP symbol, SEXP rho)
 {
     // For internal use only by [<-.data.table.
-    int i, size, targetlen, vlen, v, r, dtncol, coln, protecti=0;
-    SEXP targetcol, RHS, newdt, names, newnames, symbol, nullint;
+    // newcolnames : add these columns (if any)
+    // cols : column numbers corresponding to the values to set
+    int i, size, targetlen, vlen, v, r, oldncol, coln, protecti=0;
+    SEXP targetcol, RHS, newdt, names, newnames, nullint, thisvalue;
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (length(rows)==0) {
         targetlen = length(VECTOR_ELT(dt,0));
@@ -27,125 +29,120 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name
     } else {
         targetlen = length(rows);
     }
-    vlen = length(values);
+    if (TYPEOF(cols)!=INTSXP) error("Logical error in assign, TYPEOF(cols) is %d",TYPEOF(cols));  // Rinternals.h defines the type numbers=>names
     if (TYPEOF(values)==NILSXP) {
-        if (TYPEOF(cols)==STRSXP) error("Value of assignment is NULL, meaning delete column. But column is not present.");
+        if (length(newcolnames)) error("RHS is NULL, meaning delete column(s). But, at least one column is not present.");
+        if (!length(cols)) error("RHS is NULL, meaning delete columns(s). But, no columns passed to delete.");
     } else {
-        if (vlen<1) error("RHS of assignment is zero length but not NULL. If you intend to delete the column use NULL. Otherwise the RHS must have length > 0");
-        if (!isVectorAtomic(values) && !(isVector(values) && length(values)==targetlen))
-            error("RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list() column. In future may allow a list() of values, same length as j");
-        if (targetlen%vlen != 0) error("Tried to assign %d items to target of %d (can recycle but must be exact multiple)",vlen,targetlen);
+        if (TYPEOF(values)==VECSXP) {
+            if (length(cols)>1) {
+                if (length(values)>length(cols)) warning("List of values is longer than the number of columns, ignoring some");  
+                if (length(cols)%length(values) != 0) error("Supplied %d columns to be assigned a list length %d. Can recycle RHS but must be exact multiple.",length(cols),length(values));
+            } // else it's a list() column being assigned to one column
+        }
     }
-    dtncol = length(dt);
-    if (TYPEOF(cols)==STRSXP) {
-        // calling R passes STRSXP when adding new column(s) to end of table
+    oldncol = length(dt);
+    if (length(newcolnames)) {
+        if (TYPEOF(newcolnames)!=STRSXP) error("newcolnames is not character vector");
         if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
-        PROTECT(newdt = allocVector(VECSXP, length(dt)+length(cols)));
+        PROTECT(newdt = allocVector(VECSXP, length(dt)+length(newcolnames)));
         protecti++;
-        memcpy(DATAPTR(newdt),DATAPTR(dt),length(dt)*sizeof(SEXP *));
-        // maybe a loop instead if memcpy doesn't work out for some reason
-        // for (i=0; i<length(dt); i++)
-        //    SET_VECTOR_ELT(newdt, i, VECTOR_ELT(dt,i));
+        size = sizeof(SEXP *);
+        memcpy(DATAPTR(newdt),DATAPTR(dt),length(dt)*size);
         names = getAttrib(dt, R_NamesSymbol);
         if (isNull(names)) error("names of data.table are null");
 	    PROTECT(newnames = allocVector(STRSXP, length(newdt)));
 	    protecti++;
-	    for (i=0; i<length(dt); i++)
-	        SET_STRING_ELT(newnames, i, STRING_ELT(names, i));
-	    for (i=0; i<length(cols); i++)
-	        SET_STRING_ELT(newnames, length(dt)+i, STRING_ELT(cols, i));
+	    memcpy(DATAPTR(newnames), DATAPTR(names), length(names)*size);
+	    memcpy((char *)DATAPTR(newnames)+length(names)*size, DATAPTR(newcolnames), length(newcolnames)*size);
 	    setAttrib(newdt, R_NamesSymbol, newnames);
         copyMostAttrib(dt, newdt);
-        if (length(name)) {
-            // Called from := in j
-            // From R-ext section 5.9.8 :
-            if (!isString(name) || length(name)!=1) error("Internal data.table error in assign.c. name is not a single string");
-            if(!isEnvironment(rho)) error("Internal data.table error in assign.c. rho should be an environment");
-            symbol = install(CHAR(STRING_ELT(name, 0)));
-        } // else called from $<- or [<- where the slower (copying) `*tmp*` mechanism must be used (as of R 2.13.1)
-        if (length(rows)==0 && targetlen==vlen) {
-            for (i=0; i<length(cols); i++)
-                SET_VECTOR_ELT(newdt,length(dt)+i,values);
-            if (length(name)) setVar(symbol,newdt,rho);
-            UNPROTECT(protecti);
-            return(newdt);
-        }
-        // else allocate the column(s), and fall through to recycling subassignment later below
-        for (i=0; i<length(cols); i++)
-            SET_VECTOR_ELT(newdt,length(dt)+i,allocVector(TYPEOF(values),targetlen));
-        if (length(name)) setVar(symbol,newdt,rho);
         dt = newdt;
-    } else {
-        if (TYPEOF(cols)!=INTSXP) error("Logical error in assign, TYPEOF(cols) is %d",TYPEOF(cols));  // Rinternals.h defines the type names/numbers 
     }
     for (i=0; i<length(cols); i++) {
-        if (TYPEOF(cols)==STRSXP)
-            coln = dtncol+i;                // each new column added above, dtncol=length(dt) before dt was enlarged
-        else {
-            coln = INTEGER(cols)[i]-1;      // existing columns
-            if (TYPEOF(values)==NILSXP) {
-                // delete column
-                size=sizeof(SEXP *);
-                memmove((char *)DATAPTR(dt)+coln*size,     
-                        (char *)DATAPTR(dt)+(coln+1)*size,
-                        (length(dt)-coln-1)*size);
-                SETLENGTH(dt,length(dt)-1);
-                // TO DO: mark column vector as unused so can be gc'd. Maybe UNPROTECT_PTR?
-                names = getAttrib(dt, R_NamesSymbol);
-                memmove((char *)DATAPTR(names)+coln*size,     
-                        (char *)DATAPTR(names)+(coln+1)*size,
-                        (length(names)-coln-1)*size);
-                SETLENGTH(names,length(names)-1);
-                if (length(names)==0) {
-                    // That was last column deleted, leaving NULL data.table, so we need to reset .row_names and names, so that it really is the NULL data.table.
-                    PROTECT(nullint=allocVector(INTSXP, 0));
-                    protecti++;
-                    setAttrib(dt, R_RowNamesSymbol, nullint);  // i.e. .set_row_names(0)
-                    setAttrib(dt, R_NamesSymbol, R_NilValue);
+        coln = INTEGER(cols)[i]-1;
+        if (TYPEOF(values)==VECSXP && (length(cols)>1 || length(values)==1))
+            thisvalue = VECTOR_ELT(values,i);
+        else
+            thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
+        if (TYPEOF(thisvalue)==NILSXP)
+            continue;   // delete column(s) afterwards, below this loop
+        vlen = length(thisvalue);
+        if (length(rows)==0 && targetlen==vlen) {
+            SET_VECTOR_ELT(dt,coln,thisvalue);
+            // plonk new column in as it's already the correct length
+            // if column exists, 'replace' it (one way to change a column's type i.e. less easy, as it should be, for speed, correctness and to get the user thinking about their intent)        
+            continue;
+        }
+        if (vlen<1) error("RHS of assignment is zero length but not NULL. If you intend to delete the column use NULL. Otherwise the RHS must have length > 0");
+        if (!isVectorAtomic(thisvalue) && !(isVector(thisvalue) && length(thisvalue)==targetlen))
+            error("RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list() column.");
+        if (targetlen%vlen != 0) error("Tried to assign %d items to target of %d (can recycle but must be exact multiple)",vlen,targetlen);
+        if (coln+1 > oldncol) {  // new column
+            SET_VECTOR_ELT(dt,coln,allocVector(TYPEOF(thisvalue),targetlen));
+        }
+        targetcol = VECTOR_ELT(dt,coln);
+        PROTECT(RHS = coerceVector(thisvalue,TYPEOF(targetcol)));
+        protecti++;
+        // i.e. coerce the RHS to match the type of the column (coerceVector returns early if already the same)
+        // This is different to [<-.data.frame which changes the type of the column to match the RHS. A
+        // data.table tends to be big so we don't want to do that! Also, typically the RHS is very small,
+        // often a length 1 vector such as 42, which by default in R is type numeric. If the column is integer,
+        // then intent of user was very likely to coerce 42 to integer and then assign that to the integer column,
+        // not the other way around like [.data.frame
+        // Most usual reason for coercing RHS several times is when assigning NA to different typed columns on left in for example DT[i,]<-NA
+        if (TYPEOF(thisvalue)==REALSXP && (TYPEOF(targetcol)==INTSXP || TYPEOF(targetcol)==LGLSXP)) {
+            warning("Coerced numeric RHS to %s to match the column's type; may have truncated precision. Either change the column to numeric first (by creating a new numeric vector length %d (nrows of entire table) yourself and assigning that; i.e. 'replace' column), or coerce RHS to integer yourself (e.g. 1L or as.integer) to make your intent clear (and for speed). Or, set the column type correctly up front when you create the table and stick to it, please.", TYPEOF(targetcol)==INTSXP ? "integer" : "logical", length(VECTOR_ELT(dt,0)));
+        }
+        if (TYPEOF(thisvalue)==INTSXP && TYPEOF(targetcol)==LGLSXP) {
+            warning("Coerced integer RHS to logical to match the column's type. Either change the column to integer first (by creating a new integer vector length %d (nrows of entire table) yourself and assigning that; i.e. 'replace' column), or coerce RHS to logical yourself (e.g. as.logical) to make your intent clear (and for speed). Or, set the column type correctly up front when you create the table and stick to it, please.", length(VECTOR_ELT(dt,0)));
+        }
+        size = SIZEOF(targetcol);
+        if (length(rows)==0) {
+            for (r=0; r<(targetlen/vlen); r++) {
+                memcpy((char *)DATAPTR(targetcol) + r*vlen*size,
+                       (char *)DATAPTR(RHS),
+                       vlen * size);
+            }
+        } else {
+            i=0;
+            for (r=0; r<(targetlen/vlen); r++) {
+                for (v=0;v<vlen;v++) {
+                    memcpy((char *)DATAPTR(targetcol) + (INTEGER(rows)[i++]-1)*size, 
+                           (char *)DATAPTR(RHS) + v*size,
+                           size);
                 }
-                continue;
             }
         }
-        if (length(rows)==0 && targetlen==vlen) {
-            // replace the column by reference
-            // i needs to be missing at R level, not set to 1:nrow(dt)
-            // So, this is how to change the type of a column (i.e. less easy, as it should be, for speed, correctness and to get the user thinking about their intent)
-            if (TYPEOF(cols)==STRSXP) error("Internal logical error, cols is STRSXP and values is nrow long, but falling through to recycling branch");
-            SET_VECTOR_ELT(dt,coln,values);   // i.e. replace existing column with the RHS  
-        } else {
-            targetcol = VECTOR_ELT(dt,coln);
-            PROTECT(RHS = coerceVector(values,TYPEOF(targetcol)));
-            protecti++;
-            // i.e. coerce the RHS to match the type of the column (coerceVector returns early if already the same)
-            // This is different to [<-.data.frame which changes the type of the column to match the RHS. A
-            // data.table tends to be big so we don't want to do that! Also, typically the RHS is very small,
-            // often a length 1 vector such as 42, which by default in R is type numeric. If the column is integer,
-            // then intent of user was very likely to coerce 42 to integer and then assign that to the integer column,
-            // not the other way around like [.data.frame
-            // Most usual reason for coercing RHS several times is when assigning NA to different typed columns on left in for example DT[i,]<-NA
-            if (TYPEOF(values)==REALSXP && (TYPEOF(targetcol)==INTSXP || TYPEOF(targetcol)==LGLSXP)) {
-                warning("Coerced numeric RHS to %s to match the column's type; may have truncated precision. Either change the column to numeric first (by creating a new numeric vector length %d (nrows of entire table) yourself and assigning that; i.e. 'replace' column), or coerce RHS to integer yourself (e.g. 1L or as.integer) to make your intent clear (and for speed). Or, set the column type correctly up front when you create the table and stick to it, please.", TYPEOF(targetcol)==INTSXP ? "integer" : "logical", length(VECTOR_ELT(dt,0)));
+    }
+    for (i=0; i<length(cols); i++) {
+        // Delete any columns after assigning above, otherwise values get out of sync (and they may not be in order)
+        coln = INTEGER(cols)[i]-1;
+        if (TYPEOF(values)==VECSXP)
+            thisvalue = VECTOR_ELT(values,i);
+        else
+            thisvalue = values;
+        if (TYPEOF(thisvalue)==NILSXP) {
+            if (coln+1 > oldncol) error("Added new column but RHS is NULL");
+            size=sizeof(SEXP *);
+            memmove((char *)DATAPTR(dt)+coln*size,     
+                    (char *)DATAPTR(dt)+(coln+1)*size,
+                    (length(dt)-coln-1)*size);
+            SETLENGTH(dt,length(dt)-1);
+            // TO DO: mark column vector as unused so can be gc'd. Maybe UNPROTECT_PTR?
+            names = getAttrib(dt, R_NamesSymbol);
+            memmove((char *)DATAPTR(names)+coln*size,     
+                    (char *)DATAPTR(names)+(coln+1)*size,
+                    (length(names)-coln-1)*size);
+            SETLENGTH(names,length(names)-1);
+            if (length(names)==0) {
+                // That was last column deleted, leaving NULL data.table, so we need to reset .row_names and names, so that it really is the NULL data.table.
+                PROTECT(nullint=allocVector(INTSXP, 0));
+                protecti++;
+                setAttrib(dt, R_RowNamesSymbol, nullint);  // i.e. .set_row_names(0)
+                setAttrib(dt, R_NamesSymbol, R_NilValue);
             }
-            if (TYPEOF(values)==INTSXP && TYPEOF(targetcol)==LGLSXP) {
-                warning("Coerced integer RHS to logical to match the column's type. Either change the column to integer first (by creating a new integer vector length %d (nrows of entire table) yourself and assigning that; i.e. 'replace' column), or coerce RHS to logical yourself (e.g. as.logical) to make your intent clear (and for speed). Or, set the column type correctly up front when you create the table and stick to it, please.", length(VECTOR_ELT(dt,0)));
-            }
-            size = SIZEOF(targetcol);
-            if (length(rows)==0) {
-                for (r=0; r<(targetlen/vlen); r++) {
-                    memcpy((char *)DATAPTR(targetcol) + r*vlen*size,
-                           (char *)DATAPTR(RHS),
-                           vlen * size);
-                }
-            } else {
-                i=0;
-                for (r=0; r<(targetlen/vlen); r++) {
-                    for (v=0;v<vlen;v++) {
-                        memcpy((char *)DATAPTR(targetcol) + (INTEGER(rows)[i++]-1)*size, 
-                               (char *)DATAPTR(RHS) + v*size,
-                               size);
-                    }
-                }
-            }
+            continue;
         }
     }
     if (LOGICAL(clearkey)[0]) {
@@ -154,7 +151,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP values, SEXP clearkey, SEXP name
         // Do this at C level to avoid any copies.
         setAttrib(dt, install("sorted"), R_NilValue);
     }
+    if (length(symbol)) {
+        // Called from := in j
+        if(!isEnvironment(rho)) error("Internal data.table error in assign.c. rho should be an environment");
+        setVar(symbol,dt,rho);
+    } // else called from $<- or [<- where the slower copy via `*tmp*` mechanism must be used (as of R 2.13.1)
     UNPROTECT(protecti);
-    return(dt);  // needed for `*tmp*` mechanism, but also returns here when recycling := (setVar already called above so return(dt) is redundant, likely harmless)
+    return(dt);  // needed for `*tmp*` mechanism, and to return the new object after a := for compound syntax
 }
+
 

@@ -267,17 +267,17 @@ test(106, all(dt + dt > 1))
 test(107, dt + dt, dt * 2L)
 
 # test a few other generics:
-test(108, dt, {tt=data.table(t(t(dt)));storage.mode(tt[[2]])="integer";storage.mode(tt[[3]])="integer";tt})
+test(108, dt, data.table(t(t(dt)),key="A,B"))
 test(109, all(!is.na(dt)))
 dt2 <- dt
-dt2$A[1] <- NA
+dt2$A[1] <- NA   # removes key
 test(110, sum(is.na(dt2)), 1L)
-test(111, dt, na.omit(dt))
+test(111, {key(dt)=NULL;dt}, na.omit(dt))
 test(112, dt2[2:nrow(dt2),A], na.omit(dt2)$A)
 
 # test [<- assignment:
 dt2[is.na(dt2)] <- 1L
-test(113, dt, dt2)
+test(113, {key(dt)=NULL;dt}, dt2)   # key should be dropped because we assigned to a key column
 # want to discourage this going forward (inefficient to create RHS like this)
 # dt2[, c("A", "B")] <- dt1[, c("A", "B"), with = FALSE]
 # test(114, dt1, dt2)
@@ -866,7 +866,23 @@ tt = try(DT[,c:=NULL],silent=TRUE)
 test(316, inherits(tt,"try-error") && length(grep("column is not present", tt)))
 
 
+# Test adding, removing and updating columns via [<- in one step
+DT = data.table(a=1:6,b=1:6,c=1:6)
+DT[,c("a","c","d","e")] <- list(NULL,11:16,42L,21:26)
+test(317, DT, data.table(b=1:6,c=11:16,d=42L,e=21:26))
 
+# Other assignments
+DT[e<24,"b"] <- 99L
+test(318, DT, data.table(b=c(99L,99L,99L,4L,5L,6L),c=11:16,d=42L,e=21:26))
+test(319, DT[b!=99L,b:=99L], data.table(b=99L,c=11:16,d=42L,e=21:26))
+
+# previous within functionality restored, #1498
+DT = data.table(a=1:10)
+test(320, within(DT, {b <- 1:10; c <- a + b})[,list(a,b,c)], data.table(a=1:10,b=1:10,c=as.integer(seq(2,20,length=10))))
+# not sure why within makes columns in order a,c,b, but it seems to be a data.frame thing, too.
+test(321, transform(DT,b=42L,e=a), data.table(a=1:10,b=42L,e=1:10))
+DT = data.table(a=1:10, b=1:10)
+test(322, within(DT, rm(b)), data.table(a=1:10))
 
 
 ## See test-* for more tests

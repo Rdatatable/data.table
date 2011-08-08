@@ -4,11 +4,18 @@ The ChangeLog for data.table is the SVN commit log itself :
 
 This NEWS file summarises the main changes.
 
+
         *********************************************
         **                                         **
         **   CHANGES IN DATA.TABLE VERSION 1.6.4   **
         **                                         **
         *********************************************
+
+NEW FEATURES
+
+    o   DT[colA>3,which=TRUE] now returns row numbers rather
+        than a logical vector, for consistency.
+        
 
 BUG FIXES
 
@@ -31,6 +38,11 @@ BUG FIXES
         circumstances, fixing #1497. Thanks to Timothee Carayol
         for reporting.
         
+    o   Previous within() and transform() behaviour restored; i.e.,
+        can handle multiple columns again. Thanks to Timothee Carayol
+        for reporting.
+        
+        
 NOTES
 
     o   The package uses two features (packageVersion() and \href in Rd) 
@@ -38,7 +50,7 @@ NOTES
         A 'spurious warning' when checking a package using \href was
         fixed in R 2.12.2 patched but we believe that warning can safely
         be ignored in versions >= 2.12.0 and < 2.12.2 patched.
-        
+                
         
         *********************************************
         **                                         **
