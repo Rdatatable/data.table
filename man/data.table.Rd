@@ -9,7 +9,7 @@
 \alias{[.data.table}
 \title{ Enhanced data.frame }
 \description{
-   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast subset, fast grouping, fast update and fast ordered joins in a short and flexible syntax, for faster development. It was inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that \emph{only} accept \code{data.frame}.
+   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast subset, fast grouping, fast update and fast ordered joins in a short and flexible syntax, for faster development. It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that \emph{only} accept \code{data.frame}.
    
    The 10 minute quick start guide to \code{data.table} may be a good place to start: type \code{vignette("datatable-intro")}.
    
@@ -39,19 +39,19 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   \item{x}{ A \code{data.table}.
 
 }
-  \item{i}{ Integer, logical or character vector, expression of column names, or \code{data.table}.
+  \item{i}{ Integer, logical or character vector, expression of column names, \code{list} or \code{data.table}.
 
-  integer and logical vectors work the same way they do in \code{\link{[.data.frame}}. Other than \code{NA}s in logical \code{i} are treated as \code{FALSE}, and a single \code{NA} logical is not recycled to match the number of rows, as it is in \code{[.data.frame}.
+  integer and logical vectors work the same way they do in \code{\link{[.data.frame}}. Other than \code{NA}s in logical \code{i} are treated as \code{FALSE} and a single \code{NA} logical is not recycled to match the number of rows, as it is in \code{[.data.frame}.
 
   character is matched to the first column of \code{x}'s key.
 
   expression is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables) and can evaluate to any of the other types.
 
-  When \code{i} is a \code{data.table}, \code{x} must have a key. \code{i} is \emph{joined} to \code{x} using the key and the rows in \code{x} that match are returned. An equi-join is performed between each column in \code{i} to each column in \code{x}'s key. The match is a binary search in compiled C in O(log n) time. If \code{i} has less columns than \code{x}'s key then many rows of \code{x} may match to each row of \code{i}. If \code{i} has more columns than \code{x}'s key, the columns of \code{i} not involved in the join are included in the result. If \code{i} also has a key, it is \code{i}'s key columns that are used to match to \code{x}'s key columns, and a binary merge of the two tables is carried out.
+  When \code{i} is a \code{data.table}, \code{x} must have a key. \code{i} is \emph{joined} to \code{x} using the key and the rows in \code{x} that match are returned. An equi-join is performed between each column in \code{i} to each column in \code{x}'s key. The match is a binary search in compiled C in O(log n) time. If \code{i} has less columns than \code{x}'s key then many rows of \code{x} may match to each row of \code{i}. If \code{i} has more columns than \code{x}'s key, the columns of \code{i} not involved in the join are included in the result. If \code{i} also has a key, it is \code{i}'s key columns that are used to match to \code{x}'s key columns and a binary merge of the two tables is carried out.
 
-  Advanced: When \code{i} is an expression of column names that evaluates to \code{data.table}, a join is performed. We call this a \emph{self join}.
+  Advanced: When \code{i} is an expression of column names that evaluates to \code{data.table} or \code{list}, a join is performed. We call this a \emph{self join}.
 
-  Advanced: When \code{i} is a single variable name, it is not considered an expression of column names, and is instead evaluated in calling scope.
+  Advanced: When \code{i} is a single variable name, it is not considered an expression of column names and is instead evaluated in calling scope.
   
   Advanced: When \code{i} is a regular \code{list} (such as \code{.BY}), it is automatically converted to \code{data.table}.
 
@@ -63,9 +63,9 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 }
   \item{by}{ \code{list()} of expressions of column names, or a single character string containing comma separated column names, or a character vector of column names.
 
-  The \code{list()} of expressions is evaluated within the frame of the data.table (i.e. it sees column names as if they are variables). The data.table is then grouped by the \code{by} and \code{j} is evaluated within the frame. The order of the rows within each group is preserved, as is the order of the groups. \code{list()} may be omitted when there is just one expression, typically a single unquoted column name.
+  The \code{list()} of expressions is evaluated within the frame of the data.table (i.e. it sees column names as if they are variables). The data.table is then grouped by the \code{by} and \code{j} is evaluated within the frame. The order of the rows within each group is preserved as is the order of the groups. \code{list()} may be omitted when there is just one expression, typically a single unquoted column name.
 
-  When \code{by} contains the first \code{n} columns of \code{x}'s key, we call this a \emph{keyed by}. In a keyed by the groups appear contiguously in RAM; memory is copied in bulk internally and this is faster. Otherwise, we call it an \emph{ad hoc by}.
+  When \code{by} contains the first \code{n} columns of \code{x}'s key, we call this a \emph{keyed by}. In a keyed by the groups appear contiguously in RAM and memory is copied in bulk internally, for extra speed. Otherwise, we call it an \emph{ad hoc by}. Ad hoc by is still many times faster than \code{tapply}, for example, but just not as fast as keyed by when datasets are very large, in particular when the size of \emph{each group} is large.
 
   Advanced: Aggregation for a subset of known groups is particularly efficient when passing those groups in \code{i}. When \code{i} is a \code{data.table}, \code{DT[i,j]} evaluates \code{j} for each row of \code{i}. We call this \emph{by without by} or \emph{grouping by i}. Hence the self join \code{DT[data.table(unique(colA)),j]} is identical to \code{DT[,j,by=colA]}.
 
@@ -77,7 +77,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.
 
 }
-  \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; the column names can be used as variables. When \code{with=FALSE}, \code{j} works as it does in \code{[.data.frame}.
+  \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}. The column names can be used as variables. When \code{with=FALSE}, \code{j} works as it does in \code{[.data.frame}.
 
 }
   \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}'s key, \code{nomatch=NA} means \code{NA} is returned for \code{x}'s non-join columns for that row of \code{i}. \code{0} means no rows will be returned for that row of \code{i}.
@@ -119,17 +119,17 @@ It combines database like operations such as \code{\link{subset}}, \code{\link{w
 
 The package can be used just for rapid programming (compact syntax). Largest compute time benefits are on 64bit platforms with plentiful RAM, or when smaller datasets are repeatedly queried within a loop, or when other methods use so much working memory that they fail with an out of memory error.
 
-As with \code{[.data.frame}, \emph{compound queries} can be concatenated on one line, e.g. 
+As with \code{[.data.frame}, \emph{compound queries} can be concatenated on one line; e.g., 
 \preformatted{
     DT[,sum(v),by=colA][V1<300][tail(order(V1))]
     # sum(v) by colA then return the 6 largest which are under 300
 }
-The \code{j} expression does not have to return data, e.g.
+The \code{j} expression does not have to return data; e.g.,
 \preformatted{
     DT[,plot(colB,colC),by=colA]
     # produce a set of plots (likely to pdf) returning no data
 }
-Multiple \code{data.table}s (e.g. \code{X}, \code{Y} and \code{Z}) can be joined in many ways, e.g. :
+Multiple \code{data.table}s (e.g. \code{X}, \code{Y} and \code{Z}) can be joined in many ways; e.g.,
 \preformatted{
     X[Y][Z]
     X[Z][Y]
@@ -153,8 +153,9 @@ User reviews: \url{http://crantastic.org/packages/data-table}\cr
 \url{http://en.wikipedia.org/wiki/Binary_search}\cr
 \url{http://en.wikipedia.org/wiki/Radix_sort}             
 }
-\note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after \code{\dots}. For example \code{data.table(DF,keep=TRUE)} will create a
+\note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after `\code{\dots}`. For example, \code{data.table(DF,keep=TRUE)} will create a
 column called \code{"keep"} containing \code{TRUE} and this is correct behaviour; \code{data.table(DF,keep.rownames=TRUE)} was intended.
+
 POSIXlt is not supported. Unexpected errors may occur if you manage to create a column of type POSIXlt. Please see NEWS for 1.6.3, and \code{\link{IDateTime}} instead.
 }
 \seealso{ \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}}
@@ -236,6 +237,10 @@ DT[,list(MySum=sum(v),
 DT[,sum(v),x][V1<20]       # compound query
 DT[,sum(v),x][order(-V1)]  # ordering results
 
+DT[,z:=42L]                # add new column by reference
+DT[,z:=NULL]               # remove column
+DT["a",v:=42L]             # subassign v by reference
+
 DT[,transform(.SD,m=mean(v)),by=x] 
 DT[,.SD[which.min(v)],by=x]
 
@@ -247,7 +252,7 @@ vignette("datatable-intro")
 vignette("datatable-faq")
 vignette("datatable-timings")
 
-test.data.table()          # over 200 low level tests
+test.data.table()          # over 300 low level tests
 
 update.packages()          # keep up to date
 }}
