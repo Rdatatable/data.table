@@ -901,6 +901,13 @@ test(331, suppressWarnings(within(DT,rm(b,c,d))), data.table(a=1:5))
 DT[,c("b","a")]=NULL
 test(332, DT, data.table(c=11:15))
 test(333, within(DT,rm(c)), data.table(NULL))
+DT = data.table(a=1:5, b=6:10, c=11:15)
+DT[,2:1]=NULL
+test(334, DT, data.table(c=11:15))
+tt = try(DT[,2:1]<-NULL,silent=TRUE)
+test(335, inherits(tt,"try-error") && length(grep("Attempt to assign to column",tt)))
+
+
 
 ## See test-* for more tests
 
