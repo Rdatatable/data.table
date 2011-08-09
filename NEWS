@@ -15,7 +15,6 @@ NEW FEATURES
 
     o   DT[colA>3,which=TRUE] now returns row numbers rather
         than a logical vector, for consistency.
-        
 
 BUG FIXES
 
@@ -38,11 +37,18 @@ BUG FIXES
         circumstances, fixing #1497. Thanks to Timothee Carayol
         for reporting.
         
-    o   Previous within() and transform() behaviour restored; i.e.,
+    o   Previous within() and transform() behaviour restored; e.g.,
         can handle multiple columns again. Thanks to Timothee Carayol
         for reporting.
         
-        
+    o   cbind(DT,DF) now works, as does rbind(DT,DF), fixing #1512.
+        Thanks to Chris Neff for reporting. This was tricky to fix due
+        to nuances of the .Internal dispatch code in cbind and rbind,
+        preventing S3 methods from working in all cases.
+        R will now warn that cbind and rbind have been masked when
+        the data.table package is loaded. These revert to base::cbind
+        and base::rbind when the first argument is not data.table.
+
 NOTES
 
     o   The package uses two features (packageVersion() and \href in Rd) 

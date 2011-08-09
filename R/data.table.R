@@ -847,11 +847,23 @@ tail.data.table = function(x, n=6, ...) {
     `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
 
-cbind.data.table = function(...) {
-    data.table(...)    # for ease of use basically since people often think its like a matrix.
+cbind = function(...) {
+    # according to src/main/bind.c all the items passed to cbind must dispatch to the same
+    # cbind method otherwise it falls through to it's default internal cbind.
+    # base::cbind calls .Internal; it isn't generic. We tried creating cbind.data.table
+    # and cbind.data.frame, and setting both to the same closure but something or other
+    # wouldn't work that way. Hence masking cbind itself.
+    # All so that cbind(DT,data.frame(...)) works as you would expect (test 324)
+    # and also test 230.
+    if (is.data.table(list(...)[[1]]))
+        data.table(...)
+    else
+        base::cbind(...)
 }
 
-rbind.data.table = function (..., deparse.level=1) {
+rbind = function (...) {
+    # see long comments in cbind, same reason here
+    if (!is.data.table(list(...)[[1]])) return(base::rbind(...))
     match.names <- function(clabs, nmi) {
         if (all(clabs == nmi))
             NULL
@@ -866,7 +878,9 @@ rbind.data.table = function (..., deparse.level=1) {
     if (n == 0)
         return(structure(list(), class=c("data.table","data.frame"), row.names=.set_row_names(0)))
 
-    if (!all(sapply(allargs, is.data.table))) stop("All arguments must be data.tables")
+    # if (!all(sapply(allargs, is.data.table))) stop("All arguments must be data.tables")
+    # as of 1.6.4, can rbind a data.frame to a data.table ok
+    
     if (length(unique(sapply(allargs, ncol))) != 1) stop("All data.tables must have the same number of columns")
 
     l = list()

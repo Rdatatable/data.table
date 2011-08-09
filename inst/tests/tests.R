@@ -881,8 +881,14 @@ DT = data.table(a=1:10)
 test(320, within(DT, {b <- 1:10; c <- a + b})[,list(a,b,c)], data.table(a=1:10,b=1:10,c=as.integer(seq(2,20,length=10))))
 # not sure why within makes columns in order a,c,b, but it seems to be a data.frame thing, too.
 test(321, transform(DT,b=42L,e=a), data.table(a=1:10,b=42L,e=1:10))
-DT = data.table(a=1:10, b=1:10)
-test(322, within(DT, rm(b)), data.table(a=1:10))
+DT = data.table(a=1:5, b=1:5)
+test(322, within(DT, rm(b)), data.table(a=1:5))
+
+# check that cbind dispatches on first argument as expected
+test(323, cbind(DT,DT), data.table(a=1:5,b=1:5,`a.1`=1:5,`b.1`=1:5))
+test(324, cbind(DT,data.frame(c=1:5)), data.table(a=1:5,b=1:5,c=1:5))
+test(325, rbind(DT,DT), data.table(a=c(1:5,1:5),b=1:5))
+test(326, rbind(DT,data.frame(a=6:10,b=6:10)), data.table(a=1:10,b=1:10))
 
 
 ## See test-* for more tests
