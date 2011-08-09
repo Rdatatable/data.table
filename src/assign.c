@@ -15,7 +15,7 @@ void setSizes();
 #define SIZEOF(x) sizes[TYPEOF(x)]
 //
 
-SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP symbol, SEXP rho)
+SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP symbol, SEXP rho, SEXP revcolorder)
 {
     // For internal use only by [<-.data.table.
     // newcolnames : add these columns (if any)
@@ -30,6 +30,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         targetlen = length(rows);
     }
     if (TYPEOF(cols)!=INTSXP) error("Logical error in assign, TYPEOF(cols) is %d",TYPEOF(cols));  // Rinternals.h defines the type numbers=>names
+    if (!length(cols)) error("Logical error in assign, no column positions passed to assign");
+    if (length(cols)!=length(revcolorder)) error("Logical error in assign, length(cols)!=length(revcolorder)");
     if (TYPEOF(values)==NILSXP) {
         if (length(newcolnames)) error("RHS is NULL, meaning delete column(s). But, at least one column is not present.");
         if (!length(cols)) error("RHS is NULL, meaning delete columns(s). But, no columns passed to delete.");
@@ -115,8 +117,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             }
         }
     }
-    for (i=0; i<length(cols); i++) {
-        // Delete any columns after assigning above, otherwise values get out of sync (and they may not be in order)
+    for (r=0; r<length(revcolorder); r++) {
+        // Delete any columns assigned NULL (there was a 'continue' early in loop above)
+        i = INTEGER(revcolorder)[r]-1;
         coln = INTEGER(cols)[i]-1;
         if (TYPEOF(values)==VECSXP)
             thisvalue = VECTOR_ELT(values,i);

@@ -48,6 +48,11 @@ BUG FIXES
         R will now warn that cbind and rbind have been masked when
         the data.table package is loaded. These revert to base::cbind
         and base::rbind when the first argument is not data.table.
+        
+    o   Removing multiple columns now works (again) using
+        DT[,c("a","b")]=NULL, or within(DT,rm(a,b)), fixing #1510.
+        Thanks to Timothee Carayol for reporting.
+        
 
 NOTES
 

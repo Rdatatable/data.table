@@ -407,7 +407,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (!missing(verbose) && verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
         # the !missing is for speed to avoid calling getOption() which then calls options().
         # better to do verbosity before calling C, to make tracing easier if there's a problem in assign.c
-        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,clearkey,symbol,rho,PACKAGE="data.table"))
+        revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))  # currently length 1 anyway here, more relevant in the other .Call to assign. Might need a wrapper around .Call(assign), then
+        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,clearkey,symbol,rho,revcolorder,PACKAGE="data.table"))
         # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
         # Could return number of rows updated but even when wrapped in invisible() it seems
         # the [.class method doesn't respect invisible, which may be confusing to user. 
@@ -835,7 +836,8 @@ tail.data.table = function(x, n=6, ...) {
         # The length(value)<nrow(x) is to allow coercion of factor columns to character, but we'll
         # do away with factor columns (by default) soon anyway
     }
-    .Call("assign",x,i,cols,newcolnames,value,keycol,NULL,NULL,PACKAGE="data.table")
+    revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))
+    .Call("assign",x,i,cols,newcolnames,value,keycol,NULL,NULL,revcolorder,PACKAGE="data.table")
     # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
     # or uses data.table := syntax; i.e. DT[i,j:=value]
     # but, there is one copy by R in [<- dispatch to `*tmp*`; i.e. DT[i,j]<-value
@@ -961,11 +963,8 @@ within.data.table <- function (data, expr, keep.key = FALSE, ...) # basically wi
     l <- as.list(e)
     l <- l[!sapply(l, is.null)]
     nD <- length(del <- setdiff(names(data), (nl <- names(l))))
-    data[,nl] <- l
-    if (nD)
-        data[,del] <- if (nD == 1)
-            NULL
-        else vector("list", nD)
+    if (length(nl)) data[,nl] <- l
+    if (nD) data[,del] <- NULL
     if (!keep.key) attr(data,"sorted") <- NULL
     data
 }

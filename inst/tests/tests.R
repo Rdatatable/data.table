@@ -890,6 +890,17 @@ test(324, cbind(DT,data.frame(c=1:5)), data.table(a=1:5,b=1:5,c=1:5))
 test(325, rbind(DT,DT), data.table(a=c(1:5,1:5),b=1:5))
 test(326, rbind(DT,data.frame(a=6:10,b=6:10)), data.table(a=1:10,b=1:10))
 
+# test removing multiple columns, and non-existing ones, #1510
+DT = data.table(a=1:5, b=6:10, c=11:15)
+test(327, within(DT,rm(a,b)), data.table(c=11:15))
+test(328, within(DT,rm(b,c)), data.table(a=1:5))
+test(329, within(DT,rm(b,a)), data.table(c=11:15))
+tt = try(within(DT,rm(b,c,d)),silent=TRUE)
+test(330, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*object 'd' not found",tt)))
+test(331, suppressWarnings(within(DT,rm(b,c,d))), data.table(a=1:5))
+DT[,c("b","a")]=NULL
+test(332, DT, data.table(c=11:15))
+test(333, within(DT,rm(c)), data.table(NULL))
 
 ## See test-* for more tests
 
