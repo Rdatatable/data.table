@@ -907,6 +907,10 @@ test(334, DT, data.table(c=11:15))
 tt = try(DT[,2:1]<-NULL,silent=TRUE)
 test(335, inherits(tt,"try-error") && length(grep("Attempt to assign to column",tt)))
 
+DT = data.table(a=1:2, b=1:6)
+test(336, DT[,z:=a/b], data.table(a=1:2,b=1:6,z=(1:2)/(1:6)))
+test(337, DT[3:4,z:=a*b], data.table(a=1:2,b=1:6,z=c(1,1,3,8,1/5,2/6)))
+
 
 
 ## See test-* for more tests

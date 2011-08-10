@@ -212,7 +212,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (!is.name(isub))
             i = eval(isub, envir=x, enclos=parent.frame())
         else 
-            i =eval(isub,parent.frame())
+            i = eval(isub,parent.frame())
         if (is.logical(i)) {
             if (identical(i,NA)) i = NA_integer_  # see DT[NA] thread re recycling of NA logical
             else i[is.na(i)] = FALSE              # avoids DT[!is.na(ColA) & !is.na(ColB) & ColA==ColB], just DT[ColA==ColB]
@@ -298,8 +298,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         } else {
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
-            if (is.logical(i)) i = which(i)
-            if (which) return(i)  # e.g. DT["A",which=TRUE]
+            if (which) {
+                if (is.logical(i)) {
+                    if (length(i)==nrow(x)) return(which(i))   # e.g. DT[colA>3,which=TRUE]
+                    else return((1:nrow(x))[i])   # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness
+                }
+                else return(i)  # e.g. DT["A",which=TRUE]
+            }
             irows = i
         }
         if (missing(j)) {
@@ -383,9 +388,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (as.character(jsub[[1]]) != ":=") stop("Currently only one `:=` may be present in j. This may be expanded in future.")
         rhsav = all.vars(jsub[[3]],TRUE)
         if (length(rhsav) && length(rhsvars <- intersect(rhsav,colnames(x)))) {
-            #rhsvars = intersect(rhsav,colnames(x))
-            #if (length(rhsvars)) {
-            tmpx = x[irows,rhsvars,with=FALSE]
+            tmpx = if (identical(irows,TRUE)) x[,rhsvars,with=FALSE] else x[irows,rhsvars,with=FALSE]
+            # The 'if' isn't necessary but we do that for a bit of speed.
             rhs = eval(jsub[[3]], envir=tmpx, enclos=parent.frame())
         } else {
             rhs = eval(jsub[[3]], envir=parent.frame(), enclos=parent.frame())
@@ -403,7 +407,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             cols = as.integer(ncol(x)+1L)
             newcolnames=lhs
         }
-        ssrows = if (identical(irows,TRUE)) as.integer(NULL) else as.integer(irows)
+        ssrows = if (!is.logical(irows)) as.integer(irows)        # DT[J("a"),z:=42L]
+                 else if (identical(irows,TRUE)) as.integer(NULL) # DT[,z:=42L]
+                 else if (length(irows)==nrow(x)) which(irows)    # DT[colA>3,z:=42L]
+                 else (1:nrow(x))[irows]                          # DT[c(TRUE,FALSE),z:=42L] (recycling)            
         if (!missing(verbose) && verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
         # the !missing is for speed to avoid calling getOption() which then calls options().
         # better to do verbosity before calling C, to make tracing easier if there's a problem in assign.c
