@@ -396,20 +396,25 @@ This error (and similar; e.g., \code{'getCharCE' must be called on a CHARSXP}) m
 \subsection{\code{The following object(s) are masked from 'package:base': cbind, rbind}}
 This warning appears when loading the package. For detailed information on why they are masked, please type \code{?cbind} and click the \code{data.table} version of the help page.
 
-\subsection{\code{Coerced numeric RHS to integer to match the column's type; may have}
-\code{truncated precision. Either change the column to numeric first by}
-\code{creating a new numeric vector length 5 (nrows of entire table) yourself}
-\code{and assigning that (i.e. 'replace' column), or coerce RHS to integer}
-\code{yourself (e.g. 1L or as.integer) to make your intent clear (and for}
-\code{speed). Or, set the column type correctly up front when you create}
-\code{the table and stick to it, please.}}
-Hopefully, this is self explanatory. To generate it, try :
+\subsection{\code{Coerced numeric RHS to integer to match the column's type}}
+Hopefully, this is self explanatory. The full message is :\newline
+
+\code{Coerced numeric RHS to integer to match the column's type; may have truncated}\newline
+\code{precision. Either change the column to numeric first by creating a new numeric}\newline
+\code{vector length 5 (nrows of entire table) yourself and assigning that (i.e. }\newline
+\code{'replace' column), or coerce RHS to integer yourself (e.g. 1L or as.integer)}\newline
+\code{to make your intent clear (and for speed). Or, set the column type correctly}\newline
+\code{up front when you create the table and stick to it, please.}\newline
+
+To generate it, try :
 <<>>=
 DT = data.table(a=1:5,b=1:5)
 suppressWarnings(
-DT[2,b:=6]        # works (slower) with warning - suppressed for this vignette
+DT[2,b:=6]        # works (slower) with warning
 )
+class(6)          # numeric not integer
 DT[2,b:=7L]       # works (faster) without warning
+class(7L)         # L makes it an integer
 DT[,b:=rnorm(5)]  # 'replace' integer column with a numeric column
 @
 
