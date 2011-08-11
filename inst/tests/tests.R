@@ -912,6 +912,19 @@ test(336, DT[,z:=a/b], data.table(a=1:2,b=1:6,z=(1:2)/(1:6)))
 test(337, DT[3:4,z:=a*b], data.table(a=1:2,b=1:6,z=c(1,1,3,8,1/5,2/6)))
 
 
+# test LHS of := when with=FALSE
+DT = data.table(a=1:3, b=4:6)
+test(338, DT[,2:=42L,with=FALSE], data.table(a=1:3,b=42L))
+test(339, DT[,2:1:=list(10:12,3L),with=FALSE], data.table(a=3L,b=10:12))
+test(340, DT[,"a":=7:9,with=FALSE], data.table(a=7:9,b=10:12))
+test(341, DT[,c("a","b"):=1:3,with=FALSE], data.table(a=1:3,b=1:3))
+mycols = "a"
+test(342, DT[,mycols:=NULL,with=FALSE], data.table(b=1:3))
+mynewcol = "newname"
+test(343, DT[,mynewcol:=21L,with=FALSE], data.table(b=1:3,newname=21L))
+mycols = 1:2
+test(344, DT[,mycols:=NULL,with=FALSE], data.table(NULL))
+
 
 ## See test-* for more tests
 

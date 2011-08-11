@@ -11,6 +11,23 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+NEW FEATURES
+
+    o   The LHS of := may now be column names or positions
+        when with=FALSE; e.g.,
+        
+            DT[,c("d","e"):=NULL,with=FALSE]
+            DT[,4:5:=NULL,with=FALSE]
+            newcolname="myname"
+            DT[,newcolname:=3.14,with=FALSE]
+        
+        This implements FR#1499 'Introduce function for efficient
+        removal of a vector of column names' by Timothee Carayol,
+        plus more because you can add new columns, and assign to
+        multiple columns this way, too. We still plan to allow
+        multiple := without needing with=FALSE in future.
+
+
 BUG FIXES
 
     o   DT[,z:=a/b] and DT[a>3,z:=a/b] work again, where a and

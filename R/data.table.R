@@ -344,6 +344,66 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
     } # end of  if !missing(i)
     if (missing(j)) stop("logical error, j missing")
+    jsub = substitute(j)
+    if (is.null(jsub)) return(NULL)
+    jsubl = as.list(jsub)    
+    if (identical(jsubl[[1]],quote(eval))) {
+        jsub = eval(jsubl[[2]],parent.frame())
+        if (is.expression(jsub)) jsub = jsub[[1]]
+    }
+    av = all.vars(jsub,TRUE)
+    if (":=" %in% av) {
+        if (!missing(by)) stop("Combining := in j with by is not yet implemented. Please let maintainer('data.table') know if you are interested in this.")
+        if (bywithoutby && nrow(i)>1) stop("combining bywithoutby with := in j is not yet implemented.")
+        if (as.character(jsub[[1]]) != ":=") stop("Currently only one `:=` may be present in j. This may be expanded in future.")
+        rhsav = all.vars(jsub[[3]],TRUE)
+        if (length(rhsav) && length(rhsvars <- intersect(rhsav,colnames(x)))) {
+            tmpx = if (identical(irows,TRUE)) x[,rhsvars,with=FALSE] else x[irows,rhsvars,with=FALSE]
+            # The 'if' isn't necessary but we do that for a bit of speed.
+            rhs = eval(jsub[[3]], envir=tmpx, enclos=parent.frame())
+        } else {
+            rhs = eval(jsub[[3]], envir=parent.frame(), enclos=parent.frame())
+        }
+        if (with) {
+            if (!is.name(jsub[[2]])) stop("LHS of := must be a single column name, when with=TRUE. When with=FALSE the LHS may be a vector of column names or positions.")
+            lhs = as.character(jsub[[2]])
+        } else {
+            lhs = eval(jsub[[2]], envir=parent.frame(), enclos=parent.frame())
+            if (!is.atomic(lhs)) stop("LHS of := must evaluate to an atomic vector (column names or positions) when with=FALSE")
+            if (is.numeric(lhs)) {
+                if (!all(1<=lhs | lhs<=ncol(x))) stop("LHS of := out of bounds")
+                lhs = colnames(x)[lhs]
+            }
+            if (!is.character(lhs)) stop("Logical error. LHS of := wasn't atomic column names or positions")
+        }
+        clearkey = any(!is.na(match(lhs,key(x))))
+        m = match(lhs,names(x))
+        if (!any(is.na(m))) {
+            cols = as.integer(m)
+            newcolnames=NULL
+            symbol = rho = NULL
+        } else {
+            if (length(m)!=1) stop("Logical error. Can only add new columns one at a time currently")
+            symbol = as.name(substitute(x))
+            rho = parent.frame()
+            cols = as.integer(ncol(x)+1L)
+            newcolnames=lhs
+        }
+        ssrows = if (!is.logical(irows)) as.integer(irows)        # DT[J("a"),z:=42L]
+                 else if (identical(irows,TRUE)) as.integer(NULL) # DT[,z:=42L]
+                 else if (length(irows)==nrow(x)) which(irows)    # DT[colA>3,z:=42L]
+                 else (1:nrow(x))[irows]                          # DT[c(TRUE,FALSE),z:=42L] (recycling)            
+        if (!missing(verbose) && verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
+        # the !missing is for speed to avoid calling getOption() which then calls options().
+        # better to do verbosity before calling C, to make tracing easier if there's a problem in assign.c
+        revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))  # currently length 1 anyway here, more relevant in the other .Call to assign. Might need a wrapper around .Call(assign), then
+        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,clearkey,symbol,rho,revcolorder,PACKAGE="data.table"))
+        # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
+        # Could return number of rows updated but even when wrapped in invisible() it seems
+        # the [.class method doesn't respect invisible, which may be confusing to user. 
+        # NB: Tried assign(":=",function(lhs,rhs) {...},envir=parent.frame()) which worked for whole columns
+        # but how to pass a subset of rows that way, or more crucially an assignment within groups (TO DO)
+    }
     if (!with) {
         if (!length(j)) return(data.table(NULL))
         if (is.character(j)) j = match(j, names(x))
@@ -368,59 +428,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         attr(ans,"row.names") = .set_row_names(nrow(ans))
         return(ans)
     }
-    jsub = substitute(j)
-    if (is.null(jsub)) return(NULL)
-    jsubl = as.list(jsub)    
-    
     if (!missing(by) && !missing(i)) {
         x = x[irows]
         # TO DO: efficiency gain by taking only the columns of x that j and by need.
         bywithoutby=FALSE
-    }
-    if (identical(jsubl[[1]],quote(eval))) {
-        jsub = eval(jsubl[[2]],parent.frame())
-        if (is.expression(jsub)) jsub = jsub[[1]]
-    }
-    av = all.vars(jsub,TRUE)
-    if (":=" %in% av) {
-        if (!missing(by)) stop("Combining := in j with by is not yet implemented. Please let maintainer('data.table') know if you are interested in this.")
-        if (bywithoutby && nrow(i)>1) stop("combining bywithoutby with := in j is not yet implemented.")
-        if (as.character(jsub[[1]]) != ":=") stop("Currently only one `:=` may be present in j. This may be expanded in future.")
-        rhsav = all.vars(jsub[[3]],TRUE)
-        if (length(rhsav) && length(rhsvars <- intersect(rhsav,colnames(x)))) {
-            tmpx = if (identical(irows,TRUE)) x[,rhsvars,with=FALSE] else x[irows,rhsvars,with=FALSE]
-            # The 'if' isn't necessary but we do that for a bit of speed.
-            rhs = eval(jsub[[3]], envir=tmpx, enclos=parent.frame())
-        } else {
-            rhs = eval(jsub[[3]], envir=parent.frame(), enclos=parent.frame())
-        }
-        lhs = as.character(jsub[[2]])
-        clearkey = any(!is.na(match(lhs,key(x))))
-        m = match(lhs,names(x))
-        if (!is.na(m)) {
-            cols = as.integer(m)
-            newcolnames=NULL
-            symbol = rho = NULL
-        } else {
-            symbol = as.name(substitute(x))
-            rho = parent.frame()
-            cols = as.integer(ncol(x)+1L)
-            newcolnames=lhs
-        }
-        ssrows = if (!is.logical(irows)) as.integer(irows)        # DT[J("a"),z:=42L]
-                 else if (identical(irows,TRUE)) as.integer(NULL) # DT[,z:=42L]
-                 else if (length(irows)==nrow(x)) which(irows)    # DT[colA>3,z:=42L]
-                 else (1:nrow(x))[irows]                          # DT[c(TRUE,FALSE),z:=42L] (recycling)            
-        if (!missing(verbose) && verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
-        # the !missing is for speed to avoid calling getOption() which then calls options().
-        # better to do verbosity before calling C, to make tracing easier if there's a problem in assign.c
-        revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))  # currently length 1 anyway here, more relevant in the other .Call to assign. Might need a wrapper around .Call(assign), then
-        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,clearkey,symbol,rho,revcolorder,PACKAGE="data.table"))
-        # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
-        # Could return number of rows updated but even when wrapped in invisible() it seems
-        # the [.class method doesn't respect invisible, which may be confusing to user. 
-        # NB: Tried assign(":=",function(lhs,rhs) {...},envir=parent.frame()) which worked for whole columns
-        # but how to pass a subset of rows that way, or more crucially an assignment within groups (TO DO)
     }
     if ((missing(by) && !bywithoutby) || nrow(x)<1) {
         jvars = intersect(av,colnames(x))
