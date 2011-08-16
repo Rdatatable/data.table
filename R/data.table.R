@@ -498,12 +498,12 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 next
             }
             if (typeof(byval[[jj]]) == "double") {
-                toint = as.integer(byval[[jj]])
-                if (isTRUE(all.equal(byval[[jj]],toint))) {
-                    byval[[jj]] = toint
+                toint = as.integer(byval[[jj]])  # drops attributes (such as class) so as.vector() needed on next line
+                if (isTRUE(all.equal(as.vector(byval[[jj]]),toint))) {
+                    mode(byval[[jj]]) = "integer"  # retains column attributes (such as IDateTime class)
                     next
                 }
-                else stop("Column ",jj," of 'by' is float and cannot be auto converted to integer without losing information.")
+                else stop("Column ",jj," of 'by' is type 'double' and contains fractional data so cannot be coerced to integer in this particular case without losing information.")
             }
             if (!typeof(byval[[jj]]) %in% c("integer","logical")) stop("column or expression ",jj," of 'by' is type ",typeof(byval[[jj]]),". Do not quote column names. Useage: DT[,sum(colC),by=list(colA,month(colB))]")
         }

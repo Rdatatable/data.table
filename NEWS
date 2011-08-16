@@ -26,6 +26,11 @@ NEW FEATURES
         plus more because you can add new columns, and assign to
         multiple columns this way, too. We still plan to allow
         multiple := without needing with=FALSE in future.
+        
+        
+    o   setkey(DT,...) now returns DT (invisibly) rather than NULL.
+        This is to allow compound statements; e.g.,
+            setkey(DT,x)["a"]
 
 
 BUG FIXES
@@ -33,6 +38,14 @@ BUG FIXES
     o   DT[,z:=a/b] and DT[a>3,z:=a/b] work again, where a and
         b are columns of DT. Thanks to Chris Neff for reporting,
         and his patience.
+        
+    o   Numeric columns with class attributes are now correctly
+        coerced to integer by setkey and ad hoc by. The error
+        similar to 'fractional data is being truncated' should now
+        only occur when that really is true. A side effect of
+        this is that ad hoc by and setkey now work on IDate columns
+        which have somehow become numeric; e.g. via rbind(DF,DF)
+        as reported by Chris Neff.
 
 
         *********************************************

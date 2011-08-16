@@ -22,7 +22,7 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
-    if (identical(key(x),cols)) return(invisible()) # table is already key'd by those columns
+    if (identical(key(x),cols)) return(invisible(x)) # table is already key'd by those columns
     copied = FALSE   # in future we hope to be able to setkeys on any type, this goes away, and saves more potential copies
     for (i in cols) {
         if (is.character(x[[i]])) {
@@ -31,9 +31,9 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
             next
         }
         if (typeof(x[[i]]) == "double") {
-            toint = as.integer(x[[i]])
-            if (identical(all.equal(x[[i]],toint),TRUE)) {
-                x[[i]] = toint
+            toint = as.integer(x[[i]])   # see [.data.table for similar logic, and comments
+            if (isTRUE(all.equal(as.vector(x[[i]]),toint))) {
+                mode(x[[i]]) = "integer"
                 copied=TRUE
                 next
             }
@@ -63,7 +63,7 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
     # ans = x[o]   # copy whole table
     # attr(x,"sorted") <<- cols  # now done inside reorder by reference
     # assign(name,ans,envir=loc)
-    invisible()
+    invisible(x)
 }
 
 radixorder1 <- function(x) {

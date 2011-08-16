@@ -925,6 +925,18 @@ test(343, DT[,mynewcol:=21L,with=FALSE], data.table(b=1:3,newname=21L))
 mycols = 1:2
 test(344, DT[,mycols:=NULL,with=FALSE], data.table(NULL))
 
+# Test incorrect 'can't coerce without losing precision' message
+# It seems that the .Internal rbind of two data.frame coerces IDate to numeric. Tried defining
+# "[<-.IDate" as per Tom's suggestion, and c.IDate to no avail (maybe because the .Internal code
+# in bind.c doesn't look up package methods?). Anyway the coercion from numeric
+# to integer needed fixing anyway (the all.equal would complain about attributes even though
+# there wasn't any fractional data present), and it works for this too, now.
+DF = data.frame(x=as.IDate(c("2010-01-01","2010-01-02")), y=1:6)
+DT = as.data.table(rbind(DF,DF))
+test(345, DT[,sum(y),by=x], data.table(x=as.IDate(c("2010-01-01","2010-01-02")),V1=c(18L,24L)))
+# ad hoc by coerces double to integer with a check
+test(346, setkey(DT,x)[J(as.IDate("2010-01-02"))], data.table(x=as.IDate("2010-01-02"),y=c(2L,4L,6L)))
+# setkey also coerces double to integer with a check
 
 ## See test-* for more tests
 
