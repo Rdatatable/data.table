@@ -935,7 +935,7 @@ DF = data.frame(x=as.IDate(c("2010-01-01","2010-01-02")), y=1:6)
 DT = as.data.table(rbind(DF,DF))
 test(345, DT[,sum(y),by=x], data.table(x=as.IDate(c("2010-01-01","2010-01-02")),V1=c(18L,24L)))
 # ad hoc by coerces double to integer with a check
-test(346, setkey(DT,x)[J(as.IDate("2010-01-02"))], data.table(x=as.IDate("2010-01-02"),y=c(2L,4L,6L)))
+test(346, setkey(DT,x)[J(as.IDate("2010-01-02"))], data.table(x=as.IDate("2010-01-02"),y=rep(c(2L,4L,6L),2),key="x"))
 # setkey also coerces double to integer with a check
 
 ## See test-* for more tests
