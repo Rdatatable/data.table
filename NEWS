@@ -46,6 +46,11 @@ BUG FIXES
         this is that ad hoc by and setkey now work on IDate columns
         which have somehow become numeric; e.g. via rbind(DF,DF)
         as reported by Chris Neff.
+        
+        
+USER VISIBLE CHANGES
+
+    o   setkey's verbose messages expanded.
 
 
         *********************************************

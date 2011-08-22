@@ -27,6 +27,7 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
     for (i in cols) {
         if (is.character(x[[i]])) {
             x[[i]] = factor(x[[i]])
+            if (verbose) cat("setkey changed the type of column '",i,"' from character to factor.\n",sep="")
             copied=TRUE
             next
         }
@@ -34,10 +35,11 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
             toint = as.integer(x[[i]])   # see [.data.table for similar logic, and comments
             if (isTRUE(all.equal(as.vector(x[[i]]),toint))) {
                 mode(x[[i]]) = "integer"
+                if (verbose) cat("setkey changed the type of column '",i,"' from numeric to integer, no fractional data present.\n",sep="")
                 copied=TRUE
                 next
             }
-            stop("Column '",i,"' cannot be auto converted to integer without losing information.")
+            stop("Column '",i,"' cannot be coerced to integer without losing fractional data.")
         }
         if (is.factor(x[[i]])) {
             # check levels are sorted, if not sort them, test 150
@@ -46,6 +48,7 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
                 r = rank(l)
                 l[r] = l
                 x[[i]] = structure(r[as.integer(x[[i]])], levels=l, class="factor")
+                if (verbose) cat("setkey detected the levels of column '",i,"' were not sorted, so sorted them.\n",sep="")
                 copied=TRUE
             }
             next
@@ -56,7 +59,7 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
     o = fastorder(x, cols, verbose=verbose)
     .Call("reorder",x,o,cols, PACKAGE="data.table")
     if (copied) {
-        if (verbose) cat("setkey changed the type of a column, incurring a copy\n")
+        if (verbose) cat("setkey incurred a copy of the whole table, due to the coercion(s) above.\n")
         assign(name,x,envir=loc)
     }    
     # Was :

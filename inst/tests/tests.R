@@ -538,7 +538,7 @@ test(217, DT[J(2),v]$v, 2L)
 DT = data.table(a=c(1,2.1,3),v=1:3)
 tt = try(setkey(DT,a), silent=TRUE)
 test(218, inherits(tt,"try-error"))
-test(219, length(grep("losing information", tt)))
+test(219, length(grep("losing fractional data", tt)))
 
 # tests of quote()-ed expressions in i. Bug #1058
 DT = data.table(a=1:5,b=6:10,key="a")
