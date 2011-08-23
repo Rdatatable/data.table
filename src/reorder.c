@@ -15,13 +15,12 @@ void setSizes();
 #define SIZEOF(x) sizes[TYPEOF(x)]
 //
 
-SEXP reorder(SEXP dt, SEXP order, SEXP cols)
+SEXP reorder(SEXP dt, SEXP order)
 {
     // For internal use only by fastorder().
     char *tmp, *tmpp;
     int i, j, nrow, size;
     if (!sizesSet) setSizes();
-    if (TYPEOF(cols) != STRSXP) error("'cols' should be character vector at this point in reorder");
     nrow = length(VECTOR_ELT(dt,0));
     if (length(order) != nrow) error("logical error nrow(dt)!=length(order)");
     tmp=calloc(nrow,sizeof(double));  // sizeof largest type. 8 on all platforms?
@@ -37,7 +36,6 @@ SEXP reorder(SEXP dt, SEXP order, SEXP cols)
         memcpy((char *)DATAPTR(VECTOR_ELT(dt,i)), tmp, nrow*size);
     }
     free(tmp);
-    setAttrib(dt, install("sorted"), cols);  // wasn't sure how to set attributes in calling scope by reference at R level, here is fine
     return(R_NilValue);
 }               
 

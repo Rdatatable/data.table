@@ -941,8 +941,11 @@ test(346, setkey(DT,x)[J(as.IDate("2010-01-02"))], data.table(x=as.IDate("2010-0
 # Test that invalid keys are reset, without user needing to remove key using key(DT)=NULL first
 DT = data.table(a=letters[1:3],b=letters[6:4],key="a")
 attr(DT,"sorted")="b"  # user can go under the hood
-test(347, setkey(DT,b), data.table(a=letters[3:1],b=letters[4:6],key="b"))
-
+tt = try(setkey(DT,b),silent=TRUE)
+test(347, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*Already keyed by this key but had invalid row order, key rebuilt",tt)))
+DT = data.table(a=letters[1:3],b=letters[6:4],key="a")
+attr(DT,"sorted")="b"
+test(348, suppressWarnings(setkey(DT,b)), data.table(a=letters[3:1],b=letters[4:6],key="b"))
 
 
 ## See test-* for more tests

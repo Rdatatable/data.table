@@ -22,8 +22,7 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
-    # if (identical(key(x),cols)) return(invisible(x)) # table is already key'd by those columns
-    # ... but causes confusion if levels have become unsorted (somehow), so commented out
+    alreadykeyed = identical(key(x),cols)
     copied = FALSE   # in future we hope to be able to setkeys on any type, this goes away, and saves more potential copies
     for (i in cols) {
         if (is.character(x[[i]])) {
@@ -58,9 +57,14 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
     o = fastorder(x, cols, verbose=verbose)
-    .Call("reorder",x,o,cols, PACKAGE="data.table")
+    if (is.unsorted(o)) {
+        if (alreadykeyed) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let maintainer('data.table') know so the root cause can be fixed.")
+        .Call("reorder",x,o, PACKAGE="data.table")
+    }
+    if (!alreadykeyed) .Call("setattrib",x,"sorted",cols, PACKAGE="data.table")
     if (copied) {
         if (verbose) cat("setkey incurred a copy of the whole table, due to the coercion(s) above.\n")
+        if (alreadykeyed) warning("Already keyed by this key but had invalid structure (e.g. unordered factor levels, or incorrect column types), key rebuilt. If you didn't go under the hood please let maintainer('data.table') know so the root cause can be fixed.")
         assign(name,x,envir=loc)
     }    
     # Was :
