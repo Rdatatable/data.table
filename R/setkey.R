@@ -22,7 +22,8 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
-    if (identical(key(x),cols)) return(invisible(x)) # table is already key'd by those columns
+    # if (identical(key(x),cols)) return(invisible(x)) # table is already key'd by those columns
+    # ... but causes confusion if levels have become unsorted (somehow), so commented out
     copied = FALSE   # in future we hope to be able to setkeys on any type, this goes away, and saves more potential copies
     for (i in cols) {
         if (is.character(x[[i]])) {

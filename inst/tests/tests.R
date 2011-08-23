@@ -938,6 +938,13 @@ test(345, DT[,sum(y),by=x], data.table(x=as.IDate(c("2010-01-01","2010-01-02")),
 test(346, setkey(DT,x)[J(as.IDate("2010-01-02"))], data.table(x=as.IDate("2010-01-02"),y=rep(c(2L,4L,6L),2),key="x"))
 # setkey also coerces double to integer with a check
 
+# Test that invalid keys are reset, without user needing to remove key using key(DT)=NULL first
+DT = data.table(a=letters[1:3],b=letters[6:4],key="a")
+attr(DT,"sorted")="b"  # user can go under the hood
+test(347, setkey(DT,b), data.table(a=letters[3:1],b=letters[4:6],key="b"))
+
+
+
 ## See test-* for more tests
 
 ##########################

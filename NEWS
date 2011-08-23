@@ -27,10 +27,17 @@ NEW FEATURES
         multiple columns this way, too. We still plan to allow
         multiple := without needing with=FALSE in future.
         
-        
+     
     o   setkey(DT,...) now returns DT (invisibly) rather than NULL.
         This is to allow compound statements; e.g.,
             setkey(DT,x)["a"]
+            
+    o   If DT is already keyed by the columns passed to setkey or
+        key<-, the key is now rebuilt and checked rather than skipping
+        for efficiency. This is to save needing to know to drop the key
+        first to rebuild an invalid key. Invalid keys can arise by going
+        'under the hood'; e.g., attr(DT,"sorted")="z", or by manually
+        constructing a key with unordered factor levels.
 
 
 BUG FIXES
