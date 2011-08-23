@@ -39,10 +39,9 @@ NEW FEATURES
         key<-), the key is now rebuilt and checked rather than skipping
         for efficiency. This is to save needing to know to drop the key
         first to rebuild an invalid key. Invalid keys can arise by going
-        'under the hood'; e.g., attr(DT,"sorted")="z", or by manually
-        constructing a key with unordered factor levels. A warning is
-        issued so the user can fix the root cause. Thanks to Timothee
-        Carayol for highlighting.
+        'under the hood'; e.g., attr(DT,"sorted")="z", or somehow ending
+        up with unordered factor levels. A warning is issued so the root
+        cause can be fixed. Thanks to Timothee Carayol for highlighting.
 
 
 BUG FIXES
