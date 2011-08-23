@@ -37,7 +37,8 @@ NEW FEATURES
         for efficiency. This is to save needing to know to drop the key
         first to rebuild an invalid key. Invalid keys can arise by going
         'under the hood'; e.g., attr(DT,"sorted")="z", or by manually
-        constructing a key with unordered factor levels.
+        constructing a key with unordered factor levels. Thanks to
+        Timothee Carayol for highlighting.
 
 
 BUG FIXES
