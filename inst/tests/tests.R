@@ -790,6 +790,19 @@ f = function(x){ force(x)
 f(DT)
 test(295,DT,data.table(a=42L,b=4:6))  # := was by reference (fast) and dropped the key, too, because assigned to key column
 
+DT = data.table(a=1:3,b=4:6)
+f = function(x){ x = copy(x)
+                 setkey(x) }
+f(DT)
+test(295.1,key(DT),NULL)
+setkey(DT,a)
+f = function(x){ x = copy(x)
+                 x[,b:=10:12][J(2),b][[2]] }   # test copy retains key
+test(295.2,f(DT),11L)
+test(295.3,DT,data.table(a=1:3,b=4:6,key="a"))  # The := was on the local copy
+
+
+
 # new feature added 1.6.3, that key can be vector.
 test(296,data.table(a=1:3,b=4:6,key="a,b"),data.table(a=1:3,b=4:6,key=c("a","b")))
 

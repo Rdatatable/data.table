@@ -1128,5 +1128,10 @@ split.data.table = function(...) {
 # TO DO, add more warnings e.g. for by(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
 
 
+copy = function(x) .Call("Rf_duplicate",x,PACKAGE="data.table")
+# TO DO: speedup to duplicate.c using memcpy, suggested to r-devel, would benefit copy()
+# Could construct data.table and use memcpy ourselves but deep copies e.g. list() columns
+# may be tricky; more robust to rely on R's duplicate which deep copies.
+
 
 
