@@ -21,11 +21,11 @@ NEW FEATURES
             newcolname="myname"
             DT[,newcolname:=3.14,with=FALSE]
         
-        This implements FR#1499 'Introduce function for efficient
-        removal of a vector of column names' by Timothee Carayol,
-        plus more because you can add new columns, and assign to
-        multiple columns this way, too. We still plan to allow
-        multiple := without needing with=FALSE in future.
+        This implements FR#1499 'Ability to efficiently remove a
+        vector of column names' by Timothee Carayol, plus more
+        because you can add new columns, and assign to multiple
+        columns this way, too. We still plan to allow multiple :=
+        without needing with=FALSE, in future.
         
     o   setkey(DT,...) now returns DT (invisibly) rather than NULL.
         This is to allow compound statements; e.g.,
@@ -57,10 +57,10 @@ BUG FIXES
         
     o   Numeric columns with class attributes are now correctly
         coerced to integer by setkey and ad hoc by. The error
-        similar to 'fractional data is being truncated' should now
+        similar to 'fractional data cannot be truncated' should now
         only occur when that really is true. A side effect of
         this is that ad hoc by and setkey now work on IDate columns
-        which have somehow become numeric; e.g. via rbind(DF,DF)
+        which have somehow become numeric; e.g., via rbind(DF,DF)
         as reported by Chris Neff.
         
     o   .N is now 0 (rather than 1) when no rows in x match the
@@ -73,7 +73,7 @@ BUG FIXES
         first argument is not data.table, it now delegates to the next
         package on the search path (and above that), one or more of which
         may also mask cbind (such as IRanges), rather than skipping
-        straight to base::cbind. It no longer matters which way around
+        straight to base::cbind. So, it no longer matters which way around
         data.table and IRanges are loaded, fixing #1534. Thanks to Steve
         Lianoglou for reporting.
         

@@ -32,7 +32,7 @@ copy(x)
   If \code{value=NULL}, the key is removed.
   }
 \value{
-    No value is returned. The data.table is modified by reference. If you require a copy, take a copy first (using \code{DT2=copy(DT)}. \code{copy()} may also sometimes be useful before \code{:=} is used to subassign to a column by reference.
+    No value is returned. The data.table is modified by reference. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). \code{copy()} may also sometimes be useful before \code{:=} is used to subassign to a column by reference.
 }
 \references{
 \url{http://en.wikipedia.org/wiki/Radix_sort}\cr
@@ -60,7 +60,7 @@ copy(x)
     DT = data.table(A=5:1,B=letters[5:1])
     DT2 = copy(DT)        # explicit copy is required for data.table
     setkey(DT2,B)         # just changes DT2
-    identical(DT,DT2)     # FALSE. DT and DT2 are now different tables.
+    identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
 }
 \keyword{ data }
 
