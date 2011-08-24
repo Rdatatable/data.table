@@ -67,6 +67,16 @@ BUG FIXES
         row in i, fixing bug #1532. Thanks to Yang Zhang for
         reporting.
         
+    o   Compatibility with package IRanges has been restored. Both
+        data.table and IRanges mask cbind and rbind. When data.table's
+        cbind is found first (if it is loaded after IRanges) and the
+        first argument is not data.table, it now delegates to the next
+        package on the search path (and above that), one or more of which
+        may also mask cbind (such as IRanges), rather than skipping
+        straight to base::cbind. It no longer matters which way around
+        data.table and IRanges are loaded, fixing #1534. Thanks to Steve
+        Lianoglou for reporting.
+        
         
 USER VISIBLE CHANGES
 

@@ -875,15 +875,16 @@ cbind = function(...) {
     # wouldn't work that way. Hence masking cbind itself.
     # All so that cbind(DT,data.frame(...)) works as you would expect (test 324)
     # and also test 230.
+    # The get via match is for compatibility with IRanges (for example) which also masks rbind and cbind.
     if (is.data.table(list(...)[[1]]))
         data.table(...)
     else
-        base::cbind(...)
+        get("cbind",pos=1+match("package:data.table",search(),nomatch=1))(...)
 }
 
 rbind = function (...) {
     # see long comments in cbind, same reason here
-    if (!is.data.table(list(...)[[1]])) return(base::rbind(...))
+    if (!is.data.table(list(...)[[1]])) return(get("rbind",pos=1+match("package:data.table",search(),nomatch=1))(...))
     match.names <- function(clabs, nmi) {
         if (all(clabs == nmi))
             NULL
