@@ -43,10 +43,10 @@ NEW FEATURES
         up with unordered factor levels. A warning is issued so the root
         cause can be fixed. Thanks to Timothee Carayol for highlighting.
         
-    o   A new copy() function has been added. This copies a data.table
-        (retaining its key, if any) and should now be used to copy rather
-        than data.table(). Reminder: data.tables are not copied on write
-        by setkey, key<- or :=.
+    o   A new copy() function has been added, FR#1501. This copies a
+        data.table (retaining its key, if any) and should now be used to
+        copy rather than data.table(). Reminder: data.tables are not
+        copied on write by setkey, key<- or :=.
 
 
 BUG FIXES
