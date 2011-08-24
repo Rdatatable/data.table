@@ -22,10 +22,9 @@ NEW FEATURES
             DT[,newcolname:=3.14,with=FALSE]
         
         This implements FR#1499 'Ability to efficiently remove a
-        vector of column names' by Timothee Carayol, plus more
-        because you can add new columns, and assign to multiple
-        columns this way, too. We still plan to allow multiple :=
-        without needing with=FALSE, in future.
+        vector of column names' by Timothee Carayol in addition to
+        creating and assigning to multiple columns. We still plan
+        to allow multiple := without needing with=FALSE, in future.
         
     o   setkey(DT,...) now returns DT (invisibly) rather than NULL.
         This is to allow compound statements; e.g.,
