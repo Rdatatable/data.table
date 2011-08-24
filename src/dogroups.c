@@ -156,7 +156,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     
     for(i = 1; i < ngrp; i++) {  // 2nd group onwards
         thislen = INTEGER(lens)[i];
-        INTEGER(N)[0] = thislen;
         for (j=0; j<length(iSD); j++) {
             size = SIZEOF(VECTOR_ELT(iSD,j));
             memcpy((char *)DATAPTR(VECTOR_ELT(iSD,j)),
@@ -213,6 +212,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
                 }
             }
         }
+        INTEGER(N)[0] = INTEGER(starts)[i] == 0 ? 0 : INTEGER(lens)[i];  // .N is number of rows matched to, regardless of whether nomatch is 0 or NA
         for (j=0; j<length(SD); j++) SETLENGTH(VECTOR_ELT(SD,j),thislen);
         PROTECT(jval = eval(jexp, env));
         if (length(byval)+length(jval) != length(ans)) error("j doesn't evaluate to the same number of columns for each group");  // this would be a problem even if we unlisted afterwards. This way the user finds out earlier though so he can fix and rerun sooner.

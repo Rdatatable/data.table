@@ -72,7 +72,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   Advanced: Objects \code{.SD}, \code{.BY} and \code{.N} may be used in the \code{j} expression.
   \code{.SD} is a \code{data.table} containing the subset of \code{x}'s data for each group, excluding the group column(s). It can be used when grouping by \code{i}, when grouping by \code{by}, keyed by, and ad hoc by.
   \code{.BY} is a \code{list} containing a length 1 vector for each item in \code{by}. This can be useful when \code{by} is not known in advance.
-  \code{.N} is an integer, length 1, containing the number of rows in the group. This may be useful when the column names are not known in advance, and for convenience generally.
+  \code{.N} is an integer, length 1, containing the number of rows in the group. This may be useful when the column names are not known in advance and for convenience generally. When grouping by \code{i}, \code{.N} is the number of rows in \code{x} matched to, for each row of \code{i}, regardless of whether \code{nomatch} is \code{NA} or \code{0}.
 
   Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.
 

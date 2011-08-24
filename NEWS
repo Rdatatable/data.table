@@ -63,6 +63,10 @@ BUG FIXES
         which have somehow become numeric; e.g. via rbind(DF,DF)
         as reported by Chris Neff.
         
+    o   .N is now 0 (rather than 1) when no rows in x match the
+        row in i, fixing bug #1532. Thanks to Yang Zhang for
+        reporting.
+        
         
 USER VISIBLE CHANGES
 

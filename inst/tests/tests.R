@@ -960,6 +960,11 @@ DT = data.table(a=letters[1:3],b=letters[6:4],key="a")
 attr(DT,"sorted")="b"
 test(348, suppressWarnings(setkey(DT,b)), data.table(a=letters[3:1],b=letters[4:6],key="b"))
 
+# Test .N==0 for no match groups regardless of whether nomatch is 0 or NA
+DT = data.table(a=1:2,b=1:6,key="a")
+test(349, DT[J(2:3),.N,nomatch=NA]$.N, c(3L,0L))
+test(350, DT[J(2:3),.N,nomatch=0]$.N, c(3L,0L))
+
 
 ## See test-* for more tests
 
