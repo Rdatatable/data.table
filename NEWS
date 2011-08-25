@@ -11,7 +11,12 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+BUG FIXES
 
+    o   Tests using .Call("Rf_setAttrib",...) passed CRAN acceptance
+        checks but failed on many (but not all) platforms. Fixed.
+        Thanks (and apologies) to Prof Brian Ripley for investigating
+        the issue.
 
 
         *********************************************
