@@ -311,6 +311,7 @@ Yes :
 \begin{itemize}
 \item{\code{i}  <==>  where}
 \item{\code{j}  <==>  select}
+\item{\code{:=}  <==>  update}
 \item{\code{by}  <==>  group by}
 \item{\code{i}  <==>  order by (in compound syntax)}
 \item{\code{i}  <==>  having (in compound syntax)}
@@ -320,9 +321,9 @@ Yes :
 \item{\code{roll=TRUE}  <==>  N/A because SQL is inherently unordered}
 \end{itemize}
 The general form is : \newline
-\code{\hspace*{2cm}DT[where,select,group by][having][order by][ ]...[ ]}
+\code{\hspace*{2cm}DT[where,select|update,group by][having][order by][ ]...[ ]}
 \newline\newline
-A key advantage of column vectors in \proglang{R} is that they are \emph{ordered}, unlike SQL\footnote{It may be a surprise to learn that \code{select top 10 * from ...} does \emph{not} reliably return the same rows over time in SQL. You do need to include an \code{order by} clause, or use a clustered index to guarantee row order; i.e., SQL is inherently unordered.}. We can use ordered functions in \code{data.table} queries, such as \code{diff()}, and we can use \emph{any} \proglang{R} function from any package, not just the functions that are defined in SQL. A disadvantage is that \proglang{R} objects must fit in memory, but with several \proglang{R} packages such as ff, bigmemory and indexing, this is changing.
+A key advantage of column vectors in \proglang{R} is that they are \emph{ordered}, unlike SQL\footnote{It may be a surprise to learn that \code{select top 10 * from ...} does \emph{not} reliably return the same rows over time in SQL. You do need to include an \code{order by} clause, or use a clustered index to guarantee row order; i.e., SQL is inherently unordered.}. We can use ordered functions in \code{data.table} queries, such as \code{diff()}, and we can use \emph{any} \proglang{R} function from any package, not just the functions that are defined in SQL. A disadvantage is that \proglang{R} objects must fit in memory, but with several \proglang{R} packages such as ff, bigmemory, mmap and indexing, this is changing.
 
 
 
@@ -359,6 +360,17 @@ The \code{drop} argument is never used by \code{[.data.table}. It is a placehold
 
 \subsection{Rolling joins are cool, and very fast! Was that hard to program?}
 The prevailing row on or before the \code{i} row is the final row the binary search tests anyway. So \code{roll=TRUE} is essentially just a switch in the binary search C code to return that row.
+
+\subsection{Why does \code{DT[i,col:=value]} return the whole of \code{DT}? I expected either no visible value (consistent with \code{<-}), or a message or return value containing how many rows were updated. It isn't obvious that the data has indeed been updated by reference.}
+So that compound syntax can work; e.g., \code{DT[i,done:=TRUE][,sum(done)]}. The number of rows updated is returned when verbosity is on, either on a per query basis or globally using \code{options(datatable.verbose=TRUE)}.
+
+\subsection{Ok, but can't the return value of \code{DT[i,col:=value]} be returned invisibily, then?}
+\begin{itemize}
+\item  We tried to but \proglang{R} internally forces visibility on for \code{[}. The value of FunTab's eval column (see src/main/names.c) for \code{[} is 0 meaning force \code{R\_Visible} on (see R-Internals section 1.6). Therefore, when we tried \code{invisible()} or setting \code{R\_Visible} to 0 directly ourselves, \code{eval} in src/main/eval.c would force it on again.
+\item  After getting used to this behaviour, you might grow to prefer it (we have). After all, how many times do we subassign using \code{<-} and then immediately look at the data to check it's ok?
+\item  We can \emph{mix} \code{:=} into a \code{j} which also returns data; a \emph{mixed} update and select in one query. To detect whether \code{j} \emph{solely} updates (and then behave differently) could be confusing.
+\end{itemize}
+
 
 \section{Questions relating to compute time}
 
