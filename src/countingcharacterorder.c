@@ -14,7 +14,7 @@
 // + Always increasing so removed the decreasing option
 // + NA always first, so removed that option
 // + It's not really a sort, but an order that's returned so
-//   name change from do_radixsort to countcharorder
+//   name change from do_radixsort to countingcharacterorder
 // + Changed to a direct .Call() signature.
 // + 100,000 range restriction removed.
 // + Replaced counts alloc (and =0 loop) with a single calloc,
