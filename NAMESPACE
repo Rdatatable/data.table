@@ -13,9 +13,6 @@ export(cbind,rbind)
 # .Internal dispatch in the base functions prevents both cbind(DT,DF) and cbind(DT,vector)
 # from working using S3 methods cbind.data.table and cbind.data.frame.
 
-## utility functions for testing with test_that
-## export(is_equivalent_dt, expect_equivalent_dt)
-
 S3method("[", data.table)
 S3method("[<-", data.table)
 # S3method("[[", data.table)
@@ -27,7 +24,7 @@ S3method(as.data.table, data.frame)
 S3method(as.data.table, matrix)
 S3method(as.data.frame, data.table)
 S3method(as.matrix, data.table)
-# S3method(cbind, data.table)  # see comment above. 
+# S3method(cbind, data.table)  # see comment above.
 # S3method(rbind, data.table)
 S3method(dim, data.table)
 S3method(dimnames, data.table)
@@ -36,6 +33,7 @@ S3method("names<-", data.table)
 S3method(duplicated, data.table)
 S3method(unique, data.table)
 S3method(merge, data.table)
+S3method(subset, data.table)
 S3method(transform, data.table)
 S3method(within, data.table)
 S3method(is.na, data.table)

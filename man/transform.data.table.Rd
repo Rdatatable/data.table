@@ -23,8 +23,10 @@
 \code{within} is like \code{with}, but modifications (columns changed,
 added, or removed) are updated in the returned data.table.
 
-Note that \code{transform} always removes the key, and \code{within} has
-an option to keep it.
+Note that \code{transform} will keep the key of the data.table as long
+as the ``targets'' of the transform (ie. the columns that appear in
+\ldots) are not keys of the data.table themselves. \code{within} has
+an option to keep the keys, or not.
 }
 \value{
    The modified value of \code{data}.

@@ -254,7 +254,7 @@ dt1 <- dt2 <- dt
 test(100, {dt1[,"A"] <- 3L; dt1}, {dt2$A <- 3L; dt2})
 
 # test transform and within
-test(101, within(dt, {D <- B^2}), transform(dt, D = B^2))
+test(101, within(dt, {D <- B^2}, keep.key=TRUE), transform(dt, D = B^2))
 test(102, within(dt, {A <- B^2}), transform(dt, A = B^2))
 
 # test .SD object
