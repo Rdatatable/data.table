@@ -135,7 +135,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             }
 
             if (do.rename) {
-                colnames(dt) <- col.names
+                setattr(dt, "names", col.names)
             } else {
                 warning("There was a problem re-suffixing the merged ",
                         "data.table. The merge was successful, but the ",
