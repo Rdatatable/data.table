@@ -973,19 +973,34 @@ dimnames.data.table = function(x) {
 
 last = function(x) x[NROW(x)]     # last row for a data.table, last element for a vector.
 
-within.data.table <- function (data, expr, keep.key = FALSE, ...) # basically within.list but with a check to avoid messing up the key
+within.data.table <- function (data, expr, ...)
+# basically within.list but retains key (if any)
+# will be slower than using := or a regular query
+# `within` and other similar functions in data.table are
+# not just provided for users who expect them to work, or
+# prefer syntax they're used to, but for non-data.table-aware
+# packages to retain keys (for example). Hopefully users and
+# code will use the faster data.table syntax in time.
 {
     if (!cedta()) return(NextMethod())
     parent <- parent.frame()
     e <- evalq(environment(), data, parent)
-    eval(substitute(expr), e)
+    eval(substitute(expr), e)  # might (and it's known that some user code does) contain rm()
     l <- as.list(e)
     l <- l[!sapply(l, is.null)]
     nD <- length(del <- setdiff(names(data), (nl <- names(l))))
-    if (length(nl)) data[,nl] <- l
-    if (nD) data[,del] <- NULL
-    if (!keep.key) attr(data,"sorted") <- NULL
-    data
+    ans <- data
+    if (length(nl)) ans[,nl] <- l
+    if (nD) ans[,del] <- NULL
+    if (haskey(data) && all(key(data) %in% names(ans))) {
+        x = TRUE
+        for (i in key(data)) {
+            x = identical(data[[i]],ans[[i]])
+            if (!x) break
+        }
+        if (x) setattrib(ans,"sorted",key(data))
+    }
+    ans
 }
 
 
@@ -1008,7 +1023,7 @@ transform.data.table <- function (`_data`, ...)
     }
     key.cols <- key(`_data`)
     if (!any(tags %in% key.cols)) {
-        .Call("setattrib", ans, "sorted", key.cols, PACKAGE="data.table")
+        setattrib(ans, "sorted", key.cols)
     }
     ans
 }
@@ -1052,8 +1067,7 @@ subset.data.table <- function (x, subset, select, ...)
             ## prefix of it.
             is.prefix <- all(key(x)[1:length(key.cols)] == key.cols)
             if (is.prefix) {
-                .Call("setattrib", ans, "sorted", key.cols,
-                      PACKAGE="data.table")
+                setattrib(ans, "sorted", key.cols)
             }
         }
     } else {

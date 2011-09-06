@@ -10,6 +10,12 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+NEW FEATURES
+
+    o   subset and transform changes [Steve to fill in].
+
+    o   within now retains keys when expr doesn't touch any
+        key columns.
 
 
         *********************************************
