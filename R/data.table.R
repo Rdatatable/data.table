@@ -170,8 +170,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     if (check.names)
         vnames <- make.names(vnames, unique = TRUE)
     names(value) <- vnames
-    setattrib(value,"row.names",.set_row_names(nr))
-    setattrib(value,"class",c("data.table","data.frame"))
+    setattr(value,"row.names",.set_row_names(nr))
+    setattr(value,"class",c("data.table","data.frame"))
     if (!is.null(key)) {
       if (!is.character(key)) stop("key must be character")
       if (length(key)==1)
@@ -313,7 +313,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 for (s in seq_len(ncol(x))) ans[[s]] = x[[s]][irows]
                 names(ans) = names(x)
                 if (haskey(x) && (is.logical(irows) || length(irows)==1)) {
-                    setattrib(ans,"sorted",key(x))
+                    setattr(ans,"sorted",key(x))
                     # TO DO: detect more ordered subset cases, e.g. if irows is monotonic
                 }
             } else {
@@ -333,13 +333,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]
                 names(ans) = make.names(c(colnames(x)[rightcols],colnames(x)[-rightcols],colnames(i)[-leftcols]),unique=TRUE)
                 if (haskey(i) || nrow(i)==1)
-                    setattrib(ans,"sorted",key(x))
+                    setattr(ans,"sorted",key(x))
                     # TO DO: detect more ordered subset cases e.g. DT["A"] or DT[c("A","B")] where the
                     # irows are an ordered subset. Or just .C("isordered",irows) or inside sortedmatch
                     # The nrow(i)==1 is the simplest case and been there for a while (and tested)
             }
-            setattrib(ans,"class",c("data.table","data.frame"))
-            setattrib(ans,"row.names",.set_row_names(nrow(ans)))
+            setattr(ans,"class",c("data.table","data.frame"))
+            setattr(ans,"row.names",.set_row_names(nrow(ans)))
             return(ans)
         }
     } # end of  if !missing(i)
@@ -421,11 +421,11 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
         names(ans) = names(x)[j]
         if (haskey(x) && all(key(x) %in% names(ans)) && (is.logical(irows) || length(irows)==1 || haskey(i) || (is.data.table(i) && nrow(i)==1))) {
-            setattrib(ans,"sorted",key(x))
+            setattr(ans,"sorted",key(x))
             # TO DO: see ordered subset comments above
         }
-        setattrib(ans,"class",c("data.table","data.frame"))
-        setattrib(ans,"row.names",.set_row_names(nrow(ans)))
+        setattr(ans,"class",c("data.table","data.frame"))
+        setattr(ans,"row.names",.set_row_names(nrow(ans)))
         return(ans)
     }
     if (!missing(by) && !missing(i)) {
@@ -678,10 +678,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         for (jj in seq_along(byval)) class(ans[[jj]]) = class(byval[[jj]])
         for (jj in seq_along(testj)) class(ans[[length(byval)+jj]]) = class(testj[[jj]])
     }
-    setattrib(ans,"row.names",.set_row_names(length(ans[[1]])))
-    setattrib(ans,"class",c("data.table","data.frame"))
+    setattr(ans,"row.names",.set_row_names(length(ans[[1]])))
+    setattr(ans,"class",c("data.table","data.frame"))
     if ((!missing(by) && bysameorder) || (!missing(i) && haskey(i))) {
-        setattrib(ans,"sorted",colnames(ans)[seq_along(byval)])
+        setattr(ans,"sorted",colnames(ans)[seq_along(byval)])
     }
     ans
 }
@@ -796,8 +796,8 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
         names(value) <- collabs
     else
         names(value) <- paste("V", ic, sep = "")
-    setattrib(value,"row.names",.set_row_names(nrows))
-    setattrib(value,"class",c("data.table","data.frame"))
+    setattr(value,"row.names",.set_row_names(nrows))
+    setattr(value,"class",c("data.table","data.frame"))
     value
 }
 
@@ -805,8 +805,8 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE)
 {
     if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
     ans = copy(x)
-    setattrib(ans,"row.names",.set_row_names(nrow(x)))
-    setattrib(ans,"class",c("data.table","data.frame"))
+    setattr(ans,"row.names",.set_row_names(nrow(x)))
+    setattr(ans,"class",c("data.table","data.frame"))
     ans
 }
 
@@ -914,8 +914,8 @@ rbind = function (...) {
     for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
     # This is why we currently still need c.factor.
     names(l) = nm
-    setattrib(l,"row.names",.set_row_names(length(l[[1]])))
-    setattrib(l,"class",c("data.table","data.frame"))
+    setattr(l,"row.names",.set_row_names(length(l[[1]])))
+    setattr(l,"class",c("data.table","data.frame"))
     return(l)
     # return(data.table(l))
     # much of the code in rbind.data.frame that follows this point is either to do with row.names, or coercing various types (and silent rep) which is already done by data.table. therefore removed.
@@ -931,9 +931,9 @@ as.data.table = function(x, keep.rownames=FALSE)
 as.data.frame.data.table = function(x, ...)
 {
     ans = copy(x)
-    setattrib(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
-    setattrib(ans,"class","data.frame")
-    setattrib(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
+    setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
+    setattr(ans,"class","data.frame")
+    setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
     ans
 }
 
@@ -962,12 +962,12 @@ dimnames.data.table = function(x) {
     if (length(value) != ncol(x)) stop("Can't assign ",length(value)," names to a ",ncol(x)," column data.table")
     # If user calls names(DT)[2]="newname", R will (conveniently, for us) call this names<-.data.table function (notice no i) with 'value' same length as ncol
     m = match(key(x), attr(x,"names"))
-    setattrib(x,"names",value)
+    setattr(x,"names",value)
     if (haskey(x) && any(!is.na(m))) {
         w = which(!is.na(m))
         k = key(x)
         k[w] = value[m[w]]
-        setattrib(x,"sorted",k)
+        setattr(x,"sorted",k)
     }
     x
 }
@@ -1000,7 +1000,7 @@ within.data.table <- function (data, expr, ...)
             x = identical(data[[i]],ans[[i]])
             if (!x) break
         }
-        if (x) setattrib(ans,"sorted",key(data))
+        if (x) setattr(ans,"sorted",key(data))
     }
     ans
 }
@@ -1025,7 +1025,7 @@ transform.data.table <- function (`_data`, ...)
     }
     key.cols <- key(`_data`)
     if (!any(tags %in% key.cols)) {
-        setattrib(ans, "sorted", key.cols)
+        setattr(ans, "sorted", key.cols)
     }
     ans
 }
@@ -1069,7 +1069,7 @@ subset.data.table <- function (x, subset, select, ...)
             ## prefix of it.
             is.prefix <- all(key(x)[1:length(key.cols)] == key.cols)
             if (is.prefix) {
-                setattrib(ans, "sorted", key.cols)
+                setattr(ans, "sorted", key.cols)
             }
         }
     } else {

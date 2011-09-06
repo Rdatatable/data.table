@@ -26,6 +26,8 @@ test.data.table = function() {
 ## built around test_that. A call to test_that::{expect_equal|equal} will
 ## ultimately dispatch to this method when making an "equality" call.
 all.equal.data.table <- function(target, current, trim.levels=TRUE, ...) {
+    force(target)
+    force(current)
     if (trim.levels) {
         ## drop unused levels
         if (length(target)) {
@@ -42,10 +44,10 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, ...) {
 
     ## Trim any extra row.names attributes that came from some inheritence
     if (length(attr(target, "row.names"))) {
-        attr(target, "row.names") <- NULL
+        setattr(target, "row.names", NULL)
     }
     if (length(attr(current, "row.names"))) {
-        attr(current, "row.names") <- NULL
+        setattr(current, "row.names", NULL)
     }
     
     all.equal.list(target, current, ...)

@@ -14,7 +14,7 @@ unique.data.table <- function(x, ...) {
     # duplist is relatively quick, in C, and copes with NA
     if (haskey(x)) { 
         res = x[duplist(x[,key(x),with=FALSE])]
-        attr(res,"sorted") = key(x)
+        setattr(res,"sorted",key(x))
     } else {
         res = x[duplist(x)]
     }

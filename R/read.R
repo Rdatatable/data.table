@@ -2,8 +2,8 @@
 read = function(fnam="test.csv",primary=",") {   #,secondary=" ")
     ans = .Call("readfile",fnam,PACKAGE="data.table")
     nr = length(ans[[1]])
-    attr(ans,"row.names") = .set_row_names(nr)
-    attr(ans, "class") <- c("data.table","data.frame")
+    setattr(ans,"row.names",.set_row_names(nr))
+    setattr(ans,"class",c("data.table","data.frame"))
     names(ans) = paste("V",1:length(ans),sep="")
     ans
 }

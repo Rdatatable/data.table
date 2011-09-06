@@ -61,16 +61,12 @@ setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbo
         if (alreadykeyed) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let maintainer('data.table') know so the root cause can be fixed.")
         .Call("reorder",x,o, PACKAGE="data.table")
     }
-    if (!alreadykeyed) setattrib(x,"sorted",cols)
+    if (!alreadykeyed) setattr(x,"sorted",cols)
     if (copied) {
         if (verbose) cat("setkey incurred a copy of the whole table, due to the coercion(s) above.\n")
         if (alreadykeyed) warning("Already keyed by this key but had invalid structure (e.g. unordered factor levels, or incorrect column types), key rebuilt. If you didn't go under the hood please let maintainer('data.table') know so the root cause can be fixed.")
         assign(name,x,envir=loc)
-    }    
-    # Was :
-    # ans = x[o]   # copy whole table
-    # attr(x,"sorted") <<- cols  # now done inside reorder by reference
-    # assign(name,ans,envir=loc)
+    }
     invisible(x)
 }
 
@@ -150,7 +146,7 @@ CJ = function(...)
 key = function(x) attr(x,"sorted")
 
 "key<-" = function(x,value) {
-    if (is.null(value)) .Call("setattrib",x,"sorted",NULL,PACKAGE="data.table")
+    if (is.null(value)) setattr(x,"sorted",NULL)
     else setkey("x",value)
     x
 }
