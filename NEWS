@@ -12,7 +12,11 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
-    o   subset and transform changes [Steve to fill in].
+    o   `subset` and `transform` called on a data.table `x` will return
+        a new data.table with the same keys (or prefix of keys) as `x`
+        when it can, ie. the call to `subset` does not "select away"
+        key columns, or the call to `transform` does not involve changes
+        to the key columns.
 
     o   within now retains keys when expr doesn't touch any
         key columns.
