@@ -16,10 +16,10 @@ NEW FEATURES
         a new data.table with the same keys (or prefix of keys) as `x`
         when it can, ie. the call to `subset` does not "select away"
         key columns, or the call to `transform` does not involve changes
-        to the key columns.
+        to the key columns (implements half of FR #1341).
 
     o   within now retains keys when expr doesn't touch any
-        key columns.
+        key columns (implements half of FR #1341).
 
 
         *********************************************
