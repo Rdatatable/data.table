@@ -90,12 +90,9 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     ## Handle merging suffix behavior.
     ## Enable ability to use "old" suffix behavior for now.
     if (missing(suffixes)) {
-        pre.suffix <- options('datatable.pre.suffixes')[[1]]
-        if (!is.null(pre.suffix) && as.logical(pre.suffix)[1]) {
-            suffixes <- c("", ".1")
-        } else {
-            suffixes <- c(".x", ".y")
-        }
+        pre.suffix <- options('datatable.pre.suffixes')[[1L]]
+        pre.suffix <- !is.null(pre.suffix) && as.logical(pre.suffix)[1L]
+        suffixes <- if (pre.suffix) c("", ".1") else c(".x", ".y")
     }
 
     ## We expect that the result of dt.1[dt.2] adds a ".1" suffix to
@@ -117,31 +114,24 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             }
         }
         if (length(rename.y) > 0L) {
-            do.rename <- TRUE
-            renames <- col.names[rename.y]
-            base.names <- gsub("\\.1$", "", renames)
-
-            ## y
-            y.names <- paste(base.names, suffixes[2], sep="")
-            col.names[rename.y] <- y.names
-
-            ## x
+            base.names <- gsub("\\.1$", "", col.names[rename.y])
+            
+            ## suffix y columns
+            col.names[rename.y] <- paste(base.names, suffixes[2], sep="")
+            
+            ## suffix x columns
             xref <- match(base.names, col.names)
             if (any(is.na(xref))) {
-                ## Houston we have a problem
-                do.rename <- FALSE
-            } else {
-                col.names[xref] <- paste(base.names, suffixes[1], sep="")
-            }
-
-            if (do.rename) {
-                setattr(dt, "names", col.names)
-            } else {
-                warning("There was a problem re-suffixing the merged ",
+                ## expected to suffix columns from `x`, something went wrong
+                warning("There was a problem suffixing the merged ",
                         "data.table. The merge was successful, but the ",
                         "default column naming has been used [ie. suffixes ",
-                        "were set to c('', '.1')].\nPlease consider filing ",
-                        "a bug report.")
+                        "were set to c('', '.1')].\nPlease consider ",
+                        "reporting this problem to the mailing list: ",
+                        "datatable-help@lists.r-forge.r-project.org")
+            } else {
+                col.names[xref] <- paste(base.names, suffixes[1], sep="")
+                setattr(dt, "names", col.names)
             }
         }
     }
