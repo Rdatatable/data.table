@@ -127,8 +127,8 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
                         "data.table. The merge was successful, but the ",
                         "default column naming has been used [ie. suffixes ",
                         "were set to c('', '.1')].\nPlease consider ",
-                        "reporting this problem to the mailing list: ",
-                        "datatable-help@lists.r-forge.r-project.org")
+                        "contacting `maintainer('data.table')` so we ",
+                        "can fix this.")
             } else {
                 col.names[xref] <- paste(base.names, suffixes[1], sep="")
                 setattr(dt, "names", col.names)
