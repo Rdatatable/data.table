@@ -20,6 +20,11 @@ NEW FEATURES
 
     o   within now retains keys when expr doesn't touch any
         key columns (implements half of FR #1341).
+        
+
+BUG FIXES
+
+    o   Recycling list() items on RHS of := now works.
 
 
         *********************************************

@@ -936,7 +936,8 @@ test(342, DT[,mycols:=NULL,with=FALSE], data.table(b=1:3))
 mynewcol = "newname"
 test(343, DT[,mynewcol:=21L,with=FALSE], data.table(b=1:3,newname=21L))
 mycols = 1:2
-test(344, DT[,mycols:=NULL,with=FALSE], data.table(NULL))
+test(344, DT[,mycols:=NULL,with=FALSE], data.table(NULL)) 
+
 
 # Test incorrect 'can't coerce without losing precision' message
 # It seems that the .Internal rbind of two data.frame coerces IDate to numeric. Tried defining
@@ -965,6 +966,10 @@ DT = data.table(a=1:2,b=1:6,key="a")
 test(349, DT[J(2:3),.N,nomatch=NA]$.N, c(3L,0L))
 test(350, DT[J(2:3),.N,nomatch=0]$.N, c(3L,0L))
 
+# Test recycling list() on RHS of :=
+DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12)
+test(351, DT[,c("a","b"):=list(13:15),with=FALSE], data.table(a=13:15,b=13:15,c=7:9,d=10:12))
+test(352, DT[,letters[1:4]:=list(1L,NULL),with=FALSE], data.table(a=c(1L,1L,1L),c=c(1L,1L,1L)))
 
 ## See test-* for more tests
 

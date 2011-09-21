@@ -20,7 +20,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     // For internal use only by [<-.data.table.
     // newcolnames : add these columns (if any)
     // cols : column numbers corresponding to the values to set
-    int i, size, targetlen, vlen, v, r, oldncol, coln, protecti=0;
+    int i, j, size, targetlen, vlen, v, r, oldncol, coln, protecti=0;
     SEXP targetcol, RHS, newdt, names, newnames, nullint, thisvalue;
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (length(rows)==0) {
@@ -64,7 +64,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     for (i=0; i<length(cols); i++) {
         coln = INTEGER(cols)[i]-1;
         if (TYPEOF(values)==VECSXP && (length(cols)>1 || length(values)==1))
-            thisvalue = VECTOR_ELT(values,i);
+            thisvalue = VECTOR_ELT(values,i%length(values));
         else
             thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
         if (TYPEOF(thisvalue)==NILSXP)
@@ -107,10 +107,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                        vlen * size);
             }
         } else {
-            i=0;
+            j=0;
             for (r=0; r<(targetlen/vlen); r++) {
                 for (v=0;v<vlen;v++) {
-                    memcpy((char *)DATAPTR(targetcol) + (INTEGER(rows)[i++]-1)*size, 
+                    memcpy((char *)DATAPTR(targetcol) + (INTEGER(rows)[j++]-1)*size, 
                            (char *)DATAPTR(RHS) + v*size,
                            size);
                 }
@@ -122,7 +122,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         i = INTEGER(revcolorder)[r]-1;
         coln = INTEGER(cols)[i]-1;
         if (TYPEOF(values)==VECSXP)
-            thisvalue = VECTOR_ELT(values,i);
+            thisvalue = VECTOR_ELT(values,i%length(values));
         else
             thisvalue = values;
         if (TYPEOF(thisvalue)==NILSXP) {
