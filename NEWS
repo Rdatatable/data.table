@@ -20,11 +20,12 @@ NEW FEATURES
 
     o   within now retains keys when expr doesn't touch any
         key columns (implements half of FR #1341).
-        
+
+    o   Recycling list() items on RHS of := now works; e.g.,
+            DT[,1:4:=list(1L,NULL),with=FALSE]
+            # set columns 1 and 3 to 1L, remove columns 2 and 4
 
 BUG FIXES
-
-    o   Recycling list() items on RHS of := now works.
 
 
         *********************************************
