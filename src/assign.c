@@ -15,7 +15,7 @@ void setSizes();
 #define SIZEOF(x) sizes[TYPEOF(x)]
 //
 
-SEXP growVector(SEXP x, R_len_t newlen, int size);
+SEXP growVector(SEXP x, R_len_t newlen);
 
 SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP symbol, SEXP rho, SEXP revcolorder)
 {
@@ -108,8 +108,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                         PROTECT(addlevels = allocVector(STRSXP, 100));
                         protecti++;
                     } else if (addi >= length(addlevels)) {
-                        PROTECT(addlevels = growVector(addlevels, length(addlevels)+1000, SIZEOF(addlevels)));
-                        // TO DO: can growVector drop the type argument?, just get it from first.
+                        PROTECT(addlevels = growVector(addlevels, length(addlevels)+1000));
                         protecti++;
                     }
                     SET_STRING_ELT(addlevels,addi,thisv);
@@ -119,7 +118,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             }
             if (addi > 0) {
                 int oldlen = length(targetlevels);
-                PROTECT(targetlevels = growVector(targetlevels, length(targetlevels)+addi, SIZEOF(targetlevels)));
+                PROTECT(targetlevels = growVector(targetlevels, length(targetlevels)+addi));
                 protecti++;
                 size = sizeof(SEXP *);
                 memcpy((char *)DATAPTR(targetlevels) + oldlen*size,

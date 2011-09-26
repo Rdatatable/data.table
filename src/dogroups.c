@@ -12,7 +12,7 @@ EXPORT SEXP dogroups();
 
 int sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
 
-SEXP growVector(SEXP x, R_len_t newlen, int size);
+SEXP growVector(SEXP x, R_len_t newlen);
 int sizesSet=0;
 void setSizes()
 {
@@ -249,8 +249,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         if (ansloc + maxn > length(VECTOR_ELT(ans,0))) {
             newlen = ansloc+maxn;
             if (LOGICAL(verbose)[0]) Rprintf("dogroups: growing from %d to %d rows\n", length(VECTOR_ELT(ans,0)), newlen);
-            for (j=0; j<nbyval; j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), newlen, SIZEOF(VECTOR_ELT(byval, j))));
-            for (j=0; j<njval; j++) SET_VECTOR_ELT(ans, j+nbyval, growVector(VECTOR_ELT(ans,j+nbyval), newlen, SIZEOF(VECTOR_ELT(testj,j))));
+            for (j=0; j<nbyval; j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), newlen));
+            for (j=0; j<njval; j++) SET_VECTOR_ELT(ans, j+nbyval, growVector(VECTOR_ELT(ans,j+nbyval), newlen));
             // TO DO: implement R_realloc(?) here
             // TO DO: more sophisticated newlen estimate based on new group's size
             // TO DO: possibly inline it.
@@ -292,15 +292,15 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
 }
 
 
-SEXP growVector(SEXP x, R_len_t newlen, int size)
+SEXP growVector(SEXP x, R_len_t newlen)
 {
     // similar to EnlargeVector in src/main/subassign.c.
     // * replaced switch and loops with one memcpy
     // * no need to cater for names
     // * much shorter and faster
-    R_len_t len;
     SEXP newx;
-    len = length(x);
+    R_len_t len = length(x);
+    int size = SIZEOF(x);
     PROTECT(x);
     PROTECT(newx = allocVector(TYPEOF(x), newlen));
     memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*size);
