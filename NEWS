@@ -24,6 +24,17 @@ NEW FEATURES
     o   Recycling list() items on RHS of := now works; e.g.,
             DT[,1:4:=list(1L,NULL),with=FALSE]
             # set columns 1 and 3 to 1L, remove columns 2 and 4
+            
+    o   Factor columns on LHS of :=, [<- and $<- can now be assigned
+        new levels; e.g.,
+            DT = data.table(A=c("a","b"))
+            DT[2,"A"] <- "c"  # adds new level automatically
+            DT[2,A:="c"]      # same (faster)
+            DT$A = "newlevel" # adds new level and recycles it through A
+        Thanks to Damian Betebenner and Chris Neff for highlighting.
+        To change the type of a column, provide a full length RHS (i.e.
+        'replace' column syntax).
+        
 
 BUG FIXES
 

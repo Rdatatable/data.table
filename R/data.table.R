@@ -848,13 +848,14 @@ tail.data.table = function(x, n=6, ...) {
         cols = as.integer(j)  # for convenience e.g. to convert 1 to 1L
         newcolnames = NULL
     }
-    if (cols[1]<=ncol(x) && is.character(value) && length(value)<nrow(x) && is.factor(x[[cols[1]]])) {
-        # kludge. Doesn't cope with single character on RHS, and multiple columns of varying types on LHS.
-        value = match(value,levels(x[[cols[1]]]))
-        if (any(is.na(value))) stop("Some or all RHS not present in factor column levels")
-        # The length(value)<nrow(x) is to allow coercion of factor columns to character, but we'll
-        # do away with factor columns (by default) soon anyway
-    }
+    #  TO DO: Needs to move into C :
+    # if (cols[1]<=ncol(x) && is.character(value) && length(value)<nrow(x) && is.factor(x[[cols[1]]])) {
+    #    # kludge. Doesn't cope with single character on RHS, and multiple columns of varying types on LHS.
+    #    value = match(value,levels(x[[cols[1]]]))
+    #    if (any(is.na(value))) stop("Some or all RHS not present in factor column levels")
+    #    # The length(value)<nrow(x) is to allow coercion of factor columns to character, but we'll
+    #    # do away with factor columns (by default) soon anyway
+    # }
     revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))
     .Call("assign",x,i,cols,newcolnames,value,keycol,NULL,NULL,revcolorder,PACKAGE="data.table")
     # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)

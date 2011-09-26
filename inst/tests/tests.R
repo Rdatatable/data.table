@@ -449,12 +449,12 @@ test(175, DT[,C[C-min(C)<5],by=list(A,B)][,V1], c(5,1,2,3,4,9,9,5))
 DT <- data.table(a = c("A", "Z"), b = 1:10, key = "a")
 DT[J("A"),2] <- 100L  # without L generates nice warning :-)
 DT[J("A"),"b"] <- 1:5
-DT[1:3,"b"] <- 33L   
+DT[1:3,"b"] <- 33L
 test(176, DT,  data.table(a = rep(c("A", "Z"), each = 5),
                           b = as.integer(c(rep(33, 3), 4:5, seq(2, 10, by = 2))),
                           key = "a"))
 DT[J("A"),"a"] <- "Z"
-test(177, key(DT), NULL )
+test(177, DT, data.table(a="Z", b=as.integer(c(rep(33, 3), 4:5, seq(2, 10, by = 2)))))  # i.e. key dropped and column a still factor
 
 DT <- data.table(a = c("A", "Z"), b = 1:10, key = "a")
 DT$b[1:5] <- 1:5
@@ -970,6 +970,21 @@ test(350, DT[J(2:3),.N,nomatch=0]$.N, c(3L,0L))
 DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12)
 test(351, DT[,c("a","b"):=list(13:15),with=FALSE], data.table(a=13:15,b=13:15,c=7:9,d=10:12))
 test(352, DT[,letters[1:4]:=list(1L,NULL),with=FALSE], data.table(a=c(1L,1L,1L),c=c(1L,1L,1L)))
+
+# Test assigning new levels into factor columns
+DT = data.table(f=c("a","b"),x=1:4)
+test(353, DT[2,f:="c"], data.table(f=c("a","c","a","b"),x=1:4))
+test(354, DT[3,f:=factor("foo")], data.table(f=c("a","c","foo","b"),x=1:4))
+# Test growVector logic when adding levels
+newlevels = as.character(as.hexmode(1:2000))
+DT = data.table(f="000",x=1:2010)
+test(355, DT[11:2010,f:=newlevels], data.table(f=c(rep("000",10),newlevels),x=1:2010))
+
+DT = data.table(X=letters[1:10], Y=1:10)
+DT$X = "Something Different"
+test(356, DT, data.table(X=factor("Something Different",levels=c(letters[1:10],"Something Different")), Y=1:10))
+
+
 
 ## See test-* for more tests
 

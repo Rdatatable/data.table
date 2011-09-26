@@ -15,13 +15,15 @@ void setSizes();
 #define SIZEOF(x) sizes[TYPEOF(x)]
 //
 
+SEXP growVector(SEXP x, R_len_t newlen, int size);
+
 SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP symbol, SEXP rho, SEXP revcolorder)
 {
     // For internal use only by [<-.data.table.
     // newcolnames : add these columns (if any)
     // cols : column numbers corresponding to the values to set
     int i, j, size, targetlen, vlen, v, r, oldncol, coln, protecti=0;
-    SEXP targetcol, RHS, newdt, names, newnames, nullint, thisvalue;
+    SEXP targetcol, RHS, newdt, names, newnames, nullint, thisvalue, thisv, targetlevels;
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (length(rows)==0) {
         targetlen = length(VECTOR_ELT(dt,0));
@@ -79,20 +81,65 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         if (vlen<1) error("RHS of assignment is zero length but not NULL. If you intend to delete the column use NULL. Otherwise the RHS must have length > 0");
         if (!isVectorAtomic(thisvalue) && !(isVector(thisvalue) && length(thisvalue)==targetlen))
             error("RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list() column.");
-        if (targetlen%vlen != 0) error("Tried to assign %d items to target of %d (can recycle but must be exact multiple)",vlen,targetlen);
+        if (targetlen%vlen != 0) error("Tried to assign %d items to target of %d (can recycle but must be exact multiple). If users ask us to change this to a warning, we will change it; please ask maintainer('data.table').",vlen,targetlen);
         if (coln+1 > oldncol) {  // new column
             SET_VECTOR_ELT(dt,coln,allocVector(TYPEOF(thisvalue),targetlen));
         }
         targetcol = VECTOR_ELT(dt,coln);
-        PROTECT(RHS = coerceVector(thisvalue,TYPEOF(targetcol)));
-        protecti++;
+        if (isFactor(targetcol)) {
+            // Coerce RHS to appropriate levels of LHS, adding new levels as necessary (unlike base)
+            // If it's the same RHS being assigned to several columns, we have to recoerce for each
+            // one because the levels of each target are likely different
+            if (isFactor(thisvalue)) {
+                PROTECT(thisvalue = asCharacterFactor(thisvalue));
+                protecti++;
+            }
+            for (j=0; j<length(thisvalue); j++) TRUELENGTH(STRING_ELT(thisvalue,j))=0;  // can skip in future
+            targetlevels = getAttrib(targetcol, R_LevelsSymbol);
+            for (j=0; j<length(targetlevels); j++) TRUELENGTH(STRING_ELT(targetlevels,j))=j+1;
+            int addi = 0;
+            SEXP addlevels;
+            PROTECT(RHS = allocVector(INTSXP, length(thisvalue)));
+            protecti++;
+            for (j=0; j<length(thisvalue); j++) {
+                thisv = STRING_ELT(thisvalue,j);
+                if (TRUELENGTH(thisv)==0) {
+                    if (addi==0) {
+                        PROTECT(addlevels = allocVector(STRSXP, 100));
+                        protecti++;
+                    } else if (addi >= length(addlevels)) {
+                        PROTECT(addlevels = growVector(addlevels, length(addlevels)+1000, SIZEOF(addlevels)));
+                        // TO DO: can growVector drop the type argument?, just get it from first.
+                        protecti++;
+                    }
+                    SET_STRING_ELT(addlevels,addi,thisv);
+                    TRUELENGTH(thisv) = ++addi+length(targetlevels);  
+                }
+                INTEGER(RHS)[j] = TRUELENGTH(thisv);
+            }
+            if (addi > 0) {
+                int oldlen = length(targetlevels);
+                PROTECT(targetlevels = growVector(targetlevels, length(targetlevels)+addi, SIZEOF(targetlevels)));
+                protecti++;
+                size = sizeof(SEXP *);
+                memcpy((char *)DATAPTR(targetlevels) + oldlen*size,
+                       (char *)DATAPTR(addlevels),
+                       addi*size);
+                setAttrib(targetcol, R_LevelsSymbol, targetlevels);
+            }
+            for (j=0; j<length(targetlevels); j++) TRUELENGTH(STRING_ELT(targetlevels,j))=0;  // important to reinstate 0 for countingcharacterorder
+        } else {
+            PROTECT(RHS = coerceVector(thisvalue,TYPEOF(targetcol)));
+            protecti++;
+        }
         // i.e. coerce the RHS to match the type of the column (coerceVector returns early if already the same)
         // This is different to [<-.data.frame which changes the type of the column to match the RHS. A
-        // data.table tends to be big so we don't want to do that! Also, typically the RHS is very small,
+        // data.table tends to be big so we don't want to do that. Also, typically the RHS is very small,
         // often a length 1 vector such as 42, which by default in R is type numeric. If the column is integer,
         // then intent of user was very likely to coerce 42 to integer and then assign that to the integer column,
         // not the other way around like [.data.frame
-        // Most usual reason for coercing RHS several times is when assigning NA to different typed columns on left in for example DT[i,]<-NA
+        // Most usual reason for coercing RHS several times (i.e. inside this loop) is when assigning NA
+        // to different typed columns on left in for example DT[i,]<-NA
         if (TYPEOF(thisvalue)==REALSXP && (TYPEOF(targetcol)==INTSXP || TYPEOF(targetcol)==LGLSXP)) {
             warning("Coerced numeric RHS to %s to match the column's type; may have truncated precision. Either change the column to numeric first (by creating a new numeric vector length %d (nrows of entire table) yourself and assigning that; i.e. 'replace' column), or coerce RHS to integer yourself (e.g. 1L or as.integer) to make your intent clear (and for speed). Or, set the column type correctly up front when you create the table and stick to it, please.", TYPEOF(targetcol)==INTSXP ? "integer" : "logical", length(VECTOR_ELT(dt,0)));
         }

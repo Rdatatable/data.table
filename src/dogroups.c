@@ -12,7 +12,7 @@ EXPORT SEXP dogroups();
 
 int sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
 
-static SEXP growVector(SEXP x, R_len_t newlen, int size);
+SEXP growVector(SEXP x, R_len_t newlen, int size);
 int sizesSet=0;
 void setSizes()
 {
@@ -283,13 +283,16 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     if (ansloc < length(VECTOR_ELT(ans,0))) {
         // warning("Wrote less rows than allocated. byretn=%d but wrote %d rows",INTEGER(byretn)[0],ansloc);
         for (j=0; j<length(ans); j++) SETLENGTH(VECTOR_ELT(ans,j),ansloc);
+        // TO DO: set truelength here (uninitialized by R) to save growing next time on insert() 
+        // Important not to touch truelength for CHARSXP in R's global string cache, but we won't see those here,
+        // only true vectors such as STRSXP.
     }
     UNPROTECT(3);
     return(ans);
 }
 
 
-static SEXP growVector(SEXP x, R_len_t newlen, int size)
+SEXP growVector(SEXP x, R_len_t newlen, int size)
 {
     // similar to EnlargeVector in src/main/subassign.c.
     // * replaced switch and loops with one memcpy
