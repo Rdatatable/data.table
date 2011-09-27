@@ -7,7 +7,7 @@
 }
 \usage{
 \method{transform}{data.table}(`_data`, \ldots)
-\method{within}{data.table}(data, expr, keep.key = FALSE, \ldots)
+\method{within}{data.table}(data, expr, \ldots)
 }
 \arguments{
   \item{data, _data}{ data.table to be transformed.}
@@ -16,17 +16,15 @@
     \code{tag=value}. Ignored for \code{within}.}
 
   \item{expr}{ expression to be evaluated within the data.table.}
-
-  \item{keep.key}{ logical; if \code{TRUE}, keep the sorted key.}
 }
 \details{
 \code{within} is like \code{with}, but modifications (columns changed,
 added, or removed) are updated in the returned data.table.
 
-Note that \code{transform} will keep the key of the data.table as long
-as the ``targets'' of the transform (ie. the columns that appear in
-\ldots) are not keys of the data.table themselves. \code{within} has
-an option to keep the keys, or not.
+Note that \code{transform} will keep the key of the
+\code{data.table} provided the ``targets'' of the transform (i.e. the
+columns that appear in \ldots) are not in the key of the data.table. 
+\code{within} also retains the key provided the key columns are not ``touched''.
 }
 \value{
    The modified value of \code{data}.
