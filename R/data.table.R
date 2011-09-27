@@ -389,10 +389,14 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             cols = as.integer(ncol(x)+1L)
             newcolnames=lhs
         }
-        ssrows = if (!is.logical(irows)) as.integer(irows)        # DT[J("a"),z:=42L]
-                 else if (identical(irows,TRUE)) as.integer(NULL) # DT[,z:=42L]
-                 else if (length(irows)==nrow(x)) which(irows)    # DT[colA>3,z:=42L]
-                 else (1:nrow(x))[irows]                          # DT[c(TRUE,FALSE),z:=42L] (recycling)
+        ssrows =
+            if (!is.logical(irows)) as.integer(irows)          # DT[J("a"),z:=42L]
+            else if (identical(irows,TRUE)) as.integer(NULL)   # DT[,z:=42L]
+            else {
+                tt = if (length(irows)==nrow(x)) which(irows)  # DT[colA>3,z:=42L]
+                     else (1:nrow(x))[irows]                   # DT[c(TRUE,FALSE),z:=42L] (recycling)
+                if (!length(tt)) return(x)                     # DT[FALSE,z:=42L]
+            }
         if (!missing(verbose) && verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
         # the !missing is for speed to avoid calling getOption() which then calls options().
         # better to do verbosity before calling C, to make tracing easier if there's a problem in assign.c
@@ -848,14 +852,6 @@ tail.data.table = function(x, n=6, ...) {
         cols = as.integer(j)  # for convenience e.g. to convert 1 to 1L
         newcolnames = NULL
     }
-    #  TO DO: Needs to move into C :
-    # if (cols[1]<=ncol(x) && is.character(value) && length(value)<nrow(x) && is.factor(x[[cols[1]]])) {
-    #    # kludge. Doesn't cope with single character on RHS, and multiple columns of varying types on LHS.
-    #    value = match(value,levels(x[[cols[1]]]))
-    #    if (any(is.na(value))) stop("Some or all RHS not present in factor column levels")
-    #    # The length(value)<nrow(x) is to allow coercion of factor columns to character, but we'll
-    #    # do away with factor columns (by default) soon anyway
-    # }
     revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))
     .Call("assign",x,i,cols,newcolnames,value,keycol,NULL,NULL,revcolorder,PACKAGE="data.table")
     # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)

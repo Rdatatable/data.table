@@ -38,6 +38,9 @@ NEW FEATURES
 
 BUG FIXES
 
+    o   := with i all FALSE no longer sets the whole column, fixing
+        bug #1570. Thanks to Chris Neff for reporting.
+        
 
         *********************************************
         **                                         **

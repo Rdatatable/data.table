@@ -980,9 +980,15 @@ newlevels = as.character(as.hexmode(1:2000))
 DT = data.table(f="000",x=1:2010)
 test(355, DT[11:2010,f:=newlevels], data.table(f=c(rep("000",10),newlevels),x=1:2010))
 
+# See datatable-help post and NEWS item for 1.6.7
 DT = data.table(X=letters[1:10], Y=1:10)
 DT$X = "Something Different"
 test(356, DT, data.table(X=factor("Something Different",levels=c(letters[1:10],"Something Different")), Y=1:10))
+
+# Bug fix 1570
+DT = data.table(x=1:5,y=1:5)
+test(357, DT[x==0, y:=5L], data.table(x=1:5,y=1:5))
+test(358, DT[FALSE, y:=5L], data.table(x=1:5,y=1:5))
 
 
 
