@@ -41,6 +41,11 @@ BUG FIXES
     o   := with i all FALSE no longer sets the whole column, fixing
         bug #1570. Thanks to Chris Neff for reporting.
         
+    o   0 length by (such as NULL and character(0)) now behave as
+        if by is missing, fixing bug #1599. This is useful when by
+        is dynamic and a 'dont group' needs to be represented.
+        Thanks to Chris Neff for reporting.
+        
 
         *********************************************
         **                                         **

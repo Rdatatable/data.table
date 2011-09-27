@@ -471,7 +471,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             bysub = eval(bysub,parent.frame())
             bysubl = as.list(bysub)
         }
-        if (identical(bysubl[[1]],quote(eval))) {
+        if (length(bysubl) && identical(bysubl[[1]],quote(eval))) {
             bysub = eval(bysubl[[2]],parent.frame())
             if (is.expression(bysub)) bysub=bysub[[1]]
             bysubl = as.list(bysub)
@@ -482,7 +482,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
         allbyvars = intersect(unlist(sapply(bysubl,all.vars,functions=TRUE)),colnames(x))
         byval = eval(bysub, x, parent.frame())
-        if (is.null(byval)) stop("'by' has evaluated to NULL")
+        if (!length(byval)) {
+            # see missing(by) up above for comments
+            # by could be NULL or character(0) for example
+            if (mode(jsub)!="name" && as.character(jsub[[1]]) == "list")
+                jsub[[1]]=as.name("data.table")
+            return(eval(jsub, envir=x, enclos=parent.frame()))
+        }
         if (is.atomic(byval)) {
             if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && as.character(bysub)%in%colnames(x)) ) {
                 # e.g. by is key(DT) or c("colA","colB"), but not the value of a character column

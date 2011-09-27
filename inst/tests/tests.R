@@ -990,6 +990,10 @@ DT = data.table(x=1:5,y=1:5)
 test(357, DT[x==0, y:=5L], data.table(x=1:5,y=1:5))
 test(358, DT[FALSE, y:=5L], data.table(x=1:5,y=1:5))
 
+# Bug fix 1599
+DT = data.table(a=1:2,b=1:6)
+test(359, DT[,sum(b),by=NULL], 21L)
+test(360, DT[,sum(b),by=character(0)], 21L)
 
 
 ## See test-* for more tests
