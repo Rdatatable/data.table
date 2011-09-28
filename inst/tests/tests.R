@@ -995,6 +995,13 @@ DT = data.table(a=1:2,b=1:6)
 test(359, DT[,sum(b),by=NULL], 21L)
 test(360, DT[,sum(b),by=character(0)], 21L)
 
+# Bug fix 1576 : NULL j results in 'inconsistent types' error
+DT = data.table(a=1:3,b=1:9)
+ans = data.table(a=c(1L,3L),V1=c(12L,18L))
+test(361, DT[,if (a==2) NULL else sum(b),by=a], ans)
+test(362, DT[,if (a==2) data.table(NULL) else sum(b),by=a], ans)
+test(363, DT[,if (a==2) as.list(NULL) else sum(b),by=a], ans)
+test(364, DT[,if (a==2) integer(0) else sum(b),by=a], ans)
 
 ## See test-* for more tests
 

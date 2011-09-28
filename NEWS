@@ -46,6 +46,9 @@ BUG FIXES
         is dynamic and a 'dont group' needs to be represented.
         Thanks to Chris Neff for reporting.
         
+    o   NULL j no longer results in 'inconsistent types' error, but
+        instead returns no rows for that group, fixing bug #1576.
+        
 
         *********************************************
         **                                         **
@@ -57,8 +60,7 @@ BUG FIXES
 
     o   Tests using .Call("Rf_setAttrib",...) passed CRAN acceptance
         checks but failed on many (but not all) platforms. Fixed.
-        Thanks (and apologies) to Prof Brian Ripley for investigating
-        the issue.
+        Thanks to Prof Brian Ripley for investigating the issue.
 
 
         *********************************************
