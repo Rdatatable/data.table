@@ -63,9 +63,11 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # DONE: if M is a matrix with cols a,b and c,  data.table(A=M,B=M) will create colnames A.a,A.b,A.c,B.a,B,b,B.c.  Also  data.table(M,M) will use make.names to make the columns unique (adds .1,.2,.3)
     # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then class(l)="data.table" at the expense of checking.
     x <- list(...)
+    # TO DO: use ..1 instead?
+    # One reason data.table() is needed, different and independent from data.frame(), is to allow list() columns.
     if (identical(x, list(NULL))) return( structure(NULL,class=c("data.table","data.frame"),row.names=.set_row_names(0)) )
     if (length(x) == 1 && is.list(x[[1]]) && !is.data.frame(x[[1]]) && !is.data.table(x[[1]]) && !is.ff(x[[1]])) {
-        # a list was passed in. Constructing a list and passing it in, should be the same result as passing in each column as arguments to the function.
+        # a single list was passed in. Constructing a list and passing it in, should be the same result as passing in each column as arguments to the function.
         x = x[[1]]
         vnames = names(x)   # the names given to the explicity named arguments inside the list,  or the names if the list was a variable with names already
         exptxt = as.character(as.list(substitute(...))[-1])  # the argument expressions as text. if an unnamed list variable is passed in, this will return an empty vector, thats fine.
@@ -99,17 +101,15 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     for (i in 1:n) {
         xi = x[[i]]
         if (is.null(xi)) stop("column or argument ",i," is NULL")
-        hascols[i] = TRUE   # so lists and data.tables would have 'hascols'=TRUE
-        if (is.matrix(xi) || is.data.frame(xi)) {
+        hascols[i] = FALSE   # list() columns are considered atomic
+        if (is.matrix(xi) || is.data.frame(xi)) {  # including data.table (a data.frame, too)
             xi = as.data.table(xi, keep.rownames=keep.rownames)       # TO DO: allow a matrix to be a column of a data.table. This could allow a key'd lookup to a matrix, not just by a single rowname vector, but by a combination of several columns. A matrix column could be stored either by row or by column contiguous in memory.
             x[[i]] = xi
+            hascols[i] = TRUE
         } else {
-            if (is.ff(xi))
-               hascols[i] = FALSE
-            else if ((is.atomic(xi) || is.factor(xi) || is.array(xi)) && !is.list(xi)) {     # is.atomic is true for vectors with attributed, but is.vector() is FALSE. this is why we use is.atomic rather than is.vector
+            if ((is.atomic(xi) || is.factor(xi) || is.array(xi)) && !is.list(xi)) {     # is.atomic is true for vectors with attributed, but is.vector() is FALSE. this is why we use is.atomic rather than is.vector
                 # the is.array is required when, for example, you have a tapply inside a j=data.table(...) expression
                 # if (is.atomic(xi) || is.array(xi)) xi = as.vector(xi)   # to remove any vector names, or dimnames in an array, or attributes, otherwise they get silently retaining in the data.table list members, thus bloating memory
-                hascols[i] = FALSE
                 # if (is.factor(xi)) xi = as.character(xi)      # to use R_StringHash
                 # possibly add && getOption("stringsAsfactors",FALSE)
                 if (is.character(xi) && class(xi)!="AsIs") xi = factor(xi)  # coerce characters to factor unless wrapped in I()
@@ -117,7 +117,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             }
         }
         # ncols[i] <- NCOL(xi)  # Returns 1 for vectors.
-        nrows[i] <- NROW(xi)    # for a vector returns the length
+        nrows[i] <- NROW(xi)    # for a vector (including list() columns) returns the length
         if (hascols[i]) {
             namesi <- colnames(xi)  # works for both data.frame's, matrices and data.tables's
             if (length(namesi)==0) namesi = rep("",ncol(xi))
@@ -135,7 +135,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     for (i in (1:n)[nrows < nr]) {
         xi <- x[[i]]
         if (nr%%nrows[i] == 0) {
-            if (is.atomic(xi) || is.factor(xi)) {   # is.atomic catches as.hexmode(1:100)
+            if (is.atomic(xi) || is.list(xi)) {
                 x[[i]] <- rep(xi, length.out = nr)
                 next
             }

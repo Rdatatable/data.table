@@ -1003,6 +1003,22 @@ test(362, DT[,if (a==2) data.table(NULL) else sum(b),by=a], ans)
 test(363, DT[,if (a==2) as.list(NULL) else sum(b),by=a], ans)
 test(364, DT[,if (a==2) integer(0) else sum(b),by=a], ans)
 
+# Test that data.table() can create list() columns directly
+# NB: test 235 above ('by' when DT contains list columns) created the list column in two steps, no longer necessary
+DT = data.table(a=1:2,b=list("h",7:8))
+test(365, DT[1,b], list("h"))   # should it be a special case for 1-item results to unlist? Don't think so: in keeping with no drop=TRUE principle
+test(366, DT[2,b], list(7:8))
+DT = data.table(a=1:4,b=list("h",7:8),c=list(matrix(1:12,3),data.table(a=letters[1:3],b=list(1:2,3.4,"k"),key="a")))
+test(367, DT[3,b], list("h"))
+test(368, DT[4,b], list(7:8))
+test(369, DT[3,c[[1]][2,3]], 8L)
+test(370, DT[4,c[[1]]["b",b]$b[[1]]], 3.4)
+
+# Test returning a list() column via grouping
+DT = data.table(x=c(1,1,2,2,2),y=1:5)
+test(371, DT[,list(list(unique(y))),by=x], data.table(x=1:2,V1=list(1:2,3:5)))
+
+
 ## See test-* for more tests
 
 ##########################

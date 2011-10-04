@@ -22,19 +22,51 @@ NEW FEATURES
         key columns (implements half of FR #1341).
 
     o   Recycling list() items on RHS of := now works; e.g.,
+    
             DT[,1:4:=list(1L,NULL),with=FALSE]
-            # set columns 1 and 3 to 1L, remove columns 2 and 4
+            # set columns 1 and 3 to 1L and remove columns 2 and 4
             
     o   Factor columns on LHS of :=, [<- and $<- can now be assigned
         new levels; e.g.,
+        
             DT = data.table(A=c("a","b"))
             DT[2,"A"] <- "c"  # adds new level automatically
             DT[2,A:="c"]      # same (faster)
-            DT$A = "newlevel" # adds new level and recycles it through A
+            DT$A = "newlevel" # adds new level and recycles it
+            
         Thanks to Damian Betebenner and Chris Neff for highlighting.
         To change the type of a column, provide a full length RHS (i.e.
-        'replace' column syntax).
+        'replace' the column).
         
+    o   data.table() now accepts list columns directly rather than
+        needing to add list columns to an existing data.table; e.g.,
+        
+            DT = data.table(x=1:3,y=list(4:6,3.14,matrix(1:12,3)))
+            
+        Thanks to Branson Owen for reminding.
+        
+        Accordingly, one item has been added to FAQ 2.17 (differences
+        between data.frame and data.table) : "data.frame(list(1:2,"k",1:4))
+        creates 3 columns, data.table creates one list column"
+
+        As before, list columns can be created via grouping; e.g.,
+        
+            DT = data.table(x=c(1,1,2,2,2,3,3),y=1:7)
+            DT2 = DT[,list(list(unique(y))),by=x]
+            DT2
+                 x      V1
+            [1,] 1    1, 2
+            [2,] 2 3, 4, 5
+            [3,] 3    6, 7
+            
+        and list columns can be grouped; e.g.,
+        
+            DT2[,sum(unlist(V1)),by=list(x%%2)]
+                 x V1
+            [1,] 1 16
+            [2,] 0 12
+
+
 
 BUG FIXES
 
