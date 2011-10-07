@@ -834,7 +834,7 @@ tail.data.table = function(x, n=6, ...) {
     x[i]
 }
 
-"[<-.data.table" = function (x, i, j, value, ...) {
+"[<-.data.table" = function (x, i, j, value) {
     # It is not recommended to use <-. Instead, use := for efficiency.
     # [<- is still provided for consistency and backwards compatibility, but we hope users don't use it.
     if (!cedta()) return(`[<-.data.frame`(x, i, j, value))
@@ -845,7 +845,10 @@ tail.data.table = function(x, n=6, ...) {
             if (!missing(j)) stop("When i is matrix in DT[i]<-value syntax, it doesn't make sense to provide j")
             return(`[<-.data.frame`(x, i, value=value))
         }
-        i = x[i, which=TRUE, ...]  # e.g. ... for mult="first"
+        i = x[i, which=TRUE]
+        # Tried adding ... after value above, and passing ... in here (e.g. for mult="first") but R CMD check
+        # then gives "The argument of a replacement function which corresponds to the right hand side must be
+        # named 'value'".  So, users have to use := for that.
     } else i = as.integer(NULL)   # meaning (to C code) all rows, without allocating 1:nrow(x) vector
     if (missing(j)) j=colnames(x)
     if (!is.atomic(j)) stop("j must be atomic vector, see ?is.atomic")
