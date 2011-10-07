@@ -213,6 +213,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             i = eval(isub, envir=x, enclos=parent.frame())
         else
             i = eval(isub,parent.frame())
+        if (is.matrix(i)) stop("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please let maintainer('data.table') know if you'd like this, or add your comments to FR #1611.")
         if (is.logical(i)) {
             if (identical(i,NA)) i = NA_integer_  # see DT[NA] thread re recycling of NA logical
             else i[is.na(i)] = FALSE              # avoids DT[!is.na(ColA) & !is.na(ColB) & ColA==ColB], just DT[ColA==ColB]
@@ -303,7 +304,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     if (length(i)==nrow(x)) return(which(i))   # e.g. DT[colA>3,which=TRUE]
                     else return((1:nrow(x))[i])   # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness
                 }
-                else return(i)  # e.g. DT["A",which=TRUE]
+                else return(as.integer(i))  # e.g. DT["A",which=TRUE],  or DT[c(1,3)]
             }
             irows = i
         }
@@ -833,17 +834,20 @@ tail.data.table = function(x, n=6, ...) {
     x[i]
 }
 
-"[<-.data.table" = function (x, i, j, value) {
-    if (!cedta() || missing(j)) return(`[<-.data.frame`(x, i, j, value))
+"[<-.data.table" = function (x, i, j, value, ...) {
+    # It is not recommended to use <-. Instead, use := for efficiency.
+    # [<- is still provided for consistency and backwards compatibility, but we hope users don't use it.
+    if (!cedta()) return(`[<-.data.frame`(x, i, j, value))
     if (!missing(i)) {
-        #if (is.atomic(i) && is.numeric(i)) {
-        #    i=as.integer(i)
-        #} else {
-            # get i based on data.table-style indexing
-            isub=substitute(i)
-            i = x[eval(isub), which=TRUE, mult="all"]
-        #}
+        isub=substitute(i)
+        i = eval(isub, x, parent.frame())
+        if (is.matrix(i)) {
+            if (!missing(j)) stop("When i is matrix in DT[i]<-value syntax, it doesn't make sense to provide j")
+            return(`[<-.data.frame`(x, i, value=value))
+        }
+        i = x[i, which=TRUE, ...]  # e.g. ... for mult="first"
     } else i = as.integer(NULL)   # meaning (to C code) all rows, without allocating 1:nrow(x) vector
+    if (missing(j)) j=colnames(x)
     if (!is.atomic(j)) stop("j must be atomic vector, see ?is.atomic")
     if (any(is.na(j))) stop("NA in j")
     if (is.character(j)) {
@@ -854,9 +858,20 @@ tail.data.table = function(x, n=6, ...) {
     } else {
         if (!is.numeric(j)) stop("j must be vector of column name or positions")
         if (any(j>ncol(x))) stop("Attempt to assign to column position greater than ncol(x). Create the column by name, instead. This logic intends to catch most likely user errors.")
-        keycol = j %in% match(key(x),names(x))
+        keycol = any(j %in% match(key(x),names(x)))
         cols = as.integer(j)  # for convenience e.g. to convert 1 to 1L
         newcolnames = NULL
+    }
+    if (keycol && identical(key(x),key(value)) &&
+        identical(colnames(x),colnames(value)) &&
+        !is.unsorted(i) &&
+        identical(substitute(x),quote(`*tmp*`))) {
+        # DT["a",]$y <- 1.1  winds up creating `*tmp*` subset of rows and assigning _all_ the columns into x and
+        # over-writing the key columns with the same value (not just the single 'y' column).
+        # That isn't good for speed; it's an R thing. Solution is to use := instead to avoid all this, but user
+        # expects key to be retained in this case because _he_ didn't assign to a key column (the internal R code     
+        # did).
+        keycol=FALSE
     }
     revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))
     .Call("assign",x,i,cols,newcolnames,value,keycol,NULL,NULL,revcolorder,PACKAGE="data.table")

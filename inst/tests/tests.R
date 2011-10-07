@@ -246,7 +246,7 @@ test(97, TESTDT[c("f","i","b"),list(GroupSum=sum(v)),mult="all"], data.table(b=c
 test(98, TESTDT[SJ(c("f","i","b")),list(GroupSum=sum(v)),mult="all"], data.table(b=c("b","f","i"), GroupSum=c(7L,7L,11L), key="b"))
 # line above is the way to group, sort by group and setkey on the result by group.
 
-(dt <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B"))
+dt <- data.table(A = rep(1:3, each=4), B = rep(11:14, each=3), C = rep(21:22, 6), key = "A,B")
 test(99, unique(dt), data.table(dt[c(1L, 4L, 5L, 7L, 9L, 10L)], key="A,B"))
 
 # test [<- for column assignment 
@@ -1018,6 +1018,20 @@ test(370, DT[4,c[[1]]["b",b]$b[[1]]], 3.4)
 DT = data.table(x=c(1,1,2,2,2),y=1:5)
 test(371, DT[,list(list(unique(y))),by=x], data.table(x=1:2,V1=list(1:2,3:5)))
 
+# Test matrix i is an error
+tt = try(DT[matrix(1:2,ncol=2)],silent=TRUE)
+test(372, inherits(tt,"try-error") && length(grep("i is invalid type [(]matrix[)]",tt)))
+
+# Tests from bug fix #1593
+DT = data.table(x=letters[1:2], y=1:4)
+DT[x == "a", ]$y <- 0L
+test(373, DT, data.table(x=letters[1:2], y=c(0L,2L,0L,4L)))
+DT = data.table(x=letters[1:2], y=1:4, key="x")
+DT["a", ]$y <- 0L
+test(374, DT, data.table(x=letters[1:2], y=c(0L,2L,0L,4L), key="x"))
+DT = data.table(x=letters[1:2], y=1:4)
+DT[c(1,3), ]$y <- 0L
+test(375, DT, data.table(x=letters[1:2], y=c(0L,2L,0L,4L)))
 
 ## See test-* for more tests
 

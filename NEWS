@@ -81,6 +81,23 @@ BUG FIXES
     o   NULL j no longer results in 'inconsistent types' error, but
         instead returns no rows for that group, fixing bug #1576.
         
+    o   matrix i is now an error rather than using i as if it were a
+        vector and obtaining incorrect results. It was undocumented that
+        matrix might have been an acceptable type. matrix i is
+        still acceptable in [<-; e.g.,
+            DT[is.na(DT)] <- 1L
+        and this now works rather than assigning to non-NA items in some
+        cases.
+        
+    o   Inconsistent [<- behaviour is now fixed (#1593) so these examples
+        now work :
+            DT[x == "a", ]$y <- 0L
+            DT["a", ]$y <- 0L
+        But, := is highly encouraged instead for speed; i.e.,
+            DT[x == "a", y:=0L]
+            DT["a", y:=0L]
+        Thanks to Leon Baum for reporting.
+
 
         *********************************************
         **                                         **
