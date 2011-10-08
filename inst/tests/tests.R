@@ -1033,6 +1033,15 @@ DT = data.table(x=letters[1:2], y=1:4)
 DT[c(1,3), ]$y <- 0L
 test(375, DT, data.table(x=letters[1:2], y=c(0L,2L,0L,4L)))
 
+# Test unique on unsorted tables
+DT = data.table(a=c(2,1,2),b=c(1,2,1))
+test(376, unique(DT), data.table(a=c(2,1),b=c(1,2)))
+# From the SO thread :
+M = matrix(sample(2, 120, replace = TRUE), ncol = 3)
+DF = as.data.frame(M)
+DT = as.data.table(M)
+test(377, as.data.table(unique(DF)), unique(DT))
+
 ## See test-* for more tests
 
 ##########################
