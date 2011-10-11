@@ -94,6 +94,23 @@ BUG FIXES
         Thanks to a question by Iterator on Stack Overflow. 
 
 
+NOTES
+
+    o   cbind and rbind are reverted to S3 methods rather than
+        masking cbind and rbind themselves. Motivation of masking
+        was to allow cbind(DT,DF) to work, but this broke (full)
+        compatibility with package IRanges. To bind DF to DT :
+
+            data.table(DT,DF)
+        or
+        
+            cbind(DT,as.data.table(DF))
+            
+        FAQ 5.1 has been updated, FAQ 4.4 added, and ?cbind now
+        documents the strange matrix output from cbind(DT,DF).
+        
+        
+
         *********************************************
         **                                         **
         **   CHANGES IN DATA.TABLE VERSION 1.6.6   **

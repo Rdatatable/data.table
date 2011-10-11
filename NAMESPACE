@@ -9,10 +9,6 @@ export(data.table, tables, setkey, key, "key<-", haskey, J, CJ, SJ, copy)
 export(as.data.table,is.data.table,test.data.table,last,like,"%like%",between,"%between%")
 export(timetaken)
 
-export(cbind,rbind)
-# .Internal dispatch in the base functions prevents both cbind(DT,DF) and cbind(DT,vector)
-# from working using S3 methods cbind.data.table and cbind.data.frame.
-
 S3method("[", data.table)
 S3method("[<-", data.table)
 # S3method("[[", data.table)
@@ -24,8 +20,8 @@ S3method(as.data.table, data.frame)
 S3method(as.data.table, matrix)
 S3method(as.data.frame, data.table)
 S3method(as.matrix, data.table)
-# S3method(cbind, data.table)  # see comment above.
-# S3method(rbind, data.table)
+S3method(cbind, data.table)
+S3method(rbind, data.table)
 S3method(dim, data.table)
 S3method(dimnames, data.table)
 S3method("dimnames<-", data.table)

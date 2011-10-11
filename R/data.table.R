@@ -889,24 +889,26 @@ tail.data.table = function(x, n=6, ...) {
     `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
 
-cbind = function(...) {
+cbind.data.table = function(...) {
     # according to src/main/bind.c all the items passed to cbind must dispatch to the same
     # cbind method otherwise it falls through to it's default internal cbind.
-    # base::cbind calls .Internal; it isn't generic. We tried creating cbind.data.table
-    # and cbind.data.frame, and setting both to the same closure but something or other
-    # wouldn't work that way. Hence masking cbind itself.
-    # All so that cbind(DT,data.frame(...)) works as you would expect (test 324)
-    # and also test 230.
+    # base::cbind calls .Internal; it isn't generic. 
+    # .Internal dispatch in the base functions prevents both cbind(DT,DF) and cbind(DT,vector)
+    # from working using S3 methods cbind.data.table and cbind.data.frame.
+    # But full compatibility with IRanges wasn't possible when we masked cbind and rbind
+    # themselves, plus we prefer not to have a mask warning on startup, so we live
+    # with not being able to rbind(DT,DF) and document it.
+    # In particular see tests 324 and 230.
     # The get via match is for compatibility with IRanges (for example) which also masks rbind and cbind.
-    if (is.data.table(..1))
+    #if (is.data.table(..1))
         data.table(...)
-    else
-        get("cbind",pos=1+match("package:data.table",search(),nomatch=1))(...)
+    #else
+    #    get("cbind",pos=1+match("package:data.table",search(),nomatch=1))(...)
 }
 
-rbind = function (...) {
+rbind.data.table = function (...) {
     # see long comments in cbind, same reason here
-    if (!is.data.table(..1)) return(get("rbind",pos=1+match("package:data.table",search(),nomatch=1))(...))
+    #if (!is.data.table(..1)) return(get("rbind",pos=1+match("package:data.table",search(),nomatch=1))(...))
     match.names <- function(clabs, nmi) {
         if (all(clabs == nmi))
             NULL
@@ -921,10 +923,8 @@ rbind = function (...) {
     if (n == 0)
         return(structure(list(), class=c("data.table","data.frame"), row.names=.set_row_names(0)))
 
-    # if (!all(sapply(allargs, is.data.table))) stop("All arguments must be data.tables")
-    # as of 1.6.4, can rbind a data.frame to a data.table ok
-
-    if (length(unique(sapply(allargs, ncol))) != 1) stop("All data.tables must have the same number of columns")
+    if (!all(sapply(allargs, is.list))) stop("All arguments to rbind must be lists (including data.frame and data.table)")
+    if (length(unique(sapply(allargs, ncol))) != 1) stop("All arguments to rbind must have the same number of columns")
 
     l = list()
     nm = names(allargs[[1]])
