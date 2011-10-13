@@ -411,6 +411,8 @@ test(166, suppressWarnings(split(DT,DT$grp)[[2]]), DT[grp==2])
 if ("package:ggplot2" %in% search()) {
     test(167,print(ggplot(DT,aes(b,f))+geom_point()),NULL)  # how to programmatically test it not only doesn't error but correct output, binary diff to pre-prepared pdf ?
     test(168,DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 because there are 5 groups in DT data at this stage, just need 2 to test
+    # New test reported by C Neff on 11 Oct 2011
+    test(168.5, print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp)), ...)
     try(graphics.off(),silent=TRUE)
     #try(graphics.off(),silent=TRUE) # R CMD check doesn't like graphics it seems, even when inside try()
 } else {
