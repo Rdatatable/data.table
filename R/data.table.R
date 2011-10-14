@@ -884,12 +884,19 @@ tail.data.table = function(x, n=6, ...) {
     # (IIUC, and, as of R 2.13.1)
 }
 
-"$<-.data.table" = function (x, name, value) {
+"$<-.data.table" = function(x, name, value) {
     if (!cedta()) return(`$<-.data.frame`(x, name, value))
     `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
 
-cbind.data.table = function(...) {
+".cbind.data.frame" = function(..., deparse.level=1) {
+    if (inherits(..1,"data.table"))
+        data.table(...)
+    else
+        data.frame(..., check.names = FALSE)
+}
+
+#cbind.data.table = function(...) {
     # according to src/main/bind.c all the items passed to cbind must dispatch to the same
     # cbind method otherwise it falls through to it's default internal cbind.
     # base::cbind calls .Internal; it isn't generic. 
@@ -901,12 +908,12 @@ cbind.data.table = function(...) {
     # In particular see tests 324 and 230.
     # The get via match is for compatibility with IRanges (for example) which also masks rbind and cbind.
     #if (is.data.table(..1))
-        data.table(...)
+#        data.table(...)
     #else
     #    get("cbind",pos=1+match("package:data.table",search(),nomatch=1))(...)
-}
+#}
 
-rbind.data.table = function (...) {
+rbind.data.table = function(...) {
     # see long comments in cbind, same reason here
     #if (!is.data.table(..1)) return(get("rbind",pos=1+match("package:data.table",search(),nomatch=1))(...))
     match.names <- function(clabs, nmi) {

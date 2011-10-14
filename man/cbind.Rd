@@ -1,12 +1,12 @@
 \name{cbind.data.table}
-\alias{cbind.data.table}
+%\alias{cbind.data.table}
 \alias{rbind.data.table}
 \title{ Bind an object to data.table }
 \description{
    Binds columns (cbind) or rows (rbind) to a data.table, returning a data.table.
 }
 \usage{
-\method{cbind}{data.table}(...)
+%\method{cbind}{data.table}(...)
 \method{rbind}{data.table}(...)
 }
 \arguments{
