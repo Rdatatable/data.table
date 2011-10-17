@@ -913,7 +913,7 @@ tail.data.table = function(x, n=6, ...) {
     #    get("cbind",pos=1+match("package:data.table",search(),nomatch=1))(...)
 #}
 
-rbind.data.table = function(...) {
+.rbind.data.table = function(...) {
     # see long comments in cbind, same reason here
     #if (!is.data.table(..1)) return(get("rbind",pos=1+match("package:data.table",search(),nomatch=1))(...))
     match.names <- function(clabs, nmi) {

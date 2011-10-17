@@ -1,16 +1,16 @@
 \name{cbind.data.table}
 %\alias{cbind.data.table}
-\alias{rbind.data.table}
+%\alias{rbind.data.table}
 \title{ Bind an object to data.table }
 \description{
    Binds columns (cbind) or rows (rbind) to a data.table, returning a data.table.
 }
 \usage{
 %\method{cbind}{data.table}(...)
-\method{rbind}{data.table}(...)
+%\method{rbind}{data.table}(...)
 }
 \arguments{
-  \item{\dots}{ data.table followed by vectors, or data.tables. }
+  %\item{\dots}{ data.table followed by vectors, or data.tables. }
 }
 \details{
     Works as you'd expect, other than note this feature in \code{\link[base]{cbind}} :

@@ -901,9 +901,9 @@ test(322, within(DT, rm(b)), data.table(a=1:5))
 
 # check that cbind dispatches on first argument as expected
 test(323, cbind(DT,DT), data.table(a=1:5,b=1:5,`a.1`=1:5,`b.1`=1:5))
-test(324, cbind(DT,data.table(c=1:5)), data.table(a=1:5,b=1:5,c=1:5))
+test(324, cbind(DT,data.frame(c=1:5)), data.table(a=1:5,b=1:5,c=1:5))
 test(325, rbind(DT,DT), data.table(a=c(1:5,1:5),b=1:5))
-test(326, rbind(DT,data.table(a=6:10,b=6:10)), data.table(a=1:10,b=1:10))
+test(326, rbind(DT,data.frame(a=6:10,b=6:10)), data.table(a=1:10,b=1:10))
 
 # test removing multiple columns, and non-existing ones, #1510
 DT = data.table(a=1:5, b=6:10, c=11:15)
