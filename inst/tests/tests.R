@@ -1052,6 +1052,7 @@ if ("package:sqldf" %in% search()) {
     tf = tempfile()
     write.table(trees, file=tf, row.names=FALSE, col.names=FALSE, sep=",")
     ans <- read.csv.sql(tf, "select * from file", header = FALSE, row.names = FALSE)
+    closeAllConnections()
     unlink(tf)
     colnames(ans)=colnames(trees)
     mode(ans$Height) = "numeric"
