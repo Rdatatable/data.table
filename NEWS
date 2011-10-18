@@ -59,7 +59,6 @@ NEW FEATURES
         To change the type of a column, provide a full length RHS (i.e.
         'replace' the column).        
 
-
 BUG FIXES
 
     o   := with i all FALSE no longer sets the whole column, fixing
@@ -101,6 +100,11 @@ BUG FIXES
         on an empty "...") is fixed and test added. data.table was switching
         on list(...)[[1]] rather than ..1. Thanks to RYogi for reporting #1623.
         
+USER VISIBLE CHANGES
+
+    o   cbind and rbind are no longer masked. But, please do read FAQ 2.23,
+        4.4 and 5.1.
+
 
         *********************************************
         **                                         **
