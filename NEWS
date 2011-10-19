@@ -4,9 +4,18 @@ The ChangeLog for data.table is the SVN commit log itself :
 
 This NEWS file summarises the main changes.
 
+
         *********************************************
         **                                         **
-        **   CHANGES IN DATA.TABLE VERSION 1.6.7   **
+        **   CHANGES IN DATA.TABLE VERSION 1.7.1   **
+        **                                         **
+        *********************************************
+
+
+
+        *********************************************
+        **                                         **
+        **   CHANGES IN DATA.TABLE VERSION 1.7.0   **
         **                                         **
         *********************************************
 
