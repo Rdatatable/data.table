@@ -3,7 +3,6 @@ if (!exists(".devtesting")) {
     require(data.table)   # in dev the package should not be loaded
     require(ggplot2)      # the 2 ggplot tests take so long they get in the way
     require(plyr)
-    require(sqldf)
 }
 options(warn=2)
 nfail = ntest = 0
@@ -1047,19 +1046,10 @@ test(377, as.data.table(unique(DF)), unique(DT))
 
 # Test compatibility with sqldf. sqldf() does a do.call("rbind" with empty input,
 # so this tests ..1 when NULL (which was insufficiently list(...)[[1]] in 1.6.6).
-if ("package:sqldf" %in% search()) {
-    # As for ggplot2 tests, this will be TRUE in an R CMD check
-    tf = tempfile()
-    write.table(trees, file=tf, row.names=FALSE, col.names=FALSE, sep=",")
-    ans <- read.csv.sql(tf, "select * from file", header = FALSE, row.names = FALSE)
-    closeAllConnections()
-    unlink(tf)
-    colnames(ans)=colnames(trees)
-    mode(ans$Height) = "numeric"
-    test(378, ans, trees)
-} else {
-    cat("Test 378 not run. If required call library(sqldf) first.\n")
-}
+# We now test this directly rather than using sqldf, because we couldn't get 'R CMD check'
+# past (converted from warning) closing unused connection 3 (/tmp/RtmpYllyW2/file55822c52)
+test(378, cbind(), NULL)
+test(379, rbind(), NULL)
 
 ## See test-* for more tests
 
