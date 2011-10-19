@@ -889,33 +889,10 @@ tail.data.table = function(x, n=6, ...) {
     `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
 
-".cbind.data.frame" = function(..., deparse.level=1) {
-    if (inherits(..1,"data.table"))
-        data.table(...)
-    else
-        data.frame(..., check.names = FALSE)
-}
-
-#cbind.data.table = function(...) {
-    # according to src/main/bind.c all the items passed to cbind must dispatch to the same
-    # cbind method otherwise it falls through to it's default internal cbind.
-    # base::cbind calls .Internal; it isn't generic. 
-    # .Internal dispatch in the base functions prevents both cbind(DT,DF) and cbind(DT,vector)
-    # from working using S3 methods cbind.data.table and cbind.data.frame.
-    # But full compatibility with IRanges wasn't possible when we masked cbind and rbind
-    # themselves, plus we prefer not to have a mask warning on startup, so we live
-    # with not being able to rbind(DT,DF) and document it.
-    # In particular see tests 324 and 230.
-    # The get via match is for compatibility with IRanges (for example) which also masks rbind and cbind.
-    #if (is.data.table(..1))
-#        data.table(...)
-    #else
-    #    get("cbind",pos=1+match("package:data.table",search(),nomatch=1))(...)
-#}
 
 .rbind.data.table = function(...) {
-    # see long comments in cbind, same reason here
-    #if (!is.data.table(..1)) return(get("rbind",pos=1+match("package:data.table",search(),nomatch=1))(...))
+    # See FAQ 2.23
+    # Called from base::rbind.data.frame
     match.names <- function(clabs, nmi) {
         if (all(clabs == nmi))
             NULL

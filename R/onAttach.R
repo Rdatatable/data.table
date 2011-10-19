@@ -2,10 +2,21 @@
     if (interactive()) {
         packageStartupMessage('data.table ',as.character(packageVersion("data.table")),'  For help type: help("data.table")')
     }
-    assignInNamespace("cbind.data.frame",.cbind.data.frame,"base")
+    tt = base::cbind.data.frame
+    ss = body(tt)
+    if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
+    if (!length(grep("data.table",ss[[2]]))) {
+        # See FAQ 2.23
+        ss = ss[c(1,NA,2:length(ss))]
+        ss[[2]] = parse(text="if (inherits(..1,'data.table')) return(data.table(...))")[[1]]
+        body(tt)=ss
+        assignInNamespace("cbind.data.frame",tt,"base")  
+    }
     tt = base::rbind.data.frame
     ss = body(tt)
+    if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
     if (!length(grep("data.table",ss[[2]]))) {
+        # See FAQ 2.23
         ss = ss[c(1,NA,2:length(ss))]
         ss[[2]] = parse(text="if (inherits(..1,'data.table')) return(`.rbind.data.table`(...))")[[1]]
         body(tt)=ss
