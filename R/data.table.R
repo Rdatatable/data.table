@@ -353,7 +353,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (is.expression(jsub)) jsub = jsub[[1]]
     }
     av = all.vars(jsub,TRUE)
-    if (":=" %in% av) {
+    if (":=" %in% sapply(sapply(jsub,all.vars,TRUE),"[",1)) {
+        # The double sapply is for FAQ 4.5
         if (!missing(by)) stop("Combining := in j with by is not yet implemented. Please let maintainer('data.table') know if you are interested in this.")
         if (bywithoutby && nrow(i)>1) stop("combining bywithoutby with := in j is not yet implemented.")
         if (as.character(jsub[[1]]) != ":=") stop("Currently only one `:=` may be present in j. This may be expanded in future.")
@@ -628,6 +629,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     for (ii in ivars) assign(ii, i[[ii]][1], envir=SDenv)
     for (ii in names(SDenv$.BY)) assign(ii, SDenv$.BY[[ii]], envir=SDenv)
     for (ii in xvars) assign(ii, SDenv$.SD[[ii]], envir=SDenv)
+    lockBinding(".SD",SDenv)
+    lockBinding(".BY",SDenv)
+    lockBinding(".N",SDenv)
     testj = eval(jsub, SDenv)
     maxn=0
     if (!is.null(testj)) {
@@ -656,7 +660,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     byretn = max(byretn,maxn) # if the result for the first group is larger than the table itself(!) Unusual case where the optimisations for common query patterns. Probably a join is being done in the j via .SD and the 1-row table is an edge condition of bigger picture.
 
     byretn = as.integer(byretn)
+    unlockBinding(".SD",SDenv)
     SDenv$.SD = x[seq(length=max(len__)), xvars, with=FALSE]  # allocate enough for largest group, will re-use it, the data contents doesn't matter at this point
+    lockBinding(".SD",SDenv)
     # the subset above keeps factor levels in full
     # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
     xcols = as.integer(match(xvars,colnames(x)))

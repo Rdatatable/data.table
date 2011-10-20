@@ -429,6 +429,17 @@ This error (and similar; e.g., \code{'getCharCE' must be called on a CHARSXP}) m
 \subsection{\code{cbind(DT,DF) returns a strange format e.g. 'Integer,5'}} \label{faq:cbinderror}
 This occurs prior to v1.6.5, for \code{rbind(DT,DF)} too. Please upgrade to v1.6.7 or later.
 
+\subsection{\code{cannot change value of locked binding for '.SD'}}
+\code{.SD} is locked by design. See \code{?data.table}. If you'd like to manipulate \code{.SD} before using it, or returning it, and don't wish to modify \code{DT} using \code{:=}, then take a copy first (see \code{?copy}); e.g.,
+<<>>=
+DT = data.table(a=rep(1:3,1:3),b=1:6,c=7:12)
+DT
+DT[,{ mySD = copy(.SD)
+      mySD[1,b:=99L]
+      mySD },
+    by=a]
+@
+
 \section{Warning messages}
 \subsection{\code{The following object(s) are masked from 'package:base': cbind, rbind}}
 This warning was present in v1.6.5 and v.1.6.6 only, when loading the package. The motivation was to allow \code{cbind(DT,DF)} to work, but as it transpired, broke (full) compatibility with package IRanges. Please upgrade to v1.6.7 or later. 

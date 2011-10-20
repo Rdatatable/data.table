@@ -1051,6 +1051,13 @@ test(377, as.data.table(unique(DF)), unique(DT))
 test(378, cbind(), NULL)
 test(379, rbind(), NULL)
 
+DT = data.table(a=rep(1:3,1:3),b=1:6)
+tt = try(DT[,{.SD$b[1]=10L;.SD}, by=a], silent=TRUE)   # .SD locked for 1st group
+test(380, inherits(tt,"try-error") && length(grep("locked binding",tt)))
+tt = try(DT[,{if (a==2) {.SD$b[1]=10L;.SD} else .SD}, by=a], silent=TRUE)   # .SD locked in 2nd group onwards too
+test(381, inherits(tt,"try-error") && length(grep("locked binding",tt)))
+
+
 ## See test-* for more tests
 
 ##########################
