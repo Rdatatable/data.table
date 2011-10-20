@@ -10,7 +10,9 @@
         ss = ss[c(1,NA,2:length(ss))]
         ss[[2]] = parse(text="if (inherits(..1,'data.table')) return(data.table(...))")[[1]]
         body(tt)=ss
-        assignInNamespace("cbind.data.frame",tt,"base")  
+        unlockBinding("cbind.data.frame",baseenv())
+        assignInNamespace("cbind.data.frame",tt,"base")
+        lockBinding("cbind.data.frame",baseenv())
     }
     tt = base::rbind.data.frame
     ss = body(tt)
@@ -20,7 +22,9 @@
         ss = ss[c(1,NA,2:length(ss))]
         ss[[2]] = parse(text="if (inherits(..1,'data.table')) return(`.rbind.data.table`(...))")[[1]]
         body(tt)=ss
+        unlockBinding("rbind.data.frame",baseenv())
         assignInNamespace("rbind.data.frame",tt,"base")
-    }  
+        lockBinding("rbind.data.frame",baseenv())
+    }
 }
 

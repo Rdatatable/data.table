@@ -265,7 +265,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 for (lc in leftcols) {
                     # When/if we move to character, this entire for() will not be required.
                     rc = rightcols[lc]
-                    if (!typeof(i[[lc]])%in%c("integer","logical")) stop("unsorted column ",colnames(i)[lc], " of i is not internally type integer.")
+                    if (!typeof(i[[lc]])%in%c("integer","logical")) stop("unsorted column ",colnames(i)[lc], " of i is not internally type integer. i doesn't need to be keyed, just convert the (likely) character column to factor")
                     if (is.factor(i[[lc]])) {
                         if ((roll || rolltolast) && lc==last(leftcols)) stop("Attempting roll join on factor column i.",colnames(i)[lc],". Only integer columns (i.e. not factors) may be roll joined.")
                         if (!is.factor(x[[rc]])) stop("i.",colnames(i)[lc]," is a factor but the corresponding x.",colnames(x)[rc]," is not a factor, Factors must join to factors.")

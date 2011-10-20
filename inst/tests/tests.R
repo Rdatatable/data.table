@@ -1057,6 +1057,13 @@ test(380, inherits(tt,"try-error") && length(grep("locked binding",tt)))
 tt = try(DT[,{if (a==2) {.SD$b[1]=10L;.SD} else .SD}, by=a], silent=TRUE)   # .SD locked in 2nd group onwards too
 test(381, inherits(tt,"try-error") && length(grep("locked binding",tt)))
 
+# test that direct := is trapped, but := within a copy of .SD is allowed (FAQ 4.5)
+tt = try(DT[,b:=10L,by=a],silent=TRUE)
+test(382, inherits(tt,"try-error") && length(grep("not yet implemented",tt)))
+tt = try(DT[,{z=10L;b:=z},by=a],silent=TRUE)
+test(383, inherits(tt,"try-error") && length(grep("not yet implemented",tt)))
+test(384, DT[,{mySD=copy(.SD);mySD[1,b:=99L];mySD},by=a], data.table(a=rep(1:3,1:3),b=c(99L,99L,3L,99L,5:6)))
+
 
 ## See test-* for more tests
 
