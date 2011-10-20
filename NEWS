@@ -11,6 +11,12 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+BUG FIXES
+
+    o   .SD is now locked, partially fixing #1624. It was never
+        the intention to allow assignment to .SD. Take a 'copy(.SD)'
+        first if needed. Now documented in ?data.table and example
+        in new FAQ 4.5. Thanks to Steve Lianoglou for reporting.
 
 
         *********************************************
