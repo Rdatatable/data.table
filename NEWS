@@ -33,7 +33,8 @@ USER VISIBLE CHANGES
 
     o   Error message "column <name> of i is not internally type integer"
         is now more helpful adding "i doesn't need to be keyed, just
-        convert the (likely) character column to factor".
+        convert the (likely) character column to factor". Thanks to
+        Christoph_J for his SO question.
 
 
         *********************************************
