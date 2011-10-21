@@ -43,6 +43,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
 {
     R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0, newlen, icol, size;
     SEXP names, inames, bynames, ans, jval, naint, nareal, SD, BY, N;
+    SEXP *nameSyms;
     if (!sizesSet) setSizes();
     if (TYPEOF(order) != INTSXP) error("order not integer");
     if (TYPEOF(starts) != INTSXP) error("starts not integer");
@@ -57,10 +58,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     N = findVar(install(".N"), env);
     
     names = getAttrib(SD, R_NamesSymbol);
+    nameSyms = Calloc(length(names), SEXP);
     for(i = 0; i < length(SD); i++) {
         if (SIZEOF(VECTOR_ELT(SD, i))==0)
             error("Type %d in .SD column %d", TYPEOF(VECTOR_ELT(SD, i)), i);
-        defineVar(install(CHAR(STRING_ELT(names, i))), VECTOR_ELT(SD, i), env);
+        nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
     }
     // defineVar(install(".SD"), SD, env);
     // By installing .SD directly inside itself, R finds this symbol more quickly (if used).
@@ -224,7 +226,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
             }
         }
         INTEGER(N)[0] = INTEGER(starts)[i] == 0 ? 0 : INTEGER(lens)[i];  // .N is number of rows matched to, regardless of whether nomatch is 0 or NA
-        for (j=0; j<length(SD); j++) SETLENGTH(VECTOR_ELT(SD,j),thislen);
+        for (j=0; j<length(SD); j++) {
+            SETLENGTH(VECTOR_ELT(SD,j),thislen);
+            defineVar(nameSyms[j], VECTOR_ELT(SD, j), env);
+            // In case user's j assigns to the columns names (env is static) (tests 387 and 388)
+            // nameSyms pre-stored to save repeated install() for efficiency.
+        }
         PROTECT(jval = eval(jexp, env));
         // length(jval) may be 0 when j is plot or other side-effect only. Otherwise, even NULL in user j
         // will be auto wrapped to make list(NULL) (length 1)
@@ -307,6 +314,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         // only true vectors such as STRSXP.
     }
     UNPROTECT(3);
+    Free(nameSyms);
     return(ans);
 }
 

@@ -1069,6 +1069,18 @@ DT = data.table(x=1:2, y=1:6)
 test(385, DT[x==1, y := x], data.table(x=1:2,y=c(1L,2L,1L,4L,1L,6L)))
 test(386, DT[c(FALSE,TRUE),y:=99L], data.table(x=1:2,y=c(1L,99L,1L,99L,1L,99L)))
 
+# test that column names have the appearance of being local in j (can assign to them ok), bug #1624
+DT = data.table(name=c(rep('a', 3), rep('b', 2), rep('c', 5)), flag=FALSE)
+test(387, DT[,{flag[1]<-TRUE;list(flag=flag)}, by=name], DT[c(1,4,6),flag:=TRUE])
+DT = data.table(score=1:10, name=c(rep('a', 4), rep('b',2), rep('c', 3), 'd'))
+test(388, DT[,{ans = score[1]
+               score[1] <- -score[1]
+               ans
+               },by=name],
+           data.table(name=letters[1:4],V1=c(1L,5L,7L,10L)))
+
+
+
 ## See test-* for more tests
 
 ##########################

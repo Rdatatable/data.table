@@ -10,6 +10,14 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+BUG FIXES
+
+    o   Assigning to a column variable using <- or = in j now
+        works (creating a local copy within j), rather than
+        persisting from group to group and sometimes causing a crash.
+        Non column variables still persist from group to group; e.g.,
+        a group counter. This fixes the remainder of #1624 thanks to
+        Steve Lianoglou for reporting.
 
 
         *********************************************
@@ -24,7 +32,7 @@ BUG FIXES
         the intention to allow assignment to .SD. Take a 'copy(.SD)'
         first if needed. Now documented in ?data.table and new FAQ 4.5
         including example. Thanks to Steve Lianoglou for reporting.
-        
+
     o   := now works with a logical i subset; e.g.,
             DT[x==1,y:=x]
         Thanks to Muhammad Waliji for reporting.
