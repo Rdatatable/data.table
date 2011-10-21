@@ -15,8 +15,18 @@ BUG FIXES
 
     o   .SD is now locked, partially fixing #1624. It was never
         the intention to allow assignment to .SD. Take a 'copy(.SD)'
-        first if needed. Now documented in ?data.table and example
-        in new FAQ 4.5. Thanks to Steve Lianoglou for reporting.
+        first if needed. Now documented in ?data.table and new FAQ 4.5
+        including example. Thanks to Steve Lianoglou for reporting.
+        
+    o   := now works with a logical i subset; e.g.,
+            DT[x==1,y:=x]
+        Thanks to Muhammad Waliji for reporting.
+        
+USER VISIBLE CHANGES
+
+    o   Error message "column <name> of i is not internally type integer"
+        is now more helpful adding "i doesn't need to be keyed, just
+        convert the (likely) character column to factor".
 
 
         *********************************************

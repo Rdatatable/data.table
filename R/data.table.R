@@ -398,6 +398,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 tt = if (length(irows)==nrow(x)) which(irows)  # DT[colA>3,z:=42L]
                      else (1:nrow(x))[irows]                   # DT[c(TRUE,FALSE),z:=42L] (recycling)
                 if (!length(tt)) return(x)                     # DT[FALSE,z:=42L]
+                tt
             }
         if (!missing(verbose) && verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
         # the !missing is for speed to avoid calling getOption() which then calls options().

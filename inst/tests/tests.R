@@ -1064,6 +1064,10 @@ tt = try(DT[,{z=10L;b:=z},by=a],silent=TRUE)
 test(383, inherits(tt,"try-error") && length(grep("not yet implemented",tt)))
 test(384, DT[,{mySD=copy(.SD);mySD[1,b:=99L];mySD},by=a], data.table(a=rep(1:3,1:3),b=c(99L,99L,3L,99L,5:6)))
 
+# somehow missed testing := on logical subset with mixed TRUE/FALSE, reported by Muhammad Waliji
+DT = data.table(x=1:2, y=1:6)
+test(385, DT[x==1, y := x], data.table(x=1:2,y=c(1L,2L,1L,4L,1L,6L)))
+test(386, DT[c(FALSE,TRUE),y:=99L], data.table(x=1:2,y=c(1L,99L,1L,99L,1L,99L)))
 
 ## See test-* for more tests
 
