@@ -14,7 +14,7 @@ EXPORT SEXP readfile();
 SEXP readfile(SEXP fnam)
 {
     SEXP c1,c2,ans;
-    void *p[64];
+    char *p[64];
     int i, nrow=0;
     FILE *f=fopen(CHAR(STRING_ELT(fnam,0)),"r");
     if (f == NULL) error("file not found");
@@ -24,8 +24,8 @@ SEXP readfile(SEXP fnam)
     SET_VECTOR_ELT(ans,0,c1);
     SET_VECTOR_ELT(ans,1,c2);
     for (i=0;i<64;i++) p[i] = 0;
-    p[0] = DATAPTR(c1);
-    p[1] = DATAPTR(c2);
+    p[0] = (char *)DATAPTR(c1);
+    p[1] = (char *)DATAPTR(c2);
     char format[100]="%d,%d\n";
     while (fscanf(f,format, p[0], p[1], p[2], p[3])!=EOF) {
         // Unused and zero'd p[2], p[3] (, ..., p[64]

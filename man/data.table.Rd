@@ -9,9 +9,9 @@
 \alias{[.data.table}
 \title{ Enhanced data.frame }
 \description{
-   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast subset, fast grouping, fast update and fast ordered joins in a short and flexible syntax, for faster development. It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that \emph{only} accept \code{data.frame}.
+   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast subset, fast grouping, fast update, fast ordered joins and list columns in a short and flexible syntax, for faster development. It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that \emph{only} accept \code{data.frame}.
    
-   The 10 minute quick start guide to \code{data.table} may be a good place to start: type \code{vignette("datatable-intro")}.
+   The 10 minute quick start guide to \code{data.table} may be a good place to start: \code{\href{../doc/datatable-intro.pdf}{vignette("datatable-intro")}}. Or, the first section of FAQs is intended to be read from start to finish and is considered core documentation: \code{\href{../doc/datatable-faq.pdf}{vignette("datatable-faq")}}. If you have read and searched these documents and the help page below, please feel free to ask questions on \href{http://r.789695.n4.nabble.com/datatable-help-f2315188.html}{datatable-help} or the StackOverflow \href{http://stackoverflow.com/questions/tagged/data.table}{data.table tag}.
    
    Please check the \href{http://datatable.r-forge.r-project.org/}{homepage} for up to the minute \href{http://r-forge.r-project.org/scm/viewvc.php/pkg/NEWS?view=markup&root=datatable}{news}.
 }

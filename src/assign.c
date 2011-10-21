@@ -98,7 +98,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             targetlevels = getAttrib(targetcol, R_LevelsSymbol);
             for (j=0; j<length(targetlevels); j++) TRUELENGTH(STRING_ELT(targetlevels,j))=j+1;
             int addi = 0;
-            SEXP addlevels;
+            SEXP addlevels=NULL;
             PROTECT(RHS = allocVector(INTSXP, length(thisvalue)));
             protecti++;
             for (j=0; j<length(thisvalue); j++) {
