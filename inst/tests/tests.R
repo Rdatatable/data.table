@@ -1079,6 +1079,33 @@ test(388, DT[,{ans = score[1]
                },by=name],
            data.table(name=letters[1:4],V1=c(1L,5L,7L,10L)))
 
+# Test fast character sorting
+n = as.integer(1e7)
+m = 10000L
+cat("x = ",format(n,big.mark=","),"sample from",format(m,big.mark=","),"strings (tough test)\n")
+x = sample(as.character(as.hexmode(1:m)),n,replace=TRUE)
+cat(format(system.time(f <- factor(x),TRUE)["elapsed"],nsmall=3),": f=factor(x)\n")         # 7.611
+cat(format(system.time(o1 <- sort.list(f,method="radix"),TRUE)["elapsed"],nsmall=3),": sort.list(,'radix') on f\n")  # 0.982   (7.61+0.98=8.59)
+fsorted = f[o1]
+xsorted = x[o1]
+cat(format(system.time(o2 <- sort.list(fsorted,method="radix"),TRUE)["elapsed"],nsmall=3),": sort.list(,'radix') on fsorted\n")  # 0.982   (7.61+0.98=8.59)
+cat("-vs-\n")
+for (GE2140 in c(FALSE,TRUE)) {   # GE2140 = getRversion()>="2.14.0"
+    if (GE2140) cat(">= R 2.14.0\n") else cat("< R 2.14.0\n")
+    cat(format(system.time(o3 <- .Call("countingcharacter",x,FALSE,GE2140),TRUE)["elapsed"],nsmall=3),": char group on x (ad hoc by)\n")
+    cat(format(system.time(o4 <- .Call("countingcharacter",x,TRUE,GE2140),TRUE)["elapsed"],nsmall=3),": char sort on x (setkey)\n")
+    cat(format(system.time(o5 <- .Call("countingcharacter",xsorted,FALSE,GE2140),TRUE)["elapsed"],nsmall=3),": char group on xsorted (keyed by)\n")
+    test(389+3*GE2140,identical(o1,o4))
+    test(390+3*GE2140,identical(o2,o5))
+    test(391+3*GE2140,identical(o5,1:length(x)))
+}
+
+# test 395 ...
+
+#gc()                                                           # gcFirst=TRUE on next line wasn't always enough, it seems
+#system.time(o4 <- sort.list(fsorted,method="radix"),TRUE)      # 0.318 (even with TRUE sometimes gave 0.720)
+#identical(o3,o4)
+
 
 
 ## See test-* for more tests
