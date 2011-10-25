@@ -110,7 +110,7 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
         err <- try(o <- o[radixorder1(lst[[w]][o])], silent=TRUE)
         if (inherits(err, "try-error")) {
             if (verbose) cat("Non-first column",w,"failed radixorder1, reverting to regularorder1\n")
-            o <- o[regularorder1(lst[[w]][o])]
+            o <- o[regularorder1(lst[[w]][o])]    # TO DO: avoid the copy and reorder, pass in o to order in C
         }
     }
     o

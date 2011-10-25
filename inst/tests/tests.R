@@ -1079,32 +1079,56 @@ test(388, DT[,{ans = score[1]
                },by=name],
            data.table(name=letters[1:4],V1=c(1L,5L,7L,10L)))
 
-# Test fast character sorting
+# Test counting character grouping and sorting
+# TO DO: test range of n and m and plot, on variety of machines, 32bit and 64bit with RAM and L2 variances
 n = as.integer(1e7)
 m = 10000L
 cat("x = ",format(n,big.mark=","),"sample from",format(m,big.mark=","),"strings (tough test)\n")
 x = sample(as.character(as.hexmode(1:m)),n,replace=TRUE)
-cat(format(system.time(f <- factor(x),TRUE)["elapsed"],nsmall=3),": f=factor(x)\n")         # 7.611
-cat(format(system.time(o1 <- sort.list(f,method="radix"),TRUE)["elapsed"],nsmall=3),": sort.list(,'radix') on f\n")  # 0.982   (7.61+0.98=8.59)
+cat(format(system.time(
+    f <- factor(x)                                          # 7.079   (timings from MD's tiny 32bit netbook)
+    ,TRUE)["elapsed"],nsmall=3),  
+    ": f=factor(x) [high up front cost, plus storage and maintenance of levels]\n")
+cat(format(system.time(
+    o1 <- sort.list(f,method="radix")                       # 1.025   
+    ,TRUE)["elapsed"],nsmall=3),                            # (setkey = 7.079+1.025 = 8.104 + update to DT)
+    ": sort.list(,'radix') on f\n")
+cat(format(system.time(    
+    u <- unique(x)                                          # 5.213
+    ,TRUE)["elapsed"],nsmall=3),
+    ": u=unique(x)\n")
+cat(format(system.time(    
+    .Internal(order(na.last=FALSE, decreasing=FALSE, u))    # 0.161
+    ,TRUE)["elapsed"],nsmall=3),
+    ": .Internal(order(u))\n")
 fsorted = f[o1]
 xsorted = x[o1]
-cat(format(system.time(o2 <- sort.list(fsorted,method="radix"),TRUE)["elapsed"],nsmall=3),": sort.list(,'radix') on fsorted\n")  # 0.982   (7.61+0.98=8.59)
+cat(format(system.time(
+    o2 <- sort.list(fsorted,method="radix")                 # 0.318   
+    ,TRUE)["elapsed"],nsmall=3),                            # (page fetches on counts minimised)
+    ": sort.list(,'radix') on fsorted\n")
 cat("-vs-\n")
 for (GE2140 in c(FALSE,TRUE)) {   # GE2140 = getRversion()>="2.14.0"
     if (GE2140) cat(">= R 2.14.0\n") else cat("< R 2.14.0\n")
-    cat(format(system.time(o3 <- .Call("countingcharacter",x,FALSE,GE2140),TRUE)["elapsed"],nsmall=3),": char group on x (ad hoc by)\n")
-    cat(format(system.time(o4 <- .Call("countingcharacter",x,TRUE,GE2140),TRUE)["elapsed"],nsmall=3),": char sort on x (setkey)\n")
-    cat(format(system.time(o5 <- .Call("countingcharacter",xsorted,FALSE,GE2140),TRUE)["elapsed"],nsmall=3),": char group on xsorted (keyed by)\n")
+    cat(format(system.time(
+    o3 <- .Call("countingcharacter",x,FALSE,GE2140)         # 2.186
+    ,TRUE)["elapsed"],nsmall=3),
+    ": char group on x (ad hoc by)  [slower than radix on f but without up front cost]\n")    
+    cat(format(system.time(
+    o4 <- .Call("countingcharacter",x,TRUE,GE2140)          # 2.400
+    ,TRUE)["elapsed"],nsmall=3),
+    ": char sort on x (setkey)  [lower up front cost than factor(x)]\n")
+    cat(format(system.time(
+    o5 <- .Call("countingcharacter",xsorted,FALSE,GE2140)   # 0.222
+    ,TRUE)["elapsed"],nsmall=3),
+    ": char group on xsorted (keyed by)  [faster than sort.list(,'radix') on fsorted, same result]\n")
+    
     test(389+3*GE2140,identical(o1,o4))
     test(390+3*GE2140,identical(o2,o5))
     test(391+3*GE2140,identical(o5,1:length(x)))
 }
 
 # test 395 ...
-
-#gc()                                                           # gcFirst=TRUE on next line wasn't always enough, it seems
-#system.time(o4 <- sort.list(fsorted,method="radix"),TRUE)      # 0.318 (even with TRUE sometimes gave 0.720)
-#identical(o3,o4)
 
 
 
