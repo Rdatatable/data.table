@@ -8,17 +8,17 @@ duplicated.data.table <- function(x, ...) {
     res
 }
 
-unique.data.table <- function(x, ...) {
+unique.data.table <- function(x, tolerance=.Machine$double.eps ^ 0.5) {
     if (!cedta()) return(NextMethod("unique"))
     # duplist is relatively quick, in C, and copes with NA
-    if (haskey(x)) { 
+    if (haskey(x)) {
         # Already keyed, this should be fast :
-        res = x[duplist(x[,key(x),with=FALSE])]
+        res = x[duplist(x[,key(x),with=FALSE],tolerance=tolerance)]
         setattr(res,"sorted",key(x))
     } else {
         # TO DO: could be faster by grouping/hashing rather than sorting.
         o = fastorder(x)
-        f = o[duplist(x,o)]
+        f = o[duplist(x,o,tolerance=tolerance)]
         f = f[.Internal(order(na.last=FALSE, decreasing=FALSE, f))]
         res = x[f]
     }

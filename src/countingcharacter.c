@@ -57,7 +57,7 @@ SEXP countingcharacter(SEXP x, SEXP sort, SEXP GER2140)
     for(i=0; i<n; i++) {
         tmp = STRING_ELT(x,i);
         if (!TRUELENGTH(tmp)) {
-            if (un==ualloc) u = Realloc(u, ualloc*=2, SEXP);
+            if (un==ualloc) u = Realloc(u, ualloc=ualloc*2>n?n:ualloc*2, SEXP);
             u[un++] = tmp;
         }
         TRUELENGTH(tmp)++;
@@ -96,46 +96,27 @@ SEXP countingcharacter(SEXP x, SEXP sort, SEXP GER2140)
 // Of course, a keyed by avoids this anyway, we're only talking ad hoc by here, and
 // the differences are small.
 //
-// Above timings in this comment were on a 10 million vector of randomly
-// scattered non-contiguous 10,000 (4 byte) strings, see below.  With fewer levels, the
-// string cache hit issue reduces.
-/*
-n = 1e7
-m = 10000
-x = sample(as.character(as.hexmode(1:m)),n,replace=TRUE)
-#system.time(cl <- sort(unique(x)))                             # 4.492  
-system.time(o1 <- .Call("countingcharacter",x,TRUE,FALSE))        # 1.556   (4.49+1.55=6.04)
-system.time(f <- factor(x))                                    # 7.611
-system.time(o2 <- sort.list(f,method="radix"))                 # 0.982   (7.61+0.98=8.59)
-identical(o1,o2)
-fsorted = f[o2]
-xsorted = x[o2]
-system.time(o3 <- .Call("countingcharacter",xsorted,cl))  # 0.181
-gc()                                                           # gcFirst=TRUE on next line wasn't always enough, it seems
-system.time(o4 <- sort.list(fsorted,method="radix"),TRUE)      # 0.318 (even with TRUE sometimes gave 0.720)
-identical(o3,o4)
-*/
-
+// Timing tests now moved into test.data.table()/tests.R
 
 
 // Copied as-is directly from src/main/sort.c :
-static const size_t incs[16] = {1073790977, 268460033, 67121153, 16783361, 4197377,
+const size_t incs[16] = {1073790977, 268460033, 67121153, 16783361, 4197377,
 		       1050113, 262913, 65921, 16577, 4193, 1073, 281, 77,
 		       23, 8, 1};
-		       
+
 void ssort2(SEXP *x, size_t n)
 // Copied from src/main/sort.c.
 // ssort2 is declared static in base i.e. not exposed to packages unfortunately.
 // We don't want to call the sortVector wrapper in base because we use Realloc in
 // countingcharacter on an SEXP * directly; don't want to copy that into a SEXP vector
-// just to call ssort2, for that to merely do a STRING_PTR on the SEXP.
+// just to call ssort2, for that to merely do a STRING_PTR on the SEXP (again).
 // Some modifications needed anyway :
 // 1. 'decreasing' removed to avoid the branch inside the 3rd for loop.
 // 2. Assumes no NA are present (by construction of countingcharacter) so call to
 //    scmp replaced to save 4 branches per item (and one fun call per item), leaving
 //    it to the && to short circuit instead.
 // 3. NA always go last in data.table, that option (of scmp) removed too, but there
-//    won't be any NA anyway.
+//    won't be any NA anyway
 // 4. size_t instead of int
 {
     SEXP v;
@@ -180,7 +161,7 @@ static int scmp(SEXP x, SEXP y, Rboolean nalast)
     if (x == NA_STRING) return nalast?1:-1;
     if (y == NA_STRING) return nalast?-1:1;
     if (x == y) return 0;  // same string in cache
-    return Rf_Scollate(x, y);
+    return Scollate(x, y);
 }
 */
 

@@ -10,6 +10,9 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+NEW FEATURES
+
+
 BUG FIXES
 
     o   Assigning to a column variable using <- or = in j now
@@ -18,6 +21,10 @@ BUG FIXES
         Non column variables still persist from group to group; e.g.,
         a group counter. This fixes the remainder of #1624 thanks to
         Steve Lianoglou for reporting.
+        
+    o   unique.data.table now respects machine tolerance for double
+        precision columns, fixing #1632.
+        
 
 
         *********************************************

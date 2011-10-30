@@ -1035,7 +1035,7 @@ DT = data.table(x=letters[1:2], y=1:4)
 DT[c(1,3), ]$y <- 0L
 test(375, DT, data.table(x=letters[1:2], y=c(0L,2L,0L,4L)))
 
-# Test unique on unsorted tables
+# Test unique on unsorted tables (and tolerance on numeric columns, too)
 DT = data.table(a=c(2,1,2),b=c(1,2,1))
 test(376, unique(DT), data.table(a=c(2,1),b=c(1,2)))
 # From the SO thread :
@@ -1128,8 +1128,17 @@ for (GE2140 in c(FALSE,TRUE)) {   # GE2140 = getRversion()>="2.14.0"
     test(391+3*GE2140,identical(o5,1:length(x)))
 }
 
-# test 395 ...
+# Test unique.data.table for numeric columns within tolerance, for consistency with
+# with unique.data.frame which does this using paste.
+DT = data.table(a=tan(pi*(1/4 + 1:10)),b=42L)
+# tan(...) from example in ?all.equal.
+test(395, all.equal(DT$a, rep(1,10)))
+test(396, length(unique(DT$a)), 10L)  # all 10 values of a are unique
+test(397, DT$a[10]<DT$a[1])  # The first one isn't the smallest, so tests grouping is stable within tolerance
+test(396, unique(DT), DT[1])  # before v1.7.2 unique would return all 10 rows. For stability within tolerance, data.table has it's own modified numeric sort.
 
+x = rnorm(10)
+test(397, ordernumtol(x), order(x))
 
 
 ## See test-* for more tests
