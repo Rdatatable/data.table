@@ -8,7 +8,7 @@ duplicated.data.table <- function(x, ...) {
     res
 }
 
-unique.data.table <- function(x, tolerance=.Machine$double.eps ^ 0.5) {
+unique.data.table <- function(x, incomparables=FALSE, tolerance=.Machine$double.eps ^ 0.5, ...) {
     if (!cedta()) return(NextMethod("unique"))
     # duplist is relatively quick, in C, and copes with NA
     if (haskey(x)) {

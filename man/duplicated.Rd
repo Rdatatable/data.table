@@ -12,11 +12,13 @@
 \usage{
 \method{duplicated}{data.table}(x, ...)
 
-\method{unique}{data.table}(x, ...)
+\method{unique}{data.table}(x, incomparables=FALSE, tolerance=.Machine$double.eps ^ 0.5, ...)
 }
 \arguments{
   \item{x}{ A data.table. }
   \item{\dots}{ Not used at this time. }
+  \item{incomparables}{ Not used. }
+  \item{tolerance}{ Double precision values are considered equal if they are within this tolerance. Same default as \code{\link{all.equal}}.}
 }
 \details{
   Because data.tables are usually sorted by key, tests for duplication are
@@ -31,14 +33,14 @@
 
      \code{unique} returns a data table with duplicated rows removed.
 }
-\seealso{ \code{\link{data.table}}, \code{\link{duplicated}}, \code{\link{unique}}}
+\seealso{ \code{\link{data.table}}, \code{\link{duplicated}}, \code{\link{unique}}, \code{\link{all.equal}}}
 \examples{
-    (dt <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B"))
-    duplicated(dt)
-    unique(dt)
+    DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B")
+    duplicated(DT)
+    unique(DT)
     
-    dt = data.table(a=c(2,1,2),b=c(1,2,1))   # no key
-    unique(dt)       
+    DT = data.table(a=c(2,1,2),b=c(1,2,1))   # no key
+    unique(DT)
 }
 \keyword{ data }
 

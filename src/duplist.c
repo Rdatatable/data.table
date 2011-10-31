@@ -52,48 +52,54 @@ SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol)  //change name
 // modified for :
 // i) stability within tolerance
 // ii) option of nalast removed as data.table is always NA first (for binary search)
-// iii) rather than the loop through n in do_order to ++ the indx to return to R,
-//      we point x and indx to 1 pointer before the start, so we can use 1-based
-//      indexing.  This allows the o vector up in fast order (the very same o vector
-//      with no copies or loops through it doing ++ and --) to be passed on as the
-//      columns are looped through in reverse order.
-
-static int rcmp_tol(double x, double y, double tol, int a, int b)
-{
-    int nax = ISNAN(x), nay = ISNAN(y);
-    if (nax && nay)	return 0;
-    if (nax)		return -1;
-    if (nay)		return 1;
-    if (x < y-tol)	return -1;
-    if (x > y+tol)	return 1;
-    return a>b;
-}
+// iii) and NA and NaN disallowed, anyway
+// iv) rather than the loop through n in do_order to ++ the indx to return to R,
+//     we point x and indx to 1 before the start, so we can use 1-based
+//     indexing.  This allows the o vector up in fast order (the very same o vector
+//     with no copies or loops through it doing ++ and --) to be passed on as the
+//     columns are looped through in reverse order.
+// v) not using the rcmp function, saving the 5 if's and funct call
 
 extern const size_t incs[];
 
 #define cmptol(a,b) (x[a] > x[b]+tol || (a>b && x[a] > x[b]-tol))
-// TO DO: Take account of NAN
 
 void rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)
 {
-    //double v;
     int t, i, j, h;
     int itmp;
     double *x=REAL(xarg)-1;
     int n=length(xarg);
-    int lo = 1, hi = n;  // ignore NAs for now (need to sort to the beginning in data.table (always)
+    int lo = 1, hi = n;
     int *indx=INTEGER(indxarg)-1;
     double tol = REAL(tolarg)[0];
-
+    
+    if (NA_REAL == (double)0.0 || NA_REAL < (double)0.0 || NA_REAL > (double)0.0) 
+        Rprintf("now that is weird, shows my ignorance: this message doesn't appear");
+        // Otherwise could sort NA's to the beginning by virtue of being MIN_REAL, like NA_INTEGER is MIN_INT.
+        // But reals don't work like that, it seems.
+    
+    for (i=1; i<=n; i++) if (ISNAN(x[i])) error("NA and NaN are not allowed in numeric key columns. They have to be dealt with specially (slowing things down) but also NAs in the key can lead to ambiguities and confusion when it comes to joining to NA values. If you have a real-world example that really does need NAs in the key then consider choosing your own value to represent NA, such as -999.999. If you want to join to the -999.999 values then you can, and if you want to represent an NA row, then you can too. That will be much faster and clearer. We think that requirement is very rare, so data.table is setup to be optimized for the most common cases; i.e., no NAs in key columns. Also, binary search is faster without a check on NA_REAL (it seems we cannot rely on NA_REAL being REAL_MIN, unlike NA_INTEGER being MIN_INT).");
+    
+    //If we ever do deal with NAs then the pseudo-code might be...
+    //numna=0;
+    //for (i=1; i<=n; i++) {
+    //   if (ISNAN(x[i]))
+    //      tmp = x[i];
+    //      memmove( numna:(i-1), (numna+1):i )
+    //      x[numna++] = tmp
+    //   }
+    //}
+    //... and that should be faster than sorting the NAs to the start (which may not be stable for the non-NA)
+    //
+    // or, switch on ISNAN in cmptol macro
+     
     for (t = 0; incs[t] > hi-lo+1; t++);
 	for (h = incs[t]; t < 16; h = incs[++t])
     for (i = lo + h; i <= hi; i++) {
 	    itmp = indx[i];
 	    j = i;
-	    // #define less(a, b) (x[a] > x[b] || (x[a] == x[b] && a > b))
-	    //while (j>=lo+h && less(indx[j - h], itmp)) { // x[a] > x[b] || (x[a] == x[b] && a > b))
 	    while (j>=lo+h && cmptol(indx[j-h], itmp)) {
-	    //while (j >= lo + h && rcmp_tol(x[indx[j - h]], x[itmp], tol, indx[j - h], itmp)>0) {
 	        indx[j] = indx[j - h]; j -= h;
 		}
 		indx[j] = itmp;

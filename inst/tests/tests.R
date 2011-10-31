@@ -1135,11 +1135,10 @@ DT = data.table(a=tan(pi*(1/4 + 1:10)),b=42L)
 test(395, all.equal(DT$a, rep(1,10)))
 test(396, length(unique(DT$a)), 10L)  # all 10 values of a are unique
 test(397, DT$a[10]<DT$a[1])  # The first one isn't the smallest, so tests grouping is stable within tolerance
-test(396, unique(DT), DT[1])  # before v1.7.2 unique would return all 10 rows. For stability within tolerance, data.table has it's own modified numeric sort.
+test(398, unique(DT), DT[1])  # before v1.7.2 unique would return all 10 rows. For stability within tolerance, data.table has it's own modified numeric sort.
 
-x = rnorm(10)
-test(397, ordernumtol(x), order(x))
-
+DT = data.table(a=c(3.142, 4.2, 4.2, 3.142, 1.223, 1.223), b=rep(1,6))
+test(399, unique(DT), DT[c(1,2,5)])
 
 ## See test-* for more tests
 
