@@ -1,10 +1,15 @@
 
-duplicated.data.table <- function(x, ...) {
+duplicated.data.table <- function(x, incomparables=FALSE, tolerance=.Machine$double.eps ^ 0.5, ...) {
     if (!cedta()) return(NextMethod("duplicated"))
-    keys <- attr(x, "sorted")
-    if (is.null(keys)) stop("data table must have keys")
     res <- rep(TRUE, nrow(x))
-    res[duplist(x[,key(x),with=FALSE])] = FALSE
+    if (haskey(x))
+        res[duplist(x[,key(x),with=FALSE],tolerance=tolerance)] = FALSE
+    else {
+        o = fastorder(x)
+        f = o[duplist(x,o,tolerance=tolerance)]
+        f = f[.Internal(order(na.last=FALSE, decreasing=FALSE, f))]
+        res[f] = FALSE
+    }
     res
 }
 

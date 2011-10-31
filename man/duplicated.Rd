@@ -10,7 +10,7 @@
      (when no key) duplicated rows by all columns removed.
 }
 \usage{
-\method{duplicated}{data.table}(x, ...)
+\method{duplicated}{data.table}(x, incomparables=FALSE, tolerance=.Machine$double.eps ^ 0.5, ...)
 
 \method{unique}{data.table}(x, incomparables=FALSE, tolerance=.Machine$double.eps ^ 0.5, ...)
 }
@@ -23,7 +23,7 @@
 \details{
   Because data.tables are usually sorted by key, tests for duplication are
   especially quick. Unlike \code{\link[base]{unique.data.frame}}, \code{paste} is not
-  used to ensure equality of floating point data, but this is done directly (for speed)
+  used to ensure equality of floating point data. This is done directly (for speed)
   whilst still respecting tolerance in the same spirit as \code{\link{all.equal}}.
 
   When \code{x} has a key, only key columns are checked for duplication; non-key

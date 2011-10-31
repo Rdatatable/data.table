@@ -12,6 +12,7 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
+    
 
 BUG FIXES
 
@@ -22,9 +23,9 @@ BUG FIXES
         a group counter. This fixes the remainder of #1624 thanks to
         Steve Lianoglou for reporting.
         
-    o   unique.data.table now respects machine tolerance for double
-        precision columns, fixing #1632.
-        
+    o   unique.data.table and duplicated.data.table both now respect
+        machine tolerance for double precision columns, implementing
+        FR#1626 and fixing bug #1632.
 
 
         *********************************************
