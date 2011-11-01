@@ -1081,7 +1081,7 @@ test(388, DT[,{ans = score[1]
 
 # Test counting character grouping and sorting
 # TO DO: test range of n and m and plot, on variety of machines, 32bit and 64bit with RAM and L2 variances
-n = as.integer(1e7)
+n = as.integer(1e6)
 m = 10000L
 cat("x = ",format(n,big.mark=","),"sample from",format(m,big.mark=","),"strings (tough test)\n")
 x = sample(as.character(as.hexmode(1:m)),n,replace=TRUE)
@@ -1141,6 +1141,11 @@ test(399, duplicated(DT), c(FALSE,rep(TRUE,9)))
 DT = data.table(a=c(3.142, 4.2, 4.2, 3.142, 1.223, 1.223), b=rep(1,6))
 test(400, unique(DT), DT[c(1,2,5)])
 test(401, duplicated(DT), c(FALSE,FALSE,TRUE,TRUE,FALSE,TRUE))
+
+DT[c(2,4,5),a:=NA]
+test(402, unique(DT), DT[c(1,2,3,6)])
+test(403, duplicated(DT), c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE))
+
 
 
 ## See test-* for more tests
