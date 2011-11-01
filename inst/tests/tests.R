@@ -1146,6 +1146,14 @@ DT[c(2,4,5),a:=NA]
 test(402, unique(DT), DT[c(1,2,3,6)])
 test(403, duplicated(DT), c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE))
 
+# Test NULL columns next to non-NULL, #1633
+DT = data.table(a=1:3,b=4:6)
+test(404, DT[,list(3,if(a==2)NULL else b),by=a], data.table(a=1:3,V1=3,V2=c(4L,NA_integer_,6L)))
+tt = try(DT[,list(3,if(a==1)NULL else b),by=a],silent=TRUE)
+test(405, inherits(tt,"try-error") && length(grep("Please use a typed empty vector instead.*such as integer.*or numeric",tt)))
+tt = try(DT[,list(3,if(a==1)numeric() else b),by=a],silent=TRUE)
+test(406, inherits(tt,"try-error") && length(grep("evaluate to consistent types",tt)))
+test(407, DT[,list(3,if(a==1)integer() else b),by=a], data.table(a=1:3,V1=3,V2=c(NA_integer_,5:6)))
 
 
 ## See test-* for more tests

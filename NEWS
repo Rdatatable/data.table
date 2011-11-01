@@ -27,6 +27,11 @@ BUG FIXES
         machine tolerance for double precision columns, implementing
         FR#1626 and fixing bug #1632. Thanks to questions by Iterator
         and comments by Allan Engelhardt on Stack Overflow.
+        
+    o   A crash bug is fixed when j returns a (strictly) NULL column next
+        to a non-empty column, #1633. This case was anticipated and coded
+        for but an errant LENGTH() should have been length(). Thanks
+        to Dennis Murphy for reporting. 
 
 
         *********************************************

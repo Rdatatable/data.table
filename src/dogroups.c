@@ -105,9 +105,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         }
     }
     for(i = 0; i < njval; i++) {
-        SET_VECTOR_ELT(ans, nbyval+i, allocVector(TYPEOF(VECTOR_ELT(testj, i)), INTEGER(byretn)[0]));
+        if (isNull(VECTOR_ELT(testj, i)))
+            error("Column %d of j's result for the first group is NULL. We rely on the column types of the first result to decide the type expected for the remaining groups (and require consistency). NULL columns are acceptable for later groups (and those are replaced with NA of appropriate type and recycled) but not for the first. Please use a typed empty vector instead, such as integer() or numeric().", i+1);
         if (SIZEOF(VECTOR_ELT(testj, i))==0)
-            error("Type %d in j column", TYPEOF(VECTOR_ELT(testj, i)));
+            error("Unsupported type %d in j column %d", TYPEOF(VECTOR_ELT(testj, i)), i+1);
+        SET_VECTOR_ELT(ans, nbyval+i, allocVector(TYPEOF(VECTOR_ELT(testj, i)), INTEGER(byretn)[0]));
     }
     
     // copy existing result for first group into ans
@@ -115,13 +117,13 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     maxn = 0;
     any0 = 0;
     for (j=0; j<njval; j++) {
-        thislen = LENGTH(VECTOR_ELT(testj,j));
+        thislen = LENGTH(VECTOR_ELT(testj,j));  // checked not NULL above
         maxn = thislen>maxn ? thislen : maxn;
         if (thislen == 0) any0 = 1;
     }
     if (maxn>0 && any0) {
         for (j=0; j<njval; j++) {
-            thislen = LENGTH(VECTOR_ELT(testj,j));        
+            thislen = LENGTH(VECTOR_ELT(testj,j));
             if (thislen == 0) {
                 // replace the 0-length vector with a 1-length NA to be recycled below to fit.
                 switch (TYPEOF(VECTOR_ELT(testj, j))) {
@@ -241,7 +243,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
             if (length(byval)+length(jval) != length(ans)) error("j doesn't evaluate to the same number of columns for each group");  // this would be a problem even if we unlisted afterwards. This way the user finds out earlier though so he can fix and rerun sooner.
             if (length(jval) != njval) error("Internal logical error: length(jval)!=njval"); // Line above should be equivalent
             for (j=0; j<njval; j++) {
-                thislen = LENGTH(VECTOR_ELT(jval,j));
+                thislen = length(VECTOR_ELT(jval,j));  // might be NULL, so length not LENGTH
                 maxn = thislen>maxn ? thislen : maxn;
                 if (TYPEOF(VECTOR_ELT(jval, j)) != TYPEOF(VECTOR_ELT(ans, j+nbyval))
                     && TYPEOF(VECTOR_ELT(jval, j)) != NILSXP) error("columns of j don't evaluate to consistent types for each group: result for group %d has column %d type '%s' but expecting type '%s'", i+1, j+1, typename[TYPEOF(VECTOR_ELT(jval, j))], typename[TYPEOF(VECTOR_ELT(ans, j+nbyval))]);
@@ -252,7 +254,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
             // There is a correct number of columns, but one or more is length 0 (e.g. NULL). Different to when
             // user wants no rows at all for some groups (and achieves that by arranging j to return NULL).
             for (j=0; j<njval; j++) {
-                thislen = LENGTH(VECTOR_ELT(jval,j));        
+                thislen = length(VECTOR_ELT(jval,j));        
                 if (thislen == 0) {
                     // replace the 0-length vector with a 1-length NA to be recycled below to fit.
                     switch (TYPEOF(VECTOR_ELT(ans, j+nbyval))) {
@@ -292,7 +294,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
             }
             for (j=0; j<njval; j++) {
                 thisansloc = ansloc;
-                thislen = LENGTH(VECTOR_ELT(jval,j));
+                thislen = LENGTH(VECTOR_ELT(jval,j));  // Any NULL was replaced by an NA above.
                 if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen);
                 size = SIZEOF(VECTOR_ELT(testj,j));
                 for (r=0; r<(maxn/thislen); r++) {
