@@ -25,7 +25,8 @@ BUG FIXES
         
     o   unique.data.table and duplicated.data.table both now respect
         machine tolerance for double precision columns, implementing
-        FR#1626 and fixing bug #1632.
+        FR#1626 and fixing bug #1632. Thanks to questions by Iterator
+        and comments by Allan Engelhardt on Stack Overflow.
 
 
         *********************************************
