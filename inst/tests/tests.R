@@ -1134,26 +1134,25 @@ DT = data.table(a=tan(pi*(1/4 + 1:10)),b=42L)
 # tan(...) from example in ?all.equal.
 test(395, all.equal(DT$a, rep(1,10)))
 test(396, length(unique(DT$a)), 10L)  # all 10 values of a are unique
-test(397, DT$a[10]<DT$a[1])  # The first one isn't the smallest, so tests grouping is stable within tolerance
-test(398, unique(DT), DT[1])  # before v1.7.2 unique would return all 10 rows. For stability within tolerance, data.table has it's own modified numeric sort.
-test(399, duplicated(DT), c(FALSE,rep(TRUE,9)))
+test(397, unique(DT), DT[1])  # before v1.7.2 unique would return all 10 rows. For stability within tolerance, data.table has it's own modified numeric sort.
+test(398, duplicated(DT), c(FALSE,rep(TRUE,9)))
 
 DT = data.table(a=c(3.142, 4.2, 4.2, 3.142, 1.223, 1.223), b=rep(1,6))
-test(400, unique(DT), DT[c(1,2,5)])
-test(401, duplicated(DT), c(FALSE,FALSE,TRUE,TRUE,FALSE,TRUE))
+test(399, unique(DT), DT[c(1,2,5)])
+test(400, duplicated(DT), c(FALSE,FALSE,TRUE,TRUE,FALSE,TRUE))
 
 DT[c(2,4,5),a:=NA]
-test(402, unique(DT), DT[c(1,2,3,6)])
-test(403, duplicated(DT), c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE))
+test(401, unique(DT), DT[c(1,2,3,6)])
+test(402, duplicated(DT), c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE))
 
 # Test NULL columns next to non-NULL, #1633
 DT = data.table(a=1:3,b=4:6)
-test(404, DT[,list(3,if(a==2)NULL else b),by=a], data.table(a=1:3,V1=3,V2=c(4L,NA_integer_,6L)))
+test(403, DT[,list(3,if(a==2)NULL else b),by=a], data.table(a=1:3,V1=3,V2=c(4L,NA_integer_,6L)))
 tt = try(DT[,list(3,if(a==1)NULL else b),by=a],silent=TRUE)
-test(405, inherits(tt,"try-error") && length(grep("Please use a typed empty vector instead.*such as integer.*or numeric",tt)))
+test(404, inherits(tt,"try-error") && length(grep("Please use a typed empty vector instead.*such as integer.*or numeric",tt)))
 tt = try(DT[,list(3,if(a==1)numeric() else b),by=a],silent=TRUE)
-test(406, inherits(tt,"try-error") && length(grep("evaluate to consistent types",tt)))
-test(407, DT[,list(3,if(a==1)integer() else b),by=a], data.table(a=1:3,V1=3,V2=c(NA_integer_,5:6)))
+test(405, inherits(tt,"try-error") && length(grep("evaluate to consistent types",tt)))
+test(406, DT[,list(3,if(a==1)integer() else b),by=a], data.table(a=1:3,V1=3,V2=c(NA_integer_,5:6)))
 
 
 ## See test-* for more tests
