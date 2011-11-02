@@ -12,6 +12,11 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
+    o   unique and duplicated methods now work on unkeyed tables (comparing
+        all columns in that case) and both now respect machine tolerance for
+        double precision columns, implementing FR#1626 and fixing bug #1632.
+        The help page has been updated accordingly. Thanks to questions by
+        Iterator and comments by Allan Engelhardt on Stack Overflow.
     
 
 BUG FIXES
@@ -22,11 +27,6 @@ BUG FIXES
         Non column variables still persist from group to group; e.g.,
         a group counter. This fixes the remainder of #1624 thanks to
         Steve Lianoglou for reporting.
-        
-    o   unique.data.table and duplicated.data.table both now respect
-        machine tolerance for double precision columns, implementing
-        FR#1626 and fixing bug #1632. Thanks to questions by Iterator
-        and comments by Allan Engelhardt on Stack Overflow.
         
     o   A crash bug is fixed when j returns a (strictly) NULL column next
         to a non-empty column, #1633. This case was anticipated and coded
