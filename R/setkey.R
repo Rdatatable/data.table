@@ -150,16 +150,25 @@ SJ = function(...) J(...,SORTFIRST=TRUE)
 # the expense of more page fetches. Very much data dependent, but the various methods are implemented so tests for the
 # fastest method in each case can be performed.
 
+
 CJ = function(...)
 {
     # Pass in a list of unique values, e.g. ids and dates
     # Cross Join will then produce a join table with the combination of all values (cross product).
     # The last vector is varied the quickest in the table, so dates should be last for roll for example
     l = list(...)
-    n = sapply(l,length)
-    x=rev(take(cumprod(rev(n))))
-    for (i in seq(along=x)) l[[i]] = rep(l[[i]],each=x[i])
-    SJ(l)    # This will then expand out the vectors to fit.
+    for (i in seq(along=l)) if (storage.mode(l[[i]])=="double") mode(l[[i]])="integer"
+    if (length(l)>1) {
+        n = sapply(l,length)
+        x=rev(take(cumprod(rev(n))))
+        m = x[1]*length(l[[1]])
+        for (i in seq(along=x)) l[[i]] = rep(l[[i]],each=x[i],length=m)
+    }
+    setattr(l,"row.names",.set_row_names(length(l[[1]])))
+    setattr(l,"class",c("data.table","data.frame"))
+    names(l) = paste("V",1:length(l),sep="")
+    setkey(l)
+    l
 }
 
 key = function(x) attr(x,"sorted")

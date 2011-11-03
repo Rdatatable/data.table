@@ -20,21 +20,15 @@ print.data.table = function (x, digits = NULL, quote = FALSE, right = TRUE, nrow
         msg=""
     }
     cn = if (nrow(toprint)>20) colnames(x) else NULL  # only repeat colnames at the bottom if over 20 rows
-    print(rbind(as.matrix(format.data.table(toprint, digits = digits, na.encode = FALSE)), cn),
+    print(rbind(format.data.table(toprint, digits = digits, na.encode = FALSE), cn),
           digits=digits, quote=quote, right=right, ...)
     if (msg!="") cat(msg,"\n")
     invisible()
 }
 
 format.data.table <- function (x, ..., justify = "none") {
-    data.table(lapply(x,
-                      function(x) {
-                          res <- format(x, ..., justify = justify)
-                          class(res) <- "AsIs"
-                          res
-                      }))
+    do.call("cbind",lapply(x,format,justify=justify,...))
 }
-
 
 is.data.table = function(x) inherits(x, "data.table")
 is.ff = function(x) inherits(x, "ff")  # define this in data.table so that we don't have to require(ff), but if user is using ff we'd like it to work
@@ -66,17 +60,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # TO DO: use ..1 instead?
     # One reason data.table() is needed, different and independent from data.frame(), is to allow list() columns.
     if (identical(x, list(NULL))) return( structure(NULL,class=c("data.table","data.frame"),row.names=.set_row_names(0)) )
-    if (length(x) == 1 && is.list(x[[1]]) && !is.data.frame(x[[1]]) && !is.data.table(x[[1]]) && !is.ff(x[[1]])) {
-        # a single list was passed in. Constructing a list and passing it in, should be the same result as passing in each column as arguments to the function.
-        x = x[[1]]
-        vnames = names(x)   # the names given to the explicity named arguments inside the list,  or the names if the list was a variable with names already
-        exptxt = as.character(as.list(substitute(...))[-1])  # the argument expressions as text. if an unnamed list variable is passed in, this will return an empty vector, thats fine.
-    } else {
-        # the arguments to the data.table() function form the column names,  otherwise the expression itself
-        tt <- as.list(substitute(list(...)))[-1]  # used to get the expressions as text, for unnamed inputs.  So data.table(X,Y) will automatically put X and Y as the column names.  For longer expressions, name the arguments to data.table(). But in a call to [.data.table, wrap in list() e.g. DT[,list(a=mean(v),b=foobarzoo(zang))] will get the col names
-        vnames = names(tt)
-        exptxt = as.character(tt)
-    }
+    # the arguments to the data.table() function form the column names,  otherwise the expression itself
+    tt <- as.list(substitute(list(...)))[-1]  # Intention here is that data.table(X,Y) will automatically put X and Y as the column names.  For longer expressions, name the arguments to data.table(). But in a call to [.data.table, wrap in list() e.g. DT[,list(a=mean(v),b=foobarzoo(zang))] will get the col names
+    vnames = names(tt)
+    exptxt = as.character(tt)
     if (is.null(vnames)) vnames = rep("",length(x))
     vnames[is.na(vnames)] = ""
     novname = vnames==""
@@ -225,7 +212,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (!is.factor(x[[match(key(x)[1], colnames(x))]])) stop("The data.table has a key, but the first column of that key is not factor. i cannot be character in this case")
             i = J(i)    # TO DO: add to FAQ ... so DT[c("e","f")] returns different order to DT[c("f","e")] as is most natural. Pass in SJ(c("f","e")) to guarantee result of grouping is sorted by the groups and is key'd by group
         }
-        if (identical(class(i),"list") || identical(class(i),"data.frame")) i = data.table(i)
+        if (identical(class(i),"list") || identical(class(i),"data.frame")) i = as.data.table(i)
         if (is.data.table(i)) {
             if (!haskey(x)) stop("When i is a data.table, x must be sorted to avoid a vector scan of x per row of i")
             rightcols = match(key(x),colnames(x))
@@ -828,6 +815,18 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE)
     ans
 }
 
+as.data.table.list = function(x, keep.rownames=FALSE) {
+    x = copy(x)
+    if (!length(x)) return(data.table(NULL))
+    n = sapply(x,length)
+    if (any(n<max(n)))
+        for (i in which(n<max(n))) x[[i]] = rep(x[[i]],length=max(n))
+    if (is.null(names(x))) names(x) = paste("V",1:length(x),sep="")
+    setattr(x,"row.names",.set_row_names(max(n)))
+    setattr(x,"class",c("data.table","data.frame"))
+    x
+}
+
 as.data.table.data.table = function(x, keep.rownames=FALSE) return(x)
 
 head.data.table = function(x, n=6, ...) {
@@ -1110,78 +1109,12 @@ is.na.data.table <- function (x) {
 #    Math.data.table <- Math.data.frame
 #    summary.data.table <- summary.data.frame
 
-Ops.data.table <- function (e1, e2 = NULL)
+Ops.data.table <- function(e1, e2 = NULL)
 {
-    if (!cedta()) return(`Ops.data.frame`(e1,e2))
-    # TO DO, revisit below,  if the same as Ops.data.frame can we leave it to inheritance?
-    isList <- function(x) !is.null(x) && is.list(x)
-    unary <- nargs() == 1L
-    lclass <- nzchar(.Method[1L])
-    rclass <- !unary && (nzchar(.Method[2L]))
-    value <- list()
-    rn <- NULL
-    FUN <- get(.Generic, envir = parent.frame(), mode = "function")
-    f <- if (unary)
-        quote(FUN(left))
-    else quote(FUN(left, right))
-    lscalar <- rscalar <- FALSE
-    if (lclass && rclass) {
-        nr <- nrow(e1)
-        cn <- names(e1)
-        if (any(dim(e2) != dim(e1)))
-            stop(.Generic, " only defined for equally-sized data frames")
-    }
-    else if (lclass) {
-        nr <- nrow(e1)
-        cn <- names(e1)
-        rscalar <- length(e2) <= 1L
-        if (isList(e2)) {
-            if (rscalar)
-                e2 <- e2[[1L]]
-            else if (length(e2) != ncol(e1))
-                stop(gettextf("list of length %d not meaningful",
-                  length(e2)), domain = NA)
-        }
-        else {
-            if (!rscalar)
-                e2 <- split(rep(as.vector(e2), length.out = prod(dim(e1))),
-                  rep.int(seq_len(ncol(e1)), rep.int(nrow(e1),
-                    ncol(e1))))
-        }
-    }
-    else {
-        nr <- nrow(e2)
-        cn <- names(e2)
-        lscalar <- length(e1) <= 1L
-        if (isList(e1)) {
-            if (lscalar)
-                e1 <- e1[[1L]]
-            else if (length(e1) != ncol(e2))
-                stop(gettextf("list of length %d not meaningful",
-                  length(e1)), domain = NA)
-        }
-        else {
-            if (!lscalar)
-                e1 <- split(rep(as.vector(e1), length.out = prod(dim(e2))),
-                  rep.int(seq_len(ncol(e2)), rep.int(nrow(e2),
-                    ncol(e2))))
-        }
-    }
-    for (j in seq_along(cn)) {
-        left <- if (!lscalar)
-            e1[[j]]
-        else e1
-        right <- if (!rscalar)
-            e2[[j]]
-        else e2
-        value[[j]] <- eval(f)
-    }
-    if (.Generic %in% c("+", "-", "*", "/", "%%", "%/%")) {
-        names(value) <- cn
-        data.table(value, check.names = FALSE)
-    }
-    else matrix(unlist(value, recursive = FALSE, use.names = FALSE),
-        nrow = nr, dimnames = list(NULL, cn))
+    ans = NextMethod()
+    if (cedta() && is.data.frame(ans))
+        ans = as.data.table(ans)
+    ans
 }
 
 

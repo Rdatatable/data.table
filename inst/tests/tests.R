@@ -196,7 +196,7 @@ test(69, "TESTDT" %in% tables(silent=TRUE)[,as.character(NAME)]) # an old test (
 a = "d"
 # Variable Twister.  a in this scope has same name as a inside DT scope.
 # Aug 2010 : As a result of bug 1005, and consistency with 'j' and 'by' we now allow self joins (test 183) in 'i'.
-test(70, TESTDT[eval(J(a)),v], data.table(a="d",v=3:6))   # the eval() enabled you to use the 'a' in the calling scope, not 'a' in the TESTDT
+test(70, TESTDT[eval(J(a)),v], data.table(a="d",v=3:6))   # the eval() enabled you to use the 'a' in the calling scope, not 'a' in the TESTDT.  TO DO: document this.
 test(71, TESTDT[eval(SJ(a)),v], data.table(a="d",v=3:6,key="a"))
 test(72, TESTDT[eval(CJ(a)),v], data.table(a="d",v=3:6,key="a"))
 
@@ -1083,7 +1083,7 @@ test(388, DT[,{ans = score[1]
 # TO DO: test range of n and m and plot, on variety of machines, 32bit and 64bit with RAM and L2 variances
 n = as.integer(1e6)
 m = 10000L
-cat("x = ",format(n,big.mark=","),"sample from",format(m,big.mark=","),"strings (tough test)\n")
+cat("x = ",format(n,big.mark=","),"sample from",format(m,big.mark=","),"strings (small so as not to slow development cycle)\n")
 x = sample(as.character(as.hexmode(1:m)),n,replace=TRUE)
 cat(format(system.time(
     f <- factor(x)                                          # 7.079   (timings from MD's tiny 32bit netbook)
@@ -1153,6 +1153,9 @@ test(404, inherits(tt,"try-error") && length(grep("Please use a typed empty vect
 tt = try(DT[,list(3,if(a==1)numeric() else b),by=a],silent=TRUE)
 test(405, inherits(tt,"try-error") && length(grep("evaluate to consistent types",tt)))
 test(406, DT[,list(3,if(a==1)integer() else b),by=a], data.table(a=1:3,V1=3,V2=c(NA_integer_,5:6)))
+
+# Test that first column can be list, #1640
+test(407, data.table(list(1:2,3:5)), as.data.table(list(list(1:2,3:5))))
 
 
 ## See test-* for more tests
