@@ -304,7 +304,7 @@ n=10000
 grp1=sample(1:50,n,replace=TRUE)
 grp2=sample(1:50,n,replace=TRUE)
 dt=data.table(x=rnorm(n),y=rnorm(n),grp1=grp1,grp2=grp2)
-tt = system.time({ans = dt[,list(.Internal(mean(x)),.Internal(mean(y))),by="grp1,grp2"]})
+tt = system.time(ans <- dt[,list(.Internal(mean(x)),.Internal(mean(y))),by="grp1,grp2"])
 test(120, tt[1] < 0.5)   # actually takes more like 0.068 << 0.5
 i = sample(nrow(ans),1)
 test(121, ans[i,c(V1,V2)], dt[grp1==ans[i,grp1] & grp2==ans[i,grp2], c(mean(x),mean(y))])
@@ -1083,50 +1083,42 @@ test(388, DT[,{ans = score[1]
 # TO DO: test range of n and m and plot, on variety of machines, 32bit and 64bit with RAM and L2 variances
 n = as.integer(1e6)
 m = 10000L
-cat("x = ",format(n,big.mark=","),"sample from",format(m,big.mark=","),"strings (small so as not to slow development cycle)\n")
+cat("x = ",format(n,big.mark=","),"sample from",format(m,big.mark=","),"strings (quick test)\n")
 x = sample(as.character(as.hexmode(1:m)),n,replace=TRUE)
-cat(format(system.time(
-    f <- factor(x)                                          # 7.079   (timings from MD's tiny 32bit netbook)
-    ,TRUE)["elapsed"],nsmall=3),  
-    ": f=factor(x) [high up front cost, plus storage and maintenance of levels]\n")
-cat(format(system.time(
-    o1 <- sort.list(f,method="radix")                       # 1.025   
-    ,TRUE)["elapsed"],nsmall=3),                            # (setkey = 7.079+1.025 = 8.104 + update to DT)
-    ": sort.list(,'radix') on f\n")
-cat(format(system.time(    
-    u <- unique(x)                                          # 5.213
-    ,TRUE)["elapsed"],nsmall=3),
-    ": u=unique(x)\n")
-cat(format(system.time(    
-    .Internal(order(na.last=FALSE, decreasing=FALSE, u))    # 0.161
-    ,TRUE)["elapsed"],nsmall=3),
-    ": .Internal(order(u))\n")
+tt = system.time(f <- factor(x))                             # 7.079   (timings from MD's tiny 32bit netbook)
+cat(format(tt["elapsed"],nsmall=3),": f=factor(x) [high up front cost, plus storage and maintenance of levels]\n")
+tt = system.time(o1 <- sort.list(f,method="radix"))          # 1.025
+cat(format(tt["elapsed"],nsmall=3),": sort.list(,'radix') on f\n")      # (setkey = 7.079+1.025 = 8.104 + update to DT)
+tt = system.time(u <- unique(x))                             # 5.213
+cat(format(tt["elapsed"],nsmall=3),": u=unique(x)\n")
+tt = system.time(.Internal(order(na.last=FALSE, decreasing=FALSE, u)))   # 0.161
+cat(format(tt["elapsed"],nsmall=3),": .Internal(order(u))\n")
 fsorted = f[o1]
 xsorted = x[o1]
-cat(format(system.time(
-    o2 <- sort.list(fsorted,method="radix")                 # 0.318   
-    ,TRUE)["elapsed"],nsmall=3),                            # (page fetches on counts minimised)
-    ": sort.list(,'radix') on fsorted\n")
-cat("-vs-\n")
-for (GE2140 in c(FALSE,TRUE)) {   # GE2140 = getRversion()>="2.14.0"
-    if (GE2140) cat(">= R 2.14.0\n") else cat("< R 2.14.0\n")
-    cat(format(system.time(
-    o3 <- .Call("countingcharacter",x,FALSE,GE2140)         # 2.186
-    ,TRUE)["elapsed"],nsmall=3),
-    ": char group on x (ad hoc by)  [slower than radix on f but without up front cost]\n")    
-    cat(format(system.time(
-    o4 <- .Call("countingcharacter",x,TRUE,GE2140)          # 2.400
-    ,TRUE)["elapsed"],nsmall=3),
-    ": char sort on x (setkey)  [lower up front cost than factor(x)]\n")
-    cat(format(system.time(
-    o5 <- .Call("countingcharacter",xsorted,FALSE,GE2140)   # 0.222
-    ,TRUE)["elapsed"],nsmall=3),
-    ": char group on xsorted (keyed by)  [faster than sort.list(,'radix') on fsorted, same result]\n")
-    
-    test(389+3*GE2140,identical(o1,o4))
-    test(390+3*GE2140,identical(o2,o5))
-    test(391+3*GE2140,identical(o5,1:length(x)))
-}
+#cat(format(system.time(
+#    o2 <- sort.list(fsorted,method="radix")                 # 0.318   
+#    ,TRUE)["elapsed"],nsmall=3),                            # (page fetches on counts minimised)
+#    ": sort.list(,'radix') on fsorted\n")
+#cat("-vs-\n")
+#for (GE2140 in c(FALSE,TRUE)) {   # GE2140 = getRversion()>="2.14.0"
+#    if (GE2140) cat(">= R 2.14.0\n") else cat("< R 2.14.0\n")
+#    cat(format(system.time(
+#    o3 <- .Call("countingcharacter",x,FALSE,GE2140)         # 2.186
+#    ,TRUE)["elapsed"],nsmall=3),
+#    ": char group on x (ad hoc by)  [slower than radix on f but without up front cost]\n")    
+#    cat(format(system.time(
+#    o4 <- .Call("countingcharacter",x,TRUE,GE2140)          # 2.400
+#    ,TRUE)["elapsed"],nsmall=3),
+#    ": char sort on x (setkey)  [lower up front cost than factor(x)]\n")
+#    cat(format(system.time(
+#    o5 <- .Call("countingcharacter",xsorted,FALSE,GE2140)   # 0.222
+#    ,TRUE)["elapsed"],nsmall=3),
+#    ": char group on xsorted (keyed by)  [faster than sort.list(,'radix') on fsorted, same result]\n")
+#    
+#    test(389+3*GE2140,identical(o1,o4))
+#    test(390+3*GE2140,identical(o2,o5))
+#    test(391+3*GE2140,identical(o5,1:length(x)))
+#}
 
 # Test unique.data.table for numeric columns within tolerance, for consistency with
 # with unique.data.frame which does this using paste.
