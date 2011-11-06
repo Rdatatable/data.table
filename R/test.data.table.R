@@ -9,13 +9,20 @@ test.data.table = function() {
         # user
         d = paste(getNamespaceInfo("data.table","path"),"/tests",sep="")
     }
-    # for (fn in dir(d,"*.[rR]$",full=TRUE)) {
-    for (fn in file.path(d, 'tests.R')) {
+    # for (fn in dir(d,"*.[rR]$",full=TRUE)) {  # testthat runs those
+    for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
         cat("Running",fn,"\n")
         sys.source(fn,envir=new.env(parent=.GlobalEnv))
         # the new.env() is required for when a *user* runs test.data.table() because
         # the context of this function is sealed in the namespace w.r.t S4.
         # It is also tidier to protect the tests from the variable 'd' above.
+        
+        # As from v1.7.2, testthat doesn't run the tests.Rraw (hence file name change to .Rraw).
+        # There were environment issues with system.time() (when run by test_package) that only
+        # showed up when CRAN maintainers tested on 64bit. Matthew spent a long time including
+        # testing on 64bit in Amazon EC2. Solution was simply to not run the tests.R from
+        # testthat, which probably makes sense anyway to speed it up a bit (was running twice
+        # before).
     }
     invisible()
 }
