@@ -38,7 +38,7 @@ BUG FIXES
         to Dennis Murphy for reporting.
         
     o   The first column of data.table() can now be a list column, fixing
-        #1640. Thanks to Stavos Macrakis for reporting.
+        #1640. Thanks to Stavros Macrakis for reporting.
 
 
         *********************************************
