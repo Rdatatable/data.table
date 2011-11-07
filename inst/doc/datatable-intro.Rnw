@@ -15,7 +15,7 @@
 <<echo=FALSE,results=hide>>=
 if (!exists("data.table",.GlobalEnv)) library(data.table)  
 # In devel won't call library, but R CMD build/check will.
-rm(list=as.character(tables()$NAME))  
+rm(list=as.character(tables()$NAME),envir=.GlobalEnv)
 # for development when we Sweave this file repeatedly. Otherwise first tables() shows tables from last run
 @
 

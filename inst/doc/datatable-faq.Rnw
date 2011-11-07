@@ -14,10 +14,9 @@
 
 <<echo=FALSE,results=hide>>=
 if (!exists("data.table",.GlobalEnv)) library(data.table)  # see Intro.Rnw for comments on these two lines
-rm(list=as.character(tables()$NAME))
+rm(list=as.character(tables()$NAME),envir=.GlobalEnv)
 options(width=70)  # so lines wrap round
 @
-
 
 \begin{document}
 \title{FAQs about the \pkg{data.table} package in \proglang{R}}
@@ -386,6 +385,9 @@ That modification is made dynamically; i.e., the base definition of \code{cbind.
 foo = data.frame(a=1:3)
 cbind.data.frame = function(...)cat("Not printed\n")
 cbind(foo)
+@
+<<echo=FALSE>>=
+rm("cbind.data.frame")
 @
 \begin{itemize}
 \item Finally, we tried masking \code{cbind} itself (v1.6.5 and v1.6.6). This allowed \code{cbind(DT,DF)} to work, but introduced compatibility issues with package IRanges, since IRanges also masks \code{cbind}. It worked if IRanges was lower on the search() path than \code{data.table}, but if IRanges was higher then \code{data.table}'s \code{cbind} would never be called and the strange looking matrix output occurs again (FAQ \ref{faq:cbinderror}).

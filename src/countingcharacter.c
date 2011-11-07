@@ -30,20 +30,20 @@ EXPORT SEXP countingcharacter();
 #endif
 
 extern int Rf_Scollate();
-void ssort2(SEXP *x, size_t n);
+void ssort2(SEXP *x, R_len_t n);
 // See end of this file for comments and modifications.
 
 
 SEXP countingcharacter(SEXP x, SEXP sort, SEXP GER2140)
 {
     SEXP ans, tmp, *u;
-    size_t i, n, h, k, cumsum, un=0, ualloc;
+    R_len_t i, n, h, k, cumsum, un=0, ualloc;
     if (!isString(x)) error("x is not character");
     if (!isLogical(sort)) error("sort is not logical");
     if (!isLogical(GER2140)) error("GER2140 is not logical");
     n = LENGTH(x);
     if (!LOGICAL(GER2140)[0]) // < R 2.14.0
-        for(i=0; i<n; i++) TRUELENGTH(STRING_ELT(x,i)) = 0;    // TO DO: time the cost here
+        for(i=0; i<n; i++) TRUELENGTH(STRING_ELT(x,i)) = 0;
     else
         if (TRUELENGTH(STRING_ELT(x,0))!=0) error("R.version >= 2.14.0 but truelength on first CHARSXP ('%s') is %d (not 0 as expected). length is %d (should be nchar)",CHAR(STRING_ELT(x,0)),TRUELENGTH(STRING_ELT(x,0)),LENGTH(STRING_ELT(x,0)));
     PROTECT(ans = allocVector(INTSXP, n));
@@ -73,9 +73,9 @@ SEXP countingcharacter(SEXP x, SEXP sort, SEXP GER2140)
         tmp = STRING_ELT(x,i-1);                             // + 0.800 (random access to ans)
         k = --TRUELENGTH(tmp);
         INTEGER(ans)[k] = i;
-    } // NB: i is size_t so must be i>0 otherwise underflow to maxint.
+    } // Aside: for loop bounds written with unsigned int (such as size_t) in mind (when i>=0 would result in underflow and infinite loop).
     for(i=0; i<un; i++) TRUELENGTH(u[i]) = 0; // The cumsum means the counts are left non zero so reset for next time (0.00).
-    // INTEGER(ans)[--counts[(tmp==NA_STRING) ? 0 : TRUELENGTH(tmp)]] = i+1;
+    // INTEGER(ans)[--counts[(tmp==NA_STRING) ? 0 : TRUELENGTH(tmp)]] = i+1;  // TO DO: tests for NA in character vectors
     UNPROTECT(1);
     Free(u);
     return ans;
@@ -100,11 +100,11 @@ SEXP countingcharacter(SEXP x, SEXP sort, SEXP GER2140)
 
 
 // Copied as-is directly from src/main/sort.c :
-const size_t incs[16] = {1073790977, 268460033, 67121153, 16783361, 4197377,
+const int incs[16] = {1073790977, 268460033, 67121153, 16783361, 4197377,
 		       1050113, 262913, 65921, 16577, 4193, 1073, 281, 77,
 		       23, 8, 1};
 
-void ssort2(SEXP *x, size_t n)
+void ssort2(SEXP *x, R_len_t n)
 // Copied from src/main/sort.c.
 // ssort2 is declared static in base i.e. not exposed to packages unfortunately.
 // We don't want to call the sortVector wrapper in base because we use Realloc in
@@ -117,10 +117,9 @@ void ssort2(SEXP *x, size_t n)
 //    it to the && to short circuit instead.
 // 3. NA always go last in data.table, that option (of scmp) removed too, but there
 //    won't be any NA anyway
-// 4. size_t instead of int
 {
     SEXP v;
-    size_t i, j, h, t;
+    R_len_t i, j, h, t;
     for (t = 0; incs[t] > n; t++);
     for (h = incs[t]; t < 16; h = incs[++t])
 	for (i = h; i < n; i++) {

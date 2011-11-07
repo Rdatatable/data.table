@@ -20,7 +20,7 @@ SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol)  //change name
     // Unless, order is provided, then it also drops any previous row.
     // l must be a list of same length integer vectors
     // ans is allocated first (maximum length the number of rows) and the length returned in anslen.
-    int i,j,nrow,ncol,len,thisi,previ;
+    R_len_t i,j,nrow,ncol,len,thisi,previ;
     ncol = length(l);
     nrow = length(VECTOR_ELT(l,0));
     len=1;
@@ -61,23 +61,22 @@ SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol)  //change name
 //     columns are looped through in reverse order.
 // iv) not using the rcmp function, saving the 5 if's and funct call
 
-//  It is still a comparison sort, so is not meant to be very fast, but should be slightly
-//  more efficient that base for the reasons above. Intend to come to a fast radix sort
-//  for floating point (which does seem to be known).
+//  It is still a comparison sort, so is not meant to be super fast, but should be slightly
+//  more efficient than base for the reasons above. Intend to tackle fast radix sort
+//  for floating point later (which does seem to be known).
 
-extern const size_t incs[];
+extern const int incs[];
 
 //#define cmptol(a,b) (x[a] > x[b]+tol || (a>b && x[a] > x[b]-tol))
 #define cmptol(a,b) ( (ISNAN(x[b]) && !ISNAN(x[a])) || (!ISNAN(x[a]) && !ISNAN(x[b]) && (x[a] > x[b]+tol || (a>b && x[a] > x[b]-tol))))
 
 void rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)
 {
-    int t, i, j, h;
-    int itmp;
+    R_len_t t, i, j, h, itmp;
     double *x=REAL(xarg)-1;
-    int n=length(xarg);
-    int lo = 1, hi = n;
-    int *indx=INTEGER(indxarg)-1;
+    R_len_t n=length(xarg);
+    R_len_t lo = 1, hi = n;
+    R_len_t *indx=INTEGER(indxarg)-1;
     double tol = REAL(tolarg)[0];
     
     //for (i=1; i<=n; i++) if (ISNAN(x[i])) error("NA and NaN are not allowed in numeric key columns. They have to be dealt with specially (slowing things down) but also NAs in the key can lead to ambiguities and confusion when it comes to joining to NA values. If you have a real-world example that really does need NAs in the key then consider choosing your own value to represent NA, such as -999.999. If you want to join to the -999.999 values then you can, and if you want to represent an NA row, then you can too. That will be much faster and clearer. We think that requirement is very rare, so data.table is setup to be optimized for the most common cases; i.e., no NAs in key columns. Also, binary search is faster without a check on NA_REAL (it seems we cannot rely on NA_REAL being REAL_MIN, unlike NA_INTEGER being MIN_INT).");

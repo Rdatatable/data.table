@@ -22,7 +22,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     // For internal use only by [<-.data.table.
     // newcolnames : add these columns (if any)
     // cols : column numbers corresponding to the values to set
-    int i, j, size, targetlen, vlen, v, r, oldncol, coln, protecti=0;
+    R_len_t i, j, size, targetlen, vlen, v, r, oldncol, coln, protecti=0;
     SEXP targetcol, RHS, newdt, names, newnames, nullint, thisvalue, thisv, targetlevels;
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (length(rows)==0) {
@@ -52,13 +52,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         PROTECT(newdt = allocVector(VECSXP, length(dt)+length(newcolnames)));
         protecti++;
         size = sizeof(SEXP *);
-        memcpy(DATAPTR(newdt),DATAPTR(dt),length(dt)*size);
+        memcpy((char *)DATAPTR(newdt),(char *)DATAPTR(dt),length(dt)*size);
         names = getAttrib(dt, R_NamesSymbol);
         if (isNull(names)) error("names of data.table are null");
 	    PROTECT(newnames = allocVector(STRSXP, length(newdt)));
 	    protecti++;
-	    memcpy(DATAPTR(newnames), DATAPTR(names), length(names)*size);
-	    memcpy((char *)DATAPTR(newnames)+length(names)*size, DATAPTR(newcolnames), length(newcolnames)*size);
+	    memcpy((char *)DATAPTR(newnames), (char *)DATAPTR(names), length(names)*size);
+	    memcpy((char *)DATAPTR(newnames)+length(names)*size, (char *)DATAPTR(newcolnames), length(newcolnames)*size);
 	    setAttrib(newdt, R_NamesSymbol, newnames);
         copyMostAttrib(dt, newdt);
         dt = newdt;
@@ -97,7 +97,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             for (j=0; j<length(thisvalue); j++) TRUELENGTH(STRING_ELT(thisvalue,j))=0;  // can skip in future
             targetlevels = getAttrib(targetcol, R_LevelsSymbol);
             for (j=0; j<length(targetlevels); j++) TRUELENGTH(STRING_ELT(targetlevels,j))=j+1;
-            int addi = 0;
+            R_len_t addi = 0;
             SEXP addlevels=NULL;
             PROTECT(RHS = allocVector(INTSXP, length(thisvalue)));
             protecti++;
@@ -117,7 +117,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                 INTEGER(RHS)[j] = TRUELENGTH(thisv);
             }
             if (addi > 0) {
-                int oldlen = length(targetlevels);
+                R_len_t oldlen = length(targetlevels);
                 PROTECT(targetlevels = growVector(targetlevels, length(targetlevels)+addi));
                 protecti++;
                 size = sizeof(SEXP *);

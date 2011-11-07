@@ -11,7 +11,7 @@ EXPORT SEXP dogroups();
 #endif
 
 int sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
-char typename[20][100];  // The typename in main/inspect.c seems static (not available for use by packages), uses a switch, and uses the internal names.
+char typename[100][30];  // The typename in main/inspect.c seems static (not available for use by packages), uses a switch, and uses the internal names.
 
 SEXP growVector(SEXP x, R_len_t newlen);
 int sizesSet=0;
@@ -19,7 +19,7 @@ int sizesSet=0;
 void setSizes()
 {
     int i;
-    for (i=0;i++;i<100) {
+    for (i=0;i<100;i++) {
         sizes[i]=0;
         sprintf(typename[i],"unsupported type %d", i);
     }
@@ -34,6 +34,10 @@ void setSizes()
     strcpy(typename[STRSXP], "character");
     sizes[VECSXP] = sizeof(SEXP *);  // a column itself can be a list()
     strcpy(typename[VECSXP], "list");
+    for (i=0;i<100;i++) {
+        if (sizes[i]>8) error("Type %d is sizeof() greater than 8 bytes on this machine. We haven't tested on any architecture greater than 64bit, yet.", i);
+        // One place we need the largest sizeof (assumed to be 8 bytes) is the working memory malloc in reorder.c
+    }
     sizesSet=1;
 }
 #define SIZEOF(x) sizes[TYPEOF(x)]

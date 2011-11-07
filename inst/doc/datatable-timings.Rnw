@@ -12,14 +12,13 @@
 \SweaveOpts{keep.source=TRUE}
 %% \VignetteIndexEntry{Timings of common tasks}
 
-\begin{document}
 <<echo=FALSE,results=hide>>=
 if (!exists("data.table",.GlobalEnv)) library(data.table)  # see Intro.Rnw for comments on these two lines
-rm(list=as.character(tables()$NAME))
+rm(list=as.character(tables()$NAME),envir=.GlobalEnv)
 options(width=70)  # so lines wrap round
 @
 
-
+\begin{document}
 \title{Timings of common tasks using the \pkg{data.table} package in \proglang{R}}
 \author{Matthew Dowle}
 \date{Revised: \today\\(A later revision may be available on the \href{http://datatable.r-forge.r-project.org/}{homepage})}
