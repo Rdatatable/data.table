@@ -37,7 +37,7 @@ void ssort2(SEXP *x, R_len_t n);
 SEXP countingcharacter(SEXP x, SEXP sort, SEXP GER2140)
 {
     SEXP ans, tmp, *u;
-    R_len_t i, n, h, k, cumsum, un=0, ualloc;
+    R_len_t i, n, k, cumsum, un=0, ualloc;
     if (!isString(x)) error("x is not character");
     if (!isLogical(sort)) error("sort is not logical");
     if (!isLogical(GER2140)) error("GER2140 is not logical");
