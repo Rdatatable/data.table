@@ -9,7 +9,26 @@ This NEWS file summarises the main changes.
         **   CHANGES IN DATA.TABLE VERSION 1.7.3   **
         **                                         **
         *********************************************
-
+        
+    o   data.table now 'over' allocates space for pointers to 100
+        (by default) columns. This allows := to add columns fully by
+        reference as suggested by Muhammad Waliji, #1646. When the 100
+        slots are used up, more space is automatically allocated and a
+        warning issued that a shallow copy has taken place.
+        
+        Over allocation has *negligible* overhead. It's just the list
+        of column pointers, not the columns themselves.
+        
+    o   New function alloc.col(), to pre-allocate column slots. Use
+        this before a loop to add many more than 100 columns, for example,
+        to avoid the warnings as data.table grows its column pointer list
+        every additional 100 columns; e.g.
+            alloc.col(DT,10000)  # reserve 10,000 column slots
+        
+    o   New function truelength() returns the number of column pointers
+        allocated and should be >= length().
+        
+        To DO: user option for default.
 
 
         *********************************************

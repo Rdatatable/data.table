@@ -45,7 +45,13 @@ is.ff = function(x) inherits(x, "ff")  # define this in data.table so that we do
 #    if (is.array(x)) nrow(x) else length(x)
 #}
 
-# TO DO: now data.table inherits from data.frame, do we need data.table creation at all?
+null.data.table = function() {
+    ans = list()
+    setattr(ans,"class",c("data.table","data.frame"))
+    setattr(ans,"row.names",.set_row_names(0))
+    ans = alloc.col(ans)
+    ans
+}
 
 data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 {
@@ -57,9 +63,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # DONE: if M is a matrix with cols a,b and c,  data.table(A=M,B=M) will create colnames A.a,A.b,A.c,B.a,B,b,B.c.  Also  data.table(M,M) will use make.names to make the columns unique (adds .1,.2,.3)
     # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then class(l)="data.table" at the expense of checking.
     x <- list(...)
-    # TO DO: use ..1 instead?
+    # TO DO: use ..1 instead, but not clear exactly how in this case.
     # One reason data.table() is needed, different and independent from data.frame(), is to allow list() columns.
-    if (identical(x, list(NULL))) return( structure(NULL,class=c("data.table","data.frame"),row.names=.set_row_names(0)) )
+    if (identical(x, list(NULL))) return( null.data.table() )
     # the arguments to the data.table() function form the column names,  otherwise the expression itself
     tt <- as.list(substitute(list(...)))[-1]  # Intention here is that data.table(X,Y) will automatically put X and Y as the column names.  For longer expressions, name the arguments to data.table(). But in a call to [.data.table, wrap in list() e.g. DT[,list(a=mean(v),b=foobarzoo(zang))] will get the col names
     vnames = names(tt)
@@ -79,7 +85,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # so now finally we have good column names. We also will use novname later to know which were explicitly supplied in the call.
     n <- length(x)
     if (n < 1)
-        return(structure(list(), class = c("data.table","data.frame"), row.names=.set_row_names(0)))
+        return( null.data.table() )
     if (length(vnames) != n) stop("logical error in vnames")
     vnames <- as.list(vnames)
     # ncols <- integer(n)        # the nrows and ncols of each of the inputs (could be varying lengths)
@@ -166,6 +172,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
       else
           key(value) = key     # e.g. key=c("col1","col2")
     }
+    value = alloc.col(value)
     value
 }
 
@@ -205,7 +212,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (identical(i,NA)) i = NA_integer_  # see DT[NA] thread re recycling of NA logical
             else i[is.na(i)] = FALSE              # avoids DT[!is.na(ColA) & !is.na(ColB) & ColA==ColB], just DT[ColA==ColB]
         }
-        if (is.null(i)) return(structure(NULL,class=c("data.table","data.frame"),row.names=.set_row_names(0)))
+        if (is.null(i)) return( null.data.table() )
         if (is.character(i)) {
             # for user convenience
             if (!haskey(x)) stop("The data.table has no key but i is character. Call setkey first, see ?setkey.")
@@ -328,6 +335,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             }
             setattr(ans,"class",c("data.table","data.frame"))
             setattr(ans,"row.names",.set_row_names(nrow(ans)))
+            ans = alloc.col(ans)
             return(ans)
         }
     } # end of  if !missing(i)
@@ -391,7 +399,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         # the !missing is for speed to avoid calling getOption() which then calls options().
         # better to do verbosity before calling C, to make tracing easier if there's a problem in assign.c
         revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))  # currently length 1 anyway here, more relevant in the other .Call to assign. Might need a wrapper around .Call(assign), then
-        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,clearkey,symbol,rho,revcolorder,PACKAGE="data.table"))
+        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,clearkey,symbol,rho,revcolorder,TRUE,PACKAGE="data.table"))
         # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
         # Could return number of rows updated but even when wrapped in invisible() it seems
         # the [.class method doesn't respect invisible, which may be confusing to user.
@@ -399,7 +407,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         # but how to pass a subset of rows that way, or more crucially an assignment within groups (TO DO)
     }
     if (!with) {
-        if (!length(j)) return(data.table(NULL))
+        if (!length(j)) return( null.data.table() )
         if (is.character(j)) j = match(j, names(x))
         # TO DO:  DT[,"-columntoremove",with=FALSE] might be nice
         if (any(is.na(j))) stop("undefined columns selected")  # TO DO: include which ones in msg
@@ -420,6 +428,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
         setattr(ans,"class",c("data.table","data.frame"))
         setattr(ans,"row.names",.set_row_names(nrow(ans)))
+        ans = alloc.col(ans)
         return(ans)
     }
     if (!missing(by) && !missing(i)) {
@@ -435,6 +444,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (mode(jsub)!="name" && as.character(jsub[[1]]) == "list") {
             jsub[[1]]=as.name("data.table")
             # we need data.table here because i) it grabs the column names from objects and ii) it does the vector expansion
+            # data.table() will also call alloc.col() here
         }
         return(eval(jsub, envir=x, enclos=parent.frame()))
     }
@@ -688,6 +698,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     if ((!missing(by) && bysameorder) || (!missing(i) && haskey(i))) {
         setattr(ans,"sorted",colnames(ans)[seq_along(byval)])
     }
+    ans = alloc.col(ans)
     ans
 }
 
@@ -803,6 +814,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
         names(value) <- paste("V", ic, sep = "")
     setattr(value,"row.names",.set_row_names(nrows))
     setattr(value,"class",c("data.table","data.frame"))
+    value = alloc.col(value)
     value
 }
 
@@ -812,18 +824,20 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE)
     ans = copy(x)
     setattr(ans,"row.names",.set_row_names(nrow(x)))
     setattr(ans,"class",c("data.table","data.frame"))
+    ans = alloc.col(ans)
     ans
 }
 
 as.data.table.list = function(x, keep.rownames=FALSE) {
     x = copy(x)
-    if (!length(x)) return(data.table(NULL))
+    if (!length(x)) return( null.data.table() )
     n = sapply(x,length)
     if (any(n<max(n)))
         for (i in which(n<max(n))) x[[i]] = rep(x[[i]],length=max(n))
     if (is.null(names(x))) names(x) = paste("V",1:length(x),sep="")
     setattr(x,"row.names",.set_row_names(max(n)))
     setattr(x,"class",c("data.table","data.frame"))
+    x = alloc.col(x)
     x
 }
 
@@ -843,13 +857,18 @@ tail.data.table = function(x, n=6, ...) {
 "[<-.data.table" = function (x, i, j, value) {
     # It is not recommended to use <-. Instead, use := for efficiency.
     # [<- is still provided for consistency and backwards compatibility, but we hope users don't use it.
-    if (!cedta()) return(`[<-.data.frame`(x, i, j, value))
+    alloc.col(x,length(x))
+    if (!cedta()) {
+        x = `[<-.data.frame`(x, i, j, value)
+        return(alloc.col(x,length(x)))
+    }
     if (!missing(i)) {
         isub=substitute(i)
         i = eval(isub, x, parent.frame())
         if (is.matrix(i)) {
             if (!missing(j)) stop("When i is matrix in DT[i]<-value syntax, it doesn't make sense to provide j")
-            return(`[<-.data.frame`(x, i, value=value))
+            x = `[<-.data.frame`(x, i, value=value)
+            return(alloc.col(x,length(x)))
         }
         i = x[i, which=TRUE]
         # Tried adding ... after value above, and passing ... in here (e.g. for mult="first") but R CMD check
@@ -883,18 +902,26 @@ tail.data.table = function(x, n=6, ...) {
         keycol=FALSE
     }
     revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))
-    .Call("assign",x,i,cols,newcolnames,value,keycol,NULL,NULL,revcolorder,PACKAGE="data.table")
+    #x = alloc.col(x,length(x)+length(newcolnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over
+    x = .Call("assign",x,i,cols,newcolnames,value,keycol,NULL,NULL,revcolorder,FALSE,PACKAGE="data.table")
+    alloc.col(x,length(x))
     # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
     # or uses data.table := syntax; i.e. DT[i,j:=value]
     # but, there is one copy by R in [<- dispatch to `*tmp*`; i.e. DT[i,j]<-value
-    # (IIUC, and, as of R 2.13.1)
+    # (IIUC, and, as of R 2.13.1
+    # That copy is via main/duplicate.c which preserves truelength but copies length much. Hence alloc.col(x,length(x)).
+    # No warn passed to assign here because we know it'll be copied via *tmp*.
+    # Simplest is ... just use := to avoid all this.
 }
 
 "$<-.data.table" = function(x, name, value) {
-    if (!cedta()) return(`$<-.data.frame`(x, name, value))
+    alloc.col(x,length(x))
+    if (!cedta()) {
+        ans = `$<-.data.frame`(x, name, value)
+        return(alloc.col(ans,length(ans)))  # to set truelength to length, see above
+    }
     `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
-
 
 .rbind.data.table = function(...) {
     # See FAQ 2.23
@@ -911,8 +938,7 @@ tail.data.table = function(x, n=6, ...) {
     allargs <- allargs[sapply(allargs, length) > 0]
     n <- length(allargs)
     if (n == 0)
-        return(structure(list(), class=c("data.table","data.frame"), row.names=.set_row_names(0)))
-
+        return( null.data.table() )
     if (!all(sapply(allargs, is.list))) stop("All arguments to rbind must be lists (including data.frame and data.table)")
     if (length(unique(sapply(allargs, ncol))) != 1) stop("All arguments to rbind must have the same number of columns")
 
@@ -927,6 +953,7 @@ tail.data.table = function(x, n=6, ...) {
     names(l) = nm
     setattr(l,"row.names",.set_row_names(length(l[[1]])))
     setattr(l,"class",c("data.table","data.frame"))
+    l = alloc.col(l)
     return(l)
     # return(data.table(l))
     # much of the code in rbind.data.frame that follows this point is either to do with row.names, or coercing various types (and silent rep) which is already done by data.table. therefore removed.
@@ -935,7 +962,7 @@ tail.data.table = function(x, n=6, ...) {
 as.data.table = function(x, keep.rownames=FALSE)
 {
     if (is.null(x))
-        return(as.data.table(list()))
+        return(null.data.table())
     UseMethod("as.data.table")
 }
 
@@ -1131,6 +1158,11 @@ copy = function(x) .Call("copy",x,PACKAGE="data.table")
 # TO DO: speedup to duplicate.c using memcpy, suggested to r-devel, would benefit copy()
 # Could construct data.table and use memcpy ourselves but deep copies e.g. list() columns
 # may be tricky; more robust to rely on R's duplicate which deep copies.
+
+alloc.col = function(x,n=max(100,2*ncol(x))) .Call("alloccolwrapper",x,as.integer(n),PACKAGE="data.table")
+
+truelength = function(x) .Call("truelength",x,PACKAGE="data.table")
+# deliberately no "truelength<-" method.  alloc.col is the mechanism for that (maybe alloc.col should be renamed "truelength<-".
 
 
 

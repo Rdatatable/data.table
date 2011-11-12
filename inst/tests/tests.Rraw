@@ -816,8 +816,10 @@ DT = data.table(a=1:3,b=4:6)
 test(298, {DT$b<-NULL;DT}, data.table(a=1:3))  # delete column
 tt = try(DT$c <- as.character(DT$c), silent=TRUE) 
 test(299, inherits(tt,"try-error") && length(grep("zero length", tt)))  # to simulate RHS which could (due to user error) be non NULL but zero length
-test(299.1, DT[,c:=42L], data.table(a=1:3,c=42L))  # add column (efficiently), and check result is new table
-test(299.15, DT, data.table(a=1:3,c=42L))   # the := was by reference
+# tt = try(DT[,c:=42L], silent=TRUE)
+# test(299.01, inherits(tt,"try-error") && length(grep("converted from warning.*growing vector", tt))) # because $<- above 
+test(299.02, suppressWarnings(DT[,c:=42L]), data.table(a=1:3,c=42L))  # add column (efficiently), and check result is new table
+test(299.03, truelength(DT)>length(DT))   # the := over-allocated, by 100 by default, but user may have changed default so just check '>'
 
 tt = try(DT[2,c:=42],silent=TRUE)
 test(299.2, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*Coerced numeric RHS to integer to match the column's type.*length 3 [(]nrows of entire table[)]", tt)))  
@@ -1139,6 +1141,20 @@ test(406, DT[,list(3,if(a==1)integer() else b),by=a], data.table(a=1:3,V1=3,V2=c
 
 # Test that first column can be list, #1640
 test(407, data.table(list(1:2,3:5)), as.data.table(list(list(1:2,3:5))))
+
+# With over-allocation, null data.table has truelength 100. Replaced the calls to structure() in the
+# code to new null.data.table(), so test it. Use may have changed default, so don't test "100" explicitly.
+test(408, null.data.table(), data.table(NULL))
+
+# Test that adding a column using := is fully by reference rather than a shallow copy, #1646
+DT = data.table(1:2,3:4)  # list vector truelength 100 
+DT2 = DT
+DT2[,y:=10L]
+test(409, DT, DT2)
+test(410, DT, data.table(1:2,3:4,y=10L))
+DT2[1,V1:=99L]
+test(411, DT, DT2)
+test(412, DT, data.table(c(99L,2L),3:4,y=10L))
 
 
 ## See test-* for more tests

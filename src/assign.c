@@ -2,10 +2,13 @@
 #define USE_RINTERNALS
 #include <Rinternals.h>
 #include <Rdefines.h>
+#include <Rmath.h> 
 
 #ifdef BUILD_DLL
 #define EXPORT __declspec(dllexport)
 EXPORT SEXP assign();
+EXPORT SEXP alloccolwrapper();
+EXPORT SEXP truelength();
 #endif
 
 // See dogroups.c for these shared variables.
@@ -16,14 +19,16 @@ void setSizes();
 //
 
 SEXP growVector(SEXP x, R_len_t newlen);
+SEXP alloccol(SEXP dt, R_len_t n);
 
-SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP symbol, SEXP rho, SEXP revcolorder)
+SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP symbol, SEXP rho, SEXP revcolorder, SEXP allocwarn)
 {
     // For internal use only by [<-.data.table.
     // newcolnames : add these columns (if any)
     // cols : column numbers corresponding to the values to set
-    R_len_t i, j, size, targetlen, vlen, v, r, oldncol, coln, protecti=0;
-    SEXP targetcol, RHS, newdt, names, newnames, nullint, thisvalue, thisv, targetlevels;
+    R_len_t i, j, size, targetlen, vlen, v, r, oldncol, oldtncol, coln, protecti=0, n;
+    SEXP targetcol, RHS, newdt, names, newnames, nullint, thisvalue, thisv, targetlevels, newcol;
+    //Rprintf("Beginning %d %d\n", TYPEOF(dt), length(dt));
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (length(rows)==0) {
         targetlen = length(VECTOR_ELT(dt,0));
@@ -45,23 +50,48 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             } // else it's a list() column being assigned to one column
         }
     }
+    //Rprintf("Step 1 %d %d\n", TYPEOF(dt), length(dt));
     oldncol = length(dt);
     if (length(newcolnames)) {
         if (TYPEOF(newcolnames)!=STRSXP) error("newcolnames is not character vector");
         if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
-        PROTECT(newdt = allocVector(VECSXP, length(dt)+length(newcolnames)));
-        protecti++;
+        if (oldncol) oldtncol = TRUELENGTH(dt);
+        //Rprintf("Step 2 %d %d\n", TYPEOF(dt), length(dt));
+        if (oldtncol < oldncol+LENGTH(newcolnames)) {
+            n = imax2(oldtncol+100, oldncol+2*LENGTH(newcolnames));
+            if (LOGICAL(allocwarn)[0]) warning("growing vector of column pointers. Only a shallow copy has been taken, see FAQ X.XX. To avoid this you could alloc.col() first or deep copy using copy(). Also consider changing the 'datatable-alloccol' option.");
+            PROTECT(dt = alloccol(dt,n));
+            protecti++;
+        }
+        /*PROTECT(newdt = allocVector(VECSXP, length(dt)+length(newcolnames)));
+        protecti++;*/
         size = sizeof(SEXP *);
-        memcpy((char *)DATAPTR(newdt),(char *)DATAPTR(dt),length(dt)*size);
+        /*memcpy((char *)DATAPTR(newdt),(char *)DATAPTR(dt),length(dt)*size);*/
         names = getAttrib(dt, R_NamesSymbol);
-        if (isNull(names)) error("names of data.table are null");
+        //Rprintf("Step 3 %d %d\n", TYPEOF(dt), length(dt));
+        /*if (isNull(names)) error("names of data.table are null");
 	    PROTECT(newnames = allocVector(STRSXP, length(newdt)));
-	    protecti++;
-	    memcpy((char *)DATAPTR(newnames), (char *)DATAPTR(names), length(names)*size);
-	    memcpy((char *)DATAPTR(newnames)+length(names)*size, (char *)DATAPTR(newcolnames), length(newcolnames)*size);
-	    setAttrib(newdt, R_NamesSymbol, newnames);
-        copyMostAttrib(dt, newdt);
-        dt = newdt;
+	    protecti++;*/
+	    //memcpy((char *)DATAPTR(newnames), (char *)DATAPTR(names), length(names)*size);
+	    //Rprintf("Step 3.1 %d %d\n", TYPEOF(dt), length(dt));
+	    //Rprintf("Step 3.2 %d %d\n", TYPEOF(dt), length(dt));
+	    //Rprintf("%s %d %d %d\n",CHAR(STRING_ELT(names,0)), length(names), length(newcolnames), size);
+	    //Rprintf("Truelength names %d\n", TRUELENGTH(names));
+	    //PROTECT(dt);
+	    //protecti++;
+	    //Rprintf("%u %u %u %u %u %u (diff %u)\n",dt,DATAPTR(dt),names,DATAPTR(names),newcolnames,DATAPTR(newcolnames),((unsigned long)dt-(unsigned long)names));
+	    memcpy((char *)DATAPTR(names)+LENGTH(names)*size, (char *)DATAPTR(newcolnames), LENGTH(newcolnames)*size);
+	    // If object has been duplicated by main/duplicate.c and length copied, but truelength retained, then
+	    // this memcpy is where overwrites occurred when names is 40 bytes before dt, for example, and dt got set to
+	    // NULL by this memcpy. Now theres an alloccol(dt,length(dt)) in [<- and $<-.
+	    //Rprintf("%u %u %u %u %u %u (diff %u)\n",dt,DATAPTR(dt),names,DATAPTR(names),newcolnames,DATAPTR(newcolnames),((unsigned long)dt-(unsigned long)names));
+	    //Rprintf("Step 3.3 %d %d\n", TYPEOF(dt), length(dt));
+	    //setAttrib(newdt, R_NamesSymbol, newnames);
+        //copyMostAttrib(dt, newdt);
+        //dt = newdt;
+        LENGTH(dt) = oldncol+LENGTH(newcolnames);
+        LENGTH(names) = oldncol+LENGTH(newcolnames);
+        // truelength's of both already set by alloccol
     }
     for (i=0; i<length(cols); i++) {
         coln = INTEGER(cols)[i]-1;
@@ -73,7 +103,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             continue;   // delete column(s) afterwards, below this loop
         vlen = length(thisvalue);
         if (length(rows)==0 && targetlen==vlen) {
+            //Rprintf("Plonking in value\n");
+            //Rprintf("%d %d\n", TYPEOF(dt), length(dt));
             SET_VECTOR_ELT(dt,coln,thisvalue);
+            //Rprintf("done\n");
             // plonk new column in as it's already the correct length
             // if column exists, 'replace' it (one way to change a column's type i.e. less easy, as it should be, for speed, correctness and to get the user thinking about their intent)        
             continue;
@@ -83,7 +116,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             error("RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list() column.");
         if (targetlen%vlen != 0) error("Tried to assign %d items to target of %d (can recycle but must be exact multiple). If users ask us to change this to a warning, we will change it; please ask maintainer('data.table').",vlen,targetlen);
         if (coln+1 > oldncol) {  // new column
-            SET_VECTOR_ELT(dt,coln,allocVector(TYPEOF(thisvalue),targetlen));
+            PROTECT(newcol = allocVector(TYPEOF(thisvalue),targetlen));
+            protecti++;
+            //Rprintf("Adding new column\n");
+            SET_VECTOR_ELT(dt,coln,newcol);
+            //Rprintf("done\n");
         }
         targetcol = VECTOR_ELT(dt,coln);
         if (isFactor(targetcol)) {
@@ -168,7 +205,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         i = INTEGER(revcolorder)[r]-1;
         coln = INTEGER(cols)[i]-1;
         if (TYPEOF(values)==VECSXP)
-            thisvalue = VECTOR_ELT(values,i%length(values));
+            thisvalue = VECTOR_ELT(values,i%LENGTH(values));
         else
             thisvalue = values;
         if (TYPEOF(thisvalue)==NILSXP) {
@@ -176,20 +213,20 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             size=sizeof(SEXP *);
             memmove((char *)DATAPTR(dt)+coln*size,     
                     (char *)DATAPTR(dt)+(coln+1)*size,
-                    (length(dt)-coln-1)*size);
-            SETLENGTH(dt,length(dt)-1);
+                    (LENGTH(dt)-coln-1)*size);
+            LENGTH(dt) -= 1;
             // TO DO: mark column vector as unused so can be gc'd. Maybe UNPROTECT_PTR?
             names = getAttrib(dt, R_NamesSymbol);
             memmove((char *)DATAPTR(names)+coln*size,     
                     (char *)DATAPTR(names)+(coln+1)*size,
-                    (length(names)-coln-1)*size);
-            SETLENGTH(names,length(names)-1);
-            if (length(names)==0) {
-                // That was last column deleted, leaving NULL data.table, so we need to reset .row_names and names, so that it really is the NULL data.table.
+                    (LENGTH(names)-coln-1)*size);
+            LENGTH(names) -= 1;
+            if (LENGTH(names)==0) {
+                // That was last column deleted, leaving NULL data.table, so we need to reset .row_names, so that it really is the NULL data.table.
                 PROTECT(nullint=allocVector(INTSXP, 0));
                 protecti++;
                 setAttrib(dt, R_RowNamesSymbol, nullint);  // i.e. .set_row_names(0)
-                setAttrib(dt, R_NamesSymbol, R_NilValue);
+                //setAttrib(dt, R_NamesSymbol, R_NilValue);
             }
             continue;
         }
@@ -200,13 +237,69 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         // Do this at C level to avoid any copies.
         setAttrib(dt, install("sorted"), R_NilValue);
     }
-    if (length(symbol)) {
+    if (length(symbol)) {   // TO DO: comment out this if and body
         // Called from := in j
         if(!isEnvironment(rho)) error("Internal data.table error in assign.c. rho should be an environment");
         setVar(symbol,dt,rho);
     } // else called from $<- or [<- where the slower copy via `*tmp*` mechanism must be used (as of R 2.13.1)
     UNPROTECT(protecti);
     return(dt);  // needed for `*tmp*` mechanism, and to return the new object after a := for compound syntax
+}
+
+
+SEXP alloccol(SEXP dt, R_len_t n)
+{
+    SEXP newdt, names, newnames;
+    R_len_t l=length(dt), tl=0;   // this tl=0 is important for pre R 2.14.0
+    if (!isNull(dt)) {
+        if (TYPEOF(dt) != VECSXP) error("dt passed to alloccol isn't type VECSXP");
+        tl = TRUELENGTH(dt);
+    };
+    if (l>n) warning("table has %d column slots in use. Attept to allocate less (%d)",l,n);
+    //  can now reduce for [<- and $<- coping via *tmp*....if (tl>=n) warning("table already has %d column slots allocated, with %d in use. Attempt to allocate less (%d)",tl,l,n);
+    
+    // TO DO: Get assign to call alloccol rather than repeat the code ...
+    if (n>tl) { 
+        PROTECT(newdt = allocVector(VECSXP, n));
+        PROTECT(newnames = allocVector(STRSXP, n));
+        if (l) {
+            memcpy((char *)DATAPTR(newdt),(char *)DATAPTR(dt),l*sizeof(SEXP *));
+            names = getAttrib(dt, R_NamesSymbol);
+            if (length(names) != l) error("unexpected length of names");
+	        memcpy((char *)DATAPTR(newnames), (char *)DATAPTR(names), l*sizeof(SEXP *));
+	    }
+	    setAttrib(newdt, R_NamesSymbol, newnames);
+        copyMostAttrib(dt, newdt);
+        LENGTH(newdt) = l;  //prefered due to the SETLENGTH vs SET_LENGTH confusion (inconsistent with SET_TRUELENGTH)
+        LENGTH(newnames) = l;
+        TRUELENGTH(newdt) = n;
+        TRUELENGTH(newnames) = n;
+        dt=newdt;
+        UNPROTECT(2);
+        return(dt);
+    } else {
+        // Reduce the allocation (most likely to the same value as length).
+        //if (n!=l) warning("Reducing alloc cols from %d to %d, but not to length (%d)",TRUELENGTH(dt),n,LENGTH(dt));
+        TRUELENGTH(dt) = n;
+        TRUELENGTH(getAttrib(dt,R_NamesSymbol)) = n;
+        return(dt);
+    }
+}
+
+SEXP alloccolwrapper(SEXP dt, SEXP newncol) {
+    return(alloccol(dt, INTEGER(newncol)[0]));
+}
+
+SEXP truelength(SEXP x) {
+    SEXP ans;
+    PROTECT(ans = allocVector(INTSXP, 1));
+    if (!isNull(x)) {
+       INTEGER(ans)[0] = TRUELENGTH(x);
+    } else {
+       INTEGER(ans)[0] = 0;
+    }
+    UNPROTECT(1);
+    return(ans);
 }
 
 
