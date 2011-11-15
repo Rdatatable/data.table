@@ -1156,6 +1156,11 @@ DT2[1,V1:=99L]
 test(411, DT, DT2)
 test(412, DT, data.table(c(99L,2L),3:4,y=10L))
 
+# Test that cbind retains keys
+DT = data.table(x=c("a","b"),y=1:4,key="x")
+test(413, key(cbind(DT,DT)), "x")
+test(414, key(cbind(DT,as.data.frame(DT))), "x")
+
 
 ## See test-* for more tests
 

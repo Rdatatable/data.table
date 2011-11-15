@@ -9,7 +9,7 @@
     if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
     if (!length(grep("data.table",ss[[2]]))) {
         ss = ss[c(1,NA,2:length(ss))]
-        ss[[2]] = parse(text="if (inherits(..1,'data.table')) return(data.table(...))")[[1]]
+        ss[[2]] = parse(text="if (inherits(..1,'data.table')) return(data.table(...,key=key(..1)))")[[1]]
         body(tt)=ss
         unlockBinding("cbind.data.frame",baseenv())
         assign("cbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)

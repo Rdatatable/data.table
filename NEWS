@@ -32,6 +32,9 @@ This NEWS file summarises the main changes.
         
     o   New option 'datatable.nomatch' allows the default for nomatch
         to be changed from NA to 0, as wished for by Branson Owen.
+        
+    o   cbind(DT,...) now retains DT's key, as wished for by Chris Neff
+        and partly implementing FR#295.
 
 
         *********************************************
