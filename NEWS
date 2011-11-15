@@ -29,6 +29,9 @@ This NEWS file summarises the main changes.
         allocated and should be >= length().
         
         To DO: user option for default.
+        
+    o   New option 'datatable.nomatch' allows the default for nomatch
+        to be changed from NA to 0, as wished for by Branson Owen.
 
 
         *********************************************
