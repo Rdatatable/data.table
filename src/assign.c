@@ -20,6 +20,9 @@ void setSizes();
 
 SEXP growVector(SEXP x, R_len_t newlen);
 SEXP alloccol(SEXP dt, R_len_t n);
+SEXP *saveds;
+R_len_t *savedtl, nalloc, nsaved;
+void savetl_init(), savetl(SEXP s), savetl_end();
 
 SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP symbol, SEXP rho, SEXP revcolorder, SEXP allocwarn)
 {
@@ -27,7 +30,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     // newcolnames : add these columns (if any)
     // cols : column numbers corresponding to the values to set
     R_len_t i, j, size, targetlen, vlen, v, r, oldncol, oldtncol, coln, protecti=0, n;
-    SEXP targetcol, RHS, newdt, names, newnames, nullint, thisvalue, thisv, targetlevels, newcol;
+    SEXP targetcol, RHS, newdt, names, newnames, nullint, thisvalue, thisv, targetlevels, newcol, s;
     //Rprintf("Beginning %d %d\n", TYPEOF(dt), length(dt));
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (length(rows)==0) {
@@ -131,9 +134,20 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                 PROTECT(thisvalue = asCharacterFactor(thisvalue));
                 protecti++;
             }
-            for (j=0; j<length(thisvalue); j++) TRUELENGTH(STRING_ELT(thisvalue,j))=0;  // can skip in future
+            savetl_init();
+            for (j=0; j<length(thisvalue); j++) {
+                s = STRING_ELT(thisvalue,j);
+                if (TRUELENGTH(s)!=0) {
+                    savetl(s);  // pre-2.14.0 this will save all the uninitialised truelengths
+                    TRUELENGTH(s)=0;
+                }
+            }
             targetlevels = getAttrib(targetcol, R_LevelsSymbol);
-            for (j=0; j<length(targetlevels); j++) TRUELENGTH(STRING_ELT(targetlevels,j))=j+1;
+            for (j=0; j<length(targetlevels); j++) {
+                s = STRING_ELT(targetlevels,j);
+                if (TRUELENGTH(s)!=0) savetl(s);
+                TRUELENGTH(s)=j+1;
+            }
             R_len_t addi = 0;
             SEXP addlevels=NULL;
             PROTECT(RHS = allocVector(INTSXP, length(thisvalue)));
@@ -163,7 +177,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                        addi*size);
                 setAttrib(targetcol, R_LevelsSymbol, targetlevels);
             }
-            for (j=0; j<length(targetlevels); j++) TRUELENGTH(STRING_ELT(targetlevels,j))=0;  // important to reinstate 0 for countingcharacterorder
+            for (j=0; j<length(targetlevels); j++) TRUELENGTH(STRING_ELT(targetlevels,j))=0;  // important to reinstate 0 for countingcharacterorder and HASHPRI (if any) as done by savetl_end().
+            savetl_end();
         } else {
             PROTECT(RHS = coerceVector(thisvalue,TYPEOF(targetcol)));
             protecti++;
@@ -237,7 +252,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         // Do this at C level to avoid any copies.
         setAttrib(dt, install("sorted"), R_NilValue);
     }
-    if (length(symbol)) {   // TO DO: comment out this if and body
+    if (length(symbol)) {   // TO DO: comment out this if and body ?
         // Called from := in j
         if(!isEnvironment(rho)) error("Internal data.table error in assign.c. rho should be an environment");
         setVar(symbol,dt,rho);
@@ -246,6 +261,32 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     return(dt);  // needed for `*tmp*` mechanism, and to return the new object after a := for compound syntax
 }
 
+void savetl_init() {
+    nsaved = 0;
+    nalloc = 100;
+    saveds = Calloc(nalloc, SEXP);
+    savedtl = Calloc(nalloc, R_len_t);
+}
+
+void savetl(SEXP s)
+{
+    if (nsaved>=nalloc) {
+        nalloc *= 2;
+        saveds = Realloc(saveds, nalloc, SEXP);
+        savedtl = Realloc(savedtl, nalloc, R_len_t);
+    }
+    saveds[nsaved] = s;
+    savedtl[nsaved] = TRUELENGTH(s);
+    nsaved++;
+    //Rprintf("saved %s %d\n", CHAR(s), TRUELENGTH(s));
+}
+
+void savetl_end() {
+    int i;
+    for (i=0; i<nsaved; i++) TRUELENGTH(saveds[i]) = savedtl[i];
+    Free(saveds);
+    Free(savedtl);
+}
 
 SEXP alloccol(SEXP dt, R_len_t n)
 {

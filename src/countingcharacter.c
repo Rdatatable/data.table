@@ -33,25 +33,32 @@ extern int Rf_Scollate();
 void ssort2(SEXP *x, R_len_t n);
 // See end of this file for comments and modifications.
 
+extern SEXP *saveds;
+extern R_len_t *savedtl, nalloc, nsaved;
+extern void savetl_init(), savetl(SEXP s), savetl_end();
 
 SEXP countingcharacter(SEXP x, SEXP sort, SEXP GER2140)
 {
-    SEXP ans, tmp, *u;
+    SEXP ans, tmp, *u, s;
     R_len_t i, n, k, cumsum, un=0, ualloc;
     if (!isString(x)) error("x is not character");
     if (!isLogical(sort)) error("sort is not logical");
     if (!isLogical(GER2140)) error("GER2140 is not logical");
     n = LENGTH(x);
-    if (!LOGICAL(GER2140)[0]) // < R 2.14.0
-        for(i=0; i<n; i++) TRUELENGTH(STRING_ELT(x,i)) = 0;
-    else
-        if (TRUELENGTH(STRING_ELT(x,0))!=0) error("R.version >= 2.14.0 but truelength on first CHARSXP ('%s') is %d (not 0 as expected). length is %d (should be nchar)",CHAR(STRING_ELT(x,0)),TRUELENGTH(STRING_ELT(x,0)),LENGTH(STRING_ELT(x,0)));
+    savetl_init();
+    for(i=0; i<n; i++) {
+        s = STRING_ELT(x,i);
+        if (TRUELENGTH(s)!=0) {
+            savetl(s);    // pre-2.14.0 this will save all the uninitialised truelength (i.e. random data)
+                          // TO DO: post 2.14.0 can we assume hash>0 and use sign bit to avoid this pass?
+            TRUELENGTH(s)=0;
+        }
+    }
     PROTECT(ans = allocVector(INTSXP, n));
     ualloc = 1024;  // small initial guess, negligible time to alloc  
     u = Calloc(ualloc, SEXP);   
     
-    // Using truelength as spare storage. Code and runtime inspection revealed
-    // it unused and uninitiated in the global CHARSXP cache. Attrib is already
+    // Using truelength as spare storage, saving HASHPRI first if present. Attrib is already
     // used by R in the cache (iiuc), and would be slower to fetch anyway.
     // NB: length is the nchar of each char *, not 1.
     for(i=0; i<n; i++) {
@@ -76,8 +83,9 @@ SEXP countingcharacter(SEXP x, SEXP sort, SEXP GER2140)
     } // Aside: for loop bounds written with unsigned int (such as size_t) in mind (when i>=0 would result in underflow and infinite loop).
     for(i=0; i<un; i++) TRUELENGTH(u[i]) = 0; // The cumsum means the counts are left non zero so reset for next time (0.00).
     // INTEGER(ans)[--counts[(tmp==NA_STRING) ? 0 : TRUELENGTH(tmp)]] = i+1;  // TO DO: tests for NA in character vectors
-    UNPROTECT(1);
+    savetl_end();
     Free(u);
+    UNPROTECT(1);
     return ans;
 }
 
