@@ -58,7 +58,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     if (length(newcolnames)) {
         if (TYPEOF(newcolnames)!=STRSXP) error("newcolnames is not character vector");
         if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
-        if (oldncol) oldtncol = TRUELENGTH(dt);
+        oldtncol = TRUELENGTH(dt);
+        if (oldtncol<length(dt)) error("Internal logical error: truelength(dt)<length(DT)");
         //Rprintf("Step 2 %d %d\n", TYPEOF(dt), length(dt));
         if (oldtncol < oldncol+LENGTH(newcolnames)) {
             n = imax2(oldtncol+100, oldncol+2*LENGTH(newcolnames));

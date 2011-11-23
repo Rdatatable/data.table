@@ -1143,8 +1143,13 @@ test(406, DT[,list(3,if(a==1)integer() else b),by=a], data.table(a=1:3,V1=3,V2=c
 test(407, data.table(list(1:2,3:5)), as.data.table(list(list(1:2,3:5))))
 
 # With over-allocation, null data.table has truelength 100. Replaced the calls to structure() in the
-# code to new null.data.table(), so test it. Use may have changed default, so don't test "100" explicitly.
-test(408, null.data.table(), data.table(NULL))
+# code to new null.data.table(), so test internal function. User may have changed default, so this
+# doesn't test "100" explicitly.
+if (exists(".devtesting")) {
+    test(408, null.data.table(), data.table(NULL))
+} else {
+    test(408, data.table:::null.data.table(), data.table(NULL))
+}
 
 # Test that adding a column using := is fully by reference rather than a shallow copy, #1646
 DT = data.table(1:2,3:4)  # list vector truelength 100 
@@ -1160,6 +1165,10 @@ test(412, DT, data.table(c(99L,2L),3:4,y=10L))
 DT = data.table(x=c("a","b"),y=1:4,key="x")
 test(413, key(cbind(DT,DT)), "x")
 test(414, key(cbind(DT,as.data.frame(DT))), "x")
+
+# Test friendly error when := is used in wrong place
+tt = try(x:=1,silent=TRUE)
+test(415, inherits(tt,"try-error") && length(grep("defined for use in j only",tt)))
 
 
 ## See test-* for more tests

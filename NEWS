@@ -10,32 +10,47 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
         
-    o   data.table now 'over' allocates space for pointers to 100
-        (by default) columns. This allows := to add columns fully by
+NEW FEATURES
+
+    o   data.table now over-allocates its vector of column pointer slots
+        (100 by default). This allows := to add columns fully by
         reference as suggested by Muhammad Waliji, #1646. When the 100
         slots are used up, more space is automatically allocated and a
         warning issued that a shallow copy has taken place.
         
-        Over allocation has *negligible* overhead. It's just the list
+        Over allocation has negligible overhead. It's just the vector
         of column pointers, not the columns themselves.
         
-    o   New function alloc.col(), to pre-allocate column slots. Use
+    o   New function alloc.col() pre-allocates column slots. Use
         this before a loop to add many more than 100 columns, for example,
-        to avoid the warnings as data.table grows its column pointer list
-        every additional 100 columns; e.g.
+        to avoid the warning as data.table grows its column pointer vector
+        every additional 100 columns; e.g.,
             alloc.col(DT,10000)  # reserve 10,000 column slots
         
-    o   New function truelength() returns the number of column pointers
-        allocated and should be >= length().
-        
-        To DO: user option for default.
+    o   New function truelength() returns the number of column pointer
+        slots allocated, always >= length().
         
     o   New option 'datatable.nomatch' allows the default for nomatch
         to be changed from NA to 0, as wished for by Branson Owen.
         
     o   cbind(DT,...) now retains DT's key, as wished for by Chris Neff
         and partly implementing FR#295.
+        
+BUG FIXES
 
+    o   Assignment to factor columns (using :=, [<- or $<-) could cause
+        'variable not found' errors and a seg fault in some circumstances
+        due to a new feature in v1.7.0: "Factor columns on LHS of :=, [<-
+        and $<- can now be assigned new levels", fixing #1664. Thanks to
+        Daniele Signori for reporting.
+        
+    o   An unnecessarily strict machine tolerance test failed CRAN checks
+        on Mac preventing v1.7.2 availability for Mac (only).
+
+USER VISIBLE CHANGES
+
+    o   := is now documented, see ?":=".
+    
 
         *********************************************
         **                                         **
