@@ -35,7 +35,7 @@
     
     \code{data.table}s are \emph{not} copied-on-write by \code{setkey}, \code{key<-} or \code{:=}. See \code{\link{copy}}.
     
-    \bold{Additional resources}: search for "\code{:=}" in the \href{../doc/datatable-faq.pdf}{FAQs vignette} (3 FAQs mention \code{:=}), search Stack Overflow's \href{http://stackoverflow.com/search?q=%5Bdata.table%5D+reference}{data.table tag for "reference"} (6 questions) and search \code{data.table}'s \href{http://rwiki.sciviews.org/doku.php?id=packages:cran:data.table}{wiki}.
+    \bold{Additional resources}: search for "\code{:=}" in the \href{../doc/datatable-faq.pdf}{FAQs vignette} (3 FAQs mention \code{:=}), search Stack Overflow's \href{http://stackoverflow.com/search?q=\%5Bdata.table\%5D+reference}{data.table tag for \"reference\"} (6 questions) and search \code{data.table}'s \href{http://rwiki.sciviews.org/doku.php?id=packages:cran:data.table}{wiki}.
     
     Advanced (internals) : sub assigning to columns is easy to see how that is done internally. Removing columns by reference is also straightforward by modifying the vector of column pointers only (using memmove in C). Adding columns is more tricky to see how that can be grown by reference: the list vector of column pointers is over-allocated, see \code{\link{truelength}}. By defining \code{:=} in \code{j} we believe update synax is natural, and scales, but also it bypasses \code{[<-} dispatch via \code{*tmp*} and allows \code{:=} to update by reference with no copies of any part of memory at all.
 }
