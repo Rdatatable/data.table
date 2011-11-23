@@ -49,7 +49,8 @@ BUG FIXES
 
 USER VISIBLE CHANGES
 
-    o   := is now documented, see ?":=".
+    o   := now has its own help page in addition to the examples in ?data.table,
+        see help(":=").
     
 
         *********************************************

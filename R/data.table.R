@@ -1159,7 +1159,7 @@ copy = function(x) .Call("copy",x,PACKAGE="data.table")
 # Could construct data.table and use memcpy ourselves but deep copies e.g. list() columns
 # may be tricky; more robust to rely on R's duplicate which deep copies.
 
-alloc.col = function(DT,n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT))))) .Call("alloccolwrapper",DT,as.integer(if (is.language(n)) eval(n) else n),PACKAGE="data.table")
+alloc.col = function(DT,n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT))))) .Call("alloccolwrapper",DT,as.integer(eval(n)),PACKAGE="data.table")
 
 truelength = function(x) .Call("truelength",x,PACKAGE="data.table")
 # deliberately no "truelength<-" method.  alloc.col is the mechanism for that (maybe alloc.col should be renamed "truelength<-".
