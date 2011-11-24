@@ -24,7 +24,7 @@ alloc.col(DT, n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT)))))
 \value{
     \code{truelength(x)} returns the length of the vector allocated in memory. \code{length(x)} of those items are in use. Currently, it is the list vector of column pointers that is over-allocated (i.e. \code{truelength(DT)}), not the column vectors themselves (yet) which would in future allow fast row \code{insert()}.
     
-    \code{alloc.col} has no return value but \emph{reallocates} \code{DT} by reference, usually to grow, the number of column pointer slots. This may be useful for efficiency if you know you are about to going to add a lot of columns in a loop.
+    \code{alloc.col} \emph{reallocates} \code{DT} by reference. This may be useful for efficiency if you know you are about to going to add a lot of columns in a loop. It also returns the new DT, for convenience in compound queries.
 }
 \seealso{ \code{\link{copy}} }
 \examples{

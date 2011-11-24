@@ -63,7 +63,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         //Rprintf("Step 2 %d %d\n", TYPEOF(dt), length(dt));
         if (oldtncol < oldncol+LENGTH(newcolnames)) {
             n = imax2(oldtncol+100, oldncol+2*LENGTH(newcolnames));
-            if (LOGICAL(allocwarn)[0]) warning("growing vector of column pointers. Only a shallow copy has been taken, see FAQ X.XX. To avoid this you could alloc.col() first or deep copy using copy(). Also consider changing the 'datatable-alloccol' option.");
+            if (LOGICAL(allocwarn)[0] && NAMED(dt)>1) warning("growing vector of column pointers from %d to %d. Only a shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data, and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings(), or increase the 'datatable.alloccol' option.", oldtncol, n);
+            // Note that the NAMED(dt)>1 doesn't work because .Call always sets to 2 (see R-ints), it seems. Work around
+            // may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too because
+            // that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2. 
             PROTECT(dt = alloccol(dt,n));
             protecti++;
         }
@@ -317,15 +320,15 @@ SEXP alloccol(SEXP dt, R_len_t n)
         TRUELENGTH(newdt) = n;
         TRUELENGTH(newnames) = n;
         dt=newdt;
+        // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
         UNPROTECT(2);
-        return(dt);
     } else {
         // Reduce the allocation (most likely to the same value as length).
         //if (n!=l) warning("Reducing alloc cols from %d to %d, but not to length (%d)",TRUELENGTH(dt),n,LENGTH(dt));
         TRUELENGTH(dt) = n;
         TRUELENGTH(getAttrib(dt,R_NamesSymbol)) = n;
-        return(dt);
     }
+    return(dt);
 }
 
 SEXP alloccolwrapper(SEXP dt, SEXP newncol) {
@@ -342,6 +345,26 @@ SEXP truelength(SEXP x) {
     }
     UNPROTECT(1);
     return(ans);
+}
+
+SEXP pointer(SEXP x) {
+    SEXP ans;
+    PROTECT(ans = allocVector(INTSXP, 1));
+    INTEGER(ans)[0] = (int)x;
+    UNPROTECT(1);
+    return(ans);
+}
+
+SEXP named(SEXP x) {
+    SEXP y = (SEXP)(INTEGER(x)[0]);
+    Rprintf("%d length = %d\n",NAMED(y), LENGTH(y));
+    return(R_NilValue);
+}
+
+void setnamed(SEXP x, SEXP v) {   // call by .Call(,DUP=FALSE) only.
+    SEXP y = (SEXP)(INTEGER(x)[0]);
+    Rprintf("%d length = %d\n",NAMED(y), LENGTH(y));
+    SET_NAMED(y,INTEGER(v)[0]);
 }
 
 

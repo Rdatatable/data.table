@@ -1175,6 +1175,36 @@ DT = data.table(a=1:3,b=4:6)
 tt = try(DT[J(2)],silent=TRUE)
 test(416, inherits(tt,"try-error") && length(grep("x must be keyed",tt)))
 
+# Test shallow copy warning from := adding a column, and (TO DO) only when X is NAMED.
+DT = data.table(a=1:3,b=4:6)
+alloc.col(DT,3)
+test(417, length(DT)==2 && truelength(DT)==3)
+DT[,c:=7L]   # uses final slot
+test(418, length(DT)==3 && truelength(DT)==3)
+tt = try(DT[,d:=8L],silent=TRUE)
+    # automatic realloc and shallow copy, no risk when not named.
+    # would like to be silent using NAMED>0 but .Call sets NAMED=2 for all, it seems. TO DO.
+test(418.5, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*growing",tt)))
+suppressWarnings(DT[,d:=8L])
+if (is.null(getOption("datatable.alloccol"))) {
+    test(419, length(DT)==4 && truelength(DT)==103)
+} else {
+    test(419, length(DT)==4 && truelength(DT)>=4)
+}
+alloc.col(DT,5)
+DT2 = DT
+DT[,e:=9L]   # uses final slot
+test(420, length(DT)==5 && truelength(DT)==5)
+test(421, DT, DT2)
+tt = try(DT[,f:=10L],silent=TRUE)
+test(422, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*growing",tt)))
+suppressWarnings(DT[,f:=10L])
+if (is.null(getOption("datatable.alloccol"))) {
+    test(419, length(DT)==6 && truelength(DT)==105)
+} else {
+    test(419, length(DT)==6 && truelength(DT)>=6)
+}
+
 
 ## See test-* for more tests
 
