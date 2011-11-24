@@ -54,7 +54,10 @@ USER VISIBLE CHANGES
     o   The error message from X[Y] when X is unkeyed has been lengthened to
         including advice to call setkey first and see ?setkey. Thanks to a
         comment by ilprincipe on Stack Overflow.
-    
+        
+    o   Deleting a missing column is now a warning rather than error. Thanks
+        to Chris Neff for reporting, #1642.
+
 
         *********************************************
         **                                         **

@@ -43,8 +43,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     if (!length(cols)) error("Logical error in assign, no column positions passed to assign");
     if (length(cols)!=length(revcolorder)) error("Logical error in assign, length(cols)!=length(revcolorder)");
     if (TYPEOF(values)==NILSXP) {
-        if (length(newcolnames)) error("RHS is NULL, meaning delete column(s). But, at least one column is not present.");
-        if (!length(cols)) error("RHS is NULL, meaning delete columns(s). But, no columns passed to delete.");
+        if (!length(cols)) {
+            warning("RHS is NULL, meaning delete columns(s). But, no columns in LHS to delete.");
+            return(dt);
+        }
     } else {
         if (TYPEOF(values)==VECSXP) {
             if (length(cols)>1) {
@@ -66,7 +68,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             if (LOGICAL(allocwarn)[0] && NAMED(dt)>1) warning("growing vector of column pointers from %d to %d. Only a shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data, and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings(), or increase the 'datatable.alloccol' option.", oldtncol, n);
             // Note that the NAMED(dt)>1 doesn't work because .Call always sets to 2 (see R-ints), it seems. Work around
             // may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too because
-            // that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2. 
+            // that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
+            // Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we don't mind.
             PROTECT(dt = alloccol(dt,n));
             protecti++;
         }
@@ -219,6 +222,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             }
         }
     }
+    names = getAttrib(dt, R_NamesSymbol);
     for (r=0; r<length(revcolorder); r++) {
         // Delete any columns assigned NULL (there was a 'continue' early in loop above)
         i = INTEGER(revcolorder)[r]-1;
@@ -228,14 +232,17 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         else
             thisvalue = values;
         if (TYPEOF(thisvalue)==NILSXP) {
-            if (coln+1 > oldncol) error("Added new column but RHS is NULL");
+            if (coln+1 > oldncol) {
+                warning("RHS is NULL but column '%s' is not present to delete", CHAR(STRING_ELT(names,coln)));
+                // It was added above and now we'll delete it again (just easier to code it this way)
+            }
             size=sizeof(SEXP *);
             memmove((char *)DATAPTR(dt)+coln*size,     
                     (char *)DATAPTR(dt)+(coln+1)*size,
                     (LENGTH(dt)-coln-1)*size);
             LENGTH(dt) -= 1;
             // TO DO: mark column vector as unused so can be gc'd. Maybe UNPROTECT_PTR?
-            names = getAttrib(dt, R_NamesSymbol);
+            
             memmove((char *)DATAPTR(names)+coln*size,     
                     (char *)DATAPTR(names)+(coln+1)*size,
                     (LENGTH(names)-coln-1)*size);
@@ -247,7 +254,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                 setAttrib(dt, R_RowNamesSymbol, nullint);  // i.e. .set_row_names(0)
                 //setAttrib(dt, R_NamesSymbol, R_NilValue);
             }
-            continue;
         }
     }
     if (LOGICAL(clearkey)[0]) {

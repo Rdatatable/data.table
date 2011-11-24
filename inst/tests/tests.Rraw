@@ -880,7 +880,7 @@ DT = data.table(a=20:22)
 test(314, {DT[,b:=23:25];DT[,c:=26:28]}, data.table(a=20:22,b=23:25,c=26:28))   # add in series
 test(315, DT[,c:=NULL], data.table(a=20:22,b=23:25))   # delete last
 tt = try(DT[,c:=NULL],silent=TRUE)
-test(316, inherits(tt,"try-error") && length(grep("column is not present", tt)))
+test(316, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*column.*c.*is not present to delete", tt)))
 
 
 # Test adding, removing and updating columns via [<- in one step
