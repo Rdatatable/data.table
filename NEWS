@@ -15,8 +15,7 @@ NEW FEATURES
     o   data.table now over-allocates its vector of column pointer slots
         (100 by default). This allows := to add columns fully by
         reference as suggested by Muhammad Waliji, #1646. When the 100
-        slots are used up, more space is automatically allocated and a
-        warning issued that a shallow copy has taken place.
+        slots are used up, more space is automatically allocated.
         
         Over allocation has negligible overhead. It's just the vector
         of column pointers, not the columns themselves.
