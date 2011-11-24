@@ -1170,6 +1170,11 @@ test(414, key(cbind(DT,as.data.frame(DT))), "x")
 tt = try(x:=1,silent=TRUE)
 test(415, inherits(tt,"try-error") && length(grep("defined for use in j only",tt)))
 
+# Somehow never tested that X[Y] is error if X is unkeyed.
+DT = data.table(a=1:3,b=4:6)
+tt = try(DT[J(2)],silent=TRUE)
+test(416, inherits(tt,"try-error") && length(grep("x must be keyed",tt)))
+
 
 ## See test-* for more tests
 

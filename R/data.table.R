@@ -221,7 +221,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
         if (identical(class(i),"list") || identical(class(i),"data.frame")) i = as.data.table(i)
         if (is.data.table(i)) {
-            if (!haskey(x)) stop("When i is a data.table, x must be sorted to avoid a vector scan of x per row of i")
+            if (!haskey(x)) stop("When i is a data.table, x must be keyed (i.e. sorted, and, marked as sorted) so data.table knows which columns to join to and so it can take advantage of x being sorted. Call setkey first, see ?setkey.")
             rightcols = match(key(x),colnames(x))
             if (any(is.na(rightcols))) stop("sorted columns of x don't exist in the colnames. data.table is not a valid data.table")
             for (a in rightcols) if (!typeof(x[[a]]) %in% c("integer","logical")) stop("sorted column ",colnames(x)[a], " in x is not internally type integer")

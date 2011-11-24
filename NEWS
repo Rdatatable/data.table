@@ -51,6 +51,10 @@ USER VISIBLE CHANGES
 
     o   := now has its own help page in addition to the examples in ?data.table,
         see help(":=").
+        
+    o   The error message from X[Y] when X is unkeyed has been lengthened to
+        including advice to call setkey first and see ?setkey. Thanks to a
+        comment by ilprincipe on Stack Overflow.
     
 
         *********************************************
