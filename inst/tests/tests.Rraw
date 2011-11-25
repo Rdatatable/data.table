@@ -6,6 +6,7 @@ if (!exists(".devtesting")) {
 }
 options(warn=2)
 nfail = ntest = 0
+whichfail = NULL
 test = function(num,x,y=NULL) {
     ntest <<- ntest + 1
     if (inherits(err<-try(x,TRUE),"try-error") || inherits(err<-try(y,TRUE),"try-error")) {
@@ -43,6 +44,7 @@ test = function(num,x,y=NULL) {
         cat("Types: ",paste(sapply(y,class),collapse=","),"\n")
     }
     nfail <<- nfail + 1
+    whichfail <<- c(whichfail, num)
 }
 
 started.at = Sys.time()
@@ -1231,7 +1233,7 @@ test(431, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].
 ##########################
 options(warn=0)
 if (nfail > 0) {
-    stop(nfail," errors in test.data.table()")
+    stop(nfail," errors in test.data.table(): ",paste(whichfail,collapse=","))
     # important to stop here, so than 'R CMD check' fails
 }
 cat("All",ntest,"tests in test.data.table() completed ok in",timetaken(started.at),"\n")
