@@ -367,24 +367,26 @@ SEXP truelength(SEXP x) {
     return(ans);
 }
 
+/*
 SEXP pointer(SEXP x) {
     SEXP ans;
-    PROTECT(ans = allocVector(INTSXP, 1));
-    INTEGER(ans)[0] = (int)x;
+    PROTECT(ans = allocVector(REALSXP, 1));
+    REAL(ans)[0] = (double)x;
     UNPROTECT(1);
     return(ans);
 }
 
 SEXP named(SEXP x) {
-    SEXP y = (SEXP)(INTEGER(x)[0]);
+    SEXP y = (SEXP)(REAL(x)[0]);
     Rprintf("%d length = %d\n",NAMED(y), LENGTH(y));
     return(R_NilValue);
 }
 
-void setnamed(SEXP x, SEXP v) {   // call by .Call(,DUP=FALSE) only.
-    SEXP y = (SEXP)(INTEGER(x)[0]);
+void setnamed(double *x, int *v) {   // call by .Call(,DUP=FALSE) only.
+    SEXP y = (SEXP)(*x);
     Rprintf("%d length = %d\n",NAMED(y), LENGTH(y));
-    SET_NAMED(y,INTEGER(v)[0]);
+    SET_NAMED(y,*v);
 }
+*/
 
 
