@@ -141,51 +141,65 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                 PROTECT(thisvalue = asCharacterFactor(thisvalue));
                 protecti++;
             }
-            savetl_init();
-            for (j=0; j<length(thisvalue); j++) {
-                s = STRING_ELT(thisvalue,j);
-                if (TRUELENGTH(s)!=0) {
-                    savetl(s);  // pre-2.14.0 this will save all the uninitialised truelengths
-                    TRUELENGTH(s)=0;
-                }
-            }
             targetlevels = getAttrib(targetcol, R_LevelsSymbol);
-            for (j=0; j<length(targetlevels); j++) {
-                s = STRING_ELT(targetlevels,j);
-                if (TRUELENGTH(s)!=0) savetl(s);
-                TRUELENGTH(s)=j+1;
-            }
-            R_len_t addi = 0;
-            SEXP addlevels=NULL;
-            PROTECT(RHS = allocVector(INTSXP, length(thisvalue)));
-            protecti++;
-            for (j=0; j<length(thisvalue); j++) {
-                thisv = STRING_ELT(thisvalue,j);
-                if (TRUELENGTH(thisv)==0) {
-                    if (addi==0) {
-                        PROTECT(addlevels = allocVector(STRSXP, 100));
-                        protecti++;
-                    } else if (addi >= length(addlevels)) {
-                        PROTECT(addlevels = growVector(addlevels, length(addlevels)+1000));
-                        protecti++;
+            if (isString(thisvalue)) {
+                savetl_init();
+                for (j=0; j<length(thisvalue); j++) {
+                    s = STRING_ELT(thisvalue,j);
+                    if (TRUELENGTH(s)!=0) {
+                        savetl(s);  // pre-2.14.0 this will save all the uninitialised truelengths
+                        TRUELENGTH(s)=0;
                     }
-                    SET_STRING_ELT(addlevels,addi,thisv);
-                    TRUELENGTH(thisv) = ++addi+length(targetlevels);  
                 }
-                INTEGER(RHS)[j] = TRUELENGTH(thisv);
-            }
-            if (addi > 0) {
-                R_len_t oldlen = length(targetlevels);
-                PROTECT(targetlevels = growVector(targetlevels, length(targetlevels)+addi));
+                for (j=0; j<length(targetlevels); j++) {
+                    s = STRING_ELT(targetlevels,j);
+                    if (TRUELENGTH(s)!=0) savetl(s);
+                    TRUELENGTH(s)=j+1;
+                }
+                R_len_t addi = 0;
+                SEXP addlevels=NULL;
+                PROTECT(RHS = allocVector(INTSXP, length(thisvalue)));
                 protecti++;
-                size = sizeof(SEXP *);
-                memcpy((char *)DATAPTR(targetlevels) + oldlen*size,
-                       (char *)DATAPTR(addlevels),
-                       addi*size);
-                setAttrib(targetcol, R_LevelsSymbol, targetlevels);
+                for (j=0; j<length(thisvalue); j++) {
+                    thisv = STRING_ELT(thisvalue,j);
+                    if (TRUELENGTH(thisv)==0) {
+                        if (addi==0) {
+                            PROTECT(addlevels = allocVector(STRSXP, 100));
+                            protecti++;
+                        } else if (addi >= length(addlevels)) {
+                            PROTECT(addlevels = growVector(addlevels, length(addlevels)+1000));
+                            protecti++;
+                        }
+                        SET_STRING_ELT(addlevels,addi,thisv);
+                        TRUELENGTH(thisv) = ++addi+length(targetlevels);  
+                    }
+                    INTEGER(RHS)[j] = TRUELENGTH(thisv);
+                }
+                if (addi > 0) {
+                    R_len_t oldlen = length(targetlevels);
+                    PROTECT(targetlevels = growVector(targetlevels, length(targetlevels)+addi));
+                    protecti++;
+                    size = sizeof(SEXP *);
+                    memcpy((char *)DATAPTR(targetlevels) + oldlen*size,
+                           (char *)DATAPTR(addlevels),
+                           addi*size);
+                    setAttrib(targetcol, R_LevelsSymbol, targetlevels);
+                }
+                for (j=0; j<length(targetlevels); j++) TRUELENGTH(STRING_ELT(targetlevels,j))=0;  // important to reinstate 0 for countingcharacterorder and HASHPRI (if any) as done by savetl_end().
+                savetl_end();
+            } else {
+                // value is either integer or numeric vector
+                if (TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=REALSXP)
+                    error("Trying to assign factor column %d a value of type %d i.e. not character, integer or numeric",i,TYPEOF(thisvalue));
+                PROTECT(RHS = coerceVector(thisvalue,INTSXP));  // TYPEOF(targetcol) is INTSXP for factors
+                protecti++;
+                for (j=0; j<length(RHS); j++) {
+                    if (INTEGER(RHS)[j]<1 || INTEGER(RHS)[j]>LENGTH(targetlevels)) {
+                        warning("RHS contains %d which is outside the levels range ([1,%d]) of column %d, NAs generated", INTEGER(RHS)[j], LENGTH(targetlevels), i+1);
+                        INTEGER(RHS)[j] = NA_INTEGER;
+                    }
+                }
             }
-            for (j=0; j<length(targetlevels); j++) TRUELENGTH(STRING_ELT(targetlevels,j))=0;  // important to reinstate 0 for countingcharacterorder and HASHPRI (if any) as done by savetl_end().
-            savetl_end();
         } else {
             PROTECT(RHS = coerceVector(thisvalue,TYPEOF(targetcol)));
             protecti++;

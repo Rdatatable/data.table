@@ -1200,10 +1200,30 @@ tt = try(DT[,f:=10L],silent=TRUE)
 test(422, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*growing",tt)))
 suppressWarnings(DT[,f:=10L])
 if (is.null(getOption("datatable.alloccol"))) {
-    test(419, length(DT)==6 && truelength(DT)==105)
+    test(423, length(DT)==6 && truelength(DT)==105)
 } else {
-    test(419, length(DT)==6 && truelength(DT)>=6)
+    test(423, length(DT)==6 && truelength(DT)>=6)
 }
+
+# Test crash bug fixed, #1656, introduced with the 1.7.0 feature
+DT <- data.table(a = c("A", "Z"), b = 1:4)
+DT[1,1] <- "Z"
+test(424, DT, data.table(a=c("Z","Z","A","Z"),b=1:4))
+tt = try(DT[1,1] <- 1, silent=TRUE)
+test(425, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*Coerced numeric RHS to integer",tt)))
+suppressWarnings(DT[1,1] <- 1)
+test(426, DT, data.table(a=c("A","Z"),b=1:4))
+DT[1,1] <- 2L
+test(427, DT, data.table(a=c("Z","Z","A","Z"),b=1:4))
+DT[1,a:="A"]
+test(428, DT, data.table(a=c("A","Z","A","Z"),b=1:4))
+DT[1,a:=2L]
+test(429, DT, data.table(a=c("Z","Z","A","Z"),b=1:4))
+tt = try(DT[1,1] <- 3L, silent=TRUE)
+test(430, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*RHS contains 3 which is outside the levels range.*1,2.*of column 1, NAs generated",tt)))
+tt = try(DT[1,1:=4,with=FALSE], silent=TRUE)
+test(431, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*RHS contains 4 which is outside the levels range.*1,2.*of column 1, NAs generated",tt)))
+
 
 
 ## See test-* for more tests

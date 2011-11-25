@@ -43,6 +43,9 @@ BUG FIXES
         and $<- can now be assigned new levels", fixing #1664. Thanks to
         Daniele Signori for reporting.
         
+    o   DT[i,j]<-value no longer crashes when j is a factor column and value
+        is numeric, fixing #1656.
+        
     o   An unnecessarily strict machine tolerance test failed CRAN checks
         on Mac preventing v1.7.2 availability for Mac (only).
 
