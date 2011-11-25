@@ -10,7 +10,12 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+NOTES
 
+   o    Two unused C variables removed to pass warning from one CRAN
+        check machine (r-devel-fedora), and -Wno-unused removed from
+        Makevars to catch this in future before submitting.
+        
 
         *********************************************
         **                                         **

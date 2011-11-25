@@ -30,7 +30,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     // newcolnames : add these columns (if any)
     // cols : column numbers corresponding to the values to set
     R_len_t i, j, size, targetlen, vlen, v, r, oldncol, oldtncol, coln, protecti=0, n;
-    SEXP targetcol, RHS, newdt, names, newnames, nullint, thisvalue, thisv, targetlevels, newcol, s;
+    SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s;
     //Rprintf("Beginning %d %d\n", TYPEOF(dt), length(dt));
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (length(rows)==0) {
@@ -73,32 +73,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             PROTECT(dt = alloccol(dt,n));
             protecti++;
         }
-        /*PROTECT(newdt = allocVector(VECSXP, length(dt)+length(newcolnames)));
-        protecti++;*/
         size = sizeof(SEXP *);
-        /*memcpy((char *)DATAPTR(newdt),(char *)DATAPTR(dt),length(dt)*size);*/
         names = getAttrib(dt, R_NamesSymbol);
-        //Rprintf("Step 3 %d %d\n", TYPEOF(dt), length(dt));
-        /*if (isNull(names)) error("names of data.table are null");
-	    PROTECT(newnames = allocVector(STRSXP, length(newdt)));
-	    protecti++;*/
-	    //memcpy((char *)DATAPTR(newnames), (char *)DATAPTR(names), length(names)*size);
-	    //Rprintf("Step 3.1 %d %d\n", TYPEOF(dt), length(dt));
-	    //Rprintf("Step 3.2 %d %d\n", TYPEOF(dt), length(dt));
-	    //Rprintf("%s %d %d %d\n",CHAR(STRING_ELT(names,0)), length(names), length(newcolnames), size);
-	    //Rprintf("Truelength names %d\n", TRUELENGTH(names));
-	    //PROTECT(dt);
-	    //protecti++;
-	    //Rprintf("%u %u %u %u %u %u (diff %u)\n",dt,DATAPTR(dt),names,DATAPTR(names),newcolnames,DATAPTR(newcolnames),((unsigned long)dt-(unsigned long)names));
 	    memcpy((char *)DATAPTR(names)+LENGTH(names)*size, (char *)DATAPTR(newcolnames), LENGTH(newcolnames)*size);
 	    // If object has been duplicated by main/duplicate.c and length copied, but truelength retained, then
 	    // this memcpy is where overwrites occurred when names is 40 bytes before dt, for example, and dt got set to
 	    // NULL by this memcpy. Now theres an alloccol(dt,length(dt)) in [<- and $<-.
-	    //Rprintf("%u %u %u %u %u %u (diff %u)\n",dt,DATAPTR(dt),names,DATAPTR(names),newcolnames,DATAPTR(newcolnames),((unsigned long)dt-(unsigned long)names));
-	    //Rprintf("Step 3.3 %d %d\n", TYPEOF(dt), length(dt));
-	    //setAttrib(newdt, R_NamesSymbol, newnames);
-        //copyMostAttrib(dt, newdt);
-        //dt = newdt;
         LENGTH(dt) = oldncol+LENGTH(newcolnames);
         LENGTH(names) = oldncol+LENGTH(newcolnames);
         // truelength's of both already set by alloccol
