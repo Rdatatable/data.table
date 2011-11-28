@@ -1226,6 +1226,36 @@ test(430, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].
 tt = try(DT[1,1:=4,with=FALSE], silent=TRUE)
 test(431, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*RHS contains 4 which is outside the levels range.*1,2.*of column 1, NAs generated",tt)))
 
+# simple realloc test
+if (is.null(getOption("datatable.alloccol"))) {
+    DT = data.table(a=1:3,b=4:6)
+    test(432, truelength(DT), 100L)
+    alloc.col(DT,200)
+    test(433, truelength(DT), 200L)
+    DT = alloc.col(DT,300)  # superfluous in this example, but shouldn't fail
+    test(434, truelength(DT), 300L)
+    DT2 = alloc.col(DT,400)
+    test(435, truelength(DT), 400L)
+    test(436, truelength(DT2), 400L)
+}
+
+# test that alloc.col assigns to wherever object is (via setVar in C i.e. like <<- and inherits=TRUE)
+DT = data.table(a=1:3,b=4:6)
+f = function() {
+    alloc.col(DT,50)
+    invisible()
+}
+f()
+test(437, truelength(DT), 50L)
+
+# quick test that [<- over allocates (again) after the copy of length via *tmp*
+DT = data.table(a=1:3,b=4:6)
+tl = truelength(DT)
+DT$foo = 7L
+test(438, truelength(DT), tl)
+DT[,"bar"] = 8L
+test(439, truelength(DT), tl)
+test(440, DT, data.table(a=1:3,b=4:6,foo=7L,bar=8L))
 
 
 ## See test-* for more tests

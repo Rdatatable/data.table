@@ -49,8 +49,8 @@ null.data.table = function() {
     ans = list()
     setattr(ans,"class",c("data.table","data.frame"))
     setattr(ans,"row.names",.set_row_names(0))
-    ans = alloc.col(ans)
-    ans
+    settruelength(ans,0L)
+    alloc.col(ans)
 }
 
 data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
@@ -172,8 +172,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
       else
           key(value) = key     # e.g. key=c("col1","col2")
     }
-    value = alloc.col(value)
-    value
+    settruelength(value,0L)
+    alloc.col(value)
 }
 
 
@@ -335,8 +335,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             }
             setattr(ans,"class",c("data.table","data.frame"))
             setattr(ans,"row.names",.set_row_names(nrow(ans)))
-            ans = alloc.col(ans)
-            return(ans)
+            settruelength(ans,0L)  # what 2.14.0+ would be for consistency, not nrow(ans) (could be too, but then we couldn't drop this line later if we ever make a dependency on 2.14.0+)
+            return(alloc.col(ans))
         }
     } # end of  if !missing(i)
     if (missing(j)) stop("logical error, j missing")
@@ -428,8 +428,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
         setattr(ans,"class",c("data.table","data.frame"))
         setattr(ans,"row.names",.set_row_names(nrow(ans)))
-        ans = alloc.col(ans)
-        return(ans)
+        settruelength(ans,0L)
+        return(alloc.col(ans))
     }
     if (!missing(by) && !missing(i)) {
         x = x[irows]
@@ -698,8 +698,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     if ((!missing(by) && bysameorder) || (!missing(i) && haskey(i))) {
         setattr(ans,"sorted",colnames(ans)[seq_along(byval)])
     }
-    ans = alloc.col(ans)
-    ans
+    settruelength(ans,0L)
+    alloc.col(ans)
 }
 
 
@@ -814,8 +814,8 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
         names(value) <- paste("V", ic, sep = "")
     setattr(value,"row.names",.set_row_names(nrows))
     setattr(value,"class",c("data.table","data.frame"))
-    value = alloc.col(value)
-    value
+    settruelength(value,0L)
+    alloc.col(value)
 }
 
 as.data.table.data.frame = function(x, keep.rownames=FALSE)
@@ -824,8 +824,8 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE)
     ans = copy(x)
     setattr(ans,"row.names",.set_row_names(nrow(x)))
     setattr(ans,"class",c("data.table","data.frame"))
-    ans = alloc.col(ans)
-    ans
+    settruelength(ans,0L)
+    alloc.col(ans)
 }
 
 as.data.table.list = function(x, keep.rownames=FALSE) {
@@ -837,8 +837,8 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
     if (is.null(names(x))) names(x) = paste("V",1:length(x),sep="")
     setattr(x,"row.names",.set_row_names(max(n)))
     setattr(x,"class",c("data.table","data.frame"))
-    x = alloc.col(x)
-    x
+    settruelength(x,0L)
+    alloc.col(x)
 }
 
 as.data.table.data.table = function(x, keep.rownames=FALSE) return(x)
@@ -857,10 +857,12 @@ tail.data.table = function(x, n=6, ...) {
 "[<-.data.table" = function (x, i, j, value) {
     # It is not recommended to use <-. Instead, use := for efficiency.
     # [<- is still provided for consistency and backwards compatibility, but we hope users don't use it.
-    alloc.col(x,length(x))
+    alloc.col(x,length(x))  # it was copied to `*tmp*`, so truelength is length, now
     if (!cedta()) {
         x = `[<-.data.frame`(x, i, j, value)
-        return(alloc.col(x,length(x)))
+        alloc.col(x,length(x))   # make it what it is
+        alloc.col(x)             # over-allocate (again).   Avoid all this by using :=.
+        return(x)
     }
     if (!missing(i)) {
         isub=substitute(i)
@@ -868,7 +870,9 @@ tail.data.table = function(x, n=6, ...) {
         if (is.matrix(i)) {
             if (!missing(j)) stop("When i is matrix in DT[i]<-value syntax, it doesn't make sense to provide j")
             x = `[<-.data.frame`(x, i, value=value)
-            return(alloc.col(x,length(x)))
+            alloc.col(x,length(x))
+            alloc.col(x)
+            return(x)
         }
         i = x[i, which=TRUE]
         # Tried adding ... after value above, and passing ... in here (e.g. for mult="first") but R CMD check
@@ -885,7 +889,7 @@ tail.data.table = function(x, n=6, ...) {
         # We can now mix existing columns and new columns
     } else {
         if (!is.numeric(j)) stop("j must be vector of column name or positions")
-        if (any(j>ncol(x))) stop("Attempt to assign to column position greater than ncol(x). Create the column by name, instead. This logic intends to catch most likely user errors.")
+        if (any(j>ncol(x))) stop("Attempt to assign to column position greater than ncol(x). Create the column by name, instead. This logic intends to catch (most likely) user errors.")
         keycol = any(j %in% match(key(x),names(x)))
         cols = as.integer(j)  # for convenience e.g. to convert 1 to 1L
         newcolnames = NULL
@@ -905,11 +909,12 @@ tail.data.table = function(x, n=6, ...) {
     #x = alloc.col(x,length(x)+length(newcolnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over
     x = .Call("assign",x,i,cols,newcolnames,value,keycol,NULL,NULL,revcolorder,FALSE,PACKAGE="data.table")
     alloc.col(x,length(x))
+    alloc.col(x)
     # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
     # or uses data.table := syntax; i.e. DT[i,j:=value]
     # but, there is one copy by R in [<- dispatch to `*tmp*`; i.e. DT[i,j]<-value
     # (IIUC, and, as of R 2.13.1
-    # That copy is via main/duplicate.c which preserves truelength but copies length much. Hence alloc.col(x,length(x)).
+    # That copy is via main/duplicate.c which preserves truelength but copies length amount. Hence alloc.col(x,length(x)).
     # No warn passed to assign here because we know it'll be copied via *tmp*.
     # Simplest is ... just use := to avoid all this.
 }
@@ -918,7 +923,9 @@ tail.data.table = function(x, n=6, ...) {
     alloc.col(x,length(x))
     if (!cedta()) {
         ans = `$<-.data.frame`(x, name, value)
-        return(alloc.col(ans,length(ans)))  # to set truelength to length, see above
+        alloc.col(ans,length(ans))  # set to what is allocated, see above
+        alloc.col(ans)              # over-allocate (again)
+        return(ans)
     }
     `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
@@ -953,8 +960,8 @@ tail.data.table = function(x, n=6, ...) {
     names(l) = nm
     setattr(l,"row.names",.set_row_names(length(l[[1]])))
     setattr(l,"class",c("data.table","data.frame"))
-    l = alloc.col(l)
-    return(l)
+    settruelength(l,0L)
+    alloc.col(l)
     # return(data.table(l))
     # much of the code in rbind.data.frame that follows this point is either to do with row.names, or coercing various types (and silent rep) which is already done by data.table. therefore removed.
 }
@@ -972,6 +979,7 @@ as.data.frame.data.table = function(x, ...)
     setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
     setattr(ans,"class","data.frame")
     setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
+    suppressWarnings(settruelength(ans,0L))
     ans
 }
 
@@ -1151,7 +1159,7 @@ split.data.table = function(...) {
     NextMethod()  # allow user to do it though, split object will be data.table's with 'NA' repeated in row.names silently
 }
 
-# TO DO, add more warnings e.g. for by(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
+# TO DO, add more warnings e.g. for by.data.table(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
 
 
 copy = function(x) .Call("copy",x,PACKAGE="data.table")
@@ -1159,10 +1167,24 @@ copy = function(x) .Call("copy",x,PACKAGE="data.table")
 # Could construct data.table and use memcpy ourselves but deep copies e.g. list() columns
 # may be tricky; more robust to rely on R's duplicate which deep copies.
 
-alloc.col = function(DT,n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT))))) .Call("alloccolwrapper",DT,as.integer(eval(n)),PACKAGE="data.table")
+alloc.col = function(DT,n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT))))) 
+{   
+    if (identical(substitute(DT),quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")
+    symbol = as.name(substitute(DT))
+    rho = parent.frame()  # setVar in C finds it where it is (i.e. like <<- and inherits=TRUE)
+    .Call("alloccolwrapper",DT,as.integer(eval(n)),symbol,rho,PACKAGE="data.table")
+}
 
 truelength = function(x) .Call("truelength",x,PACKAGE="data.table")
 # deliberately no "truelength<-" method.  alloc.col is the mechanism for that (maybe alloc.col should be renamed "truelength<-".
+
+settruelength = function(x,n) {
+    if (n!=0) stop("settruelength should only be used to set to 0, prior to 2.14.0")
+    if (getRversion() >= "2.14.0")
+        if (truelength(x) != 0) warning("This is R>=2.14.0 but truelength isn't initialized to 0")
+        # grep for suppressWarnings(settruelength) for where this is needed in 2.14.0+
+    .Call("settruelength",x,as.integer(n),PACKAGE="data.table")
+}
 
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only; i.e., DT[i,col:=1L] not DT[i,col]:=1L or DT[i]$col:=1L. Please see help(":=").')
 
