@@ -23,8 +23,8 @@ BUG FIXES
    o    v1.7.3 failed CRAN checks (and could crash) in R pre-2.14.0.
         Over-allocation in v1.7.3 uses truelength which is initialized
         to 0 by R 2.14.0, but not initialized pre-2.14.0. This was
-        known and coded for but only tested in 2.14.0 before release
-        to CRAN.
+        known and coded for but only tested in 2.14.0 before previous
+        release to CRAN.
 
 NOTES
 
