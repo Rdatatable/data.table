@@ -66,7 +66,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
                 xx <- cbind(x[missingxidx], y[NA, othercols, with = FALSE][tmp])
             } else
                 xx <- x[missingxidx]
-            dt <- rbind(xx, dt)
+            dt <- rbind(xx, dt[,names(xx),with=FALSE])
         }
     }
     if (all.y) {
@@ -81,7 +81,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             othercolsy <- setdiff(names(y), key)
             if (length(othercolsy) > 0)
                 yy <- cbind(yy, y[missingyidx, othercolsy, with = FALSE])
-            dt <- rbind(dt, yy)
+            dt <- rbind(dt, yy[,names(dt),with=FALSE])
         }
     }
     if (nrow(dt) > 0) key(dt) = key

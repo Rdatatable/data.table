@@ -2,8 +2,7 @@
     if (interactive()) {
         packageStartupMessage('data.table ',as.character(packageVersion("data.table")),'  For help type: help("data.table")')
     }
-    "Please read data.table FAQ 2.23 (vignette('datatable-faq')) which explains (at some length) why data.table adds one line to base::cbind.data.frame. As soon as we have a better solution we will gladly change it."
-    # Commented as a character string so it's retained and seen by anyone who types data.table:::.onAttach
+    "Please read FAQ 2.23 (vignette('datatable-faq')) which explains (at some length) why data.table adds one line to base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
     tt = base::cbind.data.frame
     ss = body(tt)
     if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
@@ -26,5 +25,8 @@
         assign("rbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
         lockBinding("rbind.data.frame",baseenv())
     }
+    "Please read FAQ 2.23 (vignette('datatable-faq')) which explains (at some length) why data.table adds one line to base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
+    # Commented as a character string so it's retained and seen by anyone who types data.table:::.onAttach
+    invisible()
 }
 

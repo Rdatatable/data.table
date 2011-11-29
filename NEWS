@@ -10,6 +10,19 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+BUG FIXES
+
+   o    merge()-ing a data.table where its key is not the first
+        few columns in order now works correctly and without
+        warning, fixing #1645. Thanks to Timothee Carayol for
+        reporting.
+        
+USER VISIBLE CHANGES
+
+   o    rbind now cross-refs colnames as data.frame does, rather 
+        than always binding by column order, FR#1634. A warning is
+        produced when the colnames are not in a consistent order.
+        Thanks to Damian Betebenner for highlighting.
 
 
         *********************************************

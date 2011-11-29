@@ -9,8 +9,8 @@
   the default columns used to merge two data.tables are the shared key columns,
   and not the shared columns with the same names.
   
-  For a more \code{data.table}-centric way of merging two data.tables, take a
-  look at \code{\link{[.data.table}}, eg. \code{x[y, ...]}.
+  For a more \code{data.table}-centric (and faster) way of merging two data.tables,
+  take a look at \code{\link{[.data.table}}; e.g., \code{x[y, ...]}.
 }
 
 \usage{

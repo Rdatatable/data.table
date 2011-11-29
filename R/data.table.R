@@ -947,16 +947,25 @@ tail.data.table = function(x, n=6, ...) {
     if (n == 0)
         return( null.data.table() )
     if (!all(sapply(allargs, is.list))) stop("All arguments to rbind must be lists (including data.frame and data.table)")
-    if (length(unique(sapply(allargs, ncol))) != 1) stop("All arguments to rbind must have the same number of columns")
-
+    ncols = sapply(allargs, length)
+    if (length(unique(ncols)) != 1) {
+        f=which(ncols!=ncols[1])[1]
+        stop("All arguments to rbind must have the same number of columns. Item 1 has ",ncols[1]," but item ",f," has ",ncols[f],"column(s).")
+    }
     l = list()
     nm = names(allargs[[1]])
     if (length(nm) && n>1) {
-        for (i in 2:n) if (length(names(allargs[[i]])) && !all(names(allargs[[i]]) == nm)) warning("colnames of argument ",i," don't match colnames of argument 1")
+        for (i in 2:n) if (length(names(allargs[[i]]))) {
+            if (!all(names(allargs[[i]]) %in% nm))
+                stop("Some colnames of argument ",i," (",paste(setdiff(names(allargs[[i]]),nm),collapse=","),") are not present in colnames of item 1. If an argument has colnames they can be in a different order, but they must all be present. Alternatively, you can drop names (by using an unnamed list) and the columns will then be joined by position.")
+            if (!all(names(allargs[[i]]) == nm))
+                warning("Argument ",i," has names in a different order. Columns will be bound by name for consistency with base.")
+                allargs[[i]] = as.list(allargs[[i]])[nm]
+        }
     }
-    # for (i in 1:length(allargs[[1]])) l[[i]] = unlist(lapply(allargs, "[[", i))
     for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
     # This is why we currently still need c.factor.
+    # TO DO: much easier with character columns, when they are allowed.
     names(l) = nm
     setattr(l,"row.names",.set_row_names(length(l[[1]])))
     setattr(l,"class",c("data.table","data.frame"))

@@ -12,6 +12,7 @@ test = function(num,x,y=NULL) {
     if (inherits(err<-try(x,TRUE),"try-error") || inherits(err<-try(y,TRUE),"try-error")) {
         cat("Test",num,err)
         nfail <<- nfail + 1
+        whichfail <<- c(whichfail, num)
         return()
     }
     if (missing(y)) {
@@ -1152,6 +1153,7 @@ if (exists(".devtesting")) {
 } else {
     test(408, data.table:::null.data.table(), data.table(NULL))
 }
+test(408.5, data.table(), data.table(NULL))
 
 # Test that adding a column using := is fully by reference rather than a shallow copy, #1646
 DT = data.table(1:2,3:4)  # list vector truelength 100 
@@ -1256,6 +1258,35 @@ test(438, truelength(DT), tl)
 DT[,"bar"] = 8L
 test(439, truelength(DT), tl)
 test(440, DT, data.table(a=1:3,b=4:6,foo=7L,bar=8L))
+
+# Test rbind works by colname now, for consistency with base, FR#1634
+DT = data.table(a=1:3,b=4:6)
+test(441, rbind(DT,list(a=4L,b=7L)), data.table(a=1:4,b=4:7))
+test(442, rbind(DT,data.frame(a=4L,b=7L)), data.table(a=1:4,b=4:7))
+test(443, rbind(DT,data.table(a=4L,b=7L)), data.table(a=1:4,b=4:7))
+tt=try(rbind(DT,list(b=7L,a=4L)),silent=TRUE)
+test(444, inherits(tt,"try-error") && length(grep("converted from warning.*Argument 2 has names in a different order.",tt)))
+tt=try(rbind(DT,data.frame(b=7L,a=4L)),silent=TRUE)
+test(445, inherits(tt,"try-error") && length(grep("converted from warning.*Argument 2 has names in a different order.",tt)))
+tt=try(rbind(DT,data.table(b=7L,a=4L)),silent=TRUE)
+test(446, inherits(tt,"try-error") && length(grep("converted from warning.*Argument 2 has names in a different order.",tt)))
+test(447, suppressWarnings(rbind(DT,list(b=7L,a=4L))), data.table(a=1:4,b=4:7))
+test(448, suppressWarnings(rbind(DT,data.frame(b=7L,a=4L))), data.table(a=1:4,b=4:7))
+test(449, suppressWarnings(rbind(DT,data.table(b=7L,a=4L))), data.table(a=1:4,b=4:7))
+tt=try(rbind(DT,list(c=4L,a=7L)),silent=TRUE)
+test(450, inherits(tt,"try-error") && length(grep("Error.*Some colnames of argument 2 [(]c[)] are not present in colnames of item 1",tt)))
+tt=try(rbind(DT,data.frame(c=4L,a=7L)),silent=TRUE)
+test(451, inherits(tt,"try-error") && length(grep("Error.*Some colnames of argument 2 [(]c[)] are not present in colnames of item 1",tt)))
+tt=try(rbind(DT,data.table(c=4L,a=7L)),silent=TRUE)
+test(452, inherits(tt,"try-error") && length(grep("Error.*Some colnames of argument 2 [(]c[)] are not present in colnames of item 1",tt)))
+test(453, rbind(DT,list(4L,7L)), data.table(a=1:4,b=4:7))
+
+# Test the linked reported bug, #1645
+A1 = data.table(b='hello', a='foo', key='a')
+A2 = data.table(a=c('foo', 'bar'), key='a')
+test(454, merge(A1, A2, all.y=T, by='a'), data.table(b=c(NA,"hello"),a=c("bar","foo"),key="a"))
+A1 = data.table(a='foo', b='hello', key='a')
+test(455, merge(A1, A2, all.y=T, by='a'), data.table(a=c("bar","foo"),b=c(NA,"hello"),key="a"))
 
 
 ## See test-* for more tests
