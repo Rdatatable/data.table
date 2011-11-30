@@ -173,7 +173,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
           key(value) = key     # e.g. key=c("col1","col2")
     }
     settruelength(value,0L)
-    alloc.col(value)
+    alloc.col(value)   # Despite the thread on r-devel "Confused about NAMED" about data.frame(), returning it this way makes a NAM(1) data.table. Returning "value=alloc.col(value);value" is the same but returns a NAM(2) data.table. Unlike data.frame which is always NAMED==2. We ignore NAMED in data.table generally, but it would be useful to avoid the grow warning when NAMED=1. However the print method still bumps NAMED (as it does in data.frame) (TO DO - stop that bump and warn on grow via := will be even less often).
 }
 
 

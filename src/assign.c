@@ -263,7 +263,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         setVar(symbol,dt,rho);
     } // else called from $<- or [<- where the slower copy via `*tmp*` mechanism must be used (as of R 2.13.1)
     UNPROTECT(protecti);
-    return(dt);  // needed for `*tmp*` mechanism, and to return the new object after a := for compound syntax
+    return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
 }
 
 void savetl_init() {
