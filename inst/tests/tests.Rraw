@@ -1288,6 +1288,10 @@ test(454, merge(A1, A2, all.y=T, by='a'), data.table(b=c(NA,"hello"),a=c("bar","
 A1 = data.table(a='foo', b='hello', key='a')
 test(455, merge(A1, A2, all.y=T, by='a'), data.table(a=c("bar","foo"),b=c(NA,"hello"),key="a"))
 
+# Test mixing nomatch=0 and mult="last", bug #1661
+DT = data.table(id=c(1L, 2L, 2L, 3L), val=1:4, key="id")
+test(456, DT[J(c(1,2,4)), mult="last", nomatch=0], data.table(id=1:2,val=c(1L,3L)))
+
 
 ## See test-* for more tests
 

@@ -17,6 +17,10 @@ BUG FIXES
         warning, fixing #1645. Thanks to Timothee Carayol for
         reporting.
         
+   o    Mixing nomatch=0 and mult="last" (or "first") now works,
+        #1661. Thanks to Johann Hibschman for reporting.
+        
+        
 USER VISIBLE CHANGES
 
    o    rbind now cross-refs colnames as data.frame does, rather 

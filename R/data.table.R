@@ -285,7 +285,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 if (missing(by)) bywithoutby=TRUE  # TO DO: detect if joining to unique rows
             } else {
                 irows = if (mult=="first") idx.start else idx.end
-                lengths=1L
+                lengths=rep(1L,length(irows))
             }
             if (is.na(nomatch) || nomatch!=0) irows[irows==0] = nomatch
             else lengths[idx.start==0] = 0
@@ -318,8 +318,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     ii = rep(1:nrow(i),lengths)
                     for (s in seq_along(leftcols)) ans[[s]] = origi[[leftcols[s]]][ii]
                     for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = origi[[inonjoin[s]]][ii]
-                }
-                else {
+                } else {
                     for (s in seq_along(leftcols)) ans[[s]] = origi[[leftcols[s]]]
                     for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = origi[[inonjoin[s]]]
                 }
