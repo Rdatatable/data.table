@@ -209,7 +209,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
                 }
                 thislen = 1;
             } else {
-                thislen = 0;
+                continue;
             }
         } else {
             if (length(order)==0) {

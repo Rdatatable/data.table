@@ -277,18 +277,18 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             .Call("binarysearch", i, x, as.integer(leftcols-1), as.integer(rightcols-1), haskey(i), roll, rolltolast, idx.start, idx.end, PACKAGE="data.table")
             if (mult=="all") {
                 # TO DO: move this inside binarysearch.c
-                lengths = idx.end - idx.start + 1
+                lengths = idx.end - idx.start + 1L
                 idx.diff = rep(1L, sum(lengths))
-                idx.diff[head(cumsum(lengths), -1) + 1] = tail(idx.start, -1) - head(idx.end, -1)
-                idx.diff[1] = idx.start[1]
+                idx.diff[head(cumsum(lengths), -1L) + 1L] = tail(idx.start, -1L) - head(idx.end, -1L)
+                idx.diff[1L] = idx.start[1L]
                 irows = cumsum(idx.diff)
                 if (missing(by)) bywithoutby=TRUE  # TO DO: detect if joining to unique rows
             } else {
                 irows = if (mult=="first") idx.start else idx.end
                 lengths=rep(1L,length(irows))
             }
-            if (is.na(nomatch) || nomatch!=0) irows[irows==0] = nomatch
-            else lengths[idx.start==0] = 0
+            if (is.na(nomatch) || nomatch!=0L) irows[irows==0L] = nomatch
+            else lengths[idx.start==0L] = 0L
             if (which) return(irows)
         } else {
             # i is not a data.table
@@ -314,7 +314,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             } else {
                 ans = vector("list",ncol(i)+ncol(x)-length(leftcols))
                 inonjoin = seq_len(ncol(i))[-leftcols]
-                if (!all(lengths==1)) {
+                if (!all(lengths==1L)) {
                     ii = rep(1:nrow(i),lengths)
                     for (s in seq_along(leftcols)) ans[[s]] = origi[[leftcols[s]]][ii]
                     for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = origi[[inonjoin[s]]][ii]

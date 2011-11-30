@@ -968,10 +968,10 @@ DT = data.table(a=letters[1:3],b=letters[6:4],key="a")
 attr(DT,"sorted")="b"
 test(348, suppressWarnings(setkey(DT,b)), data.table(a=letters[3:1],b=letters[4:6],key="b"))
 
-# Test .N==0 for no match groups regardless of whether nomatch is 0 or NA
+# Test .N==0 with nomatch=NA|0
 DT = data.table(a=1:2,b=1:6,key="a")
 test(349, DT[J(2:3),.N,nomatch=NA]$.N, c(3L,0L))
-test(350, DT[J(2:3),.N,nomatch=0]$.N, c(3L,0L))
+test(350, DT[J(2:3),.N,nomatch=0]$.N, c(3L))
 
 # Test recycling list() on RHS of :=
 DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12)
@@ -1291,6 +1291,10 @@ test(455, merge(A1, A2, all.y=T, by='a'), data.table(a=c("bar","foo"),b=c(NA,"he
 # Test mixing nomatch=0 and mult="last", bug #1661
 DT = data.table(id=c(1L, 2L, 2L, 3L), val=1:4, key="id")
 test(456, DT[J(c(1,2,4)), mult="last", nomatch=0], data.table(id=1:2,val=c(1L,3L)))
+
+# Test join inherited scope respexts nomatch=0, #1663
+DT2 = data.table(id=c(1L,2L,4L), val2=c(11,12,14),key="id")
+test(457, DT[DT2, list(val, val2), nomatch=0], data.table(id=c(1L,2L,2L),val=1:3,val2=c(11,12,12),key="id"))
 
 
 ## See test-* for more tests

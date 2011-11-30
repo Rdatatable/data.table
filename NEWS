@@ -20,6 +20,9 @@ BUG FIXES
    o    Mixing nomatch=0 and mult="last" (or "first") now works,
         #1661. Thanks to Johann Hibschman for reporting.
         
+   o    Join Inherited Scope now respects nomatch=0, #1663. Thanks
+        to Johann Hibschman for reporting.
+        
         
 USER VISIBLE CHANGES
 
