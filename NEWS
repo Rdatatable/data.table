@@ -16,20 +16,28 @@ BUG FIXES
         few columns in order now works correctly and without
         warning, fixing #1645. Thanks to Timothee Carayol for
         reporting.
-        
+
    o    Mixing nomatch=0 and mult="last" (or "first") now works,
         #1661. Thanks to Johann Hibschman for reporting.
-        
+
    o    Join Inherited Scope now respects nomatch=0, #1663. Thanks
         to Johann Hibschman for reporting.
+
+   o    by= could generate a keyed result table with invalid key;
+        e.g., when by= expressions return NA, #1631. Thanks to
+        Muhammad Waliji for reporting.
         
-        
+
 USER VISIBLE CHANGES
 
    o    rbind now cross-refs colnames as data.frame does, rather 
         than always binding by column order, FR#1634. A warning is
         produced when the colnames are not in a consistent order.
-        Thanks to Damian Betebenner for highlighting.
+        Thanks to Damian Betebenner for highlighting. rbind an
+        unnamed list to bind columns by position.
+        
+   o    The 'bysameorder' argument has been removed, as intended and
+        warned in ?data.table. 
 
 
         *********************************************

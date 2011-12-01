@@ -1296,6 +1296,13 @@ test(456, DT[J(c(1,2,4)), mult="last", nomatch=0], data.table(id=1:2,val=c(1L,3L
 DT2 = data.table(id=c(1L,2L,4L), val2=c(11,12,14),key="id")
 test(457, DT[DT2, list(val, val2), nomatch=0], data.table(id=c(1L,2L,2L),val=1:3,val2=c(11,12,12),key="id"))
 
+# Test bysameorder edge cases, #1631
+DT = data.table(a=1:3,v=4:9,key="a")
+test(458, DT[,sum(v),by=list(a%%2L)], data.table(a=c(1L,0L),V1=c(26L,13L)))
+test(459, DT[, list(sum(v)), list(ifelse(a == 2, NA, 1))], data.table(a=c(1L,NA_integer_),V1=c(26L,13L)))
+test(460, DT[, list(sum(v)), list(ifelse(a == 2, 1, NA))], data.table(a=c(NA_integer_,1L),V1=c(26L,13L)))
+test(461, DT[,sum(v),by=a], data.table(a=1:3,V1=c(11L,13L,15L),key="a"))
+
 
 ## See test-* for more tests
 

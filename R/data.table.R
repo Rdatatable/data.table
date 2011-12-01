@@ -177,7 +177,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 }
 
 
-"[.data.table" = function (x, i, j, by=NULL, with=TRUE, nomatch=getOption("datatable.nomatch",NA), mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, bysameorder=FALSE, .SDcols, verbose=getOption("datatable.verbose",FALSE), drop=NULL)
+"[.data.table" = function (x, i, j, by=NULL, with=TRUE, nomatch=getOption("datatable.nomatch",NA), mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, .SDcols, verbose=getOption("datatable.verbose",FALSE), drop=NULL)
 {
     # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
     if (!cedta()) {
@@ -456,7 +456,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         f__ = idx.start
         len__ = as.integer(idx.end-idx.start+1)
         names(byval) = iby
-        bysameorder = haskey(i) #TRUE  # setting 'bysameorder' now is more of a fudge to avoid the o__[f__] later.
+        bysameorder = haskey(i)
         if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by' is missing")
         bynames = allbyvars = NULL
     } else {
@@ -480,6 +480,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             bysubl = as.list(bysub)
         }
         allbyvars = intersect(unlist(sapply(bysubl,all.vars,functions=TRUE)),colnames(x))
+        bysameorder = haskey(x) && all(sapply(bysubl,is.name)) && identical(allbyvars,head(key(x),length(allbyvars)))
         byval = eval(bysub, x, parent.frame())
         if (!length(byval)) {
             # see missing(by) up above for comments
@@ -529,16 +530,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             }
             names(byval) = bynames
         }
-        if (missing(bysameorder) && length(bynames) <= length(key(x)) && identical(bynames,head(key(x),length(bynames)))) {
-            bysameorder=TRUE
-            # table is already sorted by the group criteria, no need to sort
-            # fastorder is so fast though that maybe this is not worth worrying about, especially if fastorder is even faster if its already sorted.
-            # TO DO: turn off bysameorder, and always call fastorder ?
-            # TO DO++: hash the key so sorting never required (hence shash query to r-devel)
-        }
         if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}
         if (bysameorder) {
-            f__ = duplist(byval)   # find group starts, assumes they are grouped.
+            f__ = duplist(byval)   # find group starts, given we know they are already grouped.
             for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][f__]
             len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1))
         } else {

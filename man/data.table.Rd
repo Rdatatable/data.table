@@ -22,7 +22,7 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 
 \method{[}{data.table}(x, i, j, by=NULL, with=TRUE, nomatch = getOption("datatable.nomatch",NA),
   mult = "all", roll = FALSE, rolltolast = FALSE,
-  which = FALSE, bysameorder = FALSE, .SDcols,
+  which = FALSE, .SDcols,
   verbose=getOption("datatable.verbose",FALSE), drop=NULL)
 }
 \arguments{
@@ -96,9 +96,6 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 
 }
   \item{which}{ \code{TRUE} returns the integer row numbers of \code{x} that \code{i} matches to.
-
-}
-  \item{bysameorder}{ Advanced. \code{TRUE} tells \code{[.data.table} that the expressions in \code{by} are an order preserving map of \code{x}, allowing some efficiency gains. In most situations \code{bysameorder} is set to \code{TRUE} internally and there is no need to use this option. We hope to make this feature fully automatic in a future version and remove this argument.
 
 }
   \item{.SDcols}{ Advanced. Specifies the columns of \code{x} included in \code{.SD}. May be character column names or numeric positions. This is useful for speed when applying a function through a subset of (possible very many) columns; e.g., \code{DT[,lapply(.SD,sum),by="x,y",.SDcols=301:350]}.
