@@ -27,6 +27,9 @@ BUG FIXES
         e.g., when by= expressions return NA, #1631. Thanks to
         Muhammad Waliji for reporting.
         
+   o    Adding a column to a data.table loaded from disk resulted
+        in an error that truelength(DT)<length(DT).
+        
 
 USER VISIBLE CHANGES
 

@@ -32,7 +32,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     // cols : column numbers corresponding to the values to set
     R_len_t i, j, size, targetlen, vlen, v, r, oldncol, oldtncol, coln, protecti=0, n;
     SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s;
-    //Rprintf("Beginning %d %d\n", TYPEOF(dt), length(dt));
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (length(rows)==0) {
         targetlen = length(VECTOR_ELT(dt,0));
@@ -56,14 +55,19 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             } // else it's a list() column being assigned to one column
         }
     }
-    //Rprintf("Step 1 %d %d\n", TYPEOF(dt), length(dt));
     oldncol = length(dt);
     if (length(newcolnames)) {
         if (TYPEOF(newcolnames)!=STRSXP) error("newcolnames is not character vector");
         if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
         oldtncol = TRUELENGTH(dt);
-        if (oldtncol<length(dt)) error("Internal logical error: truelength(dt)<length(DT)");
-        //Rprintf("Step 2 %d %d\n", TYPEOF(dt), length(dt));
+        
+        if (oldtncol<oldncol && oldtncol>oldncol+500) oldtncol=0;
+        // tl can be 0 when saved and loaded back from disk (and NAMED will be 1 then) [so alloccol needed]
+        // but, tl is random (unitialized) in R <=2.13.2 so we try and detect that with the logic above. It is
+        // possible, (in R <=2.13.2) that by chance, tl is within a small range above length(dt) that seems
+        // like a valid truelength (but isn't), but that chance seems low. Not enough to warrant making data.table
+        // dependent on 2.14.0 (some users have asked us not to do that).
+        
         if (oldtncol < oldncol+LENGTH(newcolnames)) {
             n = imax2(oldtncol+100, oldncol+2*LENGTH(newcolnames));
             if (LOGICAL(allocwarn)[0] && NAMED(dt)>1) warning("growing vector of column pointers from %d to %d. Only a shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data, and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings(), or increase the 'datatable.alloccol' option.", oldtncol, n);
@@ -94,10 +98,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             continue;   // delete column(s) afterwards, below this loop
         vlen = length(thisvalue);
         if (length(rows)==0 && targetlen==vlen) {
-            //Rprintf("Plonking in value\n");
-            //Rprintf("%d %d\n", TYPEOF(dt), length(dt));
             SET_VECTOR_ELT(dt,coln,thisvalue);
-            //Rprintf("done\n");
             // plonk new column in as it's already the correct length
             // if column exists, 'replace' it (one way to change a column's type i.e. less easy, as it should be, for speed, correctness and to get the user thinking about their intent)        
             continue;
@@ -109,9 +110,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         if (coln+1 > oldncol) {  // new column
             PROTECT(newcol = allocVector(TYPEOF(thisvalue),targetlen));
             protecti++;
-            //Rprintf("Adding new column\n");
             SET_VECTOR_ELT(dt,coln,newcol);
-            //Rprintf("done\n");
         }
         targetcol = VECTOR_ELT(dt,coln);
         if (isFactor(targetcol)) {
