@@ -150,6 +150,7 @@ SJ = function(...) J(...,SORTFIRST=TRUE)
 # the expense of more page fetches. Very much data dependent, but the various methods are implemented so tests for the
 # fastest method in each case can be performed.
 
+# TO DO: Use the CJ list() method for J and SJ too to avoid alloc.col
 
 CJ = function(...)
 {
@@ -160,9 +161,9 @@ CJ = function(...)
     for (i in seq(along=l)) if (storage.mode(l[[i]])=="double") mode(l[[i]])="integer"
     if (length(l)>1) {
         n = sapply(l,length)
-        x=rev(take(cumprod(rev(n))))
-        m = x[1]*length(l[[1]])
-        for (i in seq(along=x)) l[[i]] = rep(l[[i]],each=x[i],length=m)
+        nrow = prod(n)
+        x=c(rev(take(cumprod(rev(n)))),1L)
+        for (i in seq(along=x)) l[[i]] = rep(l[[i]],each=x[i],length=nrow)
     }
     setattr(l,"row.names",.set_row_names(length(l[[1]])))
     setattr(l,"class",c("data.table","data.frame"))

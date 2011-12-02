@@ -30,6 +30,9 @@ BUG FIXES
    o    Adding a column to a data.table loaded from disk resulted
         in an error that truelength(DT)<length(DT).
         
+   o    CJ() bogus values and logical error fixed, #1689. Thanks to
+        Damian Betebenner and Chris Neff for reporting.
+        
 
 USER VISIBLE CHANGES
 
@@ -40,7 +43,11 @@ USER VISIBLE CHANGES
         unnamed list to bind columns by position.
         
    o    The 'bysameorder' argument has been removed, as intended and
-        warned in ?data.table. 
+        warned in ?data.table.
+        
+NOTES
+
+   o    There are now 472 raw tests, plus S4 tests.
 
 
         *********************************************
