@@ -45,6 +45,8 @@ USER VISIBLE CHANGES
    o    The 'bysameorder' argument has been removed, as intended and
         warned in ?data.table.
         
+   o    New option datatable.allocwarn. See ?truelength.
+        
 NOTES
 
    o    There are now 472 raw tests, plus S4 tests.
