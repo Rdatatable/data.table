@@ -636,7 +636,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         } else {
             stop("j must evaluate to an atomic vector (inc factor, Date etc), list of atomic vectors, or NULL")
         }
-    # if (!is.null(names(testj))) warning("j evaluates to a list with names. this is wasteful and likely avoidable")
+        if (verbose && !is.null(names(testj))) cat("testj evaluates to a list with names, this may slow down grouping")
+        if (is.list(testj) && any(sapply(testj,is.data.frame))) stop("All items in j=list(...) should be atomic vectors or lists, currently. Consider cbind or merge afterwards until := by group is implemented.")
         maxn = max(sapply(testj,length))   # this could be 0 here too
     } else {
         maxn = 0

@@ -33,6 +33,11 @@ BUG FIXES
    o    CJ() bogus values and logical error fixed, #1689. Thanks to
         Damian Betebenner and Chris Neff for reporting.
         
+   o    j=list(.SD,newcol=...) now gives friendly error suggesting cbind
+        or merge afterwards until := by group is implemented, rather than
+        treating .SD as a list column, #1647. Thanks to a question by
+        Christoph_J on Stack Overflow.
+        
 
 USER VISIBLE CHANGES
 
