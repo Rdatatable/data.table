@@ -122,14 +122,16 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
     }
     nr <- max(nrows)
-    if (nr>0 && any(nrows==0)) stop("every input must have at least one value, unless all columns are empty")
-    # So we can create an empty data.table, for inserting data later.  When some but not all columns are empty, you should put NA in the empty ones, to be silently filled to a column of NAs.
-    # TO DO - see if silent vector expansion is already done in C somewhere.
     for (i in (1:n)[nrows < nr]) {
         xi <- x[[i]]
+        if (identical(xi,list())) {
+            x[[i]] = vector("list", nr)
+            next
+        }
+        if (nrows[i]==0) stop("Item ",i," has no length. Provide at least one item (such as NA, NA_integer_ etc) to be repeated to match the ",nr," rows in the longest column. Or, all columns can be 0 length, for insert()ing rows into.")
         if (nr%%nrows[i] == 0) {
             if (is.atomic(xi) || is.list(xi)) {
-                x[[i]] <- rep(xi, length.out = nr)
+                x[[i]] = rep(xi, length.out = nr)
                 next
             }
             # don't know why this is here, take it out and see what bites

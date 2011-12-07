@@ -10,6 +10,13 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+NEW FEATURES
+
+   o    An empty list column can now be added with :=, and
+        data.table() accepts empty list().
+            DT[,newcol:=list()]
+            data.table(a=1:3,b=list())
+        Empty list columns contain NULL for all rows.
 
 
         *********************************************

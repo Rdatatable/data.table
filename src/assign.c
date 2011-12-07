@@ -103,14 +103,16 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             // if column exists, 'replace' it (one way to change a column's type i.e. less easy, as it should be, for speed, correctness and to get the user thinking about their intent)        
             continue;
         }
-        if (vlen<1) error("RHS of assignment is zero length but not NULL. If you intend to delete the column use NULL. Otherwise the RHS must have length > 0");
-        if (!isVectorAtomic(thisvalue) && !(isVector(thisvalue) && length(thisvalue)==targetlen))
+        if (vlen<1 && (TYPEOF(thisvalue)!=VECSXP || (coln+1) <= oldncol))
+            error("RHS of assignment is zero length but not NULL. If you intend to delete the column use NULL. If you intend to create an empty list column use list(). Otherwise the RHS must have length > 0; e.g. NA_real_, NA_integer_");
+        if (!isVector(thisvalue) && !(isVector(thisvalue) && length(thisvalue)==targetlen))
             error("RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list() column.");
-        if (targetlen%vlen != 0) error("Tried to assign %d items to target of %d (can recycle but must be exact multiple). If users ask us to change this to a warning, we will change it; please ask maintainer('data.table').",vlen,targetlen);
+        if (vlen>0 && targetlen%vlen != 0) error("Tried to assign %d items to target of %d (can recycle but must be exact multiple). If users ask us to change this to a warning, we will change it; please ask maintainer('data.table').",vlen,targetlen);
         if (coln+1 > oldncol) {  // new column
             PROTECT(newcol = allocVector(TYPEOF(thisvalue),targetlen));
             protecti++;
             SET_VECTOR_ELT(dt,coln,newcol);
+            if (vlen<1) continue;
         }
         targetcol = VECTOR_ELT(dt,coln);
         if (isFactor(targetcol)) {
@@ -221,7 +223,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         // Delete any columns assigned NULL (there was a 'continue' early in loop above)
         i = INTEGER(revcolorder)[r]-1;
         coln = INTEGER(cols)[i]-1;
-        if (TYPEOF(values)==VECSXP)
+        if (TYPEOF(values)==VECSXP && LENGTH(values)>0)
             thisvalue = VECTOR_ELT(values,i%LENGTH(values));
         else
             thisvalue = values;

@@ -1325,6 +1325,13 @@ tt = try(DT[,list(newcol=7L,.SD),by=a], silent=TRUE)
 test(467, inherits(tt,"try-error") && length(grep("Error.*Consider cbind or merge afterwards until",tt)))
 
 
+DT = data.table(a=1:3,b=4:6)
+test(468, DT[,foo:=list()], data.table(a=1:3,b=4:6,foo=list()))
+test(469, DT[,bar:=list(1,"a",3.14)], data.table(a=1:3,b=4:6,foo=list(),bar=list(1,"a",3.14)))
+x = list(2,"b",2.718)
+test(470, DT[,baz:=x], data.table(a=1:3,b=4:6,foo=list(),bar=list(1,"a",3.14),baz=list(2,"b",2.718)))
+
+
 ## See test-* for more tests
 
 ##########################
