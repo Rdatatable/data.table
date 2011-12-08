@@ -17,6 +17,12 @@ NEW FEATURES
             DT[,newcol:=list()]
             data.table(a=1:3,b=list())
         Empty list columns contain NULL for all rows.
+        
+BUG FIXES
+
+   o    Adding a column to a data.table loaded from disk could
+        result in a memory corruption in R < 2.14.0, revealed
+        and thanks to CRAN checks on windows old-rel.
 
 
         *********************************************

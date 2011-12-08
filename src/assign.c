@@ -61,12 +61,16 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
         oldtncol = TRUELENGTH(dt);
         
-        if (oldtncol<oldncol && oldtncol>oldncol+500) oldtncol=0;
-        // tl can be 0 when saved and loaded back from disk (and NAMED will be 1 then) [so alloccol needed]
-        // but, tl is random (unitialized) in R <=2.13.2 so we try and detect that with the logic above. It is
-        // possible, (in R <=2.13.2) that by chance, tl is within a small range above length(dt) that seems
-        // like a valid truelength (but isn't), but that chance seems low. Not enough to warrant making data.table
-        // dependent on 2.14.0 (some users have asked us not to do that).
+        if (oldtncol<oldncol || TRUELENGTH(getAttrib(dt, R_ClassSymbol)) != -999 ) {
+            // tl will be 0 in R 2.14.0+ when saved and loaded back from disk (and NAMED will be 1 then),
+            // but, tl is random (uninitialized) in R <=2.13.2 so we detect that with the logic above.
+            // It is possible (in R <=2.13.2) that by chance, tl is unitialized to -999 but not enough risk to warrant
+            // making data.table dependent on 2.14.0 (some users have asked us not to do that as they are bound to
+            // earlier versions).
+            // The first oldtncol<oldncol is not needed strictly, but no harm in keeping it there.
+            oldtncol=0;  // trigger alloccol below
+            TRUELENGTH(getAttrib(dt, R_ClassSymbol)) = -999;
+        }
         
         if (oldtncol < oldncol+LENGTH(newcolnames)) {
             n = imax2(oldtncol+100, oldncol+2*LENGTH(newcolnames));

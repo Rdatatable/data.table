@@ -1184,11 +1184,15 @@ truelength = function(x) .Call("truelength",x,PACKAGE="data.table")
 # deliberately no "truelength<-" method.  alloc.col is the mechanism for that (maybe alloc.col should be renamed "truelength<-".
 
 settruelength = function(x,n) {
-    if (n!=0) stop("settruelength should only be used to set to 0, prior to 2.14.0")
+    "Truly an internal function only. Users can call this using :::, but please don't."
+    if (n!=0) warning("settruelength should only be used to set to 0, and is for 2.13.2-")
     if (getRversion() >= "2.14.0")
         if (truelength(x) != 0) warning("This is R>=2.14.0 but truelength isn't initialized to 0")
-        # grep for suppressWarnings(settruelength) for where this is needed in 2.14.0+
+        # grep for suppressWarnings(settruelength) for where this is needed in 2.14.0+ (otherwise an option would be to make data.table depend on 2.14.0 so settruelength could be removed)
     .Call("settruelength",x,as.integer(n),PACKAGE="data.table")
+    if (is.data.table(x))
+        .Call("settruelength",attr(x,"class"),-999L,PACKAGE="data.table")
+        # So that (in R 2.13.2-) we can detect tables loaded from disk (tl is not initialized there)
 }
 
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only; i.e., DT[i,col:=1L] not DT[i,col]:=1L or DT[i]$col:=1L. Please see help(":=").')
