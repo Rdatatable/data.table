@@ -22,7 +22,7 @@ alloc.col(DT, n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT)))))
     Please note : over allocation of the column pointer vector is not for efficiency per se, it's so that \code{:=} can add columns by reference without a shallow copy.
 }
 \value{
-    \code{truelength(x)} returns the length of the vector allocated in memory. \code{length(x)} of those items are in use. Currently, it is the list vector of column pointers that is over-allocated (i.e. \code{truelength(DT)}), not the column vectors themselves (yet) which would in future allow fast row \code{insert()}.
+    \code{truelength(x)} returns the length of the vector allocated in memory. \code{length(x)} of those items are in use. Currently, it's just the list vector of column pointers that is over-allocated (i.e. \code{truelength(DT)}), not the column vectors themselves, which would in future allow fast row \code{insert()}. For tables loaded from disk however, \code{truelength} is 0 in \R 2.14.0 and random in \R <= 2.13.2; i.e., in both cases perhaps unexpected. \code{data.table} detects this state and over-allocates the loaded \code{data.table} when the next column addition or deletion occurs. All other operations on \code{data.table} (such as fast grouping and joins) do not need \code{truelength}.
     
     \code{alloc.col} \emph{reallocates} \code{DT} by reference. This may be useful for efficiency if you know you are about to going to add a lot of columns in a loop. It also returns the new DT, for convenience in compound queries.
 }

@@ -126,7 +126,8 @@ NEW FEATURES
             alloc.col(DT,10000)  # reserve 10,000 column slots
         
     o   New function truelength() returns the number of column pointer
-        slots allocated, always >= length().
+        slots allocated, always >= length() other than just after a table
+        has been loaded from disk.
         
     o   New option 'datatable.nomatch' allows the default for nomatch
         to be changed from NA to 0, as wished for by Branson Owen.
