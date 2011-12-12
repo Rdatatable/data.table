@@ -21,8 +21,12 @@ NEW FEATURES
 BUG FIXES
 
    o    Adding a column to a data.table loaded from disk could
-        result in a memory corruption in R < 2.14.0, revealed
+        result in a memory corruption in R <= 2.13.2, revealed
         and thanks to CRAN checks on windows old-rel.
+        
+   o    Adding a factor column with a RHS to be recycled no longer
+        loses its factor attribute, #1691. Thanks to Damian
+        Betebenner for reporting.
 
 
         *********************************************

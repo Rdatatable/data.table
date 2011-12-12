@@ -1324,12 +1324,28 @@ DT = data.table(a=1:2,v=3:6)
 tt = try(DT[,list(newcol=7L,.SD),by=a], silent=TRUE)
 test(467, inherits(tt,"try-error") && length(grep("Error.*Consider cbind or merge afterwards until",tt)))
 
-
+# Test empty list column
 DT = data.table(a=1:3,b=4:6)
 test(468, DT[,foo:=list()], data.table(a=1:3,b=4:6,foo=list()))
+# Test plonk list
 test(469, DT[,bar:=list(1,"a",3.14)], data.table(a=1:3,b=4:6,foo=list(),bar=list(1,"a",3.14)))
+# Test plonk list variable (to catch deparse treating j=list() specially)
 x = list(2,"b",2.718)
 test(470, DT[,baz:=x], data.table(a=1:3,b=4:6,foo=list(),bar=list(1,"a",3.14),baz=list(2,"b",2.718)))
+# Test recycling list
+DT = data.table(a=1:4,b=5:8)
+test(471, DT[,foo:=list("a",2:3)], data.table(a=1:4,b=5:8,foo=list("a",2:3,"a",2:3)))
+# Test recycling singleton list
+DT[,foo:=NULL]
+test(472, DT[,foo:=list(list(2:3))], data.table(a=1:4,b=5:8,foo=list(2:3,2:3,2:3,2:3)))
+
+# Test adding new column with a recycled factor, #1691
+DT = data.table(a=1:4,b=5:8)
+DT[,c:=factor("a")]
+test(473, DT, data.table(a=1:4,b=5:8,c=factor(c("a","a","a","a"))))
+DT[,d:=factor(c("a","b"))]
+test(474, DT, data.table(a=1:4,b=5:8,c=factor(c("a","a","a","a")),d=factor(c("a","b","a","b"))))
+
 
 
 ## See test-* for more tests

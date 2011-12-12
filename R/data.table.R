@@ -897,8 +897,8 @@ tail.data.table = function(x, n=6, ...) {
         # DT["a",]$y <- 1.1  winds up creating `*tmp*` subset of rows and assigning _all_ the columns into x and
         # over-writing the key columns with the same value (not just the single 'y' column).
         # That isn't good for speed; it's an R thing. Solution is to use := instead to avoid all this, but user
-        # expects key to be retained in this case because _he_ didn't assign to a key column (the internal R code     
-        # did).
+        # expects key to be retained in this case because _he_ didn't assign to a key column (the internal base R 
+        # code did).
         keycol=FALSE
     }
     revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))
