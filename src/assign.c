@@ -3,6 +3,7 @@
 #include <Rinternals.h>
 #include <Rdefines.h>
 #include <Rmath.h> 
+#include <Rversion.h>
 
 #ifdef BUILD_DLL
 #define EXPORT __declspec(dllexport)
@@ -61,15 +62,26 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
         oldtncol = TRUELENGTH(dt);
         
-        if (oldtncol<oldncol || TRUELENGTH(getAttrib(dt, R_ClassSymbol)) != -999 ) {
-            // tl will be 0 in R 2.14.0+ when saved and loaded back from disk (and NAMED will be 1 then),
-            // but, tl is random (uninitialized) in R <=2.13.2 so we detect that with the logic above.
+        if (TRUELENGTH(getAttrib(dt, R_ClassSymbol)) != -999 ) {
+            if (R_VERSION >= R_Version(2, 14, 0) && oldtncol!=0) {
+                error("Internal logical error: this is R >= 2.14.0, class is not marked but tl is %d rather than 0",oldtncol);
+                // tl should be 0 in R 2.14.0+ when saved and loaded back, when duplicated via *tmp*, or copy()-ed,
+                // and class marker won't be set then either, but class marker (should) only required for <=2.13.2
+                // because tl not initialized to 0 there.
+            }
+            // tl is random (uninitialized) in R <=2.13.2 so we detect that with the logic above.
             // It is possible (in R <=2.13.2) that by chance, tl is unitialized to -999 but not enough risk to warrant
             // making data.table dependent on 2.14.0 (some users have asked us not to do that as they are bound to
             // earlier versions).
-            // The first oldtncol<oldncol is not needed strictly, but no harm in keeping it there.
-            oldtncol=0;  // trigger alloccol below
+            // Also random (uninitialized) in <=2.13.2 when data.table has been duplicated; e.g. via `*tmp*` or copy()
+            // as in 2.14.0+ but isn't a problem there where tl is initialized to 0.
+            
+            oldtncol=0;  // trigger alloccol below.
+            TRUELENGTH(dt) = 0;  // so that alloccol really does its stuff (it reads TRUELENGTH again)
             TRUELENGTH(getAttrib(dt, R_ClassSymbol)) = -999;
+        } else {
+            if (oldtncol<oldncol) error("Internal error, please report (including result of sessionInfo()) to datatable-help: oldtncol (%d) < oldncol (%d) but tl of class is marked.", oldtncol, oldncol);
+            if (oldtncol>oldncol+1000) warning("tl (%d) is greater than 1000 items over-allocated (ncol = %d). If you didn't set the datatable.alloccol option very large, please report this to datatable-help including the result of sessionInfo().",oldtncol, oldncol); 
         }
         
         if (oldtncol < oldncol+LENGTH(newcolnames)) {
