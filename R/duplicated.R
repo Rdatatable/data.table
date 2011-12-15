@@ -18,7 +18,8 @@ unique.data.table <- function(x, incomparables=FALSE, tolerance=.Machine$double.
     # duplist is relatively quick, in C, and copes with NA
     if (haskey(x)) {
         # Already keyed, this should be fast :
-        res = x[duplist(x[,key(x),with=FALSE],tolerance=tolerance)]
+        rows = duplist(x[,key(x),with=FALSE],tolerance=tolerance)
+        res = x[rows]
         setattr(res,"sorted",key(x))
     } else {
         # TO DO: could be faster by grouping/hashing rather than sorting.

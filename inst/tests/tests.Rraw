@@ -1346,7 +1346,9 @@ test(473, DT, data.table(a=1:4,b=5:8,c=factor(c("a","a","a","a"))))
 DT[,d:=factor(c("a","b"))]
 test(474, DT, data.table(a=1:4,b=5:8,c=factor(c("a","a","a","a")),d=factor(c("a","b","a","b"))))
 
-
+# Test scoping error introduced at 1.6.1, unique(DT) when key column is 'x'
+DT=data.table(x=c("a", "a", "b", "b"), y=c("a", "a", "b", "b"), key="x")
+test(475, unique(DT), data.table(x=c("a","b"),y=c("a","b"),key="x"))
 
 ## See test-* for more tests
 

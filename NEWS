@@ -9,7 +9,13 @@ This NEWS file summarises the main changes.
         **   CHANGES IN DATA.TABLE VERSION 1.7.8   **
         **                                         **
         *********************************************
-        
+
+BUG FIXES
+
+   o    unique(DT) now works when DT is keyed and a key
+        column is called 'x'. Internal scoping conflict
+        introduced in June in 1.6.1. Thanks to Steven Bagley
+        for reporting.
 
 
         *********************************************
