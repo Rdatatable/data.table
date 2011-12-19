@@ -13,9 +13,13 @@ This NEWS file summarises the main changes.
 BUG FIXES
 
    o    unique(DT) now works when DT is keyed and a key
-        column is called 'x'. Internal scoping conflict
-        introduced in June in 1.6.1. Thanks to Steven Bagley
-        for reporting.
+        column is called 'x'. An internal scoping conflict
+        introduced in v1.6.1. Thanks to Steven Bagley for
+        reporting.
+        
+   o    Errors and seg faults could occur in grouping when
+        j contained character or list() columns. Many thanks
+        to Jim Holtman for providing a reproducible example.
 
 
         *********************************************

@@ -63,6 +63,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     
     names = getAttrib(SD, R_NamesSymbol);
     nameSyms = Calloc(length(names), SEXP);
+    if (!nameSyms) error("Calloc failed to allocate %d nameSyms in dogroups",length(names));
     for(i = 0; i < length(SD); i++) {
         if (SIZEOF(VECTOR_ELT(SD, i))==0)
             error("Type %d in .SD column %d", TYPEOF(VECTOR_ELT(SD, i)), i);
@@ -300,6 +301,24 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
                 thisansloc = ansloc;
                 thislen = LENGTH(VECTOR_ELT(jval,j));  // Any NULL was replaced by an NA above.
                 if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen);
+                if (TYPEOF(VECTOR_ELT(testj,j))==STRSXP) {
+                    for (r=0; r<maxn; r++) {
+                        SET_STRING_ELT(VECTOR_ELT(ans,j+nbyval), thisansloc, STRING_ELT(VECTOR_ELT(jval,j),r%thislen));
+                        thisansloc++;
+                    }
+                    continue;
+                    // TO DO: Replace SET_STRING_ELT and SET_VECTOR_ELT with direct CHK and CHECK_OLD_TO_NEW calls,
+                    // once per item in jval, then the rest can be memcpy'd after?. But, it seems we do need to
+                    // ensure objects are aged.
+                }
+                if (TYPEOF(VECTOR_ELT(testj,j))==VECSXP) {
+                    for (r=0; r<maxn; r++) {
+                        SET_VECTOR_ELT(VECTOR_ELT(ans,j+nbyval), thisansloc, VECTOR_ELT(VECTOR_ELT(jval,j),r%thislen));
+                        thisansloc++;
+                    }
+                    continue;
+                }
+                // else integer or real
                 size = SIZEOF(VECTOR_ELT(testj,j));
                 for (r=0; r<(maxn/thislen); r++) {
                     memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+nbyval)) + thisansloc*size,
@@ -313,7 +332,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         UNPROTECT(1);  // do we really need the PROTECT/UNPROTECT given the macros above won't gc() ?
     }
     if (ansloc < length(VECTOR_ELT(ans,0))) {
-        // warning("Wrote less rows than allocated. byretn=%d but wrote %d rows",INTEGER(byretn)[0],ansloc);
+        // Rprintf("Wrote less rows than allocated. byretn=%d but wrote %d rows\n",INTEGER(byretn)[0],ansloc);
         for (j=0; j<length(ans); j++) SETLENGTH(VECTOR_ELT(ans,j),ansloc);
         // TO DO: set truelength here (uninitialized by R) to save growing next time on insert() 
         // Important not to touch truelength for CHARSXP in R's global string cache, but we won't see those here,
