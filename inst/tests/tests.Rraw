@@ -1350,6 +1350,13 @@ test(474, DT, data.table(a=1:4,b=5:8,c=factor(c("a","a","a","a")),d=factor(c("a"
 DT=data.table(x=c("a", "a", "b", "b"), y=c("a", "a", "b", "b"), key="x")
 test(475, unique(DT), data.table(x=c("a","b"),y=c("a","b"),key="x"))
 
+# Test character and list columns in tables with many small groups
+DT = data.table(grp=1:20000,char=sample(as.hexmode(1:10000),40000,replace=TRUE),int=sample(1:10000,40000,replace=TRUE))
+ans = DT[,list(p=paste(unique(char),collapse=","),
+               i=list(unique(int))), by=grp]
+test(476, nrow(as.matrix(ans)), 20000L)   # The as.matrix triggers the "'getCharCE' must be called on a CHARSXP", or similar symptom of earlier corruption, before fix in dogroups.c.
+
+
 ## See test-* for more tests
 
 ##########################
