@@ -1356,6 +1356,19 @@ ans = DT[,list(p=paste(unique(char),collapse=","),
                i=list(unique(int))), by=grp]
 test(476, nrow(as.matrix(ans)), 20000L)   # The as.matrix triggers the "'getCharCE' must be called on a CHARSXP", or similar symptom of earlier corruption, before fix in dogroups.c.
 
+# Test that plonking from calling scope works, even after removing, and column copy via := is ok too.
+DT = data.table(a=1:3)
+foo = 4:6
+DT[,foo:=foo]
+rm(foo)
+gc()
+DT[,foo2:=foo]
+DT[2,foo:=10L]
+DT[3,foo2:=11L]
+gc()
+test(477, DT, data.table(a=1:3,foo=c(4L,10L,6L),foo2=c(4L,5L,11L)))
+
+
 
 ## See test-* for more tests
 

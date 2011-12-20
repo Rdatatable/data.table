@@ -13,18 +13,18 @@ This NEWS file summarises the main changes.
 BUG FIXES
 
    o    unique(DT) now works when DT is keyed and a key
-        column is called 'x'. An internal scoping conflict
-        introduced in v1.6.1. Thanks to Steven Bagley for
+        column is called 'x' (an internal scoping conflict
+        introduced in v1.6.1). Thanks to Steven Bagley for
         reporting.
         
    o    Errors and seg faults could occur in grouping when
-        j contained character or list() columns. Many thanks
+        j contained character or list columns. Many thanks
         to Jim Holtman for providing a reproducible example.
         
    o    Setting a key on a table with over 268 million rows
-        (2^31/8) now works, #1714. Bug introduced in 1.7.2.
-        setkey now works (again) up to the regular R vector
-        limit of 2^31 rows (2 billion). Thanks to Leon Baum
+        (2^31/8) now works (again), #1714. Bug introduced in
+        v1.7.2. setkey works up to the regular R vector limit
+        of 2^31 rows (2 billion). Thanks to Leon Baum
         for reporting.
         
 
