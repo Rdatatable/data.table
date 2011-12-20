@@ -24,7 +24,7 @@ SEXP reorder(SEXP dt, SEXP order)
     nrow = length(VECTOR_ELT(dt,0));
     if (length(order) != nrow) error("logical error nrow(dt)!=length(order)");
     if (sizeof(double)!=8) error("sizeof(double) isn't 8");   // 8 on both 32bit and 64bit.
-    tmp=(char *)Calloc(nrow*8,char);   // Enough working space for the largest type. setSizes() has a check too.
+    tmp=(char *)Calloc(nrow,double);   // Enough working space for the largest type. setSizes() has a check too.
     if (!tmp) error("unable to allocate temporary working memory for reordering data.table");
     for (i=0;i<length(dt);i++) {
         if (length(VECTOR_ELT(dt,i))!=nrow) error("reorder received irregular lengthed list");
@@ -32,10 +32,10 @@ SEXP reorder(SEXP dt, SEXP order)
         if (!size) error("don't know how to reorder type %d of column %d. Please send this message to maintainer('data.table')",TYPEOF(VECTOR_ELT(dt,i)),i+1);
         tmpp=tmp;
         for (j=0;j<nrow;j++) {
-            memcpy((char *)tmpp, (char *)DATAPTR(VECTOR_ELT(dt,i)) + (INTEGER(order)[j]-1)*size, size);
+            memcpy((char *)tmpp, (char *)DATAPTR(VECTOR_ELT(dt,i)) + ((size_t)(INTEGER(order)[j]-1))*size, size);
             tmpp += size;
         }
-        memcpy((char *)DATAPTR(VECTOR_ELT(dt,i)), (char *)tmp, nrow*size);
+        memcpy((char *)DATAPTR(VECTOR_ELT(dt,i)), (char *)tmp, ((size_t)nrow)*size);
     }
     Free(tmp);
     return(R_NilValue);
