@@ -5,10 +5,11 @@ if (!exists(".devtesting")) {
     require(plyr)
 }
 options(warn=2)
-nfail = ntest = 0
+nfail = ntest = lastnum = 0
 whichfail = NULL
 test = function(num,x,y=NULL) {
     ntest <<- ntest + 1
+    lastnum <<- num
     if (inherits(err<-try(x,TRUE),"try-error") || inherits(err<-try(y,TRUE),"try-error")) {
         cat("Test",num,err)
         nfail <<- nfail + 1
@@ -1367,6 +1368,7 @@ DT[2,foo:=10L]
 DT[3,foo2:=11L]
 gc()
 test(477, DT, data.table(a=1:3,foo=c(4L,10L,6L),foo2=c(4L,5L,11L)))
+test(478, DT[,foo:=foo], DT)  # does nothing, with no warning, consistent with base R `a<-a`.
 
 
 
@@ -1375,9 +1377,12 @@ test(477, DT, data.table(a=1:3,foo=c(4L,10L,6L),foo2=c(4L,5L,11L)))
 ##########################
 options(warn=0)
 if (nfail > 0) {
-    stop(nfail," errors in test.data.table(): ",paste(whichfail,collapse=","))
+    stop(nfail," error",ifelse(nfail>1,"s","")," out of ",lastnum, " in test.data.table() : ",paste(whichfail,collapse=","))
     # important to stop here, so than 'R CMD check' fails
 }
-cat("All",ntest,"tests in test.data.table() completed ok in",timetaken(started.at),"\n")
+cat("All",lastnum,"tests in test.data.table() completed ok in",timetaken(started.at),"\n")
+# Reporting lastnum rather than ntest makes it easier to check user has the latest version, assuming
+# each release or patch has extra tests.
+
 
 
