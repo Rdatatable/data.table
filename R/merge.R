@@ -32,22 +32,23 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     }
 
     if (.reset.keys(x, by)) {
+        x = copy(x)
         key(x) <- by
     }
     if (.reset.keys(y, by)) {
+        y = copy(y)
         key(y) <- by
     }
-    key <- by
 
-    ykey <- y[,key,with=FALSE]
+    ykey <- y[,by,with=FALSE]
     xidx <- x[ykey, nomatch = 0, mult = 'all', which = TRUE]
-    xkey <- x[,key,with=FALSE]
+    xkey <- x[,by,with=FALSE]
     yidx <- y[xkey, nomatch = 0, mult = 'all', which = TRUE]
 
     if (any(xidx)) {
         tmp = sort(xidx)
         xx <- x[tmp]
-        yy <- y[yidx, setdiff(names(y), key), with = FALSE]
+        yy <- y[yidx, setdiff(names(y), by), with = FALSE]
         dt <- xx
         if (ncol(yy) > 0) {
             dt <- cbind(xx, yy)
@@ -60,7 +61,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     if (all.x) {
         missingxidx <- setdiff(1:nrow(x), xidx)
         if (length(missingxidx) > 0) {
-            othercols <- setdiff(names(y), key)
+            othercols <- setdiff(names(y), by)
             if (length(othercols) > 0) {
                 tmp = rep(1, length(missingxidx))
                 xx <- cbind(x[missingxidx], y[NA, othercols, with = FALSE][tmp])
@@ -72,19 +73,19 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     if (all.y) {
         missingyidx <- setdiff(1:nrow(y), yidx)
         if (length(missingyidx) > 0) {
-            yy <- y[missingyidx, key, with = FALSE]
-            othercolsx <- setdiff(names(x), key)
+            yy <- y[missingyidx, by, with = FALSE]
+            othercolsx <- setdiff(names(x), by)
             if (length(othercolsx) > 0) {
                 tmp = rep(1, length(missingyidx))
                 yy <- cbind(yy, x[NA, othercolsx, with = FALSE][tmp])
             }
-            othercolsy <- setdiff(names(y), key)
+            othercolsy <- setdiff(names(y), by)
             if (length(othercolsy) > 0)
                 yy <- cbind(yy, y[missingyidx, othercolsy, with = FALSE])
             dt <- rbind(dt, yy[,names(dt),with=FALSE])
         }
     }
-    if (nrow(dt) > 0) key(dt) = key
+    if (nrow(dt) > 0) key(dt) = by
 
     ###########################################################################
     ## Handle merging suffix behavior.
