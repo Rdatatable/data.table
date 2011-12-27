@@ -884,7 +884,7 @@ DT = data.table(a=20:22)
 test(314, {DT[,b:=23:25];DT[,c:=26:28]}, data.table(a=20:22,b=23:25,c=26:28))   # add in series
 test(315, DT[,c:=NULL], data.table(a=20:22,b=23:25))   # delete last
 tt = try(DT[,c:=NULL],silent=TRUE)
-test(316, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*column.*c.*is not present to delete", tt)))
+test(316, inherits(tt,"try-error") && length(grep("[(]converted from warning[)] Adding new column.*c.*then assigning NULL", tt)))
 
 
 # Test adding, removing and updating columns via [<- in one step
@@ -1369,6 +1369,26 @@ DT[3,foo2:=11L]
 gc()
 test(477, DT, data.table(a=1:3,foo=c(4L,10L,6L),foo2=c(4L,5L,11L)))
 test(478, DT[,foo:=foo], DT)  # does nothing, with no warning, consistent with base R `a<-a`.
+
+# Test that recycling now works with oversized inputs and % != 0 length, both with warnings.
+DT = data.table(x=1:4)
+tt = try(DT[, a := 5:7], silent=TRUE)
+test(479, inherits(tt,"try-error") && length(grep("converted.*warning.*Supplied 3 items to be assigned to 4 items of column 'a' [(]recycled leaving remainder of 1 items[)]",tt)))
+suppressWarnings(DT[, a := 5:7])
+test(480, DT, data.table(x=1:4,a=c(5:7,5L)))  # no longer error, now recycles with remainder and warning
+
+# Test that multiple columns can be added 
+DT = data.table(x=1:4)
+test(481, DT[, c("foo","bar"):=list(10L,11:14), with=FALSE], data.table(x=1:4,foo=10L,bar=11:14))
+
+# and combined with update and add in one step
+test(482, DT[, c("foo","baz"):=list(12L,15:18), with=FALSE], data.table(x=1:4,foo=12L,bar=11:14,baz=15:18))
+
+# Test that errors in := do not leave DT in bad state, #1711
+DT = data.table(x=1:4)
+tt = try(DT[,c("foo","bar"):=list(20L,numeric()),with=FALSE], silent=TRUE)
+test(483, inherits(tt,"try-error") && length(grep("RHS of assignment to new column.*bar.*is zero length but not empty list",tt)))
+test(484, DT, data.table(x=1:4))  # i.e. DT as it was before, without foo being added as it did in v1.7.7-
 
 
 

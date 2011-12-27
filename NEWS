@@ -10,6 +10,17 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+NEW FEATURES
+
+   o    Multiple new columns can be added by reference using
+        := and with=FALSE; e.g.,
+            DT[,c("foo","bar"):=1L,with=FALSE]
+            DT[,c("foo","bar"):=list(1L,2L),with=FALSE]
+            
+   o    := now recycles vectors of non divisible length, with
+        a warning (previously an error).
+
+
 BUG FIXES
 
    o    unique(DT) now works when DT is keyed and a key
@@ -26,6 +37,11 @@ BUG FIXES
         v1.7.2. setkey works up to the regular R vector limit
         of 2^31 rows (2 billion). Thanks to Leon Baum
         for reporting.
+        
+   o    Checks in := are now made up front (before starting to
+        modify the data.table) so that the data.table isn't
+        left in an invalid state if an error occurs, #1711.
+        Thanks to Chris Neff for reporting.
         
 
         *********************************************

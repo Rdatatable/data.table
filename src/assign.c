@@ -15,6 +15,7 @@ EXPORT SEXP settruelength();
 
 // See dogroups.c for these shared variables.
 int sizes[100];
+char typename[100][30];
 int sizesSet;
 void setSizes();
 #define SIZEOF(x) sizes[TYPEOF(x)]
@@ -31,9 +32,14 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     // For internal use only by [<-.data.table.
     // newcolnames : add these columns (if any)
     // cols : column numbers corresponding to the values to set
-    R_len_t i, j, size, targetlen, vlen, v, r, oldncol, oldtncol, coln, protecti=0, n;
-    SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s;
+    R_len_t i, j, size, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, n, newcolnum;
+    SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam;
+    if (!isNull(symbol) && !isEnvironment(rho))
+        error("Internal data.table error in assign.c. rho should be an environment");
+    oldncol = length(dt);
+    names = getAttrib(dt, R_NamesSymbol);
     if (!sizesSet) setSizes();   // TO DO move into _init
+    if (oldncol<1) error("Cannot use := to add columns to an empty data.table, currently");
     if (length(rows)==0) {
         targetlen = length(VECTOR_ELT(dt,0));
         // fast way to assign to whole column, without creating 1:nrow(x) vector up in R, or here in C
@@ -43,6 +49,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     if (TYPEOF(cols)!=INTSXP) error("Logical error in assign, TYPEOF(cols) is %d",TYPEOF(cols));  // Rinternals.h defines the type numbers=>names
     if (!length(cols)) error("Logical error in assign, no column positions passed to assign");
     if (length(cols)!=length(revcolorder)) error("Logical error in assign, length(cols)!=length(revcolorder)");
+    if (!isNull(newcolnames) && !isString(newcolnames)) error("newcolnames is supplied but isn't a character vector");
     if (TYPEOF(values)==NILSXP) {
         if (!length(cols)) {
             warning("RHS is NULL, meaning delete columns(s). But, no columns in LHS to delete.");
@@ -51,14 +58,51 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     } else {
         if (TYPEOF(values)==VECSXP) {
             if (length(cols)>1) {
-                if (length(values)>length(cols)) warning("List of values is longer than the number of columns, ignoring some");  
-                if (length(cols)%length(values) != 0) error("Supplied %d columns to be assigned a list length %d. Can recycle RHS but must be exact multiple.",length(cols),length(values));
-            } // else it's a list() column being assigned to one column
-        }
+                if (length(values)>length(cols))
+                    warning("Supplied %d columns to be assigned a list (length %d) of values (%d unused)", length(cols), length(values), length(values)-length(cols));  
+                else if (length(cols)%length(values) != 0)
+                    warning("Supplied %d columns to be assigned a list (length %d) of values (recycled leaving remainder of %d items).",length(cols),length(values),length(cols)%length(values));
+            } // else it's a list() column being assigned to one column       
+        } 
     }
-    oldncol = length(dt);
+    // Check all inputs :
+    for (i=0; i<length(cols); i++) {
+        coln = INTEGER(cols)[i]-1;
+        if (TYPEOF(values)==VECSXP && (length(cols)>1 || length(values)==1))
+            thisvalue = VECTOR_ELT(values,i%LENGTH(values));
+        else
+            thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
+        vlen = length(thisvalue);
+        if (coln+1 <= oldncol) colnam = STRING_ELT(names,coln);
+        else colnam = STRING_ELT(newcolnames,coln-length(names));
+        if (vlen<1) {
+            if (coln+1 <= oldncol) {
+                if (isNull(thisvalue)) continue;  // delete existing column(s) afterwards, near end of this function
+                error("RHS of assignment to existing column '%s' is zero length but not NULL. If you intend to delete the column use NULL. Otherwise, the RHS must have length > 0; e.g., NA_integer_. If you are trying to change the column type to be an empty list column then, as with all column type changes, provide a full length RHS vector such as vector('list',nrow(DT)); i.e., 'plonk' in the new column.", CHAR(STRING_ELT(names,coln)));
+            } else if (TYPEOF(thisvalue)!=VECSXP) {  // list() is ok for new columns
+                newcolnum = coln-length(names);
+                if (newcolnum<0 || newcolnum>=length(newcolnames))
+                    error("Internal logical error. length(newcolnames)=%d, length(names)=%d, coln=%d", length(newcolnames), length(names), coln);
+                if (isNull(thisvalue)) {
+                    warning("Adding new column '%s' then assigning NULL (deleting it).",CHAR(STRING_ELT(newcolnames,newcolnum)));
+                    continue;
+                }
+                error("RHS of assignment to new column '%s' is zero length but not empty list(). For new columns the RHS must either be empty list() to create an empty list column, or, have length > 0; e.g. NA_integer_, 0L, etc.", CHAR(STRING_ELT(newcolnames,newcolnum)));
+            }
+        }
+        if (!isVector(thisvalue) && !(isVector(thisvalue) && length(thisvalue)==targetlen))
+            error("RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list column.");
+        if ((coln+1)<=oldncol && isFactor(VECTOR_ELT(dt,coln)) &&
+            !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=REALSXP)
+            error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),typename[TYPEOF(thisvalue)]);
+        if (vlen>targetlen)
+            warning("Supplied %d items to be assigned to %d items of column '%s' (%d unused)", vlen, targetlen,CHAR(colnam),vlen-targetlen);  
+        else if (vlen>0 && targetlen%vlen != 0)
+            warning("Supplied %d items to be assigned to %d items of column '%s' (recycled leaving remainder of %d items).",vlen,targetlen,CHAR(colnam),targetlen%vlen);
+    }
+    // having now checked the inputs, from this point there should be no errors,
+    // so we can now proceed to modify DT by reference.
     if (length(newcolnames)) {
-        if (TYPEOF(newcolnames)!=STRSXP) error("newcolnames is not character vector");
         if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
         oldtncol = TRUELENGTH(dt);
         
@@ -119,11 +163,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             // if column exists, 'replace' it (one way to change a column's type i.e. less easy, as it should be, for speed, correctness and to get the user thinking about their intent)        
             continue;
         }
-        if (vlen<1 && (TYPEOF(thisvalue)!=VECSXP || (coln+1) <= oldncol))
-            error("RHS of assignment is zero length but not NULL. If you intend to delete the column use NULL. If you intend to create an empty list column use list(). Otherwise the RHS must have length > 0; e.g. NA_real_, NA_integer_");
-        if (!isVector(thisvalue) && !(isVector(thisvalue) && length(thisvalue)==targetlen))
-            error("RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list() column.");
-        if (vlen>0 && targetlen%vlen != 0) error("Tried to assign %d items to target of %d (can recycle but must be exact multiple). If users ask us to change this to a warning, we will change it; please ask maintainer('data.table').",vlen,targetlen);
         if (coln+1 > oldncol) {  // new column
             PROTECT(newcol = allocVector(TYPEOF(thisvalue),targetlen));
             protecti++;
@@ -132,7 +171,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                  setAttrib(newcol, R_ClassSymbol, getAttrib(thisvalue, R_ClassSymbol));
             }
             SET_VECTOR_ELT(dt,coln,newcol);
-            if (vlen<1) continue;
+            if (vlen<1) continue;   // TO DO: come back and comment why this is here
             targetcol = newcol;
             RHS = thisvalue;
         } else {                 // existing column
@@ -194,7 +233,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                 } else {
                     // value is either integer or numeric vector
                     if (TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=REALSXP)
-                        error("Trying to assign factor column %d a value of type %d i.e. not character, integer or numeric",i,TYPEOF(thisvalue));
+                        error("Internal logical error. Up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. Please report to datatable-help.", typename[TYPEOF(thisvalue)], CHAR(STRING_ELT(names,coln)));
                     PROTECT(RHS = coerceVector(thisvalue,INTSXP));  // TYPEOF(targetcol) is INTSXP for factors
                     protecti++;
                     for (j=0; j<length(RHS); j++) {
@@ -230,14 +269,17 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                        (char *)DATAPTR(RHS),
                        vlen * size);
             }
+            memcpy((char *)DATAPTR(targetcol) + r*vlen*size,
+                   (char *)DATAPTR(RHS),
+                   targetlen%vlen * size);
         } else {
-            j=0;
-            for (r=0; r<(targetlen/vlen); r++) {
-                for (v=0;v<vlen;v++) {
-                    memcpy((char *)DATAPTR(targetcol) + (INTEGER(rows)[j++]-1)*size, 
-                           (char *)DATAPTR(RHS) + v*size,
-                           size);
-                }
+            //j=0;
+            //for (r=0; r<(targetlen/vlen); r++) {
+            for (j=0; j<targetlen; j++) {
+                //for (v=0;v<vlen;v++) {
+                memcpy((char *)DATAPTR(targetcol) + (INTEGER(rows)[j]-1)*size, 
+                       (char *)DATAPTR(RHS) + (j%vlen) * size,
+                       size);
             }
         }
     }
@@ -250,11 +292,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             thisvalue = VECTOR_ELT(values,i%LENGTH(values));
         else
             thisvalue = values;
-        if (TYPEOF(thisvalue)==NILSXP) {
-            if (coln+1 > oldncol) {
-                warning("RHS is NULL but column '%s' is not present to delete", CHAR(STRING_ELT(names,coln)));
-                // It was added above and now we'll delete it again (just easier to code it this way)
-            }
+        if (isNull(thisvalue)) {
+            // A new column being assigned NULL would have been warned above, added above, and now deleted (just easier
+            // to code it this way e.g. so that other columns may be added or removed ok by the same query).
             size=sizeof(SEXP *);
             memmove((char *)DATAPTR(dt)+coln*size,     
                     (char *)DATAPTR(dt)+(coln+1)*size,
@@ -283,7 +323,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     }
     if (!isNull(symbol)) {
         // Called from := in j when adding columns, just needed when a realloc takes place 
-        if(!isEnvironment(rho)) error("Internal data.table error in assign.c (1). rho should be an environment");
         setVar(symbol,dt,rho);
     } // else called from $<- or [<- where the slower copy via `*tmp*` mechanism must be used (as of R 2.13.1)
     UNPROTECT(protecti);
@@ -347,7 +386,6 @@ SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho)
         dt=newdt;
         // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
         if (!isNull(symbol)) {
-            if (!isEnvironment(rho)) error("Internal data.table error in assign.c (2). rho should be an environment");
             setVar(symbol,dt,rho);
         }
         UNPROTECT(2);

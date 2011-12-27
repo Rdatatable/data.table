@@ -376,16 +376,15 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
         clearkey = any(!is.na(match(lhs,key(x))))
         m = match(lhs,names(x))
-        if (!any(is.na(m))) {
+        if (all(!is.na(m))) {
             cols = as.integer(m)
             newcolnames=NULL
             symbol = rho = NULL
         } else {
-            if (length(m)!=1) stop("Logical error. Can only add new columns one at a time currently")
             symbol = as.name(substitute(x))
-            rho = parent.frame()
-            cols = as.integer(ncol(x)+1L)
-            newcolnames=lhs
+            rho = parent.frame()            
+            newcolnames=setdiff(lhs,names(x))
+            cols = as.integer(c(m[!is.na(m)],ncol(x)+1:length(newcolnames)))
         }
         ssrows =
             if (!is.logical(irows)) as.integer(irows)          # DT[J("a"),z:=42L]
