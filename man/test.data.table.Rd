@@ -5,10 +5,11 @@
   Runs a set of tests to check data.table is working correctly.
 }
 \usage{
-test.data.table()
+test.data.table(echo=FALSE)
 }
-% \arguments{
-% }
+\arguments{
+\item{echo}{ Displays each test on the console as it runs. }
+}
 \details{
    Runs a series of tests. These can be used to see features and examples of usage, too. Running test.data.table will tell you the full location of the test file(s) to open.
 }

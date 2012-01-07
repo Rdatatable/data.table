@@ -1,5 +1,5 @@
 
-test.data.table = function() {
+test.data.table = function(echo=FALSE) {
     if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
         # package developer
         if ("package:data.table" %in% search()) stop("data.table package loaded")
@@ -12,7 +12,7 @@ test.data.table = function() {
     # for (fn in dir(d,"*.[rR]$",full=TRUE)) {  # testthat runs those
     for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
         cat("Running",fn,"\n")
-        sys.source(fn,envir=new.env(parent=.GlobalEnv))
+        source(fn,local=new.env(parent=.GlobalEnv),echo=echo)
         # the new.env() is required for when a *user* runs test.data.table() because
         # the context of this function is sealed in the namespace w.r.t S4.
         # It is also tidier to protect the tests from the variable 'd' above.

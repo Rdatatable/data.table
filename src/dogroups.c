@@ -13,7 +13,7 @@ EXPORT SEXP dogroups();
 int sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
 char typename[100][30];  // The typename in main/inspect.c seems static (not available for use by packages), uses a switch, and uses the internal names.
 
-SEXP growVector(SEXP x, R_len_t newlen);
+SEXP growVector(SEXP x, R_len_t newlen, Rboolean verbose);
 int sizesSet=0;
 
 void setSizes()
@@ -151,8 +151,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     if (maxn > 0) {
         if (ansloc + maxn > length(VECTOR_ELT(ans,0))) error("Didn't allocate enough rows for result of first group.");
         for (j=0; j<nbyval; j++) {
-            for (r=0; r<maxn; r++) {
-                size = SIZEOF(VECTOR_ELT(byval, j));
+            size = SIZEOF(VECTOR_ELT(byval, j));
+            for (r=0; r<maxn; r++) {    
                 memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*size,
                        (char *)DATAPTR(VECTOR_ELT(byval,j)) + 0*size,    // this is why byval must be subset in the calling R to the first row of each group, to be consistent with i join grouping
                        1 * size);
@@ -163,11 +163,23 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
             thislen = LENGTH(VECTOR_ELT(testj,j)); // never length 0 as replaced with NA above.
             if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen); 
             size = SIZEOF(VECTOR_ELT(testj, j));
-            for (r=0; r<(maxn/thislen); r++) {
-                memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+nbyval)) + thisansloc*size,
-                   (char *)DATAPTR(VECTOR_ELT(testj,j)),
-                   thislen * size);
-                thisansloc += thislen;
+            if (TYPEOF(VECTOR_ELT(ans,j+nbyval)) != TYPEOF(VECTOR_ELT(testj,j))) error("Type mismatch in copying testj into ans");
+            switch (TYPEOF(VECTOR_ELT(testj,j))) {
+            case STRSXP :
+                for (r=0; r<maxn; r++)
+                    SET_STRING_ELT(VECTOR_ELT(ans,j+nbyval), thisansloc+r, STRING_ELT(VECTOR_ELT(testj,j),r%thislen));
+                break;
+            case VECSXP :
+                for (r=0; r<maxn; r++)
+                    SET_VECTOR_ELT(VECTOR_ELT(ans,j+nbyval), thisansloc+r, VECTOR_ELT(VECTOR_ELT(testj,j),r%thislen));
+                break;
+            default :
+                for (r=0; r<(maxn/thislen); r++) {
+                    memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+nbyval)) + thisansloc*size,
+                           (char *)DATAPTR(VECTOR_ELT(testj,j)),
+                           thislen * size);
+                    thisansloc += thislen;
+                }
             }
         }
         ansloc += maxn;
@@ -282,8 +294,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         if (ansloc + maxn > length(VECTOR_ELT(ans,0))) {
             newlen = ansloc+maxn;
             if (LOGICAL(verbose)[0]) Rprintf("dogroups: growing from %d to %d rows\n", length(VECTOR_ELT(ans,0)), newlen);
-            for (j=0; j<nbyval; j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), newlen));
-            for (j=0; j<njval; j++) SET_VECTOR_ELT(ans, j+nbyval, growVector(VECTOR_ELT(ans,j+nbyval), newlen));
+            for (j=0; j<nbyval; j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), newlen, LOGICAL(verbose)[0]));
+            for (j=0; j<njval; j++) SET_VECTOR_ELT(ans, j+nbyval, growVector(VECTOR_ELT(ans,j+nbyval), newlen, LOGICAL(verbose)[0]));
             // TO DO: implement R_realloc(?) here
             // TO DO: more sophisticated newlen estimate based on new group's size
             // TO DO: possibly inline it.
@@ -344,23 +356,31 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
 }
 
 
-SEXP growVector(SEXP x, R_len_t newlen)
+SEXP growVector(SEXP x, R_len_t newlen, Rboolean verbose)
 {
     // similar to EnlargeVector in src/main/subassign.c.
-    // * replaced switch and loops with one memcpy
+    // * replaced switch and loops with one memcpy for INTEGER and REAL, but need to age CHAR and VEC.
     // * no need to cater for names
     // * much shorter and faster
     SEXP newx;
-    R_len_t len = length(x);
-    int size = SIZEOF(x);
-    PROTECT(x);
+    R_len_t i, len = length(x);
     PROTECT(newx = allocVector(TYPEOF(x), newlen));
-    memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*size);
-    UNPROTECT(2);
+    switch (TYPEOF(x)) {
+    case STRSXP :
+        for (i=0; i<len; i++)
+            SET_STRING_ELT(newx, i, STRING_ELT(x, i));
+            // Using SET_ to ensure objects are aged, rather than memcpy. Perhaps theres a bulk/fast way to age CHECK_OLD_TO_NEW
+        break;
+    case VECSXP :
+        for (i=0; i<len; i++)
+            SET_VECTOR_ELT(newx, i, VECTOR_ELT(x, i));
+        break;
+    default :
+        memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*SIZEOF(x));
+    }
+    if (verbose) Rprintf("Growing vector from %d to %d items of type '%s'\n", len, newlen, typename[TYPEOF(x)]);
+    UNPROTECT(1);
     return newx;
 }
-
-
-
 
 

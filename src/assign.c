@@ -21,7 +21,7 @@ void setSizes();
 #define SIZEOF(x) sizes[TYPEOF(x)]
 //
 
-SEXP growVector(SEXP x, R_len_t newlen);
+extern SEXP growVector(SEXP x, R_len_t newlen, Rboolean verbose);
 SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho);
 SEXP *saveds;
 R_len_t *savedtl, nalloc, nsaved;
@@ -210,7 +210,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                                 PROTECT(addlevels = allocVector(STRSXP, 100));
                                 protecti++;
                             } else if (addi >= length(addlevels)) {
-                                PROTECT(addlevels = growVector(addlevels, length(addlevels)+1000));
+                                PROTECT(addlevels = growVector(addlevels, length(addlevels)+1000, FALSE));
                                 protecti++;
                             }
                             SET_STRING_ELT(addlevels,addi,thisv);
@@ -220,7 +220,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                     }
                     if (addi > 0) {
                         R_len_t oldlen = length(targetlevels);
-                        PROTECT(targetlevels = growVector(targetlevels, length(targetlevels)+addi));
+                        PROTECT(targetlevels = growVector(targetlevels, length(targetlevels)+addi, FALSE));
                         protecti++;
                         size = sizeof(SEXP *);
                         memcpy((char *)DATAPTR(targetlevels) + oldlen*size,
