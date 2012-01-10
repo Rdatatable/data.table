@@ -399,17 +399,19 @@ SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho)
             SET_VECTOR_ELT(newdt,i,VECTOR_ELT(dt,i));
             SET_STRING_ELT(newnames,i,STRING_ELT(names,i));
 	    }
-	    setAttrib(newdt, R_NamesSymbol, newnames);
-        copyMostAttrib(dt, newdt);
+	    DUPLICATE_ATTRIB(newdt, dt);
+        // copyMostAttrib(dt, newdt);
         LENGTH(newdt) = l;  //prefered due to the SETLENGTH vs SET_LENGTH confusion (inconsistent with SET_TRUELENGTH)
         LENGTH(newnames) = l;
         TRUELENGTH(newdt) = n;
         TRUELENGTH(newnames) = n;
-        dt=newdt;
+        setAttrib(newdt, R_NamesSymbol, newnames);
+        TRUELENGTH(getAttrib(dt, R_ClassSymbol)) = -999;
         // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
         if (!isNull(symbol)) {
-            setVar(symbol,dt,rho);
+            setVar(symbol,newdt,rho);
         }
+        dt = newdt;
         UNPROTECT(2);
     } else {
         // Reduce the allocation (most likely to the same value as length).
