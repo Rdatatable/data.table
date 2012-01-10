@@ -824,9 +824,9 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE)
 }
 
 as.data.table.list = function(x, keep.rownames=FALSE) {
-    x = copy(x)
     if (!length(x)) return( null.data.table() )
     n = sapply(x,length)
+    x = copy(x)
     if (any(n<max(n)))
         for (i in which(n<max(n))) x[[i]] = rep(x[[i]],length=max(n))
     if (is.null(names(x))) names(x) = paste("V",1:length(x),sep="")
@@ -1166,10 +1166,16 @@ split.data.table = function(...) {
 # TO DO, add more warnings e.g. for by.data.table(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
 
 
-copy = function(x) .Call("copy",x,PACKAGE="data.table")
-# TO DO: speedup to duplicate.c using memcpy, suggested to r-devel, would benefit copy()
-# Could construct data.table and use memcpy ourselves but deep copies e.g. list() columns
-# may be tricky; more robust to rely on R's duplicate which deep copies.
+copy = function(x) {
+    newx = .Call("copy",x,PACKAGE="data.table")  # copies at length but R's duplicate() also copies truelength over.
+    if (!is.data.table(x)) return(newx)   # e.g. in as.data.table.list() the list is copied before changing to data.table
+    settruelength(newx,0L)
+    alloc.col(newx)
+    # TO DO: speedup duplicate.c using memcpy, suggested to r-devel, would benefit copy()
+    # Could construct data.table and use memcpy ourselves but deep copies e.g. list() columns
+    # may be tricky; more robust to rely on R's duplicate which deep copies.
+}
+
 
 alloc.col = function(DT,n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT))))) 
 {   
@@ -1184,9 +1190,10 @@ truelength = function(x) .Call("truelength",x,PACKAGE="data.table")
 
 settruelength = function(x,n) {
     "Truly an internal function only. Users can call this using :::, but please don't."
-    if (n!=0) warning("settruelength should only be used to set to 0, and is for 2.13.2-")
-    if (getRversion() >= "2.14.0")
-        if (truelength(x) != 0) warning("This is R>=2.14.0 but truelength isn't initialized to 0")
+    if (n!=0) warning("settruelength should only be used to set to 0.")
+   # We also need this in copy() to reset the copied truelength to the length copied by R's duplicate.
+    #if (getRversion() >= "2.14.0")
+    #    if (truelength(x) != 0) warning("This is R>=2.14.0 but truelength isn't initialized to 0")
         # grep for suppressWarnings(settruelength) for where this is needed in 2.14.0+ (otherwise an option would be to make data.table depend on 2.14.0 so settruelength could be removed)
     .Call("settruelength",x,as.integer(n),PACKAGE="data.table")
     if (is.data.table(x))

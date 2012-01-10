@@ -138,12 +138,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             PROTECT(dt = alloccol(dt,n, R_NilValue, R_NilValue));
             protecti++;
         }
-        size = sizeof(SEXP *);
         names = getAttrib(dt, R_NamesSymbol);
-	    memcpy((char *)DATAPTR(names)+LENGTH(names)*size, (char *)DATAPTR(newcolnames), LENGTH(newcolnames)*size);
-	    // If object has been duplicated by main/duplicate.c and length copied, but truelength retained, then
-	    // this memcpy is where overwrites occurred when names is 40 bytes before dt, for example, and dt got set to
-	    // NULL by this memcpy. Now theres an alloccol(dt,length(dt)) in [<- and $<-.
+        for (i=0; i<LENGTH(newcolnames); i++)
+            SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
         LENGTH(dt) = oldncol+LENGTH(newcolnames);
         LENGTH(names) = oldncol+LENGTH(newcolnames);
         // truelength's of both already set by alloccol
@@ -158,6 +155,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             continue;   // delete column(s) afterwards, below this loop
         vlen = length(thisvalue);
         if (length(rows)==0 && targetlen==vlen) {
+            if (thisvalue != NULL && TYPEOF(thisvalue) == FREESXP)
+	            error("unprotected object (%p) encountered by plonk", thisvalue);
             SET_VECTOR_ELT(dt,coln,thisvalue);
             // plonk new column in as it's already the correct length
             // if column exists, 'replace' it (one way to change a column's type i.e. less easy, as it should be, for speed, correctness and to get the user thinking about their intent)        
@@ -220,12 +219,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                     }
                     if (addi > 0) {
                         R_len_t oldlen = length(targetlevels);
-                        PROTECT(targetlevels = growVector(targetlevels, length(targetlevels)+addi, FALSE));
+                        PROTECT(targetlevels = growVector(targetlevels, oldlen+addi, FALSE));
                         protecti++;
-                        size = sizeof(SEXP *);
-                        memcpy((char *)DATAPTR(targetlevels) + oldlen*size,
-                               (char *)DATAPTR(addlevels),
-                               addi*size);
+                        for (j=0; j<addi; j++)
+                            SET_STRING_ELT(targetlevels, oldlen+j, STRING_ELT(addlevels, j));
                         setAttrib(targetcol, R_LevelsSymbol, targetlevels);
                     }
                     for (j=0; j<length(targetlevels); j++) TRUELENGTH(STRING_ELT(targetlevels,j))=0;  // important to reinstate 0 for countingcharacterorder and HASHPRI (if any) as done by savetl_end().
@@ -263,23 +260,48 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             }
         }
         size = SIZEOF(targetcol);
+        //Rprintf("Recycling assign to coln %d of type '%s' vlen %d targetlen %d size %d\n", coln, typename[TYPEOF(targetcol)], vlen,targetlen,size);
+        if (TYPEOF(RHS) != TYPEOF(targetcol)) error("Internal error, TYPEOF(targetcol)!=TYPEOF(RHS)");
         if (length(rows)==0) {
-            for (r=0; r<(targetlen/vlen); r++) {
+            switch (TYPEOF(targetcol)) {
+            case STRSXP :
+                //Rprintf("Recycling correctly STRSXP\n");
+                for (r=0; r<targetlen; r++)
+                    SET_STRING_ELT(targetcol, r, STRING_ELT(RHS, r%vlen));
+                break;
+            case VECSXP :
+                //Rprintf("Recycling correctly VEC\n");
+                for (r=0; r<targetlen; r++)
+                    SET_VECTOR_ELT(targetcol, r, STRING_ELT(RHS, r%vlen));
+                break;
+            default :
+                //Rprintf("Recycling numeric or integer in bulk\n");
+                for (r=0; r<(targetlen/vlen); r++) {
+                    memcpy((char *)DATAPTR(targetcol) + r*vlen*size,
+                           (char *)DATAPTR(RHS),
+                           vlen * size);
+                    //Rprintf("Bulk copy %d %d\n", r*vlen*size, vlen * size);
+                }
                 memcpy((char *)DATAPTR(targetcol) + r*vlen*size,
                        (char *)DATAPTR(RHS),
-                       vlen * size);
+                       (targetlen%vlen) * size);
+                //Rprintf("Final bulk copy %d %d\n", r*vlen*size, (targetlen%vlen) * size);
             }
-            memcpy((char *)DATAPTR(targetcol) + r*vlen*size,
-                   (char *)DATAPTR(RHS),
-                   targetlen%vlen * size);
         } else {
-            //j=0;
-            //for (r=0; r<(targetlen/vlen); r++) {
-            for (j=0; j<targetlen; j++) {
-                //for (v=0;v<vlen;v++) {
-                memcpy((char *)DATAPTR(targetcol) + (INTEGER(rows)[j]-1)*size, 
-                       (char *)DATAPTR(RHS) + (j%vlen) * size,
-                       size);
+            switch (TYPEOF(targetcol)) {
+            case STRSXP :
+                for (r=0; r<targetlen; r++)
+                    SET_STRING_ELT(targetcol, INTEGER(rows)[r]-1, STRING_ELT(RHS, r%vlen));
+                break;
+            case VECSXP :
+                for (r=0; r<targetlen; r++)
+                    SET_VECTOR_ELT(targetcol, INTEGER(rows)[r]-1, STRING_ELT(RHS, r%vlen));
+                break;
+            default :
+                for (r=0; r<targetlen; r++)
+                    memcpy((char *)DATAPTR(targetcol) + (INTEGER(rows)[r]-1)*size, 
+                           (char *)DATAPTR(RHS) + (r%vlen) * size,
+                           size);
             }
         }
     }
@@ -359,7 +381,7 @@ void savetl_end() {
 SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho)
 {
     SEXP newdt, names, newnames;
-    R_len_t l=length(dt), tl=0;   // this tl=0 is important for pre R 2.14.0
+    R_len_t i, l=length(dt), tl=0;   // this tl=0 is important for pre R 2.14.0
     if (!isNull(dt)) {
         if (TYPEOF(dt) != VECSXP) error("dt passed to alloccol isn't type VECSXP");
         tl = TRUELENGTH(dt);
@@ -369,13 +391,13 @@ SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho)
     
     // TO DO: Get assign to call alloccol rather than repeat the code ...
     if (n>tl) { 
+        names = getAttrib(dt, R_NamesSymbol);
+        if (length(names) != l) error("Internal error in alloccol: names is length %d, but expected %d",length(names),l);
         PROTECT(newdt = allocVector(VECSXP, n));
         PROTECT(newnames = allocVector(STRSXP, n));
-        if (l) {
-            memcpy((char *)DATAPTR(newdt),(char *)DATAPTR(dt),l*sizeof(SEXP *));
-            names = getAttrib(dt, R_NamesSymbol);
-            if (length(names) != l) error("unexpected length of names");
-	        memcpy((char *)DATAPTR(newnames), (char *)DATAPTR(names), l*sizeof(SEXP *));
+        for (i=0; i<l; i++) {
+            SET_VECTOR_ELT(newdt,i,VECTOR_ELT(dt,i));
+            SET_STRING_ELT(newnames,i,STRING_ELT(names,i));
 	    }
 	    setAttrib(newdt, R_NamesSymbol, newnames);
         copyMostAttrib(dt, newdt);
