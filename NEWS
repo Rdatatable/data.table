@@ -32,7 +32,8 @@ BUG FIXES
         left in an invalid state if an error occurs, #1711.
         Thanks to Chris Neff for reporting.
         
-   o    An example in ?":=" fixed, thanks to Joseph Voelkel for
+   o    An example in ?":=" fixed, and j and by descriptons
+        improved in ?data.table. Thanks to Joseph Voelkel for
         reporting.
         
 NEW FEATURES

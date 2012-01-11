@@ -60,14 +60,14 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
   Advanced: When \code{i} is a regular \code{list} (such as \code{.BY}), it is automatically converted to \code{data.table}.
 
 }
-  \item{j}{ \code{list()} of expressions of column names, an expression or function call that evaluates to \code{list} (including \code{data.frame} and \code{data.table} which are \code{list}s, too), or (when \code{with=FALSE}) same as \code{j} in \code{[.data.frame}.
+  \item{j}{ A single column name, single expresson of column names, \code{list()} of expressions of column names, an expression or function call that evaluates to \code{list} (including \code{data.frame} and \code{data.table} which are \code{list}s, too), or (when \code{with=FALSE}) same as \code{j} in \code{[.data.frame}.
 
-  \code{j} is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables). The result is returned. \code{list()} may be omitted when there is just one expression, for convenience.
+  \code{j} is evaluated within the frame of the \code{data.table}; i.e., it sees column names as if they are variables. Use \code{j=list(...)} to return multiple columns and/or expressions of columns. A single column or single expression returns that type, usually a vector. See the examples.
 
 }
-  \item{by}{ \code{list()} of expressions of column names, or a single character string containing comma separated column names, or a character vector of column names.
+  \item{by}{ A single unquoted column name, \code{list()} of expressions of column names, or a single character string containing comma separated column names, or a character vector of column names.
 
-  The \code{list()} of expressions is evaluated within the frame of the data.table (i.e. it sees column names as if they are variables). The data.table is then grouped by the \code{by} and \code{j} is evaluated within the frame. The order of the rows within each group is preserved as is the order of the groups. \code{list()} may be omitted when there is just one expression, typically a single unquoted column name.
+  The \code{list()} of expressions is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{j=list(...)} may be omitted when there is just one expression, for convenience, typically a single expression such as \code{sum(colB)}; e.g., \code{DT[,sum(colB),by=colA]}.
 
   When \code{by} contains the first \code{n} columns of \code{x}'s key, we call this a \emph{keyed by}. In a keyed by the groups appear contiguously in RAM and memory is copied in bulk internally, for extra speed. Otherwise, we call it an \emph{ad hoc by}. Ad hoc by is still many times faster than \code{tapply}, for example, but just not as fast as keyed by when datasets are very large, in particular when the size of \emph{each group} is large.
 
