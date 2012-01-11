@@ -32,6 +32,9 @@ BUG FIXES
         left in an invalid state if an error occurs, #1711.
         Thanks to Chris Neff for reporting.
         
+   o    An example in ?":=" fixed, thanks to Joseph Voelkel for
+        reporting.
+        
 NEW FEATURES
 
    o    Multiple new columns can be added by reference using

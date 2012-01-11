@@ -46,15 +46,15 @@ Advanced (internals) : sub assigning to columns is easy to see how that is done 
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
-    DT = data.table(a=LETTERS[1:3],b=4:6,key="a")
-    DT[,c:=7]       # add a numeric column, 7 for all rows
-    DT[,d:=8L]      # add an integer column, 8L for all rows
-    DT[,c:=NULL]    # remove the c column
-    DT[2,d:=9L]     # subassign by reference to column d
-    DT              # DT changed by reference
+    DT = data.table(a=LETTERS[c(1,1:3)],b=4:7,key="a")
+    DT[,c:=8]        # add a numeric column, 7 for all rows
+    DT[,d:=9L]       # add an integer column, 8L for all rows
+    DT[,c:=NULL]     # remove the c column
+    DT[2,d:=10L]     # subassign by reference to column d
+    DT               # DT changed by reference
     
-    DT[a>"A",b:=d*2L]  # subassign to b using d where a>"A"
-    DT["A",b:=0L]      # binary search for group "A" and set column b
+    DT[b>4,b:=d*2L]  # subassign to b using d, where b>4
+    DT["A",b:=0L]    # binary search for group "A" and set column b
 
 \dontrun{
     DT[,newcol:=sum(v),by=group]  # like fast transform() by group (not yet implemented)}
