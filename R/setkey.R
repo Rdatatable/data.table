@@ -169,7 +169,7 @@ CJ = function(...)
     setattr(l,"class",c("data.table","data.frame"))
     names(l) = paste("V",1:length(l),sep="")
     settruelength(l,0L)
-    alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation. 
+    l=alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
     setkey(l)
     l
 }

@@ -22,22 +22,32 @@ void setSizes();
 //
 
 extern SEXP growVector(SEXP x, R_len_t newlen, Rboolean verbose);
-SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho);
+SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean allocwarn);
 SEXP *saveds;
 R_len_t *savedtl, nalloc, nsaved;
 void savetl_init(), savetl(SEXP s), savetl_end();
 
-SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP symbol, SEXP rho, SEXP revcolorder, SEXP allocwarn)
+SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP revcolorder)
 {
     // For internal use only by [<-.data.table.
     // newcolnames : add these columns (if any)
     // cols : column numbers corresponding to the values to set
-    R_len_t i, j, size, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, n, newcolnum;
-    SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam;
-    if (!isNull(symbol) && !isEnvironment(rho))
-        error("Internal data.table error in assign.c. rho should be an environment");
-    oldncol = length(dt);
-    names = getAttrib(dt, R_NamesSymbol);
+    R_len_t i, j, size, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, /*n,*/ newcolnum;
+    SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class;
+    //if (!isNull(symbol) && !isEnvironment(rho))
+    //    error("Internal data.table error in assign.c. rho should be an environment");
+    
+    if (isNull(dt)) error("assign has been passed a NULL dt");
+    if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
+    class = getAttrib(dt, R_ClassSymbol);
+    if (isNull(class)) error("dt passed to assgn has no class attribute. Please report result of traceback() to datatable-help.");
+    if (TRUELENGTH(class) != -999) error("dt passed to assign is not marked");
+    oldncol = LENGTH(dt);
+    names = getAttrib(dt,R_NamesSymbol);
+    if (isNull(names)) error("dt passed to assign has no names");
+    if (length(names)!=oldncol)
+        error("Internal error in assign: length of names (%d) is not length of dt (%d)",length(names),oldncol);
+
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (oldncol<1) error("Cannot use := to add columns to an empty data.table, currently");
     if (length(rows)==0) {
@@ -104,15 +114,17 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     // so we can now proceed to modify DT by reference.
     if (length(newcolnames)) {
         if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
+        if (TRUELENGTH(getAttrib(dt, R_ClassSymbol)) != -999 )
+            error("Internal logical error: dt passed to assign is not marked");
         oldtncol = TRUELENGTH(dt);
         
-        if (TRUELENGTH(getAttrib(dt, R_ClassSymbol)) != -999 ) {
-            if (R_VERSION >= R_Version(2, 14, 0) && oldtncol!=0) {
-                error("Internal logical error: this is R >= 2.14.0, class is not marked but tl is %d rather than 0",oldtncol);
+        // TO DO: remove ... if (TRUELENGTH(getAttrib(dt, R_ClassSymbol)) != -999 ) {
+        //    if (R_VERSION >= R_Version(2, 14, 0) && oldtncol!=0) {
+        //        error("Internal logical error: this is R >= 2.14.0, class is not marked but tl is %d rather than 0",oldtncol);
                 // tl should be 0 in R 2.14.0+ when saved and loaded back, when duplicated via *tmp*, or copy()-ed,
                 // and class marker won't be set then either, but class marker (should) only required for <=2.13.2
                 // because tl not initialized to 0 there.
-            }
+        //    }
             // tl is random (uninitialized) in R <=2.13.2 so we detect that with the logic above.
             // It is possible (in R <=2.13.2) that by chance, tl is unitialized to -999 but not enough risk to warrant
             // making data.table dependent on 2.14.0 (some users have asked us not to do that as they are bound to
@@ -120,24 +132,26 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             // Also random (uninitialized) in <=2.13.2 when data.table has been duplicated; e.g. via `*tmp*` or copy()
             // as in 2.14.0+ but isn't a problem there where tl is initialized to 0.
             
-            oldtncol=0;  // trigger alloccol below.
-            TRUELENGTH(dt) = 0;  // so that alloccol really does its stuff (it reads TRUELENGTH again)
-            TRUELENGTH(getAttrib(dt, R_ClassSymbol)) = -999;
-        } else {
+       //     oldtncol=0;  // trigger alloccol below.
+       //     TRUELENGTH(dt) = 0;  // so that alloccol really does its stuff (it reads TRUELENGTH again)
+       //     TRUELENGTH(getAttrib(dt, R_ClassSymbol)) = -999;
+       // } else {
             if (oldtncol<oldncol) error("Internal error, please report (including result of sessionInfo()) to datatable-help: oldtncol (%d) < oldncol (%d) but tl of class is marked.", oldtncol, oldncol);
             if (oldtncol>oldncol+1000) warning("tl (%d) is greater than 1000 items over-allocated (ncol = %d). If you didn't set the datatable.alloccol option very large, please report this to datatable-help including the result of sessionInfo().",oldtncol, oldncol); 
-        }
+        //}
         
-        if (oldtncol < oldncol+LENGTH(newcolnames)) {
-            n = imax2(oldtncol+100, oldncol+2*LENGTH(newcolnames));
-            if (LOGICAL(allocwarn)[0] && NAMED(dt)>1) warning("growing vector of column pointers from %d to %d. Only a shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data, and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings(), or increase the 'datatable.alloccol' option.", oldtncol, n);
+        if (oldtncol < oldncol+LENGTH(newcolnames))
+            error("Internal logical error. DT passed to assign has not been allocated enough column slots. l=%d, tl=%d, adding %d", oldncol, oldtncol, LENGTH(newcolnames));
+        //    n = imax2(oldtncol+100, oldncol+2*LENGTH(newcolnames));
+        //    if (LOGICAL(allocwarn)[0] && NAMED(dt)>1) warning("growing vector of column pointers from %d to %d. Only a shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data, and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings(), or increase the 'datatable.alloccol' option.", oldtncol, n);
             // Note that the NAMED(dt)>1 doesn't work because .Call always sets to 2 (see R-ints), it seems. Work around
             // may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too because
             // that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
             // Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we don't mind.
-            PROTECT(dt = alloccol(dt,n, R_NilValue, R_NilValue));
-            protecti++;
-        }
+        //    PROTECT(dt = alloccol(dt,n, R_NilValue, R_NilValue));
+        //    protecti++;
+        //}
+        //size = sizeof(SEXP *);
         names = getAttrib(dt, R_NamesSymbol);
         for (i=0; i<LENGTH(newcolnames); i++)
             SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
@@ -265,27 +279,22 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         if (length(rows)==0) {
             switch (TYPEOF(targetcol)) {
             case STRSXP :
-                //Rprintf("Recycling correctly STRSXP\n");
                 for (r=0; r<targetlen; r++)
                     SET_STRING_ELT(targetcol, r, STRING_ELT(RHS, r%vlen));
                 break;
             case VECSXP :
-                //Rprintf("Recycling correctly VEC\n");
                 for (r=0; r<targetlen; r++)
                     SET_VECTOR_ELT(targetcol, r, STRING_ELT(RHS, r%vlen));
                 break;
             default :
-                //Rprintf("Recycling numeric or integer in bulk\n");
                 for (r=0; r<(targetlen/vlen); r++) {
                     memcpy((char *)DATAPTR(targetcol) + r*vlen*size,
                            (char *)DATAPTR(RHS),
                            vlen * size);
-                    //Rprintf("Bulk copy %d %d\n", r*vlen*size, vlen * size);
                 }
                 memcpy((char *)DATAPTR(targetcol) + r*vlen*size,
                        (char *)DATAPTR(RHS),
                        (targetlen%vlen) * size);
-                //Rprintf("Final bulk copy %d %d\n", r*vlen*size, (targetlen%vlen) * size);
             }
         } else {
             switch (TYPEOF(targetcol)) {
@@ -343,10 +352,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         // Do this at C level to avoid any copies.
         setAttrib(dt, install("sorted"), R_NilValue);
     }
-    if (!isNull(symbol)) {
+    // TO DO : remove  if (!isNull(symbol)) {
         // Called from := in j when adding columns, just needed when a realloc takes place 
-        setVar(symbol,dt,rho);
-    } // else called from $<- or [<- where the slower copy via `*tmp*` mechanism must be used (as of R 2.13.1)
+        //setVar(symbol,dt,rho);
+    //} // else called from $<- or [<- where the slower copy via `*tmp*` mechanism must be used (as of R 2.13.1)
     UNPROTECT(protecti);
     return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
 }
@@ -378,21 +387,51 @@ void savetl_end() {
     Free(savedtl);
 }
 
-SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho)
+SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean allocwarn)
 {
-    SEXP newdt, names, newnames;
-    R_len_t i, l=length(dt), tl=0;   // this tl=0 is important for pre R 2.14.0
-    if (!isNull(dt)) {
-        if (TYPEOF(dt) != VECSXP) error("dt passed to alloccol isn't type VECSXP");
-        tl = TRUELENGTH(dt);
-    };
-    if (l>n) warning("table has %d column slots in use. Attept to allocate less (%d)",l,n);
-    //  can now reduce for [<- and $<- coping via *tmp*....if (tl>=n) warning("table already has %d column slots allocated, with %d in use. Attempt to allocate less (%d)",tl,l,n);
-    
-    // TO DO: Get assign to call alloccol rather than repeat the code ...
-    if (n>tl) { 
-        names = getAttrib(dt, R_NamesSymbol);
-        if (length(names) != l) error("Internal error in alloccol: names is length %d, but expected %d",length(names),l);
+    SEXP newdt, names, newnames, class;
+    R_len_t i, l, tl;
+    if (isNull(dt)) error("alloccol has been passed a NULL dt");
+    if (!isNull(symbol) && !isEnvironment(rho))
+        error("Internal data.table error in assign.c (alloccol). rho should be an environment");
+    if (TYPEOF(dt) != VECSXP) error("dt passed to alloccol isn't type VECSXP");
+    class = getAttrib(dt, R_ClassSymbol);
+    if (isNull(class)) error("dt passed to alloccol has no class attribute. Please report result of traceback() to datatable-help.");
+    l = LENGTH(dt);
+    names = getAttrib(dt,R_NamesSymbol);
+    // names may be NULL, when null.data.table() passes list() to alloccol for example.
+    // So, careful to use length() on names, not LENGTH(). 
+    if (length(names)!=l)
+        error("Internal error: length of names (%d) is not length of dt (%d)",length(names),l);
+    tl = TRUELENGTH(dt);
+    if (TRUELENGTH(class) != -999 ) {
+        // TO DO: think we can remove all the settruelength's up in data.table.R now we just rely on marker.
+        //if (R_VERSION >= R_Version(2, 14, 0) && tl!=0) {
+        //    error("Internal logical error: this is R >= 2.14.0, class is not marked but tl is %d rather than 0",tl);
+        // tl should be 0 in R 2.14.0+ when saved and loaded back, when duplicated via *tmp*, or copy()-ed,
+        // and class marker won't be set then either, but, class marker (should) only required for <=2.13.2
+        // because tl not initialized to 0 there (so when we make data.table depend on R 2.14.0, we can remove
+        // the -999 marker).
+        //}
+        // tl is random (uninitialized) in R <=2.13.2 so we detect that with the logic above.
+        // It is possible (in R <=2.13.2) that by chance, tl is unitialized to -999 but not enough risk to warrant
+        // making data.table dependent on 2.14.0 (some users have asked us not to do that as they are bound to
+        // earlier versions).
+        // The -999L marker on the class attribute doesn't get copied over by R (e.g. via [<- and $<-) so in
+        // tables() is a way this branch is important, even n 2.14.0+. 
+        tl=l;
+        TRUELENGTH(dt)=l;
+        if (!isNull(names)) TRUELENGTH(names)=l;
+        TRUELENGTH(class) = -999;
+    } else {
+        if (tl<0) error("Internal error, tl of class is marked but tl<0.");  // R <= 2.13.2 and we didn't catch uninitialized tl somehow
+        if (tl>0 && tl<l) error("Internal error, please report (including result of sessionInfo()) to datatable-help: tl (%d) < l (%d) but tl of class is marked.", tl, l);
+        if (tl>l+1000) warning("tl (%d) is greater than 1000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report this to datatable-help including the result of sessionInfo().",tl,l);
+        //if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
+        //    error("Internal error: tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol)));
+    }
+    if (n<l) warning("table has %d column slots in use. Attept to allocate less (%d)",l,n);
+    if (n>tl) {
         PROTECT(newdt = allocVector(VECSXP, n));
         PROTECT(newnames = allocVector(STRSXP, n));
         for (i=0; i<l; i++) {
@@ -406,10 +445,19 @@ SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho)
         TRUELENGTH(newdt) = n;
         TRUELENGTH(newnames) = n;
         setAttrib(newdt, R_NamesSymbol, newnames);
-        TRUELENGTH(getAttrib(dt, R_ClassSymbol)) = -999;
+        if (isNull(getAttrib(newdt, R_ClassSymbol))) error("newdt has null class");
+        TRUELENGTH(getAttrib(newdt, R_ClassSymbol)) = -999;
         // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
         if (!isNull(symbol)) {
+            if (allocwarn && NAMED(dt)>0) warning("growing vector of column pointers from %d to %d. Only a shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.", tl, n, NAMED(dt));
+            //Rf_PrintValue(symbol);
+            //Rf_PrintValue(rho);
             setVar(symbol,newdt,rho);
+            // Note that the NAMED(dt)>0 never works because .Call always sets to 2 (see R-ints). Work around
+            // may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too because
+            // that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
+            // Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we don't mind
+            // that inefficiency.
         }
         dt = newdt;
         UNPROTECT(2);
@@ -417,13 +465,13 @@ SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho)
         // Reduce the allocation (most likely to the same value as length).
         //if (n!=l) warning("Reducing alloc cols from %d to %d, but not to length (%d)",TRUELENGTH(dt),n,LENGTH(dt));
         TRUELENGTH(dt) = n;
-        TRUELENGTH(getAttrib(dt,R_NamesSymbol)) = n;
+        if (!isNull(names)) TRUELENGTH(names) = n;
     }
     return(dt);
 }
 
-SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP symbol, SEXP rho) {
-    return(alloccol(dt, INTEGER(newncol)[0], symbol, rho));
+SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP symbol, SEXP rho, SEXP allocwarn) {
+    return(alloccol(dt, INTEGER(newncol)[0], symbol, rho, LOGICAL(allocwarn)[0]));
 }
 
 SEXP truelength(SEXP x) {
