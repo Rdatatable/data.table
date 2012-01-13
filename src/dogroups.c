@@ -62,6 +62,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     N = findVar(install(".N"), env);
     
     names = getAttrib(SD, R_NamesSymbol);
+    if (length(names) != length(SD)) error("length(names)!=length(SD)");
     nameSyms = Calloc(length(names), SEXP);
     if (!nameSyms) error("Calloc failed to allocate %d nameSyms in dogroups",length(names));
     for(i = 0; i < length(SD); i++) {
@@ -72,15 +73,19 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     // defineVar(install(".SD"), SD, env);
     // By installing .SD directly inside itself, R finds this symbol more quickly (if used).
 
-    inames = getAttrib(itable, R_NamesSymbol);
+    inames = getAttrib(itable, R_NamesSymbol);  // the whole i table
+    if (length(iSD)!=length(icols)) error("length(iSD)[%d] != length(icols)[%d]",length(iSD),length(icols));
+    if (length(icols)>length(inames)) error("length(icols)[%d] > length(inames)[%d]",length(icols),length(inames));
     for(i = 0; i < length(icols); i++) {
         // JIS (used non-key variables of i). The parent of SD isn't i, but it gives that appearance.
         icol = INTEGER(icols)[i]-1;
+        if (icol>=length(inames)) error("icol[%d] >= length(inames)[%d]", icol, length(inames));
         defineVar(install(CHAR(STRING_ELT(inames,icol))),VECTOR_ELT(iSD,i),env);
         if (SIZEOF(VECTOR_ELT(iSD, i))==0)
             error("Type %d in join inherited scope column %d", TYPEOF(VECTOR_ELT(iSD, i)), i);
     }
     bynames = getAttrib(BY, R_NamesSymbol);
+    if (length(bynames) != length(byval)) error("length(bynames)!=length(byval)");
     for(i = 0; i < length(byval); i++) {
         // by vars can be used by name or via .BY
         defineVar(install(CHAR(STRING_ELT(bynames,i))),VECTOR_ELT(BY,i),env);
@@ -246,7 +251,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         }
         INTEGER(N)[0] = INTEGER(starts)[i] == 0 ? 0 : INTEGER(lens)[i];  // .N is number of rows matched to, regardless of whether nomatch is 0 or NA
         for (j=0; j<length(SD); j++) {
-            SETLENGTH(VECTOR_ELT(SD,j),thislen);
+            LENGTH(VECTOR_ELT(SD,j)) = thislen;
             defineVar(nameSyms[j], VECTOR_ELT(SD, j), env);
             // In case user's j assigns to the columns names (env is static) (tests 387 and 388)
             // nameSyms pre-stored to save repeated install() for efficiency.
@@ -345,7 +350,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     }
     if (ansloc < length(VECTOR_ELT(ans,0))) {
         // Rprintf("Wrote less rows than allocated. byretn=%d but wrote %d rows\n",INTEGER(byretn)[0],ansloc);
-        for (j=0; j<length(ans); j++) SETLENGTH(VECTOR_ELT(ans,j),ansloc);
+        for (j=0; j<length(ans); j++) LENGTH(VECTOR_ELT(ans,j)) = ansloc;
         // TO DO: set truelength here (uninitialized by R) to save growing next time on insert() 
         // Important not to touch truelength for CHARSXP in R's global string cache, but we won't see those here,
         // only true vectors such as STRSXP.

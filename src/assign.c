@@ -114,8 +114,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     // so we can now proceed to modify DT by reference.
     if (length(newcolnames)) {
         if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
-        if (TRUELENGTH(getAttrib(dt, R_ClassSymbol)) != -999 )
-            error("Internal logical error: dt passed to assign is not marked");
         oldtncol = TRUELENGTH(dt);
         
         // TO DO: remove ... if (TRUELENGTH(getAttrib(dt, R_ClassSymbol)) != -999 ) {
@@ -151,8 +149,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         //    PROTECT(dt = alloccol(dt,n, R_NilValue, R_NilValue));
         //    protecti++;
         //}
-        //size = sizeof(SEXP *);
-        names = getAttrib(dt, R_NamesSymbol);
         for (i=0; i<LENGTH(newcolnames); i++)
             SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
         LENGTH(dt) = oldncol+LENGTH(newcolnames);
@@ -169,7 +165,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             continue;   // delete column(s) afterwards, below this loop
         vlen = length(thisvalue);
         if (length(rows)==0 && targetlen==vlen) {
-            if (thisvalue != NULL && TYPEOF(thisvalue) == FREESXP)
+            if (isNull(thisvalue) || TYPEOF(thisvalue) == FREESXP)
 	            error("unprotected object (%p) encountered by plonk", thisvalue);
             SET_VECTOR_ELT(dt,coln,thisvalue);
             // plonk new column in as it's already the correct length
@@ -314,7 +310,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             }
         }
     }
-    names = getAttrib(dt, R_NamesSymbol);
     for (r=0; r<length(revcolorder); r++) {
         // Delete any columns assigned NULL (there was a 'continue' early in loop above)
         i = INTEGER(revcolorder)[r]-1;
