@@ -12,6 +12,7 @@ EXPORT SEXP dogroups();
 
 int sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
 char typename[100][30];  // The typename in main/inspect.c seems static (not available for use by packages), uses a switch, and uses the internal names.
+SEXP SelfRefSymbol;
 
 SEXP growVector(SEXP x, R_len_t newlen, Rboolean verbose);
 int sizesSet=0;
@@ -39,6 +40,7 @@ void setSizes()
         // One place we need the largest sizeof (assumed to be 8 bytes) is the working memory malloc in reorder.c
     }
     sizesSet=1;
+    SelfRefSymbol = install(".internal.selfref");
 }
 #define SIZEOF(x) sizes[TYPEOF(x)]
 

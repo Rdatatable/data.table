@@ -385,9 +385,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # Adding new column(s)
             newcolnames=setdiff(lhs,names(x))
             cols = as.integer(c(m[!is.na(m)],ncol(x)+1:length(newcolnames)))
-            if (truelength(attr(x,"class"))!=-999L || truelength(x) < ncol(x)+length(newcolnames)) {
+            if (notok<-!selfrefok(x))
+                warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table. Please report to datatable-help so the root cause can be fixed.")
+            if (notok || (truelength(x) < ncol(x)+length(newcolnames))) {
                 symbol = as.name(substitute(x))  # TO DO test   DT[....][,foo:=42L],  i.e. no symbol, just local copy
                 rho = parent.frame()       
+                # TO DO :  see if the substitute inside alloc.col would see the substitute up here i.e. DT or x?
+                # TO DO: catch compound :=, substitute(x) as expression?
                 x=alloc.col(x,max(ncol(x)+100, ncol(x)+2*length(newcolnames)),symbol,rho)
             }
         }
@@ -905,7 +909,7 @@ tail.data.table = function(x, n=6, ...) {
         keycol=FALSE
     }
     revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))
-    if (truelength(attr(x,"class"))!=-999L || truelength(x) < ncol(x)+length(newcolnames)) {
+    if (!selfrefok(x) || truelength(x) < ncol(x)+length(newcolnames)) {
         x = alloc.col(x,length(x)+length(newcolnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
         # search for one other .Call to assign in [.data.table to see how it differs
     }
@@ -1195,6 +1199,30 @@ alloc.col = function(DT,
           getOption("datatable.allocwarn",FALSE),PACKAGE="data.table")
 }
 
+selfrefok = function(DT) {
+    .Call("selfrefokwrapper",DT,PACKAGE="data.table")
+}
+
+identicalDT = function(x,y) {
+    # Allows identical() to ignore the .internal.selfref attribute, which is always different.
+    # Similar to attributes on CHARSXP, ignored internally by R.  Important to avoid any
+    # copy of the (large) data, too, so retaining the speed advantage of identical().
+    if ((!is.data.table(x)) || !is.data.table(y))
+        return(identical(x,y))
+        # so that identicalDT can be a drop in replacement for identical e.g. in test.data.table where
+        # non data.table's can be passed to the single identicalDT call.
+    .Call("hideselfref",x)
+    .Call("hideselfref",y)
+    ans = identical(x,y)
+    #if (!ans) {
+    #    print(.Internal(inspect(x)))
+    #    print(.Internal(inspect(y)))
+    #}
+    .Call("showselfref",x)
+    .Call("showselfref",y)
+    ans
+}
+
 truelength = function(x) .Call("truelength",x,PACKAGE="data.table")
 # deliberately no "truelength<-" method.  alloc.col is the mechanism for that (maybe alloc.col should be renamed "truelength<-".
 
@@ -1204,7 +1232,12 @@ settruelength = function(x,n) {
     #if (getRversion() >= "2.14.0")
     #    if (truelength(x) != 0) warning("This is R>=2.14.0 but truelength isn't initialized to 0")
         # grep for suppressWarnings(settruelength) for where this is needed in 2.14.0+ (otherwise an option would be to make data.table depend on 2.14.0 so settruelength could be removed)
+    
+    
     .Call("settruelength",x,as.integer(n),PACKAGE="data.table")
+    
+    
+    
     #if (is.data.table(x))
     #    .Call("settruelength",attr(x,"class"),-999L,PACKAGE="data.table")
     #    # So that (in R 2.13.2-) we can detect tables loaded from disk (tl is not initialized there)
