@@ -1,5 +1,6 @@
 \name{setkey}
 \alias{setkey}
+\alias(setkeyv}
 \alias{key}
 \alias{key<-}
 \alias{haskey}
@@ -30,6 +31,8 @@ copy(x)
   The sort is \emph{stable}; i.e., the order of ties (if any) is preserved.
   
   If \code{value=NULL}, the key is removed.
+  
+  It isn't good programming practice, in general, to use column numbers rather than names. This is why \code{setkey} and \code{key<-} only accept column names. If you use column numbers, bugs (possibly silent) can more easily creep into your code as time progresses if changes are made elsewhere in your code; e.g., if you add, remove or reorder columns in a few months time, a \code{setkey} by column number will then refer to a different column, possibly returning incorrect results with no warning. (A similar concept exists in SQL, where \code{"select * from ..."} is considered poor programming style when a robust, maintainable system is required.)  If you wish to use column numbers, it's possible but a little harder; e.g., \code{key(DT) <- colnames(DT)[1:2]}.
   }
 \value{
     No value is returned. The data.table is modified by reference. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). \code{copy()} may also sometimes be useful before \code{:=} is used to subassign to a column by reference.
@@ -38,7 +41,7 @@ copy(x)
 \url{http://en.wikipedia.org/wiki/Radix_sort}\cr
 \url{http://en.wikipedia.org/wiki/Counting_sort}
 }
-\note{ \code{base::sort.list(x,method="radix")} actually invokes a \emph{counting sort}, not a radix sort. See do_radixsort in src/main/sort.c. A counting sort is particularly suitable for sorting integers and factors, however, and we like it. Anyway, this is one reason data.table 'likes' integers and factors.
+\note{ \code{base::sort.list(x,method="radix")} actually invokes a \emph{counting sort}, not a radix sort. See do_radixsort in src/main/sort.c. A counting sort, however, is particularly suitable for sorting integers and factors, and we like it. Anyway, this is one reason data.table 'likes' integers and factors.
 }
 \seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}}, \code{\link[base]{sort.list}} 
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}

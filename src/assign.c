@@ -28,7 +28,7 @@ SEXP *saveds;
 R_len_t *savedtl, nalloc, nsaved;
 void savetl_init(), savetl(SEXP s), savetl_end();
 
-void setselfref(SEXP x) {
+void setselfref(SEXP x) {    // called from C only, not R
     SEXP v;
     PROTECT(v = allocVector(REALSXP, 2));
     memcpy((char *)DATAPTR(v), &x, sizeof(char *));
@@ -38,14 +38,17 @@ void setselfref(SEXP x) {
     UNPROTECT(1);
 }
 
-void hideselfref(SEXP x) {
-    TYPEOF(getAttrib(x, SelfRefSymbol))=NILSXP;
-    // We can't leave it as NILSXP due to save(): 'WriteItem: unknown type 0'.
-    // Hide and show used by identicalDT
+SEXP hideselfref(SEXP x) {   // called by identical
+    SEXP v = getAttrib(x, SelfRefSymbol);
+    if (v != NULL) TYPEOF(v)=NILSXP;
+    return(R_NilValue);
+    // We can't leave it as NILSXP (or set it NILSXP initially) due to save(): 'WriteItem: unknown type 0'.
 }
 
-void showselfref(SEXP x) {
-    TYPEOF(getAttrib(x, SelfRefSymbol))=REALSXP;
+SEXP showselfref(SEXP x) {   // called by identical
+    SEXP v = getAttrib(x, SelfRefSymbol);
+    if (v != NULL) TYPEOF(v)=REALSXP;
+    return(R_NilValue);
 }
 
 Rboolean selfrefok(SEXP x) {
@@ -73,9 +76,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     if (isNull(dt)) error("assign has been passed a NULL dt");
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
     class = getAttrib(dt, R_ClassSymbol);
-    if (isNull(class)) error("dt passed to assign has no class attribute. Please report result of traceback() to datatable-help.");
-    if (!selfrefok(dt)) error("dt passed to assign has been copied in an unexpected way. Please report the result of traceback() to datatable-help.");
-    //delete ...if (TRUELENGTH(class) != -999) error("dt passed to assign is not marked");
+    if (isNull(class)) error("dt passed to assign has no class attribute. Please report to datatable-help.");
+    if (!selfrefok(dt)) error("At an earlier point, this data.table has been copied by R. Avoid names<-, attr<- and key<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setnames(), setattr() and setkey(). If this message doesn't help, please ask on datatable-help.");  // Produced at the point user wants to assign by reference using := after the use of names<-, attr<- or key<- (which might be never).
+    // We can't catch those copies and call alloc.col afterwards, so we have to ask user to change. See comments in key<-.
     oldncol = LENGTH(dt);
     names = getAttrib(dt,R_NamesSymbol);
     if (isNull(names)) error("dt passed to assign has no names");

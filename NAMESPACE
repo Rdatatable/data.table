@@ -5,10 +5,11 @@ import(methods)
 exportClasses(data.table, IDate, ITime)
 ##
 
-export(data.table, tables, setkey, key, "key<-", haskey, J, CJ, SJ, copy)
+export(data.table, tables, setkey, key, "key<-", haskey, J, CJ, SJ, copy, identical)
 export(as.data.table,is.data.table,test.data.table,last,like,"%like%",between,"%between%")
 export(timetaken)
 export(truelength, alloc.col, ":=")
+export(setattr)
 
 S3method("[", data.table)
 S3method("[<-", data.table)

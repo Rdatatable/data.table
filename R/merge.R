@@ -33,11 +33,11 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
 
     if (.reset.keys(x, by)) {
         x = copy(x)
-        key(x) <- by
+        setkeyv(x,by)
     }
     if (.reset.keys(y, by)) {
         y = copy(y)
-        key(y) <- by
+        setkeyv(y,by)
     }
 
     ykey <- y[,by,with=FALSE]
@@ -85,8 +85,8 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             dt <- rbind(dt, yy[,names(dt),with=FALSE])
         }
     }
-    if (nrow(dt) > 0) key(dt) = by
-
+    if (nrow(dt) > 0) setkeyv(dt,by)
+    
     ###########################################################################
     ## Handle merging suffix behavior.
     ## Enable ability to use "old" suffix behavior for now.
@@ -136,7 +136,6 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             }
         }
     }
-
     dt
 }
 

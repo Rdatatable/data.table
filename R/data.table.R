@@ -167,15 +167,18 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     names(value) <- vnames
     setattr(value,"row.names",.set_row_names(nr))
     setattr(value,"class",c("data.table","data.frame"))
+    value = alloc.col(value)   # TO DO: remove the value=
     if (!is.null(key)) {
-      if (!is.character(key)) stop("key must be character")
-      if (length(key)==1)
-          eval(parse(text=paste("setkey(value,",key,")",sep="")))    # e.g. key = "x,y"
-      else
-          key(value) = key     # e.g. key=c("col1","col2")
+      if (!is.character(key)) stop("key argument of data.table() must be character")
+      if (length(key)==1) {
+          key = strsplit(key,split=",")[[1]]
+          # eg key="A,B"; a syntax only useful in key argument to data.table(), really.
+      }
+      setkeyv(value,key)
     }
-    settruelength(value,0L)
-    alloc.col(value)   # Despite the thread on r-devel "Confused about NAMED" about data.frame(), returning it this way makes a NAM(1) data.table. Returning "value=alloc.col(value);value" is the same but returns a NAM(2) data.table. Unlike data.frame which is always NAMED==2. We ignore NAMED in data.table generally, but it would be useful to avoid the grow warning when NAMED=1. However the print method still bumps NAMED (as it does in data.frame) (TO DO - stop that bump and warn on grow via := will be even less often).
+    value
+    #alloc.col(value)
+    # TO DO. Revisit this comment. Applied when 'alloc.col(value)' was the last line....Despite the thread on r-devel "Confused about NAMED" about data.frame(), returning it this way makes a NAM(1) data.table. Returning "value=alloc.col(value);value" is the same but returns a NAM(2) data.table. Unlike data.frame which is always NAMED==2. We ignore NAMED in data.table generally, but it would be useful to avoid the grow warning when NAMED=1. However the print method still bumps NAMED (as it does in data.frame) (TO DO - stop that bump and warn on grow via := will be even less often).
 }
 
 
@@ -1203,21 +1206,17 @@ selfrefok = function(DT) {
     .Call("selfrefokwrapper",DT,PACKAGE="data.table")
 }
 
-identicalDT = function(x,y) {
-    # Allows identical() to ignore the .internal.selfref attribute, which is always different.
-    # Similar to attributes on CHARSXP, ignored internally by R.  Important to avoid any
-    # copy of the (large) data, too, so retaining the speed advantage of identical().
+identical = function(x,y) {
+    # Allows identical() to ignore the .internal.selfref attribute, which is always different for data.table.
+    # The .internal.selfref allows us to track copies robustly, which is important now that data.tables are
+    # over-allocated i.e. truelength>length. 
+    # Similar to the concept of attributes on CHARSXP for internal use by R, and ignored by identical.c.
+    # This identical will mask base and appear as a warning on loading the package.
     if ((!is.data.table(x)) || !is.data.table(y))
-        return(identical(x,y))
-        # so that identicalDT can be a drop in replacement for identical e.g. in test.data.table where
-        # non data.table's can be passed to the single identicalDT call.
+        return(base::identical(x,y))
     .Call("hideselfref",x)
     .Call("hideselfref",y)
-    ans = identical(x,y)
-    #if (!ans) {
-    #    print(.Internal(inspect(x)))
-    #    print(.Internal(inspect(y)))
-    #}
+    ans = base::identical(x,y)
     .Call("showselfref",x)
     .Call("showselfref",y)
     ans

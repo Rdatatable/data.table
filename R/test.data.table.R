@@ -12,7 +12,10 @@ test.data.table = function(echo=FALSE) {
     # for (fn in dir(d,"*.[rR]$",full=TRUE)) {  # testthat runs those
     for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
         cat("Running",fn,"\n")
+        oldverbose = getOption("datatable.verbose",FALSE)
+        if (echo) options(datatable.verbose=TRUE)
         source(fn,local=new.env(parent=.GlobalEnv),echo=echo)
+        options(data.table.verbose=oldverbose)
         # the new.env() is required for when a *user* runs test.data.table() because
         # the context of this function is sealed in the namespace w.r.t S4.
         # It is also tidier to protect the tests from the variable 'd' above.

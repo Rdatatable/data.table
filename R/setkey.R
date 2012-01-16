@@ -1,74 +1,115 @@
-setkey = function(x, ..., loc=parent.frame(), verbose=getOption("datatable.verbose",FALSE))
+setkey = function(x, ..., verbose=getOption("datatable.verbose",FALSE))  #loc=parent.frame()
 {
     # sorts table by the columns, and sets the key to be those columns
     # example of use:   setkey(tbl,colA,colC,colB)
     #             or:   setkey("tbl",c("colA","colC","colB"))
     # changes the table passed in by reference
     # TO DO: allow secondary index, which stores the sorted key + a column of integer rows in the primary sorted table. Will need to either drop or maintain keys with updates or inserts.
-    if (is.character(x)) {
-        if (length(x)>1) stop("x is character vector length > 1")
-        name = x
-        if (!exists(name, envir=loc)) loc=.GlobalEnv
-        x = get(x,envir=loc,inherits=FALSE)
-        cols=c(...)
-    }  else {
-        name = deparse(substitute(x))
-        cols = getdots()
+    #if (is.character(x)) {
+    #    if (length(x)>1) stop("x is character vector length > 1")
+    #    name = x
+    #    if (!exists(name, envir=loc)) loc=.GlobalEnv
+    #    x = get(x,envir=loc,inherits=FALSE)
+    #    cols=c(...)
+    #}  else {
+    if (is.character(x)) stop("x may no longer be the character name of the data.table. The possibility was undocumented, and has been removed.")
+    if (!is.data.table(x)) stop("x is not a data.table.")
+        # name = deparse(substitute(x))   # TO DO, won't need this either !! :-)
+    cols = getdots()
+    if (!length(cols)) cols=colnames(x)
+    else if (identical(cols,"NULL")) cols=NULL
+    #}
+    setkeyv(x,cols,verbose=verbose)
+}
+
+setkeyv = function(x, cols, verbose=getOption("datatable.verbose",FALSE))
+{
+    if (!is.data.table(x)) stop("x is not a data.table")
+    if (is.null(cols)) {
+        setattr(x,"sorted",NULL)
+        return(x)
     }
-    if (!is.data.table(x)) stop("first argument must be a data.table")
+    if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setkey.")
+    if (!length(cols)) {
+        warning("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
+        setattr(x,"sorted",NULL)
+        return(x)
+    }
+    if (identical(cols,"")) stop("cols is the empty string. Use NULL to remove the key.")
+    if (any(nchar(cols)==0)) stop("cols contains some blanks.")
+    if (length(grep(",",cols))) stop("Don't use comma inside quotes. Please see the examples in help('setkey')") 
     if (!length(cols)) {
         cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
     } else {
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
-    alreadykeyed = identical(key(x),cols)
-    copied = FALSE   # in future we hope to be able to setkeys on any type, this goes away, and saves more potential copies
+    alreadykeyedbythiskey = identical(key(x),cols)
+    coerced = FALSE   # in future we hope to be able to setkeys on any type, this goes away, and saves more potential copies
     for (i in cols) {
-        if (is.character(x[[i]])) {
-            x[[i]] = factor(x[[i]])
-            if (verbose) cat("setkey changed the type of column '",i,"' from character to factor.\n",sep="")
-            copied=TRUE
+        if (".xi" %in% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
+        .xi = x[[i]]  # TO DO: check that [[ is copy on write, otherwise checking types itself will be copying each column.
+        if (is.character(.xi)) {
+            if (verbose) cat("setkey changing the type of column '",i,"' from character to factor by reference.\n",sep="")
+            x[,i:=factor(.xi),with=FALSE]
+            coerced=TRUE
             next
         }
-        if (typeof(x[[i]]) == "double") {
-            toint = as.integer(x[[i]])   # see [.data.table for similar logic, and comments
-            if (isTRUE(all.equal(as.vector(x[[i]]),toint))) {
-                mode(x[[i]]) = "integer"
-                if (verbose) cat("setkey changed the type of column '",i,"' from numeric to integer, no fractional data present.\n",sep="")
-                copied=TRUE
+        if (typeof(.xi) == "double") {
+            toint = as.integer(.xi)   # see [.data.table for similar logic, and comments
+            if (isTRUE(all.equal(as.vector(.xi),toint))) {
+                if (verbose) cat("setkey changing the type of column '",i,"' from numeric to integer by reference, no fractional data present.\n",sep="")
+                mode(.xi) = "integer"
+                x[,i:=.xi,with=FALSE]
+                coerced=TRUE
                 next
             }
             stop("Column '",i,"' cannot be coerced to integer without losing fractional data.")
         }
-        if (is.factor(x[[i]])) {
+        if (is.factor(.xi)) {
             # check levels are sorted, if not sort them, test 150
-            l = levels(x[[i]])
+            l = levels(.xi)
             if (is.unsorted(l)) {
+                if (verbose) cat("setkey detected the levels of column '",i,"' were not sorted, so sorting them, by reference.\n",sep="")
                 r = rank(l)
                 l[r] = l
-                x[[i]] = structure(r[as.integer(x[[i]])], levels=l, class="factor")
-                if (verbose) cat("setkey detected the levels of column '",i,"' were not sorted, so sorted them.\n",sep="")
-                copied=TRUE
+                .xi = structure(r[as.integer(.xi)], levels=l, class="factor")
+                x[,i:=.xi,with=FALSE]
+                coerced=TRUE
             }
             next
         }
-        if (!typeof(x[[i]]) %in% c("integer","logical")) stop("Column '",i,"' is type '",typeof(x[[i]]),"' which is not accepted by setkey.")
+        if (!typeof(.xi) %in% c("integer","logical")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not (currently) allowed as a key column type.")
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
     o = fastorder(x, cols, verbose=verbose)
     if (is.unsorted(o)) {
-        if (alreadykeyed) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let maintainer('data.table') know so the root cause can be fixed.")
+        if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let maintainer('data.table') know so the root cause can be fixed.")
         .Call("reorder",x,o, PACKAGE="data.table")
     }
-    if (!alreadykeyed) setattr(x,"sorted",cols)
-    if (copied) {
-        if (verbose) cat("setkey incurred a copy of the whole table, due to the coercion(s) above.\n")
-        if (alreadykeyed) warning("Already keyed by this key but had invalid structure (e.g. unordered factor levels, or incorrect column types), key rebuilt. If you didn't go under the hood please let maintainer('data.table') know so the root cause can be fixed.")
-        assign(name,x,envir=loc)
+    if (!alreadykeyedbythiskey) setattr(x,"sorted",cols)   # the if() just to be a tiny bit faster
+    if (coerced && alreadykeyedbythiskey) {
+        # if (verbose) cat("setkey incurred a copy of the whole table, due to the coercion(s) above.\n")
+        warning("Already keyed by this key but had invalid structure (e.g. unordered factor levels, or incorrect column types), key rebuilt. If you didn't go under the hood please let maintainer('data.table') know so the root cause can be fixed.")
+        #assign(name,x,envir=loc)
     }
     invisible(x)
 }
+
+key = function(x) attr(x,"sorted")
+
+"key<-" = function(x,value) {
+    warning("The key<-value form of setkey copies the whole table. This is due to <- in R itself. Please change to setkeyv(x,value) or setkey(x,...) syntax which do not copy and are faster. See help('setkey'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your key<- calls.")
+    setkeyv(x,value)
+    # The returned value here from key<- is then copied by R before assigning to the symbol passed in, it seems. That's
+    # why we can't do anything about it without a change in R itself. If we return NULL (or invisible()) from this key<-
+    # method, the table gets set to NULL. So, although we call setkeyv(x,value) here, and that doesn't copy, the
+    # returned value (x) then gets copied by R.
+    # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid <- dispatch and its copy.
+}
+
+haskey = function(x) !is.null(key(x))
+
 
 radixorder1 <- function(x) {
     if(is.object(x)) x = xtfrm(x) # should take care of handling factors, Date's and others, so we don't need unlist
@@ -174,14 +215,5 @@ CJ = function(...)
     l
 }
 
-key = function(x) attr(x,"sorted")
-
-"key<-" = function(x,value) {
-    if (is.null(value)) setattr(x,"sorted",NULL)
-    else setkey("x",value)
-    x
-}
-
-haskey = function(x) !is.null(key(x))
 
 

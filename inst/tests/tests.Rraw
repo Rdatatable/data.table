@@ -21,12 +21,17 @@ test = function(num,x,y=NULL) {
     } else {
         if (identical(x,y)) return()
         if (is.data.table(x) && is.data.table(y)) {
+            # TO DO:  test 166 doesn't pass with these :
+            # if (!selfrefok(x)) stop("x selfref not ok")
+            # if (!selfrefok(y)) stop("y selfref not ok")
+            x=copy(x)
+            y=copy(y)  # so we don't affect the original data which may be used in the next test
             # drop unused levels in factors
-            if (length(x)) for (i in which(sapply(x,is.factor))) x[[i]] = factor(x[[i]])
-            if (length(y)) for (i in which(sapply(y,is.factor))) y[[i]] = factor(y[[i]])
-            if (length(attr(x,"row.names"))) attr(x,"row.names") = NULL  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
-            if (length(attr(y,"row.names"))) attr(y,"row.names") = NULL
-            if (identicalDT(x,y)) return()
+            if (length(x)) for (i in which(sapply(x,is.factor))) {.xi=x[[i]];x[,i:=factor(.xi),with=FALSE]}
+            if (length(y)) for (i in which(sapply(y,is.factor))) {.yi=y[[i]];y[,i:=factor(.yi),with=FALSE]}
+            if (length(attr(x,"row.names"))) setattr(x,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
+            if (length(attr(y,"row.names"))) setattr(y,"row.names",NULL)
+            if (identical(x,y)) return()
         }
         if (is.factor(x) && is.factor(y)) {
             x = factor(x)
@@ -276,12 +281,12 @@ test(109, all(!is.na(dt)))
 dt2 <- dt
 dt2$A[1] <- NA   # removes key
 test(110, sum(is.na(dt2)), 1L)
-test(111, {key(dt)=NULL;dt}, na.omit(dt))
+test(111, {setkey(dt,NULL);dt}, na.omit(dt))
 test(112, dt2[2:nrow(dt2),A], na.omit(dt2)$A)
 
 # test [<- assignment:
 dt2[is.na(dt2)] <- 1L
-test(113, {key(dt)=NULL;dt}, dt2)   # key should be dropped because we assigned to a key column
+test(113, {setkey(dt,NULL);dt}, dt2)   # key should be dropped because we assigned to a key column
 # want to discourage this going forward (inefficient to create RHS like this)
 # dt2[, c("A", "B")] <- dt1[, c("A", "B"), with = FALSE]
 # test(114, dt1, dt2)
@@ -291,9 +296,10 @@ test(113, {key(dt)=NULL;dt}, dt2)   # key should be dropped because we assigned 
 ##     test(dt, dt2))  stop("Test 112 failed")
 
 # test the alternate form of setkey:
-dt1 <- dt2 <- dt
-setkey(dt1, "A")
-setkey("dt2", "A")
+dt1 = copy(dt)
+dt2 = copy(dt)
+setkeyv(dt1, "A")
+setkey(dt2, A)
 test(115, dt1, dt2)
 
 # Test dogroups works correctly for character/factor columns
@@ -377,7 +383,7 @@ test(149, dt[J(2:3),roll=TRUE], data.table(a=c(2L,3L),b=c(1L,1L)))  # in future 
 
 # 150:158 test out of order factor levels in key columns
 dt = data.table(x=factor(c("c","b","a"),levels=c("b","a","c")),y=1:3)
-key(dt) = "x"
+setkey(dt,x)
 test(150, dt["b",y]$y, 2L)
 # from Tom's post :
 a = data.table(a=rep(1:5, 2), b=factor(letters[rep(1:5, each =2)], levels=letters[5:1]), key="b")  
@@ -485,7 +491,7 @@ bar = function( data, fcn ) {
     q = substitute( fcn )
     xx = data[,eval(q),by=a]
     yy = data[,eval(substitute(fcn)),by=a]
-    identicalDT(xx,yy)
+    identical(xx,yy)
 }
 test(182, bar( DT, sum(buniquename314) ), TRUE)
 
@@ -513,7 +519,7 @@ test(205, x[y,list(d),mult="all"][,d], c(1,2,NA,NA))
 # with data.frame).
 TESTDT = data.table(a=1:3,v=1:3,key="a")
 test(206, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_,key="a"))
-key(TESTDT) = NULL
+setkey(TESTDT,NULL)
 test(207, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_))
 
 # With inheritance, NROW and NCOL in base work nicely. No need for them in data.table.
@@ -535,7 +541,7 @@ test(214, length(grep("data.table inherits from data.frame", tt)))
 # to solve bug #953
 DF = data.frame(a=LETTERS[1:10], b=1:10, stringsAsFactors=FALSE)
 DT = data.table(DF)
-key(DT) = 'a'   # used to complain about character
+setkey(DT,a)    # used to complain about character
 test(215, DT["C",b]$b, 3L)
 DT = data.table(DF,key="a")
 test(216, DT["C",b]$b, 3L)
@@ -627,7 +633,7 @@ test(243, X[Y][,sum(foo*bar)], 195L)
 
 # joining to less than all X's key colums (in examples but can't see formal test)
 X=data.table(a=rep(LETTERS[1:2],2:3),b=1:5,v=10:14,key="a,b")
-test(246, X["A"], {tt=X[1:2];key(tt)=key(X);tt})  # key will be retained in future
+test(246, X["A"], {tt=X[1:2];setkeyv(tt,key(X));tt})  # key will be retained in future
 test(247, X["C"]$v, NA_integer_)
 test(248, nrow(X["C",nomatch=0]), 0L)
 
@@ -700,11 +706,11 @@ setkey(DT,y)
 test(270,DT[,sum(x),by=key(DT)]$V1,1)
 
 DT = data.table(x=1,y=2)
-key(DT) = names(DT)
+setkeyv(DT,names(DT))
 test(271, DT[,length(x),by=key(DT)]$V1, 1L)
 
 DT = data.table(x=c(1,2,1), y=c(2,3,2), z=1:3)
-key(DT) = names(DT)
+setkeyv(DT,names(DT))
 test(272, DT[,sum(z),by=key(DT)]$V1, c(1L,3L,2L))
 
 
@@ -755,7 +761,7 @@ test(286, DT[,list(sum(unlist(.BY)),sum(z)),by=groupExpr], ans)
 
 # Bug fix from Damian B on 25 June 2011 :
 DT = data.table(X=c(NA,1,2,3), Y=c(NA,2,1,3))
-key(DT)=c("X","Y")
+setkeyv(DT,c("X","Y"))
 test(287, unique(DT), DT)
 
 # Bug fix #1421: using vars in calling scope in j when i is logical or integer.
@@ -766,15 +772,15 @@ test(288, DT[A=="b",B*myvar], c(30,NA))
 # Test new feature in 1.6.1 that i can be plain list (such as .BY)
 DT = data.table(grp=c("a","a","a","a","b","b","b"),v=1:7)
 mysinglelookup = data.table(grp=c("a","b"),s=c(42,84),grpname=c("California","New York"),key="grp")
-key(mysinglelookup) = "grp"
+setkey(mysinglelookup,grp)
 test(289, DT[,sum(v*mysinglelookup[.BY]$s),by=grp], data.table(grp=c("a","b"),V1=c(420,1512)))
 # In v1.6.2 we will change so that single name j returns a vector, regardless of grouping
 test(290, DT[,list(mysinglelookup[.BY]$grpname,sum(v)),by=grp], data.table(grp=c("a","b"),V1=c("California","New York"),V2=c(10L,18L)))
 
 # Test user defined attributes are retained, see comment in FR#1006
 DT = data.table(a=as.numeric(1:2),b=3:4)
-attr(DT,"myuserattr") = 42
-setkey(DT,a)  # a is numeric so a change of type to integer occurs too
+setattr(DT,"myuserattr",42)
+setkey(DT,a)   # a is numeric so a change of type to integer occurs, too, via := which checks selfref is ok
 test(291, attr(DT,"myuserattr"), 42)
 
 # Test new .N symbol
