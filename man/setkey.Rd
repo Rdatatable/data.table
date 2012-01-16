@@ -1,6 +1,6 @@
 \name{setkey}
 \alias{setkey}
-\alias(setkeyv}
+\alias{setkeyv}
 \alias{key}
 \alias{key<-}
 \alias{haskey}
