@@ -16,14 +16,15 @@ test_that("data.table can be a parent class", {
   ## pull out data from S4 as.list, and compare to list from dt
   dt.s4.list <- dt.s4@.Data
   names(dt.s4.list) <- names(dt.s4)
-  expect_identical(dt.s4.list, as.list(dt), info="Underlying data not identical")
+  expect_equal(dt.s4.list, as.list(dt), check.attributes=FALSE,
+               info="Underlying data not identical")
 })
 
 test_that("simple S4 conversion-isms work", {
   df = data.frame(a=sample(letters, 10), b=1:10)
   dt = as.data.table(df)
-  expect_equal(as(df, 'data.table'), dt)
-  expect_identical(as(dt, 'data.frame'), df)
+  expect_equal(as(df, 'data.table'), dt, check.attributes=FALSE)
+  expect_equal(as(dt, 'data.frame'), df, check.attributes=FALSE)
 })
 
 test_that("data.table can be used in an S4 slot", {
