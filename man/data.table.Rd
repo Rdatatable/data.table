@@ -191,8 +191,11 @@ DT[,2,with=FALSE]          # 2nd column
 colNum = 2
 DT[,colNum,with=FALSE]     # same
 
-setkey(DT,x)               # set a 1-column key
-key(DT) = "x"              # same
+setkey(DT,x)               # set a 1-column key. No quotes, for convenience.
+setkeyv(DT,"x")            # same (v in setkeyv stands for vector)
+v="x"
+setkeyv(DT,v)              # same
+# key(DT)<-"x"             # copies whole table, please use set* functions instead
 
 DT["a"]                    # binary search (fast)
 DT[x=="a"]                 # vector scan (slow)
@@ -217,7 +220,7 @@ J("a",2)                   # J() is alias for data.table()
 data.table("a",2)          # same
 
 setkey(DT,x,y)             # 2-column key
-key(DT) = c("x","y")       # same
+setkeyv(DT,c("x","y"))     # same
 
 DT["a"]                    # join to 1st column of key
 DT[J("a")]                 # same

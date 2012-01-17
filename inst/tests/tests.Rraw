@@ -1239,24 +1239,23 @@ test(431, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].
 if (is.null(getOption("datatable.alloccol"))) {
     DT = data.table(a=1:3,b=4:6)
     test(432, truelength(DT), 100L)
-    DT = alloc.col(DT,200)
+    alloc.col(DT,200)
     test(433, truelength(DT), 200L)
     DT = alloc.col(DT,300)  # superfluous in this example, but shouldn't fail
     test(434, truelength(DT), 300L)
     DT2 = alloc.col(DT,400)
-    test(435, truelength(DT), 300L)
+    test(435, truelength(DT), 400L)
     test(436, truelength(DT2), 400L)
 }
 
-# test that alloc.col assigns to wherever object is (via setVar in C i.e. like <<- and inherits=TRUE)
-# TO DO: But, this example is a reducing alloc, which doesn't need the setVar
+# test that alloc.col assigns to wherever object is
 DT = data.table(a=1:3,b=4:6)
 f = function() {
-    alloc.col(DT,50)
+    alloc.col(DT,200)  # DT isn't local so (via inherits=TRUE) it finds in frame above
     invisible()
 }
 f()
-test(437, truelength(DT), 50L)
+test(437, truelength(DT), 200L)
 
 # quick test that [<- over allocates (again) after the copy of length via *tmp*
 DT = data.table(a=1:3,b=4:6)

@@ -99,11 +99,11 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose",FALSE))
 key = function(x) attr(x,"sorted")
 
 "key<-" = function(x,value) {
-    warning("The key<-value form of setkey copies the whole table. This is due to <- in R itself. Please change to setkeyv(x,value) or setkey(x,...) syntax which do not copy and are faster. See help('setkey'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your key<- calls.")
+    warning("The key(x)<-value form of setkey copies the whole table. This is due to <- in R itself. Please change to setkeyv(x,value) or setkey(x,...) which do not copy and are faster. See help('setkey'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your key<- calls.")
     setkeyv(x,value)
-    # The returned value here from key<- is then copied by R before assigning to the symbol passed in, it seems. That's
+    # The returned value here from key<- is then copied by R before assigning to x, it seems. That's
     # why we can't do anything about it without a change in R itself. If we return NULL (or invisible()) from this key<-
-    # method, the table gets set to NULL. So, although we call setkeyv(x,value) here, and that doesn't copy, the
+    # method, the table gets set to NULL. So, although we call setkeyv(x,cols) here, and that doesn't copy, the
     # returned value (x) then gets copied by R.
     # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid <- dispatch and its copy.
 }

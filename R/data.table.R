@@ -167,7 +167,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     names(value) <- vnames
     setattr(value,"row.names",.set_row_names(nr))
     setattr(value,"class",c("data.table","data.frame"))
-    value = alloc.col(value)   # TO DO: remove the value=
+    alloc.col(value)
     if (!is.null(key)) {
       if (!is.character(key)) stop("key argument of data.table() must be character")
       if (length(key)==1) {
@@ -187,7 +187,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
     if (!cedta()) {
         ans = if (missing(drop)) `[.data.frame`(x,i,j) else `[.data.frame`(x,i,j,drop)
-        if (!missing(i)) key(ans)=NULL  # See test 304
+        if (!missing(i)) setkey(ans,NULL)  # See test 304
         return(ans)
     }
     if (!missing(by) && missing(j)) stop("'by' is supplied but not j")
@@ -391,11 +391,16 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (notok<-!selfrefok(x))
                 warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table. Please report to datatable-help so the root cause can be fixed.")
             if (notok || (truelength(x) < ncol(x)+length(newcolnames))) {
-                symbol = as.name(substitute(x))  # TO DO test   DT[....][,foo:=42L],  i.e. no symbol, just local copy
-                rho = parent.frame()       
+                #symbol = as.name(substitute(x))  
+                #rho = parent.frame()       
                 # TO DO :  see if the substitute inside alloc.col would see the substitute up here i.e. DT or x?
                 # TO DO: catch compound :=, substitute(x) as expression?
-                x=alloc.col(x,max(ncol(x)+100, ncol(x)+2*length(newcolnames)),symbol,rho)
+                name = substitute(x)
+                alloc.col(x,max(ncol(x)+100, ncol(x)+2*length(newcolnames)))  #,symbol,rho)
+                if (is.name(name)) assign(as.character(name),x,pos=parent.frame(),inherits=TRUE)
+                # TO DO test   DT[....][,foo:=42L],  i.e. where the foo does the realloc. Would it see DT name or the call.
+                # inherits=TRUE is correct and mimicks what the setVar in C was doing before being moved up to R level.
+                # The alloc.col always assigns to calling scope
             }
         }
         ssrows =
@@ -1138,9 +1143,8 @@ subset.data.table <- function (x, subset, select, ...)
             }
         }
     } else {
-        key(ans) <- NULL
+        setkey(ans,NULL)
     }
-
     ans
 }
 
@@ -1191,14 +1195,12 @@ copy = function(x) {
     # may be tricky; more robust to rely on R's duplicate which deep copies.
 }
 
-alloc.col = function(DT,
-                     n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT)))),
-                     symbol = NULL,  #as.name(substitute(DT)),
-                     rho = NULL  #parent.frame()  # setVar in C finds it where it is (i.e. like <<- and inherits=TRUE)
-                     ) 
-{   
+alloc.col = function(DT, n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT))))) 
+{
+    symbol = as.name(substitute(DT))
     if (identical(as.character(symbol),"*tmp*")) stop("alloc.col attempting to modify `*tmp*`")
-    .Call("alloccolwrapper",DT,as.integer(eval(n)),symbol,rho,
+    rho = parent.frame()
+    .Call("alloccolwrapper",DT,as.integer(eval(n)),symbol,rho,  # TO DO: remove symbol and rho and assign on R side
           getOption("datatable.allocwarn",FALSE),PACKAGE="data.table")
 }
 

@@ -29,9 +29,30 @@ BUG FIXES
         
    o    Checks in := are now made up front (before starting to
         modify the data.table) so that the data.table isn't
-        left in an invalid state if an error occurs, #1711.
+        left in an invalid state should an error occur, #1711.
         Thanks to Chris Neff for reporting.
         
+   o    The 'Chris crash' is fixed. The root cause was that key<-
+        always copies the whole table. The problem with that copy
+        (other than being slower) is that R doesn't maintain the
+        over allocated truelength, but it looks as though it has.
+        key<- was used internally, in particular 3 times in merge().
+        So adding a column using := after merge() was a memory overwrite,
+        since the over allocated memory wasn't really there after
+        key<-'s copy.
+        
+        data.tables now have a new attribute '.internal.selfref' to
+        catch and warn about such copies in future, and all internal
+        use of key<- has been replaced with setkey(), or new function
+        setkeyv() which accepts a vector, which do not copy. identical()
+        is now defined by data.table, masking identical in base, which
+        knows to ignore .internal.selfref in the comparison.
+        
+        Many thanks to Chris Neff for providing a reproducible example,
+        and his patience. This problem was not just in pre 2.14.0, but
+        post 2.14.0 as well. Thanks also to Christoph Jäckel, Timothée
+        Carayol and DM for investigations and suggestions.
+
    o    An example in ?":=" fixed, and j and by descriptons
         improved in ?data.table. Thanks to Joseph Voelkel for
         reporting.
@@ -46,6 +67,27 @@ NEW FEATURES
         
    o    := now recycles vectors of non divisible length, with
         a warning (previously an error).
+        
+   o    When setkey coerces a numeric or character column, it
+        no longer makes a copy of the whole table, FR#1744. Thanks
+        to an investigation by DM.
+        
+   o    New function setkeyv(DT,v) (v stands for vector) replaces
+        key(DT)<-v syntax; see Chris crash bug fix above.
+        
+   o    identical() is now defined by data.table, which ignores the new
+        .internal.selfref attribute in comparisons of two data.tables.
+        This attribute is used to detect if copies have taken place, avoid
+        any more 'Chris crashes' in future, and to warn users about
+        inefficiency. R will now warn that data.table masks identical when
+        the package is loaded.
+
+        
+USER VISIBLE CHANGES
+
+   o    The loc argument of setkey has been removed. This wasn't very
+        useful and didn't warrant a deprecation period. datatable-help was
+        consulted first.
         
 
         *********************************************
