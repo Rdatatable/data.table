@@ -19,7 +19,7 @@ test.data.table = function(echo=FALSE) {
         # the new.env() is required for when a *user* runs test.data.table() because
         # the context of this function is sealed in the namespace w.r.t S4.
         # It is also tidier to protect the tests from the variable 'd' above.
-
+        
         # As from v1.7.2, testthat doesn't run the tests.Rraw (hence file name change to .Rraw).
         # There were environment issues with system.time() (when run by test_package) that only
         # showed up when CRAN maintainers tested on 64bit. Matthew spent a long time including
@@ -35,31 +35,40 @@ test.data.table = function(echo=FALSE) {
 ## This method is used primarily to make life easy with a testing harness
 ## built around test_that. A call to test_that::{expect_equal|equal} will
 ## ultimately dispatch to this method when making an "equality" call.
-all.equal.data.table <- function(target, current, trim.levels=TRUE,
-                                 check.attributes=FALSE, ...) {
-    force(target)
-    force(current)
+all.equal.data.table <- function(target, current, trim.levels=TRUE, ...) {
+    target = copy(target)
+    current = copy(current)
     if (trim.levels) {
         ## drop unused levels
         if (length(target)) {
             for (i in which(sapply(target, is.factor))) {
-                target[[i]] <- factor(target[[i]])
+                .xi = factor(target[[i]])
+                target[,i:=.xi,with=FALSE]
             }
         }
         if (length(current)) {
             for (i in which(sapply(current, is.factor))) {
-                current[[i]] <- factor(current[[i]])
+                .xi = factor(current[[i]])
+                current[,i:=.xi,with=FALSE]
             }
         }
     }
 
     ## Trim any extra row.names attributes that came from some inheritence
-    if (length(attr(target, "row.names"))) {
-        setattr(target, "row.names", NULL)
-    }
-    if (length(attr(current, "row.names"))) {
-        setattr(current, "row.names", NULL)
-    }
-
-    all.equal.list(target, current, check.attributes=check.attributes, ...)
+    setattr(target, "row.names", NULL)
+    setattr(current, "row.names", NULL)
+    
+    # all.equal uses unclass which doesn't know about external pointers : there
+    # doesn't seem to be all.equal.externalptr method in base.
+    setattr(target, ".internal.selfref", NULL)
+    setattr(current, ".internal.selfref", NULL)
+    
+    all.equal.list(target, current, ...)
 }
+
+#all.equal.externalptr = function(target, current, ...) {
+#    if (.Call("externalptrequal",x,y,PACKAGE="data.table")) NULL
+#    else "External pointers differ"
+#}
+
+

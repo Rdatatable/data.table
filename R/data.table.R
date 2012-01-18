@@ -388,19 +388,25 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # Adding new column(s)
             newcolnames=setdiff(lhs,names(x))
             cols = as.integer(c(m[!is.na(m)],ncol(x)+1:length(newcolnames)))
-            if (notok<-!selfrefok(x))
+            if (notok<-!selfrefok(x,verbose))
                 warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table. Please report to datatable-help so the root cause can be fixed.")
             if (notok || (truelength(x) < ncol(x)+length(newcolnames))) {
                 #symbol = as.name(substitute(x))  
                 #rho = parent.frame()       
                 # TO DO :  see if the substitute inside alloc.col would see the substitute up here i.e. DT or x?
                 # TO DO: catch compound :=, substitute(x) as expression?
+                n = max(ncol(x)+100, ncol(x)+2*length(newcolnames))
                 name = substitute(x)
-                alloc.col(x,max(ncol(x)+100, ncol(x)+2*length(newcolnames)))  #,symbol,rho)
-                if (is.name(name)) assign(as.character(name),x,pos=parent.frame(),inherits=TRUE)
+                if (is.name(name) && !notok && verbose) { # && NAMED(x)>0 (TO DO)
+                    # Do the warning before allocating and assigning, so we can track where we are when verbose=TRUE
+                    # in case an error occurs in alloc.col or assign
+                    warning("growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.")
                 # TO DO test   DT[....][,foo:=42L],  i.e. where the foo does the realloc. Would it see DT name or the call.
                 # inherits=TRUE is correct and mimicks what the setVar in C was doing before being moved up to R level.
-                # The alloc.col always assigns to calling scope
+                }
+                alloc.col(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
+                if (is.name(name))
+                    assign(as.character(name),x,pos=parent.frame(),inherits=TRUE)
             }
         }
         ssrows =
@@ -416,7 +422,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         # the !missing is for speed to avoid calling getOption() which then calls options().
         # better to do verbosity before calling C, to make tracing easier if there's a problem in assign.c
         revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))  # currently length 1 anyway here, more relevant in the other .Call to assign. Might need a wrapper around .Call(assign), then
-        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,clearkey,revcolorder,PACKAGE="data.table"))
+        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,clearkey,revcolorder,verbose,PACKAGE="data.table"))
         # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
         # Could return number of rows updated but even when wrapped in invisible() it seems
         # the [.class method doesn't respect invisible, which may be confusing to user.
@@ -921,7 +927,8 @@ tail.data.table = function(x, n=6, ...) {
         x = alloc.col(x,length(x)+length(newcolnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
         # search for one other .Call to assign in [.data.table to see how it differs
     }
-    .Call("assign",x,i,cols,newcolnames,value,keycol,revcolorder,PACKAGE="data.table")
+    verbose=getOption("datatable.verbose",FALSE)
+    .Call("assign",x,i,cols,newcolnames,value,keycol,revcolorder,verbose,PACKAGE="data.table")
     settruelength(x,0L) #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
     alloc.col(x)
     # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
@@ -1003,9 +1010,20 @@ as.data.frame.data.table = function(x, ...)
     setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
     setattr(ans,"class","data.frame")
     setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
+    setattr(ans,".internal.selfref",NULL)
     suppressWarnings(settruelength(ans,0L))
     ans
 }
+
+as.list.data.table = function(x, ...) {
+    # Similar to as.list.data.frame in base.
+    ans <- unclass(x)
+    setattr(ans, "row.names", NULL)
+    setattr(ans, "sorted", NULL)
+    setattr(ans,".internal.selfref", NULL)   # needed to pass S4 tests for example
+    ans
+}
+
 
 dimnames.data.table = function(x) {
     if (!cedta()) {
@@ -1195,34 +1213,34 @@ copy = function(x) {
     # may be tricky; more robust to rely on R's duplicate which deep copies.
 }
 
-alloc.col = function(DT, n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT))))) 
+alloc.col = function(DT, n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT)))), verbose=getOption("datatable.verbose",FALSE)) 
 {
     symbol = as.name(substitute(DT))
     if (identical(as.character(symbol),"*tmp*")) stop("alloc.col attempting to modify `*tmp*`")
     rho = parent.frame()
     .Call("alloccolwrapper",DT,as.integer(eval(n)),symbol,rho,  # TO DO: remove symbol and rho and assign on R side
-          getOption("datatable.allocwarn",FALSE),PACKAGE="data.table")
+          verbose,PACKAGE="data.table")
 }
 
-selfrefok = function(DT) {
-    .Call("selfrefokwrapper",DT,PACKAGE="data.table")
+selfrefok = function(DT,verbose=getOption("datatable.verbose",FALSE)) {
+    .Call("selfrefokwrapper",DT,verbose,PACKAGE="data.table")
 }
 
-identical = function(x,y) {
-    # Allows identical() to ignore the .internal.selfref attribute, which is always different for data.table.
-    # The .internal.selfref allows us to track copies robustly, which is important now that data.tables are
-    # over-allocated i.e. truelength>length. 
-    # Similar to the concept of attributes on CHARSXP for internal use by R, and ignored by identical.c.
-    # This identical will mask base and appear as a warning on loading the package.
-    if ((!is.data.table(x)) || !is.data.table(y))
-        return(base::identical(x,y))
-    .Call("hideselfref",x)
-    .Call("hideselfref",y)
-    ans = base::identical(x,y)
-    .Call("showselfref",x)
-    .Call("showselfref",y)
-    ans
-}
+#identical = function(x,y) {
+#    # Allows identical() to ignore the .internal.selfref attribute, which is always different for data.table.
+#    # The .internal.selfref allows us to track copies robustly, which is important now that data.tables are
+#    # over-allocated i.e. truelength>length. 
+#    # Similar to the concept of attributes on CHARSXP for internal use by R, and ignored by identical.c.
+#    # This identical will mask base and appear as a warning on loading the package.
+#    if ((!is.data.table(x)) || !is.data.table(y))
+#        return(base::identical(x,y))
+#    .Call("hideselfref",x)
+#    .Call("hideselfref",y)
+#    ans = base::identical(x,y)
+#    .Call("showselfref",x)
+#    .Call("showselfref",y)
+#    ans
+#}
 
 truelength = function(x) .Call("truelength",x,PACKAGE="data.table")
 # deliberately no "truelength<-" method.  alloc.col is the mechanism for that (maybe alloc.col should be renamed "truelength<-".

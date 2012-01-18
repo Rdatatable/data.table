@@ -23,53 +23,83 @@ SEXP SelfRefSymbol;
 //
 
 extern SEXP growVector(SEXP x, R_len_t newlen, Rboolean verbose);
-SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean allocwarn);
+SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean verbose);
 SEXP *saveds;
 R_len_t *savedtl, nalloc, nsaved;
 void savetl_init(), savetl(SEXP s), savetl_end();
 
-void setselfref(SEXP x) {    // called from C only, not R
-    SEXP v;
-    PROTECT(v = allocVector(REALSXP, 2));
-    memcpy((char *)DATAPTR(v), &x, sizeof(char *));
-    SEXP names = getAttrib(x, R_NamesSymbol);
-    memcpy((char *)DATAPTR(v)+sizeof(double), &names, sizeof(char *));
-    setAttrib(x, SelfRefSymbol, v);
-    UNPROTECT(1);
+void setselfref(SEXP x) {    // called from C only, never R, so returns void
+    setAttrib(x, SelfRefSymbol, R_MakeExternalPtr(
+        R_NilValue,  // so that identical() considers this selfref attribute the same between different data.tables
+        getAttrib(x, R_NamesSymbol), // so we know if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
+        R_MakeExternalPtr( 
+            x,             // so we know if this data.table has been copied by key<-, attr<- or names<-.
+            R_NilValue,    // this tag and prot currently unused
+            R_NilValue
+        )
+    ));
+/*  *  base::identical doesn't check prot and tag of EXTPTR, just that the ptr itself is the
+       same in both objects. R_NilValue is always equal to R_NilValue.  R_NilValue is a memory
+       location constant within an R session, but can vary from session to session. So, it
+       looks like a pointer to a user looking at attributes(DT), but they might wonder how it
+       works if they realise the selfref of all data.tables all point to the same address (rather
+       than to the table itself which would be reasonable to expect given the attributes name).
+    *  p=NULL rather than R_NilValue works too, other than we need something other than NULL
+       so we can detect tables loaded from disk (which set p to NULL, see 5.13 of R-exts).
+    *  x is wrapped in another EXTPTR because of object.size (called by tables(), and by users).
+       If the prot (or tag) was x directly it sends object.size into an infinite loop and then
+       "segfault from C stack overflow" (object.size does count tag and prot, unlike identical,
+       but doesn't count what's pointed to).
+    *  Could use weak reference possibly, but the fact that they can get be set to R_NilValue
+       by gc (?) didn't seem appropriate.
+    *  If the .internal.selfref attribute is removed (e.g. by user code), nothing will break, but
+       an extra copy will just be taken on next :=, with warning, with a new selfref.
+    *  object.size will count size of names twice, but that's ok as only small.
+    *  Thanks to Steve L for suggesting ExtPtr for this, rather than the previous REALSXP
+       vector which required data.table to do a show/hide dance in a masked identical.
+*/
 }
 
-SEXP hideselfref(SEXP x) {   // called by identical
-    SEXP v = getAttrib(x, SelfRefSymbol);
-    if (v != NULL) TYPEOF(v)=NILSXP;
-    return(R_NilValue);
-    // We can't leave it as NILSXP (or set it NILSXP initially) due to save(): 'WriteItem: unknown type 0'.
+Rboolean _selfrefok(SEXP x, Rboolean names, Rboolean verbose) {
+    SEXP v, p, tag, prot;
+    v = getAttrib(x, SelfRefSymbol);
+    if (v==R_NilValue) {
+        // .internal.selfref missing. This is expected and normal for i) a pre v1.7.8 data.table loaded
+        //  from disk, and ii) every time a new data.table is over-allocated for the first time.
+        return(FALSE);
+    }
+    p = R_ExternalPtrAddr(v);
+    if (p==NULL) {
+        if (verbose) Rprintf(".internal.selfref ptr is NULL. This is expected and normal for a data.table loaded from disk. If not, please report to datatable-help.\n");
+        return(FALSE);
+    }
+    if (!isNull(p)) error("Internal error: .internal.selfref ptr is not NULL or R_NilValue");
+    tag = R_ExternalPtrTag(v);
+    if (!isString(tag)) error("Internal error: .internal.selfref tag doesn't point to a character vector");
+    prot = R_ExternalPtrProtected(v);
+    if (TYPEOF(prot) != EXTPTRSXP) error("Internal error: .internal.selfref prot is not itself an extptr");
+    if (names) {
+        return(getAttrib(x, R_NamesSymbol)==tag);
+    } else {
+        return(x==R_ExternalPtrAddr(prot));
+    }
 }
 
-SEXP showselfref(SEXP x) {   // called by identical
-    SEXP v = getAttrib(x, SelfRefSymbol);
-    if (v != NULL) TYPEOF(v)=REALSXP;
-    return(R_NilValue);
+Rboolean selfrefok(SEXP x, Rboolean verbose) {   // for readability
+    return(_selfrefok(x, FALSE, verbose));
+}
+Rboolean selfrefnamesok(SEXP x, Rboolean verbose) {
+    return(_selfrefok(x, TRUE, verbose));
 }
 
-Rboolean selfrefok(SEXP x) {
-    SEXP v = getAttrib(x, SelfRefSymbol);
-    if (isNull(v)) return(FALSE);  // e.g. pre v1.7.8 data.table loaded from disk
-    return(memcmp((char *)DATAPTR(v), &x, sizeof(char *))==0 ? TRUE : FALSE);
-}
-
-Rboolean selfrefnamesok(SEXP x) {
-    SEXP v = getAttrib(x, SelfRefSymbol), names=getAttrib(x, R_NamesSymbol);
-    if (isNull(v)) return(FALSE);
-    return(memcmp((char *)DATAPTR(v)+sizeof(double), &names, sizeof(char *))==0 ? TRUE : FALSE);
-}
-
-SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP revcolorder)
+SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP revcolorder, SEXP verb)
 {
     // For internal use only by [<-.data.table.
     // newcolnames : add these columns (if any)
     // cols : column numbers corresponding to the values to set
     R_len_t i, j, size, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, /*n,*/ newcolnum;
     SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class;
+    Rboolean verbose = LOGICAL(verb)[0];
     
     if (!sizesSet) setSizes();   // TO DO move into _init
     
@@ -77,7 +107,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
     class = getAttrib(dt, R_ClassSymbol);
     if (isNull(class)) error("dt passed to assign has no class attribute. Please report to datatable-help.");
-    if (!selfrefok(dt)) error("At an earlier point, this data.table has been copied by R. Avoid names<-, attr<- and key<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setnames(), setattr() and setkey(). If this message doesn't help, please ask on datatable-help.");  // Produced at the point user wants to assign by reference using := after the use of names<-, attr<- or key<- (which might be never).
+    if (!selfrefok(dt,verbose)) error("At an earlier point, this data.table has been copied by R. Avoid names<-, attr<- and key<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setnames(), setattr() and setkey(). If this message doesn't help, please ask on datatable-help.");  // Produced at the point user wants to assign by reference using := after the use of names<-, attr<- or key<- (which might be never).
     // We can't catch those copies and call alloc.col afterwards, so we have to ask user to change. See comments in key<-.
     oldncol = LENGTH(dt);
     names = getAttrib(dt,R_NamesSymbol);
@@ -185,7 +215,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         //    PROTECT(dt = alloccol(dt,n, R_NilValue, R_NilValue));
         //    protecti++;
         //}
-        if (!selfrefnamesok(dt))
+        if (!selfrefnamesok(dt,verbose))
             error("names of dt have been reassigned, probably via names<- or setattr(x,'names',..). We can cope with this easily, though, TO DO");
         else if (TRUELENGTH(names) != oldtncol)
             error("selfrefnames is ok but tl names [%d] != tl [%d]", TRUELENGTH(names), oldtncol);
@@ -420,7 +450,7 @@ void savetl_end() {
     Free(savedtl);
 }
 
-SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean allocwarn)
+SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean verbose)
 {
     SEXP newdt, names, newnames, class;
     R_len_t i, l, tl;
@@ -439,7 +469,7 @@ SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean allocwarn)
         error("Internal error: length of names (%d) is not length of dt (%d)",length(names),l);
     
     //if (TRUELENGTH(class) != -999 ) {
-    if (!selfrefok(dt)) {
+    if (!selfrefok(dt,verbose)) {
         // TO DO: think we can remove all the settruelength's up in data.table.R now we just rely on marker.
         //if (R_VERSION >= R_Version(2, 14, 0) && tl!=0) {
         //    error("Internal logical error: this is R >= 2.14.0, class is not marked but tl is %d rather than 0",tl);
@@ -487,7 +517,8 @@ SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean allocwarn)
         //TRUELENGTH(getAttrib(newdt, R_ClassSymbol)) = -999;
         // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
         if (!isNull(symbol)) {
-            if (allocwarn && NAMED(dt)>0) warning("growing vector of column pointers from %d to %d. Only a shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.", tl, n, NAMED(dt));
+            // TO DO: move up to R level  !! STILL TO create assign() after .Call("alloccolwrapper"...
+            //if (FALSE && verbose && NAMED(dt)>0) warning("growing vector of column pointers from %d to %d. Only a shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.", tl, n, NAMED(dt));
             //Rf_PrintValue(symbol);
             //Rf_PrintValue(rho);
             setVar(symbol,newdt,rho);
@@ -508,8 +539,8 @@ SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean allocwarn)
     return(dt);
 }
 
-SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP symbol, SEXP rho, SEXP allocwarn) {
-    return(alloccol(dt, INTEGER(newncol)[0], symbol, rho, LOGICAL(allocwarn)[0]));
+SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP symbol, SEXP rho, SEXP verbose) {
+    return(alloccol(dt, INTEGER(newncol)[0], symbol, rho, LOGICAL(verbose)[0]));
 }
 
 SEXP truelength(SEXP x) {
@@ -531,10 +562,10 @@ SEXP settruelength(SEXP x, SEXP n) {
     return(R_NilValue);
 }
 
-SEXP selfrefokwrapper(SEXP x) {
+SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
     SEXP ans;
     PROTECT(ans = allocVector(LGLSXP, 1));
-    LOGICAL(ans)[0] = selfrefok(x);
+    LOGICAL(ans)[0] = _selfrefok(x,FALSE,LOGICAL(verbose)[0]);
     UNPROTECT(1);
     return(ans);
 }

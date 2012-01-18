@@ -7,12 +7,15 @@
 }
 \usage{
 truelength(x)
-alloc.col(DT, n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT)))))
+alloc.col(DT,
+          n = getOption("datatable.alloccol",quote(max(100,2*ncol(DT)))),
+          verbose = getOption("datatable.verbose", FALSE))
 }
 \arguments{
 \item{x}{ Any type of vector, including \code{data.table} which is a \code{list} vector of column pointers. }
 \item{DT}{ A \code{data.table}. }
 \item{n}{ The number of column pointer slots to reserve in memory, including existing columns. May be a numeric, or a quote()-ed expression (see default). If \code{DT} is a 10 column \code{data.table}, \code{n=1000} means grow the spare slots from 90 to 990, assuming the default of 100 has not been changed. }
+\item{verbose}{ Output status and information. }
 }
 \details{
     When adding columns by reference using \code{:=}, we \emph{could} simply create a new column list vector (one longer) and memcpy over the old vector, with no copy of the column vectors themselves. That requires negligibe use of space and time, and is what v1.7.2 did.  However, that copy of the list vector of column pointers only (but not the columns themselves), a \emph{shallow copy}, resulted in inconsistent behaviour in some circumstances. So, as from v1.7.3 data.table over allocates the list vector of column pointers so that columns can be added fully by reference, consistently.

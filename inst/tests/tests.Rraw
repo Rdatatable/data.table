@@ -1193,7 +1193,7 @@ test(417, length(DT)==2 && truelength(DT)==3)
 DT[,c:=7L]   # uses final slot
 test(418, length(DT)==3 && truelength(DT)==3)
 options(datatable.allocwarn=TRUE)
-tt = try(DT[,d:=8L],silent=TRUE)
+tt = try(DT[,d:=8L,verbose=TRUE],silent=TRUE)
     # automatic realloc and shallow copy, no risk when not named.
     # would like to be silent using NAMED>0 but .Call sets NAMED=2 for all, it seems. TO DO.
 test(418.5, inherits(tt,"try-error") && length(grep("[(]converted from warning[)].*growing",tt)))

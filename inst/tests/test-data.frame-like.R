@@ -47,7 +47,7 @@ test_that("merging data.tables is almost like merging data.frames", {
     dtm.df <- as.data.frame(dtm)
     dfm <- merge(as.data.frame(d1), as.data.frame(d2), by='a', suffixes=c('.xx', '.yy'))
 
-    expect_equal(unname(dtm.df), unname(dfm), check.attributes=FALSE,
+    expect_equal(unname(dtm.df), unname(dfm),
                  info="Testing contents/data after merge")
     expect_equal(colnames(dtm), colnames(dfm),
                  info="Original test #255 (testing suffixes parameter)")
@@ -91,7 +91,7 @@ test_that("subset using 'select' maintains key appropriately", {
   sub.3 <- subset(dt, a == 'a', select=c('b', 'c'))
   expect_true(is.null(key(sub.3)),
               info="selected columns do not from a key prefix")
-
+  
   sub.4 <- subset(dt, a == 'cc')
   expect_equal(nrow(sub.4), 0)
   expect_true(is.null(key(sub.4)))
@@ -110,7 +110,7 @@ test_that("transform maintains keys", {
 
   t2 <- transform(dt, d=c+4, a=sample(c('x', 'y', 'z'), 20, replace=TRUE))
   expect_true(is.null(key(t2)), info="transforming a key column nukes the key")
-
+  
   ## This is probably not necessary, but let's just check that transforming
   ## a key column doesn't twist around the rows in the result.
   for (col in c('b', 'c')) {
