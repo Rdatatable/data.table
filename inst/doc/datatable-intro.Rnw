@@ -120,7 +120,7 @@ cat(try(DT["b",],silent=TRUE))
 
 The error message tells us we need to use \code{setkey()}:
 <<>>=
-setkey(DT,x)   # or key(DT)="x" if you prefer
+setkey(DT,x)
 DT
 @
 

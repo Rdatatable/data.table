@@ -66,9 +66,5 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, ...) {
     all.equal.list(target, current, ...)
 }
 
-#all.equal.externalptr = function(target, current, ...) {
-#    if (.Call("externalptrequal",x,y,PACKAGE="data.table")) NULL
-#    else "External pointers differ"
-#}
 
 

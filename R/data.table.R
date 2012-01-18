@@ -403,6 +403,12 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     warning("growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.")
                 # TO DO test   DT[....][,foo:=42L],  i.e. where the foo does the realloc. Would it see DT name or the call.
                 # inherits=TRUE is correct and mimicks what the setVar in C was doing before being moved up to R level.
+                # Commnent moved up from C ... to revisit ... Note that the NAMED(dt)>1 doesn't work because .Call
+                # always sets to 2 (see R-ints), it seems. Work around
+                # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
+                # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
+                # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
+                # don't mind.
                 }
                 alloc.col(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
                 if (is.name(name))

@@ -28,13 +28,16 @@ SEXP *saveds;
 R_len_t *savedtl, nalloc, nsaved;
 void savetl_init(), savetl(SEXP s), savetl_end();
 
-void setselfref(SEXP x) {    // called from C only, never R, so returns void
+void setselfref(SEXP x) {   
+    // Store pointer to itself so we can detect if the object has been copied. See
+    // ?copy for why copies are not just inefficient but cause a problem for over-allocated data.tables.
+    // Called from C only, not R level, so returns void.
     setAttrib(x, SelfRefSymbol, R_MakeExternalPtr(
-        R_NilValue,  // so that identical() considers this selfref attribute the same between different data.tables
-        getAttrib(x, R_NamesSymbol), // so we know if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
-        R_MakeExternalPtr( 
-            x,             // so we know if this data.table has been copied by key<-, attr<- or names<-.
-            R_NilValue,    // this tag and prot currently unused
+        R_NilValue,                  // for identical() to return TRUE
+        getAttrib(x, R_NamesSymbol), // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
+        R_MakeExternalPtr(           // to avoid an infinite loop in object.size(), if prot=x here
+            x,                       // to know if this data.table has been copied by key<-, attr<-, names<-, etc.
+            R_NilValue,              // this tag and prot currently unused
             R_NilValue
         )
     ));
@@ -180,41 +183,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     // so we can now proceed to modify DT by reference.
     if (length(newcolnames)) {
         if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
-        oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just tl now, as we won't realloc here any more.
+        oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
         
-        // TO DO: remove ... if (TRUELENGTH(getAttrib(dt, R_ClassSymbol)) != -999 ) {
-        //    if (R_VERSION >= R_Version(2, 14, 0) && oldtncol!=0) {
-        //        error("Internal logical error: this is R >= 2.14.0, class is not marked but tl is %d rather than 0",oldtncol);
-                // tl should be 0 in R 2.14.0+ when saved and loaded back, when duplicated via *tmp*, or copy()-ed,
-                // and class marker won't be set then either, but class marker (should) only required for <=2.13.2
-                // because tl not initialized to 0 there.
-        //    }
-            // tl is random (uninitialized) in R <=2.13.2 so we detect that with the logic above.
-            // It is possible (in R <=2.13.2) that by chance, tl is unitialized to -999 but not enough risk to warrant
-            // making data.table dependent on 2.14.0 (some users have asked us not to do that as they are bound to
-            // earlier versions).
-            // Also random (uninitialized) in <=2.13.2 when data.table has been duplicated; e.g. via `*tmp*` or copy()
-            // as in 2.14.0+ but isn't a problem there where tl is initialized to 0.
-            
-       //     oldtncol=0;  // trigger alloccol below.
-       //     TRUELENGTH(dt) = 0;  // so that alloccol really does its stuff (it reads TRUELENGTH again)
-       //     TRUELENGTH(getAttrib(dt, R_ClassSymbol)) = -999;
-       // } else {
-            if (oldtncol<oldncol) error("Internal error, please report (including result of sessionInfo()) to datatable-help: oldtncol (%d) < oldncol (%d) but tl of class is marked.", oldtncol, oldncol);
-            if (oldtncol>oldncol+1000) warning("tl (%d) is greater than 1000 items over-allocated (ncol = %d). If you didn't set the datatable.alloccol option very large, please report this to datatable-help including the result of sessionInfo().",oldtncol, oldncol); 
-        //}
+        if (oldtncol<oldncol) error("Internal error, please report (including result of sessionInfo()) to datatable-help: oldtncol (%d) < oldncol (%d) but tl of class is marked.", oldtncol, oldncol);
+        if (oldtncol>oldncol+1000) warning("tl (%d) is greater than 1000 items over-allocated (ncol = %d). If you didn't set the datatable.alloccol option very large, please report this to datatable-help including the result of sessionInfo().",oldtncol, oldncol); 
         
         if (oldtncol < oldncol+LENGTH(newcolnames))
             error("Internal logical error. DT passed to assign has not been allocated enough column slots. l=%d, tl=%d, adding %d", oldncol, oldtncol, LENGTH(newcolnames));
-        //    n = imax2(oldtncol+100, oldncol+2*LENGTH(newcolnames));
-        //    if (LOGICAL(allocwarn)[0] && NAMED(dt)>1) warning("growing vector of column pointers from %d to %d. Only a shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data, and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings(), or increase the 'datatable.alloccol' option.", oldtncol, n);
-            // Note that the NAMED(dt)>1 doesn't work because .Call always sets to 2 (see R-ints), it seems. Work around
-            // may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too because
-            // that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
-            // Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we don't mind.
-        //    PROTECT(dt = alloccol(dt,n, R_NilValue, R_NilValue));
-        //    protecti++;
-        //}
         if (!selfrefnamesok(dt,verbose))
             error("names of dt have been reassigned, probably via names<- or setattr(x,'names',..). We can cope with this easily, though, TO DO");
         else if (TRUELENGTH(names) != oldtncol)
@@ -223,7 +198,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
         LENGTH(dt) = oldncol+LENGTH(newcolnames);
         LENGTH(names) = oldncol+LENGTH(newcolnames);
-        // truelength's of both already set by alloccol
+        // truelengths of both already set by alloccol
     }
     for (i=0; i<length(cols); i++) {
         coln = INTEGER(cols)[i]-1;
@@ -415,10 +390,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         // Do this at C level to avoid any copies.
         setAttrib(dt, install("sorted"), R_NilValue);
     }
-    // TO DO : remove  if (!isNull(symbol)) {
-        // Called from := in j when adding columns, just needed when a realloc takes place 
-        //setVar(symbol,dt,rho);
-    //} // else called from $<- or [<- where the slower copy via `*tmp*` mechanism must be used (as of R 2.13.1)
     UNPROTECT(protecti);
     return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
 }
@@ -468,33 +439,19 @@ SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean verbose)
     if (length(names)!=l)
         error("Internal error: length of names (%d) is not length of dt (%d)",length(names),l);
     
-    //if (TRUELENGTH(class) != -999 ) {
     if (!selfrefok(dt,verbose)) {
-        // TO DO: think we can remove all the settruelength's up in data.table.R now we just rely on marker.
-        //if (R_VERSION >= R_Version(2, 14, 0) && tl!=0) {
-        //    error("Internal logical error: this is R >= 2.14.0, class is not marked but tl is %d rather than 0",tl);
-        // tl should be 0 in R 2.14.0+ when saved and loaded back, when duplicated via *tmp*, or copy()-ed,
-        // and class marker won't be set then either, but, class marker (should) only required for <=2.13.2
-        // because tl not initialized to 0 there (so when we make data.table depend on R 2.14.0, we can remove
-        // the -999 marker).
-        //}
-        // tl is random (uninitialized) in R <=2.13.2 so we detect that with the logic above.
-        // It is possible (in R <=2.13.2) that by chance, tl is unitialized to -999 but not enough risk to warrant
-        // making data.table dependent on 2.14.0 (some users have asked us not to do that as they are bound to
-        // earlier versions).
-        // The -999L marker on the class attribute doesn't get copied over by R (e.g. via [<- and $<-) so in
-        // tables() is a way this branch is important, even n 2.14.0+. 
+        // TO DO: think we can remove all the settruelength's up in data.table.R now we just rely on selfrefok.
         tl=l;
         TRUELENGTH(dt)=l;
         if (!isNull(names)) TRUELENGTH(names)=l;
         setselfref(dt);
-        //TRUELENGTH(class) = -999;
     } else {
         tl = TRUELENGTH(dt);
         if (tl<0) error("Internal error, tl of class is marked but tl<0.");  // R <= 2.13.2 and we didn't catch uninitialized tl somehow
         if (tl>0 && tl<l) error("Internal error, please report (including result of sessionInfo()) to datatable-help: tl (%d) < l (%d) but tl of class is marked.", tl, l);
         if (tl>l+1000) warning("tl (%d) is greater than 1000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report this to datatable-help including the result of sessionInfo().",tl,l);
-        //if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
+        // TO DO:  realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
+        // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
         //    error("Internal error: tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol)));
     }
     if (n<l) warning("table has %d column slots in use. Attept to allocate less (%d)",l,n);
@@ -514,7 +471,6 @@ SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean verbose)
         setAttrib(newdt, R_NamesSymbol, newnames);
         if (isNull(getAttrib(newdt, R_ClassSymbol))) error("newdt has null class");
         setselfref(newdt);
-        //TRUELENGTH(getAttrib(newdt, R_ClassSymbol)) = -999;
         // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
         if (!isNull(symbol)) {
             // TO DO: move up to R level  !! STILL TO create assign() after .Call("alloccolwrapper"...
