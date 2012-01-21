@@ -23,7 +23,7 @@ SEXP SelfRefSymbol;
 //
 
 extern SEXP growVector(SEXP x, R_len_t newlen, Rboolean verbose);
-SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean verbose);
+SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 SEXP *saveds;
 R_len_t *savedtl, nalloc, nsaved;
 void savetl_init(), savetl(SEXP s), savetl_end();
@@ -421,14 +421,12 @@ void savetl_end() {
     Free(savedtl);
 }
 
-SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean verbose)
+SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
     SEXP newdt, names, newnames, class;
     R_len_t i, l, tl;
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (isNull(dt)) error("alloccol has been passed a NULL dt");
-    if (!isNull(symbol) && !isEnvironment(rho))
-        error("Internal data.table error in assign.c (alloccol). rho should be an environment");
     if (TYPEOF(dt) != VECSXP) error("dt passed to alloccol isn't type VECSXP");
     class = getAttrib(dt, R_ClassSymbol);
     if (isNull(class)) error("dt passed to alloccol has no class attribute. Please report result of traceback() to datatable-help.");
@@ -472,18 +470,6 @@ SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean verbose)
         if (isNull(getAttrib(newdt, R_ClassSymbol))) error("newdt has null class");
         setselfref(newdt);
         // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
-        if (!isNull(symbol)) {
-            // TO DO: move up to R level  !! STILL TO create assign() after .Call("alloccolwrapper"...
-            //if (FALSE && verbose && NAMED(dt)>0) warning("growing vector of column pointers from %d to %d. Only a shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.", tl, n, NAMED(dt));
-            //Rf_PrintValue(symbol);
-            //Rf_PrintValue(rho);
-            setVar(symbol,newdt,rho);
-            // Note that the NAMED(dt)>0 never works because .Call always sets to 2 (see R-ints). Work around
-            // may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too because
-            // that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
-            // Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we don't mind
-            // that inefficiency.
-        }
         dt = newdt;
         UNPROTECT(2);
     } else {
@@ -495,8 +481,8 @@ SEXP alloccol(SEXP dt, R_len_t n, SEXP symbol, SEXP rho, Rboolean verbose)
     return(dt);
 }
 
-SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP symbol, SEXP rho, SEXP verbose) {
-    return(alloccol(dt, INTEGER(newncol)[0], symbol, rho, LOGICAL(verbose)[0]));
+SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP verbose) {
+    return(alloccol(dt, INTEGER(newncol)[0], LOGICAL(verbose)[0]));
 }
 
 SEXP truelength(SEXP x) {

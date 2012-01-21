@@ -383,7 +383,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # updates by reference to existing columns
             cols = as.integer(m)
             newcolnames=NULL
-            #symbol = rho = NULL
         } else {
             # Adding new column(s)
             newcolnames=setdiff(lhs,names(x))
@@ -391,10 +390,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (notok<-!selfrefok(x,verbose))
                 warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table. Please report to datatable-help so the root cause can be fixed.")
             if (notok || (truelength(x) < ncol(x)+length(newcolnames))) {
-                #symbol = as.name(substitute(x))  
-                #rho = parent.frame()       
-                # TO DO :  see if the substitute inside alloc.col would see the substitute up here i.e. DT or x?
-                # TO DO: catch compound :=, substitute(x) as expression?
                 n = max(ncol(x)+100, ncol(x)+2*length(newcolnames))
                 name = substitute(x)
                 if (is.name(name) && !notok && verbose) { # && NAMED(x)>0 (TO DO)
@@ -1221,32 +1216,19 @@ copy = function(x) {
 
 alloc.col = function(DT, n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT)))), verbose=getOption("datatable.verbose",FALSE)) 
 {
-    symbol = as.name(substitute(DT))
-    if (identical(as.character(symbol),"*tmp*")) stop("alloc.col attempting to modify `*tmp*`")
-    rho = parent.frame()
-    .Call("alloccolwrapper",DT,as.integer(eval(n)),symbol,rho,  # TO DO: remove symbol and rho and assign on R side
-          verbose,PACKAGE="data.table")
+    name = substitute(DT)
+    if (identical(name,quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")
+    ans = .Call("alloccolwrapper",DT,as.integer(eval(n)),verbose,PACKAGE="data.table")
+    if (is.name(name)) {
+        name = as.character(name)
+        assign(name,ans,parent.frame(),inherits=TRUE)
+    }
+    ans
 }
 
 selfrefok = function(DT,verbose=getOption("datatable.verbose",FALSE)) {
     .Call("selfrefokwrapper",DT,verbose,PACKAGE="data.table")
 }
-
-#identical = function(x,y) {
-#    # Allows identical() to ignore the .internal.selfref attribute, which is always different for data.table.
-#    # The .internal.selfref allows us to track copies robustly, which is important now that data.tables are
-#    # over-allocated i.e. truelength>length. 
-#    # Similar to the concept of attributes on CHARSXP for internal use by R, and ignored by identical.c.
-#    # This identical will mask base and appear as a warning on loading the package.
-#    if ((!is.data.table(x)) || !is.data.table(y))
-#        return(base::identical(x,y))
-#    .Call("hideselfref",x)
-#    .Call("hideselfref",y)
-#    ans = base::identical(x,y)
-#    .Call("showselfref",x)
-#    .Call("showselfref",y)
-#    ans
-#}
 
 truelength = function(x) .Call("truelength",x,PACKAGE="data.table")
 # deliberately no "truelength<-" method.  alloc.col is the mechanism for that (maybe alloc.col should be renamed "truelength<-".
