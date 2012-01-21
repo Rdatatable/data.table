@@ -236,7 +236,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (haskey(i)) {
                 leftcols = match(key(i),colnames(i))
                 if (any(is.na(leftcols))) stop("sorted columns of i don't exist in the colnames of i. data.table is not a valid data.table")
-                if (length(rightcols) < length(leftcols)) stop("i has more sorted columns than x has sorted columns, invalid sorted match")
+                if (length(rightcols) < length(leftcols)) {
+                    if (verbose) cat("i's key is longer (",length(leftcols),") than x's key (",length(rightcols),"). Using the first ",length(rightcols)," columns of i's key in the join.\n", sep="")
+                    leftcols = head(leftcols,length(rightcols))
+                }
                 byval = i[,leftcols,with=FALSE]  # TO DO: remove this subset; just needs pointer
                 for (a in seq(along=leftcols)) {
                     # When/if we move to character, this entire for() will not be required.
@@ -257,7 +260,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                         if (is.factor(x[[rc]])) stop("x.",colnames(x)[rc]," is a factor but joining to i.",colnames(i)[lc]," which is not a factor. Factors must join to factors.")
                     }
                 }
-                iby = key(x)[seq(1,length(key(i)))]
+                iby = key(x)[seq(along=leftcols)]
             } else {
                 leftcols = 1:min(ncol(i),length(rightcols))     # The order of the columns in i must match to the order of the sorted columns in x
                 byval = i[,leftcols,with=FALSE]  # TO DO: remove this subset; just needs pointer

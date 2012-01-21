@@ -73,9 +73,11 @@ NEW FEATURES
         
    o    New function setkeyv(DT,v) (v stands for vector) replaces
         key(DT)<-v syntax. Also added setattr() and setnames(). All
-        documented in ?copy. 
-
+        documented in ?copy.
         
+   o    merge() now uses (manual) secondary keys, for speed.
+
+
 USER VISIBLE CHANGES
 
    o    The loc argument of setkey has been removed. This wasn't very
@@ -83,6 +85,10 @@ USER VISIBLE CHANGES
         
    o    datatable.alloccol has been removed. That warning is now
         controlled by datatable.verbose=TRUE. One option is easer.
+        
+   o    If i is a keyed data.table, it is no longer an error if its
+        key is longer than x's key; the first length(key(x)) columns
+        of i's key are used to join.
         
 
         *********************************************

@@ -1396,7 +1396,11 @@ tt = try(DT[,c("foo","bar"):=list(20L,numeric()),with=FALSE], silent=TRUE)
 test(483, inherits(tt,"try-error") && length(grep("RHS of assignment to new column.*bar.*is zero length but not empty list",tt)))
 test(484, DT, data.table(x=1:4))  # i.e. DT as it was before, without foo being added as it did in v1.7.7-
 
-
+# Test i's key longer than x's
+d1 <- data.table(a=1:2, b=11:14, key="a,b")
+d2 <- data.table(A=0:1, B=1:4, key="A")
+test(485, d2[d1], data.table(A=INT(1,1,1,1,2,2),B=INT(2,4,2,4,NA,NA),b=INT(11,11,13,13,12,14),key="A"))
+test(486, d2[d1,sum(B)], data.table(A=INT(1,1,2,2),V1=INT(6,6,NA,NA),key="A"))
 
 
 ## See test-* for more tests
