@@ -636,13 +636,23 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 
     if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ...\n");flush.console()}
     if (f__[1]==0 && is.na(nomatch)) {
-        itestj = NA
+        itestj = NA_integer_
     } else {
-        itestj = seq(f__[1],length=len__[1])
+        itestj = as.integer(seq.int(f__[1],length=len__[1]))
         if (length(o__)) itestj = o__[itestj]
     }
     SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
+    oldlen = length(itestj)
+    length(itestj) = max(len__)  # pad with NA to allocate enough for largest group, will re-use it in dogroups.c
+    if (identical(itestj[1],0L)) {
+        itestj[1] = NA_integer_
+        oldlen = 0L
+    }
+    if (!is.integer(itestj)) stop("Logical error: itestj is not type integer")
     SDenv$.SD = x[itestj, xvars, with=FALSE]
+    # the subset above keeps factor levels in full
+    # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
+    for (ii in seq(along=xvars)) setlength(SDenv$.SD[[ii]], oldlen)
     SDenv$.BY = lapply(byval,"[",1)  # byval is list() not data.table
     SDenv$.N = as.integer(len__[1])
     for (ii in ivars) assign(ii, i[[ii]][1], envir=SDenv)
@@ -678,13 +688,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # TO DO: we might over allocate above e.g. if first group has 1 row and j is actually a single row aggregate
     # TO DO: user warning when it detects over-allocation is currently off in dogroups.c
     byretn = max(byretn,maxn) # if the result for the first group is larger than the table itself(!) Unusual case where the optimisations for common query patterns. Probably a join is being done in the j via .SD and the 1-row table is an edge condition of bigger picture.
-
     byretn = as.integer(byretn)
-    unlockBinding(".SD",SDenv)
-    SDenv$.SD = x[seq(length=max(len__)), xvars, with=FALSE]  # allocate enough for largest group, will re-use it, the data contents doesn't matter at this point
-    lockBinding(".SD",SDenv)
-    # the subset above keeps factor levels in full
-    # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
+    
     xcols = as.integer(match(xvars,colnames(x)))
     icols = NULL
     if (!missing(i) && is.data.table(i)) icols = as.integer(match(ivars,colnames(i)))
@@ -1251,6 +1256,10 @@ settruelength = function(x,n) {
     #if (is.data.table(x))
     #    .Call("settruelength",attr(x,"class"),-999L,PACKAGE="data.table")
     #    # So that (in R 2.13.2-) we can detect tables loaded from disk (tl is not initialized there)
+}
+
+setlength = function(x,n) {
+    .Call("setlength",x,as.integer(n),PACKAGE="data.table")
 }
 
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only; i.e., DT[i,col:=1L] not DT[i,col]:=1L or DT[i]$col:=1L. Please see help(":=").')

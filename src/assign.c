@@ -11,6 +11,7 @@ EXPORT SEXP assign();
 EXPORT SEXP alloccolwrapper();
 EXPORT SEXP truelength();
 EXPORT SEXP settruelength();
+EXPORT SEXP setlength();
 #endif
 
 // See dogroups.c for these shared variables.
@@ -501,6 +502,12 @@ SEXP settruelength(SEXP x, SEXP n) {
     // Only needed in pre 2.14.0. From 2.14.0+, truelength is initialized to 0 by R.
     // For prior versions we set truelength to 0 in data.table creation, before calling alloc.col.
     TRUELENGTH(x) = INTEGER(n)[0];
+    return(R_NilValue);
+}
+
+SEXP setlength(SEXP x, SEXP n) {
+    // Currently, just so .SD can be created once at R level for largest group then setup for first group
+    LENGTH(x) = INTEGER(n)[0];
     return(R_NilValue);
 }
 
