@@ -31,11 +31,12 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
         length(dt.key) < length(by) || !all(dt.key[1:length(by)] == by)
     }
 
+    ..i = NULL  # to give R CMD check a visible binding
     if (.reset.keys(x, by)) {
         # if x has many columns, coping table and setting key on all columns may be relatively slow, so we use a
         # manual secondary key here. TO DO: replace with set2key when implemented.
         xkey = x[,by,with=FALSE]  
-        xkey[,.i:=1:nrow(xkey)]
+        xkey[,..i:=1:nrow(xkey)]
         setkeyv(xkey,by)
         xsecondary=TRUE
     } else {
@@ -44,7 +45,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     }
     if (.reset.keys(y, by)) {
         ykey = y[,by,with=FALSE]
-        ykey[,.i:=1:nrow(ykey)]
+        ykey[,..i:=1:nrow(ykey)]
         setkeyv(ykey,by)
         ysecondary=TRUE
     } else {
@@ -53,12 +54,12 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     }
 
     xidx = if (xsecondary)
-        xkey[ykey, .i, nomatch=0, mult="all"]$.i   # TO DO: use drop=TRUE when implemented
+        xkey[ykey, ..i, nomatch=0, mult="all"]$..i   # TO DO: use drop=TRUE when implemented
     else
         x[ykey, nomatch = 0, mult = 'all', which = TRUE]
         
     yidx = if (ysecondary)
-        ykey[xkey, .i, nomatch=0, mult="all"]$.i
+        ykey[xkey, ..i, nomatch=0, mult="all"]$..i
     else
         y[xkey, nomatch = 0, mult = 'all', which = TRUE]
 
