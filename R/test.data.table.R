@@ -14,7 +14,7 @@ test.data.table = function(echo=FALSE) {
         cat("Running",fn,"\n")
         oldverbose = getOption("datatable.verbose",FALSE)
         if (echo) options(datatable.verbose=TRUE)
-        source(fn,local=new.env(parent=.GlobalEnv),echo=echo)
+        sys.source(fn,envir=new.env(parent=.GlobalEnv))  # using source(local=) would break 2.12 compatibility
         options(data.table.verbose=oldverbose)
         # the new.env() is required for when a *user* runs test.data.table() because
         # the context of this function is sealed in the namespace w.r.t S4.

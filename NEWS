@@ -52,7 +52,7 @@ BUG FIXES
         Jäckel, Timothée Carayol and DM for investigations and suggestions,
         which in combination led to the solution.
 
-   o    An example in ?":=" fixed, and j and by descriptons
+   o    An example in ?":=" fixed, and j and by descriptions
         improved in ?data.table. Thanks to Joseph Voelkel for
         reporting.
         
@@ -62,7 +62,6 @@ NEW FEATURES
         := and with=FALSE; e.g.,
             DT[,c("foo","bar"):=1L,with=FALSE]
             DT[,c("foo","bar"):=list(1L,2L),with=FALSE]
-        Thanks to XXX for highlighting.
         
    o    := now recycles vectors of non divisible length, with
         a warning (previously an error).
@@ -72,8 +71,7 @@ NEW FEATURES
         to an investigation by DM.
         
    o    New function setkeyv(DT,v) (v stands for vector) replaces
-        key(DT)<-v syntax. Also added setattr() and setnames(). All
-        documented in ?copy.
+        key(DT)<-v syntax. Also added setattr(). See ?copy.
         
    o    merge() now uses (manual) secondary keys, for speed.
 
