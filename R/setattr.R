@@ -5,6 +5,6 @@ setattr = function(x,name,value) {
     # And as from 1.7.8 is made exported in NAMESPACE for use in user attributes.
     # User can also call `attr<-` function directly, but that might still copy when NAMED>0 (I think).
     # See "Confused by NAMED" thread on r-devel 24 Nov 2011.
-    .Call("setattrib", x, name, value, PACKAGE="data.table")
+    invisible(.Call("setattrib", x, name, value, PACKAGE="data.table"))
 }
 

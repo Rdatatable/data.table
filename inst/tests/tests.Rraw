@@ -3,6 +3,7 @@ if (!exists(".devtesting")) {
     require(data.table)   # in dev the package should not be loaded
     require(ggplot2)      # the 2 ggplot tests take so long they get in the way
     require(plyr)
+    require(reshape)
 }
 options(warn=2)
 nfail = ntest = lastnum = 0
@@ -1402,6 +1403,17 @@ d2 <- data.table(A=0:1, B=1:4, key="A")
 test(485, d2[d1], data.table(A=INT(1,1,1,1,2,2),B=INT(2,4,2,4,NA,NA),b=INT(11,11,13,13,12,14),key="A"))
 test(486, d2[d1,sum(B)], data.table(A=INT(1,1,2,2),V1=INT(6,6,NA,NA),key="A"))
 
+if ("package:reshape" %in% search()) {
+    DT <- data.table(ID=rep(1:3, each=3), TIME=rep(1:3, 3), X=1:9)
+    test(487, data.table(reshape(DT, idvar="ID", timevar="TIME", direction="wide")),
+              data.table(ID=1:3,X.1=INT(1,4,7),X.2=INT(2,5,8),X.3=INT(3,6,9)))
+    # The data.table() around reshape is to drop reshape's attributes.
+    DT <- data.table(ID=rep(1:3, each=3), TIME=rep(1:3, 3), X=1:9, Y=10:18)
+    test(488, data.table(reshape(DT, idvar="ID", timevar="TIME", direction="wide")),
+              data.table(ID=1:3,X.1=INT(1,4,7),Y.1=INT(10,13,16),X.2=INT(2,5,8),Y.2=INT(11,14,17),X.3=INT(3,6,9),Y.3=INT(12,15,18)))
+} else {
+    cat("Tests 487 and 488 not run. If required call library(reshape) first.\n")
+}
 
 ## See test-* for more tests
 

@@ -46,7 +46,7 @@ setattr(x,name,value)
   
   }
 \value{
-    The \code{data.table} is modified by reference, and returned so it can be used in compound statements; e.g., \code{setkey(DT,a)[J("foo")]}. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). \code{copy()} may also sometimes be useful before \code{:=} is used to subassign to a column by reference. See \code{?copy}.
+    The \code{data.table} is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setkey(DT,a)[J("foo")]}. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). \code{copy()} may also sometimes be useful before \code{:=} is used to subassign to a column by reference. See \code{?copy}.
 }
 \references{
 \url{http://en.wikipedia.org/wiki/Radix_sort}\cr

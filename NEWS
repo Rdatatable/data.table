@@ -6,11 +6,22 @@ This NEWS file summarises the main changes.
 
         *********************************************
         **                                         **
-        **   CHANGES IN DATA.TABLE VERSION 1.8.0   **
+        **   CHANGES IN DATA.TABLE VERSION 1.7.9   **
         **                                         **
         *********************************************
         
+BUG FIXES
+
+   o    Incompatibility with reshape() of 3 column tables
+        fixed (introduced by 1.7.8) :
+          Error in setkey(ans, NULL) : x is not a data.table
+        Thanks to Damian Betebenner for reporting and
+        reproducible example. Test added to catch in future.
         
+   o    setattr(DT,...) still returns DT, but now invisibly.
+        It returns DT for compound syntax; e.g.,
+            setattr(DT,...)[i,j,by]
+        Again, thanks to Damian Betebenner for reporting.        
 
         *********************************************
         **                                         **
