@@ -82,17 +82,22 @@ setnames(x,old=names(x),new)
     setkey(DT2,B)         # just changes DT2
     identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
     
+    DT = data.table(a=1:2,b=3:4)
+    tracemem(DT)
+    suppressWarnings(colnames(DT)[1] <- "A")    # 3 copies of entire object
+    suppressWarnings(names(DT)[1] <- "A")       # 2 copies of entire object
+    suppressWarnings(`names<-`(DT,c("A","b")))  # 1 copy of entire object
+                                                # What if DT is large?
+                             
     DT = data.table(a=1:2,b=3:4,c=5:6)
+    tracemem(DT)
     setnames(DT,"b","B")               # by name; no match() needed
-    DT
     setnames(DT,3,"C")                 # by position
-    DT
     setnames(DT,2:3,c("D","E"))        # multiple
-    DT
     setnames(DT,c("a","E"),c("A","F")) # multiple by name
-    DT
     setnames(DT,new=c("X","Y","Z"))    # replace all
-    DT
+                                       # no copy made by setnames() at all
+
 }
 \keyword{ data }
 
