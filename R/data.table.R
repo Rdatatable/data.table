@@ -1044,12 +1044,13 @@ dimnames.data.table = function(x) {
 
 "dimnames<-.data.table" = function (x, value)   # so that can do  colnames(dt)=<..>  as well as names(dt)=<..>
 {
-    if (!cedta()) return(`dimnames<-.data.frame`(x,value))
+    if (!cedta()) return(`dimnames<-.data.frame`(x,value))  # won't maintain key column (if any). Revisit if ever causes a compatibility problem but don't think it's likely that packages change column names using dimnames<-. See names<-.data.table below.
+    warning("The dimnames(x)<-value syntax copies the whole table. This is due to <- in R itself. Please change to setnames() which doesn't copy and is faster. See help('setnames'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your dimnames<- calls.")
     if (!is.list(value) || length(value) != 2) stop("attempting to assign invalid object to dimnames of a data.table")
     if (!is.null(value[[1]])) stop("data.tables do not have rownames")
     if (ncol(x) != length(value[[2]])) stop("can't assign",length(value[[2]]),"colnames to a",ncol(x),"column data.table")
-    setattr(x,"names",as.character(value[[2]]))
-    x
+    setnames(x,as.character(value[[2]]))
+    x  # it's this returned value that is copied via *tmp* and we cannot avoid that when using <- currently in R
 }
 
 "names<-.data.table" = function(x,value)
@@ -1059,10 +1060,8 @@ dimnames.data.table = function(x) {
     caller = as.character(sys.call(-2))[1]
     if ( ((tt<-identical(caller,"colnames<-")) && cedta(3)) ||
          cedta() ) warning("The ",if(tt)"col","names(x)<-value syntax copies the whole table. This is due to <- in R itself. Please change to setnames(x,old,new) which does not copy and is faster. See help('setnames'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your ",if(tt)"col","names<- calls.")
-    setnames(x,1:length(x),value)
-    if (!is.character(value)) stop("names must be type character")
-    if (length(value) != ncol(x)) stop("Can't assign ",length(value)," names to a ",ncol(x)," column data.table")
-    x  # for the copy via *tmp* we cannot avoid when using <-
+    setnames(x,value)
+    x   # it's this returned value that is copied via *tmp* and we cannot avoid that when using <- currently in R
 }
 
 
@@ -1264,11 +1263,13 @@ setattr = function(x,name,value) {
     # Named setattr (rather than setattrib) at R level to more closely resemble attr<-
     # And as from 1.7.8 is made exported in NAMESPACE for use in user attributes.
     # User can also call `attr<-` function directly, but that copies (maybe just when NAMED>0, which is always for data.frame, I think).  See "Confused by NAMED" thread on r-devel 24 Nov 2011.
-    if (name=="names" && is.data.table(x) && length(attr(x,"names")))
-        setnames(x,1:ncol(x),value)
+    # We tend to use setattr() internally in data.table.R because often we construct a data.table and it hasn't
+    # got names yet. setnames() is the user interface which checks integrity and doesn't let you drop names for example.
+    if (name=="names" && is.data.table(x) && length(attr(x,"names")) && !is.null(value))
+        setnames(x,value)
         # Using setnames here so that truelength of names can be retained, to carry out integrity checks such as not
         # creating names longer than the number of columns of x, and to change the key, too
-        # For convenience so taht setattr(DT,"names",allnames) works as expected without requiring a switch to setnames.
+        # For convenience so that setattr(DT,"names",allnames) works as expected without requiring a switch to setnames.
     else
         .Call("setattrib", x, name, value, PACKAGE="data.table")
         # If name=="names" and this is the first time names are assigned (e.g. in data.table()), this will be grown
@@ -1276,22 +1277,31 @@ setattr = function(x,name,value) {
     invisible(x)
 }
 
-setnames = function(x,old=names(x),new) {
+setnames = function(x,old,new) {
     # Sets by reference, maintains truelength, no copy of table at all.
     # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
     # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
     if (!is.data.table(x)) stop("x is not a data.table")
-    if (!length(attr(x,"names"))) stop("x has no column names")
+    if (!length(attr(x,"names"))) stop("x has no column names")  # because setnames is for user user. Internally, use setattr(x,"names",...)
+    if (missing(new)) {
+        # so that setnames(DT,new) works too, e.g., setnames(DT,c("A","B")) where ncol(DT)==2
+        if (length(old) != ncol(x)) stop("Can't assign ",length(old)," names to a ",ncol(x)," column data.table")
+        new=old
+        old=names(x)
+    } else {
+        if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
+        if (length(new)!=length(old)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
+    }
     if (is.numeric(old)) {
         tt = old<1L | old>length(x)
         if (any(tt)) stop("Items of 'old' outside range [1,",length(x),"]: ",paste(old[tt],collapse=","))
         old = names(x)[old]
-    } 
+    }
     if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
     i = match(old,names(x))
     if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
     if (!is.character(new)) stop("'new' is not a character vector")
-    if (length(new)!=length(old)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
+    
     if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))
 
     # update the key too if the column name being change is in the key

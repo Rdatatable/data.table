@@ -15,11 +15,11 @@
 setkey(x, ..., verbose=getOption("datatable.verbose",FALSE))
 setkeyv(x, cols, verbose=getOption("datatable.verbose",FALSE))
 key(x)
-key(x) <- value
 haskey(x)
 copy(x)
 setattr(x,name,value)
-setnames(x,old=names(x),new)
+setnames(x,old,new)
+key(x) <- value   # deprecated, please use setkey or setkeyv instead.
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
@@ -28,8 +28,8 @@ setnames(x,old=names(x),new)
   \item{value}{ In (deprecated) \code{key<-}, a character vector (only) of column names. In \code{setattr}, the value to assign to the attribute or \code{NULL} removes the attribute, if present. }
   \item{name}{ The character attribute name. }
   \item{verbose}{ Output status and information. }
-  \item{old}{ Character names, or numeric positions of column names to change. By default all names of \code{x}, so that the \code{old} argument can be omitted when changing all column names using \code{new} only. }
-  \item{new}{ New column names, the same length as \code{old}. } 
+  \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, the new column names, which must be the same length as the number of columns. See examples. }
+  \item{new}{ Optional. New column names, the same length as \code{old}. } 
 }
 \details{
   The sort is attempted with the very fast \code{"radix"} method in
@@ -40,7 +40,7 @@ setnames(x,old=names(x),new)
   
   If \code{v=NULL}, the key is removed.
   
-  In v1.7.8, the \code{key<-} syntax was deprecated. The \code{<-} method copies the whole table and we know of no way to avoid that copy without a change in \R itself. Please use the \code{set}* functions instead, which make no copy at all. \code{setkey} accepts unquoted column names for convenience, whilst \code{setkeyv} accepts a vector of column names.
+  In v1.7.8, the \code{key<-} syntax was deprecated. The \code{<-} method copies the whole table and we know of no way to avoid that copy without a change in \R itself. Please use the \code{set}* functions instead, which make no copy at all. \code{setkey} accepts unquoted column names for convenience, whilst \code{setkeyv} accepts one vector of column names.
   
   The problem (for \code{data.table}) with the copy by \code{key<-} (other than being slower) is that \R doesn't maintain the over allocated truelength, but it looks as though it has. Adding a column by reference using \code{:=} after a \code{key<-} was therefore a memory overwrite and eventually a seg fault; the over allocated memory wasn't really there after \code{key<-}'s copy. \code{data.table}s have a new attribute \code{.internal.selfref} to catch and warn about such copies in future. This attribute has been implemented in way that is friendly with \code{identical()} and \code{object.size()}. 
 
@@ -66,37 +66,39 @@ setnames(x,old=names(x),new)
     
     DT = data.table(A=5:1,B=letters[5:1])
     DT # before
-    setkey(DT,B)  # re-orders table and marks it sorted.
+    setkey(DT,B)          # re-orders table and marks it sorted.
     DT # after
-    tables()      # KEY column reports the key'd columns
+    tables()              # KEY column reports the key'd columns
     key(DT)
-    setkeyv(DT,c("A"))  # rather than key(DT)<-c("A")
+    keycols = c("A","B")
+    setkeyv(DT,keycols)    # rather than key(DT)<-keycols (which copies entire table)
     
     DT = data.table(A=5:1,B=letters[5:1])
-    DT2 = DT              # not enough to copy
-    setkey(DT2,B)         # does not copy on write to DT2
+    DT2 = DT              # does not copy
+    setkey(DT2,B)         # does not copy-on-write to DT2
     identical(DT,DT2)     # TRUE. DT and DT2 are two names for the same keyed table
     
     DT = data.table(A=5:1,B=letters[5:1])
-    DT2 = copy(DT)        # explicit copy is required for data.table
-    setkey(DT2,B)         # just changes DT2
+    DT2 = copy(DT)        # explicit copy() needed to copy a data.table
+    setkey(DT2,B)         # now just changes DT2
     identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
     
-    DT = data.table(a=1:2,b=3:4)
-    tracemem(DT)
-    suppressWarnings(colnames(DT)[1] <- "A")    # 3 copies of entire object
-    suppressWarnings(names(DT)[1] <- "A")       # 2 copies of entire object
-    suppressWarnings(`names<-`(DT,c("A","b")))  # 1 copy of entire object
-                                                # What if DT is large?
-                             
+    DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies
+    tracemem(DF)
+    colnames(DF)[1] <- "A"             # 4 copies of entire object
+    names(DF)[1] <- "A"                # 3 copies of entire object
+    `names<-`(DF,c("A","b"))           # 1 copy of entire object
+    x=`names<-`(DF,c("A","b"))         # still 1 copy (so not print method)
+    # What if DF is large, say 10GB in RAM. Copy 10GB just to change a column name?
+
     DT = data.table(a=1:2,b=3:4,c=5:6)
     tracemem(DT)
     setnames(DT,"b","B")               # by name; no match() needed
     setnames(DT,3,"C")                 # by position
     setnames(DT,2:3,c("D","E"))        # multiple
     setnames(DT,c("a","E"),c("A","F")) # multiple by name
-    setnames(DT,new=c("X","Y","Z"))    # replace all
-                                       # no copy made by setnames() at all
+    setnames(DT,c("X","Y","Z"))        # replace all
+    # And, no copy of DT was made by setnames() at all
 
 }
 \keyword{ data }

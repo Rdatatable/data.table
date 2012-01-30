@@ -4,7 +4,7 @@ read = function(fnam="test.csv",primary=",") {   #,secondary=" ")
     nr = length(ans[[1]])
     setattr(ans,"row.names",.set_row_names(nr))
     setattr(ans,"class",c("data.table","data.frame"))
-    names(ans) = paste("V",1:length(ans),sep="")
+    setnames(ans,paste("V",1:length(ans),sep=""))
     ans
 }
 

@@ -9,35 +9,35 @@ This NEWS file summarises the main changes.
         **   CHANGES IN DATA.TABLE VERSION 1.7.9   **
         **                                         **
         *********************************************
-        
+
 NEW FEATURES
 
    o    New function setnames(), referred to in 1.7.8 warning messages.
         It makes no copy of the whole data object, unlike names<- and
-        colnames<-. It is also more convenient since it allows changing
+        colnames<-. It may be more convenient as well since it allows changing
         a column name, by name; e.g.,
         
           setnames(DT,"oldcolname","newcolname")  # by name; no match() needed
           setnames(DT,3,"newcolname")             # by position
           setnames(DT,2:3,c("A","B"))             # multiple
           setnames(DT,c("a","b"),c("A","B"))      # multiple by name
-          setnames(DT,new=toupper(names(DT)))     # replace all
+          setnames(DT,toupper(names(DT)))         # replace all
         
-        setnames() maintains truelength of the names vector. This allows
-        := to add columns fully by reference without even growing the names
+        setnames() maintains truelength of the over-allocated names vector. This
+        allows := to add columns fully by reference without growing the names
         vector. As before with names<-, if a key column's name is changed,
-        the key attribute is also updated with the new column name.
+        the "sorted" attribute is updated with the new column name.
         
 BUG FIXES
 
-   o    Incompatibility with reshape() of 3 column tables
-        fixed (introduced by 1.7.8) :
+   o    Incompatibility with reshape() of 3 column tables fixed
+        (introduced by 1.7.8) :
           Error in setkey(ans, NULL) : x is not a data.table
         Thanks to Damian Betebenner for reporting and
-        reproducible example. Test added to catch in future.
+        reproducible example. Tests added to catch in future.
         
-   o    setattr(DT,...) still returns DT, but now invisibly.
-        It returns DT for compound syntax; e.g.,
+   o    setattr(DT,...) still returns DT, but now invisibly. It returns
+        DT back again for compound syntax to work; e.g.,
             setattr(DT,...)[i,j,by]
         Again, thanks to Damian Betebenner for reporting.        
 

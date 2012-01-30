@@ -150,10 +150,11 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
                         "can fix this.")
             } else {
                 col.names[xref] <- paste(base.names, suffixes[1], sep="")
-                setattr(dt, "names", col.names)
+                setnames(dt, col.names)
             }
         }
     }
     dt
 }
+
 
