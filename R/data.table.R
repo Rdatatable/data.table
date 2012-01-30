@@ -638,7 +638,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     if (f__[1]==0 && is.na(nomatch)) {
         itestj = NA_integer_
     } else {
-        itestj = as.integer(seq.int(f__[1],length=len__[1]))
+        itestj = as.integer(seq.int(f__[1],length.out=len__[1]))
         if (length(o__)) itestj = o__[itestj]
     }
     SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
