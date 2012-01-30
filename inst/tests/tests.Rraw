@@ -487,7 +487,7 @@ test(181, DT[,sum(v),by=b][,V1], c(12L,9L))
 # Test fix for bug 1026 reported by Harish V
 # this test needed a unique var name to generate error 'object 'b' not found'.
 # Otherwise it finds 'b' in local scope.
-colnames(DT)[2] = "buniquename314"   
+setnames(DT,2,"buniquename314")   
 bar = function( data, fcn ) {
     q = substitute( fcn )
     xx = data[,eval(q),by=a]
@@ -868,16 +868,16 @@ if ("package:plyr" %in% search()) {
 # Test that changing colnames keep key in sync.
 # TO DO: will have to do this for secondary keys, too, when implemented.
 DT = data.table(x=1:10,y=1:10,key="x")
-names(DT) <- c("a", "b")
+setnames(DT,new=c("a", "b"))
 test(305, key(DT), "a")
-names(DT)[1] <- "R"
+setnames(DT,"a","R")
 test(306, key(DT), "R")
 
-names(DT)[2] <- "S"
+setnames(DT,"b","S")
 test(307, key(DT), "R")
-colnames(DT) = c("a","b")
+setnames(DT,new=c("a","b"))
 test(308, key(DT), "a")
-colnames(DT)[1] = "R"
+setnames(DT,1,"R")
 test(309, key(DT), "R")
 
 # Test :=NULL
@@ -1414,6 +1414,26 @@ if ("package:reshape" %in% search()) {
 } else {
     cat("Tests 487 and 488 not run. If required call library(reshape) first.\n")
 }
+
+# Test warnings for names<- and colnames<-,  but only warnings when caller is data.table aware.
+DT = data.table(a=1:3,b=4:6)
+tt=try(names(DT)[1]<-"A",silent=TRUE)
+test(489, inherits(tt,"try-error") && length(grep("converted from warning.*names[(]x[)]<-value syntax.*Please change to setnames",tt)))
+suppressWarnings(names(DT)[1]<-"A")  # make sure it still works
+test(490, names(DT), c("A","b"))
+tt=try(colnames(DT)[2]<-"B",silent=TRUE)
+test(491, inherits(tt,"try-error") && length(grep("converted from warning.*colnames[(]x[)]<-value syntax.*Please change to setnames",tt)))
+suppressWarnings(colnames(DT)[2]<-"B")  # make sure it still works
+test(492, names(DT), c("A","B"))
+
+# Check setnames out of bounds errors
+tt=try(setnames(DT,"foo","bar"),silent=TRUE)
+test(493, inherits(tt,"try-error") && length(grep("not found.*foo",tt)))
+tt=try(setnames(DT,3,"bar"),silent=TRUE)
+test(494, inherits(tt,"try-error") && length(grep("outside range.*3",tt)))
+
+
+
 
 ## See test-* for more tests
 

@@ -164,7 +164,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     vnames <- unlist(vnames)
     if (check.names)
         vnames <- make.names(vnames, unique = TRUE)
-    names(value) <- vnames
+    setattr(value,"names",vnames)
     setattr(value,"row.names",.set_row_names(nr))
     setattr(value,"class",c("data.table","data.frame"))
     alloc.col(value)
@@ -314,7 +314,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (!is.data.table(i)) {
             	ans = vector("list",ncol(x))
                 for (s in seq_len(ncol(x))) ans[[s]] = x[[s]][irows]
-                names(ans) = names(x)
+                setattr(ans, "names", names(x))
                 if (haskey(x) && (is.logical(irows) || length(irows)==1)) {
                     setattr(ans,"sorted",key(x))
                     # TO DO: detect more ordered subset cases, e.g. if irows is monotonic
@@ -333,7 +333,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 rightcols = head(rightcols,length(leftcols))
                 xnonjoin = seq_len(ncol(x))[-rightcols]
                 for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]
-                names(ans) = make.names(c(colnames(x)[rightcols],colnames(x)[-rightcols],colnames(i)[-leftcols]),unique=TRUE)
+                setattr(ans, "names", make.names(c(colnames(x)[rightcols],colnames(x)[-rightcols],colnames(i)[-leftcols]),unique=TRUE))
                 if (haskey(i) || nrow(i)==1)
                     setattr(ans,"sorted",key(x))
                     # TO DO: detect more ordered subset cases e.g. DT["A"] or DT[c("A","B")] where the
@@ -448,7 +448,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             for (s in seq(along=j)) ans[[s]] = x[[j[s]]][irows]
             # TO DO: allow i's non join columns to be included by name
         }
-        names(ans) = names(x)[j]
+        setattr(ans, "names", names(x)[j])
         if (haskey(x) && all(key(x) %in% names(ans)) && (is.logical(irows) || length(irows)==1 || haskey(i) || (is.data.table(i) && nrow(i)==1))) {
             setattr(ans,"sorted",key(x))
             # TO DO: see ordered subset comments above
@@ -483,7 +483,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (!missing(by)) stop("logical error, by not missing in bywithoutby")
         f__ = idx.start
         len__ = as.integer(idx.end-idx.start+1)
-        names(byval) = iby
+        setattr(byval, "names", iby)
         bysameorder = haskey(i)
         if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by' is missing")
         bynames = allbyvars = NULL
@@ -526,7 +526,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 byval=as.list(x[,byval,with=FALSE])
             } else {
                 byval = list(byval) # name : by may be a single unquoted column name but it must evaluate to list so this is a convenience to users
-                names(byval) = as.character(bysuborig)
+                setattr(byval, "names", as.character(bysuborig))
             }
         }
         if (!is.list(byval)) stop("by must evaluate to vector or list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
@@ -556,7 +556,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 # if you don't want the byvar named as the column (to use it in j as vector) then
                 # rename the byvar using list() notation.
             }
-            names(byval) = bynames
+            setattr(byval, "names", bynames)
         }
         if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}
         if (bysameorder) {
@@ -597,7 +597,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (jvnames[jj-1] == "" && mode(jsubl[[jj]])=="name") jvnames[jj-1] = deparse(jsubl[[jj]])
             # TO DO: if call to a[1] for example, then call it 'a' too
         }
-        names(jsub)=""  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.
+        setattr(jsub, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.
     } # else maybe a call to transform or something which returns a list.
     ws = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
     if (".SD" %in% ws) {
@@ -710,7 +710,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # if (byretn==0) return(NULL)  # user wanted side effects only (e.g. plotting).
     ww = which(jvnames=="")
     if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
-    names(ans) = c(names(byval), jvnames)
+    setattr(ans, "names", c(names(byval), jvnames))
     if (length(ans[[1]])) {
         ww = which(sapply(byval,is.factor))
         for (jj in ww) {levels(ans[[jj]]) = levels(byval[[jj]]); class(ans[[jj]])="factor"}
@@ -837,9 +837,9 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
         for (i in ic) value[[i]] <- as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
     }
     if (length(collabs) == ncols)
-        names(value) <- collabs
+        setattr(value, "names", collabs)
     else
-        names(value) <- paste("V", ic, sep = "")
+        setattr(value, "names", paste("V", ic, sep = ""))
     setattr(value,"row.names",.set_row_names(nrows))
     setattr(value,"class",c("data.table","data.frame"))
     settruelength(value,0L)
@@ -862,7 +862,7 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
     x = copy(x)
     if (any(n<max(n)))
         for (i in which(n<max(n))) x[[i]] = rep(x[[i]],length=max(n))
-    if (is.null(names(x))) names(x) = paste("V",1:length(x),sep="")
+    if (is.null(names(x))) setattr(x,"names",paste("V",1:length(x),sep=""))
     setattr(x,"row.names",.set_row_names(max(n)))
     setattr(x,"class",c("data.table","data.frame"))
     settruelength(x,0L)
@@ -997,7 +997,7 @@ tail.data.table = function(x, n=6, ...) {
     for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
     # This is why we currently still need c.factor.
     # TO DO: much easier with character columns, when they are allowed.
-    names(l) = nm
+    setattr(l,"names",nm)
     setattr(l,"row.names",.set_row_names(length(l[[1]])))
     setattr(l,"class",c("data.table","data.frame"))
     settruelength(l,0L)
@@ -1048,25 +1048,21 @@ dimnames.data.table = function(x) {
     if (!is.list(value) || length(value) != 2) stop("attempting to assign invalid object to dimnames of a data.table")
     if (!is.null(value[[1]])) stop("data.tables do not have rownames")
     if (ncol(x) != length(value[[2]])) stop("can't assign",length(value[[2]]),"colnames to a",ncol(x),"column data.table")
-    names(x) <- as.character(value[[2]])
+    setattr(x,"names",as.character(value[[2]]))
     x
 }
 
 "names<-.data.table" = function(x,value)
 {
-    # if (!cedta())... not this time. When non data.table aware packages change names, we'd like to maintain the key, too.
+    # When non data.table aware packages change names, we'd like to maintain the key, too.
+    # If call is names(DT)[2]="newname", R will call this names<-.data.table function (notice no i) with 'value' already prepared to be same length as ncol
+    caller = as.character(sys.call(-2))[1]
+    if ( ((tt<-identical(caller,"colnames<-")) && cedta(3)) ||
+         cedta() ) warning("The ",if(tt)"col","names(x)<-value syntax copies the whole table. This is due to <- in R itself. Please change to setnames(x,old,new) which does not copy and is faster. See help('setnames'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your ",if(tt)"col","names<- calls.")
+    setnames(x,1:length(x),value)
     if (!is.character(value)) stop("names must be type character")
     if (length(value) != ncol(x)) stop("Can't assign ",length(value)," names to a ",ncol(x)," column data.table")
-    # If user calls names(DT)[2]="newname", R will (conveniently, for us) call this names<-.data.table function (notice no i) with 'value' same length as ncol
-    m = match(key(x), attr(x,"names"))
-    setattr(x,"names",value)
-    if (haskey(x) && any(!is.na(m))) {
-        w = which(!is.na(m))
-        k = key(x)
-        k[w] = value[m[w]]
-        setattr(x,"sorted",k)
-    }
-    x
+    x  # for the copy via *tmp* we cannot avoid when using <-
 }
 
 
@@ -1146,7 +1142,7 @@ subset.data.table <- function (x, subset, select, ...)
         vars <- 1:ncol(x)
     } else {
         nl <- as.list(1L:ncol(x))
-        names(nl) <- names(x)
+        setattr(nl,"names",names(x))
         vars <- eval(substitute(select), nl, parent.frame())
         if (!is.null(key.cols)) {
             ## Only keep key.columns found in the select clause
@@ -1260,6 +1256,52 @@ settruelength = function(x,n) {
 
 setlength = function(x,n) {
     .Call("setlength",x,as.integer(n),PACKAGE="data.table")
+}
+
+setattr = function(x,name,value) {
+    # Wrapper for setAttrib internal R function
+    # Sets attribute by reference (no copy)
+    # Named setattr (rather than setattrib) at R level to more closely resemble attr<-
+    # And as from 1.7.8 is made exported in NAMESPACE for use in user attributes.
+    # User can also call `attr<-` function directly, but that copies (maybe just when NAMED>0, which is always for data.frame, I think).  See "Confused by NAMED" thread on r-devel 24 Nov 2011.
+    if (name=="names" && is.data.table(x) && length(attr(x,"names")))
+        setnames(x,1:ncol(x),value)
+        # Using setnames here so that truelength of names can be retained, to carry out integrity checks such as not
+        # creating names longer than the number of columns of x, and to change the key, too
+        # For convenience so taht setattr(DT,"names",allnames) works as expected without requiring a switch to setnames.
+    else
+        .Call("setattrib", x, name, value, PACKAGE="data.table")
+        # If name=="names" and this is the first time names are assigned (e.g. in data.table()), this will be grown
+        # by alloc.col very shortly afterwards in the caller.
+    invisible(x)
+}
+
+setnames = function(x,old=names(x),new) {
+    # Sets by reference, maintains truelength, no copy of table at all.
+    # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
+    # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
+    if (!is.data.table(x)) stop("x is not a data.table")
+    if (!length(attr(x,"names"))) stop("x has no column names")
+    if (is.numeric(old)) {
+        tt = old<1L | old>length(x)
+        if (any(tt)) stop("Items of 'old' outside range [1,",length(x),"]: ",paste(old[tt],collapse=","))
+        old = names(x)[old]
+    } 
+    if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
+    i = match(old,names(x))
+    if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
+    if (!is.character(new)) stop("'new' is not a character vector")
+    if (length(new)!=length(old)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
+    if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))
+
+    # update the key too if the column name being change is in the key
+    m = match(old, key(x))  # use old here before .Call that (when old=names(DT)) changes old by reference, too 
+    w = which(!is.na(m))
+    .Call("setcharvec", attr(x,"names"), as.integer(i), new, PACKAGE="data.table")
+    if (length(w))
+        .Call("setcharvec", attr(x,"sorted"), as.integer(m[w]), new[w], PACKAGE="data.table")
+        
+    invisible(x)
 }
 
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only; i.e., DT[i,col:=1L] not DT[i,col]:=1L or DT[i]$col:=1L. Please see help(":=").')

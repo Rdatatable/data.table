@@ -12,6 +12,7 @@ EXPORT SEXP alloccolwrapper();
 EXPORT SEXP truelength();
 EXPORT SEXP settruelength();
 EXPORT SEXP setlength();
+EXPORT SEXP setcharvec();
 #endif
 
 // See dogroups.c for these shared variables.
@@ -111,7 +112,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
     class = getAttrib(dt, R_ClassSymbol);
     if (isNull(class)) error("dt passed to assign has no class attribute. Please report to datatable-help.");
-    if (!selfrefok(dt,verbose)) error("At an earlier point, this data.table has been copied by R. Avoid names<-, attr<- and key<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setnames(), setattr() and setkey(). If this message doesn't help, please ask on datatable-help.");  // Produced at the point user wants to assign by reference using := after the use of names<-, attr<- or key<- (which might be never).
+    if (!selfrefok(dt,verbose)) error("At an earlier point, this data.table has been copied by R. Avoid key<-, names<- and attr<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setkey(), setnames() and setattr(). If this message doesn't help, please ask on datatable-help.");  // Produced at the point user wants to assign by reference using := after the use of names<-, attr<- or key<- (which might be never).
     // We can't catch those copies and call alloc.col afterwards, so we have to ask user to change. See comments in key<-.
     oldncol = LENGTH(dt);
     names = getAttrib(dt,R_NamesSymbol);
@@ -192,7 +193,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
         if (oldtncol < oldncol+LENGTH(newcolnames))
             error("Internal logical error. DT passed to assign has not been allocated enough column slots. l=%d, tl=%d, adding %d", oldncol, oldtncol, LENGTH(newcolnames));
         if (!selfrefnamesok(dt,verbose))
-            error("names of dt have been reassigned, probably via names<- or setattr(x,'names',..). We can cope with this easily, though, TO DO");
+            error("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to datatable-help.");
+            // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
+            // strong error message for now.
         else if (TRUELENGTH(names) != oldtncol)
             error("selfrefnames is ok but tl names [%d] != tl [%d]", TRUELENGTH(names), oldtncol);
         for (i=0; i<LENGTH(newcolnames); i++)
@@ -519,8 +522,13 @@ SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
     return(ans);
 }
 
-
-
+SEXP setcharvec(SEXP x, SEXP which, SEXP new)
+{
+    // checks have already been made at R level
+    for (int i=0; i<LENGTH(which); i++)
+        SET_STRING_ELT(x, INTEGER(which)[i]-1, STRING_ELT(new, i));
+    return(R_NilValue);
+}
 
 /*
 SEXP pointer(SEXP x) {

@@ -10,6 +10,24 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
         
+NEW FEATURES
+
+   o    New function setnames(), referred to in 1.7.8 warning messages.
+        It makes no copy of the whole data object, unlike names<- and
+        colnames<-. It is also more convenient since it allows changing
+        a column name, by name; e.g.,
+        
+          setnames(DT,"oldcolname","newcolname")  # by name; no match() needed
+          setnames(DT,3,"newcolname")             # by position
+          setnames(DT,2:3,c("A","B"))             # multiple
+          setnames(DT,c("a","b"),c("A","B"))      # multiple by name
+          setnames(DT,new=toupper(names(DT)))     # replace all
+        
+        setnames() maintains truelength of the names vector. This allows
+        := to add columns fully by reference without even growing the names
+        vector. As before with names<-, if a key column's name is changed,
+        the key attribute is also updated with the new column name.
+        
 BUG FIXES
 
    o    Incompatibility with reshape() of 3 column tables
@@ -22,6 +40,7 @@ BUG FIXES
         It returns DT for compound syntax; e.g.,
             setattr(DT,...)[i,j,by]
         Again, thanks to Damian Betebenner for reporting.        
+
 
         *********************************************
         **                                         **

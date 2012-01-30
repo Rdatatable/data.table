@@ -6,6 +6,7 @@
 \alias{haskey}
 \alias{copy}
 \alias{setattr}
+\alias{setnames}
 \title{ Create key on a data table }
 \description{
   Sorts a data.table and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always. The table is changed \emph{by reference}. No copy is made at all, other than temporary working memory as large as one column.
@@ -18,14 +19,17 @@ key(x) <- value
 haskey(x)
 copy(x)
 setattr(x,name,value)
+setnames(x,old=names(x),new)
 }
 \arguments{
-  \item{x}{ An unquoted name of a \code{data.table}. }
+  \item{x}{ A \code{data.table}. }
   \item{\dots}{ The columns to sort by. Do not quote the column names. If \code{\dots} is missing (i.e. \code{setkey(DT)}), all the columns are used. }
   \item{cols}{ A character vector (only) of column names. }
   \item{value}{ In (deprecated) \code{key<-}, a character vector (only) of column names. In \code{setattr}, the value to assign to the attribute or \code{NULL} removes the attribute, if present. }
   \item{name}{ The character attribute name. }
   \item{verbose}{ Output status and information. }
+  \item{old}{ Character names, or numeric positions of column names to change. By default all names of \code{x}, so that the \code{old} argument can be omitted when changing all column names using \code{new} only. }
+  \item{new}{ New column names, the same length as \code{old}. } 
 }
 \details{
   The sort is attempted with the very fast \code{"radix"} method in
@@ -40,9 +44,9 @@ setattr(x,name,value)
   
   The problem (for \code{data.table}) with the copy by \code{key<-} (other than being slower) is that \R doesn't maintain the over allocated truelength, but it looks as though it has. Adding a column by reference using \code{:=} after a \code{key<-} was therefore a memory overwrite and eventually a seg fault; the over allocated memory wasn't really there after \code{key<-}'s copy. \code{data.table}s have a new attribute \code{.internal.selfref} to catch and warn about such copies in future. This attribute has been implemented in way that is friendly with \code{identical()} and \code{object.size()}. 
 
-  For the same reason, please use \code{setattr()} rather than \code{attr(x,name)<-value}. And (TO DO) some set interface to names and colnames.
+  For the same reason, please use \code{setattr()} rather than \code{attr(x,name)<-value}, and \code{setnames()} rather than \code{names(x)<-value} or \code{colnames(x)<-value}.
   
-  It isn't good programming practice, in general, to use column numbers rather than names. This is why \code{setkey} and \code{setkeyv} only accept column names. If you use column numbers, bugs (possibly silent) can more easily creep into your code as time progresses if changes are made elsewhere in your code; e.g., if you add, remove or reorder columns in a few months time, a \code{setkey} by column number will then refer to a different column, possibly returning incorrect results with no warning. (A similar concept exists in SQL, where \code{"select * from ..."} is considered poor programming style when a robust, maintainable system is required.)  If you wish to use column numbers, it's possible but a little harder; e.g., \code{setkeyv(DT,colnames(DT)[1:2])}.
+  It isn't good programming practice, in general, to use column numbers rather than names. This is why \code{setkey} and \code{setkeyv} only accept column names, and why \code{old} in \code{setnames()} is recommended to be names. If you use column numbers then bugs (possibly silent) can more easily creep into your code as time progresses if changes are made elsewhere in your code; e.g., if you add, remove or reorder columns in a few months time, a \code{setkey} by column number will then refer to a different column, possibly returning incorrect results with no warning. (A similar concept exists in SQL, where \code{"select * from ..."} is considered poor programming style when a robust, maintainable system is required.)  If you wish to use column numbers, it's possible but a little harder; e.g., \code{setkeyv(DT,colnames(DT)[1:2])}.
   
   }
 \value{
@@ -58,6 +62,8 @@ setattr(x,name,value)
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
+    # Type 'example(setkey)' to run these at prompt and browse output
+    
     DT = data.table(A=5:1,B=letters[5:1])
     DT # before
     setkey(DT,B)  # re-orders table and marks it sorted.
@@ -75,6 +81,18 @@ setattr(x,name,value)
     DT2 = copy(DT)        # explicit copy is required for data.table
     setkey(DT2,B)         # just changes DT2
     identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
+    
+    DT = data.table(a=1:2,b=3:4,c=5:6)
+    setnames(DT,"b","B")               # by name; no match() needed
+    DT
+    setnames(DT,3,"C")                 # by position
+    DT
+    setnames(DT,2:3,c("D","E"))        # multiple
+    DT
+    setnames(DT,c("a","E"),c("A","F")) # multiple by name
+    DT
+    setnames(DT,new=c("X","Y","Z"))    # replace all
+    DT
 }
 \keyword{ data }
 

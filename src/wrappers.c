@@ -5,7 +5,7 @@
 
 #ifdef BUILD_DLL
 #define EXPORT __declspec(dllexport)
-EXPORT void setattrib();
+EXPORT SEXP setattrib();
 EXPORT SEXP copy();
 #endif
 
@@ -14,9 +14,10 @@ EXPORT SEXP copy();
 // all platforms, as we found out when v1.6.5 went to CRAN on
 // 25 Aug 2011, see Professor Ripley's response that day.
 
-void setattrib(SEXP x, SEXP name, SEXP value)
+SEXP setattrib(SEXP x, SEXP name, SEXP value)
 {
     setAttrib(x,name,value);
+    return(R_NilValue);
 }               
 
 SEXP copy(SEXP x)
