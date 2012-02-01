@@ -4,13 +4,23 @@ The ChangeLog for data.table is the SVN commit log itself :
 
 This NEWS file summarises the main changes.
 
-        *********************************************
-        **                                         **
-        **   CHANGES IN DATA.TABLE VERSION 1.8.0   **
-        **                                         **
-        *********************************************
+        **********************************************
+        **                                          **
+        **   CHANGES IN DATA.TABLE VERSION 1.7.10   **
+        **                                          **
+        **********************************************
         
+BUG FIXES
+
+    o   tracemem() in example(setkey) was causing CRAN check
+        errors on machines which (correctly) install R without
+        memory profiling available for efficiency. Notably, R for
+        Windows and Ubuntu have memory profiling enabled which may
+        slow down R on those architectures even when memory
+        profiling is not being requested by the user. The call to
+        tracemem() is now wrapped with try().
         
+    o   
 
 
         *********************************************

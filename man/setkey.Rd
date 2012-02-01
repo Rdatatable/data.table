@@ -84,7 +84,7 @@ key(x) <- value   # deprecated, please use setkey or setkeyv instead.
     identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
     
     DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies
-    tracemem(DF)
+    try(tracemem(DF))                  # try() for non-Windows where R is faster without memory profiling
     colnames(DF)[1] <- "A"             # 4 copies of entire object
     names(DF)[1] <- "A"                # 3 copies of entire object
     `names<-`(DF,c("A","b"))           # 1 copy of entire object
@@ -92,7 +92,7 @@ key(x) <- value   # deprecated, please use setkey or setkeyv instead.
     # What if DF is large, say 10GB in RAM. Copy 10GB just to change a column name?
 
     DT = data.table(a=1:2,b=3:4,c=5:6)
-    tracemem(DT)
+    try(tracemem(DT))
     setnames(DT,"b","B")               # by name; no match() needed
     setnames(DT,3,"C")                 # by position
     setnames(DT,2:3,c("D","E"))        # multiple
