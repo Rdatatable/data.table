@@ -632,7 +632,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         # TO DO: inspect macro definition to discover columns it uses.
         xvars = setdiff(colnames(x),union(bynames,allbyvars))
     }
-    ivars = if (bywithoutby) intersect(setdiff(ws,colnames(x)),colnames(i)) else NULL   # JIS
+    ivars = if (bywithoutby) intersect(gsub("^i[.]","",ws),colnames(i)) else NULL   # JIS
 
     if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ...\n");flush.console()}
     if (f__[1]==0 && is.na(nomatch)) {
@@ -641,10 +641,11 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         itestj = as.integer(seq.int(f__[1],length.out=len__[1]))
         if (length(o__)) itestj = o__[itestj]
     }
+    
     SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
     oldlen = length(itestj)
     length(itestj) = max(len__)  # pad with NA to allocate enough for largest group, will re-use it in dogroups.c
-    if (identical(itestj[1],0L)) {
+    if (itestj[1]==0 && !is.na(nomatch)) {
         itestj[1] = NA_integer_
         oldlen = 0L
     }
@@ -652,10 +653,23 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     SDenv$.SD = x[itestj, xvars, with=FALSE]
     # the subset above keeps factor levels in full
     # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
+    # TO DO: change all 1 to 1L internally.
     for (ii in seq(along=xvars)) setlength(SDenv$.SD[[ii]], oldlen)
     SDenv$.BY = lapply(byval,"[",1)  # byval is list() not data.table
-    SDenv$.N = as.integer(len__[1])
-    for (ii in ivars) assign(ii, i[[ii]][1], envir=SDenv)
+    if (!is.na(nomatch) && is.na(itestj[1])) {
+        # This is a very ugly switch. It gets tests 499 and 500 to work for now. TO DO: revisit and rationalise.
+        SDenv$.N = 0L
+        for (ii in ivars) {
+            assign(ii, i[[ii]][0L], envir=SDenv)
+            assign(paste("i.",ii,sep=""), i[[ii]][0L], envir=SDenv)
+        }
+    } else {
+        SDenv$.N = as.integer(len__[1L])
+        for (ii in ivars) {
+            assign(ii, i[[ii]][1L], envir=SDenv)  # for JIS
+            assign(paste("i.",ii,sep=""), i[[ii]][1L], envir=SDenv)
+        }
+    }
     for (ii in names(SDenv$.BY)) assign(ii, SDenv$.BY[[ii]], envir=SDenv)
     for (ii in xvars) assign(ii, SDenv$.SD[[ii]], envir=SDenv)
     lockBinding(".SD",SDenv)
@@ -694,7 +708,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     icols = NULL
     if (!missing(i) && is.data.table(i)) icols = as.integer(match(ivars,colnames(i)))
     else i=NULL
-    ans = .Call("dogroups",x,xcols,o__,f__,len__,jsub,SDenv,testj,byretn,byval,i,as.integer(icols),i[1,ivars,with=FALSE],is.na(nomatch),verbose,PACKAGE="data.table")
+    ans = .Call("dogroups",x,xcols,o__,f__,len__,jsub,SDenv,testj,byretn,byval,i,as.integer(icols),i[1,ivars,with=FALSE],if(length(ivars))paste("i.",ivars,sep=""),is.na(nomatch),verbose,PACKAGE="data.table")
     #print(ans)
     #stop("stopping early")
     # why is byval copying data out of i? If there aren't any
@@ -1313,6 +1327,24 @@ setnames = function(x,old,new) {
         
     invisible(x)
 }
+
+setcolorder = function(x,neworder)
+{
+    if (!is.data.table(x)) stop("x is not a data.table")
+    if (length(neworder)!=length(x)) stop("neworder is length ",length(neworder)," but x has ",length(x)," columns.")
+    if (is.character(neworder)) {
+        if (any(duplicated(neworder))) stop("neworder contains duplicate column names")
+        o = as.integer(match(neworder,names(x)))
+        if (any(is.na(o))) stop("Names in neworder not found in x: ",paste(neworder[is.na(m)],collapse=","))
+    } else {
+        if (!is.numeric(neworder)) stop("neworder is not a character or numeric vector")
+        o = as.integer(neworder)
+        m = !(o %in% 1:length(x))
+        if (any(m)) stop("Column numbers in neworder out of bounds: ",paste(o[m],collapse=","))
+    }
+    .Call("setcolorder",x,o,PACKAGE="data.table")
+    invisible(x)   
+}    
 
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only; i.e., DT[i,col:=1L] not DT[i,col]:=1L or DT[i]$col:=1L. Please see help(":=").')
 

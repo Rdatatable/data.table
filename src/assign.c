@@ -13,6 +13,7 @@ EXPORT SEXP truelength();
 EXPORT SEXP settruelength();
 EXPORT SEXP setlength();
 EXPORT SEXP setcharvec();
+EXPORT SEXP setcolorder();
 #endif
 
 // See dogroups.c for these shared variables.
@@ -527,6 +528,24 @@ SEXP setcharvec(SEXP x, SEXP which, SEXP new)
     // checks have already been made at R level
     for (int i=0; i<LENGTH(which); i++)
         SET_STRING_ELT(x, INTEGER(which)[i]-1, STRING_ELT(new, i));
+    return(R_NilValue);
+}
+
+SEXP setcolorder(SEXP x, SEXP o)
+{
+    // checks have already been made at R level in setcolorder()
+    // reording columns by reference makes no difference to generations
+    // so there's no need to use SET_* api.
+    SEXP *tmp = Calloc(LENGTH(x),SEXP);
+    for (int i=0; i<LENGTH(x); i++)
+        tmp[i] = VECTOR_ELT(x, INTEGER(o)[i]-1);
+    memcpy((char *)DATAPTR(x),(char *)tmp,LENGTH(x)*sizeof(char *));
+    SEXP names = getAttrib(x,R_NamesSymbol);
+    for (int i=0; i<LENGTH(x); i++)
+        tmp[i] = STRING_ELT(names, INTEGER(o)[i]-1);
+    memcpy((char *)DATAPTR(names),(char *)tmp,LENGTH(x)*sizeof(char *));
+    // No need to change key (if any); sorted attribute is column names not positions
+    Free(tmp);
     return(R_NilValue);
 }
 

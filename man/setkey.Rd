@@ -7,6 +7,7 @@
 \alias{copy}
 \alias{setattr}
 \alias{setnames}
+\alias{setcolorder}
 \title{ Create key on a data table }
 \description{
   Sorts a data.table and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always. The table is changed \emph{by reference}. No copy is made at all, other than temporary working memory as large as one column.
@@ -19,6 +20,7 @@ haskey(x)
 copy(x)
 setattr(x,name,value)
 setnames(x,old,new)
+setcolorder(x,neworder)
 key(x) <- value   # deprecated, please use setkey or setkeyv instead.
 }
 \arguments{
@@ -30,6 +32,7 @@ key(x) <- value   # deprecated, please use setkey or setkeyv instead.
   \item{verbose}{ Output status and information. }
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, the new column names, which must be the same length as the number of columns. See examples. }
   \item{new}{ Optional. New column names, the same length as \code{old}. } 
+  \item{neworder}{ Character vector of the new column name ordering. May also be column numbers. }
 }
 \details{
   The sort is attempted with the very fast \code{"radix"} method in
@@ -44,7 +47,7 @@ key(x) <- value   # deprecated, please use setkey or setkeyv instead.
   
   The problem (for \code{data.table}) with the copy by \code{key<-} (other than being slower) is that \R doesn't maintain the over allocated truelength, but it looks as though it has. Adding a column by reference using \code{:=} after a \code{key<-} was therefore a memory overwrite and eventually a seg fault; the over allocated memory wasn't really there after \code{key<-}'s copy. \code{data.table}s have a new attribute \code{.internal.selfref} to catch and warn about such copies in future. This attribute has been implemented in way that is friendly with \code{identical()} and \code{object.size()}. 
 
-  For the same reason, please use \code{setattr()} rather than \code{attr(x,name)<-value}, and \code{setnames()} rather than \code{names(x)<-value} or \code{colnames(x)<-value}.
+  For the same reason, please use \code{setattr()} rather than \code{attr(x,name)<-value}, \code{setnames()} rather than \code{names(x)<-value} or \code{colnames(x)<-value}, and \code{setcolorder()} rather than \code{DT<-DT[,neworder,with=FALSE]}.
   
   It isn't good programming practice, in general, to use column numbers rather than names. This is why \code{setkey} and \code{setkeyv} only accept column names, and why \code{old} in \code{setnames()} is recommended to be names. If you use column numbers then bugs (possibly silent) can more easily creep into your code as time progresses if changes are made elsewhere in your code; e.g., if you add, remove or reorder columns in a few months time, a \code{setkey} by column number will then refer to a different column, possibly returning incorrect results with no warning. (A similar concept exists in SQL, where \code{"select * from ..."} is considered poor programming style when a robust, maintainable system is required.)  If you wish to use column numbers, it's possible but a little harder; e.g., \code{setkeyv(DT,colnames(DT)[1:2])}.
   

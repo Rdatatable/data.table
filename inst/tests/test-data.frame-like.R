@@ -57,14 +57,15 @@ test_that("`suffixes` behavior can be toggled to pre 1.5.4 behavior", {
     dt1 <- data.table(a=letters[1:5], b=1:5, key="a")
     dt2 <- data.table(a=letters[3:8], b=1:6, key="a")
 
-    options(datatable.pre.suffixes=FALSE)
+    # options(datatable.pre.suffixes=FALSE)
+    # Option removed in 1.7.10
     expect_equal(colnames(merge(dt1, dt2)), c("a", "b.x", "b.y"))
 
-    options(datatable.pre.suffixes=TRUE)
-    expect_equal(colnames(merge(dt1, dt2)), c("a", "b", "b.1"),
-                 info="Pre 1.5.4 behavior not working")
+    #options(datatable.pre.suffixes=TRUE)
+    #expect_equal(colnames(merge(dt1, dt2)), c("a", "b", "b.1"),
+    #             info="Pre 1.5.4 behavior not working")
 
-    options(datatable.pre.suffixes=FALSE)
+    #options(datatable.pre.suffixes=FALSE)
 })
 
 ###############################################################################

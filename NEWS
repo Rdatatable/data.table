@@ -10,17 +10,39 @@ This NEWS file summarises the main changes.
         **                                          **
         **********************************************
         
+NEW FEATURES
+
+    o   New function setcolorder() reorders the columns by name
+        or by number, by reference with no copy. This is (almost)
+        infinitely faster than DT[,neworder,with=FALSE].
+        
+    o   The prefix i. can now be used in j to refer to join inherited
+        columns of i that are otherwise masked by columns in x with
+        the same name.
+        
+        
 BUG FIXES
 
-    o   tracemem() in example(setkey) was causing CRAN check
-        errors on machines which (correctly) install R without
-        memory profiling available for efficiency. Notably, R for
-        Windows and Ubuntu have memory profiling enabled which may
-        slow down R on those architectures even when memory
-        profiling is not being requested by the user. The call to
+    o   tracemem() in example(setkey) was causing CRAN check errors
+        on machines where R is compiled without memory profiling available,
+        for efficiency. Notably, R for Windows, Ubuntu and Mac have memory
+        profiling enabled which may slow down R on those architectures even
+        when memory profiling is not being requested by the user. The call to
         tracemem() is now wrapped with try().
         
-    o   
+    o   merge of unkeyed tables now works correctly after breaking in 1.7.8 and
+        1.7.9. Thanks to Eric and DM for reporting. Tests added.
+        
+    o   nomatch=0 was ignored for the first group when j used join inherited
+        scope. Fixed and tests added.
+        
+    
+USER-VISIBLE CHANGES
+
+    o   (TO DO) Change error of := after key<- to warning
+    
+    O   'datatable.pre.suffixes' has been removed. It was available to obtain 
+        deprecated merge() behaviour pre-1.5.4.
 
 
         *********************************************

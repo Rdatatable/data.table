@@ -31,95 +31,48 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
         length(dt.key) < length(by) || !all(dt.key[1:length(by)] == by)
     }
 
-    ..i = NULL  # to give R CMD check a visible binding
-    if (.reset.keys(x, by)) {
-        # if x has many columns, coping table and setting key on all columns may be relatively slow, so we use a
-        # manual secondary key here. TO DO: replace with set2key when implemented.
-        xkey = x[,by,with=FALSE]  
-        xkey[,..i:=1:nrow(xkey)]
-        setkeyv(xkey,by)
-        xsecondary=TRUE
-    } else {
-        xkey = x   # no copy here
-        xsecondary=FALSE
-    }
     if (.reset.keys(y, by)) {
-        ykey = y[,by,with=FALSE]
-        ykey[,..i:=1:nrow(ykey)]
-        setkeyv(ykey,by)
-        ysecondary=TRUE
-    } else {
-        ykey = y
-        ysecondary=FALSE
+        y=setkeyv(copy(y),by)
+        # TO DO Add a secondary key here, when implemented which would be cached in the object
     }
-
-    xidx = if (xsecondary)
-        xkey[ykey, ..i, nomatch=0, mult="all"]$..i   # TO DO: use drop=TRUE when implemented
-    else
-        x[ykey, nomatch = 0, mult = 'all', which = TRUE]
-        
-    yidx = if (ysecondary)
-        ykey[xkey, ..i, nomatch=0, mult="all"]$..i
-    else
-        y[xkey, nomatch = 0, mult = 'all', which = TRUE]
-
-    if (any(xidx)) {
-        tmp = sort(xidx)
-        xx <- x[tmp]
-        yy <- y[yidx, setdiff(names(y), by), with = FALSE]
-        dt <- xx
-        if (ncol(yy) > 0) {
-            dt <- cbind(xx, yy)
-        }
-    } else {
-        # nothing in common between the two data tables, return NULL data.table
-        dt <- data.table()
-    }
-
-    if (all.x) {
-        missingxidx <- setdiff(1:nrow(x), xidx)
-        if (length(missingxidx) > 0) {
-            othercols <- setdiff(names(y), by)
-            if (length(othercols) > 0) {
-                tmp = rep(1, length(missingxidx))
-                xx <- cbind(x[missingxidx], y[NA, othercols, with = FALSE][tmp])
-            } else
-                xx <- x[missingxidx]
-            dt <- rbind(xx, dt[,names(xx),with=FALSE])
-        }
-    }
+    
+    xkey = if (identical(key(x),by)) x else setkeyv(copy(x),by)
+    # TO DO: new [.data.table argument joincols or better name would allow leaving x as is if by was a head subset
+    # of key(x). Also NAMED on each column would allow subset references. Also, a secondary key may be
+    # much simpler but just need an argument to tell [.data.table to use the 2key of i.
+    
+    dt = y[xkey,nomatch=ifelse(all.x,NA,0)]   # includes JIS columns (with a .1 suffix if conflict with x names)
+    
+    end = setdiff(names(y),by)     # X[Y] sytax puts JIS i columns at the end, merge likes them alongside i.
+    setcolorder(dt,c(setdiff(names(dt),end),end))
+    
     if (all.y) {
-        missingyidx <- setdiff(1:nrow(y), yidx)
-        if (length(missingyidx) > 0) {
-            yy <- y[missingyidx, by, with = FALSE]
+        # Perhaps not very commonly used, so not a huge deal that the join is redone here.
+        missingyidx <- (1:nrow(y))[-y[xkey,which=TRUE,nomatch=0]]
+        if (length(missingyidx)) {
+            yy <- y[missingyidx]
             othercolsx <- setdiff(names(x), by)
             if (length(othercolsx) > 0) {
-                tmp = rep(1, length(missingyidx))
-                yy <- cbind(yy, x[NA, othercolsx, with = FALSE][tmp])
+                tmp = rep(NA_integer_, length(missingyidx))
+                yy <- cbind(yy, x[tmp, othercolsx, with = FALSE])
             }
-            othercolsy <- setdiff(names(y), by)
-            if (length(othercolsy) > 0)
-                yy <- cbind(yy, y[missingyidx, othercolsy, with = FALSE])
-            dt <- rbind(dt, yy[,names(dt),with=FALSE])
+            setcolorder(yy, names(dt))
+            dt = rbind(dt, yy)
         }
     }
+
     if (nrow(dt) > 0) setkeyv(dt,by)
-    
-    ###########################################################################
-    ## Handle merging suffix behavior.
-    ## Enable ability to use "old" suffix behavior for now.
-    if (missing(suffixes)) {
-        pre.suffix <- options('datatable.pre.suffixes')[[1L]]
-        pre.suffix <- !is.null(pre.suffix) && as.logical(pre.suffix)[1L]
-        suffixes <- if (pre.suffix) c("", ".1") else c(".x", ".y")
-    }
 
     ## We expect that the result of dt.1[dt.2] adds a ".1" suffix to
-    ## duplicate columns for dt.2 that are added by result of the implicit
+    ## duplicate columns for dt.1 that are added by result of the implicit
     ## merge. The (duplicate) names in dt.1 are not changed.
     ##
-    ## If the suffixes are c("", ".1") our work is already done.
-    if (!all(suffixes == c("", ".1"))) {
+    ## If the suffixes are c(".1", "") our work is already done as that's the
+    ## behaviour of X[Y].
+    ##
+    ## TO DO: revisit this logic and simplify, too.
+    
+    if (!identical(suffixes,c(".1", ""))) {
         col.names <- colnames(dt)
         rename.y <- grep("\\.1$", col.names)
 
@@ -136,7 +89,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             base.names <- gsub("\\.1$", "", col.names[rename.y])
             
             ## suffix y columns
-            col.names[rename.y] <- paste(base.names, suffixes[2], sep="")
+            col.names[rename.y] <- paste(base.names, suffixes[1], sep="")
             
             ## suffix x columns
             xref <- match(base.names, col.names)
@@ -149,7 +102,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
                         "contacting `maintainer('data.table')` so we ",
                         "can fix this.")
             } else {
-                col.names[xref] <- paste(base.names, suffixes[1], sep="")
+                col.names[xref] <- paste(base.names, suffixes[2], sep="")
                 setnames(dt, col.names)
             }
         }

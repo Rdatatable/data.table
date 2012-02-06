@@ -45,7 +45,7 @@ void setSizes()
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
 
-SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval, SEXP itable, SEXP icols, SEXP iSD, SEXP nomatchNA, SEXP verbose)
+SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval, SEXP itable, SEXP icols, SEXP iSD, SEXP idotnames, SEXP nomatchNA, SEXP verbose)
 {
     R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0, newlen, icol, size;
     SEXP names, inames, bynames, ans, jval, naint, nareal, SD, BY, N;
@@ -78,6 +78,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     inames = getAttrib(itable, R_NamesSymbol);  // the whole i table
     if (length(iSD)!=length(icols)) error("length(iSD)[%d] != length(icols)[%d]",length(iSD),length(icols));
     if (length(icols)>length(inames)) error("length(icols)[%d] > length(inames)[%d]",length(icols),length(inames));
+    if (length(icols)!=length(idotnames)) error("length(icols)[%d] != length(idotnames)[%d]",length(icols),length(idotnames));
     for(i = 0; i < length(icols); i++) {
         // JIS (used non-key variables of i). The parent of SD isn't i, but it gives that appearance.
         icol = INTEGER(icols)[i]-1;
@@ -85,6 +86,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         defineVar(install(CHAR(STRING_ELT(inames,icol))),VECTOR_ELT(iSD,i),env);
         if (SIZEOF(VECTOR_ELT(iSD, i))==0)
             error("Type %d in join inherited scope column %d", TYPEOF(VECTOR_ELT(iSD, i)), i);
+        defineVar(install(CHAR(STRING_ELT(idotnames,i))),VECTOR_ELT(iSD,i),env);
     }
     bynames = getAttrib(BY, R_NamesSymbol);
     if (length(bynames) != length(byval)) error("length(bynames)!=length(byval)");

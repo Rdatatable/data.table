@@ -8,10 +8,23 @@ if (!exists(".devtesting")) {
 options(warn=2)
 nfail = ntest = lastnum = 0
 whichfail = NULL
-test = function(num,x,y=NULL) {
+test = function(num,x,y=NULL,error,warning) {
     ntest <<- ntest + 1
     lastnum <<- num
-    if (inherits(err<-try(x,TRUE),"try-error") || inherits(err<-try(y,TRUE),"try-error")) {
+    err<-try(x,TRUE)
+    if (!missing(error) || !missing(warning)) {
+        pattern = ifelse(!missing(error),"^Error","converted from warning")
+        type = ifelse(!missing(error),"error","warning")
+        txt = ifelse(!missing(error),error,warning)
+        if (inherits(err,"try-error") && length(grep(paste(pattern,".*",txt,sep=""),err)))
+            return()
+        cat("Test",num,"didn't produce correct",type,":\n")
+        cat(err,"\n")
+        nfail <<- nfail + 1
+        whichfail <<- c(whichfail, num)
+        return()
+    }
+    if (inherits(err,"try-error") || inherits(err<-try(y,TRUE),"try-error")) {
         cat("Test",num,err)
         nfail <<- nfail + 1
         whichfail <<- c(whichfail, num)
@@ -1299,7 +1312,7 @@ test(453, rbind(DT,list(4L,7L)), data.table(a=1:4,b=4:7))
 # Test the linked reported bug, #1645
 A1 = data.table(b='hello', a='foo', key='a')
 A2 = data.table(a=c('foo', 'bar'), key='a')
-test(454, merge(A1, A2, all.y=T, by='a'), data.table(b=c(NA,"hello"),a=c("bar","foo"),key="a"))
+test(454, merge(A1, A2, all.y=T, by='a'), data.table(a=c("bar","foo"),b=c(NA,"hello"),key="a"))
 A1 = data.table(a='foo', b='hello', key='a')
 test(455, merge(A1, A2, all.y=T, by='a'), data.table(a=c("bar","foo"),b=c(NA,"hello"),key="a"))
 
@@ -1438,6 +1451,39 @@ tt=try(setnames(DT,"foo","bar"),silent=TRUE)
 test(493, inherits(tt,"try-error") && length(grep("not found.*foo",tt)))
 tt=try(setnames(DT,3,"bar"),silent=TRUE)
 test(494, inherits(tt,"try-error") && length(grep("outside range.*3",tt)))
+
+# Test new function setcolorder()
+DT = data.table(a=1:2,b=3:4,c=5:6)
+test(495, setcolorder(DT,c(2,1,3)), data.table(b=3:4,a=1:2,c=5:6))
+test(496, setcolorder(DT,c(2,1,3)), data.table(a=1:2,b=3:4,c=5:6))
+test(497, setcolorder(DT,c("c","a","b")), data.table(c=5:6,a=1:2,b=3:4))
+test(498, setcolorder(DT,"a"), error="neworder is length")
+
+
+# test first group lstens to nomatch when j uses join inherited scope.
+x <- data.table(x=c(1,3,8),x1=10:12, key="x")
+y <- data.table(x=c(3,8,10),y1=10:12, key="x")
+test(499, y[x,x1,nomatch=0], data.table(x=c(3,8),x1=11:12, key="x"))
+test(500, y[x,x1,nomatch=NA], data.table(x=c(1,3,8),x1=10:12, key="x"))
+
+# Test merge bug of unkeyed tables introduced in 1.6.8 and 1.6.9 reported by Eric, and ...
+dt1 <- data.table(l = c("a","b","a","b"))
+dt2 <- data.table(l = c("a","b"), L = c("A","B"))
+test(501, merge(dt1,dt2,by="l"), as.data.table(merge(as.data.frame(dt1), as.data.frame(dt2), by="l")))
+
+# ... similar example from DM
+dtA = data.table(i = 1:8, j = rep(1:2, 4), k = rep(1:4, 2), A = 10:17)
+dtB = data.table(j = rep(1:2, 2), k = 1:4, B = 18:21)
+test(502, merge(dtA, dtB, by = c("j","k"), all.x = TRUE),
+          data.table(j=rep(1:2,each=4), k=rep(INT(1,3,2,4),each=2), i=INT(1,5,3,7,2,6,4,8),
+                     A=INT(10,14,12,16,11,15,13,17), B=rep(INT(18,20,19,21),each=2), key="j,k"))
+test(503, dtA$i, 1:8)  # check that merge didn't change the order of dtA by reference
+test(504, dtB$k, 1:4)  # or dtB
+
+
+# Test new i. JIS prefix in 1.7.10
+DT = data.table(a=1:2,b=1:4,key="a")
+test(505, DT[J(a=1,b=6),sum(i.b*b)]$V1, 24L)
 
 
 ## See test-* for more tests
