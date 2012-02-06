@@ -39,10 +39,14 @@ BUG FIXES
     
 USER-VISIBLE CHANGES
 
-    o   (TO DO) Change error of := after key<- to warning
+    o   Updating an existing column using := after a key<- now works without warning
+        or error. This can be useful in interactive use when you forget to use setkey()
+        but don't mind about the inefficiency of key<-. Thanks to Chris Neff for
+        providing a convincing use case. Adding a new column uing := after key<-
+        issues a warning, shallow copies and proceeds, as before.
     
-    O   'datatable.pre.suffixes' has been removed. It was available to obtain 
-        deprecated merge() behaviour pre-1.5.4.
+    O   The 'datatable.pre.suffixes' option has been removed. It was available to
+        obtain deprecated merge() suffixes pre v1.5.4.
 
 
         *********************************************

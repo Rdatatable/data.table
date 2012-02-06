@@ -1480,11 +1480,18 @@ test(502, merge(dtA, dtB, by = c("j","k"), all.x = TRUE),
 test(503, dtA$i, 1:8)  # check that merge didn't change the order of dtA by reference
 test(504, dtB$k, 1:4)  # or dtB
 
-
 # Test new i. JIS prefix in 1.7.10
 DT = data.table(a=1:2,b=1:4,key="a")
 test(505, DT[J(a=1,b=6),sum(i.b*b)]$V1, 24L)
 
+# Test := after a key<-
+DT = data.table(a=3:1,b=4:6)
+test(506, key(DT)<-"a", warning="copies the whole table")
+test(507, suppressWarnings(key(DT)<-"a"), "a")
+test(508, DT, data.table(a=1:3,b=6:4,key="a"))
+test(509, DT[,b:=10L], data.table(a=1:3,b=10L,key="a"))
+test(510, DT[,c:=11L], warning="Invalid .internal.selfref detected and fixed by taking a copy of the whole table")
+test(511, suppressWarnings(DT[,c:=11L]), data.table(a=1:3,b=10L,c=11L,key="a"))
 
 ## See test-* for more tests
 

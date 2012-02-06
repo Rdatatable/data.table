@@ -391,7 +391,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             newcolnames=setdiff(lhs,names(x))
             cols = as.integer(c(m[!is.na(m)],ncol(x)+1:length(newcolnames)))
             if (notok<-!selfrefok(x,verbose))
-                warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table. Please report to datatable-help so the root cause can be fixed.")
+                warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table, so that := can add this new column by reference. At an earlier point, this data.table has been copied by R. Avoid key<-, names<- and attr<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setkey(), setnames() and setattr(). If this message doesn't help, please report to datatable-help so the root cause can be fixed.")
             if (notok || (truelength(x) < ncol(x)+length(newcolnames))) {
                 n = max(ncol(x)+100, ncol(x)+2*length(newcolnames))
                 name = substitute(x)

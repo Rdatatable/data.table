@@ -113,8 +113,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
     class = getAttrib(dt, R_ClassSymbol);
     if (isNull(class)) error("dt passed to assign has no class attribute. Please report to datatable-help.");
-    if (!selfrefok(dt,verbose)) error("At an earlier point, this data.table has been copied by R. Avoid key<-, names<- and attr<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setkey(), setnames() and setattr(). If this message doesn't help, please ask on datatable-help.");  // Produced at the point user wants to assign by reference using := after the use of names<-, attr<- or key<- (which might be never).
-    // We can't catch those copies and call alloc.col afterwards, so we have to ask user to change. See comments in key<-.
+    // selfref might not be ok, but that's ok(!) For example, if user has done key<-, seen key<-'s
+    // warning, proceeds, then uses := to update an existing column, that's ok without error or warning as updating
+    // an existing column is not affected by over-allocation. If they add a new column using :=, however, then a
+    // warning at R level in [.data.table reallocs the data.table and then proceeds.
     oldncol = LENGTH(dt);
     names = getAttrib(dt,R_NamesSymbol);
     if (isNull(names)) error("dt passed to assign has no names");
