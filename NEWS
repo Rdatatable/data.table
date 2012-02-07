@@ -53,7 +53,7 @@ USER-VISIBLE CHANGES
         providing a convincing use case. Adding a new column uing := after key<-
         issues a warning, shallow copies and proceeds, as before.
     
-    O   The 'datatable.pre.suffixes' option has been removed. It was available to
+    o   The 'datatable.pre.suffixes' option has been removed. It was available to
         obtain deprecated merge() suffixes pre v1.5.4.
 
 

@@ -54,9 +54,7 @@
   \item{suffixes}{
     A \code{character(2)} specifying the suffixes to be used for making
     non-\code{by} column names unique. The suffix behavior works in a similar 
-    fashion as \code{\link{merge.data.frame}} does. Set
-    \code{options(datatable.pre.suffixes=TRUE)} to get suffix behavior that is
-    consistent with data.table version < 1.5.4
+    fashion as \code{\link{merge.data.frame}} does.
   }
 
   \item{\dots}{
