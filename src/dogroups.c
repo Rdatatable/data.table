@@ -76,8 +76,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     // By installing .SD directly inside itself, R finds this symbol more quickly (if used).
 
     inames = getAttrib(itable, R_NamesSymbol);  // the whole i table
-    if (length(iSD)!=length(icols)) error("length(iSD)[%d] != length(icols)[%d]",length(iSD),length(icols));
     if (length(icols)>length(inames)) error("length(icols)[%d] > length(inames)[%d]",length(icols),length(inames));
+    if (length(iSD)!=length(icols)) error("length(iSD)[%d] != length(icols)[%d]",length(iSD),length(icols));
     if (length(icols)!=length(idotnames)) error("length(icols)[%d] != length(idotnames)[%d]",length(icols),length(idotnames));
     for(i = 0; i < length(icols); i++) {
         // JIS (used non-key variables of i). The parent of SD isn't i, but it gives that appearance.

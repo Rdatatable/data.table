@@ -244,6 +244,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                     protecti++;
                 }
                 targetlevels = getAttrib(targetcol, R_LevelsSymbol);
+                if (isNull(targetlevels)) error("somehow this factor column has no levels");
                 if (isString(thisvalue)) {
                     savetl_init();
                     for (j=0; j<length(thisvalue); j++) {
@@ -543,6 +544,7 @@ SEXP setcolorder(SEXP x, SEXP o)
         tmp[i] = VECTOR_ELT(x, INTEGER(o)[i]-1);
     memcpy((char *)DATAPTR(x),(char *)tmp,LENGTH(x)*sizeof(char *));
     SEXP names = getAttrib(x,R_NamesSymbol);
+    if (isNull(names)) error("dt passed to setcolorder has no names");
     for (int i=0; i<LENGTH(x); i++)
         tmp[i] = STRING_ELT(names, INTEGER(o)[i]-1);
     memcpy((char *)DATAPTR(names),(char *)tmp,LENGTH(x)*sizeof(char *));
