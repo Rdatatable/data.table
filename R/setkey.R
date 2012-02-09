@@ -170,7 +170,7 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
 }
 
 ordernumtol = function(x, o=1:length(x), tol=.Machine$double.eps^0.5) {
-    .Call("rorder_tol",x,o,tol)
+    .Call("rorder_tol",x,o,tol,PACKAGE="data.table")
     o
 }
 

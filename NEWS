@@ -11,6 +11,11 @@ This NEWS file summarises the main changes.
         **********************************************
 
 
+THANKS TO
+
+    o   Joshua Ulrich for spotting a missing PACKAGE="data.table"
+        in .Call in setkey.R, now fixed.
+
 
         **********************************************
         **                                          **
