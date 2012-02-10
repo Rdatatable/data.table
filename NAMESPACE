@@ -9,7 +9,7 @@ export(data.table, tables, setkey, setkeyv, key, "key<-", haskey, J, CJ, SJ, cop
 export(as.data.table,is.data.table,test.data.table,last,like,"%like%",between,"%between%")
 export(timetaken)
 export(truelength, alloc.col, ":=")
-export(setattr, setnames, setcolorder)
+export(setattr, setnames, setcolorder, set)
 
 S3method("[", data.table)
 S3method("[<-", data.table)

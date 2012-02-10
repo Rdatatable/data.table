@@ -87,7 +87,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     if (n < 1)
         return( null.data.table() )
     if (length(vnames) != n) stop("logical error in vnames")
-    vnames <- as.list(vnames)
+    vnames <- as.list.default(vnames)
     # ncols <- integer(n)        # the nrows and ncols of each of the inputs (could be varying lengths)
     nrows = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
     hascols = logical(n)
@@ -203,7 +203,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     bywithoutby=FALSE
     if (!missing(i)) {
         isub = substitute(i)
-        isubl = as.list(isub)
+        isubl = as.list.default(isub)
         if (identical(isubl[[1]],quote(eval))) {
             isub = eval(isubl[[2]],parent.frame())
             if (is.expression(isub)) isub=isub[[1]]
@@ -349,13 +349,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     if (missing(j)) stop("logical error, j missing")
     jsub = substitute(j)
     if (is.null(jsub)) return(NULL)
-    jsubl = as.list(jsub)
+    jsubl = as.list.default(jsub)
     if (identical(jsubl[[1]],quote(eval))) {
         jsub = eval(jsubl[[2]],parent.frame())
         if (is.expression(jsub)) jsub = jsub[[1]]
     }
     av = all.vars(jsub,TRUE)
-    if (":=" %in% sapply(sapply(jsub,all.vars,TRUE),"[",1)) {
+    if (":=" %in% sapply(sapply(jsub,all.vars,TRUE),"[",1)) {   # TO DO: Quite slow, move the sapply(sapply into C.
         # The double sapply is for FAQ 4.5
         if (!missing(by)) stop("Combining := in j with by is not yet implemented. Please let maintainer('data.table') know if you are interested in this.")
         if (bywithoutby && nrow(i)>1) stop("combining bywithoutby with := in j is not yet implemented.")
@@ -492,20 +492,20 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (missing(by)) stop("logical error, by is missing")
 
         bysub = substitute(by)
-        bysubl = as.list(bysub)
+        bysubl = as.list.default(bysub)
         bysuborig = bysub
         if (is.name(bysub) && !(as.character(bysub) %in% colnames(x))) {
             bysub = eval(bysub,parent.frame())
-            bysubl = as.list(bysub)
+            bysubl = as.list.default(bysub)
         }
         if (length(bysubl) && identical(bysubl[[1]],quote(eval))) {
             bysub = eval(bysubl[[2]],parent.frame())
             if (is.expression(bysub)) bysub=bysub[[1]]
-            bysubl = as.list(bysub)
+            bysubl = as.list.default(bysub)
         }
         if (mode(bysub) == "character") {
             bysub = parse(text=paste("list(",paste(bysub,collapse=","),")",sep=""))[[1]]
-            bysubl = as.list(bysub)
+            bysubl = as.list.default(bysub)
         }
         allbyvars = intersect(unlist(sapply(bysubl,all.vars,functions=TRUE)),colnames(x))
         bysameorder = haskey(x) && all(sapply(bysubl,is.name)) && identical(allbyvars,head(key(x),length(allbyvars)))
@@ -589,7 +589,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             jsub = call("list",jsub)  # this should handle backticked names ok too
         }
     } else if (as.character(jsub[[1]])[1] == "list") {
-        jsubl = as.list(jsub)
+        jsubl = as.list.default(jsub)
         if (length(jsubl)<2) stop("When j is list() or DT() we expect something inside the brackets")
         jvnames = names(jsubl)[-1]   # check list(a=sum(v),v)
         if (is.null(jvnames)) jvnames = rep("", length(jsubl)-1)
@@ -1345,6 +1345,17 @@ setcolorder = function(x,neworder)
     .Call("setcolorder",x,o,PACKAGE="data.table")
     invisible(x)   
 }    
+
+set = function(x,i,j,value)
+{
+    #if (length(j)!=1) stop("j must be length 1, currently")
+    #j = if (is.character(j)) match(j,names(x)) else as.integer(j)
+    # TO DO: drop clearkey argument from assign.  Either work that out inside assign, or do outside as here.
+    #j = as.integer(j)
+    .Call("assign",x,i,j,NULL,value,FALSE,j,FALSE,PACKAGE="data.table")
+    # TO DO ... if (haskey(x) && names(x)[j] %in% key(x)) setkey(x,NULL)   # haskey for speed to avoid the %in%, but do inside assign for speed.
+    invisible(x)
+}
 
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only; i.e., DT[i,col:=1L] not DT[i,col]:=1L or DT[i]$col:=1L. Please see help(":=").')
 

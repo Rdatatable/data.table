@@ -10,11 +10,28 @@ This NEWS file summarises the main changes.
         **                                          **
         **********************************************
 
+NEW FEATURES
+
+    o   New function set(DT,i,j,value) allows fast assignment to elements
+        of DT. Similar to := but avoids the overhead of [.data.table, so is
+        much faster inside a loop. Less flexible than :=, but as flexible
+        as matrix subassignment. Similar in spirit to setnames(), setcolorder(),
+        setkey() and setattr(); i.e., assigns by reference with no copy at all.
+        
+        M = matrix(1,nrow=100000,ncol=100)
+        DF = as.data.frame(M)
+        DT = as.data.table(M)
+        system.time(for (i in 1:1000) DF[i,1L] <- i)   # 591.000s
+        system.time(for (i in 1:1000) DT[i,V1:=i])     #   1.158s
+        system.time(for (i in 1:1000) M[i,1L] <- i)    #   0.016s
+        system.time(for (i in 1:1000) set(DT,i,1L,i))  #   0.027s
+        
 
 THANKS TO
 
     o   Joshua Ulrich for spotting a missing PACKAGE="data.table"
-        in .Call in setkey.R, now fixed.
+        in .Call in setkey.R, and suggesting as.list.default() and
+        unique.default() to avoid dispatch, all implemented.
 
 
         **********************************************

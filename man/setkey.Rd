@@ -8,6 +8,7 @@
 \alias{setattr}
 \alias{setnames}
 \alias{setcolorder}
+\alias{set}
 \title{ Create key on a data table }
 \description{
   Sorts a data.table and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always. The table is changed \emph{by reference}. No copy is made at all, other than temporary working memory as large as one column.
@@ -21,6 +22,7 @@ copy(x)
 setattr(x,name,value)
 setnames(x,old,new)
 setcolorder(x,neworder)
+set(x,i,j,value)   # should be documented in ?":=", perhaps.
 key(x) <- value   # deprecated, please use setkey or setkeyv instead.
 }
 \arguments{
@@ -33,6 +35,8 @@ key(x) <- value   # deprecated, please use setkey or setkeyv instead.
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, the new column names, which must be the same length as the number of columns. See examples. }
   \item{new}{ Optional. New column names, the same length as \code{old}. } 
   \item{neworder}{ Character vector of the new column name ordering. May also be column numbers. }
+  \item{i}{ Integer row numbers to be assigned \code{value}. }
+  \item{j}{ Integer column number to be assigned \code{value}. }
 }
 \details{
   The sort is attempted with the very fast \code{"radix"} method in
