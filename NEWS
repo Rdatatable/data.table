@@ -31,7 +31,7 @@ THANKS TO
 
     o   Joshua Ulrich for spotting a missing PACKAGE="data.table"
         in .Call in setkey.R, and suggesting as.list.default() and
-        unique.default() to avoid dispatch, all implemented.
+        unique.default() to avoid dispatch for speed, all implemented.
 
 
         **********************************************
