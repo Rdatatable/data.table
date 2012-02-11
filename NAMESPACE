@@ -10,6 +10,7 @@ export(as.data.table,is.data.table,test.data.table,last,like,"%like%",between,"%
 export(timetaken)
 export(truelength, alloc.col, ":=")
 export(setattr, setnames, setcolorder, set)
+export(chmatch, "%chin%")
 
 S3method("[", data.table)
 S3method("[<-", data.table)
