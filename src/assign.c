@@ -249,14 +249,17 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                     savetl_init();
                     for (j=0; j<length(thisvalue); j++) {
                         s = STRING_ELT(thisvalue,j);
-                        if (TRUELENGTH(s)!=0) {
+                        if (TRUELENGTH(s)>0) {
                             savetl(s);  // pre-2.14.0 this will save all the uninitialised truelengths
-                            TRUELENGTH(s)=0;
+                                        // so 2.14.0+ may be faster, but isn't required.
+                                        // as from v1.8.0 we assume R's internal hash is positive, so don't
+                                        // save the uninitialised truelengths that by chance are negative
                         }
+                        TRUELENGTH(s)=0;
                     }
                     for (j=0; j<length(targetlevels); j++) {
                         s = STRING_ELT(targetlevels,j);
-                        if (TRUELENGTH(s)!=0) savetl(s);
+                        if (TRUELENGTH(s)>0) savetl(s);
                         TRUELENGTH(s)=j+1;
                     }
                     R_len_t addi = 0;
@@ -405,7 +408,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
 void savetl_init() {
     nsaved = 0;
     nalloc = 100;
-    saveds = Calloc(nalloc, SEXP);
+    saveds = Calloc(nalloc, SEXP);     // TO DO  ****  Allocate first 100 only when first needed, OR (better) keep it static. No need to Free it as small working memory.  Or, could free it here with some rule if it has got too big.
     savedtl = Calloc(nalloc, R_len_t);
 }
 

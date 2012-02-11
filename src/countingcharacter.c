@@ -27,6 +27,7 @@
 #ifdef BUILD_DLL
 #define EXPORT __declspec(dllexport)
 EXPORT SEXP countingcharacter();
+EXPORT SEXP chmatch();
 #endif
 
 extern int Rf_Scollate();
@@ -171,4 +172,41 @@ static int scmp(SEXP x, SEXP y, Rboolean nalast)
     return Scollate(x, y);
 }
 */
+
+
+SEXP chmatch(SEXP x, SEXP table, SEXP in) {
+    R_len_t i;
+    SEXP ans, s;
+    savetl_init();
+    for (i=0; i<length(x); i++) {
+        s = STRING_ELT(x,i);
+        if (TRUELENGTH(s)>0) savetl(s); // pre-2.14.0 this will save all the uninitialised truelengths
+                                        // so 2.14.0+ may be faster, but isn't required.
+                                        // as from v1.8.0 we assume R's internal hash is positive, so don't
+                                        // save the uninitialised truelengths that by chance are negative
+        TRUELENGTH(s) = 0;
+    }
+    for (i=length(table)-1; i>=0; i--) {
+        s = STRING_ELT(table,i);
+        if (TRUELENGTH(s)>0) savetl(s);
+        TRUELENGTH(s) = -i-1;
+    }
+    if (LOGICAL(in)[0]) {
+        PROTECT(ans = allocVector(LGLSXP,length(x)));
+        for (i=0; i<length(x); i++) {
+            LOGICAL(ans)[i] = TRUELENGTH(STRING_ELT(x,i))<0;
+        }
+    } else {
+        PROTECT(ans = allocVector(INTSXP,length(x)));
+        for (i=0; i<length(x); i++) {
+            INTEGER(ans)[i] = -TRUELENGTH(STRING_ELT(x,i));
+        }
+    }
+    for (i=0; i<length(table); i++)
+        TRUELENGTH(STRING_ELT(table,i)) = 0;  // good practice to reinstate 0 but might not be needed.
+    savetl_end();   // reinstate HASHPRI (if any)
+    UNPROTECT(1);
+    return(ans);
+}
+
 

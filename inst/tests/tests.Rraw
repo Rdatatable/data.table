@@ -1493,6 +1493,13 @@ test(509, DT[,b:=10L], data.table(a=1:3,b=10L,key="a"))
 test(510, DT[,c:=11L], warning="Invalid .internal.selfref detected and fixed by taking a copy of the whole table")
 test(511, suppressWarnings(DT[,c:=11L]), data.table(a=1:3,b=10L,c=11L,key="a"))
 
+# Test new functons chmatch and %chin%
+y=letters
+x=sample(letters,12)
+test(512, chmatch(x,y), match(x,y))
+test(513, x %chin% y, x %in% y)
+
+
 ## See test-* for more tests
 
 ##########################

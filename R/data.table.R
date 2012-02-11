@@ -1354,7 +1354,16 @@ set = function(x,i,j,value)
     #j = as.integer(j)
     .Call("assign",x,i,j,NULL,value,FALSE,j,FALSE,PACKAGE="data.table")
     # TO DO ... if (haskey(x) && names(x)[j] %in% key(x)) setkey(x,NULL)   # haskey for speed to avoid the %in%, but do inside assign for speed.
+    # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.
+    # When := or set do it, make them aware of 'ul' and drop it if necessary.
     invisible(x)
+}
+
+chmatch = function(x,table) .Call("chmatch",x,table,FALSE,PACKAGE="data.table")
+
+"%chin%" = function(x,y) {
+    # TO DO  if y has 'ul' then match to that
+    .Call("chmatch",x,y,TRUE,PACKAGE="data.table")
 }
 
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only; i.e., DT[i,col:=1L] not DT[i,col]:=1L or DT[i]$col:=1L. Please see help(":=").')
