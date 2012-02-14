@@ -35,17 +35,31 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
         y=setkeyv(copy(y),by)
         # TO DO Add a secondary key here, when implemented which would be cached in the object
     }
-    
+
     xkey = if (identical(key(x),by)) x else setkeyv(copy(x),by)
     # TO DO: new [.data.table argument joincols or better name would allow leaving x as is if by was a head subset
     # of key(x). Also NAMED on each column would allow subset references. Also, a secondary key may be
     # much simpler but just need an argument to tell [.data.table to use the 2key of i.
-    
+
+
+    ## sidestep the auto-increment column number feature-leading-to-bug by
+    ## ensuring no names end in ".1", see unit test
+    ## "merge and auto-increment columns in y[x]" in test-data.frame.like.R
+    dupnames <- setdiff(intersect(names(xkey), names(y)), by)
+    setnames(xkey, dupnames, sprintf("%s.", dupnames))
+    setnames(y, dupnames, sprintf("%s.", dupnames))
+    on.exit({
+        ## Need to reset names of x,y due to 0-copy setnames mojo
+        setnames(xkey, sprintf("%s.", dupnames), dupnames)
+        setnames(y, sprintf("%s.", dupnames), dupnames)
+    })
+
     dt = y[xkey,nomatch=ifelse(all.x,NA,0)]   # includes JIS columns (with a .1 suffix if conflict with x names)
-    
+
+
     end = setdiff(names(y),by)     # X[Y] sytax puts JIS i columns at the end, merge likes them alongside i.
     setcolorder(dt,c(setdiff(names(dt),end),end))
-    
+
     if (all.y) {
         # Perhaps not very commonly used, so not a huge deal that the join is redone here.
         missingyidx <- (1:nrow(y))[-y[xkey,which=TRUE,nomatch=0]]
@@ -62,16 +76,12 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     }
 
     if (nrow(dt) > 0) setkeyv(dt,by)
-    
-    if (!identical(suffixes,c(".1", ""))) {
-        # Normal for this branch to run. Y[X] adds a ".1" suffix to columns of X that are also in Y,
-        # but base merge prefers .x and .y suffix, so change the suffixes here for consistency. 
-        dupnames = setdiff(intersect(names(x),names(y)),by)
-        if (length(dupnames)) {
-            setnames(dt,dupnames,paste(dupnames,suffixes[2],sep=""))
-            setnames(dt,paste(dupnames,".1",sep=""),paste(dupnames,suffixes[1],sep=""))
-        }
+
+    if (length(dupnames)) {
+        setnames(dt, sprintf("%s.", dupnames), paste(dupnames, suffixes[2], sep=""))
+        setnames(dt, sprintf("%s..1", dupnames), paste(dupnames, suffixes[1], sep=""))
     }
+
     dt
 }
 

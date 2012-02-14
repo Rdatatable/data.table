@@ -68,6 +68,45 @@ test_that("`suffixes` behavior can be toggled to pre 1.5.4 behavior", {
     #options(datatable.pre.suffixes=FALSE)
 })
 
+test_that("merge and auto-increment columns in y[x]", {
+  ## merging tables that have common column names that end in *.1 gets
+  ## tricky, because the y[x] mojo does some magic to increment the *.1
+  ## in the x (I think) and keep *.1 in the y
+  x <- data.table(a=letters[1:10], b=1:10, b.1=1:10 * 10, key="a")
+  y <- data.table(a=letters[1:10], b=letters[11:20], b.1=rnorm(10), key="a")
+  M <- merge(x, y)
+  m <- merge(as.data.frame(x), as.data.frame(y), by="a")
+
+  expect_is(M, 'data.table')
+  expect_is(m, 'data.frame')
+  expect_true(all(names(M) %in% union(names(M), names(m))))
+  for (name in names(m)) {
+    expect_equal(M[[name]], m[[name]])
+  }
+
+
+  ## Original example that smoked out the bug
+  M <- data.table(a=letters[1:10], b=1:10)
+  m <- as.data.frame(M)
+  ms <- lapply(1:3, function(x) data.table(a=letters[1:10], b=1:10 * 10^x))
+
+  for (i in 1:3) {
+    M <- merge(M, ms[[i]], by='a', suffixes=c("", sprintf(".%d", i)))
+  }
+
+  for (i in 1:3) {
+    m <- merge(m, as.data.frame(ms[[i]]), by='a',
+               suffixes=c("", sprintf(".%d", i)))
+  }
+
+  expect_is(M, 'data.table')
+  expect_is(m, 'data.frame')
+  expect_true(all(names(M) %in% union(names(M), names(m))))
+  for (name in names(m)) {
+    expect_equal(M[[name]], m[[name]])
+  }
+})
+
 ###############################################################################
 ## subset
 test_that("simple subset maintains keys", {
@@ -92,7 +131,7 @@ test_that("subset using 'select' maintains key appropriately", {
   sub.3 <- subset(dt, a == 'a', select=c('b', 'c'))
   expect_true(is.null(key(sub.3)),
               info="selected columns do not from a key prefix")
-  
+
   sub.4 <- subset(dt, a == 'cc')
   expect_equal(nrow(sub.4), 0)
   expect_true(is.null(key(sub.4)))
@@ -111,7 +150,7 @@ test_that("transform maintains keys", {
 
   t2 <- transform(dt, d=c+4, a=sample(c('x', 'y', 'z'), 20, replace=TRUE))
   expect_true(is.null(key(t2)), info="transforming a key column nukes the key")
-  
+
   ## This is probably not necessary, but let's just check that transforming
   ## a key column doesn't twist around the rows in the result.
   for (col in c('b', 'c')) {
