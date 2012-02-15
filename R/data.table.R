@@ -1359,11 +1359,12 @@ set = function(x,i,j,value)
     invisible(x)
 }
 
-chmatch = function(x,table) .Call("chmatch",x,table,FALSE,PACKAGE="data.table")
+chmatch = function(x,table,nomatch=NA_integer_)
+    .Call("chmatch",x,table,as.integer(nomatch),FALSE,PACKAGE="data.table")
 
 "%chin%" = function(x,table) {
     # TO DO  if table has 'ul' then match to that
-    .Call("chmatch",x,table,TRUE,PACKAGE="data.table")
+    .Call("chmatch",x,table,NA_integer_,TRUE,PACKAGE="data.table")
 }
 
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only; i.e., DT[i,col:=1L] not DT[i,col]:=1L or DT[i]$col:=1L. Please see help(":=").')

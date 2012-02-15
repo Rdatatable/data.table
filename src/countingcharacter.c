@@ -174,8 +174,8 @@ static int scmp(SEXP x, SEXP y, Rboolean nalast)
 */
 
 
-SEXP chmatch(SEXP x, SEXP table, SEXP in) {
-    R_len_t i;
+SEXP chmatch(SEXP x, SEXP table, SEXP nomatch, SEXP in) {
+    R_len_t i, m;
     SEXP ans, s;
     savetl_init();
     for (i=0; i<length(x); i++) {
@@ -195,11 +195,13 @@ SEXP chmatch(SEXP x, SEXP table, SEXP in) {
         PROTECT(ans = allocVector(LGLSXP,length(x)));
         for (i=0; i<length(x); i++) {
             LOGICAL(ans)[i] = TRUELENGTH(STRING_ELT(x,i))<0;
+            // nomatch ignored for logical as base does I think
         }
     } else {
         PROTECT(ans = allocVector(INTSXP,length(x)));
         for (i=0; i<length(x); i++) {
-            INTEGER(ans)[i] = -TRUELENGTH(STRING_ELT(x,i));
+            m = TRUELENGTH(STRING_ELT(x,i));
+            INTEGER(ans)[i] = (m<0) ? -m : INTEGER(nomatch)[0];
         }
     }
     for (i=0; i<length(table); i++)

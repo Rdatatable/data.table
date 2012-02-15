@@ -30,7 +30,10 @@ NEW FEATURES
         and %in% for character vectors. R's internal string cache is
         utilised (no hash table is built). They are about 4 times faster
         on the example in ?chmatch.
-        
+
+BUG FIXES
+
+    o   merge() suffixes fix from Steve.  ***  TO DO: more detail here in NEWS  ***
 
 THANKS TO
 
