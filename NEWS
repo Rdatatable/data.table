@@ -33,7 +33,12 @@ NEW FEATURES
 
 BUG FIXES
 
-    o   merge() suffixes fix from Steve.  ***  TO DO: more detail here in NEWS  ***
+    o   Fixed a `suffixes` handling bug in merge.data.table that was
+        only recently introduced during the recent "fast-merge"-ing reboot.
+        Briefly, the bug was only triggered in scenarios where both
+        tables had identical column names that were not part of `by` and
+        ended with *.1. cf. "merge and auto-increment columns in y[x]"
+        test in tests/test-data.frame-like.R for more information.
 
 THANKS TO
 
