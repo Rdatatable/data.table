@@ -49,8 +49,8 @@ x \%chin\% table
         identical(a,c)
     }
     
-    system.time(a <- x \%in\% y)                 #  4.8s
-    system.time(b <- x \%chin\% y)               #  0.9s
+    system.time(a <- x \%in\% y)                   #  4.8s
+    system.time(b <- x \%chin\% y)                 #  0.9s
     identical(a,b)
     if (fastmatchloaded) {
         match <- fmatch                          # fmatch is drop in replacement
