@@ -40,12 +40,12 @@ x \%chin\% table
     y = sample(u,1e7,replace=TRUE)
     x = sample(u)
     
-    system.time(a <- match(x,y))                 # 4.8s
-    system.time(b <- chmatch(x,y))               # 0.9s   Faster than 1st fmatch
+    system.time(a <- match(x,y))                 #  4.8s
+    system.time(b <- chmatch(x,y))               #  0.9s   Faster than 1st fmatch
     identical(a,b)
     if (fastmatchloaded<-suppressWarnings(require(fastmatch))) {
-        print(system.time(c <- fmatch(x,y)))     # 2.1s   Builds and caches hash
-        print(system.time(c <- fmatch(x,y)))     # 0.00s  Uses hash
+        print(system.time(c <- fmatch(x,y)))     #  2.1s   Builds and caches hash
+        print(system.time(c <- fmatch(x,y)))     #  0.00s  Uses hash
         identical(a,c)
     }
     
@@ -54,8 +54,8 @@ x \%chin\% table
     identical(a,b)
     if (fastmatchloaded) {
         match <- fmatch                          # fmatch is drop in replacement
-        print(system.time(c <- match(x,y)))      # 0.00s
-        print(system.time(c <- x \%in\% y))        # 4.8s   \%in\% still prefers base::match
+        print(system.time(c <- match(x,y)))      #  0.00s
+        print(system.time(c <- x \%in\% y))        #  4.8s   \%in\% still prefers base::match
         # Anyone know how to get \%in\% to use fmatch (without masking \%in\% too)?
         rm(match)
         identical(a,c)
