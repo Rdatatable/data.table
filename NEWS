@@ -30,6 +30,10 @@ NEW FEATURES
         and %in% for character vectors. R's internal string cache is
         utilised (no hash table is built). They are about 4 times faster
         on the example in ?chmatch.
+        
+    o   rbind.data.table() gains a use.names argument, by default TRUE.
+        Set to FALSE to combine columns in order rather than by name.
+
 
 BUG FIXES
 

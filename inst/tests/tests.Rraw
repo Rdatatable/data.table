@@ -1301,13 +1301,14 @@ test(446, inherits(tt,"try-error") && length(grep("converted from warning.*Argum
 test(447, suppressWarnings(rbind(DT,list(b=7L,a=4L))), data.table(a=1:4,b=4:7))
 test(448, suppressWarnings(rbind(DT,data.frame(b=7L,a=4L))), data.table(a=1:4,b=4:7))
 test(449, suppressWarnings(rbind(DT,data.table(b=7L,a=4L))), data.table(a=1:4,b=4:7))
-tt=try(rbind(DT,list(c=4L,a=7L)),silent=TRUE)
-test(450, inherits(tt,"try-error") && length(grep("Error.*Some colnames of argument 2 [(]c[)] are not present in colnames of item 1",tt)))
-tt=try(rbind(DT,data.frame(c=4L,a=7L)),silent=TRUE)
-test(451, inherits(tt,"try-error") && length(grep("Error.*Some colnames of argument 2 [(]c[)] are not present in colnames of item 1",tt)))
-tt=try(rbind(DT,data.table(c=4L,a=7L)),silent=TRUE)
-test(452, inherits(tt,"try-error") && length(grep("Error.*Some colnames of argument 2 [(]c[)] are not present in colnames of item 1",tt)))
+test(450, rbind(DT,list(c=4L,a=7L)), error="Some colnames of argument 2 [(]c[)] are not present in colnames of item 1")
+test(451, rbind(DT,data.frame(c=4L,a=7L)), error="Some colnames of argument 2 [(]c[)] are not present in colnames of item 1")
+test(452, rbind(DT,data.table(c=4L,a=7L)), error="Some colnames of argument 2 [(]c[)] are not present in colnames of item 1")
 test(453, rbind(DT,list(4L,7L)), data.table(a=1:4,b=4:7))
+
+# Test new use.names argument in 1.8.0
+test(453.1, rbind(DT,list(FOO=4L,BAR=7L),use.names=FALSE), data.table(a=1:4,b=4:7))
+test(453.2, rbind(DT,data.table(b=4:5,a=7:8), use.names=FALSE), data.table(a=1:5,b=4:8))
 
 # Test the linked reported bug, #1645
 A1 = data.table(b='hello', a='foo', key='a')

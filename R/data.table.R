@@ -1349,14 +1349,11 @@ setcolorder = function(x,neworder)
 
 set = function(x,i,j,value)
 {
-    #if (length(j)!=1) stop("j must be length 1, currently")
-    #j = if (is.character(j)) match(j,names(x)) else as.integer(j)
     # TO DO: drop clearkey argument from assign.  Either work that out inside assign, or do outside as here.
-    #j = as.integer(j)
     .Call("assign",x,i,j,NULL,value,FALSE,FALSE,PACKAGE="data.table")
     # TO DO ... if (haskey(x) && names(x)[j] %in% key(x)) setkey(x,NULL)   # haskey for speed to avoid the %in%, but do inside assign for speed.
     # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.
-    # When := or set do it, make them aware of 'ul' and drop it if necessary.
+    # TO DO: When := or set do it, make them aware of 'ul' and drop it if necessary.
     invisible(x)
 }
 
