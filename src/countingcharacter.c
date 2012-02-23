@@ -27,7 +27,7 @@
 #ifdef BUILD_DLL
 #define EXPORT __declspec(dllexport)
 EXPORT SEXP countingcharacter();
-EXPORT SEXP chmatch();
+EXPORT SEXP chmatchwrapper();
 #endif
 
 extern int Rf_Scollate();
@@ -174,7 +174,7 @@ static int scmp(SEXP x, SEXP y, Rboolean nalast)
 */
 
 
-SEXP chmatch(SEXP x, SEXP table, SEXP nomatch, SEXP in) {
+SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
     R_len_t i, m;
     SEXP ans, s;
     savetl_init();
@@ -191,7 +191,7 @@ SEXP chmatch(SEXP x, SEXP table, SEXP nomatch, SEXP in) {
         if (TRUELENGTH(s)>0) savetl(s);
         TRUELENGTH(s) = -i-1;
     }
-    if (LOGICAL(in)[0]) {
+    if (in) {
         PROTECT(ans = allocVector(LGLSXP,length(x)));
         for (i=0; i<length(x); i++) {
             LOGICAL(ans)[i] = TRUELENGTH(STRING_ELT(x,i))<0;
@@ -201,7 +201,7 @@ SEXP chmatch(SEXP x, SEXP table, SEXP nomatch, SEXP in) {
         PROTECT(ans = allocVector(INTSXP,length(x)));
         for (i=0; i<length(x); i++) {
             m = TRUELENGTH(STRING_ELT(x,i));
-            INTEGER(ans)[i] = (m<0) ? -m : INTEGER(nomatch)[0];
+            INTEGER(ans)[i] = (m<0) ? -m : nomatch;
         }
     }
     for (i=0; i<length(table); i++)
@@ -210,5 +210,11 @@ SEXP chmatch(SEXP x, SEXP table, SEXP nomatch, SEXP in) {
     UNPROTECT(1);
     return(ans);
 }
+
+SEXP chmatchwrapper(SEXP x, SEXP table, SEXP nomatch, SEXP in) {
+    return(chmatch(x,table,INTEGER(nomatch)[0],LOGICAL(in)[0]));
+}
+
+
 
 

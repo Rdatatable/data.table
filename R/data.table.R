@@ -425,8 +425,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (!missing(verbose) && verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
         # the !missing is for speed to avoid calling getOption() which then calls options().
         # better to do verbosity before calling C, to make tracing easier if there's a problem in assign.c
-        revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))  # currently length 1 anyway here, more relevant in the other .Call to assign. Might need a wrapper around .Call(assign), then
-        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,clearkey,revcolorder,verbose,PACKAGE="data.table"))
+        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,clearkey,verbose,PACKAGE="data.table"))
         # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
         # Could return number of rows updated but even when wrapped in invisible() it seems
         # the [.class method doesn't respect invisible, which may be confusing to user.
@@ -945,13 +944,12 @@ tail.data.table = function(x, n=6, ...) {
         # code did).
         keycol=FALSE
     }
-    revcolorder = .Internal(radixsort(cols, na.last=FALSE, decreasing=TRUE))
     if (!selfrefok(x) || truelength(x) < ncol(x)+length(newcolnames)) {
         x = alloc.col(x,length(x)+length(newcolnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
         # search for one other .Call to assign in [.data.table to see how it differs
     }
     verbose=getOption("datatable.verbose",FALSE)
-    .Call("assign",x,i,cols,newcolnames,value,keycol,revcolorder,verbose,PACKAGE="data.table")
+    .Call("assign",x,i,cols,newcolnames,value,keycol,verbose,PACKAGE="data.table")
     settruelength(x,0L) #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
     alloc.col(x)
     # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
@@ -975,7 +973,7 @@ tail.data.table = function(x, n=6, ...) {
     `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
 
-.rbind.data.table = function(...) {
+.rbind.data.table = function(...,use.names=TRUE) {
     # See FAQ 2.23
     # Called from base::rbind.data.frame
     match.names <- function(clabs, nmi) {
@@ -991,7 +989,7 @@ tail.data.table = function(x, n=6, ...) {
     n <- length(allargs)
     if (n == 0)
         return( null.data.table() )
-    if (!all(sapply(allargs, is.list))) stop("All arguments to rbind must be lists (including data.frame and data.table)")
+    if (!all(sapply(allargs, is.list))) stop("All arguments to rbind must be lists (data.frame and data.table are already lists)")
     ncols = sapply(allargs, length)
     if (length(unique(ncols)) != 1) {
         f=which(ncols!=ncols[1])[1]
@@ -999,13 +997,16 @@ tail.data.table = function(x, n=6, ...) {
     }
     l = list()
     nm = names(allargs[[1]])
-    if (length(nm) && n>1) {
+    if (use.names && length(nm) && n>1) {
         for (i in 2:n) if (length(names(allargs[[i]]))) {
             if (!all(names(allargs[[i]]) %in% nm))
-                stop("Some colnames of argument ",i," (",paste(setdiff(names(allargs[[i]]),nm),collapse=","),") are not present in colnames of item 1. If an argument has colnames they can be in a different order, but they must all be present. Alternatively, you can drop names (by using an unnamed list) and the columns will then be joined by position.")
+                stop("Some colnames of argument ",i," (",paste(setdiff(names(allargs[[i]]),nm),collapse=","),") are not present in colnames of item 1. If an argument has colnames they can be in a different order, but they must all be present. Alternatively, you can drop names (by using an unnamed list) and the columns will then be joined by position. Or, set use.names=FALSE.")
             if (!all(names(allargs[[i]]) == nm))
-                warning("Argument ",i," has names in a different order. Columns will be bound by name for consistency with base.")
+                warning("Argument ",i," has names in a different order. Columns will be bound by name for consistency with base. Alternatively, you can drop names (by using an unnamed list) and the columns will then be joined by position. Or, set use.names=FALSE.")
                 allargs[[i]] = as.list(allargs[[i]])[nm]
+                # TO DO : could use setcolorder() to speed this line up but i) it only currently works on data.table
+                # (not data.frame or list) and ii) it would change the original by reference so would need to be copied
+                # anyway. So, take a shallow copy somehow, or leave as-is and do the 'do.call(' below differently.
         }
     }
     for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
@@ -1344,7 +1345,7 @@ setcolorder = function(x,neworder)
     }
     .Call("setcolorder",x,o,PACKAGE="data.table")
     invisible(x)   
-}    
+}
 
 set = function(x,i,j,value)
 {
@@ -1352,7 +1353,7 @@ set = function(x,i,j,value)
     #j = if (is.character(j)) match(j,names(x)) else as.integer(j)
     # TO DO: drop clearkey argument from assign.  Either work that out inside assign, or do outside as here.
     #j = as.integer(j)
-    .Call("assign",x,i,j,NULL,value,FALSE,j,FALSE,PACKAGE="data.table")
+    .Call("assign",x,i,j,NULL,value,FALSE,FALSE,PACKAGE="data.table")
     # TO DO ... if (haskey(x) && names(x)[j] %in% key(x)) setkey(x,NULL)   # haskey for speed to avoid the %in%, but do inside assign for speed.
     # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.
     # When := or set do it, make them aware of 'ul' and drop it if necessary.
@@ -1360,11 +1361,11 @@ set = function(x,i,j,value)
 }
 
 chmatch = function(x,table,nomatch=NA_integer_)
-    .Call("chmatch",x,table,as.integer(nomatch),FALSE,PACKAGE="data.table")
+    .Call("chmatchwrapper",x,table,as.integer(nomatch),FALSE,PACKAGE="data.table")
 
 "%chin%" = function(x,table) {
     # TO DO  if table has 'ul' then match to that
-    .Call("chmatch",x,table,NA_integer_,TRUE,PACKAGE="data.table")
+    .Call("chmatchwrapper",x,table,NA_integer_,TRUE,PACKAGE="data.table")
 }
 
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only; i.e., DT[i,col:=1L] not DT[i,col]:=1L or DT[i]$col:=1L. Please see help(":=").')

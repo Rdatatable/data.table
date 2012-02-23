@@ -1500,6 +1500,18 @@ test(512, chmatch(x,y), match(x,y))
 test(513, chmatch(x,y,nomatch=0), match(x,y,nomatch=0))
 test(514, x %chin% y, x %in% y)
 
+# Test new function set() in v1.8.0
+DT = data.table(a=1:3,b=4:6)
+test(515, set(DT,2,1,3), warning="Coerced i")
+test(516, set(DT,"2",1,3), error="i is type 'character'")
+test(517, set(DT,2L,1,3), warning="Coerced j")
+test(518, set(DT,2L,1L,3), warning="Coerced numeric RHS to integer")
+test(519, set(DT,2L,1L,3L), data.table(a=INT(1,3,3),b=4:6))
+test(520, set(DT,2L,"a",2L), data.table(a=1:3,b=4:6))
+test(521, set(DT,2:3,"b",7:8), data.table(a=1:3,b=INT(4,7,8)))
+test(522, set(DT,2L,"foo",7L), error="foo.*is not a column name[.] Cannot add columns with set.*use := instead")
+test(523, set(DT,2L,c("a","a"),list(9L,10L)), data.table(a=INT(1,10,3),b=INT(4,7,8)))
+
 
 ## See test-* for more tests
 
