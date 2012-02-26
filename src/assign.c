@@ -99,14 +99,14 @@ Rboolean selfrefnamesok(SEXP x, Rboolean verbose) {
     return(_selfrefok(x, TRUE, verbose));
 }
 
-SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP clearkey, SEXP verb)
+SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP verb)
 {
     // For internal use only by [<-.data.table.
     // newcolnames : add these columns (if any)
     // cols : column names or numbers corresponding to the values to set
     R_len_t i, j, size, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum;
-    SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder;
-    Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE;
+    SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key;
+    Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, clearkey=FALSE;
     
     if (!sizesSet) setSizes();   // TO DO move into _init
     
@@ -154,7 +154,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
     }
     if (!isInteger(cols))
         error("j is type '%s'. Must be integer, character, or numeric is coerced with warning.", type2char(TYPEOF(cols)));
-        
     if (!isNull(newcolnames) && !isString(newcolnames)) error("newcolnames is supplied but isn't a character vector");
     if (isNull(values)) {
         if (!length(cols)) {
@@ -169,7 +168,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
                 else if (length(cols)%length(values) != 0)
                     warning("Supplied %d columns to be assigned a list (length %d) of values (recycled leaving remainder of %d items).",length(cols),length(values),length(cols)%length(values));
             } // else it's a list() column being assigned to one column       
-        } 
+        }
     }
     // Check all inputs :
     for (i=0; i<length(cols); i++) {
@@ -205,6 +204,17 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             warning("Supplied %d items to be assigned to %d items of column '%s' (%d unused)", vlen, targetlen,CHAR(colnam),vlen-targetlen);  
         else if (vlen>0 && targetlen%vlen != 0)
             warning("Supplied %d items to be assigned to %d items of column '%s' (recycled leaving remainder of %d items).",vlen,targetlen,CHAR(colnam),targetlen%vlen);
+    }
+    key = getAttrib(dt,install("sorted"));
+    if (length(key)) {
+        // if assigning to any key column, then drop the key. any() and subsetVector() don't seem to be
+        // exposed by R API at C level, so this is done here long hand.
+        PROTECT(tmp = allocVector(STRSXP, LENGTH(cols)));
+        protecti++;
+        for (i=0;i<LENGTH(cols);i++) SET_STRING_ELT(tmp,i,STRING_ELT(names,INTEGER(cols)[i]-1));
+        PROTECT(tmp = chmatch(tmp, key, 0, TRUE));
+        protecti++;
+        for (i=0;i<LENGTH(tmp);i++) if (LOGICAL(tmp)[i]) {clearkey=TRUE; break;}
     }
     // having now checked the inputs, from this point there should be no errors,
     // so we can now proceed to modify DT by reference.
@@ -430,10 +440,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP c
             }
         }
     }
-    if (LOGICAL(clearkey)[0]) {
+    if (clearkey) {
         // If a key column is being assigned to, clear the key, since it may change the row ordering.
         // More likely that users will assign to non-key columns, though, most of the time.
-        // Do this at C level to avoid any copies.
         setAttrib(dt, install("sorted"), R_NilValue);
     }
     UNPROTECT(protecti);

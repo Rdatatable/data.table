@@ -380,7 +380,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             }
             if (!is.character(lhs)) stop("Logical error. LHS of := wasn't atomic column names or positions")
         }
-        clearkey = any(!is.na(match(lhs,key(x))))
         m = match(lhs,names(x))
         if (all(!is.na(m))) {
             # updates by reference to existing columns
@@ -425,7 +424,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (!missing(verbose) && verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
         # the !missing is for speed to avoid calling getOption() which then calls options().
         # better to do verbosity before calling C, to make tracing easier if there's a problem in assign.c
-        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,clearkey,verbose,PACKAGE="data.table"))
+        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,verbose,PACKAGE="data.table"))
         # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
         # Could return number of rows updated but even when wrapped in invisible() it seems
         # the [.class method doesn't respect invisible, which may be confusing to user.
@@ -922,18 +921,17 @@ tail.data.table = function(x, n=6, ...) {
     if (!is.atomic(j)) stop("j must be atomic vector, see ?is.atomic")
     if (any(is.na(j))) stop("NA in j")
     if (is.character(j)) {
-        keycol = any(j %in% key(x))
         newcolnames = setdiff(j,names(x))
         cols = as.integer(match(j, c(names(x),newcolnames)))
         # We can now mix existing columns and new columns
     } else {
         if (!is.numeric(j)) stop("j must be vector of column name or positions")
         if (any(j>ncol(x))) stop("Attempt to assign to column position greater than ncol(x). Create the column by name, instead. This logic intends to catch (most likely) user errors.")
-        keycol = any(j %in% match(key(x),names(x)))
         cols = as.integer(j)  # for convenience e.g. to convert 1 to 1L
         newcolnames = NULL
     }
-    if (keycol && identical(key(x),key(value)) &&
+    reinstatekey=NULL
+    if (haskey(x) && identical(key(x),key(value)) &&
         identical(colnames(x),colnames(value)) &&
         !is.unsorted(i) &&
         identical(substitute(x),quote(`*tmp*`))) {
@@ -942,16 +940,18 @@ tail.data.table = function(x, n=6, ...) {
         # That isn't good for speed; it's an R thing. Solution is to use := instead to avoid all this, but user
         # expects key to be retained in this case because _he_ didn't assign to a key column (the internal base R 
         # code did).
-        keycol=FALSE
+        reinstatekey=key(x)
     }
     if (!selfrefok(x) || truelength(x) < ncol(x)+length(newcolnames)) {
         x = alloc.col(x,length(x)+length(newcolnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
         # search for one other .Call to assign in [.data.table to see how it differs
     }
     verbose=getOption("datatable.verbose",FALSE)
-    .Call("assign",x,i,cols,newcolnames,value,keycol,verbose,PACKAGE="data.table")
+    .Call("assign",x,i,cols,newcolnames,value,verbose,PACKAGE="data.table")
     settruelength(x,0L) #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
     alloc.col(x)
+    if (length(reinstatekey)) setkeyv(x,reinstatekey)
+    invisible(x)
     # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
     # or uses data.table := syntax; i.e. DT[i,j:=value]
     # but, there is one copy by R in [<- dispatch to `*tmp*`; i.e. DT[i,j]<-value
@@ -1349,11 +1349,9 @@ setcolorder = function(x,neworder)
 
 set = function(x,i,j,value)
 {
-    # TO DO: drop clearkey argument from assign.  Either work that out inside assign, or do outside as here.
-    .Call("assign",x,i,j,NULL,value,FALSE,FALSE,PACKAGE="data.table")
-    # TO DO ... if (haskey(x) && names(x)[j] %in% key(x)) setkey(x,NULL)   # haskey for speed to avoid the %in%, but do inside assign for speed.
+    .Call("assign",x,i,j,NULL,value,FALSE,PACKAGE="data.table")
     # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.
-    # TO DO: When := or set do it, make them aware of 'ul' and drop it if necessary.
+    # TO DO: When := or set() do it, make them aware of 'ul' and drop it if necessary.
     invisible(x)
 }
 
