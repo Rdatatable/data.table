@@ -43,7 +43,12 @@ BUG FIXES
         tables had identical column names that were not part of `by` and
         ended with *.1. cf. "merge and auto-increment columns in y[x]"
         test in tests/test-data.frame-like.R for more information.
-
+        
+    o   Adding a column using := on a data.table just loaded from disk was
+        correctly detected and over allocated, but incorrectly warning about
+        a previous copy. Test 462 was incorrectly suppressing warnings.
+        
+        
 THANKS TO
 
     o   Joshua Ulrich for spotting a missing PACKAGE="data.table"

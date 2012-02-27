@@ -67,18 +67,18 @@ void setselfref(SEXP x) {
 */
 }
 
-Rboolean _selfrefok(SEXP x, Rboolean names, Rboolean verbose) {
+int _selfrefok(SEXP x, Rboolean names, Rboolean verbose) {
     SEXP v, p, tag, prot;
     v = getAttrib(x, SelfRefSymbol);
     if (v==R_NilValue) {
         // .internal.selfref missing. This is expected and normal for i) a pre v1.7.8 data.table loaded
         //  from disk, and ii) every time a new data.table is over-allocated for the first time.
-        return(FALSE);
+        return(0);
     }
     p = R_ExternalPtrAddr(v);
     if (p==NULL) {
         if (verbose) Rprintf(".internal.selfref ptr is NULL. This is expected and normal for a data.table loaded from disk. If not, please report to datatable-help.\n");
-        return(FALSE);
+        return(-1);
     }
     if (!isNull(p)) error("Internal error: .internal.selfref ptr is not NULL or R_NilValue");
     tag = R_ExternalPtrTag(v);
@@ -93,10 +93,10 @@ Rboolean _selfrefok(SEXP x, Rboolean names, Rboolean verbose) {
 }
 
 Rboolean selfrefok(SEXP x, Rboolean verbose) {   // for readability
-    return(_selfrefok(x, FALSE, verbose));
+    return(_selfrefok(x, FALSE, verbose)==1);
 }
 Rboolean selfrefnamesok(SEXP x, Rboolean verbose) {
-    return(_selfrefok(x, TRUE, verbose));
+    return(_selfrefok(x, TRUE, verbose)==1);
 }
 
 SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP verb)
@@ -567,8 +567,8 @@ SEXP setlength(SEXP x, SEXP n) {
 
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
     SEXP ans;
-    PROTECT(ans = allocVector(LGLSXP, 1));
-    LOGICAL(ans)[0] = _selfrefok(x,FALSE,LOGICAL(verbose)[0]);
+    PROTECT(ans = allocVector(INTSXP, 1));
+    INTEGER(ans)[0] = _selfrefok(x,FALSE,LOGICAL(verbose)[0]);
     UNPROTECT(1);
     return(ans);
 }

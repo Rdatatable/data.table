@@ -389,12 +389,12 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # Adding new column(s)
             newcolnames=setdiff(lhs,names(x))
             cols = as.integer(c(m[!is.na(m)],ncol(x)+1:length(newcolnames)))
-            if (notok<-!selfrefok(x,verbose))
+            if ((ok<-selfrefok(x,verbose))==0)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
                 warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table, so that := can add this new column by reference. At an earlier point, this data.table has been copied by R. Avoid key<-, names<- and attr<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setkey(), setnames() and setattr(). If this message doesn't help, please report to datatable-help so the root cause can be fixed.")
-            if (notok || (truelength(x) < ncol(x)+length(newcolnames))) {
+            if ((ok<1L) || (truelength(x) < ncol(x)+length(newcolnames))) {
                 n = max(ncol(x)+100, ncol(x)+2*length(newcolnames))
                 name = substitute(x)
-                if (is.name(name) && !notok && verbose) { # && NAMED(x)>0 (TO DO)
+                if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
                     # Do the warning before allocating and assigning, so we can track where we are when verbose=TRUE
                     # in case an error occurs in alloc.col or assign
                     warning("growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.")
