@@ -186,7 +186,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 {
     # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
     if (!cedta()) {
-        ans = if (missing(drop)) `[.data.frame`(x,i,j) else `[.data.frame`(x,i,j,drop)
+        Nargs = nargs() - (!missing(drop))
+        ans = if (Nargs<3L) `[.data.frame`(x,i)  # drop ignored anyway by DF[i]
+              else if (missing(drop)) `[.data.frame`(x,i,j)
+              else `[.data.frame`(x,i,j,drop)
         if (!missing(i)) setkey(ans,NULL)  # See test 304
         return(ans)
     }
@@ -863,7 +866,12 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE)
     if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
     ans = copy(x)
     setattr(ans,"row.names",.set_row_names(nrow(x)))
-    setattr(ans,"class",c("data.table","data.frame"))
+    tt = class(x)
+    n=match("data.frame",tt)
+    tt = c( head(tt,n-1), "data.table","data.frame", tail(tt, length(tt)-n) )
+    # for nlme::groupedData which has class c("nfnGroupedData","nfGroupedData","groupedData","data.frame")
+    # See test 527.
+    setattr(ans,"class",tt)
     settruelength(ans,0L)
     alloc.col(ans)
 }
@@ -899,9 +907,10 @@ tail.data.table = function(x, n=6, ...) {
     # [<- is still provided for consistency and backwards compatibility, but we hope users don't use it.
     #settruelength(x,0L)  # it was copied to `*tmp*`, so truelength is length, now. But set to 0L to reset it and be safe.
     if (!cedta()) {
-        x = `[<-.data.frame`(x, i, j, value)
-        settruelength(x,0L)     # TO DO: remove comment : make it what it is
-        return(alloc.col(x))            # over-allocate (again).   Avoid all this by using :=.
+        x = if (nargs()<4) `[<-.data.frame`(x, i, value=value)
+            else `[<-.data.frame`(x, i, j, value)
+        settruelength(x,0L)     # TO DO: remove all settruelength(), no longer needed.
+        return(alloc.col(x))    # over-allocate (again).   Avoid all this by using :=.
     }
     if (!missing(i)) {
         isub=substitute(i)

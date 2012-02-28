@@ -46,7 +46,17 @@ BUG FIXES
         
     o   Adding a column using := on a data.table just loaded from disk was
         correctly detected and over allocated, but incorrectly warning about
-        a previous copy. Test 462 was incorrectly suppressing warnings.
+        a previous copy. Test 462 tested loading from disk, but suppressed
+        warnings (sadly). Fixed.
+        
+    o   data.table unaware packages that use DF[i] and DF[i]<-value syntax
+        were not compatible with data.table, fixed. Thanks to P Chalasani for
+        providing a reproducible example with base::droplevels(). Test added.
+        
+    o   as.data.table(DF) already preserved DF's attributes but not any inherited
+        classes such as nlme's groupedData, so nlme was incompatible with
+        data.table. Fixed. Thanks to Dieter Menne for providing a reproducible
+        example. Test added.
         
         
 THANKS TO
