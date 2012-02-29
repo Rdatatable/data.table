@@ -50,8 +50,8 @@ BUG FIXES
         warnings (sadly). Fixed.
         
     o   data.table unaware packages that use DF[i] and DF[i]<-value syntax
-        were not compatible with data.table, fixed. Thanks to P Chalasani for
-        providing a reproducible example with base::droplevels(). Test added.
+        were not compatible with data.table, fixed. Many thanks to Prasad Chalasani
+        for providing a reproducible example with base::droplevels(). Test added.
         
     o   as.data.table(DF) already preserved DF's attributes but not any inherited
         classes such as nlme's groupedData, so nlme was incompatible with
