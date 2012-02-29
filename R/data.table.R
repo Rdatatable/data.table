@@ -250,15 +250,14 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     rc = rightcols[a]
                     if (!typeof(i[[lc]])%in%c("integer","logical")) stop("sorted column ",colnames(i)[lc], " of i must be internally type integer")
                     if (is.factor(i[[lc]])) {
-                        if ((roll || rolltolast) && a==length(leftcols)) stop("Attempting roll join on factor column i.",colnames(i)[lc],". Only integer columns (i.e. not factors) may be roll joined.")   # because the sortedmatch a few lines below returns NA for missing chars in x (rather than some integer greater than existing). Using character rather than factor solves this if we get over the speed issues with character.
+                        if ((roll || rolltolast) && a==length(leftcols)) stop("Attempting roll join on factor column i.",colnames(i)[lc],". Only integer columns (i.e. not factors) may be roll joined.")   # because the chmatch a few lines below returns NA for missing chars in x (rather than some integer greater than existing). Using character rather than factor would solve this if we get over the speed issues with character.
                         if (!is.factor(x[[rc]])) stop("i.",colnames(i)[lc]," is a factor joining to x.",colnames(x)[rc]," which is not a factor. Factors must join to factors.")
-                        i[[lc]] = sortedmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA)[i[[lc]]]
+                        i[[lc]] = chmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA)[i[[lc]]]
                         levels(i[[lc]]) = levels(x[[rc]])
                         class(i[[lc]]) = "factor"
                         # factor levels are always sorted in data.table, so this match will be sorted too. There is no need to re-sort.
                         # NAs can be produced by this level match, in which case the C code (it knows integer value NA) can skip over the lookup.
                         # its therefore important we pass NA rather than 0 to the C code.
-                        # For factor levels in the order of several thousand, standard match is extremely innefficient, sortedmatch yields a 96% saving.
                     } else {
                         if (is.factor(x[[rc]])) stop("x.",colnames(x)[rc]," is a factor but joining to i.",colnames(i)[lc]," which is not a factor. Factors must join to factors.")
                     }
@@ -274,7 +273,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     if (is.factor(i[[lc]])) {
                         if ((roll || rolltolast) && lc==last(leftcols)) stop("Attempting roll join on factor column i.",colnames(i)[lc],". Only integer columns (i.e. not factors) may be roll joined.")
                         if (!is.factor(x[[rc]])) stop("i.",colnames(i)[lc]," is a factor but the corresponding x.",colnames(x)[rc]," is not a factor, Factors must join to factors.")
-                        i[[lc]] = sortedmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA)[i[[lc]]]
+                        i[[lc]] = chmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA)[i[[lc]]]
                         levels(i[[lc]]) = levels(x[[rc]])  # We need the x levels later, in the byval, to transfer to result
                         class(i[[lc]]) = "factor"
                     } else {
@@ -340,7 +339,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 if (haskey(i) || nrow(i)==1)
                     setattr(ans,"sorted",key(x))
                     # TO DO: detect more ordered subset cases e.g. DT["A"] or DT[c("A","B")] where the
-                    # irows are an ordered subset. Or just .C("isordered",irows) or inside sortedmatch
+                    # irows are an ordered subset. Or just .C("isordered",irows)
                     # The nrow(i)==1 is the simplest case and been there for a while (and tested)
             }
             setattr(ans,"class",c("data.table","data.frame"))

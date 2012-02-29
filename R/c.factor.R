@@ -30,7 +30,7 @@ c.factor = function(...)
 #    u = unique(y)
 #    su = u[fastorder(list(u), na.last = NA)]
 #    attr(y, "levels") = attr(x, "levels")[su]  # relying on the original factor levels being sorted
-#    y[] = sortedmatch(y, su)
+#    y[] = chmatch(y, su)
 #    class(y) = oldClass(x)
 #    y
 #}

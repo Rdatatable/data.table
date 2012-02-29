@@ -89,7 +89,6 @@ S3method(split, IDate)
 # getdots
 # NCOL
 # NROW
-# sortedmatch
 # take
 # trim
 # which.first

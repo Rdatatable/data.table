@@ -10,8 +10,7 @@ extern int Rf_Scollate();   // #include <Defn.h> failed to find Defn.h in develo
 // For Windows only
 #define EXPORT __declspec(dllexport)
 EXPORT SEXP binarysearch();
-EXPORT SEXP sortedstringmatch ();
-EXPORT SEXP sortedintegermatch ();
+//EXPORT SEXP sortedintegermatch ();
 #endif
 
 /*
@@ -120,38 +119,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
 }
 
 
-
-
-
-SEXP sortedstringmatch (SEXP ans, SEXP left, SEXP right, SEXP nomatch)
-{
-    // Called from sortedmatch.r.
-    // Primarily for matching factor levels from i to x in [.data.table before calling binarysearch.
-    // right must be a sorted string vector.
-    // left may be unsorted but it currently has no advantage if left is also sorted (TO DO).
-    // Neither left or right have duplicates, or any NAs, as is the case for factor levels.
-    // ans is the result, the locations of left in right, possibly including NA
-
-    int lr,nr,low,mid,upp;
-    nr = length(right);
-    for (lr=0; lr < length(left); lr++) {
-        low = -1;   // TO DO: leave low alone if left is sorted
-        upp = nr;
-        while(low < upp-1) {
-            mid = low + (upp-low)/2;
-            if (Rf_Scollate(STRING_ELT(right,mid), STRING_ELT(left,lr))<0) {   // TO DO: as in binarysearch, consider replacing with ?: on 2 item vector
-                low = mid;
-            } else {
-                upp = mid;
-            }
-        }
-        INTEGER(ans)[lr] = (upp<nr && STRING_ELT(left,lr)==STRING_ELT(right,upp)) ? upp+1 : INTEGER(nomatch)[0];
-    }
-    return(R_NilValue);
-}
-
-
-SEXP sortedintegermatch (SEXP ans, SEXP left, SEXP right, SEXP nomatch)
+/*SEXP sortedintegermatch (SEXP ans, SEXP left, SEXP right, SEXP nomatch)
 {
     // As sortedstringmatch, see comments above, but for integers.
     int lr,nr,low,mid,upp;
@@ -171,6 +139,6 @@ SEXP sortedintegermatch (SEXP ans, SEXP left, SEXP right, SEXP nomatch)
         INTEGER(ans)[lr] = (upp<nr && INTEGER(left)[lr] == INTEGER(right)[upp]) ? upp+1 : INTEGER(nomatch)[0];
     }
     return(R_NilValue);
-}
+}*/
 
 
