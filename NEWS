@@ -31,14 +31,14 @@ NEW FEATURES
         utilised (no hash table is built). They are about 4 times faster
         than match() on the example in ?chmatch.
         
-    o   Internal function sortedmatch removed and replaced with chmatch()
-        when matching i levels to x levels. This preliminary step was
-        causing a (known) significant slowdown when the number of unique
-        strings (i.e. levels) was large (e.g. >10,000). Exacerbated in tests
-        of equi-joining two such character columns, as demonstrated by Wes
-        McKinney (author of Python package Pandas). Matching 1 million strings
-        of which 600,000 are unique is reduced from 16s to 0.5s.
-        Background here:
+    o   Internal function sortedmatch() removed and replaced with chmatch()
+        when matching i levels to x levels for columns of type 'factor'. This
+        preliminary step was causing a (known) significant slowdown when the number
+        of levels of a factor column was large (e.g. >10,000). Exacerbated in
+        tests of joining four such columns, as demonstrated by Wes McKinney
+        (author of Python package Pandas). Matching 1 million strings of which
+        of which 600,000 are unique is now reduced from 16s to 0.5s, for example.
+        Background here :
         http://stackoverflow.com/questions/8991709/why-are-pandas-merges-in-python-faster-than-data-table-merges-in-r
         
     o   rbind.data.table() gains a use.names argument, by default TRUE.
