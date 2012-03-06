@@ -107,7 +107,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     R_len_t i, j, size, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum;
     SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key;
     Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, clearkey=FALSE;
-    
+    char *s1, *s2, *s3;
     if (!sizesSet) setSizes();   // TO DO move into _init
     
     if (isNull(dt)) error("assign has been passed a NULL dt");
@@ -198,7 +198,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         if (!isVector(thisvalue) && !(isVector(thisvalue) && length(thisvalue)==targetlen))
             error("RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list column.");
         if ((coln+1)<=oldncol && isFactor(VECTOR_ELT(dt,coln)) &&
-            !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=REALSXP)
+            !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && !isReal(thisvalue))  // !=INTSXP includes factor
             error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),typename[TYPEOF(thisvalue)]);
         if (vlen>targetlen)
             warning("Supplied %d items to be assigned to %d items of column '%s' (%d unused)", vlen, targetlen,CHAR(colnam),vlen-targetlen);  
@@ -327,10 +327,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                     savetl_end();
                 } else {
                     // value is either integer or numeric vector
-                    if (TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=REALSXP)
-                        error("Internal logical error. Up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. Please report to datatable-help.", typename[TYPEOF(thisvalue)], CHAR(STRING_ELT(names,coln)));
-                    PROTECT(RHS = coerceVector(thisvalue,INTSXP));  // TYPEOF(targetcol) is INTSXP for factors
-                    protecti++;
+                    if (TYPEOF(thisvalue)!=INTSXP && !isReal(thisvalue))
+                        error("Internal logical error. Up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. Please report to datatable-help.", type2char(TYPEOF(thisvalue)), CHAR(STRING_ELT(names,coln)));
+                    if (isReal(thisvalue)) {
+                        PROTECT(RHS = coerceVector(thisvalue,INTSXP));
+                        protecti++;
+                        warning("Coerced 'double' RHS to 'integer' to match the factor column's underlying type. Character columns are now recommended (can be in keys), or coerce RHS to integer or character first.");
+                    } else RHS = thisvalue;
                     for (j=0; j<length(RHS); j++) {
                         if (INTEGER(RHS)[j]<1 || INTEGER(RHS)[j]>LENGTH(targetlevels)) {
                             warning("RHS contains %d which is outside the levels range ([1,%d]) of column %d, NAs generated", INTEGER(RHS)[j], LENGTH(targetlevels), i+1);
@@ -339,22 +342,27 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                     }
                 }
             } else {
-                PROTECT(RHS = coerceVector(thisvalue,TYPEOF(targetcol)));
-                protecti++;
-            }
-            // i.e. coerce the RHS to match the type of the column (coerceVector returns early if already the same)
-            // This is different to [<-.data.frame which changes the type of the column to match the RHS. A
-            // data.table tends to be big so we don't want to do that. Also, typically the RHS is very small,
-            // often a length 1 vector such as 42, which by default in R is type numeric. If the column is integer,
-            // then intent of user was very likely to coerce 42 to integer and then assign that to the integer column,
-            // not the other way around like [.data.frame
-            // Most usual reason for coercing RHS several times (i.e. inside this loop) is when assigning NA
-            // to different typed columns on left in for example DT[i,]<-NA
-            if (TYPEOF(thisvalue)==REALSXP && (TYPEOF(targetcol)==INTSXP || TYPEOF(targetcol)==LGLSXP)) {
-                warning("Coerced numeric RHS to %s to match the column's type; may have truncated precision. Either change the column to numeric first (by creating a new numeric vector length %d (nrows of entire table) yourself and assigning that; i.e. 'replace' column), or coerce RHS to integer yourself (e.g. 1L or as.integer) to make your intent clear (and for speed). Or, set the column type correctly up front when you create the table and stick to it, please.", TYPEOF(targetcol)==INTSXP ? "integer" : "logical", length(VECTOR_ELT(dt,0)));
-            }
-            if (TYPEOF(thisvalue)==INTSXP && TYPEOF(targetcol)==LGLSXP) {
-                warning("Coerced integer RHS to logical to match the column's type. Either change the column to integer first (by creating a new integer vector length %d (nrows of entire table) yourself and assigning that; i.e. 'replace' column), or coerce RHS to logical yourself (e.g. as.logical) to make your intent clear (and for speed). Or, set the column type correctly up front when you create the table and stick to it, please.", length(VECTOR_ELT(dt,0)));
+                if (TYPEOF(targetcol) == TYPEOF(thisvalue))
+                    RHS = thisvalue;
+                else {
+                    // coerce the RHS to match the type of the column, unlike [<-.data.frame, for efficiency.
+                    if (isString(targetcol) && isFactor(thisvalue)) {
+                        PROTECT(RHS = asCharacterFactor(thisvalue));
+                        protecti++;
+                        if (verbose) warning("Coerced factor to character to match the column's type (coercion is inefficient)");
+                    } else {
+                        PROTECT(RHS = coerceVector(thisvalue,TYPEOF(targetcol)));
+                        protecti++;
+                        if ( (isReal(thisvalue) && (TYPEOF(targetcol)==INTSXP || isLogical(targetcol))) ||
+                             (TYPEOF(thisvalue)==INTSXP && isLogical(targetcol)) ||
+                             (isString(targetcol))) {
+                            s1 = (char *)type2char(TYPEOF(targetcol));
+                            s2 = (char *)type2char(TYPEOF(thisvalue));
+                            if (isReal(thisvalue)) s3="; may have truncated precision"; else s3="";
+                            warning("Coerced '%s' RHS to '%s' to match the column's type%s. Either change the target column to '%s' first (by creating a new '%s' vector length %d (nrows of entire table) and assign that; i.e. 'replace' column), or coerce RHS to '%s' (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your intent clear and for speed. Or, set the column type correctly up front when you create the table and stick to it, please.", s2, s1, s3, s2, s2, LENGTH(VECTOR_ELT(dt,0)), s1);
+                        }
+                    }
+                }
             }
         }
         size = SIZEOF(targetcol);

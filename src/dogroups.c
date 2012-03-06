@@ -112,10 +112,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
         switch (TYPEOF(VECTOR_ELT(byval, i))) {   // this structure is more for the future when by could contain character for example
             case INTSXP :
             case LGLSXP :
+            case STRSXP :
                 break;
-            case REALSXP : case STRSXP :
+            case REALSXP :
             default:
-                error("by columns must be integer (currently)");
+                error("by columns must be integer, character or factor (currently not numeric)");
         }
     }
     for(i = 0; i < njval; i++) {

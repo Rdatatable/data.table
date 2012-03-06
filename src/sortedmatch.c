@@ -30,79 +30,112 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     // If the left table is large and the right table is large, then sorting the left table first may be
     // quicker depending on how long to sort the left table. This is up to user via use of J() or SJ()
     
-    int lr,nr,low,mid,upp,coln,col,lci,rci;
-    int prevlow, prevupp, type, newlow, newupp, size;
+    R_len_t lr,nr,low,mid,upp,coln,col,lci,rci;
+    R_len_t prevlow, prevupp, type, newlow, newupp, /*size,*/ lt, rt;
+    SEXP lc, rc;
     union {
         int i;
-        SEXP str;
+        SEXP s;
     } lval, rval;
     if (NA_INTEGER > 0) error("expected internal value of NA_INTEGER %d to be negative",NA_INTEGER);
+    if (NA_INTEGER != NA_LOGICAL) error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
     nr = LENGTH(VECTOR_ELT(right,0));   // num rows in right hand table
-    coln = LENGTH(leftcols);    // there may be more sorted columns in the right table, but we just need up to the number in the left.
+    coln = LENGTH(leftcols);    // there may be more sorted columns in x than involved in the join
+    for(col=0; col<coln; col++) {
+        lci = INTEGER(leftcols)[col];
+        if (lci==NA_INTEGER) error("Internal error. Missing column name(s) in sorted attribute of i");
+        rci = INTEGER(rightcols)[col];
+        if (rci==NA_INTEGER) error("Internal error. Missing column name(s) in sorted attribute of x");
+        lt = TYPEOF(VECTOR_ELT(left, lci));
+        rt = TYPEOF(VECTOR_ELT(right, rci));
+        if (lt != rt) error("typeof x.%s (%s) != typeof i.%s (%s)", CHAR(STRING_ELT(getAttrib(right,R_NamesSymbol),rci)), type2char(rt), CHAR(STRING_ELT(getAttrib(left,R_NamesSymbol),lci)), type2char(lt));
+    }
     low=-1;
-    for (lr=0; lr < LENGTH(VECTOR_ELT(left,0)); lr++) {  // left row
+    for (lr=0; lr < LENGTH(VECTOR_ELT(left,0)); lr++) {  // left row (i.e. from i). TO DO: change left/right to i/x
         upp = prevupp = nr;
         low = prevlow = (LOGICAL(isorted)[0]) ? low : -1;
-        INTEGER(retFirst)[lr] = INTEGER(retLast)[lr] = 0;   // default to no match for 2 goto's below
+        INTEGER(retFirst)[lr] = INTEGER(retLast)[lr] = 0;   // default to no match for NA goto below
         for(col=0; col<coln && low<upp-1; col++) {
-            lci = INTEGER(leftcols)[col];
-            rci = INTEGER(rightcols)[col];
-            type = TYPEOF(VECTOR_ELT(left, lci));
+            lc = VECTOR_ELT(left,INTEGER(leftcols)[col]);
+            rc = VECTOR_ELT(right,INTEGER(rightcols)[col]);
+            prevlow = low;
+            prevupp = upp;
+            type = TYPEOF(lc);
             switch (type) {
-            case INTSXP : 
-                lval.i = INTEGER(VECTOR_ELT(left,lci))[lr];        // factors are also INTSXP but we won't see factors here
-                if (lval.i==NA_INTEGER) goto nextlr;
-                size=sizeof(int);  // e.g. 4
-                break;
-            case LGLSXP :
-                lval.i = LOGICAL(VECTOR_ELT(left,lci))[lr];
-                if (lval.i==NA_LOGICAL) goto nextlr;
-                size=sizeof(int);  // e.g. 4
+            case LGLSXP : case INTSXP :   // including factors
+                lval.i = INTEGER(lc)[lr];
+                if (lval.i==NA_INTEGER) goto nextlr; // TO DO: remove 'if' if NA are allowed in key (could do)
+                                                     // break breaks out of this switch, but we want to break this loop
+                while(low < upp-1) {
+                    mid = low+((upp-low)/2);
+                    rval.i = INTEGER(rc)[mid];
+                    if (rval.i<lval.i) {    // TO DO:  more efficient 3-way branch in C ?
+                        low=mid;
+                    } else if (rval.i>lval.i) {
+                        upp=mid;
+                    } else { // rval.i == lval.i)
+                        // branch mid to find start and end of this == series [multi-column binary search]
+                        // TO DO: not if mult=first or last 
+                        newlow = mid;
+                        newupp = mid;
+                        while(newlow<upp-1) {  // considered switching off these two whiles if only first or last are required. But these loops will be within the final page and all in cache so unlikely to make much difference. And, we need them anyway for penultimate columns (the first for column 2 is unlikely to be the first matching column 1).
+                            mid = newlow+((upp-newlow)/2);
+                            rval.i = INTEGER(rc)[mid];
+                            if (rval.i == lval.i) newlow=mid; else upp=mid;
+                            // TO DO: replace if with ?: using essentially c(newlow,upp)[rval==lval]=mid; maybe sign()
+                        }
+                        while(low<newupp-1) {
+                            mid = low+((newupp-low)/2);
+                            rval.i = INTEGER(rc)[mid];
+                            if (rval.i == lval.i) newupp=mid; else low=mid;
+                        }
+                        break;
+                        // low and upp now surround the group and we only need this range of the next column
+                    }
+                }
                 break;
             case STRSXP :
-                //To revisit:
-                //lval.str = STRING_ELT(VECTOR_ELT(left,lci),lr);
-                //if (lval.str==NA_STRING) goto nextlr;
-                //size=sizeof(SEXP);    // e.g. 4 (since SEXP is a pointer)
-                //break;
+                lval.s = STRING_ELT(lc,lr);
+                if (lval.s==NA_STRING) goto nextlr;
+                while(low < upp-1) {
+                    mid = low+((upp-low)/2);
+                    rval.s = STRING_ELT(rc,mid);
+                    // if (rval.s == NA_STRING) error("NA not allowed in keys"); should be in setkey as some NA may be missed by the binary search here.
+                    if (rval.s==lval.s) {
+                        newlow = mid;
+                        newupp = mid;
+                        while(newlow<upp-1) {
+                            mid = newlow+((upp-newlow)/2);
+                            rval.s = STRING_ELT(rc,mid);
+                            if (rval.s == lval.s) newlow=mid; else upp=mid;
+                        }
+                        while(low<newupp-1) {
+                            mid = low+((newupp-low)/2);
+                            rval.s = STRING_ELT(rc,mid);
+                            if (rval.s == lval.s) newupp=mid; else low=mid;
+                        }
+                        break;
+                    } else if (Rf_Scollate(rval.s, lval.s)<0) {
+                    // } else if (strcmp(CHAR(rval.s), CHAR(lval.s))<0) {
+                    // TO DO: test strcmp; i.e., if restricting to ASCII speeds up (maybe ASCII falls through and is
+                    // fast anyway)
+                    // Using Rf_Scollate caters for all, as does countingcharacter:ssort2. If we speed up later,
+                    // that's better than slowing down later. Switch can be a column level check that all is ascii
+                    // (setkey can check and mark)
+                    // We're using the last line of scmp in sort.c since we already dealt with NA and == above
+                        low=mid;
+                    } else {
+                        upp=mid;
+                    }
+                }
+                break;
             case REALSXP :
                 // ************* TO DO *******************
                 // Have discussed a decimal() class - fixed decimal points stored as integer
             default:
-                error("only types internally integer are allowed in key. Type %d found", type);
+                error("Type '%s' not supported as key column", type2char(type));
             }
-            if (type != TYPEOF(VECTOR_ELT(right, rci))) error("column %d of x has different type to column %d of i", rci, lci);
-            prevlow = low;
-            prevupp = upp;
-            while(low < upp-1) {
-                mid = low+((upp-low)/2);
-                memcpy(&rval, (char *)DATAPTR(VECTOR_ELT(right,rci)) + mid*size, size);
-                // if (isstr) rval.str = STRING_ELT(VECTOR_ELT(right,rci),mid);
-                //else rval.i = INTEGER(VECTOR_ELT(right,rci))[mid];
-                //if (rval==NA_INTEGER) error("NA in key columns");  // an NA in the key might not be detected. only detected if mid falls on it
-                if (memcmp(&rval,&lval,size)==0) {        // we can't do rval==lval. Not because it might be string (it would be fine - see scmp in sort.c doing == on strings in cache) but because int (4 or 8) might not be the same size as str (4 or 8) on some platforms and this could change over time. In the union we don't want any unused space at the end to effect this equality test.
-                    // split mid in two  and find start and end of this == series
-                    newlow = mid;
-                    newupp = mid;
-                    while(newlow<upp-1) {  // consider switching off these while if only first or last are required. But these loops will be within the final page's and all in cache so unlikely to make much difference.
-                        mid = newlow+((upp-newlow)/2);
-                        memcpy(&rval, (char *)DATAPTR(VECTOR_ELT(right,rci)) + mid*size, size);
-                        if (memcmp(&rval,&lval,size)==0) newlow=mid; else upp=mid;  //replace if with ?: using myvec[rval==lval];
-                    }
-                    while(low<newupp-1) {
-                        mid = low+((newupp-low)/2);
-                        memcpy(&rval, (char *)DATAPTR(VECTOR_ELT(right,rci)) + mid*size, size);
-                        if (memcmp(&rval,&lval,size)==0) newupp=mid; else low=mid;
-                    }
-                    break;   // stop the while for this group and go to next column. If its the last column low and upp will surround the group
-                }
-                if (rval.i<lval.i) {   // if (type==INTSXP ? rval.i<lval.i : Rf_Scollate(rval.str, lval.str)<0) {  // for strings, we can jump to last line of scmp since we already dealt with NA and == above.
-                    low=mid;
-                } else {
-                    upp=mid;
-                }
-            }
-        }
+        }    
         if (low<upp-1) {
             INTEGER(retFirst)[lr] = (low+1)+1;
             INTEGER(retLast)[lr] = (upp-1)+1;

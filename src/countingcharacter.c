@@ -38,13 +38,12 @@ extern SEXP *saveds;
 extern R_len_t *savedtl, nalloc, nsaved;
 extern void savetl_init(), savetl(SEXP s), savetl_end();
 
-SEXP countingcharacter(SEXP x, SEXP sort, SEXP GER2140)
+SEXP countingcharacter(SEXP x, SEXP sort)
 {
     SEXP ans, tmp, *u, s;
     R_len_t i, n, k, cumsum, un=0, ualloc;
     if (!isString(x)) error("x is not character");
     if (!isLogical(sort)) error("sort is not logical");
-    if (!isLogical(GER2140)) error("GER2140 is not logical");
     n = LENGTH(x);
     savetl_init();
     for(i=0; i<n; i++) {
@@ -52,6 +51,8 @@ SEXP countingcharacter(SEXP x, SEXP sort, SEXP GER2140)
         if (TRUELENGTH(s)!=0) {
             savetl(s);    // pre-2.14.0 this will save all the uninitialised truelength (i.e. random data)
                           // TO DO: post 2.14.0 can we assume hash>0 and use sign bit to avoid this pass?
+                          // pre-v1.8.0 GER2140 was passed in here, but now removed. Make this optimisation if/when
+                          // when make data.table depend on R 2.14.0.
             TRUELENGTH(s)=0;
         }
     }
@@ -134,7 +135,7 @@ void ssort2(SEXP *x, R_len_t n)
 	for (i = h; i < n; i++) {
 	    v = x[i];
 	    j = i;
-		while (j>=h && x[j-h]!=v && Rf_Scollate(x[j-h],v) > 0)   // data.table
+		while (j>=h && x[j-h]!=v && Rf_Scollate(x[j-h],v) > 0)   // data.table. TO DO: test all ascii and then use strcmp.
 		// while (j >= h && scmp(x[j - h], v, TRUE) > 0)         // base
 		{ x[j] = x[j-h]; j-=h; }
 	    x[j] = v;

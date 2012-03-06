@@ -12,6 +12,10 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
+    o   character columns are now allowed in keys and are preferred to
+        factor. data.table() and setkey() no longer coerce character to
+        factor. Factors are still supported.
+
     o   New function set(DT,i,j,value) allows fast assignment to elements
         of DT. Similar to := but avoids the overhead of [.data.table, so is
         much faster inside a loop. Less flexible than :=, but as flexible
@@ -43,6 +47,8 @@ NEW FEATURES
         
     o   rbind.data.table() gains a use.names argument, by default TRUE.
         Set to FALSE to combine columns in order rather than by name.
+        
+    
 
 
 BUG FIXES
