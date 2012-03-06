@@ -14,7 +14,11 @@ NEW FEATURES
 
     o   character columns are now allowed in keys and are preferred to
         factor. data.table() and setkey() no longer coerce character to
-        factor. Factors are still supported.
+        factor. Factors are still supported. Implements FR#1493, FR#1224
+        and (partially) FR#951.
+        
+    o   unique(DT) and duplicated(DT) are now faster with character columns,
+        on unkeyed tables as well as keyed tables, FR#1724.
 
     o   New function set(DT,i,j,value) allows fast assignment to elements
         of DT. Similar to := but avoids the overhead of [.data.table, so is
