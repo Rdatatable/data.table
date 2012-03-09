@@ -464,11 +464,12 @@ test(164, foo(f), DT[,mean(b),by=d])
 test(165, subset(DT,a>2), DT[a>2])
 test(166, suppressWarnings(split(DT,DT$grp)[[2]]), DT[grp==2])
 if ("package:ggplot2" %in% search()) {
-    test(167,print(ggplot(DT,aes(b,f))+geom_point()),NULL)  # how to programmatically test it not only doesn't error but correct output, binary diff to pre-prepared pdf ?
+    test(167,names(print(ggplot(DT,aes(b,f))+geom_point())),c("data","panel","plot"))
+    # The names() is a stronger test that it has actually plotted, but also because test() sees the invisible result
     test(168,DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 because there are 5 groups in DT data at this stage, just need 2 to test
     # New test reported by C Neff on 11 Oct 2011
     if ("package:hexbin" %in% search())
-       test(168.5, print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp)), NULL)
+       test(168.5, names(print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp))), c("data","panel","plot"))
     else
        cat("Test 168.5 not run. If required call library(hexbin) first.\n")
     try(graphics.off(),silent=TRUE)
@@ -1540,6 +1541,10 @@ test(529, system.time(ans1<-match(a,b))["user.self"] > system.time(ans2<-chmatch
 test(530, ans1, ans2)
 # sorting a and b no longer makes a difference since both match and chmatch work via hash in some way or another
 cat("done\n")
+
+# Test that .set_row_names() is maintained on .SD for each group
+DT = data.table(a=c(1,1,2,2,2,3,3,3,3),b=1:9)
+test(531, DT[,length(rownames(.SD)),by=a], data.table(a=1:3,V1=2:4))
 
 ## See test-* for more tests
 

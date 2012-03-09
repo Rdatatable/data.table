@@ -48,7 +48,7 @@ void setSizes()
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP byval, SEXP itable, SEXP icols, SEXP iSD, SEXP idotnames, SEXP nomatchNA, SEXP verbose)
 {
     R_len_t i, j, k, rownum, ngrp, njval, nbyval, ansloc, maxn, r, thisansloc, thislen, any0, newlen, icol, size;
-    SEXP names, inames, bynames, ans, jval, naint, nareal, SD, BY, N;
+    SEXP names, inames, bynames, ans, jval, naint, nareal, SD, BY, N, rownames, s;
     SEXP *nameSyms;
     if (!sizesSet) setSizes();
     if (TYPEOF(order) != INTSXP) error("order not integer");
@@ -65,6 +65,15 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     
     names = getAttrib(SD, R_NamesSymbol);
     if (length(names) != length(SD)) error("length(names)!=length(SD)");
+    
+    for (s = ATTRIB(SD); s != R_NilValue && TAG(s)!=R_RowNamesSymbol; s = CDR(s));
+    // getAttrib0 basically but that's hidden in attrib.c
+    if (s==R_NilValue) error("row.names attribute of .SD not found");
+    rownames = CAR(s);
+    if (!isInteger(rownames) || LENGTH(rownames)!=2 || INTEGER(rownames)[0]!=NA_INTEGER) error("row.names of .SD isn't integer length 2 with NA as first item; i.e., .set_row_names(). [%s %d %d]",type2char(TYPEOF(rownames)),LENGTH(rownames),INTEGER(rownames)[0]);
+    // even for 0 length, R level code sets this to c(NA_integer_,0L) rather than integer(). Same thing but easier
+    // here in case first group was 0 rows we'd have to allocate it here, otherwise.
+    
     nameSyms = Calloc(length(names), SEXP);
     if (!nameSyms) error("Calloc failed to allocate %d nameSyms in dogroups",length(names));
     for(i = 0; i < length(SD); i++) {
@@ -255,6 +264,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
             }
         }
         INTEGER(N)[0] = INTEGER(starts)[i] == 0 ? 0 : INTEGER(lens)[i];  // .N is number of rows matched to, regardless of whether nomatch is 0 or NA
+        INTEGER(rownames)[1] = -thislen;  // the .set_row_names() of .SD
         for (j=0; j<length(SD); j++) {
             LENGTH(VECTOR_ELT(SD,j)) = thislen;
             defineVar(nameSyms[j], VECTOR_ELT(SD, j), env);

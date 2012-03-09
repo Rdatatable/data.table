@@ -509,6 +509,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 toint = as.integer(byval[[jj]])  # drops attributes (such as class) so as.vector() needed on next line
                 if (isTRUE(all.equal(as.vector(byval[[jj]]),toint))) {
                     mode(byval[[jj]]) = "integer"  # retains column attributes (such as IDateTime class)
+                    # TO DO: check no copy and remove coercion
                     next
                 }
                 else stop("Column ",jj," of 'by' is type 'double' and contains fractional data so cannot be coerced to integer in this particular case without losing information.")
@@ -615,8 +616,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
     oldlen = length(itestj)
     length(itestj) = max(len__)  # pad with NA to allocate enough for largest group, will re-use it in dogroups.c
-    if (itestj[1]==0 && !is.na(nomatch)) {
-        itestj[1] = NA_integer_
+    if (itestj[1L]==0 && !is.na(nomatch)) {
+        itestj[1L] = NA_integer_
         oldlen = 0L
     }
     if (!is.integer(itestj)) stop("Logical error: itestj is not type integer")
@@ -625,8 +626,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
     # TO DO: change all 1 to 1L internally.
     for (ii in seq(along=xvars)) setlength(SDenv$.SD[[ii]], oldlen)
-    SDenv$.BY = lapply(byval,"[",1)  # byval is list() not data.table
-    if (!is.na(nomatch) && is.na(itestj[1])) {
+    setattr(SDenv$.SD,"row.names",c(NA_integer_,as.integer(-oldlen)))
+    # .set_row_names() basically other than not integer() for 0 length, otherwise dogroups has no [1] to modify to -.N
+    SDenv$.BY = lapply(byval,"[",1L)  # byval is list() not data.table
+    if (!is.na(nomatch) && is.na(itestj[1L])) {
         # This is a very ugly switch. It gets tests 499 and 500 to work for now. TO DO: revisit and rationalise.
         SDenv$.N = 0L
         for (ii in ivars) {
@@ -642,6 +645,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     }
     for (ii in names(SDenv$.BY)) assign(ii, SDenv$.BY[[ii]], envir=SDenv)
     for (ii in xvars) assign(ii, SDenv$.SD[[ii]], envir=SDenv)
+    assign("print", function(x,...){base::print(x,...);NULL}, envir=SDenv)
+    # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
     lockBinding(".SD",SDenv)
     lockBinding(".BY",SDenv)
     lockBinding(".N",SDenv)
