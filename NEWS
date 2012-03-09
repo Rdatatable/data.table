@@ -84,9 +84,9 @@ BUG FIXES
         used length of row.names. Such as the recent update to ggplot2. Fixed.
         
     o   When grouped j consists of a print of an object (such as ggplot2), the print is now
-        masked to return NULL rather than the (large and irregular) object that ggplot2 now
-        returns since the recent update v0.9.0. Otherwise data.table tries to accumulate the
-        (albeit invisible) print object. The print mask is local to grouping, not generally. 
+        masked to return NULL rather than the object that ggplot2 returns since the
+        recent update v0.9.0. Otherwise data.table tries to accumulate the (albeit
+        invisible) print object. The print mask is local to grouping, not generally.
         
         
 THANKS TO
