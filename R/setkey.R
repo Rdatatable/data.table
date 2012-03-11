@@ -102,20 +102,13 @@ radixorder1 <- function(x) {
     if(typeof(x) == "logical") return(c(which(is.na(x)),which(!x),which(x))) # logical is a special case of radix sort; just 3 buckets known up front. TO DO - could be faster in C but low priority
     if(typeof(x) != "integer") # this allows factors; we assume the levels are sorted as we always do in data.table
         stop("radixorder1 is only for integer 'x'")
-    # Actually, we never set na.last=NA. We rely that NA's are first in the C binary search, lets be safe ...
-    # if(is.na(na.last))
-    #    return(.Internal(radixsort(x, TRUE, decreasing))[seq_len(sum(!is.na(x)))])
-    #    # this is a work around for what we consider a bug in sort.list on vectors with NA (inconsistent with order) reported to r-devel
-    #else
-    return(.Internal(radixsort(x, na.last=FALSE, decreasing=FALSE)))
+    sort.list(x, na.last=FALSE, decreasing=FALSE,method="radix")
+    # Always put NAs first, relied on in C binary search by relying on NA_integer_ being -maxint (checked in C).
 }
 
 regularorder1 <- function(x) {
     if(is.object(x)) x = xtfrm(x) # should take care of handling factors, Date's and others, so we don't need unlist
-    #if(is.na(na.last))
-    #    return(.Internal(order(TRUE, decreasing, x))[seq_len(sum(!is.na(x)))])
-    #else
-    return(.Internal(order(na.last=FALSE, decreasing=FALSE, x)))
+    sort.list(x, na.last=FALSE, decreasing=FALSE)
 }
 
 

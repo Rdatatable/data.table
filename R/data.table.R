@@ -539,9 +539,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             f__ = duplist(byval,order=o__)
             len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1))
             firstofeachgroup = o__[f__]
-            origorder = .Internal(order(na.last=FALSE, decreasing=FALSE, firstofeachgroup))
+            origorder = sort.list(firstofeachgroup, na.last=FALSE, decreasing=FALSE)
             # radixsort isn't appropriate in this case. 'firstofeachgroup' are row numbers from the
             # (likely) large table so if nrow>100,000, range will be >100,000. Save time by not trying radix.
+            # TO DO: remove sort.list call by changing fastorder to fastgroup in first place.
             f__ = f__[origorder]
             len__ = len__[origorder]
             firstofeachgroup = firstofeachgroup[origorder]
@@ -994,7 +995,10 @@ tail.data.table = function(x, n=6, ...) {
     }
     for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
     # This is why we currently still need c.factor.
-    # TO DO: much easier with character columns, when they are allowed.
+    # Now that character columns are allowed and recommended, c.factor isn't needed as much.
+    # Also, rbind is not called as much as the past since dogroups.c has moved a lot into C.
+    # TO DO: Move the do.call() into C and tidy up c.factor by removing it, depending on what
+    # rbind.data.frame does, considering consistency.
     setattr(l,"names",nm)
     setattr(l,"row.names",.set_row_names(length(l[[1]])))
     setattr(l,"class",c("data.table","data.frame"))

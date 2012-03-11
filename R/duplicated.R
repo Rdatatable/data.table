@@ -7,7 +7,8 @@ duplicated.data.table <- function(x, incomparables=FALSE, tolerance=.Machine$dou
     else {
         o = fastorder(x)
         f = o[duplist(x,o,tolerance=tolerance)]
-        f = f[.Internal(order(na.last=FALSE, decreasing=FALSE, f))]
+        f = f[sort.list(f, na.last=FALSE, decreasing=FALSE)]
+        # TO DO: remove sort.list call by replacing fastorder with fastgroup
         res[f] = FALSE
     }
     res
@@ -25,7 +26,8 @@ unique.data.table <- function(x, incomparables=FALSE, tolerance=.Machine$double.
         # TO DO: could be faster by grouping/hashing rather than sorting.
         o = fastorder(x)
         f = o[duplist(x,o,tolerance=tolerance)]
-        f = f[.Internal(order(na.last=FALSE, decreasing=FALSE, f))]
+        f = f[sort.list(f, na.last=FALSE, decreasing=FALSE)]
+        # TO DO: remove sort.list call by replacing fastorder with fastgroup
         res = x[f]
     }
     res
