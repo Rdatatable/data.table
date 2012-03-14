@@ -591,8 +591,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
         }
     } else {
-        if (!missing(.SDcols)) stop("j doesn't use .SD but .SDcols has been passed in")
+        if (!missing(.SDcols)) warning("This j doesn't use .SD but .SDcols has been passed in. Ignoring .SDcols. data.table inspects j anyway to see which columns are used, so there is only a need to provide .SDcols (for speed) when j uses .SD, and, you know or wish to specify a subset of columns for .SD. See ?data.table.")
         xvars = setdiff(intersect(ws,colnames(x)),bynames)
+        if (verbose) cat("Detected that j uses these columns (the rest, if any, are ignored for efficiency):",paste(xvars,collapse=","),"\n")
         # using a few named columns will be faster
         # Consider:   DT[,max(diff(date)),by=list(month=month(date))]
         # and:        DT[,sapply(.SD,sum),by=month(date)]

@@ -87,13 +87,19 @@ BUG FIXES
         masked to return NULL rather than the object that ggplot2 returns since the
         recent update v0.9.0. Otherwise data.table tries to accumulate the (albeit
         invisible) print object. The print mask is local to grouping, not generally.
-        
-        
+
+
 THANKS TO
 
     o   Joshua Ulrich for spotting a missing PACKAGE="data.table"
         in .Call in setkey.R, and suggesting as.list.default() and
         unique.default() to avoid dispatch for speed, all implemented.
+
+
+USER-VISIBLE CHANGES
+
+    o   Providing .SDcols when j doesn't use .SD is downgraded from error to warning,
+        and verbosity now reports which columns have been detected as used by j.
 
 
         **********************************************
