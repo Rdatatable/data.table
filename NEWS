@@ -93,8 +93,8 @@ BUG FIXES
         works :
             DT[,sum(v),by="column 1"]
         Thanks to Yang Zhang for reporting. Test added. As before, column names may be
-        back ticked in the usual way (in i, j and by); e.g.,
-            DT[,sum(`nice name`),by=list(`long column name`)]
+        back ticked in the usual R way (in i, j and by); e.g.,
+            DT[,sum(`nicely named var`+1),by=list(month(`long name for date column`))]
 
 
 THANKS TO
