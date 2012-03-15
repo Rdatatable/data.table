@@ -474,6 +474,12 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             bysubl = as.list.default(bysub)
         }
         if (mode(bysub) == "character") {
+            if (length(grep(",",bysub))) {
+                if (length(bysub)>1) stop("'by' is a character vector length ",length(by)," but one or more items include a comma. Either pass a vector of column names (which can contain spaces when check.names=FALSE, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.")
+                bysub = strsplit(bysub,split=",")[[1]]
+            }
+            tt = grep("^[^`]+$",bysub)
+            if (length(tt)) bysub[tt] = paste("`",bysub[tt],"`",sep="")
             bysub = parse(text=paste("list(",paste(bysub,collapse=","),")",sep=""))[[1]]
             bysubl = as.list.default(bysub)
         }

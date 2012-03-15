@@ -87,6 +87,14 @@ BUG FIXES
         masked to return NULL rather than the object that ggplot2 returns since the
         recent update v0.9.0. Otherwise data.table tries to accumulate the (albeit
         invisible) print object. The print mask is local to grouping, not generally.
+        
+    o   'by' was failing (bug #1880) when passed character column names where one or more
+        included a space, as allowed by data.table() when check.names=FALSE. So, this now
+        works :
+            DT[,sum(v),by="column 1"]
+        Thanks to Yang Zhang for reporting. Test added. As before, column names may be
+        back ticked in the usual way (in i, j and by); e.g.,
+            DT[,sum(`nice name`),by=list(`long column name`)]
 
 
 THANKS TO
