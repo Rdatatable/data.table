@@ -194,9 +194,9 @@ round to weeks, months, quarters, and years.
     (af <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,idate,itime"))
 
     af[, mean(a), by = "itime"]
-    af[, mean(a), by = "hour = hour(itime)"]
-    af[, mean(a), by = "wday = factor(weekdays(idate))"] 
-    af[, mean(a), by = "wday = wday(idate)"] 
+    af[, mean(a), by = list(hour = hour(itime))]
+    af[, mean(a), by = list(wday = factor(weekdays(idate)))] 
+    af[, mean(a), by = list(wday = wday(idate))] 
 
     as.POSIXct(af$idate) 
     as.POSIXct(af$idate, time = af$itime) 
