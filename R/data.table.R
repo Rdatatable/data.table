@@ -173,7 +173,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 }
 
 
-"[.data.table" = function (x, i, j, by=NULL, with=TRUE, nomatch=getOption("datatable.nomatch",NA), mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, .SDcols, verbose=getOption("datatable.verbose",FALSE), drop=NULL)
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch",NA), mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, .SDcols, verbose=getOption("datatable.verbose",FALSE), drop=NULL)
 {
     # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
     if (!cedta()) {
@@ -184,7 +184,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (!missing(i)) setkey(ans,NULL)  # See test 304
         return(ans)
     }
-    if (!missing(by) && missing(j)) stop("'by' is supplied but not j")
     if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
     if (roll && rolltolast) stop("roll and rolltolast cannot both be true")
     # TO DO. Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
@@ -192,7 +191,17 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     if (which && !missing(j)) stop("'which' is true but 'j' is also supplied")
     if (missing(i) && missing(j)) stop("must provide either i or j or both. Try DT instead of DT[].")
     if (!with && missing(j)) stop("j must be provided when with=FALSE")
-    if (!with && !missing(by)) stop("with must be TRUE when by is provided")
+    bysub=NULL
+    if (!missing(by)) bysub=substitute(by)
+    if (!missing(keyby)) {
+        if (!missing(by)) stop("Provide either 'by' or 'keyby' but not both")
+        by=bysub=substitute(keyby)
+        # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
+    }
+    if (!missing(by)) {
+        if (!with) stop("'with' must be TRUE when 'by' or 'keyby' is provided")
+        if (missing(j)) stop("'by' or 'keyby' is supplied but not j")
+    }
     irows = TRUE
     bywithoutby=FALSE
     if (!missing(i)) {
@@ -460,8 +469,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     } else {
         # Find the groups, using 'by' ...
         if (missing(by)) stop("logical error, by is missing")
-
-        bysub = substitute(by)
         bysubl = as.list.default(bysub)
         bysuborig = bysub
         if (is.name(bysub) && !(as.character(bysub) %chin% colnames(x))) {
@@ -475,7 +482,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
         if (mode(bysub) == "character") {
             if (length(grep(",",bysub))) {
-                if (length(bysub)>1) stop("'by' is a character vector length ",length(by)," but one or more items include a comma. Either pass a vector of column names (which can contain spaces when check.names=FALSE, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.")
+                if (length(bysub)>1) stop("'by' is a character vector length ",length(bysub)," but one or more items include a comma. Either pass a vector of column names (which can contain spaces when check.names=FALSE, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.")
                 bysub = strsplit(bysub,split=",")[[1]]
             }
             tt = grep("^[^`]+$",bysub)
@@ -497,15 +504,17 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && as.character(bysub)%chin%colnames(x)) ) {
                 # e.g. by is key(DT) or c("colA","colB"), but not the value of a character column
                 if (!all(byval %chin% colnames(x)))
-                    stop("'by' seems like a column name vector but these elements are not column names (first 5):",paste(head(byval[!byval%chin%colnames(x)],5),collapse=""))
+                    stop("'by' or 'keyby' seems like a column name vector but these elements are not column names (first 5):",paste(head(byval[!byval%chin%colnames(x)],5),collapse=""))
                 # byvars = byval
                 byval=as.list(x[,byval,with=FALSE])
             } else {
-                byval = list(byval) # name : by may be a single unquoted column name but it must evaluate to list so this is a convenience to users
-                setattr(byval, "names", as.character(bysuborig))
+                # by may be a single unquoted column name but it must evaluate to list so this is a convenience to users. Could also be a single expression here such as DT[,sum(v),by=colA%%2]
+                byval = list(byval) 
+                if (is.name(bysuborig))
+                    setattr(byval, "names", as.character(bysuborig))    
             }
         }
-        if (!is.list(byval)) stop("by must evaluate to vector or list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
+        if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to vector or list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
         for (jj in seq_len(length(byval))) {
             #if (is.character(byval[[jj]])) {
             #    byval[[jj]] = factor(byval[[jj]])
@@ -518,16 +527,16 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     # TO DO: check no copy and remove coercion
                     next
                 }
-                else stop("Column ",jj," of 'by' is type 'double' and contains fractional data so cannot be coerced to integer in this particular case without losing information.")
+                else stop("Column ",jj," of 'by' or 'keyby' is type 'double' and contains fractional data so cannot be coerced to integer in this particular case without losing information.")
             }
-            if (!typeof(byval[[jj]]) %chin% c("integer","logical","character")) stop("column or expression ",jj," of 'by' is type ",typeof(byval[[jj]]),". Do not quote column names. Useage: DT[,sum(colC),by=list(colA,month(colB))]")
+            if (!typeof(byval[[jj]]) %chin% c("integer","logical","character")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Useage: DT[,sum(colC),by=list(colA,month(colB))]")
         }
         tt = sapply(byval,length)
-        if (any(tt!=nrow(x))) stop("Each item in the 'by' list must be same length as rows in x (",nrow(x),"): ",paste(tt,collapse=","))
+        if (any(tt!=nrow(x))) stop("Each item in the 'by' or 'keyby' list must be same length as rows in x (",nrow(x),"): ",paste(tt,collapse=","))
         bynames = names(byval)
         if (is.null(bynames)) bynames = rep("",length(byval))
         if (any(bynames=="")) {
-            if (length(bysubl)<2) stop("When by is list() we expect something inside the brackets")
+            if (length(bysubl)<2) stop("When 'by' or 'keyby' is list() we expect something inside the brackets")
             for (jj in seq_along(bynames)) {
                 if (bynames[jj]=="") bynames[jj] = all.vars(bysubl[[jj+1]])[1]
                 # if you don't want the byvar named as the column (to use it in j as vector) then
@@ -722,6 +731,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     setattr(ans,"class",c("data.table","data.frame"))
     if ((!missing(by) && bysameorder) || (!missing(i) && haskey(i))) {
         setattr(ans,"sorted",colnames(ans)[seq_along(byval)])
+    } else if (!missing(keyby)) {
+        setkeyv(ans,colnames(ans)[seq_along(byval)])
+        # but if 'bykey' and 'bysameorder' then the setattr in branch above will run instead for
+        # speed (because !missing(by) when bykey, too)
     }
     settruelength(ans,0L)
     alloc.col(ans)

@@ -18,11 +18,12 @@
    Tip: one of the quickest ways to learn the features is to type \code{example(data.table)} and study the output at the prompt.
    
    *NEW* : help page for \code{\link{:=}}
+           \code{keyby} argument
 }
 \usage{
 data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 
-\method{[}{data.table}(x, i, j, by=NULL, with=TRUE, nomatch = getOption("datatable.nomatch",NA),
+\method{[}{data.table}(x, i, j, by, keyby, with=TRUE, nomatch = getOption("datatable.nomatch",NA),
   mult = "all", roll = FALSE, rolltolast = FALSE,
   which = FALSE, .SDcols,
   verbose=getOption("datatable.verbose",FALSE), drop=NULL)
@@ -81,6 +82,9 @@ data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
 
   Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.
 
+}
+  \item{keyby}{ An \emph{ad hoc by} just as \code{by} but with an additional \code{setkey()} on the \code{by} columns of the result, for convenience. Not to be confused with a \emph{keyed by} as defined above.
+  
 }
   \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}. The column names can be used as variables. When \code{with=FALSE}, \code{j} works as it does in \code{[.data.frame}.
 

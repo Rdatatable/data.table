@@ -1550,6 +1550,28 @@ test(531, DT[,length(rownames(.SD)),by=a], data.table(a=1:3,V1=2:4))
 DT = data.table("a b"=c(1,1,2,2,2),c=1:5,check.names=FALSE)
 test(532, DT[,sum(c),by="a b"], data.table("a b"=1:2,V1=c(3L,12L),check.names=FALSE))
 
+# Test keyby, new in v1.8.0
+DT = data.table(a=c(1,3,1,2,3,2),b=1:2,c=1:3,v=1:6)
+test(533, DT[,sum(v),by=a, keyby=a], error="not both")
+test(534, DT[,sum(v),by=a], data.table(a=c(1L,3L,2L),V1=c(4L,7L,10L)))  # retains appearance order
+ans = data.table(a=1:3,V1=c(4L,10L,7L),key="a")
+test(535, DT[,sum(v),keyby=a], ans)
+test(536, DT[,sum(v),keyby="a"], ans)
+var="a"
+test(537, DT[,sum(v),keyby=eval(var)], ans)
+a=quote(a%%2L)
+test(538, DT[,sum(v),by=eval(a)], data.table(a=1:0,V1=c(11L,10L)))
+test(539, DT[,sum(v),keyby=eval(a)], data.table(a=0:1,V1=c(10L,11L),key="a"))
+
+test(540, DT[,sum(v),keyby=c("a","b","c")]$V1, INT(1,3,4,6,5,2))
+test(541, DT[,sum(v),keyby="a,b,c"]$V1, INT(1,3,4,6,5,2))
+test(542, DT[,sum(v),keyby=c("a","b,c")], error="these elements are not column names")
+
+
+# TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name
+# TO DO: move timings into --timing
+
+
 ## See test-* for more tests
 
 ##########################
