@@ -41,6 +41,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose",FALSE))
         #    next
         #}
         if (typeof(.xi) == "double") {
+            # avoid new vector here, use reallyreal to issue warning that int might be more appropriate
             toint = as.integer(.xi)   # see [.data.table for similar logic, and comments
             if (isTRUE(all.equal(as.vector(.xi),toint))) {
                 if (verbose) cat("setkey changing the type of column '",i,"' from numeric to integer by reference, no fractional data present.\n",sep="")
@@ -51,21 +52,21 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose",FALSE))
             }
             stop("Column '",i,"' cannot be coerced to integer without losing fractional data.")
         }
-        if (is.factor(.xi)) {
-            # check levels are sorted, if not sort them, test 150
-            # TO DO ... do we need sorted levels now that we use chmatch rather than sortedmatch?
-            #           good to allow unsorted levels for convenience to avoid "1. orange", "2. apple" workaround
-            l = levels(.xi)
-            if (is.unsorted(l)) {
-                if (verbose) cat("setkey detected the levels of column '",i,"' were not sorted, so sorting them, by reference.\n",sep="")
-                r = rank(l)
-                l[r] = l
-                .xi = structure(r[as.integer(.xi)], levels=l, class="factor")
-                x[,i:=.xi,with=FALSE]
-                coerced=TRUE
-            }
-            next
-        }
+        #if (is.factor(.xi)) {
+        #    # check levels are sorted, if not sort them, test 150
+        #    # TO DO ... do we need sorted levels now that we use chmatch rather than sortedmatch?
+        #    #           good to allow unsorted levels for convenience to avoid "1. orange", "2. apple" workaround
+        #    l = levels(.xi)
+        #    if (is.unsorted(l)) {
+        #        if (verbose) cat("setkey detected the levels of column '",i,"' were not sorted, so sorting them, by reference.\n",sep="")
+        #        r = rank(l)
+        #        l[r] = l
+        #        .xi = structure(r[as.integer(.xi)], levels=l, class="factor")
+        #        x[,i:=.xi,with=FALSE]
+        #        coerced=TRUE
+        #    }
+        #    next
+        #}
         if (!typeof(.xi) %chin% c("integer","logical","character")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not (currently) allowed as a key column type.")
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")

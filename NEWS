@@ -17,6 +17,13 @@ NEW FEATURES
         factor. Factors are still supported. Implements FR#1493, FR#1224
         and (partially) FR#951.
         
+    o   setkey() no longer sorts factor levels. This should be more convenient
+        and compatible with ordered factors where the levels are 'labels', in
+        some order other than alphabetical. The established advice to paste each
+        level with an ordinal prefix, or use another table to hold the factor
+        labels instead of a factor column, is no longer needed. Solves FR#1420.
+        Thanks to Damian Betebenner and Allan Engelhardt raising on datatable-help.
+        
     o   unique(DT) and duplicated(DT) are now faster with character columns,
         on unkeyed tables as well as keyed tables, FR#1724.
 
@@ -60,9 +67,12 @@ NEW FEATURES
         by FAQ 3.3.  Thanks to Yike Lu for the suggestion and discussion (FR#1780).
         
     o   Single by (or keyby) expressions no longer need to be wrapped in list(),
-        for convenience; e.g.,
+        for convenience, implementing FR#1743; e.g., these now works :
             DT[,sum(v),by=a%%2L]
-
+            DT[,sum(v),by=month(date)]
+        instead of needing :
+            DT[,sum(v),by=list(a%%2L)]
+            DT[,sum(v),by=list(month(date))]
 
 BUG FIXES
 

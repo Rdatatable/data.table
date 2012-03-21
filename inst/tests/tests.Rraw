@@ -426,7 +426,7 @@ dt = data.table(a=c(1L,4L,5L), b=1:3, key="a")
 test(148, dt[CJ(2:3),roll=TRUE], data.table(a=c(2L,3L),b=c(1L,1L),key="a"))
 test(149, dt[J(2:3),roll=TRUE], data.table(a=c(2L,3L),b=c(1L,1L)))  # in future this will detect the subset is ordered and retain the key
 
-# 150:158 test out of order factor levels in key columns
+# 150:158 test out of order factor levels in key columns (now allowed from v1.8.0)
 dt = data.table(x=factor(c("c","b","a"),levels=c("b","a","c")),y=1:3)
 setkey(dt,x)
 test(150, dt["b",y]$y, 2L)
@@ -439,13 +439,14 @@ a = data.table(x=factor(letters[rep(1:5, each =2)], levels=letters[5:1]),
                z=1:10)
 test(152, is.unsorted(levels(a$x)), TRUE)
 test(153, is.unsorted(levels(a$y)), TRUE)
-test(154, a[,sum(z),by=x][1,paste(x,V1)], "a 3")  # this result seems more correct now that ad hoc by doesn't sort the groups
-before = a[,sum(z),by=y]
-setkey(a,x)
-test(155, is.unsorted(levels(a$x)), FALSE)
-test(156, is.unsorted(levels(a$y)), TRUE)   # non-key columns are ok to have unsorted levels
-test(157, a[,sum(z),by=x][1,paste(x,V1)], "a 3")
-test(158, a[,sum(z),by=y], before)
+test(154, a[,sum(z),by=x][1,paste(x,V1)], "a 3")  # ad hoc by doesn't sort the groups so 'a' (5th level) should be first
+setkey(a,x)    # 'e' (level 1) should come first now.
+test(155, is.unsorted(levels(a$x)), TRUE)
+test(156, is.unsorted(levels(a$y)), TRUE)
+test(157, a[,sum(z),by=x][1,paste(x,V1)], "e 19")  # 1st level is now first
+test(158, a[,sum(z),by=y][1,paste(y,V1)], "h 19")  # not 'f'
+test(158.5, a[,sum(z),keyby=y][1,paste(y,V1)], "j 15")  # not 'f' either
+
 
 # tests of by expression variables
 DT = data.table( a=1:5, b=11:50, d=c("A","B","C","D"), f=1:5, grp=1:5 )
