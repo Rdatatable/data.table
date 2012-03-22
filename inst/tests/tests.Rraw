@@ -1573,6 +1573,22 @@ DT = data.table(a=1:4,date=as.IDate("2012-02-28")+0:3,v=5:8)
 test(543, DT[,sum(v),by=a%%2L], data.table(a=1:0,V1=c(12L,14L)))
 test(544, DT[,sum(v),by=month(date)], data.table(month=2:3,V1=c(11L,15L)))
 
+# Test that factor levels no longer need to be sorted, and that 'ordered' class is retained.
+# Posted by Allan Engelhardt ...
+F = factor(LETTERS[1:3], levels=rev(LETTERS), ordered=TRUE)
+DT = data.table(A=F,B=F,v=1:3, key="A")
+test(545,is.ordered(DT$A) && is.ordered(DT$B))
+test(546,DT["A",v]$v,1L)
+# Posted by Damian Betebenner ...
+set.seed(123)
+my.course.sample = sample(1:5, 10, replace=TRUE)
+Y = factor(my.course.sample, levels=1:5, labels=c("Basic Math", "Calculus", "Geometry", "Algebra I", "Algebra II"))
+DT = data.table(ID=1:10, COURSE=Y)
+test(547, DT[,sum(ID),by=COURSE]$V1, INT(1,2,29,17,6))
+setkey(DT, COURSE)
+test(548, DT[,sum(ID),by=key(DT)]$V1, INT(6,1,29,2,17))
+
+
 
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name
 # TO DO: move timings into --timing

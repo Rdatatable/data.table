@@ -22,7 +22,8 @@ NEW FEATURES
         some order other than alphabetical. The established advice to paste each
         level with an ordinal prefix, or use another table to hold the factor
         labels instead of a factor column, is no longer needed. Solves FR#1420.
-        Thanks to Damian Betebenner and Allan Engelhardt raising on datatable-help.
+        Thanks to Damian Betebenner and Allan Engelhardt raising on datatable-help
+        and their tests have been added verbatim to the test suite.
         
     o   unique(DT) and duplicated(DT) are now faster with character columns,
         on unkeyed tables as well as keyed tables, FR#1724.
