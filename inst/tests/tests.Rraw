@@ -1328,8 +1328,8 @@ test(457, DT[DT2, list(val, val2), nomatch=0], data.table(id=c(1L,2L,2L),val=1:3
 # Test bysameorder edge cases, #1631
 DT = data.table(a=1:3,v=4:9,key="a")
 test(458, DT[,sum(v),by=list(a%%2L)], data.table(a=c(1L,0L),V1=c(26L,13L)))
-test(459, DT[, list(sum(v)), list(ifelse(a == 2, NA, 1))], data.table(a=c(1L,NA_integer_),V1=c(26L,13L)))
-test(460, DT[, list(sum(v)), list(ifelse(a == 2, 1, NA))], data.table(a=c(NA_integer_,1L),V1=c(26L,13L)))
+test(459, DT[, list(sum(v)), list(ifelse(a == 2, NA, 1))], data.table(ifelse=c(1L,NA_integer_),V1=c(26L,13L)))
+test(460, DT[, list(sum(v)), list(ifelse(a == 2, 1, NA))], data.table(ifelse=c(NA_integer_,1L),V1=c(26L,13L)))
 test(461, DT[,sum(v),by=a], data.table(a=1:3,V1=c(11L,13L,15L),key="a"))
 
 # Test loading from file (which resets tl to 0 in R 2.14.0+, and unitialized random number in 2.13.2-)
@@ -1567,6 +1567,11 @@ test(539, DT[,sum(v),keyby=eval(a)], data.table(a=0:1,V1=c(10L,11L),key="a"))
 test(540, DT[,sum(v),keyby=c("a","b","c")]$V1, INT(1,3,4,6,5,2))
 test(541, DT[,sum(v),keyby="a,b,c"]$V1, INT(1,3,4,6,5,2))
 test(542, DT[,sum(v),keyby=c("a","b,c")], error="these elements are not column names")
+
+# Test single expressions passed to by, FR#1743 in v1.8.0
+DT = data.table(a=1:4,date=as.IDate("2012-02-28")+0:3,v=5:8)
+test(543, DT[,sum(v),by=a%%2L], data.table(a=1:0,V1=c(12L,14L)))
+test(544, DT[,sum(v),by=month(date)], data.table(month=2:3,V1=c(11L,15L)))
 
 
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name

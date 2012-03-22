@@ -73,6 +73,15 @@ NEW FEATURES
         instead of needing :
             DT[,sum(v),by=list(a%%2L)]
             DT[,sum(v),by=list(month(date))]
+            
+    o   Unnamed 'by' expressions have always been inspected using all.vars() to make
+        a guess at a sensible column name for the result. This guess now includes
+        function names via all.vars(functions=TRUE), for convenience; e.g.,
+            DT[,sum(v),by=month(date)]
+        now returns a column called 'month' rather than 'date'. It is more robust to
+        explicitly name columns, though; e.g.,
+            DT[,sum(v),by=list("Guaranteed name"=month(date))]
+
 
 BUG FIXES
 

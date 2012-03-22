@@ -509,7 +509,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 byval=as.list(x[,byval,with=FALSE])
             } else {
                 # by may be a single unquoted column name but it must evaluate to list so this is a convenience to users. Could also be a single expression here such as DT[,sum(v),by=colA%%2]
-                byval = list(byval) 
+                byval = list(byval)
+                bysubl = c(as.name("list"),bysuborig)  # for guessing the column name below
                 if (is.name(bysuborig))
                     setattr(byval, "names", as.character(bysuborig))    
             }
@@ -538,9 +539,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (any(bynames=="")) {
             if (length(bysubl)<2) stop("When 'by' or 'keyby' is list() we expect something inside the brackets")
             for (jj in seq_along(bynames)) {
-                if (bynames[jj]=="") bynames[jj] = all.vars(bysubl[[jj+1]])[1]
-                # if you don't want the byvar named as the column (to use it in j as vector) then
-                # rename the byvar using list() notation.
+                if (bynames[jj]=="") {
+                    # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
+                    tt = grep("^eval|^[^a-zA-Z]",all.vars(bysubl[[jj+1]],functions=TRUE),invert=TRUE,value=TRUE)[1]
+                    if (!length(tt)) tt = all.vars(bysubl[[jj+1]])[1]
+                    bynames[jj] = tt
+                    # if user doesn't like this inferred name, user has to use by=list() to name the column
+                }
             }
             setattr(byval, "names", bynames)
         }
