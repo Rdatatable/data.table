@@ -28,6 +28,16 @@
     }
     "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one line to base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
     # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onAttach
+    
+    # Set options for the speed boost in v1.8.0 by avoiding 'default' arg of getOption(,default=)
+    opts = c("datatable.verbose"="FALSE",
+             "datatable.dfdispatchwarn"="TRUE",
+             "datatable.alloccol"="quote(max(100,2*ncol(DT)))",
+             "datatable.nomatch"="NA_integer_")
+    for (i in setdiff(names(opts),names(options()))) {
+        eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))
+    }    
     invisible()
 }
+
 

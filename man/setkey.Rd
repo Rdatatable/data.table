@@ -14,8 +14,8 @@
   Sorts a data.table and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always. The table is changed \emph{by reference}. No copy is made at all, other than temporary working memory as large as one column.
 }
 \usage{
-setkey(x, ..., verbose=getOption("datatable.verbose",FALSE))
-setkeyv(x, cols, verbose=getOption("datatable.verbose",FALSE))
+setkey(x, ..., verbose=getOption("datatable.verbose"))
+setkeyv(x, cols, verbose=getOption("datatable.verbose"))
 key(x)
 haskey(x)
 copy(x)

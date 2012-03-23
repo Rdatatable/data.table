@@ -173,7 +173,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 }
 
 
-"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch",NA), mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, .SDcols, verbose=getOption("datatable.verbose",FALSE), drop=NULL)
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), drop=NULL)
 {
     # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
     if (!cedta()) {
@@ -187,7 +187,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
     if (roll && rolltolast) stop("roll and rolltolast cannot both be true")
     # TO DO. Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
-    if (!(is.na(nomatch) || nomatch==0)) stop("nomatch must either be NA or 0")
+    if (!(is.na(nomatch) || nomatch==0L)) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
     if (which && !missing(j)) stop("'which' is true but 'j' is also supplied")
     if (missing(i) && missing(j)) stop("must provide either i or j or both. Try DT instead of DT[].")
     if (!with && missing(j)) stop("j must be provided when with=FALSE")
@@ -247,7 +247,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                     else {
                         if (!is.factor(x[[rc]])) stop("i.",colnames(i)[lc]," is a factor joining to x.",colnames(x)[rc]," which is not a factor. Factors must join to factors or characters.")
                         # TO DO: use := here to avoid the copy.
-                        i[[lc]] = chmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA)[i[[lc]]]
+                        i[[lc]] = chmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA_integer_)[i[[lc]]]
                         levels(i[[lc]]) = levels(x[[rc]])
                         class(i[[lc]]) = "factor"
                     }
@@ -402,9 +402,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 if (!length(tt)) return(x)                     # DT[FALSE,z:=42L]
                 tt
             }
-        if (!missing(verbose) && verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
-        # the !missing is for speed to avoid calling getOption() which then calls options().
-        # better to do verbosity before calling C, to make tracing easier if there's a problem in assign.c
+        if (verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
         return(.Call("assign",x,ssrows,cols,newcolnames,rhs,verbose,PACKAGE="data.table"))
         # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
         # Could return number of rows updated but even when wrapped in invisible() it seems
@@ -955,7 +953,7 @@ tail.data.table = function(x, n=6, ...) {
         x = alloc.col(x,length(x)+length(newcolnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
         # search for one other .Call to assign in [.data.table to see how it differs
     }
-    verbose=getOption("datatable.verbose",FALSE)
+    verbose=getOption("datatable.verbose")
     .Call("assign",x,i,cols,newcolnames,value,verbose,PACKAGE="data.table")
     settruelength(x,0L) #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
     alloc.col(x)
@@ -1226,7 +1224,7 @@ Ops.data.table <- function(e1, e2 = NULL)
 
 
 split.data.table = function(...) {
-    if (cedta() && getOption("datatable.dfdispatchwarn",TRUE))  # or user can use suppressWarnings
+    if (cedta() && getOption("datatable.dfdispatchwarn"))  # or user can use suppressWarnings
         warning("split is inefficient. It copies memory. Please use [,j,by=list(...)] syntax. See data.table FAQ.")
     NextMethod()  # allow user to do it though, split object will be data.table's with 'NA' repeated in row.names silently
 }
@@ -1244,7 +1242,7 @@ copy = function(x) {
     # may be tricky; more robust to rely on R's duplicate which deep copies.
 }
 
-alloc.col = function(DT, n=getOption("datatable.alloccol",quote(max(100,2*ncol(DT)))), verbose=getOption("datatable.verbose",FALSE)) 
+alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("datatable.verbose")) 
 {
     name = substitute(DT)
     if (identical(name,quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")
@@ -1256,7 +1254,7 @@ alloc.col = function(DT, n=getOption("datatable.alloccol",quote(max(100,2*ncol(D
     ans
 }
 
-selfrefok = function(DT,verbose=getOption("datatable.verbose",FALSE)) {
+selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
     .Call("selfrefokwrapper",DT,verbose,PACKAGE="data.table")
 }
 

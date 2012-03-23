@@ -12,7 +12,7 @@ test.data.table = function(echo=FALSE) {
     # for (fn in dir(d,"*.[rR]$",full=TRUE)) {  # testthat runs those
     for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
         cat("Running",fn,"\n")
-        oldverbose = getOption("datatable.verbose",FALSE)
+        oldverbose = getOption("datatable.verbose")
         if (echo) options(datatable.verbose=TRUE)
         sys.source(fn,envir=new.env(parent=.GlobalEnv))  # using source(local=) would break 2.12 compatibility
         options(data.table.verbose=oldverbose)

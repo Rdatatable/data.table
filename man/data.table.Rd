@@ -23,10 +23,12 @@
 \usage{
 data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 
-\method{[}{data.table}(x, i, j, by, keyby, with=TRUE, nomatch = getOption("datatable.nomatch",NA),
+\method{[}{data.table}(x, i, j, by, keyby, with=TRUE,
+  nomatch = getOption("datatable.nomatch"),   # default: NA_integer_
   mult = "all", roll = FALSE, rolltolast = FALSE,
   which = FALSE, .SDcols,
-  verbose=getOption("datatable.verbose",FALSE), drop=NULL)
+  verbose=getOption("datatable.verbose"),     # default: FALSE
+  drop=NULL)
 }
 \arguments{
   \item{\dots}{ Just as \code{\dots} in \code{\link{data.frame}}. Usual recycling rules are applied to vectors of different lengths to create a list of equal length vectors.

@@ -1,4 +1,4 @@
-setkey = function(x, ..., verbose=getOption("datatable.verbose",FALSE))
+setkey = function(x, ..., verbose=getOption("datatable.verbose"))
 {
     if (is.character(x)) stop("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
     cols = getdots()
@@ -7,7 +7,7 @@ setkey = function(x, ..., verbose=getOption("datatable.verbose",FALSE))
     setkeyv(x,cols,verbose=verbose)
 }
 
-setkeyv = function(x, cols, verbose=getOption("datatable.verbose",FALSE))
+setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
 {
     if (is.null(cols)) {   # this is done on a data.frame when !cedta at top of [.data.table
         setattr(x,"sorted",NULL)
@@ -113,7 +113,7 @@ regularorder1 <- function(x) {
 }
 
 
-fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.verbose",FALSE))
+fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.verbose"))
 {
     # lst is a list or anything thats stored as a list and can be accessed with [[.
     # 'which' may be integers or names
