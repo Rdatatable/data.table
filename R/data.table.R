@@ -53,7 +53,7 @@ null.data.table = function() {
     alloc.col(ans)
 }
 
-data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
+data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 {
     # creates a data.table directly, without the overhead of creating a data.frame first (ie the overhead of rownames)
     # you can convert from matrix and data.frame, to data.table, and retain the rownames in the first column - see as.data.table.matrix()
@@ -482,7 +482,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         }
         if (mode(bysub) == "character") {
             if (length(grep(",",bysub))) {
-                if (length(bysub)>1) stop("'by' is a character vector length ",length(bysub)," but one or more items include a comma. Either pass a vector of column names (which can contain spaces when check.names=FALSE, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.")
+                if (length(bysub)>1) stop("'by' is a character vector length ",length(bysub)," but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.")
                 bysub = strsplit(bysub,split=",")[[1]]
             }
             tt = grep("^[^`]+$",bysub)

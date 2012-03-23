@@ -21,7 +21,7 @@
            \code{keyby} argument
 }
 \usage{
-data.table(..., keep.rownames=FALSE, check.names=TRUE, key=NULL)
+data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 
 \method{[}{data.table}(x, i, j, by, keyby, with=TRUE, nomatch = getOption("datatable.nomatch",NA),
   mult = "all", roll = FALSE, rolltolast = FALSE,

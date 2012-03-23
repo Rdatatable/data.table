@@ -118,12 +118,13 @@ BUG FIXES
         invisible) print object. The print mask is local to grouping, not generally.
         
     o   'by' was failing (bug #1880) when passed character column names where one or more
-        included a space, as allowed by data.table() when check.names=FALSE. So, this now
-        works :
+        included a space. So, this now works :
             DT[,sum(v),by="column 1"]
-        Thanks to Yang Zhang for reporting. Test added. As before, column names may be
+        and j retains spaces in column names rather than replacing spaces with "."; e.g.,
+            DT[,list("a b"=1)]
+        Thanks to Yang Zhang for reporting. Tests added. As before, column names may be
         back ticked in the usual R way (in i, j and by); e.g.,
-            DT[,sum(`nicely named var`+1),by=list(month(`long name for date column`))]
+            DT[,sum(`nicely named var`+1),by=month(`long name for date column`)]
 
 
 THANKS TO
@@ -137,6 +138,10 @@ USER-VISIBLE CHANGES
 
     o   Providing .SDcols when j doesn't use .SD is downgraded from error to warning,
         and verbosity now reports which columns have been detected as used by j.
+        
+    o   check.names is now FALSE by default, for convenience when working with column
+        names with spaces and other special characters, which are now fully supported.
+        This difference to data.frame has been added to FAQ 2.17.
 
 
         **********************************************
