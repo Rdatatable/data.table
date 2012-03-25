@@ -132,6 +132,9 @@ BUG FIXES
         Thanks to Yang Zhang for reporting. Tests added. As before, column names may be
         back ticked in the usual R way (in i, j and by); e.g.,
             DT[,sum(`nicely named var`+1),by=month(`long name for date column`)]
+            
+    o   unique() on an unkeyed table including character columns now works correctly, fixing
+        #1725. Thanks to Steven Bagley for reproducible example. Test added.
 
 
 THANKS TO
