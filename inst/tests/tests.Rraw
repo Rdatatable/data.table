@@ -1593,6 +1593,13 @@ test(549, DT[,sum(ID),by=COURSE]$V1, INT(1,2,29,17,6))
 setkey(DT, COURSE)
 test(550, DT[,sum(ID),by=key(DT)]$V1, INT(6,1,29,2,17))
 
+# Another test of DT[i] syntax from datatable-unaware packages, #1794 from ilprincipe.
+DF = structure(list(sample = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), .Label = c("panel.1yr", "panel.2yr", "panel.3yr", "panel.inc", "pre.inc", "pre.prev", "post.inc", "post.prev"), class = "factor"), base = c(2003, 2003, 2003, 2003, 2003, 2003, 2003, 2003, 2002, 2002, 2002, 2002, 2002, 2002, 2002, 2002), ref = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L), .Label = c("2004", "2002-2004", "2001", "2000", "2009", "2008"), class = "factor"), var = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L), .Label = c("distance", "time"), class = "factor"), treated = c(0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1), distance = c(10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05), all = c(602L, 6357L, 8528L, 9272L, 435L, 2438L, 3456L, 6360L, 245L, 2693L, 3699L, 4084L, 187L, 983L, 1400L, 2660L), di.recip = c(5L, 39L, 57L, 62L, 4L, 16L, 22L, 45L, 2L, 25L, 36L, 37L, 1L, 11L, 16L, 35L), irr = c(0.00830564784053156, 0.00613496932515337, 0.00668386491557223, 0.00668679896462468, 0.00919540229885057, 0.00656275635767022, 0.00636574074074074, 0.00707547169811321, 0.00816326530612245, 0.00928332714444857, 0.0097323600973236, 0.00905974534769833, 0.0053475935828877, 0.0111902339776195, 0.0114285714285714, 0.0131578947368421)), .Names = c("sample", "base", "ref", "var", "treated", "distance", "all", "di.recip", "irr"), row.names = c(NA, 16L), class = "data.frame")
+DT = as.data.table(DF)
+test(551, nrow(reshape(DT, v.names = c("all", "di.recip", "irr"),
+              timevar = "treated", idvar = c("sample", "var", "distance"), 
+              direction = "wide" )), 8L)
+
 
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name
 # TO DO: move timings into --timing
