@@ -1605,6 +1605,11 @@ DT = data.table(a=c("1","1"), b=c(2,2))
 test(552, is.character(DT$a))
 test(553, unique(DT), data.table(a="1",b=2))
 
+# Test bug #1726 from Ivan Zhang.
+DT = data.table(V1=c('a', 'b', 'a'), V2 = c('hello', 'ello', 'llo'))
+test(554, nrow(DT[V1=='a' & V2 %like% 'll']), 2L)
+test(555, nrow(DT[V1=='a' & V2 %like% 'ello']), 1L)
+
 
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".
 # TO DO: move timings into --timing

@@ -134,7 +134,11 @@ BUG FIXES
             DT[,sum(`nicely named var`+1),by=month(`long name for date column`)]
             
     o   unique() on an unkeyed table including character columns now works correctly, fixing
-        #1725. Thanks to Steven Bagley for reproducible example. Test added.
+        #1725. Thanks to Steven Bagley for reporting. Test added.
+        
+    o   %like% now returns logical (rather than integer locations) so that it can be
+        combined with other i clauses, fixing #1726. Thanks to Ivan Zhang for reporting. Test
+        added.
 
 
 THANKS TO

@@ -11,17 +11,18 @@ vector %like% pattern
 }
 \arguments{
    \item{vector}{ Either a character vector or a factor. A factor is faster. }
-   \item{pattern}{ Passed on to \code{\link{regexpr}}. }
+   \item{pattern}{ Passed on to \code{\link{grepl}}. }
 }
 % \details{
 % }
 \value{
-    Integer vector containing the locations of vector which match the pattern using regexpr.
+    Logical vector, \code{TRUE} for items that match \code{pattern}.
 }
 \note{ Current implementation does not make use of sorted keys. }
-\seealso{ \code{\link{data.table}}, \code{\link{regexpr}} }
+\seealso{ \code{\link{data.table}}, \code{\link{grepl}} }
 \examples{
     DT = data.table(Name=c("Mary","George","Martha"), Salary=c(2,3,4))
     DT[Name \%like\% "^Mar"]
 }
 \keyword{ data }
+
