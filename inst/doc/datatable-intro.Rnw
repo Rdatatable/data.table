@@ -71,17 +71,13 @@ Some users regularly work with 20 or more tables in memory, rather like a databa
 The result of \code{tables()} is itself a \code{data.table}, returned silently, so that \code{tables()} 
 can be used in programs. \code{tables()} is unrelated to the base function \code{table()}.
 
-Also note that \code{data.table()} automatically converts character vectors to factors.
+To see the column types\footnote{As from v1.8.0, \code{data.table()} no longer converts \code{character} to \code{factor}.} :
 
 <<>>=
 sapply(DT,class)
 @
 
-Users should rarely need to know this has occurred. See \code{?factor} if you are unfamiliar
-with factors. Factors will appear to you as though they are character columns. You can refer to them just as
-though they are character.
-
-You may have noticed the empty column KEY in the result of \code{tables()} above. This is the subject of the next section, the first of the 3 main features of the package.
+You may have noticed the empty column KEY in the result of \code{tables()} earlier above. This is the subject of the next section, the first of the 3 main features of the package.
 
 
 \section*{1. Keys}
@@ -93,7 +89,7 @@ most one name. A person has at least two names, a first name and a second
 name. That is useful to organise a telephone directory, for example, which is sorted by surname, then first name.
 However, each row in a \code{data.frame} can only have one name.
 
-A \emph{key} consists of one or more columns of rownames, which may be integer, factor or some other class, not
+A \emph{key} consists of one or more columns of rownames, which may be integer, factor, character or some other class, not
 simply character. Furthermore, the rows are sorted by the key. Therefore, a \code{data.table} can have at most one key,
 because it cannot be sorted in more than one way.
 
