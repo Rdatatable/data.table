@@ -338,7 +338,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     av = all.vars(jsub,TRUE)
     if (":=" %chin% sapply(sapply(jsub,all.vars,TRUE),"[",1)) {   # TO DO: Quite slow, move the sapply(sapply into C.
         # The double sapply is for FAQ 4.5
-        if (!missing(by)) stop("Combining := in j with by is not yet implemented. Please let maintainer('data.table') know if you are interested in this.")
+        if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
+        if (!missing(by)) stop("Combining := in j with by is not yet implemented.")
         if (bywithoutby && nrow(i)>1) stop("combining bywithoutby with := in j is not yet implemented.")
         if (as.character(jsub[[1]]) != ":=") stop("Currently only one `:=` may be present in j. This may be expanded in future.")
         rhsav = all.vars(jsub[[3]],TRUE)
@@ -667,6 +668,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     for (ii in xvars) assign(ii, SDenv$.SD[[ii]], envir=SDenv)
     assign("print", function(x,...){base::print(x,...);NULL}, envir=SDenv)
     # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
+    setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=. 
     lockBinding(".SD",SDenv)
     lockBinding(".BY",SDenv)
     lockBinding(".N",SDenv)
@@ -1235,6 +1237,7 @@ split.data.table = function(...) {
 copy = function(x) {
     newx = .Call("copy",x,PACKAGE="data.table")  # copies at length but R's duplicate() also copies truelength over.
     if (!is.data.table(x)) return(newx)   # e.g. in as.data.table.list() the list is copied before changing to data.table
+    setattr(newx,".data.table.locked",NULL)
     settruelength(newx,0L)
     alloc.col(newx)
     # TO DO: speedup duplicate.c using memcpy, suggested to r-devel, would benefit copy()

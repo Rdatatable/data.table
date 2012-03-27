@@ -10,6 +10,11 @@ This NEWS file summarises the main changes.
         **                                          **
         **********************************************
 
+BUG FIXES
+
+    o   DT[,f(.SD),by=colA] where f(x)=x[,colB:=1L] was a segfault, bug#1727.
+        This is now a graceful error to say that using := in .SD's j is
+        reserved for future use. Thanks to Leon Baum for reporting.
 
 
         **********************************************

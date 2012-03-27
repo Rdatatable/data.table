@@ -1610,6 +1610,12 @@ DT = data.table(V1=c('a', 'b', 'a'), V2 = c('hello', 'ello', 'llo'))
 test(554, nrow(DT[V1=='a' & V2 %like% 'll']), 2L)
 test(555, nrow(DT[V1=='a' & V2 %like% 'ello']), 1L)
 
+# Test can't := to .SD, #1727
+DT = data.table(x = 1:5, y = rnorm(5))
+test(556, DT[,.SD[,z:=rnorm(1)],by=x], error="not yet implemented")  # will change to error below when := by group is done 
+f = function(.SD) .SD[,z:=rnorm(1)]
+test(557, DT[, f(.SD), by=x], error="[.]SD is locked.*reserved for possible future use")
+
 
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".
 # TO DO: move timings into --timing
