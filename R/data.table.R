@@ -27,7 +27,17 @@ print.data.table = function (x, digits = NULL, quote = FALSE, right = TRUE, nrow
 }
 
 format.data.table <- function (x, ..., justify = "none") {
-    do.call("cbind",lapply(x,format,justify=justify,...))
+    format.item = function(x) {
+        if (is.atomic(x))
+            paste(c(head(x,6),if(length(x)>6)""),collapse=",")
+        else
+            paste("<",class(x)[1],">",sep="")
+    }
+    do.call("cbind",lapply(x,function(col,...){
+        if (is.list(col))
+            col = sapply(col,format.item)
+        format(col,justify=justify,...)
+    }))
 }
 
 is.data.table = function(x) inherits(x, "data.table")

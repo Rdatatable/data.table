@@ -1616,6 +1616,12 @@ test(556, DT[,.SD[,z:=rnorm(1)],by=x], error="not yet implemented")  # will chan
 f = function(.SD) .SD[,z:=rnorm(1)]
 test(557, DT[, f(.SD), by=x], error="[.]SD is locked.*reserved for possible future use")
 
+# Test printing on nested data.table, bug #1803
+DT = data.table(x=letters[1:3],y=list(1:10,letters[1:4],data.table(a=1:3,b=4:6)))
+test(558, capture.output(print(DT)),
+          c("     x            y","[1,] a 1,2,3,4,5,6,","[2,] b      a,b,c,d","[3,] c <data.table>"))
+test(559, setkey(DT,x)["a",y][[2]][[1]], 1:10)
+
 
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".
 # TO DO: move timings into --timing

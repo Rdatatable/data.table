@@ -10,6 +10,22 @@ This NEWS file summarises the main changes.
         **                                          **
         **********************************************
 
+NEW FEATURES
+
+    o   Prettier printing of list columns. The first 6 items of atomic vectors
+        are collapsed with "," followed by a trailing "," if there are more than
+        6, FR#1608. This difference to data.frame has been added to FAQ 2.17. 
+        Embedded objects (such as a data.table) print their class name only to avoid
+        seemingly mangled output, bug #1803. Thanks to Yike Lu for reporting.
+        For example:
+        > data.table(x=letters[1:3],
+                     y=list( 1:10, letters[1:4], data.table(a=1:3,b=4:6) ))
+             x            y
+        [1,] a 1,2,3,4,5,6,
+        [2,] b      a,b,c,d
+        [3,] c <data.table>
+        
+
 BUG FIXES
 
     o   DT[,f(.SD),by=colA] where f(x)=x[,colB:=1L] was a segfault, bug#1727.
