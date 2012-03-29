@@ -31,7 +31,12 @@ BUG FIXES
     o   DT[,f(.SD),by=colA] where f(x)=x[,colB:=1L] was a segfault, bug#1727.
         This is now a graceful error to say that using := in .SD's j is
         reserved for future use. Thanks to Leon Baum for reporting.
-
+        
+    o   If .N is selected by j it is now renamed "N" (no dot) in the output, to
+        avoid a potential conflict in subsequent grouping between a column called
+        ".N" and the special .N variable, fixing #1720. ?data.table updated and
+        FAQ 4.6 added with detailed examples.
+        
 
         **********************************************
         **                                          **
