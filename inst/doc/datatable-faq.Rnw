@@ -442,6 +442,25 @@ DT[,{ mySD = copy(.SD)
     by=a]
 @
 
+\subsection{\code{cannot change value of locked binding for '.N'}}
+Please upgrade to v1.8.1 or later. From this version, if \code{.N} is returned by \code{j} it is renamed to \code{N} to avoid any abiguity in any subsequent grouping between the \code{.N} special variable and a column called \code{".N"}.
+The old behaviour can be reproduced by forcing \code{.N} to be called \code{.N}, like this :
+<<>>=
+DT = data.table(a=c(1,1,2,2,2),b=c(1,2,2,2,1))
+DT
+DT[,list(.N=.N),list(a,b)]   # show intermediate result for exposition
+cat(try(
+    DT[,list(.N=.N),by=list(a,b)][,unique(.N),by=a]   # compound query more typical
+,silent=TRUE))
+@
+If you are already running v1.8.1 or later then the error message is now more helpful than the \code{cannot change value of locked binding} error.  As you can see above, since this vignette was produced using v1.8.1 or later. 
+The more natural syntax now works :
+<<>>=
+if (packageVersion("data.table") >= "1.8.1") {
+    DT[,.N,by=list(a,b)][,unique(N),by=a]
+}
+@
+
 \section{Warning messages}
 \subsection{\code{The following object(s) are masked from 'package:base': cbind, rbind}}
 This warning was present in v1.6.5 and v.1.6.6 only, when loading the package. The motivation was to allow \code{cbind(DT,DF)} to work, but as it transpired, broke (full) compatibility with package IRanges. Please upgrade to v1.6.7 or later. 

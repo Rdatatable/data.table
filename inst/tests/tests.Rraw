@@ -836,8 +836,8 @@ test(291, attr(DT,"myuserattr"), 42)
 
 # Test new .N symbol
 DT = data.table(a=c(1,1,1,1,2,2,2),b=c(3,3,3,4,4,4,4))
-test(292, DT[,.N,by=list(a,b)], data.table(a=c(1L,1L,2L),b=c(3L,4L,4L),.N=c(3L,1L,3L)))
-test(293, DT[,list(a+b,.N),by=list(a,b)],  data.table(a=c(1L,1L,2L),b=c(3L,4L,4L),V1=4:6,.N=c(3L,1L,3L)))
+test(292, DT[,.N,by=list(a,b)], data.table(a=c(1L,1L,2L),b=c(3L,4L,4L),N=c(3L,1L,3L)))
+test(293, DT[,list(a+b,.N),by=list(a,b)],  data.table(a=c(1L,1L,2L),b=c(3L,4L,4L),V1=4:6,N=c(3L,1L,3L)))
 
 # Test that setkey and := syntax really are by reference, even within functions. You
 # really do need to take a copy first to a new name; force(x) isn't enough.
@@ -1025,8 +1025,8 @@ test(348, suppressWarnings(setkey(DT,b)), data.table(a=letters[3:1],b=letters[4:
 
 # Test .N==0 with nomatch=NA|0
 DT = data.table(a=1:2,b=1:6,key="a")
-test(349, DT[J(2:3),.N,nomatch=NA]$.N, c(3L,0L))
-test(350, DT[J(2:3),.N,nomatch=0]$.N, c(3L))
+test(349, DT[J(2:3),.N,nomatch=NA]$N, c(3L,0L))
+test(350, DT[J(2:3),.N,nomatch=0]$N, c(3L))
 
 # Test recycling list() on RHS of :=
 DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12)
@@ -1621,6 +1621,20 @@ DT = data.table(x=letters[1:3],y=list(1:10,letters[1:4],data.table(a=1:3,b=4:6))
 test(558, capture.output(print(DT)),
           c("     x            y","[1,] a 1,2,3,4,5,6,","[2,] b      a,b,c,d","[3,] c <data.table>"))
 test(559, setkey(DT,x)["a",y][[2]][[1]], 1:10)
+
+# Test renaming of .N to N
+DT = data.table(a=c(1,1,2,2,2),b=c(1,2,2,2,1))
+test(560, DT[,.N,a][,.N], error="'[.]N' not found")
+test(561, DT[,.N,a][,N], 2:3)
+test(562, DT[,list(.N),a][,N], 2:3)
+test(563, DT[,.N,a][,unique(.N),a]$V1, c(1L,1L))
+test(564, DT[,.N,a][,unique(N),a]$V1, 2:3)
+test(565, DT[,.N,a][N>2], data.table(a=2L, N=3L))
+test(566, DT[,list(.N=.N),a][.N>2], data.table(a=2L,.N=3L))
+test(567, DT[,.N,list(a,b)][,N,by=a]$N, c(1L,1L,2L,1L))
+test(568, DT[,.N,list(a,b)][,unique(N),by=a]$V1, c(1L,2L,1L))
+test(569, DT[,list(.N=.N),list(a,b)][,.N,a], error="The column '.N' can't be grouped because")
+test(570, DT[,list(.N=.N),list(a,b)][,unique(.N),a], error="The column '.N' can't be grouped because")
 
 
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".

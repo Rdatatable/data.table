@@ -586,7 +586,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     if (mode(jsub)=="name") {
         # j is a single unquoted column name, convenience to use to auto wrap it with list()
         if (jsub!=".SD") {
-            jvnames = deparse(jsub)
+            jvnames = gsub("^[.]N$","N",deparse(jsub))
             jsub = call("list",jsub)  # this should handle backticked names ok too
         }
     } else if (as.character(jsub[[1]])[1] == "list") {
@@ -595,7 +595,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         jvnames = names(jsubl)[-1]   # check list(a=sum(v),v)
         if (is.null(jvnames)) jvnames = rep("", length(jsubl)-1)
         for (jj in 2:length(jsubl)) {
-            if (jvnames[jj-1] == "" && mode(jsubl[[jj]])=="name") jvnames[jj-1] = deparse(jsubl[[jj]])
+            if (jvnames[jj-1] == "" && mode(jsubl[[jj]])=="name")
+                jvnames[jj-1] = gsub("^[.]N$","N",deparse(jsubl[[jj]]))
             # TO DO: if call to a[1] for example, then call it 'a' too
         }
         setattr(jsub, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.
@@ -652,6 +653,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         oldlen = 0L
     }
     if (!is.integer(itestj)) stop("Logical error: itestj is not type integer")
+    if (".N" %chin% xvars) stop("The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.")
     SDenv$.SD = x[itestj, xvars, with=FALSE]
     # the subset above keeps factor levels in full
     # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
