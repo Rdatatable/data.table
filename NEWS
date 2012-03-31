@@ -40,6 +40,8 @@ BUG FIXES
     o   Moved data.table setup code from .onAttach to .onLoad so that it
         is also run when data.table is simply `import`ed from within a package, 
         fixing #1916.
+        
+    o   Typos fixed in ?":=", thanks to Michael Weylandt for reporting.
 
         **********************************************
         **                                          **

@@ -47,9 +47,9 @@ Advanced (internals) : sub assigning to columns is easy to see how that is done 
 }
 \examples{
     DT = data.table(a=LETTERS[c(1,1:3)],b=4:7,key="a")
-    DT[,c:=8]        # add a numeric column, 7 for all rows
-    DT[,d:=9L]       # add an integer column, 8L for all rows
-    DT[,c:=NULL]     # remove the c column
+    DT[,c:=8]        # add a numeric column, 8 for all rows
+    DT[,d:=9L]       # add an integer column, 9L for all rows
+    DT[,c:=NULL]     # remove column c
     DT[2,d:=10L]     # subassign by reference to column d
     DT               # DT changed by reference
     
