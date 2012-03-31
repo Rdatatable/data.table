@@ -37,6 +37,9 @@ BUG FIXES
         ".N" and the special .N variable, fixing #1720. ?data.table updated and
         FAQ 4.6 added with detailed examples.
         
+    o   Moved data.table setup code from .onAttach to .onLoad so that it
+        is also run when data.table is simply `import`ed from within a package, 
+        fixing #1916.
 
         **********************************************
         **                                          **
