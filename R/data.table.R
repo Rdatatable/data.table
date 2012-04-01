@@ -250,10 +250,10 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 if (is.character(i[[lc]]) && is.factor(x[[rc]])) i[[lc]] = factor(i[[lc]])
                 if (is.factor(i[[lc]])) {
                     if ((roll || rolltolast) && lc==length(leftcols)) stop("Attempting roll join on factor column i.",colnames(i)[lc],". Only integer or character colums may be roll joined.")   # because the chmatch a few lines below returns NA for missing chars in x (rather than some integer greater than existing).
-                       
-                    if (is.character(x[[rc]]))
+                    if (is.character(x[[rc]])) {
                         # TO DO: warning and do this coerce via := to a copy.
                         i[[lc]] = as.character(i[[lc]])
+                    }
                     else {
                         if (!is.factor(x[[rc]])) stop("i.",colnames(i)[lc]," is a factor joining to x.",colnames(x)[rc]," which is not a factor. Factors must join to factors or characters.")
                         # TO DO: use := here to avoid the copy.
@@ -526,10 +526,6 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to vector or list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
         for (jj in seq_len(length(byval))) {
-            #if (is.character(byval[[jj]])) {
-            #    byval[[jj]] = factor(byval[[jj]])
-            #    next
-            #}
             if (typeof(byval[[jj]]) == "double") {
                 toint = as.integer(byval[[jj]])  # drops attributes (such as class) so as.vector() needed on next line
                 if (isTRUE(all.equal(as.vector(byval[[jj]]),toint))) {
@@ -550,7 +546,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             for (jj in seq_along(bynames)) {
                 if (bynames[jj]=="") {
                     # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
-                    tt = grep("^eval|^[^a-zA-Z]",all.vars(bysubl[[jj+1]],functions=TRUE),invert=TRUE,value=TRUE)[1]
+                    tt = grep("^eval|^[^a-zA-Z ]",all.vars(bysubl[[jj+1]],functions=TRUE),invert=TRUE,value=TRUE)[1]
                     if (!length(tt)) tt = all.vars(bysubl[[jj+1]])[1]
                     bynames[jj] = tt
                     # if user doesn't like this inferred name, user has to use by=list() to name the column
