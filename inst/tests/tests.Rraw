@@ -1642,6 +1642,11 @@ test(571, DT[,sum(v),by="b, b"], data.table("b"=3:4, " b"=5:6, V1=c(9L,12L)))
 test(572, DT[,sum(v),by="a , b"], data.table("a "=1:2, " b"=5:6, V1=c(9L,12L)))
 test(573, DT[,sum(v),by="b, a"], error="object ' a' not found")
 
+# Test base::unname, used by melt, and only supported by data.table for DF compatibility for non-dtaware packages
+DT = data.table(a=1:3, b=4:6)
+test(574, dim(unname(DT)), 3:2)
+
+
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".
 # TO DO: move timings into --timing
 

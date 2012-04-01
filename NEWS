@@ -30,7 +30,8 @@ BUG FIXES
 
     o   DT[,f(.SD),by=colA] where f(x)=x[,colB:=1L] was a segfault, bug#1727.
         This is now a graceful error to say that using := in .SD's j is
-        reserved for future use. Thanks to Leon Baum for reporting.
+        reserved for future use. This was already caught in most circumstances,
+        other than via f(.SD). Thanks to Leon Baum for reporting.
         
     o   If .N is selected by j it is now renamed "N" (no dot) in the output, to
         avoid a potential conflict in subsequent grouping between a column called
@@ -39,9 +40,13 @@ BUG FIXES
         
     o   Moved data.table setup code from .onAttach to .onLoad so that it
         is also run when data.table is simply `import`ed from within a package, 
-        fixing #1916.
+        fixing #1916 related to missing data.table options.
         
     o   Typos fixed in ?":=", thanks to Michael Weylandt for reporting.
+    
+    o   base::unname(DT) now works again, as needed by plyr::melt(). Thanks to
+        Christoph Jaeckel for reporting. Test added.
+
 
         **********************************************
         **                                          **
