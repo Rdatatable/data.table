@@ -46,7 +46,12 @@ BUG FIXES
     
     o   base::unname(DT) now works again, as needed by plyr::melt(). Thanks to
         Christoph Jaeckel for reporting. Test added.
-
+        
+    o   CJ(x=...,y=...) now retains the column names x and y, useful when CJ
+        is used independently (since x[CJ(...)] takes join column names from x).
+        Restores behaviour lost somewhere between 1.7.1 and 1.8.0, thanks
+        to Muhammad Waliji for reporting. Tests added.
+        
 
         **********************************************
         **                                          **

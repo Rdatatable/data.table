@@ -186,7 +186,13 @@ CJ = function(...)
     }
     setattr(l,"row.names",.set_row_names(length(l[[1]])))
     setattr(l,"class",c("data.table","data.frame"))
-    setattr(l,"names",paste("V",1:length(l),sep=""))
+    vnames = names(l)
+    if (is.null(vnames)) vnames=rep("",length(l))
+    tt = vnames==""
+    if (any(tt)) {
+        vnames[tt] = paste("V", which(tt), sep="")
+        setattr(l,"names",vnames)
+    }
     settruelength(l,0L)
     l=alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
     setkey(l)    # TO DO: if inputs are each !is.unsorted, then no need to setkey here, just setattr("sorted") to save sort
