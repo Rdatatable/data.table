@@ -25,6 +25,11 @@ NEW FEATURES
         [2,] b      a,b,c,d
         [3,] c <data.table>
         
+    o   Warnings added when joining character to factor, and factor to character.
+        Character to character is now preferred in joins and needs no coercion.
+        Even so, these coercions have been made much more efficient by taking
+        a shallow copy of i internally, avoiding a full deep copy of i.
+        
 
 BUG FIXES
 
@@ -51,6 +56,12 @@ BUG FIXES
         is used independently (since x[CJ(...)] takes join column names from x).
         Restores behaviour lost somewhere between 1.7.1 and 1.8.0, thanks
         to Muhammad Waliji for reporting. Tests added.
+        
+    o   A column plonk via set() was only possible by passing NULL as i. The default
+        for i is now NULL so that missing i invokes a column plonk, too (when length(value)
+        == nrow(DT)). A column plonk is much more efficient than creating 1:nrow(DT) and
+        passing that as i to set() or DT[i,:=] (almost infinitely faster). Thanks to
+        testing by Josh O'Brien in comments on Stack Overflow.
         
 
         **********************************************

@@ -240,34 +240,38 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 chmatch(head(key(i),length(rightcols)),colnames(i))
             else
                 1:min(ncol(i),length(rightcols))
-            origi = i
+            origi = shallow(i)   # careful to only plonk syntax on i from now on
+                                 # TO DO: enforce via .internal.shallow attribute and expose shallow() to users
             for (a in seq(along=leftcols)) {
-                # We still need this to support joining factors.  But character is now preferred.
-                # When character, this branch is skipped and origi above is left as a pointer to i
-                # without no copy on write done.
-                lc = leftcols[a]
-                rc = rightcols[a]
-                if (is.character(i[[lc]]) && is.factor(x[[rc]])) i[[lc]] = factor(i[[lc]])
-                if (is.factor(i[[lc]])) {
-                    if ((roll || rolltolast) && lc==length(leftcols)) stop("Attempting roll join on factor column i.",colnames(i)[lc],". Only integer or character colums may be roll joined.")   # because the chmatch a few lines below returns NA for missing chars in x (rather than some integer greater than existing).
-                    if (is.character(x[[rc]])) {
-                        # TO DO: warning and do this coerce via := to a copy.
-                        i[[lc]] = as.character(i[[lc]])
+                # This loop is simply to support joining factor columns
+                lc = leftcols[a]   # i   # TO DO: rename left and right to i and x
+                rc = rightcols[a]  # x
+                icnam = names(i)[lc]
+                xcnam = names(x)[rc]
+                if (is.character(x[[rc]])) {
+                    if (is.character(i[[lc]])) next
+                    if (!is.factor(i[[lc]]))
+                        stop("x.'",xcnam,"' is a character column being joined to i.'",icnam,"' which is type '",typeof(i[[lc]]),"'. Character columns must join to factor or character columns.")
+                    warning("Coercing factor column i.'",icnam,"' to character to match type of x.'",xcnam,"'.")
+                    set(i,j=lc,value=as.character(i[[lc]]))
+                    # no longer copies all of i, thanks to shallow() and :=/set
+                    next
+                }
+                if (is.factor(x[[rc]])) {
+                    if (is.character(i[[lc]])) {
+                        warning("Coercing character column i.'",icnam,"' to factor to match type of x.'",xcnam,"'. If possible please change x.'",xcnam,"' to character. Character columns are now preferred in joins.")
+                        set(i,j=lc,value=factor(i[[lc]]))
                     }
-                    else {
-                        if (!is.factor(x[[rc]])) stop("i.",colnames(i)[lc]," is a factor joining to x.",colnames(x)[rc]," which is not a factor. Factors must join to factors or characters.")
-                        # TO DO: use := here to avoid the copy.
-                        i[[lc]] = chmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA_integer_)[i[[lc]]]
-                        levels(i[[lc]]) = levels(x[[rc]])
-                        class(i[[lc]]) = "factor"
-                    }
-                    # factor levels are always sorted in data.table, so this match will be sorted too.
-                    # There is no need to re-sort.
+                    if (!is.factor(i[[lc]]))
+                        stop("x.'",xcnam,"' is a factor column being joined to i.'",icnam,"' which is type '",typeof(i[[lc]]),"'. Factor columns must join to factor or character columns.")
+                    if ((roll || rolltolast) && lc==length(leftcols)) stop("Attempting roll join on factor column i.",colnames(i)[lc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns NA for missing chars in x (rather than some integer greater than existing).
+                    newfactor = chmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA_integer_)[i[[lc]]]
+                    levels(newfactor) = levels(x[[rc]])
+                    class(newfactor) = "factor"
+                    set(i,j=lc,value=newfactor)
                     # NAs can be produced by this level match, in which case the C code (it knows integer value NA)
-                    # can skip over the lookup.
-                    # it's therefore important we pass NA rather than 0 to the C code.
-                } else if (is.factor(x[[rc]]))
-                    stop("x.",colnames(x)[rc]," is type 'factor' but joining to i.",colnames(i)[lc]," which is not a factor or character (",typeof(i[[lc]]),")")
+                    # can skip over the lookup. It's therefore important we pass NA rather than 0 to the C code.
+                }
             }
             idx.start = integer(nrow(i))
             idx.end = integer(nrow(i))
@@ -406,7 +410,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         ssrows =
             if (!is.logical(irows)) as.integer(irows)          # DT[J("a"),z:=42L]
-            else if (identical(irows,TRUE)) as.integer(NULL)   # DT[,z:=42L]
+            else if (identical(irows,TRUE)) NULL               # DT[,z:=42L]
             else {
                 tt = if (length(irows)==nrow(x)) which(irows)  # DT[colA>3,z:=42L]
                      else (1:nrow(x))[irows]                   # DT[c(TRUE,FALSE),z:=42L] (recycling)
@@ -933,7 +937,7 @@ tail.data.table = function(x, n=6, ...) {
         # Tried adding ... after value above, and passing ... in here (e.g. for mult="first") but R CMD check
         # then gives "The argument of a replacement function which corresponds to the right hand side must be
         # named 'value'".  So, users have to use := for that.
-    } else i = as.integer(NULL)   # meaning (to C code) all rows, without allocating 1:nrow(x) vector
+    } else i = NULL          # meaning (to C code) all rows, without allocating 1:nrow(x) vector
     if (missing(j)) j=colnames(x)
     if (!is.atomic(j)) stop("j must be atomic vector, see ?is.atomic")
     if (any(is.na(j))) stop("NA in j")
@@ -1256,6 +1260,11 @@ copy = function(x) {
     # may be tricky; more robust to rely on R's duplicate which deep copies.
 }
 
+shallow = function(x) {
+    if (!is.data.table(x)) stop("x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table")
+    .Call("shallowwrapper",x,PACKAGE="data.table")  # copies VECSXP only
+}
+
 alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("datatable.verbose")) 
 {
     name = substitute(DT)
@@ -1371,7 +1380,7 @@ setcolorder = function(x,neworder)
     invisible(x)   
 }
 
-set = function(x,i,j,value)
+set = function(x,i=NULL,j,value)
 {
     .Call("assign",x,i,j,NULL,value,FALSE,PACKAGE="data.table")
     # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.

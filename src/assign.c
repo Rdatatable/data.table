@@ -484,10 +484,39 @@ void savetl_end() {
     Free(savedtl);
 }
 
+static SEXP shallow(SEXP dt, R_len_t n)
+{
+    // called from alloccol where n is checked carefully, or from shallow() where n is set to
+    // truelength (i.e. a shallow copy only with no size change)
+    SEXP newdt, names, newnames;
+    R_len_t i,l;
+    PROTECT(newdt = allocVector(VECSXP, n));   // to do, use growVector here?
+    PROTECT(newnames = allocVector(STRSXP, n));
+    l = LENGTH(dt);
+    names = getAttrib(dt,R_NamesSymbol);
+    for (i=0; i<l; i++) {
+        SET_VECTOR_ELT(newdt,i,VECTOR_ELT(dt,i));
+        SET_STRING_ELT(newnames,i,STRING_ELT(names,i));
+	}
+	DUPLICATE_ATTRIB(newdt, dt);
+    // copyMostAttrib(dt, newdt);
+    LENGTH(newdt) = l;  //prefered due to the SETLENGTH vs SET_LENGTH confusion (inconsistent with SET_TRUELENGTH)
+    LENGTH(newnames) = l;
+    TRUELENGTH(newdt) = n;
+    TRUELENGTH(newnames) = n;
+    setAttrib(newdt, R_NamesSymbol, newnames);
+    if (isNull(getAttrib(newdt, R_ClassSymbol))) error("newdt has null class");
+    setselfref(newdt);
+    // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
+    UNPROTECT(2);
+    return(newdt);
+}
+        
+
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
-    SEXP newdt, names, newnames, class;
-    R_len_t i, l, tl;
+    SEXP names, class;
+    R_len_t l, tl;
     if (!sizesSet) setSizes();   // TO DO move into _init
     if (isNull(dt)) error("alloccol has been passed a NULL dt");
     if (TYPEOF(dt) != VECSXP) error("dt passed to alloccol isn't type VECSXP");
@@ -516,36 +545,20 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
         //    error("Internal error: tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol)));
     }
     if (n<l) warning("table has %d column slots in use. Attept to allocate less (%d)",l,n);
-    if (n>tl) {
-        PROTECT(newdt = allocVector(VECSXP, n));   // to do, use growVector here.
-        PROTECT(newnames = allocVector(STRSXP, n));
-        for (i=0; i<l; i++) {
-            SET_VECTOR_ELT(newdt,i,VECTOR_ELT(dt,i));
-            SET_STRING_ELT(newnames,i,STRING_ELT(names,i));
-	    }
-	    DUPLICATE_ATTRIB(newdt, dt);
-        // copyMostAttrib(dt, newdt);
-        LENGTH(newdt) = l;  //prefered due to the SETLENGTH vs SET_LENGTH confusion (inconsistent with SET_TRUELENGTH)
-        LENGTH(newnames) = l;
-        TRUELENGTH(newdt) = n;
-        TRUELENGTH(newnames) = n;
-        setAttrib(newdt, R_NamesSymbol, newnames);
-        if (isNull(getAttrib(newdt, R_ClassSymbol))) error("newdt has null class");
-        setselfref(newdt);
-        // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
-        dt = newdt;
-        UNPROTECT(2);
-    } else {
-        // Reduce the allocation (most likely to the same value as length).
-        //if (n!=l) warning("Reducing alloc cols from %d to %d, but not to length (%d)",TRUELENGTH(dt),n,LENGTH(dt));
-        TRUELENGTH(dt) = n;
-        if (!isNull(names)) TRUELENGTH(names) = n;
-    }
+    if (n>tl) return(shallow(dt,n)); // usual case (increasing alloc)
+    // Reduce the allocation (most likely to the same value as length).
+    //if (n!=l) warning("Reducing alloc cols from %d to %d, but not to length (%d)",TRUELENGTH(dt),n,LENGTH(dt));
+    TRUELENGTH(dt) = n;
+    if (!isNull(names)) TRUELENGTH(names) = n;
     return(dt);
 }
 
 SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP verbose) {
     return(alloccol(dt, INTEGER(newncol)[0], LOGICAL(verbose)[0]));
+}
+
+SEXP shallowwrapper(SEXP dt) {
+    return(shallow(dt, TRUELENGTH(dt)));
 }
 
 SEXP truelength(SEXP x) {
