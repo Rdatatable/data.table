@@ -62,6 +62,13 @@ BUG FIXES
         == nrow(DT)). A column plonk is much more efficient than creating 1:nrow(DT) and
         passing that as i to set() or DT[i,:=] (almost infinitely faster). Thanks to
         testing by Josh O'Brien in comments on Stack Overflow.
+
+
+USER VISIBLE CHANGES
+
+    o   Incorrect syntax error message for := now includes advice to check that
+        DT is a data.table rather than a data.frame. Thanks to a comment by
+        gkaupas on Stack Overflow.
         
 
         **********************************************

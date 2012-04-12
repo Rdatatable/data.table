@@ -1399,7 +1399,7 @@ chmatch = function(x,table,nomatch=NA_integer_)
 chorder = function(x) .Call("countingcharacter",x,TRUE,PACKAGE="data.table")
 chgroup = function(x) .Call("countingcharacter",x,FALSE,PACKAGE="data.table")
 
-":=" = function(LHS,RHS) stop(':= is defined for use in j only; i.e., DT[i,col:=1L] not DT[i,col]:=1L or DT[i]$col:=1L. Please see help(":=").')
+":=" = function(LHS,RHS) stop(':= is defined for use in j only; i.e., DT[i,col:=1L] not DT[i,col]:=1L or DT[i]$col:=1L. Please see help(":="). Check is.data.table(DT) is TRUE.')
 
 
 

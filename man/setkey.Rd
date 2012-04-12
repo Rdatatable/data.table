@@ -22,7 +22,7 @@ copy(x)
 setattr(x,name,value)
 setnames(x,old,new)
 setcolorder(x,neworder)
-set(x,i,j,value)   # should be documented in ?":=", perhaps.
+set(x,i=NULL,j,value)   # should be documented in ?":=", perhaps.
 key(x) <- value   # deprecated, please use setkey or setkeyv instead.
 }
 \arguments{
