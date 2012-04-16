@@ -240,7 +240,6 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 chmatch(head(key(i),length(rightcols)),colnames(i))
             else
                 1:min(ncol(i),length(rightcols))
-            origi = i
             i = shallow(i)   # careful to only plonk syntax on i from now on
                              # TO DO: enforce via .internal.shallow attribute and expose shallow() to users
             for (a in seq(along=leftcols)) {
@@ -293,7 +292,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             else lengths[idx.start==0L] = 0L
             if (which) return(irows)
             iby = head(key(x),length(leftcols))
-            byval = origi[,leftcols,with=FALSE]  # **** TO DO: remove this subset; just needs pointer  ****
+            byval = i[,leftcols,with=FALSE]  # **** TO DO: remove this subset; just needs pointer  ****
         } else {
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
@@ -320,11 +319,11 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 inonjoin = seq_len(ncol(i))[-leftcols]
                 if (!all(lengths==1L)) {   # TO DO: avoid this all == by returning flag from C
                     ii = rep(1:nrow(i),lengths)
-                    for (s in seq_along(leftcols)) ans[[s]] = origi[[leftcols[s]]][ii]
-                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = origi[[inonjoin[s]]][ii]
+                    for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]][ii]
+                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]][ii]
                 } else {
-                    for (s in seq_along(leftcols)) ans[[s]] = origi[[leftcols[s]]]
-                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = origi[[inonjoin[s]]]
+                    for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]]
+                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]]
                 }
                 rightcols = head(rightcols,length(leftcols))
                 xnonjoin = seq_len(ncol(x))[-rightcols]
