@@ -1657,6 +1657,13 @@ test(575, CJ(x=c(1L,2L), y=c("a","b")), data.table(x=c(1L,1L,2L,2L),y=c("a","b",
 test(576, CJ(c(1L,2L), y=c("a","b")), data.table(V1=c(1L,1L,2L,2L),y=c("a","b","a","b"),key="V1,y"))
 test(577, CJ(x=c(1L,2L), c("a","b")), data.table(x=c(1L,1L,2L,2L),V2=c("a","b","a","b"),key="x,V2"))
 
+# Test factor to character join when factor contains unused and reverse order levels :
+X = data.table(a=LETTERS[1:4],v=1:4,key="a")
+Y = data.table(a=factor(c("D","B"),levels=rev(LETTERS)),key="a")
+test(578, X[Y], warning="Coercing factor column i.'a' to character to match type of x.'a'")
+test(579, suppressWarnings(X[Y]), data.table(a=factor(c("D","B"),levels=rev(LETTERS)), v=c(4L,2L)))
+
+
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".
 # TO DO: move timings into --timing
 

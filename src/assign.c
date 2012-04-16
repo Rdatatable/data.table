@@ -36,6 +36,7 @@ void setselfref(SEXP x) {
     // Store pointer to itself so we can detect if the object has been copied. See
     // ?copy for why copies are not just inefficient but cause a problem for over-allocated data.tables.
     // Called from C only, not R level, so returns void.
+    if (!sizesSet) setSizes();
     setAttrib(x, SelfRefSymbol, R_MakeExternalPtr(
         R_NilValue,                  // for identical() to return TRUE
         getAttrib(x, R_NamesSymbol), // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
@@ -69,10 +70,14 @@ void setselfref(SEXP x) {
 
 int _selfrefok(SEXP x, Rboolean names, Rboolean verbose) {
     SEXP v, p, tag, prot;
+    if (!sizesSet) setSizes();
     v = getAttrib(x, SelfRefSymbol);
-    if (v==R_NilValue) {
-        // .internal.selfref missing. This is expected and normal for i) a pre v1.7.8 data.table loaded
+    if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
+        // .internal.selfref missing is expected and normal for i) a pre v1.7.8 data.table loaded
         //  from disk, and ii) every time a new data.table is over-allocated for the first time.
+        //  Not being an extptr is for when users contruct a data.table via structure() using dput, post
+        //  a question, and find the extptr doesn't parse so put quotes around it (for example).
+        //  In both cases the selfref is not ok.
         return(0);
     }
     p = R_ExternalPtrAddr(v);
@@ -558,7 +563,10 @@ SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP verbose) {
 }
 
 SEXP shallowwrapper(SEXP dt) {
-    return(shallow(dt, TRUELENGTH(dt)));
+    if (!selfrefok(dt,FALSE))
+        return(shallow(dt, length(dt)));  // a manually created data.table via dput() and structure(), for example
+    else 
+        return(shallow(dt, TRUELENGTH(dt)));
 }
 
 SEXP truelength(SEXP x) {

@@ -240,8 +240,9 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 chmatch(head(key(i),length(rightcols)),colnames(i))
             else
                 1:min(ncol(i),length(rightcols))
-            origi = shallow(i)   # careful to only plonk syntax on i from now on
-                                 # TO DO: enforce via .internal.shallow attribute and expose shallow() to users
+            origi = i
+            i = shallow(i)   # careful to only plonk syntax on i from now on
+                             # TO DO: enforce via .internal.shallow attribute and expose shallow() to users
             for (a in seq(along=leftcols)) {
                 # This loop is simply to support joining factor columns
                 lc = leftcols[a]   # i   # TO DO: rename left and right to i and x
@@ -317,7 +318,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             } else {
                 ans = vector("list",ncol(i)+ncol(x)-length(leftcols))
                 inonjoin = seq_len(ncol(i))[-leftcols]
-                if (!all(lengths==1L)) {
+                if (!all(lengths==1L)) {   # TO DO: avoid this all == by returning flag from C
                     ii = rep(1:nrow(i),lengths)
                     for (s in seq_along(leftcols)) ans[[s]] = origi[[leftcols[s]]][ii]
                     for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = origi[[inonjoin[s]]][ii]

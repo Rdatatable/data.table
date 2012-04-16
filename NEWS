@@ -36,12 +36,12 @@ BUG FIXES
     o   DT[,f(.SD),by=colA] where f(x)=x[,colB:=1L] was a segfault, bug#1727.
         This is now a graceful error to say that using := in .SD's j is
         reserved for future use. This was already caught in most circumstances,
-        other than via f(.SD). Thanks to Leon Baum for reporting.
+        other than via f(.SD). Thanks to Leon Baum for reporting. Test added.
         
     o   If .N is selected by j it is now renamed "N" (no dot) in the output, to
         avoid a potential conflict in subsequent grouping between a column called
         ".N" and the special .N variable, fixing #1720. ?data.table updated and
-        FAQ 4.6 added with detailed examples.
+        FAQ 4.6 added with detailed examples. Tests added.
         
     o   Moved data.table setup code from .onAttach to .onLoad so that it
         is also run when data.table is simply `import`ed from within a package, 
@@ -61,7 +61,11 @@ BUG FIXES
         for i is now NULL so that missing i invokes a column plonk, too (when length(value)
         == nrow(DT)). A column plonk is much more efficient than creating 1:nrow(DT) and
         passing that as i to set() or DT[i,:=] (almost infinitely faster). Thanks to
-        testing by Josh O'Brien in comments on Stack Overflow.
+        testing by Josh O'Brien in comments on Stack Overflow. Test added.
+        
+    o   Joining a factor column with unsorted and unused levels to a character column
+        now matches properly, fixing #1922. Thanks to Christoph Jäckel for the reproducible
+        example. Test added.
 
 
 USER VISIBLE CHANGES
