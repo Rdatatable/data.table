@@ -74,6 +74,9 @@ USER VISIBLE CHANGES
         DT is a data.table rather than a data.frame. Thanks to a comment by
         gkaupas on Stack Overflow.
         
+    o   When set() is passed a logical i, the error message now includes advice to
+        wrap with which() and take the which() outside the loop if possible.
+
 
         **********************************************
         **                                          **

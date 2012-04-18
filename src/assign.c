@@ -109,7 +109,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     // For internal use only by [<-.data.table.
     // newcolnames : add these columns (if any)
     // cols : column names or numbers corresponding to the values to set
-    R_len_t i, j, size, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum;
+    R_len_t i, j, nrow, size, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum;
     SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key;
     Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, clearkey=FALSE;
     char *s1, *s2, *s3;
@@ -130,17 +130,18 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         error("Internal error in assign: length of names (%d) is not length of dt (%d)",length(names),oldncol);
 
     if (oldncol<1) error("Cannot use := to add columns to an empty data.table, currently");
+    nrow = length(VECTOR_ELT(dt,0));
     if (length(rows)==0) {
-        targetlen = length(VECTOR_ELT(dt,0));
+        targetlen = nrow;
         // fast way to assign to whole column, without creating 1:nrow(x) vector up in R, or here in C
     } else {
         if (isReal(rows)) {
             rows = PROTECT(rows = coerceVector(rows, INTSXP));
             protecti++;
             warning("Coerced i from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2");
-        }
+        }    
         if (!isInteger(rows))
-            error("i is type '%s'. Must be integer, or numeric is coerced with warning.", type2char(TYPEOF(rows)));
+            error("i is type '%s'. Must be integer, or numeric is coerced with warning. If i is a logical subset, simply wrap with which(), and take the which() outside the loop if possible for efficiency.", type2char(TYPEOF(rows)));
         targetlen = length(rows);
     }
     if (!length(cols))
