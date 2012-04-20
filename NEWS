@@ -70,7 +70,7 @@ BUG FIXES
     o   'by' on an empty table now returns an empty table (#1945) and .N, .SD and .BY are
         now available in the empty case (also #1945). The column names and types of
         the returned empty table are consistent with the non empty case. Thanks to
-        Malcolm Cook for reporting.
+        Malcolm Cook for reporting. Tests added.
 
 
 USER VISIBLE CHANGES
