@@ -66,6 +66,11 @@ BUG FIXES
     o   Joining a factor column with unsorted and unused levels to a character column
         now matches properly, fixing #1922. Thanks to Christoph Jäckel for the reproducible
         example. Test added.
+        
+    o   'by' on an empty table now returns an empty table (#1945) and .N, .SD and .BY are
+        now available in the empty case (also #1945). The column names and types of
+        the returned empty table are consistent with the non empty case. Thanks to
+        Malcolm Cook for reporting.
 
 
 USER VISIBLE CHANGES
@@ -75,7 +80,11 @@ USER VISIBLE CHANGES
         gkaupas on Stack Overflow.
         
     o   When set() is passed a logical i, the error message now includes advice to
-        wrap with which() and take the which() outside the loop if possible.
+        wrap with which() and take the which() outside the loop (if any) if possible.
+        
+    o   An empty data.table (0 rows, 1+ cols) now print as "Empty data.table" rather
+        than "NULL data.table". A NULL data.table, returned by data.table(NULL) has
+        0 rows and 0 cols.  DT[0] returns an empty data.table.
 
 
         **********************************************

@@ -15,10 +15,10 @@ if (!exists(".devtesting")) {
 options(warn=2)
 nfail = ntest = lastnum = 0
 whichfail = NULL
-test = function(num,x,y=NULL,error,warning) {
+test = function(num,x,y=NULL,error,warning,output) {
     ntest <<- ntest + 1
     lastnum <<- num
-    err<-try(x,TRUE)
+    err <- if (missing(output)) try(x,TRUE) else out<-capture.output(try(x,TRUE))
     if (!missing(error) || !missing(warning)) {
         type = ifelse(!missing(error),"error","warning")
         txt = ifelse(!missing(error),error,warning)
@@ -38,6 +38,15 @@ test = function(num,x,y=NULL,error,warning) {
         nfail <<- nfail + 1
         whichfail <<- c(whichfail, num)
         return()
+    }
+    if (!missing(output)) {
+       if (length(grep(output,out))) return()
+       cat("Test",num,"didn't produce correct output:\n")
+       cat("Expected:",output,"\n")
+       cat("Observed:",out,"\n")
+       nfail <<- nfail + 1
+       whichfail <<- c(whichfail, num)
+       return()
     }
     if (missing(y)) {
         if (x) return()
@@ -77,14 +86,20 @@ test = function(num,x,y=NULL,error,warning) {
     whichfail <<- c(whichfail, num)
 }
 
+.timingtests = FALSE
 started.at = Sys.time()
 
 # Test counting character grouping and sorting
 # Now at the start of this file, so that any errors elsewhere show up in the
 # last 13 lines displayed by CRAN checks.
 # TO DO: test range of n and m and plot, on variety of machines, 32bit and 64bit with RAM and L2 variances
-n = as.integer(1e6)
-m = 10000L
+if (.timingtests) {
+    n = as.integer(1e6)
+    m = as.integer(1e4)
+} else {
+    n = as.integer(1e4)
+    m = as.integer(1e2)
+}
 cat("x = ",format(n,big.mark=","),"sample from",format(m,big.mark=","),"strings (quick test)\n")
 x = sample(as.character(as.hexmode(1:m)),n,replace=TRUE)
 tt = system.time(f <- factor(x))                             # 7.079   (timings from MD's tiny 32bit netbook)
@@ -553,9 +568,9 @@ test(182, bar( DT, sum(buniquename314) ), TRUE)
 DT = data.table(A = c("o", "x"), B = 1:10, key = "A")
 test(183, DT[J(unique(A)), B]$B, DT$B)
 
-# Test bug 709
+# Test bug 709 which returned an error here. And return type now empty table, #1945 in 1.8.1.
 xx = data.table(a=1:5,b=6:10)
-test(184, xx[a>6,sum(b),by=a], 0L)   # aside: consistent with sum(NULL)==0
+test(184, xx[a>6,sum(b),by=a], data.table(a=integer(),V1=integer()))
 
 # Tests of bug 1015 highlight by Harish
 # See thread "'by without by' now heeds nomatch=NA"
@@ -1541,14 +1556,16 @@ if ("package:nlme" %in% search()) {
 # Speed test of chmatch vs match.
 # sortedmatch was 40 times slower and the wrong approach, removed in v1.8.0.
 # Example from Tom in Jan 2011 who first found and raised the issue with sortedmatch.
-cat("Running 30sec (max) test ...");flush.console()
-n = 1e6
-a = as.character(as.hexmode(sample(n,replace=T)))
-b = as.character(as.hexmode(sample(n,replace=T)))
-test(529, system.time(ans1<-match(a,b))["user.self"] > system.time(ans2<-chmatch(a,b))["user.self"])
-test(530, ans1, ans2)
-# sorting a and b no longer makes a difference since both match and chmatch work via hash in some way or another
-cat("done\n")
+if (.timingtests) {
+  cat("Running 30sec (max) test ...");flush.console()
+  n = 1e6
+  a = as.character(as.hexmode(sample(n,replace=T)))
+  b = as.character(as.hexmode(sample(n,replace=T)))
+  test(529, system.time(ans1<-match(a,b))["user.self"] > system.time(ans2<-chmatch(a,b))["user.self"])
+  test(530, ans1, ans2)
+  # sorting a and b no longer makes a difference since both match and chmatch work via hash in some way or another
+  cat("done\n")
+}
 
 # Test that .set_row_names() is maintained on .SD for each group
 DT = data.table(a=c(1,1,2,2,2,3,3,3,3),b=1:9)
@@ -1667,14 +1684,20 @@ test(579, suppressWarnings(X[Y]), data.table(a=c("D","B"), v=c(4L,2L)))
 DT = data.table(a=1:3,b=4:6)
 test(580, set(DT,a<3,"b",0L), error="simply wrap with which[(][)], and take the which[(][)] outside the loop if possible for efficiency")
 
-# Test when i returns empty data.table
-# DT = data.table(a=1:3,v=1:6)
-# test(581, DT[a<1,sum(v),by=a], DT[a<1])
-# test(582, DT[a<1], DT[0])
-# test(583, capture.output(DT[a<1]), paste("Empty data.table (0 rows), X columns:", paste(names(DT),collapse=",")))
+# Test by on empty tables (and when i returns no rows), #1945
+DT = data.table(a=1:3,v=1:6)
+test(581, DT[a<1,sum(v),by=a], data.table(a=integer(),V1=integer()))
+test(582, DT[a<1,sum(v),by=list(a)], data.table(a=integer(),V1=integer()))
+test(583, DT[a<1], DT[0])
+test(584, DT[a<1], output="Empty data.table [(]0 rows[)] of 2 cols: a,v")
+test(585, DT[a<1,list(v)], output="Empty data.table [(]0 rows[)] of 1 col: v")
+test(586, data.table(a=integer(),V1=integer()), output="Empty data.table [(]0 rows[)] of 2 cols: a,V1")
+
+# Test that .N is available in by on empty table, also in #1945
+test(587, DT[a<1,list(sum(v),.N),by=a], data.table(a=integer(),V1=integer(),N=integer()))
 
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".
-# TO DO: move timings into --timing
+# TO DO: why did SO answer using eval twice in j need .SD in lapply(f,eval,.SD) on 19 Apr
 
 
 ## See test-* for more tests

@@ -8,7 +8,10 @@ dim.data.table <- function(x) {
 print.data.table = function (x, digits = NULL, quote = FALSE, right = TRUE, nrows = 100, ...)
 {
     if (nrow(x) == 0) {
-        cat("NULL data table\n")
+        if (length(x)==0)
+           cat("NULL data.table\n")
+        else
+           cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1)"s",": ",paste(head(names(x),6),collapse=","),if(ncol(x)>6)"...","\n",sep="")
         return()
     }
     if (nrow(x)>nrows) {
@@ -455,7 +458,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         # TO DO: efficiency gain by taking only the columns of x that j and by need.
         bywithoutby=FALSE
     }
-    if ((missing(by) && !bywithoutby) || nrow(x)<1) {
+    if ((missing(by) && !bywithoutby)) { # || nrow(x)<1) {
         jvars = intersect(av,colnames(x))
         if (!identical(irows,TRUE)) {
             x = x[irows,jvars,with=FALSE]
@@ -506,9 +509,9 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         allbyvars = intersect(unlist(sapply(bysubl,all.vars,functions=TRUE)),colnames(x))
         bysameorder = haskey(x) && all(sapply(bysubl,is.name)) && identical(allbyvars,head(key(x),length(allbyvars)))
         byval = eval(bysub, x, parent.frame())
-        if (!length(byval)) {
+        if (!length(byval) && nrow(x)>0L) {
             # see missing(by) up above for comments
-            # by could be NULL or character(0) for example
+            # by could be NULL or character(0) for example (e.g. passed in as argument in a loop of different bys)
             if (mode(jsub)!="name" && as.character(jsub[[1]]) == "list")
                 jsub[[1]]=as.name("data.table")
             return(eval(jsub, envir=x, enclos=parent.frame()))
@@ -638,9 +641,13 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     ivars = if (bywithoutby) intersect(gsub("^i[.]","",ws),colnames(i)) else NULL   # JIS
 
     if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ...\n");flush.console()}
-    if (f__[1]==0 && is.na(nomatch)) {
+    if (nrow(x)==0) {
+        itestj = 0L
+        f__ = 0L
+        len__ = 0L
+    } else if (f__[1]==0 && is.na(nomatch))
         itestj = NA_integer_
-    } else {
+    else {
         itestj = as.integer(seq.int(f__[1],length.out=len__[1]))
         if (length(o__)) itestj = o__[itestj]
     }
@@ -699,18 +706,19 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         if (verbose && !is.null(names(testj))) cat("testj evaluates to a list with names, this may slow down grouping")
         if (is.list(testj) && any(sapply(testj,is.data.frame))) stop("All items in j=list(...) should be atomic vectors or lists, currently. Consider cbind or merge afterwards until := by group is implemented.")
+        if (nrow(x)==0L) testj = lapply(testj,"[",0L)   # by on 0-row tables need to return correctly types 0-row result
         maxn = max(sapply(testj,length))   # this could be 0 here too
     } else {
-        maxn = 0
+        maxn = 0L
         # e.g. if j is for side effects only: printing or plotting
     }
-    byretn = if (maxn == 0) 0
-    else if (maxn==1 && len__[1]>1) length(f__)   # Most common case 1 : j is a list of simple aggregates i.e. list of atoms only
-    else if (maxn==len__[1]) sum(len__)  # Most common case 2 : j returns as many rows as there are in the group (maybe a join)
+    byretn = if (maxn == 0L) 0L
+    else if (maxn==1L && len__[1L]>1L) length(f__)   # Most common case 1 : j is a list of simple aggregates i.e. list of atoms only
+    else if (maxn==len__[1L]) sum(len__)  # Most common case 2 : j returns as many rows as there are in the group (maybe a join)
     else sum(len__)
     # TO DO: we might over allocate above e.g. if first group has 1 row and j is actually a single row aggregate
     # TO DO: user warning when it detects over-allocation is currently off in dogroups.c
-    byretn = max(byretn,maxn) # if the result for the first group is larger than the table itself(!) Unusual case where the optimisations for common query patterns. Probably a join is being done in the j via .SD and the 1-row table is an edge condition of bigger picture.
+    if (nrow(x)>0L) byretn = max(byretn,maxn) # if the result for the first group is larger than the table itself(!) Unusual case where the optimisations for common query patterns. Probably a join is being done in the j via .SD and the 1-row table is an edge condition of bigger picture.
     byretn = as.integer(byretn)
     
     xcols = as.integer(chmatch(xvars,colnames(x)))

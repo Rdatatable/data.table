@@ -54,7 +54,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
     if (TYPEOF(order) != INTSXP) error("order not integer");
     if (TYPEOF(starts) != INTSXP) error("starts not integer");
     if (TYPEOF(lens) != INTSXP) error("lens not integer");
-    if (INTEGER(starts)[0]<0 || INTEGER(lens)[0]<1) error("starts[1]<0 or lens[1]<1");
+    if (INTEGER(starts)[0]<0 || INTEGER(lens)[0]<0) error("starts[1]<0 or lens[1]<0");
     if(!isEnvironment(env)) error("’env’ should be an environment");
     ngrp = length(starts);  // the number of groups
     njval = length(testj);  // testj is now the result of j on the first group
