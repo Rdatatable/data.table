@@ -71,6 +71,9 @@ BUG FIXES
         now available in the empty case (also #1945). The column names and types of
         the returned empty table are consistent with the non empty case. Thanks to
         Malcolm Cook for reporting. Tests added.
+        
+    o   DT[NULL] now returns the NULL data.table, rather than an error. Test added.
+        Use DT[0] to return an empty copy of DT.
 
 
 USER VISIBLE CHANGES

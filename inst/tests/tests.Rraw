@@ -1696,6 +1696,9 @@ test(586, data.table(a=integer(),V1=integer()), output="Empty data.table [(]0 ro
 # Test that .N is available in by on empty table, also in #1945
 test(587, DT[a<1,list(sum(v),.N),by=a], data.table(a=integer(),V1=integer(),N=integer()))
 
+# Realised that DT[NULL] returned an error.
+test(588, DT[NULL], data.table(NULL))
+
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".
 # TO DO: why did SO answer using eval twice in j need .SD in lapply(f,eval,.SD) on 19 Apr
 

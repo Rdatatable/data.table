@@ -219,6 +219,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     bywithoutby=FALSE
     if (!missing(i)) {
         isub = substitute(i)
+        if (is.null(isub)) return( null.data.table() )
         isubl = as.list.default(isub)
         if (identical(isubl[[1]],quote(eval))) {
             isub = eval(isubl[[2]],parent.frame())
