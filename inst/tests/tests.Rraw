@@ -40,6 +40,8 @@ test = function(num,x,y=NULL,error,warning,output) {
         return()
     }
     if (!missing(output)) {
+       output = gsub("[(]","[(]",output)
+       output = gsub("[)]","[)]",output)
        if (length(grep(output,out))) return()
        cat("Test",num,"didn't produce correct output:\n")
        cat("Expected:",output,"\n")
@@ -508,8 +510,9 @@ g <- quote( list( d ) )
 test(170, DT[,list(d)], DT[,eval(g)])
 
 DT = data.table(A=c(25L,85L,25L,25L,85L), B=c("a","a","b","c","c"), C=c(2,65,9,82,823))
-test(171, DT[ , data.table( A, C )[ A==25, C ] + data.table( A, C )[ A==85, C ], by=B ], data.table(B=c("a","c"),V1=c(67,905)))
-
+test(171.1, DT[B=="b"][A==85], output="Empty data.table (0 rows) of 3 cols: A,B,C")
+test(171.2, DT[B=="b"][A==85,C], numeric())
+test(171.3, DT[ , data.table( A, C )[ A==25, C ] + data.table( A, C )[ A==85, C ], by=B ], data.table(B=c("a","c"),V1=c(67,905)))
 test(172, DT[ , list(3,data.table( A, C )[ A==25, C ] + data.table( A, C )[ A==85, C ]), by=B ], data.table(B=c("a","b","c"),V1=3,V2=c(67,NA,905)))
 
 # Test growing result in memory. Usually the guess is good though.
@@ -1647,7 +1650,8 @@ test(559, setkey(DT,x)["a",y][[2]][[1]], 1:10)
 
 # Test renaming of .N to N
 DT = data.table(a=c(1,1,2,2,2),b=c(1,2,2,2,1))
-test(560, DT[,.N,a][,.N], error="'[.]N' not found")
+test(560.1, DT[,.N,a][,.N], 2L)
+test(560.2, DT[,.N,a][,N], 2:3)
 test(561, DT[,.N,a][,N], 2:3)
 test(562, DT[,list(.N),a][,N], 2:3)
 test(563, DT[,.N,a][,unique(.N),a]$V1, c(1L,1L))
@@ -1689,9 +1693,9 @@ DT = data.table(a=1:3,v=1:6)
 test(581, DT[a<1,sum(v),by=a], data.table(a=integer(),V1=integer()))
 test(582, DT[a<1,sum(v),by=list(a)], data.table(a=integer(),V1=integer()))
 test(583, DT[a<1], DT[0])
-test(584, DT[a<1], output="Empty data.table [(]0 rows[)] of 2 cols: a,v")
-test(585, DT[a<1,list(v)], output="Empty data.table [(]0 rows[)] of 1 col: v")
-test(586, data.table(a=integer(),V1=integer()), output="Empty data.table [(]0 rows[)] of 2 cols: a,V1")
+test(584, DT[a<1], output="Empty data.table (0 rows) of 2 cols: a,v")
+test(585, DT[a<1,list(v)], output="Empty data.table (0 rows) of 1 col: v")
+test(586, data.table(a=integer(),V1=integer()), output="Empty data.table (0 rows) of 2 cols: a,V1")
 
 # Test that .N is available in by on empty table, also in #1945
 test(587, DT[a<1,list(sum(v),.N),by=a], data.table(a=integer(),V1=integer(),N=integer()))
