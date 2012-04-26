@@ -74,6 +74,11 @@ BUG FIXES
         
     o   DT[NULL] now returns the NULL data.table, rather than an error. Test added.
         Use DT[0] to return an empty copy of DT.
+        
+    o   .N, .SD and .BY are now available to j when 'by' is missing, "", character()
+        and NULL, fixing #1732. For consistency so that j works unchanged when by is
+        dynamic and passed one of those values all meaning 'don't group'. Thanks
+        to Joseph Voelkel reporting and Chris Neff for further use cases. Tests added.
 
 
 USER VISIBLE CHANGES
@@ -88,6 +93,11 @@ USER VISIBLE CHANGES
     o   An empty data.table (0 rows, 1+ cols) now print as "Empty data.table" rather
         than "NULL data.table". A NULL data.table, returned by data.table(NULL) has
         0 rows and 0 cols.  DT[0] returns an empty data.table.
+        
+    o   0 length by (such as NULL and character(0)) now return a data.table when j
+        is vector, rather than vector, for consistency of return types when by
+        is dynamic and 'dont group' needs to be represented. Bug fix #1599 in
+        v1.7.0 was fixing an error in this case (0 length by).
 
 
         **********************************************

@@ -1083,8 +1083,8 @@ test(358, DT[FALSE, y:=5L], data.table(x=1:5,y=1:5))
 
 # Bug fix 1599
 DT = data.table(a=1:2,b=1:6)
-test(359, DT[,sum(b),by=NULL], 21L)
-test(360, DT[,sum(b),by=character(0)], 21L)
+test(359, DT[,sum(b),by=NULL], data.table(V1=21L))
+test(360, DT[,sum(b),by=character(0)], data.table(V1=21L))
 
 # Bug fix 1576 : NULL j results in 'inconsistent types' error
 DT = data.table(a=1:3,b=1:9)
@@ -1702,6 +1702,17 @@ test(587, DT[a<1,list(sum(v),.N),by=a], data.table(a=integer(),V1=integer(),N=in
 
 # Realised that DT[NULL] returned an error.
 test(588, DT[NULL], data.table(NULL))
+
+# Test that .N, .SD and .BY are available when by is missing and when by is 0 length
+DT = data.table(x=rep(1:3,each=3), y=c(1,3,6), v=1:9)
+test(589, DT[,sapply(.SD,sum)*.N], c(x=162, y=270, v=405))
+test(590, DT[,sapply(.SD,sum)*.N,by=NULL], data.table(V1=c(162,270,405)))
+test(591, DT[,sapply(.SD,sum)*.N,by=character()], data.table(V1=c(162,270,405)))
+test(592, DT[,sapply(.SD,sum)*.N,by=""], data.table(V1=c(162,270,405)))
+test(593, DT[,lapply(.SD,sum)], list(x=18L, y=30, v=45L))
+test(594, DT[,lapply(.SD,sum),by=NULL], data.table(x=18L, y=30, v=45L))
+test(595, DT[,lapply(.SD,sum),by=character()], data.table(x=18L, y=30, v=45L))
+test(596, DT[,lapply(.SD,sum),by=""], data.table(x=18L, y=30, v=45L))
 
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".
 # TO DO: why did SO answer using eval twice in j need .SD in lapply(f,eval,.SD) on 19 Apr

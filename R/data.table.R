@@ -516,9 +516,16 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         if (!length(byval) && nrow(x)>0L) {
             # see missing(by) up above for comments
             # by could be NULL or character(0) for example (e.g. passed in as argument in a loop of different bys)
-            if (mode(jsub)!="name" && as.character(jsub[[1L]]) == "list")
+            if (mode(jsub)!="name" && as.character(jsub[[1L]]) == "list")  # TO DO: can we remove this 'if' now?
                 jsub[[1L]]=as.name("data.table")
-            return(eval(jsub, envir=x, enclos=parent.frame()))   # *** 2nd point need to remove and leave to by ***
+            #return(eval(jsub, envir=x, enclos=parent.frame()))   # *** 2nd point need to remove and leave to by ***
+            f__ = 1L
+            len__ = nrow(x)
+            bysameorder = FALSE  # 1st and only group is the entire table, so could be TRUE, but FALSE to avoid
+                                 # a key of empty character()
+            bynames = allbyvars = NULL
+            byval = list()
+            # the rest now fall through
         }
         if (is.atomic(byval)) {
             if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && as.character(bysub)%chin%colnames(x)) ) {
@@ -566,23 +573,25 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             setattr(byval, "names", bynames)
         }
         if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}
-        if (bysameorder) {
-            f__ = duplist(byval)   # find group starts, given we know they are already grouped.
-            for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][f__]
-            len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1L))
-        } else {
-            o__ = fastorder(byval)
-            f__ = duplist(byval,order=o__)
-            len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1L))
-            firstofeachgroup = o__[f__]
-            origorder = sort.list(firstofeachgroup, na.last=FALSE, decreasing=FALSE)
-            # radixsort isn't appropriate in this case. 'firstofeachgroup' are row numbers from the
-            # (likely) large table so if nrow>100,000, range will be >100,000. Save time by not trying radix.
-            # TO DO: remove sort.list call by changing fastorder to fastgroup in first place.
-            f__ = f__[origorder]
-            len__ = len__[origorder]
-            firstofeachgroup = firstofeachgroup[origorder]
-            for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][firstofeachgroup]
+        if (length(byval)) {
+            if (bysameorder) {
+                f__ = duplist(byval)   # find group starts, given we know they are already grouped.
+                for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][f__]
+                len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1L))
+            } else {
+                o__ = fastorder(byval)
+                f__ = duplist(byval,order=o__)
+                len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1L))
+                firstofeachgroup = o__[f__]
+                origorder = sort.list(firstofeachgroup, na.last=FALSE, decreasing=FALSE)
+                # radixsort isn't appropriate in this case. 'firstofeachgroup' are row numbers from the
+                # (likely) large table so if nrow>100,000, range will be >100,000. Save time by not trying radix.
+                # TO DO: remove sort.list call by changing fastorder to fastgroup in first place.
+                f__ = f__[origorder]
+                len__ = len__[origorder]
+                firstofeachgroup = firstofeachgroup[origorder]
+                for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][firstofeachgroup]
+            }
         }
         if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
         # TO DO: allow secondary keys to be stored, then we see if our by matches one, if so use it, and no need to sort again. TO DO: document multiple keys.
