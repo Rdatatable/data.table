@@ -346,7 +346,7 @@ A key advantage of column vectors in \proglang{R} is that they are \emph{ordered
 \item{\code{DT[ColA==ColB]} is simpler than \code{DF[!is.na(ColA) \& !is.na(ColB) \& ColA==ColB,]}}
 \item{\code{data.frame(list(1:2,"k",1:4))} creates 3 columns, \code{data.table} creates one \code{list} column.}
 \item{\code{check.names} is by default \code{TRUE} in \code{data.frame} but \code{FALSE} in \code{data.table}, for convenience.}
-\item{\code{stringsAsFactors} is by default \code{TRUE} in \code{data.frame} but \code{FALSE} in \code{data.table}, for efficiency. Since a global string cache was added to R, characters items are a pointer to the single cached string and there is no longer a performance benefit of coverting to factor.
+\item{\code{stringsAsFactors} is by default \code{TRUE} in \code{data.frame} but \code{FALSE} in \code{data.table}, for efficiency. Since a global string cache was added to R, characters items are a pointer to the single cached string and there is no longer a performance benefit of coverting to factor.}
 \item{Atomic vectors in \code{list} columns are collapsed when printed using ", " in \code{data.frame}, but "," in \code{data.table} with a trailing comma after the 6th item to avoid accidental printing of large embedded objects.}
 \end{itemize}
 In \code{[.data.frame} we very often set \code{drop=FALSE}. When we forget, bugs can arise in edge cases where single columns are selected and all of a sudden a vector is returned rather than a single column \code{data.frame}. In \code{[.data.table} we took the opportunity to make it consistent and drop \code{drop}.

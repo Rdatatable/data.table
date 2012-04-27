@@ -53,7 +53,8 @@ expression.
 n = ceiling(1e7/26^2)   # 10 million rows
 DF = data.frame(x=rep(LETTERS,each=26*n),
                 y=rep(letters,each=n),
-                v=rnorm(n*26^2))
+                v=rnorm(n*26^2),
+                stringsAsFactors=FALSE)
 DT = data.table(DF,key="x,y")
 tables()
 

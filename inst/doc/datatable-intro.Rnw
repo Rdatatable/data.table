@@ -148,14 +148,15 @@ The comma is optional.
 DT["b"]
 @
 
-Lets now create a new \code{data.frame}. We will make it large enough to demonstrate the
+Let's now create a new \code{data.frame}. We will make it large enough to demonstrate the
 difference between a \emph{vector scan} and a \emph{binary search}.
 <<print=TRUE>>=
 grpsize = ceiling(1e7/26^2)   # 10 million rows, 676 groups
 tt=system.time( DF <- data.frame(
-  x=rep(factor(LETTERS),each=26*grpsize),
-  y=rep(factor(letters),each=grpsize),
-  v=runif(grpsize*26^2))
+  x=rep(LETTERS,each=26*grpsize),
+  y=rep(letters,each=grpsize),
+  v=runif(grpsize*26^2),
+  stringsAsFactors=FALSE)
 )
 head(DF,3)
 tail(DF,3)
@@ -164,7 +165,7 @@ dim(DF)
 
 We might say that \proglang{R} has created a 3 column table and \emph{inserted}
 \Sexpr{format(nrow(DF),big.mark=",",scientific=FALSE)} rows. It took \Sexpr{format(tt[3],nsmall=3)} secs, so it inserted
-\Sexpr{format(as.integer(nrow(DF)/tt[3]),big.mark=",",scientific=FALSE)} rows per second. This is normal in base \proglang{R}.
+\Sexpr{format(as.integer(nrow(DF)/tt[3]),big.mark=",",scientific=FALSE)} rows per second. This is normal in base \proglang{R}. Notice that we set \code{stringsAsFactors=FALSE}. This makes it a little faster for a fairer comparison, but feel free to experiment. 
 
 Let's extract an arbitrary group from \code{DF}:
 
