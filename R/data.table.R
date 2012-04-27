@@ -468,14 +468,13 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         if (mode(jsub)!="name" && as.character(jsub[[1L]]) == "list") {
             jsub[[1L]]=as.name("data.table")
             # we need data.table here because i) it grabs the column names from objects and ii) it does the vector expansion
-            # data.table() will also call alloc.col() here
+            # and we return testj straight after the eval later below (seeing .N and .SD) in this case.
         }
         f__ = min(1L,nrow(x))  # 0L for empty x
         len__ = nrow(x)
         bysameorder = TRUE  # 1st and only group is the entire table
         bynames = allbyvars = NULL
         byval = list()
-        # will now eval (seeing .SD and .N as testj and then return it)
     } else if (bywithoutby) {
         # The groupings come instead from each row of the i data.table.
         # Much faster for a few known groups vs a 'by' for all followed by a subset
@@ -516,9 +515,6 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         if (!length(byval) && nrow(x)>0L) {
             # see missing(by) up above for comments
             # by could be NULL or character(0) for example (e.g. passed in as argument in a loop of different bys)
-            if (mode(jsub)!="name" && as.character(jsub[[1L]]) == "list")  # TO DO: can we remove this 'if' now?
-                jsub[[1L]]=as.name("data.table")
-            #return(eval(jsub, envir=x, enclos=parent.frame()))   # *** 2nd point need to remove and leave to by ***
             f__ = 1L
             len__ = nrow(x)
             bysameorder = FALSE  # 1st and only group is the entire table, so could be TRUE, but FALSE to avoid
