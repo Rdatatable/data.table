@@ -12,6 +12,15 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
+    o   Numeric columns (type 'double') are now allowed in keys and ad hoc
+        by. J() and SJ() no longer coerce 'double' to 'integer'. i join columns
+        which mismatch on numeric type are coerced silently to match
+        the type of x's join column. Other types which use 'double' (such as
+        POSIXct and bit64) can now be fully supported. Two floating point values
+        are considered equal (by grouping and binary search joins) if their
+        difference is within sqrt(.Machine$double.eps), by default. See example
+        in ?unique.data.table. Completes FRs #951, #1609 and #1075.
+
     o   Prettier printing of list columns. The first 6 items of atomic vectors
         are collapsed with "," followed by a trailing "," if there are more than
         6, FR#1608. This difference to data.frame has been added to FAQ 2.17. 

@@ -619,10 +619,8 @@ DT = data.table(DF,key="a")
 test(216, DT["C",b]$b, 3L)
 DT = data.table(a=c(1,2,3),v=1:3,key="a")
 test(217, DT[J(2),v]$v, 2L)
-DT = data.table(a=c(1,2.1,3),v=1:3)
-tt = try(setkey(DT,a), silent=TRUE)
-test(218, inherits(tt,"try-error"))
-test(219, length(grep("losing fractional data", tt)))
+DT = data.table(a=c(1,2.1,3),v=1:3,key="a")
+test(218, DT[J(2.1),v]$v, 2L)
 
 # tests of quote()-ed expressions in i. Bug #1058
 DT = data.table(a=1:5,b=6:10,key="a")
@@ -668,8 +666,8 @@ test(230, ans1, ans2)
 # one column merge, bug #1241
 DT = data.table(a=rep(1:2,each=3),b=1:6,key="a")
 y = J(a=c(0,1),bb=c(10,11),key="a")
-test(231,merge(y,DT),data.table(a=1L,bb=11L,b=1:3,key="a"))
-test(232,merge(y,DT,all=TRUE),data.table(a=rep(c(0L,1L,2L),c(1,3,3)),bb=rep(c(10L,11L,NA_integer_),c(1,3,3)),b=c(NA_integer_,1:6),key="a"))
+test(231,merge(y,DT),data.table(a=1L,bb=11,b=1:3,key="a"))
+test(232,merge(y,DT,all=TRUE),data.table(a=rep(c(0L,1L,2L),c(1,3,3)),bb=rep(c(10,11,NA_real_),c(1,3,3)),b=c(NA_integer_,1:6),key="a"))
 y<-J(a=c(0,1),key="a") # y with only a key column
 test(233,merge(y,DT),data.table(a=1L,b=1:3,key="a"))
 test(234,merge(y,DT,all=TRUE),data.table(a=rep(c(0L,1L,2L),c(1,3,3)),b=c(NA_integer_,1:6),key="a"))
@@ -677,7 +675,7 @@ test(234,merge(y,DT,all=TRUE),data.table(a=rep(c(0L,1L,2L),c(1,3,3)),b=c(NA_inte
 # 'by' when DT contains list columns
 DT = data.table(a=c(1,1,2,3,3),key="a")
 DT$b=list(1:2,1:3,1:4,1:5,1:6)
-test(235,DT[,mean(unlist(b)),by=a],data.table(a=1:3,V1=c(1.8,2.5,mean(c(1:5,1:6))),key="a"))
+test(235,DT[,mean(unlist(b)),by=a],data.table(a=c(1,2,3),V1=c(1.8,2.5,mean(c(1:5,1:6))),key="a"))
 test(236,DT[,sapply(b,mean),by=a],data.table(a=c(1,1,2,3,3),V1=c(1.5,2.0,2.5,3.0,3.5),key="a"))
 
 # when i is a single name, it no longer evaluates within data.table scope
@@ -719,7 +717,7 @@ y=data.table(a=c("b","d","b"), d=c(8,9,10))
 test(251, x[y], data.table(a=c("b","b","d","b","b"),b=c(2:3,NA,2:3),d=c(8,8,9,10,10)))
 
 # auto coerce float to int in ad hoc by (just like setkey), FR#1051
-DT = data.table(a=c(1,1,1,2,2),v=1:5)
+DT = data.table(a=INT(1,1,1,2,2),v=1:5)
 test(252, DT[,sum(v),by=a], data.table(a=1:2,V1=c(6L,9L)))
 
 # check that by retains factor columns, since character is now default
@@ -790,10 +788,10 @@ test(272, DT[,sum(z),by=key(DT)]$V1, c(1L,3L,2L))
 DT = data.table(a=1:6,b=1:2)
 test(273, DT[,sum(a)*b,by=b]$V1, c(9L,24L))
 test(274, DT[,sum(a)*.BY[[1]],by=b], data.table(b=1:2,V1=c(9L,24L)))
-test(275, DT[,sum(a)*bcalc,by=list(bcalc=b+1)], data.table(bcalc=2:3,V1=c(18L,36L)))
+test(275, DT[,sum(a)*bcalc,by=list(bcalc=b+1L)], data.table(bcalc=2:3,V1=c(18L,36L)))
 test(276, DT[,sapply(.SD,sum)*b,by=b], data.table(b=1:2,V1=c(9L,24L)))  # .SD should no longer include b, unlike v1.6 and before
-test(277, DT[,sapply(.SD,sum)*bcalc,by=list(bcalc=b+1)], data.table(bcalc=2:3,V1=c(18L,36L)))  # cols used in by expressions are excluded from .SD, but can still be used in j (by name only and may vary within the group e.g. DT[,max(diff(date)),by=month(date)]
-test(278, DT[,sum(a*b),by=list(bcalc=b+1)], data.table(bcalc=2:3,V1=c(9L,24L)))
+test(277, DT[,sapply(.SD,sum)*bcalc,by=list(bcalc=b+1L)], data.table(bcalc=2:3,V1=c(18L,36L)))  # cols used in by expressions are excluded from .SD, but can still be used in j (by name only and may vary within the group e.g. DT[,max(diff(date)),by=month(date)]
+test(278, DT[,sum(a*b),by=list(bcalc=b+1L)], data.table(bcalc=2:3,V1=c(9L,24L)))
 
 
 # Test x==y where either column contain NA.
@@ -821,7 +819,7 @@ test(281, DT[, list(bal[1], bal[0]), by=pool], data.table(pool=1:2, V1=c(10,30),
 test(282, DT[, list(bal[ifelse(pool==1,1,0)], bal[1]), by=pool], data.table(pool=1:2, V1=c(10,NA), V2=c(10,30)))
 
 # More tests based on Andreas Borg's post of 11 May 2011.
-DT = data.table(x=c(0,0,1,0,1,1), y=c(1,1,0,1,1,1), z=1:6)
+DT = data.table(x=INT(0,0,1,0,1,1), y=INT(1,1,0,1,1,1), z=1:6)
 ans = data.table(x=c(0L,1L,1L),y=c(1L,0L,1L),V1=c(1L,1L,2L),V2=c(7L,3L,11L))
 test(283, DT[,list(sum(x[1], y[1]),sum(z)), by=list(x,y)], ans)
 test(284, DT[,list(sum(unlist(.BY)),sum(z)),by=list(x,y)], ans)
@@ -855,7 +853,7 @@ setkey(DT,a)   # a is numeric so a change of type to integer occurs, too, via :=
 test(291, attr(DT,"myuserattr"), 42)
 
 # Test new .N symbol
-DT = data.table(a=c(1,1,1,1,2,2,2),b=c(3,3,3,4,4,4,4))
+DT = data.table(a=INT(1,1,1,1,2,2,2),b=INT(3,3,3,4,4,4,4))
 test(292, DT[,.N,by=list(a,b)], data.table(a=c(1L,1L,2L),b=c(3L,4L,4L),N=c(3L,1L,3L)))
 test(293, DT[,list(a+b,.N),by=list(a,b)],  data.table(a=c(1L,1L,2L),b=c(3L,4L,4L),V1=4:6,N=c(3L,1L,3L)))
 
@@ -918,7 +916,7 @@ DT = data.table(A=1:10,B=rnorm(10),C=paste("a",1:100010,sep=""))
 test(301, nrow(DT[,sum(B),by=C])==100010)
 
 # Test fast assign
-DT = data.table(a=c(1,2,2,3),b=4:7,key="a")
+DT = data.table(a=c(1L,2L,2L,3L),b=4:7,key="a")
 DT[2,b:=42L]
 test(302, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,42L,6L,7L),key="a"))
 DT[J(2),b:=84L]
@@ -1021,18 +1019,15 @@ mycols = 1:2
 test(344, DT[,mycols:=NULL,with=FALSE], data.table(NULL)) 
 
 
-# Test incorrect 'can't coerce without losing precision' message
 # It seems that the .Internal rbind of two data.frame coerces IDate to numeric. Tried defining
 # "[<-.IDate" as per Tom's suggestion, and c.IDate to no avail (maybe because the .Internal code
-# in bind.c doesn't look up package methods?). Anyway the coercion from numeric
-# to integer needed fixing anyway (the all.equal would complain about attributes even though
-# there wasn't any fractional data present), and it works for this too, now.
+# in bind.c doesn't look up package methods?). Anyway, as from 1.8.1, double are allowed in keys, so
+# these still work but for a different reason than before 1.8.1: the results are IDate stored as double,
+# rather than before when is worked because by and setkey coerced double to integer.
 DF = data.frame(x=as.IDate(c("2010-01-01","2010-01-02")), y=1:6)
 DT = as.data.table(rbind(DF,DF))
-test(345, DT[,sum(y),by=x], data.table(x=as.IDate(c("2010-01-01","2010-01-02")),V1=c(18L,24L)))
-# ad hoc by coerces double to integer with a check
-test(346, setkey(DT,x)[J(as.IDate("2010-01-02"))], data.table(x=as.IDate("2010-01-02"),y=rep(c(2L,4L,6L),2),key="x"))
-# setkey also coerces double to integer with a check
+test(345, DT[,sum(y),by=x], {.x=as.IDate(c("2010-01-01","2010-01-02"));mode(.x)="double";data.table(x=.x,V1=c(18L,24L))})
+test(346, setkey(DT,x)[J(as.IDate("2010-01-02"))], {.x=as.IDate(rep("2010-01-02",6L));mode(.x)="double";data.table(x=.x,y=rep(c(2L,4L,6L),2),key="x")})
 
 # Test that invalid keys are reset, without user needing to remove key using key(DT)=NULL first
 DT = data.table(a=letters[1:3],b=letters[6:4],key="a")
@@ -1106,7 +1101,7 @@ test(369, DT[3,c[[1]][2,3]], 8L)
 test(370, DT[4,c[[1]]["b",b]$b[[1]]], 3.4)
 
 # Test returning a list() column via grouping
-DT = data.table(x=c(1,1,2,2,2),y=1:5)
+DT = data.table(x=INT(1,1,2,2,2),y=1:5)
 test(371, DT[,list(list(unique(y))),by=x], data.table(x=1:2,V1=list(1:2,3:5)))
 
 # Test matrix i is an error
@@ -1350,8 +1345,8 @@ test(457, DT[DT2, list(val, val2), nomatch=0], data.table(id=c(1L,2L,2L),val=1:3
 # Test bysameorder edge cases, #1631
 DT = data.table(a=1:3,v=4:9,key="a")
 test(458, DT[,sum(v),by=list(a%%2L)], data.table(a=c(1L,0L),V1=c(26L,13L)))
-test(459, DT[, list(sum(v)), list(ifelse(a == 2, NA, 1))], data.table(ifelse=c(1L,NA_integer_),V1=c(26L,13L)))
-test(460, DT[, list(sum(v)), list(ifelse(a == 2, 1, NA))], data.table(ifelse=c(NA_integer_,1L),V1=c(26L,13L)))
+test(459, DT[, list(sum(v)), list(ifelse(a == 2, NA, 1L))], data.table(ifelse=c(1L,NA_integer_),V1=c(26L,13L)))
+test(460, DT[, list(sum(v)), list(ifelse(a == 2, 1, NA))], data.table(ifelse=c(NA_real_,1),V1=c(26L,13L)))
 test(461, DT[,sum(v),by=a], data.table(a=1:3,V1=c(11L,13L,15L),key="a"))
 
 # Test loading from file (which resets tl to 0 in R 2.14.0+, and unitialized random number in 2.13.2-)
@@ -1509,7 +1504,7 @@ test(504, dtB$k, 1:4)  # or dtB
 
 # Test new i. JIS prefix in 1.7.10
 DT = data.table(a=1:2,b=1:4,key="a")
-test(505, DT[J(a=1,b=6),sum(i.b*b)]$V1, 24L)
+test(505, DT[J(a=1,b=6),sum(i.b*b)]$V1, 24)  # 24 now 'double' because i.b is 'double'
 
 # Test := after a key<-
 DT = data.table(a=3:1,b=4:6)
@@ -1571,18 +1566,18 @@ if (.timingtests) {
 }
 
 # Test that .set_row_names() is maintained on .SD for each group
-DT = data.table(a=c(1,1,2,2,2,3,3,3,3),b=1:9)
+DT = data.table(a=INT(1,1,2,2,2,3,3,3,3),b=1:9)
 test(531, DT[,length(rownames(.SD)),by=a], data.table(a=1:3,V1=2:4))
 
 # Test column names with spaces, bug#1880, and check.names default is now FALSE, too
 # Thanks to Yang Zhang for the tests.
-DT = data.table("a b"=c(1,1,2,2,2),c=1:5)
+DT = data.table("a b"=INT(1,1,2,2,2),c=1:5)
 test(532, DT[,sum(c),by="a b"], data.table("a b"=1:2,V1=c(3L,12L)))
 test(533, names(data.table('a b'=1)[, list('c d'=`a b`)]), "c d")
 test(534, names(transform(data.table('a b'=1), `c d`=`a b`)), c("a b","c d"))
 
 # Test keyby, new in v1.8.0
-DT = data.table(a=c(1,3,1,2,3,2),b=1:2,c=1:3,v=1:6)
+DT = data.table(a=INT(1,3,1,2,3,2),b=1:2,c=1:3,v=1:6)
 test(535, DT[,sum(v),by=a, keyby=a], error="not both")
 test(536, DT[,sum(v),by=a], data.table(a=c(1L,3L,2L),V1=c(4L,7L,10L)))  # retains appearance order
 ans = data.table(a=1:3,V1=c(4L,10L,7L),key="a")
@@ -1649,7 +1644,7 @@ test(558, capture.output(print(DT)),
 test(559, setkey(DT,x)["a",y][[2]][[1]], 1:10)
 
 # Test renaming of .N to N
-DT = data.table(a=c(1,1,2,2,2),b=c(1,2,2,2,1))
+DT = data.table(a=INT(1,1,2,2,2),b=INT(1,2,2,2,1))
 test(560.1, DT[,.N,a][,.N], 2L)
 test(560.2, DT[,.N,a][,N], 2:3)
 test(561, DT[,.N,a][,N], 2:3)

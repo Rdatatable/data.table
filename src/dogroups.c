@@ -122,8 +122,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP order, SEXP starts, SEXP lens, SEXP jex
             case INTSXP :
             case LGLSXP :
             case STRSXP :
-                break;
             case REALSXP :
+                break;
             default:
                 error("by columns must be integer, character or factor (currently not numeric)");
         }

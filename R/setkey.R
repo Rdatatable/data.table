@@ -31,8 +31,8 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
     }
     alreadykeyedbythiskey = identical(key(x),cols)
     coerced = FALSE   # in future we hope to be able to setkeys on any type, this goes away, and saves more potential copies
+    if (".xi" %in% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
     for (i in cols) {
-        if (".xi" %in% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
         .xi = x[[i]]  # TO DO: check that [[ is copy on write, otherwise checking types itself will be copying each column.
         #if (is.character(.xi)) {
         #    if (verbose) cat("setkey changing the type of column '",i,"' from character to factor by reference.\n",sep="")
@@ -40,18 +40,19 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
         #    coerced=TRUE
         #    next
         #}
-        if (typeof(.xi) == "double") {
-            # avoid new vector here, use reallyreal to issue warning that int might be more appropriate
-            toint = as.integer(.xi)   # see [.data.table for similar logic, and comments
-            if (isTRUE(all.equal(as.vector(.xi),toint))) {
-                if (verbose) cat("setkey changing the type of column '",i,"' from numeric to integer by reference, no fractional data present.\n",sep="")
-                mode(.xi) = "integer"
-                x[,i:=.xi,with=FALSE]
-                coerced=TRUE
-                next
-            }
-            stop("Column '",i,"' cannot be coerced to integer without losing fractional data.")
-        }
+        #if (typeof(.xi) == "double") {
+            # TO DO: use reallyreal to issue warning that int might be more appropriate
+            
+        #    toint = as.integer(.xi)   # see [.data.table for similar logic, and comments
+        #    if (isTRUE(all.equal(as.vector(.xi),toint))) {
+        #        if (verbose) cat("setkey changing the type of column '",i,"' from numeric to integer by reference, no fractional data present.\n",sep="")
+        #        mode(.xi) = "integer"
+        #        x[,i:=.xi,with=FALSE]
+        #        coerced=TRUE
+        #        next
+        #    }
+        #    stop("Column '",i,"' cannot be coerced to integer without losing fractional data.")
+        #}
         #if (is.factor(.xi)) {
         #    # check levels are sorted, if not sort them, test 150
         #    # TO DO ... do we need sorted levels now that we use chmatch rather than sortedmatch?
@@ -67,7 +68,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
         #    }
         #    next
         #}
-        if (!typeof(.xi) %chin% c("integer","logical","character")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not (currently) allowed as a key column type.")
+        if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not (currently) allowed as a key column type.")
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
     o = fastorder(x, cols, verbose=verbose)
@@ -157,8 +158,8 @@ ordernumtol = function(x, o=1:length(x), tol=.Machine$double.eps^0.5) {
 
 J = function(...,SORTFIRST=FALSE) {
     # J because a little like the base function I(). Intended as a wrapper for subscript to DT[]
-    JDT = data.table(...)
-    for (i in 1:length(JDT)) if (storage.mode(JDT[[i]])=="double") mode(JDT[[i]])="integer"
+    JDT = data.table(...)   # TO DO: can this be list() for efficiency instead?
+    # TO DO: delete... for (i in 1:length(JDT)) if (storage.mode(JDT[[i]])=="double") mode(JDT[[i]])="integer"
     if (SORTFIRST) setkey(JDT)
     JDT
 }
@@ -177,7 +178,7 @@ CJ = function(...)
     # Cross Join will then produce a join table with the combination of all values (cross product).
     # The last vector is varied the quickest in the table, so dates should be last for roll for example
     l = list(...)
-    for (i in seq(along=l)) if (storage.mode(l[[i]])=="double") mode(l[[i]])="integer"
+    # for (i in seq(along=l)) if (storage.mode(l[[i]])=="double") mode(l[[i]])="integer"
     if (length(l)>1) {
         n = sapply(l,length)
         nrow = prod(n)

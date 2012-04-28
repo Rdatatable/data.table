@@ -25,16 +25,18 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
   o options to join to prevailing value (roll join a.k.a locf)
 */
 
-SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP roll, SEXP rolltolast, SEXP retFirst, SEXP retLast)
+SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP roll, SEXP rolltolast, SEXP retFirst, SEXP retLast, SEXP tolerance)
 {
     // If the left table is large and the right table is large, then sorting the left table first may be
     // quicker depending on how long to sort the left table. This is up to user via use of J() or SJ()
     
     R_len_t lr,nr,low,mid,upp,coln,col,lci,rci;
     R_len_t prevlow, prevupp, type, newlow, newupp, /*size,*/ lt, rt;
+    double tol = REAL(tolerance)[0];
     SEXP lc, rc;
     union {
         int i;
+        double d;
         SEXP s;
     } lval, rval;
     if (NA_INTEGER > 0) error("expected internal value of NA_INTEGER %d to be negative",NA_INTEGER);
@@ -130,8 +132,33 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                 }
                 break;
             case REALSXP :
-                // ************* TO DO *******************
-                // Have discussed a decimal() class - fixed decimal points stored as integer
+                // same comments for INTSXP apply here
+                lval.d = REAL(lc)[lr];
+                if (lval.d==NA_REAL) goto nextlr;
+                while(low < upp-1) {
+                    mid = low+((upp-low)/2);
+                    rval.d = REAL(rc)[mid];
+                    if (rval.d<lval.d-tol) {
+                        low=mid;
+                    } else if (rval.d>lval.d+tol) {
+                        upp=mid;
+                    } else { // rval.d == lval.d) 
+                        newlow = mid;
+                        newupp = mid;
+                        while(newlow<upp-1) {
+                            mid = newlow+((upp-newlow)/2);
+                            rval.d = REAL(rc)[mid];
+                            if (fabs(rval.d-lval.d)<tol) newlow=mid; else upp=mid;
+                        }
+                        while(low<newupp-1) {
+                            mid = low+((newupp-low)/2);
+                            rval.d = REAL(rc)[mid];
+                            if (fabs(rval.d-lval.d)<tol) newupp=mid; else low=mid;
+                        }
+                        break;
+                    }
+                }
+                break;
             default:
                 error("Type '%s' not supported as key column", type2char(type));
             }

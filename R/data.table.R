@@ -134,7 +134,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         if (nrows[i]==0L) stop("Item ",i," has no length. Provide at least one item (such as NA, NA_integer_ etc) to be repeated to match the ",nr," rows in the longest column. Or, all columns can be 0 length, for insert()ing rows into.")
         if (nr%%nrows[i] == 0L) {
-            if (is.atomic(xi) || is.list(xi)) {
+            if (nrows[i]<nr && (is.atomic(xi) || is.list(xi))) {
+                # TO DO: surely use set() here, or avoid the coercion
                 x[[i]] = rep(xi, length.out = nr)
                 next
             }
@@ -276,10 +277,22 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                     # NAs can be produced by this level match, in which case the C code (it knows integer value NA)
                     # can skip over the lookup. It's therefore important we pass NA rather than 0 to the C code.
                 }
+                if (is.integer(x[[rc]]) && is.real(i[[lc]])) {
+                    # TO DO: add warning if reallyreal about loss of precision
+                    # or could coerce in binary search on the fly, at cost
+                    newval = i[[lc]]
+                    mode(newval) = "integer"  # retains column attributes (such as IDateTime class)
+                    set(i,j=lc,value=newval)
+                }
+                if (is.real(x[[rc]]) && is.integer(i[[lc]])) {
+                    newval = i[[lc]]
+                    mode(newval) = "double"
+                    set(i,j=lc,value=newval)
+                }
             }
             idx.start = integer(nrow(i))
             idx.end = integer(nrow(i))
-            .Call("binarysearch", i, x, as.integer(leftcols-1L), as.integer(rightcols-1L), haskey(i), roll, rolltolast, idx.start, idx.end, PACKAGE="data.table")
+            .Call("binarysearch", i, x, as.integer(leftcols-1L), as.integer(rightcols-1L), haskey(i), roll, rolltolast, idx.start, idx.end, sqrt(.Machine$double.eps), PACKAGE="data.table")
             if (mult=="all") {
                 # TO DO: move this inside binarysearch.c
                 lengths = idx.end - idx.start + 1L
@@ -540,16 +553,16 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to vector or list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
         for (jj in seq_len(length(byval))) {
-            if (typeof(byval[[jj]]) == "double") {
-                toint = as.integer(byval[[jj]])  # drops attributes (such as class) so as.vector() needed on next line
-                if (isTRUE(all.equal(as.vector(byval[[jj]]),toint))) {
-                    mode(byval[[jj]]) = "integer"  # retains column attributes (such as IDateTime class)
-                    # TO DO: check no copy and remove coercion
-                    next
-                }
-                else stop("Column ",jj," of 'by' or 'keyby' is type 'double' and contains fractional data so cannot be coerced to integer in this particular case without losing information.")
-            }
-            if (!typeof(byval[[jj]]) %chin% c("integer","logical","character")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Useage: DT[,sum(colC),by=list(colA,month(colB))]")
+            #if (typeof(byval[[jj]]) == "double") {
+            #    toint = as.integer(byval[[jj]])  # drops attributes (such as class) so as.vector() needed on next line
+            #    if (isTRUE(all.equal(as.vector(byval[[jj]]),toint))) {
+            #        mode(byval[[jj]]) = "integer"  # retains column attributes (such as IDateTime class)
+            #        # TO DO: check no copy and remove coercion
+            #        next
+            #    }
+            #    else stop("Column ",jj," of 'by' or 'keyby' is type 'double' and contains fractional data so cannot be coerced to integer in this particular case without losing information.")
+            #}
+            if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Useage: DT[,sum(colC),by=list(colA,month(colB))]")
         }
         tt = sapply(byval,length)
         if (any(tt!=nrow(x))) stop("Each item in the 'by' or 'keyby' list must be same length as rows in x (",nrow(x),"): ",paste(tt,collapse=","))
