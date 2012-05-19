@@ -94,6 +94,7 @@ key(x) <- value   # deprecated, please use setkey or setkeyv instead.
     try(tracemem(DF))                  # try() for non-Windows where R is faster without memory profiling
     colnames(DF)[1] <- "A"             # 4 copies of entire object
     names(DF)[1] <- "A"                # 3 copies of entire object
+    names(DF) <- c("A", "b")           # 2 copies of entire object
     `names<-`(DF,c("A","b"))           # 1 copy of entire object
     x=`names<-`(DF,c("A","b"))         # still 1 copy (so not print method)
     # What if DF is large, say 10GB in RAM. Copy 10GB just to change a column name?
