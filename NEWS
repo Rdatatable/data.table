@@ -15,12 +15,12 @@ NEW FEATURES
     o   Numeric columns (type 'double') are now allowed in keys and ad hoc
         by. J() and SJ() no longer coerce 'double' to 'integer'. i join columns
         which mismatch on numeric type are coerced silently to match
-        the type of x's join column. Other types which use 'double' (such as
-        POSIXct and bit64) can now be fully supported. Two floating point values
+        the type of x's join column. Two floating point values
         are considered equal (by grouping and binary search joins) if their
         difference is within sqrt(.Machine$double.eps), by default. See example
-        in ?unique.data.table. Completes FRs #951, #1609 and #1075.
-
+        in ?unique.data.table. Completes FRs #951, #1609 and #1075. This paves the
+        way for other atomic types which use 'double' (such as POSIXct and bit64).
+        
     o   Prettier printing of list columns. The first 6 items of atomic vectors
         are collapsed with "," followed by a trailing "," if there are more than
         6, FR#1608. This difference to data.frame has been added to FAQ 2.17. 
@@ -38,6 +38,12 @@ NEW FEATURES
         Character to character is now preferred in joins and needs no coercion.
         Even so, these coercions have been made much more efficient by taking
         a shallow copy of i internally, avoiding a full deep copy of i.
+        
+    o   Ordered subsets now retain x's key. Always for logical and keyed i, using
+        base::is.unsorted() for integer and unkeyed i.
+        
+    o   mean() is now automatically .Internal()-ed. This can speed up grouping by
+        20 times when there are a large number of groups. See wiki point 3.
         
 
 BUG FIXES
@@ -107,6 +113,11 @@ USER VISIBLE CHANGES
         is vector, rather than vector, for consistency of return types when by
         is dynamic and 'dont group' needs to be represented. Bug fix #1599 in
         v1.7.0 was fixing an error in this case (0 length by).
+        
+    o   Default column names for unnamed columns are now consistent between 'by' and
+        non-'by'; e.g. these two queries now name the columns "V1" and "V2" :
+            DT[,list("a","b"),by=x]
+            DT[,list("a","b")]      # used to name the columns 'a' and 'b', oddly.
 
 
         **********************************************

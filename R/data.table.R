@@ -22,7 +22,7 @@ print.data.table = function (x, digits = NULL, quote = FALSE, right = TRUE, nrow
         toprint = x
         msg=""
     }
-    cn = if (nrow(toprint)>20L) colnames(x) else NULL  # only repeat colnames at the bottom if over 20 rows
+    cn = if (nrow(toprint)>20L) names(x) else NULL  # only repeat colnames at the bottom if over 20 rows
     print(rbind(format.data.table(toprint, digits = digits, na.encode = FALSE), cn),
           digits=digits, quote=quote, right=right, ...)
     if (msg!="") cat(msg,"\n")
@@ -115,7 +115,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         nrows[i] <- NROW(xi)    # for a vector (including list() columns) returns the length
         if (hascols[i]) {
-            namesi <- colnames(xi)  # works for both data.frame's, matrices and data.tables's
+            namesi <- names(xi)  # works for both data.frame's, matrices and data.tables's
             if (length(namesi)==0L) namesi = rep("",ncol(xi))
             namesi[is.na(namesi)] = ""
             tt = namesi==""
@@ -186,6 +186,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     # TO DO. Revisit this comment. Applied when 'alloc.col(value)' was the last line....Despite the thread on r-devel "Confused about NAMED" about data.frame(), returning it this way makes a NAM(1) data.table. Returning "value=alloc.col(value);value" is the same but returns a NAM(2) data.table. Unlike data.frame which is always NAMED==2. We ignore NAMED in data.table generally, but it would be useful to avoid the grow warning when NAMED=1. However the print method still bumps NAMED (as it does in data.frame) (TO DO - stop that bump and warn on grow via := will be even less often).
 }
 
+is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need to result in 'not sorted' e.g. test 251 where i table is not sorted but f__ without NAs is sorted. Could check if i is sorted too, but that would take time and that's what SJ is for to make the calling code clear to the reader.
 
 "[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), drop=NULL)
 {
@@ -201,7 +202,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
     if (roll && rolltolast) stop("roll and rolltolast cannot both be true")
     # TO DO. Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
-    if (!(is.na(nomatch) || nomatch==0L)) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
+    if (!is.na(nomatch) && nomatch!=0L) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
+    nomatch = as.integer(nomatch)
     if (which && !missing(j)) stop("'which' is true but 'j' is also supplied")
     if (missing(i) && missing(j)) stop("must provide either i or j or both. Try DT instead of DT[].")
     if (!with && missing(j)) stop("j must be provided when with=FALSE")
@@ -216,7 +218,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         if (!with) stop("'with' must be TRUE when 'by' or 'keyby' is provided")
         if (missing(j)) stop("'by' or 'keyby' is supplied but not j")
     }
-    irows = TRUE
+    irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
     bywithoutby=FALSE
     if (!missing(i)) {
         isub = substitute(i)
@@ -240,9 +242,9 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         if (identical(class(i),"list") || identical(class(i),"data.frame")) i = as.data.table(i)
         if (is.data.table(i)) {
             if (!haskey(x)) stop("When i is a data.table (or character vector), x must be keyed (i.e. sorted, and, marked as sorted) so data.table knows which columns to join to and take advantage of x being sorted. Call setkey(x,...) first, see ?setkey.")
-            rightcols = chmatch(key(x),colnames(x))   # NAs here (i.e. invalid data.table) checked in binarysearch 
+            rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in binarysearch 
             leftcols = if (haskey(i))
-                chmatch(head(key(i),length(rightcols)),colnames(i))
+                chmatch(head(key(i),length(rightcols)),names(i))
             else
                 1L:min(ncol(i),length(rightcols))
             i = shallow(i)   # careful to only plonk syntax on i from now on
@@ -269,7 +271,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                     }
                     if (!is.factor(i[[lc]]))
                         stop("x.'",xcnam,"' is a factor column being joined to i.'",icnam,"' which is type '",typeof(i[[lc]]),"'. Factor columns must join to factor or character columns.")
-                    if ((roll || rolltolast) && lc==length(leftcols)) stop("Attempting roll join on factor column i.",colnames(i)[lc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns NA for missing chars in x (rather than some integer greater than existing).
+                    if ((roll || rolltolast) && lc==length(leftcols)) stop("Attempting roll join on factor column i.",names(i)[lc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns NA for missing chars in x (rather than some integer greater than existing).
                     newfactor = chmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA_integer_)[i[[lc]]]
                     levels(newfactor) = levels(x[[rc]])
                     class(newfactor) = "factor"
@@ -290,67 +292,78 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                     set(i,j=lc,value=newval)
                 }
             }
-            idx.start = integer(nrow(i))
-            idx.end = integer(nrow(i))
-            .Call("binarysearch", i, x, as.integer(leftcols-1L), as.integer(rightcols-1L), haskey(i), roll, rolltolast, idx.start, idx.end, sqrt(.Machine$double.eps), PACKAGE="data.table")
+            f__ = integer(nrow(i))
+            len__ = integer(nrow(i))
+            allLen1 = TRUE
+            .Call("binarysearch", i, x, as.integer(leftcols-1L), as.integer(rightcols-1L), haskey(i), roll, rolltolast, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1, PACKAGE="data.table")
+            # length of nomatch (single 0 or NA) is 1 in both cases.
             if (mult=="all") {
-                # TO DO: move this inside binarysearch.c
-                lengths = idx.end - idx.start + 1L
-                idx.diff = rep(1L, sum(lengths))
-                idx.diff[head(cumsum(lengths), -1L) + 1L] = tail(idx.start, -1L) - head(idx.end, -1L)
-                idx.diff[1L] = idx.start[1L]
-                irows = cumsum(idx.diff)
-                if (missing(by)) bywithoutby=TRUE  # TO DO: detect if joining to unique rows
+                # TO DO: delete ...
+                #idx.diff = rep(1L, sum(lengths))
+                #idx.diff[head(cumsum(lengths), -1L) + 1L] = tail(idx.start, -1L) - head(idx.end, -1L)
+                #idx.diff[1L] = idx.start[1L]
+                #irows = cumsum(idx.diff)
+                if (!missing(by) || which || missing(j)) {
+                    irows = if (allLen1) f__ else as.integer(unlist(mapply(seq,f__,length.out=len__,SIMPLIFY=FALSE)))
+                    # TO DO: *** if works, port the unlist mapply to C *** This is potentially relatively slow currently.
+                } else {
+                    bywithoutby=TRUE  # TO DO: use allLen1 to detect if joining to unique rows?
+                    # Important that f__ is as long as nrow(i) (rather than taking away 0s), to know the i groups
+                }
             } else {
-                irows = if (mult=="first") idx.start else idx.end
-                lengths=rep(1L,length(irows))
+                irows = if (mult=="first") f__ else f__+len__-1L
+                if (identical(nomatch,0L)) irows = irows[len__>0L]   # 0s are len 0, so this removes -1 irows
             }
-            if (is.na(nomatch) || nomatch!=0L) irows[irows==0L] = nomatch
-            else lengths[idx.start==0L] = 0L
+            #browser()
+            # TO DO .. delete ...if (is.na(nomatch) || nomatch!=0L) irows[irows==0L] = nomatch
+            # else lengths[idx.start==0L] = 0L
             if (which) return(irows)
-            iby = head(key(x),length(leftcols))
-            byval = i[,leftcols,with=FALSE]  # **** TO DO: shallow copy here ****
+            # TO DO..delete...iby = head(key(x),length(leftcols))
+            # byval = i[,leftcols,with=FALSE]  # **** TO DO: shallow copy here ****
         } else {
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
-            if (which) {
-                if (is.logical(i)) {
-                    if (length(i)==nrow(x)) return(which(i))   # e.g. DT[colA>3,which=TRUE]
-                    else return((1L:nrow(x))[i])   # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness
-                }
-                else return(as.integer(i))  # e.g. DT["A",which=TRUE],  or DT[c(1,3)]
+            # if (which) {
+            if (is.logical(i)) {
+                if (length(i)==nrow(x)) irows=which(i)   # e.g. DT[colA>3,which=TRUE]
+                else if (!isTRUE(i)) irows=(1L:nrow(x))[i]  # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness
             }
-            irows = i
+            else {
+                irows = as.integer(i)  # e.g. DT[c(1,3)]
+                irows[irows>nrow(x)] = NA_integer_  # not needed for vector subsetting, but for is.unsorted to return NA
+            }
+            if (which)
+                return(if (is.null(irows)) 1L:nrow(x) else irows)
         }
         if (missing(j)) {
             if (!is.data.table(i)) {
+                if (is.null(irows)) return(copy(x))  # Must return a copy. Shallow copy only when i is missing.
             	ans = vector("list",ncol(x))
                 for (s in seq_len(ncol(x))) ans[[s]] = x[[s]][irows]
                 setattr(ans, "names", names(x))
-                if (haskey(x) && (is.logical(irows) || length(irows)==1L)) {
+                if (haskey(x) && (is.logical(i) || is.sorted(irows))) {
                     setattr(ans,"sorted",key(x))
-                    # TO DO: detect more ordered subset cases, e.g. if irows is monotonic
                 }
             } else {
                 ans = vector("list",ncol(i)+ncol(x)-length(leftcols))
                 inonjoin = seq_len(ncol(i))[-leftcols]
-                if (!all(lengths==1L)) {   # TO DO: avoid this all == by returning flag from C
-                    ii = rep(1L:nrow(i),lengths)
-                    for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]][ii]
-                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]][ii]
-                } else {
+                if ((allLen1 || mult!="all") && (is.na(nomatch) || !any(f__==0L))) {
                     for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]]
                     for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]]
+                } else {
+                    ii = rep(1L:nrow(i),len__)
+                    for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]][ii]
+                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]][ii]
                 }
                 rightcols = head(rightcols,length(leftcols))
                 xnonjoin = seq_len(ncol(x))[-rightcols]
-                for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]
-                setattr(ans, "names", make.names(c(colnames(x)[rightcols],colnames(x)[-rightcols],colnames(i)[-leftcols]),unique=TRUE))
-                if (haskey(i) || nrow(i)==1L)
+                if (is.null(irows)) 
+                    for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]]
+                else
+                    for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]
+                setattr(ans, "names", make.names(c(names(x)[rightcols],names(x)[-rightcols],names(i)[-leftcols]),unique=TRUE))
+                if (haskey(i) || is.sorted(f__))
                     setattr(ans,"sorted",key(x))
-                    # TO DO: detect more ordered subset cases e.g. DT["A"] or DT[c("A","B")] where the
-                    # irows are an ordered subset. Or just .C("isordered",irows)
-                    # The nrow(i)==1L is the simplest case and been there for a while (and tested)
             }
             setattr(ans,"class",c("data.table","data.frame"))
             setattr(ans,"row.names",.set_row_names(nrow(ans)))
@@ -366,6 +379,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         jsub = eval(jsubl[[2L]],parent.frame())
         if (is.expression(jsub)) jsub = jsub[[1L]]
     }
+    lhs = NULL
     av = all.vars(jsub,TRUE)
     if (":=" %chin% sapply(sapply(jsub,all.vars,TRUE),"[",1L)) {   # TO DO: Quite slow, move the sapply(sapply into C.
         # The double sapply is for FAQ 4.5
@@ -373,23 +387,30 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         if (!missing(by)) stop("Combining := in j with by is not yet implemented.")
         if (bywithoutby && nrow(i)>1L) stop("combining bywithoutby with := in j is not yet implemented.")
         if (as.character(jsub[[1L]]) != ":=") stop("Currently only one `:=` may be present in j. This may be expanded in future.")
+        lhs = jsub[[2]]
+        jsub = jsub[[3]]
+        av = all.vars(jsub,TRUE)  # TO DO: might not be necessary to remove the lhs from av like this
+        if (FALSE) {
         rhsav = all.vars(jsub[[3L]],TRUE)
-        if (length(rhsav) && length(rhsvars <- intersect(rhsav,colnames(x)))) {
-            tmpx = if (identical(irows,TRUE)) x[,rhsvars,with=FALSE] else x[irows,rhsvars,with=FALSE]
+        # TO DO: these eval go away when done by group,  and don't see .N, .SD, .BY or .I either.
+        if (length(rhsav) && length(rhsvars <- intersect(rhsav,names(x)))) {
+            tmpx = if (is.null(irows)) x[,rhsvars,with=FALSE] else x[irows,rhsvars,with=FALSE]
             # The 'if' isn't necessary but we do that for a bit of speed.
             rhs = eval(jsub[[3L]], envir=tmpx, enclos=parent.frame())
         } else {
             rhs = eval(jsub[[3L]], envir=parent.frame(), enclos=parent.frame())
         }
+        #
+        }
         if (with) {
-            if (!is.name(jsub[[2L]])) stop("LHS of := must be a single column name, when with=TRUE. When with=FALSE the LHS may be a vector of column names or positions.")
-            lhs = as.character(jsub[[2L]])
+            if (!is.name(lhs)) stop("LHS of := must be a single column name, when with=TRUE. When with=FALSE the LHS may be a vector of column names or positions.")
+            lhs = as.character(lhs)
         } else {
-            lhs = eval(jsub[[2L]], envir=parent.frame(), enclos=parent.frame())
+            lhs = eval(lhs, envir=parent.frame(), enclos=parent.frame())
             if (!is.atomic(lhs)) stop("LHS of := must evaluate to an atomic vector (column names or positions) when with=FALSE")
             if (is.numeric(lhs)) {
                 if (!all(1L<=lhs | lhs<=ncol(x))) stop("LHS of := out of bounds")
-                lhs = colnames(x)[lhs]
+                lhs = names(x)[lhs]
             }
             if (!is.character(lhs)) stop("Logical error. LHS of := wasn't atomic column names or positions")
         }
@@ -397,15 +418,15 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         if (all(!is.na(m))) {
             # updates by reference to existing columns
             cols = as.integer(m)
-            newcolnames=NULL
+            newnames=NULL
         } else {
-            # Adding new column(s)
-            newcolnames=setdiff(lhs,names(x))
-            cols = as.integer(c(m[!is.na(m)],ncol(x)+1L:length(newcolnames)))
+            # Adding new column(s). TO DO: move after the first eval incase the jsub has an error.
+            newnames=setdiff(lhs,names(x))
+            cols = as.integer(c(m[!is.na(m)],ncol(x)+1L:length(newnames)))
             if ((ok<-selfrefok(x,verbose))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
                 warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table, so that := can add this new column by reference. At an earlier point, this data.table has been copied by R. Avoid key<-, names<- and attr<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setkey(), setnames() and setattr(). If this message doesn't help, please report to datatable-help so the root cause can be fixed.")
-            if ((ok<1L) || (truelength(x) < ncol(x)+length(newcolnames))) {
-                n = max(ncol(x)+100, ncol(x)+2*length(newcolnames))
+            if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
+                n = max(ncol(x)+100, ncol(x)+2*length(newnames))
                 name = substitute(x)
                 if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
                     # Do the warning before allocating and assigning, so we can track where we are when verbose=TRUE
@@ -425,6 +446,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                     assign(as.character(name),x,pos=parent.frame(),inherits=TRUE)
             }
         }
+        # TO DO: delete ... this goes away too if the assign is later ...
+        if (FALSE) {
         ssrows =
             if (!is.logical(irows)) as.integer(irows)          # DT[J("a"),z:=42L]
             else if (identical(irows,TRUE)) NULL               # DT[,z:=42L]
@@ -434,31 +457,35 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 if (!length(tt)) return(x)                     # DT[FALSE,z:=42L]
                 tt
             }
+        }
+            
+        # TO DO: any new columns can't be added here, because we don't know the type to add yet, after eval below...
+        if (FALSE) {
         if (verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
-        return(.Call("assign",x,ssrows,cols,newcolnames,rhs,verbose,PACKAGE="data.table"))
+        return(.Call("assign",x,ssrows,cols,newnames,rhs,verbose,PACKAGE="data.table"))
+        }
         # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
         # Could return number of rows updated but even when wrapped in invisible() it seems
         # the [.class method doesn't respect invisible, which may be confusing to user.
         # NB: Tried assign(":=",function(lhs,rhs) {...},envir=parent.frame()) which worked for whole columns
         # but how to pass a subset of rows that way, or more crucially an assignment within groups (TO DO)
-    }
-    if (!with) {
+    } else if (!with) {
         if (!length(j)) return( null.data.table() )
         if (is.character(j)) j = chmatch(j, names(x))
-        # TO DO:  DT[,"-columntoremove",with=FALSE] might be nice
+        # TO DO:  DT[,-"columntoremove",with=FALSE] might be nice
         if (any(is.na(j))) stop("undefined columns selected")  # TO DO: include which ones in msg
         if (any(abs(j) > ncol(x) | j==0L)) stop("j out of bounds")
         if (any(j<0L) && any(j>0L)) stop("j mixes positive and negative")
         if (any(j<0L)) j = seq_len(ncol(x))[j]
         ans = vector("list",length(j))
-        if (identical(irows,TRUE))
+        if (is.null(irows))
             for (s in seq(along=j)) ans[[s]] = x[[j[s]]]
         else {
             for (s in seq(along=j)) ans[[s]] = x[[j[s]]][irows]
             # TO DO: allow i's non join columns to be included by name
         }
         setattr(ans, "names", names(x)[j])
-        if (haskey(x) && all(key(x) %chin% names(ans)) && (is.logical(irows) || length(irows)==1L || haskey(i) || (is.data.table(i) && nrow(i)==1L))) {
+        if (haskey(x) && all(key(x) %chin% names(ans)) && (missing(i) || is.logical(i) || (is.data.table(i) && haskey(i)) || is.sorted(irows))) {
             setattr(ans,"sorted",key(x))
             # TO DO: see ordered subset comments above
         }
@@ -467,145 +494,200 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         settruelength(ans,0L)
         return(alloc.col(ans))
     }
-    if (!missing(by) && !missing(i)) {
-        x = x[irows]
-        # TO DO: efficiency gain by taking only the columns of x that j and by need.
-        bywithoutby=FALSE
-    }
-    o__ = as.integer(NULL)
-    if ((missing(by) && !bywithoutby)) {
-        jvars = intersect(av,colnames(x))
-        if (!identical(irows,TRUE)) {
-            x = x[irows,jvars,with=FALSE]
-        }
-        if (mode(jsub)!="name" && as.character(jsub[[1L]]) == "list") {
-            jsub[[1L]]=as.name("data.table")
+    # TO DO...delete...if (!missing(by) && !missing(i)) {
+        # *************************
+        # x = x[irows]
+        # *************************
+        # TO DO: efficiency gain (relating to .I too) by taking only the columns of x that j and by need.
+        # TO DO: and when .I is done, it'll need to refer to x not x[irows]
+    #    bywithoutby=FALSE
+    #}
+    o__ = integer()
+    itestj = NULL
+    xnrow = nrow(x)
+    if (missing(by) && !bywithoutby) {
+        # doggroups.c won't be called. The first group (testj) is the only group, for consistency of .N,.SD etc
+        # TO DO: delete ... 
+        # jvars = intersect(av,names(x))
+        # if (!identical(irows,TRUE)) {
+        #     x = x[irows,jvars,with=FALSE]    # can't copy here due to := needing to assign to original x, and for speed
+        # }
+        #if (mode(jsub)!="name" && identical(as.character(jsub[[1L]]),"list")) {
+        #    jsub[[1L]]=as.name("data.table")
             # we need data.table here because i) it grabs the column names from objects and ii) it does the vector expansion
             # and we return testj straight after the eval later below (seeing .N and .SD) in this case.
+        #}
+        if (is.null(irows)) {
+            # itestj = integer()
+            len__ = 0L   # len 0 here so that max(len__) is 0 later to leave NULL irows unchanged.
+            # f__ = min(1L,nrow(x))  # 0L for empty x
+            # len__ = nrow(x)
+            bysameorder = TRUE  # 1st and only group is the entire table 
+        } else {
+            itestj = irows
+            len__ = length(itestj)
+            bysameorder = is.sorted(irows)
+            # to delete ... f__ = irows[1L]
+            # o__ = irows   # ?????????
         }
-        f__ = min(1L,nrow(x))  # 0L for empty x
-        len__ = nrow(x)
-        bysameorder = TRUE  # 1st and only group is the entire table
-        bynames = allbyvars = NULL
         byval = list()
-    } else if (bywithoutby) {
-        # The groupings come instead from each row of the i data.table.
-        # Much faster for a few known groups vs a 'by' for all followed by a subset
-        if (!missing(by)) stop("logical error, by not missing in bywithoutby")
-        f__ = idx.start
-        len__ = as.integer(idx.end-idx.start+1L)
-        setattr(byval, "names", iby)
-        bysameorder = haskey(i)
-        if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by' is missing")
         bynames = allbyvars = NULL
     } else {
-        # Find the groups, using 'by' ...
-        if (missing(by)) stop("logical error, by is missing")
-        bysubl = as.list.default(bysub)
-        bysuborig = bysub
-        if (is.name(bysub) && !(as.character(bysub) %chin% colnames(x))) {
-            bysub = eval(bysub,parent.frame())
+        if (bywithoutby) {
+            # The groupings come instead from each row of the i data.table.
+            # Much faster for a few known groups vs a 'by' for all followed by a subset
+            if (!missing(by)) stop("logical error, by not missing in bywithoutby")
+            # TO DO... delete ... if (!isTRUE(irows)) {cat("logical error, irows not TRUE in bywithoutby\n");browser()}
+            #f__ = idx.start
+            #len__ = as.integer(idx.end-idx.start+1L)
+            if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by' is missing")
+            byval = i
+            bynames = head(key(x),length(leftcols))
+            allbyvars = NULL
+            bysameorder = haskey(i)
+        } else {
+            # Find the groups, using 'by' ...
+            if (missing(by)) stop("logical error, by is missing")
             bysubl = as.list.default(bysub)
-        }
-        if (length(bysubl) && identical(bysubl[[1L]],quote(eval))) {
-            bysub = eval(bysubl[[2]],parent.frame())
-            if (is.expression(bysub)) bysub=bysub[[1L]]
-            bysubl = as.list.default(bysub)
-        }
-        if (mode(bysub) == "character") {
-            if (length(grep(",",bysub))) {
-                if (length(bysub)>1L) stop("'by' is a character vector length ",length(bysub)," but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.")
-                bysub = strsplit(bysub,split=",")[[1L]]
+            bysuborig = bysub
+            if (is.name(bysub) && !(as.character(bysub) %chin% names(x))) {
+                bysub = eval(bysub,parent.frame())
+                bysubl = as.list.default(bysub)
             }
-            tt = grep("^[^`]+$",bysub)
-            if (length(tt)) bysub[tt] = paste("`",bysub[tt],"`",sep="")
-            bysub = parse(text=paste("list(",paste(bysub,collapse=","),")",sep=""))[[1L]]
-            bysubl = as.list.default(bysub)
-        }
-        allbyvars = intersect(unlist(sapply(bysubl,all.vars,functions=TRUE)),colnames(x))
-        bysameorder = haskey(x) && all(sapply(bysubl,is.name)) && identical(allbyvars,head(key(x),length(allbyvars)))
-        byval = eval(bysub, x, parent.frame())
-        if (!length(byval) && nrow(x)>0L) {
-            # see missing(by) up above for comments
-            # by could be NULL or character(0) for example (e.g. passed in as argument in a loop of different bys)
-            f__ = 1L
-            len__ = nrow(x)
-            bysameorder = FALSE  # 1st and only group is the entire table, so could be TRUE, but FALSE to avoid
-                                 # a key of empty character()
-            bynames = allbyvars = NULL
-            byval = list()
-            # the rest now fall through
-        }
-        if (is.atomic(byval)) {
-            if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && as.character(bysub)%chin%colnames(x)) ) {
-                # e.g. by is key(DT) or c("colA","colB"), but not the value of a character column
-                if (!all(byval %chin% colnames(x)))
-                    stop("'by' or 'keyby' seems like a column name vector but these elements are not column names (first 5):",paste(head(byval[!byval%chin%colnames(x)],5),collapse=""))
-                # byvars = byval
-                byval=as.list(x[,byval,with=FALSE])
-            } else {
-                # by may be a single unquoted column name but it must evaluate to list so this is a convenience to users. Could also be a single expression here such as DT[,sum(v),by=colA%%2]
-                byval = list(byval)
-                bysubl = c(as.name("list"),bysuborig)  # for guessing the column name below
-                if (is.name(bysuborig))
-                    setattr(byval, "names", as.character(bysuborig))    
+            if (length(bysubl) && identical(bysubl[[1L]],quote(eval))) {
+                bysub = eval(bysubl[[2]],parent.frame())
+                if (is.expression(bysub)) bysub=bysub[[1L]]
+                bysubl = as.list.default(bysub)
             }
-        }
-        if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to vector or list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
-        for (jj in seq_len(length(byval))) {
-            #if (typeof(byval[[jj]]) == "double") {
-            #    toint = as.integer(byval[[jj]])  # drops attributes (such as class) so as.vector() needed on next line
-            #    if (isTRUE(all.equal(as.vector(byval[[jj]]),toint))) {
-            #        mode(byval[[jj]]) = "integer"  # retains column attributes (such as IDateTime class)
-            #        # TO DO: check no copy and remove coercion
-            #        next
-            #    }
-            #    else stop("Column ",jj," of 'by' or 'keyby' is type 'double' and contains fractional data so cannot be coerced to integer in this particular case without losing information.")
-            #}
-            if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Useage: DT[,sum(colC),by=list(colA,month(colB))]")
-        }
-        tt = sapply(byval,length)
-        if (any(tt!=nrow(x))) stop("Each item in the 'by' or 'keyby' list must be same length as rows in x (",nrow(x),"): ",paste(tt,collapse=","))
-        bynames = names(byval)
-        if (is.null(bynames)) bynames = rep("",length(byval))
-        if (any(bynames=="")) {
-            if (length(bysubl)<2) stop("When 'by' or 'keyby' is list() we expect something inside the brackets")
-            for (jj in seq_along(bynames)) {
-                if (bynames[jj]=="") {
-                    # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
-                    tt = grep("^eval|^[^a-zA-Z ]",all.vars(bysubl[[jj+1L]],functions=TRUE),invert=TRUE,value=TRUE)[1L]
-                    if (!length(tt)) tt = all.vars(bysubl[[jj+1L]])[1L]
-                    bynames[jj] = tt
-                    # if user doesn't like this inferred name, user has to use by=list() to name the column
+            if (mode(bysub) == "character") {
+                if (length(grep(",",bysub))) {
+                    if (length(bysub)>1L) stop("'by' is a character vector length ",length(bysub)," but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.")
+                    bysub = strsplit(bysub,split=",")[[1L]]
+                }
+                tt = grep("^[^`]+$",bysub)
+                if (length(tt)) bysub[tt] = paste("`",bysub[tt],"`",sep="")
+                bysub = parse(text=paste("list(",paste(bysub,collapse=","),")",sep=""))[[1L]]
+                bysubl = as.list.default(bysub)
+            }
+            allbyvars = intersect(unlist(sapply(bysubl,all.vars,functions=TRUE)),names(x))
+            orderedirows = is.sorted(irows) 
+            bysameorder = orderedirows && haskey(x) && all(sapply(bysubl,is.name)) && identical(allbyvars,head(key(x),length(allbyvars)))
+            if (is.null(irows))
+                byval = eval(bysub, x, parent.frame())
+            else {
+                if (!is.integer(irows)) stop("Internal error: irows isn't integer")  # length 0 when i returns no rows
+                if (any(irows<1L | irows>nrow(x))) stop("Internal error: some irows<1 or >nrow(x)")
+                xss = x[irows,allbyvars,with=FALSE]
+                byval = eval(bysub, xss, parent.frame())
+                xnrow = nrow(xss)
+                # TO DO: pass xss (x subset) through into dogroups. Still need irows there (for :=), but more condense
+                # and contiguous to use xss to form .SD in dogroups than going via irows
+            }
+            if (!length(byval) && xnrow>0L) {
+                
+                # see missing(by) up above for comments
+                # by could be NULL or character(0) for example (e.g. passed in as argument in a loop of different bys)
+                # leave itestj as NULL to mean all rows
+                
+                # TO DO delete ... f__ = 1L
+                # len__ = nrow(x)
+                #itestj = integer()
+                
+                bysameorder = FALSE  # 1st and only group is the entire table, so could be TRUE, but FALSE to avoid
+                                     # a key of empty character()
+                byval = list()
+                bynames = allbyvars = NULL
+                # the rest now fall through
+            } else bynames = names(byval)
+            if (is.atomic(byval)) {
+                if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && as.character(bysub)%chin%names(x)) ) {
+                    # e.g. by is key(DT) or c("colA","colB"), but not the value of a character column
+                    if (!all(byval %chin% names(x)))
+                        stop("'by' or 'keyby' seems like a column name vector but these elements are not column names (first 5):",paste(head(byval[!byval%chin%names(x)],5),collapse=""))
+                    # byvars = byval
+                    byval=as.list(x[,byval,with=FALSE])
+                    bynames = names(byval)
+                } else {
+                    # by may be a single unquoted column name but it must evaluate to list so this is a convenience to users. Could also be a single expression here such as DT[,sum(v),by=colA%%2]
+                    byval = list(byval)
+                    bysubl = c(as.name("list"),bysuborig)  # for guessing the column name below
+                    if (is.name(bysuborig))
+                        bynames = as.character(bysuborig)
+                    else
+                        bynames = names(byval)    
                 }
             }
-            setattr(byval, "names", bynames)
-        }
-        if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}
-        if (length(byval)) {
-            if (bysameorder) {
-                f__ = duplist(byval)   # find group starts, given we know they are already grouped.
-                for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][f__]
-                len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1L))
-            } else {
-                o__ = fastorder(byval)
-                f__ = duplist(byval,order=o__)
-                len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1L))
-                firstofeachgroup = o__[f__]
-                origorder = sort.list(firstofeachgroup, na.last=FALSE, decreasing=FALSE)
-                # radixsort isn't appropriate in this case. 'firstofeachgroup' are row numbers from the
-                # (likely) large table so if nrow>100,000, range will be >100,000. Save time by not trying radix.
-                # TO DO: remove sort.list call by changing fastorder to fastgroup in first place.
-                f__ = f__[origorder]
-                len__ = len__[origorder]
-                firstofeachgroup = firstofeachgroup[origorder]
-                for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][firstofeachgroup]
+            if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to vector or list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
+            for (jj in seq_len(length(byval))) {
+                if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Useage: DT[,sum(colC),by=list(colA,month(colB))]")
             }
+            tt = sapply(byval,length)
+            # TO DO: delete ... byvalnrow = ifelse(is.null(irows), nrow(x), length(irows))
+            if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be same length as rows in x or number of rows returned by i (",xnrow,").")
+            # TO DO ... delete ... bynames = names(byval)
+            if (is.null(bynames)) bynames = rep("",length(byval))
+            if (any(bynames=="")) {
+                if (length(bysubl)<2) stop("When 'by' or 'keyby' is list() we expect something inside the brackets")
+                for (jj in seq_along(bynames)) {
+                    if (bynames[jj]=="") {
+                        # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
+                        tt = grep("^eval|^[^a-zA-Z ]",all.vars(bysubl[[jj+1L]],functions=TRUE),invert=TRUE,value=TRUE)[1L]
+                        if (!length(tt)) tt = all.vars(bysubl[[jj+1L]])[1L]
+                        bynames[jj] = tt
+                        # if user doesn't like this inferred name, user has to use by=list() to name the column
+                    }
+                }
+            }
+            setattr(byval, "names", bynames)  # byval is just a list not a data.table hence setattr not setnames
+            if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}
+            if (length(byval) && length(byval[[1]])) {
+                if (!bysameorder) {
+                    o__ = fastorder(byval)
+                    bysameorder = orderedirows && is.sorted(o__)
+                    if (bysameorder) o__ = integer()   # skip the 1:xnrow vector for efficiency
+                }
+                if (bysameorder) {
+                    f__ = duplist(byval)   # find group starts, given we know they are already grouped.
+                    # TO DO...delete ... for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][f__]   # TO DO: not necessary if dogroups knows where to look in byval rather than incrementing
+                    len__ = as.integer(c(diff(f__), xnrow-last(f__)+1L))
+                    # TO DO: return both f__ and len__ from C level, and, there's a TO DO in duplist.R
+                } else {
+                    f__ = duplist(byval,order=o__)
+                    len__ = as.integer(c(diff(f__), xnrow-last(f__)+1L))
+                    firstofeachgroup = o__[f__]
+                    origorder = sort.list(firstofeachgroup, na.last=FALSE, decreasing=FALSE)
+                    # radixsort isn't appropriate in this case. 'firstofeachgroup' are row numbers from the
+                    # (likely) large table so if nrow>100,000, range will be >100,000. Save time by not trying radix.
+                    # TO DO: remove sort.list call by changing fastorder to fastgroup in first place.
+                    f__ = f__[origorder]
+                    len__ = len__[origorder]
+                    #firstofeachgroup = firstofeachgroup[origorder]
+                    #for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][firstofeachgroup]
+                }
+                #if (!isTRUE(irows)) {
+                #    o__ = if (length(o__)) irows[o__] else irows
+                #    #f__ = irows[f__]
+                #}
+            } else {f__=NULL;len__=0L}   # f__=integer()/0L
+            if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+            # TO DO: allow secondary keys to be stored, then we see if our by matches one, if so use it, and no need to sort again. TO DO: document multiple keys.
         }
-        if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
-        # TO DO: allow secondary keys to be stored, then we see if our by matches one, if so use it, and no need to sort again. TO DO: document multiple keys.
+        #if (!length(f__)) stop("Internal error: f__ should be at least length 1")
+        #browser()
+        if (xnrow==0L || identical(f__[1L],0L)) {
+            # TO DO: avoid even running clauses above when for empty data.tables ?
+            itestj = integer()
+            #f__ = 0L
+            #len__ = 0L
+        } #else if (f__[1L]==0L && is.na(nomatch))
+          #  itestj = NA_integer_
+        else if (length(f__)) {
+            itestj = as.integer(seq(f__[1L],length.out=len__[1L]))
+            if (length(o__)) itestj = o__[itestj]
+            if (length(irows)) itestj = irows[itestj]
+        }
     }
-
+    #browser()
     # j to be run for each group (either from by, bywithoutby, or, whole DT when by is missing or length 0)
     jvnames = NULL
     if (mode(jsub)=="name") {
@@ -615,7 +697,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             # jsub = call("list",jsub) ## TO DO: remove
             # now list()ed after the eval of testj below
         }
-    } else if (as.character(jsub[[1L]])[1L] == "list") {
+    } else if (identical(as.character(jsub[[1L]])[1L],"list")) {
         jsubl = as.list.default(jsub)
         if (length(jsubl)<2) stop("When j is list() or DT() we expect something inside the brackets")
         jvnames = names(jsubl)[-1L]   # check list(a=sum(v),v)
@@ -625,12 +707,14 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 jvnames[jj-1L] = gsub("^[.]N$","N",deparse(jsubl[[jj]]))
             # TO DO: if call to a[1] for example, then call it 'a' too
         }
+        ww = which(jvnames=="")
+        if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
         setattr(jsub, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.
     } # else maybe a call to transform or something which returns a list.
     ws = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
     if (".SD" %chin% ws) {
         if (missing(.SDcols)) {
-            xvars = setdiff(colnames(x),union(bynames,allbyvars))
+            xvars = setdiff(names(x),union(bynames,allbyvars))
             # just using .SD in j triggers all non-by columns in the subset even if some of
             # those columns are not used. It would be tricky to detect whether the j expression
             # really does use all of the .SD columns or not, hence .SDcols for grouping
@@ -638,17 +722,17 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         } else {
             if (is.numeric(.SDcols)) {
                 if (any(is.na(.SDcols)) || any(.SDcols>ncol(.SDcols)) || any(.SDcols<1L)) stop(".SDcols is numeric but out of bounds (or NA)")
-                xvars = colnames(x)[.SDcols]
+                xvars = names(x)[.SDcols]
             } else {
                 if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
-                if (any(is.na(.SDcols)) || any(!.SDcols %chin% colnames(x))) stop("Some items of .SDcols are not column names (or are NA)")
+                if (any(is.na(.SDcols)) || any(!.SDcols %chin% names(x))) stop("Some items of .SDcols are not column names (or are NA)")
                 xvars = .SDcols
             }
             # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
         }
     } else {
         if (!missing(.SDcols)) warning("This j doesn't use .SD but .SDcols has been passed in. Ignoring .SDcols. data.table inspects j anyway to see which columns are used, so there is only a need to provide .SDcols (for speed) when j uses .SD, and, you know or wish to specify a subset of columns for .SD. See ?data.table.")
-        xvars = setdiff(intersect(ws,colnames(x)),bynames)
+        xvars = setdiff(intersect(ws,names(x)),bynames)
         if (verbose) cat("Detected that j uses these columns (the rest, if any, are ignored for efficiency):",paste(xvars,collapse=","),"\n")
         # using a few named columns will be faster
         # Consider:   DT[,max(diff(date)),by=list(month=month(date))]
@@ -659,63 +743,100 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         # For macros such as DT[,macro(),by=...]. A macro is a function with no arguments
         # evaluated within the scope of x.
         # TO DO: inspect macro definition to discover columns it uses.
-        xvars = setdiff(colnames(x),union(bynames,allbyvars))
+        xvars = setdiff(names(x),union(bynames,allbyvars))
     }
-    ivars = if (bywithoutby) intersect(gsub("^i[.]","",ws),colnames(i)) else NULL   # JIS
-
     if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ...\n");flush.console()}
-    if (nrow(x)==0L) {
-        itestj = integer()
-        f__ = 0L
-        len__ = 0L
-    } else if (f__[1L]==0L && is.na(nomatch))
-        itestj = NA_integer_
-    else {
-        itestj = as.integer(seq.int(f__[1L],length.out=len__[1L]))   # TO DO: Avoid in the entire case.
-        if (length(o__)) itestj = o__[itestj]
-    }
-    
     SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
     oldlen = length(itestj)
     length(itestj) = max(len__)  # pad with NA to allocate enough for largest group, will re-use it in dogroups.c
-    if (itestj[1L]==0 && !is.na(nomatch)) {
+    if (identical(itestj[1L],0L)) {
+        # Otherwise the allocation for largest group will be one row too few (owing to the first 0)
         itestj[1L] = NA_integer_
         oldlen = 0L
     }
-    if (!is.integer(itestj)) stop("Logical error: itestj is not type integer")
+    #  if (!is.integer(itestj)) stop("Logical error: itestj is not type integer")
     if (".N" %chin% xvars) stop("The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.")
-    SDenv$.SD = x[itestj, xvars, with=FALSE]  # TO DO: shallow copy xvars here.
-    # the subset above keeps factor levels in full
-    # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
-    # TO DO: change all 1 to 1L internally.
-    for (ii in seq(along=xvars)) setlength(SDenv$.SD[[ii]], oldlen)
+    #browser()
+    if (length(itestj)) {
+        #if (isTRUE(irows))
+            SDenv$.SD = x[itestj, xvars, with=FALSE]   # Must not shallow copy xvars here. This is the allocation for the largest group. Since itestj is passed in here, it won't shallow copy, even in future. Only DT[,xvars,with=FALSE] will ever shallow copy.
+        #else
+        #    SDenv$.SD = x[irows[itestj], xvars, with=FALSE]
+        for (ii in seq(along=xvars)) setlength(SDenv$.SD[[ii]], oldlen)  # setup length for the first group
+    } else {
+        # First group is the only group (e.g. no grouping)
+        if (is.null(irows))
+            SDenv$.SD = x[, xvars, with=FALSE]  # TO DO: shallow copy here. Could just have x, but then the columns of .SD wouldn't be consistent for lapply()ing etc, so need xvars here. Plus, if just x, then the lock below would lock x and that's untidy. Best is to shallow copy.
+        else
+            SDenv$.SD = x[irows, xvars, with=FALSE]   # Needs to be a copy of the i subset, even when that subset is contiguous, since we can't point to subsets of a vector (due to DATAPTR being an offset)
+    }
     setattr(SDenv$.SD,"row.names",c(NA_integer_,as.integer(-oldlen)))
     # .set_row_names() basically other than not integer() for 0 length, otherwise dogroups has no [1] to modify to -.N
     SDenv$.BY = lapply(byval,"[",1L)  # byval is list() not data.table
-    if (!is.na(nomatch) && is.na(itestj[1L])) {
-        # This is a very ugly switch. It gets tests 499 and 500 to work for now. TO DO: revisit and rationalise.
-        SDenv$.N = 0L
-        for (ii in ivars) {
-            assign(ii, i[[ii]][0L], envir=SDenv)
-            assign(paste("i.",ii,sep=""), i[[ii]][0L], envir=SDenv)
-        }
-    } else {
-        SDenv$.N = as.integer(len__[1L])
-        for (ii in ivars) {
-            assign(ii, i[[ii]][1L], envir=SDenv)  # for JIS
-            assign(paste("i.",ii,sep=""), i[[ii]][1L], envir=SDenv)
+    #if (!length(len__)) stop("Internal error: len__ has no length")
+    SDenv$.N = if (is.null(itestj)) xnrow else len__[1L]
+    
+    SDenv$.iSD = NULL  # null.data.table()
+    if (bywithoutby) {   
+        jisvars = intersect(gsub("^i[.]","",ws),names(i))
+        # JIS (non join cols) but includes join columns too (as there are named in i)
+        if (length(jisvars)) {
+            tt = min(nrow(i),1L)
+            SDenv$.iSD = i[tt,jisvars,with=FALSE]
+            for (ii in jisvars) {
+                assign(ii, SDenv$.iSD[[ii]], envir=SDenv)
+                assign(paste("i.",ii,sep=""), SDenv$.iSD[[ii]], envir=SDenv)
+            }
         }
     }
+    
+    # TO DO.. delete ... if (!is.na(nomatch) && is.na(itestj[1L])) {
+    #    # This is a very ugly switch. It gets tests 499 and 500 to work for now. TO DO: revisit and rationalise.
+    #    SDenv$.N = 0L
+    #    for (ii in ivars) {
+    #        assign(ii, i[[ii]][0L], envir=SDenv)
+    #        assign(paste("i.",ii,sep=""), i[[ii]][0L], envir=SDenv)
+    #    }
+    #} else {
+    #    SDenv$.N = as.integer(len__[1L])
+    #    for (ii in ivars) {
+    #        assign(ii, i[[ii]][1L], envir=SDenv)  # for JIS
+    #        assign(paste("i.",ii,sep=""), i[[ii]][1L], envir=SDenv)
+    #    }
+    #}
+    
+    
     for (ii in names(SDenv$.BY)) assign(ii, SDenv$.BY[[ii]], envir=SDenv)
+    
     for (ii in xvars) assign(ii, SDenv$.SD[[ii]], envir=SDenv)
+    # Since .SD is inside SDenv, alongside its columns as variables, R finds .SD symbol more quickly, if used.
+    # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
+    
     assign("print", function(x,...){base::print(x,...);NULL}, envir=SDenv)
     # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
+    
+    #assign("mean", base::mean.default, envir=SDenv)  # This is much faster, but still a lot slower than below
+    for (ii in seq_along(jsub)[-1])
+        if (is.call(jsub[[ii]]) && jsub[[ii]][[1]] == as.name("mean")) jsub[[ii]] = call(".Internal",jsub[[ii]])
+        
     setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=. 
     lockBinding(".SD",SDenv)
     lockBinding(".BY",SDenv)
     lockBinding(".N",SDenv)
+    lockBinding(".iSD",SDenv) 
     testj = eval(jsub, SDenv)
-    if (missing(by) && !bywithoutby) return(testj)
+    #browser()
+    if (!is.null(lhs)) {
+        if (verbose) cat("Assigning",if (is.null(itestj)) paste("all",nrow(x)) else length(testj),"row(s)\n")
+        return(.Call("assign",x,itestj,cols,newnames,testj,verbose,PACKAGE="data.table"))
+    }
+    if (missing(by) && !bywithoutby) {
+        if (is.call(jsub) && jsub[[1L]]=="list") {  # selecting from a list column should return list, though
+            testj = as.data.table.list(testj)   # does the vector expansion to create equal length vectors
+            setnames(testj, jvnames)
+        }
+        return(testj)
+    }
     if (mode(jsub)=="name" && jsub!=".SD") { 
         jsub = call("list",jsub)  # this should handle backticked names ok too
         testj = list(testj)
@@ -734,7 +855,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         if (verbose && !is.null(names(testj))) cat("testj evaluates to a list with names, this may slow down grouping")
         if (is.list(testj) && any(sapply(testj,is.data.frame))) stop("All items in j=list(...) should be atomic vectors or lists, currently. Consider cbind or merge afterwards until := by group is implemented.")
-        if (nrow(x)==0L) testj = lapply(testj,"[",0L)   # by on 0-row tables need to return correctly types 0-row result
+        if (SDenv$.N==0L) testj = lapply(testj,"[",0L)   # by on 0-row tables need to return correctly types 0-row result
         maxn = max(sapply(testj,length))   # this could be 0 here too
     } else {
         maxn = 0L
@@ -746,48 +867,64 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     else sum(len__)
     # TO DO: we might over allocate above e.g. if first group has 1 row and j is actually a single row aggregate
     # TO DO: user warning when it detects over-allocation is currently off in dogroups.c
-    if (nrow(x)>0L) byretn = max(byretn,maxn) # if the result for the first group is larger than the table itself(!) Unusual case where the optimisations for common query patterns. Probably a join is being done in the j via .SD and the 1-row table is an edge condition of bigger picture.
+    if (xnrow>0L) byretn = max(byretn,maxn) # if the result for the first group is larger than the table itself(!) Unusual case where the optimisations for common query patterns. Probably a join is being done in the j via .SD and the 1-row table is an edge condition of bigger picture.
     byretn = as.integer(byretn)
     
-    xcols = as.integer(chmatch(xvars,colnames(x)))
-    icols = NULL
-    if (!missing(i) && is.data.table(i)) icols = as.integer(chmatch(ivars,colnames(i)))
-    else i=NULL
-    ans = .Call("dogroups",x,xcols,o__,f__,len__,jsub,SDenv,testj,byretn,byval,i,as.integer(icols),i[1L,ivars,with=FALSE],if(length(ivars))paste("i.",ivars,sep=""),is.na(nomatch),verbose,PACKAGE="data.table")
+    xcols = chmatch(xvars,names(x))
+    if (bywithoutby) {
+        groups = i
+        grpcols = leftcols # 'leftcols' are the columns in i involved in the join (either head of key(i) or head along i)
+        jiscols = chmatch(jisvars,names(i))  # integer() if there are no jisvars (usually there aren't, advanced feature)
+    } else {
+        groups = byval
+        grpcols = seq_along(byval)
+        jiscols = NULL   # NULL rather than integer() is used in C to know when using by
+    }   
+    #icols = NULL
+    #if (!missing(i) && is.data.table(i)) icols = as.integer(chmatch(ivars,names(i)))
+    #else i=NULL
+    #if (!isTRUE(irows)) o__ = if (length(o__)) irows[irows!=0L][o__] else irows[irows!=0L]
+    #browser()
+    ans = .Call("dogroups", x, xcols, groups, grpcols, jiscols, irows, o__, f__, len__, jsub, SDenv, testj, byretn, verbose,PACKAGE="data.table")
+    # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
+    # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
+    # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
+    
+    # TO DO: at the top of dogroups change xcols, grpcols, jiscols, irows, o__ and f__ to be 0-based than 1-based, by
+    # reference in C, to save lots of -1 inside C for loops.
+    
+    # browser()
     #print(ans)
-    #stop("stopping early")
-    # why is byval copying data out of i? If there aren't any
-    # expressions of columns then it could just be i directly.
-    # This will reduce the 'many groups' timing vs sqldf even more.
-
-    # don't want to eval j for every row of i unless it really is mult='all'
-
-    # setkey could mark the key whether it is unique or not.
+    
+    # TO DO: don't want to eval j for every row of i unless it really is mult='all'
+    # TO DO: setkey could mark the key whether it is unique or not.
 
     # TO DO : play with hash and size arguments of the new.env().
     if (verbose) {cat("... done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
     # if (byretn==0L) return(NULL)  # user wanted side effects only (e.g. plotting).
     ww = which(jvnames=="")
     if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
-    setattr(ans, "names", c(names(byval), jvnames))
+    #browser()
+    setattr(ans, "names", c(bynames, jvnames))
     if (length(ans[[1L]])) {
         if (length(byval)) {
             ww = which(sapply(byval,is.factor))
             for (jj in ww) {levels(ans[[jj]]) = levels(byval[[jj]]); class(ans[[jj]])="factor"}
         }
         ww = which(sapply(testj,is.factor))
-        for (jj in ww) {levels(ans[[length(byval)+jj]]) = levels(testj[[jj]]); class(ans[[length(byval)+jj]])="factor"}
+        for (jj in ww) {levels(ans[[length(grpcols)+jj]]) = levels(testj[[jj]]); class(ans[[length(grpcols)+jj]])="factor"}
 
         # bit of a klude to retain the classes. Rather than allocating in C, we could allocate ans in R before dogroups, and create the right class at that stage
+        # TO DO: speed up by using setattr. class<- and levels<- might be copying the whole vector?
         for (jj in seq_along(byval)) class(ans[[jj]]) = class(byval[[jj]])
-        for (jj in seq_along(testj)) class(ans[[length(byval)+jj]]) = class(testj[[jj]])
+        for (jj in seq_along(testj)) class(ans[[length(grpcols)+jj]]) = class(testj[[jj]])
     }
     setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
     setattr(ans,"class",c("data.table","data.frame"))
-    if ((!missing(by) && bysameorder) || (!missing(i) && haskey(i))) {
-        setattr(ans,"sorted",colnames(ans)[seq_along(byval)])
+    if (haskey(x) && ((!missing(by) && bysameorder) || (!missing(i) && (haskey(i) || is.sorted(f__))))) {
+        setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
     } else if (!missing(keyby)) {
-        setkeyv(ans,colnames(ans)[seq_along(byval)])
+        setkeyv(ans,names(ans)[seq_along(byval)])
         # but if 'bykey' and 'bysameorder' then the setattr in branch above will run instead for
         # speed (because !missing(by) when bykey, too)
     }
@@ -822,7 +959,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 as.matrix.data.table = function(x,...)
 {
     dm <- dim(x)
-    cn <- colnames(x)
+    cn <- names(x)
     if (any(dm == 0L))
         return(array(NA, dim = dm, dimnames = list(NULL, cn)))
     p <- dm[2L]
@@ -976,23 +1113,23 @@ tail.data.table = function(x, n=6, ...) {
         # then gives "The argument of a replacement function which corresponds to the right hand side must be
         # named 'value'".  So, users have to use := for that.
     } else i = NULL          # meaning (to C code) all rows, without allocating 1L:nrow(x) vector
-    if (missing(j)) j=colnames(x)
+    if (missing(j)) j=names(x)
     if (!is.atomic(j)) stop("j must be atomic vector, see ?is.atomic")
     if (any(is.na(j))) stop("NA in j")
     if (is.character(j)) {
-        newcolnames = setdiff(j,names(x))
-        cols = as.integer(chmatch(j, c(names(x),newcolnames)))
+        newnames = setdiff(j,names(x))
+        cols = as.integer(chmatch(j, c(names(x),newnames)))
         # We can now mix existing columns and new columns
     } else {
         if (!is.numeric(j)) stop("j must be vector of column name or positions")
         if (any(j>ncol(x))) stop("Attempt to assign to column position greater than ncol(x). Create the column by name, instead. This logic intends to catch (most likely) user errors.")
         cols = as.integer(j)  # for convenience e.g. to convert 1 to 1L
-        newcolnames = NULL
+        newnames = NULL
     }
     reinstatekey=NULL
     if (haskey(x) && identical(key(x),key(value)) &&
-        identical(colnames(x),colnames(value)) &&
-        !is.unsorted(i) &&
+        identical(names(x),names(value)) &&
+        is.sorted(i) &&
         identical(substitute(x),quote(`*tmp*`))) {
         # DT["a",]$y <- 1.1  winds up creating `*tmp*` subset of rows and assigning _all_ the columns into x and
         # over-writing the key columns with the same value (not just the single 'y' column).
@@ -1001,12 +1138,12 @@ tail.data.table = function(x, n=6, ...) {
         # code did).
         reinstatekey=key(x)
     }
-    if (!selfrefok(x) || truelength(x) < ncol(x)+length(newcolnames)) {
-        x = alloc.col(x,length(x)+length(newcolnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
+    if (!selfrefok(x) || truelength(x) < ncol(x)+length(newnames)) {
+        x = alloc.col(x,length(x)+length(newnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
         # search for one other .Call to assign in [.data.table to see how it differs
     }
     verbose=getOption("datatable.verbose")
-    .Call("assign",x,i,cols,newcolnames,value,verbose,PACKAGE="data.table")
+    .Call("assign",x,i,cols,newnames,value,verbose,PACKAGE="data.table")
     settruelength(x,0L) #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
     alloc.col(x)
     if (length(reinstatekey)) setkeyv(x,reinstatekey)

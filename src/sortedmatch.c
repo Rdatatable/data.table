@@ -25,12 +25,12 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
   o options to join to prevailing value (roll join a.k.a locf)
 */
 
-SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP roll, SEXP rolltolast, SEXP retFirst, SEXP retLast, SEXP tolerance)
+SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP roll, SEXP rolltolast, SEXP nomatch, SEXP tolerance, SEXP retFirst, SEXP retLength, SEXP allLen1 )
 {
     // If the left table is large and the right table is large, then sorting the left table first may be
     // quicker depending on how long to sort the left table. This is up to user via use of J() or SJ()
     
-    R_len_t lr,nr,low,mid,upp,coln,col,lci,rci;
+    R_len_t lr,nr,low,mid,upp,coln,col,lci,rci,len;
     R_len_t prevlow, prevupp, type, newlow, newupp, /*size,*/ lt, rt;
     double tol = REAL(tolerance)[0];
     SEXP lc, rc;
@@ -56,7 +56,8 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     for (lr=0; lr < LENGTH(VECTOR_ELT(left,0)); lr++) {  // left row (i.e. from i). TO DO: change left/right to i/x
         upp = prevupp = nr;
         low = prevlow = (LOGICAL(isorted)[0]) ? low : -1;
-        INTEGER(retFirst)[lr] = INTEGER(retLast)[lr] = 0;   // default to no match for NA goto below
+        INTEGER(retFirst)[lr] = INTEGER(nomatch)[0];   // default to no match for NA goto below
+        INTEGER(retLength)[lr] = INTEGER(nomatch)[0]==0 ? 0 : 1;   
         for(col=0; col<coln && low<upp-1; col++) {
             lc = VECTOR_ELT(left,INTEGER(leftcols)[col]);
             rc = VECTOR_ELT(right,INTEGER(rightcols)[col]);
@@ -162,14 +163,17 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             default:
                 error("Type '%s' not supported as key column", type2char(type));
             }
-        }    
+        }
         if (low<upp-1) {
-            INTEGER(retFirst)[lr] = (low+1)+1;
-            INTEGER(retLast)[lr] = (upp-1)+1;
+            INTEGER(retFirst)[lr] = low+2;   // extra +1 for 1-based indexing at R level
+            len = upp-low-1;
+            INTEGER(retLength)[lr] = len;
+            if (len > 1) LOGICAL(allLen1)[0] = FALSE;
         } else {
             if (low>prevlow && col==coln && (LOGICAL(roll)[0] ||
                                             (LOGICAL(rolltolast)[0] && upp<prevupp))) {
-                INTEGER(retFirst)[lr] = INTEGER(retLast)[lr] = low+1;
+                INTEGER(retFirst)[lr] = low+1;
+                INTEGER(retLength)[lr] = 1;
                 low -= 1; // for test 148
             }
         }

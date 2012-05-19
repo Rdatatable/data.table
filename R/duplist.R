@@ -8,7 +8,7 @@ duplist = function(l,order,tolerance=.Machine$double.eps ^ 0.5)
     # l = list(...)
     # TO DO - its wasteful that ans is allocated at long as the list, it just returns the first of each group.
     if (!is.list(l)) stop("l not type list")
-    if (!length(l)) return(logical())
+    if (!(length(l) || length(l[[1]]))) return(0L)
     ans = integer(length(l[[1]]))
     len = integer(1)
     if (missing(order)) {

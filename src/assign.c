@@ -131,10 +131,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
 
     if (oldncol<1) error("Cannot use := to add columns to an empty data.table, currently");
     nrow = length(VECTOR_ELT(dt,0));
-    if (length(rows)==0) {
+    if (isNull(rows)) {
         targetlen = nrow;
         // fast way to assign to whole column, without creating 1:nrow(x) vector up in R, or here in C
     } else {
+        if (!LENGTH(rows)) return(dt);
         if (isReal(rows)) {
             rows = PROTECT(rows = coerceVector(rows, INTSXP));
             protecti++;
