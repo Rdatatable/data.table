@@ -45,6 +45,12 @@ NEW FEATURES
     o   mean() is now automatically .Internal()-ed, FR#1231. This can speed up
         grouping by 20 times when there are a large number of groups. See wiki point 3.
         
+    o   The package is now Byte Compiled (when installed in R 2.14.0 or later). Several
+        internal speed improvements were made in this version too, such as avoiding
+        internal copies. If you find 1.8.1 is faster, before attributing that to Byte
+        Compilation, please install the package without Byte Compilation and compare
+        ceteris paribus. If you find cases where speed has slowed, please let us know.
+
 
 BUG FIXES
 
