@@ -1399,7 +1399,7 @@ test(478, DT[,foo:=foo], DT)  # does nothing, with no warning, consistent with b
 
 # Test that recycling now works with oversized inputs and % != 0 length, both with warnings.
 DT = data.table(x=1:4)
-test(479, DT[, a := 5:7], error="converted.*warning.*Supplied 3 items to be assigned to 4 items of column 'a' [(]recycled leaving remainder of 1 items[)]")
+test(479, DT[, a := 5:7], warning="Supplied 3 items to be assigned to 4 items of column 'a' [(]recycled leaving remainder of 1 items[)]")
 suppressWarnings(DT[, a := 5:7])
 test(480, DT, data.table(x=1:4,a=c(5:7,5L)))  # no longer error, now recycles with remainder and warning
 

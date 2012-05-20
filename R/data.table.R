@@ -296,7 +296,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             len__ = integer(nrow(i))
             allLen1 = TRUE
             .Call("binarysearch", i, x, as.integer(leftcols-1L), as.integer(rightcols-1L), haskey(i), roll, rolltolast, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1, PACKAGE="data.table")
-            # length of nomatch (single 0 or NA) is 1 in both cases.
+            # length of nomatch (single 0 or NA) is 1 in both cases. len__ of 0 matches are 0
             if (mult=="all") {
                 # TO DO: delete ...
                 #idx.diff = rep(1L, sum(lengths))
@@ -312,7 +312,8 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 }
             } else {
                 irows = if (mult=="first") f__ else f__+len__-1L
-                if (identical(nomatch,0L)) irows = irows[len__>0L]   # 0s are len 0, so this removes -1 irows
+                if (identical(nomatch,0L)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
+                len__ = pmin(len__,1L)  # for test 456, and consistency generally
             }
             #browser()
             # TO DO .. delete ...if (is.na(nomatch) || nomatch!=0L) irows[irows==0L] = nomatch
@@ -699,17 +700,20 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         }
     } else if (identical(as.character(jsub[[1L]])[1L],"list")) {
         jsubl = as.list.default(jsub)
-        if (length(jsubl)<2) stop("When j is list() or DT() we expect something inside the brackets")
-        jvnames = names(jsubl)[-1L]   # check list(a=sum(v),v)
-        if (is.null(jvnames)) jvnames = rep("", length(jsubl)-1L)
-        for (jj in 2L:length(jsubl)) {
-            if (jvnames[jj-1L] == "" && mode(jsubl[[jj]])=="name")
-                jvnames[jj-1L] = gsub("^[.]N$","N",deparse(jsubl[[jj]]))
-            # TO DO: if call to a[1] for example, then call it 'a' too
+        # if (length(jsubl)<2) stop("When j is list() or DT() we expect something inside the brackets")
+        # Empty list is needed for test 468: adding an empty list column
+        if (length(jsubl)>1) {
+            jvnames = names(jsubl)[-1L]   # check list(a=sum(v),v)
+            if (is.null(jvnames)) jvnames = rep("", length(jsubl)-1L)
+            for (jj in 2L:length(jsubl)) {
+                if (jvnames[jj-1L] == "" && mode(jsubl[[jj]])=="name")
+                    jvnames[jj-1L] = gsub("^[.]N$","N",deparse(jsubl[[jj]]))
+                # TO DO: if call to a[1] for example, then call it 'a' too
+            }
+            ww = which(jvnames=="")
+            if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
+            setattr(jsub, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.
         }
-        ww = which(jvnames=="")
-        if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
-        setattr(jsub, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.
     } # else maybe a call to transform or something which returns a list.
     ws = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
     if (".SD" %chin% ws) {
