@@ -20,6 +20,8 @@ NEW FEATURES
         difference is within sqrt(.Machine$double.eps), by default. See example
         in ?unique.data.table. Completes FRs #951, #1609 and #1075. This paves the
         way for other atomic types which use 'double' (such as POSIXct and bit64).
+        Thanks to Chris Neff for beta testing and finding a problem with a key of
+        two numeric columns (bug #2004), fixed.
         
     o   Prettier printing of list columns. The first 6 items of atomic vectors
         are collapsed with "," followed by a trailing "," if there are more than

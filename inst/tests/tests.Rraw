@@ -1685,7 +1685,13 @@ test(594, DT[,lapply(.SD,sum),by=NULL], data.table(x=18L, y=30, v=45L))
 test(595, DT[,lapply(.SD,sum),by=character()], data.table(x=18L, y=30, v=45L))
 test(596, DT[,lapply(.SD,sum),by=""], data.table(x=18L, y=30, v=45L))
 
-# TO DO: tests on 'double' in keys and ad hoc by
+# Test keys of two numeric columns, bug#2004
+DT = data.table(x=0.0,y=c(0.0,0.1,0.0,0.2,0.0))
+test(597, unique(DT), DT[c(1,2,4)])
+test(598, DT[,list(count=.N),by=c("x","y")], data.table(x=0.0,y=c(0.0,0.1,0.2),count=c(3L,1L,1L)))
+
+
+# TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
 #        test on out of bound i subsets e.g. 6:10 when DT has 7 rows, and mixed negative and positive i integer is error.
 #  test that ordered subsets when i is unkeyed now retain x's key (using is.sorted(f__))

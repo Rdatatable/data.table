@@ -67,6 +67,9 @@ SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol)  //change name
 //     with no copies or loops through it doing ++ and --) to be passed on as the
 //     columns are looped through in reverse order.
 // iv) not using the rcmp function, saving the 5 if's and funct call
+// v) the section of the "less" macro in main/src/sort.c: "|| (x[a] == x[b] && a > b)" seems to cause instability
+//  when we don't pass in seq_along(x) as idx. Think it might be superfluous in base, but needs to be removed here
+//  where we pass in different orders than seq_along(x).
 
 //  It is still a comparison sort, so is not meant to be super fast, but should be slightly
 //  more efficient than base for the reasons above. Intend to tackle fast radix sort
@@ -74,10 +77,10 @@ SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol)  //change name
 
 extern const int incs[];
 
-//#define cmptol(a,b) (x[a] > x[b]+tol || (a>b && x[a] > x[b]-tol))
-#define cmptol(a,b) ( (ISNAN(x[b]) && !ISNAN(x[a])) || (!ISNAN(x[a]) && !ISNAN(x[b]) && (x[a] > x[b]+tol || (a>b && x[a] > x[b]-tol))))
+//#define cmptol(a,b) (x[a] > x[b]+tol || (a>b && x[a] > x[b]-tol))  [from src/main/sort.c]
+#define cmptol(a,b) ( (ISNAN(x[b]) && !ISNAN(x[a])) || (!ISNAN(x[a]) && !ISNAN(x[b]) && (x[a] > x[b]+tol)))
 
-void rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)
+SEXP rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)
 {
     R_len_t t, i, j, h, itmp;
     double *x=REAL(xarg)-1;
@@ -98,6 +101,7 @@ void rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)
 		}
 		indx[j] = itmp;
     }
+    return(R_NilValue);
 }
 
 

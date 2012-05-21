@@ -128,7 +128,7 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
     w <- last(which)
     v = lst[[w]]
     o = switch(typeof(v),
-        "double" = ordernumtol(v),   # TO DO: just allow double in keys now, already done.
+        "double" = ordernumtol(v),
         "character" = chorder(v),
         # Use a radix sort (fast and stable for ties), but will fail for range > 1e5 elements (and any negatives)
         tryCatch(radixorder1(v),error=function(e) {
@@ -140,7 +140,7 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
     for (w in rev(take(which))) {
         v = lst[[w]]
         o = switch(typeof(v),
-            "double" = ordernumtol(v, o),
+            "double" = ordernumtol(v, o),   # o is changed by reference by ordernumtol, and returned too
             "character" = o[chorder(v[o])],   # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol
             tryCatch(o[radixorder1(v[o])], error=function(e) {
                 if (verbose) cat("Non-first column",w,"failed radixorder1, reverting to regularorder1\n")
@@ -151,7 +151,7 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
     o
 }
 
-ordernumtol = function(x, o=1:length(x), tol=.Machine$double.eps^0.5) {
+ordernumtol = function(x, o=seq_along(x), tol=.Machine$double.eps^0.5) {
     .Call("rorder_tol",x,o,tol,PACKAGE="data.table")
     o
 }
