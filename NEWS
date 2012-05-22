@@ -127,8 +127,8 @@ USER VISIBLE CHANGES
             DT[,list("a","b"),by=x]
             DT[,list("a","b")]      # used to name the columns 'a' and 'b', oddly.
             
-    o   Typing ?merge now asks whether to display ?merge.data.frame or ?merge.data.table.
-        Thanks to Chris Neff for suggesting.
+    o   Typing ?merge now asks whether to display ?merge.data.frame or ?merge.data.table,
+        and ?merge.data.table works directly. Thanks to Chris Neff for suggesting.
 
 
         **********************************************
