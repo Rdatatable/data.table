@@ -1,4 +1,5 @@
 \name{subset.data.table}
+\alias{subset}
 \alias{subset.data.table}
 
 \title{ Subsetting data.tables }

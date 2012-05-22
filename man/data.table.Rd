@@ -20,6 +20,7 @@
    *NEW* : \itemize{
 \item help page for \code{\link{:=}}
 \item \code{keyby} argument
+\item \code{character} and \code{numeric} now allowed as key column types
 }
 }
 \usage{

@@ -1,5 +1,7 @@
 \name{duplicated}
+\alias{duplicated}
 \alias{duplicated.data.table}
+\alias{unique}
 \alias{unique.data.table}
 \title{ Determine Duplicate Rows }
 \description{

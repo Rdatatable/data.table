@@ -1,5 +1,7 @@
 \name{transform.data.table}
+\alias{transform}
 \alias{transform.data.table}
+\alias{within}
 \alias{within.data.table}
 \title{ Data table utilities }
 \description{

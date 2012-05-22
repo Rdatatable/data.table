@@ -1,4 +1,5 @@
 \name{all.equal}
+\alias{all.equal}
 \alias{all.equal.data.table}
 \title{ Equality Test Between Two Data Tables }
 \description{
