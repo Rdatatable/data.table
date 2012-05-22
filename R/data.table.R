@@ -1243,8 +1243,12 @@ as.data.frame.data.table = function(x, ...)
 }
 
 as.list.data.table = function(x, ...) {
-    # Similar to as.list.data.frame in base.
-    ans <- unclass(x)
+    # Similar to as.list.data.frame in base. Although a data.table/frame is a list, too, it may be
+    # being coerced to raw list type (by calling code) so that "[" and "[[" work in their raw list form,
+    # such as lapply does for data.frame. So we do have to remove the class attributes (and thus shallow
+    # copy is almost instant way to achieve that, without risking compatibility).
+    ans = shallow(x)
+    setattr(ans, "class", NULL)
     setattr(ans, "row.names", NULL)
     setattr(ans, "sorted", NULL)
     setattr(ans,".internal.selfref", NULL)   # needed to pass S4 tests for example

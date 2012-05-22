@@ -1702,6 +1702,10 @@ test(600, !is.unsorted(DT$x))
 test(601, is.unsorted(DT$y))
 test(602, order(DT$x,DT$y), 1:20)
 
+# Test that as.list.data.table no longer copies via unclass, so speeding up sapply(DT,class) and lapply(.SD,...) etc, #2000
+DT = data.table(a=1:1e7,b=1:1e7,c=1:1e7,d=1:1e7)
+test(603, system.time(sapply(DT,class))["user.self"] < 0.01)
+
 
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
@@ -1715,6 +1719,7 @@ test(602, order(DT$x,DT$y), 1:20)
 # TO DO: check the "j is named list could be inefficient" message from verbose than Chris N showed recenctly to 15 May
 # TO DO: !make sure explicitly that unnamed lists are being executed by dogroups!
 # TO DO: Add to warning about a previous copy that class<-, levels<- can also copy whole vector.  *Any* fun<- form basically.
+# TO DO: use looped := vs set test in example(":=") or example(setnames) to test overhead in [.data.table is tested to stay low in future.
 
 ## See test-* for more tests
 

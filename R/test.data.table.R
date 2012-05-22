@@ -58,7 +58,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, ...) {
     setattr(target, "row.names", NULL)
     setattr(current, "row.names", NULL)
     
-    # all.equal uses unclass which doesn't know about external pointers : there
+    # all.equal uses unclass which doesn't know about external pointers; there
     # doesn't seem to be all.equal.externalptr method in base.
     setattr(target, ".internal.selfref", NULL)
     setattr(current, ".internal.selfref", NULL)

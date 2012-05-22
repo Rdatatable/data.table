@@ -52,6 +52,12 @@ NEW FEATURES
         internal copies. If you find 1.8.1 is faster, before attributing that to Byte
         Compilation, please install the package without Byte Compilation and compare
         ceteris paribus. If you find cases where speed has slowed, please let us know.
+        
+    o   Idioms such as sapply(DT,class) and lapply(.SD,...) get a very significant speed
+        boost by avoiding a call to unclass() which copies the entire object. Thanks to
+        a question by user1393348 on Stack Overflow, implementing #2000.
+        http://stackoverflow.com/questions/10584993/r-loop-over-columns-in-data-table
+        
 
 
 BUG FIXES
