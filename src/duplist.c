@@ -73,12 +73,16 @@ SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol)  //change name
 
 //  It is still a comparison sort, so is not meant to be super fast, but should be slightly
 //  more efficient than base for the reasons above. Intend to tackle fast radix sort
-//  for floating point later (which does seem to be known).
+//  for floating point later (which does seem to be known), but then what about ties within tolerance (radix would
+//  be stable within ties but at full accuracy by construction as it does no comparison. Could sweep after
+//  within ties to get the original order back, perhaps.  If we do a recursive order through columns 1:n then it
+//  becomes natural and stable to use shell/quick.
 
 extern const int incs[];
 
-//#define cmptol(a,b) (x[a] > x[b]+tol || (a>b && x[a] > x[b]-tol))  [from src/main/sort.c]
-#define cmptol(a,b) ( (ISNAN(x[b]) && !ISNAN(x[a])) || (!ISNAN(x[a]) && !ISNAN(x[b]) && (x[a] > x[b]+tol)))
+//#define cmptol(a,b) (x[a] > x[b]+tol || (a>b && x[a]==x[b]))  [from src/main/sort.c]
+#define cmptol(a,b) ((ISNAN(x[a]) && ISNAN(x[b]) && a>b) || (!ISNAN(x[a]) && ( ISNAN(x[b]) || (x[a]>(x[b]+tol) || (a>b && x[a]>x[b]-tol)) )))
+
 
 SEXP rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)
 {
@@ -90,7 +94,9 @@ SEXP rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)
     double tol = REAL(tolarg)[0];
     
     //for (i=1; i<=n; i++) if (ISNAN(x[i])) error("NA and NaN are not allowed in numeric key columns. They have to be dealt with specially (slowing things down) but also NAs in the key can lead to ambiguities and confusion when it comes to joining to NA values. If you have a real-world example that really does need NAs in the key then consider choosing your own value to represent NA, such as -999.999. If you want to join to the -999.999 values then you can, and if you want to represent an NA row, then you can too. That will be much faster and clearer. We think that requirement is very rare, so data.table is setup to be optimized for the most common cases; i.e., no NAs in key columns. Also, binary search is faster without a check on NA_REAL (it seems we cannot rely on NA_REAL being REAL_MIN, unlike NA_INTEGER being MIN_INT).");
-     
+
+    //Rprintf("%d\n",(long)NA_REAL<0);  True. This would work well, were it not for tolerance. NA_REAL<0 is nan as IEEE returns nan at C level
+    
     for (t = 0; incs[t] > hi-lo+1; t++);
 	for (h = incs[t]; t < 16; h = incs[++t])
     for (i = lo + h; i <= hi; i++) {

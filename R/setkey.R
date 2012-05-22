@@ -140,7 +140,7 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
     for (w in rev(take(which))) {
         v = lst[[w]]
         o = switch(typeof(v),
-            "double" = ordernumtol(v, o),   # o is changed by reference by ordernumtol, and returned too
+            "double" = o[ordernumtol(v[o])],   # o was changed by reference by ordernumtol, and returned too, but couldn't get it stable within ties (tests now cover the cases).  TO DO: try again another time
             "character" = o[chorder(v[o])],   # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol
             tryCatch(o[radixorder1(v[o])], error=function(e) {
                 if (verbose) cat("Non-first column",w,"failed radixorder1, reverting to regularorder1\n")
@@ -151,7 +151,8 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
     o
 }
 
-ordernumtol = function(x, o=seq_along(x), tol=.Machine$double.eps^0.5) {
+ordernumtol = function(x, tol=.Machine$double.eps^0.5) {
+    o=seq_along(x)
     .Call("rorder_tol",x,o,tol,PACKAGE="data.table")
     o
 }

@@ -1690,6 +1690,18 @@ DT = data.table(x=0.0,y=c(0.0,0.1,0.0,0.2,0.0))
 test(597, unique(DT), DT[c(1,2,4)])
 test(598, DT[,list(count=.N),by=c("x","y")], data.table(x=0.0,y=c(0.0,0.1,0.2),count=c(3L,1L,1L)))
 
+# And that numeric NAs sort stably to the beginning. Whether NAs are allowed in keys, another issue but
+# ordernumtol needs to deal with NA anyway for add hoc by and unique.
+DT = data.table( c(1.34, 1.34, 1.34,   NA, 2.22, 2.22, 1.34, NA,  NA, 1.34, 0.999), c(75.1,   NA, 75.1, 75.1,  2.3,  2.4,  2.5, NA, 1.1,   NA, 7.9 ))
+test(599, DT[c(8,9,4,11,2,10,7,1,3,5,6)], setkey(setkey(DT),NULL))
+
+set.seed(1)
+DT = data.table(x=rep(c(1,2), each=10), y=rnorm(20))
+setkey(DT, x, y)
+test(600, !is.unsorted(DT$x))
+test(601, is.unsorted(DT$y))
+test(602, order(DT$x,DT$y), 1:20)
+
 
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
