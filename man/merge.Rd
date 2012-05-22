@@ -1,4 +1,5 @@
 \name{merge}
+\alias{merge}
 \alias{merge.data.table}
 \title{ Merge Two Data Tables }
 \description{

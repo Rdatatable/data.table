@@ -126,6 +126,9 @@ USER VISIBLE CHANGES
         non-'by'; e.g. these two queries now name the columns "V1" and "V2" :
             DT[,list("a","b"),by=x]
             DT[,list("a","b")]      # used to name the columns 'a' and 'b', oddly.
+            
+    o   Typing ?merge now asks whether to display ?merge.data.frame or ?merge.data.table.
+        Thanks to Chris Neff for suggesting.
 
 
         **********************************************
