@@ -1715,6 +1715,10 @@ DT = as.data.table(matrix(1L,nrow=100000,ncol=100))
 test(607, system.time(for (i in 1:1000) DT[i,V1:=i])["user.self"] < 5)  # safe margin
 test(608, DT[1:1000,V1], 1:1000)
 
+# Crash bug of chorder(character()), #2026
+test(609, chorder(character()), order(character()))
+test(610, chorder(""), order(""))
+
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
 #        test on out of bound i subsets e.g. 6:10 when DT has 7 rows, and mixed negative and positive i integer is error.

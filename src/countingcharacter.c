@@ -42,9 +42,10 @@ SEXP countingcharacter(SEXP x, SEXP sort)
 {
     SEXP ans, tmp, *u, s;
     R_len_t i, n, k, cumsum, un=0, ualloc;
-    if (!isString(x)) error("x is not character");
-    if (!isLogical(sort)) error("sort is not logical");
+    if (!isString(x)) error("x is not character vector");
+    if (!isLogical(sort)) error("sort is not logical vector");
     n = LENGTH(x);
+    if (!n) return(allocVector(INTSXP,0));
     savetl_init();
     for(i=0; i<n; i++) {
         s = STRING_ELT(x,i);

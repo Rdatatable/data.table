@@ -112,6 +112,8 @@ BUG FIXES
     o   A large slow down (2s went up to 40s) in the development version of 1.8.1 when
         iterating calls to DT[...] in a for loop, such as in example(":="), has been
         fixed, #2027. This was caught before making it to CRAN. Speed regression test added.
+        
+    o   chorder(character()) was a seg fault, #2026. Fixed and test added.
 
 
 USER VISIBLE CHANGES
