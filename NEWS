@@ -108,6 +108,10 @@ BUG FIXES
         and NULL, fixing #1732. For consistency so that j works unchanged when by is
         dynamic and passed one of those values all meaning 'don't group'. Thanks
         to Joseph Voelkel reporting and Chris Neff for further use cases. Tests added.
+        
+    o   A large slow down (2s went up to 40s) in the development version of 1.8.1 when
+        iterating calls to DT[...] in a for loop, such as in example(":="), has been
+        fixed, #2027. This was caught before making it to CRAN. Speed regression test added.
 
 
 USER VISIBLE CHANGES

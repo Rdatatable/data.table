@@ -42,7 +42,7 @@ Advanced (internals) : sub assigning to columns is easy to see how that is done 
 \value{
     \code{DT} is modified by reference and the new value is returned. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). Recall that this package is for large data (of mixed column types, with multi-column keys) where updates by reference can be many orders of magnitude faster than copying the entire table.   
 }
-\seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{alloc.col}}, \code{\link{truelength}}
+\seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{set}}
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
@@ -68,7 +68,15 @@ Advanced (internals) : sub assigning to columns is easy to see how that is done 
     system.time(for (i in 1:1000) DF[i,1] <- i)
     # 591 seconds }        
     system.time(for (i in 1:1000) DT[i,V1:=i])
-    # 1.16 seconds  ( 509 times faster )
+    # 3.3 seconds  ( 179 times faster, 3.3 is overhead in [.data.table )
+    system.time(for (i in 1:1000) set(DT,i,1L,i))
+    # 0.03 seconds  ( 19700 times faster, overhead of [.data.table is avoided )
+    
+    # However, normally, we call [.data.table *once* on *large* data, not many times on small data.
+    # The above is to demonstrate overhead, not to recommend looping in this way. But the option
+    # of set() is there if you need it.
+    
 }
 \keyword{ data }
+
 

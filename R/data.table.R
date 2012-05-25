@@ -190,6 +190,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
 
 "[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), drop=NULL)
 {
+    # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
+    # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
+    
     # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
     if (!cedta()) {
         Nargs = nargs() - (!missing(drop))
@@ -480,7 +483,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (any(j<0L)) j = seq_len(ncol(x))[j]
         ans = vector("list",length(j))
         if (is.null(irows))
-            for (s in seq(along=j)) ans[[s]] = x[[j[s]]]
+            for (s in seq(along=j)) ans[[s]] = x[[j[s]]]  # TO DO: return marked/safe shallow copy back to user
         else {
             for (s in seq(along=j)) ans[[s]] = x[[j[s]]][irows]
             # TO DO: allow i's non join columns to be included by name
@@ -606,7 +609,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     if (!all(byval %chin% names(x)))
                         stop("'by' or 'keyby' seems like a column name vector but these elements are not column names (first 5):",paste(head(byval[!byval%chin%names(x)],5),collapse=""))
                     # byvars = byval
-                    byval=as.list(x[,byval,with=FALSE])
+                    byval=as.list(x[,byval,with=FALSE])   # TO DO: Why as.list here? And why not just shallow()
                     bynames = names(byval)
                 } else {
                     # by may be a single unquoted column name but it must evaluate to list so this is a convenience to users. Could also be a single expression here such as DT[,sum(v),by=colA%%2]
@@ -718,7 +721,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     ws = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
     if (".SD" %chin% ws) {
         if (missing(.SDcols)) {
-            xvars = setdiff(names(x),union(bynames,allbyvars))
+            xvars = setdiff(names(x),union(bynames,allbyvars))   # TO DO: why allbyvars here too?
             # just using .SD in j triggers all non-by columns in the subset even if some of
             # those columns are not used. It would be tricky to detect whether the j expression
             # really does use all of the .SD columns or not, hence .SDcols for grouping
@@ -744,10 +747,17 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         # We don't want date in .SD in the latter, but we do in the former; hence the union() above.
     }
     if (!length(xvars)) {
+        if (verbose) cat("No columns have been detected as used by j. So no column variables will be available to j. This will be correct in queries such as DT[i,V1:=i] and DT[,groupsize:=.N,by=colA], but may be confusing you if you wrote DT[,get('colB')+1,by=colA]. Set .SDcols=TRUE and all columns will be available to j, even using get(), but this is not recommended and may be very slower. Use eval(quote()) or paste0() idioms to construct queries that dynamically select columns.\n")
         # For macros such as DT[,macro(),by=...]. A macro is a function with no arguments
         # evaluated within the scope of x.
         # TO DO: inspect macro definition to discover columns it uses.
-        xvars = setdiff(names(x),union(bynames,allbyvars))
+        # Investigate macro(). I don't think that would work anyway as the scope is where the macro() was defined, not
+        # where it's used, no?   eval(macro) is the way to do macros, and that will detect the variables used by
+        # macro already, using the if jsub[[1]]==eval switches earlier above.
+        
+        # So, leave xvars empty. Important for test 607.
+        
+        # xvars = setdiff(names(x),union(bynames,allbyvars))
     }
     if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ...\n");flush.console()}
     SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
@@ -761,11 +771,10 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     #  if (!is.integer(itestj)) stop("Logical error: itestj is not type integer")
     if (".N" %chin% xvars) stop("The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.")
     #browser()
-    if (length(itestj)) {
-        #if (isTRUE(irows))
-            SDenv$.SD = x[itestj, xvars, with=FALSE]   # Must not shallow copy xvars here. This is the allocation for the largest group. Since itestj is passed in here, it won't shallow copy, even in future. Only DT[,xvars,with=FALSE] will ever shallow copy.
-        #else
-        #    SDenv$.SD = x[irows[itestj], xvars, with=FALSE]
+    if (!length(xvars)) {
+        SDenv$.SD = null.data.table()  # e.g. test 607
+    } else if (length(itestj)) {
+        SDenv$.SD = x[itestj, xvars, with=FALSE]   # Must not shallow copy xvars here. This is the allocation for the largest group. Since itestj is passed in here, it won't shallow copy, even in future. Only DT[,xvars,with=FALSE] will ever shallow copy.
         for (ii in seq(along=xvars)) setlength(SDenv$.SD[[ii]], oldlen)  # setup length for the first group
     } else {
         # First group is the only group (e.g. no grouping)
@@ -820,8 +829,8 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
     
     #assign("mean", base::mean.default, envir=SDenv)  # This is much faster, but still a lot slower than below
-    for (ii in seq_along(jsub)[-1])
-        if (is.call(jsub[[ii]]) && jsub[[ii]][[1]] == as.name("mean")) jsub[[ii]] = call(".Internal",jsub[[ii]])
+    for (ii in seq_along(jsub)[-1L])
+        if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]] == as.name("mean")) jsub[[ii]] = call(".Internal",jsub[[ii]])
         
     setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=. 
     lockBinding(".SD",SDenv)
@@ -940,13 +949,15 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
 #  [[.data.frame is now dispatched due to inheritance.
 #  The code below tried to avoid that but made things
 #  very slow (462 times faster down to 1 in the timings test).
-#  TO DO. Reintroduce the bvelow but dispatch straight to
-#  .C("do_subset2") or better.
+#  TO DO. Reintroduce velow but dispatch straight to
+#  .C("do_subset2") or better. Tests 604-608 test
+#  that this doesn't regress.
 
 #"[[.data.table" = function(x,...) {
 #    if (!cedta()) return(`[[.data.frame`(x,...))
-#    class(x)=NULL
-#    x[[...]]
+#    .subset2(x,...)
+#    #class(x)=NULL  # awful, copy
+#    #x[[...]]
 #}
 
 #"[[<-.data.table" = function(x,i,j,value) {
