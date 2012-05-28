@@ -388,86 +388,87 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     if (":=" %chin% sapply(sapply(jsub,all.vars,TRUE),"[",1L)) {   # TO DO: Quite slow, move the sapply(sapply into C.
         # The double sapply is for FAQ 4.5
         if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
-        if (!missing(by)) stop("Combining := in j with by is not yet implemented.")
-        if (bywithoutby && nrow(i)>1L) stop("combining bywithoutby with := in j is not yet implemented.")
-        if (as.character(jsub[[1L]]) != ":=") stop("Currently only one `:=` may be present in j. This may be expanded in future.")
-        lhs = jsub[[2]]
-        jsub = jsub[[3]]
-        av = all.vars(jsub,TRUE)  # TO DO: might not be necessary to remove the lhs from av like this
-        if (FALSE) {
-        rhsav = all.vars(jsub[[3L]],TRUE)
-        # TO DO: these eval go away when done by group,  and don't see .N, .SD, .BY or .I either.
-        if (length(rhsav) && length(rhsvars <- intersect(rhsav,names(x)))) {
-            tmpx = if (is.null(irows)) x[,rhsvars,with=FALSE] else x[irows,rhsvars,with=FALSE]
-            # The 'if' isn't necessary but we do that for a bit of speed.
-            rhs = eval(jsub[[3L]], envir=tmpx, enclos=parent.frame())
-        } else {
-            rhs = eval(jsub[[3L]], envir=parent.frame(), enclos=parent.frame())
-        }
-        #
-        }
-        if (with) {
-            if (!is.name(lhs)) stop("LHS of := must be a single column name, when with=TRUE. When with=FALSE the LHS may be a vector of column names or positions.")
-            lhs = as.character(lhs)
-        } else {
-            lhs = eval(lhs, envir=parent.frame(), enclos=parent.frame())
-            if (!is.atomic(lhs)) stop("LHS of := must evaluate to an atomic vector (column names or positions) when with=FALSE")
-            if (is.numeric(lhs)) {
-                if (!all(1L<=lhs | lhs<=ncol(x))) stop("LHS of := out of bounds")
-                lhs = names(x)[lhs]
+        #if (!missing(by)) stop("Combining := in j with by is not yet implemented.")
+        #if (bywithoutby && nrow(i)>1L) stop("combining bywithoutby with := in j is not yet implemented.")
+        if (as.character(jsub[[1L]]) == ":=") {  #stop("Currently only one `:=` may be present in j. This may be expanded in future.")
+            lhs = jsub[[2]]
+            jsub = jsub[[3]]
+            av = all.vars(jsub,TRUE)  # TO DO: might not be necessary to remove the lhs from av like this
+            if (FALSE) {
+            rhsav = all.vars(jsub[[3L]],TRUE)
+            # TO DO: these eval go away when done by group,  and don't see .N, .SD, .BY or .I either.
+            if (length(rhsav) && length(rhsvars <- intersect(rhsav,names(x)))) {
+                tmpx = if (is.null(irows)) x[,rhsvars,with=FALSE] else x[irows,rhsvars,with=FALSE]
+                # The 'if' isn't necessary but we do that for a bit of speed.
+                rhs = eval(jsub[[3L]], envir=tmpx, enclos=parent.frame())
+            } else {
+                rhs = eval(jsub[[3L]], envir=parent.frame(), enclos=parent.frame())
             }
-            if (!is.character(lhs)) stop("Logical error. LHS of := wasn't atomic column names or positions")
-        }
-        m = chmatch(lhs,names(x))
-        if (all(!is.na(m))) {
-            # updates by reference to existing columns
-            cols = as.integer(m)
-            newnames=NULL
-        } else {
-            # Adding new column(s). TO DO: move after the first eval incase the jsub has an error.
-            newnames=setdiff(lhs,names(x))
-            cols = as.integer(c(m[!is.na(m)],ncol(x)+1L:length(newnames)))
-            if ((ok<-selfrefok(x,verbose))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-                warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table, so that := can add this new column by reference. At an earlier point, this data.table has been copied by R. Avoid key<-, names<- and attr<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setkey(), setnames() and setattr(). If this message doesn't help, please report to datatable-help so the root cause can be fixed.")
-            if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
-                n = max(ncol(x)+100, ncol(x)+2*length(newnames))
-                name = substitute(x)
-                if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
-                    # Do the warning before allocating and assigning, so we can track where we are when verbose=TRUE
-                    # in case an error occurs in alloc.col or assign
-                    warning("growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.")
-                # TO DO test   DT[....][,foo:=42L],  i.e. where the foo does the realloc. Would it see DT name or the call.
-                # inherits=TRUE is correct and mimicks what the setVar in C was doing before being moved up to R level.
-                # Commnent moved up from C ... to revisit ... Note that the NAMED(dt)>1 doesn't work because .Call
-                # always sets to 2 (see R-ints), it seems. Work around
-                # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
-                # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
-                # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
-                # don't mind.
+            #
+            }
+            if (with) {
+                if (!is.name(lhs)) stop("LHS of := must be a single column name, when with=TRUE. When with=FALSE the LHS may be a vector of column names or positions.")
+                lhs = as.character(lhs)
+            } else {
+                lhs = eval(lhs, envir=parent.frame(), enclos=parent.frame())
+                if (!is.atomic(lhs)) stop("LHS of := must evaluate to an atomic vector (column names or positions) when with=FALSE")
+                if (is.numeric(lhs)) {
+                    if (!all(1L<=lhs | lhs<=ncol(x))) stop("LHS of := out of bounds")
+                    lhs = names(x)[lhs]
                 }
-                alloc.col(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
-                if (is.name(name))
-                    assign(as.character(name),x,pos=parent.frame(),inherits=TRUE)
+                if (!is.character(lhs)) stop("Logical error. LHS of := wasn't atomic column names or positions")
             }
-        }
-        # TO DO: delete ... this goes away too if the assign is later ...
-        if (FALSE) {
-        ssrows =
-            if (!is.logical(irows)) as.integer(irows)          # DT[J("a"),z:=42L]
-            else if (identical(irows,TRUE)) NULL               # DT[,z:=42L]
-            else {
-                tt = if (length(irows)==nrow(x)) which(irows)  # DT[colA>3,z:=42L]
-                     else (1L:nrow(x))[irows]                   # DT[c(TRUE,FALSE),z:=42L] (recycling)
-                if (!length(tt)) return(x)                     # DT[FALSE,z:=42L]
-                tt
+            m = chmatch(lhs,names(x))
+            if (all(!is.na(m))) {
+                # updates by reference to existing columns
+                cols = as.integer(m)
+                newnames=NULL
+            } else {
+                # Adding new column(s). TO DO: move after the first eval incase the jsub has an error.
+                newnames=setdiff(lhs,names(x))
+                cols = as.integer(c(m[!is.na(m)],ncol(x)+1L:length(newnames)))
+                if ((ok<-selfrefok(x,verbose))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
+                    warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table, so that := can add this new column by reference. At an earlier point, this data.table has been copied by R. Avoid key<-, names<- and attr<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setkey(), setnames() and setattr(). If this message doesn't help, please report to datatable-help so the root cause can be fixed.")
+                if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
+                    n = max(ncol(x)+100, ncol(x)+2*length(newnames))
+                    name = substitute(x)
+                    if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
+                        # Do the warning before allocating and assigning, so we can track where we are when verbose=TRUE
+                        # in case an error occurs in alloc.col or assign
+                        warning("growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.")
+                    # TO DO test   DT[....][,foo:=42L],  i.e. where the foo does the realloc. Would it see DT name or the call.
+                    # inherits=TRUE is correct and mimicks what the setVar in C was doing before being moved up to R level.
+                    # Commnent moved up from C ... to revisit ... Note that the NAMED(dt)>1 doesn't work because .Call
+                    # always sets to 2 (see R-ints), it seems. Work around
+                    # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
+                    # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
+                    # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
+                    # don't mind.
+                    }
+                    alloc.col(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
+                    if (is.name(name))
+                        assign(as.character(name),x,pos=parent.frame(),inherits=TRUE)
+                }
             }
-        }
-            
-        # TO DO: any new columns can't be added here, because we don't know the type to add yet, after eval below...
-        if (FALSE) {
-        if (verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
-        return(.Call("assign",x,ssrows,cols,newnames,rhs,verbose,PACKAGE="data.table"))
-        }
+            # TO DO: delete ... this goes away too if the assign is later ...
+            if (FALSE) {
+            ssrows =
+                if (!is.logical(irows)) as.integer(irows)          # DT[J("a"),z:=42L]
+                else if (identical(irows,TRUE)) NULL               # DT[,z:=42L]
+                else {
+                    tt = if (length(irows)==nrow(x)) which(irows)  # DT[colA>3,z:=42L]
+                         else (1L:nrow(x))[irows]                   # DT[c(TRUE,FALSE),z:=42L] (recycling)
+                    if (!length(tt)) return(x)                     # DT[FALSE,z:=42L]
+                    tt
+                }
+            }
+                
+            # TO DO: any new columns can't be added here, because we don't know the type to add yet, after eval below...
+            if (FALSE) {
+            if (verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
+            return(.Call("assign",x,ssrows,cols,newnames,rhs,verbose,PACKAGE="data.table"))
+            }
+        }  # end if first call is to :=
         # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
         # Could return number of rows updated but even when wrapped in invisible() it seems
         # the [.class method doesn't respect invisible, which may be confusing to user.
@@ -841,9 +842,10 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     #browser()
     if (!is.null(lhs)) {
         if (verbose) cat("Assigning",if (is.null(itestj)) paste("all",nrow(x)) else length(testj),"row(s)\n")
-        return(.Call("assign",x,itestj,cols,newnames,testj,verbose,PACKAGE="data.table"))
+        .Call("assign",x,itestj,cols,newnames,testj,verbose,PACKAGE="data.table")
     }
     if (missing(by) && !bywithoutby) {
+        if (!is.null(lhs)) return(x)
         if (is.call(jsub) && jsub[[1L]]=="list") {  # selecting from a list column should return list, though
             testj = as.data.table.list(testj)   # does the vector expansion to create equal length vectors
             setnames(testj, jvnames)
@@ -898,7 +900,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     #else i=NULL
     #if (!isTRUE(irows)) o__ = if (length(o__)) irows[irows!=0L][o__] else irows[irows!=0L]
     #browser()
-    ans = .Call("dogroups", x, xcols, groups, grpcols, jiscols, irows, o__, f__, len__, jsub, SDenv, testj, byretn, verbose,PACKAGE="data.table")
+    if (is.null(lhs)) cols=NULL
+    ans = .Call("dogroups", x, xcols, groups, grpcols, jiscols, irows, o__, f__, len__, jsub, SDenv, testj, byretn, cols, verbose,PACKAGE="data.table")
+    if (!is.null(lhs)) return(x)
     # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
     # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
     # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)

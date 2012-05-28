@@ -36,10 +36,10 @@ void setSizes()
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
 
-SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP irows, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP verbose)
+SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP irows, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP testj, SEXP byretn, SEXP lhs, SEXP verbose)
 {
-    R_len_t i, j, k, rownum, ngrp, njval, ngrpcols, ansloc, maxn, r, thisansloc, thislen, any0, newlen, igrp, grpcol, size;
-    SEXP names, bynames, ans, jval, naint, nareal, SD, BY, N, iSD, rownames, s;
+    R_len_t i, j, k, rownum, ngrp, njval, ngrpcols, ansloc=0, maxn, r, thisansloc, thislen, any0, newlen, igrp, grpcol, size, vlen, protecti=0;
+    SEXP names, bynames, ans=NULL, jval, naint, nareal, SD, BY, N, iSD, rownames, s, targetcol, RHS;
     SEXP *nameSyms;
     if (!sizesSet) setSizes();
     if (TYPEOF(order) != INTSXP) error("Internal error: order not integer");
@@ -104,109 +104,116 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             error("Type %d in by column %d", TYPEOF(VECTOR_ELT(BY, i)), i);
     }
     
-    PROTECT(ans = allocVector(VECSXP, ngrpcols + njval));
-    
-    PROTECT(naint = allocVector(INTSXP, 1));
+    PROTECT(naint = allocVector(INTSXP, 1));  // TO DO: do way with this if we just have extra switch for INT/REAL
+                                              //        it was from when we didn't know about generations and tried to do memcpy for everything 
+    protecti++;   
     INTEGER(naint)[0] = NA_INTEGER;
     
     PROTECT(nareal = allocVector(REALSXP, 1));
+    protecti++;
     REAL(nareal)[0] = NA_REAL;
     
-    for(i = 0; i < ngrpcols; i++) {
-        grpcol = INTEGER(grpcols)[i]-1;
-        SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(groups, grpcol)), INTEGER(byretn)[0]));
-        switch (TYPEOF(VECTOR_ELT(groups, grpcol))) {   // this structure is more for the future when by could contain character for example
-            case INTSXP :
-            case LGLSXP :
-            case STRSXP :
-            case REALSXP :
-                break;
-            default:
-                error("Unsupported type '%s' of group columnn '%s'", type2char(TYPEOF(VECTOR_ELT(groups, grpcol))), CHAR(STRING_ELT(getAttrib(groups, R_NamesSymbol),grpcol)));
-        }
-    }
-    for(i = 0; i < njval; i++) {
-        if (isNull(VECTOR_ELT(testj, i)))
-            error("Column %d of j's result for the first group is NULL. We rely on the column types of the first result to decide the type expected for the remaining groups (and require consistency). NULL columns are acceptable for later groups (and those are replaced with NA of appropriate type and recycled) but not for the first. Please use a typed empty vector instead, such as integer() or numeric().", i+1);
-        if (SIZEOF(VECTOR_ELT(testj, i))==0)
-            error("Unsupported type '%s' in j column %d", type2char(TYPEOF(VECTOR_ELT(testj, i))), i+1);
-        SET_VECTOR_ELT(ans, ngrpcols+i, allocVector(TYPEOF(VECTOR_ELT(testj, i)), INTEGER(byretn)[0]));
-    }
+    if (isNull(lhs)) {
+        PROTECT(ans = allocVector(VECSXP, ngrpcols + njval));
+        protecti++;
     
-    // copy existing result for first group into ans
-    // TO DO: treat first group the same and move byretn logic (best guess at final size) 
-    ansloc = 0;
-    maxn = 0;
-    any0 = 0;
-    for (j=0; j<njval; j++) {
-        thislen = LENGTH(VECTOR_ELT(testj,j));  // checked not NULL above
-        maxn = thislen>maxn ? thislen : maxn;
-        if (thislen == 0) any0 = 1;
-    }
-    if (maxn>0 && any0) {
-        for (j=0; j<njval; j++) {
-            thislen = LENGTH(VECTOR_ELT(testj,j));
-            if (thislen == 0) {
-                // replace the 0-length vector with a 1-length NA to be recycled below to fit.
-                switch (TYPEOF(VECTOR_ELT(testj, j))) {
-                case LGLSXP :
+        for(i = 0; i < ngrpcols; i++) {
+            grpcol = INTEGER(grpcols)[i]-1;
+            SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(groups, grpcol)), INTEGER(byretn)[0]));
+            switch (TYPEOF(VECTOR_ELT(groups, grpcol))) {   // this structure is more for the future when by could contain character for example
                 case INTSXP :
-                    SET_VECTOR_ELT(testj,j,naint);
-                    break;
-                case REALSXP :
-                    SET_VECTOR_ELT(testj,j,nareal);
-                    break;
+                case LGLSXP :
                 case STRSXP :
-                    SET_VECTOR_ELT(testj,j,NA_STRING);
+                case REALSXP :
                     break;
                 default:
-                    error("Logical error. Type of column should have been checked by now");
-                }
+                    error("Unsupported type '%s' of group columnn '%s'", type2char(TYPEOF(VECTOR_ELT(groups, grpcol))), CHAR(STRING_ELT(getAttrib(groups, R_NamesSymbol),grpcol)));
             }
         }
-    }
-    if (maxn > 0) {
-        if (ansloc + maxn > length(VECTOR_ELT(ans,0))) error("Didn't allocate enough rows for result of first group.");
-        igrp = length(order) ? INTEGER(order)[INTEGER(starts)[0]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[0]-1 : 0);
-        // just first group here.
-        // null icols => grouping by by (where by and x irows line up). Grouping by i has non-null jiscols even when JIS not used (jiscols=integer())
-        for (j=0; j<ngrpcols; j++) {
-            grpcol = INTEGER(grpcols)[j]-1;
-            size = SIZEOF(VECTOR_ELT(groups, grpcol));
-            for (r=0; r<maxn; r++) {
-                memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*size,
-                       (char *)DATAPTR(VECTOR_ELT(groups,grpcol)) + igrp*size,
-                       1 * size);
-            }
+        
+        for(i = 0; i < njval; i++) {
+            if (isNull(VECTOR_ELT(testj, i)))
+                error("Column %d of j's result for the first group is NULL. We rely on the column types of the first result to decide the type expected for the remaining groups (and require consistency). NULL columns are acceptable for later groups (and those are replaced with NA of appropriate type and recycled) but not for the first. Please use a typed empty vector instead, such as integer() or numeric().", i+1);
+            if (SIZEOF(VECTOR_ELT(testj, i))==0)
+                error("Unsupported type '%s' in j column %d", type2char(TYPEOF(VECTOR_ELT(testj, i))), i+1);
+            SET_VECTOR_ELT(ans, ngrpcols+i, allocVector(TYPEOF(VECTOR_ELT(testj, i)), INTEGER(byretn)[0]));
         }
+        
+        // copy existing result for first group into ans
+        // TO DO: treat first group the same and move byretn logic (best guess at final size) 
+        ansloc = 0;
+        maxn = 0;
+        any0 = 0;
         for (j=0; j<njval; j++) {
-            thisansloc = ansloc;
-            thislen = LENGTH(VECTOR_ELT(testj,j)); // never length 0 as replaced with NA above.
-            if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen); 
-            size = SIZEOF(VECTOR_ELT(testj, j));
-            if (TYPEOF(VECTOR_ELT(ans,j+ngrpcols)) != TYPEOF(VECTOR_ELT(testj,j))) error("Type mismatch in copying testj into ans");
-            switch (TYPEOF(VECTOR_ELT(testj,j))) {
-            case STRSXP :
-                for (r=0; r<maxn; r++)
-                    SET_STRING_ELT(VECTOR_ELT(ans,j+ngrpcols), thisansloc+r, STRING_ELT(VECTOR_ELT(testj,j),r%thislen));
-                break;
-            case VECSXP :
-                for (r=0; r<maxn; r++)
-                    SET_VECTOR_ELT(VECTOR_ELT(ans,j+ngrpcols), thisansloc+r, VECTOR_ELT(VECTOR_ELT(testj,j),r%thislen));
-                break;
-            default :
-                for (r=0; r<(maxn/thislen); r++) {
-                    memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+ngrpcols)) + thisansloc*size,
-                           (char *)DATAPTR(VECTOR_ELT(testj,j)),
-                           thislen * size);
-                    thisansloc += thislen;
+            thislen = LENGTH(VECTOR_ELT(testj,j));  // checked not NULL above
+            maxn = thislen>maxn ? thislen : maxn;
+            if (thislen == 0) any0 = 1;
+        }
+        if (maxn>0 && any0) {
+            for (j=0; j<njval; j++) {
+                thislen = LENGTH(VECTOR_ELT(testj,j));
+                if (thislen == 0) {
+                    // replace the 0-length vector with a 1-length NA to be recycled below to fit.
+                    switch (TYPEOF(VECTOR_ELT(testj, j))) {
+                    case LGLSXP :
+                    case INTSXP :
+                        SET_VECTOR_ELT(testj,j,naint);
+                        break;
+                    case REALSXP :
+                        SET_VECTOR_ELT(testj,j,nareal);
+                        break;
+                    case STRSXP :
+                        SET_VECTOR_ELT(testj,j,NA_STRING);
+                        break;
+                    default:
+                        error("Logical error. Type of column should have been checked by now");
+                    }
                 }
             }
         }
-        ansloc += maxn;
+        if (maxn > 0) {
+            if (ansloc + maxn > length(VECTOR_ELT(ans,0))) error("Didn't allocate enough rows for result of first group.");
+            igrp = length(order) ? INTEGER(order)[INTEGER(starts)[0]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[0]-1 : 0);
+            // just first group here.
+            // null icols => grouping by by (where by and x irows line up). Grouping by i has non-null jiscols even when JIS not used (jiscols=integer())
+            for (j=0; j<ngrpcols; j++) {
+                grpcol = INTEGER(grpcols)[j]-1;
+                size = SIZEOF(VECTOR_ELT(groups, grpcol));
+                for (r=0; r<maxn; r++) {
+                    memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*size,
+                           (char *)DATAPTR(VECTOR_ELT(groups,grpcol)) + igrp*size,
+                           1 * size);
+                }
+            }
+            for (j=0; j<njval; j++) {
+                thisansloc = ansloc;
+                thislen = LENGTH(VECTOR_ELT(testj,j)); // never length 0 as replaced with NA above.
+                if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen); 
+                size = SIZEOF(VECTOR_ELT(testj, j));
+                if (TYPEOF(VECTOR_ELT(ans,j+ngrpcols)) != TYPEOF(VECTOR_ELT(testj,j))) error("Type mismatch in copying testj into ans");
+                switch (TYPEOF(VECTOR_ELT(testj,j))) {
+                case STRSXP :
+                    for (r=0; r<maxn; r++)
+                        SET_STRING_ELT(VECTOR_ELT(ans,j+ngrpcols), thisansloc+r, STRING_ELT(VECTOR_ELT(testj,j),r%thislen));
+                    break;
+                case VECSXP :
+                    for (r=0; r<maxn; r++)
+                        SET_VECTOR_ELT(VECTOR_ELT(ans,j+ngrpcols), thisansloc+r, VECTOR_ELT(VECTOR_ELT(testj,j),r%thislen));
+                    break;
+                default :
+                    for (r=0; r<(maxn/thislen); r++) {
+                        memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+ngrpcols)) + thisansloc*size,
+                               (char *)DATAPTR(VECTOR_ELT(testj,j)),
+                               thislen * size);
+                        thisansloc += thislen;
+                    }
+                }
+            }
+            ansloc += maxn;
+        }
+        // end copy of testj into result
     }
-    // end copy of testj into result
-    
+        
     for(i = 1; i < ngrp; i++) {  // 2nd group onwards
         if (INTEGER(starts)[i] == 0) continue;   // nomatch 0 and this group has no match. 0's need to be present
                                                  // so that i lines up with f__
@@ -287,6 +294,71 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         PROTECT(jval = eval(jexp, env));
         // length(jval) may be 0 when j is plot or other side-effect only. Otherwise, even NULL in user j
         // will be auto wrapped to make list(NULL) (length 1)
+        if (!isNull(lhs)) {
+            targetcol = VECTOR_ELT(dt,INTEGER(lhs)[0]-1);
+            size = SIZEOF(targetcol);
+            RHS = VECTOR_ELT(jval,0);
+            if (TYPEOF(targetcol)!=TYPEOF(RHS)) error("Type of RHS must match LHS. To check and coerce would impact performance too much for the fastest cases. Either change the type of the target column, or coerce the RHS of := yourself (e.g. by using 1L instead of 1)");
+            vlen = length(RHS);
+            if (length(order)==0) {
+                rownum = INTEGER(starts)[i]-1;
+                if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
+                switch (TYPEOF(targetcol)) {
+                case STRSXP :
+                    for (r=0; r<thislen; r++)
+                        SET_STRING_ELT(targetcol, rownum+r, STRING_ELT(RHS, r%vlen));
+                    break;
+                case VECSXP :
+                    for (r=0; r<thislen; r++)
+                        SET_VECTOR_ELT(targetcol, rownum+r, STRING_ELT(RHS, r%vlen));
+                    break;
+                default :
+                    for (r=0; r<(thislen/vlen); r++) {
+                        memcpy((char *)DATAPTR(targetcol) + (rownum+r*vlen)*size,
+                               (char *)DATAPTR(RHS),
+                               vlen * size);
+                    }
+                    memcpy((char *)DATAPTR(targetcol) + (rownum+r*vlen)*size,
+                           (char *)DATAPTR(RHS),
+                           (thislen%vlen) * size);
+                }
+            } else {
+                switch (TYPEOF(targetcol)) {
+                case STRSXP :
+                    for (k=0; k<thislen; k++) {
+                        rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
+                        if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
+                        SET_STRING_ELT(targetcol, rownum, STRING_ELT(RHS, k%vlen));
+                    }
+                    break;
+                case VECSXP :
+                    for (k=0; k<thislen; k++) {
+                        rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
+                        if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;   // TO DO : here too
+                        SET_VECTOR_ELT(targetcol, rownum, VECTOR_ELT(RHS, k%vlen));
+                    }
+                    break;
+                case INTSXP :
+                    for (k=0; k<thislen; k++) {
+                        rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
+                        if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
+                        INTEGER(targetcol)[rownum] = INTEGER(RHS)[k%vlen];
+                    }
+                    break;
+                case REALSXP :
+                    for (k=0; k<thislen; k++) {
+                        rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
+                        if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
+                        REAL(targetcol)[rownum] = REAL(RHS)[k%vlen];
+                    }
+                    break;
+                default :
+                    error("Unsupported type");
+                }
+            }
+            UNPROTECT(1);
+            continue;
+        }
         maxn = 0;
         any0 = 0;
         if (length(jval)>1 || length(VECTOR_ELT(jval,0))) {
@@ -377,16 +449,16 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         UNPROTECT(1);  // do we really need the PROTECT/UNPROTECT given the macros above won't gc() ?
     }
-    if (ansloc < length(VECTOR_ELT(ans,0))) {
+    if (isNull(lhs) && ansloc < length(VECTOR_ELT(ans,0))) {
         // Rprintf("Wrote less rows than allocated. byretn=%d but wrote %d rows\n",INTEGER(byretn)[0],ansloc);
         for (j=0; j<length(ans); j++) LENGTH(VECTOR_ELT(ans,j)) = ansloc;
         // TO DO: set truelength here (uninitialized by R) to save growing next time on insert() 
         // Important not to touch truelength for CHARSXP in R's global string cache, but we won't see those here,
         // only true vectors such as STRSXP.
     }
-    UNPROTECT(3);
+    UNPROTECT(protecti);
     Free(nameSyms);
-    return(ans);
+    if (isNull(lhs)) return(ans); else return(R_NilValue);
 }
 
 

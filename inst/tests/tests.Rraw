@@ -16,6 +16,7 @@ options(warn=2)
 nfail = ntest = lastnum = 0
 whichfail = NULL
 test = function(num,x,y=NULL,error,warning,output) {
+    # cat(num,"\n")
     ntest <<- ntest + 1
     lastnum <<- num
     err <- if (missing(output)) try(x,TRUE) else out<-capture.output(try(x,TRUE))
@@ -1135,9 +1136,9 @@ test(380, DT[,{.SD$b[1]=10L;.SD}, by=a], error="locked binding")  # .SD locked f
 test(381, DT[,{if (a==2) {.SD$b[1]=10L;.SD} else .SD}, by=a], error="locked binding") # .SD locked in 2nd group onwards too
 
 # test that direct := is trapped, but := within a copy of .SD is allowed (FAQ 4.5)
-test(382, DT[,b:=10L,by=a], error="not yet implemented")
-test(383, DT[,{z=10L;b:=z},by=a], error="not yet implemented")
-test(384, DT[,{mySD=copy(.SD);mySD[1,b:=99L];mySD},by=a], data.table(a=rep(1:3,1:3),b=c(99L,99L,3L,99L,5:6)))
+test(382, DT[,b:=.N*2L,by=a], data.table(a=rep(1:3,1:3),b=rep(2L*(1:3),1:3)))
+# TO DO: switch back on .. test(383, DT[,{z=10L;b:=z},by=a], error="not yet implemented")
+test(384, DT[,{mySD=copy(.SD);mySD[1,b:=99L];mySD},by=a], data.table(a=rep(1:3,1:3),b=c(99L,99L,4L,99L,6L,6L)))
 
 # somehow missed testing := on logical subset with mixed TRUE/FALSE, reported by Muhammad Waliji
 DT = data.table(x=1:2, y=1:6)
@@ -1609,7 +1610,7 @@ test(555, nrow(DT[V1=='a' & V2 %like% 'ello']), 1L)
 
 # Test can't := to .SD, #1727
 DT = data.table(x = 1:5, y = rnorm(5))
-test(556, DT[,.SD[,z:=rnorm(1)],by=x], error="not yet implemented")  # will change to error below when := by group is done 
+test(556, DT[,.SD[,z:=rnorm(1)],by=x], error="[.]SD is locked.*reserved for possible future use")
 f = function(.SD) .SD[,z:=rnorm(1)]
 test(557, DT[, f(.SD), by=x], error="[.]SD is locked.*reserved for possible future use")
 
@@ -1718,6 +1719,13 @@ test(608, DT[1:1000,V1], 1:1000)
 # Crash bug of chorder(character()), #2026
 test(609, chorder(character()), order(character()))
 test(610, chorder(""), order(""))
+
+# := by group
+DT = data.table(a=1:3,b=(1:9)/10)
+DT[,v:=NA_real_]
+test(611, DT[,v:=sum(b),by=a], data.table(a=1:3,b=(1:9)/10,v=c(1.2,1.5,1.8)))
+setkey(DT,a)
+test(612, DT[,v:=min(b),by=a], data.table(a=1:3,b=(1:9)/10,v=(1:3)/10,key="a"))
 
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
