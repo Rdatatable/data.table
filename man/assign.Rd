@@ -68,7 +68,7 @@ Advanced (internals) : sub assigning to columns is easy to see how that is done 
     system.time(for (i in 1:1000) DF[i,1] <- i)
     # 591 seconds }        
     system.time(for (i in 1:1000) DT[i,V1:=i])
-    # 3.3 seconds  ( 179 times faster, 3.3 is overhead in [.data.table )
+    # 2.4 seconds  ( 246 times faster, 2.4 is overhead in [.data.table )
     system.time(for (i in 1:1000) set(DT,i,1L,i))
     # 0.03 seconds  ( 19700 times faster, overhead of [.data.table is avoided )
     

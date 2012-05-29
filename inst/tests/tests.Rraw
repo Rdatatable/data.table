@@ -1135,9 +1135,9 @@ DT = data.table(a=rep(1:3,1:3),b=1:6)
 test(380, DT[,{.SD$b[1]=10L;.SD}, by=a], error="locked binding")  # .SD locked for 1st group
 test(381, DT[,{if (a==2) {.SD$b[1]=10L;.SD} else .SD}, by=a], error="locked binding") # .SD locked in 2nd group onwards too
 
-# test that direct := is trapped, but := within a copy of .SD is allowed (FAQ 4.5)
+# test that direct := is trapped, but := within a copy of .SD is allowed (FAQ 4.5). See also tests 556-557.
 test(382, DT[,b:=.N*2L,by=a], data.table(a=rep(1:3,1:3),b=rep(2L*(1:3),1:3)))
-# TO DO: switch back on .. test(383, DT[,{z=10L;b:=z},by=a], error="not yet implemented")
+test(383, DT[,{z=10L;b:=z},by=a], error=":= is defined for use in j only, and [(]currently[)] only once")
 test(384, DT[,{mySD=copy(.SD);mySD[1,b:=99L];mySD},by=a], data.table(a=rep(1:3,1:3),b=c(99L,99L,4L,99L,6L,6L)))
 
 # somehow missed testing := on logical subset with mixed TRUE/FALSE, reported by Muhammad Waliji
