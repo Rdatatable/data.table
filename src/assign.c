@@ -226,7 +226,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     // having now checked the inputs, from this point there should be no errors,
     // so we can now proceed to modify DT by reference.
     if (length(newcolnames)) {
-        if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
+        //if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
         oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
         
         if (oldtncol<oldncol) error("Internal error, please report (including result of sessionInfo()) to datatable-help: oldtncol (%d) < oldncol (%d) but tl of class is marked.", oldtncol, oldncol);
@@ -264,12 +264,30 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             continue;
         }
         if (coln+1 > oldncol) {  // new column
-            PROTECT(newcol = allocVector(TYPEOF(thisvalue),targetlen));
+            PROTECT(newcol = allocVector(TYPEOF(thisvalue),nrow));
             protecti++;
             if (isFactor(thisvalue)) {
                  setAttrib(newcol, R_LevelsSymbol, getAttrib(thisvalue, R_LevelsSymbol));
                  setAttrib(newcol, R_ClassSymbol, getAttrib(thisvalue, R_ClassSymbol));
             }
+            switch(TYPEOF(thisvalue)) {
+            // NAs are special; no need to worry about generations. Can't use memset (1 byte). Although
+            // allocVector already did memset to 0, we think initializing to NA is safer and more inline with expectations.
+            case STRSXP :
+                for (j=0; j<nrow; j++) ((SEXP *)DATAPTR(newcol))[j] = NA_STRING;
+                break;
+            case INTSXP :
+                for (j=0; j<nrow; j++) INTEGER(newcol)[j] = NA_INTEGER;
+                break;
+            case REALSXP :
+	            for (j=0; j<nrow; j++) REAL(newcol)[j] = NA_REAL;
+	            break;
+	        case VECSXP :
+	            // list columns already have each item initialized to NULL
+	            break;
+	        default :
+	            error("Unsupported type '%s' when adding a new column using := or set()", type2char(TYPEOF(thisvalue)));
+	        }
             SET_VECTOR_ELT(dt,coln,newcol);
             if (vlen<1) continue;   // TO DO: come back and comment why this is here
             targetcol = newcol;

@@ -23,6 +23,17 @@ NEW FEATURES
         Thanks to Chris Neff for beta testing and finding problems with keys
         of two numeric columns (bug #2004), fixed and tests added.
         
+    o   := by group is now implemented (FR#1491) and sub-assigning to a new column
+        by reference now adds the column automatically (initialized with NA where
+        the sub-assign doesn't touch) (FR#1997). := by group can be combined with all
+        types of i, so ":= by group" includes grouping by `i` as well as by `by`.
+        Since := by group is by reference, it should be significantly faster than any
+        method that (directly or indirectly) `cbind`s the grouped results to DT, since
+        no copy of the (large) DT is made at all. It's a short and natural syntax that
+        can be compounded with other queries.
+            DT[,newcol:=sum(colB),by=colA]
+            
+        
     o   Prettier printing of list columns. The first 6 items of atomic vectors
         are collapsed with "," followed by a trailing "," if there are more than
         6, FR#1608. This difference to data.frame has been added to FAQ 2.17. 

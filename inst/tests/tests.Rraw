@@ -1722,10 +1722,19 @@ test(610, chorder(""), order(""))
 
 # := by group
 DT = data.table(a=1:3,b=(1:9)/10)
-DT[,v:=NA_real_]
 test(611, DT[,v:=sum(b),by=a], data.table(a=1:3,b=(1:9)/10,v=c(1.2,1.5,1.8)))
 setkey(DT,a)
 test(612, DT[,v:=min(b),by=a], data.table(a=1:3,b=(1:9)/10,v=(1:3)/10,key="a"))
+# Assign to subset ok (NA initialized in the other items) ok :
+test(613, DT[J(2),w:=8.3]$w, rep(c(NA,8.3,NA),each=3))
+test(614, DT[J(3),x:=9L]$x, rep(c(NA_integer_,NA_integer_,9L),each=3))
+test(615, DT[J(2),z:=list(list(c(10L,11L)))]$z, rep(list(NULL, 10:11, NULL),each=3))
+# Combining := by group with i
+test(616, DT[a>1,p:=sum(b)]$p, rep(c(NA,3.3),c(3,6)))
+test(617, DT[a>1,q:=sum(b),by=a]$q, rep(c(NA,1.5,1.8),each=3))
+
+# Next, turn off the double sapply(sapply when checking for := and test still caught, but later.
+# and follow through irows in assign step after eval in dogroups to check redundancy
 
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
