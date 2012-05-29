@@ -744,7 +744,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         # We don't want date in .SD in the latter, but we do in the former; hence the union() above.
     }
     if (!length(xvars)) {
-        if (verbose) cat("No columns have been detected as used by j. So no column variables will be available to j. This will be correct in queries such as DT[i,V1:=i] and DT[,groupsize:=.N,by=colA], but may be confusing you if you wrote DT[,get('colB')+1,by=colA]. Set .SDcols=TRUE and all columns will be available to j, even using get(), but this is not recommended and may be very slower. Use eval(quote()) or paste0() idioms to construct queries that dynamically select columns.\n")
+        # TO DO.. only print this if get() is in j ... if (verbose) cat("No columns have been detected as used by j. So no column variables will be available to j. This will be correct in queries such as DT[i,V1:=i] and DT[,groupsize:=.N,by=colA], but may be confusing you if you wrote DT[,get('colB')+1,by=colA]. Set .SDcols=TRUE and all columns will be available to j, even using get(), but this is not recommended and may be very slower. Use eval(quote()) or paste0() idioms to construct queries that dynamically select columns.\n")
         # For macros such as DT[,macro(),by=...]. A macro is a function with no arguments
         # evaluated within the scope of x.
         # TO DO: inspect macro definition to discover columns it uses.
