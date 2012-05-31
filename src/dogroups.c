@@ -217,7 +217,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     for(i = 1; i < ngrp; i++) {  // 2nd group onwards
         if (INTEGER(starts)[i] == 0) continue;   // nomatch 0 and this group has no match. 0's need to be present
                                                  // so that i lines up with f__
+        if (INTEGER(starts)[i] == NA_INTEGER && !isNull(lhs)) continue;
         thislen = INTEGER(lens)[i];
+        INTEGER(N)[0] = INTEGER(starts)[i] == NA_INTEGER ? 0 : thislen;
+        // .N is number of rows matched to ( 0 even when nomatch is NA)
+        
         for (j=0; j<length(iSD); j++) {   // either this or the next for() will run, not both
             size = SIZEOF(VECTOR_ELT(iSD,j));
             memcpy((char *)DATAPTR(VECTOR_ELT(iSD,j)),
@@ -252,7 +256,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                         error("Logical error. Type of column should have been checked by now");
                     }
                 }
-                thislen = 1;
+                thislen = 1;  // it is anyway?
             //TO DO..delete... } else {
             //    continue;
             //}
@@ -279,12 +283,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 }
             }
         }
-        // TO DO: delete ...INTEGER(N)[0] = INTEGER(starts)[i] == 0 ? 0 : INTEGER(lens)[i];  
         
-        INTEGER(N)[0] = INTEGER(starts)[i] == NA_INTEGER ? 0 : INTEGER(lens)[i];
-        // .N is number of rows matched to ( 0 even when nomatch is NA)
-        
-        INTEGER(rownames)[1] = -thislen;  // the .set_row_names() of .SD
+        INTEGER(rownames)[1] = -thislen;  // the .set_row_names() of .SD. Not .N when nomatch=NA and this is a nomatch
         for (j=0; j<length(SD); j++) {
             LENGTH(VECTOR_ELT(SD,j)) = thislen;
             defineVar(nameSyms[j], VECTOR_ELT(SD, j), env);

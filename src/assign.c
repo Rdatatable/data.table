@@ -109,6 +109,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     // For internal use only by [<-.data.table.
     // newcolnames : add these columns (if any)
     // cols : column names or numbers corresponding to the values to set
+    // rows : row numbers to assign
     R_len_t i, j, nrow, size, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum;
     SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key;
     Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, clearkey=FALSE;
@@ -144,6 +145,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         if (!isInteger(rows))
             error("i is type '%s'. Must be integer, or numeric is coerced with warning. If i is a logical subset, simply wrap with which(), and take the which() outside the loop if possible for efficiency.", type2char(TYPEOF(rows)));
         targetlen = length(rows);
+        for (i=0;i<targetlen;i++) if (INTEGER(rows)[i]==NA_INTEGER) error("Internal error: NA exist in 'rows' passed to C assign");
     }
     if (!length(cols))
         error("Logical error in assign, no column positions passed to assign");

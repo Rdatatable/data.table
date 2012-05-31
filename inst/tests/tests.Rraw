@@ -17,6 +17,7 @@ nfail = ntest = lastnum = 0
 whichfail = NULL
 test = function(num,x,y=NULL,error,warning,output) {
     # cat(num,"\n")
+    # assign("lastnum",lastnum,.GlobalEnv)
     ntest <<- ntest + 1
     lastnum <<- num
     err <- if (missing(output)) try(x,TRUE) else out<-capture.output(try(x,TRUE))
@@ -1039,6 +1040,9 @@ test(348, suppressWarnings(setkey(DT,b)), data.table(a=letters[3:1],b=letters[4:
 DT = data.table(a=1:2,b=1:6,key="a")
 test(349, DT[J(2:3),.N,nomatch=NA]$N, c(3L,0L))
 test(350, DT[J(2:3),.N,nomatch=0]$N, c(3L))
+# Test first .N==0 with nomatch=NA|0   TO DO: *** reinstate and fix:
+#test(350.1, DT[J(4),.N]$N, 0L)
+#test(350.2, DT[J(0:4),.N]$N, c(0L,3L,3L,0L,0L))
 
 # Test recycling list() on RHS of :=
 DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12)
@@ -1733,8 +1737,19 @@ test(615, DT[J(2),z:=list(list(c(10L,11L)))]$z, rep(list(NULL, 10:11, NULL),each
 test(616, DT[a>1,p:=sum(b)]$p, rep(c(NA,3.3),c(3,6)))
 test(617, DT[a>1,q:=sum(b),by=a]$q, rep(c(NA,1.5,1.8),each=3))
 
-# Next, turn off the double sapply(sapply when checking for := and test still caught, but later.
-# and follow through irows in assign step after eval in dogroups to check redundancy
+# Empty i clause, #2034. Thanks to Chris for testing, tests from him.
+test(618, copy(DT)[a>3,r:=sum(b)], DT)
+test(619, copy(DT)[J(-1),r:=sum(b)], DT)
+test(620, copy(DT)[J(-1),r:=sum(b),nomatch=0], DT)
+DT = data.table(x=letters, key="x")
+test(621, copy(DT)[J("bb"), x:="foo"], DT)
+test(622, copy(DT)[J("bb"), x:="foo",nomatch=0], DT)
+
+set.seed(2)
+DT = data.table(a=rnorm(5)*10, b=1:5)
+test(621, DT[,s:=sum(b),by=round(a)%%2]$s, c(10L,5L,5L,10L,10L))
+
+# Next, follow through irows in assign step after eval in dogroups to check redundancy
 
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key

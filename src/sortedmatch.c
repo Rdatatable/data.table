@@ -57,7 +57,8 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
         upp = prevupp = nr;
         low = prevlow = (LOGICAL(isorted)[0]) ? low : -1;
         INTEGER(retFirst)[lr] = INTEGER(nomatch)[0];   // default to no match for NA goto below
-        INTEGER(retLength)[lr] = INTEGER(nomatch)[0]==0 ? 0 : 1;   
+        // INTEGER(retLength)[lr] = 0;   // could do this to save the branch and later branches in R to set .N to 0
+        INTEGER(retLength)[lr] = INTEGER(nomatch)[0]==0 ? 0 : 1;
         for(col=0; col<coln && low<upp-1; col++) {
             lc = VECTOR_ELT(left,INTEGER(leftcols)[col]);
             rc = VECTOR_ELT(right,INTEGER(rightcols)[col]);

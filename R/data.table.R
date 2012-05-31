@@ -299,7 +299,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             len__ = integer(nrow(i))
             allLen1 = TRUE
             .Call("binarysearch", i, x, as.integer(leftcols-1L), as.integer(rightcols-1L), haskey(i), roll, rolltolast, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1, PACKAGE="data.table")
-            # length of nomatch (single 0 or NA) is 1 in both cases. len__ of 0 matches are 0
+            #browser()
+            # length of input nomatch (single 0 or NA) is 1 in both cases. 
+            # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
             if (mult=="all") {
                 # TO DO: delete ...
                 #idx.diff = rep(1L, sum(lengths))
@@ -307,8 +309,12 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 #idx.diff[1L] = idx.start[1L]
                 #irows = cumsum(idx.diff)
                 if (!missing(by) || which || missing(j)) {
-                    irows = if (allLen1) f__ else as.integer(unlist(mapply(seq,f__,length.out=len__,SIMPLIFY=FALSE)))
-                    # TO DO: *** if works, port the unlist mapply to C *** This is potentially relatively slow currently.
+                    irows = if (allLen1) f__ else {
+                        # tt = len__
+                        # if (is.na(nomatch)) len__[len__==0L] = 1L
+                        as.integer(unlist(mapply(seq,f__,length.out=len__,SIMPLIFY=FALSE)))
+                        # TO DO: *** if works, port the unlist mapply to C *** This is potentially relatively slow currently.
+                    }
                 } else {
                     bywithoutby=TRUE  # TO DO: use allLen1 to detect if joining to unique rows?
                     # Important that f__ is as long as nrow(i) (rather than taking away 0s), to know the i groups
@@ -387,7 +393,10 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     av = all.vars(jsub,TRUE)
     if (length(av) && av[1] == ":=") {
         if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
-        
+        if (!is.null(irows) && !length(irows)) {
+            if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")
+            return(x)
+        }
         lhs = jsub[[2]]
         jsub = jsub[[3]]
         av = all.vars(jsub,TRUE)  # TO DO: might not be necessary to remove the lhs from av like this
@@ -776,7 +785,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     } else {
         # First group is the only group (e.g. no grouping)
         if (is.null(irows))
-            SDenv$.SD = x[, xvars, with=FALSE]  # TO DO: shallow copy here. Could just have x, but then the columns of .SD wouldn't be consistent for lapply()ing etc, so need xvars here. Plus, if just x, then the lock below would lock x and that's untidy. Best is to shallow copy.
+            SDenv$.SD = x[, xvars, with=FALSE]  # TO DO: *** shallow copy here. Could just have x, but then the columns of .SD wouldn't be consistent for lapply()ing etc, so need xvars here. Plus, if just x, then the lock below would lock x and that's untidy. Best is to shallow copy.
         else
             SDenv$.SD = x[irows, xvars, with=FALSE]   # Needs to be a copy of the i subset, even when that subset is contiguous, since we can't point to subsets of a vector (due to DATAPTR being an offset)
     }
@@ -786,6 +795,22 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     #if (!length(len__)) stop("Internal error: len__ has no length")
     SDenv$.N = if (is.null(itestj)) xnrow else len__[1L]
     
+if (FALSE) {
+    # Strangeness here ...  TO DO, for tests 350.1 and 350.2    
+    p = if (is.null(itestj)) xnrow else if (is.na(itestj[1L])) 0L else len__[1L]
+    SDenv$.N = p
+    
+    if (lastnum == 350.1) {
+        cat("SDenv$.N is",SDenv$.N,"\n")
+        p = if (is.null(itestj)) xnrow else if (is.na(itestj[1L])) 0L else len__[1L]
+        q = is.null(itestj)
+        r = is.na(itestj[1L])
+        s = len__[1L]
+        browser()
+    }
+}
+    # SDenv$.N = if (is.null(itestj)) xnrow else if (exists("f__") && is.na(f__[1L])) 0L else len__[1L]
+    #browser()
     SDenv$.iSD = NULL  # null.data.table()
     if (bywithoutby) {   
         jisvars = intersect(gsub("^i[.]","",ws),names(i))
@@ -837,8 +862,10 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     testj = eval(jsub, SDenv)
     #browser()
     if (!is.null(lhs)) {
-        if (verbose) cat("Assigning",if (is.null(itestj)) paste("all",nrow(x)) else length(testj),"row(s)\n")
-        .Call("assign",x,itestj,cols,newnames,testj,verbose,PACKAGE="data.table")
+        if (is.null(itestj) || !is.na(itestj[1L])) {
+            if (verbose) cat("Assigning first or only group ",if (is.null(itestj)) paste("all",nrow(x)) else length(testj),"row(s)\n")
+            .Call("assign",x,head(itestj,oldlen),cols,newnames,testj,verbose,PACKAGE="data.table")
+        }
     }
     if (missing(by) && !bywithoutby) {
         if (!is.null(lhs)) return(x)
