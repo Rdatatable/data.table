@@ -33,7 +33,6 @@ NEW FEATURES
         can be compounded with other queries.
             DT[,newcol:=sum(colB),by=colA]
             
-        
     o   Prettier printing of list columns. The first 6 items of atomic vectors
         are collapsed with "," followed by a trailing "," if there are more than
         6, FR#1608. This difference to data.frame has been added to FAQ 2.17. 
@@ -69,7 +68,6 @@ NEW FEATURES
         a question by user1393348 on Stack Overflow, implementing #2000.
         http://stackoverflow.com/questions/10584993/r-loop-over-columns-in-data-table
         
-
 
 BUG FIXES
 
@@ -125,6 +123,10 @@ BUG FIXES
         fixed, #2027. This was caught before making it to CRAN. Speed regression test added.
         
     o   chorder(character()) was a seg fault, #2026. Fixed and test added.
+    
+    o   When grouping by i, if the first row of i had no match, .N was 1 rather than 0.
+        Fixed and tests added. Thanks to a question by user1165199 on Stack Overflow :
+        http://stackoverflow.com/questions/10721517/count-number-of-times-data-is-in-another-dataframe-in-r
 
 
 USER VISIBLE CHANGES

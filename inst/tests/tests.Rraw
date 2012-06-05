@@ -16,8 +16,8 @@ options(warn=2)
 nfail = ntest = lastnum = 0
 whichfail = NULL
 test = function(num,x,y=NULL,error,warning,output) {
-    # cat(num,"\n")
-    # assign("lastnum",lastnum,.GlobalEnv)
+    #cat(num,"\n")
+    #assign(".testnum",num,.GlobalEnv)
     ntest <<- ntest + 1
     lastnum <<- num
     err <- if (missing(output)) try(x,TRUE) else out<-capture.output(try(x,TRUE))
@@ -920,7 +920,7 @@ test(301.1, nrow(DT[,sum(B),by=C])==100010)
 
 # Test fast assign
 DT = data.table(a=c(1L,2L,2L,3L),b=4:7,key="a")
-DT[2,b:=42L]
+DT[2,b:=42L]  # needs to be on its own line to test DT symbol is changed by reference
 test(302, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,42L,6L,7L),key="a"))
 DT[J(2),b:=84L]
 test(303, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,84L,84L,7L),key="a"))
@@ -1040,9 +1040,9 @@ test(348, suppressWarnings(setkey(DT,b)), data.table(a=letters[3:1],b=letters[4:
 DT = data.table(a=1:2,b=1:6,key="a")
 test(349, DT[J(2:3),.N,nomatch=NA]$N, c(3L,0L))
 test(350, DT[J(2:3),.N,nomatch=0]$N, c(3L))
-# Test first .N==0 with nomatch=NA|0   TO DO: *** reinstate and fix:
-#test(350.1, DT[J(4),.N]$N, 0L)
-#test(350.2, DT[J(0:4),.N]$N, c(0L,3L,3L,0L,0L))
+# Test first .N==0 with nomatch=NA|0
+test(350.1, DT[J(4),.N]$N, 0L)
+test(350.2, DT[J(0:4),.N]$N, c(0L,3L,3L,0L,0L))
 
 # Test recycling list() on RHS of :=
 DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12)
@@ -1355,7 +1355,7 @@ test(466, all(sapply(CJ(f1, f2),length)==6L))
 
 # Test list(.SD,newcol=..) gives error with guidance
 DT = data.table(a=1:2,v=3:6)
-test(467, DT[,list(newcol=7L,.SD),by=a], error="Error.*Consider cbind or merge afterwards until")
+test(467, DT[,list(newcol=7L,.SD),by=a], error="Error.*use := by group instead")
 
 # Test empty list column
 DT = data.table(a=1:3,b=4:6)
@@ -1459,7 +1459,7 @@ test(497, setcolorder(DT,c("c","a","b")), data.table(c=5:6,a=1:2,b=3:4))
 test(498, setcolorder(DT,"a"), error="neworder is length")
 
 
-# test first group lstens to nomatch when j uses join inherited scope.
+# test first group listens to nomatch when j uses join inherited scope.
 x <- data.table(x=c(1,3,8),x1=10:12, key="x")
 y <- data.table(x=c(3,8,10),y1=10:12, key="x")
 test(499, y[x,x1,nomatch=0], data.table(x=c(3,8),x1=11:12, key="x"))
@@ -1747,7 +1747,7 @@ test(622, copy(DT)[J("bb"), x:="foo",nomatch=0], DT)
 
 set.seed(2)
 DT = data.table(a=rnorm(5)*10, b=1:5)
-test(621, DT[,s:=sum(b),by=round(a)%%2]$s, c(10L,5L,5L,10L,10L))
+test(623, DT[,s:=sum(b),by=round(a)%%2]$s, c(10L,5L,5L,10L,10L))
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy
 

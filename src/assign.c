@@ -30,6 +30,7 @@ extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 SEXP *saveds;
 R_len_t *savedtl, nalloc, nsaved;
+SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 
 void setselfref(SEXP x) {   
@@ -266,30 +267,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             continue;
         }
         if (coln+1 > oldncol) {  // new column
-            PROTECT(newcol = allocVector(TYPEOF(thisvalue),nrow));
+            PROTECT(newcol = allocNAVector(TYPEOF(thisvalue),nrow));
             protecti++;
+            // TO DO: keepattr here !
             if (isFactor(thisvalue)) {
                  setAttrib(newcol, R_LevelsSymbol, getAttrib(thisvalue, R_LevelsSymbol));
                  setAttrib(newcol, R_ClassSymbol, getAttrib(thisvalue, R_ClassSymbol));
             }
-            switch(TYPEOF(thisvalue)) {
-            // NAs are special; no need to worry about generations. Can't use memset (1 byte). Although
-            // allocVector already did memset to 0, we think initializing to NA is safer and more inline with expectations.
-            case STRSXP :
-                for (j=0; j<nrow; j++) ((SEXP *)DATAPTR(newcol))[j] = NA_STRING;
-                break;
-            case INTSXP :
-                for (j=0; j<nrow; j++) INTEGER(newcol)[j] = NA_INTEGER;
-                break;
-            case REALSXP :
-	            for (j=0; j<nrow; j++) REAL(newcol)[j] = NA_REAL;
-	            break;
-	        case VECSXP :
-	            // list columns already have each item initialized to NULL
-	            break;
-	        default :
-	            error("Unsupported type '%s' when adding a new column using := or set()", type2char(TYPEOF(thisvalue)));
-	        }
             SET_VECTOR_ELT(dt,coln,newcol);
             if (vlen<1) continue;   // TO DO: come back and comment why this is here
             targetcol = newcol;
@@ -482,6 +466,36 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     }
     UNPROTECT(protecti);
     return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
+}
+
+SEXP allocNAVector(SEXPTYPE type, R_len_t n)
+{
+    // an allocVector following with initialization to NA since a subassign to a new column using :=
+    // routinely leaves untouched items (rather than 0 or "" as allocVector does with it's memset)
+    // We guess that author of allocVector would have liked to initialize with NA but was prevented since memset
+    // is restricted to one byte.
+    R_len_t i;
+    SEXP v;
+    PROTECT(v = allocVector(type, n));
+    switch(type) {
+    // NAs are special; no need to worry about generations.
+    case INTSXP :
+        for (i=0; i<n; i++) INTEGER(v)[i] = NA_INTEGER;
+        break;
+    case REALSXP :
+        for (i=0; i<n; i++) REAL(v)[i] = NA_REAL;
+        break;
+    case STRSXP :
+        for (i=0; i<n; i++) ((SEXP *)DATAPTR(v))[i] = NA_STRING;
+        break;
+    case VECSXP :
+        // list columns already have each item initialized to NULL
+        break;
+    default :
+        error("Unsupported type '%s'", type2char(type));
+    }
+    UNPROTECT(1);
+    return(v);
 }
 
 void savetl_init() {
