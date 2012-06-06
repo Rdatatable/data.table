@@ -1269,6 +1269,7 @@ tail.data.table = function(x, n=6, ...) {
                 # anyway. So, take a shallow copy somehow, or leave as-is and do the 'do.call(' below differently.
         }
     }
+    allargs = lapply(allargs, as.data.table)  # To recycle items to match length if necessary, bug #2003. rbind will always be slow anyway, so not worrying about efficiency here. Later there'll be fast insert() by reference.
     for (i in 1L:length(allargs[[1L]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
     # This is why we currently still need c.factor.
     # Now that character columns are allowed and recommended, c.factor isn't needed as much.

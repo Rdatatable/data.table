@@ -136,6 +136,8 @@ BUG FIXES
         to Leon Baum for reporting.
         
     o   unique() of ITime no longer coerces to integer, fixing #1719.
+    
+    o   rbind() of DT with an irregular list() now recycles the list items correctly, #2003. 
         
 
 

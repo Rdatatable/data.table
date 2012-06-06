@@ -1770,6 +1770,10 @@ t = as.ITime(strptime(c("09:10:00","09:11:00","09:11:00","09:12:00"),"%H:%M:%S")
 test(626, unique(t), t[c(1,2,4)])
 test(627, class(unique(t)), "ITime")
 
+# Test recycling list() rbind
+test(628, rbind(data.table(a=1:3,b=5:7,c=list(1:2,1:3,1:4)), list(4L,8L,1:3)),
+          data.table(a=c(1:3,rep(4L,3L)),b=c(5:7,rep(8L,3L)),c=list(1:2,1:3,1:4,1L,2L,3L)))
+
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy
 
