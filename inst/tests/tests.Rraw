@@ -1753,6 +1753,14 @@ set.seed(2)
 DT = data.table(a=rnorm(5)*10, b=1:5)
 test(623, DT[,s:=sum(b),by=round(a)%%2]$s, c(10L,5L,5L,10L,10L))
 
+# Tests on POSIXct attributes
+
+DT = data.table(a=c(1,1,2,2,2))
+test(624, attributes(DT[,as.POSIXct("2011-12-13 18:50",tz="EST"),by=a][[2]]), list(class=c("POSIXct","POSIXt"),tzone="EST"))
+
+
+
+
 # Next, follow through irows in assign step after eval in dogroups to check redundancy
 
 # TO DO: tests on double in add hoc by

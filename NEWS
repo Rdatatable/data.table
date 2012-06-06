@@ -127,6 +127,10 @@ BUG FIXES
     o   When grouping by i, if the first row of i had no match, .N was 1 rather than 0.
         Fixed and tests added. Thanks to a question by user1165199 on Stack Overflow :
         http://stackoverflow.com/questions/10721517/count-number-of-times-data-is-in-another-dataframe-in-r
+        
+    o   All object attributes are now retained by grouping; e.g., tzone of POSIXct is no
+        longer lost, fixing #1704. Test added. Thanks to Karl Ove Hufthammer for reporting.
+        
 
 
 USER VISIBLE CHANGES
