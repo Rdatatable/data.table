@@ -1322,9 +1322,9 @@ test(453.2, rbind(DT,data.table(b=4:5,a=7:8), use.names=FALSE), data.table(a=1:5
 # Test the linked reported bug, #1645
 A1 = data.table(b='hello', a='foo', key='a')
 A2 = data.table(a=c('foo', 'bar'), key='a')
-test(454, merge(A1, A2, all.y=T, by='a'), data.table(a=c("bar","foo"),b=c(NA,"hello"),key="a"))
+test(454, merge(A1, A2, all.y=TRUE, by='a'), data.table(a=c("bar","foo"),b=c(NA,"hello"),key="a"))
 A1 = data.table(a='foo', b='hello', key='a')
-test(455, merge(A1, A2, all.y=T, by='a'), data.table(a=c("bar","foo"),b=c(NA,"hello"),key="a"))
+test(455, merge(A1, A2, all.y=TRUE, by='a'), data.table(a=c("bar","foo"),b=c(NA,"hello"),key="a"))
 
 # Test mixing nomatch=0 and mult="last", bug #1661
 DT = data.table(id=c(1L, 2L, 2L, 3L), val=1:4, key="id")
@@ -1774,6 +1774,26 @@ test(627, class(unique(t)), "ITime")
 # Test recycling list() rbind
 test(628, rbind(data.table(a=1:3,b=5:7,c=list(1:2,1:3,1:4)), list(4L,8L,1:3)),
           data.table(a=c(1:3,rep(4L,3L)),b=c(5:7,rep(8L,3L)),c=list(1:2,1:3,1:4,1L,2L,3L)))
+          
+# Test merge with common names and all.y=TRUE, #2011
+DT1 = data.table(a=c(1,3,4,5), total=c(2,1,3,1), key="a")
+DT2 = data.table(a=c(2,3,5), total=c(5,1,2), key="a")
+# 629+630 worked before anyway.  631+632 test the bug fix.
+# The .1 tests double check it's the same behaviour as merge.data.frame.
+adf=as.data.frame
+adt=as.data.table
+
+test(629, merge(DT1,DT2), data.table(a=c(3,5),total.x=c(1,1),total.y=c(1,2),key="a"))
+test(629.1, merge(DT1,DT2), setkey(adt(merge(adf(DT1),adf(DT2),by="a")),a))
+
+test(630, merge(DT1,DT2,all.x=TRUE), data.table(a=c(1,3,4,5),total.x=c(2,1,3,1),total.y=c(NA,1,NA,2),key="a"))
+test(630.1, merge(DT1,DT2,all.x=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all.x=TRUE)),a))
+
+test(631, merge(DT1,DT2,all.y=TRUE), data.table(a=c(2,3,5),total.x=c(NA,1,1),total.y=c(5,1,2),key="a"))
+test(631.1, merge(DT1,DT2,all.y=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all.y=TRUE)),a))
+
+test(632, merge(DT1,DT2,all=TRUE), data.table(a=c(1,2,3,4,5),total.x=c(2,NA,1,3,1),total.y=c(NA,5,1,NA,2),key="a"))
+test(632.1, merge(DT1,DT2,all=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all=TRUE)),a))
 
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy

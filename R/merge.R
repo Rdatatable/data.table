@@ -46,29 +46,26 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     ## ensuring no names end in ".1", see unit test
     ## "merge and auto-increment columns in y[x]" in test-data.frame.like.R
     dupnames <- setdiff(intersect(names(xkey), names(y)), by)
-    setnames(xkey, dupnames, sprintf("%s.", dupnames))
-    setnames(y, dupnames, sprintf("%s.", dupnames))
-    on.exit({
-        ## Need to reset names of x,y due to 0-copy setnames mojo
-        setnames(xkey, sprintf("%s.", dupnames), dupnames)
-        setnames(y, sprintf("%s.", dupnames), dupnames)
-    })
+    if (length(dupnames)) {
+        xkey = setnames(shallow(xkey), dupnames, sprintf("%s.", dupnames))
+        y = setnames(shallow(y), dupnames, sprintf("%s.", dupnames))
+    }
 
     dt = y[xkey,nomatch=ifelse(all.x,NA,0)]   # includes JIS columns (with a .1 suffix if conflict with x names)
 
-
     end = setdiff(names(y),by)     # X[Y] sytax puts JIS i columns at the end, merge likes them alongside i.
     setcolorder(dt,c(setdiff(names(dt),end),end))
-
+    
     if (all.y) {
         # Perhaps not very commonly used, so not a huge deal that the join is redone here.
         missingyidx <- (1:nrow(y))[-y[xkey,which=TRUE,nomatch=0]]
         if (length(missingyidx)) {
             yy <- y[missingyidx]
-            othercolsx <- setdiff(names(x), by)
-            if (length(othercolsx) > 0) {
+            othercolsx <- setdiff(names(xkey), by)
+            if (length(othercolsx)) {
                 tmp = rep(NA_integer_, length(missingyidx))
-                yy <- cbind(yy, x[tmp, othercolsx, with = FALSE])
+                yy <- cbind(xkey[tmp, othercolsx, with = FALSE], yy)
+                setnames(yy, make.names(names(yy),unique=TRUE))
             }
             setcolorder(yy, names(dt))
             dt = rbind(dt, yy)
@@ -81,7 +78,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
         setnames(dt, sprintf("%s.", dupnames), paste(dupnames, suffixes[2], sep=""))
         setnames(dt, sprintf("%s..1", dupnames), paste(dupnames, suffixes[1], sep=""))
     }
-
+    
     dt
 }
 

@@ -142,7 +142,9 @@ BUG FIXES
     
     o   setcolorder() now produces correct error when passed missing column names. Test added.
     
-    
+    o   merge() with common names, and, all.y=TRUE (or all=TRUE) no longer returns an error, #2011.
+        Tests added. Thanks to a question by Ina on Stack Overflow :
+        http://stackoverflow.com/questions/10618837/joining-two-partial-data-tables-keeping-all-x-and-all-y
         
 
 
