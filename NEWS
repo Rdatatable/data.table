@@ -135,9 +135,14 @@ BUG FIXES
         <- and :=); e.g., POSIXct class is no longer lost, fixing #1712. Test added. Thanks
         to Leon Baum for reporting.
         
-    o   unique() of ITime no longer coerces to integer, fixing #1719.
+    o   unique() of ITime no longer coerces to integer, fixing #1719. Test added.
     
-    o   rbind() of DT with an irregular list() now recycles the list items correctly, #2003. 
+    o   rbind() of DT with an irregular list() now recycles the list items correctly,
+        #2003. Test added. 
+    
+    o   setcolorder() now produces correct error when passed missing column names. Test added.
+    
+    
         
 
 

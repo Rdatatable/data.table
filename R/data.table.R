@@ -1613,7 +1613,7 @@ setcolorder = function(x,neworder)
     if (is.character(neworder)) {
         if (any(duplicated(neworder))) stop("neworder contains duplicate column names")
         o = as.integer(chmatch(neworder,names(x)))
-        if (any(is.na(o))) stop("Names in neworder not found in x: ",paste(neworder[is.na(m)],collapse=","))
+        if (any(is.na(o))) stop("Names in neworder not found in x: ",paste(neworder[is.na(o)],collapse=","))
     } else {
         if (!is.numeric(neworder)) stop("neworder is not a character or numeric vector")
         o = as.integer(neworder)
