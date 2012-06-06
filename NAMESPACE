@@ -81,6 +81,9 @@ S3method(rep, ITime)
 S3method(round, IDate)
 S3method(seq, IDate)
 S3method(split, IDate)
+S3method(unique, IDate)
+S3method(unique, ITime)
+
 
 
 # [.factor
