@@ -1765,6 +1765,10 @@ DT[,time3:=Sys.time()]         # recycle
 DT[,time4:=rep(Sys.time(),5)]  # plonk
 test(625, all(sapply(DT,is,"POSIXct")[-1])) 
 
+# unique on ITime doesn't lose attributes, #1719
+t = as.ITime(strptime(c("09:10:00","09:11:00","09:11:00","09:12:00"),"%H:%M:%S"))
+test(626, unique(t), t[c(1,2,4)])
+test(627, class(unique(t)), "ITime")
 
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy

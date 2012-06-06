@@ -135,6 +135,8 @@ BUG FIXES
         <- and :=); e.g., POSIXct class is no longer lost, fixing #1712. Test added. Thanks
         to Leon Baum for reporting.
         
+    o   unique() of ITime no longer coerces to integer, fixing #1719.
+        
 
 
 USER VISIBLE CHANGES

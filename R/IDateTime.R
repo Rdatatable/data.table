@@ -24,7 +24,8 @@ seq.IDate <-
 c.IDate <-
 rep.IDate <-
 split.IDate <-
-as.list.IDate <-    
+as.list.IDate <-
+unique.IDate <-
     function(x, ...) {
         as.IDate(NextMethod())
     }
@@ -99,6 +100,11 @@ rep.ITime <- function (x, ...)
     val
 }
 
+unique.ITime <- function(x, ...) {
+    ans = NextMethod()
+    setattr(ans,"class","ITime")
+    ans
+}
 
 # create a data.table with IDate and ITime columns
 #   should work for most date/time formats like chron or POSIXct
