@@ -440,9 +440,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 n = max(ncol(x)+100, ncol(x)+2*length(newnames))
                 name = substitute(x)
                 if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
-                    # Do the warning before allocating and assigning, so we can track where we are when verbose=TRUE
-                    # in case an error occurs in alloc.col or assign
-                    warning("growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this warning. To avoid this warning you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.")
+                    cat("Growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.")
+                    # Verbosity should not issue warnings, so cat rather than warning.
+                    # TO DO: Add option 'datatable.pedantic' to turn on warnings like this. 
                 # TO DO test   DT[....][,foo:=42L],  i.e. where the foo does the realloc. Would it see DT name or the call.
                 # inherits=TRUE is correct and mimicks what the setVar in C was doing before being moved up to R level.
                 # Commnent moved up from C ... to revisit ... Note that the NAMED(dt)>1 doesn't work because .Call
@@ -759,10 +759,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         
         # xvars = setdiff(names(x),union(bynames,allbyvars))
     }
-    if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ...\n");flush.console()}
+
     SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
-    
-    
+        
     #oldlen = length(itestj)
     #length(itestj) = max(len__)  # pad with NA to allocate enough for largest group, will re-use it in dogroups.c
     #if (identical(itestj[1L],0L)) {
@@ -854,8 +853,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         jval = eval(jsub,SDenv)
 
         if (!is.null(lhs)) {
-            #if (is.null(itestj) || !is.na(itestj[1L])) {
-            if (verbose) cat("Assigning first or only group ",if (is.null(itestj)) paste("all",nrow(x)) else length(testj),"row(s)\n")
+            if (verbose) cat("Assigning to ",if (is.null(irows)) "all " else paste(length(irows),"row subset of "), nrow(x)," rows\n",sep="")
             .Call("assign",x,irows,cols,newnames,jval,verbose,PACKAGE="data.table")
             return(x)
         }
@@ -938,7 +936,10 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     # TO DO: ensure that names of .SD are removed and resinstated later, for things like j=.SD[2], relying on data.table's
     # not needing to have colnames at all and working by row number(s) passed to .SD
     #browser()
+    if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
     ans = .Call("dogroups", x, xcols, groups, grpcols, jiscols, irows, o__, f__, len__, jsub, SDenv, cols, newnames, verbose,PACKAGE="data.table")
+    if (verbose) {cat("done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+    
     #browser()
     
     # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
@@ -952,8 +953,8 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     # TO DO: setkey could mark the key whether it is unique or not.
 
     # TO DO : play with hash and size arguments of the new.env().
-    if (verbose) {cat("... done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
     if (!is.null(lhs)) return(x)
+    if (is.null(ans)) return(as.data.table.list(lapply(groups,"[",0L)))  # side-effects only such as test 168
     
     if (is.null(names(ans))) {
         # Efficiency gain of dropping names has been successful. Ordinarily this will run.

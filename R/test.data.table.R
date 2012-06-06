@@ -1,5 +1,5 @@
 
-test.data.table = function(echo=FALSE) {
+test.data.table = function(verbose=FALSE) {
     if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
         # package developer
         if ("package:data.table" %in% search()) stop("data.table package loaded")
@@ -13,7 +13,7 @@ test.data.table = function(echo=FALSE) {
     for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
         cat("Running",fn,"\n")
         oldverbose = getOption("datatable.verbose")
-        if (echo) options(datatable.verbose=TRUE)
+        if (verbose) options(datatable.verbose=TRUE)
         sys.source(fn,envir=new.env(parent=.GlobalEnv))  # using source(local=) would break 2.12 compatibility
         options(data.table.verbose=oldverbose)
         # the new.env() is required for when a *user* runs test.data.table() because

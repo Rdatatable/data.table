@@ -360,7 +360,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                     if (isString(targetcol) && isFactor(thisvalue)) {
                         PROTECT(RHS = asCharacterFactor(thisvalue));
                         protecti++;
-                        if (verbose) warning("Coerced factor to character to match the column's type (coercion is inefficient)");
+                        if (verbose) Rprintf("Coerced factor to character to match the column's type (coercion is inefficient)\n");   // TO DO:  datatable.pedantic would turn this into warning
                     } else {
                         PROTECT(RHS = coerceVector(thisvalue,TYPEOF(targetcol)));
                         protecti++;

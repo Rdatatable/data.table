@@ -45,13 +45,15 @@ test = function(num,x,y=NULL,error,warning,output) {
     if (!missing(output)) {
        output = gsub("[(]","[(]",output)
        output = gsub("[)]","[)]",output)
-       if (length(grep(output,out))) return()
-       cat("Test",num,"didn't produce correct output:\n")
-       cat("Expected:",output,"\n")
-       cat("Observed:",out,"\n")
-       nfail <<- nfail + 1
-       whichfail <<- c(whichfail, num)
-       return()
+       if (!length(grep(output,out))) {
+           cat("Test",num,"didn't produce correct output:\n")
+           cat("Expected:",output,"\n")
+           cat("Observed:",out,"\n")
+           nfail <<- nfail + 1
+           whichfail <<- c(whichfail, num)
+           return()
+       }
+       if (missing(y)) return()
     }
     if (missing(y)) {
         if (x) return()
@@ -439,7 +441,7 @@ dt <- data.table(a = rep(1:3, each = 4), b = LETTERS[1:4], b2 = LETTERS[1:4])
 test(144, dt[, .SD[3,], by=b], data.table(b=LETTERS[1:4],a=3L,b2=LETTERS[1:4]))
 
 DT = data.table(x=rep(c("a","b"),c(2,3)),y=1:5)
-xx = capture.output(ans <- DT[,{print(x);sum(y)},by=x])
+xx = capture.output(ans <- DT[,{print(x);sum(y)},by=x,verbose=FALSE])
 test(145, xx, c("[1] \"a\"","[1] \"b\""))
 test(146, ans, data.table(x=c("a","b"),V1=c(3L,12L)))
 
@@ -895,9 +897,9 @@ test(297,DT[,list(A1=sum(A1),A2=sum(A2),A3=sum(A3)),by=grp], DT[,lapply(.SD,sum)
 
 DT = data.table(a=1:3,b=4:6)
 test(298, {DT$b<-NULL;DT}, data.table(a=1:3))  # delete column
-test(299, DT$c <- as.character(DT$c), error="zero length")  # to simulate RHS which could (due to user error) be non NULL but zero length
-# test(299.01, DT[,c:=42L], warning="growing vector") # because $<- above 
-test(299.02, suppressWarnings(DT[,c:=42L]), data.table(a=1:3,c=42L))  # add column (efficiently), and check result is new table
+test(299, DT$c <- as.character(DT$c), error="zero length")  # to simulate RHS which could (due to user error) be non NULL but zero length. This copies DT too, so the next test checks that a subsequent := detects and fixes that.
+test(299.01, DT[,c:=42L], warning="Invalid .internal.selfref detected and fixed") 
+test(299.02, suppressWarnings(DT[,c:=42L]), data.table(a=1:3,c=42L))
 test(299.03, truelength(DT)>length(DT))   # the := over-allocated, by 100 by default, but user may have changed default so just check '>'
 
 test(299.2, DT[2,c:=42], warning="Coerced 'double' RHS to 'integer' to match the column's type.*length 3 [(]nrows of entire table[)]")
@@ -1062,6 +1064,8 @@ test(355, DT[11:2010,f:=newlevels], data.table(f=factor(c(rep("000",10),newlevel
 DT = data.table(f=c("a","b"),x=1:4)
 # Test coercing factor to character column
 test(355.5, DT[3,f:=factor("foo")], data.table(f=c("a","b","foo","b"),x=1:4))
+test(355.6, DT[4,f:=factor("bar"),verbose=TRUE], data.table(f=c("a","b","foo","bar"),x=1:4), output="Coerced factor to character to match the column")
+
 
 # See datatable-help post and NEWS item for 1.6.7
 DT = data.table(X=factor(letters[1:10]), Y=1:10)
@@ -1229,7 +1233,7 @@ DT[,c:=7L]   # uses final slot
 test(418, length(DT)==3 && truelength(DT)==3)
     # automatic realloc and shallow copy, no risk when not named.
     # would like to be silent using NAMED>0 but .Call sets NAMED=2 for all, it seems. TO DO.
-test(418.5, DT[,d:=8L,verbose=TRUE], warning="growing")
+test(418.5, DT[,d:=8L,verbose=TRUE], output="Growing vector of column pointers from")
 DT[,d:=8L]
 if (is.null(getOption("datatable.alloccol"))) {
     test(419, length(DT)==4 && truelength(DT)==103)
