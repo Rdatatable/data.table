@@ -1758,6 +1758,12 @@ test(623, DT[,s:=sum(b),by=round(a)%%2]$s, c(10L,5L,5L,10L,10L))
 DT = data.table(a=c(1,1,2,2,2))
 test(624, attributes(DT[,as.POSIXct("2011-12-13 18:50",tz="EST"),by=a][[2]]), list(class=c("POSIXct","POSIXt"),tzone="EST"))
 
+DT = data.table(x = rnorm(5))
+DT$time1 <- Sys.time()         # recycle via *tmp*
+DT$time2 <- rep(Sys.time(), 5) # plonk via *tmp*
+DT[,time3:=Sys.time()]         # recycle
+DT[,time4:=rep(Sys.time(),5)]  # plonk
+test(625, all(sapply(DT,is,"POSIXct")[-1])) 
 
 
 

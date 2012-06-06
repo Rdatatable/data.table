@@ -27,6 +27,7 @@ SEXP SelfRefSymbol;
 
 extern SEXP growVector(SEXP x, R_len_t newlen, Rboolean verbose);
 extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
+extern SEXP keepattr(SEXP out, SEXP in);
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 SEXP *saveds;
 R_len_t *savedtl, nalloc, nsaved;
@@ -267,15 +268,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             continue;
         }
         if (coln+1 > oldncol) {  // new column
-            PROTECT(newcol = allocNAVector(TYPEOF(thisvalue),nrow));
+            PROTECT(newcol = keepattr(allocNAVector(TYPEOF(thisvalue),nrow),thisvalue));
             protecti++;
-            // TO DO: keepattr here !
-            if (isFactor(thisvalue)) {
-                 setAttrib(newcol, R_LevelsSymbol, getAttrib(thisvalue, R_LevelsSymbol));
-                 setAttrib(newcol, R_ClassSymbol, getAttrib(thisvalue, R_ClassSymbol));
-            }
             SET_VECTOR_ELT(dt,coln,newcol);
-            if (vlen<1) continue;   // TO DO: come back and comment why this is here
+            if (vlen<1) continue;   // e.g. DT[,newcol:=integer()] (adding new empty column)
             targetcol = newcol;
             RHS = thisvalue;
         } else {                 // existing column

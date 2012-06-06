@@ -131,6 +131,10 @@ BUG FIXES
     o   All object attributes are now retained by grouping; e.g., tzone of POSIXct is no
         longer lost, fixing #1704. Test added. Thanks to Karl Ove Hufthammer for reporting.
         
+    o   All object attributes are now retained by recycling assign to a new column (both
+        <- and :=); e.g., POSIXct class is no longer lost, fixing #1712. Test added. Thanks
+        to Leon Baum for reporting.
+        
 
 
 USER VISIBLE CHANGES
