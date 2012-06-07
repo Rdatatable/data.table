@@ -150,6 +150,9 @@ BUG FIXES
         Thanks to a question by Vanja on Stack Overflow :
         http://stackoverflow.com/questions/10628371/r-importing-data-table-package-namespace-unexplainable-jump-in-memory-consumpt
         
+    o   DT[,2:=someval,with=FALSE] now changes column 2 even if column 1 has the same (duplicate)
+        name, #2025. Thanks to Sean Creighton for reporting.
+        
 
 
 USER VISIBLE CHANGES

@@ -414,18 +414,21 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         #
         #}
         if (with) {
-            if (!is.name(lhs)) stop("LHS of := must be a single column name, when with=TRUE. When with=FALSE the LHS may be a vector of column names or positions.")
+            if (!is.name(lhs)) stop("LHS of := must be a single column name when with=TRUE. When with=FALSE the LHS may be a vector of column names or positions.")
             lhs = as.character(lhs)
+            m = chmatch(lhs,names(x))
         } else {
             lhs = eval(lhs, envir=parent.frame(), enclos=parent.frame())
             if (!is.atomic(lhs)) stop("LHS of := must evaluate to an atomic vector (column names or positions) when with=FALSE")
-            if (is.numeric(lhs)) {
-                if (!all(1L<=lhs | lhs<=ncol(x))) stop("LHS of := out of bounds")
-                lhs = names(x)[lhs]
-            }
-            if (!is.character(lhs)) stop("Logical error. LHS of := wasn't atomic column names or positions")
+            if (is.character(lhs))
+                m = chmatch(lhs,names(x))
+            else if (is.numeric(lhs)) {
+                m = as.integer(lhs)
+                if (!all(1L<=m | m<=ncol(x))) stop("numeric LHS of := out of bounds")
+                lhs = names(x)[m]
+            } else
+                stop("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
         }
-        m = chmatch(lhs,names(x))
         if (all(!is.na(m))) {
             # updates by reference to existing columns
             cols = as.integer(m)
