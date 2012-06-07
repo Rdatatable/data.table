@@ -146,7 +146,9 @@ BUG FIXES
         Tests added. Thanks to a question by Ina on Stack Overflow :
         http://stackoverflow.com/questions/10618837/joining-two-partial-data-tables-keeping-all-x-and-all-y
         
-    o   Removing or setting datatable.alloccol to NULL is no longer a memory leak, #2014. 
+    o   Removing or setting datatable.alloccol to NULL is no longer a memory leak, #2014.
+        Thanks to a question by Vanja on Stack Overflow :
+        http://stackoverflow.com/questions/10628371/r-importing-data-table-package-namespace-unexplainable-jump-in-memory-consumpt
         
 
 
