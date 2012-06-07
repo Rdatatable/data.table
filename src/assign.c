@@ -591,6 +591,8 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 }
 
 SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP verbose) {
+    if (!isInteger(newncol) || length(newncol)!=1) error("n must be integer length 1. Has datatable.alloccol somehow become unset?");
+    if (!isLogical(verbose) || length(verbose)!=1) error("verbose must be TRUE or FALSE"); 
     return(alloccol(dt, INTEGER(newncol)[0], LOGICAL(verbose)[0]));
 }
 

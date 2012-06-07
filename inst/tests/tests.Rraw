@@ -1795,6 +1795,12 @@ test(631.1, merge(DT1,DT2,all.y=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a"
 test(632, merge(DT1,DT2,all=TRUE), data.table(a=c(1,2,3,4,5),total.x=c(2,NA,1,3,1),total.y=c(NA,5,1,NA,2),key="a"))
 test(632.1, merge(DT1,DT2,all=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all=TRUE)),a))
 
+# Test that unsettting datatable.alloccol is caught, #2014
+old = getOption("datatable.alloccol")
+options(datatable.alloccol=NULL)
+test(633, data.table(a=1:3), error="n must be integer length 1")
+options(datatable.alloccol=old)
+
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy
 

@@ -146,6 +146,8 @@ BUG FIXES
         Tests added. Thanks to a question by Ina on Stack Overflow :
         http://stackoverflow.com/questions/10618837/joining-two-partial-data-tables-keeping-all-x-and-all-y
         
+    o   Removing or setting datatable.alloccol to NULL is no longer a memory leak, #2014. 
+        
 
 
 USER VISIBLE CHANGES
