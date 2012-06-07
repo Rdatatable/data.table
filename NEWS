@@ -180,6 +180,9 @@ USER VISIBLE CHANGES
             
     o   Typing ?merge now asks whether to display ?merge.data.frame or ?merge.data.table,
         and ?merge.data.table works directly. Thanks to Chris Neff for suggesting.
+        
+    o   Description of how join columns are determined in X[Y] syntax has been clarified
+        in ?data.table. Thanks to Juliet Hannah and Yike Lu.
 
 
         **********************************************
