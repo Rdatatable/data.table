@@ -956,7 +956,10 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     # TO DO: setkey could mark the key whether it is unique or not.
 
     # TO DO : play with hash and size arguments of the new.env().
-    if (!is.null(lhs)) return(x)
+    if (!is.null(lhs)) {
+        if (any(names(x)[cols] %chin% key(x))) setkey(x,NULL)
+        return(x)
+    }
     if (is.null(ans)) return(as.data.table.list(lapply(groups,"[",0L)))  # side-effects only such as test 168
     
     if (is.null(names(ans))) {
