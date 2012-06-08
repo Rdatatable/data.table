@@ -1626,7 +1626,7 @@ test(557, DT[, f(.SD), by=x], error="[.]SD is locked.*reserved for possible futu
 # Test printing on nested data.table, bug #1803
 DT = data.table(x=letters[1:3],y=list(1:10,letters[1:4],data.table(a=1:3,b=4:6)))
 test(558, capture.output(print(DT)),
-          c("     x            y","[1,] a 1,2,3,4,5,6,","[2,] b      a,b,c,d","[3,] c <data.table>"))
+          c("   x            y","1: a 1,2,3,4,5,6,","2: b      a,b,c,d","3: c <data.table>"))
 test(559, setkey(DT,x)["a",y][[2]][[1]], 1:10)
 
 # Test renaming of .N to N
@@ -1817,6 +1817,15 @@ test(637, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1
 test(638, key(DT[J(43L),a:=99L]), NULL)
 setkey(DT,a)
 test(639, key(DT[,a:=99L,by=a]), NULL)
+
+# Test printing is right aligned without quotes etc, and rownames are repeated ok for more than 20 rows
+DT=data.table(a=8:10,b=c("xy","x","xyz"),c=c(1.1,22.1,0))
+test(640, capture.output(print(DT)), c("    a   b    c","1:  8  xy  1.1","2:  9   x 22.1","3: 10 xyz  0.0"))
+DT=data.table(a=letters,b=1:26)
+test(641, tail(capture.output(print(DT[1:20])),2), c("19: s 19","20: t 20"))
+test(642, tail(capture.output(print(DT[1:21])),2), c("21: u 21","    a  b"))
+DT=data.table(a=as.character(as.hexmode(1:500)), b=1:500)
+test(643, capture.output(print(DT)), c("       a   b","  1: 001   1","  2: 002   2","  3: 003   3","  4: 004   4","  5: 005   5","---         ","496: 1f0 496","497: 1f1 497","498: 1f2 498","499: 1f3 499","500: 1f4 500"))
 
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy

@@ -5,7 +5,7 @@ dim.data.table <- function(x) {
     # TO DO: consider placing "dim" as an attibute updated on inserts. Saves this 'if'.
 }
 
-print.data.table = function (x, digits = NULL, quote = FALSE, right = TRUE, nrows = 100, ...)
+print.data.table = function (x, nrows=100L, digits=NULL, ...)
 {
     if (nrow(x) == 0L) {
         if (length(x)==0L)
@@ -14,18 +14,32 @@ print.data.table = function (x, digits = NULL, quote = FALSE, right = TRUE, nrow
            cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6),collapse=","),if(ncol(x)>6)"...","\n",sep="")
         return()
     }
+    printdots=FALSE
+    n = 5
     if (nrow(x)>nrows) {
-        if (missing(nrows)) nrows=10L
-        msg=paste("First",nrows,"rows of",nrow(x),"printed.")
-        toprint = head(x,nrows)
+        if (missing(nrows)) {
+        #msg=paste("First",nrows,"rows of",nrow(x),"printed.")
+            toprint = rbind(head(x,n),tail(x,n))
+            rn = c(seq_len(n),seq.int(to=nrow(x),length=n))
+            printdots = TRUE
+        } else {
+            toprint = head(x,nrows)
+            rn = seq_len(nrows)
+        }
     } else {
         toprint = x
-        msg=""
+        rn = seq_len(nrow(x))
     }
-    cn = if (nrow(toprint)>20L) names(x) else NULL  # only repeat colnames at the bottom if over 20 rows
-    print(rbind(format.data.table(toprint, digits = digits, na.encode = FALSE), cn),
-          digits=digits, quote=quote, right=right, ...)
-    if (msg!="") cat(msg,"\n")
+    toprint=format.data.table(toprint, digits=digits, na.encode = FALSE)
+    rownames(toprint)=paste(format(rn,right=TRUE),":",sep="")
+    if (printdots) {
+        print(rbind(head(toprint,n),"---"="",tail(toprint,n)), right=TRUE,quote=FALSE)
+        return(invisible())
+    }   
+    if (nrow(toprint)>20L)
+        # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
+        toprint=rbind(toprint,matrix(names(x),nrow=1))
+    print(toprint,right=TRUE,quote=FALSE)
     invisible()
 }
 

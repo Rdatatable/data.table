@@ -41,10 +41,10 @@ NEW FEATURES
         For example:
         > data.table(x=letters[1:3],
                      y=list( 1:10, letters[1:4], data.table(a=1:3,b=4:6) ))
-             x            y
-        [1,] a 1,2,3,4,5,6,
-        [2,] b      a,b,c,d
-        [3,] c <data.table>
+           x            y
+        1: a 1,2,3,4,5,6,
+        2: b      a,b,c,d
+        3: c <data.table>
         
     o   Warnings added when joining character to factor, and factor to character.
         Character to character is now preferred in joins and needs no coercion.
@@ -183,6 +183,10 @@ USER VISIBLE CHANGES
         
     o   Description of how join columns are determined in X[Y] syntax has been clarified
         in ?data.table. Thanks to Juliet Hannah and Yike Lu.
+        
+    o   DT now prints consistent row numbers when the column names are reprinted at the
+        bottom of the output (saves scrolling up). Thanks to Yike Lu for reporting #2015.
+        The tail as well as the head of large tables is now printed.
 
 
         **********************************************
