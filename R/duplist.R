@@ -12,9 +12,9 @@ duplist = function(l,order,tolerance=.Machine$double.eps ^ 0.5)
     ans = integer(length(l[[1]]))
     len = integer(1)
     if (missing(order)) {
-        .Call("duplist",l,ans,len,as.integer(-1),as.numeric(tolerance),PACKAGE="data.table")
+        .Call(Cduplist,l,ans,len,as.integer(-1),as.numeric(tolerance))
     } else {
-        .Call("duplist",l,ans,len,as.integer(order),as.numeric(tolerance),PACKAGE="data.table")
+        .Call(Cduplist,l,ans,len,as.integer(order),as.numeric(tolerance))
     }
     length(ans) = len
     ans

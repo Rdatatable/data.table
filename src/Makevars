@@ -1,0 +1,5 @@
+
+all: $(SHLIB)
+	mv $(SHLIB) datatable$(SHLIB_EXT)
+
+

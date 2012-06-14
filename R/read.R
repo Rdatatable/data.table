@@ -1,6 +1,6 @@
 
 read = function(fnam="test.csv",primary=",") {   #,secondary=" ")
-    ans = .Call("readfile",fnam,PACKAGE="data.table")
+    ans = .Call(Creadfile,fnam)
     nr = length(ans[[1]])
     setattr(ans,"row.names",.set_row_names(nr))
     setattr(ans,"class",c("data.table","data.frame"))

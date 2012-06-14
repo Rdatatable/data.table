@@ -20,7 +20,7 @@ print.data.table = function (x, nrows=100L, digits=NULL, ...)
         if (missing(nrows)) {
         #msg=paste("First",nrows,"rows of",nrow(x),"printed.")
             toprint = rbind(head(x,n),tail(x,n))
-            rn = c(seq_len(n),seq.int(to=nrow(x),length=n))
+            rn = c(seq_len(n),seq.int(to=nrow(x),length.out=n))
             printdots = TRUE
         } else {
             toprint = head(x,nrows)
@@ -33,7 +33,9 @@ print.data.table = function (x, nrows=100L, digits=NULL, ...)
     toprint=format.data.table(toprint, digits=digits, na.encode = FALSE)
     rownames(toprint)=paste(format(rn,right=TRUE),":",sep="")
     if (printdots) {
-        print(rbind(head(toprint,n),"---"="",tail(toprint,n)), right=TRUE,quote=FALSE)
+        toprint = rbind(head(toprint,n),"---"="",tail(toprint,n))
+        rownames(toprint) = format(rownames(toprint),justify="right")
+        print(toprint,right=TRUE,quote=FALSE)
         return(invisible())
     }   
     if (nrow(toprint)>20L)
@@ -312,7 +314,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             f__ = integer(nrow(i))
             len__ = integer(nrow(i))
             allLen1 = TRUE
-            .Call("binarysearch", i, x, as.integer(leftcols-1L), as.integer(rightcols-1L), haskey(i), roll, rolltolast, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1, PACKAGE="data.table")
+            .Call(Cbinarysearch, i, x, as.integer(leftcols-1L), as.integer(rightcols-1L), haskey(i), roll, rolltolast, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1)
             #browser()
             # length of input nomatch (single 0 or NA) is 1 in both cases. 
             # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
@@ -490,7 +492,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         # TO DO: any new columns can't be added here, because we don't know the type to add yet, after eval below...
         #if (FALSE) {
         #if (verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
-        #return(.Call("assign",x,ssrows,cols,newnames,rhs,verbose,PACKAGE="data.table"))
+        #return(.Call(Cassign,x,ssrows,cols,newnames,rhs,verbose))
         #}
         # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
         # Could return number of rows updated but even when wrapped in invisible() it seems
@@ -777,7 +779,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         # xvars = setdiff(names(x),union(bynames,allbyvars))
     }
 
-    SDenv = new.env(parent=parent.frame()) # use an environment to get the variable scoping right
+    SDenv = new.env(hash=TRUE,parent=parent.frame())
+    # hash (the default anyway) does seem better as expected using e.g. test 645
+    # TO DO: experiment with size argument
         
     #oldlen = length(itestj)
     #length(itestj) = max(len__)  # pad with NA to allocate enough for largest group, will re-use it in dogroups.c
@@ -833,9 +837,17 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     assign("print", function(x,...){base::print(x,...);NULL}, envir=SDenv)
     # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
     
-    #assign("mean", base::mean.default, envir=SDenv)  # This is much faster, but still a lot slower than below
-    for (ii in seq_along(jsub)[-1L])
-        if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]] == as.name("mean")) jsub[[ii]] = call(".Internal",jsub[[ii]])
+    for (ii in seq_along(jsub)[-1L]) {
+        if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]] == as.name("mean")) {
+            if (length(jsub[[ii]])==2L)
+                jsub[[ii]] = call(".Internal",jsub[[ii]])  # couldn't get .External as fast as .Internal.
+            else if (length(jsub[[ii]])==3L)
+                jsub[[ii]] = call(".External",quote(Cfastmean),jsub[[ii]][[2L]], jsub[[ii]][[3L]])  # faster than .Call
+        }
+    }
+    assign("Cfastmean", Cfastmean, envir=SDenv)
+    # assign("mean", base::mean.default, envir=SDenv)   # slower
+    # assign("mean", fastmean, envir=SDenv)             # slower
         
     lockBinding(".BY",SDenv)
     lockBinding(".iSD",SDenv) 
@@ -871,7 +883,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
 
         if (!is.null(lhs)) {
             if (verbose) cat("Assigning to ",if (is.null(irows)) "all " else paste(length(irows),"row subset of "), nrow(x)," rows\n",sep="")
-            .Call("assign",x,irows,cols,newnames,jval,verbose,PACKAGE="data.table")
+            .Call(Cassign,x,irows,cols,newnames,jval,verbose)
             return(x)
         }
         if ((is.call(jsub) && jsub[[1L]]=="list") || !missing(by)) {  # selecting from a list column should return list, though
@@ -954,7 +966,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     # not needing to have colnames at all and working by row number(s) passed to .SD
     #browser()
     if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
-    ans = .Call("dogroups", x, xcols, groups, grpcols, jiscols, irows, o__, f__, len__, jsub, SDenv, cols, newnames, verbose,PACKAGE="data.table")
+    ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, irows, o__, f__, len__, jsub, SDenv, cols, newnames, verbose)
     if (verbose) {cat("done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
     
     #browser()
@@ -969,7 +981,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     # TO DO: don't want to eval j for every row of i unless it really is mult='all'
     # TO DO: setkey could mark the key whether it is unique or not.
 
-    # TO DO : play with hash and size arguments of the new.env().
     if (!is.null(lhs)) {
         if (any(names(x)[cols] %chin% key(x))) setkey(x,NULL)
         return(x)
@@ -1227,7 +1238,7 @@ tail.data.table = function(x, n=6, ...) {
         # search for one other .Call to assign in [.data.table to see how it differs
     }
     verbose=getOption("datatable.verbose")
-    .Call("assign",x,i,cols,newnames,value,verbose,PACKAGE="data.table")
+    .Call(Cassign,x,i,cols,newnames,value,verbose)
     settruelength(x,0L) #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
     alloc.col(x)
     if (length(reinstatekey)) setkeyv(x,reinstatekey)
@@ -1514,7 +1525,7 @@ split.data.table = function(...) {
 
 
 copy = function(x) {
-    newx = .Call("copy",x,PACKAGE="data.table")  # copies at length but R's duplicate() also copies truelength over.
+    newx = .Call(Ccopy,x)  # copies at length but R's duplicate() also copies truelength over.
     if (!is.data.table(x)) return(newx)   # e.g. in as.data.table.list() the list is copied before changing to data.table
     setattr(newx,".data.table.locked",NULL)
     settruelength(newx,0L)
@@ -1526,14 +1537,14 @@ copy = function(x) {
 
 shallow = function(x) {
     if (!is.data.table(x)) stop("x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table")
-    .Call("shallowwrapper",x,PACKAGE="data.table")  # copies VECSXP only
+    .Call(Cshallowwrapper,x)  # copies VECSXP only
 }
 
 alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("datatable.verbose")) 
 {
     name = substitute(DT)
     if (identical(name,quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")
-    ans = .Call("alloccolwrapper",DT,as.integer(eval(n)),verbose,PACKAGE="data.table")
+    ans = .Call(Calloccolwrapper,DT,as.integer(eval(n)),verbose)
     if (is.name(name)) {
         name = as.character(name)
         assign(name,ans,parent.frame(),inherits=TRUE)
@@ -1542,10 +1553,10 @@ alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("d
 }
 
 selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
-    .Call("selfrefokwrapper",DT,verbose,PACKAGE="data.table")
+    .Call(Cselfrefokwrapper,DT,verbose)
 }
 
-truelength = function(x) .Call("truelength",x,PACKAGE="data.table")
+truelength = function(x) .Call(Ctruelength,x)
 # deliberately no "truelength<-" method.  alloc.col is the mechanism for that (maybe alloc.col should be renamed "truelength<-".
 
 settruelength = function(x,n) {
@@ -1556,17 +1567,17 @@ settruelength = function(x,n) {
         # grep for suppressWarnings(settruelength) for where this is needed in 2.14.0+ (otherwise an option would be to make data.table depend on 2.14.0 so settruelength could be removed)
     
     
-    .Call("settruelength",x,as.integer(n),PACKAGE="data.table")
+    .Call(Csettruelength,x,as.integer(n))
     
     
     
     #if (is.data.table(x))
-    #    .Call("settruelength",attr(x,"class"),-999L,PACKAGE="data.table")
+    #    .Call(Csettruelength,attr(x,"class"),-999L)
     #    # So that (in R 2.13.2-) we can detect tables loaded from disk (tl is not initialized there)
 }
 
 setlength = function(x,n) {
-    .Call("setlength",x,as.integer(n),PACKAGE="data.table")
+    .Call(Csetlength,x,as.integer(n))
 }
 
 setattr = function(x,name,value) {
@@ -1583,7 +1594,7 @@ setattr = function(x,name,value) {
         # creating names longer than the number of columns of x, and to change the key, too
         # For convenience so that setattr(DT,"names",allnames) works as expected without requiring a switch to setnames.
     else
-        .Call("setattrib", x, name, value, PACKAGE="data.table")
+        .Call(Csetattrib, x, name, value)
         # If name=="names" and this is the first time names are assigned (e.g. in data.table()), this will be grown
         # by alloc.col very shortly afterwards in the caller.
     invisible(x)
@@ -1619,9 +1630,9 @@ setnames = function(x,old,new) {
     # update the key too if the column name being change is in the key
     m = chmatch(old, key(x))  # use old here before .Call that (when old=names(DT)) changes old by reference, too 
     w = which(!is.na(m))
-    .Call("setcharvec", attr(x,"names"), as.integer(i), new, PACKAGE="data.table")
+    .Call(Csetcharvec, attr(x,"names"), as.integer(i), new)
     if (length(w))
-        .Call("setcharvec", attr(x,"sorted"), as.integer(m[w]), new[w], PACKAGE="data.table")
+        .Call(Csetcharvec, attr(x,"sorted"), as.integer(m[w]), new[w])
         
     invisible(x)
 }
@@ -1640,30 +1651,29 @@ setcolorder = function(x,neworder)
         m = !(o %in% 1L:length(x))
         if (any(m)) stop("Column numbers in neworder out of bounds: ",paste(o[m],collapse=","))
     }
-    .Call("setcolorder",x,o,PACKAGE="data.table")
+    .Call(Csetcolorder,x,o)
     invisible(x)   
 }
 
 set = function(x,i=NULL,j,value)
 {
-    .Call("assign",x,i,j,NULL,value,FALSE,PACKAGE="data.table")
+    .Call(Cassign,x,i,j,NULL,value,FALSE)
     # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.
     # TO DO: When := or set() do it, make them aware of 'ul' and drop it if necessary.
     invisible(x)
 }
 
 chmatch = function(x,table,nomatch=NA_integer_)
-    .Call("chmatchwrapper",x,table,as.integer(nomatch),FALSE,PACKAGE="data.table")
+    .Call(Cchmatchwrapper,x,table,as.integer(nomatch),FALSE)
 
 "%chin%" = function(x,table) {
     # TO DO  if table has 'ul' then match to that
-    .Call("chmatchwrapper",x,table,NA_integer_,TRUE,PACKAGE="data.table")
+    .Call(Cchmatchwrapper,x,table,NA_integer_,TRUE)
 }
 
-chorder = function(x) .Call("countingcharacter",x,TRUE,PACKAGE="data.table")
-chgroup = function(x) .Call("countingcharacter",x,FALSE,PACKAGE="data.table")
+chorder = function(x) .Call(Ccountingcharacter,x,TRUE)
+chgroup = function(x) .Call(Ccountingcharacter,x,FALSE)
 
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only, and (currently) only once; i.e., DT[i,col:=1L] and DT[,newcol:=sum(colB),by=colA] are ok, but not DT[i,col]:=1L, not DT[i]$col:=1L and not DT[,{newcol1:=1L;newcol2:=2L}]. Please see help(":="). Check is.data.table(DT) is TRUE.')
-
 
 

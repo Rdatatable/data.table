@@ -74,7 +74,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
     o = fastorder(x, cols, verbose=verbose)
     if (is.unsorted(o)) {
         if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let maintainer('data.table') know so the root cause can be fixed.")
-        .Call("reorder",x,o, PACKAGE="data.table")
+        .Call(Creorder,x,o)
     }
     if (!alreadykeyedbythiskey) setattr(x,"sorted",cols)   # the if() just to be a tiny bit faster
     if (coerced && alreadykeyedbythiskey) {
@@ -153,7 +153,7 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
 
 ordernumtol = function(x, tol=.Machine$double.eps^0.5) {
     o=seq_along(x)
-    .Call("rorder_tol",x,o,tol,PACKAGE="data.table")
+    .Call(Crorder_tol,x,o,tol)
     o
 }
 
