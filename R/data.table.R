@@ -863,14 +863,13 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (length(xvars)) {
             if (is.null(irows)) {
                 SDenv$.SD = x[, xvars, with=FALSE]  # TO DO: *** shallow copy here. Could just have x, but then the columns of .SD wouldn't be consistent for lapply()ing etc, so need xvars here. Plus, if just x, then the lock below would lock x and that's untidy. Best is to shallow copy.
-                SDenv$.N = nrow(x)
             } else {
                 SDenv$.SD = x[irows, xvars, with=FALSE]   # Needs to be a copy of the i subset, even when that subset is contiguous, since we can't point to subsets of a vector (due to DATAPTR being an offset)
-                SDenv$.N = xnrow
             }
+            SDenv$.N = nrow(SDenv$.SD)
         } else {
-            SDenv$.SD = shallow(x)   # shallow because we need to lock .SD and not x itself.
-            SDenv$.N = nrow(x)
+            SDenv$.SD = null.data.table()   # no columns used by j so .SD can be empty. Only needs to exist so that we can rely on it being there when locking it below for example. If .SD were used by j, of course then xvars would be the columns and we wouldn't be in this leaf.
+            SDenv$.N = if (is.null(irows)) nrow(x) else sum(!is.na(irows) & irows>0L)
         }
         setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=. 
         lockBinding(".SD",SDenv)

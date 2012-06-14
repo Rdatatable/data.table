@@ -107,7 +107,7 @@ if (.timingtests) {
     n = as.integer(1e4)
     m = as.integer(1e2)
 }
-cat("x = ",format(n,big.mark=","),"sample from",format(m,big.mark=","),"strings (quick test)\n")
+cat("x = ",format(n,big.mark=","),"sample from",format(m,big.mark=","),"strings (quick test to save load on CRAN servers where tests run every day. In dev we increase n and m a lot for meaningful times.\n")
 x = sample(as.character(as.hexmode(1:m)),n,replace=TRUE)
 tt = system.time(f <- factor(x))                             # 7.079   (timings from MD's tiny 32bit netbook)
 cat(format(tt["elapsed"],nsmall=3),": f=factor(x) [high up front cost, plus storage and maintenance of levels]\n")
@@ -1859,9 +1859,10 @@ test(651, ans1, ans2)
 test(652, any(is.nan(ans1$V1))) 
 test(653, tt1["user.self"] < tt2["user.self"])
 
-# TO DO:
 # Test .N for logical i subset
-# test(654, DT[a==8L, .N], 1L)
+DT = data.table(a=1:10, b=rnorm(10))
+test(654, DT[a==8L, .N], 1L)
+
 
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy
