@@ -759,7 +759,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     } else {
         if (!missing(.SDcols)) warning("This j doesn't use .SD but .SDcols has been passed in. Ignoring .SDcols. data.table inspects j anyway to see which columns are used, so there is only a need to provide .SDcols (for speed) when j uses .SD, and, you know or wish to specify a subset of columns for .SD. See ?data.table.")
         xvars = setdiff(intersect(ws,names(x)),bynames)
-        if (verbose) cat("Detected that j uses these columns (the rest, if any, are ignored for efficiency):",paste(xvars,collapse=","),"\n")
+        if (verbose) cat("Detected that j uses these columns:",if (!length(xvars)) "<none>" else paste(xvars,collapse=","),"\n")
         # using a few named columns will be faster
         # Consider:   DT[,max(diff(date)),by=list(month=month(date))]
         # and:        DT[,sapply(.SD,sum),by=month(date)]
@@ -816,39 +816,37 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         }
     }
     
-    # TO DO.. delete ... if (!is.na(nomatch) && is.na(itestj[1L])) {
-    #    # This is a very ugly switch. It gets tests 499 and 500 to work for now. TO DO: revisit and rationalise.
-    #    SDenv$.N = 0L
-    #    for (ii in ivars) {
-    #        assign(ii, i[[ii]][0L], envir=SDenv)
-    #        assign(paste("i.",ii,sep=""), i[[ii]][0L], envir=SDenv)
-    #    }
-    #} else {
-    #    SDenv$.N = as.integer(len__[1L])
-    #    for (ii in ivars) {
-    #        assign(ii, i[[ii]][1L], envir=SDenv)  # for JIS
-    #        assign(paste("i.",ii,sep=""), i[[ii]][1L], envir=SDenv)
-    #    }
-    #}
-    
-    
     for (ii in names(SDenv$.BY)) assign(ii, SDenv$.BY[[ii]], envir=SDenv)
     
     assign("print", function(x,...){base::print(x,...);NULL}, envir=SDenv)
     # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
     
-    for (ii in seq_along(jsub)[-1L]) {
-        if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]] == as.name("mean")) {
-            if (length(jsub[[ii]])==2L)
-                jsub[[ii]] = call(".Internal",jsub[[ii]])  # couldn't get .External as fast as .Internal.
-            else if (length(jsub[[ii]])==3L)
-                jsub[[ii]] = call(".External",quote(Cfastmean),jsub[[ii]][[2L]], jsub[[ii]][[3L]])  # faster than .Call
+    if (options("datatable.optimize")[[1L]]>0L) {  # Abilility to turn off if problems
+        optmean = function(expr) {
+            if (length(expr)==2L)
+                return(call(".Internal",expr))  # couldn't get .External as fast as .Internal, but no na.rm this route
+            if (length(expr)==3L)
+                return(call(".External",quote(Cfastmean),expr[[2L]], expr[[3L]]))  # faster than .Call
+            expr
         }
+        oldjsub = jsub
+        if (is.call(jsub)) {
+            if (jsub[[1L]]=="list") {
+                for (ii in seq_along(jsub)[-1L])
+                    if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]]=="mean")
+                        jsub[[ii]] = optmean(jsub[[ii]])
+            } else if (jsub[[1L]]=="mean") {
+                jsub = optmean(jsub)
+            }
+        }
+        if (verbose && !identical(oldjsub, jsub))
+            cat("Optimized j from '",deparse(oldjsub),"' to '",deparse(jsub),"'\n",sep="")
+        assign("Cfastmean", Cfastmean, envir=SDenv)
+        assign("mean", function(x,na.rm=FALSE).External(Cfastmean,x,na.rm), envir=SDenv)  # for j=sapply(.SD,mean)
+        # assign("mean", base::mean.default, envir=SDenv)   # slower
+        # assign("mean", fastmean, envir=SDenv)             # slower
     }
-    assign("Cfastmean", Cfastmean, envir=SDenv)
-    # assign("mean", base::mean.default, envir=SDenv)   # slower
-    # assign("mean", fastmean, envir=SDenv)             # slower
-        
+    
     lockBinding(".BY",SDenv)
     lockBinding(".iSD",SDenv) 
     #testj = eval(jsub, SDenv)
@@ -1539,7 +1537,7 @@ shallow = function(x) {
     .Call(Cshallowwrapper,x)  # copies VECSXP only
 }
 
-alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("datatable.verbose")) 
+alloc.col = function(DT, n=options("datatable.alloccol")[[1L]], verbose=options("datatable.verbose")[[1L]]) 
 {
     name = substitute(DT)
     if (identical(name,quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")

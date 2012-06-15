@@ -1859,10 +1859,24 @@ test(651, ans1, ans2)
 test(652, any(is.nan(ans1$V1))) 
 test(653, tt1["user.self"] < tt2["user.self"])
 
+# See FR#2067. Here we're just testing the optimization of mean which saves 30%
+tt1 = system.time(ans1<-DT[,lapply(.SD,mean),by=list(grp1,grp2)])  #21s
+options(datatable.optimize=0)
+tt2 = system.time(ans2<-DT[,lapply(.SD,mean),by=list(grp1,grp2)])  #32s
+options(datatable.optimize=Inf)
+test(654, ans1, ans2)
+test(655, tt1["user.self"] < tt2["user.self"])
+
+test(656, DT[,mean(x),by=grp1,verbose=TRUE], output="Optimized j from 'mean(x)' to '.Internal(mean(x))'")
+test(657, DT[,list(mean(x)),by=grp1,verbose=TRUE], output="Optimized j from 'list(mean(x))' to 'list(.Internal(mean(x)))'")
+test(658, DT[,list(mean(x),mean(y)),by=grp1,verbose=TRUE], output="Optimized j from 'list(mean(x), mean(y))' to 'list(.Internal(mean(x)), .Internal(mean(y)))'")
+
 # Test .N for logical i subset
 DT = data.table(a=1:10, b=rnorm(10))
-test(654, DT[a==8L, .N], 1L)
+test(659, DT[a==8L, .N], 1L)
 
+# Check growing doesn't race
+# rep(1:10,1:10)
 
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy
@@ -1876,7 +1890,7 @@ test(654, DT[a==8L, .N], 1L)
 # TO DO: why did SO answer using eval twice in j need .SD in lapply(f,eval,.SD) on 19 Apr
 # TO DO: change all 1 to 1L internally (done in data.table.R, other .R to do)
 
-# TO DO: check the "j is named list could be inefficient" message from verbose than Chris N showed recenctly to 15 May
+# TO DO: check the "j is named list could be inefficient" message from verbose than Chris N showed recently to 15 May
 # TO DO: !make sure explicitly that unnamed lists are being executed by dogroups!
 # TO DO: Add to warning about a previous copy that class<-, levels<- can also copy whole vector.  *Any* fun<- form basically.
 # TO DO: use looped := vs set test in example(":=") or example(setnames) to test overhead in [.data.table is tested to stay low in future.

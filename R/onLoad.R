@@ -28,7 +28,8 @@
     opts = c("datatable.verbose"="FALSE",
              "datatable.dfdispatchwarn"="TRUE",
              "datatable.alloccol"="quote(max(100,2*ncol(DT)))",
-             "datatable.nomatch"="NA_integer_")
+             "datatable.nomatch"="NA_integer_",
+             "datatable.optimize"="Inf")
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))
     }
