@@ -1336,6 +1336,8 @@ as.list.data.table = function(x, ...) {
     # being coerced to raw list type (by calling code) so that "[" and "[[" work in their raw list form,
     # such as lapply does for data.frame. So we do have to remove the class attributes (and thus shallow
     # copy is almost instant way to achieve that, without risking compatibility).
+    #if (sys.call(-2L)[[1L]]=="lapply")
+    #    return(x)
     ans = shallow(x)
     setattr(ans, "class", NULL)
     setattr(ans, "row.names", NULL)
@@ -1571,10 +1573,6 @@ settruelength = function(x,n) {
     #if (is.data.table(x))
     #    .Call(Csettruelength,attr(x,"class"),-999L)
     #    # So that (in R 2.13.2-) we can detect tables loaded from disk (tl is not initialized there)
-}
-
-setlength = function(x,n) {
-    .Call(Csetlength,x,as.integer(n))
 }
 
 setattr = function(x,name,value) {

@@ -13,7 +13,7 @@ EXPORT SEXP dogroups();
 int sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
 SEXP SelfRefSymbol;
 
-SEXP keepattr(SEXP out, SEXP in);
+SEXP keepattr(SEXP to, SEXP from);
 SEXP growVector(SEXP x, R_len_t newlen);
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 int sizesSet=0;
@@ -333,6 +333,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     for (j=0; j<ngrpcols; j++) SET_STRING_ELT(names2, j, STRING_ELT(bynames,j));
                     for (j=0; j<njval; j++) SET_STRING_ELT(names2, ngrpcols+j, STRING_ELT(names,j));
                     setAttrib(ans, R_NamesSymbol, names2);
+                    // setAttrib(SD, R_NamesSymbol, R_NilValue); // so that lapply(.SD,mean) is unnamed from 2nd group on
                 }
             } else {
                 estn = ansloc+maxn;
@@ -427,14 +428,14 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     return(ans);
 }
 
-SEXP keepattr(SEXP out, SEXP in)
+SEXP keepattr(SEXP to, SEXP from)
 {
     // Same as R_copyDFattr in src/main/attrib.c, but that seems not exposed in R's api
-    // Only difference is that we reverse in and out in the prototype, for easier calling above
-    SET_ATTRIB(out, ATTRIB(in));
-    IS_S4_OBJECT(in) ?  SET_S4_OBJECT(out) : UNSET_S4_OBJECT(out);
-    SET_OBJECT(out, OBJECT(in));
-    return out;
+    // Only difference is that we reverse from and to in the prototype, for easier calling above
+    SET_ATTRIB(to, ATTRIB(from));
+    IS_S4_OBJECT(from) ?  SET_S4_OBJECT(to) : UNSET_S4_OBJECT(to);
+    SET_OBJECT(to, OBJECT(from));
+    return to;
 }
 
 SEXP growVector(SEXP x, R_len_t newlen)

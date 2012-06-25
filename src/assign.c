@@ -27,7 +27,7 @@ SEXP SelfRefSymbol;
 
 extern SEXP growVector(SEXP x, R_len_t newlen, Rboolean verbose);
 extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
-extern SEXP keepattr(SEXP out, SEXP in);
+extern SEXP keepattr(SEXP to, SEXP from);
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 SEXP *saveds;
 R_len_t *savedtl, nalloc, nsaved;
@@ -89,7 +89,7 @@ int _selfrefok(SEXP x, Rboolean names, Rboolean verbose) {
     }
     if (!isNull(p)) error("Internal error: .internal.selfref ptr is not NULL or R_NilValue");
     tag = R_ExternalPtrTag(v);
-    if (!isString(tag)) error("Internal error: .internal.selfref tag doesn't point to a character vector");
+    if (!(isNull(tag) || isString(tag))) error("Internal error: .internal.selfref tag isn't NULL or a character vector");
     prot = R_ExternalPtrProtected(v);
     if (TYPEOF(prot) != EXTPTRSXP) error("Internal error: .internal.selfref prot is not itself an extptr");
     if (names) {
@@ -527,25 +527,35 @@ static SEXP shallow(SEXP dt, R_len_t n)
     // truelength (i.e. a shallow copy only with no size change)
     SEXP newdt, names, newnames;
     R_len_t i,l;
+    int protecti=0;
     PROTECT(newdt = allocVector(VECSXP, n));   // to do, use growVector here?
-    PROTECT(newnames = allocVector(STRSXP, n));
+    protecti++;
+    copyMostAttrib(dt, newdt);   // including class
+    // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
+    //        also increases truelength. Perhaps make that distinction, then, and split out, but marked
+    //        so that the next change knows to duplicate.
+    //        Does copyMostAttrib duplicate each attrib or does it point?
     l = LENGTH(dt);
-    names = getAttrib(dt,R_NamesSymbol);
-    for (i=0; i<l; i++) {
+    for (i=0; i<l; i++)
         SET_VECTOR_ELT(newdt,i,VECTOR_ELT(dt,i));
-        SET_STRING_ELT(newnames,i,STRING_ELT(names,i));
-	}
-	DUPLICATE_ATTRIB(newdt, dt);
-    // copyMostAttrib(dt, newdt);
-    LENGTH(newdt) = l;  //prefered due to the SETLENGTH vs SET_LENGTH confusion (inconsistent with SET_TRUELENGTH)
-    LENGTH(newnames) = l;
-    TRUELENGTH(newdt) = n;
-    TRUELENGTH(newnames) = n;
+    names = getAttrib(dt,R_NamesSymbol); 
+    PROTECT(newnames = allocVector(STRSXP, n));
+    protecti++;
+    if (length(names)) {
+        if (length(names) < l) error("Internal error: length(names)>0 but <length(dt)");
+        for (i=0; i<l; i++)
+            SET_STRING_ELT(newnames,i,STRING_ELT(names,i));
+    } // else an unnamed data.table is valid e.g. unname(DT) done by ggplot2, and .SD may have its names cleared in dogroups, but shallow will always create names for data.table(NULL) which has 100 slots all empty so you can add to an empty data.table by reference ok.
     setAttrib(newdt, R_NamesSymbol, newnames);
-    if (isNull(getAttrib(newdt, R_ClassSymbol))) error("newdt has null class");
+    // setAttrib appears to change length and truelength, so need to do that first _then_ SET next,
+    // otherwise (if the SET were were first) the 100 tl is assigned to length.
+    LENGTH(newnames) = l;
+    TRUELENGTH(newnames) = n;
+    LENGTH(newdt) = l;
+    TRUELENGTH(newdt) = n;
     setselfref(newdt);
     // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
-    UNPROTECT(2);
+    UNPROTECT(protecti);
     return(newdt);
 }
         
@@ -619,12 +629,6 @@ SEXP settruelength(SEXP x, SEXP n) {
     // Only needed in pre 2.14.0. From 2.14.0+, truelength is initialized to 0 by R.
     // For prior versions we set truelength to 0 in data.table creation, before calling alloc.col.
     TRUELENGTH(x) = INTEGER(n)[0];
-    return(R_NilValue);
-}
-
-SEXP setlength(SEXP x, SEXP n) {
-    // Currently, just so .SD can be created once at R level for largest group then setup for first group
-    LENGTH(x) = INTEGER(n)[0];
     return(R_NilValue);
 }
 
