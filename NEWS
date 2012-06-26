@@ -55,7 +55,17 @@ NEW FEATURES
         base::is.unsorted() for integer and unkeyed i. Implements FR#295.
         
     o   mean() is now automatically optimized, FR#1231. This can speed up grouping
-        by 20 times when there are a large number of groups. See wiki point 3.
+        by 20 times when there are a large number of groups. See wiki point 3, which
+        is no longer needed to know. Turn off optimization by setting
+        options(datatable.optimize=0).
+        
+    o   DT[,lapply(.SD,...),by=...] is now automatically optimized. This can speed
+        up applying a function by column by group, by over 20 times. See wiki point 5
+        which is no longer needed to know. In other words:
+             DT[,lapply(.SD,sum),by=grp]
+        is now just as fast as :
+             DT[,list(x=sum(x),y=sum(y)),by=grp]
+        Don't forget to use .SDcols when a subset of columns is needed.
         
     o   The package is now Byte Compiled (when installed in R 2.14.0 or later). Several
         internal speed improvements were made in this version too, such as avoiding
@@ -63,9 +73,9 @@ NEW FEATURES
         Compilation, please install the package without Byte Compilation and compare
         ceteris paribus. If you find cases where speed has slowed, please let us know.
         
-    o   Idioms such as sapply(DT,class) and lapply(.SD,...) get a very significant speed
-        boost by avoiding a call to unclass() which copies the entire object. Thanks to
-        a question by user1393348 on Stack Overflow, implementing #2000.
+    o   sapply(DT,class) gets a significant speed boost by avoiding a call to unclass()
+        in as.list.data.table() called by lapply(DT,...), which copied the entire object.
+        Thanks to a question by user1393348 on Stack Overflow, implementing #2000.
         http://stackoverflow.com/questions/10584993/r-loop-over-columns-in-data-table
         
 

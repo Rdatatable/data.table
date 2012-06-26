@@ -821,32 +821,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     assign("print", function(x,...){base::print(x,...);NULL}, envir=SDenv)
     # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
     
-    if (options("datatable.optimize")[[1L]]>0L) {  # Abilility to turn off if problems
-        optmean = function(expr) {
-            if (length(expr)==2L)
-                return(call(".Internal",expr))  # couldn't get .External as fast as .Internal, but no na.rm this route
-            if (length(expr)==3L)
-                return(call(".External",quote(Cfastmean),expr[[2L]], expr[[3L]]))  # faster than .Call
-            expr
-        }
-        oldjsub = jsub
-        if (is.call(jsub)) {
-            if (jsub[[1L]]=="list") {
-                for (ii in seq_along(jsub)[-1L])
-                    if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]]=="mean")
-                        jsub[[ii]] = optmean(jsub[[ii]])
-            } else if (jsub[[1L]]=="mean") {
-                jsub = optmean(jsub)
-            }
-        }
-        if (verbose && !identical(oldjsub, jsub))
-            cat("Optimized j from '",deparse(oldjsub),"' to '",deparse(jsub),"'\n",sep="")
-        assign("Cfastmean", Cfastmean, envir=SDenv)
-        assign("mean", function(x,na.rm=FALSE).External(Cfastmean,x,na.rm), envir=SDenv)  # for j=sapply(.SD,mean)
-        # assign("mean", base::mean.default, envir=SDenv)   # slower
-        # assign("mean", fastmean, envir=SDenv)             # slower
-    }
-    
     lockBinding(".BY",SDenv)
     lockBinding(".iSD",SDenv) 
     #testj = eval(jsub, SDenv)
@@ -910,6 +884,67 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=. 
     lockBinding(".SD",SDenv)
     lockBinding(".N",SDenv)
+    
+    if (options("datatable.optimize")[[1L]]>0L) {  # Abilility to turn off if problems
+        # Optimization to reduce overhead of calling mean and lapply over and over for each group
+        nomeanopt=FALSE
+        optmean = function(expr) {
+            if (length(expr)==2L)
+                return(call(".Internal",expr))  # couldn't get .External as fast as .Internal, but no na.rm this route
+            if (length(expr)==3L && identical("na",substring(names(expr)[3L],1,2)))
+                return(call(".External",quote(Cfastmean),expr[[2L]], expr[[3L]]))  # faster than .Call
+            nomeanopt<<-TRUE
+            expr  # e.g. trim is not optimized, just na.rm
+        }
+        oldjsub = jsub
+        if (is.call(jsub)) {
+            if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xvars)) {
+                txt = as.list(jsub)[-1L]
+                txt[1L] = txt[2L]
+                ans = vector("list",length(xvars)+1L)
+                ans[[1L]] = as.name("list")
+                for (ii in seq_along(xvars)) {
+                    txt[[2L]] = as.name(xvars[ii])
+                    ans[[ii+1L]] = as.call(txt)
+                }
+                jsub = as.call(ans)  # important no names here
+                jvnames = xvars      # but here instead
+                # It may seem inefficient to constuct a potentially long expression. But, consider calling
+                # lapply 100000 times. The C code inside lapply does the LCONS stuff anyway, every time it
+                # is called, involving small memory allocations. 
+                # The R level lapply calls as.list which needs a shallow copy.
+                # lapply also does a setAttib of names (duplicating the same names over and over again
+                # for each group) which is terrible for our needs. We replace all that with a
+                # (ok, long, but not huge in memory terms) list() which is primitive (so avoids symbol
+                # lookup), and the eval() inside dogroups hardly has to do anything. All this results in
+                # overhead minimised. We don't need to worry about the env passed to the eval in a possible
+                # lapply replacement, or how to pass ... efficiently to it.
+                # Plus we optimize lapply first, so that mean() can be optimized too as well, next.
+            }
+            if (jsub[[1L]]=="list") {
+                for (ii in seq_along(jsub)[-1L])
+                    if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]]=="mean")
+                        jsub[[ii]] = optmean(jsub[[ii]])
+            } else if (jsub[[1L]]=="mean") {
+                jsub = optmean(jsub)
+            }
+        }
+        if (nomeanopt) {
+            warning("Unable to optimize call to mean() and could be very slow. Only mean(x) and mean(x,na.rm=TRUE) are optimized, and you must name 'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean 'trim' which is the 2nd argument. 'trim' is not yet optimized.",immediate.=TRUE)
+        }
+        if (verbose) { 
+            if (!identical(oldjsub, jsub))
+                cat("Optimized j from '",deparse(oldjsub),"' to '",deparse(jsub),"'\n",sep="")
+            else
+                cat("Optimization is on but j left unchanged as '",deparse(jsub),"'\n",sep="")
+        }
+        assign("Cfastmean", Cfastmean, envir=SDenv)
+        # assign("mean", fastmean, envir=SDenv)  # neater than the hard work above, but slower
+        
+        assign("mean", base::mean.default, envir=SDenv)
+        # Here in case nomeanopt=TRUE or some calls to mean weren't detected somehow. Better but still very slow.
+    }
+    
     
     #if (mode(jsub)=="name" && jsub!=".SD") { 
     #    jsub = call("list",jsub)  # this should handle backticked names ok too
@@ -988,7 +1023,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         # Efficiency gain of dropping names has been successful. Ordinarily this will run.
         if (is.null(jvnames)) jvnames = character(length(ans)-length(bynames))
         if (length(bynames)+length(jvnames)!=length(ans))
-            stop("Internal error: jvnames is length ",length(jvnames), "but ans is ",length(ans)," and bynames is ",length(bynames))
+            stop("Internal error: jvnames is length ",length(jvnames), " but ans is ",length(ans)," and bynames is ", length(bynames))
         ww = which(jvnames=="")
         if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
         setattr(ans, "names", c(bynames, jvnames))

@@ -1859,13 +1859,12 @@ test(651, ans1, ans2)
 test(652, any(is.nan(ans1$V1))) 
 test(653, tt1["user.self"] < tt2["user.self"])
 
-# See FR#2067. Here we're just testing the optimization of mean which saves 30%
-tt1 = system.time(ans1<-DT[,lapply(.SD,mean),by=list(grp1,grp2)])  #21s
-options(datatable.optimize=0)
-tt2 = system.time(ans2<-DT[,lapply(.SD,mean),by=list(grp1,grp2)])  #32s
-options(datatable.optimize=Inf)
+# See FR#2067. Here we're just testing the optimization of mean and lapply, should be comparable to above
+tt2 = system.time(ans2<-DT[,lapply(.SD,mean,na.rm=TRUE),by=list(grp1,grp2)])
+setnames(ans2,"x","V1")
+setnames(ans2,"y","V2")
 test(654, ans1, ans2)
-test(655, tt1["user.self"] < tt2["user.self"])
+test(655, (tt1["user.self"] - tt2["user.self"])<0.5)  # unoptimized tt2 takes 30 seconds rather than 2
 
 test(656, DT[,mean(x),by=grp1,verbose=TRUE], output="Optimized j from 'mean(x)' to '.Internal(mean(x))'")
 test(657, DT[,list(mean(x)),by=grp1,verbose=TRUE], output="Optimized j from 'list(mean(x))' to 'list(.Internal(mean(x)))'")
@@ -1875,7 +1874,7 @@ test(658, DT[,list(mean(x),mean(y)),by=grp1,verbose=TRUE], output="Optimized j f
 DT = data.table(a=1:10, b=rnorm(10))
 test(659, DT[a==8L, .N], 1L)
 
-# Check growing doesn't race
+# TO DO:  check growing doesn't race  !!!!
 # rep(1:10,1:10)
 
 
