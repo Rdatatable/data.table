@@ -153,11 +153,11 @@ BUG FIXES
         http://stackoverflow.com/questions/10618837/joining-two-partial-data-tables-keeping-all-x-and-all-y
         
     o   Removing or setting datatable.alloccol to NULL is no longer a memory leak, #2014.
-        Thanks to a question by Vanja on Stack Overflow :
+        Tests added. Thanks to a question by Vanja on Stack Overflow :
         http://stackoverflow.com/questions/10628371/r-importing-data-table-package-namespace-unexplainable-jump-in-memory-consumpt
         
     o   DT[,2:=someval,with=FALSE] now changes column 2 even if column 1 has the same (duplicate)
-        name, #2025. Thanks to Sean Creighton for reporting.
+        name, #2025. Thanks to Sean Creighton for reporting. Tests added.
         
 
 USER VISIBLE CHANGES
@@ -194,18 +194,19 @@ USER VISIBLE CHANGES
         The tail as well as the head of large tables is now printed.
         
     o   setnames(DT,newnames) now works when DT contains duplicate column names, #2103.
-        Thanks to Timothee Carayol for reporting.
+        Thanks to Timothee Carayol for reporting. Tests added.
         
         
 THANKS TO BETA TESTING :
 
-    o   Florian Oswald for #2094: DT[,newcol:=NA] now adds a new logical column ok, test added.
+    o   Florian Oswald for #2094: DT[,newcol:=NA] now adds a new logical column ok.
+        Test added.
     
     o   A large slow down (2s went up to 40s) when iterating calls to DT[...] in a
         for loop, such as in example(":="), was caught and fixed in beta, #2027.
         Speed regression test added.
         
-    o   Christoph Jäckel for #2078: by=c(...) with i clause broke. Test added.
+    o   Christoph Jäckel for #2078: by=c(...) with i clause broke. Tests added.
 
 
 NOTES
