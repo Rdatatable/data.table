@@ -288,15 +288,16 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 // This was 'byretn' in R in v1.8.0, now here in C from v1.8.1 onwards.
                 if (grpn==0)
                     estn = maxn = 0;   // empty case e.g. test 184. maxn is 1 here due to sum(integer()) == 0L
-                else if (maxn==1 && grpn>1)
+                else if (maxn==1) // including when grpn==1 we default to assuming it's an aggregate
                     estn = LENGTH(starts);
                     // Common case 1 : j is a list of simple aggregates i.e. list of atoms only
-                else if (maxn >= grpn)
+                else if (maxn >= grpn) {
+                    estn = 0;
                     for (j=0;j<LENGTH(lens);j++) estn+=INTEGER(lens)[j];
                     // Common case 2 : j returns as many rows as there are in the group (maybe a join)
                     // TO DO: this might over allocate if first group has 1 row and j is actually a single row aggregate
                     //        in cases when we're not sure could wait for the first few groups before deciding.
-                else  // maxn < grpn
+                } else  // maxn < grpn
                     estn = maxn * LENGTH(starts);
                     // Common case 3 : head or tail of .SD perhaps
                 if (estn<maxn) estn=maxn;  // if the result for the first group is larger than the table itself(!) Unusual case where a join is being done in j via .SD and the 1-row table is an edge case of bigger picture.
@@ -336,8 +337,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     // setAttrib(SD, R_NamesSymbol, R_NilValue); // so that lapply(.SD,mean) is unnamed from 2nd group on
                 }
             } else {
-                estn = ansloc+maxn;
-                // TO DO: ****** Use % i/#groups for linear estimate + 5%
+                estn = ((double)ngrp/i)*1.1*(ansloc+maxn);
                 if (LOGICAL(verbose)[0]) Rprintf("dogroups: growing from %d to %d rows\n", length(VECTOR_ELT(ans,0)), estn);
                 for (j=0; j<ngrpcols; j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), estn));
                 for (j=0; j<njval; j++) SET_VECTOR_ELT(ans, j+ngrpcols, growVector(VECTOR_ELT(ans,j+ngrpcols), estn));
