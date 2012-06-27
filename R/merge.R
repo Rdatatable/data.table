@@ -64,7 +64,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             othercolsx <- setdiff(names(xkey), by)
             if (length(othercolsx)) {
                 tmp = rep(NA_integer_, length(missingyidx))
-                yy <- cbind(xkey[tmp, othercolsx, with = FALSE], yy)
+                yy <- cbind(yy, xkey[tmp, othercolsx, with = FALSE])
                 setnames(yy, make.names(names(yy),unique=TRUE))
             }
             setcolorder(yy, names(dt))

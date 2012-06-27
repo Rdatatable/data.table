@@ -1639,8 +1639,11 @@ setnames = function(x,old,new) {
     if (missing(new)) {
         # so that setnames(DT,new) works too, e.g., setnames(DT,c("A","B")) where ncol(DT)==2
         if (length(old) != ncol(x)) stop("Can't assign ",length(old)," names to a ",ncol(x)," column data.table")
-        new=old
-        old=names(x)
+        m = chmatch(key(x), names(x))
+        if (length(m) && any(is.na(m))) stop("Internal error: attr(x,'sorted') not all in names(x)")
+        .Call(Csetattrib, x, "names", old)  # not setattr, to avoid recursive loop, since it calls setnames.
+        if (length(m)) .Call(Csetattrib, x, "sorted", old[m])
+        return(invisible(x))
     } else {
         if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
         if (length(new)!=length(old)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
@@ -1662,8 +1665,7 @@ setnames = function(x,old,new) {
     w = which(!is.na(m))
     .Call(Csetcharvec, attr(x,"names"), as.integer(i), new)
     if (length(w))
-        .Call(Csetcharvec, attr(x,"sorted"), as.integer(m[w]), new[w])
-        
+        .Call(Csetcharvec, attr(x,"sorted"), as.integer(m[w]), new[w])    
     invisible(x)
 }
 

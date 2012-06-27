@@ -128,10 +128,6 @@ BUG FIXES
         dynamic and passed one of those values all meaning 'don't group'. Thanks
         to Joseph Voelkel reporting and Chris Neff for further use cases. Tests added.
         
-    o   A large slow down (2s went up to 40s) in the development version of 1.8.1 when
-        iterating calls to DT[...] in a for loop, such as in example(":="), has been
-        fixed, #2027. This was caught before making it to CRAN. Speed regression test added.
-        
     o   chorder(character()) was a seg fault, #2026. Fixed and test added.
     
     o   When grouping by i, if the first row of i had no match, .N was 1 rather than 0.
@@ -198,9 +194,17 @@ USER VISIBLE CHANGES
         bottom of the output (saves scrolling up). Thanks to Yike Lu for reporting #2015.
         The tail as well as the head of large tables is now printed.
         
-THANKS TO BETA TESTERS :
+    o   setnames(DT,newnames) now works when DT contains duplicate column names, #2103.
+        Thanks to Timothee Carayol for reporting.
+        
+        
+THANKS TO BETA TESTING :
 
-    o   Florian Oswald for #2094. DT[,newcol:=NA] now adds a new logical column ok.
+    o   Florian Oswald for #2094: DT[,newcol:=NA] now adds a new logical column ok.
+    
+    o   A large slow down (2s went up to 40s) when iterating calls to DT[...] in a
+        for loop, such as in example(":="), was caught and fixed in beta, #2027.
+        Speed regression test added.
 
 
         **********************************************
