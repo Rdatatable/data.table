@@ -160,7 +160,6 @@ BUG FIXES
         name, #2025. Thanks to Sean Creighton for reporting.
         
 
-
 USER VISIBLE CHANGES
 
     o   Incorrect syntax error message for := now includes advice to check that
@@ -200,12 +199,23 @@ USER VISIBLE CHANGES
         
 THANKS TO BETA TESTING :
 
-    o   Florian Oswald for #2094: DT[,newcol:=NA] now adds a new logical column ok.
+    o   Florian Oswald for #2094: DT[,newcol:=NA] now adds a new logical column ok, test added.
     
     o   A large slow down (2s went up to 40s) when iterating calls to DT[...] in a
         for loop, such as in example(":="), was caught and fixed in beta, #2027.
         Speed regression test added.
+        
+    o   Christoph Jäckel for #2078: by=c(...) with i clause broke. Test added.
 
+
+NOTES
+
+    o   There are now (***Update:669***) raw tests, plus S4 tests.
+    
+    o   v1.8.1 was an R-Forge only beta release. The final v1.8.1 was released
+        as v1.8.2 on CRAN, so users who had already upgraded to 1.8.1 are
+        prompted to upgrade by update.packages().
+        
 
         **********************************************
         **                                          **

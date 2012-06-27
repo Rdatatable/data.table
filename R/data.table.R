@@ -579,6 +579,11 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 bysub = eval(bysubl[[2]],parent.frame())
                 if (is.expression(bysub)) bysub=bysub[[1L]]
                 bysubl = as.list.default(bysub)
+            } else if (is.call(bysub) && as.character(bysub[[1L]]) %chin% c("c","key")) {
+                # catch common cases, so we don't have to copy x[irows] for all columns
+                tt = eval(bysub,parent.frame())
+                if (!is.character(tt)) stop("by=c(...) or key(...) must evaluate to 'character'")
+                bysub=tt
             }
             if (mode(bysub) == "character") {
                 if (length(grep(",",bysub))) {
@@ -598,7 +603,13 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             else {
                 if (!is.integer(irows)) stop("Internal error: irows isn't integer")  # length 0 when i returns no rows
                 if (any(irows<1L | irows>nrow(x))) stop("Internal error: some irows<1 or >nrow(x)")
-                xss = x[irows,allbyvars,with=FALSE]
+                if (length(allbyvars)) {
+                    if (verbose) cat("i clause present and columns used in by detected, only these subset:",paste(allbyvars,collapse=","),"\n")
+                    xss = x[irows,allbyvars,with=FALSE]
+                } else {
+                    if (verbose) cat("i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '",deparse(by),"'\n",sep="")
+                    xss = x[irows]
+                }
                 byval = eval(bysub, xss, parent.frame())
                 xnrow = nrow(xss)
                 # TO DO: pass xss (x subset) through into dogroups. Still need irows there (for :=), but more condense
@@ -622,12 +633,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             } else bynames = names(byval)
             if (is.atomic(byval)) {
                 if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && as.character(bysub)%chin%names(x)) ) {
-                    # e.g. by is key(DT) or c("colA","colB"), but not the value of a character column
-                    if (!all(byval %chin% names(x)))
-                        stop("'by' or 'keyby' seems like a column name vector but these elements are not column names (first 5):",paste(head(byval[!byval%chin%names(x)],5),collapse=""))
-                    # byvars = byval
-                    byval=as.list(x[,byval,with=FALSE])   # TO DO: Why as.list here? And why not just shallow()
-                    bynames = names(byval)
+                    stop("'by' appears to evaluate to column names but isn't c() or key(). Use by=list(...) if you can. Otherwise, by=eval(",deparse(bysub),") should work. This is for efficiency so data.table can detect which columns are needed.")
                 } else {
                     # by may be a single unquoted column name but it must evaluate to list so this is a convenience to users. Could also be a single expression here such as DT[,sum(v),by=colA%%2]
                     byval = list(byval)

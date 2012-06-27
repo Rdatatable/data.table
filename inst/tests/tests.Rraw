@@ -23,9 +23,11 @@ test = function(num,x,y=NULL,error,warning,output) {
     err <- if (missing(output)) try(x,TRUE) else out<-capture.output(try(x,TRUE))
     if (!missing(error) || !missing(warning)) {
         type = ifelse(!missing(error),"error","warning")
-        txt = ifelse(!missing(error),error,warning)
+        patt = txt = ifelse(!missing(error),error,warning)
+        patt = gsub("[(]","[(]",patt)
+        patt = gsub("[)]","[)]",patt)
         if (inherits(err,"try-error") && 
-           length(grep(txt,err)) &&
+           length(grep(patt,err)) &&
            ((type=="error" && !length(grep("converted from warning",err))) ||
             (type=="warning" && length(grep("converted from warning",err)))))
             return()
@@ -43,17 +45,17 @@ test = function(num,x,y=NULL,error,warning,output) {
         return()
     }
     if (!missing(output)) {
-       output = gsub("[(]","[(]",output)
-       output = gsub("[)]","[)]",output)
-       if (!length(grep(output,out))) {
-           cat("Test",num,"didn't produce correct output:\n")
-           cat("Expected:",output,"\n")
-           cat("Observed:",out,"\n")
-           nfail <<- nfail + 1
-           whichfail <<- c(whichfail, num)
-           return()
-       }
-       if (missing(y)) return()
+        output = gsub("[(]","[(]",output)
+        output = gsub("[)]","[)]",output)
+        if (!length(grep(output,out))) {
+            cat("Test",num,"didn't produce correct output:\n")
+            cat("Expected:",output,"\n")
+            cat("Observed:",out,"\n")
+            nfail <<- nfail + 1
+            whichfail <<- c(whichfail, num)
+            return()
+        }
+        if (missing(y)) return()
     }
     if (missing(y)) {
         if (x) return()
@@ -902,11 +904,11 @@ test(299.01, DT[,c:=42L], warning="Invalid .internal.selfref detected and fixed"
 test(299.02, suppressWarnings(DT[,c:=42L]), data.table(a=1:3,c=42L))
 test(299.03, truelength(DT)>length(DT))   # the := over-allocated, by 100 by default, but user may have changed default so just check '>'
 
-test(299.2, DT[2,c:=42], warning="Coerced 'double' RHS to 'integer' to match the column's type.*length 3 [(]nrows of entire table[)]")
+test(299.2, DT[2,c:=42], warning="Coerced 'double' RHS to 'integer' to match the column's type.*length 3 (nrows of entire table)")
 # also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
 test(299.3, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
-test(299.4, DT[2,c:=42], warning="Coerced 'double' RHS to 'logical' to match the column's type.*length 3 [(]nrows of entire table[)]")
-test(299.5, DT[2,c:=42L], warning="Coerced 'integer' RHS to 'logical' to match the column's type.*length 3 [(]nrows of entire table[)]")
+test(299.4, DT[2,c:=42], warning="Coerced 'double' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
+test(299.5, DT[2,c:=42L], warning="Coerced 'integer' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
 
 
 # Test bug fix #1468, combining i and by.
@@ -1110,7 +1112,7 @@ DT = data.table(x=INT(1,1,2,2,2),y=1:5)
 test(371, DT[,list(list(unique(y))),by=x], data.table(x=1:2,V1=list(1:2,3:5)))
 
 # Test matrix i is an error
-test(372, DT[matrix(1:2,ncol=2)], error="i is invalid type [(]matrix[)]")
+test(372, DT[matrix(1:2,ncol=2)], error="i is invalid type (matrix)")
 
 # Tests from bug fix #1593
 DT = data.table(x=letters[1:2], y=1:4)
@@ -1145,7 +1147,7 @@ test(381, DT[,{if (a==2) {.SD$b[1]=10L;.SD} else .SD}, by=a], error="locked bind
 
 # test that direct := is trapped, but := within a copy of .SD is allowed (FAQ 4.5). See also tests 556-557.
 test(382, DT[,b:=.N*2L,by=a], data.table(a=rep(1:3,1:3),b=rep(2L*(1:3),1:3)))
-test(383, DT[,{z=10L;b:=z},by=a], error=":= is defined for use in j only, and [(]currently[)] only once")
+test(383, DT[,{z=10L;b:=z},by=a], error=":= is defined for use in j only, and (currently) only once")
 test(384, DT[,{mySD=copy(.SD);mySD[1,b:=99L];mySD},by=a], data.table(a=rep(1:3,1:3),b=c(99L,99L,4L,99L,6L,6L)))
 
 # somehow missed testing := on logical subset with mixed TRUE/FALSE, reported by Muhammad Waliji
@@ -1310,9 +1312,9 @@ test(446, rbind(DT,data.table(b=7L,a=4L)), warning="Argument 2 has names in a di
 test(447, suppressWarnings(rbind(DT,list(b=7L,a=4L))), data.table(a=1:4,b=4:7))
 test(448, suppressWarnings(rbind(DT,data.frame(b=7L,a=4L))), data.table(a=1:4,b=4:7))
 test(449, suppressWarnings(rbind(DT,data.table(b=7L,a=4L))), data.table(a=1:4,b=4:7))
-test(450, rbind(DT,list(c=4L,a=7L)), error="Some colnames of argument 2 [(]c[)] are not present in colnames of item 1")
-test(451, rbind(DT,data.frame(c=4L,a=7L)), error="Some colnames of argument 2 [(]c[)] are not present in colnames of item 1")
-test(452, rbind(DT,data.table(c=4L,a=7L)), error="Some colnames of argument 2 [(]c[)] are not present in colnames of item 1")
+test(450, rbind(DT,list(c=4L,a=7L)), error="Some colnames of argument 2 (c) are not present in colnames of item 1")
+test(451, rbind(DT,data.frame(c=4L,a=7L)), error="Some colnames of argument 2 (c) are not present in colnames of item 1")
+test(452, rbind(DT,data.table(c=4L,a=7L)), error="Some colnames of argument 2 (c) are not present in colnames of item 1")
 test(453, rbind(DT,list(4L,7L)), data.table(a=1:4,b=4:7))
 
 # Test new use.names argument in 1.8.0
@@ -1408,7 +1410,7 @@ test(478, DT[,foo:=foo], DT)  # does nothing, with no warning, consistent with b
 
 # Test that recycling now works with oversized inputs and % != 0 length, both with warnings.
 DT = data.table(x=1:4)
-test(479, DT[, a := 5:7], warning="Supplied 3 items to be assigned to 4 items of column 'a' [(]recycled leaving remainder of 1 items[)]")
+test(479, DT[, a := 5:7], warning="Supplied 3 items to be assigned to 4 items of column 'a' (recycled leaving remainder of 1 items)")
 suppressWarnings(DT[, a := 5:7])
 test(480, DT, data.table(x=1:4,a=c(5:7,5L)))  # no longer error, now recycles with remainder and warning
 
@@ -1444,10 +1446,10 @@ if ("package:reshape" %in% search()) {
 
 # Test warnings for names<- and colnames<-,  but only warnings when caller is data.table aware.
 DT = data.table(a=1:3,b=4:6)
-test(489, names(DT)[1]<-"A", warning="names[(]x[)]<-value syntax.*Please change to setnames")
+test(489, names(DT)[1]<-"A", warning="names(x)<-value syntax.*Please change to setnames")
 suppressWarnings(names(DT)[1]<-"A")  # make sure it still works
 test(490, names(DT), c("A","b"))
-test(491, colnames(DT)[2]<-"B", warning="colnames[(]x[)]<-value syntax.*Please change to setnames")
+test(491, colnames(DT)[2]<-"B", warning="colnames(x)<-value syntax.*Please change to setnames")
 suppressWarnings(colnames(DT)[2]<-"B")  # make sure it still works
 test(492, names(DT), c("A","B"))
 
@@ -1577,7 +1579,7 @@ test(541, DT[,sum(v),keyby=eval(a)], data.table(a=0:1,V1=c(10L,11L),key="a"))
 
 test(542, DT[,sum(v),keyby=c("a","b","c")]$V1, INT(1,3,4,6,5,2))
 test(543, DT[,sum(v),keyby="a,b,c"]$V1, INT(1,3,4,6,5,2))
-test(544, DT[,sum(v),keyby=c("a","b,c")], error="these elements are not column names")
+test(544, DT[,sum(v),keyby=c("a","b,c")], error="but one or more items include a comma")
 
 # Test single expressions passed to by, FR#1743 in v1.8.0
 DT = data.table(a=1:4,date=as.IDate("2012-02-28")+0:3,v=5:8)
@@ -1667,7 +1669,7 @@ test(579, suppressWarnings(X[Y]), data.table(a=c("D","B"), v=c(4L,2L)))
 
 # Test that logical i in set() returns helpful error
 DT = data.table(a=1:3,b=4:6)
-test(580, set(DT,a<3,"b",0L), error="simply wrap with which[(][)], and take the which[(][)] outside the loop if possible for efficiency")
+test(580, set(DT,a<3,"b",0L), error="simply wrap with which(), and take the which() outside the loop if possible for efficiency")
 
 # Test by on empty tables (and when i returns no rows), #1945
 DT = data.table(a=1:3,v=1:6)
@@ -1830,8 +1832,8 @@ test(643, capture.output(print(DT)), c("       a   b","  1: 001   1","  2: 002  
 # Test inconsistent length of columns error.
 DT = list(a=3:1,b=4:3)
 setattr(DT,"class",c("data.table","data.frame"))
-test(644, setkey(DT,a), error="Column 2 is length 2 which differs from length of column 1 [(]3[)]")
-test(645, setkey(DT,b), error="Column 2 is length 2 which differs from length of column 1 [(]3[)]")
+test(644, setkey(DT,a), error="Column 2 is length 2 which differs from length of column 1 (3)")
+test(645, setkey(DT,b), error="Column 2 is length 2 which differs from length of column 1 (3)")
 
 # Test faster mean.  Example from (now not needed as much) data.table wiki point 3.
 # Example is a lot of very small groups.
@@ -1890,9 +1892,16 @@ test(663, sapply(DT,class), c(a="integer",newcol="logical"))
 DT = data.table(a=1:3, b=2:4, a=3:5)
 test(664, setnames(DT, c('d','e','f')), data.table(d=1:3,e=2:4,f=3:5)) 
 
+# Test by=c(...) in combination with i subset, #2078
+DT = data.table(a=1:3,b=1:6,key="a")
+test(665, DT[a<3,sum(b),by=c("a"),verbose=TRUE], DT[a<3,sum(b),by="a"], output="i clause present and columns used in by detected")
+test(666, DT[a<3,sum(b),by=key(DT),verbose=TRUE], DT[a<3,sum(b),by=a], output="i clause present and columns used in by detected")
+test(667, DT[a<3,sum(b),by=paste("a")], error='Otherwise, by=eval(paste("a")) should work')
+test(668, DT[a<3,sum(b),by=eval(paste("a"))], DT[a<3,sum(b),by=a])
+test(669, DT[a<3,sum(b),by=c(2)], error="must evaluate to 'character'")
+
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy
-
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
 #        test on out of bound i subsets e.g. 6:10 when DT has 7 rows, and mixed negative and positive i integer is error.
