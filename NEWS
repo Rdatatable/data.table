@@ -197,6 +197,10 @@ USER VISIBLE CHANGES
     o   DT now prints consistent row numbers when the column names are reprinted at the
         bottom of the output (saves scrolling up). Thanks to Yike Lu for reporting #2015.
         The tail as well as the head of large tables is now printed.
+        
+THANKS TO BETA TESTERS :
+
+    o   Florian Oswald for #2094. DT[,newcol:=NA] now adds a new logical column ok.
 
 
         **********************************************

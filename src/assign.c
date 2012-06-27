@@ -476,6 +476,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
     switch(type) {
     // NAs are special; no need to worry about generations.
     case INTSXP :
+    case LGLSXP :
         for (i=0; i<n; i++) INTEGER(v)[i] = NA_INTEGER;
         break;
     case REALSXP :
