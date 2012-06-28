@@ -588,10 +588,10 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 bysub = eval(bysubl[[2]],parent.frame())
                 if (is.expression(bysub)) bysub=bysub[[1L]]
                 bysubl = as.list.default(bysub)
-            } else if (is.call(bysub) && as.character(bysub[[1L]]) %chin% c("c","key")) {
+            } else if (is.call(bysub) && as.character(bysub[[1L]]) %chin% c("c","key","names")) {
                 # catch common cases, so we don't have to copy x[irows] for all columns
                 tt = eval(bysub,parent.frame())
-                if (!is.character(tt)) stop("by=c(...) or key(...) must evaluate to 'character'")
+                if (!is.character(tt)) stop("by=c(...), key(...) or names(...) must evaluate to 'character'")
                 bysub=tt
             }
             if (mode(bysub) == "character") {
