@@ -5,11 +5,6 @@
 //#include <sys/mman.h>
 #include <fcntl.h>
 
-#ifdef BUILD_DLL
-#define EXPORT __declspec(dllexport)
-EXPORT SEXP duplist();
-#endif
-
 #define cmpnum(a,b) ((ISNAN(a) && ISNAN(b)) || fabs(a-b)<REAL(tol)[0])
 
 SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol)  //change name to uniqlist

@@ -6,13 +6,6 @@
 #include <fcntl.h>
 extern int Rf_Scollate();   // #include <Defn.h> failed to find Defn.h in development, so this extern stops the warning
 
-#ifdef BUILD_DLL
-// For Windows only
-#define EXPORT __declspec(dllexport)
-EXPORT SEXP binarysearch();
-//EXPORT SEXP sortedintegermatch ();
-#endif
-
 /*
 Implements binary search (a.k.a. divide and conquer).
 http://en.wikipedia.org/wiki/Binary_search

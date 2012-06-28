@@ -24,12 +24,6 @@
 #include <Rinternals.h>
 #include <Rdefines.h>
 
-#ifdef BUILD_DLL
-#define EXPORT __declspec(dllexport)
-EXPORT SEXP countingcharacter();
-EXPORT SEXP chmatchwrapper();
-#endif
-
 extern int Rf_Scollate();
 void ssort2(SEXP *x, R_len_t n);
 // See end of this file for comments and modifications.

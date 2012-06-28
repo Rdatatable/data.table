@@ -3,11 +3,6 @@
 #include <Rinternals.h>
 #include <Rdefines.h>
 
-#ifdef BUILD_DLL
-#define EXPORT __declspec(dllexport)
-EXPORT SEXP reorder();
-#endif
-
 // See dogroups.c for these shared variables.
 extern int sizes[];
 extern int sizesSet;

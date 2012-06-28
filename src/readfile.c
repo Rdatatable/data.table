@@ -5,12 +5,6 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-#ifdef BUILD_DLL
-// For Windows only
-#define EXPORT __declspec(dllexport)
-EXPORT SEXP readfile();
-#endif
-
 SEXP readfile(SEXP fnam)
 {
     SEXP c1,c2,ans;

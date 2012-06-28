@@ -2,14 +2,6 @@
 #define USE_RINTERNALS
 #include <Rinternals.h>
 #include <Rdefines.h>
-/*
-Don't know why we need this. Hang over from old? Remove and see if win-builder bites.
-#ifdef BUILD_DLL
-#define EXPORT __declspec(dllexport)
-EXPORT SEXP setattrib();
-EXPORT SEXP copy();
-#endif
-*/
 
 // Wrappers for R internal functions. We can't rely on calling
 // Rf_setAttrib and Rf_duplicate directly from .Call in R on

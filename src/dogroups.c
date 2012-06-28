@@ -5,11 +5,6 @@
 //#include <sys/mman.h>
 #include <fcntl.h>
 
-#ifdef BUILD_DLL
-#define EXPORT __declspec(dllexport)
-EXPORT SEXP dogroups();
-#endif
-
 int sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
 SEXP SelfRefSymbol;
 

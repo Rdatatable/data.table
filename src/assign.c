@@ -5,17 +5,6 @@
 #include <Rmath.h> 
 #include <Rversion.h>
 
-#ifdef BUILD_DLL
-#define EXPORT __declspec(dllexport)
-EXPORT SEXP assign();
-EXPORT SEXP alloccolwrapper();
-EXPORT SEXP truelength();
-EXPORT SEXP settruelength();
-EXPORT SEXP setlength();
-EXPORT SEXP setcharvec();
-EXPORT SEXP setcolorder();
-#endif
-
 // See dogroups.c for these shared variables.
 int sizes[100];
 char typename[100][30];
