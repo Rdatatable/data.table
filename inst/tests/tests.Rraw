@@ -1900,6 +1900,19 @@ test(667, DT[a<3,sum(b),by=paste("a")], error='Otherwise, by=eval(paste("a")) sh
 test(668, DT[a<3,sum(b),by=eval(paste("a"))], DT[a<3,sum(b),by=a])
 test(669, DT[a<3,sum(b),by=c(2)], error="must evaluate to 'character'")
 
+# Test := keyby does key, #2065
+DT = data.table(x=1:2, y=1:6)
+ans = data.table(x=rep(1:2,each=3),y=c(1L,3L,5L,2L,4L,6L),z=rep(c(9L,12L),each=3),key="x")
+test(670, DT[,z:=sum(y),keyby=x], ans)
+DT = data.table(x=1:2, y=1:6)
+test(671, DT[,z:=sum(y),keyby="x"], ans)
+DT = data.table(x=1:2, y=1:6)
+test(672, DT[,z:=sum(y),keyby=x%%2], warning=":= keyby not straightforward character column names or list() of column names, treating as a by")
+DT = data.table(x=1:2, y=1:6)
+test(673, DT[,z:=sum(y),by=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)))
+DT = data.table(x=1:2, y=1:6)
+test(674, DT[x>1,z:=sum(y),keyby=x], error="When i is present, keyby := on a subset of rows doesn't make sense. Either change keyby to by, or remove i")
+
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy
 # TO DO: tests on double in add hoc by

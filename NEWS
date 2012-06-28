@@ -207,11 +207,14 @@ THANKS TO BETA TESTING :
         Speed regression test added.
         
     o   Christoph Jäckel for #2078: by=c(...) with i clause broke. Tests added.
+    
+    o   Chris Neff for #2065: keyby := now keys, unless, i clause is present or
+        keyby is not straightforward column names (in any format). Tests added.
 
 
 NOTES
 
-    o   There are now (***Update:669***) raw tests, plus S4 tests.
+    o   There are now (***Update:674***) raw tests, plus S4 tests.
     
     o   v1.8.1 was an R-Forge only beta release. The final v1.8.1 was released
         as v1.8.2 on CRAN, so users who had already upgraded to 1.8.1 are

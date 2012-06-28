@@ -410,9 +410,12 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     newnames = NULL
     if (length(av) && av[1L] == ":=") {
         if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
-        if (!is.null(irows) && !length(irows)) {
-            if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")
-            return(x)
+        if (!is.null(irows)) {
+            if (!length(irows)) {
+                if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")
+                return(x)
+            }
+            if (!missing(keyby)) stop("When i is present, keyby := on a subset of rows doesn't make sense. Either change keyby to by, or remove i")
         }
         lhs = jsub[[2]]
         jsub = jsub[[3]]
@@ -1020,7 +1023,14 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     # TO DO: setkey could mark the key whether it is unique or not.
 
     if (!is.null(lhs)) {
-        if (any(names(x)[cols] %chin% key(x))) setkey(x,NULL)
+        if (any(names(x)[cols] %chin% key(x)))
+            setkey(x,NULL)
+        if (!missing(keyby)) {
+            cnames = as.character(bysubl)[-1]
+            if (all(cnames %chin% names(x)))
+                setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.
+            else warning(":= keyby not straightforward character column names or list() of column names, treating as a by:",paste(cnames,collapse=","),"\n")
+        } 
         return(x)
     }
     if (is.null(ans)) return(as.data.table.list(lapply(groups,"[",0L)))  # side-effects only such as test 168
