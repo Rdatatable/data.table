@@ -204,6 +204,12 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 
 is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need to result in 'not sorted' e.g. test 251 where i table is not sorted but f__ without NAs is sorted. Could check if i is sorted too, but that would take time and that's what SJ is for to make the calling code clear to the reader.
 
+.massagei = function(x) {
+    if (is.call(x) && as.character(x[[1L]]) %chin% c("J","."))
+        x[[1L]] = quote(list)
+    x
+}
+
 "[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), drop=NULL)
 {
     # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
@@ -243,12 +249,12 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         isub = substitute(i)
         if (is.null(isub)) return( null.data.table() )
         isubl = as.list.default(isub)
-        if (identical(isubl[[1L]],quote(eval))) {
-            isub = eval(isubl[[2L]],parent.frame())
+        if (identical(isubl[[1L]],quote(eval))) {  # TO DO: or ..()
+            isub = eval(.massagei(isubl[[2L]]),parent.frame())
             if (is.expression(isub)) isub=isub[[1L]]
         }
         if (!is.name(isub))
-            i = eval(isub, envir=x, enclos=parent.frame())
+            i = eval(.massagei(isub), envir=x, enclos=parent.frame())
         else
             i = eval(isub,parent.frame())
         if (is.matrix(i)) stop("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please let maintainer('data.table') know if you'd like this, or add your comments to FR #1611.")
@@ -257,7 +263,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             else i[is.na(i)] = FALSE              # avoids DT[!is.na(ColA) & !is.na(ColB) & ColA==ColB], just DT[ColA==ColB]
         }
         if (is.null(i)) return( null.data.table() )
-        if (is.character(i)) i = J(i)   # for user convenience
+        if (is.character(i)) i = list(i)   # for user convenience
         if (identical(class(i),"list") || identical(class(i),"data.frame")) i = as.data.table(i)
         if (is.data.table(i)) {
             if (!haskey(x)) stop("When i is a data.table (or character vector), x must be keyed (i.e. sorted, and, marked as sorted) so data.table knows which columns to join to and take advantage of x being sorted. Call setkey(x,...) first, see ?setkey.")
@@ -1242,9 +1248,10 @@ tail.data.table = function(x, n=6, ...) {
         settruelength(x,0L)     # TO DO: remove all settruelength(), no longer needed.
         return(alloc.col(x))    # over-allocate (again).   Avoid all this by using :=.
     }
+    # TO DO: warning("Please use DT[i,j:=value] syntax instead of DT[i,j]<-value, for efficiency. See ?':='")
     if (!missing(i)) {
         isub=substitute(i)
-        i = eval(isub, x, parent.frame())
+        i = eval(.massagei(isub), x, parent.frame())
         if (is.matrix(i)) {
             if (!missing(j)) stop("When i is matrix in DT[i]<-value syntax, it doesn't make sense to provide j")
             x = `[<-.data.frame`(x, i, value=value)

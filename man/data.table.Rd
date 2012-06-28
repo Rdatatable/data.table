@@ -229,15 +229,15 @@ DT[X,mult="first"]         # first row of each group
 DT[X,mult="last"]          # last row of each group
 DT[X,sum(v)*foo]           # join inherited scope
 
-J("a",2)                   # J() is alias for data.table()
-data.table("a",2)          # same
-
 setkey(DT,x,y)             # 2-column key
 setkeyv(DT,c("x","y"))     # same
 
 DT["a"]                    # join to 1st column of key
-DT[J("a")]                 # same
+DT[J("a")]                 # same. J() stands for Join, an alias for list()
+DT[list("a")]              # same
+DT[.("a")]                 # same. In the style of package plyr.
 DT[J("a",3)]               # join to 2 columns
+DT[.("a",3)]               # same
 DT[J("a",3:6)]             # join 4 rows (2 missing)
 DT[J("a",3:6),nomatch=0]   # remove missing
 DT[J("a",3:6),roll=TRUE]   # rolling join (locf)

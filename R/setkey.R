@@ -157,21 +157,26 @@ ordernumtol = function(x, tol=.Machine$double.eps^0.5) {
     o
 }
 
-J = function(...,SORTFIRST=FALSE) {
-    # J because a little like the base function I(). Intended as a wrapper for subscript to DT[]
-    JDT = data.table(...)   # TO DO: can this be list() for efficiency instead?
-    # TO DO: delete... for (i in 1:length(JDT)) if (storage.mode(JDT[[i]])=="double") mode(JDT[[i]])="integer"
-    if (SORTFIRST) setkey(JDT)
-    JDT
+# TO DO. delete ...
+#    J = function(...,SORTFIRST=FALSE) {
+#    # J because a little like the base function I(). Intended as a wrapper for subscript to DT[]
+#    JDT = data.table(...)   # TO DO: can this be list() for efficiency instead? Yes. Now done directly in [.data.table
+#    # TO DO: delete... for (i in 1:length(JDT)) if (storage.mode(JDT[[i]])=="double") mode(JDT[[i]])="integer"
+#    if (SORTFIRST) setkey(JDT)
+#    JDT
+#}
+
+SJ = function(...) {
+    JDT = as.data.table(list(...))
+    setkey(JDT)
 }
-SJ = function(...) J(...,SORTFIRST=TRUE)
 # S for Sorted, sorts the left table first.
 # Note it may well be faster to do an unsorted join, rather than sort first involving a memory copy plus the
 # sorting overhead. Often its clearer in the code to do an unsorted join anyway. Unsorted join uses less I-chache, at
 # the expense of more page fetches. Very much data dependent, but the various methods are implemented so tests for the
 # fastest method in each case can be performed.
 
-# TO DO: Use the CJ list() method for J and SJ too to avoid alloc.col
+# TO DO: Use the CJ list() method for SJ (and inside as.data.table.list?, #2109) too to avoid alloc.col
 
 CJ = function(...)
 {

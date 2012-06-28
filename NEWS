@@ -54,12 +54,12 @@ NEW FEATURES
     o   Ordered subsets now retain x's key. Always for logical and keyed i, using
         base::is.unsorted() for integer and unkeyed i. Implements FR#295.
         
-    o   mean() is now automatically optimized, FR#1231. This can speed up grouping
+    o   mean() is now automatically optimized, #1231. This can speed up grouping
         by 20 times when there are a large number of groups. See wiki point 3, which
         is no longer needed to know. Turn off optimization by setting
         options(datatable.optimize=0).
         
-    o   DT[,lapply(.SD,...),by=...] is now automatically optimized. This can speed
+    o   DT[,lapply(.SD,...),by=...] is now automatically optimized, #2067. This can speed
         up applying a function by column by group, by over 20 times. See wiki point 5
         which is no longer needed to know. In other words:
              DT[,lapply(.SD,sum),by=grp]
@@ -78,6 +78,23 @@ NEW FEATURES
         Thanks to a question by user1393348 on Stack Overflow, implementing #2000.
         http://stackoverflow.com/questions/10584993/r-loop-over-columns-in-data-table
         
+    o   New DT[.(...)] syntax (in the style of package plyr) is identical to 
+        DT[list(...)], DT[J(...)] and DT[data.table(...)]. The J() alias
+        has been removed from data.table's namespace, but still works inside DT[...],
+        as in DT[J(...)]. J() was conflicting with function J() in package XLConnect (#1747)
+        and rJava (#2045). For data.table to change was easier, with some efficiency
+        advantages too.
+        If you have used J() independently (i.e. outside DT[...]) then you may see
+            'Error: could not find function "J"'
+        and if so merely type
+            J = list
+        at the prompt and your code should work (albeit by reintroducing the conflict with
+        XLConnect and rJava) until you can replace your calls to J() with list() or
+        data.table(). This should work if any packages you use have themselves used J()
+        outside of DT[...], too.
+        We plan to add ..(), so that .() and ..() are analogous to the file system's
+        ./ and ../; i.e., .() evaluates within the frame of DT, ..() in the parent scope.
+
 
 BUG FIXES
 
@@ -214,7 +231,7 @@ THANKS TO BETA TESTING :
 
 NOTES
 
-    o   There are now (***Update:674***) raw tests, plus S4 tests.
+    o   There are now (***Update:675***) raw tests, plus S4 tests.
     
     o   v1.8.1 was an R-Forge only beta release. The final v1.8.1 was released
         as v1.8.2 on CRAN, so users who had already upgraded to 1.8.1 are

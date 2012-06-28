@@ -21,7 +21,7 @@ test_that("`xkey` column names are valid in merge (bug#1299", {
 
 test_that("one column merges work (bug #1241)", {
     dt <- data.table(a=rep(1:2,each=3), b=1:6, key="a")
-    y <- J(a=c(0,1), bb=c(10,11), key="a")
+    y <- data.table(a=c(0,1), bb=c(10,11), key="a")
     expect_equal(merge(y, dt), data.table(a=1L, bb=11L, b=1:3, key="a"),
                  info="Original test #231")
     expect_equal(merge(y, dt, all=TRUE),
@@ -31,7 +31,7 @@ test_that("one column merges work (bug #1241)", {
                  info="Original test #232")
 
     ## y with only a key column
-    y <- J(a=c(0,1), key="a")
+    y <- data.table(a=c(0,1), key="a")
     expect_equal(merge(y,dt), data.table(a=1L, b=1:3, key="a"),
                  info="Original test #233")
     expect_equal(merge(y, dt, all=TRUE),

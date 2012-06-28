@@ -97,9 +97,9 @@
 
     # test it more:
     d1 <- data.table(a=rep(1:2,each=3), b=1:6, key="a,b")
-    d2 <- J(a=0:1, bb=10:11, key="a")
-    d3 <- J(a=0:1, key="a")
-    d4 <- J(a=0:1, b=0:1, key="a,b")
+    d2 <- data.table(a=0:1, bb=10:11, key="a")
+    d3 <- data.table(a=0:1, key="a")
+    d4 <- data.table(a=0:1, b=0:1, key="a,b")
 
     merge(d1, d2)
     merge(d2, d1)
