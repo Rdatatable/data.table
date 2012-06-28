@@ -87,12 +87,12 @@ NEW FEATURES
         If you have used J() independently (i.e. outside DT[...]) then you may see
             'Error: could not find function "J"'
         and if so merely type
-            J = list
+            J = data.table
         at the prompt and your code should work (albeit by reintroducing the conflict with
         XLConnect and rJava) until you can replace your calls to J() with list() or
         data.table(). This should work if any packages you use have themselves used J()
         outside of DT[...], too.
-        We plan to add ..(), so that .() and ..() are analogous to the file system's
+        Aside: we plan to add ..(), so that .() and ..() are analogous to the file system's
         ./ and ../; i.e., .() evaluates within the frame of DT, ..() in the parent scope.
 
 

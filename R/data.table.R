@@ -584,12 +584,17 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 bysub = eval(bysub,parent.frame())
                 bysubl = as.list.default(bysub)
             }
-            if (length(bysubl) && identical(bysubl[[1L]],quote(eval))) {
+            if (length(bysubl) && identical(bysubl[[1L]],quote(eval))) {    # TO DO: or by=..()
                 bysub = eval(bysubl[[2]],parent.frame())
                 if (is.expression(bysub)) bysub=bysub[[1L]]
                 bysubl = as.list.default(bysub)
             } else if (is.call(bysub) && as.character(bysub[[1L]]) %chin% c("c","key","names")) {
                 # catch common cases, so we don't have to copy x[irows] for all columns
+                # *** TO DO ***: try() this eval first (as long as not list() or .()) and see if it evaluates to column names
+                # to avoid the explicit c,key,names which already misses paste("V",1:10) for example
+                #        tried before but since not wrapped in try() it failed on some tests
+                # or look for column names used in this by (since if none it wouldn't find column names anyway
+                # when evaled within full x[irows]).  Trouble is that colA%%2L is a call and should be within frame.
                 tt = eval(bysub,parent.frame())
                 if (!is.character(tt)) stop("by=c(...), key(...) or names(...) must evaluate to 'character'")
                 bysub=tt
