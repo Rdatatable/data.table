@@ -1774,8 +1774,11 @@ test(626, unique(t), t[c(1,2,4)])
 test(627, class(unique(t)), "ITime")
 
 # Test recycling list() rbind
-test(628, rbind(data.table(a=1:3,b=5:7,c=list(1:2,1:3,1:4)), list(4L,8L,1:3)),
+test(628, rbind(data.table(a=1:3,b=5:7,c=list(1:2,1:3,1:4)), list(4L,8L,as.list(1:3))),
           data.table(a=c(1:3,rep(4L,3L)),b=c(5:7,rep(8L,3L)),c=list(1:2,1:3,1:4,1L,2L,3L)))
+# Test switch in .rbind.data.table for factor columns
+test(628.5, rbind(data.table(a=1:3,b=factor(letters[1:3]),c=factor("foo")), list(4L,factor("d"),factor("bar"))),
+          data.table(a=1:4,b=factor(letters[1:4]),c=factor(c(rep("foo",3),"bar"))))
           
 # Test merge with common names and all.y=TRUE, #2011
 DT1 = data.table(a=c(1,3,4,5), total=c(2,1,3,1), key="a")
@@ -1928,7 +1931,7 @@ test(676, rbindlist(l[1:3]), data.table(a=1:6,b=7:12))
 test(677, rbindlist(l[c(10,1,10,2,10)]), data.table(a=1:4,b=7:10))  # NULL items ignored
 test(678, rbindlist(l[c(1,4)]), error="Item 2 has 1 columns, inconsistent with item 1 which has 2")
 test(679, rbindlist(l[c(1:2,5)]), error="Column 2 of item 3 is length 1, inconsistent with first column of that item which is length 2.")
-test(680, rbindlist(l[c(2,6)]), error="Column 1 of item 2 is type 'double', inconsistent with column 1 of item 1 (type 'integer')")
+test(680, rbindlist(l[c(2,6)]), error="Column 1 of item 2 is type 'double', inconsistent with column 1 of item 1's type ('integer')")
 test(681, rbindlist(list(data.table(a=letters[1:2],b=c(1.2,1.3),c=1:2), list("c",1.4,3L), NULL, list(letters[4:6],c(1.5,1.6,1.7),4:6))), data.table(a=letters[1:6], b=seq(1.2,1.7,by=0.1), c=1:6))
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy

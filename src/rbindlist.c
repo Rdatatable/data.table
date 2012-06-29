@@ -40,7 +40,7 @@ SEXP rbindlist(SEXP l)
             thiscol = VECTOR_ELT(li,j);
             if (thislen != length(thiscol)) error("Column %d of item %d is length %d, inconsistent with first column of that item which is length %d. rbindlist doesn't recycle as it already expects each item to be a uniform list, or data.table", j+1, i+1, length(thiscol), thislen);
             if (TYPEOF(thiscol) != TYPEOF(target))
-                error("Column %d of item %d is type '%s', inconsistent with column %d of item %d (type '%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
+                error("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
             switch(TYPEOF(target)) {
             case STRSXP :
                 for (r=0; r<thislen; r++)

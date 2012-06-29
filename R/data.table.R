@@ -1346,7 +1346,6 @@ tail.data.table = function(x, n=6, ...) {
         f=which(ncols!=ncols[1L])[1L]
         stop("All arguments to rbind must have the same number of columns. Item 1 has ",ncols[1L]," but item ",f," has ",ncols[f],"column(s).")
     }
-    l = list()
     nm = names(allargs[[1L]])
     if (use.names && length(nm) && n>1L) {
         for (i in 2:n) if (length(names(allargs[[i]]))) {
@@ -1361,11 +1360,16 @@ tail.data.table = function(x, n=6, ...) {
         }
     }
     allargs = lapply(allargs, as.data.table)  # To recycle items to match length if necessary, bug #2003. rbind will always be slow anyway, so not worrying about efficiency here. Later there'll be fast insert() by reference.
-    for (i in 1L:length(allargs[[1L]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
+    
+    if (!any(sapply(allargs[[1L]],is.factor)))
+        return(rbindlist(allargs))  # do.call("c",...) is now in C
+    # TO DO: Move earlier logic above for use.names (binding by name) into rbindlist C, too.
+    l = lapply(seq_along(allargs[[1L]]), function(i) do.call("c", lapply(allargs, "[[", i)))
     # This is why we currently still need c.factor.
     # Now that character columns are allowed and recommended, c.factor isn't needed as much.
     # Also, rbind is not called as much as the past since dogroups.c has moved a lot into C.
-    # TO DO: Move the do.call() into C and tidy up c.factor by removing it, depending on what
+    # TO DO: Convert factor to character first, so do.call() can be done by rbindlist too. Then
+    # call factor() aferwards on those columns. Tidy up c.factor by removing it, depending on what
     # rbind.data.frame does, considering consistency.
     setattr(l,"names",nm)
     setattr(l,"row.names",.set_row_names(length(l[[1L]])))
