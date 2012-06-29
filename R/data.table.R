@@ -1734,6 +1734,14 @@ chmatch = function(x,table,nomatch=NA_integer_)
 chorder = function(x) .Call(Ccountingcharacter,x,TRUE)
 chgroup = function(x) .Call(Ccountingcharacter,x,FALSE)
 
+rbindlist = function(l) {
+    ans = .Call(Crbindlist,l)
+    setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
+    setattr(ans,"class",c("data.table","data.frame"))
+    settruelength(ans,0L)
+    alloc.col(ans)
+}
+
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only, and (currently) only once; i.e., DT[i,col:=1L] and DT[,newcol:=sum(colB),by=colA] are ok, but not DT[i,col]:=1L, not DT[i]$col:=1L and not DT[,{newcol1:=1L;newcol2:=2L}]. Please see help(":="). Check is.data.table(DT) is TRUE.')
 
 

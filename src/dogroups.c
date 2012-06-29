@@ -11,10 +11,9 @@ SEXP SelfRefSymbol;
 SEXP keepattr(SEXP to, SEXP from);
 SEXP growVector(SEXP x, R_len_t newlen);
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
-int sizesSet=0;
 
-void setSizes()
-{
+void setSizes() {
+    // called by init.c
     int i;
     for (i=0;i<100;i++) sizes[i]=0;
     // only these types are currently allowed as column types :
@@ -27,7 +26,6 @@ void setSizes()
         if (sizes[i]>8) error("Type %d is sizeof() greater than 8 bytes on this machine. We haven't tested on any architecture greater than 64bit, yet.", i);
         // One place we need the largest sizeof (assumed to be 8 bytes) is the working memory malloc in reorder.c
     }
-    sizesSet=1;
     SelfRefSymbol = install(".internal.selfref");
 }
 #define SIZEOF(x) sizes[TYPEOF(x)]
@@ -41,7 +39,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     SEXP *nameSyms;
     Rboolean wasvector, firstalloc=FALSE;
     
-    if (!sizesSet) setSizes();
     if (TYPEOF(order) != INTSXP) error("Internal error: order not integer");
     //if (TYPEOF(starts) != INTSXP) error("Internal error: starts not integer");
     //if (TYPEOF(lens) != INTSXP) error("Internal error: lens not integer");
@@ -354,7 +351,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             if (thislen == 0) {
                 // including NULL and typed empty vectors, fill with NA
                 // A NULL in the first group's jval isn't allowed; caught above after allocating ans
-                
                 switch (TYPEOF(target)) {
                 case LGLSXP :
                 case INTSXP :

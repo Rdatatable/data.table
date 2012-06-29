@@ -25,6 +25,7 @@ SEXP duplist();
 SEXP readfile();
 SEXP reorder();
 SEXP rorder_tol();
+SEXP rbindlist();
 
 // .Externals
 SEXP fastmean();
@@ -49,6 +50,7 @@ R_CallMethodDef callMethods[] = {
 {"Creadfile", (DL_FUNC) &readfile, -1},
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crorder_tol", (DL_FUNC) &rorder_tol, -1},
+{"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {NULL, NULL, 0}
 };
 
@@ -59,10 +61,14 @@ R_ExternalMethodDef externalMethods[] = {
 {NULL, NULL, 0}
 };
 
-void attribute_visible R_init_datatable(DllInfo *info)   // relies on pkg/src/Makevars to mv data.table.so to datatable.so
+void setSizes();
+
+void attribute_visible R_init_datatable(DllInfo *info)
+// relies on pkg/src/Makevars to mv data.table.so to datatable.so
 {
-R_registerRoutines(info, NULL, callMethods, NULL, externalMethods);
-R_useDynamicSymbols(info, FALSE);
+    R_registerRoutines(info, NULL, callMethods, NULL, externalMethods);
+    R_useDynamicSymbols(info, FALSE);
+    setSizes();
 }
 
 

@@ -94,6 +94,9 @@ NEW FEATURES
         outside of DT[...], too.
         Aside: we plan to add ..(), so that .() and ..() are analogous to the file system's
         ./ and ../; i.e., .() evaluates within the frame of DT, ..() in the parent scope.
+        
+    o   New function rbindlist(l). This does the same as do.call("rbind",l), but much
+        faster.
 
 
 BUG FIXES

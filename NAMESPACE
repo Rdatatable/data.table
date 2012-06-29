@@ -11,6 +11,7 @@ export(timetaken)
 export(truelength, alloc.col, ":=")
 export(setattr, setnames, setcolorder, set)
 export(chmatch, "%chin%", chorder, chgroup)
+export(rbindlist)
 
 S3method("[", data.table)
 S3method("[<-", data.table)

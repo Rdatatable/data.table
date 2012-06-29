@@ -6,11 +6,8 @@
 #include <Rversion.h>
 
 // See dogroups.c for these shared variables.
-int sizes[100];
-char typename[100][30];
-int sizesSet;
-void setSizes();
 SEXP SelfRefSymbol; 
+int sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
 //
 
@@ -27,7 +24,6 @@ void setselfref(SEXP x) {
     // Store pointer to itself so we can detect if the object has been copied. See
     // ?copy for why copies are not just inefficient but cause a problem for over-allocated data.tables.
     // Called from C only, not R level, so returns void.
-    if (!sizesSet) setSizes();
     setAttrib(x, SelfRefSymbol, R_MakeExternalPtr(
         R_NilValue,                  // for identical() to return TRUE
         getAttrib(x, R_NamesSymbol), // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
@@ -61,7 +57,6 @@ void setselfref(SEXP x) {
 
 int _selfrefok(SEXP x, Rboolean names, Rboolean verbose) {
     SEXP v, p, tag, prot;
-    if (!sizesSet) setSizes();
     v = getAttrib(x, SelfRefSymbol);
     if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
         // .internal.selfref missing is expected and normal for i) a pre v1.7.8 data.table loaded
@@ -105,7 +100,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key;
     Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, clearkey=FALSE;
     char *s1, *s2, *s3;
-    if (!sizesSet) setSizes();   // TO DO move into _init
     
     if (isNull(dt)) error("assign has been passed a NULL dt");
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
@@ -199,7 +193,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             error("RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list column.");
         if ((coln+1)<=oldncol && isFactor(VECTOR_ELT(dt,coln)) &&
             !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && !isReal(thisvalue))  // !=INTSXP includes factor
-            error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),typename[TYPEOF(thisvalue)]);
+            error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
         if (vlen>targetlen)
             warning("Supplied %d items to be assigned to %d items of column '%s' (%d unused)", vlen, targetlen,CHAR(colnam),vlen-targetlen);  
         else if (vlen>0 && targetlen%vlen != 0)
@@ -556,7 +550,6 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
     SEXP names, class;
     R_len_t l, tl;
-    if (!sizesSet) setSizes();   // TO DO move into _init
     if (isNull(dt)) error("alloccol has been passed a NULL dt");
     if (TYPEOF(dt) != VECSXP) error("dt passed to alloccol isn't type VECSXP");
     class = getAttrib(dt, R_ClassSymbol);

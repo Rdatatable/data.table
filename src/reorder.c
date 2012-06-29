@@ -5,8 +5,6 @@
 
 // See dogroups.c for these shared variables.
 extern int sizes[];
-extern int sizesSet;
-extern void setSizes();
 #define SIZEOF(x) sizes[TYPEOF(x)]
 //
 
@@ -15,7 +13,6 @@ SEXP reorder(SEXP dt, SEXP order)
     // For internal use only by fastorder().
     char *tmp, *tmpp;
     R_len_t i, j, nrow, size;
-    if (!sizesSet) setSizes();
     nrow = length(VECTOR_ELT(dt,0));
     for (i=0;i<length(dt);i++) {
         if (length(VECTOR_ELT(dt,i))!=nrow) error("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table. Check NEWS link at top of ?data.table for latest bug fixes. If not already reported and fixed, please report to datatable-help.", i+1, length(VECTOR_ELT(dt,i)), nrow);
