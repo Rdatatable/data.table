@@ -303,7 +303,7 @@ Furthermore, matrices, especially sparse matrices, are often stored in a 3 colum
 
 \subsection{Can base be changed to do this then, rather than a new package?}
 \code{data.frame} is used \emph{everywhere} and so it is very difficult to make \emph{any} changes to it.
-\code{data.table} \emph{inherits} from \code{data.frame}. It \emph{is} a \code{data.frame}, too. A \code{data.table} \emph{can} be passed to any package that \emph{only} accepts \code{data.frame}. When that package uses \code{[.data.frame} syntax on the \code{data.table}, it works.
+\code{data.table} \emph{inherits} from \code{data.frame}. It \emph{is} a \code{data.frame}, too. A \code{data.table} \emph{can} be passed to any package that \emph{only} accepts \code{data.frame}. When that package uses \code{[.data.frame} syntax on the \code{data.table}, it works. It works because \code{[.data.table} looks to see where it was called from. If it was called from such a package, \code{[.data.table} diverts to \code{[.data.frame}.
 
 \subsection{I've heard that \code{data.table} syntax is analogous to SQL.}
 Yes :
