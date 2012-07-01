@@ -9,8 +9,8 @@ int sizes[100];
 
 SEXP rbindlist(SEXP l)
 {
-    R_len_t i,j,r, nrow=0, first=-1, ansloc, ncol, thislen;
-    SEXP ans, li, lf, thiscol, target;
+    R_len_t i,j,r, nrow=0, first=-1, ansloc, ncol=0, thislen;
+    SEXP ans, li, lf=R_NilValue, thiscol, target;
     int size;
     
     for (i=0;i<length(l);i++) {

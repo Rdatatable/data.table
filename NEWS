@@ -237,7 +237,7 @@ THANKS TO BETA TESTING :
 
 NOTES
 
-    o   There are now 684 raw tests, plus S4 tests.
+    o   There are now 688 raw tests, plus S4 tests.
     
     o   v1.8.1 was an R-Forge only beta release. The final v1.8.1 was released
         as v1.8.2 on CRAN, so users who had already upgraded to 1.8.1 were

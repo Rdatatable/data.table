@@ -303,7 +303,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                             stop("x.'",xcnam,"' is a factor column being joined to i.'",icnam,"' which is type '",typeof(i[[lc]]),"'. Factor columns must join to factor or character columns.")
                         resetifactor = c(resetifactor,lc)
                         # Retain original levels of i's factor columns in factor to factor joins (important when NAs,
-                        # see tests 683 and 684).
+                        # see tests 687 and 688).
                     }
                     if ((roll || rolltolast) && lc==length(leftcols)) stop("Attempting roll join on factor column i.",names(i)[lc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns NA for missing chars in x (rather than some integer greater than existing).
                     newfactor = chmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA_integer_)[i[[lc]]]
@@ -1752,6 +1752,7 @@ chgroup = function(x) .Call(Ccountingcharacter,x,FALSE)
 
 rbindlist = function(l) {
     ans = .Call(Crbindlist,l)
+    if (!length(ans)) return(null.data.table())
     setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
     setattr(ans,"class",c("data.table","data.frame"))
     settruelength(ans,0L)
