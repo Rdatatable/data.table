@@ -58,7 +58,10 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     
     if (all.y) {
         # Perhaps not very commonly used, so not a huge deal that the join is redone here.
-        missingyidx <- (1:nrow(y))[-y[xkey,which=TRUE,nomatch=0]]
+        missingyidx = seq.int(nrow(y))
+        whichy = y[xkey,which=TRUE,nomatch=0]  # TO DO:  Use not join (i=-xkey) here when implemented
+        whichy = whichy[whichy>0]
+        if (length(whichy)) missingyidx = missingyidx[-whichy]
         if (length(missingyidx)) {
             yy <- y[missingyidx]
             othercolsx <- setdiff(names(xkey), by)

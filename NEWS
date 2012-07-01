@@ -90,8 +90,8 @@ NEW FEATURES
             J = data.table
         at the prompt and your code should work (albeit by reintroducing the conflict with
         XLConnect and rJava) until you can replace your calls to J() with list() or
-        data.table(). This should work if any packages you use have themselves used J()
-        outside of DT[...], too.
+        data.table(). This should also work if any packages you use, have themselves used
+        J() outside of DT[...].
         Aside: we plan to add ..(), so that .() and ..() are analogous to the file system's
         ./ and ../; i.e., .() evaluates within the frame of DT, ..() in the parent scope.
         
@@ -179,6 +179,9 @@ BUG FIXES
     o   DT[,2:=someval,with=FALSE] now changes column 2 even if column 1 has the same (duplicate)
         name, #2025. Thanks to Sean Creighton for reporting. Tests added.
         
+    o   merge() is now correct when all=TRUE but there are no common values in the two
+        data.tables, fixing #2114. Thanks to Karl Ove Hufthammer for reporting.  Tests added.
+        
 
 USER VISIBLE CHANGES
 
@@ -234,10 +237,10 @@ THANKS TO BETA TESTING :
 
 NOTES
 
-    o   There are now (***Update:675***) raw tests, plus S4 tests.
+    o   There are now 684 raw tests, plus S4 tests.
     
     o   v1.8.1 was an R-Forge only beta release. The final v1.8.1 was released
-        as v1.8.2 on CRAN, so users who had already upgraded to 1.8.1 are
+        as v1.8.2 on CRAN, so users who had already upgraded to 1.8.1 were
         prompted to upgrade by update.packages().
         
 

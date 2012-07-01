@@ -272,8 +272,13 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 chmatch(head(key(i),length(rightcols)),names(i))
             else
                 1L:min(ncol(i),length(rightcols))
-            i = shallow(i)   # careful to only plonk syntax on i from now on
-                             # TO DO: enforce via .internal.shallow attribute and expose shallow() to users
+            origi = i       # Only needed for factor to factor joins, to recover the original levels
+                            # Otherwise, types of i join columns are alyways promoted to match x's
+                            # types (with warning or verbose)
+            i = shallow(i)  # careful to only plonk syntax on i from now on (otherwise i would change)
+                            # TO DO: enforce via .internal.shallow attribute and expose shallow() to users
+                            # This is why shallow() is very importantly internal only, currently.
+            resetifactor = NULL  # Keep track of any factor to factor join cols (only time we keep orig)
             for (a in seq(along=leftcols)) {
                 # This loop is simply to support joining factor columns
                 lc = leftcols[a]   # i   # TO DO: rename left and right to i and x
@@ -293,9 +298,13 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     if (is.character(i[[lc]])) {
                         warning("Coercing character column i.'",icnam,"' to factor to match type of x.'",xcnam,"'. If possible please change x.'",xcnam,"' to character. Character columns are now preferred in joins.")
                         set(i,j=lc,value=factor(i[[lc]]))
+                    } else {
+                        if (!is.factor(i[[lc]]))
+                            stop("x.'",xcnam,"' is a factor column being joined to i.'",icnam,"' which is type '",typeof(i[[lc]]),"'. Factor columns must join to factor or character columns.")
+                        resetifactor = c(resetifactor,lc)
+                        # Retain original levels of i's factor columns in factor to factor joins (important when NAs,
+                        # see tests 683 and 684).
                     }
-                    if (!is.factor(i[[lc]]))
-                        stop("x.'",xcnam,"' is a factor column being joined to i.'",icnam,"' which is type '",typeof(i[[lc]]),"'. Factor columns must join to factor or character columns.")
                     if ((roll || rolltolast) && lc==length(leftcols)) stop("Attempting roll join on factor column i.",names(i)[lc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns NA for missing chars in x (rather than some integer greater than existing).
                     newfactor = chmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA_integer_)[i[[lc]]]
                     levels(newfactor) = levels(x[[rc]])
@@ -307,11 +316,13 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 if (is.integer(x[[rc]]) && is.real(i[[lc]])) {
                     # TO DO: add warning if reallyreal about loss of precision
                     # or could coerce in binary search on the fly, at cost
+                    if (verbose) cat("Coercing 'double' column i.'",icnam,"' to 'integer' to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.",sep="")
                     newval = i[[lc]]
                     mode(newval) = "integer"  # retains column attributes (such as IDateTime class)
                     set(i,j=lc,value=newval)
                 }
                 if (is.real(x[[rc]]) && is.integer(i[[lc]])) {
+                    if (verbose) cat("Coercing 'integer' column i.'",icnam,"' to 'double' to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.",sep="")
                     newval = i[[lc]]
                     mode(newval) = "double"
                     set(i,j=lc,value=newval)
@@ -324,6 +335,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             #browser()
             # length of input nomatch (single 0 or NA) is 1 in both cases. 
             # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
+            for (ii in resetifactor) set(i,j=ii,value=origi[[ii]])
             if (mult=="all") {
                 # TO DO: delete ...
                 #idx.diff = rep(1L, sum(lengths))
