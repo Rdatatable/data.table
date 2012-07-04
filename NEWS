@@ -234,6 +234,9 @@ THANKS TO BETA TESTING :
     o   Chris Neff for #2065: keyby := now keys, unless, i clause is present or
         keyby is not straightforward column names (in any format). Tests added.
 
+    o   :=NULL to delete, following by := by group to add, didn't add the column,
+        #2117. Test added.
+
 
 NOTES
 

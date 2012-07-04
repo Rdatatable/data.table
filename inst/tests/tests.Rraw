@@ -1955,6 +1955,12 @@ test(687, merge(DF1, DF2, by="foo", all=TRUE), as.data.frame(merge(DT1,DT2,by="f
 DT = data.table(a=factor(letters[1:4]), b=5:8, key="a")
 test(688, DT[J(factor("b"))], data.table(a=factor("b"), b=6L, key="a"))
 
+# Test removing a column followed by adding a new column using := by group, #2117
+DT = data.table(a=1:3,b=4:6)
+DT[,b:=NULL]
+test(689, DT[,b:=.N,by=a], data.table(a=1:3, b=1L))
+test(690, DT[,c:=2,by=a], data.table(a=1:3, b=1L, c=2))
+
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy
 # TO DO: tests on double in add hoc by

@@ -422,12 +422,14 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                         (char *)DATAPTR(dt)+(coln+1)*size,
                         (LENGTH(dt)-coln-1)*size);
                 LENGTH(dt) -= 1;
-                // TO DO: mark column vector as unused so can be gc'd. Maybe UNPROTECT_PTR?
-            
+                SET_VECTOR_ELT(dt, LENGTH(dt), R_NilValue);
+                // adding using := by group relies on NULL here to know column slot is empty.
+                // good to tidy up the vector anyway.
                 memmove((char *)DATAPTR(names)+coln*size,     
                     (char *)DATAPTR(names)+(coln+1)*size,
                     (LENGTH(names)-coln-1)*size);
                 LENGTH(names) -= 1;
+                SET_STRING_ELT(names, LENGTH(names), NA_STRING);  // no need really, just tidy
                 if (LENGTH(names)==0) {
                     // That was last column deleted, leaving NULL data.table, so we need to reset .row_names, so that it really is the NULL data.table.
                     PROTECT(nullint=allocVector(INTSXP, 0));
