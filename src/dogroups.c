@@ -31,7 +31,7 @@ void setSizes() {
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
 
-SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP irows, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose)
+SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose)
 {
     R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, size, vlen;
     int protecti=0;
@@ -104,7 +104,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                    size);
         }
         // to delete ... igrp = length(order) ? INTEGER(order)[INTEGER(starts)[i]-1]-1 : INTEGER(starts)[i]-1;
-        igrp = length(order) ? INTEGER(order)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
+        igrp = length(grporder) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
         for (j=0; j<length(BY); j++) {
             size = SIZEOF(VECTOR_ELT(BY,j));
             memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),
@@ -138,7 +138,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         } else {
             if (length(order)==0) {
                 rownum = INTEGER(starts)[i]-1;
-                if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
+                // to delete ... if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
                 for (j=0; j<length(SD); j++) {
                     size = SIZEOF(VECTOR_ELT(SD,j));
                     memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),
@@ -148,7 +148,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             } else {
                 for (k=0; k<grpn; k++) {
                     rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                    if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
+                    // to delete ... if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
                     for (j=0; j<length(SD); j++) {
                         size = SIZEOF(VECTOR_ELT(SD,j));
                         memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)) + k*size,
@@ -204,7 +204,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             vlen = length(RHS);
             if (length(order)==0) {
                 rownum = INTEGER(starts)[i]-1;
-                if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
+                // to delete ... if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
                 switch (TYPEOF(targetcol)) {
                 case STRSXP :
                     for (r=0; r<grpn; r++)
@@ -229,28 +229,28 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 case STRSXP :
                     for (k=0; k<grpn; k++) {
                         rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                        if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
+                        // if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
                         SET_STRING_ELT(targetcol, rownum, STRING_ELT(RHS, k%vlen));
                     }
                     break;
                 case VECSXP :
                     for (k=0; k<grpn; k++) {
                         rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                        if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;   // TO DO : here too
+                        // if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;   // TO DO : here too
                         SET_VECTOR_ELT(targetcol, rownum, VECTOR_ELT(RHS, k%vlen));
                     }
                     break;
                 case INTSXP :
                     for (k=0; k<grpn; k++) {
                         rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                        if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
+                        // if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
                         INTEGER(targetcol)[rownum] = INTEGER(RHS)[k%vlen];
                     }
                     break;
                 case REALSXP :
                     for (k=0; k<grpn; k++) {
                         rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                        if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
+                        // if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
                         REAL(targetcol)[rownum] = REAL(RHS)[k%vlen];
                     }
                     break;

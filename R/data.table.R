@@ -622,7 +622,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 bysubl = as.list.default(bysub)
             }
             allbyvars = intersect(unlist(sapply(bysubl,all.vars,functions=TRUE)),names(x))
-            orderedirows = is.sorted(irows) 
+            orderedirows = is.sorted(irows)  # TRUE when irows is NULL (i.e. no i clause)
             bysameorder = orderedirows && haskey(x) && all(sapply(bysubl,is.name)) && identical(allbyvars,head(key(x),length(allbyvars)))
             if (is.null(irows))
                 byval = eval(bysub, x, parent.frame())
@@ -698,12 +698,14 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 if (!bysameorder) {
                     o__ = fastorder(byval)
                     bysameorder = orderedirows && is.sorted(o__)
+                    # browser()
                     if (bysameorder) o__ = integer()   # skip the 1:xnrow vector for efficiency
                 }
                 if (bysameorder) {
                     f__ = duplist(byval)   # find group starts, given we know they are already grouped.
                     # TO DO...delete ... for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][f__]   # TO DO: not necessary if dogroups knows where to look in byval rather than incrementing
                     len__ = as.integer(c(diff(f__), xnrow-last(f__)+1L))
+                    # browser()
                     # TO DO: return both f__ and len__ from C level, and, there's a TO DO in duplist.R
                 } else {
                     f__ = duplist(byval,order=o__)
@@ -723,7 +725,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 #    #f__ = irows[f__]
                 #}
             } else {f__=NULL;len__=0L}   # f__=integer()/0L
-            if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+            if (verbose) {cat("done in ",round(proc.time()[3]-last.started.at,3),"secs. bysameorder=",bysameorder," and o__ is length ",length(o__),"\n",sep="");flush.console}
             # TO DO: allow secondary keys to be stored, then we see if our by matches one, if so use it, and no need to sort again. TO DO: document multiple keys.
         }
         #if (!length(f__)) stop("Internal error: f__ should be at least length 1")
@@ -1018,7 +1020,11 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     #icols = NULL
     #if (!missing(i) && is.data.table(i)) icols = as.integer(chmatch(ivars,names(i)))
     #else i=NULL
-    #if (!isTRUE(irows)) o__ = if (length(o__)) irows[irows!=0L][o__] else irows[irows!=0L]
+    grporder = o__
+    if (length(irows) && !isTRUE(irows)) {
+        if (length(o__) && length(irows)!=length(o__)) stop("Internal error: length(irows)!=length(o__)")
+        o__ = if (length(o__)) irows[o__] else irows
+    }
     # browser()
     if (is.null(lhs)) cols=NULL
     if (!length(f__)) {
@@ -1030,7 +1036,8 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     # not needing to have colnames at all and working by row number(s) passed to .SD
     #browser()
     if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
-    ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, irows, o__, f__, len__, jsub, SDenv, cols, newnames, verbose)
+    # browser()
+    ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, verbose)
     if (verbose) {cat("done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
     
     #browser()

@@ -1961,6 +1961,17 @@ DT[,b:=NULL]
 test(689, DT[,b:=.N,by=a], data.table(a=1:3, b=1L))
 test(690, DT[,c:=2,by=a], data.table(a=1:3, b=1L, c=2))
 
+# Test combining i with by, with particular out of order circumstances, #2118
+set.seed(1)
+DT=data.table(a=sample(1:5,20,replace=TRUE),b=1:4,c=1:10)
+test(691, DT[a>2,sum(c),by=b], DT[a>2][,sum(c),by=b])
+test(692, DT[a>2,sum(c),by=b%%2L], data.table(b=1:0,V1=c(34L,42L)))
+test(693, DT[a>2,sum(c),by=(b+1)%%2], data.table(b=c(0,1),V1=c(34L,42L)))
+setkey(DT,b)
+test(694, DT[a>2,sum(c),by=b], DT[a>2][,sum(c),by=b])
+test(695, DT[a>2,sum(c),by=b%%2L], data.table(b=1:0,V1=c(34L,42L)))
+test(696, DT[a>2,sum(c),by=(b+1)%%2], data.table(b=c(0,1),V1=c(34L,42L),key="b"))
+
 
 # Next, follow through irows in assign step after eval in dogroups to check redundancy
 # TO DO: tests on double in add hoc by

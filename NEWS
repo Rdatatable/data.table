@@ -220,7 +220,7 @@ USER VISIBLE CHANGES
         Thanks to Timothee Carayol for reporting. Tests added.
         
         
-THANKS TO BETA TESTING :
+THANKS TO BETA TESTING (i.e. bugs caught in 1.8.1 before release to CRAN) :
 
     o   Florian Oswald for #2094: DT[,newcol:=NA] now adds a new logical column ok.
         Test added.
@@ -236,11 +236,13 @@ THANKS TO BETA TESTING :
 
     o   :=NULL to delete, following by := by group to add, didn't add the column,
         #2117. Test added.
+        
+    o   Combining i subset with by gave incorrect results, #2118. Tests added.
 
 
 NOTES
 
-    o   There are now 688 raw tests, plus S4 tests.
+    o   There are now 696 raw tests, plus S4 tests.
     
     o   v1.8.1 was an R-Forge only beta release. The final v1.8.1 was released
         as v1.8.2 on CRAN, so users who had already upgraded to 1.8.1 were
