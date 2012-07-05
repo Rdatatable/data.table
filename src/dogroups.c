@@ -103,7 +103,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                    (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(jiscols)[j]-1))+i*size,
                    size);
         }
-        // to delete ... igrp = length(order) ? INTEGER(order)[INTEGER(starts)[i]-1]-1 : INTEGER(starts)[i]-1;
         igrp = length(grporder) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
         for (j=0; j<length(BY); j++) {
             size = SIZEOF(VECTOR_ELT(BY,j));
@@ -112,33 +111,28 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                    size);
         }
         if (INTEGER(starts)[i] == NA_INTEGER) {
-            // TO DO..delete... if (LOGICAL(nomatchNA)[0]) {
-                for (j=0; j<length(SD); j++) {
-                    switch (TYPEOF(VECTOR_ELT(SD, j))) {
-                    case LGLSXP :
-                        LOGICAL(VECTOR_ELT(SD,j))[0] = NA_LOGICAL;
-                        break;
-                    case INTSXP :
-                        INTEGER(VECTOR_ELT(SD,j))[0] = NA_INTEGER;
-                        break;
-                    case REALSXP :
-                        REAL(VECTOR_ELT(SD,j))[0] = NA_REAL;
-                        break;
-                    case STRSXP :
-                        SET_STRING_ELT(VECTOR_ELT(SD,j),0,NA_STRING);
-                        break;
-                    default:
-                        error("Logical error. Type of column should have been checked by now");
-                    }
+            for (j=0; j<length(SD); j++) {
+                switch (TYPEOF(VECTOR_ELT(SD, j))) {
+                case LGLSXP :
+                    LOGICAL(VECTOR_ELT(SD,j))[0] = NA_LOGICAL;
+                    break;
+                case INTSXP :
+                    INTEGER(VECTOR_ELT(SD,j))[0] = NA_INTEGER;
+                    break;
+                case REALSXP :
+                    REAL(VECTOR_ELT(SD,j))[0] = NA_REAL;
+                    break;
+                case STRSXP :
+                    SET_STRING_ELT(VECTOR_ELT(SD,j),0,NA_STRING);
+                    break;
+                default:
+                    error("Logical error. Type of column should have been checked by now");
                 }
-                grpn = 1;  // it is anyway?
-            //TO DO..delete... } else {
-            //    continue;
-            //}
+            }
+            grpn = 1;  // TO DO: it is anyway?
         } else {
             if (length(order)==0) {
                 rownum = INTEGER(starts)[i]-1;
-                // to delete ... if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
                 for (j=0; j<length(SD); j++) {
                     size = SIZEOF(VECTOR_ELT(SD,j));
                     memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),
@@ -148,7 +142,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             } else {
                 for (k=0; k<grpn; k++) {
                     rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                    // to delete ... if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
                     for (j=0; j<length(SD); j++) {
                         size = SIZEOF(VECTOR_ELT(SD,j));
                         memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)) + k*size,
@@ -204,7 +197,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             vlen = length(RHS);
             if (length(order)==0) {
                 rownum = INTEGER(starts)[i]-1;
-                // to delete ... if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
                 switch (TYPEOF(targetcol)) {
                 case STRSXP :
                     for (r=0; r<grpn; r++)
@@ -229,28 +221,24 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 case STRSXP :
                     for (k=0; k<grpn; k++) {
                         rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                        // if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
                         SET_STRING_ELT(targetcol, rownum, STRING_ELT(RHS, k%vlen));
                     }
                     break;
                 case VECSXP :
                     for (k=0; k<grpn; k++) {
                         rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                        // if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;   // TO DO : here too
                         SET_VECTOR_ELT(targetcol, rownum, VECTOR_ELT(RHS, k%vlen));
                     }
                     break;
                 case INTSXP :
                     for (k=0; k<grpn; k++) {
                         rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                        // if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
                         INTEGER(targetcol)[rownum] = INTEGER(RHS)[k%vlen];
                     }
                     break;
                 case REALSXP :
                     for (k=0; k<grpn; k++) {
                         rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                        // if (!isNull(irows)) rownum = INTEGER(irows)[rownum] -1;
                         REAL(targetcol)[rownum] = REAL(RHS)[k%vlen];
                     }
                     break;
