@@ -116,21 +116,19 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     if (n < 1L)
         return( null.data.table() )
     if (length(vnames) != n) stop("logical error in vnames")
-    vnames <- as.list.default(vnames)
-    # ncols <- integer(n)        # the nrows and ncols of each of the inputs (could be varying lengths)
+    vnames <- as.list.default(vnames)    
     nrows = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
-    hascols = logical(n)
+    numcols = integer(n)         # the ncols of each of the inputs (e.g. if inputs contain matrix or data.table)
     for (i in 1L:n) {
         xi = x[[i]]
         if (is.null(xi)) stop("column or argument ",i," is NULL")
-        hascols[i] = FALSE   # list() columns are considered atomic
         if (is.matrix(xi) || is.data.frame(xi)) {  # including data.table (a data.frame, too)
             xi = as.data.table(xi, keep.rownames=keep.rownames)       # TO DO: allow a matrix to be a column of a data.table. This could allow a key'd lookup to a matrix, not just by a single rowname vector, but by a combination of several columns. A matrix column could be stored either by row or by column contiguous in memory.
             x[[i]] = xi
-            hascols[i] = TRUE
+            numcols[i] = length(xi)
         }
         nrows[i] <- NROW(xi)    # for a vector (including list() columns) returns the length
-        if (hascols[i]) {
+        if (numcols[i]>0L) {
             namesi <- names(xi)  # works for both data.frame's, matrices and data.tables's
             if (length(namesi)==0L) namesi = rep("",ncol(xi))
             namesi[is.na(namesi)] = ""
@@ -165,8 +163,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         stop("arguments cannot be silently repeated to match max nr: ", paste(unique(nrows), collapse = ", "))
     }
-    if (any(hascols)) {
-        value = list()
+    if (any(numcols>0L)) {
+        value = vector("list",sum(pmax(numcols,1L)))
         k = 1L
         for(i in 1L:n) {
             if (is.list(x[[i]]) && !is.ff(x[[i]])) {
@@ -188,7 +186,6 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     setattr(value,"names",vnames)
     setattr(value,"row.names",.set_row_names(nr))
     setattr(value,"class",c("data.table","data.frame"))
-    alloc.col(value)
     if (!is.null(key)) {
       if (!is.character(key)) stop("key argument of data.table() must be character")
       if (length(key)==1L) {
@@ -197,9 +194,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
       }
       setkeyv(value,key)
     }
-    value
-    #alloc.col(value)
-    # TO DO. Revisit this comment. Applied when 'alloc.col(value)' was the last line....Despite the thread on r-devel "Confused about NAMED" about data.frame(), returning it this way makes a NAM(1) data.table. Returning "value=alloc.col(value);value" is the same but returns a NAM(2) data.table. Unlike data.frame which is always NAMED==2. We ignore NAMED in data.table generally, but it would be useful to avoid the grow warning when NAMED=1. However the print method still bumps NAMED (as it does in data.frame) (TO DO - stop that bump and warn on grow via := will be even less often).
+    alloc.col(value)
+    # At some point returning it this way made a NAM(1) data.table. Returning "value=alloc.col(value);value" is the same but returned a NAM(2) data.table. Unlike data.frame which is always NAMED==2. We ignore NAMED in data.table generally, and now even when := adds by reference always. The print method still bumps NAMED (as it does in data.frame) for some reason and print appears to copy (TO DO).
 }
 
 is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need to result in 'not sorted' e.g. test 251 where i table is not sorted but f__ without NAs is sorted. Could check if i is sorted too, but that would take time and that's what SJ is for to make the calling code clear to the reader.
