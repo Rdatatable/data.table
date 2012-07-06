@@ -182,6 +182,11 @@ BUG FIXES
     o   merge() is now correct when all=TRUE but there are no common values in the two
         data.tables, fixing #2114. Thanks to Karl Ove Hufthammer for reporting.  Tests added.
         
+    o   An as.data.frame method has been added for ITime, so that ITime can be passed to ggplot2
+        without error, #1713. Thanks to Farrel Buchinsky for reporting. Tests added.
+        ITime is still displayed as integer seconds from midnight; we don't know why ggplot2 doesn't
+        invoke ITime's print method. Convert ITime to POSIXct for ggplot2, is one approach.
+        
 
 USER VISIBLE CHANGES
 

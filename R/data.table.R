@@ -1023,9 +1023,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     grporder = o__
     if (length(irows) && !isTRUE(irows)) {
         if (length(o__) && length(irows)!=length(o__)) stop("Internal error: length(irows)!=length(o__)")
-        o__ = if (length(o__)) irows[o__] else irows
-    }
-    # browser()
+        o__ = if (length(o__)) irows[o__]  # better do this once up front (even though another alloc) than deep repeated branch in dogroups.c
+              else irows
+    } # else grporder is left bound to same o__ memory (no cost of copy)
     if (is.null(lhs)) cols=NULL
     if (!length(f__)) {
         # for consistency of empty case in test 184

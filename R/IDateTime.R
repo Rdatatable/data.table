@@ -81,6 +81,20 @@ as.character.ITime <- format.ITime <- function(x, ...) {
           substring(paste("0", ss, sep = ""), nchar(paste(ss))), sep = ":")
 }
 
+as.data.frame.ITime = function(x, ...) {
+    # This method is just for ggplot2, #1713
+    # Avoids the error "cannot coerce class '"ITime"' into a data.frame", but for some reason
+    # ggplot2 doesn't seem to call the print method to get axis labels, so still prints integers.
+    # Tried converting to POSIXct but that gives the error below.
+    # If user converts to POSIXct themselves, then it works for some reason.
+    ans = list(x)
+    # ans = list(as.POSIXct(x,tzone=""))  # ggplot2 gives "Error: Discrete value supplied to continuous scale"
+    setattr(ans,"class","data.frame")
+    setattr(ans,"row.names", .set_row_names(length(x)))
+    setattr(ans,"names",NULL)
+    ans
+}
+
 print.ITime <- function(x, ...) {
     print(format(x))
 }

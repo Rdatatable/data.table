@@ -493,22 +493,32 @@ test(164, foo(f), DT[,mean(b),by=d])
 # checks that data.table inherits methods from data.frame in base ok
 test(165, subset(DT,a>2), DT[a>2])
 test(166, suppressWarnings(split(DT,DT$grp)[[2]]), DT[grp==2])
+
 if ("package:ggplot2" %in% search()) {
     test(167,names(print(ggplot(DT,aes(b,f))+geom_point())),c("data","panel","plot"))
     # The names() is a stronger test that it has actually plotted, but also because test() sees the invisible result
-    test(168,DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 because there are 5 groups in DT data at this stage, just need 2 to test
+    test(167.1,DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 because there are 5 groups in DT data at this stage, just need 2 to test
     # New test reported by C Neff on 11 Oct 2011
     if ("package:hexbin" %in% search())
-       test(168.5, names(print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp))), c("data","panel","plot"))
+       test(167.2, names(print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp))), c("data","panel","plot"))
     else
-       cat("Test 168.5 not run. If required call library(hexbin) first.\n")
+       cat("Test 167.2 not run. If required call library(hexbin) first.\n")
+              
+    # Test plotting ITime with ggplot2 which seems to require an as.data.frame method for ITime, #1713
+    datetimes = c("2011 NOV18 09:29:16", "2011 NOV18 10:42:40", "2011 NOV18 23:47:12",
+              "2011 NOV19 01:06:01", "2011 NOV19 11:35:34", "2011 NOV19 11:51:09")
+    DT = IDateTime(strptime(datetimes,"%Y %b%d %H:%M:%S"))
+    test(168, print(DT[,qplot(idate,itime)])$ranges, print(qplot(DT$idate,DT$itime))$ranges)
+    test(168.1, print(DT[,qplot(idate,as.POSIXct(itime,tzone=""))])$ranges, print(qplot(idate,as.POSIXct(itime,tzone=""),data=DT))$ranges)
+
     try(graphics.off(),silent=TRUE)
     #try(graphics.off(),silent=TRUE) # R CMD check doesn't like graphics it seems, even when inside try()
 } else {
-    cat("Tests 167, 168 and 168.5 not run. If required call library(ggplot2) first.\n")
-    # ggplot takes a long time e.g. increases runtime of test.data.table from under 1 second to over 10 seconds. So we don't include these by default.
-    # From examples, the library(ggplot2) is done first, so that 'R CMD check' does include tests 167 and 168 
+    cat("Tests 167-168 not run. If required call library(ggplot2) first.\n")
+    # ggplot takes a long time so we don't include these by default
+    # From examples, the library(ggplot2) is done first, so that 'R CMD check' does include tests 167-168 
 }
+
 # test of . in formula, using inheritance
 DT = data.table(y=1:100,x=101:200,y=201:300,grp=1:5)
 test(169,DT[,as.list(lm(y~0+.,.SD)$coef),by=grp][2,x]-2<1e-10, TRUE)
@@ -1971,6 +1981,7 @@ setkey(DT,b)
 test(694, DT[a>2,sum(c),by=b], DT[a>2][,sum(c),by=b])
 test(695, DT[a>2,sum(c),by=b%%2L], data.table(b=1:0,V1=c(34L,42L)))
 test(696, DT[a>2,sum(c),by=(b+1)%%2], data.table(b=c(0,1),V1=c(34L,42L),key="b"))
+
 
 
 # TO DO: tests on double in add hoc by
