@@ -35,7 +35,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 {
     R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, size, vlen;
     int protecti=0;
-    SEXP names, names2, bynames, ans=NULL, jval, thiscol, SD, BY, N, iSD, rownames, s, targetcol, RHS, listwrap, target;
+    SEXP names, names2, bynames, dtnames, ans=NULL, jval, thiscol, SD, BY, N, iSD, rownames, s, targetcol, RHS, listwrap, target;
     SEXP *nameSyms;
     Rboolean wasvector, firstalloc=FALSE;
     
@@ -154,7 +154,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         
         INTEGER(rownames)[1] = -grpn;  // the .set_row_names() of .SD. Not .N when nomatch=NA and this is a nomatch
         for (j=0; j<length(SD); j++) {
-            LENGTH(VECTOR_ELT(SD,j)) = grpn;
+            SETLENGTH(VECTOR_ELT(SD,j), grpn);
             defineVar(nameSyms[j], VECTOR_ELT(SD, j), env);
             // In case user's j assigns to the columns names (env is static) (tests 387 and 388)
             // nameSyms pre-stored to save repeated install() for efficiency.
@@ -187,9 +187,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 if (isNull(RHS)) error("RHS is NULL when grouping :=. Makes no sense to delete a column by group. Perhaps use an empty vector instead.");
                 if (TRUELENGTH(dt) < INTEGER(lhs)[0]) error("Internal error: Trying to add new column by reference but tl is full; alloc.col should have run first at R level before getting to this point in dogroups");
                 SET_VECTOR_ELT(dt,INTEGER(lhs)[0]-1,allocNAVector(TYPEOF(RHS), LENGTH(VECTOR_ELT(dt,0))));
-                SET_STRING_ELT(getAttrib(dt, R_NamesSymbol), INTEGER(lhs)[0]-1, STRING_ELT(newnames,0));
-                LENGTH(getAttrib(dt, R_NamesSymbol))++;
-                LENGTH(dt)++;
+                dtnames = getAttrib(dt, R_NamesSymbol);
+                SET_STRING_ELT(dtnames, INTEGER(lhs)[0]-1, STRING_ELT(newnames,0));
+                SETLENGTH(dtnames, LENGTH(dtnames)+1);
+                SETLENGTH(dt, LENGTH(dt)+1);
                 targetcol = VECTOR_ELT(dt,INTEGER(lhs)[0]-1);
             }
             if (TYPEOF(targetcol)!=TYPEOF(RHS)) error("Type of RHS ('%s') must match LHS ('%s'). To check and coerce would impact performance too much for the fastest cases. Either change the type of the target column, or coerce the RHS of := yourself (e.g. by using 1L instead of 1)", type2char(TYPEOF(RHS)), type2char(TYPEOF(targetcol)));
@@ -398,7 +399,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     if (isNull(lhs) && ans!=NULL) {
         if (ansloc < LENGTH(VECTOR_ELT(ans,0))) {
             if (LOGICAL(verbose)[0]) Rprintf("Wrote less rows (%d) than allocated (%d).\n",ansloc,LENGTH(VECTOR_ELT(ans,0)));
-            for (j=0; j<length(ans); j++) LENGTH(VECTOR_ELT(ans,j)) = ansloc;
+            for (j=0; j<length(ans); j++) SETLENGTH(VECTOR_ELT(ans,j),ansloc);
             // TO DO: set truelength here (uninitialized by R) to save growing next time on insert() 
         }
     } else ans = R_NilValue;

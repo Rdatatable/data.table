@@ -48,7 +48,7 @@ SEXP countingcharacter(SEXP x, SEXP sort)
                           // TO DO: post 2.14.0 can we assume hash>0 and use sign bit to avoid this pass?
                           // pre-v1.8.0 GER2140 was passed in here, but now removed. Make this optimisation if/when
                           // when make data.table depend on R 2.14.0.
-            TRUELENGTH(s)=0;
+            SET_TRUELENGTH(s,0);
         }
     }
     PROTECT(ans = allocVector(INTSXP, n));
@@ -64,21 +64,23 @@ SEXP countingcharacter(SEXP x, SEXP sort)
             if (un==ualloc) u = Realloc(u, ualloc=ualloc*2>n?n:ualloc*2, SEXP);
             u[un++] = tmp;
         }
-        TRUELENGTH(tmp)++;
+        SET_TRUELENGTH(tmp, TRUELENGTH(tmp)+1);
         // counts[(tmp==NA_STRING) ? 0 : TRUELENGTH(tmp)]++;
         // TO DO:  is NA_STRING a pointer to a CHARSXP with a truelength to cobble?
     }
     if (LOGICAL(sort)[0]) ssort2(u,un);
     cumsum = TRUELENGTH(u[0]);
     for(i=1; i<un; i++) {                                    // 0.000
-        cumsum = (TRUELENGTH(u[i]) += cumsum);
+        cumsum += TRUELENGTH(u[i]);
+        SET_TRUELENGTH(u[i], cumsum);
     }
     for(i=n; i>0; i--) {                                     // 0.400 (page fetches on string cache)
         tmp = STRING_ELT(x,i-1);                             // + 0.800 (random access to ans)
-        k = --TRUELENGTH(tmp);
+        SET_TRUELENGTH(tmp, TRUELENGTH(tmp)-1);
+        k = TRUELENGTH(tmp);
         INTEGER(ans)[k] = i;
     } // Aside: for loop bounds written with unsigned int (such as size_t) in mind (when i>=0 would result in underflow and infinite loop).
-    for(i=0; i<un; i++) TRUELENGTH(u[i]) = 0; // The cumsum means the counts are left non zero so reset for next time (0.00).
+    for(i=0; i<un; i++) SET_TRUELENGTH(u[i],0); // The cumsum means the counts are left non zero so reset for next time (0.00).
     // INTEGER(ans)[--counts[(tmp==NA_STRING) ? 0 : TRUELENGTH(tmp)]] = i+1;  // TO DO: tests for NA in character vectors
     savetl_end();
     Free(u);
@@ -180,12 +182,12 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
                                         // so 2.14.0+ may be faster, but isn't required.
                                         // as from v1.8.0 we assume R's internal hash is positive, so don't
                                         // save the uninitialised truelengths that by chance are negative
-        TRUELENGTH(s) = 0;
+        SET_TRUELENGTH(s,0);
     }
     for (i=length(table)-1; i>=0; i--) {
         s = STRING_ELT(table,i);
         if (TRUELENGTH(s)>0) savetl(s);
-        TRUELENGTH(s) = -i-1;
+        SET_TRUELENGTH(s, -i-1);
     }
     if (in) {
         PROTECT(ans = allocVector(LGLSXP,length(x)));
@@ -201,7 +203,7 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
         }
     }
     for (i=0; i<length(table); i++)
-        TRUELENGTH(STRING_ELT(table,i)) = 0;  // good practice to reinstate 0 but might not be needed.
+        SET_TRUELENGTH(STRING_ELT(table,i),0);  // good practice to reinstate 0 but might not be needed.
     savetl_end();   // reinstate HASHPRI (if any)
     UNPROTECT(1);
     return(ans);

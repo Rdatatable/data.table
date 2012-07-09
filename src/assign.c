@@ -229,8 +229,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             error("selfrefnames is ok but tl names [%d] != tl [%d]", TRUELENGTH(names), oldtncol);
         for (i=0; i<LENGTH(newcolnames); i++)
             SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
-        LENGTH(dt) = oldncol+LENGTH(newcolnames);
-        LENGTH(names) = oldncol+LENGTH(newcolnames);
+        SETLENGTH(dt, oldncol+LENGTH(newcolnames));
+        SETLENGTH(names, oldncol+LENGTH(newcolnames));
         // truelengths of both already set by alloccol
     }
     for (i=0; i<length(cols); i++) {
@@ -279,12 +279,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                                         // as from v1.8.0 we assume R's internal hash is positive, so don't
                                         // save the uninitialised truelengths that by chance are negative
                         }
-                        TRUELENGTH(s)=0;
+                        SET_TRUELENGTH(s,0);
                     }
                     for (j=0; j<length(targetlevels); j++) {
                         s = STRING_ELT(targetlevels,j);
                         if (TRUELENGTH(s)>0) savetl(s);
-                        TRUELENGTH(s)=j+1;
+                        SET_TRUELENGTH(s,j+1);
                     }
                     R_len_t addi = 0;
                     SEXP addlevels=NULL;
@@ -301,7 +301,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                                 protecti++;
                             }
                             SET_STRING_ELT(addlevels,addi,thisv);
-                            TRUELENGTH(thisv) = ++addi+length(targetlevels);  
+                            SET_TRUELENGTH(thisv,++addi+length(targetlevels));  
                         }
                         INTEGER(RHS)[j] = TRUELENGTH(thisv);
                     }
@@ -313,7 +313,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                             SET_STRING_ELT(targetlevels, oldlen+j, STRING_ELT(addlevels, j));
                         setAttrib(targetcol, R_LevelsSymbol, targetlevels);
                     }
-                    for (j=0; j<length(targetlevels); j++) TRUELENGTH(STRING_ELT(targetlevels,j))=0;  // important to reinstate 0 for countingcharacterorder and HASHPRI (if any) as done by savetl_end().
+                    for (j=0; j<length(targetlevels); j++) SET_TRUELENGTH(STRING_ELT(targetlevels,j),0);  // important to reinstate 0 for countingcharacterorder and HASHPRI (if any) as done by savetl_end().
                     savetl_end();
                 } else {
                     // value is either integer or numeric vector
@@ -421,14 +421,14 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                 memmove((char *)DATAPTR(dt)+coln*size,     
                         (char *)DATAPTR(dt)+(coln+1)*size,
                         (LENGTH(dt)-coln-1)*size);
-                LENGTH(dt) -= 1;
+                SETLENGTH(dt, LENGTH(dt)-1);
                 SET_VECTOR_ELT(dt, LENGTH(dt), R_NilValue);
                 // adding using := by group relies on NULL here to know column slot is empty.
                 // good to tidy up the vector anyway.
                 memmove((char *)DATAPTR(names)+coln*size,     
                     (char *)DATAPTR(names)+(coln+1)*size,
                     (LENGTH(names)-coln-1)*size);
-                LENGTH(names) -= 1;
+                SETLENGTH(names, LENGTH(names)-1);
                 SET_STRING_ELT(names, LENGTH(names), NA_STRING);  // no need really, just tidy
                 if (LENGTH(names)==0) {
                     // That was last column deleted, leaving NULL data.table, so we need to reset .row_names, so that it really is the NULL data.table.
@@ -502,7 +502,7 @@ void savetl(SEXP s)
 
 void savetl_end() {
     int i;
-    for (i=0; i<nsaved; i++) TRUELENGTH(saveds[i]) = savedtl[i];
+    for (i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
     Free(saveds);
     Free(savedtl);
 }
@@ -537,10 +537,10 @@ static SEXP shallow(SEXP dt, R_len_t n)
     setAttrib(newdt, R_NamesSymbol, newnames);
     // setAttrib appears to change length and truelength, so need to do that first _then_ SET next,
     // otherwise (if the SET were were first) the 100 tl is assigned to length.
-    LENGTH(newnames) = l;
-    TRUELENGTH(newnames) = n;
-    LENGTH(newdt) = l;
-    TRUELENGTH(newdt) = n;
+    SETLENGTH(newnames,l);
+    SET_TRUELENGTH(newnames,n);
+    SETLENGTH(newdt,l);
+    SET_TRUELENGTH(newdt,n);
     setselfref(newdt);
     // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
     UNPROTECT(protecti);
@@ -566,8 +566,8 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
     if (!selfrefok(dt,verbose)) {
         // TO DO: think we can remove all the settruelength's up in data.table.R now we just rely on selfrefok.
         tl=l;
-        TRUELENGTH(dt)=l;
-        if (!isNull(names)) TRUELENGTH(names)=l;
+        SET_TRUELENGTH(dt,l);
+        if (!isNull(names)) SET_TRUELENGTH(names,l);
         setselfref(dt);
     } else {
         tl = TRUELENGTH(dt);
@@ -582,8 +582,8 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
     if (n>tl) return(shallow(dt,n)); // usual case (increasing alloc)
     // Reduce the allocation (most likely to the same value as length).
     //if (n!=l) warning("Reducing alloc cols from %d to %d, but not to length (%d)",TRUELENGTH(dt),n,LENGTH(dt));
-    TRUELENGTH(dt) = n;
-    if (!isNull(names)) TRUELENGTH(names) = n;
+    SET_TRUELENGTH(dt, n);
+    if (!isNull(names)) SET_TRUELENGTH(names, n);
     return(dt);
 }
 
@@ -615,7 +615,7 @@ SEXP truelength(SEXP x) {
 SEXP settruelength(SEXP x, SEXP n) {
     // Only needed in pre 2.14.0. From 2.14.0+, truelength is initialized to 0 by R.
     // For prior versions we set truelength to 0 in data.table creation, before calling alloc.col.
-    TRUELENGTH(x) = INTEGER(n)[0];
+    SET_TRUELENGTH(x, INTEGER(n)[0]);
     return(R_NilValue);
 }
 

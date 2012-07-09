@@ -43,8 +43,8 @@ SEXP readfile(SEXP fnam)
         // columns 11 and 12 in BED.
     }
     fclose(f);
-    LENGTH(c1) = nrow;
-    LENGTH(c2) = nrow;
+    SETLENGTH(c1, nrow);
+    SETLENGTH(c2, nrow);
     UNPROTECT(3);
     return(ans);
 }
