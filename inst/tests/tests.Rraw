@@ -2000,6 +2000,19 @@ DT2 = data.table(A=4:5,B=letters[4:5],C=c(TRUE,FALSE))
 test(706, rbind(DT1,DT2), data.table(A=1:5, B=letters[1:5], C=c(TRUE,TRUE,FALSE,TRUE,FALSE)))
 test(707, rbindlist(list(DT1,DT2)), rbind(DT1,DT2))
 
+# Test non ascii characters when passed as character by, #2134
+x = rep(LETTERS[1:2], 3)
+y = rep(1:3, each=2)
+DT = data.table(ÅR=x, foo=y)
+test(708, names(DT[, mean(foo), by="ÅR"]), c("ÅR","V1"))
+test(709, DT[, mean(foo), by="ÅR"], DT[, mean(foo), by=ÅR])
+DT = data.table(FÅR=x, foo=y)
+test(710, names(DT[, mean(foo), by="FÅR"]), c("FÅR","V1"))
+DT = data.table(ÆØÅ=x, foo=y)
+test(711, DT[, mean(foo), by="ÆØÅ"], data.table(ÆØÅ=c("A","B"), V1=2))
+test(712, DT[, mean(foo), by=ÆØÅ], data.table(ÆØÅ=c("A","B"), V1=2))
+
+
 
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key

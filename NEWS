@@ -194,6 +194,14 @@ BUG FIXES
         to Benjamin Barnes for reporting. The root cause was non character inputs to chmatch
         and %chin%. Tests added.
         
+    o   Non-ascii column names now work when passed as character 'by', #2134. Thanks to
+        Karl Ove Hufthammer for reporting. Tests added.
+            DT[, mean(foo), by=ÆØÅ]      # worked before
+            DT[, mean(foo), by="ÆØÅ"]    # now works too
+            DT[, mean(foo), by=colA]     # worked before
+            DT[, mean(foo), by="colA"]   # worked before
+            
+        
 
 USER VISIBLE CHANGES
 
@@ -254,7 +262,7 @@ THANKS TO BETA TESTING (i.e. bugs caught in 1.8.1 before release to CRAN) :
 
 NOTES
 
-    o   There are now 707 raw tests, plus S4 tests.
+    o   There are now 712 raw tests, plus S4 tests.
     
     o   v1.8.1 was an R-Forge only beta release. The final v1.8.1 was released
         as v1.8.2 on CRAN, so users who had already upgraded to 1.8.1 were

@@ -680,7 +680,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 for (jj in seq_along(bynames)) {
                     if (bynames[jj]=="") {
                         # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
-                        tt = grep("^eval|^[^a-zA-Z ]",all.vars(bysubl[[jj+1L]],functions=TRUE),invert=TRUE,value=TRUE)[1L]
+                        tt = grep("^eval|^[^[:alpha:] ]",all.vars(bysubl[[jj+1L]],functions=TRUE),invert=TRUE,value=TRUE)[1L]
                         if (!length(tt)) tt = all.vars(bysubl[[jj+1L]])[1L]
                         bynames[jj] = tt
                         # if user doesn't like this inferred name, user has to use by=list() to name the column
@@ -694,7 +694,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 if (!bysameorder) {
                     o__ = fastorder(byval)
                     bysameorder = orderedirows && is.sorted(o__)
-                    # browser()
                     if (bysameorder) o__ = integer()   # skip the 1:xnrow vector for efficiency
                 }
                 if (bysameorder) {
