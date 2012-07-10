@@ -1994,7 +1994,11 @@ test(703, subset(DT,select="aa"), data.table(aa=1:6,key="aa"))
 test(704, subset(DT,select=aa), data.table(aa=1:6,key="aa"))
 test(705, subset(DT,select=c(aa)), data.table(aa=1:6,key="aa"))
 
-
+# Test rbinding of logical columns, #2133
+DT1 = data.table(A=1:3,B=letters[1:3],C=c(TRUE,TRUE,FALSE))
+DT2 = data.table(A=4:5,B=letters[4:5],C=c(TRUE,FALSE))
+test(706, rbind(DT1,DT2), data.table(A=1:5, B=letters[1:5], C=c(TRUE,TRUE,FALSE,TRUE,FALSE)))
+test(707, rbindlist(list(DT1,DT2)), rbind(DT1,DT2))
 
 
 # TO DO: tests on double in add hoc by

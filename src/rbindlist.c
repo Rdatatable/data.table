@@ -53,13 +53,14 @@ SEXP rbindlist(SEXP l)
                 break;
             case REALSXP:
             case INTSXP:
+            case LGLSXP:
                 size = SIZEOF(thiscol);
                 memcpy((char *)DATAPTR(target) + ansloc*size,
                        (char *)DATAPTR(thiscol),
                        thislen * size);
                 break;
             default :
-                error("Unsupported column type '%d'", type2char(TYPEOF(target))); 
+                error("Unsupported column type '%s'", type2char(TYPEOF(target))); 
             }
             ansloc += thislen;
         }

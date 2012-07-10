@@ -187,9 +187,12 @@ BUG FIXES
         ITime axis labels are still displayed as integer seconds from midnight; we don't know why ggplot2
         doesn't invoke ITime's as.character method. Convert ITime to POSIXct for ggplot2, is one approach.
         
+    o   setnames(DT,newnames) now works when DT contains duplicate column names, #2103.
+        Thanks to Timothee Carayol for reporting. Tests added.
+        
     o   subset() would crash on a keyed table with non-character 'select', #2131. Thanks
-        to Benjamin Barnes for reporting with reproducible example. The root cause was
-        non-character inputs to chmatch and %chin%. Tests added.
+        to Benjamin Barnes for reporting. The root cause was non character inputs to chmatch
+        and %chin%. Tests added.
         
 
 USER VISIBLE CHANGES
@@ -225,9 +228,6 @@ USER VISIBLE CHANGES
         bottom of the output (saves scrolling up). Thanks to Yike Lu for reporting #2015.
         The tail as well as the head of large tables is now printed.
         
-    o   setnames(DT,newnames) now works when DT contains duplicate column names, #2103.
-        Thanks to Timothee Carayol for reporting. Tests added.
-        
         
 THANKS TO BETA TESTING (i.e. bugs caught in 1.8.1 before release to CRAN) :
 
@@ -247,11 +247,14 @@ THANKS TO BETA TESTING (i.e. bugs caught in 1.8.1 before release to CRAN) :
         #2117. Test added.
         
     o   Combining i subset with by gave incorrect results, #2118. Tests added.
+    
+    o   Benjamin Barnes for #2133: rbindlist not supporting type 'logical'.
+        Tests added.
 
 
 NOTES
 
-    o   There are now 696 raw tests, plus S4 tests.
+    o   There are now 707 raw tests, plus S4 tests.
     
     o   v1.8.1 was an R-Forge only beta release. The final v1.8.1 was released
         as v1.8.2 on CRAN, so users who had already upgraded to 1.8.1 were
