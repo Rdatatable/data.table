@@ -1520,7 +1520,6 @@ transform.data.table <- function (`_data`, ...)
     ans
 }
 
-# not exported or documented, yet
 subset.data.table <- function (x, subset, select, ...)
 {
     key.cols <- key(x)
@@ -1540,20 +1539,15 @@ subset.data.table <- function (x, subset, select, ...)
     } else {
         nl <- as.list(1L:ncol(x))
         setattr(nl,"names",names(x))
-        vars <- eval(substitute(select), nl, parent.frame())
-        if (!is.null(key.cols)) {
-            ## Only keep key.columns found in the select clause
-            key.cols <- key.cols[key.cols %chin% vars]
-            if (length(key.cols) == 0L) {
-                key.cols <- NULL
-            }
-        }
+        vars <- eval(substitute(select), nl, parent.frame())  # e.g.  select=colF:colP
+        if (is.numeric(vars)) vars=names(x)[vars]
+        key.cols <- intersect(key.cols, vars) ## Only keep key.columns found in the select clause
     }
 
     ans <- x[r, vars, with = FALSE]
     
     if (nrow(ans) > 0L) {
-        if (!missing(select) && !is.null(key.cols)) {
+        if (!missing(select) && length(key.cols)) {
             ## Set the key on the returned data.table as long as the key
             ## columns that "remain" are the same as the original, or a
             ## prefix of it.

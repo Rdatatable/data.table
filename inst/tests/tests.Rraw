@@ -16,8 +16,7 @@ options(warn=2)
 nfail = ntest = lastnum = 0
 whichfail = NULL
 test = function(num,x,y=NULL,error,warning,output) {
-    #cat(num,"\n")
-    #assign(".testnum",num,.GlobalEnv)
+    .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
     err <- if (missing(output)) try(x,TRUE) else out<-capture.output(try(x,TRUE))
@@ -1981,6 +1980,20 @@ setkey(DT,b)
 test(694, DT[a>2,sum(c),by=b], DT[a>2][,sum(c),by=b])
 test(695, DT[a>2,sum(c),by=b%%2L], data.table(b=1:0,V1=c(34L,42L)))
 test(696, DT[a>2,sum(c),by=(b+1)%%2], data.table(b=c(0,1),V1=c(34L,42L),key="b"))
+
+# Test subset and %chin% crash with non-character input, #2131
+test(697, 4 %chin% letters, error="type")
+test(698, 4L %chin% letters, error="type")
+test(699, "a" %chin% 4, error="type")
+DT = data.table(aa=1:6,bb=7:12)
+test(700, subset(DT,select="aa"), DT[,list(aa)])
+test(701, subset(DT,select=aa), DT[,list(aa)])
+test(702, subset(DT,select=c(aa)), DT[,list(aa)])
+setkey(DT,aa)
+test(703, subset(DT,select="aa"), data.table(aa=1:6,key="aa"))
+test(704, subset(DT,select=aa), data.table(aa=1:6,key="aa"))
+test(705, subset(DT,select=c(aa)), data.table(aa=1:6,key="aa"))
+
 
 
 

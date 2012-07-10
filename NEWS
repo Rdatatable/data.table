@@ -187,6 +187,10 @@ BUG FIXES
         ITime axis labels are still displayed as integer seconds from midnight; we don't know why ggplot2
         doesn't invoke ITime's as.character method. Convert ITime to POSIXct for ggplot2, is one approach.
         
+    o   subset() would crash on a keyed table with non-character 'select', #2131. Thanks
+        to Benjamin Barnes for reporting with reproducible example. The root cause was
+        non-character inputs to chmatch and %chin%. Tests added.
+        
 
 USER VISIBLE CHANGES
 

@@ -175,6 +175,8 @@ static int scmp(SEXP x, SEXP y, Rboolean nalast)
 SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
     R_len_t i, m;
     SEXP ans, s;
+    if (!isString(x) && !isNull(x)) error("x is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(x)));
+    if (!isString(table) && !isNull(table)) error("table is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(table)));    
     savetl_init();
     for (i=0; i<length(x); i++) {
         s = STRING_ELT(x,i);
