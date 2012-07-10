@@ -232,6 +232,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     }
                     break;
                 case INTSXP :
+                case LGLSXP :
                     for (k=0; k<grpn; k++) {
                         rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
                         INTEGER(targetcol)[rownum] = INTEGER(RHS)[k%vlen];

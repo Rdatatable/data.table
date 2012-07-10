@@ -328,22 +328,15 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             len__ = integer(nrow(i))
             allLen1 = TRUE
             .Call(Cbinarysearch, i, x, as.integer(leftcols-1L), as.integer(rightcols-1L), haskey(i), roll, rolltolast, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1)
-            #browser()
             # length of input nomatch (single 0 or NA) is 1 in both cases. 
             # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
             for (ii in resetifactor) set(i,j=ii,value=origi[[ii]])
             if (mult=="all") {
-                # TO DO: delete ...
-                #idx.diff = rep(1L, sum(lengths))
-                #idx.diff[head(cumsum(lengths), -1L) + 1L] = tail(idx.start, -1L) - head(idx.end, -1L)
-                #idx.diff[1L] = idx.start[1L]
-                #irows = cumsum(idx.diff)
                 if (!missing(by) || which || missing(j)) {
                     irows = if (allLen1) f__ else {
-                        # tt = len__
-                        # if (is.na(nomatch)) len__[len__==0L] = 1L
                         as.integer(unlist(mapply(seq,f__,length.out=len__,SIMPLIFY=FALSE)))
-                        # TO DO: *** if works, port the unlist mapply to C *** This is potentially relatively slow currently.
+                        # TO DO: *** if works, port the unlist mapply to C
+                        #        *** This is potentially relatively slow currently.
                     }
                 } else {
                     bywithoutby=TRUE  # TO DO: use allLen1 to detect if joining to unique rows?
@@ -354,21 +347,14 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 if (identical(nomatch,0L)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
                 len__ = pmin(len__,1L)  # for test 456, and consistency generally
             }
-            #browser()
-            # TO DO .. delete ...if (is.na(nomatch) || nomatch!=0L) irows[irows==0L] = nomatch
-            # else lengths[idx.start==0L] = 0L
             if (which) return(irows)
-            # TO DO..delete...iby = head(key(x),length(leftcols))
-            # byval = i[,leftcols,with=FALSE]  # **** TO DO: shallow copy here ****
         } else {
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
-            # if (which) {
             if (is.logical(i)) {
                 if (length(i)==nrow(x)) irows=which(i)   # e.g. DT[colA>3,which=TRUE]
                 else if (!isTRUE(i)) irows=(1L:nrow(x))[i]  # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness
-            }
-            else {
+            } else {
                 irows = as.integer(i)  # e.g. DT[c(1,3)]
                 irows[irows>nrow(x)] = NA_integer_  # not needed for vector subsetting, but for is.unsorted to return NA
             }
@@ -433,19 +419,8 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         }
         lhs = jsub[[2]]
         jsub = jsub[[3]]
-        av = all.vars(jsub,TRUE)  # TO DO: might not be necessary to remove the lhs from av like this
-        #if (FALSE) {
-        #rhsav = all.vars(jsub[[3L]],TRUE)
-       # # TO DO: these eval go away when done by group,  and don't see .N, .SD, .BY or .I either.
-        #if (length(rhsav) && length(rhsvars <- intersect(rhsav,names(x)))) {
-        #    tmpx = if (is.null(irows)) x[,rhsvars,with=FALSE] else x[irows,rhsvars,with=FALSE]
-        #    # The 'if' isn't necessary but we do that for a bit of speed.
-        #    rhs = eval(jsub[[3L]], envir=tmpx, enclos=parent.frame())
-        #} else {
-        #    rhs = eval(jsub[[3L]], envir=parent.frame(), enclos=parent.frame())
-        #}
-        #
-        #}
+        av = all.vars(jsub,TRUE)
+        
         if (with) {
             if (!is.name(lhs)) stop("LHS of := must be a single column name when with=TRUE. When with=FALSE the LHS may be a vector of column names or positions.")
             lhs = as.character(lhs)
@@ -481,7 +456,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     # TO DO: Add option 'datatable.pedantic' to turn on warnings like this. 
                 # TO DO test   DT[....][,foo:=42L],  i.e. where the foo does the realloc. Would it see DT name or the call.
                 # inherits=TRUE is correct and mimicks what the setVar in C was doing before being moved up to R level.
-                # Commnent moved up from C ... to revisit ... Note that the NAMED(dt)>1 doesn't work because .Call
+                # Comment moved up from C ... to revisit ... Note that the NAMED(dt)>1 doesn't work because .Call
                 # always sets to 2 (see R-ints), it seems. Work around
                 # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
                 # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
@@ -493,29 +468,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     assign(as.character(name),x,pos=parent.frame(),inherits=TRUE)
             }
         }
-        # TO DO: delete ... this goes away too if the assign is later ...
-        #if (FALSE) {
-        #ssrows =
-        #    if (!is.logical(irows)) as.integer(irows)          # DT[J("a"),z:=42L]
-        #    else if (identical(irows,TRUE)) NULL               # DT[,z:=42L]
-        #    else {
-        #        tt = if (length(irows)==nrow(x)) which(irows)  # DT[colA>3,z:=42L]
-        #             else (1L:nrow(x))[irows]                   # DT[c(TRUE,FALSE),z:=42L] (recycling)
-        #        if (!length(tt)) return(x)                     # DT[FALSE,z:=42L]
-        #        tt
-        #    }
-        #}
-            
-        # TO DO: any new columns can't be added here, because we don't know the type to add yet, after eval below...
-        #if (FALSE) {
-        #if (verbose) cat("Assigning",if (!length(ssrows)) paste("all",nrow(x)) else length(ssrows),"row(s)\n")
-        #return(.Call(Cassign,x,ssrows,cols,newnames,rhs,verbose))
-        #}
-        # Allows 'update and then' queries such as DT[J(thisitem),done:=TRUE][,sum(done)]
-        # Could return number of rows updated but even when wrapped in invisible() it seems
-        # the [.class method doesn't respect invisible, which may be confusing to user.
-        # NB: Tried assign(":=",function(lhs,rhs) {...},envir=parent.frame()) which worked for whole columns
-        # but how to pass a subset of rows that way, or more crucially an assignment within groups (TO DO)
     } else if (!with) {
         if (!length(j)) return( null.data.table() )
         if (is.character(j)) j = chmatch(j, names(x))
@@ -544,29 +496,12 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     o__ = integer()
     xnrow = nrow(x)
     if (missing(by) && !bywithoutby) {
-        # doggroups.c won't be called. The first group (testj) is the only group, for consistency of .N,.SD etc
-        # TO DO: delete ... 
-        # jvars = intersect(av,names(x))
-        # if (!identical(irows,TRUE)) {
-        #     x = x[irows,jvars,with=FALSE]    # can't copy here due to := needing to assign to original x, and for speed
-        # }
-        #if (mode(jsub)!="name" && identical(as.character(jsub[[1L]]),"list")) {
-        #    jsub[[1L]]=as.name("data.table")
-            # we need data.table here because i) it grabs the column names from objects and ii) it does the vector expansion
-            # and we return testj straight after the eval later below (seeing .N and .SD) in this case.
-        #}
         if (is.null(irows)) {
-            # itestj = integer()
             len__ = 0L   # len 0 here so that max(len__) is 0 later to leave NULL irows unchanged.
-            # f__ = min(1L,nrow(x))  # 0L for empty x
-            # len__ = nrow(x)
             bysameorder = TRUE  # 1st and only group is the entire table 
         } else {
-            #itestj = irows
             len__ = length(irows)
             bysameorder = is.sorted(irows)
-            # to delete ... f__ = irows[1L]
-            # o__ = irows   # ?????????
         }
         byval = list()
         bynames = allbyvars = NULL
@@ -575,9 +510,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             # The groupings come instead from each row of the i data.table.
             # Much faster for a few known groups vs a 'by' for all followed by a subset
             if (!missing(by)) stop("logical error, by not missing in bywithoutby")
-            # TO DO... delete ... if (!isTRUE(irows)) {cat("logical error, irows not TRUE in bywithoutby\n");browser()}
-            #f__ = idx.start
-            #len__ = as.integer(idx.end-idx.start+1L)
             if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by' is missing")
             byval = i
             bynames = head(key(x),length(leftcols))
@@ -638,15 +570,8 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 # and contiguous to use xss to form .SD in dogroups than going via irows
             }
             if (!length(byval) && xnrow>0L) {
-                
                 # see missing(by) up above for comments
                 # by could be NULL or character(0) for example (e.g. passed in as argument in a loop of different bys)
-                # leave itestj as NULL to mean all rows
-                
-                # TO DO delete ... f__ = 1L
-                # len__ = nrow(x)
-                #itestj = integer()
-                
                 bysameorder = FALSE  # 1st and only group is the entire table, so could be TRUE, but FALSE to avoid
                                      # a key of empty character()
                 byval = list()
@@ -671,9 +596,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Useage: DT[,sum(colC),by=list(colA,month(colB))]")
             }
             tt = sapply(byval,length)
-            # TO DO: delete ... byvalnrow = ifelse(is.null(irows), nrow(x), length(irows))
             if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be same length as rows in x or number of rows returned by i (",xnrow,").")
-            # TO DO ... delete ... bynames = names(byval)
             if (is.null(bynames)) bynames = rep("",length(byval))
             if (any(bynames=="")) {
                 if (length(bysubl)<2) stop("When 'by' or 'keyby' is list() we expect something inside the brackets")
@@ -687,7 +610,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     }
                 }
             }
-            # to delete, done later now ... 
             setattr(byval, "names", bynames)  # byval is just a list not a data.table hence setattr not setnames
             if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}
             if (length(byval) && length(byval[[1]])) {
@@ -698,9 +620,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 }
                 if (bysameorder) {
                     f__ = duplist(byval)   # find group starts, given we know they are already grouped.
-                    # TO DO...delete ... for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][f__]   # TO DO: not necessary if dogroups knows where to look in byval rather than incrementing
                     len__ = as.integer(c(diff(f__), xnrow-last(f__)+1L))
-                    # browser()
                     # TO DO: return both f__ and len__ from C level, and, there's a TO DO in duplist.R
                 } else {
                     f__ = duplist(byval,order=o__)
@@ -712,46 +632,22 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     # TO DO: remove sort.list call by changing fastorder to fastgroup in first place.
                     f__ = f__[origorder]
                     len__ = len__[origorder]
-                    #firstofeachgroup = firstofeachgroup[origorder]
-                    #for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][firstofeachgroup]
                 }
-                #if (!isTRUE(irows)) {
-                #    o__ = if (length(o__)) irows[o__] else irows
-                #    #f__ = irows[f__]
-                #}
-            } else {f__=NULL;len__=0L}   # f__=integer()/0L
+            } else {f__=NULL;len__=0L}
             if (verbose) {cat("done in ",round(proc.time()[3]-last.started.at,3),"secs. bysameorder=",bysameorder," and o__ is length ",length(o__),"\n",sep="");flush.console}
             # TO DO: allow secondary keys to be stored, then we see if our by matches one, if so use it, and no need to sort again. TO DO: document multiple keys.
         }
-        #if (!length(f__)) stop("Internal error: f__ should be at least length 1")
-        #browser()
-        if (xnrow==0L || identical(f__[1L],0L)) {
-            # TO DO: avoid even running clauses above when for empty data.tables ?
-            #itestj = integer()
-            #f__ = 0L
-            #len__ = 0L
-        } #else if (f__[1L]==0L && is.na(nomatch))
-          #  itestj = NA_integer_
-        else if (length(f__)) {
-        #    itestj = as.integer(seq(f__[1L],length.out=len__[1L]))
-        #    if (length(o__)) itestj = o__[itestj]
-        #    if (length(irows)) itestj = irows[itestj]
-        }
     }
-    #browser()
     # j to be run for each group (either from by, bywithoutby, or, whole DT when by is missing or length 0)
     jvnames = NULL
     if (mode(jsub)=="name") {
         # j is a single unquoted column name
         if (jsub!=".SD") {
             jvnames = gsub("^[.]N$","N",deparse(jsub))
-            # jsub = call("list",jsub) ## TO DO: remove
-            # now list()ed after it's eval'd inside dogroups.
+            # jsub is list()ed after it's eval'd inside dogroups.
         }
-    } else if (length(av) && av[1L] == "list") {  # identical(as.character(jsub[[1L]])[1L],"list")) {
+    } else if (length(av) && av[1L] == "list") {
         jsubl = as.list.default(jsub)  # TO DO: names(jsub) and names(jsub)="" seem to work so make use of that
-        # if (length(jsubl)<2) stop("When j is list() or DT() we expect something inside the brackets")
-        # Empty list is needed for test 468: adding an empty list column
         if (length(jsubl)>1) {
             jvnames = names(jsubl)[-1L]   # check list(a=sum(v),v)
             if (is.null(jvnames)) jvnames = rep("", length(jsubl)-1L)
@@ -760,11 +656,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     jvnames[jj-1L] = gsub("^[.]N$","N",deparse(jsubl[[jj]]))
                 # TO DO: if call to a[1] for example, then call it 'a' too
             }
-            # ww = which(jvnames=="")
-            # done later, delete ... if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
             setattr(jsubl, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.
             jsub = as.call(jsubl)
-        }
+        } # else empty list is needed for test 468: adding an empty list column
     } # else maybe a call to transform or something which returns a list.
     ws = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
     if (".SD" %chin% ws) {
@@ -794,43 +688,19 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         # and:        DT[,sapply(.SD,sum),by=month(date)]
         # We don't want date in .SD in the latter, but we do in the former; hence the union() above.
     }
-    if (!length(xvars)) {
-        # TO DO.. only print this if get() is in j ... if (verbose) cat("No columns have been detected as used by j. So no column variables will be available to j. This will be correct in queries such as DT[i,V1:=i] and DT[,groupsize:=.N,by=colA], but may be confusing you if you wrote DT[,get('colB')+1,by=colA]. Set .SDcols=TRUE and all columns will be available to j, even using get(), but this is not recommended and may be very slower. Use eval(quote()) or paste0() idioms to construct queries that dynamically select columns.\n")
-        # For macros such as DT[,macro(),by=...]. A macro is a function with no arguments
-        # evaluated within the scope of x.
-        # TO DO: inspect macro definition to discover columns it uses.
-        # Investigate macro(). I don't think that would work anyway as the scope is where the macro() was defined, not
-        # where it's used, no?   eval(macro) is the way to do macros, and that will detect the variables used by
-        # macro already, using the if jsub[[1]]==eval switches earlier above.
-        
-        # So, leave xvars empty. Important for test 607.
-        
-        # xvars = setdiff(names(x),union(bynames,allbyvars))
-    }
+    #if (!length(xvars)) {
+    #    Leave xvars empty. Important for test 607.
+    #    get('varname') is too difficult to detect which columns are used, use alternatives such as .SDcols
+    #    eval(macro) is the way to do macros, and that will detect the variables used, via the
+    #    if jsub[[1]]==eval switche earlier above.
+    #}
 
     SDenv = new.env(hash=TRUE,parent=parent.frame())
     # hash (the default anyway) does seem better as expected using e.g. test 645
     # TO DO: experiment with size argument
         
-    #oldlen = length(itestj)
-    #length(itestj) = max(len__)  # pad with NA to allocate enough for largest group, will re-use it in dogroups.c
-    #if (identical(itestj[1L],0L)) {
-        # Otherwise the allocation for largest group will be one row too few (owing to the first 0)
-    #    itestj[1L] = NA_integer_
-    #    oldlen = 0L
-    #}
-    #  if (!is.integer(itestj)) stop("Logical error: itestj is not type integer")
     if (".N" %chin% xvars) stop("The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.")
-    #browser()
-    
-    #else {
     SDenv$.BY = lapply(byval,"[",1L)  # byval is list() not data.table
-    #if (!length(len__)) stop("Internal error: len__ has no length")
-    
-    # SDenv$.N = 0L  #if (is.null(itestj)) xnrow else len__[1L]
-    
-    # SDenv$.N = if (is.null(itestj)) xnrow else if (exists("f__") && is.na(f__[1L])) 0L else len__[1L]
-    #browser()
     SDenv$.iSD = NULL  # null.data.table()
     if (bywithoutby) {   
         jisvars = intersect(gsub("^i[.]","",ws),names(i))
@@ -852,11 +722,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     
     lockBinding(".BY",SDenv)
     lockBinding(".iSD",SDenv) 
-    #testj = eval(jsub, SDenv)
-    #browser()
-    #if (!is.null(lhs)) {
-    #    
-    #}
     SDenv$.SD = null.data.table()  # e.g. test 607. Grouping still proceeds even though no .SD e.g. grouping key only tables, or where j consists of .N only
     SDenv$.N = 0L
     if ((missing(by) || !length(byval)) && !bywithoutby) {
@@ -906,7 +771,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         SDenv$.SD = x[alloc, xvars, with=FALSE]
         # TO DO: **** Instead just for loop assigning vector(typeof(...)). Saves recursion overhead.  
         # Must not shallow copy xvars here. This is the allocation for the largest group. Since i is passed in here, it won't shallow copy, even in future. Only DT[,xvars,with=FALSE] might ever shallow copy automatically.
-     #   for (ii in seq(along=xvars)) setlength(SDenv$.SD[[ii]], oldlen)  # setup length for the first group
     }
     if (nrow(SDenv$.SD)==0L) setattr(SDenv$.SD,"row.names",c(NA_integer_,0L))
     # .set_row_names() basically other than not integer() for 0 length, otherwise dogroups has no [1] to modify to -.N
@@ -968,39 +832,13 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 cat("Optimization is on but j left unchanged as '",deparse(jsub),"'\n",sep="")
         }
         assign("Cfastmean", Cfastmean, envir=SDenv)
-        # assign("mean", fastmean, envir=SDenv)  # neater than the hard work above, but slower
-        
         assign("mean", base::mean.default, envir=SDenv)
         # Here in case nomeanopt=TRUE or some calls to mean weren't detected somehow. Better but still very slow.
+        # Maybe change to :
+        #     assign("mean", fastmean, envir=SDenv)  # neater than the hard work above, but slower
+        # when fastmean can do trim.
     }
-    
-    
-    #if (mode(jsub)=="name" && jsub!=".SD") { 
-    #    jsub = call("list",jsub)  # this should handle backticked names ok too
-    #}
-    #    #testj = list(testj)
-    #}
-    #maxn=0L
-    #if (!is.null(testj)) {
-    #    if (is.atomic(testj)) {
-    #        jvnames = ""
-    #        jsub = call("list",jsub)
-    #        testj = list(testj)
-    #    } else if (is.list(testj)) {
-    #        if (is.null(jvnames))   # if we didn't deliberately drop the names and store them earlier
-    #            jvnames = if (is.null(names(testj))) rep("",length(testj)) else names(testj)
-    #    } else {
-    #        stop("j must evaluate to an atomic vector (inc factor, Date etc), list of atomic vectors, or NULL")
-    #    }
-    #    if (verbose && !is.null(names(testj))) cat("testj evaluates to a list with names, this may slow down grouping")
-    #    if (is.list(testj) && any(sapply(testj,is.data.frame))) stop("All items in j=list(...) should be atomic vectors or lists, currently. Consider cbind or merge afterwards until := by group is implemented.")
-    #    if (SDenv$.N==0L) testj = lapply(testj,"[",0L)   # by on 0-row tables need to return correctly types 0-row result
-    #    maxn = max(sapply(testj,length))   # this could be 0 here too
-    #} else {
-    #    maxn = 0L
-    #    # e.g. if j is for side effects only: printing or plotting
-    #}
-    
+
     xcols = chmatch(xvars,names(x))
     if (bywithoutby) {
         groups = i
@@ -1011,10 +849,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         grpcols = seq_along(byval)
         jiscols = NULL   # NULL rather than integer() is used in C to know when using by
     }
-    #if (length(bynames)) setattr(groups, "names", bynames)
-    #icols = NULL
-    #if (!missing(i) && is.data.table(i)) icols = as.integer(chmatch(ivars,names(i)))
-    #else i=NULL
     grporder = o__
     if (length(irows) && !isTRUE(irows)) {
         if (length(o__) && length(irows)!=length(o__)) stop("Internal error: length(irows)!=length(o__)")
@@ -1027,15 +861,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         f__=len__=0L
     }
     
-    # TO DO: ensure that names of .SD are removed and resinstated later, for things like j=.SD[2], relying on data.table's
-    # not needing to have colnames at all and working by row number(s) passed to .SD
-    #browser()
     if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
-    # browser()
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, verbose)
     if (verbose) {cat("done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
-    
-    #browser()
     
     # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
     # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
@@ -1070,21 +898,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         setattr(ans, "names", c(bynames, jvnames))
     }
     
-    # TO DO: reinstate and add tests of grouping by factors and classed columns in j
-    # if (length(ans[[1L]])) {
-    #    if (length(byval)) {
-    #        ww = which(sapply(byval,is.factor))
-    #        for (jj in ww) {levels(ans[[jj]]) = levels(byval[[jj]]); class(ans[[jj]])="factor"}
-    #    }
-    #    ww = which(sapply(testj,is.factor))
-    #    for (jj in ww) {levels(ans[[length(grpcols)+jj]]) = levels(testj[[jj]]); class(ans[[length(grpcols)+jj]])="factor"}  
-    #
-
-        # bit of a klude to retain the classes. Rather than allocating in C, we could allocate ans in R before dogroups, and create the right class at that stage
-        # TO DO: speed up by using setattr. class<- and levels<- might be copying the whole vector?
-    #    for (jj in seq_along(byval)) class(ans[[jj]]) = class(byval[[jj]])
-    #    for (jj in seq_along(testj)) class(ans[[length(grpcols)+jj]]) = class(testj[[jj]])
-    #}
     setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
     setattr(ans,"class",c("data.table","data.frame"))
     if (haskey(x) && ((!missing(by) && bysameorder) || (!missing(i) && (haskey(i) || is.sorted(f__))))) {
