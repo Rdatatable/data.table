@@ -245,7 +245,7 @@ DT[J("a",3:6),roll=TRUE]   # rolling join (locf)
 DT[,sum(v),by=list(y\%\%2)]  # by expression
 DT[,.SD[2],by=x]           # 2nd row of each group
 DT[,tail(.SD,2),by=x]      # last 2 rows of each group
-DT[,lapply(.SD,sum),by=x]  # applying through columns by group
+DT[,lapply(.SD,sum),by=x]  # apply through columns by group
 
 DT[,list(MySum=sum(v),
          MyMin=min(v),
@@ -256,11 +256,12 @@ DT[,sum(v),x][V1<20]       # compound query
 DT[,sum(v),x][order(-V1)]  # ordering results
 
 DT[,z:=42L]                # add new column by reference
-DT[,z:=NULL]               # remove column
+DT[,z:=NULL]               # remove column by reference
 DT["a",v:=42L]             # subassign v by reference
 
-DT[,transform(.SD,m=mean(v)),by=x] 
-DT[,.SD[which.min(v)],by=x]
+DT[,m:=mean(v),by=x]       # add new column by reference by group
+
+DT[,.SD[which.min(v)],by=x]  # nested query by group
 
 # Follow posting guide, support is here (not r-help) :
 maintainer("data.table")
@@ -270,7 +271,7 @@ vignette("datatable-intro")
 vignette("datatable-faq")
 vignette("datatable-timings")
 
-test.data.table()          # over 300 low level tests
+test.data.table()          # over 700 low level tests
 
 update.packages()          # keep up to date
 }}
