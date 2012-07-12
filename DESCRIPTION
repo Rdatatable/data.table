@@ -1,5 +1,5 @@
 Package: data.table
-Version: 1.8.1
+Version: 1.8.2
 Title: Extension of data.frame for fast indexing, fast ordered joins, fast assignment, fast grouping and list columns.
 Author: M Dowle, T Short, S Lianoglou
 Maintainer: M Dowle <datatable-help@lists.r-forge.r-project.org>
