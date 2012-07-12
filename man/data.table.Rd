@@ -21,6 +21,7 @@
 \item help page for \code{\link{:=}}
 \item \code{keyby} argument
 \item \code{character} and \code{numeric} now allowed as key column types
+\item \code{\link{:=}} by group
 }
 }
 \usage{
@@ -71,7 +72,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \code{j} is evaluated within the frame of the \code{data.table}; i.e., it sees column names as if they are variables. Use \code{j=list(...)} to return multiple columns and/or expressions of columns. A single column or single expression returns that type, usually a vector. See the examples.
 
 }
-  \item{by}{ A single unquoted column name, \code{list()} of expressions of column names, or a single character string containing comma separated column names, or a character vector of column names.
+  \item{by}{ A single unquoted column name, a \code{list()} of expressions of column names, a single character string containing comma separated column names, or a character vector of column names.
 
   The \code{list()} of expressions is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{j=list(...)} may be omitted when there is just one expression, for convenience, typically a single expression such as \code{sum(colB)}; e.g., \code{DT[,sum(colB),by=colA]}.
 
@@ -79,9 +80,9 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 
   Advanced: Aggregation for a subset of known groups is particularly efficient when passing those groups in \code{i}. When \code{i} is a \code{data.table}, \code{DT[i,j]} evaluates \code{j} for each row of \code{i}. We call this \emph{by without by} or \emph{grouping by i}. Hence, the self join \code{DT[data.table(unique(colA)),j]} is identical to \code{DT[,j,by=colA]}.
 
-  Advanced: Objects \code{.SD}, \code{.BY} and \code{.N} may be used in the \code{j} expression.
+  Advanced: When grouping by \code{by} or by \code{i}, symbols \code{.SD}, \code{.BY} and \code{.N} may be used in the \code{j} expression, defined as follows.
   
-  \code{.SD} is a \code{data.table} containing the \bold{S}ubset of \code{x}'s \bold{D}ata for each group, excluding the group column(s). It can be used when grouping by \code{i}, when grouping by \code{by}, keyed by, and ad hoc by.
+  \code{.SD} is a \code{data.table} containing the \bold{S}ubset of \code{x}'s \bold{D}ata for each group, excluding the group column(s).
   
   \code{.BY} is a \code{list} containing a length 1 vector for each item in \code{by}. This can be useful when \code{by} is not known in advance. The \code{by} variables are also available to \code{j} directly by name; useful for example for titles of graphs if \code{j} is a plot command, or to branch with \code{if()} depending on the value of a group variable.
   
@@ -107,7 +108,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \item{roll}{ Applies to the last join column, generally a date but can be any ordered variable, irregular and including gaps. If \code{roll=TRUE} and \code{i}'s row matches to all but the last \code{x} join column, and its value in the last \code{i} join column falls in a gap (including after the last observation in \code{x} for that group), then the \emph{prevailing} value in \code{x} is \emph{rolled} forward. This operation is particularly fast using a modified binary search. The operation is also known as last observation carried forward (LOCF). Usually, there should be no duplicates in \code{x}'s key, the last key column is a date (or time, or datetime) and all the columns of \code{x}'s key are joined to. A common idiom is to select a contemporaneous regular time series (\code{dts}) across a set of identifiers (\code{ids}):  \code{DT[CJ(ids,dts),roll=TRUE]} where \code{DT} has a 2-column key (id,date) and \code{\link{CJ}} stands for \emph{cross join}.
 
 }
-  \item{rolltolast}{ Like \code{roll} but the data is not rolled forward past the \emph{last} observation. The value of \code{i} must fall in a gap in \code{x} but not after the end of the data for that group defined by all but the last join column. \code{roll} and \code{rolltolast} may not both be \code{TRUE}.
+  \item{rolltolast}{ Like \code{roll} but the data is not rolled forward past the \emph{last} observation within each group defined by the join columns. The value of \code{i} must fall in a gap in \code{x} but not after the end of the data, for that group defined by all but the last join column. \code{roll} and \code{rolltolast} may not both be \code{TRUE}.
 
 }
   \item{which}{ \code{TRUE} returns the integer row numbers of \code{x} that \code{i} matches to.
@@ -154,7 +155,7 @@ Multiple \code{data.table}s (e.g. \code{X}, \code{Y} and \code{Z}) can be joined
 A \code{data.table} is a \code{list} of vectors, just like a \code{data.frame}. However :
 \enumerate{
 \item it never has rownames. Instead it may have one \emph{key} of one or more columns. This key can be used for row indexing instead of rownames.
-\item it has enhanced functionality in \code{[.data.table} for fast joins of keyed tables, fast aggregation, and fast last observation carried forward (LOCF).
+\item it has enhanced functionality in \code{[.data.table} for fast joins of keyed tables, fast aggregation, fast last observation carried forward (LOCF) and fast add/modify/delete of columns by reference with no copy at all.
 }
 
 Since a \code{list} \emph{is} a \code{vector}, \code{data.table} columns may be type \code{list}. Columns of type \code{list} can contain mixed types. Each item in a column of type \code{list} may be different lengths. This is true of \code{data.frame}, too.

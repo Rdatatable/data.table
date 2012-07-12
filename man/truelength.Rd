@@ -3,7 +3,7 @@
 \alias{alloc.col}
 \title{ Over-allocation access }
 \description{
-    These functions are experimental and somewhat advanced. By \emph{experimental} we mean their names might change and perhaps the syntax, argument names and types (so if you write a lot of code using them, you have been warned!). They should work and be stable, though, so please report problems with them.
+    These functions are experimental and somewhat advanced. By \emph{experimental} we mean their names might change and perhaps the syntax, argument names and types. So if you write a lot of code using them, you have been warned! They should work and be stable, though, so please report problems with them.
 }
 \usage{
 truelength(x)
@@ -22,12 +22,12 @@ alloc.col(DT,
 
     When the allocated column pointer slots are used up, to add a new column \code{data.table} must reallocate that vector. If two or more variables are bound to the same data.table this shallow copy may or may not be desirable, but we don't think this will be a problem very often (more discussion may be required on datatable-help). Setting \code{options(datatable.verbose=TRUE)} includes messages if and when a shallow copy is taken. To avoid shallow copies there are several options: use \code{\link{copy}} to make a deep copy first, use \code{alloc.col} to reallocate in advance, or, change the default allocation rule (perhaps in your .Rprofile); e.g., \code{options(datatable.alloccol=1000)}.
 
-    Please note : over allocation of the column pointer vector is not for efficiency per se, it's so that \code{:=} can add columns by reference without a shallow copy.
+    Please note : over allocation of the column pointer vector is not for efficiency per se. It's so that \code{:=} can add columns by reference without a shallow copy.
 }
 \value{
     \code{truelength(x)} returns the length of the vector allocated in memory. \code{length(x)} of those items are in use. Currently, it's just the list vector of column pointers that is over-allocated (i.e. \code{truelength(DT)}), not the column vectors themselves, which would in future allow fast row \code{insert()}. For tables loaded from disk however, \code{truelength} is 0 in \R 2.14.0 and random in \R <= 2.13.2; i.e., in both cases perhaps unexpected. \code{data.table} detects this state and over-allocates the loaded \code{data.table} when the next column addition or deletion occurs. All other operations on \code{data.table} (such as fast grouping and joins) do not need \code{truelength}.
     
-    \code{alloc.col} \emph{reallocates} \code{DT} by reference. This may be useful for efficiency if you know you are about to going to add a lot of columns in a loop. It also returns the new DT, for convenience in compound queries.
+    \code{alloc.col} \emph{reallocates} \code{DT} by reference. This may be useful for efficiency if you know you are about to going to add a lot of columns in a loop. It also returns the new \code{DT}, for convenience in compound queries.
 }
 \seealso{ \code{\link{copy}} }
 \examples{

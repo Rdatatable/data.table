@@ -2,18 +2,18 @@
 \alias{rbindlist}
 \title{ Makes one data.table from a list of many }
 \description{
-  Same as do.call("rbind",l), but much faster.
+  Same as \code{do.call("rbind",l)}, but much faster.
 }
 \usage{
 rbindlist(l)
 }
 \arguments{
-  \item{l}{ A list of data.table, data.frame, list (which may be mixed). Unless NULL, each item must have the same number of columns of consistent type. }
+  \item{l}{ A list of \code{data.table}, \code{data.frame} or \code{list} objects. Each item must be either \code{NULL} or have the same number of columns of consistent type. All items do not have to be the same type; e.g, a \code{data.table} may be bound with a \code{list}.}
 }
 % \details{
 % }
 \value{
-    An unkeyed data.table containing a concatenation of all the items passed in.
+    An unkeyed \code{data.table} containing a concatenation of all the items passed in.
 }
 \seealso{ \code{\link{data.table}} }
 \examples{

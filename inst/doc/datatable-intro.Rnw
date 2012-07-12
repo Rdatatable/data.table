@@ -300,19 +300,19 @@ where calling \code{month()} on \code{dateCol} is what we mean by expressions of
 
 This is also known as last observation carried forward (LOCF) or a \emph{rolling join}.
 
-Recall that x[i] is a join between \code{data.table} x and \code{data.table} i.  If i has 2 columns, the first column is matched
-to the first column of the key of x, and the 2nd column to the 2nd.  An equi-join is performed, meaning that
+Recall that \code{x[i]} is a join between \code{data.table} \code{x} and \code{data.table} \code{i}.  If \code{i} has 2 columns, the first column is matched
+to the first column of the key of \code{x}, and the 2nd column to the 2nd.  An equi-join is performed, meaning that
 the values must be equal.
 
 The syntax for fast rolling join is
 
 \code{x[i,roll=TRUE]}
 
-As before the first column of i is matched to x where the values are equal. The last column of i though, the 2nd one in
+As before the first column of \code{i} is matched to \code{x} where the values are equal. The last column of \code{i} though, the 2nd one in
 this example, is treated specially. If no match is found, then the row before is returned, provided the first
 column still matches.
 
-For examples see \code{example("[.data.table")}
+For examples type \code{example(data.table)} and follow the output at the prompt.
 
 
 

@@ -11,7 +11,9 @@
   and not the shared columns with the same names.
   
   For a more \code{data.table}-centric (and faster) way of merging two data.tables,
-  take a look at \code{\link{[.data.table}}; e.g., \code{x[y, ...]}.
+  take a look at \code{\link{[.data.table}}; e.g., \code{x[y, ...]}. In recent
+  versions, however, \code{merge()} is much closer to the speed of \code{x[y, ...]}.
+  See FAQ 2.12 for a detailed comparison of \code{merge} and \code{x[y, ...]}.
 }
 
 \usage{
@@ -36,7 +38,7 @@
 
   \item{all}{
     logical; \code{all = L} is shorthand for \code{all.x = L} and
-    \code{all.y = L}.
+    \code{all.y = L}, where L is either TRUE or FALSE.
   }
 
   \item{all.x}{
@@ -120,3 +122,5 @@
 }
 
 \keyword{ data }
+
+

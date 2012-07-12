@@ -8,10 +8,11 @@
 \alias{setattr}
 \alias{setnames}
 \alias{setcolorder}
-\alias{set}
 \title{ Create key on a data table }
 \description{
-  Sorts a data.table and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always. The table is changed \emph{by reference}. No copy is made at all, other than temporary working memory as large as one column.
+  \code{setkey()} sorts a \code{data.table} and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always. The table is changed \emph{by reference}. No copy is made at all, other than temporary working memory as large as one column.
+  
+  All \code{set*} functions similarly change the \code{data.table} by reference with no copy at all, and are documented here. Other than \code{\link{set}()}, which is documented in \code{\link{:=}}.
 }
 \usage{
 setkey(x, ..., verbose=getOption("datatable.verbose"))
@@ -22,12 +23,11 @@ copy(x)
 setattr(x,name,value)
 setnames(x,old,new)
 setcolorder(x,neworder)
-set(x,i=NULL,j,value)   # should be documented in ?":=", perhaps.
-key(x) <- value   # deprecated, please use setkey or setkeyv instead.
+key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
-  \item{\dots}{ The columns to sort by. Do not quote the column names. If \code{\dots} is missing (i.e. \code{setkey(DT)}), all the columns are used. }
+  \item{\dots}{ The columns to sort by. Do not quote the column names. If \code{\dots} is missing (i.e. \code{setkey(DT)}), all the columns are used. \code{NULL} removes the key. }
   \item{cols}{ A character vector (only) of column names. }
   \item{value}{ In (deprecated) \code{key<-}, a character vector (only) of column names. In \code{setattr}, the value to assign to the attribute or \code{NULL} removes the attribute, if present. }
   \item{name}{ The character attribute name. }
@@ -35,8 +35,6 @@ key(x) <- value   # deprecated, please use setkey or setkeyv instead.
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, the new column names, which must be the same length as the number of columns. See examples. }
   \item{new}{ Optional. New column names, the same length as \code{old}. } 
   \item{neworder}{ Character vector of the new column name ordering. May also be column numbers. }
-  \item{i}{ Integer row numbers to be assigned \code{value}. }
-  \item{j}{ Integer column number to be assigned \code{value}. }
 }
 \details{
   The sort is attempted with the very fast \code{"radix"} method in
@@ -44,8 +42,6 @@ key(x) <- value   # deprecated, please use setkey or setkeyv instead.
   method in \code{\link[base]{order}}. That logic is repeated column by column.
   
   The sort is \emph{stable}; i.e., the order of ties (if any) is preserved.
-  
-  If \code{v=NULL}, the key is removed.
   
   In v1.7.8, the \code{key<-} syntax was deprecated. The \code{<-} method copies the whole table and we know of no way to avoid that copy without a change in \R itself. Please use the \code{set}* functions instead, which make no copy at all. \code{setkey} accepts unquoted column names for convenience, whilst \code{setkeyv} accepts one vector of column names.
   
@@ -90,14 +86,14 @@ key(x) <- value   # deprecated, please use setkey or setkeyv instead.
     setkey(DT2,B)         # now just changes DT2
     identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
     
-    DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies
+    DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies, as of R 2.15.1
     try(tracemem(DF))                  # try() for non-Windows where R is faster without memory profiling
     colnames(DF)[1] <- "A"             # 4 copies of entire object
     names(DF)[1] <- "A"                # 3 copies of entire object
-    names(DF) <- c("A", "b")           # 2 copies of entire object
+    names(DF) <- c("A", "b")           # 1 copy of entire object
     `names<-`(DF,c("A","b"))           # 1 copy of entire object
-    x=`names<-`(DF,c("A","b"))         # still 1 copy (so not print method)
-    # What if DF is large, say 10GB in RAM. Copy 10GB just to change a column name?
+    
+    # What if DF is large, say 10GB in RAM. Copy 10GB, even once, just to change a column name?
 
     DT = data.table(a=1:2,b=3:4,c=5:6)
     try(tracemem(DT))
@@ -106,7 +102,8 @@ key(x) <- value   # deprecated, please use setkey or setkeyv instead.
     setnames(DT,2:3,c("D","E"))        # multiple
     setnames(DT,c("a","E"),c("A","F")) # multiple by name
     setnames(DT,c("X","Y","Z"))        # replace all
-    # And, no copy of DT was made by setnames() at all
+    
+    # And, no copy of DT was made by setnames() at all.
 
 }
 \keyword{ data }

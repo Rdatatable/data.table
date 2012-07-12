@@ -5,7 +5,9 @@
 \alias{within.data.table}
 \title{ Data table utilities }
 \description{
-  Utilities for data.table transformation.
+  Utilities for \code{data.table} transformation.
+  
+  \strong{\code{transform} by group is particularly slow. Please use \code{:=} by group instead.}
 }
 \usage{
 \method{transform}{data.table}(`_data`, \ldots)
@@ -47,3 +49,5 @@ transform(dt, c = a^2)
 
 }
 \keyword{ data }
+
+

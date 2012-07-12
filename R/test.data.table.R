@@ -10,7 +10,7 @@ test.data.table = function(verbose=FALSE) {
         d = paste(getNamespaceInfo("data.table","path"),"/tests",sep="")
     }
     # for (fn in dir(d,"*.[rR]$",full=TRUE)) {  # testthat runs those
-    oldenc = options(encoding="UTF-8")  # just for tests 708-712 on Windows
+    oldenc = options(encoding="UTF-8")[[1L]]  # just for tests 708-712 on Windows
     for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
         cat("Running",fn,"\n")
         oldverbose = getOption("datatable.verbose")
