@@ -516,15 +516,14 @@ You can join the project and change the code and/or documentation yourself.
 \subsection{I think it's not great. How do I warn others about my experience?}
 Please put your vote and comments on \href{http://crantastic.org/packages/data-table}{Crantastic}. Please make it constructive so we have a chance to improve.
 
-\subsection{I have a question. I know the posting guide tells me to contact the maintainer (not r-help), but is there a larger group of people I can ask?}
-Yes. You can post to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help}. It's like r-help, but just for this package. Feel free to answer questions there, too.
-\code{maintainer("<package name>")} returns the maintainer for any package and is where you should ask first (see \href{http://www.r-project.org/posting-guide.html}{R-help posting guide}). \code{maintainer("data.table")} returns datatable-help.
+\subsection{I have a question. I know the r-help posting guide tells me to contact the maintainer (not r-help), but is there a larger group of people I can ask?}
+Yes, there are two options. You can post to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help}. It's like r-help, but just for this package. Or the \href{http://stackoverflow.com/questions/tagged/data.table}{\code{data.table} tag on Stack Overflow}. Feel free to answer questions in those places, too.
 
 \subsection{Where are the datatable-help archives?}
-The \href{http://datatable.r-forge.r-project.org/}{homepage} contains links to the archives in 4 different formats.
+The \href{http://datatable.r-forge.r-project.org/}{homepage} contains links to the archives in several formats.
 
 \subsection{I'd prefer not to contact datatable-help, can I mail just one or two people privately?}
-Sure. You're more likely to get a faster answer from datatable-help, though.
+Sure. You're more likely to get a faster answer from datatable-help or Stack Overflow, though. Asking publicly in those places helps build the knowledge base.
 
 \subsection{I have created a package that depends on \code{data.table}. How do I ensure my package is \code{data.table}-aware so that inheritance from \code{data.frame} works?}
 You don't need to do anything special. As long as your package has a namespace, and imports or depends on \code{data.table}, your package is detected as \code{data.table}-aware.

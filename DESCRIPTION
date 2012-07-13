@@ -1,8 +1,8 @@
 Package: data.table
-Version: 1.8.3
+Version: 1.8.2
 Title: Extension of data.frame for fast indexing, fast ordered joins, fast assignment, fast grouping and list columns.
 Author: M Dowle, T Short, S Lianoglou
-Maintainer: M Dowle <datatable-help@lists.r-forge.r-project.org>
+Maintainer: M Dowle <mdowle@mdowle.plus.com>
 Depends: R (>= 2.12.0)
 Imports: methods
 Suggests: chron, ggplot2 (>= 0.9.0), plyr, reshape, testthat (>= 0.4), hexbin, fastmatch, nlme

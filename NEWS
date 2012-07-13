@@ -6,15 +6,15 @@ This NEWS file summarises the main changes.
 
         **********************************************
         **                                          **
-        **   CHANGES IN DATA.TABLE VERSION 1.8.3    **
-        **                                          **
-        **********************************************
-
-
-
-        **********************************************
-        **                                          **
         **   CHANGES IN DATA.TABLE VERSION 1.8.2    **
+        **                                          **
+        **********************************************
+
+
+
+        **********************************************
+        **                                          **
+        **   CHANGES IN DATA.TABLE VERSION 1.8.1    **
         **                                          **
         **********************************************
 
@@ -105,7 +105,6 @@ NEW FEATURES
         
     o   New function rbindlist(l). This does the same as do.call("rbind",l), but much
         faster.
-
 
 BUG FIXES
 
@@ -207,9 +206,7 @@ BUG FIXES
             DT[, mean(foo), by=ÆØÅ]      # worked before
             DT[, mean(foo), by="ÆØÅ"]    # now works too
             DT[, mean(foo), by=colA]     # worked before
-            DT[, mean(foo), by="colA"]   # worked before
-            
-        
+            DT[, mean(foo), by="colA"]   # worked before        
 
 USER VISIBLE CHANGES
 
@@ -267,14 +264,11 @@ THANKS TO BETA TESTING (i.e. bugs caught in 1.8.1 before release to CRAN) :
     o   Benjamin Barnes for #2133: rbindlist not supporting type 'logical'.
         Tests added.
 
-
 NOTES
 
     o   There are now 712 raw tests, plus S4 tests.
     
-    o   v1.8.1 was an R-Forge only beta release. The final v1.8.1 was released
-        as v1.8.2 on CRAN, so users who had already upgraded to 1.8.1 were
-        prompted to upgrade by update.packages().
+    o   v1.8.1 was an R-Forge only beta release. v1.8.2 was released to CRAN.
         
 
         **********************************************

@@ -73,13 +73,13 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
     o = fastorder(x, cols, verbose=verbose)
     if (is.unsorted(o)) {
-        if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let maintainer('data.table') know so the root cause can be fixed.")
+        if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
         .Call(Creorder,x,o)
     }
     if (!alreadykeyedbythiskey) setattr(x,"sorted",cols)   # the if() just to be a tiny bit faster
     if (coerced && alreadykeyedbythiskey) {
         # if (verbose) cat("setkey incurred a copy of the whole table, due to the coercion(s) above.\n")
-        warning("Already keyed by this key but had invalid structure (e.g. unordered factor levels, or incorrect column types), key rebuilt. If you didn't go under the hood please let maintainer('data.table') know so the root cause can be fixed.")
+        warning("Already keyed by this key but had invalid structure (e.g. unordered factor levels, or incorrect column types), key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
     }
     invisible(x)
 }

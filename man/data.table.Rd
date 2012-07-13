@@ -264,8 +264,10 @@ DT[,m:=mean(v),by=x]       # add new column by reference by group
 
 DT[,.SD[which.min(v)],by=x]  # nested query by group
 
-# Follow posting guide, support is here (not r-help) :
-maintainer("data.table")
+# Follow r-help posting guide, support is here (*not* r-help) :
+# datatable-help@lists.r-forge.r-project.org
+# or
+# http://stackoverflow.com/questions/tagged/data.table
 
 \dontrun{
 vignette("datatable-intro")
