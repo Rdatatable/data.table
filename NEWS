@@ -4,17 +4,10 @@ The ChangeLog for data.table is the SVN commit log itself :
 
 This NEWS file summarises the main changes.
 
+
         **********************************************
         **                                          **
         **   CHANGES IN DATA.TABLE VERSION 1.8.2    **
-        **                                          **
-        **********************************************
-
-
-
-        **********************************************
-        **                                          **
-        **   CHANGES IN DATA.TABLE VERSION 1.8.1    **
         **                                          **
         **********************************************
 
@@ -206,7 +199,7 @@ BUG FIXES
             DT[, mean(foo), by=ÆØÅ]      # worked before
             DT[, mean(foo), by="ÆØÅ"]    # now works too
             DT[, mean(foo), by=colA]     # worked before
-            DT[, mean(foo), by="colA"]   # worked before        
+            DT[, mean(foo), by="colA"]   # worked before
 
 USER VISIBLE CHANGES
 
@@ -263,10 +256,14 @@ THANKS TO BETA TESTING (i.e. bugs caught in 1.8.1 before release to CRAN) :
     
     o   Benjamin Barnes for #2133: rbindlist not supporting type 'logical'.
         Tests added.
+        
+    o   Chris Neff for #2146: using := to add a column to the result of a simple
+        column subset such as DT[,list(x)], or after changing all column names
+        with setnames(), was an error. Fixed and tests added.
 
 NOTES
 
-    o   There are now 712 raw tests, plus S4 tests.
+    o   There are now 714 raw tests, plus S4 tests.
     
     o   v1.8.1 was an R-Forge only beta release. v1.8.2 was released to CRAN.
         

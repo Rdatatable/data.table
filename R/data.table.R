@@ -1490,12 +1490,13 @@ setnames = function(x,old,new) {
     if (!is.data.table(x)) stop("x is not a data.table")
     if (!length(attr(x,"names"))) stop("x has no column names")  # because setnames is for user user. Internally, use setattr(x,"names",...)
     if (missing(new)) {
-        # so that setnames(DT,new) works too, e.g., setnames(DT,c("A","B")) where ncol(DT)==2
+        # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
         if (length(old) != ncol(x)) stop("Can't assign ",length(old)," names to a ",ncol(x)," column data.table")
         m = chmatch(key(x), names(x))
         if (length(m) && any(is.na(m))) stop("Internal error: attr(x,'sorted') not all in names(x)")
-        .Call(Csetattrib, x, "names", old)  # not setattr, to avoid recursive loop, since it calls setnames.
-        if (length(m)) .Call(Csetattrib, x, "sorted", old[m])
+        .Call(Csetcharvec, names(x), seq_along(names(x)), old)
+        # setcharvec (rather than setattr) so as not to affect selfref. 
+        if (length(m)) .Call(Csetcharvec, attr(x,"sorted"), m, old[m])
         return(invisible(x))
     } else {
         if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")

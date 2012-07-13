@@ -2012,6 +2012,11 @@ DT = data.table(ÆØÅ=x, foo=y)
 test(711, DT[, mean(foo), by="ÆØÅ"], data.table(ÆØÅ=c("A","B"), V1=2))
 test(712, DT[, mean(foo), by=ÆØÅ], data.table(ÆØÅ=c("A","B"), V1=2))
 
+# Test := adding column after a setnames of all column names (which [,list(x)] does), #2146
+DT = data.table(x=1:5)[,list(x)]
+test(713, DT[,y:=5], data.table(x=1:5,y=5))
+setnames(DT,c("A","B"))
+test(714, DT[,z:=6:10], data.table(A=1:5,B=5,z=6:10))
 
 
 # TO DO: tests on double in add hoc by
