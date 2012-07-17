@@ -7,6 +7,7 @@
   Creates a data.table to be passed in as the i to a [.data.table join.
 }
 \usage{
+J(...)    # Only for use in i of DT[i, ...]. Deprecated outside.
 SJ(...)
 CJ(...)
 }

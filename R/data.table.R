@@ -690,10 +690,16 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     }
     #if (!length(xvars)) {
     #    Leave xvars empty. Important for test 607.
-    #    get('varname') is too difficult to detect which columns are used, use alternatives such as .SDcols
-    #    eval(macro) is the way to do macros, and that will detect the variables used, via the
-    #    if jsub[[1]]==eval switche earlier above.
     #}
+    if ("get" %chin% ws) {
+        if (verbose) {
+            cat("'get' found in j. xvars being set to all columns. Use .SDcols or eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld:", paste(xvars,collapse=","),"\n")
+            # get('varname') is too difficult to detect which columns are used in general
+            # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
+        }
+        xvars = setdiff(names(x),bynames)
+        if (verbose) cat("New:",paste(xvars,collapse=","),"\n")
+    }
 
     SDenv = new.env(hash=TRUE,parent=parent.frame())
     # hash (the default anyway) does seem better as expected using e.g. test 645

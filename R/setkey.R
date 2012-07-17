@@ -166,6 +166,8 @@ ordernumtol = function(x, tol=.Machine$double.eps^0.5) {
 #    JDT
 #}
 
+J = function(...) data.table(...)     # Now deprecated.  Defined like this because with J=data.table we have to put keep.rownames etc into J.Rd.
+
 SJ = function(...) {
     JDT = as.data.table(list(...))
     setkey(JDT)

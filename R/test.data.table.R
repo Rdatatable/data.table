@@ -11,6 +11,8 @@ test.data.table = function(verbose=FALSE) {
     }
     # for (fn in dir(d,"*.[rR]$",full=TRUE)) {  # testthat runs those
     oldenc = options(encoding="UTF-8")[[1L]]  # just for tests 708-712 on Windows
+    oldlocale = Sys.getlocale("LC_CTYPE")
+    Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
     for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
         cat("Running",fn,"\n")
         oldverbose = getOption("datatable.verbose")
@@ -29,6 +31,7 @@ test.data.table = function(verbose=FALSE) {
         # before).
     }
     options(encoding=oldenc)
+    Sys.setlocale("LC_CTYPE", oldlocale)
     invisible()
 }
 

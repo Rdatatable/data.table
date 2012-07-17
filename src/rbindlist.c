@@ -12,6 +12,7 @@ SEXP rbindlist(SEXP l)
     R_len_t i,j,r, nrow=0, first=-1, ansloc, ncol=0, thislen;
     SEXP ans, li, lf=R_NilValue, thiscol, target;
     int size;
+    Rboolean coerced=FALSE;
     
     for (i=0;i<length(l);i++) {
         li = VECTOR_ELT(l,i);
@@ -39,8 +40,12 @@ SEXP rbindlist(SEXP l)
             thislen = length(VECTOR_ELT(li,0));
             thiscol = VECTOR_ELT(li,j);
             if (thislen != length(thiscol)) error("Column %d of item %d is length %d, inconsistent with first column of that item which is length %d. rbindlist doesn't recycle as it already expects each item to be a uniform list, or data.table", j+1, i+1, length(thiscol), thislen);
-            if (TYPEOF(thiscol) != TYPEOF(target))
-                error("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
+            if (TYPEOF(thiscol) != TYPEOF(target)) {
+                thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
+                coerced = TRUE;
+                // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
+                // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
+            }
             switch(TYPEOF(target)) {
             case STRSXP :
                 for (r=0; r<thislen; r++)
@@ -63,6 +68,10 @@ SEXP rbindlist(SEXP l)
                 error("Unsupported column type '%s'", type2char(TYPEOF(target))); 
             }
             ansloc += thislen;
+            if (coerced) {
+                UNPROTECT(1);
+                coerced = FALSE;
+            }
         }
     }
     UNPROTECT(1);
