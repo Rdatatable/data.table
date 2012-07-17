@@ -9,7 +9,13 @@ This NEWS file summarises the main changes.
         **   CHANGES IN DATA.TABLE VERSION 1.8.3    **
         **                                          **
         **********************************************
-        
+
+USER VISIBLE CHANGES
+
+    o   J() now issues a warning (when used *outside* DT[...]) that using it
+        outside DT[...] is deprecated. See item below in v1.8.2.
+        Use data.table() directly instead of J(), outside DT[...]. Or, define
+        an alias yourself. J() will continue to work *inside* DT[...] as documented.
         
 
         **********************************************

@@ -2012,8 +2012,8 @@ test(713, DT[,y:=5], data.table(x=1:5,y=5))
 setnames(DT,c("A","B"))
 test(714, DT[,z:=6:10], data.table(A=1:5,B=5,z=6:10))
 
-# Test J alias (now deprecated)
-test(715, J(a=1:3,b=4), data.table(a=1:3,b=4))
+# Test J alias (now deprecated) issued warning from v1.8.3
+test(715, J(a=1:3,b=4), warning="deprecated [*]outside[*] DT")
 
 # Test get in j
 DT = data.table(a=1:3,b=4:6)

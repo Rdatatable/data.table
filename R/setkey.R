@@ -166,7 +166,11 @@ ordernumtol = function(x, tol=.Machine$double.eps^0.5) {
 #    JDT
 #}
 
-J = function(...) data.table(...)     # Now deprecated.  Defined like this because with J=data.table we have to put keep.rownames etc into J.Rd.
+J = function(...) {
+    warning("The J alias is deprecated *outside* DT[...] because J() conflicts with the function J() in XLConnect and rJava. Please use data.table() instead, or define an alias yourself. J() will continue to work *inside* DT[...] as documented. This warning is issued from v1.8.3. J() will be unavailable for use outside DT[...] from v1.8.4. Only then will the conflict with rJava and XLConnect be resolved.")
+    data.table(...)
+    # Defined like this because with J=data.table we have to put keep.rownames etc into J.Rd.
+}
 
 SJ = function(...) {
     JDT = as.data.table(list(...))
