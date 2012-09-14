@@ -5,9 +5,19 @@ dim.data.table <- function(x) {
     # TO DO: consider placing "dim" as an attibute updated on inserts. Saves this 'if'.
 }
 
+.last.call <- function() {
+    file1 <- tempfile("Rrawhist")
+    savehistory(file1)
+    rawhist <- readLines(file1)
+    rawhist[length(rawhist)]
+}
+
 print.data.table = function(x, nrows=getOption("datatable.print.nrows"), digits=NULL,
                             topn=getOption("datatable.print.topn"), ...)
 {
+    if (length(grep("\\[.*:=", .last.call()))) {
+        return(invisible())
+    }
     if (!is.numeric(nrows)) {
         nrows = 100L
     }
