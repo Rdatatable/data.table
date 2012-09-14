@@ -9,6 +9,18 @@ This NEWS file summarises the main changes.
         **   CHANGES IN DATA.TABLE VERSION 1.8.3    **
         **                                          **
         **********************************************
+NEW FEAUTRES
+
+    o   Printing options have been added to configure how when a summary
+        of a data.table is printed to the console, via
+        options(datatable.print.nrows=100), and how much of the head/tails
+        is printed when the summary is triggred, via
+        options(datatable.print.topn=10). This was prompted by the following
+        discussion on the mailing list:
+        http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-September/001303.html
+        Where there was a desire to sidestep the printing-to-console-by-default when
+        invoking dt[, something := XXX] for a chunk of time.
+        See FAQs 2.11 and 2.22 for more.
 
 USER VISIBLE CHANGES
 

@@ -29,7 +29,9 @@
              "datatable.dfdispatchwarn"="TRUE",
              "datatable.alloccol"="quote(max(100,2*ncol(DT)))",
              "datatable.nomatch"="NA_integer_",
-             "datatable.optimize"="Inf")
+             "datatable.optimize"="Inf",
+             "datatable.print.nrows"="100L",
+             "datatable.print.topn"="5L")
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))
     }

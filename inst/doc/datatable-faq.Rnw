@@ -245,10 +245,11 @@ DT[,list(g=1,h=2,i=3,j=4,repeatgroupname=x[1],sum(y)),by=x]
 Code written prior to v1.6.1 that uses \code{[1]} will still work, but the \code{[1]} is no longer necessary.
 
 \subsection{Only the first 10 rows are printed, how do I print more?}
-Try \code{print(DT,nrows=Inf)} to print all rows, or set nrows to the number of rows you require.
-Recall that when you forget a \code{data.frame} is large and type its name at the \proglang{R} prompt, \proglang{R}
-appears to hang for a long time while the entire table is formatted. \code{data.table} catches this and just prints
-the first 10 rows of large tables by default.  
+There are two things happening here. First, if the number of rows in a \code{data.table} are large (\code{> 100} by default), then a summary of the \code{data.table} is printed to the console by default. Second, the summary of a large \code{data.table} is printed by takingthe top and bottm \code{n} rows of the \code{data.table} and only printing those. Both of these parametes (when to trigger a summary, and how much of a table to use as a summary) are configurable by \proglang{R}'s \code{options} mechanism, or by calling the \code{print} function directly.
+
+For instance, to enforce the summary of a \code{data.table} to only happen when a \code{data.table} is greater than 50 rows, you could \code{options(datatable.print.nrows=50)}. To disable the summary-by-default completely, you could \code{options(datatable.print.nrows=Inf)}. You could also call \code{print} directly, as in \code{print(your.data.table, nrows=Inf)}.
+
+If you want to show more than just the top (and bottom) 10 rows of a \code{data.table} summary (say you like 20), set \code{options(datatable.print.topn=20)}, for example. Again, you could also just call \code{print} directly, as in \code{print(your.data.table, topn=20)}
 
 \subsection{With an \code{X[Y]} join, what if \code{X} contains a column called \code{"Y"}?}
 When \code{i} is a single name such as \code{Y} it is evaluated in the calling frame. In all other cases such as calls to \code{J()} or other expressions, \code{i} is evaluated within the scope of \code{X}. This facilitates easy \emph{self joins} such as \code{X[J(unique(colA)),mult="first"]}.
@@ -370,7 +371,7 @@ So that compound syntax can work; e.g., \code{DT[i,done:=TRUE][,sum(done)]}. The
 \subsection{Ok, but can't the return value of \code{DT[i,col:=value]} be returned invisibily, then?}
 \begin{itemize}
 \item  We tried to but \proglang{R} internally forces visibility on for \code{[}. The value of FunTab's eval column (see src/main/names.c) for \code{[} is 0 meaning force \code{R\_Visible} on (see R-Internals section 1.6). Therefore, when we tried \code{invisible()} or setting \code{R\_Visible} to 0 directly ourselves, \code{eval} in src/main/eval.c would force it on again.
-\item  After getting used to this behaviour, you might grow to prefer it (we have). After all, how many times do we subassign using \code{<-} and then immediately look at the data to check it's ok?
+\item  After getting used to this behaviour, you might grow to prefer it (we have). After all, how many times do we subassign using \code{<-} and then immediately look at the data to check it's ok? This having been said, if you set \code{options(datatable.print.nrows=0)}, the \code{print.data.table} function will print nothing unless you call it directly, eg. \code{print(your.data.table, nrows=10)} which leads you to believe that this is returning invisibly.
 \item  We can \emph{mix} \code{:=} into a \code{j} which also returns data; a \emph{mixed} update and select in one query. To detect whether \code{j} \emph{solely} updates (and then behave differently) could be confusing.
 \end{itemize}
 

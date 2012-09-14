@@ -5,8 +5,22 @@ dim.data.table <- function(x) {
     # TO DO: consider placing "dim" as an attibute updated on inserts. Saves this 'if'.
 }
 
-print.data.table = function (x, nrows=100L, digits=NULL, ...)
+print.data.table = function(x, nrows=getOption("datatable.print.nrows"), digits=NULL,
+                            topn=getOption("datatable.print.topn"), ...)
 {
+    if (!is.numeric(nrows)) {
+        nrows = 100L
+    }
+    if (!is.infinite(nrows)) {
+        nrows = as.integer(nrows)        
+    }
+    if (nrows <= 0L) {
+        return(invisible())
+    }
+    if (!is.numeric(topn)) {
+        topn = 5L
+    }
+    topn = as.integer(topn)
     if (nrow(x) == 0L) {
         if (length(x)==0L)
            cat("NULL data.table\n")
@@ -15,17 +29,22 @@ print.data.table = function (x, nrows=100L, digits=NULL, ...)
         return()
     }
     printdots=FALSE
-    n = 5
+
+    if (topn * 2 >= nrows) {
+        ## If nrows is set to a very small number, you might just print the whole data.table
+        ## with a `---` in the middle, anyway.
+        topn = max(floor(nrows / 3), 1L)
+    }
     if (nrow(x)>nrows) {
-        if (missing(nrows)) {
+        ##if (missing(nrows)) {
         #msg=paste("First",nrows,"rows of",nrow(x),"printed.")
-            toprint = rbind(head(x,n),tail(x,n))
-            rn = c(seq_len(n),seq.int(to=nrow(x),length.out=n))
+            toprint = rbind(head(x, topn), tail(x, topn))
+            rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
             printdots = TRUE
-        } else {
-            toprint = head(x,nrows)
-            rn = seq_len(nrows)
-        }
+        ##} else {
+        ##    toprint = head(x,nrows)
+        ##    rn = seq_len(nrows)
+        ##}
     } else {
         toprint = x
         rn = seq_len(nrow(x))
@@ -33,7 +52,7 @@ print.data.table = function (x, nrows=100L, digits=NULL, ...)
     toprint=format.data.table(toprint, digits=digits, na.encode = FALSE)
     rownames(toprint)=paste(format(rn,right=TRUE),":",sep="")
     if (printdots) {
-        toprint = rbind(head(toprint,n),"---"="",tail(toprint,n))
+        toprint = rbind(head(toprint,topn),"---"="",tail(toprint,topn))
         rownames(toprint) = format(rownames(toprint),justify="right")
         print(toprint,right=TRUE,quote=FALSE)
         return(invisible())
