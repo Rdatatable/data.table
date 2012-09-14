@@ -8,6 +8,7 @@ dim.data.table <- function(x) {
 .last.call <- function() {
     file1 <- tempfile("Rrawhist")
     savehistory(file1)
+    on.exit(unlink(file1))
     rawhist <- readLines(file1)
     rawhist[length(rawhist)]
 }
