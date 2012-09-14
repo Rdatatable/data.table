@@ -17,7 +17,7 @@ NEW FEAUTRES
         has more than 100 rows, it is summarzied by showing the top and bottom
         `options(datatable.print.topn=10)` (10) rows. This change slightly alters
         the previous functionality of a direct call to `print(dt, nrows=XXX)`
-        by now shoing the top AND bottom XXX rows (previously it was just top).
+        by now showing the top AND bottom XXX rows (previously it was just top).
         Thanks to Allan Engelhardt and Melanie Bocou for useful discussions.
         For more details, see FAQs 2.11 and 2.22 and the following mailing list thread:
         http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-September/001303.html
