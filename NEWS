@@ -11,16 +11,16 @@ This NEWS file summarises the main changes.
         **********************************************
 NEW FEAUTRES
 
-    o   Printing options have been added to configure how when a summary
-        of a data.table is printed to the console, via
-        options(datatable.print.nrows=100), and how much of the head/tails
-        is printed when the summary is triggred, via
-        options(datatable.print.topn=10). This was prompted by the following
-        discussion on the mailing list:
+    o   Printing options have been added to configure how and when a summary
+        of a data.table is printed to the console using. The "when" is
+        determined by `options(datatable.print.nrows=100)` -- if a data.table
+        has more than 100 rows, it is summarzied by showing the top and bottom
+        `options(datatable.print.topn=10)` (10) rows. This change slightly alters
+        the previous functionality of a direct call to `print(dt, nrows=XXX)`
+        by now shoing the top AND bottom XXX rows (previously it was just top).
+        Thanks to Allan Engelhardt and Melanie Bocou for useful discussions.
+        For more details, see FAQs 2.11 and 2.22 and the following mailing list thread:
         http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-September/001303.html
-        Where there was a desire to sidestep the printing-to-console-by-default when
-        invoking dt[, something := XXX] for a chunk of time.
-        See FAQs 2.11 and 2.22 for more.
 
 USER VISIBLE CHANGES
 

@@ -36,15 +36,9 @@ print.data.table = function(x, nrows=getOption("datatable.print.nrows"), digits=
         topn = max(floor(nrows / 3), 1L)
     }
     if (nrow(x)>nrows) {
-        ##if (missing(nrows)) {
-        #msg=paste("First",nrows,"rows of",nrow(x),"printed.")
-            toprint = rbind(head(x, topn), tail(x, topn))
-            rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
-            printdots = TRUE
-        ##} else {
-        ##    toprint = head(x,nrows)
-        ##    rn = seq_len(nrows)
-        ##}
+        toprint = rbind(head(x, topn), tail(x, topn))
+        rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
+        printdots = TRUE
     } else {
         toprint = x
         rn = seq_len(nrow(x))
