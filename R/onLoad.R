@@ -24,6 +24,16 @@
         lockBinding("rbind.data.frame",baseenv())
     }
 
+    ## Check to see if we can use a "history hack" to suppress reference assignment (:=) output
+    ## to console. This will fail when R is run with `--no-readline` (which is the case when
+    ## R is run via ESS)
+    file1 <- tempfile("Rrawhist")
+    silence.refassign <- tryCatch({
+      savehistory(file1)
+      unlink(file1)
+      as.character(TRUE)
+    }, error=function(e) as.character(FALSE))
+
     # Set options for the speed boost in v1.8.0 by avoiding 'default' arg of getOption(,default=)
     opts = c("datatable.verbose"="FALSE",
              "datatable.dfdispatchwarn"="TRUE",
@@ -31,7 +41,9 @@
              "datatable.nomatch"="NA_integer_",
              "datatable.optimize"="Inf",
              "datatable.print.nrows"="100L",
-             "datatable.print.topn"="5L")
+             "datatable.print.topn"="5L",
+             "datatable.print.silence.refassign"=silence.refassign)
+
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))
     }
