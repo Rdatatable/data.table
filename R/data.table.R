@@ -508,6 +508,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             }
         }
     } else if (!with) {
+        if (is.logical(j)) j <- which(j)
         if (!length(j)) return( null.data.table() )
         if (is.character(j)) j = chmatch(j, names(x))
         # TO DO:  DT[,-"columntoremove",with=FALSE] might be nice
