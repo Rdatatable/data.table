@@ -54,10 +54,12 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
   }
 \value{
     The \code{data.table} is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setkey(DT,a)[J("foo")]}. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). \code{copy()} may also sometimes be useful before \code{:=} is used to subassign to a column by reference. See \code{?copy}.
+    Note that \code{setattr} is also in package \code{bit}. Both packages merely expose R's internal \code{setAttrib} function at C level, but differ in return value. \code{bit::setattr} returns \code{NULL} (invisibly) to remind you the function is used for its side effect. \code{data.table::setattr} returns the changed object (invisibly) for use in compound statements.
 }
 \references{
 \url{http://en.wikipedia.org/wiki/Radix_sort}\cr
-\url{http://en.wikipedia.org/wiki/Counting_sort}
+\url{http://en.wikipedia.org/wiki/Counting_sort}\cr
+\url{http://cran.at.r-project.org/web/packages/bit/index.html}
 }
 \note{ \code{base::sort.list(x,method="radix")} actually invokes a \emph{counting sort}, not a radix sort. See do_radixsort in src/main/sort.c. A counting sort, however, is particularly suitable for sorting integers and factors, and we like it. Anyway, this is one reason data.table 'likes' integers and factors.
 }

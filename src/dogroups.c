@@ -110,7 +110,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                    (char *)DATAPTR(VECTOR_ELT(groups,j))+igrp*size,
                    size);
         }
-        if (INTEGER(starts)[i] == NA_INTEGER) {
+        if (INTEGER(starts)[i] == NA_INTEGER || (length(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)) {
             for (j=0; j<length(SD); j++) {
                 switch (TYPEOF(VECTOR_ELT(SD, j))) {
                 case LGLSXP :

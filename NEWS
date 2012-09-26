@@ -9,7 +9,8 @@ This NEWS file summarises the main changes.
         **   CHANGES IN DATA.TABLE VERSION 1.8.3    **
         **                                          **
         **********************************************
-NEW FEAUTRES
+        
+NEW FEATURES
 
     o   Printing options have been added to configure how and when a summary
         of a data.table is printed to the console using. The "when" is
@@ -21,11 +22,27 @@ NEW FEAUTRES
         Thanks to Allan Engelhardt and Melanie Bocou for useful discussions.
         For more details, see FAQs 2.11 and 2.22 and the following mailing list thread:
         http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-September/001303.html
+        
+    o   When one or more rows in i have no match to x and i is unkeyed, i is now
+        tested to see if it is sorted. If so, the key is retained to match user
+        expectations. As before, when all rows of i match to x, the key is retained
+        if i matches to an ordered subset of keyed x without needing to test i,
+        even if i is unkeyed.
 
 BUG FIXES
-
+        
     o   Indexing columns of data.table with a logical vector and `with=FALSE`
         now works as expected. This fixes #1797. Thanks to Mani Narayanan for reporting.
+        
+    o   In X[Y,cols,with=FALSE], NA matches are now handled correctly. And if cols
+        includes join columns, NA matches (if any) are now populated from i. For
+        consistency with X[Y] and X[Y,list(...)]. Tests added.
+        
+    o   "Internal" error message when combining join containing missing groups and group by
+        is fixed, #2162. For example :
+            X[Y,.N,by=NonJoinColumn]
+        where Y contains some rows that don't match to X. This bug could also result in a seg
+        fault. Thanks to Andrey Riabushenko for reporting. Tests added.
 
 USER VISIBLE CHANGES
 
@@ -100,7 +117,7 @@ NEW FEATURES
 
     o   The package is now Byte Compiled (when installed in R 2.14.0 or later). Several
         internal speed improvements were made in this version too, such as avoiding
-        internal copies. If you find 1.8.1 is faster, before attributing that to Byte
+        internal copies. If you find 1.8.2 is faster, before attributing that to Byte
         Compilation, please install the package without Byte Compilation and compare
         ceteris paribus. If you find cases where speed has slowed, please let us know.
 

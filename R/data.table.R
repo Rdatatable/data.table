@@ -307,6 +307,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 chmatch(head(key(i),length(rightcols)),names(i))
             else
                 1L:min(ncol(i),length(rightcols))
+            rightcols = head(rightcols,length(leftcols))
             origi = i       # Only needed for factor to factor joins, to recover the original levels
                             # Otherwise, types of i join columns are alyways promoted to match x's
                             # types (with warning or verbose)
@@ -371,7 +372,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
             for (ii in resetifactor) set(i,j=ii,value=origi[[ii]])
             if (mult=="all") {
-                if (!missing(by) || which || missing(j)) {
+                if (!missing(by) || which || missing(j) || !with) {
                     irows = if (allLen1) f__ else {
                         as.integer(unlist(mapply(seq,f__,length.out=len__,SIMPLIFY=FALSE)))
                         # TO DO: *** if works, port the unlist mapply to C
@@ -420,14 +421,17 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]][ii]
                     for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]][ii]
                 }
-                rightcols = head(rightcols,length(leftcols))
                 xnonjoin = seq_len(ncol(x))[-rightcols]
                 if (is.null(irows))
                     for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]]
                 else
                     for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]
                 setattr(ans, "names", make.names(c(names(x)[rightcols],names(x)[-rightcols],names(i)[-leftcols]),unique=TRUE))
-                if (haskey(i) || is.sorted(f__))
+                if (haskey(i) || is.sorted(f__) || (is.na(nomatch) && any(is.na(f__)) && is.sorted(fastorder(i,leftcols))) ||
+                                                   (nomatch==0L && any(f__==0L) && is.sorted(f__[f__!=0L])))
+                    # TO DO: any(is.na()) could be anyNA() and any0, and we need an efficient is.unsorted(DT) method.
+                    # But we only need is.sorted(i) when there are NA matches, so the above should rarely bite.
+                    # Most efficient method would be || (is.na(nomatch) && anyNA(f__) && !is.unsorted(f__,na.rm=TRUE) && **where there are NA's, those rows in i are >= previous row in i**!
                     setattr(ans,"sorted",key(x))
             }
             setattr(ans,"class",c("data.table","data.frame"))
@@ -520,8 +524,17 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (is.null(irows))
             for (s in seq(along=j)) ans[[s]] = x[[j[s]]]  # TO DO: return marked/safe shallow copy back to user
         else {
-            for (s in seq(along=j)) ans[[s]] = x[[j[s]]][irows]
-            # TO DO: allow i's non join columns to be included by name
+            if (is.data.table(i) && is.na(nomatch) && any(is.na(irows))) {   # TO DO: any(is.na()) => anyNA() and presave it 
+                if (any(j %in% rightcols)) ii = rep(1L:nrow(i),len__)
+                for (s in which(j %in% rightcols))
+                    ans[[s]] = i[[leftcols[match(j[s],rightcols)]]][ii]
+                    # So that NA matches from i get the i values, as xss expects further below.
+                for (s in which(!j %in% rightcols))
+                    ans[[s]] = x[[j[s]]][irows]
+                # TO DO: allow i's non join columns to be included by name
+            } else {
+                for (s in seq(along=j)) ans[[s]] = x[[j[s]]][irows]
+            }
         }
         setattr(ans, "names", names(x)[j])
         if (haskey(x) && all(key(x) %chin% names(ans)) && (missing(i) || is.logical(i) || (is.data.table(i) && haskey(i)) || is.sorted(irows))) {
@@ -596,13 +609,15 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 byval = eval(bysub, x, parent.frame())
             else {
                 if (!is.integer(irows)) stop("Internal error: irows isn't integer")  # length 0 when i returns no rows
-                if (any(irows<1L | irows>nrow(x))) stop("Internal error: some irows<1 or >nrow(x)")
+                # We might pass irows as i to x[] below (and did in 1.8.2): irows may contain NA, 0, negatives and >nrow(x) here, all ok.
+                # But we need i join column values to be retained, hence the eval(isub) approach. TO DO: do directly here rather than a recursive call and rejoin.
+                if (!is.na(nomatch)) irows = irows[irows!=0L]
                 if (length(allbyvars)) {
                     if (verbose) cat("i clause present and columns used in by detected, only these subset:",paste(allbyvars,collapse=","),"\n")
-                    xss = x[irows,allbyvars,with=FALSE]
+                    xss = x[eval(isub),allbyvars,with=FALSE,nomatch=nomatch]
                 } else {
                     if (verbose) cat("i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '",deparse(by),"'\n",sep="")
-                    xss = x[irows]
+                    xss = x[eval(isub),nomatch=nomatch]
                 }
                 byval = eval(bysub, xss, parent.frame())
                 xnrow = nrow(xss)
