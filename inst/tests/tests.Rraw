@@ -2035,17 +2035,20 @@ test(724, DT[list(c(5,6,7)), .N, by=b, nomatch=0], DT[list(c(5,6,7)),nomatch=0][
 
 # another test linked from #2162
 DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9, key="x")
-test(725, DT[J(c("a","b","d")),v][,list(v)], DT[J(c("a","b","d")),"v",with=FALSE])  # unfiled bug fix for NA matches; see NEWS 1.8.3
-test(726, DT[J(c("a", "b", "d")), sum(v), by=x, nomatch=0], data.table(x=c("a","b"),V1=c(6L,15L),key="x"))
-test(727, DT[J(c("a", "b", "d")), sum(v), by=x], data.table(x=c("a","b","d"),V1=c(6L,15L,NA),key="x"))
-test(728, DT[J(c("a", "b", "d")), sum(v), by=x], DT[J(c("a", "b", "d"))][, sum(v), by=x])
+test(725, DT[c("a","b","d"),v][,list(v)], DT[J(c("a","b","d")),"v",with=FALSE])  # unfiled bug fix for NA matches; see NEWS 1.8.3
+test(726, DT[c("a", "b", "d"), sum(v), by=x, nomatch=0], data.table(x=c("a","b"),V1=c(6L,15L),key="x"))
+test(727, DT[c("a", "b", "d"), sum(v), by=x], data.table(x=c("a","b","d"),V1=c(6L,15L,NA),key="x"))
+test(728, DT[c("a", "b", "d"), sum(v), by=x], DT[J(c("a", "b", "d"))][, sum(v), by=x])
 oldv = options(datatable.verbose=FALSE)
-test(729, capture.output(DT[J(c("a", "b", "d")), print(.SD), by=x, verbose=FALSE]),
-          capture.output(DT[J(c("a", "b", "d"))][, print(.SD), by=x]))
+test(729, capture.output(DT[c("a", "b", "d"), print(.SD), by=x, verbose=FALSE]),
+          capture.output(DT[c("a", "b", "d")][, print(.SD), by=x]))
 options(oldv)
 
-# ** And check := in these join then group examples, too, including NA matches ... **
-
+# check := when combining join with missing groups and then group by
+test(730, DT[c("b","a"),w:=sum(v),by=y]$w, INT(5,7,9,5,7,9,NA,NA,NA))  # by over a different column than was joined to
+test(731, DT["d",w:=99,by=y]$w, INT(5,7,9,5,7,9,NA,NA,NA))    # do nothing for missing group, before getting as far as type error
+test(732, DT["d",w:=99L,by=y]$w, INT(5,7,9,5,7,9,NA,NA,NA))   # do nothing for missing group
+test(733, DT[c("c","e","b"),w:=sum(v),by=y%%2L]$w, INT(5,7,9,24,24,15,24,24,15))
 
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key

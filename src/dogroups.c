@@ -92,7 +92,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     ansloc = 0;
     for(i=0; i<ngrp; i++) {
         if (INTEGER(starts)[i] == 0 && (i>0 || !isNull(lhs))) continue;
-        if (INTEGER(starts)[i] == NA_INTEGER && !isNull(lhs)) continue;
+        if (!isNull(lhs) &&
+               (INTEGER(starts)[i] == NA_INTEGER ||
+                (length(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)))
+            continue;
         grpn = INTEGER(lens)[i];
         INTEGER(N)[0] = INTEGER(starts)[i] == NA_INTEGER ? 0 : grpn;
         // .N is number of rows matched to ( 0 even when nomatch is NA)
