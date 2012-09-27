@@ -28,6 +28,9 @@ NEW FEATURES
         expectations. As before, when all rows of i match to x, the key is retained
         if i matches to an ordered subset of keyed x without needing to test i,
         even if i is unkeyed.
+        
+    o   by on a keyed empty table is now keyed by the by columns, for consistency with
+        the non empty case when an ordered grouping is detected.
 
 BUG FIXES
         

@@ -688,7 +688,11 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     f__ = f__[origorder]
                     len__ = len__[origorder]
                 }
-            } else {f__=NULL;len__=0L}
+            } else {
+                f__=NULL
+                len__=0L
+                bysameorder=TRUE   # for test 724
+            }
             if (verbose) {cat("done in ",round(proc.time()[3]-last.started.at,3),"secs. bysameorder=",bysameorder," and o__ is length ",length(o__),"\n",sep="");flush.console}
             # TO DO: allow secondary keys to be stored, then we see if our by matches one, if so use it, and no need to sort again. TO DO: document multiple keys.
         }
