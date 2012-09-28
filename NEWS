@@ -53,6 +53,11 @@ USER VISIBLE CHANGES
         outside DT[...] is deprecated. See item below in v1.8.2.
         Use data.table() directly instead of J(), outside DT[...]. Or, define
         an alias yourself. J() will continue to work *inside* DT[...] as documented.
+        
+    o   DT[,LHS:=RHS,...] no longer prints DT. This implements #2128 "Try again to get
+        DT[i,j:=value] to return invisibly". Thanks to discussions here :
+          http://stackoverflow.com/questions/11359553/how-to-suppress-output-when-using-in-r-data-table
+          http://r.789695.n4.nabble.com/Avoiding-print-when-using-tp4643076.html
 
 
         **********************************************

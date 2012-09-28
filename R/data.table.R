@@ -5,47 +5,20 @@ dim.data.table <- function(x) {
     # TO DO: consider placing "dim" as an attibute updated on inserts. Saves this 'if'.
 }
 
-.last.call <- function() {
-    file1 <- tempfile("Rrawhist")
-    failed <- tryCatch({savehistory(file1); FALSE}, error=function(e) TRUE)
-    if (failed) {
-        options(datatable.print.silence.refassign=FALSE)
-        warning("No history file available, auto suppressing `:=` will not work.\n",
-                "  The `datatable.print.silence.refassign` option has been set to ",
-                "FALSE so that this warning will not appear again in this session.\n",
-                "  Call `options(datatable.print.nrows=0)` to temporarily silence ",
-                "data.table printing to get a similar effect.\n",
-                "  Please see FAQ XXX for more information.")
-        ## TODO: Update FAQ and insert correct number here
-        ans <- ""
-    } else {
-        rawhist <- readLines(file1)
-        ans <- rawhist[length(rawhist)]
-        unlink(file1)
-    }
-    ans
-}
-
 print.data.table = function(x, nrows=getOption("datatable.print.nrows"), digits=NULL,
-                            topn=getOption("datatable.print.topn"),
-                            silence.refassign=getOption("datatable.print.silence.refassign"),
-                            ...)
+                            topn=getOption("datatable.print.topn"), ...)
 {
-    if (isTRUE(silence.refassign) && length(grep("\\[.*:=", .last.call()))) {
+    #  If print() was explicity called, sys.call(1)[2] is a symbol rather than data.table; use this fact.
+    #  := in [.data.table sets ..print to FALSE, IFF, it's parent env is .GlobalEnv (i.e. it was at the prompt, not in a function)
+    if (exists("..print") && !..print && is.data.table(sys.call(1)[[2]])) {   # exists is for examples when run by R CMD check (strange)
+        assign("..print",TRUE,envir=.GlobalEnv)
         return(invisible())
     }
-    if (!is.numeric(nrows)) {
-        nrows = 100L
-    }
-    if (!is.infinite(nrows)) {
-        nrows = as.integer(nrows)
-    }
-    if (nrows <= 0L) {
-        return(invisible())
-    }
-    if (!is.numeric(topn)) {
-        topn = 5L
-    }
+    assign("..print",TRUE,envir=.GlobalEnv)  # for explicit print() such as print(DT[,w:=99L])
+    if (!is.numeric(nrows)) nrows = 100L
+    if (!is.infinite(nrows)) nrows = as.integer(nrows)
+    if (nrows <= 0L) return(invisible())
+    if (!is.numeric(topn)) topn = 5L
     topn = as.integer(topn)
     if (nrow(x) == 0L) {
         if (length(x)==0L)
@@ -453,6 +426,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     newnames = NULL
     if (length(av) && av[1L] == ":=") {
         if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
+        if (identical(parent.frame(),.GlobalEnv)) assign("..print",FALSE,envir=.GlobalEnv)
         if (!is.null(irows)) {
             if (!length(irows)) {
                 if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")

@@ -2050,6 +2050,13 @@ test(731, DT["d",w:=99,by=y]$w, INT(5,7,9,5,7,9,NA,NA,NA))    # do nothing for m
 test(732, DT["d",w:=99L,by=y]$w, INT(5,7,9,5,7,9,NA,NA,NA))   # do nothing for missing group
 test(733, DT[c("c","e","b"),w:=sum(v),by=y%%2L]$w, INT(5,7,9,24,24,15,24,24,15))
 
+# Test := printing suppression. Here all as if user typed at prompt :
+# DT[,sum(v),by=a][1,V1:=99L]   #should print!
+# TO DO
+# and now from inside a function ...
+# TO DO
+
+
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
 #        test on out of bound i subsets e.g. 6:10 when DT has 7 rows, and mixed negative and positive i integer is error.
