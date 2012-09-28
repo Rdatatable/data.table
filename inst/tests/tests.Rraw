@@ -2050,11 +2050,26 @@ test(731, DT["d",w:=99,by=y]$w, INT(5,7,9,5,7,9,NA,NA,NA))    # do nothing for m
 test(732, DT["d",w:=99L,by=y]$w, INT(5,7,9,5,7,9,NA,NA,NA))   # do nothing for missing group
 test(733, DT[c("c","e","b"),w:=sum(v),by=y%%2L]$w, INT(5,7,9,24,24,15,24,24,15))
 
-# Test := printing suppression. Here all as if user typed at prompt :
-# DT[,sum(v),by=a][1,V1:=99L]   #should print!
-# TO DO
-# and now from inside a function ...
-# TO DO
+# Test := printing suppression. Here as if user typed at prompt. Can't use capture.output (iiuc) because {} changes eval depth
+DT = data.table(a=1:2)
+#sink(f<-tempfile())
+DT                                    # yes
+DT[1]                                 # yes
+DT[2,a:=3L]                           # no
+DT                                    # yes
+print(DT[2,a:=4L])                    # yes
+print(DT)                             # yes
+(function(){DT[2,a:=5L];NULL})()      # no
+DT                                    # yes
+{DT[2,a:=6L];invisible()}             # no
+print(DT)                             # yes
+(function(){print(DT[2,a:=7L]);print(DT);invisible()})()    # yes*2
+{print(DT[2,a:=8L]);print(DT);invisible()}                  # yes*2
+DT[1][,a:=9L]      # yes (since DT[1] is a new select) due to is.name in := in [.data.table
+DT[2,a:=10L][1]    # yes
+#sink(NULL)
+#test(734, paste(scan(f,character()),collapse=""), "a1:12:2a1:1a1:12:3a1:12:4a1:12:4NULLa1:12:5a1:12:6a1:12:7a1:12:7a1:12:8a1:12:8a1:9a1:1")
+#unlink(f)
 
 
 # TO DO: tests on double in add hoc by

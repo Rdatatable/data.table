@@ -18,5 +18,12 @@ SEXP copy(SEXP x)
 {
     return(duplicate(x));
 } 
+LibExtern int	R_EvalDepth;
+
+SEXP EvalDepth()
+{
+    return(ScalarInteger(R_EvalDepth));
+}
+
 
 
