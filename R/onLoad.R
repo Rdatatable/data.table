@@ -36,8 +36,6 @@
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))
     }
-    
-    assign("..print",TRUE,envir=.GlobalEnv)
 }
 
 

@@ -1,0 +1,79 @@
+
+R version 2.15.1 (2012-06-22) -- "Roasted Marshmallows"
+Copyright (C) 2012 The R Foundation for Statistical Computing
+ISBN 3-900051-07-0
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> require(data.table)
+Loading required package: data.table
+> # Tests the suppression of := output
+> # Since this tests autoprinting at the console, it needs to use the .Rout.save mechanism in R CMD check
+> DT = data.table(a=1:2)                # Should print at console?
+> DT                                    # yes
+   a
+1: 1
+2: 2
+> DT[1]                                 # yes
+   a
+1: 1
+> DT[2,a:=3L]                           # no
+> DT                                    # yes
+   a
+1: 1
+2: 3
+> print(DT[2,a:=4L])                    # yes
+   a
+1: 1
+2: 4
+> print(DT)                             # yes
+   a
+1: 1
+2: 4
+> (function(){DT[2,a:=5L];NULL})()      # no
+NULL
+> DT                                    # yes
+   a
+1: 1
+2: 5
+> {DT[2,a:=6L];invisible()}             # no
+> print(DT)                             # yes
+   a
+1: 1
+2: 6
+> (function(){print(DT[2,a:=7L]);print(DT);invisible()})()    # yes*2
+   a
+1: 1
+2: 7
+   a
+1: 1
+2: 7
+> {print(DT[2,a:=8L]);print(DT);invisible()}                  # yes*2
+   a
+1: 1
+2: 8
+   a
+1: 1
+2: 8
+> DT[1][,a:=9L]      # yes (since DT[1] is a new select) due to is.name in := in [.data.table
+   a
+1: 9
+> DT[2,a:=10L][1]    # yes
+   a
+1: 1
+> 
+> 
+> proc.time()
+   user  system elapsed 
+  1.468   0.068   1.505 

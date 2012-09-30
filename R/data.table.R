@@ -5,12 +5,21 @@ dim.data.table <- function(x) {
     # TO DO: consider placing "dim" as an attibute updated on inserts. Saves this 'if'.
 }
 
+.global = new.env()  # thanks to: http://stackoverflow.com/a/12605694/403310
+.global$print = TRUE
+.global$depthtrigger =
+    if (exists(".global",.GlobalEnv) || getRversion() < "2.14.0") {
+        8L # this is either development, or pre 2.14, where package isn't compiled
+    } else {
+        2L # normal value when package is loaded in 2.14+ (where functions are compiled in namespace)
+    }
+                           
 print.data.table = function(x, nrows=getOption("datatable.print.nrows"), digits=NULL,
                             topn=getOption("datatable.print.topn"), ...)
 {
-    #  := in [.data.table sets ..print to FALSE, when appropriate
-    if (exists("..print") && !..print) { # exists is for examples when run by R CMD check (strange)
-        assign("..print",TRUE,envir=.GlobalEnv)
+    if (!.global$print) {
+        #  := in [.data.table sets print=FALSE, when appropriate, to suppress := autoprinting at the console
+        .global$print = TRUE
         return(invisible())
     }
     if (!is.numeric(nrows)) nrows = 100L
@@ -230,7 +239,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (!missing(i)) setkey(ans,NULL)  # See test 304
         return(ans)
     }
-    assign("..print",TRUE,.GlobalEnv)
+    .global$print = TRUE
     if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
     if (roll && rolltolast) stop("roll and rolltolast cannot both be true")
     # TO DO. Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
@@ -425,7 +434,8 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     newnames = NULL
     if (length(av) && av[1L] == ":=") {
         if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
-        if (.Call(CEvalDepth)<=8L && is.name(substitute(x))) assign("..print",FALSE,envir=.GlobalEnv)
+        if (.Call(CEvalDepth)<=.global$depthtrigger && is.name(substitute(x)))
+            .global$print = FALSE
         if (!is.null(irows)) {
             if (!length(irows)) {
                 if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")
