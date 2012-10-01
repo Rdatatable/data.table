@@ -1725,7 +1725,7 @@ test(602, order(DT$x,DT$y), 1:20)
 
 # Test that as.list.data.table no longer copies via unclass, so speeding up sapply(DT,class) and lapply(.SD,...) etc, #2000
 DT = data.table(a=1:1e7,b=1:1e7,c=1:1e7,d=1:1e7)   # 152MB
-test(603, system.time(sapply(DT,class))["user.self"] < 0.01)
+test(603, system.time(sapply(DT,class))["user.self"] < 0.1)
 
 # Tests on loopability, i.e. that overhead of [.data.table isn't huge, as in speed example in example(":=")
 # These are just to catch slow down regressions where instead of 1s it takes 40s
