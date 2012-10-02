@@ -229,7 +229,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
 {
     # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
     # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
-
     # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
     if (!cedta()) {
         Nargs = nargs() - (!missing(drop))
@@ -239,7 +238,11 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (!missing(i)) setkey(ans,NULL)  # See test 304
         return(ans)
     }
-    .global$print = TRUE
+    if (!identical(sys.call(-2)[[1]],as.name("[.data.table"))) {
+        # The caller isn't [.data.table calling itself
+        # Reset flag in case auto print didn't run last time. Unlikely actually needed. So that DT...[] is a hard print.
+        .global$print = TRUE   
+    }
     if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
     if (roll && rolltolast) stop("roll and rolltolast cannot both be true")
     # TO DO. Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.

@@ -16,4 +16,6 @@ print(DT)                             # yes
 {print(DT[2,a:=8L]);print(DT);invisible()}                  # yes*2
 DT[1][,a:=9L]      # yes (since DT[1] is a new select) due to is.name in := in [.data.table
 DT[2,a:=10L][1]    # yes
+DT[,a:=as.integer(a)]   # no (tests switch to detect recursive [.data.table call)
+DT[1,a:=as.integer(a)]  # no
 
