@@ -31,8 +31,8 @@ NEW FEATURES
 
 BUG FIXES
         
-    o   Indexing columns of data.table with a logical vector and `with=FALSE`
-        now works as expected. This fixes #1797. Thanks to Mani Narayanan for reporting.
+    o   Indexing columns of data.table with a logical vector and `with=FALSE` now works as
+        expected, fixing #1797. Thanks to Mani Narayanan for reporting. Test added.
         
     o   In X[Y,cols,with=FALSE], NA matches are now handled correctly. And if cols
         includes join columns, NA matches (if any) are now populated from i. For
@@ -46,6 +46,9 @@ BUG FIXES
         
     o   On empty tables, := now changes column type and adds new 0 length columns ok, fixing
         #2274. Tests added.
+        
+    o   Deleting multiple columns out-of-order is no longer a segfault, #2223. Test added.
+            DT[,c(9,2,6):=NULL,with=FALSE]
         
 
 USER VISIBLE CHANGES

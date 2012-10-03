@@ -398,11 +398,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     }
     if (anytodelete) {
         // Delete any columns assigned NULL (there was a 'continue' earlier in loop above)
-        // In reverse order to make repeated memmove easy.
+        // In reverse order to make repeated memmove easy. Otherwise cols would need to be updated as well after each delete.
         PROTECT(colorder = duplicate(cols));
         protecti++;
         R_isort(INTEGER(colorder),LENGTH(cols));
-        PROTECT(colorder = match(colorder, cols, 0));
+        PROTECT(colorder = match(cols, colorder, 0));   // actually matches colorder to cols (oddly, arguments are that way around)
         protecti++;
         // Can't find a visible R entry point to return ordering of cols, above is only way I could find.
         // Need ordering (rather than just sorting) because the RHS corresponds in order to the LHS.
