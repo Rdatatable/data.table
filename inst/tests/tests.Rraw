@@ -2056,8 +2056,6 @@ test(734, DT[,b:=as.character(b)], data.table(a=integer(),b=character()))
 test(735, DT[,c:=double()], data.table(a=integer(),b=character(),c=double()))
 
 
-# TO DO: Relax error on DT[] so that can be to print, and add tests to autoprint.R
-
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
 #        test on out of bound i subsets e.g. 6:10 when DT has 7 rows, and mixed negative and positive i integer is error.

@@ -238,18 +238,18 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (!missing(i)) setkey(ans,NULL)  # See test 304
         return(ans)
     }
-    if (!identical(sys.call(-2)[[1]],as.name("[.data.table"))) {
-        # The caller isn't [.data.table calling itself
-        # Reset flag in case auto print didn't run last time. Unlikely actually needed. So that DT...[] is a hard print.
-        .global$print = TRUE   
-    }
     if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
     if (roll && rolltolast) stop("roll and rolltolast cannot both be true")
     # TO DO. Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
     if (!is.na(nomatch) && nomatch!=0L) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
     nomatch = as.integer(nomatch)
     if (which && !missing(j)) stop("'which' is true but 'j' is also supplied")
-    if (missing(i) && missing(j)) stop("must provide either i or j or both. Try DT instead of DT[].")
+    if (missing(i) && missing(j)) {
+        # ...[] == oops at console, forgot print(...)
+        # or some kind of dynamic construction that has edge case of no contents inside [...]
+        .global$print=TRUE
+        return(DT)
+    }
     if (!with && missing(j)) stop("j must be provided when with=FALSE")
     bysub=NULL
     if (!missing(by)) bysub=substitute(by)
