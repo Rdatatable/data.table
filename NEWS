@@ -12,22 +12,19 @@ This NEWS file summarises the main changes.
         
 NEW FEATURES
 
-    o   Printing options have been added to configure how and when a summary
-        of a data.table is printed to the console using. The "when" is
-        determined by `options(datatable.print.nrows=100)` -- if a data.table
-        has more than 100 rows, it is summarzied by showing the top and bottom
-        `options(datatable.print.topn=10)` (10) rows. This change slightly alters
-        the previous functionality of a direct call to `print(dt, nrows=XXX)`
-        by now showing the top AND bottom XXX rows (previously it was just top).
-        Thanks to Allan Engelhardt and Melanie Bocou for useful discussions.
-        For more details, see FAQs 2.11 and 2.22 and the following mailing list thread:
+    o   New printing options have been added :
+            options(datatable.print.nrows=100)
+            options(datatable.print.topn=10)
+        If the table to printed has more than nrows, the top and bottom topn rows
+        are printed. Otherwise, below nrows, the entire table is printed.
+        Thanks to Allan Engelhardt and Melanie Bocou for useful discussions :
         http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-September/001303.html
+        and see FAQs 2.11 and 2.22.
         
     o   When one or more rows in i have no match to x and i is unkeyed, i is now
-        tested to see if it is sorted. If so, the key is retained to match user
-        expectations. As before, when all rows of i match to x, the key is retained
-        if i matches to an ordered subset of keyed x without needing to test i,
-        even if i is unkeyed.
+        tested to see if it is sorted. If so, the key is retained. As before, when all rows of
+        i match to x, the key is retained if i matches to an ordered subset of keyed x without
+        needing to test i, even if i is unkeyed.
         
     o   by on a keyed empty table is now keyed by the by columns, for consistency with
         the non empty case when an ordered grouping is detected.
@@ -41,11 +38,15 @@ BUG FIXES
         includes join columns, NA matches (if any) are now populated from i. For
         consistency with X[Y] and X[Y,list(...)]. Tests added.
         
-    o   "Internal" error message when combining join containing missing groups and group by
+    o   "Internal error" message when combining join containing missing groups and group by
         is fixed, #2162. For example :
             X[Y,.N,by=NonJoinColumn]
         where Y contains some rows that don't match to X. This bug could also result in a seg
         fault. Thanks to Andrey Riabushenko for reporting. Tests added.
+        
+    o   On empty tables, := now changes column type and adds new 0 length columns ok, fixing
+        #2274. Tests added.
+        
 
 USER VISIBLE CHANGES
 
@@ -58,6 +59,7 @@ USER VISIBLE CHANGES
         DT[i,j:=value] to return invisibly". Thanks to discussions here :
           http://stackoverflow.com/questions/11359553/how-to-suppress-output-when-using-in-r-data-table
           http://r.789695.n4.nabble.com/Avoiding-print-when-using-tp4643076.html
+        * TO DO * Update 2 FAQs.
 
 
         **********************************************
