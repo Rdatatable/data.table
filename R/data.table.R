@@ -248,7 +248,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         # ...[] == oops at console, forgot print(...)
         # or some kind of dynamic construction that has edge case of no contents inside [...]
         .global$print=TRUE
-        return(DT)
+        return(x)
     }
     if (!with && missing(j)) stop("j must be provided when with=FALSE")
     bysub=NULL
