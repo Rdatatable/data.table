@@ -49,7 +49,12 @@ BUG FIXES
         
     o   Deleting multiple columns out-of-order is no longer a segfault, #2223. Test added.
             DT[,c(9,2,6):=NULL,with=FALSE]
+        Reminder: deleting columns by reference is relatively instant, regardless of table size.
         
+    o   Mixing column adds and deletes in one := gave incorrect results, #2251. Thanks to
+        Michael Nelson for reporting. Test added.
+            DT[,c("newcol","col1"):=list(col1+1L,NULL),with=FALSE]
+                
 
 USER VISIBLE CHANGES
 
