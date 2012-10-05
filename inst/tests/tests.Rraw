@@ -2085,6 +2085,12 @@ test(747, DT[,new1:=4:6], warning="recycled leaving remainder of 1 item")
 suppressWarnings(DT[,new1:=4:6])
 test(748, DT[c("c","b"),`:=`(new3=.N,new2=sum(new1)+1L)], data.table(a=letters[c(1:3,3L)],new1=INT(4,5,6,4),new2=INT(5,6,11,11),new3=INT(NA,1,2,2),key="a"))
 
+# and multiple LHS by group, #1710
+DT = data.table(a=rep(6:8,1:3),b=1:6)
+test(749, DT[,c("c","d","e"):=list(.N,sum(b),a*10L),by=a], data.table(a=rep(6:8,1:3),b=1:6,c=rep(1:3,1:3),d=INT(rep(c(1,5,15),1:3)),e=rep(6:8,1:3)*10L))
+test(750, DT[a<8,`:=`(f=b+sum(d),g=.N),by=c][,6:7,with=FALSE], data.table(f=INT(2,12,13,NA,NA,NA),g=INT(1,2,2,NA,NA,NA)))
+
+
 
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")

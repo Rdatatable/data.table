@@ -46,7 +46,7 @@ NEW FEATURES
             DT[,c("existingcol","newcol"):=1L]   # same (with=FALSE not needed)
             
     o   Multiple LHS:= and `:=`(...) now work by group, and by without by. Implementing
-        or fixing, and thanks to, #2215 (Florian Oswald), more to add ...
+        or fixing, and thanks to, #2215 (Florian Oswald), #1710 (Farrel Buchinsky), more to add ...
         
 
 BUG FIXES
