@@ -2074,6 +2074,8 @@ test(741, DT[,`:=`(4:6,7:9,10:12)], error="all arguments must be named")  # test
 # that out of bounds LHS is caught, root cause of #2254
 test(742, DT[,3:6:=1L], error="outside.*range")
 test(743, DT[,2:3:=99L], data.table(c1=1:3,c2=99L,c3=99L))
+test(744, DT[,(ncol(DT)+1):=1L], error="outside.*range")
+test(745, DT[,ncol(DT):=1L], data.table(c1=1:3,c2=99L,c3=1L)) 
 
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")

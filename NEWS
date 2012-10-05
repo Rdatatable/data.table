@@ -63,15 +63,18 @@ BUG FIXES
         #2274. Tests added.
         
     o   Deleting multiple columns out-of-order is no longer a segfault, #2223. Test added.
-            DT[,c(9,2,6):=NULL,with=FALSE]
+            DT[,c(9,2,6):=NULL]
         Reminder: deleting columns by reference is relatively instant, regardless of table size.
         
     o   Mixing column adds and deletes in one := gave incorrect results, #2251. Thanks to
         Michael Nelson for reporting. Test added.
-            DT[,c("newcol","col1"):=list(col1+1L,NULL),with=FALSE]
+            DT[,c("newcol","col1"):=list(col1+1L,NULL)]
+            DT[,`:=`(newcol=col1+1L,col1=NULL)]             # same
             
     o   Out of bound positions in the LHS of := are now caught. Root cause of crash in #2254.
         Thanks to Thell Fowler for reporting. Tests added.
+            DT[,(ncol(DT)+1):=1L]   # out of bounds error (add new columns by name only)
+            DT[,ncol(DT):=1L]       # ok
         
                 
 
