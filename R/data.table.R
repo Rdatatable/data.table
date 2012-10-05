@@ -446,26 +446,32 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             }
             if (!missing(keyby)) stop("When i is present, keyby := on a subset of rows doesn't make sense. Either change keyby to by, or remove i")
         }
-        lhs = jsub[[2]]
-        jsub = jsub[[3]]
-        av = all.vars(jsub,TRUE)
-
-        if (with) {
-            if (!is.name(lhs)) stop("LHS of := must be a single column name when with=TRUE. When with=FALSE the LHS may be a vector of column names or positions.")
-            lhs = as.character(lhs)
-            m = chmatch(lhs,names(x))
+        if (is.null(names(jsub))) {
+            # regular LHS:=RHS usage, or `:=`(...) with no named arguments (an error)
+            # `:=`(LHS,RHS) is valid though, but more because can't see how to detect that, than desire
+            if (length(jsub)!=3L) stop("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
+            lhs = jsub[[2]]
+            jsub = jsub[[3]]
+            if (is.name(lhs) && with) lhs = as.character(lhs)
+            # to use a variable of column names on LHS, use eval(mycols):=  or get("mycols"):=, or with=FALSE for backwards compatibility
+            else lhs = eval(lhs, envir=parent.frame(), enclos=parent.frame())
         } else {
-            lhs = eval(lhs, envir=parent.frame(), enclos=parent.frame())
-            if (!is.atomic(lhs)) stop("LHS of := must evaluate to an atomic vector (column names or positions) when with=FALSE")
-            if (is.character(lhs))
-                m = chmatch(lhs,names(x))
-            else if (is.numeric(lhs)) {
-                m = as.integer(lhs)
-                if (!all(1L<=m | m<=ncol(x))) stop("numeric LHS of := out of bounds")
-                lhs = names(x)[m]
-            } else
-                stop("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
+            # `:=`(c2=1L,c3=2L,...)
+            lhs = names(jsub)[-1]
+            if (any(lhs=="")) stop("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
+            names(jsub)=""
+            jsub[[1]]=as.name("list")
         }
+        av = all.vars(jsub,TRUE)
+        if (!is.atomic(lhs)) stop("LHS of := must be a symbol, or an atomic vector (column names or positions).")
+        if (is.character(lhs))
+            m = chmatch(lhs,names(x))
+        else if (is.numeric(lhs)) {
+            m = as.integer(lhs)
+            if (any(m<1L | ncol(x)<m)) stop("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
+            lhs = names(x)[m]
+        } else
+            stop("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
         if (all(!is.na(m))) {
             # updates by reference to existing columns
             cols = as.integer(m)

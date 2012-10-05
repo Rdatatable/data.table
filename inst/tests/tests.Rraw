@@ -2057,10 +2057,27 @@ test(735, DT[,c:=double()], data.table(a=integer(),b=character(),c=double()))
 
 # Deleting multiple columns out-of-order, #2223
 DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12,e=13:15,f=16:18,g=19:21)
-test(736, DT[,c("b","d","g","f","c"):=NULL,with=FALSE], data.table(a=1:3,e=13:15))
+test(736, DT[,c("b","d","g","f","c"):=NULL,with=FALSE], data.table(a=1:3,e=13:15))  # test redundant with=FALSE is ok
+DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12,e=13:15,f=16:18,g=19:21)
+test(737, DT[,c("b","d","g","f","c"):=NULL], data.table(a=1:3,e=13:15))  # with no longer needed
 
-DT = data.table(c1 = 1:2)
-test(737, DT[,c("c2", "c1"):=list(c1+1L, NULL),with=FALSE], data.table(c2=2:3))
+# Mixing column adds and deletes in one := gave incorrect results, #2251.
+DT = data.table(c1=1:2)
+test(738, DT[,c("c2", "c1"):=list(c1+1L, NULL)], data.table(c2=2:3))
+
+# `:=`(c1=v1,v2=v2,...) is now valid , #2254
+DT = data.table( c1=1:3 )
+test(739, DT[,`:=`(c2=4:6, c3=7:9)], data.table(c1=1:3,c2=4:6,c3=7:9))
+test(740, DT[,`:=`(4:6,c3=7:9)], error="all arguments must be named")
+test(741, DT[,`:=`(4:6,7:9,10:12)], error="all arguments must be named")  # test the same error message in the other branch
+
+# that out of bounds LHS is caught, root cause of #2254
+test(742, DT[,3:6:=1L], error="outside.*range")
+test(743, DT[,2:3:=99L], data.table(c1=1:3,c2=99L,c3=99L))
+
+
+# TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
+
 
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key

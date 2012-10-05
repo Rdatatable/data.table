@@ -28,6 +28,21 @@ NEW FEATURES
         
     o   by on a keyed empty table is now keyed by the by columns, for consistency with
         the non empty case when an ordered grouping is detected.
+        
+    o   DT[,`:=`(col1=val1, col2=val2, ...)] is now valid syntax rather than a crash, #2254.
+        Many thanks to Thell Fowler for the suggestion.
+    
+    o   with=FALSE is no longer needed to use column names or positions on the LHS of :=, #2120.
+            DT[,c("newcol","existingcol"):=list(1L,NULL)]   # with=FALSE not needed
+        same as :
+            DT[,`:=`(newcol=1L, existingcol:=NULL)]
+        If the LHS is held in a variable, the followed equivalent options are retained :
+            mycols = c("existingcol","newcol")
+            DT[,get("mycols"):=1L]
+            DT[,eval(mycols):=1L]                # same
+            DT[,mycols:=1L,with=FALSE]           # same
+            DT[,c("existingcol","newcol"):=1L]   # same (with=FALSE not needed)
+        
 
 BUG FIXES
         
@@ -54,6 +69,10 @@ BUG FIXES
     o   Mixing column adds and deletes in one := gave incorrect results, #2251. Thanks to
         Michael Nelson for reporting. Test added.
             DT[,c("newcol","col1"):=list(col1+1L,NULL),with=FALSE]
+            
+    o   Out of bound positions in the LHS of := are now caught. Root cause of crash in #2254.
+        Thanks to Thell Fowler for reporting. Tests added.
+        
                 
 
 USER VISIBLE CHANGES
