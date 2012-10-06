@@ -258,10 +258,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         by=bysub=substitute(keyby)
         # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
     }
-    if (!missing(by)) {
-        if (!with) stop("'with' must be TRUE when 'by' or 'keyby' is provided")
-        if (missing(j)) stop("'by' or 'keyby' is supplied but not j")
-    }
+    if (!missing(by) && missing(j)) stop("'by' or 'keyby' is supplied but not j")
     irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
     bywithoutby=FALSE
     if (!missing(i)) {
@@ -452,11 +449,16 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             if (length(jsub)!=3L) stop("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
             lhs = jsub[[2]]
             jsub = jsub[[3]]
-            if (is.name(lhs) && with) lhs = as.character(lhs)
+            if (is.name(lhs) && with)
+                lhs = as.character(lhs)
+            else {
+                if (!with && !is.name(lhs) && verbose) cat("with=FALSE ignored: LHS of := isn't a symbol\n")  # TO DO: upgrade to warning
+                lhs = eval(lhs, envir=parent.frame(), enclos=parent.frame())
+            }
             # to use a variable of column names on LHS, use eval(mycols):=  or get("mycols"):=, or with=FALSE for backwards compatibility
-            else lhs = eval(lhs, envir=parent.frame(), enclos=parent.frame())
         } else {
             # `:=`(c2=1L,c3=2L,...)
+            if (!with) warning("with=FALSE ignored. Not needed in `:=`(...) syntax.")
             lhs = names(jsub)[-1]
             if (any(lhs=="")) stop("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
             names(jsub)=""
@@ -487,7 +489,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 n = max(ncol(x)+100, ncol(x)+2*length(newnames))
                 name = substitute(x)
                 if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
-                    cat("Growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.")
+                    cat("Growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n")
                     # Verbosity should not issue warnings, so cat rather than warning.
                     # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
                 # TO DO test   DT[....][,foo:=42L],  i.e. where the foo does the realloc. Would it see DT name or the call.
@@ -505,6 +507,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             }
         }
     } else if (!with) {
+        if (!missing(by)) warning("'with=FALSE ignored when 'by' or 'keyby' is provided and not using :=")
         if (is.logical(j)) j <- which(j)
         if (!length(j)) return( null.data.table() )
         if (is.character(j)) j = chmatch(j, names(x))

@@ -48,6 +48,13 @@ NEW FEATURES
     o   Multiple LHS:= and `:=`(...) now work by group, and by without by. Implementing
         or fixing, and thanks to, #2215 (Florian Oswald), #1710 (Farrel Buchinsky), more to add ...
         
+    o   with=FALSE now works with a symbol LHS of :=, by group (#2120) :
+            colname = "newcol"
+            DT[,colname:=f(),by=grp,with=FALSE]
+        Thanks to Alex :
+            http://stackoverflow.com/questions/11745169/dynamic-column-names-in-data-table-r
+            http://stackoverflow.com/questions/11680579/assign-multiple-columns-using-in-data-table-by-group
+        
 
 BUG FIXES
         
