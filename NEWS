@@ -87,8 +87,14 @@ BUG FIXES
         Thanks to Thell Fowler for reporting. Tests added.
             DT[,(ncol(DT)+1):=1L]   # out of bounds error (add new columns by name only)
             DT[,ncol(DT):=1L]       # ok
-        
-                
+            
+    o   A recycled column plonk RHS of := no longer messes up setkey and := when used on that
+        object afterwards, #2298. For example,
+            DT = data.table(a=letters[3:1],x=1:3)
+            DT[,c("x1","x2"):=x]  # ok (x1 and x2 are copies of x)
+            setkey(DT,a)          # now ok rather than wrong result
+        Thanks to Timothee Carayol for reporting. Tests added.
+
 
 USER VISIBLE CHANGES
 

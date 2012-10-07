@@ -235,8 +235,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     }
     for (i=0; i<length(cols); i++) {
         coln = INTEGER(cols)[i]-1;
-        if (TYPEOF(values)==VECSXP && (length(cols)>1 || length(values)==1))
-            thisvalue = VECTOR_ELT(values,i%length(values));
+        if (TYPEOF(values)==VECSXP && (LENGTH(cols)>1 || LENGTH(values)==1))
+            thisvalue = VECTOR_ELT(values,i%LENGTH(values));
         else
             thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
         if (TYPEOF(thisvalue)==NILSXP) {
@@ -245,6 +245,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         }
         vlen = length(thisvalue);
         if (length(rows)==0 && targetlen==vlen) {
+            if (TYPEOF(values)!=VECSXP || i>LENGTH(values)-1)
+                thisvalue = duplicate(thisvalue);  // otherwise recycled RHS would have columns pointing to others, #2298
             SET_VECTOR_ELT(dt,coln,thisvalue);
             // plonk new column in as it's already the correct length
             // if column exists, 'replace' it (one way to change a column's type i.e. less easy, as it should be, for speed, correctness and to get the user thinking about their intent)        
