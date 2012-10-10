@@ -2034,15 +2034,22 @@ test(723, DT[list(c(5,6,7)), .N, by=b, nomatch=0], data.table(b=numeric(),N=inte
 test(724, DT[list(c(5,6,7)), .N, by=b, nomatch=0], DT[list(c(5,6,7)),nomatch=0][,.N,by=b])      # Splitting should always be consistent
 
 # another test linked from #2162
-DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9, key="x")
+DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1L,3L,6L), v=1:9, key="x")
 test(725, DT[c("a","b","d"),v][,list(v)], DT[J(c("a","b","d")),"v",with=FALSE])  # unfiled bug fix for NA matches; see NEWS 1.8.3
-test(726, DT[c("a", "b", "d"), sum(v), by=x, nomatch=0], data.table(x=c("a","b"),V1=c(6L,15L),key="x"))
-test(727, DT[c("a", "b", "d"), sum(v), by=x], data.table(x=c("a","b","d"),V1=c(6L,15L,NA),key="x"))
-test(728, DT[c("a", "b", "d"), sum(v), by=x], DT[J(c("a", "b", "d"))][, sum(v), by=x])
+test(726, DT[c("a", "b", "d"), sum(v), by=y, nomatch=0], data.table(y=INT(1,3,6),V1=INT(5,7,9),key="y"))
+test(727, DT[c("a", "b", "d"), sum(v), by=y], data.table(y=INT(1,3,6,NA),V1=INT(5,7,9,NA)))
+test(728, DT[c("a", "b", "d"), sum(v), by=y], DT[J(c("a", "b", "d"))][, sum(v), by=y])
 oldv = options(datatable.verbose=FALSE)
-test(729, capture.output(DT[c("a", "b", "d"), print(.SD), by=x, verbose=FALSE]),
-          capture.output(DT[c("a", "b", "d")][, print(.SD), by=x]))
+test(729, capture.output(DT[c("a", "b", "d"), print(.SD)]),
+          capture.output(suppressWarnings(DT[c("a", "b", "d"), print(.SD), by=x])))
+test(729.1, capture.output(DT[c("a", "b"), print(.SD), by=y]),   # TO DO: why doesn't last group have x=d, maybe groups=i in dogroups
+            capture.output(DT[c("a", "b")][, print(.SD), by=y]))
 options(oldv)
+test(729.2, DT[c("b","d"),.SD], data.table(x=c("b","b","b","d"),y=INT(1,3,6,NA),v=INT(4,5,6,NA)))   # no debate here
+test(729.3, DT[c("b","d"),.SD, by=y], DT[c("b","d")][,.SD, by=y][4L,x:=NA_character_])   # the i groups when no match don't get carried through (would be hard to implement this and very unlikely to be useful. Just break into compound query, if needed to be used in j, to get them to carry through. TO DO: add to FAQ.
+
+# That unnamed i gets x's join column names when j is .SD (or any named list, which verbose warns is inefficient), #2281
+test(729.4, DT[c("a","b"),.SD], data.table(x=rep(c("a","b"),each=3),y=INT(1,3,6),v=1:6,key="x"))
 
 # check := when combining join with missing groups and then group by
 test(730, DT[c("b","a"),w:=sum(v),by=y]$w, INT(5,7,9,5,7,9,NA,NA,NA))  # by over a different column than was joined to
@@ -2105,7 +2112,11 @@ test(753, setkey(DT[,c("x1","x2"):=x],a), data.table(a=letters[1:3],x=3:1,x1=3:1
 DT = data.table(a=letters[3:1],x=1:3,y=4:6)
 test(754, setkey(DT[,c("x1","y1","x2","y2"):=list(x,y)],a), data.table(a=letters[1:3],x=3:1,y=6:4,x1=3:1,y1=6:4,x2=3:1,y2=6:4,key="a"))
 
-
+# Test warning on redundant by, #2282.  # ** TO DO ** - add this to FAQ warnings section.
+DT = data.table(a=letters[1:3],b=rep(c("d","e"),each=3),x=1:6,key="a,b")
+test(755, DT[c("b","c"),sum(x)], data.table(a=c("b","c"),V1=c(7L,9L),key="a"))
+test(756, DT[c("b","c"),sum(x),by=a], warning="by.*is not necessary.*by-without-by")
+test(757, DT[list(c("b","c"),"d"),sum(x),by=a], data.table(a=c("b","c"),V1=2:3,key="a"))  # no warning because 'by' less than number of join columns
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 

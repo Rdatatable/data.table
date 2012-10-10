@@ -69,7 +69,7 @@ BUG FIXES
         is fixed, #2162. For example :
             X[Y,.N,by=NonJoinColumn]
         where Y contains some rows that don't match to X. This bug could also result in a seg
-        fault. Thanks to Andrey Riabushenko for reporting. Tests added.
+        fault. Thanks to Andrey Riabushenko and Michael Schermerhorn for reporting. Tests added.
         
     o   On empty tables, := now changes column type and adds new 0 length columns ok, fixing
         #2274. Tests added.
@@ -95,6 +95,9 @@ BUG FIXES
             setkey(DT,a)          # now ok rather than wrong result
         Thanks to Timothee Carayol for reporting. Tests added.
 
+    o   Join columns are now named correctly when j is .SD, a subset of .SD, or similar, #2281.
+            DT[c("a","b"),.SD[...]]    # result's first column now named key(DT)[1] rather than 'V1'
+
 
 USER VISIBLE CHANGES
 
@@ -105,17 +108,29 @@ USER VISIBLE CHANGES
         
     o   DT[,LHS:=RHS,...] no longer prints DT. This implements #2128 "Try again to get
         DT[i,j:=value] to return invisibly". Thanks to discussions here :
-          http://stackoverflow.com/questions/11359553/how-to-suppress-output-when-using-in-r-data-table
-          http://r.789695.n4.nabble.com/Avoiding-print-when-using-tp4643076.html
-        * TO DO * Update 2 FAQs.
+            http://stackoverflow.com/questions/11359553/how-to-suppress-output-when-using-in-r-data-table
+            http://r.789695.n4.nabble.com/Avoiding-print-when-using-tp4643076.html
+        ** TO DO ** Update 2 FAQs.
         
     o   DT[] now returns DT rather than an error that either i or j must be supplied.
         So, ending with [] at the console is a convenience to print the result of :=, rather
         than wrapping with print(); e.g.,
-          DT[i,j:=value]...oops forgot print...[]
+            DT[i,j:=value]...oops forgot print...[]
         is the same as :
-          print(DT[i,j:=value])
+            print(DT[i,j:=value])
           
+    o   A warning is now issued when by is set equal to the by-without-by join columns, therefore
+        causing x to be subset and then grouped again. The warning suggests removing by or
+        changing it, #2282. This can be turned off using options(datatable.warnredundantby=FALSE).
+        Thanks to Ben Barnes for highlighting :
+            http://stackoverflow.com/a/12474211/403310
+
+NOTES
+
+    o   There are now 757 raw tests, plus S4 tests.
+
+    o   v1.8.3 is an R-Forge only beta release. v1.8.4 will be released to CRAN.
+    
 
         **********************************************
         **                                          **

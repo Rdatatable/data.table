@@ -261,6 +261,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     if (!missing(by) && missing(j)) stop("'by' or 'keyby' is supplied but not j")
     irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
     bywithoutby=FALSE
+    potentialredundantby = FALSE
     if (!missing(i)) {
         isub = substitute(i)
         if (is.null(isub)) return( null.data.table() )
@@ -287,7 +288,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             leftcols = if (haskey(i))
                 chmatch(head(key(i),length(rightcols)),names(i))
             else
-                1L:min(ncol(i),length(rightcols))
+                1L:min(length(i),length(rightcols))
             rightcols = head(rightcols,length(leftcols))
             origi = i       # Only needed for factor to factor joins, to recover the original levels
                             # Otherwise, types of i join columns are alyways promoted to match x's
@@ -359,6 +360,8 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                         # TO DO: *** if works, port the unlist mapply to C
                         #        *** This is potentially relatively slow currently.
                     }
+                    if (!missing(by) && !which && !missing(j) && with)
+                        potentialredundantby = TRUE
                 } else {
                     bywithoutby=TRUE  # TO DO: use allLen1 to detect if joining to unique rows?
                     # Important that f__ is as long as nrow(i) (rather than taking away 0s), to know the i groups
@@ -599,6 +602,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 bysubl = as.list.default(bysub)
             }
             allbyvars = intersect(unlist(sapply(bysubl,all.vars,functions=TRUE)),names(x))
+            if (potentialredundantby && all(sapply(bysubl,is.name)) && identical(allbyvars,names(x)[rightcols]) && options("datatable.warnredundantby")[[1L]]) {
+                warning("by is not necessary in this query; it equals all the join columns in the same order. j is already evaluated by group of x that each row of i matches to (by-without-by, see ?data.table). Setting by will be slower because a subset of x is taken and then grouped again. Consider removing by, or changing it.")
+            }
             orderedirows = is.sorted(irows)  # TRUE when irows is NULL (i.e. no i clause)
             bysameorder = orderedirows && haskey(x) && all(sapply(bysubl,is.name)) && identical(allbyvars,head(key(x),length(allbyvars)))
             if (is.null(irows))
@@ -947,8 +953,13 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         }
         return(x)
     }
-    if (is.null(ans)) return(as.data.table.list(lapply(groups,"[",0L)))  # side-effects only such as test 168
-
+    if (is.null(ans)) {
+        ans = as.data.table.list(lapply(groups,"[",0L))  # side-effects only such as test 168
+        setnames(ans,bynames)   # TO DO: why doesn't groups have bynames in the first place?
+        return(ans)
+    }
+    setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
+    setattr(ans,"class",c("data.table","data.frame"))
     if (is.null(names(ans))) {
         # Efficiency gain of dropping names has been successful. Ordinarily this will run.
         if (is.null(jvnames)) jvnames = character(length(ans)-length(bynames))
@@ -957,10 +968,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         ww = which(jvnames=="")
         if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
         setattr(ans, "names", c(bynames, jvnames))
+    } else {
+        setnames(ans,seq_along(bynames),bynames)   # TO DO: why doesn't .BY (where dogroups gets names when j is named list) have bynames?
     }
-
-    setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
-    setattr(ans,"class",c("data.table","data.frame"))
     if (haskey(x) && ((!missing(by) && bysameorder) || (!missing(i) && (haskey(i) || is.sorted(f__))))) {
         setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
     } else if (!missing(keyby)) {
