@@ -111,17 +111,18 @@ USER VISIBLE CHANGES
             http://stackoverflow.com/questions/11359553/how-to-suppress-output-when-using-in-r-data-table
             http://r.789695.n4.nabble.com/Avoiding-print-when-using-tp4643076.html
         ** TO DO ** Update 2 FAQs.
-        
+
     o   DT[] now returns DT rather than an error that either i or j must be supplied.
         So, ending with [] at the console is a convenience to print the result of :=, rather
         than wrapping with print(); e.g.,
             DT[i,j:=value]...oops forgot print...[]
         is the same as :
             print(DT[i,j:=value])
-          
-    o   A warning is now issued when by is set equal to the by-without-by join columns, therefore
+
+    o   A warning is now issued when by is set equal to the by-without-by join columns,
         causing x to be subset and then grouped again. The warning suggests removing by or
-        changing it, #2282. This can be turned off using options(datatable.warnredundantby=FALSE).
+        changing it, #2282. This can be turned off using options(datatable.warnredundantby=FALSE)
+        in case it occurs after upgrading, until those lines can be modified.
         Thanks to Ben Barnes for highlighting :
             http://stackoverflow.com/a/12474211/403310
 
