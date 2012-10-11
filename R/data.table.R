@@ -612,14 +612,15 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             else {
                 if (!is.integer(irows)) stop("Internal error: irows isn't integer")  # length 0 when i returns no rows
                 # We might pass irows as i to x[] below (and did in 1.8.2): irows may contain NA, 0, negatives and >nrow(x) here, all ok.
-                # But we need i join column values to be retained, hence the eval(isub) approach. TO DO: do directly here rather than a recursive call and rejoin.
+                # But we need i join column values to be retained, hence the eval(isub) approach.
+                # TO DO: do directly here rather than a recursive call and rejoin.
                 if (!is.na(nomatch)) irows = irows[irows!=0L]
                 if (length(allbyvars)) {
                     if (verbose) cat("i clause present and columns used in by detected, only these subset:",paste(allbyvars,collapse=","),"\n")
-                    xss = x[eval(isub),allbyvars,with=FALSE,nomatch=nomatch]
+                    xss = x[eval(isub),allbyvars,with=FALSE,nomatch=nomatch,mult=mult,roll=roll,rolltolast=rolltolast]
                 } else {
                     if (verbose) cat("i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '",deparse(by),"'\n",sep="")
-                    xss = x[eval(isub),nomatch=nomatch]
+                    xss = x[eval(isub),nomatch=nomatch,mult=mult,roll=roll,rolltolast=rolltolast]
                 }
                 byval = eval(bysub, xss, parent.frame())
                 xnrow = nrow(xss)

@@ -2118,6 +2118,14 @@ test(755, DT[c("b","c"),sum(x)], data.table(a=c("b","c"),V1=c(7L,9L),key="a"))
 test(756, DT[c("b","c"),sum(x),by=a], warning="by.*is not necessary.*by-without-by")
 test(757, DT[list(c("b","c"),"d"),sum(x),by=a], data.table(a=c("b","c"),V1=2:3,key="a"))  # no warning because 'by' less than number of join columns
 
+# join then by when mult=="last"|"first", #2303 (crash in dev 1.8.3 only)
+DT = data.table(a=1:3,b=1:6,c=7:12,key="a")
+test(758, DT[J(c(1L,1L)),sum(c),by=b,mult="last"], DT[J(c(1L,1L)),mult="last"][,sum(c),by=b])
+test(759, DT[J(1L),c,by=b,mult="last"], DT[J(1L),mult="last"][,c,by=b])
+test(760, DT[2:5,sum(c),by=b], DT[2:5][,sum(c),by=b])
+test(761, DT[2:5,sum(c),by=b%%2], DT[2:5][,sum(c),by=b%%2])
+
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 
 # TO DO: tests on double in add hoc by

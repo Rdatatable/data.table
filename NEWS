@@ -54,7 +54,6 @@ NEW FEATURES
         Thanks to Alex :
             http://stackoverflow.com/questions/11745169/dynamic-column-names-in-data-table-r
             http://stackoverflow.com/questions/11680579/assign-multiple-columns-using-in-data-table-by-group
-        
 
 BUG FIXES
         
@@ -98,7 +97,6 @@ BUG FIXES
     o   Join columns are now named correctly when j is .SD, a subset of .SD, or similar, #2281.
             DT[c("a","b"),.SD[...]]    # result's first column now named key(DT)[1] rather than 'V1'
 
-
 USER VISIBLE CHANGES
 
     o   J() now issues a warning (when used *outside* DT[...]) that using it
@@ -125,12 +123,20 @@ USER VISIBLE CHANGES
         in case it occurs after upgrading, until those lines can be modified.
         Thanks to Ben Barnes for highlighting :
             http://stackoverflow.com/a/12474211/403310
+            
+THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
+
+    o   Combining a join with mult="first"|"last" followed by by inside the same [...] gave incorrect
+        results or a crash, #2303. Many thanks to Garrett See for the reproducible example and
+        pinpointing in advance which commit had caused the problem. Tests added.
 
 NOTES
 
-    o   There are now 757 raw tests, plus S4 tests.
+    o   There are now 761 raw tests. test.data.table() should return precisely this number of
+        tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
+        installed; please reinstall from CRAN.
 
-    o   v1.8.3 is an R-Forge only beta release. v1.8.4 will be released to CRAN.
+    o   v1.8.3 was an R-Forge only beta release. v1.8.4 was released to CRAN.
     
 
         **********************************************
