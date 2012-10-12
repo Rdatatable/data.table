@@ -88,9 +88,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     
     PROTECT(listwrap = allocVector(VECSXP, 1));
     protecti++;
-
+    Rboolean jexpIsSymbolOtherThanSD = (isSymbol(jexp) && strcmp(CHAR(PRINTNAME(jexp)),".SD")!=0);  // test 559
+    
     ansloc = 0;
-    for(i=0; i<ngrp; i++) {
+    for(i=0; i<ngrp; i++) {   // even for an empty i table, ngroup is length 1 (starts is value 0), for consistency of empty cases
         if (INTEGER(starts)[i] == 0 && (i>0 || !isNull(lhs))) continue;
         if (!isNull(lhs) &&
                (INTEGER(starts)[i] == NA_INTEGER ||
@@ -153,8 +154,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     }
                 }
             }
-        }
-        
+        }        
         INTEGER(rownames)[1] = -grpn;  // the .set_row_names() of .SD. Not .N when nomatch=NA and this is a nomatch
         for (j=0; j<length(SD); j++) {
             SETLENGTH(VECTOR_ELT(SD,j), grpn);
@@ -163,25 +163,29 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             // nameSyms pre-stored to save repeated install() for efficiency.
         }
         PROTECT(jval = eval(jexp, env));
-        if (!length(jval)) {
+        if (isNull(jval))  {
             // j may be a plot or other side-effect only
             UNPROTECT(1);
             continue;
         }
-        if ((wasvector = isVectorAtomic(jval) || (isSymbol(jexp) && strcmp(CHAR(PRINTNAME(jexp)),".SD")!=0))) {
+        if ((wasvector = (isVectorAtomic(jval) || jexpIsSymbolOtherThanSD))) {  // see test 559
             // Prior to 1.8.1 the wrap with list() was done up in R after the first group had tested.
-            // This wrap is done to make the code below easier to loop through. listwrap avoids allocating for each group 
+            // This wrap is done to make the code below easier to loop through. listwrap avoids copying jval.
             SET_VECTOR_ELT(listwrap,0,jval);
             jval = listwrap;
         } else {
-            if (!isVector(jval)) error("j must evaluate to vector or list");
-            for (j=0; j<length(jval); j++) {
+            if (!isNewList(jval))    // isNewList tests for VECSXP. isList tests for (old) LISTSXP
+                error("j evaluates to type '%s'. Must evaluate to atomic vector or list.",type2char(TYPEOF(jval)));
+            if (!LENGTH(jval)) {
+                UNPROTECT(1);
+                continue;
+            }
+            for (j=0; j<LENGTH(jval); j++) {
                 thiscol = VECTOR_ELT(jval,j);
                 if (!isNull(thiscol) && (!isVector(thiscol) || isFrame(thiscol) || isArray(thiscol) ))
                     error("All items in j=list(...) should be atomic vectors or lists. If you are trying something like j=list(.SD,newcol=mean(colA)) then use := by group instead (much quicker), or cbind or merge afterwards.");
             }
         }
-        // TO DO: check if direct NULL in user j is auto wrapped to make list(NULL) (length 1)
         if (!isNull(lhs)) {
             for (j=0; j<length(lhs); j++) {
                 targetcol = VECTOR_ELT(dt,INTEGER(lhs)[j]-1);
@@ -257,17 +261,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             continue;
         }
         maxn = 0;
-        if (length(jval)>1 || length(VECTOR_ELT(jval,0))) {
-            if (njval==0) njval = length(jval);   // for first group, then the rest must conform
-            if (njval != length(jval)) error("j doesn't evaluate to the same number of columns for each group");  // this would be a problem even if we unlisted afterwards. This way the user finds out earlier though so he can fix and rerun sooner.
-            for (j=0; j<njval; j++) {
-                k = length(VECTOR_ELT(jval,j));  // might be NULL, so length not LENGTH
-                maxn = k>maxn ? k : maxn;
-            }
-        } // else j was NULL or data.table(NULL) etc (tests 361-364)
-        if (maxn==0) {
-            UNPROTECT(1);   // jval
-            continue;
+        if (njval==0) njval = LENGTH(jval);   // for first group, then the rest (when non 0) must conform to the first >0 group
+        if (njval!=LENGTH(jval)) error("j doesn't evaluate to the same number of columns for each group");  // this would be a problem even if we unlisted afterwards. This way the user finds out earlier though so he can fix and rerun sooner.
+        for (j=0; j<njval; j++) {
+            k = length(VECTOR_ELT(jval,j));  // might be NULL, so length not LENGTH
+            maxn = k>maxn ? k : maxn;
         }
         if (ansloc + maxn > estn) {
             if (estn == -1) {

@@ -835,7 +835,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         return(jval)
     }
     if (length(xvars)) {
-        alloc = seq_len(max(len__))
+        alloc = if (length(len__)) seq_len(max(len__)) else 0L
         SDenv$.SD = x[alloc, xvars, with=FALSE]
         # TO DO: **** Instead just for loop assigning vector(typeof(...)). Saves recursion overhead.
         # Must not shallow copy xvars here. This is the allocation for the largest group. Since i is passed in here, it won't shallow copy, even in future. Only DT[,xvars,with=FALSE] might ever shallow copy automatically.

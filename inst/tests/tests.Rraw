@@ -1638,7 +1638,7 @@ test(557, DT[, f(.SD), by=x], error="[.]SD is locked.*reserved for possible futu
 DT = data.table(x=letters[1:3],y=list(1:10,letters[1:4],data.table(a=1:3,b=4:6)))
 test(558, capture.output(print(DT)),
           c("   x            y","1: a 1,2,3,4,5,6,","2: b      a,b,c,d","3: c <data.table>"))
-test(559, setkey(DT,x)["a",y][[2]][[1]], 1:10)
+test(559, setkey(DT,x)["a",y][[2]][[1]], 1:10)   # y is symbol representing list column, specially detected in dogroups
 
 # Test renaming of .N to N
 DT = data.table(a=INT(1,1,2,2,2),b=INT(1,2,2,2,1))
@@ -2125,6 +2125,14 @@ test(759, DT[J(1L),c,by=b,mult="last"], DT[J(1L),mult="last"][,c,by=b])
 test(760, DT[2:5,sum(c),by=b], DT[2:5][,sum(c),by=b])
 test(761, DT[2:5,sum(c),by=b%%2], DT[2:5][,sum(c),by=b%%2])
 
+# joining from empty i table, #2194
+DT = data.table(a=1:3,b=4:6,key="a")
+test(762, DT[J(integer()),b], data.table(a=integer(),b=integer(),key="a"))
+test(763, DT[J(integer()),1L,by=b], data.table(b=integer(),V1=integer(),key="b"))  # ordered by is detected now (empty is ordered), otherwise a join to the result would fail just because it's empty which wouldn't be consistent with non empty case
+test(764, DT[J(integer()),b,mult="last"], integer())
+test(765, DT[J(2L),b,mult="last"], 5L)
+test(766, DT[J(5L),b,nomatch=0], data.table(a=integer(),b=integer(),key="a"))
+test(767, DT[J(5:6),b,nomatch=0], data.table(a=integer(),b=integer(),key="a"))
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 

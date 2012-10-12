@@ -11,7 +11,7 @@ This NEWS file summarises the main changes.
         **          R-Forge, not yet CRAN           **
         **                                          **
         **********************************************
-        
+
 NEW FEATURES
 
     o   New printing options have been added :
@@ -97,6 +97,9 @@ BUG FIXES
     o   Join columns are now named correctly when j is .SD, a subset of .SD, or similar, #2281.
             DT[c("a","b"),.SD[...]]    # result's first column now named key(DT)[1] rather than 'V1'
 
+    o   Joining an empty i table now works without error (#2194). It also retains key and has a consistent
+        number and type of empty columns as the non empty by-without-by case. Tests added.
+        
 USER VISIBLE CHANGES
 
     o   J() now issues a warning (when used *outside* DT[...]) that using it
@@ -132,7 +135,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 761 raw tests. test.data.table() should return precisely this number of
+    o   There are now 767 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 
