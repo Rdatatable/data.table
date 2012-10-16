@@ -127,6 +127,10 @@ USER VISIBLE CHANGES
         Thanks to Ben Barnes for highlighting :
             http://stackoverflow.com/a/12474211/403310
             
+    o   Description of how join columns are determined in X[Y] syntax has been further clarified
+        in ?data.table. Thanks to Alex :
+            http://stackoverflow.com/questions/12920803/merge-data-table-when-the-number-of-key-columns-are-different
+            
 THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
     o   Combining a join with mult="first"|"last" followed by by inside the same [...] gave incorrect
