@@ -2134,6 +2134,20 @@ test(765, DT[J(2L),b,mult="last"], 5L)
 test(766, DT[J(5L),b,nomatch=0], data.table(a=integer(),b=integer(),key="a"))
 test(767, DT[J(5:6),b,nomatch=0], data.table(a=integer(),b=integer(),key="a"))
 
+# Crash on by-without-by with mixed type non join i columns, #2314. Despite not being used by j they were still being assigned to .BY.
+DT = data.table(iris,key="Species")
+Y = data.table(date=as.POSIXct("2011-01-01"),num=as.numeric(1:26))
+Y[,get("letters"):=LETTERS]
+Y[,A:=1:26]
+Y[,p:=factor(p)]  # coerce type to match DT$Species to save warning. Crash was related to .BY internally, not the coercion.
+setkey(Y,p)
+for (i in 1:10){DT[Y,Petal.Width];DT[Y];NULL}  # reliable crash in 1.8.2 (tested).
+test(768, DT[Y,Petal.Width], data.table(Species=factor(LETTERS),Petal.Width=NA_real_))
+DT = data.table(a=1:3,b=1:6,c=7:12, key="a")
+test(769, DT[,.BY[[1]]==a,by=a], data.table(a=1:3,V1=TRUE,key="a"))
+test(770, DT[J(2:3),.BY[[1]]==b], data.table(a=INT(2,2,3,3),V1=c(TRUE,FALSE),key="a"))
+
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 
 # TO DO: tests on double in add hoc by

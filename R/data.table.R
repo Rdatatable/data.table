@@ -768,7 +768,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     # TO DO: experiment with size argument
 
     if (".N" %chin% xvars) stop("The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.")
-    SDenv$.BY = lapply(byval,"[",1L)  # byval is list() not data.table
     SDenv$.iSD = NULL  # null.data.table()
     if (bywithoutby) {
         jisvars = intersect(gsub("^i[.]","",ws),names(i))
@@ -788,7 +787,6 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     assign("print", function(x,...){base::print(x,...);NULL}, envir=SDenv)
     # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
 
-    lockBinding(".BY",SDenv)
     lockBinding(".iSD",SDenv)
     SDenv$.SD = null.data.table()  # e.g. test 607. Grouping still proceeds even though no .SD e.g. grouping key only tables, or where j consists of .N only
     SDenv$.N = 0L
@@ -912,11 +910,14 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         groups = i
         grpcols = leftcols # 'leftcols' are the columns in i involved in the join (either head of key(i) or head along i)
         jiscols = chmatch(jisvars,names(i))  # integer() if there are no jisvars (usually there aren't, advanced feature)
+        SDenv$.BY = groups[1L,grpcols,with=FALSE]
     } else {
         groups = byval
         grpcols = seq_along(byval)
         jiscols = NULL   # NULL rather than integer() is used in C to know when using by
+        SDenv$.BY = lapply(byval,"[",1L)  # byval is list() not data.table
     }
+    lockBinding(".BY",SDenv)
     grporder = o__
     if (length(irows) && !isTRUE(irows)) {
         if (length(o__) && length(irows)!=length(o__)) stop("Internal error: length(irows)!=length(o__)")

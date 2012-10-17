@@ -76,14 +76,15 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     
     bynames = getAttrib(BY, R_NamesSymbol);
     if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols))) error("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]",length(bynames),length(groups),length(grpcols));
-    // No .BY when bywithoutby.  TO DO: would it be useful to include it there too?
+    // TO DO: check above.
+    
     for(i = 0; i < length(BY); i++) {
         // by vars can be used by name or via .BY
         defineVar(install(CHAR(STRING_ELT(bynames,i))),VECTOR_ELT(BY,i),env);
-        if (TYPEOF(VECTOR_ELT(BY,i)) != TYPEOF(VECTOR_ELT(groups,i)))
+        if (TYPEOF(VECTOR_ELT(BY,i)) != TYPEOF(VECTOR_ELT(groups,INTEGER(grpcols)[i]-1)))
             error("Type mismatch between .BY and groups, column %d",i);
         if (SIZEOF(VECTOR_ELT(BY,i))==0)
-            error("Type %d in by column %d", TYPEOF(VECTOR_ELT(BY, i)), i);
+            error("Unsupported type '%s' in by column %d", type2char(TYPEOF(VECTOR_ELT(BY, i))), i);
     }
     
     PROTECT(listwrap = allocVector(VECSXP, 1));
@@ -111,7 +112,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         for (j=0; j<length(BY); j++) {
             size = SIZEOF(VECTOR_ELT(BY,j));
             memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),
-                   (char *)DATAPTR(VECTOR_ELT(groups,j))+igrp*size,
+                   (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1))+igrp*size,
                    size);
         }
         if (INTEGER(starts)[i] == NA_INTEGER || (length(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)) {
@@ -316,7 +317,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     // names of result come from the first group and the names of remaining groups are ignored (all that matters for them is that the number of columns (and their types) match the first group.
                     names2 = PROTECT(allocVector(STRSXP,ngrpcols+njval));
                     protecti++;
-                    for (j=0; j<ngrpcols; j++) SET_STRING_ELT(names2, j, STRING_ELT(bynames,j));
+                    //  for (j=0; j<ngrpcols; j++) SET_STRING_ELT(names2, j, STRING_ELT(bynames,j));  // These get set back up in R
                     for (j=0; j<njval; j++) SET_STRING_ELT(names2, ngrpcols+j, STRING_ELT(names,j));
                     setAttrib(ans, R_NamesSymbol, names2);
                     // setAttrib(SD, R_NamesSymbol, R_NilValue); // so that lapply(.SD,mean) is unnamed from 2nd group on
@@ -330,10 +331,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         // Now copy jval into ans ...
         for (j=0; j<ngrpcols; j++) {
-            size = SIZEOF(VECTOR_ELT(groups, j));
+            size = SIZEOF(VECTOR_ELT(groups, INTEGER(grpcols)[j]-1));
             for (r=0; r<maxn; r++) {
                 memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*size,  // TO DO: a switched assign here?
-                    (char *)DATAPTR(VECTOR_ELT(groups,j)) + igrp*size,   // generations a concern but this one ok I think
+                    (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1)) + igrp*size,   // generations a concern but this one ok I think
                     1 * size);
             }
         }

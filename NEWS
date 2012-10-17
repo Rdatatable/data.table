@@ -100,6 +100,9 @@ BUG FIXES
     o   Joining an empty i table now works without error (#2194). It also retains key and has a consistent
         number and type of empty columns as the non empty by-without-by case. Tests added.
         
+    o   by-without-by with keyed i where key isn't the 1:n columns of i could crash, #2314. Many thanks
+        to Garrett See for reporting with reproducible example data file. Tests added.
+        
 USER VISIBLE CHANGES
 
     o   J() now issues a warning (when used *outside* DT[...]) that using it
@@ -139,7 +142,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 767 raw tests. test.data.table() should return precisely this number of
+    o   There are now 770 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 
