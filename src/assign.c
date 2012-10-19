@@ -245,16 +245,22 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         }
         vlen = length(thisvalue);
         if (length(rows)==0 && targetlen==vlen) {
-            if (TYPEOF(values)!=VECSXP || i>LENGTH(values)-1)
-                thisvalue = duplicate(thisvalue);  // otherwise recycled RHS would have columns pointing to others, #2298
+            if (  NAMED(thisvalue) || 
+                 (TYPEOF(values)==VECSXP && i>LENGTH(values)-1)) { // recycled RHS would have columns pointing to others, #2298.
+                PROTECT(thisvalue = duplicate(thisvalue));
+                protecti++;
+            } // else a direct plonk of unnamed RHS such as:  DT[,a:=as.character(a)]
+            setAttrib(thisvalue, R_NamesSymbol, R_NilValue);   // clear names such as  DT[,a:=mapvector[a]]
             SET_VECTOR_ELT(dt,coln,thisvalue);
             // plonk new column in as it's already the correct length
             // if column exists, 'replace' it (one way to change a column's type i.e. less easy, as it should be, for speed, correctness and to get the user thinking about their intent)        
             continue;
         }
         if (coln+1 > oldncol) {  // new column
-            PROTECT(newcol = keepattr(allocNAVector(TYPEOF(thisvalue),nrow),thisvalue));
+            PROTECT(newcol = allocNAVector(TYPEOF(thisvalue),nrow));
             protecti++;
+            if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,newcol);  // class etc but not names
+            // else for lists (such as data.frame and data.table) treat them as raw lists and drop attribs
             SET_VECTOR_ELT(dt,coln,newcol);
             if (vlen<1) continue;   // e.g. DT[,newcol:=integer()] (adding new empty column)
             targetcol = newcol;
@@ -368,7 +374,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                 break;
             case VECSXP :
                 for (r=0; r<targetlen; r++)
-                    SET_VECTOR_ELT(targetcol, r, STRING_ELT(RHS, r%vlen));
+                    SET_VECTOR_ELT(targetcol, r, VECTOR_ELT(RHS, r%vlen));
+                    // TO DO: would need duplicate here if := in future could ever change a list item's contents by reference.
                 break;
             default :
                 for (r=0; r<(targetlen/vlen); r++) {
@@ -388,7 +395,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                 break;
             case VECSXP :
                 for (r=0; r<targetlen; r++)
-                    SET_VECTOR_ELT(targetcol, INTEGER(rows)[r]-1, STRING_ELT(RHS, r%vlen));
+                    SET_VECTOR_ELT(targetcol, INTEGER(rows)[r]-1, VECTOR_ELT(RHS, r%vlen));
                 break;
             default :
                 for (r=0; r<targetlen; r++)

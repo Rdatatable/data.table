@@ -455,7 +455,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             if (is.name(lhs) && with)
                 lhs = as.character(lhs)
             else {
-                if (!with && !is.name(lhs) && verbose) cat("with=FALSE ignored: LHS of := isn't a symbol\n")  # TO DO: upgrade to warning
+                if (!with && !is.name(lhs) && verbose) cat("with=FALSE ignored (LHS of := isn't a symbol)\n")  # TO DO: upgrade to warning
                 lhs = eval(lhs, envir=parent.frame(), enclos=parent.frame())
             }
             # to use a variable of column names on LHS, use eval(mycols):=  or get("mycols"):=, or with=FALSE for backwards compatibility

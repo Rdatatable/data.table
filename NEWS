@@ -103,6 +103,10 @@ BUG FIXES
     o   by-without-by with keyed i where key isn't the 1:n columns of i could crash, #2314. Many thanks
         to Garrett See for reporting with reproducible example data file. Tests added.
         
+    o   DT[,col1:=X[Y,col2]] was a seg fault, #2311. Due to RHS being a data.table. mult="first"
+        (or drop=TRUE in future) was likely intended. Thanks to Anoop Shah for reporting with
+        reproducible example. Tests added.
+        
 USER VISIBLE CHANGES
 
     o   J() now issues a warning (when used *outside* DT[...]) that using it
