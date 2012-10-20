@@ -292,7 +292,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 firstalloc=TRUE; 
                 for(j=0; j<ngrpcols; j++) {
                     thiscol = VECTOR_ELT(groups, INTEGER(grpcols)[j]-1);
-                    SET_VECTOR_ELT(ans, j, keepattr(allocVector(TYPEOF(thiscol), estn), thiscol));
+                    SET_VECTOR_ELT(ans, j, allocVector(TYPEOF(thiscol), estn));
+                    copyMostAttrib(thiscol, VECTOR_ELT(ans,j));  // not names, otherwise test 778 would fail
                 }
                 for(j=0; j<njval; j++) {
                     thiscol = VECTOR_ELT(jval, j);
@@ -305,11 +306,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                             Rprintf("Column %d of j is a named vector (each item down the rows is named, somehow). Please remove those names for efficiency (to save creating them over and over for each group). They are ignored anyway.", j+1);
                         }
                     }
-                    setAttrib(thiscol, R_NamesSymbol, R_NilValue);    // If not cleared, test 276 would fail
-                    setAttrib(thiscol, R_DimSymbol, R_NilValue);      // Probably superfluous since non-atomic was
-                    setAttrib(thiscol, R_DimNamesSymbol, R_NilValue);  // caught earlier.
-                    SET_VECTOR_ELT(ans, ngrpcols+j, keepattr(allocVector(TYPEOF(thiscol), estn), thiscol));
-                    // See growVector for comments about keepattr.
+                    SET_VECTOR_ELT(ans, ngrpcols+j, allocVector(TYPEOF(thiscol), estn));
+                    copyMostAttrib(thiscol, VECTOR_ELT(ans,ngrpcols+j));  // not names, otherwise test 276 would fail
                 }
                 names = getAttrib(jval, R_NamesSymbol);
                 if (!isNull(names)) {
