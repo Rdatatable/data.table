@@ -2112,6 +2112,14 @@ DT = data.table(a=letters[3:1],x=1:3)
 test(753, setkey(DT[,c("x1","x2"):=x],a), data.table(a=letters[1:3],x=3:1,x1=3:1,x2=3:1,key="a"))
 DT = data.table(a=letters[3:1],x=1:3,y=4:6)
 test(754, setkey(DT[,c("x1","y1","x2","y2"):=list(x,y)],a), data.table(a=letters[1:3],x=3:1,y=6:4,x1=3:1,y1=6:4,x2=3:1,y2=6:4,key="a"))
+# And non-recycling i.e. that a single column copy does copy the column
+DT = data.table(a=1:3)
+test(754.1, DT[,b:=a][1,a:=4L][2,b:=5L], data.table(a=INT(4,2,3),b=INT(1,5,3)))
+test(754.2, DT[,b:=a][3,b:=6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
+test(754.3, DT[,a:=as.character(a),verbose=TRUE], output="Direct plonk.*no copy")
+RHS = as.integer(DT$a)
+test(754.4, DT[,a:=RHS,verbose=TRUE], output="RHS for item 1 has been duplicated")
+
 
 # Test warning on redundant by, #2282.  # ** TO DO ** - add this to FAQ warnings section.
 DT = data.table(a=letters[1:3],b=rep(c("d","e"),each=3),x=1:6,key="a,b")
@@ -2170,6 +2178,9 @@ setattr(DT$b, "names", c("a","b","c"))  # Future proof this test for when data.t
 test(777, names(DT$b), c("a","b","c"))
 test(778, DT[,sum(a),by=b], data.table(b=c("a","b"),V1=c(3L,3L)))  #2307 retained names length 3 on the length 2 vector result causing it not to print.
 test(779, print(DT[,sum(a),by=b]), output="   b V11: a  32: b  3$")
+
+
+
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 

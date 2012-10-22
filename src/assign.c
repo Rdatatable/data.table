@@ -244,11 +244,14 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         }
         vlen = length(thisvalue);
         if (length(rows)==0 && targetlen==vlen) {
-            if (  NAMED(thisvalue) || 
+            if (  NAMED(thisvalue)==2 ||  // NAMED is already 1 from the 'value' local variable at R level passed to Cassign.
                  (TYPEOF(values)==VECSXP && i>LENGTH(values)-1)) { // recycled RHS would have columns pointing to others, #2298.
                 PROTECT(thisvalue = duplicate(thisvalue));
                 protecti++;
-            } // else a direct plonk of unnamed RHS such as:  DT[,a:=as.character(a)]
+                if (verbose) Rprintf("RHS for item %d has been duplicated. Either NAMED vector or recycled list RHS.\n",i+1);
+            } else {
+                if (verbose) Rprintf("Direct plonk of unnamed RHS, no copy.\n");  // e.g. DT[,a:=as.character(a)] as tested by 754.3
+            }
             setAttrib(thisvalue, R_NamesSymbol, R_NilValue);   // clear names such as  DT[,a:=mapvector[a]]
             SET_VECTOR_ELT(dt,coln,thisvalue);
             // plonk new column in as it's already the correct length
