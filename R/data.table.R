@@ -1354,12 +1354,7 @@ last = function(x) x[NROW(x)]     # last row for a data.table, last element for 
 
 within.data.table <- function (data, expr, ...)
 # basically within.list but retains key (if any)
-# will be slower than using := or a regular query
-# `within` and other similar functions in data.table are
-# not just provided for users who expect them to work, or
-# prefer syntax they're used to, but for non-data.table-aware
-# packages to retain keys (for example). Hopefully users and
-# code will use the faster data.table syntax in time.
+# will be slower than using := or a regular query (see ?within for further info).
 {
     if (!cedta()) return(NextMethod())
     parent <- parent.frame()
@@ -1383,8 +1378,8 @@ within.data.table <- function (data, expr, ...)
 }
 
 
-# basically transform.data.frame with data.table instead of data.frame
 transform.data.table <- function (`_data`, ...)
+# basically transform.data.frame with data.table instead of data.frame, and retains key
 {
     if (!cedta()) return(NextMethod())
     e <- eval(substitute(list(...)), `_data`, parent.frame())

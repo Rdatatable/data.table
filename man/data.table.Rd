@@ -256,13 +256,15 @@ DT[,list(MySum=sum(v),
 DT[,sum(v),x][V1<20]       # compound query
 DT[,sum(v),x][order(-V1)]  # ordering results
 
-DT[,z:=42L]                # add new column by reference
-DT[,z:=NULL]               # remove column by reference
-DT["a",v:=42L]             # subassign v by reference
+print(DT[,z:=42L])         # add new column by reference
+print(DT[,z:=NULL])        # remove column by reference
+print(DT["a",v:=42L])      # subassign to existing v column by reference
+print(DT["b",v2:=84L])     # subassign to new column by reference (NA padded)
 
-DT[,m:=mean(v),by=x]       # add new column by reference by group
+DT[,m:=mean(v),by=x][]     # add new column by reference by group
+                           # NB: postfix [] is shortcut to print()
 
-DT[,.SD[which.min(v)],by=x]  # nested query by group
+DT[,.SD[which.min(v)],by=x][]  # nested query by group
 
 # Follow r-help posting guide, support is here (*not* r-help) :
 # datatable-help@lists.r-forge.r-project.org

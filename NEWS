@@ -148,11 +148,16 @@ USER VISIBLE CHANGES
         in ?data.table. Thanks to Alex :
             http://stackoverflow.com/questions/12920803/merge-data-table-when-the-number-of-key-columns-are-different
             
+    o   ?transform and example(transform) has been fixed and embelished, #2316.
+        Thanks to Garrett See's suggestion.
+            
 THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
     o   Combining a join with mult="first"|"last" followed by by inside the same [...] gave incorrect
         results or a crash, #2303. Many thanks to Garrett See for the reproducible example and
         pinpointing in advance which commit had caused the problem. Tests added.
+        
+    o   Examples in ?data.table have been updated now that := no longer prints. Thanks to Garrett See.
 
 NOTES
 
