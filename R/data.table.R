@@ -506,7 +506,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 }
                 alloc.col(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
                 if (is.name(name))
-                    assign(as.character(name),x,pos=parent.frame(),inherits=TRUE)
+                    assign(as.character(name),x,parent.frame(),inherits=TRUE)
             }
         }
     } else if (!with) {
@@ -763,10 +763,10 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (verbose) cat("New:",paste(xvars,collapse=","),"\n")
     }
 
-    SDenv = new.env(hash=TRUE,parent=parent.frame())
-    # hash (the default anyway) does seem better as expected using e.g. test 645
+    SDenv = new.env(parent=parent.frame())
+    # hash=TRUE (the default) does seem better as expected using e.g. test 645
     # TO DO: experiment with size argument
-
+    
     if (".N" %chin% xvars) stop("The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.")
     SDenv$.iSD = NULL  # null.data.table()
     if (bywithoutby) {
@@ -776,20 +776,21 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             tt = min(nrow(i),1L)
             SDenv$.iSD = i[tt,jisvars,with=FALSE]
             for (ii in jisvars) {
-                assign(ii, SDenv$.iSD[[ii]], envir=SDenv)
-                assign(paste("i.",ii,sep=""), SDenv$.iSD[[ii]], envir=SDenv)
+                assign(ii, SDenv$.iSD[[ii]], SDenv)
+                assign(paste("i.",ii,sep=""), SDenv$.iSD[[ii]], SDenv)
             }
         }
     }
 
-    for (ii in names(SDenv$.BY)) assign(ii, SDenv$.BY[[ii]], envir=SDenv)
+    for (ii in names(SDenv$.BY)) assign(ii, SDenv$.BY[[ii]], SDenv)
 
-    assign("print", function(x,...){base::print(x,...);NULL}, envir=SDenv)
+    assign("print", function(x,...){base::print(x,...);NULL}, SDenv)
     # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
 
     lockBinding(".iSD",SDenv)
     SDenv$.SD = null.data.table()  # e.g. test 607. Grouping still proceeds even though no .SD e.g. grouping key only tables, or where j consists of .N only
-    SDenv$.N = 0L
+    SDenv$.N = as.integer(0)     # not 0L for the reson on next line :
+    SDenv$.GRP = as.integer(1)   # oddly using 1L doesn't work reliably here! Possible R bug? TO DO: create reproducible example and report. To reproduce change to 1L and run test.data.table, test 780 fails. The assign seems ineffective and a previous value for .GRP from a previous test is retained, despite just creating a new SDenv.
     if ((missing(by) || !length(byval)) && !bywithoutby) {
         # No grouping, or mult="first"|"last", or by=NULL|character()|""|list()
         if (length(xvars)) {
@@ -806,7 +807,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
         lockBinding(".SD",SDenv)
         lockBinding(".N",SDenv)
-        for (ii in xvars) assign(ii, SDenv$.SD[[ii]], envir=SDenv)
+        for (ii in xvars) assign(ii, SDenv$.SD[[ii]], SDenv)
         # Since .SD is inside SDenv, alongside its columns as variables, R finds .SD symbol more quickly, if used.
         # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
 
@@ -843,6 +844,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
     lockBinding(".SD",SDenv)
     lockBinding(".N",SDenv)
+    lockBinding(".GRP",SDenv)
 
     if (options("datatable.optimize")[[1L]]>0L) {  # Abilility to turn off if problems
         # Optimization to reduce overhead of calling mean and lapply over and over for each group
@@ -897,11 +899,11 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             else
                 cat("Optimization is on but j left unchanged as '",deparse(jsub),"'\n",sep="")
         }
-        assign("Cfastmean", Cfastmean, envir=SDenv)
-        assign("mean", base::mean.default, envir=SDenv)
+        assign("Cfastmean", Cfastmean, SDenv)
+        assign("mean", base::mean.default, SDenv)
         # Here in case nomeanopt=TRUE or some calls to mean weren't detected somehow. Better but still very slow.
         # Maybe change to :
-        #     assign("mean", fastmean, envir=SDenv)  # neater than the hard work above, but slower
+        #     assign("mean", fastmean, SDenv)  # neater than the hard work above, but slower
         # when fastmean can do trim.
     }
 

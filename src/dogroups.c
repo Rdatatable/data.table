@@ -35,7 +35,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 {
     R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, size, vlen;
     int protecti=0;
-    SEXP names, names2, bynames, dtnames, ans=NULL, jval, thiscol, SD, BY, N, iSD, rownames, s, targetcol, RHS, listwrap, target;
+    SEXP names, names2, bynames, dtnames, ans=NULL, jval, thiscol, SD, BY, N, GRP, iSD, rownames, s, targetcol, RHS, listwrap, target;
     SEXP *nameSyms;
     Rboolean wasvector, firstalloc=FALSE;
     
@@ -50,6 +50,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     SD = findVar(install(".SD"), env);
     BY = findVar(install(".BY"), env);
     N = findVar(install(".N"), env);
+    GRP = findVar(install(".GRP"), env);
     iSD = findVar(install(".iSD"), env);  // 1-row and possibly no cols (if no i variables are used via JIS)
     
     // fetch rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
@@ -101,6 +102,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         grpn = INTEGER(lens)[i];
         INTEGER(N)[0] = INTEGER(starts)[i] == NA_INTEGER ? 0 : grpn;
         // .N is number of rows matched to ( 0 even when nomatch is NA)
+        INTEGER(GRP)[0] = i+1;  // group counter exposed as .GRP
         
         for (j=0; j<length(iSD); j++) {   // either this or the next for() will run, not both
             size = SIZEOF(VECTOR_ELT(iSD,j));

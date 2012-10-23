@@ -54,6 +54,10 @@ NEW FEATURES
         Thanks to Alex :
             http://stackoverflow.com/questions/11745169/dynamic-column-names-in-data-table-r
             http://stackoverflow.com/questions/11680579/assign-multiple-columns-using-in-data-table-by-group
+            
+    o   .GRP is a new symbol available to j. Value 1 for the first group, 2 for the 2nd, etc. Thanks
+        to Josh O'Brien for the suggestion :
+            http://stackoverflow.com/questions/13018696/data-table-key-indices-or-group-counter
 
 BUG FIXES
         
