@@ -63,7 +63,7 @@ NEW FEATURES
         locations in \code{DT}. This implements FR#1962.
             DT[,.I[which.max(colB)],by=colA]   # locations of maximums by group
 
-    o   A new "!" prefix on i signifies not-join (a.k.a. not-select), #1384.
+    o   A new "!" prefix on i signals 'not-join' (a.k.a. 'not-select'), #1384.
             DT[-DT["a", which=TRUE, nomatch=0]]   # old not-join idiom, still works
             DT[!"a"]                              # same result, now preferred.
             DT[!J(6),...]
