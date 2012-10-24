@@ -2193,6 +2193,27 @@ test(785, DT[J(2:4),.I,by=a%%2L], data.table(a=rep(0:1,c(4,2)),.I=INT(3,4,7,8,5,
 test(786, DT[J(c(3,2,4)),list(.I,.GRP)], data.table(a=rep(c(3L,2L,4L),each=2),.I=INT(5,6,3,4,7,8),.GRP=rep(1:3,each=2L)))
 test(787, DT[J(3:2),`:=`(i=.I,grp=.GRP)][,list(i,grp)], data.table(i=INT(NA,NA,3:6,NA,NA),grp=INT(NA,NA,2,2,1,1,NA,NA))) 
 
+# New not-join (a.k.a. not-select, since not just for data.table i but integer, logical and character too)
+DT = data.table(A=rep(1:3,each=2),B=1:6,key="A")
+test(788, DT[!J(2)], data.table(A=c(1L,1L,3L,3L),B=c(1L,2L,5L,6L),key="A"))
+test(789, DT[!(2:6)], DT[1])
+test(790, DT[!6], DT[1:5])
+test(791, DT[!c(TRUE,FALSE)], DT[c(FALSE,TRUE)])
+test(792, setkey(DT[,A:=letters[A]],A)[!c("b","c")],DT["a"])
+test(793, DT[!"b"], DT[c("a","c")])
+test(794, DT[!0], DT)
+test(795, DT[!NULL], DT[NULL])
+test(796, DT[!integer()], DT)
+test(797, DT[!-1], DT[1])
+test(798, DT[--1], DT[1])
+myi = c("a","c")
+test(799, DT[!myi], DT["b"])
+test(800, DT[!"c",sum(B),by=A], data.table(A=c("a","b"),V1=c(3L,7L),key="A"))
+test(801, DT[!"missing",sum(B),by=A], DT[,sum(B),by=A])
+test(802, DT[!c("a","missing","b","missing2"),sum(B),by=A], DT["c",sum(B)])
+
+
+
 
 # TO DO:
 #DT = data.table(a=1:3,b=1:6,key="a")

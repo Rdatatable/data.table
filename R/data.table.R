@@ -138,7 +138,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     vnames <- as.list.default(vnames)
     nrows = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
     numcols = integer(n)         # the ncols of each of the inputs (e.g. if inputs contain matrix or data.table)
-    for (i in 1L:n) {
+    for (i in seq_len(n)) {
         xi = x[[i]]
         if (is.null(xi)) stop("column or argument ",i," is NULL")
         if (is.matrix(xi) || is.data.frame(xi)) {  # including data.table (a data.frame, too)
@@ -158,7 +158,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
     }
     nr <- max(nrows)
-    for (i in (1L:n)[nrows < nr]) {
+    for (i in which(nrows < nr)) {
         # TO DO ... recycle in C, but not high priority as large data already regular from database or file
         xi <- x[[i]]
         if (identical(xi,list())) {
@@ -185,9 +185,9 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     if (any(numcols>0L)) {
         value = vector("list",sum(pmax(numcols,1L)))
         k = 1L
-        for(i in 1L:n) {
+        for(i in seq_len(n)) {
             if (is.list(x[[i]]) && !is.ff(x[[i]])) {
-                for(j in 1L:length(x[[i]])) {
+                for(j in seq_len(length(x[[i]]))) {
                     value[[k]] = x[[i]][[j]]
                     k=k+1L
                 }
@@ -241,6 +241,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
     if (roll && rolltolast) stop("roll and rolltolast cannot both be true")
     # TO DO. Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
+    missingnomatch = missing(nomatch)
     if (!is.na(nomatch) && nomatch!=0L) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
     nomatch = as.integer(nomatch)
     if (which && !missing(j)) stop("'which' is true but 'j' is also supplied")
@@ -262,8 +263,15 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
     bywithoutby=FALSE
     potentialredundantby = FALSE
+    notjoin = FALSE
     if (!missing(i)) {
         isub = substitute(i)
+        if (is.call(isub) && isub[[1]] == as.name("!")) {
+            notjoin = TRUE
+            if (!missingnomatch) warning("not-join '!' prefix is present on i; ignoring provided 'nomatch' and setting nomatch=0. Please remove nomatch.");
+            nomatch = 0L
+            isub = isub[[2]]
+        }
         if (is.null(isub)) return( null.data.table() )
         isubl = as.list.default(isub)
         if (identical(isubl[[1L]],quote(eval))) {  # TO DO: or ..()
@@ -288,7 +296,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             leftcols = if (haskey(i))
                 chmatch(head(key(i),length(rightcols)),names(i))
             else
-                1L:min(length(i),length(rightcols))
+                seq_len(min(length(i),length(rightcols)))
             rightcols = head(rightcols,length(leftcols))
             origi = i       # Only needed for factor to factor joins, to recover the original levels
                             # Otherwise, types of i join columns are alyways promoted to match x's
@@ -297,7 +305,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                             # TO DO: enforce via .internal.shallow attribute and expose shallow() to users
                             # This is why shallow() is very importantly internal only, currently.
             resetifactor = NULL  # Keep track of any factor to factor join cols (only time we keep orig)
-            for (a in seq(along=leftcols)) {
+            for (a in seq_along(leftcols)) {
                 # This loop is simply to support joining factor columns
                 lc = leftcols[a]   # i   # TO DO: rename left and right to i and x
                 rc = rightcols[a]  # x
@@ -354,13 +362,13 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
             for (ii in resetifactor) set(i,j=ii,value=origi[[ii]])
             if (mult=="all") {
-                if (!missing(by) || which || missing(j) || !with) {
+                if (!missing(by) || which || missing(j) || !with || notjoin) {
                     irows = if (allLen1) f__ else {
                         as.integer(unlist(mapply(seq,f__,length.out=len__,SIMPLIFY=FALSE)))
                         # TO DO: *** if works, port the unlist mapply to C
                         #        *** This is potentially relatively slow currently.
                     }
-                    if (!missing(by) && !which && !missing(j) && with)
+                    if (!missing(by) && !which && !missing(j) && with && !notjoin)
                         potentialredundantby = TRUE
                 } else {
                     bywithoutby=TRUE  # TO DO: use allLen1 to detect if joining to unique rows?
@@ -371,20 +379,26 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 if (identical(nomatch,0L)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
                 len__ = pmin(len__,1L)  # for test 456, and consistency generally
             }
-            if (which) return(irows)
+            
         } else {
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
             if (is.logical(i)) {
                 if (length(i)==nrow(x)) irows=which(i)   # e.g. DT[colA>3,which=TRUE]
-                else if (!isTRUE(i)) irows=(1L:nrow(x))[i]  # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness
+                else if (!isTRUE(i)) irows=seq_len(nrow(x))[i]  # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness
             } else {
                 irows = as.integer(i)  # e.g. DT[c(1,3)]
                 irows[irows>nrow(x)] = NA_integer_  # not needed for vector subsetting, but for is.unsorted to return NA
             }
-            if (which)
-                return(if (is.null(irows)) 1L:nrow(x) else irows)
         }
+        if (notjoin) {
+            if (bywithoutby || !is.integer(irows) || is.na(nomatch)) stop("Internal error: notjoin but bywithoutby or !integer or nomatch==NA")
+            irows = irows[irows!=0L]
+            i = isub = irows = if (length(irows)) seq_len(nrow(x))[-irows] else NULL  # NULL meaning all rows i.e. seq_len(nrow(x))
+            # Doing this once here, helps speed later when repeatedly subsetting each column. R's [irows] would do this for each column when
+            # irows contains negatives. Assigning to isub is because by uses isub later (TO DO - removed that).
+        }
+        if (which) return(if (is.null(irows)) seq_len(nrow(x)) else irows)
         if (missing(j)) {
             if (!is.data.table(i)) {
                 if (is.null(irows)) return(copy(x))  # Must return a copy. Shallow copy only when i is missing.
@@ -401,7 +415,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]]
                     for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]]
                 } else {
-                    ii = rep(1L:nrow(i),len__)
+                    ii = rep(seq_len(nrow(i)),len__)
                     for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]][ii]
                     for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]][ii]
                 }
@@ -484,7 +498,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         } else {
             # Adding new column(s). TO DO: move after the first eval incase the jsub has an error.
             newnames=setdiff(lhs,names(x))
-            m[is.na(m)] = ncol(x)+1L:length(newnames)
+            m[is.na(m)] = ncol(x)+seq_len(length(newnames))
             cols = as.integer(m)
             if ((ok<-selfrefok(x,verbose))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
                 warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table, so that := can add this new column by reference. At an earlier point, this data.table has been copied by R. Avoid key<-, names<- and attr<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setkey(), setnames() and setattr(). If this message doesn't help, please report to datatable-help so the root cause can be fixed.")
@@ -521,10 +535,10 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (any(j<0L)) j = seq_len(ncol(x))[j]
         ans = vector("list",length(j))
         if (is.null(irows))
-            for (s in seq(along=j)) ans[[s]] = x[[j[s]]]  # TO DO: return marked/safe shallow copy back to user
+            for (s in seq_along(j)) ans[[s]] = x[[j[s]]]  # TO DO: return marked/safe shallow copy back to user
         else {
             if (is.data.table(i) && is.na(nomatch) && any(is.na(irows))) {   # TO DO: any(is.na()) => anyNA() and presave it 
-                if (any(j %in% rightcols)) ii = rep(1L:nrow(i),len__)
+                if (any(j %in% rightcols)) ii = rep(seq_len(nrow(i)),len__)
                 for (s in which(j %in% rightcols))
                     ans[[s]] = i[[leftcols[match(j[s],rightcols)]]][ii]
                     # So that NA matches from i get the i values, as xss expects further below.
@@ -532,7 +546,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     ans[[s]] = x[[j[s]]][irows]
                 # TO DO: allow i's non join columns to be included by name
             } else {
-                for (s in seq(along=j)) ans[[s]] = x[[j[s]]][irows]
+                for (s in seq_along(j)) ans[[s]] = x[[j[s]]][irows]
             }
         }
         setattr(ans, "names", names(x)[j])
@@ -613,7 +627,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 if (!is.integer(irows)) stop("Internal error: irows isn't integer")  # length 0 when i returns no rows
                 # We might pass irows as i to x[] below (and did in 1.8.2): irows may contain NA, 0, negatives and >nrow(x) here, all ok.
                 # But we need i join column values to be retained, hence the eval(isub) approach.
-                # TO DO: do directly here rather than a recursive call and rejoin.
+                # TO DO: do directly here rather than a recursive call and rejoin. Then also no need to assign to isub way above in if(notjoin).
                 if (!is.na(nomatch)) irows = irows[irows!=0L]
                 if (length(allbyvars)) {
                     if (verbose) cat("i clause present and columns used in by detected, only these subset:",paste(allbyvars,collapse=","),"\n")
@@ -713,7 +727,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (length(jsubl)>1) {
             jvnames = names(jsubl)[-1L]   # check list(a=sum(v),v)
             if (is.null(jvnames)) jvnames = rep("", length(jsubl)-1L)
-            for (jj in 2L:length(jsubl)) {
+            for (jj in seq.int(2L,length(jsubl))) {
                 if (jvnames[jj-1L] == "" && mode(jsubl[[jj]])=="name")
                     jvnames[jj-1L] = gsub("^[.]N$","N",deparse(jsubl[[jj]]))
                 # TO DO: if call to a[1] for example, then call it 'a' too
@@ -1029,7 +1043,7 @@ as.matrix.data.table = function(x,...)
     class(X) <- NULL
     non.numeric <- non.atomic <- FALSE
     all.logical <- TRUE
-    for (j in 1L:p) {
+    for (j in seq_len(p)) {
         if (is.ff(X[[j]])) X[[j]] <- X[[j]][]   # to bring the ff into memory, since we need to create a matrix in memory
         xj <- X[[j]]
         if (length(dj <- dim(xj)) == 2L && dj[2L] > 1L) {
@@ -1039,7 +1053,7 @@ as.matrix.data.table = function(x,...)
             collabs[[j]] <- paste(collabs[[j]], if (length(dnj) >
                 0L)
                 dnj
-            else 1L:dj[2L], sep = ".")
+            else seq_len(dj[2L]), sep = ".")
         }
         if (!is.logical(xj))
             all.logical <- FALSE
@@ -1051,7 +1065,7 @@ as.matrix.data.table = function(x,...)
             non.atomic <- TRUE
     }
     if (non.atomic) {
-        for (j in 1L:p) {
+        for (j in seq_len(p)) {
             xj <- X[[j]]
             if (is.recursive(xj)) {
             }
@@ -1061,7 +1075,7 @@ as.matrix.data.table = function(x,...)
     else if (all.logical) {
     }
     else if (non.numeric) {
-        for (j in 1L:p) {
+        for (j in seq_len(p)) {
             if (is.character(X[[j]]))
                 next
             xj <- X[[j]]
@@ -1084,9 +1098,9 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
     if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
     d <- dim(x)
     nrows <- d[1L]
-    ir <- seq(length = nrows)
+    ir <- seq_len(nrows)
     ncols <- d[2L]
-    ic <- seq(length = ncols)
+    ic <- seq_len(ncols)
     dn <- dimnames(x)
     collabs <- dn[[2L]]
     if (any(empty <- nchar(collabs) == 0L))
@@ -1129,7 +1143,7 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
     x = copy(x)
     if (any(n<max(n)))
         for (i in which(n<max(n))) x[[i]] = rep(x[[i]],length=max(n))
-    if (is.null(names(x))) setattr(x,"names",paste("V",1L:length(x),sep=""))
+    if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
     setattr(x,"row.names",.set_row_names(max(n)))
     setattr(x,"class",c("data.table","data.frame"))
     settruelength(x,0L)
@@ -1140,12 +1154,12 @@ as.data.table.data.table = function(x, keep.rownames=FALSE) return(x)
 
 head.data.table = function(x, n=6, ...) {
     if (!cedta()) return(NextMethod())
-    i = seq(len=min(n,nrow(x)))
+    i = seq_len(min(n,nrow(x)))
     x[i]
 }
 tail.data.table = function(x, n=6, ...) {
     if (!cedta()) return(NextMethod())
-    i = seq(to=nrow(x), length=min(n, nrow(x)))
+    i = seq.int(max(min(1,nrow(x)),nrow(x)-n+1), nrow(x))  # min for 0-row x
     x[i]
 }
 
@@ -1254,7 +1268,7 @@ tail.data.table = function(x, n=6, ...) {
     }
     nm = names(allargs[[1L]])
     if (use.names && length(nm) && n>1L) {
-        for (i in 2:n) if (length(names(allargs[[i]]))) {
+        for (i in seq.int(2,n)) if (length(names(allargs[[i]]))) {
             if (!all(names(allargs[[i]]) %chin% nm))
                 stop("Some colnames of argument ",i," (",paste(setdiff(names(allargs[[i]]),nm),collapse=","),") are not present in colnames of item 1. If an argument has colnames they can be in a different order, but they must all be present. Alternatively, you can drop names (by using an unnamed list) and the columns will then be joined by position. Or, set use.names=FALSE.")
             if (!all(names(allargs[[i]]) == nm))
@@ -1421,9 +1435,9 @@ subset.data.table <- function (x, subset, select, ...)
     }
 
     if (missing(select)) {
-        vars <- 1L:ncol(x)
+        vars <- seq_len(ncol(x))
     } else {
-        nl <- as.list(1L:ncol(x))
+        nl <- as.list(seq_len(ncol(x)))
         setattr(nl,"names",names(x))
         vars <- eval(substitute(select), nl, parent.frame())  # e.g.  select=colF:colP
         if (is.numeric(vars)) vars=names(x)[vars]
@@ -1437,7 +1451,7 @@ subset.data.table <- function (x, subset, select, ...)
             ## Set the key on the returned data.table as long as the key
             ## columns that "remain" are the same as the original, or a
             ## prefix of it.
-            is.prefix <- all(key(x)[1L:length(key.cols)] == key.cols)
+            is.prefix <- all(key(x)[seq_len(length(key.cols))] == key.cols)
             if (is.prefix) {
                 setattr(ans, "sorted", key.cols)
             }
@@ -1608,7 +1622,7 @@ setcolorder = function(x,neworder)
     } else {
         if (!is.numeric(neworder)) stop("neworder is not a character or numeric vector")
         o = as.integer(neworder)
-        m = !(o %in% 1L:length(x))
+        m = !(o %in% seq_len(length(x)))
         if (any(m)) stop("Column numbers in neworder out of bounds: ",paste(o[m],collapse=","))
     }
     .Call(Csetcolorder,x,o)
