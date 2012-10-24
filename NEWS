@@ -66,16 +66,16 @@ NEW FEATURES
     o   A new "!" prefix on i signals 'not-join' (a.k.a. 'not-select'), #1384.
             DT[-DT["a", which=TRUE, nomatch=0]]   # old not-join idiom, still works
             DT[!"a"]                              # same result, now preferred.
-            DT[!J(6),...]
-            DT[!DT2,...]
+            DT[!J(6),...]                         # !J == not-join
+            DT[!2:3,...]                          # ! on all types of i
             DT[colA!=6L | colB!=23L,...]          # multiple vector scanning approach
             DT[!J(6L,23L)]                        # same result, faster binary search
         '!' has been used rather than '-' :
-            * to leave DT[+...] and DT[-...] available for future use
             * to match the 'not-join' and 'not-select' nomenclature
             * with '-', DT[-0] would return DT rather than DT[0] and not be backwards
               compatibile. With '!', DT[!0] returns DT both before (since !0 is TRUE in
               base R) and after this new feature.
+            * to leave DT[+...] and DT[-...] available for future use
 
 BUG FIXES
         
