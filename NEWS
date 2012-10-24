@@ -59,6 +59,10 @@ NEW FEATURES
         to Josh O'Brien for the suggestion :
             http://stackoverflow.com/questions/13018696/data-table-key-indices-or-group-counter
 
+    o   .I is a new symbol available to j. An integer vector length .N. It contains the group's row
+        locations in \code{DT}. This implements FR#1962.
+            DT[,.I[which.max(colB)],by=colA]   # locations of maximums by group
+
 BUG FIXES
         
     o   Indexing columns of data.table with a logical vector and `with=FALSE` now works as
@@ -115,8 +119,7 @@ BUG FIXES
           DT = data.table(a=1:3,b=c("a","a","b"))
           setattr(DT$b, "names", c("a","b","c"))  # not recommended, just to illustrate
           DT[,sum(a),by=b]  # now ok
-        
-        
+
 USER VISIBLE CHANGES
 
     o   J() now issues a warning (when used *outside* DT[...]) that using it
@@ -161,7 +164,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 779 raw tests. test.data.table() should return precisely this number of
+    o   There are now 787 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 

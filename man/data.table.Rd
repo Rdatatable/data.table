@@ -80,7 +80,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 
   Advanced: Aggregation for a subset of known groups is particularly efficient when passing those groups in \code{i}. When \code{i} is a \code{data.table}, \code{DT[i,j]} evaluates \code{j} for each row of \code{i}. We call this \emph{by without by} or \emph{grouping by i}. Hence, the self join \code{DT[data.table(unique(colA)),j]} is identical to \code{DT[,j,by=colA]}.
 
-  Advanced: When grouping by \code{by} or by \code{i}, symbols \code{.SD}, \code{.BY} and \code{.N} may be used in the \code{j} expression, defined as follows.
+  Advanced: When grouping by \code{by} or by \code{i}, symbols \code{.SD}, \code{.BY}, \code{.N}, \code{.I} and \code{.GRP} may be used in the \code{j} expression, defined as follows.
   
   \code{.SD} is a \code{data.table} containing the \bold{S}ubset of \code{x}'s \bold{D}ata for each group, excluding the group column(s).
   
@@ -88,7 +88,11 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   
   \code{.N} is an integer, length 1, containing the number of rows in the group. This may be useful when the column names are not known in advance and for convenience generally. When grouping by \code{i}, \code{.N} is the number of rows in \code{x} matched to, for each row of \code{i}, regardless of whether \code{nomatch} is \code{NA} or \code{0}. It is renamed to \code{N} (no dot) in the result (otherwise a column called \code{".N"} could conflict with the \code{.N} variable, see FAQ 4.6 for more details and example), unless it is explicity named; e.g., \code{DT[,list(total=.N),by=a]}.
   
-  \code{.SD}, \code{.BY} and \code{.N} are \emph{read only}. Their bindings are locked and attempting to assign to them will generate an error. If you wish to manipulate \code{.SD} before returning it, take a \code{copy(.SD)} first (see FAQ 4.5). Using \code{:=} in the \code{j} of \code{.SD} is reserved for future use as a (tortuously) flexible way to update \code{DT} by reference by group (even when groups are not contiguous in an ad hoc by).
+  \code{.I} is an integer vector length \code{.N} holding the row locations in \code{x} for this group. This is useful to subset in j; e.g. DT[,.I[which.max(somecol)],by=grp].
+  
+  \code{.GRP} is an integer, length 1, containing a simple group counter. 1 for the 1st group, 2 for the 2nd, etc.
+  
+  \code{.SD}, \code{.BY}, \code{.N}, \code{.I} and \code{.GRP} are \emph{read only}. Their bindings are locked and attempting to assign to them will generate an error. If you wish to manipulate \code{.SD} before returning it, take a \code{copy(.SD)} first (see FAQ 4.5). Using \code{:=} in the \code{j} of \code{.SD} is reserved for future use as a (tortuously) flexible way to update \code{DT} by reference by group (even when groups are not contiguous in an ad hoc by).
 
   Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.
 

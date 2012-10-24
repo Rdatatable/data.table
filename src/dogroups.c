@@ -35,7 +35,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 {
     R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, size, vlen;
     int protecti=0;
-    SEXP names, names2, bynames, dtnames, ans=NULL, jval, thiscol, SD, BY, N, GRP, iSD, rownames, s, targetcol, RHS, listwrap, target;
+    SEXP names, names2, bynames, dtnames, ans=NULL, jval, thiscol, SD, BY, N, I, GRP, iSD, rownames, s, targetcol, RHS, listwrap, target;
     SEXP *nameSyms;
     Rboolean wasvector, firstalloc=FALSE;
     
@@ -52,6 +52,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     N = findVar(install(".N"), env);
     GRP = findVar(install(".GRP"), env);
     iSD = findVar(install(".iSD"), env);  // 1-row and possibly no cols (if no i variables are used via JIS)
+    I = findVar(install(".I"), env);
     
     // fetch rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
     // non data.table aware package that uses rownames
@@ -137,6 +138,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 }
             }
             grpn = 1;  // TO DO: it is anyway?
+            INTEGER(I)[0] = 0;
         } else {
             if (length(order)==0) {
                 rownum = INTEGER(starts)[i]-1;
@@ -146,6 +148,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                        (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+rownum*size,
                        grpn*size);
                 }
+                for (j=0; j<grpn; j++) INTEGER(I)[j] = rownum+j+1;
             } else {
                 for (k=0; k<grpn; k++) {
                     rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
@@ -155,6 +158,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                            (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1)) + rownum*size,
                            size);
                     }
+                    INTEGER(I)[k] = rownum+1;
                 }
             }
         }        
@@ -165,6 +169,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             // In case user's j assigns to the columns names (env is static) (tests 387 and 388)
             // nameSyms pre-stored to save repeated install() for efficiency.
         }
+        SETLENGTH(I, grpn);
         PROTECT(jval = eval(jexp, env));
         if (isNull(jval))  {
             // j may be a plot or other side-effect only

@@ -804,9 +804,11 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             SDenv$.SD = null.data.table()   # no columns used by j so .SD can be empty. Only needs to exist so that we can rely on it being there when locking it below for example. If .SD were used by j, of course then xvars would be the columns and we wouldn't be in this leaf.
             SDenv$.N = if (is.null(irows)) nrow(x) else sum(!is.na(irows) & irows>0L)
         }
+        SDenv$.I = seq_len(SDenv$.N)
         setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
         lockBinding(".SD",SDenv)
         lockBinding(".N",SDenv)
+        lockBinding(".I",SDenv)
         for (ii in xvars) assign(ii, SDenv$.SD[[ii]], SDenv)
         # Since .SD is inside SDenv, alongside its columns as variables, R finds .SD symbol more quickly, if used.
         # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
@@ -833,8 +835,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         }
         return(jval)
     }
+    alloc = if (length(len__)) seq_len(max(len__)) else 0L
+    SDenv$.I = alloc
     if (length(xvars)) {
-        alloc = if (length(len__)) seq_len(max(len__)) else 0L
         SDenv$.SD = x[alloc, xvars, with=FALSE]
         # TO DO: **** Instead just for loop assigning vector(typeof(...)). Saves recursion overhead.
         # Must not shallow copy xvars here. This is the allocation for the largest group. Since i is passed in here, it won't shallow copy, even in future. Only DT[,xvars,with=FALSE] might ever shallow copy automatically.
@@ -845,6 +848,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     lockBinding(".SD",SDenv)
     lockBinding(".N",SDenv)
     lockBinding(".GRP",SDenv)
+    lockBinding(".I",SDenv)
 
     if (options("datatable.optimize")[[1L]]>0L) {  # Abilility to turn off if problems
         # Optimization to reduce overhead of calling mean and lapply over and over for each group
