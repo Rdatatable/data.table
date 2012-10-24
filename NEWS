@@ -76,7 +76,6 @@ NEW FEATURES
             * with '-', DT[-0] would return DT rather than DT[0] and not be backwards
               compatibile. With '!', DT[!0] returns DT both before (since !0 is TRUE in
               base R) and after this new feature.
-            
 
 BUG FIXES
         
@@ -179,7 +178,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 787 raw tests. test.data.table() should return precisely this number of
+    o   There are now 803 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 
