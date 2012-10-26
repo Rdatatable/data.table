@@ -440,6 +440,10 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     } # end of  if !missing(i)
     if (missing(j)) stop("logical error, j missing")
     jsub = substitute(j)
+    if (!with && is.call(jsub) && jsub[[1]]==as.name("!")) {
+        notj = TRUE
+        jsub = jsub[[2]]
+    } else notj = FALSE
     if (is.null(jsub)) return(NULL)
     jsubl = as.list.default(jsub)
     if (identical(jsubl[[1L]],quote(eval))) {
@@ -451,6 +455,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     newnames = NULL
     if (length(av) && av[1L] == ":=") {
         if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
+        if (notj) stop("doesn't make sense to combine !j with :=");
         if (.Call(CEvalDepth)<=.global$depthtrigger && is.name(substitute(x)))
             .global$print = FALSE
         if (!is.null(irows)) {
@@ -525,14 +530,25 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         }
     } else if (!with) {
         if (!missing(by)) warning("'with=FALSE ignored when 'by' or 'keyby' is provided and not using :=")
+        if (notj) j = eval(jsub,parent.frame()) # else j will be evaluated for the first time on next line
         if (is.logical(j)) j <- which(j)
         if (!length(j)) return( null.data.table() )
-        if (is.character(j)) j = chmatch(j, names(x))
-        # TO DO:  DT[,-"columntoremove",with=FALSE] might be nice
-        if (any(is.na(j))) stop("undefined columns selected")  # TO DO: include which ones in msg
+        if (is.character(j)) {
+            origj = j
+            j = chmatch(j, names(x))
+            if (any(is.na(j))) {
+                if (notj) {
+                    warning("column(s) not removed because not found: ",paste(origj[is.na(j)],collapse=","))
+                    j = j[!is.na(j)]
+                } else {
+                    stop("column(s) not found: ",paste(origj[is.na(j)],collapse=","))
+                }
+            }
+        }
         if (any(abs(j) > ncol(x) | j==0L)) stop("j out of bounds")
         if (any(j<0L) && any(j>0L)) stop("j mixes positive and negative")
         if (any(j<0L)) j = seq_len(ncol(x))[j]
+        if (notj) j = seq_len(ncol(x))[-j]  # DT[,!"columntoexclude",with=FALSE], if a copy is needed, rather than :=NULL
         ans = vector("list",length(j))
         if (is.null(irows))
             for (s in seq_along(j)) ans[[s]] = x[[j[s]]]  # TO DO: return marked/safe shallow copy back to user

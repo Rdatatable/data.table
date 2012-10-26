@@ -59,12 +59,12 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   expression is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables) and can evaluate to any of the other types.
 
   When \code{i} is a \code{data.table}, \code{x} must have a key. \code{i} is \emph{joined} to \code{x} using \code{x}'s key and the rows in \code{x} that match are returned. An equi-join is performed between each column in \code{i} to each column in \code{x}'s key; i.e., column 1 of \code{i} is matched to the 1st column of \code{x}'s key, column 2 to the second, etc. The match is a binary search in compiled C in O(log n) time. If \code{i} has \emph{fewer} columns than \code{x}'s key then not all of {x}'s key columns will be joined to (a common use case) and many rows of \code{x} will (ordinarily) match to each row of \code{i}. If \code{i} has \emph{more} columns than \code{x}'s key, the columns of \code{i} not involved in the join are included in the result. If \code{i} also has a key, it is \code{i}'s key columns that are used to match to \code{x}'s key columns (column 1 of \code{i}'s key is joined to column 1 of \code{x}'s key, column 2 of \code{i}'s key to column 2 of \code{x}'s key, and so on for as long as the shorter key) and a binary merge of the two tables is carried out. In all joins the names of the columns are irrelevant; the columns of \code{x}'s key are joined to in order, either from column 1 onwards of \code{i} when \code{i} is unkeyed, or from column 1 onwards of \code{i}'s key. In code, the number of join columns is determined by \code{min(length(key(x)),if (haskey(i)) length(key(i)) else ncol(i))}.
+  
+  All types of `i` may be prefixed with \code{!}. This signals a \emph{not-join} or \emph{not-select} should be performed. Throughout \code{data.table} documentation, where we refer to the type of `i`, we mean the type of `i` \emph{after} the `!`, if present. See examples.
 
   Advanced: When \code{i} is an expression of column names that evaluates to \code{data.table} or \code{list}, a join is performed. We call this a \emph{self join}.
 
   Advanced: When \code{i} is a single variable name, it is not considered an expression of column names and is instead evaluated in calling scope.
-  
-  Advanced: When \code{i} is a regular \code{list} (such as \code{.BY}), it is automatically converted to \code{data.table}.
 
 }
   \item{j}{ A single column name, single expresson of column names, \code{list()} of expressions of column names, an expression or function call that evaluates to \code{list} (including \code{data.frame} and \code{data.table} which are \code{list}s, too), or (when \code{with=FALSE}) same as \code{j} in \code{[.data.frame}.
@@ -269,6 +269,13 @@ DT[,m:=mean(v),by=x][]     # add new column by reference by group
                            # NB: postfix [] is shortcut to print()
 
 DT[,.SD[which.min(v)],by=x][]  # nested query by group
+
+DT[!J("a")]                # not join
+DT[!"a"]                   # same
+DT[!2:4]                   # all rows other than 2:4
+DT[x!="b" | y!=3]          # multiple vector scanning approach, slow
+DT[!J("b",3)]              # same result but much faster
+
 
 # Follow r-help posting guide, support is here (*not* r-help) :
 # datatable-help@lists.r-forge.r-project.org

@@ -19,7 +19,7 @@ NEW FEATURES
             options(datatable.print.topn=10)
         If the table to printed has more than nrows, the top and bottom topn rows
         are printed. Otherwise, below nrows, the entire table is printed.
-        Thanks to Allan Engelhardt and Melanie Bocou for useful discussions :
+        Thanks to Allan Engelhardt and Melanie Bacou for useful discussions :
         http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-September/001303.html
         and see FAQs 2.11 and 2.22.
         
@@ -36,8 +36,7 @@ NEW FEATURES
     
     o   with=FALSE is no longer needed to use column names or positions on the LHS of :=, #2120.
             DT[,c("newcol","existingcol"):=list(1L,NULL)]   # with=FALSE not needed
-        same as :
-            DT[,`:=`(newcol=1L, existingcol:=NULL)]
+            DT[,`:=`(newcol=1L, existingcol:=NULL)]         # same
         If the LHS is held in a variable, the followed equivalent options are retained :
             mycols = c("existingcol","newcol")
             DT[,get("mycols"):=1L]
@@ -46,7 +45,14 @@ NEW FEATURES
             DT[,c("existingcol","newcol"):=1L]   # same (with=FALSE not needed)
             
     o   Multiple LHS:= and `:=`(...) now work by group, and by without by. Implementing
-        or fixing, and thanks to, #2215 (Florian Oswald), #1710 (Farrel Buchinsky), more to add ...
+        or fixing, and thanks to, #2215 (Florian Oswald), #1710 (Farrel Buchinsky) and
+        others.
+            DT[,c("newcol1","newcol2"):=list(mean(col1),sd(col1)), by=grp]
+            DT[,`:=`(newcol1=mean(col1),
+                     newcol2=sd(col1),
+                     ...),  by=grp]                        # same but easier to read
+            DT[c("grp1","grp2"), `:=`(newcol1=mean(col1),
+                                      newcol2=sd(col1))]   # same using by-without-by
         
     o   with=FALSE now works with a symbol LHS of :=, by group (#2120) :
             colname = "newcol"
@@ -60,22 +66,42 @@ NEW FEATURES
             http://stackoverflow.com/questions/13018696/data-table-key-indices-or-group-counter
 
     o   .I is a new symbol available to j. An integer vector length .N. It contains the group's row
-        locations in \code{DT}. This implements FR#1962.
-            DT[,.I[which.max(colB)],by=colA]   # locations of maximums by group
+        locations in DT. This implements FR#1962.
+            DT[,.I[which.max(colB)],by=colA]      # row numbers of maxima by group
 
-    o   A new "!" prefix on i signals 'not-join' (a.k.a. 'not-select'), #1384.
+    o   A new "!" prefix on i signals 'not-join' (a.k.a. 'not-select'), #1384(i).
             DT[-DT["a", which=TRUE, nomatch=0]]   # old not-join idiom, still works
             DT[!"a"]                              # same result, now preferred.
             DT[!J(6),...]                         # !J == not-join
             DT[!2:3,...]                          # ! on all types of i
-            DT[colA!=6L | colB!=23L,...]          # multiple vector scanning approach
+            DT[colA!=6L | colB!=23L,...]          # multiple vector scanning approach (slow)
             DT[!J(6L,23L)]                        # same result, faster binary search
         '!' has been used rather than '-' :
-            * to match the 'not-join' and 'not-select' nomenclature
+            * to match the 'not-join'/'not-where' nomenclature
             * with '-', DT[-0] would return DT rather than DT[0] and not be backwards
-              compatibile. With '!', DT[!0] returns DT both before (since !0 is TRUE in
+              compatible. With '!', DT[!0] returns DT both before (since !0 is TRUE in
               base R) and after this new feature.
-            * to leave DT[+...] and DT[-...] available for future use
+            * to leave DT[+J...] and DT[-J...] available for future use
+            
+    o   When with=FALSE, "!" may also be a prefix on j, #1384(ii). This selects all but the named columns.
+            SF[,-match("somecol",names(DF))]              # works when somecol exists. If not, NA causes an error.
+            DF[,-match("somecol",names(DF),nomatch=0)]    # works when somecol exists. Empty data.frame when it doesn't, silently.
+            DT[,-match("somecol",names(DT)),with=FALSE]   # same issues.
+            DT[,setdiff(names(DT),"somecol"),with=FALSE]  # works but you have to know order of arguments, and no warning if doesn't exist
+            - vs -
+            DT[,!"somecol",with=FALSE]                    # works and easy to read. With (helpful) warning if somecol isn't there.
+        Strictly speaking, this (!j) is a "not-select" (not !i). This has no analogy in SQL.
+        Reminder: i is analogous to WHERE, j is analogous to SELECT and `:=` in j changes SELECT to UPDATE.
+        !j when j is column positions is very similar to -j.
+            DF[,-(2:3),drop=FALSE]           # all but columns 2 and 3. Careful, brackets and drop=FALSE are required.
+            DT[,-(2:3),with=FALSE]           # same
+            DT[,!2:3,with=FALSE]             # same
+            copy(DT)[,2:3:=NULL,with=FALSE]  # same
+        !j was introduced for column names really, though, not positions. It works for both, for consistency :
+            toremove = c("somecol","anothercol")
+            DT[,!toremove,with=FALSE]
+            toremove = 2:3
+            DT[,!toremove,with=FALSE]        # same code works without change
 
 BUG FIXES
         
@@ -89,8 +115,8 @@ BUG FIXES
     o   "Internal error" message when combining join containing missing groups and group by
         is fixed, #2162. For example :
             X[Y,.N,by=NonJoinColumn]
-        where Y contains some rows that don't match to X. This bug could also result in a seg
-        fault. Thanks to Andrey Riabushenko and Michael Schermerhorn for reporting. Tests added.
+        where Y contains some rows that don't match to X. This bug could also result in a segfault.
+        Thanks to Andrey Riabushenko and Michael Schermerhorn for reporting. Tests added.
         
     o   On empty tables, := now changes column type and adds new 0 length columns ok, fixing
         #2274. Tests added.
@@ -178,7 +204,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 803 raw tests. test.data.table() should return precisely this number of
+    o   There are now 810 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 
