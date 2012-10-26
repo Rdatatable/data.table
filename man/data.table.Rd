@@ -115,7 +115,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \item{rolltolast}{ Like \code{roll} but the data is not rolled forward past the \emph{last} observation within each group defined by the join columns. The value of \code{i} must fall in a gap in \code{x} but not after the end of the data, for that group defined by all but the last join column. \code{roll} and \code{rolltolast} may not both be \code{TRUE}.
 
 }
-  \item{which}{ \code{TRUE} returns the integer row numbers of \code{x} that \code{i} matches to.
+  \item{which}{ \code{TRUE} returns the row numbers of \code{x} that \code{i} matches to. \code{NA} returns the row numbers of \code{i} that have no match in \code{x}. By default \code{FALSE} and the rows in \code{x} that match are returned.
 
 }
   \item{.SDcols}{ Advanced. Specifies the columns of \code{x} included in \code{.SD}. May be character column names or numeric positions. This is useful for speed when applying a function through a subset of (possible very many) columns; e.g., \code{DT[,lapply(.SD,sum),by="x,y",.SDcols=301:350]}.

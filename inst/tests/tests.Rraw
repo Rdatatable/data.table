@@ -2211,18 +2211,28 @@ test(800, DT[!myi], DT["b"])
 test(801, DT[!"c",sum(B),by=A], data.table(A=c("a","b"),V1=c(3L,7L),key="A"))
 test(802, DT[!"missing",sum(B),by=A], DT[,sum(B),by=A])
 test(803, DT[!c("a","missing","b","missing2"),sum(B),by=A], DT["c",sum(B)])
+# Combining not-join with which
+test(804, DT[!"b",which=TRUE], INT(1:2,5:6))  # row numbers in DT that don't match
+# New which=NA value
+test(805, DT[c("b","foo","c"),which=NA], 2L)  # row numbers in i that don't match
+test(806, DT[!c("b","foo","c"),which=NA], c(1L,3L)) # row numbers in i that do match
+test(807, DT[!c("b","foo","c"),nomatch=0], error="not-join.*prefix is present on i.*Please remove nomatch")
+test(808, DT[c("b","foo","c"),which=TRUE,nomatch=NA], INT(3:4,NA,5:6))
+test(809, DT[c("b","foo","c"),which=TRUE,nomatch=0], INT(3:4,5:6))
+test(810, DT[c("b","foo","c"),which=NA,nomatch=NA], 2L)
+test(811, DT[c("b","foo","c"),which=NA,nomatch=0], error="which=NA with nomatch=0 would always return an empty vector[.] Please change or remove either which or nomatch")
 
 # New notj for column names and positions when with=FALSE, #1384
 DT = data.table(a=1:3,b=4:6,c=7:9)
-test(804, DT[,!"b",with=FALSE], DT[,-match("b",names(DT)),with=FALSE])
-test(805, DT[,"foo",with=FALSE], error="column(s) not found: foo")
-test(806, DT[,!"foo",with=FALSE], warning="column(s) not removed because not found: foo")
-test(807, suppressWarnings(DT[,!c("b","foo"),with=FALSE]), DT[,list(a,c)])
-test(808, DT[,!2:3,with=FALSE], DT[,-(2:3),with=FALSE])  # for consistency, but ! is really for character column names
+test(812, DT[,!"b",with=FALSE], DT[,-match("b",names(DT)),with=FALSE])
+test(813, DT[,"foo",with=FALSE], error="column(s) not found: foo")
+test(814, DT[,!"foo",with=FALSE], warning="column(s) not removed because not found: foo")
+test(815, suppressWarnings(DT[,!c("b","foo"),with=FALSE]), DT[,list(a,c)])
+test(816, DT[,!2:3,with=FALSE], DT[,-(2:3),with=FALSE])  # for consistency, but ! is really for character column names
 mycols = "b"
-test(809, DT[,!mycols,with=FALSE], DT[,list(a,c)])
+test(817, DT[,!mycols,with=FALSE], DT[,list(a,c)])
 mycols = 2
-test(810, DT[,!mycols,with=FALSE], DT[,list(a,c)])
+test(818, DT[,!mycols,with=FALSE], DT[,list(a,c)])
 
 
 # TO DO:

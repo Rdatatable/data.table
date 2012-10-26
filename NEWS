@@ -102,7 +102,14 @@ NEW FEATURES
             DT[,!toremove,with=FALSE]
             toremove = 2:3
             DT[,!toremove,with=FALSE]        # same code works without change
-
+            
+    o   'which' now accepts NA. This means return the row numbers in i that don't match, #1384(iii).
+        Thanks to Santosh Srinivas for the suggestion.
+            X[Y,which=TRUE]   # row numbers of X that do match, as before
+            X[!Y,which=TRUE]  # row numbers of X that don't match
+            X[Y,which=NA]     # row numbers of Y that don't match
+            X[!Y,which=NA]    # row numbers of Y that do match (for completeness)
+        
 BUG FIXES
         
     o   Indexing columns of data.table with a logical vector and `with=FALSE` now works as
@@ -204,7 +211,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 810 raw tests. test.data.table() should return precisely this number of
+    o   There are now 818 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 

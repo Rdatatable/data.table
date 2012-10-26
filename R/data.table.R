@@ -244,7 +244,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     missingnomatch = missing(nomatch)
     if (!is.na(nomatch) && nomatch!=0L) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
     nomatch = as.integer(nomatch)
-    if (which && !missing(j)) stop("'which' is true but 'j' is also supplied")
+    if (!is.logical(which) || length(which)>1) stop("'which' must be a logical vector length 1. Either FALSE, TRUE or NA.")
+    if ((isTRUE(which)||is.na(which)) && !missing(j)) stop("'which' is ",which," (meaning return row numbers) but 'j' is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
+    if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
     if (missing(i) && missing(j)) {
         # ...[] == oops at console, forgot print(...)
         # or some kind of dynamic construction that has edge case of no contents inside [...]
@@ -268,7 +270,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         isub = substitute(i)
         if (is.call(isub) && isub[[1]] == as.name("!")) {
             notjoin = TRUE
-            if (!missingnomatch) warning("not-join '!' prefix is present on i; ignoring provided 'nomatch' and setting nomatch=0. Please remove nomatch.");
+            if (!missingnomatch) stop("not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch.");
             nomatch = 0L
             isub = isub[[2]]
         }
@@ -360,6 +362,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             .Call(Cbinarysearch, i, x, as.integer(leftcols-1L), as.integer(rightcols-1L), haskey(i), roll, rolltolast, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1)
             # length of input nomatch (single 0 or NA) is 1 in both cases.
             # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
+            if (is.na(which)) return(which(if (notjoin) f__!=0L else is.na(f__)))
             for (ii in resetifactor) set(i,j=ii,value=origi[[ii]])
             if (mult=="all") {
                 if (!missing(by) || which || missing(j) || !with || notjoin) {
