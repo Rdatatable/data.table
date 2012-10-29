@@ -359,18 +359,16 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             f__ = integer(nrow(i))
             len__ = integer(nrow(i))
             allLen1 = TRUE
+            if (verbose) {last.started.at=proc.time()[3];cat("Starting binary search ...");flush.console()}
             .Call(Cbinarysearch, i, x, as.integer(leftcols-1L), as.integer(rightcols-1L), haskey(i), roll, rolltolast, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1)
+            if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
             # length of input nomatch (single 0 or NA) is 1 in both cases.
             # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
             if (is.na(which)) return(which(if (notjoin) f__!=0L else is.na(f__)))
             for (ii in resetifactor) set(i,j=ii,value=origi[[ii]])
             if (mult=="all") {
                 if (!missing(by) || which || missing(j) || !with || notjoin) {
-                    irows = if (allLen1) f__ else {
-                        as.integer(unlist(mapply(seq,f__,length.out=len__,SIMPLIFY=FALSE)))
-                        # TO DO: *** if works, port the unlist mapply to C
-                        #        *** This is potentially relatively slow currently.
-                    }
+                    irows = if (allLen1) f__ else vecseq(f__,len__)
                     if (!missing(by) && !which && !missing(j) && with && !notjoin)
                         potentialredundantby = TRUE
                 } else {
@@ -418,7 +416,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]]
                     for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]]
                 } else {
-                    ii = rep(seq_len(nrow(i)),len__)
+                    ii = rep.int(seq_len(nrow(i)),len__)
                     for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]][ii]
                     for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]][ii]
                 }
@@ -1675,6 +1673,8 @@ rbindlist = function(l) {
     settruelength(ans,0L)
     alloc.col(ans)
 }
+
+vecseq = function(x,y) .Call(Cvecseq,x,y)
 
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only, and (currently) only once; i.e., DT[i,col:=1L] and DT[,newcol:=sum(colB),by=colA] are ok, but not DT[i,col]:=1L, not DT[i]$col:=1L and not DT[,{newcol1:=1L;newcol2:=2L}]. Please see help(":="). Check is.data.table(DT) is TRUE.')
 

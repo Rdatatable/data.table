@@ -111,6 +111,13 @@ NEW FEATURES
             X[!Y,which=NA]    # row numbers of Y that do match (for completeness)
         
 BUG FIXES
+
+    o   A large slowdown (many minutes instead of a few secs) in X[Y] joins has been fixed, #2216.
+        This occurred where the number of rows in i was large, and at least one row joined to
+        more than one row in x. Possibly in other similar circumstances too. The workaround was
+        to set mult="first" which is no longer required.
+        Thanks to a question and report from Alex Chernyakov :
+            http://stackoverflow.com/questions/12042779/time-of-data-table-join
         
     o   Indexing columns of data.table with a logical vector and `with=FALSE` now works as
         expected, fixing #1797. Thanks to Mani Narayanan for reporting. Test added.

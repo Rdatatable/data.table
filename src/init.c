@@ -27,6 +27,7 @@ SEXP reorder();
 SEXP rorder_tol();
 SEXP rbindlist();
 SEXP EvalDepth();
+SEXP vecseq();
 
 // .Externals
 SEXP fastmean();
@@ -53,6 +54,7 @@ R_CallMethodDef callMethods[] = {
 {"Crorder_tol", (DL_FUNC) &rorder_tol, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"CEvalDepth", (DL_FUNC) &EvalDepth, -1},
+{"Cvecseq", (DL_FUNC) &vecseq, -1},
 {NULL, NULL, 0}
 };
 
