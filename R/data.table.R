@@ -896,7 +896,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (is.call(jsub)) {
             if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xvars)) {
                 txt = as.list(jsub)[-1L]
-                txt[1L] = txt[2L]
+                txt[[1L]] = as.name(txt[[2L]])
                 ans = vector("list",length(xvars)+1L)
                 ans[[1L]] = as.name("list")
                 for (ii in seq_along(xvars)) {

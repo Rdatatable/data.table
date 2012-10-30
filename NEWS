@@ -182,6 +182,12 @@ BUG FIXES
         providing reproducible examples :
             http://stackoverflow.com/questions/13106018/data-table-error-when-used-through-knitr-gwidgetswww
 
+    o   Optimization of lapply when FUN is a character function name now works, #2212.
+            DT[,lapply(.SD, "+", 1), by=id]  # no longer an error
+            DT[,lapply(.SD, `+`, 1), by=id]  # same, worked before
+        Thanks to Michael Nelson for highlighting. Tests added.
+            
+
 USER VISIBLE CHANGES
 
     o   J() now issues a warning (when used *outside* DT[...]) that using it
