@@ -2234,8 +2234,14 @@ test(817, DT[,!mycols,with=FALSE], DT[,list(a,c)])
 mycols = 2
 test(818, DT[,!mycols,with=FALSE], DT[,list(a,c)])
 
-# Test X[Y] slowdown
-test(819, TRUE, TRUE)  # dummy test to increment test.data.table() counter, for Alex to test.
+# Test X[Y] slowdown, #2216
+X = CJ(a=seq_len(1e3),b=seq_len(1e3))
+Y = copy(X)
+X[4,b:=3L]     # create a dup group, to force allLen1=FALSE
+setkey(X)
+test(819, system.time(X[Y])["user.self"] < 2)   # Was many minutes in 1.8.2!  Now well under 1s, but 2s for wide tolerance.
+test(820, system.time(X[Y,mult="first"])["user.self"] < 2)
+
 
 # TO DO:
 #DT = data.table(a=1:3,b=1:6,key="a")

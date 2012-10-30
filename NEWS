@@ -115,7 +115,7 @@ BUG FIXES
     o   A large slowdown (many minutes instead of a few secs) in X[Y] joins has been fixed, #2216.
         This occurred where the number of rows in i was large, and at least one row joined to
         more than one row in x. Possibly in other similar circumstances too. The workaround was
-        to set mult="first" which is no longer required.
+        to set mult="first" which is no longer required. Test added.
         Thanks to a question and report from Alex Chernyakov :
             http://stackoverflow.com/questions/12042779/time-of-data-table-join
         
