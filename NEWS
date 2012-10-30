@@ -173,6 +173,14 @@ BUG FIXES
           DT = data.table(a=1:3,b=c("a","a","b"))
           setattr(DT$b, "names", c("a","b","c"))  # not recommended, just to illustrate
           DT[,sum(a),by=b]  # now ok
+          
+    o   gWidgetsWWW wasn't known as data.table aware, even though it mimicks executing
+        code in .GlobalEnv, #2340. data.table is now gWidgetsWWW aware and further packages
+        can be added if required by changing a new variable :
+            data.table:::cedta.override
+        by using assignInNamespace(). Thanks to Zach Waite and Yihui Xie for investigating and
+        providing reproducible examples :
+            http://stackoverflow.com/questions/13106018/data-table-error-when-used-through-knitr-gwidgetswww
 
 USER VISIBLE CHANGES
 
