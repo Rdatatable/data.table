@@ -69,7 +69,7 @@ NEW FEATURES
         locations in DT. This implements FR#1962.
             DT[,.I[which.max(colB)],by=colA]      # row numbers of maxima by group
 
-    o   A new "!" prefix on i signals 'not-join' (a.k.a. 'not-select'), #1384(i).
+    o   A new "!" prefix on i signals 'not-join' (a.k.a. 'not-where'), #1384(i).
             DT[-DT["a", which=TRUE, nomatch=0]]   # old not-join idiom, still works
             DT[!"a"]                              # same result, now preferred.
             DT[!J(6),...]                         # !J == not-join
@@ -90,7 +90,7 @@ NEW FEATURES
             DT[,setdiff(names(DT),"somecol"),with=FALSE]  # works but you have to know order of arguments, and no warning if doesn't exist
             - vs -
             DT[,!"somecol",with=FALSE]                    # works and easy to read. With (helpful) warning if somecol isn't there.
-        Strictly speaking, this (!j) is a "not-select" (not !i). This has no analogy in SQL.
+        Strictly speaking, this (!j) is a "not-select" (!i is 'not-where'). This has no analogy in SQL.
         Reminder: i is analogous to WHERE, j is analogous to SELECT and `:=` in j changes SELECT to UPDATE.
         !j when j is column positions is very similar to -j.
             DF[,-(2:3),drop=FALSE]           # all but columns 2 and 3. Careful, brackets and drop=FALSE are required.
@@ -126,7 +126,7 @@ BUG FIXES
         includes join columns, NA matches (if any) are now populated from i. For
         consistency with X[Y] and X[Y,list(...)]. Tests added.
         
-    o   "Internal error" message when combining join containing missing groups and group by
+    o   "Internal error" when combining join containing missing groups and group by
         is fixed, #2162. For example :
             X[Y,.N,by=NonJoinColumn]
         where Y contains some rows that don't match to X. This bug could also result in a segfault.
