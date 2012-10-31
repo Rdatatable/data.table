@@ -6,7 +6,9 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             by <- key(x)
         }
     }
-
+    if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
+    if (any(duplicated(names(y)))) stop("y has some duplicated column name(s): ",paste(names(y)[duplicated(names(y))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
+    
     ## Try to infer proper value for `by`
     if (is.null(by)) {
         by <- intersect(key(x), key(y))
