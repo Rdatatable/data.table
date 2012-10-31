@@ -1022,7 +1022,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         # return(call(".Internal",expr))  # slightly faster than .External, but R now blocks .Internal in coerce.c from apx Sep 2012
     if (length(expr)==3L && identical("na",substring(names(expr)[3L],1,2)))   # one parameter passed to mean()
         return(call(".External",quote(Cfastmean),expr[[2L]], expr[[3L]]))  # faster than .Call
-    nomeanopt<<-TRUE
+    assign("nomeanopt",TRUE,parent.frame())
     expr  # e.g. trim is not optimized, just na.rm
 }
 
@@ -1350,7 +1350,7 @@ as.list.data.table = function(x, ...) {
     setattr(ans, "class", NULL)
     setattr(ans, "row.names", NULL)
     setattr(ans, "sorted", NULL)
-    setattr(ans,".selfref", NULL)   # needed to pass S4 tests for example
+    setattr(ans,".internal.selfref", NULL)   # needed to pass S4 tests for example
     ans
 }
 
