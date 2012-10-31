@@ -186,6 +186,9 @@ BUG FIXES
             DT[,lapply(.SD, "+", 1), by=id]  # no longer an error
             DT[,lapply(.SD, `+`, 1), by=id]  # same, worked before
         Thanks to Michael Nelson for highlighting. Tests added.
+        
+    o   Syntactically invalid column names (such as "Some rate (%)") are now preserved in X[Y] joins and
+        merge() as intended, #2193. Thanks to George Kaupas for reporting. Tests added.
             
 
 USER VISIBLE CHANGES
@@ -232,7 +235,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 818 raw tests. test.data.table() should return precisely this number of
+    o   There are now 827 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 

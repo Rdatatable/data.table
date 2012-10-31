@@ -200,7 +200,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         value = x
     }
     vnames <- unlist(vnames)
-    if (check.names)
+    if (check.names)   # default FALSE
         vnames <- make.names(vnames, unique = TRUE)
     setattr(value,"names",vnames)
     setattr(value,"row.names",.set_row_names(nr))
@@ -425,7 +425,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]]
                 else
                     for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]
-                setattr(ans, "names", make.names(c(names(x)[rightcols],names(x)[-rightcols],names(i)[-leftcols]),unique=TRUE))
+                setattr(ans, "names", make.unique(c(names(x)[rightcols],names(x)[-rightcols],names(i)[-leftcols])))
                 if (haskey(i) || is.sorted(f__) || (is.na(nomatch) && any(is.na(f__)) && is.sorted(fastorder(i,leftcols))) ||
                                                    (nomatch==0L && any(f__==0L) && is.sorted(f__[f__!=0L])))
                     # TO DO: any(is.na()) could be anyNA() and any0, and we need an efficient is.unsorted(DT) method.
