@@ -25,5 +25,11 @@ SEXP EvalDepth()
     return(ScalarInteger(R_EvalDepth));
 }
 
+SEXP copyattr(SEXP from, SEXP to)
+{
+    // for use by [.data.table to retain attribs such as "comments" when subsetting and j is missing
+    copyMostAttrib(from, to);
+    return(R_NilValue);
+}
 
 

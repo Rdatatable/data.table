@@ -12,7 +12,7 @@
 \description{
   \code{setkey()} sorts a \code{data.table} and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always. The table is changed \emph{by reference}. No copy is made at all, other than temporary working memory as large as one column.
   
-  All \code{set*} functions similarly change the \code{data.table} by reference with no copy at all, and are documented here. Other than \code{\link{set}()}, which is documented in \code{\link{:=}}.
+  All \code{set*} functions similarly change their input by reference with no copy at all, and are documented here. Other than \code{\link{set}()}, which is documented in \code{\link{:=}}.
 }
 \usage{
 setkey(x, ..., verbose=getOption("datatable.verbose"))
@@ -26,7 +26,7 @@ setcolorder(x,neworder)
 key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 }
 \arguments{
-  \item{x}{ A \code{data.table}. }
+  \item{x}{ A \code{data.table}. Other than \code{setattr} which accepts any input; e.g, columns of a \code{data.frame} or \code{data.table}. }
   \item{\dots}{ The columns to sort by. Do not quote the column names. If \code{\dots} is missing (i.e. \code{setkey(DT)}), all the columns are used. \code{NULL} removes the key. }
   \item{cols}{ A character vector (only) of column names. }
   \item{value}{ In (deprecated) \code{key<-}, a character vector (only) of column names. In \code{setattr}, the value to assign to the attribute or \code{NULL} removes the attribute, if present. }
@@ -45,23 +45,23 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
   
   In v1.7.8, the \code{key<-} syntax was deprecated. The \code{<-} method copies the whole table and we know of no way to avoid that copy without a change in \R itself. Please use the \code{set}* functions instead, which make no copy at all. \code{setkey} accepts unquoted column names for convenience, whilst \code{setkeyv} accepts one vector of column names.
   
-  The problem (for \code{data.table}) with the copy by \code{key<-} (other than being slower) is that \R doesn't maintain the over allocated truelength, but it looks as though it has. Adding a column by reference using \code{:=} after a \code{key<-} was therefore a memory overwrite and eventually a seg fault; the over allocated memory wasn't really there after \code{key<-}'s copy. \code{data.table}s have a new attribute \code{.internal.selfref} to catch and warn about such copies in future. This attribute has been implemented in way that is friendly with \code{identical()} and \code{object.size()}. 
+  The problem (for \code{data.table}) with the copy by \code{key<-} (other than being slower) is that \R doesn't maintain the over allocated truelength, but it looks as though it has. Adding a column by reference using \code{:=} after a \code{key<-} was therefore a memory overwrite and eventually a segfault; the over allocated memory wasn't really there after \code{key<-}'s copy. \code{data.table}s now have an attribute \code{.internal.selfref} to catch and warn about such copies. This attribute has been implemented in a way that is friendly with \code{identical()} and \code{object.size()}. 
 
-  For the same reason, please use \code{setattr()} rather than \code{attr(x,name)<-value}, \code{setnames()} rather than \code{names(x)<-value} or \code{colnames(x)<-value}, and \code{setcolorder()} rather than \code{DT<-DT[,neworder,with=FALSE]}.
+  For the same reason, please use \code{setattr()} rather than \code{attr(x,name)<-value}, \code{setnames()} rather than \code{names(x)<-value} or \code{colnames(x)<-value}, and \code{setcolorder()} rather than \code{DT<-DT[,neworder,with=FALSE]}. In particular, \code{setattr()} is useful in many situations to set attributes by reference and can be used on any object or part of an object, not just \code{data.table}s.
   
-  It isn't good programming practice, in general, to use column numbers rather than names. This is why \code{setkey} and \code{setkeyv} only accept column names, and why \code{old} in \code{setnames()} is recommended to be names. If you use column numbers then bugs (possibly silent) can more easily creep into your code as time progresses if changes are made elsewhere in your code; e.g., if you add, remove or reorder columns in a few months time, a \code{setkey} by column number will then refer to a different column, possibly returning incorrect results with no warning. (A similar concept exists in SQL, where \code{"select * from ..."} is considered poor programming style when a robust, maintainable system is required.)  If you wish to use column numbers, it's possible but a little harder; e.g., \code{setkeyv(DT,colnames(DT)[1:2])}.
+  It isn't good programming practice, in general, to use column numbers rather than names. This is why \code{setkey} and \code{setkeyv} only accept column names, and why \code{old} in \code{setnames()} is recommended to be names. If you use column numbers then bugs (possibly silent) can more easily creep into your code as time progresses if changes are made elsewhere in your code; e.g., if you add, remove or reorder columns in a few months time, a \code{setkey} by column number will then refer to a different column, possibly returning incorrect results with no warning. (A similar concept exists in SQL, where \code{"select * from ..."} is considered poor programming style when a robust, maintainable system is required.)  If you really wish to use column numbers, it's possible but deliberately a little harder; e.g., \code{setkeyv(DT,colnames(DT)[1:2])}.
   
   }
 \value{
-    The \code{data.table} is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setkey(DT,a)[J("foo")]}. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). \code{copy()} may also sometimes be useful before \code{:=} is used to subassign to a column by reference. See \code{?copy}.
-    Note that \code{setattr} is also in package \code{bit}. Both packages merely expose R's internal \code{setAttrib} function at C level, but differ in return value. \code{bit::setattr} returns \code{NULL} (invisibly) to remind you the function is used for its side effect. \code{data.table::setattr} returns the changed object (invisibly) for use in compound statements.
+    The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setkey(DT,a)[J("foo")]}. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). \code{copy()} may also sometimes be useful before \code{:=} is used to subassign to a column by reference. See \code{?copy}.
+    Note that \code{setattr} is also in package \code{bit}. Both packages merely expose R's internal \code{setAttrib} function at C level, but differ in return value. \code{bit::setattr} returns \code{NULL} (invisibly) to remind you the function is used for its side effect. \code{data.table::setattr} returns the changed object (invisibly), for use in compound statements.
 }
 \references{
 \url{http://en.wikipedia.org/wiki/Radix_sort}\cr
 \url{http://en.wikipedia.org/wiki/Counting_sort}\cr
 \url{http://cran.at.r-project.org/web/packages/bit/index.html}
 }
-\note{ \code{base::sort.list(x,method="radix")} actually invokes a \emph{counting sort}, not a radix sort. See do_radixsort in src/main/sort.c. A counting sort, however, is particularly suitable for sorting integers and factors, and we like it. Anyway, this is one reason data.table 'likes' integers and factors.
+\note{ Despite its name, \code{base::sort.list(x,method="radix")} actually invokes a \emph{counting sort} in R, not a radix sort. See do_radixsort in src/main/sort.c. A counting sort, however, is particularly suitable for sorting integers and factors, and we like it. In fact we like it so much that \code{data.table} contains a counting sort algorithm for character vectors using R's internal global string cache. This is particularly fast for character vectors containing many duplicates, such as grouped data in a key column. This means that character is often preferred to factor. Factors are still fully supported, in particular ordered factors (where the levels are not in alphabetic order).
 }
 \seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}}, \code{\link[base]{sort.list}}, \code{\link{copy}}, \code{\link{:=}}
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}

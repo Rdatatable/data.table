@@ -28,6 +28,7 @@ SEXP rorder_tol();
 SEXP rbindlist();
 SEXP EvalDepth();
 SEXP vecseq();
+SEXP copyattr();
 
 // .Externals
 SEXP fastmean();
@@ -55,6 +56,7 @@ R_CallMethodDef callMethods[] = {
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"CEvalDepth", (DL_FUNC) &EvalDepth, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
+{"Ccopyattr", (DL_FUNC) &copyattr, -1},
 {NULL, NULL, 0}
 };
 

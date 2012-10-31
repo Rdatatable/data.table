@@ -192,6 +192,9 @@ BUG FIXES
         
     o   merge() and setcolorder() now check for duplicate column names first rather than a less helpful
         error later, #2193(ii). Thanks to Peter Fine for reporting. Tests added.
+        
+    o   Column attributes (such as 'comment') are now retained by X[Y] and merge(), #2270. Thanks to
+        Allan Engelhardt for reporting. Tests added.
             
 
 USER VISIBLE CHANGES
@@ -227,6 +230,9 @@ USER VISIBLE CHANGES
             
     o   ?transform and example(transform) has been fixed and embelished, #2316.
         Thanks to Garrett See's suggestion.
+        
+    o   ?setattr has been updated to document that it takes any input, not just data.table, and
+        can be used on columns of a data.frame, for example.
             
 THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
@@ -238,7 +244,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 830 raw tests. test.data.table() should return precisely this number of
+    o   There are now 833 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 

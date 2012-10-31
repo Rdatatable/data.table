@@ -2264,6 +2264,15 @@ test(828, setcolorder(DT2,c("a","b")), error="x has some duplicated column name(
 test(829, merge(DT1,DT2), error="y has some duplicated column name(s): a. Please remove or rename")
 test(830, merge(DT2,DT1), error="x has some duplicated column name(s): a. Please remove or rename")
 
+# attribs such as "comments" should be retained, #2270
+DT1 <- data.table(id = seq.int(1, 10), A = LETTERS[1:10], key = "id")
+comment(DT1$A) <- "first comment"     # copies, setattr would be better as on next line
+DT2 <- data.table(id = seq.int(2, 10, 2), b = letters[1:5], key = "id")
+setattr(DT2$b,"comment","second comment")
+test(831, comment(DT1[DT2]$A), "first comment")
+test(832, comment(DT2[DT1]$b), "second comment")
+test(833, sapply(merge(DT1,DT2),comment), list(id=NULL, A="first comment", b="second comment"))
+
 # TO DO:
 #DT = data.table(a=1:3,b=1:6,key="a")
 #DT[J(2,42,84),print(.SD)]

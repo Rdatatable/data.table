@@ -404,7 +404,10 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             if (!is.data.table(i)) {
                 if (is.null(irows)) return(copy(x))  # Must return a copy. Shallow copy only when i is missing.
             	ans = vector("list",ncol(x))
-                for (s in seq_len(ncol(x))) ans[[s]] = x[[s]][irows]
+                for (s in seq_len(ncol(x))) {
+                    ans[[s]] = x[[s]][irows]
+                    copyattr(x[[s]],ans[[s]])
+                }
                 setattr(ans, "names", names(x))
                 if (haskey(x) && (is.logical(i) || is.sorted(irows))) {
                     setattr(ans,"sorted",key(x))
@@ -413,18 +416,18 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 ans = vector("list",ncol(i)+ncol(x)-length(leftcols))
                 inonjoin = seq_len(ncol(i))[-leftcols]
                 if ((allLen1 || mult!="all") && (is.na(nomatch) || !any(f__==0L))) {
-                    for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]]
+                    for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]]  # won't copy so will retain attribs such as "comments"
                     for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]]
                 } else {
                     ii = rep.int(seq_len(nrow(i)),len__)
-                    for (s in seq_along(leftcols)) ans[[s]] = i[[leftcols[s]]][ii]
-                    for (s in seq_along(inonjoin)) ans[[s+ncol(x)]] = i[[inonjoin[s]]][ii]
+                    for (s in seq_along(leftcols)) {ans[[s]] = i[[leftcols[s]]][ii]; copyattr(i[[leftcols[s]]], ans[[s]])}
+                    for (s in seq_along(inonjoin)) {ans[[s+ncol(x)]] = i[[inonjoin[s]]][ii]; copyattr(i[[inonjoin[s]]], ans[[s+ncol(x)]])}
                 }
                 xnonjoin = seq_len(ncol(x))[-rightcols]
                 if (is.null(irows))
                     for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]]
                 else
-                    for (s in seq_along(xnonjoin)) ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]
+                    for (s in seq_along(xnonjoin)) {ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]; copyattr(x[[xnonjoin[s]]], ans[[s+length(leftcols)]])}
                 setattr(ans, "names", make.unique(c(names(x)[rightcols],names(x)[-rightcols],names(i)[-leftcols])))
                 if (haskey(i) || is.sorted(f__) || (is.na(nomatch) && any(is.na(f__)) && is.sorted(fastorder(i,leftcols))) ||
                                                    (nomatch==0L && any(f__==0L) && is.sorted(f__[f__!=0L])))
@@ -1525,6 +1528,10 @@ copy = function(x) {
     # TO DO: speedup duplicate.c using memcpy, suggested to r-devel, would benefit copy()
     # Could construct data.table and use memcpy ourselves but deep copies e.g. list() columns
     # may be tricky; more robust to rely on R's duplicate which deep copies.
+}
+
+copyattr = function(from, to) {
+    .Call(Ccopyattr, from, to)
 }
 
 shallow = function(x) {
