@@ -97,7 +97,7 @@ NEW FEATURES
             DT[,-(2:3),with=FALSE]           # same
             DT[,!2:3,with=FALSE]             # same
             copy(DT)[,2:3:=NULL,with=FALSE]  # same
-        !j was introduced for column names really, though, not positions. It works for both, for consistency :
+        !j was introduced for column names really, not positions. It works for both, for consistency :
             toremove = c("somecol","anothercol")
             DT[,!toremove,with=FALSE]
             toremove = 2:3
@@ -196,7 +196,6 @@ BUG FIXES
     o   Column attributes (such as 'comment') are now retained by X[Y] and merge(), #2270. Thanks to
         Allan Engelhardt for reporting. Tests added.
             
-
 USER VISIBLE CHANGES
 
     o   J() now issues a warning (when used *outside* DT[...]) that using it
@@ -244,7 +243,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 833 raw tests. test.data.table() should return precisely this number of
+    o   There are now 834 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 

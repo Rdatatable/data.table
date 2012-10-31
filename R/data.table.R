@@ -886,15 +886,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
 
     if (options("datatable.optimize")[[1L]]>0L) {  # Abilility to turn off if problems
         # Optimization to reduce overhead of calling mean and lapply over and over for each group
-        nomeanopt=FALSE
-        optmean = function(expr) {
-            if (length(expr)==2L)
-                return(call(".Internal",expr))  # couldn't get .External as fast as .Internal, but no na.rm this route
-            if (length(expr)==3L && identical("na",substring(names(expr)[3L],1,2)))
-                return(call(".External",quote(Cfastmean),expr[[2L]], expr[[3L]]))  # faster than .Call
-            nomeanopt<<-TRUE
-            expr  # e.g. trim is not optimized, just na.rm
-        }
+        nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
         oldjsub = jsub
         if (is.call(jsub)) {
             if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xvars)) {
@@ -923,9 +915,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             if (jsub[[1L]]=="list") {
                 for (ii in seq_along(jsub)[-1L])
                     if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]]=="mean")
-                        jsub[[ii]] = optmean(jsub[[ii]])
+                        jsub[[ii]] = .optmean(jsub[[ii]])
             } else if (jsub[[1L]]=="mean") {
-                jsub = optmean(jsub)
+                jsub = .optmean(jsub)
             }
         }
         if (nomeanopt) {
@@ -933,9 +925,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         }
         if (verbose) {
             if (!identical(oldjsub, jsub))
-                cat("Optimized j from '",deparse(oldjsub),"' to '",deparse(jsub),"'\n",sep="")
+                cat("Optimized j from '",deparse(oldjsub),"' to '",deparse(jsub,width.cutoff=200),"'\n",sep="")
             else
-                cat("Optimization is on but j left unchanged as '",deparse(jsub),"'\n",sep="")
+                cat("Optimization is on but j left unchanged as '",deparse(jsub,width.cutoff=200),"'\n",sep="")
         }
         assign("Cfastmean", Cfastmean, SDenv)
         assign("mean", base::mean.default, SDenv)
@@ -1024,6 +1016,15 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     alloc.col(ans)
 }
 
+.optmean = function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
+    if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE
+        return(call(".External",quote(Cfastmean),expr[[2L]], FALSE))
+        # return(call(".Internal",expr))  # slightly faster than .External, but R now blocks .Internal in coerce.c from apx Sep 2012
+    if (length(expr)==3L && identical("na",substring(names(expr)[3L],1,2)))   # one parameter passed to mean()
+        return(call(".External",quote(Cfastmean),expr[[2L]], expr[[3L]]))  # faster than .Call
+    nomeanopt<<-TRUE
+    expr  # e.g. trim is not optimized, just na.rm
+}
 
 #  [[.data.frame is now dispatched due to inheritance.
 #  The code below tried to avoid that but made things
@@ -1349,7 +1350,7 @@ as.list.data.table = function(x, ...) {
     setattr(ans, "class", NULL)
     setattr(ans, "row.names", NULL)
     setattr(ans, "sorted", NULL)
-    setattr(ans,".internal.selfref", NULL)   # needed to pass S4 tests for example
+    setattr(ans,".selfref", NULL)   # needed to pass S4 tests for example
     ans
 }
 
