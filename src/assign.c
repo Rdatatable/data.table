@@ -188,8 +188,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                 error("RHS of assignment to new column '%s' is zero length but not empty list(). For new columns the RHS must either be empty list() to create an empty list column, or, have length > 0; e.g. NA_integer_, 0L, etc.", CHAR(STRING_ELT(newcolnames,newcolnum)));
             }
         }
-        if (!isVector(thisvalue) && !(isVector(thisvalue) && length(thisvalue)==targetlen))
+        if (!(isVectorAtomic(thisvalue) || isNewList(thisvalue)))  // NULL had a continue earlier above
             error("RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list column.");
+        if (isMatrix(thisvalue) && (j=INTEGER(getAttrib(thisvalue, R_DimSymbol))[1]) > 1)  // matrix passes above (considered atomic vector)
+            warning("%d column matrix RHS of := will be treated as one vector", j);
         if ((coln+1)<=oldncol && isFactor(VECTOR_ELT(dt,coln)) &&
             !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && !isReal(thisvalue))  // !=INTSXP includes factor
             error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
@@ -252,7 +254,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             } else {
                 if (verbose) Rprintf("Direct plonk of unnamed RHS, no copy.\n");  // e.g. DT[,a:=as.character(a)] as tested by 754.3
             }
-            setAttrib(thisvalue, R_NamesSymbol, R_NilValue);   // clear names such as  DT[,a:=mapvector[a]]
+            setAttrib(thisvalue, R_NamesSymbol, R_NilValue);     // clear names such as  DT[,a:=mapvector[a]]
+            setAttrib(thisvalue, R_DimSymbol, R_NilValue);       // so that matrix is treated as vector
+            setAttrib(thisvalue, R_DimNamesSymbol, R_NilValue);  // the 3rd of the 3 attribs not copied by copyMostAttrib, for consistency.
             SET_VECTOR_ELT(dt,coln,thisvalue);
             // plonk new column in as it's already the correct length
             // if column exists, 'replace' it (one way to change a column's type i.e. less easy, as it should be, for speed, correctness and to get the user thinking about their intent)        

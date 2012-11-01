@@ -57,7 +57,7 @@ NEW FEATURES
     o   with=FALSE now works with a symbol LHS of :=, by group (#2120) :
             colname = "newcol"
             DT[,colname:=f(),by=grp,with=FALSE]
-        Thanks to Alex :
+        Thanks to Alex Chernyakov :
             http://stackoverflow.com/questions/11745169/dynamic-column-names-in-data-table-r
             http://stackoverflow.com/questions/11680579/assign-multiple-columns-using-in-data-table-by-group
             
@@ -195,6 +195,12 @@ BUG FIXES
         
     o   Column attributes (such as 'comment') are now retained by X[Y] and merge(), #2270. Thanks to
         Allan Engelhardt for reporting. Tests added.
+        
+    o   A matrix RHS of := is now treated as vector, with warning if it has more than 1 column, #2333.
+        Thanks to Alex Chernyakov for highlighting. Tests added.
+            DT[,b:=scale(a)]   # now works rather than creating an invalid column of type matrix
+        http://stackoverflow.com/questions/13076509/why-error-from-na-omit-after-running-scale-in-r-in-data-table
+        
             
 USER VISIBLE CHANGES
 

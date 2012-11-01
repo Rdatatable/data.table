@@ -2274,6 +2274,16 @@ test(832, comment(DT2[DT1]$b), "second comment")
 test(833, sapply(merge(DT1,DT2),comment), list(id=NULL, A="first comment", b="second comment"))
 test(834, comment(DT1[2:3]$A), "first comment")
 
+# Test that matrix RHS of := is caught, #2333
+DT = data.table(a=1:3)
+DT[,a:=scale(a)]    # 1 column matrix auto treated as vector
+test(835, na.omit(DT), DT)
+test(836, DT[,a:=as.integer(a)], data.table(a=INT(-1,0,1)))
+test(837, DT[,a:=cbind(1,2)], warning="2 column matrix RHS of := will be treated as one vector")
+DT = data.table(a=1:3,b=1:6)
+test(838, DT[,c:=scale(b), by=a][,c:=as.integer(1000*c)], data.table(a=1:3,b=1:6,c=rep(as.integer(1000*scale(1:2)), each=3)))
+
+
 # TO DO:
 #DT = data.table(a=1:3,b=1:6,key="a")
 #DT[J(2,42,84),print(.SD)]
