@@ -1388,9 +1388,6 @@ dimnames.data.table = function(x) {
     x   # it's this returned value that is copied via *tmp* and we cannot avoid that when using <- currently in R
 }
 
-
-last = function(x) x[NROW(x)]     # last row for a data.table, last element for a vector.
-
 within.data.table <- function (data, expr, ...)
 # basically within.list but retains key (if any)
 # will be slower than using := or a regular query (see ?within for further info).

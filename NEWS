@@ -201,7 +201,10 @@ BUG FIXES
             DT[,b:=scale(a)]   # now works rather than creating an invalid column of type matrix
         http://stackoverflow.com/questions/13076509/why-error-from-na-omit-after-running-scale-in-r-in-data-table
         
-            
+    o   last() is now S3 generic for compatibility with xts::last, #2312. Strictly speaking, for speed,
+        last(x) deals with vector, list and data.table inputs directly before falling back to
+        S3 dispatch. Thanks to Garrett See for reporting. Tests added.
+
 USER VISIBLE CHANGES
 
     o   J() now issues a warning (when used *outside* DT[...]) that using it
@@ -249,7 +252,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 834 raw tests. test.data.table() should return precisely this number of
+    o   There are now 842 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 
