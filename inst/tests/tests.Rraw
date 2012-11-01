@@ -1702,7 +1702,7 @@ test(589, DT[,sapply(.SD,sum)*.N], c(x=162, y=270, v=405))
 test(590, DT[,sapply(.SD,sum)*.N,by=NULL], data.table(V1=c(162,270,405)))
 test(591, DT[,sapply(.SD,sum)*.N,by=character()], data.table(V1=c(162,270,405)))
 test(592, DT[,sapply(.SD,sum)*.N,by=""], data.table(V1=c(162,270,405)))
-test(593, DT[,lapply(.SD,sum)], list(x=18L, y=30, v=45L))
+test(593, DT[,lapply(.SD,sum)], data.table(x=18L, y=30, v=45L))    # bug fix #2263 in v1.8.3: now data.table result for consistency
 test(594, DT[,lapply(.SD,sum),by=NULL], data.table(x=18L, y=30, v=45L))
 test(595, DT[,lapply(.SD,sum),by=character()], data.table(x=18L, y=30, v=45L))
 test(596, DT[,lapply(.SD,sum),by=""], data.table(x=18L, y=30, v=45L))

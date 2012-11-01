@@ -204,6 +204,10 @@ BUG FIXES
     o   last() is now S3 generic for compatibility with xts::last, #2312. Strictly speaking, for speed,
         last(x) deals with vector, list and data.table inputs directly before falling back to
         S3 dispatch. Thanks to Garrett See for reporting. Tests added.
+        
+    o   DT[,lapply(.SD,sum)] in the case of no grouping now returns a data.table for consistency, rather
+        than list, #2263. Thanks to Justin and mnel for highlighting. Existing test changed.
+            http://stackoverflow.com/a/12290443/403310
 
 USER VISIBLE CHANGES
 

@@ -854,7 +854,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             .Call(Cassign,x,irows,cols,newnames,jval,verbose)
             return(x)
         }
-        if ((is.call(jsub) && jsub[[1L]]=="list") || !missing(by)) {  # selecting from a list column should return list, though
+        if ((is.call(jsub) && is.list(jval)) || !missing(by)) {  # selecting from a list column should return list, though
             if (is.atomic(jval)) {
                 setattr(jval,"names",NULL)
                 jval = data.table(jval)
