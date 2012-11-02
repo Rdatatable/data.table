@@ -854,7 +854,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             .Call(Cassign,x,irows,cols,newnames,jval,verbose)
             return(x)
         }
-        if ((is.call(jsub) && is.list(jval)) || !missing(by)) {  # selecting from a list column should return list, though
+        if ((is.call(jsub) && is.list(jval) && !is.object(jval)) || !missing(by)) {
+            # is.call: selecting from a list column should return list
+            # is.object: for test 168 and 168.1 (S4 object result from ggplot2::qplot). Just plain list results should result in data.table
             if (is.atomic(jval)) {
                 setattr(jval,"names",NULL)
                 jval = data.table(jval)
