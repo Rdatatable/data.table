@@ -208,6 +208,9 @@ BUG FIXES
     o   DT[,lapply(.SD,sum)] in the case of no grouping now returns a data.table for consistency, rather
         than list, #2263. Thanks to Justin and mnel for highlighting. Existing test changed.
             http://stackoverflow.com/a/12290443/403310
+            
+    o   L[[2L]][,:=] now works, where L is a list of data.table objects, #2204. Thanks to Melanie Bacou
+        for reporting. Tests added.
 
 USER VISIBLE CHANGES
 

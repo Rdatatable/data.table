@@ -9,7 +9,7 @@ dim.data.table <- function(x) {
 .global$print = TRUE
 .global$depthtrigger =
     if (exists(".global",.GlobalEnv) || getRversion() < "2.14.0") {
-        8L # this is either development, or pre 2.14, where package isn't compiled
+        7L # this is either development, or pre 2.14, where package isn't compiled
     } else {
         2L # normal value when package is loaded in 2.14+ (where functions are compiled in namespace)
     }
@@ -213,8 +213,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
       }
       setkeyv(value,key)
     }
-    alloc.col(value)
-    # At some point returning it this way made a NAM(1) data.table. Returning "value=alloc.col(value);value" is the same but returned a NAM(2) data.table. Unlike data.frame which is always NAMED==2. We ignore NAMED in data.table generally, and now even when := adds by reference always. The print method still bumps NAMED (as it does in data.frame) for some reason and print appears to copy (TO DO).
+    alloc.col(value)  # returns a NAMED==0 object, unlike data.frame()
 }
 
 is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need to result in 'not sorted' e.g. test 251 where i table is not sorted but f__ without NAs is sorted. Could check if i is sorted too, but that would take time and that's what SJ is for to make the calling code clear to the reader.
@@ -459,8 +458,8 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     newnames = NULL
     if (length(av) && av[1L] == ":=") {
         if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
-        if (notj) stop("doesn't make sense to combine !j with :=");
-        if (.Call(CEvalDepth)<=.global$depthtrigger && is.name(substitute(x)))
+        if (notj) stop("doesn't make sense to combine !j with :=")
+        if (.Call(CEvalDepth)<=.global$depthtrigger)
             .global$print = FALSE
         if (!is.null(irows)) {
             if (!length(irows)) {
@@ -510,7 +509,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             m[is.na(m)] = ncol(x)+seq_len(length(newnames))
             cols = as.integer(m)
             if ((ok<-selfrefok(x,verbose))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-                warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table, so that := can add this new column by reference. At an earlier point, this data.table has been copied by R. Avoid key<-, names<- and attr<- which in R currently (and oddly) all copy the whole data.table. Use set* syntax instead to avoid copying: setkey(), setnames() and setattr(). If this message doesn't help, please report to datatable-help so the root cause can be fixed.")
+                warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table, so that := can add this new column by reference. At an earlier point, this data.table has been copied by R. Avoid key<-, names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: setkey(), setnames() and setattr(). If this message doesn't help, please report to datatable-help so the root cause can be fixed.")
             if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
                 n = max(ncol(x)+100, ncol(x)+2*length(newnames))
                 name = substitute(x)
@@ -518,18 +517,28 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     cat("Growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n")
                     # Verbosity should not issue warnings, so cat rather than warning.
                     # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
-                # TO DO test   DT[....][,foo:=42L],  i.e. where the foo does the realloc. Would it see DT name or the call.
-                # inherits=TRUE is correct and mimicks what the setVar in C was doing before being moved up to R level.
-                # Comment moved up from C ... to revisit ... Note that the NAMED(dt)>1 doesn't work because .Call
-                # always sets to 2 (see R-ints), it seems. Work around
-                # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
-                # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
-                # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
-                # don't mind.
+                
+                    # TO DO ... comments moved up from C ... 
+                    # Note that the NAMED(dt)>1 doesn't work because .Call
+                    # always sets to 2 (see R-ints), it seems. Work around
+                    # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
+                    # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
+                    # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
+                    # don't mind.
                 }
                 alloc.col(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
-                if (is.name(name))
+                if (is.name(name)) {
                     assign(as.character(name),x,parent.frame(),inherits=TRUE)
+                } else if (is.call(name) && name[[1L]]=="[[" && is.name(name[[2L]])) {
+                    k = eval(name[[2L]],parent.frame())
+                    origj = j = eval(name[[3L]],parent.frame())
+                    if (is.character(j)) {
+                        if (length(j)!=1L) stop("L[[i]][,:=] syntax only valid when i is length 1, but it's length %d",length(j))
+                        j = match(j, names(k))
+                        if (is.na(j)) stop("Item '",origj,"' not found in names of list")
+                    }
+                    .Call(Csetlistelt,k,as.integer(j), x)
+                }
             }
         }
     } else if (!with) {
@@ -1548,7 +1557,7 @@ alloc.col = function(DT, n=options("datatable.alloccol")[[1L]], verbose=options(
         name = as.character(name)
         assign(name,ans,parent.frame(),inherits=TRUE)
     }
-    ans
+    .Call(Csetnamed,ans,0L)
 }
 
 selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
