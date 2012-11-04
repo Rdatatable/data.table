@@ -26,7 +26,7 @@ setcolorder(x,neworder)
 key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 }
 \arguments{
-  \item{x}{ A \code{data.table}. Other than \code{setattr} which accepts any input; e.g, columns of a \code{data.frame} or \code{data.table}. }
+  \item{x}{ A \code{data.table}. Other than \code{setattr} which accepts any input; e.g, columns of a \code{data.frame} or \code{data.table}, and \code{setnames} which accepts \code{data.frame}, too. }
   \item{\dots}{ The columns to sort by. Do not quote the column names. If \code{\dots} is missing (i.e. \code{setkey(DT)}), all the columns are used. \code{NULL} removes the key. }
   \item{cols}{ A character vector (only) of column names. }
   \item{value}{ In (deprecated) \code{key<-}, a character vector (only) of column names. In \code{setattr}, the value to assign to the attribute or \code{NULL} removes the attribute, if present. }

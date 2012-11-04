@@ -2322,6 +2322,10 @@ test(853, l[[1]][,d:=10:12], warning="Invalid .internal.selfref detected and fix
 test(854, suppressWarnings(l[[1]][,d:=10:12]), data.table(a=1:3,b=4:6,d=10:12))
 test(855, l[[1]], data.table(a=1:3,b=4:6,d=10:12))
 
+# Test setnames on data.frame, #2273.
+DF = data.frame(foo=1:2,bar=3:4)
+setnames(DF,c("baz","qux"))
+test(856, DF, data.frame(baz=1:2,qux=3:4))
 
 # TO DO:
 #DT = data.table(a=1:3,b=1:6,key="a")
