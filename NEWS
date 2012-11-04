@@ -253,7 +253,10 @@ USER VISIBLE CHANGES
         
     o   ?setattr has been updated to document that it takes any input, not just data.table, and
         can be used on columns of a data.frame, for example.
-            
+        
+    o   Efficiency warnings when joining between a factor column and a character column are now downgraded
+        to messages when verbosity is on, #2265(i). Thanks to Christian Hudon for the suggestion.
+
 THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
     o   Combining a join with mult="first"|"last" followed by by inside the same [...] gave incorrect
@@ -264,7 +267,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 856 raw tests. test.data.table() should return precisely this number of
+    o   There are now 858 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 

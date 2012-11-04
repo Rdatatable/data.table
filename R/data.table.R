@@ -316,14 +316,14 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     if (is.character(i[[lc]])) next
                     if (!is.factor(i[[lc]]))
                         stop("x.'",xcnam,"' is a character column being joined to i.'",icnam,"' which is type '",typeof(i[[lc]]),"'. Character columns must join to factor or character columns.")
-                    warning("Coercing factor column i.'",icnam,"' to character to match type of x.'",xcnam,"'.")
+                    if (verbose) cat("Coercing factor column i.'",icnam,"' to character to match type of x.'",xcnam,"'.\n",sep="")
                     set(i,j=lc,value=as.character(i[[lc]]))
                     # no longer copies all of i, thanks to shallow() and :=/set
                     next
                 }
                 if (is.factor(x[[rc]])) {
                     if (is.character(i[[lc]])) {
-                        warning("Coercing character column i.'",icnam,"' to factor to match type of x.'",xcnam,"'. If possible please change x.'",xcnam,"' to character. Character columns are now preferred in joins.")
+                        if (verbose) cat("Coercing character column i.'",icnam,"' to factor to match type of x.'",xcnam,"'. If possible please change x.'",xcnam,"' to character. Character columns are now preferred in joins.\n",sep="")
                         set(i,j=lc,value=factor(i[[lc]]))
                     } else {
                         if (!is.factor(i[[lc]]))
@@ -343,13 +343,13 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 if (is.integer(x[[rc]]) && is.real(i[[lc]])) {
                     # TO DO: add warning if reallyreal about loss of precision
                     # or could coerce in binary search on the fly, at cost
-                    if (verbose) cat("Coercing 'double' column i.'",icnam,"' to 'integer' to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.",sep="")
+                    if (verbose) cat("Coercing 'double' column i.'",icnam,"' to 'integer' to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
                     newval = i[[lc]]
                     mode(newval) = "integer"  # retains column attributes (such as IDateTime class)
                     set(i,j=lc,value=newval)
                 }
                 if (is.real(x[[rc]]) && is.integer(i[[lc]])) {
-                    if (verbose) cat("Coercing 'integer' column i.'",icnam,"' to 'double' to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.",sep="")
+                    if (verbose) cat("Coercing 'integer' column i.'",icnam,"' to 'double' to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
                     newval = i[[lc]]
                     mode(newval) = "double"
                     set(i,j=lc,value=newval)
