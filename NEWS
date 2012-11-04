@@ -209,8 +209,11 @@ BUG FIXES
         than list, #2263. Thanks to Justin and mnel for highlighting. Existing test changed.
             http://stackoverflow.com/a/12290443/403310
             
-    o   L[[2L]][,:=] now works, where L is a list of data.table objects, #2204. Thanks to Melanie Bacou
-        for reporting. Tests added.
+    o   L[[2L]][,newcol:=] now works, where L is a list of data.table objects, #2204. Thanks to Melanie Bacou
+        for reporting. Tests added. A warning is issued when the first column is added if L was created with
+        list(DT1,DT2) since R's list() copies named inputs. Until reflist() is implemented, this warning can be
+        ignored or suppressed.
+            http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-August/001265.html
 
 USER VISIBLE CHANGES
 
@@ -259,7 +262,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 842 raw tests. test.data.table() should return precisely this number of
+    o   There are now 855 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 

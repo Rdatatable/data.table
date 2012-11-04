@@ -2306,7 +2306,7 @@ test(846, l[["foo"]][2,d:=4], data.table(a=1:3,d=c(NA,4,NA)))
 test(847, l, list(foo=data.table(a=1:3,d=c(NA,4,NA)), bar=data.table(b=4:6)))
 old = getOption("datatable.alloccol")
 options(datatable.alloccol=2L)  # the return value here seems to be TRUE rather than the old expression TO DO: follow up with r-devel
-l = list(foo=data.table(a=1:3,b=4:6),bar=data.table(c=7:9,d=10:12))
+l = list(foo=data.table(a=1:3,b=4:6),bar=data.table(c=7:9,d=10:12))   # list() doesn't copy the NAMED==0 objects here
 test(848, truelength(l[[1L]]), 2L)
 test(849, {l[[1L]][,e:=13:15]; l[[1L]]}, data.table(a=1:3,b=4:6)[,e:=13:15])
 test(850, truelength(l[[1L]]), 102L)
@@ -2314,6 +2314,14 @@ test(851, truelength(l[[2L]]), 2L)
 l[["bar"]][,f:=16:18]
 test(852, truelength(l[[2L]]), 102L)
 options(datatable.alloccol=old)
+# Now create the list from named objected
+DT1 = data.table(a=1:3, b=4:6)
+DT2 = data.table(c=7:9)
+l = list(DT1, DT2)   # TO DO: implement reflist(). Same as list() but doesn't copy named inputs.
+test(853, l[[1]][,d:=10:12], warning="Invalid .internal.selfref detected and fixed.*R's list.*copies named objects")  # correct and desired warning
+test(854, suppressWarnings(l[[1]][,d:=10:12]), data.table(a=1:3,b=4:6,d=10:12))
+test(855, l[[1]], data.table(a=1:3,b=4:6,d=10:12))
+
 
 # TO DO:
 #DT = data.table(a=1:3,b=1:6,key="a")
