@@ -165,7 +165,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     }
     // Check all inputs :
     for (i=0; i<length(cols); i++) {
-        coln = INTEGER(cols)[i]-1;
+        coln = INTEGER(cols)[i];
+        if (coln<1 || coln>oldncol+length(newcolnames))
+            error("Item %d of j is %d which is outside range. Cannot add columns with set(), use := instead to add columns by reference.",i+1,coln);
+        coln--;
         if (TYPEOF(values)==VECSXP && (length(cols)>1 || length(values)==1))
             thisvalue = VECTOR_ELT(values,i%LENGTH(values));
         else

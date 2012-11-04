@@ -13,7 +13,7 @@
 \arguments{
 \item{LHS}{ A single column name. Or, when \code{with=FALSE}, a vector of column names or numeric positions (or a variable that evaluates as such). If the column doesn't exist, it is added, by reference. }
 \item{RHS}{ A vector of replacement values. It is recycled in the usual way to fill the number of rows satisfying \code{i}, if any. Or, when \code{with=FALSE}, a \code{list} of replacement vectors which are applied (the \code{list} is recycled if necessary) to each column of \code{LHS} . To remove a column use \code{NULL}. }
-\item{x}{ A \code{data.table}. }
+\item{x}{ A \code{data.table}. Or, \code{set()} accepts \code{data.frame}, too. }
 \item{i}{ Optional. Integer row numbers to be assigned \code{value}. \code{NULL} represents all rows more efficiently than creating a vector such as \code{1:nrow(x)}. }
 \item{j}{ Integer column number to be assigned \code{value}. }
 \item{value}{ Value to assign by reference to \code{x[i,j]}. }
