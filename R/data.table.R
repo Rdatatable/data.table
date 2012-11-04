@@ -538,7 +538,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                         if (is.na(j)) stop("Item '",origj,"' not found in names of list")
                     }
                     .Call(Csetlistelt,k,as.integer(j), x)
-                }
+                } # TO DO: else if env$<- or list$<-
             }
         }
     } else if (!with) {
