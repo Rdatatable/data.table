@@ -267,16 +267,15 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     notjoin = FALSE
     if (!missing(i)) {
         isub = substitute(i)
-        if (is.call(isub) && isub[[1]] == as.name("!")) {
+        if (is.call(isub) && isub[[1L]] == as.name("!")) {
             notjoin = TRUE
             if (!missingnomatch) stop("not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch.");
             nomatch = 0L
-            isub = isub[[2]]
+            isub = isub[[2L]]
         }
         if (is.null(isub)) return( null.data.table() )
-        isubl = as.list.default(isub)
-        if (identical(isubl[[1L]],quote(eval))) {  # TO DO: or ..()
-            isub = eval(.massagei(isubl[[2L]]),parent.frame())
+        if (is.call(isub) && isub[[1L]]=="eval") {  # TO DO: or ..()
+            isub = eval(.massagei(isub[[2L]]),parent.frame())
             if (is.expression(isub)) isub=isub[[1L]]
         }
         if (!is.name(isub))
@@ -289,8 +288,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             else i[is.na(i)] = FALSE              # avoids DT[!is.na(ColA) & !is.na(ColB) & ColA==ColB], just DT[ColA==ColB]
         }
         if (is.null(i)) return( null.data.table() )
-        if (is.character(i)) i = list(i)   # for user convenience
-        if (identical(class(i),"list") || identical(class(i),"data.frame")) i = as.data.table(i)
+        if (is.character(i)) i = data.table(V1=i)   # for user convenience
+        else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) i = as.data.table(i[[1L]])
+        else if (identical(class(i),"list") || identical(class(i),"data.frame")) i = as.data.table(i)
         if (is.data.table(i)) {
             if (!haskey(x)) stop("When i is a data.table (or character vector), x must be keyed (i.e. sorted, and, marked as sorted) so data.table knows which columns to join to and take advantage of x being sorted. Call setkey(x,...) first, see ?setkey.")
             rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in binarysearch

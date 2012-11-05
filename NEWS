@@ -216,6 +216,9 @@ BUG FIXES
         list(DT1,DT2) since R's list() copies named inputs. Until reflist() is implemented, this warning can be
         ignored or suppressed.
             http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-August/001265.html
+            
+    o   DT[J(data.frame(...))] now works again, giving the same result as DT[data.frame(...)], #2265.
+        Thanks to Christian Hudon for reporting. Tests added.
 
 USER VISIBLE CHANGES
 
@@ -267,7 +270,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 858 raw tests. test.data.table() should return precisely this number of
+    o   There are now 860 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 

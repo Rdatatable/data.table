@@ -2329,6 +2329,11 @@ test(856, DF, data.frame(baz=1:2,qux=3:4))
 test(857, set(DF,NULL,"quux",5:6), error="'quux' is not a column name.*use := instead to add columns by reference")
 test(858, set(DF,NULL,3L,5:6), error="Item 1 of j is 3 which is outside range.*use := instead to add columns by reference")
 
+# Test DT[J(data.frame())], #2265
+DT = data.table(foo=c(1,2,3), bar=c(1.1,2.2,3.3), key="foo")
+i = data.frame(foo=1)
+test(859, DT[i], DT[J(i)])
+test(860, DT[i], DT[data.table(i)])
 
 
 # TO DO:
@@ -2336,8 +2341,6 @@ test(858, set(DF,NULL,3L,5:6), error="Item 1 of j is 3 which is outside range.*u
 #DT[J(2,42,84),print(.SD)]
 #Error in setnames(ans, bynames) : 
 #  Can't assign 1 names to a 3 column data.table 
-
-
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 
