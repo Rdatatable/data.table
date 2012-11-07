@@ -17,15 +17,16 @@ SEXP rbindlist(SEXP l)
     for (i=0;i<length(l);i++) {
         li = VECTOR_ELT(l,i);
         if (isNull(li)) continue;
-        if (TYPEOF(li) != VECSXP) error("Item %d of list is not a list",i+1);
+        if (TYPEOF(li) != VECSXP) error("Item %d of list input is not a data.frame, data.table or list",i+1);
+        if (!LENGTH(li) || !length(VECTOR_ELT(li,0))) continue;
         if (first==-1) {
-            first = i;   // First non-NULL
+            first = i;   // First non-empty list/data.frame/data.table
             lf = li;
             ncol = length(lf);
         } else {
-            if (length(li) != ncol) error("Item %d has %d columns, inconsistent with item %d which has %d",i+1,length(li),first+1,ncol);
+            if (length(li) != ncol) error("Item %d has %d columns, inconsistent with item %d which has %d columns",i+1,length(li),first+1,ncol);
         }
-        nrow+=length(VECTOR_ELT(li,0));
+        nrow+=LENGTH(VECTOR_ELT(li,0));
     }
     PROTECT(ans = allocVector(VECSXP, ncol));
     setAttrib(ans, R_NamesSymbol, getAttrib(lf, R_NamesSymbol));
@@ -36,10 +37,11 @@ SEXP rbindlist(SEXP l)
         ansloc = 0;
         for (i=first; i<length(l); i++) {
             li = VECTOR_ELT(l,i);
-            if (isNull(li)) continue;  // majority of time though, each item of l is populated
-            thislen = length(VECTOR_ELT(li,0));
+            if (!length(li)) continue;  // majority of time though, each item of l is populated
+            thislen = length(VECTOR_ELT(li,0));  // type of li was checked to be VECSXP already above
+            if (!thislen) continue;
             thiscol = VECTOR_ELT(li,j);
-            if (thislen != length(thiscol)) error("Column %d of item %d is length %d, inconsistent with first column of that item which is length %d. rbindlist doesn't recycle as it already expects each item to be a uniform list, or data.table", j+1, i+1, length(thiscol), thislen);
+            if (thislen != length(thiscol)) error("Column %d of item %d is length %d, inconsistent with first column of that item which is length %d. rbindlist doesn't recycle as it already expects each item to be a uniform list, data.frame or data.table", j+1, i+1, length(thiscol), thislen);
             if (TYPEOF(thiscol) != TYPEOF(target)) {
                 thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
                 coerced = TRUE;

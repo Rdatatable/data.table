@@ -227,6 +227,9 @@ BUG FIXES
         1.5Kb per data.table on 64bit (97*8*2 bytes) and 0.75Kb on 32bit (97*4*2 bytes).
         Many thanks to Xavier Saint-Mleux and Sasha Goodman for the reproducible examples and
         assistance. Tests added.
+        
+    o   rbindlist now skips empty (0 row) items as well as NULL items. So the column types of the result are
+        now taken from the first non-empty data.table. Thanks to Garrett See for reporting. Test added.
 
 USER VISIBLE CHANGES
 
@@ -278,7 +281,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 863 raw tests. test.data.table() should return precisely this number of
+    o   There are now 864 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 

@@ -8,10 +8,11 @@
 rbindlist(l)
 }
 \arguments{
-  \item{l}{ A list of \code{data.table}, \code{data.frame} or \code{list} objects. Each item must be either \code{NULL} or have the same number of columns of consistent type. All items do not have to be the same type; e.g, a \code{data.table} may be bound with a \code{list}.}
+  \item{l}{ A list of \code{data.table}, \code{data.frame} or \code{list} objects.}
 }
-% \details{
-% }
+\details{
+Each item of \code{l} may be either \code{NULL} (skipped), an empty object (0 rows) (skipped), or, have the same number of columns as the first non empty item. All items do not have to be the same type; e.g, a \code{data.table} may be bound with a \code{list}. The column types of the result are taken from the first non-empty item. If subsequent non-empty items have columns that mismatch in type, they are coerced to the first non-empty item's column types.
+}
 \value{
     An unkeyed \code{data.table} containing a concatenation of all the items passed in.
 }
