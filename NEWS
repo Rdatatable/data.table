@@ -83,7 +83,7 @@ NEW FEATURES
               base R) and after this new feature.
             * to leave DT[+J...] and DT[-J...] available for future use
             
-    o   When with=FALSE, "!" may also be a prefix on j, #1384(ii). This selects all but the named columns.
+    o   When with=FALSE, "!" may also be a prefix on j, #1384ii. This selects all but the named columns.
             SF[,-match("somecol",names(DF))]              # works when somecol exists. If not, NA causes an error.
             DF[,-match("somecol",names(DF),nomatch=0)]    # works when somecol exists. Empty data.frame when it doesn't, silently.
             DT[,-match("somecol",names(DT)),with=FALSE]   # same issues.
@@ -103,7 +103,7 @@ NEW FEATURES
             toremove = 2:3
             DT[,!toremove,with=FALSE]        # same code works without change
             
-    o   'which' now accepts NA. This means return the row numbers in i that don't match, #1384(iii).
+    o   'which' now accepts NA. This means return the row numbers in i that don't match, #1384iii.
         Thanks to Santosh Srinivas for the suggestion.
             X[Y,which=TRUE]   # row numbers of X that do match, as before
             X[!Y,which=TRUE]  # row numbers of X that don't match
@@ -190,10 +190,11 @@ BUG FIXES
         Thanks to Michael Nelson for highlighting. Tests added.
         
     o   Syntactically invalid column names (such as "Some rate (%)") are now preserved in X[Y] joins and
-        merge() as intended, #2193(i). Thanks to George Kaupas for reporting. Tests added.
+        merge(), as intended. Thanks to George Kaupas (#2193i) and Yang Zhang (#2090) for reporting.
+        Tests added.
         
     o   merge() and setcolorder() now check for duplicate column names first rather than a less helpful
-        error later, #2193(ii). Thanks to Peter Fine for reporting. Tests added.
+        error later, #2193ii. Thanks to Peter Fine for reporting. Tests added.
         
     o   Column attributes (such as 'comment') are now retained by X[Y] and merge(), #2270. Thanks to
         Allan Engelhardt for reporting. Tests added.

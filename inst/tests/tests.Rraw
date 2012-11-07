@@ -2242,11 +2242,14 @@ test(823, DT[,lapply(.SD, "sum", a), by=a], ans)
 test(824, DT[,lapply(.SD, sum, a), by=a], ans)
 test(825, DT[,lapply(.SD, `sum`, a), by=a], ans)
 
-# Test illegal names in merge are ok and setcolorder length error, #2193(i)
+# Test illegal names in merge are ok and setcolorder length error, #2193i and #2090
 DT1 = data.table(a=letters[1:5], "Illegal(name%)"=1:5, key="a")
 DT2 = data.table(a=letters[1:5], b=6L, key="a")
 test(826, merge(DT1,DT2), cbind(DT1,b=6L))
 test(827, merge(DT2,DT1), cbind(DT2,"Illegal(name%)"=1:5))
+a=data.table('User ID'=c(1,2,3), 'Blah Blah'=c(1,2,3), key='User ID')  #2090's test
+b=data.table('User ID'=c(1,2,3), 'Yadda Yadda'=c(1,2,3), key='User ID')
+test(827.1, names(a[b]), c("User ID","Blah Blah","Yadda Yadda"))
 
 # setcolorder and merge check for dup column names, #2193(ii)
 setnames(DT2,"b","a")
