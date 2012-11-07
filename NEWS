@@ -154,7 +154,7 @@ BUG FIXES
     o   A recycled column plonk RHS of := no longer messes up setkey and := when used on that
         object afterwards, #2298. For example,
             DT = data.table(a=letters[3:1],x=1:3)
-            DT[,c("x1","x2"):=x]  # ok (x1 and x2 are copies of x)
+            DT[,c("x1","x2"):=x]  # ok (x1 and x2 are now copies of x)
             setkey(DT,a)          # now ok rather than wrong result
         Thanks to Timothee Carayol for reporting. Tests added.
 
@@ -177,7 +177,7 @@ BUG FIXES
           DT[,sum(a),by=b]  # now ok
           
     o   gWidgetsWWW wasn't known as data.table aware, even though it mimicks executing
-        code in .GlobalEnv, #2340. data.table is now gWidgetsWWW aware and further packages
+        code in .GlobalEnv, #2340. So, data.table is now gWidgetsWWW-aware. Further packages
         can be added if required by changing a new variable :
             data.table:::cedta.override
         by using assignInNamespace(). Thanks to Zach Waite and Yihui Xie for investigating and
@@ -219,6 +219,13 @@ BUG FIXES
             
     o   DT[J(data.frame(...))] now works again, giving the same result as DT[data.frame(...)], #2265.
         Thanks to Christian Hudon for reporting. Tests added.
+        
+    o   A memory leak has been fixed, #2191 and #2284. All data.table objects leaked the over allocated column
+        pointer slots; i.e., when a data.table went out of scope or was rm()'d this memory wasn't released and
+        gc() would report growing Vcells. For a 3 column data.table with a 100 allocation, the growth was
+        1.5Kb per data.table on 64bit (97*8*2 bytes) and 0.75Kb on 32bit (97*4*2 bytes).
+        Many thanks to Xavier Saint-Mleux and Sasha Goodman for the reproducible examples and
+        assistance. Tests added.
 
 USER VISIBLE CHANGES
 
@@ -270,7 +277,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
 NOTES
 
-    o   There are now 860 raw tests. test.data.table() should return precisely this number of
+    o   There are now 861 raw tests. test.data.table() should return precisely this number of
         tests passed. If not, then somehow, a slightly stale version from R-Forge is likely
         installed; please reinstall from CRAN.
 

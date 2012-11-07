@@ -1239,30 +1239,19 @@ test(416, DT[J(2)], error="x must be keyed")
 
 # Test shallow copy warning from := adding a column, and (TO DO) only when X is NAMED.
 DT = data.table(a=1:3,b=4:6)
-alloc.col(DT,3)
-test(417, length(DT)==2 && truelength(DT)==3)
-DT[,c:=7L]   # uses final slot
-test(418, length(DT)==3 && truelength(DT)==3)
-    # automatic realloc and shallow copy, no risk when not named.
-    # would like to be silent using NAMED>0 but .Call sets NAMED=2 for all, it seems. TO DO.
-test(418.5, DT[,d:=8L,verbose=TRUE], output="Growing vector of column pointers from")
-DT[,d:=8L]
-if (is.null(getOption("datatable.alloccol"))) {
-    test(419, length(DT)==4 && truelength(DT)==103)
-} else {
-    test(419, length(DT)==4 && truelength(DT)>=4)
-}
-alloc.col(DT,5)
+test(417, alloc.col(DT,3), warning="Attempt to reduce allocation from.*to 3 ignored. Can only increase allocation via shallow copy")
+old = getOption("datatable.alloccol")   # search for "r-devel" note in this file why not in one step here
+options(datatable.alloccol=3L)
+DT = data.table(a=1:3,b=4:6)
+options(datatable.alloccol=old)
 DT2 = DT
-DT[,e:=9L]   # uses final slot
-test(420, length(DT)==5 && truelength(DT)==5)
-test(421, DT, DT2)
-DT[,f:=10L]
-if (is.null(getOption("datatable.alloccol"))) {
-    test(423, length(DT)==6 && truelength(DT)==105)
-} else {
-    test(423, length(DT)==6 && truelength(DT)>=6)
-}
+test(418, length(DT)==2 && truelength(DT)==3)
+DT[,c:=7L]   # uses final slot
+test(419, DT, DT2)
+test(420, length(DT)==3 && truelength(DT)==3 && length(DT2)==3 && truelength(DT2)==3)
+test(421, DT[,d:=8L,verbose=TRUE], output="Growing vector of column pointers from")
+test(422, length(DT)==4)
+test(423, truelength(DT)>=4)  # with default alloccol, new tl will be 103. But user might have set that higher and then be running test.data.table(), or user might have set alloccol to just ncol(DT)+1. Hence just >=4.
 
 # Test crash bug fixed, #1656, introduced with the 1.7.0 feature
 DT <- data.table(a = factor(c("A", "Z")), b = 1:4)
@@ -2334,6 +2323,12 @@ DT = data.table(foo=c(1,2,3), bar=c(1.1,2.2,3.3), key="foo")
 i = data.frame(foo=1)
 test(859, DT[i], DT[J(i)])
 test(860, DT[i], DT[data.table(i)])
+
+# test no memory leak, #2191 and #2284
+before = gc()["Vcells","(Mb)"]
+for (i in 1:5000) { dt = data.table(1:3); rm(dt) }  # in 1.8.2 would leak 7.5MB
+after = gc()["Vcells","(Mb)"]
+test(861, after < before+1)
 
 
 # TO DO:
