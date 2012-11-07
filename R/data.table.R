@@ -13,7 +13,7 @@ dim.data.table <- function(x) {
     } else {
         2L # normal value when package is loaded in 2.14+ (where functions are compiled in namespace)
     }
-                           
+
 print.data.table = function(x, nrows=getOption("datatable.print.nrows"), digits=NULL,
                             topn=getOption("datatable.print.topn"), ...)
 {
@@ -379,7 +379,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 if (identical(nomatch,0L)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
                 len__ = pmin(len__,1L)  # for test 456, and consistency generally
             }
-            
+
         } else {
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
@@ -517,8 +517,8 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     cat("Growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n")
                     # Verbosity should not issue warnings, so cat rather than warning.
                     # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
-                
-                    # TO DO ... comments moved up from C ... 
+
+                    # TO DO ... comments moved up from C ...
                     # Note that the NAMED(dt)>1 doesn't work because .Call
                     # always sets to 2 (see R-ints), it seems. Work around
                     # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
@@ -566,7 +566,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (is.null(irows))
             for (s in seq_along(j)) ans[[s]] = x[[j[s]]]  # TO DO: return marked/safe shallow copy back to user
         else {
-            if (is.data.table(i) && is.na(nomatch) && any(is.na(irows))) {   # TO DO: any(is.na()) => anyNA() and presave it 
+            if (is.data.table(i) && is.na(nomatch) && any(is.na(irows))) {   # TO DO: any(is.na()) => anyNA() and presave it
                 if (any(j %in% rightcols)) ii = rep(seq_len(nrow(i)),len__)
                 for (s in which(j %in% rightcols))
                     ans[[s]] = i[[leftcols[match(j[s],rightcols)]]][ii]
@@ -809,7 +809,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     SDenv = new.env(parent=parent.frame())
     # hash=TRUE (the default) does seem better as expected using e.g. test 645
     # TO DO: experiment with size argument
-    
+
     if (".N" %chin% xvars) stop("The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.")
     SDenv$.iSD = NULL  # null.data.table()
     if (bywithoutby) {
@@ -1014,7 +1014,8 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
         setattr(ans, "names", c(bynames, jvnames))
     } else {
-        setnames(ans,seq_along(bynames),bynames)   # TO DO: why doesn't .BY (where dogroups gets names when j is named list) have bynames?
+        #setnames(ans,seq_along(bynames),bynames)   # TO DO: why doesn't .BY (where dogroups gets names when j is named list) have bynames?
+        setnames(ans, c(bynames, names(ans)[-(seq_along(bynames))]))
     }
     if (haskey(x) && ((!missing(by) && bysameorder) || (!missing(i) && (haskey(i) || is.sorted(f__))))) {
         setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
