@@ -903,7 +903,15 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (is.call(jsub)) {
             if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xvars)) {
                 txt = as.list(jsub)[-1L]
-                txt[[1L]] = as.name(txt[[2L]])
+                fun = txt[[2L]]
+                if (is.call(fun) && fun[[1L]]=="function") {
+                    assign("..FUN",eval(fun),SDenv)  # to avoid creating function() for each column of .SD
+                    lockBinding("..FUN",SDenv)
+                    txt[[1L]] = as.name("..FUN")
+                } else {
+                    if (is.character(fun)) fun = as.name(fun)
+                    txt[[1L]] = fun
+                }
                 ans = vector("list",length(xvars)+1L)
                 ans[[1L]] = as.name("list")
                 for (ii in seq_along(xvars)) {
