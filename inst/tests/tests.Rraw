@@ -2328,35 +2328,39 @@ test(859, DT[i], DT[J(i)])
 test(860, DT[i], DT[data.table(i)])
 
 # test no memory leak, #2191 and #2284
-before = gc()["Vcells","(Mb)"]
+gc(); before = gc()["Vcells","(Mb)"]
 for (i in 1:2000) { DT = data.table(1:3); rm(DT) }  # in 1.8.2 would leak 3MB
-after = gc()["Vcells","(Mb)"]
+gc(); after = gc()["Vcells","(Mb)"]
 test(861, after < before+0.5)   # close to 0.0 difference, but 0.5 for safe margin
 
-before = gc()["Vcells","(Mb)"]
+gc(); before = gc()["Vcells","(Mb)"]
 DF = data.frame(x=1:20, y=runif(20))
 for (i in 1:2000) { DT = as.data.table(DF); rm(DT) }
-after = gc()["Vcells","(Mb)"]
+gc(); after = gc()["Vcells","(Mb)"]
 test(862, after < before+0.5)
 
-before = gc()["Vcells","(Mb)"]
+gc(); before = gc()["Vcells","(Mb)"]
 DT = data.table(x=1:20, y=runif(20))
 for (i in 1:2000) { x <- DT[1:5,]; rm(x) }
-after = gc()["Vcells","(Mb)"]
+gc(); after = gc()["Vcells","(Mb)"]
 test(863, after < before+0.5)
 
 # rbindlist should look for the first non-empty data.table
 test(864, rbindlist(list(data.table(foo=logical(0),bar=logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), DT)
 
+# Steve's find that setnames failed for numeric 'old' when pointing to duplicated names
+DT = data.table(a=1:3,b=1:3,v=1:6,w=1:6)
+test(865, ans1<-DT[,{list(name1=sum(v),name2=sum(w))},by="a,b",verbose=TRUE],
+          output="result of j is a named list. It's very inefficient.*removed and put back")
+test(866, names(ans1), c("a","b","name1","name2"))
+test(867, names(ans2<-DT[,list(name1=sum(v),name2=sum(w)),by="a,b"]), c("a","b","name1","name2"))  # list names extracted here
+test(868, ans1, ans2)
+# and related to setnames, too
+DT = data.table(a=1:3,b=1:6,key="a")
+test(869, DT[J(2,42,84),print(.SD)], output="   b1: 22: 5Empty data.table (0 rows) of 3 cols: a,V2,V3")
 
-# TO DO:
-#DT = data.table(a=1:3,b=1:6,key="a")
-#DT[J(2,42,84),print(.SD)]
-#Error in setnames(ans, bynames) : 
-#  Can't assign 1 names to a 3 column data.table 
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
-
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
 #        test on out of bound i subsets e.g. 6:10 when DT has 7 rows, and mixed negative and positive i integer is error.

@@ -110,7 +110,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     # DONE: expression text is checked to be strict name before using as a column name.
     # DONE: if M is a matrix with cols a,b and c,  data.table(A=M,B=M) will create colnames A.a,A.b,A.c,B.a,B,b,B.c.  Also  data.table(M,M) will use make.names to make the columns unique (adds .1,.2,.3)
     # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then class(l)="data.table" at the expense of checking.
-    x <- list(...)
+    #  TO DO: Could use nargs()-!missing(keep.rownames)-!missing(check.names)-!missing(key) to get length of `...`
+    x <- list(...)  # NAMED OBJECTS WILL BE A COPY HERE, TO DO: avoid.
     # TO DO: use ..1 instead, but not clear exactly how in this case.
     # One reason data.table() is needed, different and independent from data.frame(), is to allow list() columns.
     if (identical(x, list(NULL))) return( null.data.table() )
@@ -1000,7 +1001,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     }
     if (is.null(ans)) {
         ans = as.data.table.list(lapply(groups,"[",0L))  # side-effects only such as test 168
-        setnames(ans,bynames)   # TO DO: why doesn't groups have bynames in the first place?
+        setnames(ans,seq_along(bynames),bynames)   # TO DO: why doesn't groups have bynames in the first place?
         return(ans)
     }
     setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
@@ -1014,8 +1015,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
         setattr(ans, "names", c(bynames, jvnames))
     } else {
-        #setnames(ans,seq_along(bynames),bynames)   # TO DO: why doesn't .BY (where dogroups gets names when j is named list) have bynames?
-        setnames(ans, c(bynames, names(ans)[-(seq_along(bynames))]))
+        setnames(ans,seq_along(bynames),bynames)   # TO DO: why doesn't .BY (where dogroups gets names when j is named list) have bynames?
     }
     if (haskey(x) && ((!missing(by) && bysameorder) || (!missing(i) && (haskey(i) || is.sorted(f__))))) {
         setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
@@ -1625,19 +1625,21 @@ setnames = function(x,old,new) {
         if (length(new)!=length(old)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
     }
     if (is.numeric(old)) {
-        tt = old<1L | old>length(x)
-        if (any(tt)) stop("Items of 'old' outside range [1,",length(x),"]: ",paste(old[tt],collapse=","))
-        old = names(x)[old]
+        tt = old<1L | old>length(x) | is.na(old)
+        if (any(tt)) stop("Items of 'old' either NA or outside range [1,",length(x),"]: ",paste(old[tt],collapse=","))
+        i = as.integer(old)
+        if (any(duplicated(i))) stop("Some duplicates exist in 'old': ",paste0(i[duplicated(i)],collapse=","))
+    } else {
+        if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
+        if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste0(old[duplicated(old)],collapse=","))
+        i = chmatch(old,names(x))
+        if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
     }
-    if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
-    i = chmatch(old,names(x))
-    if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
     if (!is.character(new)) stop("'new' is not a character vector")
-
     if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))
 
     # update the key too if the column name being change is in the key
-    m = chmatch(old, key(x))  # use old here before .Call that (when old=names(DT)) changes old by reference, too
+    m = chmatch(names(x)[i], key(x))
     w = which(!is.na(m))
     .Call(Csetcharvec, attr(x,"names"), as.integer(i), new)
     if (length(w))
