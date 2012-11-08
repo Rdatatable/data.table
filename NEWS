@@ -242,7 +242,7 @@ USER VISIBLE CHANGES
         DT[i,j:=value] to return invisibly". Thanks to discussions here :
             http://stackoverflow.com/questions/11359553/how-to-suppress-output-when-using-in-r-data-table
             http://r.789695.n4.nabble.com/Avoiding-print-when-using-tp4643076.html
-        ** TO DO ** Update 2 FAQs.
+        FAQs 2.21 and 2.22 have been updated.
 
     o   DT[] now returns DT rather than an error that either i or j must be supplied.
         So, ending with [] at the console is a convenience to print the result of :=, rather

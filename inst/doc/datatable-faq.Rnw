@@ -366,14 +366,13 @@ The \code{drop} argument is never used by \code{[.data.table}. It is a placehold
 The prevailing row on or before the \code{i} row is the final row the binary search tests anyway. So \code{roll=TRUE} is essentially just a switch in the binary search C code to return that row.
 
 \subsection{Why does \code{DT[i,col:=value]} return the whole of \code{DT}? I expected either no visible value (consistent with \code{<-}), or a message or return value containing how many rows were updated. It isn't obvious that the data has indeed been updated by reference.}
-So that compound syntax can work; e.g., \code{DT[i,done:=TRUE][,sum(done)]}. The number of rows updated is returned when verbosity is on, either on a per query basis or globally using \code{options(datatable.verbose=TRUE)}.
+This has changed in v1.8.3 to meet your expectations. Please upgrade.
+The whole of \code{DT} is returned (now invisibly) so that compound syntax can work; e.g., \code{DT[i,done:=TRUE][,sum(done)]}. The number of rows updated is returned when verbosity is on, either on a per query basis or globally using \code{options(datatable.verbose=TRUE)}.
 
-\subsection{Ok, but can't the return value of \code{DT[i,col:=value]} be returned invisibily, then?}
-\begin{itemize}
-\item  We tried to but \proglang{R} internally forces visibility on for \code{[}. The value of FunTab's eval column (see src/main/names.c) for \code{[} is 0 meaning force \code{R\_Visible} on (see R-Internals section 1.6). Therefore, when we tried \code{invisible()} or setting \code{R\_Visible} to 0 directly ourselves, \code{eval} in src/main/eval.c would force it on again.
-\item  After getting used to this behaviour, you might grow to prefer it (we have). After all, how many times do we subassign using \code{<-} and then immediately look at the data to check it's ok? This having been said, if you set \code{options(datatable.print.nrows=0)}, the \code{print.data.table} function will print nothing unless you call it directly, eg. \code{print(your.data.table, nrows=10)} which leads you to believe that this is returning invisibly.
-\item  We can \emph{mix} \code{:=} into a \code{j} which also returns data; a \emph{mixed} update and select in one query. To detect whether \code{j} \emph{solely} updates (and then behave differently) could be confusing.
-\end{itemize}
+\subsection{Ok, thanks. What was so difficult about the result of \code{DT[i,col:=value]} being returned invisibly?}
+\proglang{R} internally forces visibility on for \code{[}. The value of FunTab's eval column (see src/main/names.c) for \code{[} is 0 meaning force \code{R\_Visible} on (see R-Internals section 1.6). Therefore, when we tried \code{invisible()} or setting \code{R\_Visible} to 0 directly ourselves, \code{eval} in src/main/eval.c would force it on again.
+
+To solve this problem, the key was to stop trying to stop the print method running after a \code{:=}. Instead, inside \code{:=} we now (from v1.8.3) set a global flag which the print method uses to know whether to actually print or not.
 
 \subsection{I've noticed that \code{base::cbind.data.frame} (and \code{base::rbind.data.frame}) appear to be changed by \code{data.table}. How is this possible? Why?}
 It is a temporary, last resort solution until we discover a better way to solve the problems listed below. Essentially, the issue is that \code{data.table} inherits from \code{data.frame}, \emph{and}, \code{base::cbind} and \code{base::rbind} (uniquely) do their own S3 dispatch internally as documented by \code{?cbind}. The change is adding one line to the start of each function directly in base; e.g.,
