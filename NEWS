@@ -4,13 +4,23 @@ The ChangeLog for data.table is the SVN commit log itself :
 
 This NEWS file summarises the main changes.
 
-        **********************************************
-        **                                          **
-        **   CHANGES IN DATA.TABLE VERSION 1.8.3    **
-        **                                          **
-        **          R-Forge, not yet CRAN           **
-        **                                          **
-        **********************************************
+        *********************************************
+        **                                         **
+        **   CHANGES IN DATA.TABLE VERSION 1.8.5   **
+        **                                         **
+        **      R-Forge only, not yet on CRAN      **
+        **                                         **
+        *********************************************
+
+
+
+        *********************************************
+        **                                         **
+        **   CHANGES IN DATA.TABLE VERSION 1.8.4   **
+        **                                         **
+        **           On CRAN: 9 Nov 2012           **
+        **                                         **
+        *********************************************
 
 NEW FEATURES
 
