@@ -7,11 +7,12 @@ if (!exists(".devtesting")) {
         require(ggplot2)      # the 2 ggplot tests take so long they get in the way in dev
         require(hexbin)
         require(nlme)
-        require(xls)
+        require(xts)
     })
     # The suppression is for users running test.data.table(). If they don't have ggplot2 installed we don't
     # want to warn about it not being installed. 'R CMD check' is a stricter test that will warn if the
     # packages above are not installed, via DESCRIPTION:Suggests.
+    .devtesting=FALSE
 }
 options(warn=2)
 nfail = ntest = lastnum = 0
@@ -927,6 +928,8 @@ test(300, DT[J(1),sum(v),by=b], data.table(b=c(1L,4L,7L),V1=c(1L,4L,7L),key="b")
 test(300.1, DT[J(1:2),sum(v),by=b], data.table(b=c(1L,4L,7L,2L,5L,8L),V1=c(1L,4L,7L,2L,5L,8L)))
 
 # Test ad hoc by of more than 100,000 levels, see 2nd part of bug #1387 (100,000 from the limit of base::sort.list radix)
+# This does need to be this large, like this in CRAN checks, because sort.list(method="radix") has this limit, which
+# this tests. But it's well under 10 seconds.
 DT = data.table(A=1:10,B=rnorm(10),C=factor(paste("a",1:100010,sep="")))
 test(301, nrow(DT[,sum(B),by=C])==100010)
 DT = data.table(A=1:10,B=rnorm(10),C=paste("a",1:100010,sep=""))
@@ -1208,7 +1211,7 @@ test(407, data.table(list(1:2,3:5)), as.data.table(list(list(1:2,3:5))))
 # With over-allocation, null data.table has truelength 100. Replaced the calls to structure() in the
 # code to new null.data.table(), so test internal function. User may have changed default, so this
 # doesn't test "100" explicitly.
-if (exists(".devtesting")) {
+if (.devtesting) {
     test(408, null.data.table(), data.table(NULL))
 } else {
     test(408, data.table:::null.data.table(), data.table(NULL))
@@ -1389,10 +1392,11 @@ DT=data.table(x=c("a", "a", "b", "b"), y=c("a", "a", "b", "b"), key="x")
 test(475, unique(DT), data.table(x=c("a","b"),y=c("a","b"),key="x"))
 
 # Test character and list columns in tables with many small groups
-DT = data.table(grp=1:20000,char=sample(as.hexmode(1:10000),40000,replace=TRUE),int=sample(1:10000,40000,replace=TRUE))
+N = if (.devtesting) 1000L else 100L
+DT = data.table(grp=1:(2*N),char=sample(as.hexmode(1:N),4*N,replace=TRUE),int=sample(1:N,4*N,replace=TRUE))
 ans = DT[,list(p=paste(unique(char),collapse=","),
                i=list(unique(int))), by=grp]
-test(476, nrow(as.matrix(ans)), 20000L)   # The as.matrix triggers the "'getCharCE' must be called on a CHARSXP", or similar symptom of earlier corruption, before fix in dogroups.c.
+test(476, nrow(as.matrix(ans)), 2L*N)   # The as.matrix triggers the "'getCharCE' must be called on a CHARSXP", or similar symptom of earlier corruption, before fix in dogroups.c.
 
 # Test that plonking from calling scope works, even after removing, and column copy via := is ok too.
 DT = data.table(a=1:3)
@@ -1714,16 +1718,19 @@ test(601, is.unsorted(DT$y))
 test(602, order(DT$x,DT$y), 1:20)
 
 # Test that as.list.data.table no longer copies via unclass, so speeding up sapply(DT,class) and lapply(.SD,...) etc, #2000
-DT = data.table(a=1:1e7,b=1:1e7,c=1:1e7,d=1:1e7)   # 152MB
-test(603, system.time(sapply(DT,class))["user.self"] < 0.1)
+N = if (.devtesting) 1e6 else 1e4
+DT = data.table(a=1:N,b=1:N,c=1:N,d=1:N)   # 15MB in dev testing, but test with N=1e7
+if (.devtesting) test(603, system.time(sapply(DT,class))["user.self"] < 0.1)
 
 # Tests on loopability, i.e. that overhead of [.data.table isn't huge, as in speed example in example(":=")
 # These are just to catch slow down regressions where instead of 1s it takes 40s
+if (.devtesting) {  # TO DO: find more robust way to turn these on for CRAN checks
 test(604, system.time(for (i in 1:1000) nrow(DT))["user.self"] < 0.5)
 test(605, system.time(for (i in 1:1000) ncol(DT))["user.self"] < 0.5)
 test(606, system.time(for (i in 1:1000) length(DT[[1L]]))["user.self"] < 0.5) # much faster than nrow, TO DO: replace internally
+}
 DT = as.data.table(matrix(1L,nrow=100000,ncol=100))
-test(607, system.time(for (i in 1:1000) DT[i,V1:=i])["user.self"] < 10)  # safe margin
+test(607, system.time(for (i in 1:1000) DT[i,V1:=i])["user.self"] < 10)  # 10 to be very wide margin for CRAN
 test(608, DT[1:1000,V1], 1:1000)
 
 # Crash bug of chorder(character()), #2026
@@ -1840,7 +1847,7 @@ test(645, setkey(DT,b), error="Column 2 is length 2 which differs from length of
 # Test faster mean.  Example from (now not needed as much) data.table wiki point 3.
 # Example is a lot of very small groups.
 set.seed(100)
-n=1e5  # small n so as not to overload daily CRAN checks.
+n=1e4  # small n so as not to overload daily CRAN checks.
 DT=data.table(grp1=sample(1:750, n, replace=TRUE),
               grp2=sample(1:750, n, replace=TRUE),
               x=rnorm(n),
@@ -1854,14 +1861,14 @@ tt3 = system.time(ans3<-DT[,list(basemean(x),basemean(y)),by=list(grp1,grp2)])  
 test(646, ans1, ans2)  # identical, not all.equal, deliberately as strong test
 test(647, ans1, ans3)
 test(648, any(is.na(ans1$V1)) && !any(is.nan(ans1$V1)))
-test(649, tt1["user.self"] < 2*tt2["user.self"])   # should be same speed, but *2 as large margin
-test(650, tt1["user.self"] < tt3["user.self"]/2)   # 10 times faster, but test 2 times faster as large margin
+if (.devtesting) test(649, tt1["user.self"] < 2*tt2["user.self"])   # should be same speed, but *2 as large margin
+if (.devtesting) test(650, tt1["user.self"] < tt3["user.self"]/2)   # 10 times faster, but test 2 times faster as large margin
 
 tt1 = system.time(ans1<-DT[,list(mean(x,na.rm=TRUE),mean(y,na.rm=TRUE)),by=list(grp1,grp2)])   # 2.0s
 tt2 = system.time(ans2<-DT[,list(mean.default(x,na.rm=TRUE),mean.default(y,na.rm=TRUE)),by=list(grp1,grp2)])  # 5.0s
 test(651, ans1, ans2)
 test(652, any(is.nan(ans1$V1)))
-test(653, tt1["user.self"] < tt2["user.self"])
+if (.devtesting) test(653, tt1["user.self"] < tt2["user.self"])
 
 # See FR#2067. Here we're just testing the optimization of mean and lapply, should be comparable to above
 tt2 = system.time(ans2<-DT[,lapply(.SD,mean,na.rm=TRUE),by=list(grp1,grp2)])
@@ -2229,8 +2236,10 @@ X = CJ(a=seq_len(1e3),b=seq_len(1e3))
 Y = copy(X)
 X[4,b:=3L]     # create a dup group, to force allLen1=FALSE
 setkey(X)
-test(819, system.time(X[Y])["user.self"] < 2)   # Was many minutes in 1.8.2!  Now well under 1s, but 2s for wide tolerance.
-test(820, system.time(X[Y,mult="first"])["user.self"] < 2)
+test(819, system.time(X[Y])["user.self"] < 5)   # Was many minutes in 1.8.2!  Now well under 1s, but 5s for wide tolerance for CRAN.
+                                                # We do want CRAN to tell us if any changes in R or elsewhere cause the 2 minute bug to
+                                                # so that's why it isn't excluded by an if(.devtesting)
+test(820, system.time(X[Y,mult="first"])["user.self"] < 5)
 
 # Optimization of lapply(,"+"), #2212
 DT = data.table(a=rep(1:3,each=2L),b=1:6,c=7:12)
@@ -2280,15 +2289,30 @@ test(837, DT[,a:=cbind(1,2)], warning="2 column matrix RHS of := will be treated
 DT = data.table(a=1:3,b=1:6)
 test(838, DT[,c:=scale(b), by=a][,c:=as.integer(1000*c)], data.table(a=1:3,b=1:6,c=rep(as.integer(1000*scale(1:2)), each=3)))
 
-# S3 dispatch of xts::last
-if ("package:xts" %in% search()) {
+# Test data.table's last(). (last is used internally in data.table, too).
+test(839, last(1:10), 10L)   # If xts is loaded, this'll just test xts's last. Ok as they're consistent, for vectors.
+DT = data.table(a=1:3,b=4:6)
+test(840, last(DT), DT[3L])  # xts's last returns a one row data.table ok. So this test is ok too, whether or not xts is loaded.
+                             # But not true when DT is a one column data.table/data.frame, see below.
+if ("package:xts" %in% search()) {  # e.g. when run via R CMD check
     x = xts(1:100, Sys.Date()+1:100)
-    test(839, last(x,10), x[91:100,])
-} else cat("Test 839 not run. If required call library(xts) first.\n")
-DT = data.table(a=1:10)
-test(840, last(DT), DT[10])
-test(841, last(1:10), 10L)
-test(842, last(list("a",1:2,89)), 89)
+    test(841, last(x,10), x[91:100,])
+    # The important thing this tests is that data.table's last() dispatches to xts's method when data.table is loaded above xts.
+    # But that isn't tested by R CMD check because xts is loaded above data.table, there.
+    # So to make this test relevant, in a fresh R session type: "require(xts);require(data.table);test.data.table()"
+    #                                              rather than: "require(data.table);require(xts);test.data.table()"
+    # Which was the main thrust of bug#2312 fixed in v1.8.3
+} else {
+    cat("Test 841 not run. If required call library(xts) first.\n")
+    # So these won't run from R CMD check (deliberately, for now) ...
+    test(842, last(list("a",1:2,89)), 89)  # xts's last returns a one item list here. Would prefer it to return the item itself.
+    DT = data.table(a=1:3)
+    test(842.1, last(DT), DT[3L])
+    # xts's last returns a 3L atomic here for 1 column data.frame, strangely. We wish for the last row, consistently. I tried
+    # providing a last.data.table method and using Enhances and Imports in DESCRIPTION with import() and S3method() in
+    # NAMESPACE but nothing I tried made last.data.table available to xts's last if xts was loaded above data.table (which was
+    # frustrating to test as well, see comment to test 839 above).
+} 
 
 # Test L[[1L]][,:=] updates by reference, #2204
 l = list(data.table(a=1:3), data.table(b=4:6))
@@ -2332,6 +2356,7 @@ test(859, DT[i], DT[J(i)])
 test(860, DT[i], DT[data.table(i)])
 
 # test no memory leak, #2191 and #2284
+# These take a few seconds each, and it's important to run these on CRAN to check no leak
 gc(); before = gc()["Vcells","(Mb)"]
 for (i in 1:2000) { DT = data.table(1:3); rm(DT) }  # in 1.8.2 would leak 3MB
 gc(); after = gc()["Vcells","(Mb)"]

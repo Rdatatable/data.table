@@ -40,10 +40,15 @@ chgroup(x)
 \examples{
     # Please type 'example(chmatch)' to run this and see timings on your machine
     
-    u = as.character(as.hexmode(1:10000))
-    y = sample(u,1e7,replace=TRUE)
-    x = sample(u)
+    # N is set small here (1e5) because CRAN runs all examples and tests every night, to catch
+    # any problems early as R itself changes and other packages run.
+    # The comments here apply when N has been changed to 1e7.
+    N = 1e5
     
+    u = as.character(as.hexmode(1:10000))
+    y = sample(u,N,replace=TRUE)
+    x = sample(u)
+                                                 #  With N=1e7 ...
     system.time(a <- match(x,y))                 #  4.8s
     system.time(b <- chmatch(x,y))               #  0.9s   Faster than 1st fmatch
     identical(a,b)
@@ -64,11 +69,11 @@ chgroup(x)
         rm(match)
         identical(a,c)
     }
-    
+
     # Different example with more unique strings ...
-    u = as.character(as.hexmode(1:1e6))
-    y = sample(u,1e7,replace=TRUE)
-    x = sample(u,1e7,replace=TRUE)
+    u = as.character(as.hexmode(1:(N/10)))
+    y = sample(u,N,replace=TRUE)
+    x = sample(u,N,replace=TRUE)
     system.time(a <- match(x,y))                 # 34.0s
     system.time(b <- chmatch(x,y))               #  6.4s
     identical(a,b)
