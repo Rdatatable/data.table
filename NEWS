@@ -27,7 +27,7 @@ NEW FEATURES
     o   New printing options have been added :
             options(datatable.print.nrows=100)
             options(datatable.print.topn=10)
-        If the table to printed has more than nrows, the top and bottom topn rows
+        If the table to be printed has more than nrows, the top and bottom topn rows
         are printed. Otherwise, below nrows, the entire table is printed.
         Thanks to Allan Engelhardt and Melanie Bacou for useful discussions :
         http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-September/001303.html
@@ -94,7 +94,7 @@ NEW FEATURES
             * to leave DT[+J...] and DT[-J...] available for future use
             
     o   When with=FALSE, "!" may also be a prefix on j, #1384ii. This selects all but the named columns.
-            SF[,-match("somecol",names(DF))]              # works when somecol exists. If not, NA causes an error.
+            DF[,-match("somecol",names(DF))]              # works when somecol exists. If not, NA causes an error.
             DF[,-match("somecol",names(DF),nomatch=0)]    # works when somecol exists. Empty data.frame when it doesn't, silently.
             DT[,-match("somecol",names(DT)),with=FALSE]   # same issues.
             DT[,setdiff(names(DT),"somecol"),with=FALSE]  # works but you have to know order of arguments, and no warning if doesn't exist
