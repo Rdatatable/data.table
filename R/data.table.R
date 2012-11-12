@@ -1636,10 +1636,11 @@ setnames = function(x,old,new) {
         tt = old<1L | old>length(x) | is.na(old)
         if (any(tt)) stop("Items of 'old' either NA or outside range [1,",length(x),"]: ",paste(old[tt],collapse=","))
         i = as.integer(old)
-        if (any(duplicated(i))) stop("Some duplicates exist in 'old': ",paste0(i[duplicated(i)],collapse=","))
+        if (any(duplicated(i))) stop("Some duplicates exist in 'old': ",paste(i[duplicated(i)],collapse=","))
     } else {
         if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
-        if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste0(old[duplicated(old)],collapse=","))
+        if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste(old[duplicated(old)],collapse=","))
+        if (any(duplicated(names(x)))) stop("'old' is character but there are duplicate column names: ",paste(names(x)[duplicated(names(x))],collapse=","))
         i = chmatch(old,names(x))
         if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
     }

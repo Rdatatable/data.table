@@ -13,6 +13,19 @@ This NEWS file summarises the main changes.
         *********************************************
 
 
+COMPATIBILITY FOR R 2.12.0 - 2.15.0
+
+    o   setnames used paste0() to construct its error messages, a function
+        added to R 2.15.0. Reverted to use paste(). Tests added.
+        
+    o   
+    
+NOTES
+
+    o   There are now 875 raw tests, as reported by test.data.table().
+    
+    o   v1.8.5 was an R-Forge only release. v1.8.6 was released to CRAN.
+
 
         *********************************************
         **                                         **
