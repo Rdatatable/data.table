@@ -13,19 +13,28 @@ This NEWS file summarises the main changes.
         *********************************************
 
 
-COMPATIBILITY FOR R 2.12.0 - 2.15.0
+COMPATIBILITY FOR R 2.12.0-2.15.0
 
     o   setnames used paste0() to construct its error messages, a function
         added to R 2.15.0. Reverted to use paste(). Tests added.
         
-    o   
-    
+    o   X[Y] where Y is empty (test 764) failed due to reliance on a pmin()
+        enhancement in R 2.15.1. Removed reliance.
+
 NOTES
 
+    o   test.data.table() now passes in 2.12.0, the stated dependency, as well as
+        2.14.0, 2.15.0, 2.15.1, 2.15.2 and R-devel.
+        
+    o   Full R CMD check (i.e. including compatibility tests with the 9 Suggest-ed
+        packages and S4 tests run using testthat which in turn depends on packages
+        which depend on R >= 2.14.0) passes ok in 2.14.0 onwards.
+        
     o   There are now 875 raw tests, as reported by test.data.table().
     
-    o   v1.8.5 was an R-Forge only release. v1.8.6 was released to CRAN.
-
+    o   v1.8.5 was on R-Forge only. v1.8.6 was released to CRAN.
+        Odd numbers are development, evens on CRAN.
+    
 
         *********************************************
         **                                         **

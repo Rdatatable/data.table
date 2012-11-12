@@ -378,9 +378,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             } else {
                 irows = if (mult=="first") f__ else f__+len__-1L
                 if (identical(nomatch,0L)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
-                len__ = pmin(len__,1L)  # for test 456, and consistency generally
+                if (length(len__)) len__ = pmin(len__,1L)  # for test 456, and consistency generally
+                                                           # the if() is for R < 2.15.1 when pmin was enhanced, see v1.8.6.
             }
-
         } else {
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
