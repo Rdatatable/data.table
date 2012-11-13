@@ -6,9 +6,19 @@ This NEWS file summarises the main changes.
 
         *********************************************
         **                                         **
-        **   CHANGES IN DATA.TABLE VERSION 1.8.5   **
+        **   CHANGES IN DATA.TABLE VERSION 1.8.7   **
         **                                         **
-        **      R-Forge only, not yet on CRAN      **
+        *********************************************
+
+No changes, yet.
+1.8.6 was just released to CRAN.
+
+
+        *********************************************
+        **                                         **
+        **   CHANGES IN DATA.TABLE VERSION 1.8.6   **
+        **                                         **
+        **           On CRAN: 13 Nov 2012          **
         **                                         **
         *********************************************
 
