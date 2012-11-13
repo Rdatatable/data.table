@@ -12,6 +12,11 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+BUG FIXES
+
+    o   A variable in calling scope was not found when combining i, j and by
+        in one query and that query occurred inside a function, #2368.
+        This worked in 1.8.2, so this was a regression. Test added.
 
 COMPATIBILITY FOR R 2.12.0-2.15.0
 
@@ -30,7 +35,7 @@ NOTES
         packages and S4 tests run using testthat which in turn depends on packages
         which depend on R >= 2.14.0) passes ok in 2.14.0 onwards.
         
-    o   There are now 875 raw tests, as reported by test.data.table().
+    o   There are now 876 raw tests, as reported by test.data.table().
     
     o   v1.8.5 was on R-Forge only. v1.8.6 was released to CRAN.
         Odd numbers are development, evens on CRAN.

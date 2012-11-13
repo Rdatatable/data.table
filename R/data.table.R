@@ -276,13 +276,13 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         }
         if (is.null(isub)) return( null.data.table() )
         if (is.call(isub) && isub[[1L]]=="eval") {  # TO DO: or ..()
-            isub = eval(.massagei(isub[[2L]]),parent.frame())
+            isub = eval(.massagei(isub[[2L]]), parent.frame(), parent.frame())
             if (is.expression(isub)) isub=isub[[1L]]
         }
         if (!is.name(isub))
-            i = eval(.massagei(isub), envir=x, enclos=parent.frame())
+            i = eval(.massagei(isub), x, parent.frame())
         else
-            i = eval(isub,parent.frame())
+            i = eval(isub, parent.frame(), parent.frame())
         if (is.matrix(i)) stop("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please let datatable-help know if you'd like this, or add your comments to FR #1611.")
         if (is.logical(i)) {
             if (identical(i,NA)) i = NA_integer_  # see DT[NA] thread re recycling of NA logical
@@ -395,9 +395,9 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (notjoin) {
             if (bywithoutby || !is.integer(irows) || is.na(nomatch)) stop("Internal error: notjoin but bywithoutby or !integer or nomatch==NA")
             irows = irows[irows!=0L]
-            i = isub = irows = if (length(irows)) seq_len(nrow(x))[-irows] else NULL  # NULL meaning all rows i.e. seq_len(nrow(x))
-            # Doing this once here, helps speed later when repeatedly subsetting each column. R's [irows] would do this for each column when
-            # irows contains negatives. Assigning to isub is because by uses isub later (TO DO - removed that).
+            i = irows = if (length(irows)) seq_len(nrow(x))[-irows] else NULL  # NULL meaning all rows i.e. seq_len(nrow(x))
+            # Doing this once here, helps speed later when repeatedly subsetting each column. R's [irows] would do this for each
+            # column when irows contains negatives.
         }
         if (which) return(if (is.null(irows)) seq_len(nrow(x)) else irows)
         if (missing(j)) {
@@ -451,7 +451,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     if (is.null(jsub)) return(NULL)
     jsubl = as.list.default(jsub)
     if (identical(jsubl[[1L]],quote(eval))) {
-        jsub = eval(jsubl[[2L]],parent.frame())
+        jsub = eval(jsubl[[2L]], parent.frame(), parent.frame())
         if (is.expression(jsub)) jsub = jsub[[1L]]
     }
     lhs = NULL
@@ -479,7 +479,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 lhs = as.character(lhs)
             else {
                 if (!with && !is.name(lhs) && verbose) cat("with=FALSE ignored (LHS of := isn't a symbol)\n")  # TO DO: upgrade to warning
-                lhs = eval(lhs, envir=parent.frame(), enclos=parent.frame())
+                lhs = eval(lhs, parent.frame(), parent.frame())
             }
             # to use a variable of column names on LHS, use eval(mycols):=  or get("mycols"):=, or with=FALSE for backwards compatibility
         } else {
@@ -531,8 +531,8 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 if (is.name(name)) {
                     assign(as.character(name),x,parent.frame(),inherits=TRUE)
                 } else if (is.call(name) && name[[1L]]=="[[" && is.name(name[[2L]])) {
-                    k = eval(name[[2L]],parent.frame())
-                    origj = j = eval(name[[3L]],parent.frame())
+                    k = eval(name[[2L]], parent.frame(), parent.frame())
+                    origj = j = eval(name[[3L]], parent.frame(), parent.frame())
                     if (is.character(j)) {
                         if (length(j)!=1L) stop("L[[i]][,:=] syntax only valid when i is length 1, but it's length %d",length(j))
                         j = match(j, names(k))
@@ -544,7 +544,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         }
     } else if (!with) {
         if (!missing(by)) warning("'with=FALSE ignored when 'by' or 'keyby' is provided and not using :=")
-        if (notj) j = eval(jsub,parent.frame()) # else j will be evaluated for the first time on next line
+        if (notj) j = eval(jsub, parent.frame(), parent.frame()) # else j will be evaluated for the first time on next line
         if (is.logical(j)) j <- which(j)
         if (!length(j)) return( null.data.table() )
         if (is.character(j)) {
@@ -617,11 +617,11 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             bysubl = as.list.default(bysub)
             bysuborig = bysub
             if (is.name(bysub) && !(as.character(bysub) %chin% names(x))) {
-                bysub = eval(bysub,parent.frame())
+                bysub = eval(bysub, parent.frame(), parent.frame())
                 bysubl = as.list.default(bysub)
             }
             if (length(bysubl) && identical(bysubl[[1L]],quote(eval))) {    # TO DO: or by=..()
-                bysub = eval(bysubl[[2]],parent.frame())
+                bysub = eval(bysubl[[2]], parent.frame(), parent.frame())
                 if (is.expression(bysub)) bysub=bysub[[1L]]
                 bysubl = as.list.default(bysub)
             } else if (is.call(bysub) && as.character(bysub[[1L]]) %chin% c("c","key","names")) {
@@ -631,7 +631,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 #        tried before but since not wrapped in try() it failed on some tests
                 # or look for column names used in this by (since if none it wouldn't find column names anyway
                 # when evaled within full x[irows]).  Trouble is that colA%%2L is a call and should be within frame.
-                tt = eval(bysub,parent.frame())
+                tt = eval(bysub, parent.frame(), parent.frame())
                 if (!is.character(tt)) stop("by=c(...), key(...) or names(...) must evaluate to 'character'")
                 bysub=tt
             }
@@ -655,16 +655,19 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 byval = eval(bysub, x, parent.frame())
             else {
                 if (!is.integer(irows)) stop("Internal error: irows isn't integer")  # length 0 when i returns no rows
-                # We might pass irows as i to x[] below (and did in 1.8.2): irows may contain NA, 0, negatives and >nrow(x) here, all ok.
-                # But we need i join column values to be retained, hence the eval(isub) approach.
-                # TO DO: do directly here rather than a recursive call and rejoin. Then also no need to assign to isub way above in if(notjoin).
+                # Passing irows as i to x[] below has been troublesome in a rare edge case.
+                # irows may contain NA, 0, negatives and >nrow(x) here. That's all ok.
+                # But we may need i join column values to be retained (where those rows have no match), hence we tried eval(isub)
+                # in 1.8.3, but this failed test 876.
+                # TO DO: Add a test like X[i,sum(v),by=i.x2], or where by includes a join column (both where some i don't match).
+                # TO DO: Make xss directly, rather than recursive call.
                 if (!is.na(nomatch)) irows = irows[irows!=0L]
                 if (length(allbyvars)) {
                     if (verbose) cat("i clause present and columns used in by detected, only these subset:",paste(allbyvars,collapse=","),"\n")
-                    xss = x[eval(isub),allbyvars,with=FALSE,nomatch=nomatch,mult=mult,roll=roll,rolltolast=rolltolast]
+                    xss = x[irows,allbyvars,with=FALSE,nomatch=nomatch,mult=mult,roll=roll,rolltolast=rolltolast]
                 } else {
                     if (verbose) cat("i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '",deparse(by),"'\n",sep="")
-                    xss = x[eval(isub),nomatch=nomatch,mult=mult,roll=roll,rolltolast=rolltolast]
+                    xss = x[irows,nomatch=nomatch,mult=mult,roll=roll,rolltolast=rolltolast]
                 }
                 byval = eval(bysub, xss, parent.frame())
                 xnrow = nrow(xss)
@@ -857,7 +860,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         # Since .SD is inside SDenv, alongside its columns as variables, R finds .SD symbol more quickly, if used.
         # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
 
-        jval = eval(jsub,SDenv)
+        jval = eval(jsub, SDenv, parent.frame())
 
         if (!is.null(lhs)) {
             if (verbose) cat("Assigning to ",if (is.null(irows)) "all " else paste(length(irows),"row subset of "), nrow(x)," rows\n",sep="")
