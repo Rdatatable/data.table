@@ -14,9 +14,9 @@ This NEWS file summarises the main changes.
 
 BUG FIXES
 
-    o   A variable in calling scope was not found when combining i, j and by
-        in one query and that query occurred inside a function, #2368.
-        This worked in 1.8.2, so this was a regression. Test added.
+    o   A variable in calling scope was not found when combining i, j and by in
+        one query, i used that local variable, and that query occurred inside a
+        function, #2368. This worked in 1.8.2, a regression. Test added.
 
 COMPATIBILITY FOR R 2.12.0-2.15.0
 
@@ -39,7 +39,7 @@ NOTES
     
     o   v1.8.5 was on R-Forge only. v1.8.6 was released to CRAN.
         Odd numbers are development, evens on CRAN.
-    
+
 
         *********************************************
         **                                         **
@@ -106,7 +106,7 @@ NEW FEATURES
         locations in DT. This implements FR#1962.
             DT[,.I[which.max(colB)],by=colA]      # row numbers of maxima by group
 
-    o   A new "!" prefix on i signals 'not-join' (a.k.a. 'not-where'), #1384(i).
+    o   A new "!" prefix on i signals 'not-join' (a.k.a. 'not-where'), #1384i.
             DT[-DT["a", which=TRUE, nomatch=0]]   # old not-join idiom, still works
             DT[!"a"]                              # same result, now preferred.
             DT[!J(6),...]                         # !J == not-join
@@ -313,7 +313,7 @@ USER VISIBLE CHANGES
         can be used on columns of a data.frame, for example.
         
     o   Efficiency warnings when joining between a factor column and a character column are now downgraded
-        to messages when verbosity is on, #2265(i). Thanks to Christian Hudon for the suggestion.
+        to messages when verbosity is on, #2265i. Thanks to Christian Hudon for the suggestion.
 
 THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
 
