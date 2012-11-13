@@ -2409,7 +2409,7 @@ f = function() {
   print(DT[a>localvar,sum(b)])
   print(DT[a>localvar,sum(b),by=a])  # bug fix 2368
 }
-test(876, f(), output="   a b1: 3 32: 3 6[1] 9   a V11: 3  9")
+test(876, f(), output="   a b1: 3 32: 3 6.*[1] 9.*   a V11: 3  9")
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
