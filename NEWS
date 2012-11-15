@@ -10,7 +10,11 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+NEW FEATURES
+
+    o   Fast file reader read()
 No changes, yet.
+
 1.8.6 was just released to CRAN.
 
 
