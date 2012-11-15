@@ -34,7 +34,7 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg)
         SET_VECTOR_ELT(ans,i,thiscol);
         if (thistype == STRSXP) {
             charcol[nc] = i;
-            p[i] = buffer[nc] = malloc(1024);   // TO DO tie in %1024s and return value from fscanf
+            p[i] = buffer[nc] = malloc(sizeof(char)*1024);   // TO DO tie in %1024s and return value from fscanf
             size[i] = 0;
             nc++;
         } else {
@@ -59,7 +59,7 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg)
     return(ans);
 }
 
-/*  
+/*
 (*) (Often) unused and zero'd p[*] is deliberate
 It isn't possible in C to construct a vargs and pass it to fscanf in C or C99. A '...' can
 be passed on, but not created unless we depend on a specialist library or go to asm.

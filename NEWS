@@ -15,7 +15,7 @@ This NEWS file summarises the main changes.
 NEW FEATURES
 
     o   New function read(): fast file reader.
-        ?read has example showing 24s down to 3s.
+        ?read has example showing 63s down to 5s.
 
 
         *********************************************

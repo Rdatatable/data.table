@@ -1,7 +1,7 @@
 
 read = function(x="test.csv",primary=",",secondary="",header=TRUE,verbose=TRUE) {
     h = read.table(x,header=header,sep=",",stringsAsFactors=FALSE,nrows=10)
-    f = c("integer"="%d","double"="%lf","character"="%s")[sapply(h,typeof)]
+    f = c("integer"="%d","double"="%lf","character"="%[^,]")[sapply(h,typeof)]
     f = paste(paste(f,collapse=","),"\n",sep="")
     types = lapply(sapply(h,typeof,USE.NAMES=FALSE),vector,length=0L)
     
