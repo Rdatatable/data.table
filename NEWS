@@ -8,14 +8,14 @@ This NEWS file summarises the main changes.
         **                                         **
         **   CHANGES IN DATA.TABLE VERSION 1.8.7   **
         **                                         **
+        **         In development, unstable        **
+        **                                         **
         *********************************************
 
 NEW FEATURES
 
-    o   Fast file reader read()
-No changes, yet.
-
-1.8.6 was just released to CRAN.
+    o   New function read(): fast file reader.
+        ?read has example showing 24s down to 3s.
 
 
         *********************************************
