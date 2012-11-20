@@ -1,7 +1,9 @@
 
 read = function(x="test.csv",primary=",",secondary="",header=TRUE,verbose=TRUE) {
     h = read.table(x,header=header,sep=",",stringsAsFactors=FALSE,nrows=10)
-    f = c("integer"="%d","double"="%lf","character"="%[^,]")[sapply(h,typeof)]
+    type = sapply(h,typeof)
+    f = c("integer"="%d","double"="%lf","character"="%[^,]")[type]
+    if (last(type)=="character") f[length(f)] = "%[^,\n]"
     f = paste(paste(f,collapse=","),"\n",sep="")
     types = lapply(sapply(h,typeof,USE.NAMES=FALSE),vector,length=0L)
     
@@ -16,9 +18,9 @@ read = function(x="test.csv",primary=",",secondary="",header=TRUE,verbose=TRUE) 
     estn = 10 * (file.info(x)$size - hrowsize) / hsize
     if (verbose) {
         cat("Estimated nrows =",estn,"\n")
-        cat("Format =",f)
+        cat("Format =",gsub("[\n][]]","\\\\n]",f))  # matching the ] is to exclude the final \n
     }
-    ans = .Call(Creadfile,x,f,types,as.integer(header),as.integer(1.05*estn))
+    ans = .Call(Creadfile,x,f,types,as.integer(header),as.integer(1.05*estn),verbose)
     nr = length(ans[[1]])
     setattr(ans,"row.names",.set_row_names(nr))
     setattr(ans,"class",c("data.table","data.frame"))

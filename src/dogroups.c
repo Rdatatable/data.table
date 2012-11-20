@@ -350,7 +350,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             if (thislen == 0) {
                 // including NULL and typed empty vectors, fill with NA
                 // A NULL in the first group's jval isn't allowed; caught above after allocating ans
-                switch (TYPEOF(target)) {
+                switch (TYPEOF(target)) {     // TO DO - do we really need a switch here?  single memcpy?
                 case LGLSXP :
                 case INTSXP :
                     for (r=0; r<maxn; r++) INTEGER(target)[thisansloc+r] = NA_INTEGER;
