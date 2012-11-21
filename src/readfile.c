@@ -9,12 +9,15 @@
 // TO DO: loop fscanf in batches of 32 (or 128) to remove column limit
 // TO DO: test if increasing p from 32 to 128 decreases performance for 10 columns.
 // TO DO: whitespace at the end of the line before \n, should be ignored
+// TO DO: invalid but not ,, data should be reported as warning (and NA as already done).
+// TO DO: should read int64 / bit64 without going via character
+// TO DO: test using "grep read.table ...Rtrunk/tests/*"
 
 extern int sizes[];
 SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SEXP verbosearg)
 {
     SEXP thiscol, ans;
-    R_len_t i, protecti=0, nrow=0, ncol, estn, tmp;
+    R_len_t i, protecti=0, nrow=0, ncol, estn;
     int size[32], type[32], thistype, nc=0, charcol[32];
     char *buffer[32];
     char *p[32], *format, *formatcopy, *fmttok[32], *q;
@@ -75,7 +78,8 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SE
                error("Unsupported type");
             }
             while(getc(f)!=',');  // scan to next separator
-            while (++i<ncol && fscanf(f, fmttok[i], p[i])) tmp=getc(f); // TO DO - cater for EOF here on last line of file if there's a missing there,  and 2 missings in the same row.
+            while (++i<ncol && fscanf(f, fmttok[i], p[i]) && getc(f)!=EOF);
+            // TO DO - cater for EOF here on last line of file if there's a missing there,  and 2 missings in the same row.
         }
         for (i=0; i<ncol; i++) p[i]+=size[i];
         for (i=0; i<nc; i++) SET_STRING_ELT(VECTOR_ELT(ans, charcol[i]), nrow, mkChar(buffer[i]));
