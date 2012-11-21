@@ -18,7 +18,7 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SE
 {
     SEXP thiscol, ans;
     R_len_t i, protecti=0, nrow=0, ncol, estn;
-    int size[32], type[32], thistype, nc=0, charcol[32];
+    int size[32], type[32], thistype, nc=0, charcol[32], c1, c2;
     char *buffer[32];
     char *p[32], *format, *formatcopy, *fmttok[32], *q;
     Rboolean verbose = LOGICAL(verbosearg)[0];
@@ -59,17 +59,19 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SE
         fmttok[++i] = q = strtok(NULL,",");
     }
     if (verbose) {Rprintf("Split format (if last col is character, extra newline will print here):"); for (i=0; i<ncol; i++){Rprintf(" %s", fmttok[i]);}}
-    while ((i=fscanf(f, format, p[0],p[1],p[2],p[3],p[4],p[5],p[6],p[7],            // see note (*) below
+    while ((i=fscanf(f, format, p[0],p[1],p[2],p[3],p[4],p[5],p[6],p[7],            // see footnote 1
                              p[8],p[9],p[10],p[11],p[12],p[13],p[14],p[15],
                              p[16],p[17],p[18],p[19],p[20],p[21],p[22],p[23],
                              p[24],p[25],p[26],p[27],p[28],p[29],p[30],p[31])) != EOF) {
         while (i<ncol) {
-            switch(type[i]) {   // replace switch with a direct lookup to type NA
-            case INTSXP:
+            switch(type[i]) {              // this switch could be avoided for speed using memcpy, but less readable
+            case INTSXP:                   // and this only runs for each invalid or missing field anyway (i.e. rarely)
                *(int *)p[i] = NA_INTEGER;
                break;
             case REALSXP:
                *(double *)p[i] = NA_REAL;
+               fseek(f,-2,SEEK_CUR); c1 = getc(f); c2 = getc(f);   // see footnote 2
+               if ((c1 == 'A' || c1 == 'a') && c2 == ',') fseek(f,-2,SEEK_CUR);
                break;
             case STRSXP:
                *p[i] = '\0';
@@ -77,8 +79,8 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SE
             default:
                error("Unsupported type");
             }
-            while(getc(f)!=',');  // scan to next separator
-            while (++i<ncol && fscanf(f, fmttok[i], p[i]) && getc(f)!=EOF);
+            while(getc(f)!=',');   // discard remainder of invalid input in this field (if any) and read next separator
+            while (++i<ncol && fscanf(f, fmttok[i], p[i]) && getc(f)!=EOF);   // read remaining fields one by one
             // TO DO - cater for EOF here on last line of file if there's a missing there,  and 2 missings in the same row.
         }
         for (i=0; i<ncol; i++) p[i]+=size[i];
@@ -94,12 +96,27 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SE
 }
 
 /*
-(*) (Often) unused and zero'd p[*] is deliberate
+Footnote 1.
+Often superfluous and ugly p[*] repetition is deliberate and required.
 It isn't possible in C to construct a vargs and pass it to fscanf in C or C99. A '...' can
-be passed on, but not created unless we depend on a specialist library or go to asm.
-Living with a, say, 32 column limit, seems fine for very many common scientific and business file formats. 
+be passed on, but not created, unless we depend on a specialist library or go to asm.
 Assumption is that fscanf is optimised internally for navigating the format, and is faster than character by
 character code with branching and function calls at the C level (such as in R's scan.c).
+
+Footnote 2.
+The internet has many (usually false) claims of bug finds in fscanf, but this _might_ actually
+be one. NAN and INF (case insensitive) are (the only) acceptable text values under IEEE Binary Floating Point
+format (vs hexadecimal floating-point) to %g (and %e %f %a equivalents). That capabability is very
+deep in the OS or hardware (exactly which can vary) and we like taking advantage of that, by using fscanf.
+However, fscanf is supposed to stop reading the field on invalid character
+and leave that invalid character unread. It does this for all other invalid character input to %g. But
+when is reads "NA", apparently, it expects N next (to form NAN) realises "," isn't valid and stops ok but doesn't leave that comma
+unread (inconsistent with all other invalid input to %g).  Hence the rewind and special case in the C code above.
+Unfortunately, R historically defaulted to writing out "NA" for NA, so we have to cope with
+that. Just blank (i.e. ,,) would have been easier. It's not so bad as the extra test only runs when
+a missing or invalid input to %lg actually occurs; i.e., for fully populated files not written by R, that'll never run.
+Note the test on getc only needs to test for "A," or "a,", since the only way that could happen if there was an N (or n) before that; i.e., it really is only a special case for this apparent bug in scanf with NA (not NAN) input.
+TO DO: link to gcc/S.O. query.
 */
 
 

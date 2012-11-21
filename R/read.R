@@ -1,5 +1,5 @@
 
-read = function(fnam="test.csv",sep=",",sep2="",header=TRUE,verbose=TRUE) {
+read = function(fnam="test.csv",sep=NULL,sep2=NULL,header=TRUE,na.strings=NULL,verbose=TRUE) {
     if (!is.character(fnam) || length(fnam)!=1) stop("fnam must be a single character string containing a file name, full path to a file, or URL starting 'http://', 'https://' or 'file://'")
     if (substring(fnam,1,7) %chin% c("http://","https:/","file://")) {
         tt = tempfile()
@@ -9,7 +9,7 @@ read = function(fnam="test.csv",sep=",",sep2="",header=TRUE,verbose=TRUE) {
     }
     h = read.table(fnam,header=header,sep=",",stringsAsFactors=FALSE,nrows=10)
     type = sapply(h,typeof)
-    f = c("integer"="%d","double"="%lf","character"="%[^,]")[type]
+    f = c("integer"="%d","double"="%lg","character"="%[^,]")[type]
     if (last(type)=="character") f[length(f)] = "%[^,\n]"
     f = paste(paste(f,collapse=","),"\n",sep="")
     types = lapply(sapply(h,typeof,USE.NAMES=FALSE),vector,length=0L)
