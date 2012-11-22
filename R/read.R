@@ -1,6 +1,7 @@
 
-read = function(fnam="test.csv",sep=NULL,sep2=NULL,header=TRUE,na.strings=NULL,verbose=TRUE) {
+read = function(fnam="test.csv",sep="auto",sep2="auto",header="auto",na.strings=NULL,stringsAsFactors=FALSE,verbose=TRUE) {
     if (!is.character(fnam) || length(fnam)!=1) stop("fnam must be a single character string containing a file name, full path to a file, or URL starting 'http://', 'https://' or 'file://'")
+    header=TRUE
     if (substring(fnam,1,7) %chin% c("http://","https:/","file://")) {
         tt = tempfile()
         on.exit(unlink(tt), add=TRUE)

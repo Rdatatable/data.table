@@ -7,7 +7,7 @@
    This help file may (currently, in development) document features that haven't been implemented yet.
 }
 \usage{
-read(fnam, sep=NULL, sep2=NULL, header=TRUE, na.strings=NULL, verbose=TRUE)
+read(fnam, sep="auto", sep2="auto", header="auto", na.strings=NULL, stringsAsFactors=FALSE, verbose=TRUE)
 }
 \arguments{
   \item{fnam}{ The file name to read, as a length 1 character string. May be a URL starting http:// or file://, and on Windows where R has been started with --internet2, a URL starting https:// }
@@ -15,6 +15,7 @@ read(fnam, sep=NULL, sep2=NULL, header=TRUE, na.strings=NULL, verbose=TRUE)
   \item{sep2}{ Optional. The separator \emph{within} columns. Defaults to the first character not in the set [a-zA-Z0-9"'\\n<sep>]. For regular .csv files where each column is an atomic vector, sep2 will default to ""; i.e., not relevant. }
   \item{header}{ Optional. Does the first line contain column names? Defaults according to a comparison of item types in rows 1 -vs- 2.}
   \item{na.strings}{ Optonal. By default (and always) ,, is treated as NA_character_. Additionally a vector of string values may be supplied to na.strings, all of which are converted to NA_character_ in all character columns; e.g., na.strings=c("N/A","NA"," "). Where " " represents all whitepace. }
+  \item{stringsAsFactors}{ By default character columns are left as character. Convert to factor when TRUE. }
   \item{verbose}{ Optional. Become chatty, by default FALSE. Currently TRUE in development. }
 }
 \details{
