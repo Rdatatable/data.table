@@ -2411,6 +2411,23 @@ f = function() {
 }
 test(876, f(), output="   a b1: 3 32: 3 6.*[1] 9.*   a V11: 3  9")
 
+# Test read()
+n=1e3
+DT = data.table( a=sample(1:1000,n,replace=TRUE),
+                 b=sample(1:1000,n,replace=TRUE),
+                 c=rnorm(n),
+                 d=sample(c("foo","bar","baz","qux","quux"),n,replace=TRUE),
+                 e=rnorm(n),
+                 f=sample(1:1000,n,replace=TRUE) )
+DT[2,b:=NA_integer_]
+DT[4,c:=NA_real_]
+# DT[3,d:=NA_character_]   // TO DO: reinstate when na.strings is added
+DT[5,d:=""]
+write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
+test(877, all(mapply(all.equal, read.csv(f,stringsAsFactors=FALSE), read(f))))  # TO DO: drop "all(mapply" when colnames are read
+unlink(f)
+
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key

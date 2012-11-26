@@ -22,6 +22,16 @@ Allow logical columns (currently will be character). T/True/TRUE/true are allowe
 extern int sizes[];
 char sep, sep2;
 
+static void protprint(char *str)   // protected print i.e. \n is protected by replacing with \\n
+{
+    char *p=str;
+    while (*p!='\0') {
+        if (*p=='\n') Rprintf("\\n");
+        else Rprintf("%c",*p);
+        p++;
+    }
+}
+
 SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SEXP verbosearg)
 {
     SEXP thiscol, ans;
@@ -67,7 +77,7 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SE
         }
         fmttok[++i] = q = strtok(NULL,",");
     }
-    if (verbose) {Rprintf("Split format (newlines will print):"); for (i=0; i<ncol; i++){Rprintf(" %s", fmttok[i]);}; Rprintf("\n");}
+    if (verbose) {Rprintf("Split format:"); for (i=0; i<ncol; i++){Rprintf(" "); protprint(fmttok[i]);}; Rprintf("\n");}
     while ((i=fscanf(f, format,
             p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7],            // see footnote 1
             p[8], p[9], p[10],p[11],p[12],p[13],p[14],p[15],
@@ -117,7 +127,7 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SE
 
 FILE *f;
 
-int countfields()
+static int countfields()
 {
     int ncols=0;
     char ch, protected='0';
@@ -135,11 +145,10 @@ int countfields()
     return(ncols);
 }
 
-
 SEXP finddelim(SEXP fnam)
 {
     int nline=0, ncols=0, i;
-    char ch;
+    char ch, *format, *p;
     long pos=0;
     Rboolean verbose=TRUE;
     f=fopen(CHAR(STRING_ELT(fnam,0)),"r");
@@ -164,16 +173,19 @@ SEXP finddelim(SEXP fnam)
     rewind(f);  // To the start
     
     nline = 1;
-    while (countfields()!=ncols) nline++;  // discard humun readable header (if any)
+    pos = ftell(f);
+    while (countfields()!=ncols) nline++,pos=ftell(f); // discard human readable header (if any)
     
     if (verbose) Rprintf("First row with %d fields detected on line %d\n", ncols, nline);
     // if there is a header row, it will have just been read. Start on 2nd row regardless to detect types
     // Now keep looping until all fields are character, or we have seen 10 non-NA values in all columns.
     // Potentially, could scan whole file here (an entirely NA column). TO DO: limit that and test middle and end of file.
     
-    char typef[3][7] = {"%9d%n","%lld%n","%lg%n"};   // We'll promote types from long long => double => character
-                                             // R is C99 so ll ok => bit64::integer64
-                                             // We don't use %d, as the result is undefined in C99 for large numbers that overflow int.
+    char typef[3][7] = {"%9d%n","%lld%n","%lg%n"};
+    // We'll promote types from long long => double => character
+    // R is C99 so ll ok => bit64::integer64. We don't use %d, as the result is undefined in C99 for large numbers that
+    // overflow int hence protected field width 9. Where int wider than 9 chars but < INT_MAX, we'll detect that later.
+    
     int typei[ncols], typec[ncols], nread;  // typec = count of non-NA data in that col
     for (i=0; i<ncols; i++) typei[i]=0, typec[i]=0;
     char strf[] = "%[^,\n]";
@@ -205,18 +217,24 @@ SEXP finddelim(SEXP fnam)
     
     for (i=0; i<ncols; i++) Rprintf("Type %d = %d\n", i, typei[i]);
     
-    fclose(f);
-    free(buffer);
+    // TO DO: If user has overridden any types, change these now. Not if user has selected a lesser type, though, with warning.
     
-    /*
-    So, we now have the types.
-    If user has overridden any types, change these now.
-    Create format string for fscanf
-    Read the header row using it.
+    p = format = malloc(sizeof(char)*1024);
+    char typef2[4][7] = {"%9d","%lld","%lg","%[^,\n]"};
+    p += sprintf(p, "%s", typef2[typei[0]]);
+    strcpy(strf, ",%s");
+    strf[0] = sep;
+    for (i=1; i<ncols; i++) p += sprintf(p, strf, typef2[typei[i]]);
+    Rprintf("Format on C side = "); protprint(format); Rprintf("\n");
+    
+    fseek(f,pos,SEEK_SET);  // back to the start of (likely) header row
+    /* Read the header row using the split format into v.
     If header row fails (nfields read < ncol) then it's the header row, otherwise that's the first data row (unless header has
     been set) then proceed as before ...
     */
-
+    fclose(f);
+    free(buffer);
+    free(format);
     return(R_NilValue);
 }
 
