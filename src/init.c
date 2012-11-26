@@ -23,6 +23,7 @@ SEXP chmatchwrapper();
 SEXP countingcharacter();
 SEXP duplist();
 SEXP readfile();
+SEXP finddelim();
 SEXP reorder();
 SEXP rorder_tol();
 SEXP rbindlist();
@@ -53,6 +54,7 @@ R_CallMethodDef callMethods[] = {
 {"Ccountingcharacter", (DL_FUNC) &countingcharacter, -1},
 {"Cduplist", (DL_FUNC) &duplist, -1},
 {"Creadfile", (DL_FUNC) &readfile, -1},
+{"Cfinddelim", (DL_FUNC) &finddelim, -1},
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crorder_tol", (DL_FUNC) &rorder_tol, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},

@@ -8,11 +8,11 @@ read = function(fnam="test.csv",sep="auto",sep2="auto",header="auto",na.strings=
         download.file(fnam, tt)
         fnam = tt
     }
+    .Call(Cfinddelim,fnam)
     h = read.table(fnam,header=header,sep=",",stringsAsFactors=FALSE,nrows=10)
     type = sapply(h,typeof)
-    f = c("integer"="%d","double"="%lg","character"="%[^,]")[type]
-    if (last(type)=="character") f[length(f)] = "%[^,\n]"
-    f = paste(paste(f,collapse=","),"\n",sep="")
+    f = c("integer"="%d","double"="%lg","character"="%[^,\n]")[type]
+    f = paste(paste(f,collapse=","),sep="")
     types = lapply(sapply(h,typeof,USE.NAMES=FALSE),vector,length=0L)
     
     h = sapply(readLines(fnam,n=11),nchar)   # This could be even faster version of wc -l in C just for top 10 rows
@@ -26,13 +26,15 @@ read = function(fnam="test.csv",sep="auto",sep2="auto",header="auto",na.strings=
     estn = as.integer(1.05 * 10 * (file.info(fnam)$size - hrowsize) / hsize)
     if (verbose) {
         cat("Allocating nrows =",estn,"\n")
-        cat("Format =",gsub("[\n][]]","\\\\n]",f))  # matching the ] is to exclude the final \n
+        cat("Format =",gsub("[\n]","\\\\n",f),"\n")
     }
     ans = .Call(Creadfile,fnam,f,types,as.integer(header),estn,verbose)
     nr = length(ans[[1]])
     setattr(ans,"row.names",.set_row_names(nr))
     setattr(ans,"class",c("data.table","data.frame"))
     setattr(ans,"names",paste("V",1:length(ans),sep=""))
+    
+    # if (read any integer64, then require(bit64) else cat("integer64 have been read, you'll need bit64 to make those columns appear correctly, which isn't installed")
     ans
 }
 

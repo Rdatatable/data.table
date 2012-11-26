@@ -4,23 +4,31 @@
 #include <Rdefines.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <errno.h>
 
-// TO DO: secondary separator for list() columns, such as columns 11 and 12 in BED.
-// TO DO: loop fscanf in batches of 32 (or 128) to remove column limit
-// TO DO: test if increasing p from 32 to 128 decreases performance for 10 columns.
-// TO DO: whitespace at the end of the line before \n, should be ignored
-// TO DO: invalid but not ,, data should be reported as warning (and NA as already done).
-// TO DO: should read int64 / bit64 without going via character
-// TO DO: test using "grep read.table ...Rtrunk/tests/*"
+/*****
+TO DO:
+Read bit64 directly without going via character
+Read middle and end to check types
+Whitespace at the end of the line before \n should be ignored (warn about non white unprotected by comment char)
+Invalid but not ,, and not NA should promote type and coerce existing (reporting on which line it did that).
+test using "grep read.table ...Rtrunk/tests/
+loop fscanf in batches of 32 (or 128) to remove column limit
+test if increasing p from 32 to 128 decreases performance for 10 columns.
+secondary separator for list() columns, such as columns 11 and 12 in BED.
+Allow logical columns (currently will be character). T/True/TRUE/true are allowed in main/src/util.c
+*****/
 
 extern int sizes[];
+char sep, sep2;
+
 SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SEXP verbosearg)
 {
     SEXP thiscol, ans;
     R_len_t i, protecti=0, nrow=0, ncol, estn;
     int size[32], type[32], thistype, nc=0, charcol[32], c1, c2, c3;
     char *buffer[32];
-    char *p[32], *format, *formatcopy, *fmttok[32], *q;
+    char *p[32], *format, *formatcopy, *fmttok[32], *q, ch;
     long pos=0;
     Rboolean verbose = LOGICAL(verbosearg)[0];
     if (LENGTH(types)>32) error("Currently limited to 32 columns just for dev. Will be increased.");
@@ -59,7 +67,7 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SE
         }
         fmttok[++i] = q = strtok(NULL,",");
     }
-    if (verbose) {Rprintf("Split format (if last col is character, extra newline will print here):"); for (i=0; i<ncol; i++){Rprintf(" %s", fmttok[i]);}}
+    if (verbose) {Rprintf("Split format (newlines will print):"); for (i=0; i<ncol; i++){Rprintf(" %s", fmttok[i]);}; Rprintf("\n");}
     while ((i=fscanf(f, format,
             p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7],            // see footnote 1
             p[8], p[9], p[10],p[11],p[12],p[13],p[14],p[15],
@@ -75,9 +83,10 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SE
                if (ftell(f)>pos) {                          // see footnote 2. dealing with potential scanf bug, not needed otherwise
                    c3 = getc(f); fseek(f,-3,SEEK_CUR); c1 = getc(f); c2 = getc(f);   
                    if ((c1=='A' || c1=='a') && c2==',' &&   // has just potentially over-read comma of "NA,"
-                       (pos ||                              // pos>0 => not the first NA in this row. ftell below has just run and
+                       (pos || (i &&                        // pos>0 => not the first NA in this row. ftell below has just run and
                                                             //   the one-by-one fscanf did just advance (i.e. didn't just read ",,")
-                        (c3!=',' || type[i-1]!=STRSXP)))    // if the all-on-one fscanf above just read NA into a character column
+                                                            //   i to ensure i-1 is valid, but probably not needed (keep for safety)
+                        (c3!=',' || type[i-1]!=STRSXP))))   // if the all-on-one fscanf above just read NA into a character column
                                                             //   but a float ",," is next, the comma wasn't over read so don't rewind
                        fseek(f,-1,SEEK_CUR);                // rewind the over read comma when NA appears in a float column
                }
@@ -88,9 +97,10 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SE
             default:
                error("Unsupported type");
             }
-            while(getc(f)!=',');   // discard remainder of invalid input in this field (if any) and read next separator
+            while((ch=getc(f))!=','   // discard remainder of invalid input in this field (if any) and read next
+                   && ch!='\n');      // separator. TO DO: promote type and ensure invalid data not lost without at least warning.
             while (++i<ncol && (pos=ftell(f)) && fscanf(f, fmttok[i], p[i]) && getc(f)!=EOF);   // read remaining fields one by one
-            // TO DO - cater for EOF here on last line of file if there's a missing there,  and 2 missings in the same row.
+            // TO DO - cater for EOF here on last line of file if there's a missing on last row.
         }
         for (i=0; i<ncol; i++) p[i]+=size[i];
         for (i=0; i<nc; i++) SET_STRING_ELT(VECTOR_ELT(ans, charcol[i]), nrow, mkChar(buffer[i]));
@@ -103,6 +113,111 @@ SEXP readfile(SEXP fnam, SEXP formatarg, SEXP types, SEXP skip, SEXP estnarg, SE
     for (i=0; i<nc; i++) free(buffer[i]);
     free(formatcopy);
     return(ans);
+}
+
+FILE *f;
+
+int countfields()
+{
+    int ncols=0;
+    char ch, protected='0';
+    ch = getc(f);
+    if (ch!='\n') ncols=1;
+    while (ch!='\n') {   // TO DO: add tests of this.
+        if (ch=='\"' || ch=='\'') {
+            if (protected=='0') protected = ch;
+            else if (protected==ch) protected = '0';
+            continue;
+        }
+        ncols += (protected=='0' ? ch==sep : 0);
+        ch = getc(f);
+    }
+    return(ncols);
+}
+
+
+SEXP finddelim(SEXP fnam)
+{
+    int nline=0, ncols=0, i;
+    char ch;
+    long pos=0;
+    Rboolean verbose=TRUE;
+    f=fopen(CHAR(STRING_ELT(fnam,0)),"r");
+    
+    while (nline<30 && (ch=getc(f))!=EOF) nline += ch=='\n';   // skip first 30 lines (in case of human readable banner)
+    Rprintf("Found line %d\n", nline);
+    pos = ftell(f);
+    
+    // If the first column is protected (quoted character column) then skip over it in case it contains a different sep
+    if ((ch=getc(f)) == '\"') while(getc(f)!='\"');
+    else if (ch=='\'') while(getc(f)!='\'');
+    
+    if (fscanf(f,"%*[^, \t|:;~\n]")==EOF) error("File ends on line %d before any separator was found", nline);
+    sep = getc(f);
+    if (sep=='\n') error("No separator found on line %d. Please specify 'sep' manually, see ?read.", nline);
+    if (verbose) Rprintf("Detected sep as '%c'\n", sep);
+    // TO DO: Test single column files where there is no sep.
+    // TO DO: Test files where line 30 is the last line and doesn't end \n
+    fseek(f,pos,SEEK_SET);  // back to beginning of line
+    ncols = countfields();
+    if (verbose) Rprintf("Detected %d columns\n", ncols);
+    rewind(f);  // To the start
+    
+    nline = 1;
+    while (countfields()!=ncols) nline++;  // discard humun readable header (if any)
+    
+    if (verbose) Rprintf("First row with %d fields detected on line %d\n", ncols, nline);
+    // if there is a header row, it will have just been read. Start on 2nd row regardless to detect types
+    // Now keep looping until all fields are character, or we have seen 10 non-NA values in all columns.
+    // Potentially, could scan whole file here (an entirely NA column). TO DO: limit that and test middle and end of file.
+    
+    char typef[3][7] = {"%9d%n","%lld%n","%lg%n"};   // We'll promote types from long long => double => character
+                                             // R is C99 so ll ok => bit64::integer64
+                                             // We don't use %d, as the result is undefined in C99 for large numbers that overflow int.
+    int typei[ncols], typec[ncols], nread;  // typec = count of non-NA data in that col
+    for (i=0; i<ncols; i++) typei[i]=0, typec[i]=0;
+    char strf[] = "%[^,\n]";
+    strf[3] = sep;  // replace comma with sep, in case sep isn't comma
+    char *buffer = malloc(sizeof(char) * 1024);
+    Rboolean needMoreObs;
+    double v;
+    do {   // all non character columns need 10 non-NA items for good guess. Type character can stop there.
+        needMoreObs = FALSE;
+        for (i=0;i<ncols;i++) {
+            *buffer='\0';
+            if (fscanf(f,strf,buffer)==EOF) error("Premature EOF!");
+            // Rprintf("Field contents are '%s'\n", buffer);
+            if (*buffer=='\"') {typei[i]=3; if (fscanf(f,"%*[^\n\"]")==EOF) error("Premature EOF"); getc(f); }
+            else if (*buffer=='\'') {typei[i]=3; if (fscanf(f,"%*[^'\n]")==EOF) error("Premature EOF"); getc(f); }
+            else if (*buffer!='\0' && strcmp(buffer,"NA")!=0) { // ,, or ,NA, doesn't help to detect type, skip
+                // Rprintf("Testing type, type before = %d with format %s\n", typei[i],typef[typei[i]]);
+                while (typei[i]<3 && (sscanf(buffer,typef[typei[i]],&v,&nread)==0 || nread<strlen(buffer))) typei[i]++;
+                // Rprintf("Type after = %d with nread=%d\n", typei[i], nread);
+                // if (typei[i]==0) Rprintf("Int value read=%lld with errno=%d\n",*(long long *)&v,errno);
+                typec[i]++;
+            }
+            ch = getc(f);
+            if (i+1<ncols && ch!=sep) error("Unexpected separator ending field %d of line %d", i+1, nline);
+            if (typei[i]<3 && typec[i]<10) needMoreObs=TRUE;
+        }
+        while (ch!='\n') ch = getc(f);
+    } while( needMoreObs && ch != EOF );
+    
+    for (i=0; i<ncols; i++) Rprintf("Type %d = %d\n", i, typei[i]);
+    
+    fclose(f);
+    free(buffer);
+    
+    /*
+    So, we now have the types.
+    If user has overridden any types, change these now.
+    Create format string for fscanf
+    Read the header row using it.
+    If header row fails (nfields read < ncol) then it's the header row, otherwise that's the first data row (unless header has
+    been set) then proceed as before ...
+    */
+
+    return(R_NilValue);
 }
 
 /*
@@ -128,7 +243,7 @@ a missing or invalid input to %lg actually occurs; i.e., for fully populated fil
 Note the test on getc only needs to test for "A," or "a,", since the only way that could happen if there was an N (or n) before that; i.e., it really is only a special case for this apparent bug in scanf with NA (not NAN) input.
 The ftell(f)>pos is to deal with ",NA,," to detect that the 2nd field hasn't advanced (without that if, it would correct the comma overread bug in scanf a 2nd time for the same particular comma, and a mess would ensue).
 
-TO DO: link to gcc/S.O. query.
+TO DO: link to gcc/S.O. query about %d and %lld overread of comma after NA.
 */
 
 

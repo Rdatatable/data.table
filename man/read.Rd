@@ -2,7 +2,7 @@
 \alias{read}
 \title{ Fast and friendly file finagler }
 \description{
-   Similar to read.table but much faster and more convenient. All controls such as delimiter, colClasses and nrows are automatically detected. Additionally, dual delimited files such as BED are automatically detected;  columns 11 and 12 are each read directly into list columns where each cell is itself an integer vector (no need for strsplit). int64/bit64 types are also read directly.
+   Similar to read.table but much faster and more convenient. All controls such as delimiter, colClasses and nrows are automatically detected. Additionally, dual delimited files such as BED are automatically detected;  columns 11 and 12 are each read directly into list columns where each cell is itself an integer vector (no need for strsplit). bit64::integer64 types are also read directly.
    
    This help file may (currently, in development) document features that haven't been implemented yet.
 }
@@ -24,6 +24,10 @@ Missing values are commonly represented in delimited files by, well, missing dat
 ",NA," in character columns are read as the "NA" string literal by default, not NA_character_. na.strings can be used to change this, but isn't yet implemented.  (TO DO).
 
 character columns can be single or double quoted, or not quoted at all. Spaces and other whitepace (in fact anything other than sep) may appear in unquoted character column, provided the field doesn't contain sep itself. Therefore quoting character values is only required if sep itself appears in the string value. This is all automatically detected and no arguments are needed to control it. If a character value starts " it should end with "; it may then include sep and '. If a character value starts ' it should end with '; it may then include sep and ". Just like the R parser. This is on a per field basis; i.e., an entire column need not follow consistent quoting. Just a few cells (perhaps just those that contain sep) may only be quoted. And the quoting character can vary within that column.  Features like this are intended to foster friendliness, achieved with a fair amount of fenangling.
+
+There is no line length limit, not even a very large one. Since we are encouraging list columns using a secondary separator where the data has that structure, this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. We use a single pass approach.
+
+The filename extension (such as .csv) is irrelevant for "auto" sep and sep2. It's entirely driven by the file contents.
 
 }
 \value{
@@ -49,16 +53,16 @@ DT = data.table( a=sample(1:1000,n,replace=TRUE),
                  f=sample(1:1000,n,replace=TRUE) )
 DT[2,b:=NA_integer_]
 DT[4,c:=NA_real_]
-DT[3,d:=NA_character_]
+# DT[3,d:=NA_character_]
 DT[5,d:=""]
 write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
 
 cat("File size (MB):",round(file.info("test.csv")$size/1024^2),"\n")  # 50MB
-system.time(x <- read.csv("test.csv",stringsAsFactors=FALSE))         # 63s
-system.time(y <- read("test.csv"))                                    #  5s
-all(mapply(all.equal,x,y))   # TRUE
+system.time(x <- read.csv("test.csv",stringsAsFactors=FALSE))  # 63s
+system.time(y <- read("test.csv"))                             #  5s
+all(mapply(all.equal,x,y))                                     # TRUE
 
-read("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")          # Format is auto detected.
+# read("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")          # Format is auto detected.
 
 }
 }
