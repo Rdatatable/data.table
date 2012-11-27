@@ -16,12 +16,18 @@ NEW FEATURES
 
     o   New function read(): fast file reader.
         ?read has example showing 63s down to 5s.
-        
+
 BUG FIXES
 
     o   setnames(DT,c(NA,NA)) is now a type error rather than a segfault, #2393.
         Thanks to Damian Betebenner for reporting.
-        
+
+    o   rbind() no longers warns about inputs having columns in a different order
+        if use.names has been explicitly set TRUE, #2385.
+
+NOTES
+
+    o   There are now 880 raw tests, as reported by test.data.table().
 
 
         *********************************************

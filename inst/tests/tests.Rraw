@@ -2415,6 +2415,10 @@ test(876, f(), output="   a b1: 3 32: 3 6.*[1] 9.*   a V11: 3  9")
 DT = data.table(a=1:3, b=4:6)
 test(877, setnames(DT, c(NA, NA)), error="Passed a vector of type 'logical'. Needs to be type 'character'")
 
+# test no warning when use.names explicitly set, #2385
+test(878, rbind(data.table(a=1:3,b=4:6), data.table(b=7:9,a=4:6)), warning="Argument 2 has names in a different order.*bound by name")
+test(879, rbind(data.table(a=1:3,b=4:6), data.table(b=7:9,a=4:6), use.names=TRUE), data.table(a=1:6,b=4:9))
+
 # Test read()
 n=1e3
 DT = data.table( a=sample(1:1000,n,replace=TRUE),
@@ -2428,7 +2432,7 @@ DT[4,c:=NA_real_]
 # DT[3,d:=NA_character_]   // TO DO: reinstate when na.strings is added
 DT[5,d:=""]
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
-test(878, all(mapply(all.equal, read.csv(f,stringsAsFactors=FALSE), read(f))))  # TO DO: drop "all(mapply" when colnames are read
+test(880, all(mapply(all.equal, read.csv(f,stringsAsFactors=FALSE), read(f))))  # TO DO: drop "all(mapply" when colnames are read
 unlink(f)
 
 
