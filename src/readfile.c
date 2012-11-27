@@ -52,20 +52,21 @@ static int countfields()
     return(ncol);
 }
 
-SEXP readfile(SEXP fnam, SEXP verbosearg)
+SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
 {
     SEXP thiscol, ans;
-    R_len_t i, protecti=0, nrow=0, ncharcol=0, ncol=0, estn=1000010, nline=0;
+    R_len_t i, protecti=0, nrow=0, ncharcol=0, ncol=0, estn, nline=0;
     int size[32], type[32], thistype, charcol[32], c1, c2, c3;
     char *ansbuffer[32];
     char *p[32], *format, *formatcopy, *fmttok[32], *q, ch;
-    long pos=0;
-    Rboolean verbose = LOGICAL(verbosearg)[0];
+    long pos=0, pos1, pos2;
+    Rboolean verbose=LOGICAL(verbosearg)[0], header=LOGICAL(headerarg)[0];
+    
     f=fopen(CHAR(STRING_ELT(fnam,0)),"r");
     if (f == NULL) error("file not found");
     
     // ********************************************************************************************
-    // Make informed guess at column types
+    // Make informed guess at column types and nrows
     // ********************************************************************************************
     
     while (nline<30 && (ch=getc(f))!=EOF) nline += ch=='\n';   // skip first 30 lines (in case of human readable banner)
@@ -107,10 +108,10 @@ SEXP readfile(SEXP fnam, SEXP verbosearg)
     char strf[] = "%[^,\n]";
     strf[3] = sep;  // replace comma with sep, in case sep isn't comma
     char *buffer = malloc(sizeof(char) * 1024);
-    Rboolean needMoreObs;
     double v;
-    do {   // all non character columns need 10 non-NA items for good guess. Type character can stop there.
-        needMoreObs = FALSE;
+    pos1 = ftell(f);
+    nline=0;
+    do {
         for (i=0;i<ncol;i++) {
             *buffer='\0';
             if (fscanf(f,strf,buffer)==EOF) error("Premature EOF!");
@@ -126,11 +127,10 @@ SEXP readfile(SEXP fnam, SEXP verbosearg)
             }
             ch = getc(f);
             if (i+1<ncol && ch!=sep) error("Unexpected separator ending field %d of line %d", i+1, nline);
-            if (type[i]<3 && typec[i]<10) needMoreObs=TRUE;
         }
         while (ch!='\n') ch = getc(f);
-    } while( needMoreObs && ch != EOF );
-    
+    } while( ++nline < 10 && ch != EOF );
+    pos2 = ftell(f);
     // TO DO: If user has overridden any types, change these now. Not if user has selected a lesser type, though, with warning.
     
     q = format = malloc(sizeof(char)*1024);
@@ -141,19 +141,12 @@ SEXP readfile(SEXP fnam, SEXP verbosearg)
     strf[0] = sep;
     for (i=1; i<ncol; i++) q += sprintf(q, strf, typef2[type[i]]);
     if (verbose) {Rprintf("Format = "); protprint(format); Rprintf("\n");}
-    
-    /*
-    h = sapply(readLines(fnam,n=11),nchar)
-    if (header) {
-        hrowsize = h[1]+1
-        hsize = sum(h[2:11]) + 10
-    } else {
-        hrowsize = 0
-        hsize = sum(h[1:10]) + 10
-    }
-    estn = as.integer(1.05 * 10 * (file.info(fnam)$size - hrowsize) / hsize)
-    */
-    
+
+    // fsize passed in from R level for simplicity since R handles LFS, calls stat and stat64 appropriately on
+    // each platform, and returns fsize as double accordingly.
+    estn = (R_len_t)(1.05 * nline * (REAL(fsize)[0]-pos1) / (pos2-pos1));
+    if (verbose) Rprintf("Estimated nrows: %d ( 1.05*%d*(%ld-%ld)/(%ld-%ld) )\n",estn,nline,(long)REAL(fsize)[0],pos1,pos2,pos1);
+
     // ********************************************************************************************
     // Now read data
     // ********************************************************************************************
@@ -165,6 +158,7 @@ SEXP readfile(SEXP fnam, SEXP verbosearg)
     If header row fails (nfields read < ncol) then it's the header row, otherwise that's the first data row (unless header has
     been set) then proceed as before ...
     */
+    if (header!=NA_LOGICAL) Rprintf("'header' changed by user from 'auto' to %s\n", header?"TRUE":"FALSE");
     
     for (i=0; i<32; i++) p[i] = 0;
     ans=PROTECT(allocVector(VECSXP,ncol));  // TO DO, could over-allocate here directly, or maybe safer to go via alloccol.
@@ -234,6 +228,10 @@ SEXP readfile(SEXP fnam, SEXP verbosearg)
         for (i=0; i<ncharcol; i++) SET_STRING_ELT(VECTOR_ELT(ans, charcol[i]), nrow, mkChar(ansbuffer[i]));
         pos=0;
         nrow++;
+        if (nrow > estn) {
+            warning("Read more rows than estimated, even after estimating 5% more. Reallocation at this point fairly trivial but not yet implemented. Returning the rows read so far and discarding the rest, for now.");
+            break;
+        }
     }
     fclose(f);
     for (i=0; i<ncol; i++) SETLENGTH(VECTOR_ELT(ans,i), nrow);

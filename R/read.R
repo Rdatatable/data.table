@@ -9,7 +9,7 @@ read = function(fnam="test.csv",sep="auto",sep2="auto",header="auto",na.strings=
     }
     if (identical(header,"auto")) header=NA
     else if (!identical(header,TRUE) && !identical(header,FALSE)) stop("'header' must be 'auto', TRUE or FALSE")
-    ans = .Call(Creadfile,fnam,header,verbose)
+    ans = .Call(Creadfile,fnam,header,verbose,file.info(fnam)$size)
     nr = length(ans[[1]])
     setattr(ans,"row.names",.set_row_names(nr))
     setattr(ans,"class",c("data.table","data.frame"))
