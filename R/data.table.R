@@ -1316,7 +1316,7 @@ tail.data.table = function(x, n=6, ...) {
             if (!all(names(allargs[[i]]) %chin% nm))
                 stop("Some colnames of argument ",i," (",paste(setdiff(names(allargs[[i]]),nm),collapse=","),") are not present in colnames of item 1. If an argument has colnames they can be in a different order, but they must all be present. Alternatively, you can drop names (by using an unnamed list) and the columns will then be joined by position. Or, set use.names=FALSE.")
             if (!all(names(allargs[[i]]) == nm))
-                if (missing(use.names)) warning("Argument ",i," has names in a different order. Columns will be bound by name for consistency with base. Alternatively, you can drop names (by using an unnamed list) and the columns will then be joined by position. Or, set use.names=FALSE.")
+                if (missing(use.names)) warning("Argument ",i," has names in a different order. Columns will be bound by name for consistency with base. You can drop names (by using an unnamed list) and the columns will then be joined by position, or set use.names=FALSE. Alternatively, explicitly setting use.names to TRUE will remove this warning.")
                 allargs[[i]] = as.list(allargs[[i]])[nm]
                 # TO DO : could use setcolorder() to speed this line up but i) it only currently works on data.table
                 # (not data.frame or list) and ii) it would change the original by reference so would need to be copied
