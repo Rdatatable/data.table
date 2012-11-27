@@ -58,9 +58,9 @@ DT[5,d:=""]
 write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
 
 cat("File size (MB):",round(file.info("test.csv")$size/1024^2),"\n")  # 50MB
-system.time(x <- read.csv("test.csv",stringsAsFactors=FALSE))  # 63s
-system.time(y <- read("test.csv"))                             #  5s
-all(mapply(all.equal,x,y))                                     # TRUE
+system.time(x <- read.csv("test.csv",stringsAsFactors=FALSE))         # 60secs
+system.time(y <- read("test.csv"))                                    #  5secs
+all(mapply(all.equal,x,y))                                            # TRUE
 
 # read("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")          # Format is auto detected.
 
