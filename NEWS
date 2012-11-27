@@ -16,6 +16,12 @@ NEW FEATURES
 
     o   New function read(): fast file reader.
         ?read has example showing 63s down to 5s.
+        
+BUG FIXES
+
+    o   setnames(DT,c(NA,NA)) is now a type error rather than a segfault, #2393.
+        Thanks to Damian Betebenner for reporting.
+        
 
 
         *********************************************

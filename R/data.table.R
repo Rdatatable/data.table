@@ -1624,6 +1624,7 @@ setnames = function(x,old,new) {
     if (!length(attr(x,"names"))) stop("x has no column names")  # because setnames is for user user. Internally, use setattr(x,"names",...)
     if (missing(new)) {
         # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
+        if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
         if (length(old) != ncol(x)) stop("Can't assign ",length(old)," names to a ",ncol(x)," column data.table")
         m = chmatch(key(x), names(x))
         if (length(m) && any(is.na(m))) stop("Internal error: attr(x,'sorted') not all in names(x)")

@@ -2411,6 +2411,10 @@ f = function() {
 }
 test(876, f(), output="   a b1: 3 32: 3 6.*[1] 9.*   a V11: 3  9")
 
+# segfault when assigning NA names, #2393
+DT = data.table(a=1:3, b=4:6)
+test(877, setnames(DT, c(NA, NA)), error="Passed a vector of type 'logical'. Needs to be type 'character'")
+
 # Test read()
 n=1e3
 DT = data.table( a=sample(1:1000,n,replace=TRUE),
@@ -2424,7 +2428,7 @@ DT[4,c:=NA_real_]
 # DT[3,d:=NA_character_]   // TO DO: reinstate when na.strings is added
 DT[5,d:=""]
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
-test(877, all(mapply(all.equal, read.csv(f,stringsAsFactors=FALSE), read(f))))  # TO DO: drop "all(mapply" when colnames are read
+test(878, all(mapply(all.equal, read.csv(f,stringsAsFactors=FALSE), read(f))))  # TO DO: drop "all(mapply" when colnames are read
 unlink(f)
 
 

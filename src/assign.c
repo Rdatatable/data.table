@@ -669,9 +669,16 @@ SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
 
 SEXP setcharvec(SEXP x, SEXP which, SEXP new)
 {
-    // checks have already been made at R level
-    for (int i=0; i<LENGTH(which); i++)
-        SET_STRING_ELT(x, INTEGER(which)[i]-1, STRING_ELT(new, i));
+    int w;
+    if (!isString(x)) error("x must be a character vector");
+    if (!isInteger(which)) error("'which' must be an integer vector");
+    if (!isString(new)) error("'new' must be a character vector");
+    if (LENGTH(new)!=LENGTH(which)) error("'new' is length %d. Should be the same as length of 'which' (%d)",LENGTH(new),LENGTH(which));
+    for (int i=0; i<LENGTH(which); i++) {
+        w = INTEGER(which)[i];
+        if (w==NA_INTEGER || w<1 || w>LENGTH(x)) error("Item %d of 'which' is %d which is outside range of the length %d character vector", i+1,w,LENGTH(x));
+        SET_STRING_ELT(x, w-1, STRING_ELT(new, i));
+    }
     return(R_NilValue);
 }
 
