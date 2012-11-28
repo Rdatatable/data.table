@@ -2432,7 +2432,7 @@ DT[4,c:=NA_real_]
 # DT[3,d:=NA_character_]   // TO DO: reinstate when na.strings is added
 DT[5,d:=""]
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
-test(880, all(mapply(all.equal, read.csv(f,stringsAsFactors=FALSE), read(f))))  # TO DO: drop "all(mapply" when colnames are read
+test(880, read(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
 unlink(f)
 
 

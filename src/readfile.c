@@ -8,7 +8,6 @@
 
 /*****
 TO DO:
-Read column names
 Add test reading integer64 directly without going via character
 Read middle and end to check types
 Whitespace at the end of the line before \n should be ignored (warn about non white unprotected by comment char)
@@ -20,6 +19,7 @@ secondary separator for list() columns, such as columns 11 and 12 in BED.
 Allow logical columns (currently will be character). T/True/TRUE/true are allowed in main/src/util.c
 Test files with under 30 rows
 Implement na.strings.
+Print a % progress every 1 second after the first 2. if (clock-last)>1 second rather than on some %% of rows.
 *****/
 
 extern int sizes[];
@@ -72,7 +72,7 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
     // ********************************************************************************************
     
     while (nline<30 && (ch=getc(f))!=EOF) nline += ch=='\n';   // skip first 30 lines (in case of human readable banner)
-    if (verbose) Rprintf("Found line %d\n", nline);
+    if (verbose) Rprintf("Starting format detection from line %d in case of banners (auto skip)\n", nline);
     pos = ftell(f);
     
     // If the first column is protected (quoted character column) then skip over it in case it contains a different sep
@@ -82,12 +82,11 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
     if (fscanf(f,"%*[^, \t|:;~\n]")==EOF) error("File ends on line %d before any separator was found", nline);
     sep = getc(f);
     if (sep=='\n') error("No separator found on line %d. Please specify 'sep' manually, see ?read.", nline);
-    if (verbose) Rprintf("Detected sep as '%c'\n", sep);
     // TO DO: Test single column files where there is no sep.
     // TO DO: Test files where line 30 is the last line and doesn't end \n
     fseek(f,pos,SEEK_SET);  // back to beginning of line
     ncol = countfields();
-    if (verbose) Rprintf("Detected %d columns\n", ncol);
+    if (verbose) Rprintf("Detected sep as '%c' and %d columns\n", sep, ncol);
     if (ncol>32) error("Currently limited to 32 columns just for dev. Will be increased.");
     rewind(f);  // To the start
     
@@ -95,7 +94,7 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
     pos = ftell(f);
     while (countfields()!=ncol) nline++,pos=ftell(f); // discard human readable header (if any). No need for 'skip'.
     
-    if (verbose) Rprintf("First row with %d fields detected on line %d\n", ncol, nline);
+    if (verbose) Rprintf("Found first row with %d fields occuring on line %d (either column names or first row of data)\n", ncol, nline);
     // if there is a header row, it will have just been read. Start on 2nd row regardless to detect types
     
     char typef[3][7] = {"%9d%n","%lld%n","%lg%n"};
@@ -127,8 +126,8 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
             ch = getc(f);
             if (i+1<ncol && ch!=sep) error("Unexpected separator ending field %d of line %d", i+1, nline);
         }
-        while (ch!='\n') ch = getc(f);
-    } while( ++nline < 10 && ch != EOF );
+        while (ch!='\n') ch=getc(f);
+    } while( ++nline<10 && ch!=EOF );
     pos2 = ftell(f);
     // TO DO: If user has overridden any types, change these now. Not if user has selected a lesser type, though, with warning.
     
@@ -140,27 +139,69 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
     strf[0] = sep;
     for (i=1; i<ncol; i++) q += sprintf(q, strf, typef2[type[i]]);
     if (verbose) {Rprintf("Format = "); protprint(format); Rprintf("\n");}
+    formatcopy = malloc(sizeof(char)*strlen(format));
+    strcpy(formatcopy,format);
+    fmttok[i=0] = q = strtok(formatcopy,",");
+    while (q != NULL) {
+        if (q[1] == '[') {
+            q[strlen(q)] = ',';
+            strtok(NULL,",");
+        }
+        fmttok[++i] = q = strtok(NULL,",");
+    }
+    if (verbose) {Rprintf("Fsplit ="); for (i=0; i<ncol; i++){Rprintf(" "); protprint(fmttok[i]);}; Rprintf("\n");}
 
-    // fsize passed in from R level for simplicity since R handles LFS, calls stat and stat64 appropriately on
-    // each platform, and returns fsize as double accordingly.
+    // ********************************************************************************************
+    // Detect and assign column names
+    // ********************************************************************************************
+
+    if (header!=NA_LOGICAL) Rprintf("'header' changed by user from 'auto' to %s\n", header?"TRUE":"FALSE");
+    fseek(f,pos,SEEK_SET);  // back to the start of (likely) header row
+    SEXP names = PROTECT(allocVector(STRSXP, ncol));
+    protecti++;
+    i=0;
+    while ((i=fscanf(f, fmttok[i], buffer))==1) ch=getc(f);
+    // TO DO discard any whitespace after last column name on first row before the \n
+    if (ch!='\n') error("Not positioned correctly after testing format of header row");
+    if (i && header!=TRUE) {
+        if (verbose) Rprintf("Fields in header row are the same type as the data rows, and 'header' is either 'auto' or FALSE. Treating as the first data row and using default column names.\n");
+        for (i=0; i<ncol; i++) {
+            sprintf(buffer,"V%d",i);
+            SET_STRING_ELT(names, i, mkChar(buffer));
+        }
+        fseek(f,pos,SEEK_SET);  // back to start of first row. Treat as first data row, no column names present.
+    } else {
+        if (verbose && i) {
+            Rprintf("Fields in header row aren't the same type as data rows. Treating as column names");
+            if (header==FALSE) Rprintf(", despite header=FALSE (its types means it can't be treated as data row).\n"); 
+            else Rprintf(".\n");
+        }
+        fseek(f,pos,SEEK_SET);
+        strcpy(strf, "%[^,\n]");
+        strf[3] = sep;
+        for (i=0; i<ncol; i++) {
+            if (fscanf(f,strf,buffer)!=1) error("Format error when reading column name %d", i+1);
+            // TO DO: remove quote protection if present
+            SET_STRING_ELT(names, i, mkChar(buffer));
+            ch = getc(f);
+        }
+        while (ch!='\n') ch=getc(f);
+    }
+    
+    // Estimate number of rows
     estn = (R_len_t)(1.05 * nline * (REAL(fsize)[0]-pos1) / (pos2-pos1));
     if (verbose) Rprintf("Estimated nrows: %d ( 1.05*%d*(%ld-%ld)/(%ld-%ld) )\n",estn,nline,(long)REAL(fsize)[0],pos1,pos2,pos1);
+    // fsize passed in from R level for simplicity since R handles LFS, calls stat and stat64 appropriately on
+    // each platform, and returns fsize as double accordingly.
 
     // ********************************************************************************************
     // Now read data
     // ********************************************************************************************
     
-    fseek(f,pos,SEEK_SET);  // back to the start of (likely) header row
-    while ((ch=getc(f))!=EOF && ch!='\n');
-    /*
-    Read the header row using the split format into v.
-    If header row fails (nfields read < ncol) then it's the header row, otherwise that's the first data row (unless header=TRUE)
-    */
-    if (header!=NA_LOGICAL) Rprintf("'header' changed by user from 'auto' to %s\n", header?"TRUE":"FALSE");
-    
     for (i=0; i<32; i++) p[i] = 0;
     ans=PROTECT(allocVector(VECSXP,ncol));  // TO DO, could over-allocate here directly, or maybe safer to go via alloccol.
     protecti++;
+    setAttrib(ans,R_NamesSymbol,names);
     for (i=0; i<ncol; i++) {
         thistype = type[i] = typesxp[ type[i] ];  // map from 0-3 to INTSXP,REALSXP and STRSXP.
         thiscol = PROTECT(allocVector(thistype,estn));
@@ -177,17 +218,6 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
             size[i] = sizes[thistype];
         }
     }
-    formatcopy = malloc(sizeof(char)*strlen(format));
-    strcpy(formatcopy,format);
-    fmttok[i=0] = q = strtok(formatcopy,",");
-    while (q != NULL) {
-        if (q[1] == '[') {
-            q[strlen(q)] = ',';
-            strtok(NULL,",");
-        }
-        fmttok[++i] = q = strtok(NULL,",");
-    }
-    if (verbose) {Rprintf("Fsplit ="); for (i=0; i<ncol; i++){Rprintf(" "); protprint(fmttok[i]);}; Rprintf("\n");}
     while ((i=fscanf(f, format,
             p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7],            // see footnote 1
             p[8], p[9], p[10],p[11],p[12],p[13],p[14],p[15],

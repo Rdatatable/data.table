@@ -2,7 +2,7 @@
 \alias{read}
 \title{ Fast and friendly file finagler }
 \description{
-   Similar to read.table but much faster and more convenient. All controls such as delimiter, colClasses and nrows are automatically detected. Dual-delimited files such as BED are automatically detected: columns 11 and 12 are each read directly into list columns where each cell is itself an integer vector (no need for strsplit). bit64::integer64 types are also detected and read directly.
+   Similar to \code{read.table} but much faster and more convenient. All controls such as delimiter, colClasses and nrows are automatically detected. Dual-delimited files such as BED are automatically detected: columns 11 and 12 are each read directly into list columns where each cell is itself an integer vector (no need for strsplit). bit64::integer64 types are also detected and read directly without needing to read as character then convert.
    
    This help file is in development and may document features that haven't been implemented yet.
 }
@@ -59,10 +59,10 @@ DT[4,c:=NA_real_]
 DT[5,d:=""]
 write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
 
-cat("File size (MB):",round(file.info("test.csv")$size/1024^2),"\n")  # 50MB
-system.time(x <- read.csv("test.csv",stringsAsFactors=FALSE))         # 60secs
-system.time(y <- read("test.csv"))                                    #  5secs
-all(mapply(all.equal,x,y))                                            # TRUE
+cat("File size (MB):",round(file.info("test.csv")$size/1024^2),"\n")  # 50 MB (1e6 rows x 6 columns)
+system.time(x <- read.csv("test.csv",stringsAsFactors=FALSE))         # 60 sec
+system.time(y <- read("test.csv"))                                    #  5 sec
+all.equal(as.data.table(x), y)                                        #   TRUE
 
 # read("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")          # Format is auto detected.
 

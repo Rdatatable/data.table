@@ -13,7 +13,6 @@ read = function(fnam="test.csv",sep="auto",sep2="auto",header="auto",na.strings=
     nr = length(ans[[1]])
     setattr(ans,"row.names",.set_row_names(nr))
     setattr(ans,"class",c("data.table","data.frame"))
-    setattr(ans,"names",paste("V",1:length(ans),sep=""))
     # if (read any integer64, then require(bit64) else cat("integer64 have been read, you'll need bit64 to make those columns appear correctly, which isn't installed")
     ans
 }
