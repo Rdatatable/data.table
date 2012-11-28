@@ -8,6 +8,7 @@
 
 /*****
 TO DO:
+Read column names
 Add test reading integer64 directly without going via character
 Read middle and end to check types
 Whitespace at the end of the line before \n should be ignored (warn about non white unprotected by comment char)
@@ -18,6 +19,7 @@ test if increasing p from 32 to 128 decreases performance for 10 columns.
 secondary separator for list() columns, such as columns 11 and 12 in BED.
 Allow logical columns (currently will be character). T/True/TRUE/true are allowed in main/src/util.c
 Test files with under 30 rows
+Implement na.strings.
 *****/
 
 extern int sizes[];
@@ -91,20 +93,18 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
     
     nline = 1;
     pos = ftell(f);
-    while (countfields()!=ncol) nline++,pos=ftell(f); // discard human readable header (if any)
+    while (countfields()!=ncol) nline++,pos=ftell(f); // discard human readable header (if any). No need for 'skip'.
     
     if (verbose) Rprintf("First row with %d fields detected on line %d\n", ncol, nline);
     // if there is a header row, it will have just been read. Start on 2nd row regardless to detect types
-    // Now keep looping until all fields are character, or we have seen 10 non-NA values in all columns.
-    // Potentially, could scan whole file here (an entirely NA column). TO DO: limit that and test middle and end of file.
     
     char typef[3][7] = {"%9d%n","%lld%n","%lg%n"};
     // We'll promote types from long long => double => character
     // R is C99 so ll ok => bit64::integer64. We don't use %d, as the result is undefined in C99 for large numbers that
     // overflow int hence protected field width 9. Where int wider than 9 chars but < INT_MAX, we'll detect that later.
     
-    int typec[ncol], nread;  // typec = count of non-NA data in that col
-    for (i=0; i<ncol; i++) type[i]=0, typec[i]=0;
+    int nread;
+    for (i=0; i<ncol; i++) type[i]=0;
     char strf[] = "%[^,\n]";
     strf[3] = sep;  // replace comma with sep, in case sep isn't comma
     char *buffer = malloc(sizeof(char) * 1024);
@@ -123,7 +123,6 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
                 while (type[i]<3 && (sscanf(buffer,typef[type[i]],&v,&nread)==0 || nread<strlen(buffer))) type[i]++;
                 // Rprintf("Type after = %d with nread=%d\n", type[i], nread);
                 // if (type[i]==0) Rprintf("Int value read=%lld with errno=%d\n",*(long long *)&v,errno);
-                typec[i]++;
             }
             ch = getc(f);
             if (i+1<ncol && ch!=sep) error("Unexpected separator ending field %d of line %d", i+1, nline);
@@ -155,8 +154,7 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
     while ((ch=getc(f))!=EOF && ch!='\n');
     /*
     Read the header row using the split format into v.
-    If header row fails (nfields read < ncol) then it's the header row, otherwise that's the first data row (unless header has
-    been set) then proceed as before ...
+    If header row fails (nfields read < ncol) then it's the header row, otherwise that's the first data row (unless header=TRUE)
     */
     if (header!=NA_LOGICAL) Rprintf("'header' changed by user from 'auto' to %s\n", header?"TRUE":"FALSE");
     
