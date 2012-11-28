@@ -2,9 +2,6 @@
 #define USE_RINTERNALS
 #include <Rinternals.h>
 #include <Rdefines.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <errno.h>
 
 /*****
 TO DO:
@@ -22,6 +19,7 @@ secondary separator for list() columns, such as columns 11 and 12 in BED.
 Implement na.strings.
 Allow logical columns (currently read as character). T/True/TRUE/true are allowed in main/src/util.c
 Test files with under 30 rows,  and just 1 column files (no separator).
+Clear up slightly over-allocated rows on heap during gc().
 *****/
 
 extern int sizes[];

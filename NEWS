@@ -17,7 +17,7 @@ NEW FEATURES
     o   New function read(), a fast and friendly file reader.
         *  60sec down to 5sec (50MB .csv, 1e6 rows x 6 columns).
         *  Header, skip, nrows, sep and colClasses are auto detected.
-        *  integer64 columns are detected and read natively.
+        *  bit64::integer64 columns are detected and read natively.
         See ?read. Many thanks to Chris Neff for ideas and discussions.
 
 BUG FIXES
