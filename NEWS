@@ -14,9 +14,11 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
-    o   New function read(): a fast and friendly file reader.
-        ?read has example showing 60sec down to 5.
-        Thanks to Chris Neff for ideas and discussion.
+    o   New function read(), a fast and friendly file reader.
+        *  60sec down to 5sec (50MB .csv, 1e6 rows x 6 columns).
+        *  Header, skip, nrows, sep and colClasses are auto detected.
+        *  integer64 columns are detected and read natively.
+        See ?read. Many thanks to Chris Neff for ideas and discussions.
 
 BUG FIXES
 
@@ -28,7 +30,7 @@ BUG FIXES
 
 NOTES
 
-    o   There are now 880 raw tests, as reported by test.data.table().
+    o   There are now 882 raw tests, as reported by test.data.table().
 
 
         *********************************************

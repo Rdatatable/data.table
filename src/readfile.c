@@ -8,18 +8,20 @@
 
 /*****
 TO DO:
-Add test reading integer64 directly without going via character
+Print a % progress every 1 second after the first 2 sec, including eta. if (clock-last > 1 second) rather than on some %% of rows.
+Add a way to pick out particular columns only, by name or position.
+A way for user to override type, for particular columns only.
 Read middle and end to check types
+Quote protection in the main data read step needs implementing
 Whitespace at the end of the line before \n should be ignored (warn about non white unprotected by comment char)
-Invalid but not ,, and not NA should promote type and coerce existing (reporting on which line it did that)
-test using "grep read.table ...Rtrunk/tests/
+In rare cases, invalid but not ,, and not NA should promote type and coerce existing (reporting on which line it did that)
+test using at least "grep read.table ...Rtrunk/tests/
 loop fscanf in batches of 32 (or 128) to remove column limit
 test if increasing p from 32 to 128 decreases performance for 10 columns.
 secondary separator for list() columns, such as columns 11 and 12 in BED.
-Allow logical columns (currently will be character). T/True/TRUE/true are allowed in main/src/util.c
-Test files with under 30 rows
 Implement na.strings.
-Print a % progress every 1 second after the first 2. if (clock-last)>1 second rather than on some %% of rows.
+Allow logical columns (currently read as character). T/True/TRUE/true are allowed in main/src/util.c
+Test files with under 30 rows,  and just 1 column files (no separator).
 *****/
 
 extern int sizes[];
@@ -203,9 +205,10 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
     protecti++;
     setAttrib(ans,R_NamesSymbol,names);
     for (i=0; i<ncol; i++) {
-        thistype = type[i] = typesxp[ type[i] ];  // map from 0-3 to INTSXP,REALSXP and STRSXP.
+        thistype  = typesxp[ type[i] ];  // map from 0-3 to INTSXP,REALSXP and STRSXP.
         thiscol = PROTECT(allocVector(thistype,estn));
         protecti++;
+        if (type[i]==1) setAttrib(thiscol, R_ClassSymbol, ScalarString(mkChar("integer64")));
         SET_TRUELENGTH(thiscol, estn);
         SET_VECTOR_ELT(ans,i,thiscol);
         if (thistype == STRSXP) {
@@ -225,10 +228,10 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
             p[24],p[25],p[26],p[27],p[28],p[29],p[30],p[31])) != EOF) {
         while (i<ncol) {
             switch(type[i]) {              // this switch could be avoided for speed using memcpy, but less readable
-            case INTSXP:                   // and this only runs for each invalid or missing field anyway (i.e. rarely)
+            case 0: // INTSXP              // and this only runs for each invalid or missing field anyway (i.e. rarely)
                *(int *)p[i] = NA_INTEGER;
                break;
-            case REALSXP:
+            case 1: case 2:   // integer64 or REALSXP
                *(double *)p[i] = NA_REAL;
                if (ftell(f)>pos) {                          // see footnote 2. dealing with potential scanf bug, not needed otherwise
                    c3 = getc(f); fseek(f,-3,SEEK_CUR); c1 = getc(f); c2 = getc(f);   
@@ -236,16 +239,16 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
                        (pos || (i &&                        // pos>0 => not the first NA in this row. ftell below has just run and
                                                             //   the one-by-one fscanf did just advance (i.e. didn't just read ",,")
                                                             //   i to ensure i-1 is valid, but probably not needed (keep for safety)
-                        (c3!=',' || type[i-1]!=STRSXP))))   // if the all-on-one fscanf above just read NA into a character column
+                        (c3!=',' || type[i-1]!=3))))        // if the all-on-one fscanf above just read NA into a character column
                                                             //   but a float ",," is next, the comma wasn't over read so don't rewind
                        fseek(f,-1,SEEK_CUR);                // rewind the over read comma when NA appears in a float column
                }
                break;
-            case STRSXP:
+            case 3 :  // STRSXP
                *p[i] = '\0';
                break;
             default:
-               error("Unsupported type");
+               error("Internal error. %d is invalid; type enumeration is only 0,1,2,3", type[i]);
             }
             while((ch=getc(f))!=','   // discard remainder of invalid input in this field (if any) and read next
                    && ch!='\n');      // separator. TO DO: promote type and ensure invalid data not lost without at least warning.

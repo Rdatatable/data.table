@@ -8,6 +8,7 @@ if (!exists(".devtesting")) {
         require(hexbin)
         require(nlme)
         require(xts)
+        require(bit64)
     })
     # The suppression is for users running test.data.table(). If they don't have ggplot2 installed we don't
     # want to warn about it not being installed. 'R CMD check' is a stricter test that will warn if the
@@ -2435,6 +2436,16 @@ write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
 test(880, read(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
 unlink(f)
 
+if ("package:bit64" %in% search()) {
+    DT = data.table( a=sample(1:1000,n,replace=TRUE),
+                     b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
+                     c=sample(c("foo","bar","baz"),n,replace=TRUE) )
+    write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
+    test(881, class(DT$b), "integer64")
+    test(882, read(f), DT)
+} else {
+    cat("Tests 881-882 not run. If required call library(bit64) first.\n")
+}
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
