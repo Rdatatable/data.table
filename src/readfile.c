@@ -5,6 +5,7 @@
 
 /*****
 TO DO:
+Include NAN, Inf and -Inf in demo in ?read and tests.Rraw
 Add a way to pick out particular columns only, by name or position.
 A way for user to override type, for particular columns only.
 Read middle and end to check types
@@ -15,7 +16,7 @@ test using at least "grep read.table ...Rtrunk/tests/
 loop fscanf in batches of 32 (or 128) to remove column limit
 test if increasing p from 32 to 128 decreases performance for 10 columns.
 secondary separator for list() columns, such as columns 11 and 12 in BED.
-Implement na.strings.
+Implement na.strings and reinstate DT[3,d:=NA_character_] in ?read
 Allow logical columns (currently read as character). T/True/TRUE/true are allowed in main/src/util.c
 Test files with under 30 rows,  and just 1 column files (no separator).
 Clear up slightly over-allocated rows on heap during gc().

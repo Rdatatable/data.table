@@ -10,19 +10,19 @@
 read(fnam, sep="auto", sep2="auto", header="auto", na.strings=NULL, stringsAsFactors=FALSE, verbose=FALSE)
 }
 \arguments{
-  \item{fnam}{ The file name to read, as a length 1 character string. May be a URL starting http:// or file://, and on Windows where R has been started with --internet2, a URL starting https:// }
+  \item{fnam}{ The file name to read, as a length 1 character string or a URL starting http:// or file://. }
   \item{sep}{ The separator between columns. Defaults to the first character not in the set [a-zA-Z0-9"'\\n]. }
   \item{sep2}{ The separator \emph{within} columns. Defaults to the first character not in the set [a-zA-Z0-9"'\\n<sep>]. }
   \item{header}{ Does the first line contain column names? Defaults according to a comparison of field types in rows 1 vs 2.}
-  \item{na.strings}{ A character vector of strings to convert to \code{NA_character_}. By default, ",," is read as a blank string \code{""} and ",NA," is read as \code{"NA"}. Typical values might be \code{na.strings="NA"}, or \code{na.strings=c("NA","N/A","")}. }
+  \item{na.strings}{ A character vector of strings to convert to \code{NA_character_}. By default, ",," is read as a blank string (\code{""}) and ",NA," is read as the string \code{"NA"}. Typical values might be \code{na.strings="NA"}, or \code{na.strings=c("NA","N/A","")}. }
   \item{stringsAsFactors}{ Convert all character columns to factors? }
   \item{verbose}{ Be chatty? }
 }
 \details{
 
-character columns can be single (\code{\'}) or double quoted (\code{\"}), or not quoted at all. Spaces and other whitepace (in fact anything other than sep) may appear in an unquoted character field, provided the field doesn't contain sep itself. Therefore quoting character values is only required if sep itself appears in the string value. This is automatically detected and no arguments are needed to control it. If a character value starts " it should end with "; it may then include sep and '. If a character value starts ' it should end with '; it may then include sep and ". Just like the R parser. This is on a per field basis; i.e., an entire column need not follow consistent quoting. Just a few cells (perhaps just those that contain sep) may only be quoted. The quoting character can be different for different fields.
+character columns can be single quoted (') or double quoted ("), or not quoted at all. Spaces and other whitepace (in fact anything other than sep) may appear in an unquoted character field, provided the field doesn't contain sep itself. Therefore quoting character values is only required if sep itself appears in the string value. This is automatically detected and no arguments are needed to control it. If a character value starts " it should end with "; it may then include sep and '. If a character value starts ' it should end with '; it may then include sep and ". Just like the R parser. This is on a per field basis; i.e., an entire column need not follow consistent quoting. Just a few cells (perhaps just those that contain sep) may only be quoted.
 
-There is no line length limit, not even a very large one. Since we are encouraging list columns using a secondary separator, where the data has that structure, this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. We use a single pass approach.
+There is no line length limit, not even a very large one. Since we are encouraging \code{list} columns (i.e. using \code{sep2}), this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. A single pass approach is used.
 
 The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \code{sep2}. Separator detection is entirely driven by the file contents. This can be useful when loading a large set of different files, which may not be named consistently, or may not have the extension .csv despite being csv. Some datasets have been collected over many years, one file per day for example. Sometimes the file name format has changed at some point in the past or even the format of the file itself. So the idea is that you can loop \code{read} through a set of files and as long as each file is regular and delimited, \code{read} can read them all.
 
@@ -35,15 +35,15 @@ Features like these are intended to foster friendliness. Achieved with a fair am
     A data.table.
 }
 \references{
-Background :
-\url{http://cran.r-project.org/doc/manuals/R-data.html}
-\url{http://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}
-\url{www.biostat.jhsph.edu/~rpeng/docs/R-large-tables.html}
-\url{https://stat.ethz.ch/pipermail/r-help/2007-August/138315.html}
-\url{http://www.cerebralmastication.com/2009/11/loading-big-data-into-r/}
-\url{http://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}
-\url{http://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}
-\url{http://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces}
+Background :\cr
+\url{http://cran.r-project.org/doc/manuals/R-data.html}\cr
+\url{http://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}\cr
+\url{www.biostat.jhsph.edu/~rpeng/docs/R-large-tables.html}\cr
+\url{https://stat.ethz.ch/pipermail/r-help/2007-August/138315.html}\cr
+\url{http://www.cerebralmastication.com/2009/11/loading-big-data-into-r/}\cr
+\url{http://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
+\url{http://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}\cr
+\url{http://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces}\cr
 \url{http://stackoverflow.com/questions/11782084/reading-in-large-text-files-in-r}
 
 finagler = "to get or achieve by guile or manipulation" \url{http://dictionary.reference.com/browse/finagler}
@@ -64,9 +64,7 @@ DT = data.table( a=sample(1:1000,n,replace=TRUE),
                  f=sample(1:1000,n,replace=TRUE) )
 DT[2,b:=NA_integer_]
 DT[4,c:=NA_real_]
-# DT[3,d:=NA_character_]   # TO DO: reinstate when na.strings is implemented
 DT[5,d:=""]
-# TO DO:  Include NAN, Inf and -Inf here in demo
 
 write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
 cat("File size (MB):",round(file.info("test.csv")$size/1024^2),"\n")    # 50 MB (1e6 rows x 6 columns)
