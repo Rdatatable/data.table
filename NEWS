@@ -15,9 +15,12 @@ This NEWS file summarises the main changes.
 NEW FEATURES
 
     o   New function read(), a fast and friendly file reader.
-        *  60sec down to 5sec (50MB .csv, 1e6 rows x 6 columns).
-        *  Header, skip, nrows, sep and colClasses are auto detected.
-        *  bit64::integer64 columns are detected and read natively.
+        *  header, skip, nrows, sep and colClasses are all auto detected.
+        *  integers>2^31 are detected and read natively as bit64::integer64.
+        *  With a 50MB .csv, 1e6 rows x 6 columns :
+             read.csv("test.csv")                                        60sec
+             read.table("test.csv",<all known tricks and known nrows>)   10sec
+             read("test.csv")                                             5sec
         See ?read. Many thanks to Chris Neff for ideas and discussions.
 
 BUG FIXES
@@ -26,7 +29,8 @@ BUG FIXES
         Thanks to Damian Betebenner for reporting.
 
     o   rbind() no longers warns about inputs having columns in a different order
-        if use.names has been explicitly set TRUE, #2385.
+        if use.names has been explicitly set TRUE, #2385. Thanks to Simon Judes
+        for reporting.
 
 NOTES
 

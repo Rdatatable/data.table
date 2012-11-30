@@ -35,7 +35,16 @@ Features like these are intended to foster friendliness. Achieved with a fair am
     A data.table.
 }
 \references{
+\url{http://cran.r-project.org/doc/manuals/R-data.html}
 \url{http://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}
+\url{www.biostat.jhsph.edu/~rpeng/docs/R-large-tables.html}
+\url{https://stat.ethz.ch/pipermail/r-help/2007-August/138315.html}
+\url{http://www.cerebralmastication.com/2009/11/loading-big-data-into-r/}
+\url{http://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}
+\url{http://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}
+\url{http://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces}
+\url{http://stackoverflow.com/questions/11782084/reading-in-large-text-files-in-r}
+
 finagler = "to get or achieve by guile or manipulation" \url{http://dictionary.reference.com/browse/finagler}
 }
 \seealso{ \code{\link[utils]{read.csv}}, \code{\link[base]{url}}
@@ -60,8 +69,12 @@ write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
 
 cat("File size (MB):",round(file.info("test.csv")$size/1024^2),"\n")  # 50 MB (1e6 rows x 6 columns)
 system.time(x <- read.csv("test.csv",stringsAsFactors=FALSE))         # 60 sec
-system.time(y <- read("test.csv"))                                    #  5 sec
-all.equal(as.data.table(x), y)                                        #   TRUE
+system.time(y <- read.table("test.csv",header=TRUE,sep=",",quote="",stringsAsFactors=FALSE,comment.char="",nrows=as.integer(n),colClasses=c("integer","integer","numeric","character","numeric","integer")))
+                                                                      # 10 sec (all known advice with known nrows, see references)
+identical(x,y)                                                        #   TRUE
+
+system.time(z <- read("test.csv"))                                    #  5 sec (faster and friendlier)
+all.equal(as.data.table(x), z)                                        #   TRUE
 
 # read("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")          # Format is auto detected.
 

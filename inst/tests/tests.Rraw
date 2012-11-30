@@ -2443,6 +2443,7 @@ if ("package:bit64" %in% search()) {
     write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
     test(881, class(DT$b), "integer64")
     test(882, read(f), DT)
+    unlink(f)
 } else {
     cat("Tests 881-882 not run. If required call library(bit64) first.\n")
 }
