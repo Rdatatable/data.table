@@ -5,7 +5,6 @@
 
 /*****
 TO DO:
-Print a % progress every 1 second after the first 2 sec, including eta. if (clock-last > 1 second) rather than on some %% of rows.
 Add a way to pick out particular columns only, by name or position.
 A way for user to override type, for particular columns only.
 Read middle and end to check types
@@ -25,6 +24,7 @@ Clear up slightly over-allocated rows on heap during gc().
 extern int sizes[];
 char sep, sep2;
 FILE *f;
+extern double currentTime();
 
 static void protprint(char *str)   // protected print i.e. \n is protected by replacing with \\n
 {
@@ -219,6 +219,7 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
             size[i] = sizes[thistype];
         }
     }
+    double nexttime = currentTime()+2;
     while ((i=fscanf(f, format,
             p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7],            // see footnote 1
             p[8], p[9], p[10],p[11],p[12],p[13],p[14],p[15],
@@ -260,6 +261,10 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
         if (nrow > estn) {
             warning("Read more rows than estimated, even after estimating 5% more. Reallocation at this point fairly trivial but not yet implemented. Returning the rows read so far and discarding the rest, for now.");
             break;
+        } else if (nrow%10000==0 && currentTime()>nexttime) {  // %10000 && saves a little bit (apx 0.2 in 4.9 secs, 5%)
+            Rprintf("%.1f%%\r", 100.0*nrow/estn);
+            nexttime = currentTime()+1;
+            R_CheckUserInterrupt();
         }
     }
     fclose(f);

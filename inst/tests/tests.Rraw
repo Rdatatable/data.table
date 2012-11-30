@@ -2448,6 +2448,9 @@ if ("package:bit64" %in% search()) {
     cat("Tests 881-882 not run. If required call library(bit64) first.\n")
 }
 
+# TO DO: test sep=space detection:  read("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
+
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
