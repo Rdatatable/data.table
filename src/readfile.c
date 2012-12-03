@@ -5,7 +5,6 @@
 
 /*****
 TO DO:
-Implement na.strings and reinstate DT[3,d:=NA_character_] in ?read
 Add a way to pick out particular columns only, by name or position.
 A way for user to override type, for particular columns only.
 Read middle and end to check types
@@ -54,15 +53,16 @@ static int countfields()
     return(ncol);
 }
 
-SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
+SEXP readfile(SEXP fnam, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP fsize)
 {
-    SEXP thiscol, ans;
-    R_len_t i, protecti=0, nrow=0, ncharcol=0, ncol=0, estn, nline=0;
+    SEXP thiscol, ans, thisstr;
+    R_len_t i, j, protecti=0, nrow=0, ncharcol=0, ncol=0, estn, nline=0;
     int size[32], type[32], thistype, charcol[32], c1, c2, c3;
     char *ansbuffer[32];
     char *p[32], *format, *formatcopy, *fmttok[32], *q, ch;
     long pos=0, pos1, pos2;
     Rboolean verbose=LOGICAL(verbosearg)[0], header=LOGICAL(headerarg)[0];
+    int nnastrings = length(nastrings);
     
     f=fopen(CHAR(STRING_ELT(fnam,0)),"r");
     if (f == NULL) error("file not found");
@@ -255,7 +255,16 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP verbosearg, SEXP fsize)
             // TO DO - cater for EOF here on last line of file if there's a missing on last row.
         }
         for (i=0; i<ncol; i++) p[i]+=size[i];
-        for (i=0; i<ncharcol; i++) SET_STRING_ELT(VECTOR_ELT(ans, charcol[i]), nrow, mkChar(ansbuffer[i]));
+        for (i=0; i<ncharcol; i++) {
+            thisstr = mkChar(ansbuffer[i]);
+            for (j=0; j<nnastrings; j++) {
+                if (thisstr==STRING_ELT(nastrings,j)) {
+                    thisstr = NA_STRING;
+                    break;
+                }
+            }
+            SET_STRING_ELT(VECTOR_ELT(ans, charcol[i]), nrow, thisstr);
+        }
         pos=0;
         nrow++;
         if (nrow > estn) {

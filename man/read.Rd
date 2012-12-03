@@ -7,14 +7,14 @@
    This help file is in development and may document features that haven't been implemented yet.
 }
 \usage{
-read(fnam, sep="auto", sep2="auto", header="auto", na.strings=NULL, stringsAsFactors=FALSE, verbose=FALSE)
+read(fnam, sep="auto", sep2="auto", header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE)
 }
 \arguments{
   \item{fnam}{ The file name to read, as a length 1 character string or a URL starting http:// or file://. }
   \item{sep}{ The separator between columns. Defaults to the first character not in the set [a-zA-Z0-9"'\\n]. }
   \item{sep2}{ The separator \emph{within} columns. Defaults to the first character not in the set [a-zA-Z0-9"'\\n<sep>]. }
   \item{header}{ Does the first line contain column names? Defaults according to a comparison of field types in rows 1 vs 2.}
-  \item{na.strings}{ A character vector of strings to convert to \code{NA_character_}. By default, ",," is read as a blank string (\code{""}) and ",NA," is read as the string \code{"NA"}. Typical values might be \code{na.strings="NA"}, or \code{na.strings=c("NA","N/A","")}. }
+  \item{na.strings}{ A character vector of strings to convert to \code{NA_character_}. By default, ",," is read as a blank string (\code{""}) and ",NA," is read as \code{NA_character_}. Typical values might be \code{na.strings=NULL} or perhaps \code{na.strings=c("NA","N/A","")}. }
   \item{stringsAsFactors}{ Convert all character columns to factors? }
   \item{verbose}{ Be chatty? }
 }
@@ -64,6 +64,7 @@ DT = data.table( a=sample(1:1000,n,replace=TRUE),
                  f=sample(1:1000,n,replace=TRUE) )
 DT[2,b:=NA_integer_]
 DT[4,c:=NA_real_]
+DT[3,d:=NA_character_]
 DT[5,d:=""]
 DT[2,e:=+Inf]
 DT[3,e:=-Inf]
@@ -105,7 +106,7 @@ system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",         # 100-20
     colClasses=c("integer","integer","numeric",
                  "character","numeric","integer")))
                  
-system.time(DT <- read("testbig.csv"))                                  # 45 sec (consistently)
+system.time(DT <- read("testbig.csv"))                                  # 50 sec (consistently)
 all(mapply(all.equal, DF, DT))                                          # TRUE
 
 
