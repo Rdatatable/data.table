@@ -2432,8 +2432,12 @@ DT[2,b:=NA_integer_]
 DT[4,c:=NA_real_]
 # DT[3,d:=NA_character_]   // TO DO: reinstate when na.strings is added
 DT[5,d:=""]
-write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
-test(880, read(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
+DT[2,e:=+Inf]
+DT[3,e:=-Inf]
+DT[4,e:=NaN]  # write.table writes NaN as NA, though, and all.equal considers NaN==NA. read would read NaN as NaN if "NaN" was in file
+write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)  
+test(880, all.equal(read(f), as.data.table(read.csv(f,stringsAsFactors=FALSE))))
+test(881, all.equal(read(f), DT))
 unlink(f)
 
 if ("package:bit64" %in% search()) {
@@ -2441,11 +2445,11 @@ if ("package:bit64" %in% search()) {
                      b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
                      c=sample(c("foo","bar","baz"),n,replace=TRUE) )
     write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
-    test(881, class(DT$b), "integer64")
-    test(882, read(f), DT)
+    test(882, class(DT$b), "integer64")
+    test(883, read(f), DT)
     unlink(f)
 } else {
-    cat("Tests 881-882 not run. If required call library(bit64) first.\n")
+    cat("Tests 882-883 not run. If required call library(bit64) first.\n")
 }
 
 # TO DO: test sep=space detection:  read("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")

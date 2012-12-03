@@ -28,7 +28,7 @@ The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \c
 
 There is no need for a \code{skip} argument. Once the format and number of fields is detected from lines 30-39, the first row in the file containing a conformant number of fields is deemed to be the header row. Thus, human readable banner rows are automatically skipped. This feature can be useful if you are loading many files which may not all have consistently sized banners.
 
-Features like these are intended to foster friendliness. Achieved with a fair amount of fenagling.
+Features like these are intended to foster friendliness. Achieved with a fair amount of finagling.
 
 }
 \value{
@@ -65,6 +65,8 @@ DT = data.table( a=sample(1:1000,n,replace=TRUE),
 DT[2,b:=NA_integer_]
 DT[4,c:=NA_real_]
 DT[5,d:=""]
+DT[2,e:=+Inf]
+DT[3,e:=-Inf]
 
 write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
 cat("File size (MB):",round(file.info("test.csv")$size/1024^2),"\n")    # 50 MB (1e6 rows x 6 columns)
@@ -81,7 +83,7 @@ require(data.table)
 system.time(DT <- read("test.csv"))                                     #  5 sec (faster and friendlier)
 
 require(sqldf)
-system.time(SQLDF <- read.csv.sql("test.csv"))                          # 20 sec (friendly too, good defaults)
+system.time(SQLDF <- read.csv.sql("test.csv",dbname=NULL))              # 20 sec (friendly too, good defaults)
 
 require(ff)
 system.time(FFDF <- read.csv.ffdf(file="test.csv",nrows=n))             # 20 sec (friendly too, good defaults)
