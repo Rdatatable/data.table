@@ -212,6 +212,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 if (TYPEOF(targetcol)!=TYPEOF(RHS)) error("Type of RHS ('%s') must match LHS ('%s'). To check and coerce would impact performance too much for the fastest cases. Either change the type of the target column, or coerce the RHS of := yourself (e.g. by using 1L instead of 1)", type2char(TYPEOF(RHS)), type2char(TYPEOF(targetcol)));
                 size = SIZEOF(targetcol);
                 vlen = length(RHS);
+                if (vlen==0) continue;
                 if (length(order)==0) {
                     rownum = INTEGER(starts)[i]-1;
                     switch (TYPEOF(targetcol)) {

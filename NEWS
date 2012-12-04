@@ -34,10 +34,14 @@ BUG FIXES
     o   rbind() no longers warns about inputs having columns in a different order
         if use.names has been explicitly set TRUE, #2385. Thanks to Simon Judes
         for reporting.
+        
+    o   := by group with 0 length RHS could crash in some circumstances. Thanks to
+        Damien Challet for the reproducible example using obfuscated data and 
+        pinpointing the version that regressed. Fixed and test added.
 
 NOTES
 
-    o   There are now 882 raw tests, as reported by test.data.table().
+    o   There are now 886 raw tests, as reported by test.data.table().
 
 
         *********************************************
