@@ -16,7 +16,7 @@ read = function(fnam="test.csv",sep="auto",sep2="auto",header="auto",na.strings=
     setattr(ans,"class",c("data.table","data.frame"))
     if ( !exists("print.integer64") && any(sapply(ans,inherits,"integer64")) )
         warning("Some columns have been loaded as type 'integer64' but package bit64 isn't loaded. Those columns will display as strange looking floating point data. There is no need to reload the data. Just require(bit64) to obtain the integer64 print method and print the data again.")
-    ans
+    alloc.col(ans)
 }
 
 

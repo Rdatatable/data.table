@@ -5,6 +5,7 @@
 
 /*****
 TO DO:
+Test files with under 30 rows,  and just 1 column files (no separator).
 Add a way to pick out particular columns only, by name or position.
 A way for user to override type, for particular columns only.
 Read middle and end to check types
@@ -16,8 +17,8 @@ loop fscanf in batches of 32 (or 128) to remove column limit
 test if increasing p from 32 to 128 decreases performance for 10 columns.
 secondary separator for list() columns, such as columns 11 and 12 in BED.
 Allow logical columns (currently read as character). T/True/TRUE/true are allowed in main/src/util.c
-Test files with under 30 rows,  and just 1 column files (no separator).
 Clear up slightly over-allocated rows on heap during gc().
+Allow 2 character separators (some companies have internal formats that do that)
 *****/
 
 extern int sizes[];
@@ -141,14 +142,16 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP f
     if (verbose) {Rprintf("Format = "); protprint(format); Rprintf("\n");}
     formatcopy = malloc(sizeof(char)*strlen(format));
     strcpy(formatcopy,format);
-    fmttok[i=0] = q = strtok(formatcopy,",");
+    strf[1] = '\0';  // now just sep in char * form with ending \0 that strtok needs
+    fmttok[i=0] = q = strtok(formatcopy, strf);
     while (q != NULL) {
         if (q[1] == '[') {
-            q[strlen(q)] = ',';
-            strtok(NULL,",");
+            q[strlen(q)] = sep;
+            strtok(NULL, strf);
         }
-        fmttok[++i] = q = strtok(NULL,",");
+        fmttok[++i] = q = strtok(NULL, strf);
     }
+    if (i!=ncol) error("Internal error: Fsplit i (%d) != ncol (%d)", i, ncol);
     if (verbose) {Rprintf("Fsplit ="); for (i=0; i<ncol; i++){Rprintf(" "); protprint(fmttok[i]);}; Rprintf("\n");}
 
     // ********************************************************************************************
@@ -166,7 +169,7 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP f
     if (i && header!=TRUE) {
         if (verbose) Rprintf("Fields in header row are the same type as the data rows, and 'header' is either 'auto' or FALSE. Treating as the first data row and using default column names.\n");
         for (i=0; i<ncol; i++) {
-            sprintf(buffer,"V%d",i);
+            sprintf(buffer,"V%d",i+1);
             SET_STRING_ELT(names, i, mkChar(buffer));
         }
         fseek(f,pos,SEEK_SET);  // back to start of first row. Treat as first data row, no column names present.
@@ -234,11 +237,11 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP f
                *(double *)p[i] = NA_REAL;
                if (ftell(f)>pos) {                          // see footnote 2. dealing with potential scanf bug, not needed otherwise
                    c3 = getc(f); fseek(f,-3,SEEK_CUR); c1 = getc(f); c2 = getc(f);   
-                   if ((c1=='A' || c1=='a') && c2==',' &&   // has just potentially over-read comma of "NA,"
+                   if ((c1=='A' || c1=='a') && c2==sep &&   // has just potentially over-read comma of "NA,"
                        (pos || (i &&                        // pos>0 => not the first NA in this row. ftell below has just run and
                                                             //   the one-by-one fscanf did just advance (i.e. didn't just read ",,")
                                                             //   i to ensure i-1 is valid, but probably not needed (keep for safety)
-                        (c3!=',' || type[i-1]!=3))))        // if the all-on-one fscanf above just read NA into a character column
+                        (c3!=sep || type[i-1]!=3))))        // if the all-on-one fscanf above just read NA into a character column
                                                             //   but a float ",," is next, the comma wasn't over read so don't rewind
                        fseek(f,-1,SEEK_CUR);                // rewind the over read comma when NA appears in a float column
                }
@@ -249,7 +252,7 @@ SEXP readfile(SEXP fnam, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP f
             default:
                error("Internal error. %d is invalid; type enumeration is only 0,1,2,3", type[i]);
             }
-            while((ch=getc(f))!=','   // discard remainder of invalid input in this field (if any) and read next
+            while((ch=getc(f))!=sep   // discard remainder of invalid input in this field (if any) and read next
                    && ch!='\n');      // separator. TO DO: promote type and ensure invalid data not lost without at least warning.
             while (++i<ncol && (pos=ftell(f)) && fscanf(f, fmttok[i], p[i]) && getc(f)!=EOF);   // read remaining fields one by one
             // TO DO - cater for EOF here on last line of file if there's a missing on last row.

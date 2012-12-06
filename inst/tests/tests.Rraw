@@ -2441,7 +2441,6 @@ test(881, all.equal(read(f), DT))
 DT[3,d:="NA"]
 test(882, all.equal(read(f,na.strings=NULL), DT))
 unlink(f)
-
 if ("package:bit64" %in% search()) {
     DT = data.table( a=sample(1:1000,n,replace=TRUE),
                      b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
@@ -2453,8 +2452,7 @@ if ("package:bit64" %in% search()) {
 } else {
     cat("Tests 883-884 not run. If required call library(bit64) first.\n")
 }
-
-# test(885, read("ch11b.dat")) # needs to be in tests directory     # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
+test(885, read("ch11b.dat"), as.data.table(read.table("ch11b.dat")))  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
 
 # Crash bug when RHS is 0 length and := by group, fixed in 1.8.7
 DT = data.table(a=1:3,b=1:6)
