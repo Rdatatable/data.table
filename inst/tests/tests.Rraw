@@ -64,7 +64,7 @@ test = function(num,x,y=NULL,error,warning,output) {
         if (missing(y)) return()
     }
     if (missing(y)) {
-        if (isTRUE(x)) return()
+        if (isTRUE(as.vector(x))) return()  # as.vector to drop names of a named vector such as returned by system.time
     } else {
         if (identical(x,y)) return()
         if (is.data.table(x) && is.data.table(y)) {
