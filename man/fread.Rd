@@ -1,5 +1,5 @@
-\name{read}
-\alias{read}
+\name{fread}
+\alias{fread}
 \title{ Fast and friendly file finagler }
 \description{
    Similar to \code{read.table} but much faster and more convenient. All controls such as delimiter, colClasses and nrows are automatically detected. Dual-delimited files such as BED are automatically detected: columns 11 and 12 are each read directly into list columns where each cell is itself an integer vector (no need for strsplit). bit64::integer64 types are also detected and read directly without needing to read as character then convert.
@@ -7,7 +7,7 @@
    This help file is in development and may document features that haven't been implemented yet.
 }
 \usage{
-read(fnam, sep="auto", sep2="auto", header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE)
+fread(fnam, sep="auto", sep2="auto", header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE)
 }
 \arguments{
   \item{fnam}{ The file name to read, as a length 1 character string or a URL starting http:// or file://. }
@@ -28,7 +28,7 @@ The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \c
 
 There is no need for a \code{skip} argument. Once the format and number of fields is detected from lines 30-39, the first row in the file containing a conformant number of fields is deemed to be the header row. Thus, human readable banner rows are automatically skipped. This feature can be useful if you are loading many files which may not all have consistently sized banners.
 
-Features like these are intended to foster friendliness. Achieved with a fair amount of finagling.
+These features are for fostering friendliness. Fulfilled with a fair amount of finagling.
 
 }
 \value{
@@ -81,7 +81,7 @@ system.time(DF2 <- read.table("test.csv",header=TRUE,sep=",",quote="",  # 10 sec
                  "character","numeric","integer")))
 
 require(data.table)
-system.time(DT <- read("test.csv"))                                     #  5 sec (faster and friendlier)
+system.time(DT <- fread("test.csv"))                                    #  5 sec (faster and friendlier)
 
 require(sqldf)
 system.time(SQLDF <- read.csv.sql("test.csv",dbname=NULL))              # 20 sec (friendly too, good defaults)
@@ -106,7 +106,7 @@ system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",         # 100-20
     colClasses=c("integer","integer","numeric",
                  "character","numeric","integer")))
                  
-system.time(DT <- read("testbig.csv"))                                  # 50 sec (consistently)
+system.time(DT <- fread("testbig.csv"))                                 # 50 sec (consistently)
 all(mapply(all.equal, DF, DT))                                          # TRUE
 
 
@@ -116,12 +116,12 @@ all(mapply(all.equal, DF, DT))                                          # TRUE
 download.file("http://stat-computing.org/dataexpo/2009/2008.csv.bz2",
               destfile="2008.csv.bz2")                                  # 109MB (compressed)
 system("bunzip2 2008.csv.bz2")                                          # 658MB (7,009,729 rows x 29 columns)
-system.time(DT <- read("2008.csv"))                                     # 90 secs
+system.time(DT <- fread("2008.csv"))                                    # 90 secs
 table(sapply(DT,class))                                                 # 4 character and 25 integer columns
 
 
 # Reads URLs directly :
-read("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
+fread("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
 
 # Reads text input directly (TO DO) :
 # read("...")
