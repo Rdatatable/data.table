@@ -12,7 +12,7 @@ export(truelength, alloc.col, ":=")
 export(setattr, setnames, setcolorder, set)
 export(chmatch, "%chin%", chorder, chgroup)
 export(rbindlist)
-export(read)
+export(fread)
 
 S3method("[", data.table)
 S3method("[<-", data.table)

@@ -2420,7 +2420,7 @@ test(877, setnames(DT, c(NA, NA)), error="Passed a vector of type 'logical'. Nee
 test(878, rbind(data.table(a=1:3,b=4:6), data.table(b=7:9,a=4:6)), warning="Argument 2 has names in a different order.*bound by name")
 test(879, rbind(data.table(a=1:3,b=4:6), data.table(b=7:9,a=4:6), use.names=TRUE), data.table(a=1:6,b=4:9))
 
-# Test read()
+# Test fread()
 n=1e3
 DT = data.table( a=sample(1:1000,n,replace=TRUE),
                  b=sample(1:1000,n,replace=TRUE),
@@ -2436,10 +2436,10 @@ DT[2,e:=+Inf]
 DT[3,e:=-Inf]
 DT[4,e:=NaN]  # write.table writes NaN as NA, though, and all.equal considers NaN==NA. read would read NaN as NaN if "NaN" was in file
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)  
-test(880, all.equal(read(f), as.data.table(read.csv(f,stringsAsFactors=FALSE))))
-test(881, all.equal(read(f), DT))
+test(880, all.equal(fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE))))
+test(881, all.equal(fread(f), DT))
 DT[3,d:="NA"]
-test(882, all.equal(read(f,na.strings=NULL), DT))
+test(882, all.equal(fread(f,na.strings=NULL), DT))
 unlink(f)
 if ("package:bit64" %in% search()) {
     DT = data.table( a=sample(1:1000,n,replace=TRUE),
@@ -2447,12 +2447,12 @@ if ("package:bit64" %in% search()) {
                      c=sample(c("foo","bar","baz"),n,replace=TRUE) )
     write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
     test(883, class(DT$b), "integer64")
-    test(884, read(f), DT)
+    test(884, fread(f), DT)
     unlink(f)
 } else {
     cat("Tests 883-884 not run. If required call library(bit64) first.\n")
 }
-test(885, read("ch11b.dat"), as.data.table(read.table("ch11b.dat")))  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
+test(885, fread("ch11b.dat"), as.data.table(read.table("ch11b.dat")))  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
 
 # Crash bug when RHS is 0 length and := by group, fixed in 1.8.7
 DT = data.table(a=1:3,b=1:6)
