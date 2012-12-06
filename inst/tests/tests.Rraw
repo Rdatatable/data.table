@@ -64,7 +64,7 @@ test = function(num,x,y=NULL,error,warning,output) {
         if (missing(y)) return()
     }
     if (missing(y)) {
-        if (x) return()
+        if (isTRUE(x)) return()
     } else {
         if (identical(x,y)) return()
         if (is.data.table(x) && is.data.table(y)) {
