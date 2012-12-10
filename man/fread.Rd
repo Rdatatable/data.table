@@ -7,12 +7,13 @@
    This help file is in development and may document features that haven't been implemented yet.
 }
 \usage{
-fread(fnam, sep="auto", sep2="auto", header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE)
+fread(fnam, sep="auto", sep2="auto", nrows=-1, header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE)
 }
 \arguments{
   \item{fnam}{ The file name to read, as a length 1 character string or a URL starting http:// or file://. }
   \item{sep}{ The separator between columns. Defaults to the first character not in the set [a-zA-Z0-9"'\\n]. }
   \item{sep2}{ The separator \emph{within} columns. Defaults to the first character not in the set [a-zA-Z0-9"'\\n<sep>]. }
+  \item{nrows}{ The number of rows to read, by default -1 means all. Unlike \code{read.table}, it doesn't help speed to set this to the number of rows in the file (or an estimate), since the number of rows is automatically estimated and is already fast. Only set \code{nrows} if you require the first 10 rows, for example, or are reading the file in chunks. }
   \item{header}{ Does the first line contain column names? Defaults according to a comparison of field types in rows 1 vs 2.}
   \item{na.strings}{ A character vector of strings to convert to \code{NA_character_}. By default, ",," is read as a blank string (\code{""}) and ",NA," is read as \code{NA_character_}. Typical values might be \code{na.strings=NULL} or perhaps \code{na.strings=c("NA","N/A","")}. }
   \item{stringsAsFactors}{ Convert all character columns to factors? }
@@ -28,7 +29,7 @@ The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \c
 
 There is no need for a \code{skip} argument. Once the format and number of fields is detected from lines 30-39, the first row in the file containing a conformant number of fields is deemed to be the header row. Thus, human readable banner rows are automatically skipped. This feature can be useful if you are loading many files which may not all have consistently sized banners.
 
-These features are for fostering friendliness. Fulfilled with a fair amount of finagling.
+These features are for fostering friendliness. Facilitated by a fair farthingsworth of (far from fatuitous) finagling. The fread function's first letter is f; for fast, friendly, file or finagle.
 
 }
 \value{
