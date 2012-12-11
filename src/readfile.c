@@ -6,11 +6,12 @@
 
 /*****
 TO DO:
-Test 0-row files (just header, and empty), and just 1 column files (no separator).
+Quote protection in the main data read step needs implementing
+Remove strtok? and formatcopy?  Add %n to buffer read to save strlen
+Add #lines read ok in bulk, and % of time spent going slow.
 Add a way to pick out particular columns only, by name or position.
 A way for user to override type, for particular columns only.
 Read middle and end to check types
-Quote protection in the main data read step needs implementing
 Whitespace at the end of the line before \n should be ignored (warn about non white unprotected by comment char)
 test using at least "grep read.table ...Rtrunk/tests/
 loop fscanf in batches of 32 (or 128) to remove column limit
@@ -61,48 +62,61 @@ static int countfields()
 SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP fsize)
 {
     SEXP thiscol, ans, thisstr;
-    R_len_t i, j, k, protecti=0, nrow=0, ncharcol=0, ncol=0, estn, nline, flines;
+    R_len_t i, j, k, protecti=0, nrow=0, ncharcol=0, ncol=0, estn, nline, flines, nonblank;
     int size[32], type[32], thistype, charcol[32], buflen;
     char *ansbuffer[32];
     char *p[32], *format, *formatcopy, *fmttok[32], *q, ch;
-    long pos=0, pos1, pos2;
-    Rboolean verbose=LOGICAL(verbosearg)[0], header=LOGICAL(headerarg)[0];
+    long pos, pos1, pos2;
+    Rboolean verbose=LOGICAL(verbosearg)[0], header=LOGICAL(headerarg)[0], allchar;
     int nnastrings = length(nastrings);
     
     f=fopen(CHAR(STRING_ELT(fnam,0)),"r");
     if (f == NULL) error("file not found");
     
     // ********************************************************************************************
-    // Make informed guess at column types
+    // Auto skip human readable banners / panels
     // ********************************************************************************************
+
+    nline = 0;
+    nonblank = 0;
+    ch = '\0';
+    pos = 0;
+    while (nline<30 && ch!=EOF) {
+        i = 0;
+        pos1 = ftell(f);
+        while ((ch = getc(f))!=EOF && ch!='\n') i += !isspace(ch);
+        nline++;
+        if (i) pos=pos1, nonblank=nline;
+    }
+    if (nonblank==0) error("File is either empty or fully whitespace in the first 30 rows");
+    nline = nonblank;   // nline>nonblank for short files (under 30 rows) with trailing newlines
+    if (verbose) Rprintf("Starting format detection on line %d (the last non blank line in the first 30)\n", nline);
+    fseek(f,pos,SEEK_SET);
     
-    nline = 1;
-    while (nline<40 && (ch=getc(f))!=EOF) nline += ch=='\n';
-    nline -= 10;
-    if (nline<2) nline=2;
-    if (verbose) Rprintf("Starting format detection from line %d\n", nline);
-    rewind(f);
-    i = 1;
-    while (i<nline) i += (getc(f)=='\n');
-    pos = ftell(f);
+    // ********************************************************************************************
+    // Auto detect separator and number of fields
+    // ********************************************************************************************
     
     // If the first column is protected (quoted character column) then skip over it in case it contains a different sep
     if ((ch=getc(f)) == '\"') while(getc(f)!='\"');
     else if (ch=='\'') while(getc(f)!='\'');
     
-    if (fscanf(f,"%*[^, \t|:;~\n]")==EOF) error("File ends on line %d before any separator was found", nline);
-    sep = getc(f);
-    if (sep=='\n') error("No separator found on line %d. Please specify 'sep' manually, see ?read.", nline);
+    if (fscanf(f,"%*[^, \t|:;~\n]")==EOF) sep='\n'; else sep = getc(f);
+    if (verbose && sep=='\n') Rprintf("Line %d ends before any separator was found. Deducing this is a single column file. Otherwise, please specify 'sep' manually, see ?fread.\n", nline);
     // TO DO: Test single column files where there is no sep.
     // TO DO: Test files where line 30 is the last line and doesn't end \n
     fseek(f,pos,SEEK_SET);  // back to beginning of line
     ncol = countfields();
-    if (verbose) {
+    if (verbose && sep!='\n') {
         if (sep=='\t') Rprintf("Detected sep as '\\t' and %d columns ('\\t' will be printed as '_' below)\n", ncol);
         else Rprintf("Detected sep as '%c' and %d columns\n", sep, ncol);
     }
     if (ncol>32) error("Currently limited to 32 columns just for dev. Will be increased.");
     fseek(f,pos,SEEK_SET);
+    
+    // ********************************************************************************************
+    // Make informed guess at column types
+    // ********************************************************************************************
     
     char typef[3][7] = {"%9d%n","%lld%n","%lg%n"};
     // We'll promote types from long long => double => character
@@ -183,12 +197,15 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
     fseek(f,pos,SEEK_SET);  // back to the start of (likely) header row
     SEXP names = PROTECT(allocVector(STRSXP, ncol));
     protecti++;
-    i=0;
-    while (fscanf(f, fmttok[i], buffer)==1) ch=getc(f),i++;
+    i=0; allchar=TRUE;
+    while (fscanf(f, fmttok[i], buffer)==1) {ch=getc(f); if (type[i]<3) allchar=FALSE; i++;}
     // TO DO discard any whitespace after last column name on first row before the \n
     if (ch!='\n' && ch!=EOF) error("Not positioned correctly after testing format of header row. ch=%d",ch);
-    if (i==ncol && header!=TRUE) {
-        if (verbose) Rprintf("Fields in header row are the same type as the data rows, and 'header' is either 'auto' or FALSE. Treating as the first data row and using default column names.\n");
+    if (i==ncol && header!=TRUE && (nonblank>nline || !allchar)) {
+        if (verbose) {
+            if (nonblank==nline) Rprintf("There is just one data row and no header and this single row has some numeric fields. Treating as a data row and using default column names.\n");
+            else Rprintf("Fields in header row are the same type as the data rows, and 'header' is either 'auto' or FALSE. Treating as the first data row and using default column names.\n");
+        }
         for (i=0; i<ncol; i++) {
             sprintf(buffer,"V%d",i+1);
             SET_STRING_ELT(names, i, mkChar(buffer));
@@ -196,11 +213,12 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
         fseek(f,pos,SEEK_SET);  // back to start of first row. Treat as first data row, no column names present.
     } else {
         if (verbose) {
-            if (i<ncol) {
+            if (nonblank==nline) Rprintf("Single data row has all character fields, treating as column names of empty table\n");
+            else if (i<ncol) {
                 Rprintf("Fields in header row aren't the same type as data rows. Treating as column names");
                 if (header==FALSE) Rprintf(", despite header=FALSE (its types means it can't be treated as data row).\n"); 
                 else Rprintf(".\n");
-            }
+            } 
             else Rprintf("Fields in header row are the same type as the data rows but 'header' is TRUE. Treating as column names.");
         }
         fseek(f,pos,SEEK_SET);
@@ -212,7 +230,7 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
             SET_STRING_ELT(names, i, mkChar(buffer));
             ch = getc(f);
         }
-        while (ch!='\n') ch=getc(f);
+        while (ch!='\n' && ch!=EOF) ch=getc(f);
     }
     
     // ********************************************************************************************
@@ -268,12 +286,13 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
             // some missings, NAs, or protected sep
             // back to start of line, now at normal speed
             // ***  TO DO: can we do away with strtok now?  ***
+            if (i==0 && getc(f)=='\n') continue;  // skip blank lines
             fseek(f,pos,SEEK_SET);
             for (i=0; i<ncol; i++) {
                 *buffer='\0';
                 buflen = 0;
                 if (fscanf(f,strf,buffer)==EOF) error("Premature EOF!");  
-                //buflen = strlen(buffer);   // TO DO: faster to use %n !!, and/or count up !isspace  "3.14  " should be 3.14 ok.
+                //***** buflen = strlen(buffer);   // TO DO: faster to use %n !!, and/or count up !isspace  "3.14  " should be 3.14 ok.
                 q = buffer;
                 while (*q!='\0') if (isspace(*q++)==0) buflen++;
                 
