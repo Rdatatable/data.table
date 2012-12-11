@@ -6,7 +6,7 @@
 
 /*****
 TO DO:
-Test files with under 30 rows,  and just 1 column files (no separator).
+Test 0-row files (just header, and empty), and just 1 column files (no separator).
 Add a way to pick out particular columns only, by name or position.
 A way for user to override type, for particular columns only.
 Read middle and end to check types
@@ -45,8 +45,8 @@ static int countfields()
     int ncol=0;
     char ch, protected='0';
     ch = getc(f);
-    if (ch!='\n') ncol=1;
-    while (ch!='\n') {   // TO DO: add tests of this. Add to documentation that you cannot protect \n.
+    if (ch!='\n' && ch!=EOF) ncol=1;
+    while (ch!='\n' && ch!=EOF) {
         if (ch=='\"' || ch=='\'') {
             if (protected=='0') protected = ch;
             else if (protected==ch) protected = '0';
@@ -61,7 +61,7 @@ static int countfields()
 SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP fsize)
 {
     SEXP thiscol, ans, thisstr;
-    R_len_t i, j, k, protecti=0, nrow=0, ncharcol=0, ncol=0, estn, nline=0, flines=0;
+    R_len_t i, j, k, protecti=0, nrow=0, ncharcol=0, ncol=0, estn, nline, flines;
     int size[32], type[32], thistype, charcol[32], buflen;
     char *ansbuffer[32];
     char *p[32], *format, *formatcopy, *fmttok[32], *q, ch;
@@ -76,8 +76,14 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
     // Make informed guess at column types
     // ********************************************************************************************
     
-    while (nline<30 && (ch=getc(f))!=EOF) nline += ch=='\n';
-    if (verbose) Rprintf("Starting format detection from line %d in case of banners (auto skip)\n", nline);
+    nline = 1;
+    while (nline<40 && (ch=getc(f))!=EOF) nline += ch=='\n';
+    nline -= 10;
+    if (nline<2) nline=2;
+    if (verbose) Rprintf("Starting format detection from line %d\n", nline);
+    rewind(f);
+    i = 1;
+    while (i<nline) i += (getc(f)=='\n');
     pos = ftell(f);
     
     // If the first column is protected (quoted character column) then skip over it in case it contains a different sep
@@ -92,8 +98,8 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
     fseek(f,pos,SEEK_SET);  // back to beginning of line
     ncol = countfields();
     if (verbose) {
-        if (sep=='\t') Rprintf("Detected sep as '\\t' and %d columns. '\\t' will be printed as '_' below.\n", ncol);
-        else Rprintf("Detected sep as '%c' and %d columns.\n", sep, ncol);
+        if (sep=='\t') Rprintf("Detected sep as '\\t' and %d columns ('\\t' will be printed as '_' below)\n", ncol);
+        else Rprintf("Detected sep as '%c' and %d columns\n", sep, ncol);
     }
     if (ncol>32) error("Currently limited to 32 columns just for dev. Will be increased.");
     fseek(f,pos,SEEK_SET);
@@ -109,14 +115,18 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
     strf[3] = sep;  // replace comma with sep, in case sep isn't comma
     char *buffer = malloc(sizeof(char) * 1024);
     double v;
+    flines = 0;
     pos1 = ftell(f);
     do {
         for (i=0;i<ncol;i++) {
             *buffer='\0';
-            if (fscanf(f,strf,buffer)==EOF) error("Premature EOF!");
+            if (fscanf(f,strf,buffer)==EOF) {
+                if (i==0) {ch=EOF; break;}  // last empty line
+                if (i<ncol-1) error("File finishes on line %d in field %d, before all %d fields have been read",nline+flines,i+1,ncol);
+            }
             // Rprintf("Field contents are '%s'\n", buffer);
-            if (*buffer=='\"') {type[i]=3; if (fscanf(f,"%*[^\n\"\r]")==EOF) error("Premature EOF"); getc(f); }
-            else if (*buffer=='\'') {type[i]=3; if (fscanf(f,"%*[^'\n\r]")==EOF) error("Premature EOF"); getc(f); }
+            if (*buffer=='\"') {type[i]=3; if (fscanf(f,"%*[^\n\"\r]")==EOF) error("Premature EOF 2"); getc(f); }
+            else if (*buffer=='\'') {type[i]=3; if (fscanf(f,"%*[^'\n\r]")==EOF) error("Premature EOF 3"); getc(f); }
             else if (*buffer!='\0' && strcmp(buffer,"NA")!=0) { // ,, or ,NA, doesn't help to detect type, skip
                 // Rprintf("Testing type, type before = %d with format %s\n", type[i],typef[type[i]]);
                 while (type[i]<3 && (sscanf(buffer,typef[type[i]],&v,&nread)==0 || nread<strlen(buffer))) type[i]++;
@@ -124,10 +134,15 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
                 // if (type[i]==0) Rprintf("Int value read=%lld with errno=%d\n",*(long long *)&v,errno);
             }
             ch = getc(f);
-            if (i+1<ncol && ch!=sep) error("Unexpected separator ending field %d of line %d", i+1, nline+flines);
+            if (i<ncol-1 && ch!=sep) {
+                if (i==0 && (ch=='\n' || ch==EOF)) break;
+                error("Unexpected character (%d) ending field %d of line %d.", ch, i+1, nline+flines);
+            }
         }
-        while (ch!='\n') ch=getc(f);
-    } while( ++flines<10 && ch!=EOF );
+        if (i==ncol) flines++;
+        // Rprintf("Read line and ch is %d with \\n=%d\n",ch,'\n');
+        while (ch!='\n' && ch!=EOF) ch=getc(f); //, Rprintf("Next ch is %d\n",ch);
+    } while( flines<10 && ch!=EOF );
     pos2 = ftell(f);
     // TO DO: If user has overridden any types, change these now. Not if user has selected a lesser type, though, with warning.
     
@@ -169,10 +184,10 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
     SEXP names = PROTECT(allocVector(STRSXP, ncol));
     protecti++;
     i=0;
-    while ((i=fscanf(f, fmttok[i], buffer))==1) ch=getc(f);
+    while (fscanf(f, fmttok[i], buffer)==1) ch=getc(f),i++;
     // TO DO discard any whitespace after last column name on first row before the \n
-    if (ch!='\n') error("Not positioned correctly after testing format of header row");
-    if (i && header!=TRUE) {
+    if (ch!='\n' && ch!=EOF) error("Not positioned correctly after testing format of header row. ch=%d",ch);
+    if (i==ncol && header!=TRUE) {
         if (verbose) Rprintf("Fields in header row are the same type as the data rows, and 'header' is either 'auto' or FALSE. Treating as the first data row and using default column names.\n");
         for (i=0; i<ncol; i++) {
             sprintf(buffer,"V%d",i+1);
@@ -180,10 +195,13 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
         }
         fseek(f,pos,SEEK_SET);  // back to start of first row. Treat as first data row, no column names present.
     } else {
-        if (verbose && i) {
-            Rprintf("Fields in header row aren't the same type as data rows. Treating as column names");
-            if (header==FALSE) Rprintf(", despite header=FALSE (its types means it can't be treated as data row).\n"); 
-            else Rprintf(".\n");
+        if (verbose) {
+            if (i<ncol) {
+                Rprintf("Fields in header row aren't the same type as data rows. Treating as column names");
+                if (header==FALSE) Rprintf(", despite header=FALSE (its types means it can't be treated as data row).\n"); 
+                else Rprintf(".\n");
+            }
+            else Rprintf("Fields in header row are the same type as the data rows but 'header' is TRUE. Treating as column names.");
         }
         fseek(f,pos,SEEK_SET);
         strcpy(strf, "%[^,\n\r]");
@@ -202,7 +220,7 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
     // ********************************************************************************************
 
     pos = ftell(f);  // start of the first data row
-    estn = (R_len_t)(1.05 * flines * (REAL(fsize)[0]-pos) / (pos2-pos1));
+    estn = (R_len_t)ceil(1.05 * flines * (REAL(fsize)[0]-pos) / (pos2-pos1)) +5;  // +5 for small files
     if (verbose) Rprintf("Estimated nrows: %d ( 1.05*%d*(%ld-%ld)/(%ld-%ld) )\n",estn,flines,(long)REAL(fsize)[0],pos,pos2,pos1);
     // fsize passed in from R level for simplicity since R handles LFS, calls stat and stat64 appropriately on
     // each platform, and returns fsize as double accordingly.
@@ -303,21 +321,24 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
                 } else {
                     SET_STRING_ELT(VECTOR_ELT(ans, i), nrow, mkChar(buffer));
                 }
-                if (i+1<ncol && (ch=getc(f))!=sep) error("Unexpected separator ending field %d of line %d", i+1, nline);
-                // TO DO: error("Format error on line %d, field %d\n", nrow, i);
+                ch = getc(f);
+                if (i+1<ncol && ch!=sep) {
+                    if (i==0 && (ch=='\n' || ch==EOF)) break;
+                    error("Unexpected character (%d) ending field %d of line %d.", ch, i+1, nline+nrow);
+                }
             }
         } else {
             // bulk read was successful, just deal with the character fields
             for (i=0; i<ncharcol; i++)
                 SET_STRING_ELT(VECTOR_ELT(ans, charcol[i]), nrow, mkChar(ansbuffer[i]));
+            ch = getc(f);
         }
-        ch = getc(f);   // != EOF, too
         //if (ch != '\n') error("Non \\n at end of line %d\n", nrow);
-        while (ch!='\n') ch=getc(f);
+        while (ch!='\n' && ch!=EOF) ch=getc(f);  // count !isspace here
         for (i=0; i<ncol; i++) p[i]+=size[i];
         pos=ftell(f);
         if (++nrow == estn) {
-            if (INTEGER(nrowsarg)[0]==-1) warning("Read more rows than estimated, even after estimating 5%% more. Reallocation at this point fairly trivial but not yet implemented. Returning the rows read so far and discarding the rest, for now.");
+            if (INTEGER(nrowsarg)[0]==-1) warning("Filled all estn rows, even after estimating 5%% more. Reallocation at this point fairly trivial but not yet implemented. Returning the rows read so far and discarding the rest (if any), for now.");
             break;
         } else if (nrow%10000==0 && currentTime()>nexttime) {  // %10000 && saves a little bit (apx 0.2 in 4.9 secs, 5%)
             Rprintf("%.1f%%\r", 100.0*nrow/estn);
