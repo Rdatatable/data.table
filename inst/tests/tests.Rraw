@@ -2480,13 +2480,16 @@ if ("package:bit64" %in% search()) {
 }
 unlink(f)
 
-loc = ifelse(.devtesting, "", paste(path.package("data.table")))
-test(897, fread("ch11b.dat"), as.data.table(read.table("ch11b.dat")))  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
+loc = ifelse(.devtesting, "", paste(path.package("data.table"),"/tests/",sep=""))
+f = paste(loc,"ch11b.dat",sep="")  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
+test(897, fread(f), as.data.table(read.table(f)))  
 
-test(898, all.equal(DT<-fread("1206FUT.txt"), as.data.table(read.table("1206FUT.txt",sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class))))))
+f = paste(loc,"1206FUT.txt",sep="")
+test(898, all.equal(DT<-fread(f), as.data.table(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class))))))
 
 # Tests the coerce of column 23 to character on line 179 due to the 'A' for the first time :
-test(899, all.equal(fread("2008head.csv"), as.data.table(read.csv("2008head.csv",stringsAsFactors=FALSE))))
+f = paste(loc,"2008head.csv",sep="")
+test(899, all.equal(fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE))))
 
 # Crash bug when RHS is 0 length and := by group, fixed in 1.8.7
 DT = data.table(a=1:3,b=1:6)
