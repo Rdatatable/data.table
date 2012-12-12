@@ -7,8 +7,7 @@
 /*****
 TO DO:
 Quote protection in the main data read step needs implementing
-Remove strtok? and formatcopy?  Add %n to buffer read to save strlen
-Add #lines read ok in bulk, and % of time spent going slow.
+Remove strtok? and formatcopy?  Add %n to buffer read to save strlen. Change to p++. Speed regressed for 2008.csv.
 Add a way to pick out particular columns only, by name or position.
 A way for user to override type, for particular columns only.
 Read middle and end to check types
@@ -70,13 +69,16 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
     Rboolean verbose=LOGICAL(verbosearg)[0], header=LOGICAL(headerarg)[0], allchar;
     int nnastrings = length(nastrings);
     
+    double t0 = currentTime();
     f=fopen(CHAR(STRING_ELT(fnam,0)),"r");
     if (f == NULL) error("file not found");
+    //setvbuf(f,NULL,_IOFBF,8096);
+    //setbuf(f,NULL);
     
     // ********************************************************************************************
     // Auto skip human readable banners / panels
     // ********************************************************************************************
-
+    double t1 = currentTime();
     nline = 0;
     nonblank = 0;
     ch = '\0';
@@ -273,16 +275,21 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
             size[i] = sizes[thistype];
         }
     }
-    double nexttime = currentTime()+2;
-    // pos is still at the start of the first data row at this point. 
-    while ((i=fscanf(f, format,
-            p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7],            // see footnote 1
-            p[8], p[9], p[10],p[11],p[12],p[13],p[14],p[15],           // bulk read in one call
-            p[16],p[17],p[18],p[19],p[20],p[21],p[22],p[23],           // could replace with p++, p++, etc, then could be looped.
-            p[24],p[25],p[26],p[27],p[28],p[29],p[30],p[31])) != EOF) {   // a smaller batch size here, could mean less field iterating
+    double t2=currentTime(), t3, t4=0.0, tCoerce0, tCoerce=0.0;
+    double nexttime = t1+2;
+    // pos is still at the start of the first data row at this point.
+    if (EOF > -1) error("Internal error. EOF is not -1 or less\n");
+    while (TRUE) {
+        i = fscanf(f, format,
+            p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7],       // see footnote 1
+            p[8], p[9], p[10],p[11],p[12],p[13],p[14],p[15],      // bulk read in one call
+            p[16],p[17],p[18],p[19],p[20],p[21],p[22],p[23],      // could replace with p++, p++, etc, then could be looped.
+            p[24],p[25],p[26],p[27],p[28],p[29],p[30],p[31]);     // a smaller batch size here, could mean less field iterating
         // TO DO: if next char isn't \n, or there's any non white at the end then reset to the start, too
         // Rprintf("%d %d\n",i,nrow);
         if (i<ncol) {
+            if (i==EOF) break;
+            t3 = currentTime();
             // some missings, NAs, or protected sep
             // back to start of line, now at normal speed
             // ***  TO DO: can we do away with strtok now?  ***
@@ -312,6 +319,7 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
                         nread=0;
                         if (sscanf(buffer,typef[type[i]],p[i],&nread)==0 || nread<buflen) {
                             type[i]++;
+                            tCoerce0 = currentTime();
                             while (type[i]<3 && (sscanf(buffer,typef[type[i]],&v,&nread)==0 || nread<buflen)) type[i]++;
                             if (verbose) Rprintf("Column %d bumped to code %d on line %d, field contains '%s'\n", i+1, type[i], nrow+1, buffer);
                             if (type[i]==1) error("Coercing int to integer64 needs to be implemeted");
@@ -321,7 +329,7 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
                             // TO DO: specialize coerceVector to only coerce up to the point so far.
                             SET_VECTOR_ELT(ans, i, thiscol);
                             if (thistype == STRSXP) {
-                                for (j=0; j<nrow; j++) if (STRING_ELT(thiscol,j)==NA_STRING) SET_STRING_ELT(thiscol,j,install(""));
+                                for (j=0; j<nrow; j++) if (STRING_ELT(thiscol,j)==NA_STRING) SET_STRING_ELT(thiscol,j,R_BlankString);
                                 // If a character column starts with blanks, they'll have been coerced to NAs. Set back to "" and
                                 // these will be converted back to NA at the end if na.strings contains "".
                                 charcol[ncharcol] = i;
@@ -335,6 +343,7 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
                                 p[i] += nrow*size[i];
                                 memcpy(p[i],&v,size[i]);
                             }
+                            tCoerce += currentTime() - tCoerce0;
                         }
                     }
                 } else {
@@ -346,6 +355,7 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
                     error("Unexpected character (%d) ending field %d of line %d.", ch, i+1, nline+nrow);
                 }
             }
+            t4 += currentTime()-t3;
         } else {
             // bulk read was successful, just deal with the character fields
             for (i=0; i<ncharcol; i++)
@@ -365,9 +375,9 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
             R_CheckUserInterrupt();
         }
     }
+    double t5=currentTime();
     fclose(f);
     for (i=0; i<ncol; i++) SETLENGTH(VECTOR_ELT(ans,i), nrow);
-    nexttime = currentTime();
     for (k=0; k<nnastrings; k++) {
         thisstr = STRING_ELT(nastrings,k);
         for (j=0; j<ncharcol; j++) {
@@ -377,12 +387,21 @@ SEXP readfile(SEXP fnam, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ver
             }
         }
     }
-    if (verbose && nnastrings) Rprintf("Changing na.strings to NA took %.3f sec\n",currentTime()-nexttime);
     for (i=0; i<ncharcol; i++) free(ansbuffer[i]);
     free(formatcopy);
     free(buffer);
     free(format);
     UNPROTECT(protecti);
+    if (verbose) {
+        double tn = currentTime(), tot=tn-t0;
+        Rprintf("%8.3fs (%3.0f%%) Opening file\n", t1-t0, 100*(t1-t0)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Format detection\n", t2-t1, 100*(t2-t1)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Bulk reading\n", t5-t2-t4, 100*(t5-t2-t4)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Tokenized reading (any rows with missing data or fields with a protected sep)\n", t4-tCoerce, 100*(t4-tCoerce)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Bumping column type midread and coercing data already read\n", tCoerce, 100*tCoerce/tot);
+        if (nnastrings) Rprintf("%8.3fs (%3.0f%%) Changing na.strings to NA\n", tn-t5, 100*(tn-t5)/tot);
+        Rprintf("%8.3fs        Total\n", tot);
+    }
     return(ans);
 }
 

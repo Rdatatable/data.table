@@ -116,9 +116,9 @@ all(mapply(all.equal, DF, DT))                                          # TRUE
 
 download.file("http://stat-computing.org/dataexpo/2009/2008.csv.bz2",
               destfile="2008.csv.bz2")                                  # 109MB (compressed)
-system("bunzip2 2008.csv.bz2")                                          # 658MB (7,009,729 rows x 29 columns)
+system("bunzip2 2008.csv.bz2")                                          # 658MB (7,009,728 rows x 29 columns)
 system.time(DT <- fread("2008.csv"))                                    # 90 secs
-table(sapply(DT,class))                                                 # 4 character and 25 integer columns
+table(sapply(DT,class))                                                 # 5 character and 24 integer columns
 
 
 # Reads URLs directly :
