@@ -2480,6 +2480,7 @@ if ("package:bit64" %in% search()) {
 }
 unlink(f)
 
+loc = ifelse(.devtesting, "", paste(path.package("data.table")))
 test(897, fread("ch11b.dat"), as.data.table(read.table("ch11b.dat")))  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
 
 test(898, all.equal(DT<-fread("1206FUT.txt"), as.data.table(read.table("1206FUT.txt",sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class))))))
