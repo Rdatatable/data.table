@@ -32,6 +32,8 @@ There is no line length limit, not even a very large one. Since we are encouragi
 
 The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \code{sep2}. Separator detection is entirely driven by the file contents. This can be useful when loading a large set of different files, which may not be named consistently, or may not have the extension .csv despite being csv. Some datasets have been collected over many years, one file per day for example. Sometimes the file name format has changed at some point in the past or even the format of the file itself. So the idea is that you can loop \code{read} through a set of files and as long as each file is regular and delimited, \code{read} can read them all.
 
+All known line endings are detected automatically: \\n (*NIX including Mac), \\r\\n (Windows CRLF), \\r (old Mac) and \\n\\r (just in case). There is no need to convert input files first: \code{fread} running on any architecture will read a file from any architecture. Both \\r and \\n may be embedded in character strings (including column names) provided the field is quoted.
+
 There is no need for a \code{skip} argument. Once the format and number of fields is detected from lines 30-39, the first row in the file containing a conformant number of fields is deemed to be the header row. Thus, human readable banner rows are automatically skipped. This feature can be useful if you are loading many files which may not all have consistently sized banners.
 
 Finally, these few features are for fostering friendliness. Facilitated by a fair farthingsworth of (far from flaky, flawed

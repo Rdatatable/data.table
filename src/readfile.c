@@ -19,23 +19,26 @@
 
 /*****
 TO DO:
-Fully cover all line endings: \r\n (win, CRLF) or \r (?mac) and just \n (*nix)
 Whitespace at the end of the line before \n should be ignored (warn about non white unprotected by comment char)
 Stroll speedup
+Add a mapChunk argument, by default 10% of getsysinfo.ram. Entire file when 0.
+Allow logical columns (currently read as character). T/True/TRUE/true are allowed in main/src/util.c
+Read dates and times sensibly. By searching for - and :, and dateTtime etc.
+---
 Add a way to pick out particular columns only, by name or position.
 A way for user to override type, for particular columns only.
 CoerceVector should only coerce items read so far.
 Read middle and end to check types
 A few TO DO inline in the code, including some speed fine tuning
 test using at least "grep read.table ...Rtrunk/tests/
-secondary separator for list() columns, such as columns 11 and 12 in BED.
-Allow logical columns (currently read as character). T/True/TRUE/true are allowed in main/src/util.c
 Clear up slightly over-allocated rows on heap during gc().
-Add a mapChunk argument, by default 16MB. Entire file when 0.
+Implement realloc if estn wasn't large enough.
+secondary separator for list() columns, such as columns 11 and 12 in BED.
 Allow 2 character separators? Some companies have internal formats that do that.
 *****/
 
-char *ch, sep, sep2;
+char *ch, sep, sep2, eol, eol2;
+int eolLen;
 extern double currentTime();
 
 static int countfields()
@@ -46,9 +49,9 @@ static int countfields()
     lch = ch;
     protected = FALSE;
     if (sep=='\"') error("Internal error: sep is \", not an allowed separator");
-    if (*lch!='\n' && *lch) ncol=1;
+    if (*lch!=eol && *lch) ncol=1;
     if (*lch=='\"') protected = TRUE;  // lch might be mmp, careful not to check lch-1 for '\' before that (not mapped)
-    while (*lch!='\n' && *lch) {
+    while (*lch!=eol && *lch) {
         if (!protected) ncol += (*lch==sep);
         lch++;
         if (*lch=='\"' && *(lch-1)!='\\') protected = !protected;   // after lch++ it's now safe to check lch-1 for '\' 
@@ -122,8 +125,32 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         if (verbose) Rprintf("Memory mapped file ok in %.3f wall clock seconds\n", tMap-t0);
         if (EOF > -1) error("Internal error. EOF is not -1 or less\n");
         if (mmp[filesize-1] < 0) error("mmap'd region has EOF at the end");
-        if (mmp[filesize] != 0) error("Extra byte mmap'd hasn't been set to 0, contrary to the spec, iiuc");
+        if (mmp[filesize] != 0) error("Extra byte mmap'd hasn't been set to 0, contrary to the spec, iwuc");
     }
+    // ********************************************************************************************
+    // Auto detect eol, first eol where there are two (i.e. CRLF)
+    // ********************************************************************************************
+    ch = mmp;
+    while (*ch && *ch!='\n' && *ch!='\r') {
+        if (*ch=='\"') while(*++ch!='\"' && *ch);  // allow protection of \n and \r inside column names
+        if (*ch) ch++;                             // this 'if' needed in case opening protection is not closed before eof
+    }
+    eol=eol2=*ch; eolLen=1;
+    if (eol=='\r') {
+        if (*(ch+1)=='\n') {
+            if (verbose) Rprintf("Detected eol as \\r\\n (CRLF), the Windows standard.\n");
+            eol2='\n'; eolLen=2;
+        } else if (verbose) Rprintf("Detected eol as \\r only (no \\n afterwards). An old Mac standard, iwuc.\n");
+    } else if (eol=='\n') {
+        if (*(ch+1)=='\r') {
+            if (verbose) Rprintf("Detected eol as \\n\\r. Apparently some old systems use this.\n");
+            eol2='\r'; eolLen=2;
+        } else if (verbose) Rprintf("Detected eol as \\n only (no \\r afterwards). This is the *NIX standard, including Mac iwuc.\n");
+    } else {
+        if (eol!='\0') error("Internal error: eol should be \\0, \\r or \\n");
+        if (verbose) Rprintf("Input ends before any eol observed. Input will be treated as a single data row.\n");
+    }
+    
     // ********************************************************************************************
     // Auto skip human readable banners, if any
     // ********************************************************************************************
@@ -132,9 +159,9 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
     while (nline<INTEGER(autostart)[0] && *ch) {
         i = 0;
         pos1 = ch;
-        while (*ch && *ch!='\n') i += !isspace(*ch++);
+        while (*ch && *ch!=eol) i += !isspace(*ch++);
         nline++;
-        if (*ch) ch++;
+        if (*ch==eol) ch+=eolLen;
         if (i) pos=pos1, nonblank=nline;
     }
     if (nonblank==0) error("Input is either empty or fully whitespace in the first 30 rows");
@@ -145,14 +172,14 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
     // ********************************************************************************************
     // Auto detect separator and number of fields
     // ********************************************************************************************
-    while (isspace(*ch) && *ch!='\n') ch++;                       // skip over any leading space at start of row
-    if (*ch=='\"') {while(*++ch!='\"' && *ch && *ch!='\n');ch++;} // if first column is protected by ", skip over it
+    while (isspace(*ch) && *ch!=eol) ch++;                       // skip over any leading space at start of row
+    if (*ch=='\"') {while(*++ch!='\"' && *ch && *ch!=eol);ch++;} // if first column is protected by ", skip over it
     while (isalnum(*ch) || *ch=='\"' || *ch=='.' || *ch=='+' || *ch=='-') ch++;
-    if (*ch=='\0') sep='\n'; else sep=*ch;
-    if (verbose && sep=='\n') Rprintf("Line %d ends before any separator was found. Deducing this is a single column input. Otherwise, please specify 'sep' manually, see ?fread.\n", nline);
+    if (*ch=='\0') sep=eol; else sep=*ch;
+    if (verbose && sep==eol) Rprintf("Line %d ends before any separator was found. Deducing this is a single column input. Otherwise, please specify 'sep' manually, see ?fread.\n", nline);
     ch = pos;                                                    // back to beginning of line
     ncol = countfields();
-    if (verbose && sep!='\n') {
+    if (verbose && sep!=eol) {
         if (sep=='\t') Rprintf("Detected sep as '\\t' and %d columns ('\\t' will be printed as '_' below)\n", ncol);
         else Rprintf("Detected sep as '%c' and %d columns\n", sep, ncol);
     }
@@ -168,19 +195,19 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
     flines = 0;
     pos1 = ch = pos;   // pos1 used to calc estn.  start of autostart
     while(flines<10 && *ch) {
-        ch2=ch; while (isspace(*ch2) && *ch2!=sep && *ch2!='\n') ch2++;  // skip over any empty lines. if isspace it can't be \0
-        if (*ch2=='\n') { ch=ch2+1; continue; }
+        ch2=ch; while (isspace(*ch2) && *ch2!=sep && *ch2!=eol) ch2++;  // skip over any empty lines. if isspace it can't be \0
+        if (*ch2==eol) { ch=ch2+eolLen; continue; }
         flines++;
         for (i=0;i<ncol;i++) {
             //Rprintf("Field %d: '%.20s'\n", i+1, ch);
             while (isblank(*ch) && *ch!=sep && *ch) ch++;  // Only needed because strto* skip leading isspace (e.g. " \t123")
-            if (*ch==sep || *ch=='\n' || *ch=='\0') {}   // skip empty field (",,")
-            else if (*ch=='N' && *(ch+1)=='A' && (*(ch+2)==sep || *(ch+2)=='\n' || *(ch+2)=='\0')) ch+=2;  // skip ',NA,', doesn't help to detect type
+            if (*ch==sep || *ch==eol || *ch=='\0') {}   // skip empty field (",,")
+            else if (*ch=='N' && *(ch+1)=='A' && (*(ch+2)==sep || *(ch+2)==eol || *(ch+2)=='\0')) ch+=2;  // skip ',NA,', doesn't help to detect type
             else switch (type[i]) {
             case 0:  // integer
                 errno=0; ch2=ch;
                 u.l = strtoll(ch, &ch2, 10);
-                if (ch2>ch && (*ch2==sep || *ch2=='\n' || *ch2=='\0') && INT_MIN<=u.l && u.l<=INT_MAX && errno==0) {
+                if (ch2>ch && (*ch2==sep || *ch2==eol || *ch2=='\0') && INT_MIN<=u.l && u.l<=INT_MAX && errno==0) {
                     ch=ch2;
                     break;
                 }
@@ -188,7 +215,7 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
             case 1:  // integer64
                 errno=0; ch2=ch;
                 u.l = strtoll(ch, &ch2, 10);
-                if (ch2>ch && (*ch2==sep || *ch2=='\n' || *ch2=='\0') && errno==0) {
+                if (ch2>ch && (*ch2==sep || *ch2==eol || *ch2=='\0') && errno==0) {
                     ch=ch2;
                     break;
                 }
@@ -196,20 +223,20 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
             case 2:  // double
                 errno=0; ch2=ch;
                 u.d = strtod(ch, &ch2);
-                if (ch2>ch && (*ch2==sep || *ch2=='\n' || *ch2=='\0') && errno==0) {
+                if (ch2>ch && (*ch2==sep || *ch2==eol || *ch2=='\0') && errno==0) {
                     ch=ch2;
                     break;
                 }
                 type[i]++;
             case 3:   // character
-                if (*ch=='\"') {while(*++ch!='\n' && *ch && !(*ch=='\"' && *(ch-1)!='\\')); ch++;}
-                else while(*ch!=sep && *ch!='\n' && *ch) ch++;
+                if (*ch=='\"') {while(*++ch!=eol && *ch && !(*ch=='\"' && *(ch-1)!='\\')); ch++;}
+                else while(*ch!=sep && *ch!=eol && *ch) ch++;
             }
             if (*ch==sep && i<ncol-1) {ch++; continue;}  // most common case first, done, next field
             if (i<ncol-1) error("Expected sep ('%c') but '%c' ends field %d on line %d when detecting types: %.*s", sep, *ch, i+1, nline+nrow, ch-pos+1, pos);
         }
-        while (*ch!='\n' && *ch) ch++;
-        if (*ch=='\n') ch++;
+        while (*ch!=eol && *ch) ch++;
+        if (*ch==eol) ch+=eolLen;
     }
     pos2 = ch;
     if (verbose) { Rprintf("Type codes: "); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf("\n"); }
@@ -220,14 +247,14 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
     // ********************************************************************************************
     ch = pos;  // back to start of autostart.  nline is already this line number
     if (ch>mmp) {
-        if (*(ch-1)!='\n') error("Internal error. No \\n immediately before autostart line %d. '%.10s' instead", nline, ch);
+        if (*(ch-1)!=eol2) error("Internal error. No EOL immediately before autostart line %d, '%.10s' instead", nline, ch-1);
         do {
-            ch-=2;
-            while (ch>mmp && *ch!='\n') ch--;
-            if (ch>mmp) ch++;
+            ch-=(1+eolLen);
+            while (ch>mmp && *ch!=eol) ch--;
+            if (ch>mmp) ch+=eolLen;
             nline--;
         } while ((i=(countfields()==ncol)) && ch>mmp);
-        if (!i) while (*ch++!='\n');
+        if (!i) {while (*ch++!=eol); ch+=eolLen-1;}
     }
     pos = ch;
     if (verbose) Rprintf("Found first row with %d fields occuring on line %d (either column names or first row of data)\n", ncol, nline);
@@ -240,12 +267,12 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
     protecti++;
     i=0; allchar=TRUE;
     for (i=0; i<ncol; i++) {
-        if (*ch=='\"') {while(*++ch!='\n' && *ch && !(*ch=='\"' && *(ch-1)!='\\')); if (*ch++!='\"') error("Format error on line %d: %.*s", nline+flines, ch-pos+1, pos); }
+        if (*ch=='\"') {while(*++ch!=eol && *ch && !(*ch=='\"' && *(ch-1)!='\\')); if (*ch++!='\"') error("Format error on line %d: %.*s", nline+flines, ch-pos+1, pos); }
         else {
             errno = 0;
             u.d = strtod(ch, &ch2);
-            if (ch2>ch && (*ch2==sep || *ch2=='\n' || *ch2=='\0') && !errno) { allchar=FALSE, ch=ch2; }
-            else while(*++ch!='\n' && *ch!=sep && *ch); 
+            if (ch2>ch && (*ch2==sep || *ch2==eol || *ch2=='\0') && !errno) { allchar=FALSE, ch=ch2; }
+            else while(*++ch!=eol && *ch!=sep && *ch); 
         }
         if (i<ncol-1) {   // not the last column (doesn't have a separator after it)
             if (*ch!=sep) error("Unexpected character (%.10s) ending field %d of line %d", ch, i+1, nline);
@@ -253,7 +280,7 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         }
     }
     // TO DO discard any whitespace after last column name on first row before the \n
-    if (*ch!='\n' && *ch!='\0') error("Not positioned correctly after testing format of header row. ch='%c'",*ch);
+    if (*ch!=eol && *ch!='\0') error("Not positioned correctly after testing format of header row. ch='%c'",*ch);
     if (!allchar || header==FALSE) {
         if (verbose && !allchar) Rprintf("The first data row has some non character fields. Treating as a data row and using default column names.\n");
         char buff[10];
@@ -267,14 +294,14 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         ch = pos;
         nline++;
         for (i=0; i<ncol; i++) {
-            if (*ch=='\"') {ch++; ch2=ch; while(*ch2!='\"' && *ch2!='\n' && *ch2) ch2++;}
-            else {ch2=ch; while(*ch2!=sep && *ch2!='\n' && *ch2) ch2++;}
-            SET_STRING_ELT(names, i, mkCharLen(ch, ch2-ch-(*(ch2-1)=='\r')));
+            if (*ch=='\"') {ch++; ch2=ch; while(*ch2!='\"' && *ch2!=eol && *ch2) ch2++;}
+            else {ch2=ch; while(*ch2!=sep && *ch2!=eol && *ch2) ch2++;}
+            SET_STRING_ELT(names, i, mkCharLen(ch, ch2-ch));
             if (*ch2=='\"') ch2++;
             if (i<ncol-1) ch=++ch2;
         }
-        while (*ch!='\n' && *ch) ch++;
-        if (*ch) ch++; // now on first data row (row after column names)
+        while (*ch!=eol && *ch) ch++;
+        if (*ch==eol) ch+=eolLen;  // now on first data row (row after column names)
     }
     
     // ********************************************************************************************
@@ -313,8 +340,8 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
     pos = ch;
     while (*ch) {
         //Rprintf("Row %d : %.10s\n", nrow+1, ch);
-        while (isspace(*ch) && *ch!=sep && *ch!='\n') ch++;       // skip over any empty lines. if isspace it can't be \0
-        if (*ch=='\n') { ch++; nline++; continue; }
+        while (isspace(*ch) && *ch!=sep && *ch!=eol) ch++;       // skip over any empty lines. if isspace it can't be \0
+        if (*ch==eol) { ch+=eolLen; nline++; continue; }
         ch = pos;                                                //  in case first column is character with leading space
         for (i=0;i<ncol;i++) {
             //Rprintf("Field %d: '%.10s'\n", i+1, ch);
@@ -322,44 +349,44 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
             switch (type[i]) {
             case 0: // integer
                 errno=0; ch2=ch;
-                while (isspace(*ch) && *ch!=sep) ch++; // TO DO: remove. Only because stroll* skips leading isspace (could include sep)
-                if (*ch==sep) ch2=ch;
+                while (isspace(*ch) && *ch!=sep && *ch!=eol) ch++; // TO DO: remove. Only because stroll* skips leading isspace (could include sep)
+                if (*ch==sep || *ch==eol) ch2=ch;
                 else {ch2=ch; u.l = strtoll(ch, &ch2, 10);}
-                if (ch2>ch && (*ch2==sep || *ch2=='\n' || *ch2=='\0') && INT_MIN<=u.l && u.l<=INT_MAX && errno==0) {
+                if (ch2>ch && (*ch2==sep || *ch2==eol || *ch2=='\0') && INT_MIN<=u.l && u.l<=INT_MAX && errno==0) {
                     // TO DO: do we really need the check on ch2?  sep can't be true unless ch2 has moved?
                     INTEGER(thiscol)[nrow] = (int)u.l;
                     ch=ch2;
                     break;   // field now done, we prefer fully populated files
                 }
                 isna=FALSE;
-                if (*ch==sep || *ch=='\n' || *ch=='\0' || (isna=(*ch=='N' && *(ch+1)=='A' && (*(ch+2)==sep || *(ch+2)=='\n' || *(ch+2)=='\0')))) {
+                if (*ch==sep || *ch==eol || *ch=='\0' || (isna=(*ch=='N' && *(ch+1)=='A' && (*(ch+2)==sep || *(ch+2)==eol || *(ch+2)=='\0')))) {
                     INTEGER(thiscol)[nrow] = NA_INTEGER;
                     ch+=2*isna;
                     break;
                 }  
             case 1: // bit64::integer64
                 errno=0; ch2=ch;
-                while (isspace(*ch) && *ch!=sep) ch++; // TO DO: remove. Only because stroll* skips leading isspace (could include sep)
-                if (*ch==sep) ch2=ch;
+                while (isspace(*ch) && *ch!=sep && *ch!=eol) ch++; // TO DO: remove. Only because stroll* skips leading isspace (could include sep)
+                if (*ch==sep || *ch==eol) ch2=ch;
                 else {ch2=ch; u.l = strtoll(ch, &ch2, 10);}   // wasteful repeated call on fall through, but only once (ever, per column) on bump.
-                if (ch2>ch && (*ch2==sep || *ch2=='\n' || *ch2=='\0') && errno==0) {
+                if (ch2>ch && (*ch2==sep || *ch2==eol || *ch2=='\0') && errno==0) {
                     if (type[i]==0) { error("Coercing int to integer64 needs to be implemented"); type[i]=1; }
                     REAL(thiscol)[nrow] = u.d;
                     ch=ch2;
                     break;
                 }
                 isna=FALSE;
-                if (*ch==sep || *ch=='\n' || *ch=='\0' || (isna=(*ch=='N' && *(ch+1)=='A' && (*(ch+2)==sep || *(ch+2)=='\n' || *(ch+2)=='\0')))) {
+                if (*ch==sep || *ch==eol || *ch=='\0' || (isna=(*ch=='N' && *(ch+1)=='A' && (*(ch+2)==sep || *(ch+2)==eol || *(ch+2)=='\0')))) {
                     REAL(thiscol)[nrow] = NA_REAL;
                     ch+=2*isna;
                     break;
                 }
             case 2: // double
                 errno=0; ch2=ch;
-                while (isspace(*ch) && *ch!=sep) ch++; // TO DO: remove. Only because stroll* skips leading isspace (could include sep)
-                if (*ch==sep) ch2=ch;
+                while (isspace(*ch) && *ch!=sep && *ch!=eol) ch++; // TO DO: remove. Only because stroll* skips leading isspace (could include sep)
+                if (*ch==sep || *ch==eol) ch2=ch;
                 else {ch2=ch; u.d = strtod(ch, &ch2);}
-                if (ch2>ch && (*ch2==sep || *ch2=='\n' || *ch2=='\0') && errno==0) {
+                if (ch2>ch && (*ch2==sep || *ch2==eol || *ch2=='\0') && errno==0) {
                     if (type[i]==1) error("Coercing integer64 to real needs to be implemented");
                     else if (type[i]==0) {
                         tCoerce0 = currentTime();
@@ -373,15 +400,15 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
                     break;
                 }
                 isna=FALSE;
-                if (*ch==sep || *ch=='\n' || *ch=='\0' || (isna=(*ch=='N' && *(ch+1)=='A' && (*(ch+2)==sep || *(ch+2)=='\n' || *(ch+2)=='\0')))) {
+                if (*ch==sep || *ch==eol || *ch=='\0' || (isna=(*ch=='N' && *(ch+1)=='A' && (*(ch+2)==sep || *(ch+2)==eol || *(ch+2)=='\0')))) {
                     REAL(thiscol)[nrow] = NA_REAL;
                     ch+=2*isna;
                     break;
                 }
             case 3: // character
                 ch2=ch;
-                if (*ch=='\"') {ch++; while(*++ch2 && *ch2!='\n' && !(*ch2=='\"' && *(ch2-1)!='\\'));}
-                else while (*ch2!=sep && *ch2!='\n' && *ch2) ch2++;
+                if (*ch=='\"') {ch++; while(*++ch2 && *ch2!=eol && !(*ch2=='\"' && *(ch2-1)!='\\'));}
+                else while (*ch2!=sep && *ch2!=eol && *ch2) ch2++;
                 if (type[i]<3) {
                     if (type[i]==1) error("Coercing integer64 to character needs to be implemented");
                     tCoerce0 = currentTime();
@@ -393,15 +420,15 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
                     type[i]=3;
                     tCoerce += currentTime()-tCoerce0;
                 }
-                SET_STRING_ELT(thiscol, nrow, mkCharLen(ch,ch2-ch-(*(ch2-1)=='\r')));  // TO DO: stronger line end flexibility
+                SET_STRING_ELT(thiscol, nrow, mkCharLen(ch,ch2-ch));
                 if (*ch2=='\"') ch=ch2+1; else ch=ch2;
             }
             if (*ch==sep && i<ncol-1) {ch++; continue;}  // most common case first, done, next field
             if (i<ncol-1) error("Expected sep ('%c') but '%c' ends field %d on line %d: %.*s", sep, *ch, i+1, nline+nrow, ch-pos+1, pos);
         }
         //Rprintf("At end of line with nrow=%d and ch='%.10s'\n", nrow, ch);
-        while (*ch!='\n' && *ch) ch++; // discard after end of line, but before \n. TO DO: warn about uncommented text here
-        if (*ch=='\n') ch++;
+        while (*ch!=eol && *ch) ch++; // discard after end of line, but before \n. TO DO: warn about uncommented text here
+        if (*ch==eol) ch+=eolLen;
         pos = ch;  // start of line position only needed to include the whole line in any error message
         //Rprintf("Start of next line '%.10s'\n", ch);
         if (++nrow == estn) {
@@ -411,7 +438,6 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
             Rprintf("%.0f%%\r", 100.0*nrow/estn);
             nexttime = currentTime()+1;
             R_CheckUserInterrupt();
-            
         }
     }
     Rprintf("    \r");
