@@ -2441,16 +2441,20 @@ test(881, all.equal(fread(f), DT))
 DT[3,d:="NA"]
 test(882, all.equal(fread(f,na.strings=NULL), DT))
 DT[3,d:=NA_character_]
+write.table(DT,f,sep=",",row.names=FALSE,quote=TRUE)
+test(883, all.equal(fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE))))
+test(884, all.equal(fread(f), DT))
+
 # Test short files
-cat("",file=f); test(883, fread(f), error="empty")
-cat("\n",file=f); test(884, fread(f), error="empty")
-cat("  \n\t  \v  \n    \n  ",file=f); test(885, fread(f), error="empty")
-cat("A",file=f); test(886, fread(f), data.table(A=character()))
-cat("A\n",file=f); test(887, fread(f), data.table(A=character()))
-cat("AB,CDE",file=f); test(888, fread(f), data.table(AB=character(),CDE=character()))
-cat("AB,CDE\n",file=f); test(889, fread(f), data.table(AB=character(),CDE=character()))
-cat("3.14",file=f); test(890, fread(f), data.table(V1=3.14))
-cat("A,3",file=f); test(891, fread(f), data.table(V1="A",V2=3L))
+cat("",file=f); test(885, fread(f), error="empty")
+cat("\n",file=f); test(886, fread(f), error="empty")
+cat("  \n\t  \v  \n    \n  ",file=f); test(887, fread(f), error="empty")
+cat("A",file=f); test(888, fread(f), data.table(A=character()))
+cat("A\n",file=f); test(889, fread(f), data.table(A=character()))
+cat("AB,CDE",file=f); test(890, fread(f), data.table(AB=character(),CDE=character()))
+cat("AB,CDE\n",file=f); test(891, fread(f), data.table(AB=character(),CDE=character()))
+cat("3.14",file=f); test(892, fread(f), data.table(V1=3.14))
+cat("A,3",file=f); test(893, fread(f), data.table(V1="A",V2=3L))
 for (nc in c(0,1,2)) {   # 0 means all cols here
 for (nr in c(0,1,2,3,5,10,18,19,20,21,22,28,29,30,31,32,38,39,40,41,42)) {  # 30 and 40 are trigger points for auto skip
     headDT = head(DT,nr)[,seq_len(if (nc==0) ncol(DT) else nc),with=FALSE]
@@ -2461,39 +2465,45 @@ for (nr in c(0,1,2,3,5,10,18,19,20,21,22,28,29,30,31,32,38,39,40,41,42)) {  # 30
         write.table(headDT[i],file=f,quote=FALSE,sep=",",eol="",row.names=FALSE,col.names=FALSE,append=TRUE)
         # loop approach is to get no \n after last line
     }
-    test(892+nr/100+nc/1000, all.equal(fread(f), headDT))
-    cat("\n",file=f,append=TRUE)   # now a 'normal' file ending with \n
-    test(893+nr/100+nc/1000, all.equal(fread(f), headDT))
-    cat("\n",file=f,append=TRUE)   # extra \n should be ignored
     test(894+nr/100+nc/1000, all.equal(fread(f), headDT))
+    cat("\n",file=f,append=TRUE)   # now a 'normal' file ending with \n
+    test(895+nr/100+nc/1000, all.equal(fread(f), headDT))
+    cat("\n",file=f,append=TRUE)   # extra \n should be ignored
+    test(896+nr/100+nc/1000, all.equal(fread(f), headDT))
 }}
 if ("package:bit64" %in% search()) {
     DT = data.table( a=sample(1:1000,n,replace=TRUE),
                      b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
                      c=sample(c("foo","bar","baz"),n,replace=TRUE) )
     write.table(DT,f,sep=",",row.names=FALSE,quote=FALSE)
-    test(895, class(DT$b), "integer64")
-    test(896, fread(f), DT)
+    test(897, class(DT$b), "integer64")
+    test(898, fread(f), DT)
     unlink(f)
 } else {
-    cat("Tests 895-896 not run. If required call library(bit64) first.\n")
+    cat("Tests 897-898 not run. If required call library(bit64) first.\n")
 }
 unlink(f)
 
 loc = ifelse(.devtesting, "", paste(path.package("data.table"),"/tests/",sep=""))
 f = paste(loc,"ch11b.dat",sep="")  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
-test(897, fread(f), as.data.table(read.table(f)))  
+test(899, fread(f), as.data.table(read.table(f)))  
 
-f = paste(loc,"1206FUT.txt",sep="")
-test(898, all.equal(DT<-fread(f), as.data.table(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class))))))
+f = paste(loc,"1206FUT.txt",sep="")    # a CRLF line ending file (DOS)
+test(900, all.equal(DT<-fread(f), as.data.table(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class))))))
 
 # Tests the coerce of column 23 to character on line 179 due to the 'A' for the first time :
 f = paste(loc,"2008head.csv",sep="")
-test(899, all.equal(fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE))))
+test(901, all.equal(fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE))))
+
+test(902, fread("A,B\n1,3,foo,5\n2,4,barbaz,6"), data.table(1:2,3:4,c("foo","barbaz"),5:6))  # invalid header (too short) ignored
+test(903, fread("A,B,C,D\n1,3,foo,5\n2,4,barbaz,6"), DT<-data.table(A=1:2,B=3:4,C=c("foo","barbaz"),D=5:6))  # ok
+test(904, fread('A,B,C,D\n1,3,foo,5\n2,4,"barbaz",6'), DT)
+test(905, fread('A,B,C,D\n1,3,foo,5\n2,4,"ba,r,baz",6'), DT[2,C:="ba,r,baz"])
+test(906, fread('A,B,C,D\n1,3,foo,5\n2,4,"ba,\\"r,baz",6'), DT[2,C:='ba,\\"r,baz'])  # \" protected ok, but \ needs taking off too (TO DO)
 
 # Crash bug when RHS is 0 length and := by group, fixed in 1.8.7
 DT = data.table(a=1:3,b=1:6)
-test(900, DT[,newcol:=logical(0),by=a], data.table(a=1:3,b=1:6,newcol=NA))
+test(907, DT[,newcol:=logical(0),by=a], data.table(a=1:3,b=1:6,newcol=NA))
 
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")

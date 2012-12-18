@@ -7,21 +7,26 @@
    This help file is in development and may document features that haven't been implemented yet.
 }
 \usage{
-fread(fnam, sep="auto", sep2="auto", nrows=-1, header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE)
+fread(input, sep="auto", sep2="auto", nrows=-1, header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE, autostart=30)
 }
 \arguments{
-  \item{fnam}{ The file name to read, as a length 1 character string or a URL starting http:// or file://. }
-  \item{sep}{ The separator between columns. Defaults to the first character not in the set [a-zA-Z0-9"'\\n]. }
-  \item{sep2}{ The separator \emph{within} columns. Defaults to the first character not in the set [a-zA-Z0-9"'\\n<sep>]. }
+  \item{input}{ Either the file name to read (containing no \\n character) or the input itself as a string (containing at least one \\n), see examples. In both cases, a length 1 character string. A filename may be a URL starting http:// or file://. }
+  \item{sep}{ The separator between columns. Defaults to the first character on line \code{datastart} not in the set [a-zA-Z0-9"+-.]. }
+  \item{sep2}{ The separator \emph{within} columns. Defaults to the first character on line \code{datastart} not in the set [a-zA-Z0-9"+-.<sep>]. }
   \item{nrows}{ The number of rows to read, by default -1 means all. Unlike \code{read.table}, it doesn't help speed to set this to the number of rows in the file (or an estimate), since the number of rows is automatically estimated and is already fast. Only set \code{nrows} if you require the first 10 rows, for example, or are reading the file in chunks. }
-  \item{header}{ Does the first line contain column names? Defaults according to a comparison of field types in rows 1 vs 2.}
+  \item{header}{ Does the first data line contain column names? Defaults according to a comparison of field types in data line 1 vs 2.}
   \item{na.strings}{ A character vector of strings to convert to \code{NA_character_}. By default, ",," is read as a blank string (\code{""}) and ",NA," is read as \code{NA_character_}. Typical values might be \code{na.strings=NULL} or perhaps \code{na.strings=c("NA","N/A","")}. }
   \item{stringsAsFactors}{ Convert all character columns to factors? }
   \item{verbose}{ Be chatty? }
+  \item{autostart}{ Any line number within the region of machine readable delimited text, by default 30 (or the last line if the file is shorter). If this line is empty (e.g. short files with trailing blank lines) then the last non empty line before that is found. This line is then used to auto detect \code{sep}, \code{sep2}, the number of columns and guess at the column types (although more rows are used to make a better guess, see Details). We invisage it to be extremely unlikely that \code{autostart} should ever need to be changed. }
 }
 \details{
 
-character columns can be single quoted (') or double quoted ("), or not quoted at all. Spaces and other whitepace (anything other than sep and newline) may appear in an unquoted character field, provided the field doesn't contain sep itself. Therefore quoting character values is only required if sep itself appears in the string value. Quoting may also be used to signify that numeric data should be read as text (or the column type can be overriden using colClasses). This is automatically detected and no arguments are needed to control it. If a character value starts " it should end with "; it may then include sep and '. If a character value starts ' it should end with '; it may then include sep and ". Just like the R parser. This is on a per field basis; i.e., an entire column need not follow consistent quoting. Just a few cells (perhaps just those that contain sep) may only be quoted.
+Once the separator is detected, the number of columns is determined. Then the file is searched backwards from \code{autostart} until a row is found that doesn't have that number of columns, or the start of file is reached. Thus, the first data row is found and any human readable banners are automatically skipped, if present. Rather like in Excel when you click a cell inside a rectangular region of populated cells with empty rows above, then select AutoFilter. The table region is determined by Excel searching outwards from that cell (in our case, line 30) to find the table edges. The time to do this is utterly negligible, but is reported by \code{verbose=TRUE}, just in case.
+
+Once a good guess is made, the file may of course still contain data of a different type. In this case, the type is bumped and existing data coerced. Unlike read.table when colClasses is supplied; it creates NA in this case, silently.
+
+character columns can be quoted ("), or not quoted at all. Spaces and other whitepace (anything other than sep and newline) may appear in an unquoted character field, provided the field doesn't contain sep itself. Therefore quoting character values is only required if sep itself appears in the string value. Quoting may also be used to signify that numeric data should be read as text (or the column type can be overriden using colClasses). This is automatically detected and no arguments are needed to control it. If a character value starts " it should end with "; it may then include sep and '. If a character value starts ' it should end with '; it may then include sep and ". Just like the R parser. This is on a per field basis; i.e., an entire column need not follow consistent quoting. Just a few cells (perhaps just those that contain sep) may only be quoted.
 
 There is no line length limit, not even a very large one. Since we are encouraging \code{list} columns (i.e. using \code{sep2}), this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. A single pass approach is used.
 
@@ -29,7 +34,8 @@ The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \c
 
 There is no need for a \code{skip} argument. Once the format and number of fields is detected from lines 30-39, the first row in the file containing a conformant number of fields is deemed to be the header row. Thus, human readable banner rows are automatically skipped. This feature can be useful if you are loading many files which may not all have consistently sized banners.
 
-These features are for fostering friendliness. Facilitated by a fair farthingsworth of (far from fatuitous) finagling. The fread function's first letter is f; for fast, friendly, file or finagle.
+Finally, these few features are for fostering friendliness. Facilitated by a fair farthingsworth of (far from flaky, flawed
+or fatuous) finagling. Furthermore, it's frustrating to forget but fear not, fortunately the (free) fread function's first facet is f; for fast, friendly, file or finagle.
 
 }
 \value{
@@ -45,7 +51,11 @@ Background :\cr
 \url{http://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
 \url{http://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}\cr
 \url{http://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces}\cr
-\url{http://stackoverflow.com/questions/11782084/reading-in-large-text-files-in-r}
+\url{http://stackoverflow.com/questions/11782084/reading-in-large-text-files-in-r}\cr
+\url{http://stackoverflow.com/questions/45972/mmap-vs-reading-blocks}\cr
+\url{http://stackoverflow.com/questions/258091/when-should-i-use-mmap-for-file-access}\cr
+\url{http://stackoverflow.com/a/9818473/403310}\cr
+\url{http://stackoverflow.com/questions/9608950/reading-huge-files-using-memory-mapped-files}
 
 finagler = "to get or achieve by guile or manipulation" \url{http://dictionary.reference.com/browse/finagler}
 }
@@ -82,7 +92,7 @@ system.time(DF2 <- read.table("test.csv",header=TRUE,sep=",",quote="",  # 10 sec
                  "character","numeric","integer")))
 
 require(data.table)
-system.time(DT <- fread("test.csv"))                                    #  5 sec (faster and friendlier)
+system.time(DT <- fread("test.csv"))                                    #  3 sec (faster and friendlier)
 
 require(sqldf)
 system.time(SQLDF <- read.csv.sql("test.csv",dbname=NULL))              # 20 sec (friendly too, good defaults)
@@ -106,8 +116,8 @@ system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",         # 100-20
     quote="",stringsAsFactors=FALSE,comment.char="",nrows=1e7,                     
     colClasses=c("integer","integer","numeric",
                  "character","numeric","integer")))
-                 
-system.time(DT <- fread("testbig.csv"))                                 # 50 sec (consistently)
+
+system.time(DT <- fread("testbig.csv"))                                 # 30-40 sec
 all(mapply(all.equal, DF, DT))                                          # TRUE
 
 
@@ -117,15 +127,26 @@ all(mapply(all.equal, DF, DT))                                          # TRUE
 download.file("http://stat-computing.org/dataexpo/2009/2008.csv.bz2",
               destfile="2008.csv.bz2")                                  # 109MB (compressed)
 system("bunzip2 2008.csv.bz2")                                          # 658MB (7,009,728 rows x 29 columns)
-system.time(DT <- fread("2008.csv"))                                    # 90 secs
+colClasses = sapply(read.csv("2008.csv",nrows=100),class)               # 4 character, 24 integer, 1 logical. Incorrect.
+colClasses = sapply(read.csv("2008.csv",nrows=200),class)               # 5 character, 24 integer. Correct. Might have missed data
+system.time(DF <- read.table("2008.csv", header=TRUE, sep=",",          
+    quote="",stringsAsFactors=FALSE,comment.char="",nrows=7009730,      
+    colClasses=colClasses)                                              # 360 secs
+system.time(DT <- fread("2008.csv"))                                    #  80 secs
 table(sapply(DT,class))                                                 # 5 character and 24 integer columns
 
 
 # Reads URLs directly :
 fread("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
 
-# Reads text input directly (TO DO) :
-# read("...")
+# Reads text input directly :
+fread("A,B\n1,2\n3,4")
+
+# including pasted input :
+fread("A,B
+1,2
+3,4
+")
 
 }
 }

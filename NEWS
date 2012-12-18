@@ -17,13 +17,15 @@ NEW FEATURES
     o   New function fread(), a fast and friendly file reader.
         *  header, skip, nrows, sep and colClasses are all auto detected.
         *  integers>2^31 are detected and read natively as bit64::integer64.
+        *  accepts filenames, URLs and "A,B\n1,2\n3,4" directly
         *  new implementation entirely in C
         *  With a 50MB .csv, 1 million rows x 6 columns :
              read.csv("test.csv")                                        # 30-60 sec (varies)
              read.table("test.csv",<all known tricks and known nrows>)   #    10 sec
-             fread("test.csv")                                           #     5 sec
+             fread("test.csv")                                           #     3 sec
         * Airline data: 658MB csv (7 million rows x 29 columns)
-             fread("2008.csv")                                           #    91 sec
+             read.table("2008.csv",<all known tricks and known nrows>)   #   360 sec
+             fread("2008.csv")                                           #    80 sec
         See ?fread. Many thanks to Chris Neff and Garrett See for ideas, discussions
         and beta testing.
 
@@ -42,7 +44,7 @@ BUG FIXES
 
 NOTES
 
-    o   There are now 900 raw tests, as reported by test.data.table().
+    o   There are now 907 raw tests, as reported by test.data.table().
 
 
         *********************************************
