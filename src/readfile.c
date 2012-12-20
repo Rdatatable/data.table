@@ -16,12 +16,11 @@
 #include <unistd.h>  // for close()
 #endif
 
-
 /*****
 TO DO:
-Stroll speedup
-Whitespace at the end of the line before eol should be ignored, but warn about non white unprotected by comment char (currently skipped)
-Warning about any blank lines skipped in the middle
+Test Garrett's two files again.
+Warn about non whitespace (unprotected by comment.char) after the last column on any line (currently skipped silently)
+Warning about any blank lines skipped in the middle, and any imperfect number of columns
 Check and correct nline in error messages
 Go through fread tests and remove all all.equal()s 
 Allow logical columns (currently read as character). T/True/TRUE/true are allowed in main/src/util.c
@@ -61,6 +60,35 @@ static int countfields()
     }
     if (protected) error("Unbalanced \" observed on this line: %.*s\n", lch-ch, ch);
     return(ncol);
+}
+
+long long Strtoll()
+{
+    // Specialized stroll that :
+    // i) skips leading isspace(), too, but other than field separator and eol (e.g. doesn't skip over leading sep when '\t')
+    // ii) has fewer branches for speed as no need for non decimal base
+    // iii) updates global ch directly saving arguments
+    // iv) is safe for mmap which can't be \0 terminated on Windows (but can be on unix and mac)
+    // v) fails if whole field isn't consumed such as "3.14" (strtol consumes the 3 and stops)
+    // ... all without needing to read into a buffer (reads the mmap directly)
+    char *lch; int sign=1; long long acc=0;
+    while (ch<eof && isspace(*ch) && *ch!=sep && *ch!=eol) ch++;   // yes we do want to consume with ch not lch (e.g. FUT1206.txt)
+    lch=ch;
+    if (*lch=='+') { sign=1; lch++; }
+    else if (*lch=='-') { sign=-1; lch++; }
+    char *start = lch;
+    while (lch<eof && '0'<=*lch && *lch<='9') {
+        acc *= 10;
+        acc += *lch-'0';
+        lch++;
+    }
+    int len = lch-start;
+    if (len==0 || len>18 ||   // 18 = 2^63 width. If wider the *= above has overflowed (ok), catch now though
+        (lch!=eof && *lch!=sep && *lch!=eol)) {    // whole field should be consumed
+        errno=1; return(0);
+    }
+    ch = lch;   // update global ch
+    return(sign*acc);
 }
 
 SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart)
@@ -216,20 +244,12 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
             else if (ch<eof-1 && *ch=='N' && *(ch+1)=='A' && (ch+2==eof || *(ch+2)==sep || *(ch+2)==eol)) ch+=2; // skip ',NA,', doesn't help to detect type
             else switch (type[i]) {
             case 0:  // integer
-                errno=0; ch2=ch;
-                u.l = strtoll(ch, &ch2, 10);
-                if (ch2>ch && (ch2==eof || *ch2==sep || *ch2==eol) && INT_MIN<=u.l && u.l<=INT_MAX && errno==0) {
-                    ch=ch2;
-                    break;
-                }
+                errno=0; u.l = Strtoll();
+                if (errno==0 && INT_MIN<=u.l && u.l<=INT_MAX) break;
                 type[i]++;
             case 1:  // integer64
-                errno=0; ch2=ch;
-                u.l = strtoll(ch, &ch2, 10);
-                if (ch2>ch && (ch2==eof || *ch2==sep || *ch2==eol) && errno==0) {
-                    ch=ch2;
-                    break;
-                }
+                errno=0; u.l = Strtoll();
+                if (errno==0) break;
                 type[i]++;
             case 2:  // double
                 errno=0; ch2=ch;
@@ -379,39 +399,30 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         if (ch<eof && *ch==eol) { ch+=eolLen; nline++; continue; }
         ch = pos;                                 //  back to start in case first column is character with leading space to be retained
         for (j=0;j<ncol;j++) {
-            //Rprintf("Field %d: '%.10s'\n", j+1, ch);
+            // Rprintf("Field %d: '%.10s'\n", j+1, ch);
             thiscol = VECTOR_ELT(ans, j);
             switch (type[j]) {
             case 0: // integer
-                errno=0; ch2=ch;
-                while (ch<eof && isspace(*ch) && *ch!=sep && *ch!=eol) ch++; // TO DO: remove. Only because stroll* skips leading isspace (could include sep)
-                if (ch==eof || *ch==sep || *ch==eol) ch2=ch;
-                else {ch2=ch; u.l = strtoll(ch, &ch2, 10);}
-                if (ch2>ch && (ch2==eof || *ch2==sep || *ch2==eol) && INT_MIN<=u.l && u.l<=INT_MAX && errno==0) {
-                    // TO DO: do we really need the check on ch2?  sep can't be true unless ch2 has moved?
+                errno=0; u.l = Strtoll();
+                if (errno==0 && INT_MIN<=u.l && u.l<=INT_MAX) {
                     INTEGER(thiscol)[i] = (int)u.l;
-                    ch=ch2;
-                    break;   // field now done, we prefer fully populated files
+                    break;   // done with this field, Strtoll already moved ch for us to sit on next sep or eol
                 }
-                isna=FALSE;
-                if (ch==eof || *ch==sep || *ch==eol || (isna=(ch<eof-1 && *ch=='N' && *(ch+1)=='A' && (ch+2==eof || *(ch+2)==sep || *(ch+2)==eol)))) {
+                isna=FALSE; if (ch==eof || *ch==sep || *ch==eol || 
+                   (isna=(ch<eof-1 && *ch=='N' && *(ch+1)=='A' && (ch+2==eof || *(ch+2)==sep || *(ch+2)==eol)))) {
                     INTEGER(thiscol)[i] = NA_INTEGER;
                     ch+=2*isna;
                     break;
                 }  
             case 1: // bit64::integer64
-                errno=0; ch2=ch;
-                while (ch<eof && isspace(*ch) && *ch!=sep && *ch!=eol) ch++; // TO DO: remove. Only because stroll* skips leading isspace (could include sep)
-                if (ch==eof || *ch==sep || *ch==eol) ch2=ch;
-                else {ch2=ch; u.l = strtoll(ch, &ch2, 10);}   // wasteful repeated call on fall through, but only once (ever, per column) on bump.
-                if (ch2>ch && (ch2==eof || *ch2==sep || *ch2==eol) && errno==0) {
+                errno=0; u.l = Strtoll();
+                if (errno==0) {
                     if (type[j]==0) { error("Coercing int to integer64 needs to be implemented"); type[i]=1; }
                     REAL(thiscol)[i] = u.d;
-                    ch=ch2;
                     break;
                 }
-                isna=FALSE;
-                if (ch==eof || *ch==sep || *ch==eol || (isna=(ch<eof-1 && *ch=='N' && *(ch+1)=='A' && (ch+2==eof || *(ch+2)==sep || *(ch+2)==eol)))) {
+                isna=FALSE; if (ch==eof || *ch==sep || *ch==eol || 
+                   (isna=(ch<eof-1 && *ch=='N' && *(ch+1)=='A' && (ch+2==eof || *(ch+2)==sep || *(ch+2)==eol)))) {
                     REAL(thiscol)[i] = NA_REAL;
                     ch+=2*isna;
                     break;
