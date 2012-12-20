@@ -79,7 +79,7 @@ test = function(num,x,y=NULL,error,warning,output) {
             if (length(attr(x,"row.names"))) setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
             if (length(attr(y,"row.names"))) setattr(yc,"row.names",NULL)
             if (identical(xc,yc) && identical(key(x),key(y))) return()  # check key too because := might have cleared it
-            if (all.equal(xc,yc) && identical(key(x),key(y))) return()
+            if (isTRUE(all.equal(xc,yc)) && identical(key(x),key(y))) return()
         }
         if (is.factor(x) && is.factor(y)) {
             x = factor(x)
@@ -89,12 +89,12 @@ test = function(num,x,y=NULL,error,warning,output) {
     }
     cat("Test",num,"ran without errors but failed check:\n")
     if (is.data.table(x)) {
-        print(head(x))
+        print(head(x,2));print(tail(x,2))
         cat("Key: ",paste(key(x),collapse=","),"\n")
         cat("Types: ",paste(sapply(x,class),collapse=","),"\n")
     } else print(x)
     if (is.data.table(y)) {
-        print(head(y))
+        print(head(y,2));print(tail(y,2))
         cat("Key: ",paste(key(y),collapse=","),"\n")
         cat("Types: ",paste(sapply(y,class),collapse=","),"\n")
     } else print(y)
@@ -2462,26 +2462,28 @@ cat("AB,CDE",file=f<-tempfile()); test(890, fread(f), data.table(AB=character(),
 test(891, fread("AB,CDE\n"), data.table(AB=character(),CDE=character()))
 cat("3.14",file=f<-tempfile()); test(892, fread(f), data.table(V1=3.14)); unlink(f)
 cat("A,3",file=f<-tempfile()); test(893, fread(f), data.table(V1="A",V2=3L)); unlink(f)
+if (.Platform$OS.type=="unix") test(893.5, fread("A,B\r\n\r\n"), data.table(A=character(),B=character()))
 for (nc in c(0,1,2)) {   # 0 means all cols here
 for (nr in c(0,1,2,3,5,10,18,19,20,21,22,28,29,30,31,32,38,39,40,41,42)) {  # 30 and 40 are trigger points for auto skip
+for (eol in if (.Platform$OS.type=="unix") c("\n","\r\n") else "\n") {
     headDT = head(DT,nr)[,seq_len(if (nc==0) ncol(DT) else nc),with=FALSE]
     if (nr==0) for (j in seq_len(ncol(headDT))) set(headDT,j=j,value=character())  # when read back in empty cols are type character
     f = tempfile()
     cat(names(headDT),sep=",",file=f)  # no \n at the end here
     for (i in seq_len(nr)) {
-        cat("\n",file=f,append=TRUE)
+        cat(eol,file=f,append=TRUE)  # on unix we simulate windows too. on windows \n will write \r\n (and \r\n will write \r\r\n)
         write.table(headDT[i],file=f,quote=FALSE,sep=",",eol="",row.names=FALSE,col.names=FALSE,append=TRUE)
         # loop approach is to get no \n after last line
     }
     test(894+nr/100+nc/1000, fread(f), headDT)
     file.copy(f,f2<-tempfile()); unlink(f)    # again trying to work around apparent issue on Windows
-    cat("\n",file=f2,append=TRUE)   # now a 'normal' file ending with \n
+    cat(eol,file=f2,append=TRUE)   # now a 'normal' file ending with \n
     test(895+nr/100+nc/1000, fread(f2), headDT)
     file.copy(f2,f3<-tempfile()); unlink(f2)
-    cat("\n",file=f3,append=TRUE)   # extra \n should be ignored
+    cat(eol,file=f3,append=TRUE)   # extra \n should be ignored
     test(896+nr/100+nc/1000, fread(f3), headDT)
     unlink(f3)
-}}
+}}}
 if ("package:bit64" %in% search()) {
     DT = data.table( a=sample(1:1000,n,replace=TRUE),
                      b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
