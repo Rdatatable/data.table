@@ -19,14 +19,13 @@
 
 /*****
 TO DO:
-893.5 should be two empty integer cols not character
 Stroll speedup
-* Save continual ch<eof checking throughout. Last line might still be tricky if last line has no eol.
-* Whitespace at the end of the line before eol should be ignored, and warn about non white unprotected by comment char
-* Warning about any blank lines skipped in the middle.
+Whitespace at the end of the line before eol should be ignored, but warn about non white unprotected by comment char (currently skipped)
+Warning about any blank lines skipped in the middle
 Check and correct nline in error messages
 Go through fread tests and remove all all.equal()s 
 Allow logical columns (currently read as character). T/True/TRUE/true are allowed in main/src/util.c
+893.5 should be two empty integer cols not character
 ---
 Add a way to pick out particular columns only, by name or position.
 A way for user to override type, for particular columns only.
@@ -34,6 +33,7 @@ Detect and coerce dates and times. By searching for - and :, and dateTtime etc, 
 CoerceVector should only coerce items read so far.
 Read middle and end to check types
 A few TO DO inline in the code, including some speed fine tuning
+Save repeated ch<eof checking in main read step. Last line might still be tricky if last line has no eol.
 test using at least "grep read.table ...Rtrunk/tests/
 Add a mapChunk argument, by default 10% of getsysinfo.ram. Entire file when 0 (if users knowns file will be reread a few times). 
 Secondary separator for list() columns, such as columns 11 and 12 in BED.
@@ -506,7 +506,7 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         Rprintf("%8.3fs (%3.0f%%) Format detection\n", tFormat-tMap, 100*(tFormat-tMap)/tot);
         Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", tRowCount-tFormat, 100*(tRowCount-tFormat)/tot);
         Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (xMB) in RAM\n", tAlloc-tRowCount, 100*(tAlloc-tRowCount)/tot, nrow, ncol);
-        Rprintf("%8.3fs (%3.0f%%) Reading data\n", tRead-tRowCount-tCoerce, 100*(tRead-tRowCount-tCoerce)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Reading data\n", tRead-tAlloc-tCoerce, 100*(tRead-tAlloc-tCoerce)/tot);
         Rprintf("%8.3fs (%3.0f%%) Bumping column type midread and coercing data already read\n", tCoerce, 100*tCoerce/tot);
         Rprintf("%8.3fs (%3.0f%%) Changing na.strings to NA\n", tn-tRead, 100*(tn-tRead)/tot);
         Rprintf("%8.3fs        Total\n", tot);
