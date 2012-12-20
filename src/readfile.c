@@ -70,7 +70,7 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
     int thistype;
     char *fnam=NULL, *pos, *pos1, *mmp, *ch2;
     Rboolean verbose=LOGICAL(verbosearg)[0], header=LOGICAL(headerarg)[0], allchar;
-    double t0 = currentTime(), tMap;
+    double t0 = currentTime();
     size_t filesize;
 #ifdef WIN32
     HANDLE hFile=0;
@@ -91,7 +91,6 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         filesize = strlen(mmp);
         eof = mmp+filesize;
         if (*eof!='\0') error("Internal error: last byte of character input isn't \\0");
-        tMap = currentTime();
     } else {
         fnam = ch;
 #ifndef WIN32
@@ -111,7 +110,7 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         dwFileSize=GetFileSize(hFile,NULL);
         if (dwFileSize==0) { CloseHandle(hFile); error("File is empty: %s", fnam); }
         filesize = (size_t)dwFileSize;
-        hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, dwFileSize, NULL); // dwFileSize+1 not allowed here, unlike mmap where +1 is zero'd
+        hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL); // dwFileSize+1 not allowed here, unlike mmap where +1 is zero'd
         if (hMap==NULL) { CloseHandle(hFile); error("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
         mmp = (char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,dwFileSize);
         if (mmp == NULL) {
@@ -129,12 +128,12 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
 #ifndef WIN32
         if (madvise(mmp, filesize+1, MADV_SEQUENTIAL | MADV_WILLNEED) == -1) warning("Mapped file ok but madvise failed");
 #endif
-        tMap = currentTime();
-        if (verbose) Rprintf("Memory mapped file ok in %.3f wall clock seconds\n", tMap-t0);
         if (EOF > -1) error("Internal error. EOF is not -1 or less\n");
         if (mmp[filesize-1] < 0) error("mmap'd region has EOF at the end");
         eof = mmp+filesize;  // byte after last byte of file.  Never dereference eof as it's not mapped.
     }
+    double tMap = currentTime();
+    
     // ********************************************************************************************
     // Auto detect eol, first eol where there are two (i.e. CRLF)
     // ********************************************************************************************
@@ -315,6 +314,7 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         if (ch<eof && *ch==eol) ch+=eolLen;  // now on first data row (row after column names)
         pos = ch;
     }
+    double tFormat = currentTime();
     
     // ********************************************************************************************
     // Count number of rows
@@ -340,14 +340,15 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
             // TO DO Warn about any non blank lines with incorrect number of fields being removed.
         }
         nrow-=i;
-        if (verbose) Rprintf("Subtracted %d for last eol, plus any trailing empty lines, leaving %d data rows\n",i,nrow);
+        if (verbose) Rprintf("Subtracted %d for last eol and any trailing empty lines, leaving %d data rows\n",i,nrow);
     }
     i = INTEGER(nrowsarg)[0];
     if (i>-1 && i<nrow) {
         nrow = i;
         if (verbose) Rprintf("nrow limited to nrows passed in (%d)\n", nrow);
     }
-    ch = pos;  
+    double tRowCount = currentTime();
+    ch = pos;
 
     // ********************************************************************************************
     // Allocate columns for known nrow
@@ -363,17 +364,18 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         SET_TRUELENGTH(thiscol, nrow);
         SET_VECTOR_ELT(ans,i,thiscol);
     }
+    double tAlloc = currentTime();
     
     // ********************************************************************************************
     // Now read the data
     // ********************************************************************************************
-    double t1=currentTime(), tCoerce0, tCoerce=0.0;
+    double tCoerce0, tCoerce=0.0;
     double nexttime = t0+2;  // start printing % done after a few seconds, if doesn't appear then you know mmap is taking a while
     Rboolean isna;
     ch = pos;   // back to start of first data row
     for (i=0; i<nrow; i++) {
         //Rprintf("Row %d : %.10s\n", i+1, ch);
-        while (ch<eof && isspace(*ch) && *ch!=sep && *ch!=eol) ch++;       // skip over any empty lines.
+        while (ch<eof && isspace(*ch) && *ch!=sep && *ch!=eol) ch++;    // skip over any empty lines. TO DO: remove this, leave to fall through
         if (ch<eof && *ch==eol) { ch+=eolLen; nline++; continue; }
         ch = pos;                                 //  back to start in case first column is character with leading space to be retained
         for (j=0;j<ncol;j++) {
@@ -475,7 +477,7 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         }
     }
     Rprintf("    \r");
-    double t2=currentTime();
+    double tRead = currentTime();
     for (i=0; i<ncol; i++) SETLENGTH(VECTOR_ELT(ans,i), nrow);
     for (k=0; k<length(nastrings); k++) {
         thisstr = STRING_ELT(nastrings,k);
@@ -501,12 +503,12 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
     if (verbose) {
         double tn = currentTime(), tot=tn-t0;
         Rprintf("%8.3fs (%3.0f%%) Memory map (quicker if you rerun)\n", tMap-t0, 100*(tMap-t0)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Format detection\n", t1-tMap, 100*(t1-tMap)/tot);
-        //Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", .......);
-        //Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (%dMB) in RAM\n", ....., nrow, ncol);
-        Rprintf("%8.3fs (%3.0f%%) Reading data\n", t2-t1-tCoerce, 100*(t2-t1-tCoerce)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Format detection\n", tFormat-tMap, 100*(tFormat-tMap)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", tRowCount-tFormat, 100*(tRowCount-tFormat)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (xMB) in RAM\n", tAlloc-tRowCount, 100*(tAlloc-tRowCount)/tot, nrow, ncol);
+        Rprintf("%8.3fs (%3.0f%%) Reading data\n", tRead-tRowCount-tCoerce, 100*(tRead-tRowCount-tCoerce)/tot);
         Rprintf("%8.3fs (%3.0f%%) Bumping column type midread and coercing data already read\n", tCoerce, 100*tCoerce/tot);
-        Rprintf("%8.3fs (%3.0f%%) Changing na.strings to NA\n", tn-t2, 100*(tn-t2)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Changing na.strings to NA\n", tn-tRead, 100*(tn-tRead)/tot);
         Rprintf("%8.3fs        Total\n", tot);
     }
     return(ans);
