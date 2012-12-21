@@ -19,6 +19,7 @@
 /*****
 TO DO:
 Test Garrett's two files again.
+print.data.table nrow tidy up. Change test() to be print(DT,topn=2)
 Warn about non whitespace (unprotected by comment.char) after the last column on any line (currently skipped silently)
 Warning about any blank lines skipped in the middle, and any imperfect number of columns
 Check and correct nline in error messages
@@ -92,7 +93,7 @@ long long Strtoll()
         return(sign*acc);
     }
     if ((len==0 && (lch==eof || *lch==sep || *lch==eol)) ||
-        (lch<eof-1 && *lch++=='N' && *lch++=='A' && ((lch==eof) || *lch==sep || *lch==eol))) {
+        (lch<eof-1 && *lch++=='N' && *lch++=='A' && (lch==eof || *lch==sep || *lch==eol))) {
         errno=1;  // blank or "NA,"  =>  NA
         ch=lch;   // advance over the blanks or NA
     } else errno=2;   // invalid integer such as "3.14" or "123ABC,". Need to bump type.
@@ -362,16 +363,15 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         // estn = (R_len_t)ceil(1.05 * flines * (filesize-(pos-mmp)) / (pos2-pos1)) +5;  // +5 for small files
         // if (verbose) Rprintf("Estimated nrows: %d ( 1.05*%d*(%ld-(%ld-%ld))/(%ld-%ld) )\n",estn,flines,filesize,pos,mmp,pos2,pos1);
         if (ch!=eof) error("Internal error: ch!=eof after counting eol");
-        i=0; Rboolean blank=TRUE;
-        while (blank && ch>pos) {   // subtract blank lines at the end from the row count
-            while (ch>pos && *--ch!=eol2);
-            if (ch>pos) ch++;
-            i += (blank=(countfields()!=ncol));
-            ch -= eolLen;
-            // TO DO Warn about any non blank lines with incorrect number of fields being removed.
+        i=0; int nblank=0;
+        while (i==0 && ch>pos) {   // subtract blank lines at the end from the row count
+            i=0; while (ch>pos && *--ch!=eol2) i += !isspace(*ch);
+            nblank += (i==0);
+            ch -= eolLen-1;
         }
-        nrow-=i;
-        if (verbose) Rprintf("Subtracted %d for last eol and any trailing empty lines, leaving %d data rows\n",i,nrow);
+        // if (nblank==0) There is non white after the last eol. Ok and dealt with.
+        nrow-=nblank;
+        if (verbose) Rprintf("Subtracted %d for last eol and any trailing empty lines, leaving %d data rows\n",nblank,nrow);
     }
     i = INTEGER(nrowsarg)[0];
     if (i>-1 && i<nrow) {
