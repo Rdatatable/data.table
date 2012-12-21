@@ -2437,8 +2437,8 @@ DT[2,e:=+Inf]
 DT[3,e:=-Inf]
 DT[4,e:=NaN]  # write.table writes NaN as NA, though, and all.equal considers NaN==NA. read would read NaN as NaN if "NaN" was in file
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)  
-test(880, all.equal(fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE))))
-test(881, all.equal(fread(f), DT))
+test(880, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
+test(881, fread(f), DT)
 DT[3,d:="NA"]
 test(882, all.equal(fread(f,na.strings=NULL), DT))
 DT[3,d:=NA_character_]

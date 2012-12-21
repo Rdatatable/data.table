@@ -37,6 +37,8 @@ test using at least "grep read.table ...Rtrunk/tests/
 Add a mapChunk argument, by default 10% of getsysinfo.ram. Entire file when 0 (if users knowns file will be reread a few times). 
 Secondary separator for list() columns, such as columns 11 and 12 in BED.
 Allow 2 character separators? Some companies have internal formats that do that.
+If nrow is small, say 20, then it shouldn't mmap the entire file (that's probably why user just wants to look at head)
+More natural to start format detection on row 1 after the header (if any). autostart at 30 makes sense, but not so much format detection too.
 *****/
 
 char *ch, sep, sep2, eol, eol2, *eof;
@@ -65,30 +67,36 @@ static int countfields()
 long long Strtoll()
 {
     // Specialized stroll that :
-    // i) skips leading isspace(), too, but other than field separator and eol (e.g. doesn't skip over leading sep when '\t')
+    // i) skips leading isspace(), too, but other than field separator and eol (e.g. '\t' and ' \t' in FUT1206.txt)
     // ii) has fewer branches for speed as no need for non decimal base
     // iii) updates global ch directly saving arguments
-    // iv) is safe for mmap which can't be \0 terminated on Windows (but can be on unix and mac)
+    // iv) safe for mmap which can't be \0 terminated on Windows (but can be on unix and mac)
     // v) fails if whole field isn't consumed such as "3.14" (strtol consumes the 3 and stops)
-    // ... all without needing to read into a buffer (reads the mmap directly)
-    char *lch; int sign=1; long long acc=0;
-    while (ch<eof && isspace(*ch) && *ch!=sep && *ch!=eol) ch++;   // yes we do want to consume with ch not lch (e.g. FUT1206.txt)
-    lch=ch;
+    // ... all without needing to read into a buffer at all (reads the mmap directly)
+    char *lch=ch; int sign=1; long long acc=0;
+    while (lch<eof && isspace(*lch) && *lch!=sep && *lch!=eol) lch++;
+    char *start = lch;   // start of [+-][0-9]+
     if (*lch=='+') { sign=1; lch++; }
     else if (*lch=='-') { sign=-1; lch++; }
-    char *start = lch;
-    while (lch<eof && '0'<=*lch && *lch<='9') {
+    while (lch<eof && '0'<=*lch && *lch<='9') {   // TO DO can remove lch<eof when last row is specialized in case of no final eol
         acc *= 10;
         acc += *lch-'0';
         lch++;
     }
     int len = lch-start;
-    if (len==0 || len>18 ||   // 18 = 2^63 width. If wider the *= above has overflowed (ok), catch now though
-        (lch!=eof && *lch!=sep && *lch!=eol)) {    // whole field should be consumed
-        errno=1; return(0);
+    //Rprintf("Strtoll field '%.*s' has len %d\n", lch-ch+1, ch, len);
+    if (len>0 && len<19 && // 18 = 2^63 width. If wider, *= above overflowed (ok). Including [+-] in len<19 is for len==0 NA check.
+        (lch==eof || *lch==sep || *lch==eol)) {
+        ch=lch;    // advance global ch only if field fully consumed perfectly
+        errno=0;
+        return(sign*acc);
     }
-    ch = lch;   // update global ch
-    return(sign*acc);
+    if ((len==0 && (lch==eof || *lch==sep || *lch==eol)) ||
+        (lch<eof-1 && *lch++=='N' && *lch++=='A' && ((lch==eof) || *lch==sep || *lch==eol))) {
+        errno=1;  // blank or "NA,"  =>  NA
+        ch=lch;   // advance over the blanks or NA
+    } else errno=2;   // invalid integer such as "3.14" or "123ABC,". Need to bump type.
+    return(0);
 }
 
 SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart)
@@ -239,18 +247,21 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         flines++;
         for (i=0;i<ncol;i++) {
             //Rprintf("Field %d: '%.20s'\n", i+1, ch);
-            while (ch<eof && isblank(*ch) && *ch!=sep) ch++;  // Only needed because strto* skip leading isspace (e.g. " \t123")
+            while (ch<eof && isblank(*ch) && *ch!=sep && *ch!=eol) ch++;  
             if (ch==eof || *ch==sep || *ch==eol) {}   // skip empty field (",,")
             else if (ch<eof-1 && *ch=='N' && *(ch+1)=='A' && (ch+2==eof || *(ch+2)==sep || *(ch+2)==eol)) ch+=2; // skip ',NA,', doesn't help to detect type
+            // TO DO: tidy logic above now that Strtoll is specialized.
             else switch (type[i]) {
             case 0:  // integer
-                errno=0; u.l = Strtoll();
+                ch2=ch;
+                u.l = Strtoll();
                 if (errno==0 && INT_MIN<=u.l && u.l<=INT_MAX) break;
-                type[i]++;
+                type[i]++; ch=ch2; // if number was valid but too big then Strtoll will have moved ch on, so ch=ch2 restarts this field
             case 1:  // integer64
-                errno=0; u.l = Strtoll();
+                errno=0; ch2=ch;
+                u.l = Strtoll();
                 if (errno==0) break;
-                type[i]++;
+                type[i]++; ch=ch2;
             case 2:  // double
                 errno=0; ch2=ch;
                 u.d = strtod(ch, &ch2);
@@ -399,32 +410,28 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         if (ch<eof && *ch==eol) { ch+=eolLen; nline++; continue; }
         ch = pos;                                 //  back to start in case first column is character with leading space to be retained
         for (j=0;j<ncol;j++) {
-            // Rprintf("Field %d: '%.10s'\n", j+1, ch);
+            //Rprintf("Field %d: '%.10s'\n", j+1, ch);
             thiscol = VECTOR_ELT(ans, j);
             switch (type[j]) {
             case 0: // integer
-                errno=0; u.l = Strtoll();
+                ch2=ch;
+                u.l = Strtoll();
                 if (errno==0 && INT_MIN<=u.l && u.l<=INT_MAX) {
                     INTEGER(thiscol)[i] = (int)u.l;
                     break;   // done with this field, Strtoll already moved ch for us to sit on next sep or eol
-                }
-                isna=FALSE; if (ch==eof || *ch==sep || *ch==eol || 
-                   (isna=(ch<eof-1 && *ch=='N' && *(ch+1)=='A' && (ch+2==eof || *(ch+2)==sep || *(ch+2)==eol)))) {
+                } else if (errno==1) {   // TO DO: remove this brach by letting Strtoll return NA_INTEGER
                     INTEGER(thiscol)[i] = NA_INTEGER;
-                    ch+=2*isna;
                     break;
-                }  
+                }
+                ch=ch2;  // moves ch back ready for bump to case 1 repeat in case Strtoll was ok but just too big
             case 1: // bit64::integer64
-                errno=0; u.l = Strtoll();
+                u.l = Strtoll();
                 if (errno==0) {
                     if (type[j]==0) { error("Coercing int to integer64 needs to be implemented"); type[i]=1; }
                     REAL(thiscol)[i] = u.d;
                     break;
-                }
-                isna=FALSE; if (ch==eof || *ch==sep || *ch==eol || 
-                   (isna=(ch<eof-1 && *ch=='N' && *(ch+1)=='A' && (ch+2==eof || *(ch+2)==sep || *(ch+2)==eol)))) {
+                } else if (errno==1) {
                     REAL(thiscol)[i] = NA_REAL;
-                    ch+=2*isna;
                     break;
                 }
             case 2: // double
