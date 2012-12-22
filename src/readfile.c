@@ -65,7 +65,7 @@ static int countfields()
     return(ncol);
 }
 
-long long Strtoll()
+static inline long long Strtoll()
 {
     // Specialized stroll that :
     // i) skips leading isspace(), too, but other than field separator and eol (e.g. '\t' and ' \t' in FUT1206.txt)
@@ -137,7 +137,11 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         if (fstat(fd,&stat_buf) == -1) {close(fd); error("Opened file ok but couldn't obtain file size: %s", fnam);}
         filesize = stat_buf.st_size;
         if (filesize==0) {close(fd); error("File is empty: %s", fnam);}
+#ifdef MAP_POPULATE
         mmp = (char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);    // TO DO?: MAP_HUGETLB
+#else
+        mmp = (char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);    // for Mac
+#endif
         if (mmp == MAP_FAILED) {
             close(fd);
 #else
@@ -483,18 +487,15 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
         while (ch<eof && *ch!=eol) ch++; // discard after end of line, but before \n. TO DO: warn about uncommented text here
         if (ch<eof && *ch==eol) ch+=eolLen;
         pos = ch;  // start of line position only needed to include the whole line in any error message
-        //Rprintf("Start of next line '%.10s'\n", ch);
-        //if (++nrow == estn) {
-        //    if (INTEGER(nrowsarg)[0]==-1) warning("Filled all estn rows (%d), even after estimating 5%% more. Reallocation at this point fairly trivial but not yet implemented. Returning the rows read so far and discarding the rest (if any), for now.", estn);
-        //    break;
-        //} else
         if (i%10000==0 && currentTime()>nexttime) {  // %10000 && saves a little bit (apx 0.2 in 4.9 secs, 5%)
-            Rprintf("%.0f%%\r", 100.0*i/nrow);         // prints straight away (0%10000) if the mmap took a while
+            Rprintf("\r%.0f%%", 100.0*i/nrow);       // prints on first iteration (i%10000==0) if the mmap took a while, is the idea
+            R_FlushConsole();
             nexttime = currentTime()+1;
             R_CheckUserInterrupt();
         }
     }
-    Rprintf("    \r");
+    Rprintf("\r      \r");
+    R_FlushConsole();
     double tRead = currentTime();
     for (i=0; i<ncol; i++) SETLENGTH(VECTOR_ELT(ans,i), nrow);
     for (k=0; k<length(nastrings); k++) {
