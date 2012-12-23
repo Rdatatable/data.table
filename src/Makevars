@@ -1,4 +1,6 @@
 
+PKG_CFLAGS=-O3 -mtune=native
+
 all: $(SHLIB)
 	mv $(SHLIB) datatable$(SHLIB_EXT)
 
