@@ -2514,9 +2514,21 @@ test(905, fread('A,B,C,D\n1,3,foo,5\n2,4,"ba,r,baz",6'), DT[2,C:="ba,r,baz"])
 test(906, fread('A,B,C,D\n1,3,foo,5\n2,4,"ba,\\"r,baz",6'), DT[2,C:='ba,\\"r,baz'])  # \" protected ok, but \ needs taking off too (TO DO)
 test(907, fread("A,B,C\n1,3,\n2,4,\n"), data.table(A=1:2,B=3:4,C=NA_integer_))
 
+test(908, fread("
+Date and Time,Open,High,Low,Close,Volume
+2007/01/01 22:51:00,5683,5683,5673,5673,64
+2007/01/01 22:52:00,5675,5676,5674,5674,17
+2007/01/01 22:53:00,5674,5674,5673,5674,42
+",sep=",")$Open, c(5683L,5675L,5674L))
+
 # Crash bug when RHS is 0 length and := by group, fixed in 1.8.7
 DT = data.table(a=1:3,b=1:6)
-test(908, DT[,newcol:=logical(0),by=a], data.table(a=1:3,b=1:6,newcol=NA))
+test(909, DT[,newcol:=logical(0),by=a], data.table(a=1:3,b=1:6,newcol=NA))
+
+# roll join error when non last join column is factor, #2450
+X = data.table(id=2001:2004, uid=c(1001,1002,1001,1001), state=factor(c('CA','CA','CA','MA')), ts=c(51,52,53,54), key='state,uid,ts')
+Y = data.table(id=3001:3004, uid=c(1001,1003,1002,1001), state=factor(c('CA','CA','CA','CA')), ts=c(51,57,59,59), key='state,uid,ts')
+test(910, X[Y,roll=TRUE], data.table(state=factor('CA'), uid=c(1001,1001,1002,1003), ts=c(51,59,59,57), id=INT(2001,2003,2002,NA), id.1=INT(3001,3004,3003,3002),key='state,uid,ts'))
 
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")

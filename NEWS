@@ -41,6 +41,10 @@ BUG FIXES
     o   := by group with 0 length RHS could crash in some circumstances. Thanks to
         Damien Challet for the reproducible example using obfuscated data and 
         pinpointing the version that regressed. Fixed and test added.
+        
+    o   Error 'attemping to roll join on a factor column' could occur when a non last
+        join column was a factor columnn, #2450. Thanks to Blue Magister for
+        highlighting.
 
 NOTES
 

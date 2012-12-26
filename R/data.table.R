@@ -333,7 +333,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                         # Retain original levels of i's factor columns in factor to factor joins (important when NAs,
                         # see tests 687 and 688).
                     }
-                    if ((roll || rolltolast) && lc==length(leftcols)) stop("Attempting roll join on factor column i.",names(i)[lc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns NA for missing chars in x (rather than some integer greater than existing).
+                    if ((roll || rolltolast) && a==length(leftcols)) stop("Attempting roll join on factor column x.",names(x)[rc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns NA for missing chars in x (rather than some integer greater than existing).
                     newfactor = chmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA_integer_)[i[[lc]]]
                     levels(newfactor) = levels(x[[rc]])
                     class(newfactor) = "factor"

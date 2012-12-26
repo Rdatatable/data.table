@@ -100,7 +100,7 @@ static inline long long Strtoll()
     return(0);
 }
 
-SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart)
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart)
 {
     SEXP thiscol, ans, thisstr;
     R_len_t i, j, k, protecti=0, nrow=0, ncol=0, nline, flines;
@@ -224,17 +224,22 @@ SEXP readfile(SEXP input, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP ve
     // ********************************************************************************************
     // Auto detect separator and number of fields
     // ********************************************************************************************
-    while (ch<eof && isspace(*ch) && *ch!=eol) ch++;             // skip over any leading space at start of row
-    if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!='\"' && *ch!=eol); ch++;} // if first column is protected skip over it, and the closing "
-    while (ch<eof && (isalnum(*ch) || *ch=='\"' || *ch=='.' || *ch=='+' || *ch=='-')) ch++;
-    if (ch==eof) sep=eol; else sep=*ch;
-    if (verbose && sep==eol) Rprintf("Line %d ends before any separator was found. Deducing this is a single column input. Otherwise, please specify 'sep' manually, see ?fread.\n", nline);
+    if (isNull(separg)) {
+        while (ch<eof && isspace(*ch) && *ch!=eol) ch++;             // skip over any leading space at start of row
+        if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!='\"' && *ch!=eol); ch++;} // if first column is protected skip over it, and the closing "
+        while (ch<eof && (isalnum(*ch) || *ch=='\"' || *ch=='.' || *ch=='+' || *ch=='-')) ch++;
+        if (ch==eof) sep=eol; else sep=*ch;
+        if (verbose) {
+            if (sep==eol) Rprintf("Line %d ends before any separator was found. Deducing this is a single column input. Otherwise, please specify 'sep' manually, see ?fread.\n", nline);
+            else if (sep=='\t') Rprintf("Detected sep as '\\t'\n"); else Rprintf("Detected sep as '%c'\n", sep);
+        }
+    } else {
+        sep = CHAR(STRING_ELT(separg,0))[0];
+        if (verbose) { if (sep=='\t') Rprintf("Using sep supplied '\\t'\n"); else Rprintf("Using sep supplied '%c'\n", sep); }
+    }
     ch = pos;                                                    // back to beginning of line
     ncol = countfields();
-    if (verbose && sep!=eol) {
-        if (sep=='\t') Rprintf("Detected sep as '\\t' and %d columns ('\\t' will be printed as '_' below)\n", ncol);
-        else Rprintf("Detected sep as '%c' and %d columns\n", sep, ncol);
-    }
+    if (verbose && sep!=eol) Rprintf("Found %d columns\n",ncol);
     
     // ********************************************************************************************
     // Make informed guess at column types using autostart onwards
