@@ -26,8 +26,8 @@ NEW FEATURES
         * airline data: 658MB csv (7 million rows x 29 columns)
              read.table("2008.csv",<all known tricks and known nrows>)   #   360 sec
              fread("2008.csv")                                           #    50 sec
-        See ?fread. Many thanks to Chris Neff and Garrett See for ideas, discussions
-        and beta testing.
+        See ?fread. Many thanks to Chris Neff, Garrett See and Hideyoshi Maeda for ideas,
+        discussions and beta testing.
 
 BUG FIXES
 
