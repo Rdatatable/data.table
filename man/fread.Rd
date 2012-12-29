@@ -11,8 +11,8 @@ fread(input, sep="auto", sep2="auto", nrows=-1, header="auto", na.strings="NA", 
 }
 \arguments{
   \item{input}{ Either the file name to read (containing no \\n character) or the input itself as a string (containing at least one \\n), see examples. In both cases, a length 1 character string. A filename may be a URL starting http:// or file://. }
-  \item{sep}{ The separator between columns. Defaults to the first character on line \code{datastart} not in the set [a-zA-Z0-9"+-.]. }
-  \item{sep2}{ The separator \emph{within} columns. Defaults to the first character on line \code{datastart} not in the set [a-zA-Z0-9"+-.<sep>]. }
+  \item{sep}{ The separator between columns. Defaults to the first character on line \code{datastart} not in the set [a-zA-Z0-9"+-./\]. }
+  \item{sep2}{ The separator \emph{within} columns. Defaults to the first character on line \code{datastart} not in the set [a-zA-Z0-9"+-./\<sep>]. }
   \item{nrows}{ The number of rows to read, by default -1 means all. Unlike \code{read.table}, it doesn't help speed to set this to the number of rows in the file (or an estimate), since the number of rows is automatically estimated and is already fast. Only set \code{nrows} if you require the first 10 rows, for example, or are reading the file in chunks. }
   \item{header}{ Does the first data line contain column names? Defaults according to a comparison of field types in data line 1 vs 2.}
   \item{na.strings}{ A character vector of strings to convert to \code{NA_character_}. By default, ",," is read as a blank string (\code{""}) and ",NA," is read as \code{NA_character_}. Typical values might be \code{na.strings=NULL} or perhaps \code{na.strings=c("NA","N/A","")}. }

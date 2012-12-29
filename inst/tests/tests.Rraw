@@ -2530,6 +2530,14 @@ X = data.table(id=2001:2004, uid=c(1001,1002,1001,1001), state=factor(c('CA','CA
 Y = data.table(id=3001:3004, uid=c(1001,1003,1002,1001), state=factor(c('CA','CA','CA','CA')), ts=c(51,57,59,59), key='state,uid,ts')
 test(910, X[Y,roll=TRUE], data.table(state=factor('CA'), uid=c(1001,1001,1002,1003), ts=c(51,59,59,57), id=INT(2001,2003,2002,NA), id.1=INT(3001,3004,3003,3002),key='state,uid,ts'))
 
+# NA in join column of type double, #2453.
+X = data.table(name=c("Joh","Raf","Jon","Ste","Rob","Smi"),depID=c(NA,31,33,33,34,34),key="depID")
+Y = data.table(depID=c(31,33,34,35),depName=c("Sal","Eng","Cle","Mar"),key="depID")
+test(911, Y[X], data.table(depID=c(NA,31,33,33,34,34),depName=c(NA,"Sal","Eng","Eng","Cle","Cle"),name=c("Joh","Raf","Jon","Ste","Rob","Smi"),key='depID'))   # Y[X] same as merge.data.frame(X,Y,all.x=TRUE)
+test(912, X[Y], data.table(depID=c(31,33,33,34,34,35),name=c("Raf","Jon","Ste","Rob","Smi",NA),depName=c("Sal","Eng","Eng","Cle","Cle","Mar"),key='depID'))
+test(913, X[Y,nomatch=0], data.table(depID=c(31,33,33,34,34),name=c("Raf","Jon","Ste","Rob","Smi"),depName=c("Sal","Eng","Eng","Cle","Cle"),key='depID'))
+test(914, Y[X,nomatch=0], data.table(depID=c(31,33,33,34,34),depName=c("Sal","Eng","Eng","Cle","Cle"),name=c("Raf","Jon","Ste","Rob","Smi"),key='depID'))
+
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by

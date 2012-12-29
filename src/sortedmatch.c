@@ -32,7 +32,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
         double d;
         SEXP s;
     } lval, rval;
-    if (NA_INTEGER > 0) error("expected internal value of NA_INTEGER %d to be negative",NA_INTEGER);
+    if (NA_INTEGER > INT_MIN) error("expected internal value of NA_INTEGER %d to be INT_MIN (%d).", NA_INTEGER, INT_MIN);
     if (NA_INTEGER != NA_LOGICAL) error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
     nr = LENGTH(VECTOR_ELT(right,0));   // num rows in right hand table
     coln = LENGTH(leftcols);    // there may be more sorted columns in x than involved in the join
@@ -66,9 +66,9 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                 while(low < upp-1) {
                     mid = low+((upp-low)/2);
                     rval.i = INTEGER(rc)[mid];
-                    if (rval.i<lval.i) {    // TO DO:  more efficient 3-way branch in C ?
+                    if (rval.i<lval.i) {          // relies on NA_INTEGER == INT_MIN, tested above with error if not
                         low=mid;
-                    } else if (rval.i>lval.i) {
+                    } else if (rval.i>lval.i) {   // TO DO:  more efficient 3-way branch using C ?.
                         upp=mid;
                     } else { // rval.i == lval.i)
                         // branch mid to find start and end of this == series [multi-column binary search]
@@ -112,7 +112,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                             if (rval.s == lval.s) newupp=mid; else low=mid;
                         }
                         break;
-                    } else if (Rf_Scollate(rval.s, lval.s)<0) {
+                    } else if (rval.s==NA_STRING || Rf_Scollate(rval.s, lval.s)<0) {
                     // } else if (strcmp(CHAR(rval.s), CHAR(lval.s))<0) {
                     // TO DO: test strcmp; i.e., if restricting to ASCII speeds up (maybe ASCII falls through and is
                     // fast anyway)
@@ -129,11 +129,11 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             case REALSXP :
                 // same comments for INTSXP apply here
                 lval.d = REAL(lc)[lr];
-                if (lval.d==NA_REAL) goto nextlr;
+                if (ISNAN(lval.d)) goto nextlr;
                 while(low < upp-1) {
                     mid = low+((upp-low)/2);
                     rval.d = REAL(rc)[mid];
-                    if (rval.d<lval.d-tol) {
+                    if (rval.d<lval.d-tol || ISNAN(rval.d)) {
                         low=mid;
                     } else if (rval.d>lval.d+tol) {
                         upp=mid;

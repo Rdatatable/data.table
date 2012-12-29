@@ -99,7 +99,7 @@ SEXP fastmean(SEXP args)
 	        break;
 	    case REALSXP:
 	        for (i = 0; i<l; i++) {
-	            if(REAL(x)[i] == NA_REAL) break;
+	            if(ISNAN(REAL(x)[i])) break;
 	            s += REAL(x)[i];
 	        }
 	        s /= l;

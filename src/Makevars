@@ -1,8 +1,4 @@
 
-MAKEFLAGS="CFLAGS=-O3"
-CFLAGS=-O3
-PKG_CFLAGS=-O3
-
 all: $(SHLIB)
 	mv $(SHLIB) datatable$(SHLIB_EXT)
 

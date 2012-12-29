@@ -45,6 +45,13 @@ BUG FIXES
     o   Error 'attemping to roll join on a factor column' could occur when a non last
         join column was a factor columnn, #2450. Thanks to Blue Magister for
         highlighting.
+        
+    o   NA in a join column of type double could cause both X[Y] and merge(X,Y)
+        to return incorrect results, #2453. Due to an errant x==NA_REAL in the C source
+        which should have been ISNA(x). Support for double in keyed joins is a relatively
+        recent addition to data.table, but embarassing all the same. Fixed and tests added.
+        Many thanks to statquant for the thorough and reproducible report :
+        http://stackoverflow.com/questions/14076065/data-table-inner-outer-join-to-merge-with-na
 
 NOTES
 
