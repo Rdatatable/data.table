@@ -39,16 +39,27 @@ Read middle and end to check types
 A few TO DO inline in the code, including some speed fine tuning
 Save repeated ch<eof checking in main read step. Last line might still be tricky if last line has no eol.
 test using at least "grep read.table ...Rtrunk/tests/
-Add a mapChunk argument, by default 10% of getsysinfo.ram. Entire file when 0 (if users knowns file will be reread a few times). 
 Secondary separator for list() columns, such as columns 11 and 12 in BED.
 Allow 2 character separators? Some companies have internal formats that do that.
-If nrow is small, say 20, then it shouldn't mmap the entire file (that's probably why user just wants to look at head)
+If nrow is small, say 20, then it shouldn't mmap the entire file (that's probably why user just wants to look at head). Try MMAP_DONTNEED in that case to save needing to map the file in chunks.
 More natural to start format detection on row 1 after the header (if any). autostart at 30 makes sense, but not so much format detection too.
 *****/
 
 char *ch, sep, sep2, eol, eol2, *eof;
 int eolLen;
 extern double currentTime();
+Rboolean verbose;
+
+// Define our own fread type codes different to R's SEXPTYPE :
+// i) INTEGER64 is not in R but an add on packages using REAL, we need to make a distinction here, without using class (for speed)
+// ii) 0:n codes makes it easier to bump through types in this order using ++.
+#define SXP_INT    0   // INTSXP
+#define SXP_INT64  1   // REALSXP
+#define SXP_REAL   2   // REALSXP
+#define SXP_STR    3   // STRSXP
+static char TypeName[4][10] = {"INT","INT64","REAL","STR"};  // for messages and errors
+static int TypeSxp[4] = {INTSXP,REALSXP,REALSXP,STRSXP};
+static union {double d; long long l;} u;
 
 static int countfields()
 {
@@ -104,13 +115,91 @@ static inline long long Strtoll()
     return(0);
 }
 
+static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, int col)
+{
+    // Like R's coerceVector() but we only need to coerce elements up to the row read so far, for speed.
+    SEXP newv;
+    R_len_t i;
+    char *ch2=ch;
+    while (ch2!=eof || *ch2!=sep || *ch2!=eol) ch2++;  // ch2 now marks the end of field, used in verbose messages and errors
+    if (verbose) Rprintf("Bumping column %d from %s to %s on data row %d, field contains '%.*s'\n",
+                         col+1, TypeName[oldtype], TypeName[newtype], sofar+1, ch2-ch, ch);
+    PROTECT(newv = allocVector(TypeSxp[newtype], LENGTH(v)));
+    switch(newtype) {
+    case SXP_INT64:
+        switch(oldtype) {
+        case SXP_INT :
+            for (i=0; i<sofar; i++) REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? NA_REAL : (u.l=(long long)INTEGER(v)[i],u.d));
+            break;
+        default :
+            error("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
+        }
+        break;
+    case SXP_REAL:
+        switch(oldtype) {
+        case SXP_INT :
+            for (i=0; i<sofar; i++) REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? NA_REAL : (double)INTEGER(v)[i]);
+            break;
+        case SXP_INT64 :
+            for (i=0; i<sofar; i++) REAL(newv)[i] = (double)(long long)&REAL(v)[i];
+            break;
+        default :
+            error("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
+        }
+        break;
+    case SXP_STR:
+        warning("Bumping column %d from %s to STR on data row %d, field contains '%.*s'. Coercing previously read values in this column back to STR which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0'. If this matters please rerun and set 'colClasses' to 'character' for this column. Column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.", col+1, TypeName[oldtype], sofar+1, ch2-ch, ch);
+        char buffer[1024];
+        switch(oldtype) {
+        case SXP_INT :
+            for (i=0; i<sofar; i++) {
+                if (INTEGER(v)[i] == NA_INTEGER)
+                    SET_STRING_ELT(newv,i,R_BlankString);
+                else {
+                    sprintf(buffer,"%d",INTEGER(v)[i]);
+                    SET_STRING_ELT(newv, i, mkChar(buffer));
+                }
+            }
+            break;
+        case SXP_INT64 :
+            for (i=0; i<sofar; i++) {
+                if (ISNA(REAL(v)[i]))
+                    SET_STRING_ELT(newv,i,R_BlankString);
+                else {
+                    sprintf(buffer,"%lld",*(long long *)&REAL(v)[i]);
+                    SET_STRING_ELT(newv, i, mkChar(buffer));
+                }
+            }
+            break;
+        case SXP_REAL :
+            for (i=0; i<sofar; i++) {
+                if (ISNA(REAL(v)[i]))
+                    SET_STRING_ELT(newv,i,R_BlankString);
+                else {
+                    sprintf(buffer,"%f",REAL(v)[i]);
+                    SET_STRING_ELT(newv, i, mkChar(buffer));
+                }
+            }
+            break;
+        default :
+            error("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
+        }
+        break;
+    default :
+        error("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
+    }
+    UNPROTECT(1);
+    return(newv);
+}
+
 SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart)
 {
     SEXP thiscol, ans, thisstr;
     R_len_t i, j, k, protecti=0, nrow=0, ncol=0, nline, flines;
     int thistype;
     char *fnam=NULL, *pos, *pos1, *mmp, *ch2;
-    Rboolean verbose=LOGICAL(verbosearg)[0], header=LOGICAL(headerarg)[0], allchar;
+    Rboolean header=LOGICAL(headerarg)[0], allchar;
+    verbose=LOGICAL(verbosearg)[0];
     double t0 = currentTime();
     size_t filesize;
 #ifdef WIN32
@@ -249,7 +338,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // Make informed guess at column types using autostart onwards
     // ********************************************************************************************
     int type[ncol]; for (i=0; i<ncol; i++) type[i]=0;   // default type is 0 (integer)
-    union {double d; long long l;} u;
     if (sizeof(u.d) != 8) error("Assumed sizeof(double) is 8 bytes, but it's %d", sizeof(u.d));
     if (sizeof(u.l) != 8) error("Assumed sizeof(long long) is 8 bytes, but it's %d", sizeof(u.l));
     u.l=0; u.d=0;// to avoid 'possibly unitialized' warning from compiler on lines after stroll below
@@ -295,7 +383,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (ch<eof && *ch==eol) ch+=eolLen;
     }
     if (verbose) { Rprintf("Type codes: "); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf("\n"); }
-    int typesxp[4] = {INTSXP,REALSXP,REALSXP,STRSXP};
     
     // ********************************************************************************************
     // Search backwards to find column names row or first data row
@@ -401,7 +488,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     protecti++;
     setAttrib(ans,R_NamesSymbol,names);
     for (i=0; i<ncol; i++) {
-        thistype  = typesxp[ type[i] ];  // map from 0-3 to INTSXP(0), REALSXP(1), REALSXP(2) and STRSXP(3).
+        thistype  = TypeSxp[ type[i] ];
         thiscol = PROTECT(allocVector(thistype,nrow));
         protecti++;
         if (type[i]==1) setAttrib(thiscol, R_ClassSymbol, ScalarString(mkChar("integer64")));
@@ -482,7 +569,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     for (k=0; k<nrow; k++) if (STRING_ELT(thiscol,k)==NA_STRING) SET_STRING_ELT(thiscol,k,R_BlankString);
                     // If a character column was blank on earlier rows (and in the guess rows), they'll have been coerced to
                     // NAs. Set back to "" and these will be converted back to NA at the end if na.strings contains "".
-                    if (verbose) Rprintf("Column %d bumped from code %d to character on line %d, field contains '%.*s'\n", j+1, type[j], i+2, ch2-ch, ch);
                     type[j]=3;
                     tCoerce += currentTime()-tCoerce0;
                 }
