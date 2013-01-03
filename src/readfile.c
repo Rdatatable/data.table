@@ -28,7 +28,6 @@ print.data.table nrow tidy up. Change test() to be print(DT,topn=2)
 Warn about non whitespace (unprotected by comment.char) after the last column on any line (currently skipped silently)
 Warning about any blank lines skipped in the middle, and any imperfect number of columns
 Check and correct nline in error messages
-Go through fread tests and remove all all.equal()s 
 Allow logical columns (currently read as character). T/True/TRUE/true are allowed in main/src/util.c
 893.5 should be two empty integer cols not character
 ---

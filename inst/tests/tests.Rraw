@@ -1864,8 +1864,8 @@ tt1 = system.time(ans1<-DT[,list(mean(x),mean(y)),by=list(grp1,grp2)])    # 1.1s
 tt2 = system.time(ans2<-DT[,list(.Internal(mean(x)),.Internal(mean(y))),by=list(grp1,grp2)])  # 1.1s
 basemean = base::mean  # to isolate `::` itself
 tt3 = system.time(ans3<-DT[,list(basemean(x),basemean(y)),by=list(grp1,grp2)])   # 11s
-test(646, ans1, ans2)  # identical, not all.equal, deliberately as strong test
-test(647, ans1, ans3)
+test(646, identical(ans1, ans2))  # identical, not all.equal, deliberately as strong test
+test(647, identical(ans1, ans3))
 test(648, any(is.na(ans1$V1)) && !any(is.nan(ans1$V1)))
 if (.devtesting) test(649, tt1["user.self"] < 2*tt2["user.self"])   # should be same speed, but *2 as large margin
 if (.devtesting) test(650, tt1["user.self"] < tt3["user.self"]/2)   # 10 times faster, but test 2 times faster as large margin
@@ -2435,17 +2435,17 @@ DT[3,d:=NA_character_]
 DT[5,d:=""]
 DT[2,e:=+Inf]
 DT[3,e:=-Inf]
-DT[4,e:=NaN]  # write.table writes NaN as NA, though, and all.equal considers NaN==NA. read would read NaN as NaN if "NaN" was in file
+DT[4,e:=NaN]  # write.table writes NaN as NA, though, and all.equal considers NaN==NA. fread would read NaN as NaN if "NaN" was in file
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)  
 test(880, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
 test(881, fread(f), DT)
 DT[3,d:="NA"]
-test(882, all.equal(fread(f,na.strings=NULL), DT))
+test(882, fread(f,na.strings=NULL), DT)
 DT[3,d:=NA_character_]
 unlink(f)
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=TRUE)
-test(883, all.equal(fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE))))
-test(884, all.equal(fread(f), DT))
+test(883, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
+test(884, fread(f), DT)
 unlink(f)
 
 # Test short files.
@@ -2501,7 +2501,7 @@ f = paste(loc,"ch11b.dat",sep="")  # http://www.stats.ox.ac.uk/pub/datasets/csb/
 test(899, fread(f), as.data.table(read.table(f)))  
 
 f = paste(loc,"1206FUT.txt",sep="")    # a CRLF line ending file (DOS)
-test(900, all.equal(DT<-fread(f), as.data.table(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class))))))
+test(900, DT<-fread(f), as.data.table(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)))))
 
 # Tests the coerce of column 23 to character on line 179 due to the 'A' for the first time :
 f = paste(loc,"2008head.csv",sep="")
