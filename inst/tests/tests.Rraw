@@ -2505,7 +2505,7 @@ test(900, all.equal(DT<-fread(f), as.data.table(read.table(f,sep="\t",header=TRU
 
 # Tests the coerce of column 23 to character on line 179 due to the 'A' for the first time :
 f = paste(loc,"2008head.csv",sep="")
-test(901, all.equal(fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE))))
+test(901, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
 
 test(902, fread("A,B\n1,3,foo,5\n2,4,barbaz,6"), data.table(1:2,3:4,c("foo","barbaz"),5:6))  # invalid header (too short) ignored
 test(903, fread("A,B,C,D\n1,3,foo,5\n2,4,barbaz,6"), DT<-data.table(A=1:2,B=3:4,C=c("foo","barbaz"),D=5:6))  # ok

@@ -18,6 +18,7 @@
 
 /*****
 TO DO:
+Read middle and end to check types, then turn back on bump to STR warning
 Check that default sep for first column date test is now space not \\. Then implement loop to find separator to find header row.
 Test Garrett's two files again.
 akhilsbehl's integer64 example.
@@ -34,8 +35,6 @@ Allow logical columns (currently read as character). T/True/TRUE/true are allowe
 Add a way to pick out particular columns only, by name or position.
 A way for user to override type, for particular columns only.
 Detect and coerce dates and times. By searching for - and :, and dateTtime etc, or R's own method. POSIXct default, for microseconds? : http://stackoverflow.com/questions/14056370/cast-string-to-idatetime
-CoerceVector should only coerce items read so far.
-Read middle and end to check types
 A few TO DO inline in the code, including some speed fine tuning
 Save repeated ch<eof checking in main read step. Last line might still be tricky if last line has no eol.
 test using at least "grep read.table ...Rtrunk/tests/
@@ -45,12 +44,16 @@ If nrow is small, say 20, then it shouldn't mmap the entire file (that's probabl
 More natural to start format detection on row 1 after the header (if any). autostart at 30 makes sense, but not so much format detection too.
 *****/
 
-char *ch, sep, sep2, eol, eol2, *eof;
-int eolLen;
 extern double currentTime();
-Rboolean verbose;
+extern int sizes[100];
 
-// Define our own fread type codes different to R's SEXPTYPE :
+static char *ch, sep, sep2, eol, eol2, *eof;
+static int eolLen;
+static Rboolean verbose;
+static double tCoerce, tCoerceAlloc;
+
+
+// Define our own fread type codes, different to R's SEXPTYPE :
 // i) INTEGER64 is not in R but an add on packages using REAL, we need to make a distinction here, without using class (for speed)
 // ii) 0:n codes makes it easier to bump through types in this order using ++.
 #define SXP_INT    0   // INTSXP
@@ -115,16 +118,31 @@ static inline long long Strtoll()
     return(0);
 }
 
-static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, int col)
+static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R_len_t col)
 {
-    // Like R's coerceVector() but we only need to coerce elements up to the row read so far, for speed.
+    // Like R's coerceVector() but :
+    // i) we only need to coerce elements up to the row read so far, for speed.
+    // ii) we can directly change type of vectors without an allocation when the size of the data type doesn't change
     SEXP newv;
-    R_len_t i;
-    char *ch2=ch;
-    while (ch2!=eof || *ch2!=sep || *ch2!=eol) ch2++;  // ch2 now marks the end of field, used in verbose messages and errors
+    R_len_t i, protecti=0;
+    double tCoerce0 = currentTime();
+    char *lch=ch;
+    while (lch!=eof && *lch!=sep && *lch!=eol) lch++;  // lch now marks the end of field, used in verbose messages and errors
     if (verbose) Rprintf("Bumping column %d from %s to %s on data row %d, field contains '%.*s'\n",
-                         col+1, TypeName[oldtype], TypeName[newtype], sofar+1, ch2-ch, ch);
-    PROTECT(newv = allocVector(TypeSxp[newtype], LENGTH(v)));
+                         col+1, TypeName[oldtype], TypeName[newtype], sofar+1, lch-ch, ch);
+    if (sizes[TypeSxp[oldtype]]<4) error("Internal error: SIZEOF oldtype %d < 4", oldtype);
+    if (sizes[TypeSxp[newtype]]<4) error("Internal error: SIZEOF newtype %d < 4", newtype);
+    if (sizes[TypeSxp[oldtype]] == sizes[TypeSxp[newtype]]) {
+        TYPEOF(v) = TypeSxp[newtype];
+        newv=v;
+    } else {
+        double tCoerceAlloc0 = currentTime();
+        PROTECT(newv = allocVector(TypeSxp[newtype], LENGTH(v)));
+        tCoerceAlloc += currentTime()-tCoerceAlloc0;
+        // This was 1.3s (all of tCoerce) when testing on 2008.csv; might have triggered a gc, included.
+        // Happily, mid read bumps are very rarely needed, due to testing types at the start, middle and end of the file, first.
+        protecti++;
+    }
     switch(newtype) {
     case SXP_INT64:
         switch(oldtype) {
@@ -141,17 +159,19 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, i
             for (i=0; i<sofar; i++) REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? NA_REAL : (double)INTEGER(v)[i]);
             break;
         case SXP_INT64 :
-            for (i=0; i<sofar; i++) REAL(newv)[i] = (double)(long long)&REAL(v)[i];
+            for (i=0; i<sofar; i++) REAL(newv)[i] = (ISNA(REAL(v)[i]) ? NA_REAL : (double)(long long)&REAL(v)[i]);
             break;
         default :
             error("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
         }
         break;
     case SXP_STR:
-        warning("Bumping column %d from %s to STR on data row %d, field contains '%.*s'. Coercing previously read values in this column back to STR which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0'. If this matters please rerun and set 'colClasses' to 'character' for this column. Column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.", col+1, TypeName[oldtype], sofar+1, ch2-ch, ch);
+        if (verbose) Rprintf("Bumping column %d from %s to STR on data row %d, field contains '%.*s'. Coercing previously read values in this column back to STR which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too, if they occurred before the bump. If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, TypeName[oldtype], sofar+1, lch-ch, ch);
+        // TODO: this Rprintf back to warning when first 5 (not from autostart), middle and end is also checked (test 894.03+).
         char buffer[1024];
         switch(oldtype) {
         case SXP_INT :
+            // This for loop takes 0.000007 seconds if the bump occurs on line 179, for example, timing showed
             for (i=0; i<sofar; i++) {
                 if (INTEGER(v)[i] == NA_INTEGER)
                     SET_STRING_ELT(newv,i,R_BlankString);
@@ -188,7 +208,8 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, i
     default :
         error("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
     }
-    UNPROTECT(1);
+    UNPROTECT(protecti);
+    tCoerce += currentTime()-tCoerce0;
     return(newv);
 }
 
@@ -500,7 +521,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     // Now read the data
     // ********************************************************************************************
-    double tCoerce0, tCoerce=0.0;
+    tCoerce = tCoerceAlloc = 0.0;
     double nexttime = t0+2;  // start printing % done after a few seconds, if doesn't appear then you know mmap is taking a while
     Rboolean isna;
     ch = pos;   // back to start of first data row
@@ -513,41 +534,36 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             //Rprintf("Field %d: '%.10s'\n", j+1, ch);
             thiscol = VECTOR_ELT(ans, j);
             switch (type[j]) {
-            case 0: // integer
+            case SXP_INT:
                 ch2=ch;
                 u.l = Strtoll();
                 if (errno==0 && INT_MIN<=u.l && u.l<=INT_MAX) {
                     INTEGER(thiscol)[i] = (int)u.l;
-                    break;   // done with this field, Strtoll already moved ch for us to sit on next sep or eol
-                } else if (errno==1) {   // TO DO: remove this brach by letting Strtoll return NA_INTEGER
+                    break;   //  Most common case. Done with this field. Strtoll already moved ch for us to sit on next sep or eol.
+                } else if (errno==1) {   // TO DO: remove this brach by letting Strtoll return NA_INTEGER for NA (==INT_MIN) and ,,?
                     INTEGER(thiscol)[i] = NA_INTEGER;
                     break;
                 }
-                ch=ch2;  // moves ch back ready for bump to case 1 repeat in case Strtoll was ok but just too big
-            case 1: // bit64::integer64
+                ch=ch2;  // moves ch back ready for type bump and reread of this field (an INT64 would have been read fine by Strtoll)
+                SET_VECTOR_ELT(ans, j, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_INT64, i, j));
+            case SXP_INT64:
                 u.l = Strtoll();
                 if (errno==0) {
-                    if (type[j]==0) { error("Coercing int to integer64 needs to be implemented"); type[i]=1; }
                     REAL(thiscol)[i] = u.d;
                     break;
-                } else if (errno==1) {
+                } else if (errno==1) {   // TO DO: same as comment above.
                     REAL(thiscol)[i] = NA_REAL;
                     break;
                 }
-            case 2: // double
+                SET_VECTOR_ELT(ans, j, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_REAL, i, j));
+                // A bump from INT to STR will bump through INT64 and then REAL before STR, coercing each time. Deliberate, known and
+                // timed by verbose=TRUE. Very rare (see comments in coerceVectorSoFar). For speed in most common cases (saving deep branches).
+            case SXP_REAL:
                 errno=0; ch2=ch;
                 while (ch<eof && isspace(*ch) && *ch!=sep && *ch!=eol) ch++; // TO DO: remove. Only because strod* skips leading isspace (could include sep)
                 if (ch==eof || *ch==sep || *ch==eol) ch2=ch;
                 else {ch2=ch; u.d = strtod(ch, &ch2);}
                 if (ch2>ch && (ch==eof || *ch2==sep || *ch2==eol) && errno==0) {
-                    if (type[j]==1) { error("Coercing integer64 to real needs to be implemented"); type[j]=2; }
-                    else if (type[j]==0) {
-                        tCoerce0 = currentTime();
-                        SET_VECTOR_ELT(ans, j, thiscol = coerceVector(thiscol, REALSXP));
-                        if (verbose) Rprintf("Column %d bumped from code %d to double on line %d, field contains '%.10s'\n", j+1, type[j], i+2, ch);
-                        type[j]=2;
-                        tCoerce += currentTime()-tCoerce0;
-                    }
                     REAL(thiscol)[i] = u.d;
                     ch=ch2;
                     break;
@@ -558,20 +574,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     ch+=2*isna;
                     break;
                 }
-            case 3: // character
+                SET_VECTOR_ELT(ans, j, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
+            case SXP_STR:
                 ch2=ch;
                 if (ch<eof && *ch=='\"') {ch++; while(++ch2<eof && *ch2!=eol && !(*ch2=='\"' && *(ch2-1)!='\\'));}
                 else while (ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;
-                if (type[j]<3) {
-                    if (type[j]==1) error("Coercing integer64 to character needs to be implemented");
-                    tCoerce0 = currentTime();
-                    SET_VECTOR_ELT(ans, j, thiscol = coerceVector(thiscol, STRSXP));
-                    for (k=0; k<nrow; k++) if (STRING_ELT(thiscol,k)==NA_STRING) SET_STRING_ELT(thiscol,k,R_BlankString);
-                    // If a character column was blank on earlier rows (and in the guess rows), they'll have been coerced to
-                    // NAs. Set back to "" and these will be converted back to NA at the end if na.strings contains "".
-                    type[j]=3;
-                    tCoerce += currentTime()-tCoerce0;
-                }
                 SET_STRING_ELT(thiscol, i, mkCharLen(ch,ch2-ch));
                 if (ch2<eof && *ch2=='\"') ch=ch2+1; else ch=ch2;
             }
@@ -616,12 +623,13 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     if (verbose) {
         double tn = currentTime(), tot=tn-t0;
-        Rprintf("%8.3fs (%3.0f%%) Memory map (quicker if you rerun)\n", tMap-t0, 100*(tMap-t0)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Memory map (rerun may be quicker)\n", tMap-t0, 100*(tMap-t0)/tot);
         Rprintf("%8.3fs (%3.0f%%) Format detection\n", tFormat-tMap, 100*(tFormat-tMap)/tot);
         Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", tRowCount-tFormat, 100*(tRowCount-tFormat)/tot);
         Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (xMB) in RAM\n", tAlloc-tRowCount, 100*(tAlloc-tRowCount)/tot, nrow, ncol);
         Rprintf("%8.3fs (%3.0f%%) Reading data\n", tRead-tAlloc-tCoerce, 100*(tRead-tAlloc-tCoerce)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Bumping column type midread and coercing data already read\n", tCoerce, 100*tCoerce/tot);
+        Rprintf("%8.3fs (%3.0f%%) Allocation for type bumps (if any), including gc time if triggered\n", tCoerceAlloc, 100*tCoerceAlloc/tot);
+        Rprintf("%8.3fs (%3.0f%%) Coercing data already read in type bumps\n", tCoerce-tCoerceAlloc, 100*(tCoerce-tCoerceAlloc)/tot);
         Rprintf("%8.3fs (%3.0f%%) Changing na.strings to NA\n", tn-tRead, 100*(tn-tRead)/tot);
         Rprintf("%8.3fs        Total\n", tot);
     }

@@ -134,7 +134,7 @@ colClasses = sapply(read.csv("2008.csv",nrows=200),class)               # 5 char
 system.time(DF <- read.table("2008.csv", header=TRUE, sep=",",          
     quote="",stringsAsFactors=FALSE,comment.char="",nrows=7009730,      
     colClasses=colClasses)                                              # 360 secs
-system.time(DT <- fread("2008.csv"))                                    #  50 secs
+system.time(DT <- fread("2008.csv"))                                    #  40 secs
 table(sapply(DT,class))                                                 # 5 character and 24 integer columns
 
 
