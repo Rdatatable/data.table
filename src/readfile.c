@@ -20,7 +20,7 @@
 TO DO:
 Read middle and end to check types, then turn back on bump to STR warning
 Check that default sep for first column date test is now space not \\. Then implement loop to find separator to find header row.
-Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)hea
+Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
 Add LaF comparison.
 as.read.table=TRUE/FALSE option.  Or fread.table and fread.csv (see thread on datatable-help).
 print.data.table nrow tidy up. Change test() to be print(DT,topn=2)
@@ -83,14 +83,15 @@ static int countfields()
 
 static inline long long Strtoll()
 {
-    // Specialized stroll that :
+    // Specialized strtoll that :
     // i) skips leading isspace(), too, but other than field separator and eol (e.g. '\t' and ' \t' in FUT1206.txt)
     // ii) has fewer branches for speed as no need for non decimal base
     // iii) updates global ch directly saving arguments
     // iv) safe for mmap which can't be \0 terminated on Windows (but can be on unix and mac)
     // v) fails if whole field isn't consumed such as "3.14" (strtol consumes the 3 and stops)
     // ... all without needing to read into a buffer at all (reads the mmap directly)
-    char *lch=ch; int sign=1; long long acc=0;
+    char *lch=ch; int sign=1; long long acc=0;  // TO DO: use u.l instead of acc?
+    errno = 0;
     while (lch<eof && isspace(*lch) && *lch!=sep && *lch!=eol) lch++;
     char *start = lch;   // start of [+-][0-9]+
     if (*lch=='+') { sign=1; lch++; }
@@ -105,7 +106,6 @@ static inline long long Strtoll()
     if (len>0 && len<19 && // 18 = 2^63 width. If wider, *= above overflowed (ok). Including [+-] in len<19 is for len==0 NA check.
         (lch==eof || *lch==sep || *lch==eol)) {
         ch=lch;    // advance global ch only if field fully consumed perfectly
-        errno=0;
         return(sign*acc);
     }
     if ((len==0 && (lch==eof || *lch==sep || *lch==eol)) ||
@@ -115,6 +115,29 @@ static inline long long Strtoll()
     } else errno=2;   // invalid integer such as "3.14" or "123ABC,". Need to bump type.
     return(0);
 }
+
+static inline double Strtod()
+{
+    // Specialized strtod for same reasons as Strtoll (leading \t dealt with), but still uses strtod (hard to do better, unlike strtoll).
+    char *lch=ch;
+    errno = 0;
+    while (lch<eof && isspace(*lch) && *lch!=sep && *lch!=eol) lch++;
+    if (lch==eof || *lch==sep || *lch==eol)  return(NA_REAL);  // e.g. ',,' or '\t\t'
+    char *start=lch;
+    u.d = strtod(start, &lch);
+    if (lch>start && (lch==eof || *lch==sep || *lch==eol) && errno==0) {
+        ch = lch;
+        return(u.d);
+    }
+    if (lch==start && lch<eof-1 && *lch=='N' && *(lch+1)=='A' && (lch+2==eof || *(lch+2)==sep || *(lch+2)==eol)) {
+        ch = lch+2;
+        return(NA_REAL);
+    }
+    errno=1;  // invalid double, need to bump type.  TO DO: when Strtoll returns NA_INTEGER, too, its errno==1 will mean the same
+    return(0.0);
+}
+                
+                
 
 static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R_len_t col)
 {
@@ -378,17 +401,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 if (errno==0 && INT_MIN<=u.l && u.l<=INT_MAX) break;
                 type[i]++; ch=ch2; // if number was valid but too big then Strtoll will have moved ch on, so ch=ch2 restarts this field
             case SXP_INT64:
-                errno=0; ch2=ch;
-                u.l = Strtoll();
-                if (errno==0) break;
-                type[i]++; ch=ch2;
+                Strtoll();
+                if (errno==0) break;   // TO DO: if Strtoll() returns errno and sets u.l instead, then that saves a line here.
+                type[i]++;
             case SXP_REAL:
-                errno=0; ch2=ch;
-                u.d = strtod(ch, &ch2);
-                if (ch2>ch && (ch2==eof || *ch2==sep || *ch2==eol) && errno==0) {
-                    ch=ch2;
-                    break;
-                }
+                Strtod();
+                if (errno==0) break;
                 type[i]++;
             case SXP_STR:
                 if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\')); ch++;}
@@ -429,10 +447,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     for (i=0; i<ncol; i++) {
         if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\')); if (ch<eof && *ch++!='\"') error("Format error on line %d: %.*s", nline+flines, ch-pos+1, pos); }
         else {
-            errno = 0;
-            u.d = strtod(ch, &ch2);
-            if (ch2>ch && (ch2==eof || *ch2==sep || *ch2==eol) && !errno) { allchar=FALSE, ch=ch2; }
-            else while(++ch<eof && *ch!=eol && *ch!=sep); 
+            Strtod();
+            if (errno==0) allchar=FALSE;   // if field reads as double ok then it's anything but character
+            else while(ch<eof && *ch!=eol && *ch!=sep) ch++;  // skip over character field
         }
         if (i<ncol-1) {   // not the last column (doesn't have a separator after it)
             if (ch<eof && *ch!=sep) error("Unexpected character (%.5s) ending field %d of line %d", ch, i+1, nline);
@@ -520,7 +537,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     tCoerce = tCoerceAlloc = 0.0;
     double nexttime = t0+2;  // start printing % done after a few seconds, if doesn't appear then you know mmap is taking a while
-    Rboolean isna;
     ch = pos;   // back to start of first data row
     for (i=0; i<nrow; i++) {
         //Rprintf("Row %d : %.10s\n", i+1, ch);
@@ -556,19 +572,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 // A bump from INT to STR will bump through INT64 and then REAL before STR, coercing each time. Deliberate, known and
                 // timed by verbose=TRUE. Very rare (see comments in coerceVectorSoFar). For speed in most common cases (saving deep branches).
             case SXP_REAL:
-                errno=0; ch2=ch;
-                while (ch<eof && isspace(*ch) && *ch!=sep && *ch!=eol) ch++; // TO DO: remove. Only because strod* skips leading isspace (could include sep)
-                if (ch==eof || *ch==sep || *ch==eol) ch2=ch;
-                else {ch2=ch; u.d = strtod(ch, &ch2);}
-                if (ch2>ch && (ch==eof || *ch2==sep || *ch2==eol) && errno==0) {
+                u.d = Strtod();
+                if (errno==0) {
                     REAL(thiscol)[i] = u.d;
-                    ch=ch2;
-                    break;
-                }
-                isna=FALSE;
-                if (ch==eof || *ch==sep || *ch==eol || (isna=(ch<eof-1 && *ch=='N' && *(ch+1)=='A' && (ch2==eof || *(ch+2)==sep || *(ch+2)==eol)))) {
-                    REAL(thiscol)[i] = NA_REAL;
-                    ch+=2*isna;
                     break;
                 }
                 SET_VECTOR_ELT(ans, j, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
