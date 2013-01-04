@@ -20,8 +20,7 @@
 TO DO:
 Read middle and end to check types, then turn back on bump to STR warning
 Check that default sep for first column date test is now space not \\. Then implement loop to find separator to find header row.
-Test Garrett's two files again.
-akhilsbehl's integer64 example.
+Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)hea
 Add LaF comparison.
 as.read.table=TRUE/FALSE option.  Or fread.table and fread.csv (see thread on datatable-help).
 print.data.table nrow tidy up. Change test() to be print(DT,topn=2)
@@ -124,6 +123,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     // ii) we can directly change type of vectors without an allocation when the size of the data type doesn't change
     SEXP newv;
     R_len_t i, protecti=0;
+    int w, d, e;
     double tCoerce0 = currentTime();
     char *lch=ch;
     while (lch!=eof && *lch!=sep && *lch!=eol) lch++;  // lch now marks the end of field, used in verbose messages and errors
@@ -142,6 +142,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
         // Happily, mid read bumps are very rarely needed, due to testing types at the start, middle and end of the file, first.
         protecti++;
     }
+    setAttrib(newv, R_ClassSymbol, newtype==SXP_INT64 ? ScalarString(mkChar("integer64")) : R_NilValue);
     switch(newtype) {
     case SXP_INT64:
         switch(oldtype) {
@@ -158,7 +159,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
             for (i=0; i<sofar; i++) REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? NA_REAL : (double)INTEGER(v)[i]);
             break;
         case SXP_INT64 :
-            for (i=0; i<sofar; i++) REAL(newv)[i] = (ISNA(REAL(v)[i]) ? NA_REAL : (double)(long long)&REAL(v)[i]);
+            for (i=0; i<sofar; i++) REAL(newv)[i] = (ISNA(REAL(v)[i]) ? NA_REAL : (double)(*(long long *)&REAL(v)[i]));
             break;
         default :
             error("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
@@ -167,17 +168,14 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     case SXP_STR:
         if (verbose) Rprintf("Bumping column %d from %s to STR on data row %d, field contains '%.*s'. Coercing previously read values in this column back to STR which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too, if they occurred before the bump. If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, TypeName[oldtype], sofar+1, lch-ch, ch);
         // TODO: this Rprintf back to warning when first 5 (not from autostart), middle and end is also checked (test 894.03+).
-        char buffer[1024];
         switch(oldtype) {
         case SXP_INT :
             // This for loop takes 0.000007 seconds if the bump occurs on line 179, for example, timing showed
             for (i=0; i<sofar; i++) {
                 if (INTEGER(v)[i] == NA_INTEGER)
                     SET_STRING_ELT(newv,i,R_BlankString);
-                else {
-                    sprintf(buffer,"%d",INTEGER(v)[i]);
-                    SET_STRING_ELT(newv, i, mkChar(buffer));
-                }
+                else
+                    SET_STRING_ELT(newv, i, mkChar( EncodeInteger(INTEGER(v)[i],0) ));
             }
             break;
         case SXP_INT64 :
@@ -185,19 +183,19 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
                 if (ISNA(REAL(v)[i]))
                     SET_STRING_ELT(newv,i,R_BlankString);
                 else {
-                    sprintf(buffer,"%lld",*(long long *)&REAL(v)[i]);
+                    static char buffer[25];  // to hold [+-]2^63
+                    snprintf(buffer,24,"%lld",*(long long *)&REAL(v)[i]);
                     SET_STRING_ELT(newv, i, mkChar(buffer));
                 }
             }
             break;
         case SXP_REAL :
+            formatReal(REAL(v), sofar, &w, &d, &e, 0);
             for (i=0; i<sofar; i++) {
                 if (ISNA(REAL(v)[i]))
                     SET_STRING_ELT(newv,i,R_BlankString);
-                else {
-                    sprintf(buffer,"%f",REAL(v)[i]);
-                    SET_STRING_ELT(newv, i, mkChar(buffer));
-                }
+                else
+	                SET_STRING_ELT(newv, i, mkChar( EncodeReal(REAL(v)[i], 0, d, e, '.') ));
             }
             break;
         default :
@@ -374,17 +372,17 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             else if (ch<eof-1 && *ch=='N' && *(ch+1)=='A' && (ch+2==eof || *(ch+2)==sep || *(ch+2)==eol)) ch+=2; // skip ',NA,', doesn't help to detect type
             // TO DO: tidy logic above now that Strtoll is specialized.
             else switch (type[i]) {
-            case 0:  // integer
+            case SXP_INT:
                 ch2=ch;
                 u.l = Strtoll();
                 if (errno==0 && INT_MIN<=u.l && u.l<=INT_MAX) break;
                 type[i]++; ch=ch2; // if number was valid but too big then Strtoll will have moved ch on, so ch=ch2 restarts this field
-            case 1:  // integer64
+            case SXP_INT64:
                 errno=0; ch2=ch;
                 u.l = Strtoll();
                 if (errno==0) break;
                 type[i]++; ch=ch2;
-            case 2:  // double
+            case SXP_REAL:
                 errno=0; ch2=ch;
                 u.d = strtod(ch, &ch2);
                 if (ch2>ch && (ch2==eof || *ch2==sep || *ch2==eol) && errno==0) {
@@ -392,7 +390,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     break;
                 }
                 type[i]++;
-            case 3:   // character
+            case SXP_STR:
                 if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\')); ch++;}
                 else while(ch<eof && *ch!=sep && *ch!=eol) ch++;
             }
@@ -511,7 +509,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         thistype  = TypeSxp[ type[i] ];
         thiscol = PROTECT(allocVector(thistype,nrow));
         protecti++;
-        if (type[i]==1) setAttrib(thiscol, R_ClassSymbol, ScalarString(mkChar("integer64")));
+        if (type[i]==SXP_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(mkChar("integer64")));
         SET_TRUELENGTH(thiscol, nrow);
         SET_VECTOR_ELT(ans,i,thiscol);
     }
