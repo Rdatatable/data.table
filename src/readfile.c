@@ -18,28 +18,26 @@
 
 /*****
 TO DO:
-Read middle and end to check types, then turn back on bump to STR warning
+then turn back on bump to STR warning (will need warning= in bump tests)
+Post from patricknik on 5 Jan re ""b"" in a field.
 Check that default sep for first column date test is now space not \\. Then implement loop to find separator to find header row.
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
-Add LaF comparison.
-as.read.table=TRUE/FALSE option.  Or fread.table and fread.csv (see thread on datatable-help).
 print.data.table nrow tidy up. Change test() to be print(DT,topn=2)
 Warn about non whitespace (unprotected by comment.char) after the last column on any line (currently skipped silently)
 Warning about any blank lines skipped in the middle, and any imperfect number of columns
 Check and correct nline in error messages
 Allow logical columns (currently read as character). T/True/TRUE/true are allowed in main/src/util.c
-893.5 should be two empty integer cols not character
----
 Add a way to pick out particular columns only, by name or position.
 A way for user to override type, for particular columns only.
-Detect and coerce dates and times. By searching for - and :, and dateTtime etc, or R's own method. POSIXct default, for microseconds? : http://stackoverflow.com/questions/14056370/cast-string-to-idatetime
-A few TO DO inline in the code, including some speed fine tuning
+A few TO DO inline in the code, including some speed fine tuning e.g. specialize Ispace and any other lib calls.
 Save repeated ch<eof checking in main read step. Last line might still be tricky if last line has no eol.
 test using at least "grep read.table ...Rtrunk/tests/
+---
 Secondary separator for list() columns, such as columns 11 and 12 in BED.
-Allow 2 character separators? Some companies have internal formats that do that.
 If nrow is small, say 20, then it shouldn't mmap the entire file (that's probably why user just wants to look at head). Try MMAP_DONTNEED in that case to save needing to map the file in chunks.
-More natural to start format detection on row 1 after the header (if any). autostart at 30 makes sense, but not so much format detection too.
+Add LaF comparison.
+as.read.table=TRUE/FALSE option.  Or fread.table and fread.csv (see thread on datatable-help).
+Detect and coerce dates and times. By searching for - and :, and dateTtime etc, or R's own method. POSIXct default, for microseconds? : http://stackoverflow.com/questions/14056370/cast-string-to-idatetime
 *****/
 
 extern double currentTime();
@@ -49,7 +47,6 @@ static char *ch, sep, sep2, eol, eol2, *eof;
 static int eolLen;
 static Rboolean verbose;
 static double tCoerce, tCoerceAlloc;
-
 
 // Define our own fread type codes, different to R's SEXPTYPE :
 // i) INTEGER64 is not in R but an add on packages using REAL, we need to make a distinction here, without using class (for speed)
@@ -81,7 +78,7 @@ static int countfields()
     return(ncol);
 }
 
-static inline long long Strtoll()
+static inline Rboolean Strtoll()
 {
     // Specialized strtoll that :
     // i) skips leading isspace(), too, but other than field separator and eol (e.g. '\t' and ' \t' in FUT1206.txt)
@@ -90,54 +87,55 @@ static inline long long Strtoll()
     // iv) safe for mmap which can't be \0 terminated on Windows (but can be on unix and mac)
     // v) fails if whole field isn't consumed such as "3.14" (strtol consumes the 3 and stops)
     // ... all without needing to read into a buffer at all (reads the mmap directly)
-    char *lch=ch; int sign=1; long long acc=0;  // TO DO: use u.l instead of acc?
-    errno = 0;
+    char *lch=ch; int sign=1; long long acc=0;
     while (lch<eof && isspace(*lch) && *lch!=sep && *lch!=eol) lch++;
-    char *start = lch;   // start of [+-][0-9]+
-    if (*lch=='+') { sign=1; lch++; }
-    else if (*lch=='-') { sign=-1; lch++; }
-    while (lch<eof && '0'<=*lch && *lch<='9') {   // TO DO can remove lch<eof when last row is specialized in case of no final eol
+    if (lch==eof || *lch==sep || *lch==eol) {   //  ',,' or ',   ,' or '\t\t' or '\t   \t' etc => NA
+        ch = lch;                               // advance global ch over empty field
+        return(TRUE);                           // caller already set u.l=NA_INTEGR or u.d=NA_REAL as appropriate
+    }  
+    char *start = lch;                          // start of [+-][0-9]+
+    if (*lch=='-') { sign=0; lch++; }
+    else if (*lch=='+') { sign=1; lch++; }
+    while (lch<eof && '0'<=*lch && *lch<='9') { // TO DO can remove lch<eof when last row is specialized in case of no final eol
         acc *= 10;
         acc += *lch-'0';
         lch++;
     }
     int len = lch-start;
     //Rprintf("Strtoll field '%.*s' has len %d\n", lch-ch+1, ch, len);
-    if (len>0 && len<19 && // 18 = 2^63 width. If wider, *= above overflowed (ok). Including [+-] in len<19 is for len==0 NA check.
-        (lch==eof || *lch==sep || *lch==eol)) {
-        ch=lch;    // advance global ch only if field fully consumed perfectly
-        return(sign*acc);
+    if (len>0 && len<19 &&   // 18 = 2^63 width. If wider, *= above overflowed (ok). Including [+-] in len<19 is for len==0 NA check.
+        (lch==eof || *lch==sep || *lch==eol)) {   // only if field fully consumed (e.g. not ,123456A,)
+        ch = lch;
+        u.l = sign ? acc : -acc;
+        return(TRUE);     // either int or int64 read ok, result in u.l.  INT_MIN and INT_MAX checked by caller.
     }
-    if ((len==0 && (lch==eof || *lch==sep || *lch==eol)) ||
-        (lch<eof-1 && *lch++=='N' && *lch++=='A' && (lch==eof || *lch==sep || *lch==eol))) {
-        errno=1;  // blank or "NA,"  =>  NA
-        ch=lch;   // advance over the blanks or NA
-    } else errno=2;   // invalid integer such as "3.14" or "123ABC,". Need to bump type.
-    return(0);
+    if (len==0 && lch<eof-1 && *lch++=='N' && *lch++=='A' && (lch==eof || *lch==sep || *lch==eol)) {   // ',NA,'
+        ch = lch;       // advance over NA
+        return(TRUE);   // NA_INTEGER or NA_REAL (for SXP_INT64) was already set by caller
+    }
+    return(FALSE);  // invalid integer such as "3.14" or "123ABC,". Need to bump type.
 }
 
-static inline double Strtod()
+static inline Rboolean Strtod()
 {
     // Specialized strtod for same reasons as Strtoll (leading \t dealt with), but still uses strtod (hard to do better, unlike strtoll).
     char *lch=ch;
-    errno = 0;
     while (lch<eof && isspace(*lch) && *lch!=sep && *lch!=eol) lch++;
-    if (lch==eof || *lch==sep || *lch==eol)  return(NA_REAL);  // e.g. ',,' or '\t\t'
+    if (lch==eof || *lch==sep || *lch==eol) {u.d=NA_REAL; ch=lch; return(TRUE); }  // e.g. ',,' or '\t\t'
     char *start=lch;
+    errno = 0;
     u.d = strtod(start, &lch);
     if (lch>start && (lch==eof || *lch==sep || *lch==eol) && errno==0) {
         ch = lch;
-        return(u.d);
+        return(TRUE);  // double read ok (result in u.d)
     }
-    if (lch==start && lch<eof-1 && *lch=='N' && *(lch+1)=='A' && (lch+2==eof || *(lch+2)==sep || *(lch+2)==eol)) {
-        ch = lch+2;
-        return(NA_REAL);
+    if (lch==start && lch<eof-1 && *lch++=='N' && *lch++=='A' && (lch==eof || *lch==sep || *lch==eol)) {
+        ch = lch;
+        u.d = NA_REAL;
+        return(TRUE);
     }
-    errno=1;  // invalid double, need to bump type.  TO DO: when Strtoll returns NA_INTEGER, too, its errno==1 will mean the same
-    return(0.0);
+    return(FALSE);     // invalid double, need to bump type.
 }
-                
-                
 
 static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R_len_t col)
 {
@@ -238,7 +236,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     SEXP thiscol, ans, thisstr;
     R_len_t i, j, k, protecti=0, nrow=0, ncol=0, nline, flines;
     int thistype;
-    char *fnam=NULL, *pos, *pos1, *mmp, *ch2;
+    char *fnam=NULL, *pos, *pos1, *mmp, *ch2, *linestart;
     Rboolean header=LOGICAL(headerarg)[0], allchar;
     verbose=LOGICAL(verbosearg)[0];
     double t0 = currentTime();
@@ -250,14 +248,17 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
 #else
     int fd=-1;
 #endif
+   if (NA_INTEGER != INT_MIN) error("Internal error: NA_INTEGER (%d) != INT_MIN (%d).", NA_INTEGER, INT_MIN);  // relied on by Stroll
+   if (sizeof(double) != 8) error("Internal error: sizeof(double) is %d bytes, not 8.", sizeof(double));
+   if (sizeof(long long) != 8) error("Internal error: sizeof(long long) is %d bytes, not 8.", sizeof(long long));
 
     // ********************************************************************************************
-    // Point to text input, or open and mmap file
+    //   Point to text input, or open and mmap file
     // ********************************************************************************************
     ch = ch2 = (char *)CHAR(STRING_ELT(input,0));
     while (*ch2!='\n' && *ch2) ch2++;
     if (*ch2=='\n' || !*ch) {
-        if (verbose) Rprintf("Input is either empty or contains a \\n, taking this to be text input (not a filename)\n");
+        if (verbose) Rprintf("Input contains a \\n (or is \"\"), taking this to be text input (not a filename)\n");
         mmp = ch;
         filesize = strlen(mmp);
         eof = mmp+filesize;
@@ -310,7 +311,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     double tMap = currentTime();
     
     // ********************************************************************************************
-    // Auto detect eol, first eol where there are two (i.e. CRLF)
+    //   Auto detect eol, first eol where there are two (i.e. CRLF)
     // ********************************************************************************************
     ch = mmp;
     while (ch<eof && *ch!='\n' && *ch!='\r') {
@@ -338,7 +339,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
 
     // ********************************************************************************************
-    // Auto skip human readable banners, if any
+    //   Auto skip human readable banners, if any
     // ********************************************************************************************
     nline = 0; int lastnonblank = 0; pos = 0;
     ch = mmp;
@@ -352,13 +353,13 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     if (lastnonblank==0) error("Input is either empty or fully whitespace in the first 30 rows");
     nline = lastnonblank;   // nline>nonblank when short files (under 30 rows) with trailing newlines
-    if (verbose) Rprintf("Starting format detection on line %d (the last non blank line in the first 30)\n", nline);
-    ch = pos;
     
     // ********************************************************************************************
-    // Auto detect separator and number of fields
+    //   Auto detect separator and number of fields
     // ********************************************************************************************
+    ch = pos;  // start of autostart
     if (isNull(separg)) {
+        if (verbose) Rprintf("Using line %d to detect sep (the last non blank line in the first 30)\n", nline);
         while (ch<eof && isspace(*ch) && *ch!=eol) ch++;             // skip over any leading space at start of row
         if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!='\"' && *ch!=eol); ch++;} // if first column is protected skip over it, and the closing "
         while (ch<eof && (isalnum(*ch) || *ch=='\"' || *ch=='.' || *ch=='+' || *ch=='-' || *ch=='\\' || *ch=='/')) ch++;
@@ -371,57 +372,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         sep = CHAR(STRING_ELT(separg,0))[0];
         if (verbose) { if (sep=='\t') Rprintf("Using sep supplied '\\t'\n"); else Rprintf("Using sep supplied '%c'\n", sep); }
     }
-    ch = pos;                                                    // back to beginning of line
+    ch = pos;    // back to beginning of autostart
     ncol = countfields();
     if (verbose && sep!=eol) Rprintf("Found %d columns\n",ncol);
     
     // ********************************************************************************************
-    // Make informed guess at column types using autostart onwards
-    // ********************************************************************************************
-    int type[ncol]; for (i=0; i<ncol; i++) type[i]=0;   // default type is 0 (integer)
-    if (sizeof(u.d) != 8) error("Assumed sizeof(double) is 8 bytes, but it's %d", sizeof(u.d));
-    if (sizeof(u.l) != 8) error("Assumed sizeof(long long) is 8 bytes, but it's %d", sizeof(u.l));
-    u.l=0; u.d=0;// to avoid 'possibly unitialized' warning from compiler on lines after stroll below
-    flines = 0;
-    pos1 = ch = pos;   // pos1 used to calc estn.  start of autostart
-    while(flines<10 && ch<eof) {
-        ch2=ch; while (ch2<eof && isspace(*ch2) && *ch2!=sep && *ch2!=eol) ch2++;  // skip over any empty lines
-        if (ch2<eof && *ch2==eol) { ch=ch2+eolLen; continue; }
-        flines++;
-        for (i=0;i<ncol;i++) {
-            //Rprintf("Field %d: '%.20s'\n", i+1, ch);
-            while (ch<eof && isblank(*ch) && *ch!=sep && *ch!=eol) ch++;  
-            if (ch==eof || *ch==sep || *ch==eol) {}   // skip empty field (",,")
-            else if (ch<eof-1 && *ch=='N' && *(ch+1)=='A' && (ch+2==eof || *(ch+2)==sep || *(ch+2)==eol)) ch+=2; // skip ',NA,', doesn't help to detect type
-            // TO DO: tidy logic above now that Strtoll is specialized.
-            else switch (type[i]) {
-            case SXP_INT:
-                ch2=ch;
-                u.l = Strtoll();
-                if (errno==0 && INT_MIN<=u.l && u.l<=INT_MAX) break;
-                type[i]++; ch=ch2; // if number was valid but too big then Strtoll will have moved ch on, so ch=ch2 restarts this field
-            case SXP_INT64:
-                Strtoll();
-                if (errno==0) break;   // TO DO: if Strtoll() returns errno and sets u.l instead, then that saves a line here.
-                type[i]++;
-            case SXP_REAL:
-                Strtod();
-                if (errno==0) break;
-                type[i]++;
-            case SXP_STR:
-                if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\')); ch++;}
-                else while(ch<eof && *ch!=sep && *ch!=eol) ch++;
-            }
-            if (ch<eof && *ch==sep && i<ncol-1) {ch++; continue;}  // most common case first, done, next field
-            if (i<ncol-1) error("Expected sep ('%c') but '%c' ends field %d on line %d when detecting types: %.*s", sep, *ch, i+1, nline+nrow, ch-pos+1, pos);
-        }
-        while (ch<eof && *ch!=eol) ch++;
-        if (ch<eof && *ch==eol) ch+=eolLen;
-    }
-    if (verbose) { Rprintf("Type codes: "); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf("\n"); }
-    
-    // ********************************************************************************************
-    // Search backwards to find column names row or first data row
+    //   Search backwards to find column names row or first data row
     // ********************************************************************************************
     ch = pos;  // back to start of autostart.  nline is already this line number
     if (ch>mmp) {
@@ -435,31 +391,30 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (!i) {while (*ch++!=eol); ch+=eolLen-1;}
     }
     pos = ch;
-    if (verbose) Rprintf("Found first row with %d fields occuring on line %d (either column names or first row of data)\n", ncol, nline);
+    if (verbose) Rprintf("First row with %d fields occurs on line %d (either column names or first row of data)\n", ncol, nline);
     
     // ********************************************************************************************
-    // Detect and assign column names
+    //   Detect and assign column names
     // ********************************************************************************************
     if (header!=NA_LOGICAL) Rprintf("'header' changed by user from 'auto' to %s\n", header?"TRUE":"FALSE");
     SEXP names = PROTECT(allocVector(STRSXP, ncol));
     protecti++;
-    i=0; allchar=TRUE;
+    allchar=TRUE;
     for (i=0; i<ncol; i++) {
-        if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\')); if (ch<eof && *ch++!='\"') error("Format error on line %d: %.*s", nline+flines, ch-pos+1, pos); }
-        else {
-            Strtod();
-            if (errno==0) allchar=FALSE;   // if field reads as double ok then it's anything but character
+        if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\')); if (ch<eof && *ch++!='\"') error("Format error on line %d: '%.*s'", nline, ch-pos+1, pos); }
+        else {                              // if field reads as double ok then it's INT/INT64/REAL; i.e., not character (and so not a column name)
+            if (Strtod()) allchar=FALSE;    // thought about testing at least one isalpha, but we want 1E9 to be a value not a column name, here
             else while(ch<eof && *ch!=eol && *ch!=sep) ch++;  // skip over character field
         }
         if (i<ncol-1) {   // not the last column (doesn't have a separator after it)
             if (ch<eof && *ch!=sep) error("Unexpected character (%.5s) ending field %d of line %d", ch, i+1, nline);
             else if (ch<eof) ch++;
-        }
+        } 
     }
     // *** TO DO discard any whitespace after last column name on first row before the eol ***
     if (ch<eof && *ch!=eol) error("Not positioned correctly after testing format of header row. ch='%c'",*ch);
     if (!allchar || header==FALSE) {
-        if (verbose && !allchar) Rprintf("The first data row has some non character fields. Treating as a data row and using default column names.\n");
+        if (verbose && !allchar) Rprintf("Some field on line %d are not type character (or are empty). Treating as a data row and using default column names.\n", nline);
         char buff[10];
         for (i=0; i<ncol; i++) {
             sprintf(buff,"V%d",i+1);
@@ -467,7 +422,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
         ch = pos;   // back to start of first row. Treat as first data row, no column names present.
     } else {
-        if (verbose && allchar) Rprintf("All the fields in the first data row are character fields. Treating as the column names\n");
+        if (verbose && allchar) Rprintf("All the fields on line %d are character fields. Treating as the column names.\n", nline);
         ch = pos;
         nline++;
         for (i=0; i<ncol; i++) {
@@ -481,22 +436,22 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (ch<eof && *ch==eol) ch+=eolLen;  // now on first data row (row after column names)
         pos = ch;
     }
-    double tFormat = currentTime();
+    double tLayout = currentTime();
     
     // ********************************************************************************************
-    // Count number of rows
+    //   Count number of rows
     // ********************************************************************************************
     if (pos==eof || *pos==eol) {
         nrow=0;
         if (verbose) Rprintf("Byte after header row is eof or eol, 0 data rows present.\n");
     } else {
         nrow=1; while (ch<eof) nrow+=(*ch++==eol);
-        if (verbose) Rprintf("Count of eol after pos: %d\n",nrow);
+        if (verbose) Rprintf("Count of eol after first data row: %d\n",nrow);
         // Advantages of exact count: i) no need to slightly over allocate (by 5%, say) and no need to clear up on heap during gc(),
-        // and ii) no need to implement realloc if estimate doesn't turn out to be large enough (e.g. sample rows wider than file average).
-        // The old estimate method :
-        // estn = (R_len_t)ceil(1.05 * flines * (filesize-(pos-mmp)) / (pos2-pos1)) +5;  // +5 for small files
-        // if (verbose) Rprintf("Estimated nrows: %d ( 1.05*%d*(%ld-(%ld-%ld))/(%ld-%ld) )\n",estn,flines,filesize,pos,mmp,pos2,pos1);
+        // and ii) no need to implement realloc if estimate doesn't turn out to be large enough (e.g. if sample rows are wider than file average).
+        // The old estimate method based on size of first 10 rows :
+        // estn = (R_len_t)ceil(1.05 * 10 * (filesize-(pos-mmp)) / (pos2-pos1)) +5;  // +5 for small files
+        // if (verbose) Rprintf("Estimated nrows: %d ( 1.05*%d*(%ld-(%ld-%ld))/(%ld-%ld) )\n",estn,10,filesize,pos,mmp,pos2,pos1);
         if (ch!=eof) error("Internal error: ch!=eof after counting eol");
         i=0; int nblank=0;
         while (i==0 && ch>pos) {   // subtract blank lines at the end from the row count
@@ -514,8 +469,61 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (verbose) Rprintf("nrow limited to nrows passed in (%d)\n", nrow);
     }
     double tRowCount = currentTime();
-    ch = pos;
-
+    
+    // ********************************************************************************************
+    //   Make best guess at column types using first 5 rows, middle 5 rows and last 5 rows
+    // ********************************************************************************************
+    int type[ncol]; for (i=0; i<ncol; i++) type[i]=SXP_INT;   // default type is lowest
+    char *end=pos, *str;
+    for (i = 0; i<5; i++) {   // ch is on eol before last line, search back another 5 rows
+        while (ch>pos && *--ch!=eol2);
+        ch -= eolLen-1;
+    }
+    end = ch + eolLen;
+    for (j=0; j<(nrow>15?3:1); j++) {
+        switch(j) {
+        case 0: ch = pos;                str="first";   break;
+        case 1: ch = pos + (eof-pos)/2;  str="+middle";  break;
+        case 2: ch = end;                str="+last";    break;
+        }
+        if (j) {  // find start of next line
+            while (ch<eof && *ch!=eol) ch++;
+            if (ch<eof && *ch==eol) ch+=eolLen;
+        }
+        flines = 0;
+        while(flines<5 && flines<nrow && ch<eof) {
+            //ch2=ch; while (ch2<eof && isspace(*ch2) && *ch2!=sep && *ch2!=eol) ch2++;  // skip over any empty lines
+            //if (ch2<eof && *ch2==eol) { ch=ch2+eolLen; continue; }
+            flines++;
+            linestart = ch;
+            for (i=0;i<ncol;i++) {
+                // Rprintf("Field %d: '%.20s'\n", i+1, ch);        
+                switch (type[i]) {
+                case SXP_INT:
+                    ch2=ch;
+                    u.l = NA_INTEGER;      // see comments in the main read step lower down. Similar switch as here.
+                    if (Strtoll() && INT_MIN<=u.l && u.l<=INT_MAX) break;   
+                    type[i]++; ch=ch2;
+                case SXP_INT64:
+                    if (Strtoll()) break;
+                    type[i]++;
+                case SXP_REAL:
+                    if (Strtod()) break;
+                    type[i]++;
+                case SXP_STR:
+                    if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\')); ch++;}
+                    else while(ch<eof && *ch!=sep && *ch!=eol) ch++;
+                }
+                if (ch<eof && *ch==sep && i<ncol-1) {ch++; continue;}  // most common case first, done, next field
+                if (i<ncol-1) error("Expected sep ('%c') but '%c' ends field %d on line %d when detecting types: %.*s", sep, *ch, i+1, nline+flines-1, ch-linestart+1, linestart);
+            }
+            while (ch<eof && *ch!=eol) ch++;
+            if (ch<eof && *ch==eol) ch+=eolLen;
+        }
+        if (verbose) { Rprintf("Type codes: "); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf(" (%s 5 rows)\n",str); }
+    }
+    double tColType = currentTime();
+    
     // ********************************************************************************************
     // Allocate columns for known nrow
     // ********************************************************************************************
@@ -533,7 +541,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     double tAlloc = currentTime();
     
     // ********************************************************************************************
-    // Now read the data
+    //   Read the data
     // ********************************************************************************************
     tCoerce = tCoerceAlloc = 0.0;
     double nexttime = t0+2;  // start printing % done after a few seconds, if doesn't appear then you know mmap is taking a while
@@ -548,35 +556,21 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             thiscol = VECTOR_ELT(ans, j);
             switch (type[j]) {
             case SXP_INT:
-                ch2=ch;
-                u.l = Strtoll();
-                if (errno==0 && INT_MIN<=u.l && u.l<=INT_MAX) {
+                ch2=ch; u.l=NA_INTEGER;
+                if (Strtoll() && INT_MIN<=u.l && u.l<=INT_MAX) {  // relies on INT_MIN==NA.INTEGER, checked earlier
                     INTEGER(thiscol)[i] = (int)u.l;
                     break;   //  Most common case. Done with this field. Strtoll already moved ch for us to sit on next sep or eol.
-                } else if (errno==1) {   // TO DO: remove this brach by letting Strtoll return NA_INTEGER for NA (==INT_MIN) and ,,?
-                    INTEGER(thiscol)[i] = NA_INTEGER;
-                    break;
                 }
                 ch=ch2;  // moves ch back ready for type bump and reread of this field (an INT64 would have been read fine by Strtoll)
                 SET_VECTOR_ELT(ans, j, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_INT64, i, j));
             case SXP_INT64:
-                u.l = Strtoll();
-                if (errno==0) {
-                    REAL(thiscol)[i] = u.d;
-                    break;
-                } else if (errno==1) {   // TO DO: same as comment above.
-                    REAL(thiscol)[i] = NA_REAL;
-                    break;
-                }
+                u.d = NA_REAL;
+                if (Strtoll()) { REAL(thiscol)[i] = u.d; break; }
                 SET_VECTOR_ELT(ans, j, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_REAL, i, j));
-                // A bump from INT to STR will bump through INT64 and then REAL before STR, coercing each time. Deliberate, known and
-                // timed by verbose=TRUE. Very rare (see comments in coerceVectorSoFar). For speed in most common cases (saving deep branches).
+                // A bump from INT to STR will bump through INT64 and then REAL before STR, coercing each time. Deliberately done this way. It's
+                // a small and very rare cost (see comments in coerceVectorSoFar), for better speed 99% of the time (saving deep branches).
             case SXP_REAL:
-                u.d = Strtod();
-                if (errno==0) {
-                    REAL(thiscol)[i] = u.d;
-                    break;
-                }
+                if (Strtod()) { REAL(thiscol)[i] = u.d; break; }
                 SET_VECTOR_ELT(ans, j, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
             case SXP_STR:
                 ch2=ch;
@@ -603,6 +597,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     R_FlushConsole();
     double tRead = currentTime();
     for (i=0; i<ncol; i++) SETLENGTH(VECTOR_ELT(ans,i), nrow);
+    
+    // ********************************************************************************************
+    //   Convert na.strings to NA
+    // ********************************************************************************************
     for (k=0; k<length(nastrings); k++) {
         thisstr = STRING_ELT(nastrings,k);
         for (j=0; j<ncol; j++) {
@@ -627,12 +625,13 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (verbose) {
         double tn = currentTime(), tot=tn-t0;
         Rprintf("%8.3fs (%3.0f%%) Memory map (rerun may be quicker)\n", tMap-t0, 100*(tMap-t0)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Format detection\n", tFormat-tMap, 100*(tFormat-tMap)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", tRowCount-tFormat, 100*(tRowCount-tFormat)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (xMB) in RAM\n", tAlloc-tRowCount, 100*(tAlloc-tRowCount)/tot, nrow, ncol);
+        Rprintf("%8.3fs (%3.0f%%) Sep and header detection\n", tLayout-tMap, 100*(tLayout-tMap)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", tRowCount-tLayout, 100*(tRowCount-tLayout)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Colmn type detection (first, middle and last 5 rows)\n", tColType-tRowCount, 100*(tColType-tRowCount)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (xMB) in RAM\n", tAlloc-tColType, 100*(tAlloc-tColType)/tot, nrow, ncol);
         Rprintf("%8.3fs (%3.0f%%) Reading data\n", tRead-tAlloc-tCoerce, 100*(tRead-tAlloc-tCoerce)/tot);
         Rprintf("%8.3fs (%3.0f%%) Allocation for type bumps (if any), including gc time if triggered\n", tCoerceAlloc, 100*tCoerceAlloc/tot);
-        Rprintf("%8.3fs (%3.0f%%) Coercing data already read in type bumps\n", tCoerce-tCoerceAlloc, 100*(tCoerce-tCoerceAlloc)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Coercing data already read in type bumps (if any)\n", tCoerce-tCoerceAlloc, 100*(tCoerce-tCoerceAlloc)/tot);
         Rprintf("%8.3fs (%3.0f%%) Changing na.strings to NA\n", tn-tRead, 100*(tn-tRead)/tot);
         Rprintf("%8.3fs        Total\n", tot);
     }

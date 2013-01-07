@@ -32,7 +32,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
         double d;
         SEXP s;
     } lval, rval;
-    if (NA_INTEGER > INT_MIN) error("expected internal value of NA_INTEGER %d to be INT_MIN (%d).", NA_INTEGER, INT_MIN);
+    if (NA_INTEGER != INT_MIN) error("Internal error: NA_INTEGER (%d) != INT_MIN (%d).", NA_INTEGER, INT_MIN);
     if (NA_INTEGER != NA_LOGICAL) error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
     nr = LENGTH(VECTOR_ELT(right,0));   // num rows in right hand table
     coln = LENGTH(leftcols);    // there may be more sorted columns in x than involved in the join
