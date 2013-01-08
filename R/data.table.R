@@ -14,8 +14,10 @@ dim.data.table <- function(x) {
         2L # normal value when package is loaded in 2.14+ (where functions are compiled in namespace)
     }
 
-print.data.table = function(x, nrows=getOption("datatable.print.nrows"), digits=NULL,
-                            topn=getOption("datatable.print.topn"), ...)
+print.data.table = function(x,
+    topn=getOption("datatable.print.topn"),   # (5) print the top topn and bottom topn rows with '---' inbetween
+    nrows=getOption("datatable.print.nrows"), # (100) under this the whole (small) table is printed, unless topn is provided
+    digits=NULL, ...)
 {
     if (!.global$print) {
         #  := in [.data.table sets print=FALSE, when appropriate, to suppress := autoprinting at the console
@@ -24,9 +26,10 @@ print.data.table = function(x, nrows=getOption("datatable.print.nrows"), digits=
     }
     if (!is.numeric(nrows)) nrows = 100L
     if (!is.infinite(nrows)) nrows = as.integer(nrows)
-    if (nrows <= 0L) return(invisible())
+    if (nrows <= 0L) return(invisible())   # ability to turn off printing
     if (!is.numeric(topn)) topn = 5L
-    topn = as.integer(topn)
+    topnmiss = missing(topn)
+    topn = max(as.integer(topn),1L)
     if (nrow(x) == 0L) {
         if (length(x)==0L)
            cat("NULL data.table\n")
@@ -34,20 +37,14 @@ print.data.table = function(x, nrows=getOption("datatable.print.nrows"), digits=
            cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6),collapse=","),if(ncol(x)>6)"...","\n",sep="")
         return()
     }
-    printdots=FALSE
-
-    if (topn * 2 >= nrows) {
-        ## If nrows is set to a very small number, you might just print the whole data.table
-        ## with a `---` in the middle, anyway.
-        topn = max(floor(nrows / 3), 1L)
-    }
-    if (nrow(x)>nrows) {
+    if (topn*2<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
         toprint = rbind(head(x, topn), tail(x, topn))
         rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
         printdots = TRUE
     } else {
         toprint = x
         rn = seq_len(nrow(x))
+        printdots = FALSE
     }
     toprint=format.data.table(toprint, digits=digits, na.encode = FALSE)
     rownames(toprint)=paste(format(rn,right=TRUE),":",sep="")

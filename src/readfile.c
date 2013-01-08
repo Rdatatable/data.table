@@ -18,10 +18,9 @@
 
 /*****
 TO DO:
-Post from patricknik on 5 Jan re ""b"" in a field.
 Check that default sep for first column date test is now space not \\. Then implement loop to find separator to find header row.
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
-print.data.table nrow tidy up. Change test() to be print(DT,topn=2)
+Post from patricknik on 5 Jan re ""b"" in a field.
 Warn about non whitespace (unprotected by comment.char) after the last column on any line (currently skipped silently)
 Warning about any blank lines skipped in the middle, and any imperfect number of columns
 Check and correct nline in error messages

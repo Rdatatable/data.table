@@ -1,15 +1,15 @@
 \name{J}
 \alias{J}
-\alias{SJ}
 \alias{CJ}
+\alias{SJ}
 \title{ Creates a Join data table }
 \description{
   Creates a data.table to be passed in as the i to a [.data.table join.
 }
 \usage{
-J(...)    # Only for use in i of DT[i, ...]. Deprecated outside.
-SJ(...)
-CJ(...)
+# DT[J(...)]    # J() only for use inside DT[...].
+SJ(...)         # DT[SJ(...)]
+CJ(...)         # DT[CJ(...)]
 }
 \arguments{
   \item{\dots}{ Each argument is a vector. Generally each vector is the same length but if they are not then usual silent repitition is applied. }
