@@ -18,7 +18,6 @@
 
 /*****
 TO DO:
-then turn back on bump to STR warning (will need warning= in bump tests)
 Post from patricknik on 5 Jan re ""b"" in a field.
 Check that default sep for first column date test is now space not \\. Then implement loop to find separator to find header row.
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
@@ -32,6 +31,7 @@ A way for user to override type, for particular columns only.
 A few TO DO inline in the code, including some speed fine tuning e.g. specialize Ispace and any other lib calls.
 Save repeated ch<eof checking in main read step. Last line might still be tricky if last line has no eol.
 test using at least "grep read.table ...Rtrunk/tests/
+Remove J and update NEWS about rJava.
 ---
 Secondary separator for list() columns, such as columns 11 and 12 in BED.
 If nrow is small, say 20, then it shouldn't mmap the entire file (that's probably why user just wants to look at head). Try MMAP_DONTNEED in that case to save needing to map the file in chunks.
@@ -187,8 +187,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
         }
         break;
     case SXP_STR:
-        if (verbose) Rprintf("Bumping column %d from %s to STR on data row %d, field contains '%.*s'. Coercing previously read values in this column back to STR which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too, if they occurred before the bump. If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, TypeName[oldtype], sofar+1, lch-ch, ch);
-        // TODO: this Rprintf back to warning when first 5 (not from autostart), middle and end is also checked (test 894.03+).
+        warning("Bumped column %d to type character on data row %d, field contains '%.*s'. Coercing previously read values in this column from integer or numeric back to character which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too (if they occurred in this column before the bump). If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, sofar+1, lch-ch, ch);
         switch(oldtype) {
         case SXP_INT :
             // This for loop takes 0.000007 seconds if the bump occurs on line 179, for example, timing showed

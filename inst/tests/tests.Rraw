@@ -28,17 +28,20 @@ test = function(num,x,y=NULL,error,warning,output) {
         patt = txt = ifelse(!missing(error),error,warning)
         patt = gsub("[(]","[(]",patt)
         patt = gsub("[)]","[)]",patt)
-        if (inherits(err,"try-error") &&
-           length(grep(patt,err)) &&
-           ((type=="error" && !length(grep("converted from warning",err))) ||
-            (type=="warning" && length(grep("converted from warning",err)))))
+        if (! (inherits(err,"try-error") &&
+              length(grep(patt,err)) &&
+              ((type=="error" && !length(grep("converted from warning",err))) ||
+               (type=="warning" && length(grep("converted from warning",err))))) ) {
+            cat("Test",num,"didn't produce correct",type,":\n")
+            cat("Expected: '",txt,"'\n",sep="")
+            cat("Observed: '",gsub("^[(]converted from warning[)] ","",gsub("\n$","",gsub("^Error.* : \n  ","",as.character(err)))),"'\n",sep="")
+            nfail <<- nfail + 1
+            whichfail <<- c(whichfail, num)
             return()
-        cat("Test",num,"didn't produce correct",type,":\n")
-        cat("Expected: '",txt,"'\n",sep="")
-        cat("Observed: '",gsub("^[(]converted from warning[)] ","",gsub("\n$","",gsub("^Error.* : \n  ","",as.character(err)))),"'\n",sep="")
-        nfail <<- nfail + 1
-        whichfail <<- c(whichfail, num)
-        return()
+        }
+        if (type=="warning")
+            err <- if (missing(output)) x<-try(suppressWarnings(x),TRUE) else out<-paste(capture.output(x<-try(suppressWarnings(x),TRUE)),collapse="")
+        else return()
     }
     if (inherits(err,"try-error") || inherits(err<-try(y,TRUE),"try-error")) {
         cat("Test",num,err)
@@ -65,6 +68,15 @@ test = function(num,x,y=NULL,error,warning,output) {
     }
     if (missing(y)) {
         if (isTRUE(as.vector(x))) return()  # as.vector to drop names of a named vector such as returned by system.time
+        cat("Test",num,"expected TRUE (y is missing) but observed:\n")
+        if (is.data.table(x)) {
+            print(head(x,2));print(tail(x,2))
+            cat("Key: ",paste(key(x),collapse=","),"\n")
+            cat("Types: ",paste(sapply(x,class),collapse=","),"\n")
+        } else print(x)
+        nfail <<- nfail + 1
+        whichfail <<- c(whichfail, num)
+        return()
     } else {
         if (identical(x,y)) return()
         if (is.data.table(x) && is.data.table(y)) {
@@ -917,15 +929,13 @@ test(297,DT[,list(A1=sum(A1),A2=sum(A2),A3=sum(A3)),by=grp], DT[,lapply(.SD,sum)
 DT = data.table(a=1:3,b=4:6)
 test(298, {DT$b<-NULL;DT}, data.table(a=1:3))  # delete column
 test(299, DT$c <- as.character(DT$c), error="zero length")  # to simulate RHS which could (due to user error) be non NULL but zero length. This copies DT too, so the next test checks that a subsequent := detects and fixes that.
-test(299.01, DT[,c:=42L], warning="Invalid .internal.selfref detected and fixed")
-test(299.02, suppressWarnings(DT[,c:=42L]), data.table(a=1:3,c=42L))
-test(299.03, truelength(DT)>length(DT))   # the := over-allocated, by 100 by default, but user may have changed default so just check '>'
-
-test(299.2, DT[2,c:=42], warning="Coerced 'double' RHS to 'integer' to match the column's type.*length 3 (nrows of entire table)")
+test(299.1, DT[,c:=42L], data.table(a=1:3,c=42L), warning="Invalid .internal.selfref detected and fixed")
+test(299.2, truelength(DT)>length(DT))   # the := over-allocated, by 100 by default, but user may have changed default so just check '>'
+test(299.3, DT[2,c:=42], data.table(a=1:3,c=42L), warning="Coerced 'double' RHS to 'integer' to match the column's type.*length 3 (nrows of entire table)")
 # also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
-test(299.3, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
-test(299.4, DT[2,c:=42], warning="Coerced 'double' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
-test(299.5, DT[2,c:=42L], warning="Coerced 'integer' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
+test(299.4, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
+test(299.5, DT[2,c:=42], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
+test(299.6, DT[2,c:=0L], data.table(a=1:3,c=FALSE), warning="Coerced 'integer' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
 
 
 # Test bug fix #1468, combining i and by.
@@ -980,7 +990,7 @@ test(313, DT[,a:=1:3], error="") # cannot := a new column to NULL data.table, cu
 DT = data.table(a=20:22)
 test(314, {DT[,b:=23:25];DT[,c:=26:28]}, data.table(a=20:22,b=23:25,c=26:28))   # add in series
 test(315, DT[,c:=NULL], data.table(a=20:22,b=23:25))   # delete last
-test(316, DT[,c:=NULL], warning="Adding new column 'c' then assigning NULL")
+test(316, DT[,c:=NULL], data.table(a=20:22,b=23:25), warning="Adding new column 'c' then assigning NULL")
 
 
 # Test adding, removing and updating columns via [<- in one step
@@ -1012,8 +1022,7 @@ DT = data.table(a=1:5, b=6:10, c=11:15)
 test(327, within(DT,rm(a,b)), data.table(c=11:15))
 test(328, within(DT,rm(b,c)), data.table(a=1:5))
 test(329, within(DT,rm(b,a)), data.table(c=11:15))
-test(330, within(DT,rm(b,c,d)), warning="object 'd' not found")
-test(331, suppressWarnings(within(DT,rm(b,c,d))), data.table(a=1:5))
+test(330, within(DT,rm(b,c,d)), data.table(a=1:5), warning="object 'd' not found")
 DT[,c("b","a")]=NULL
 test(332, DT, data.table(c=11:15))
 test(333, within(DT,rm(c)), data.table(NULL))
@@ -1054,10 +1063,8 @@ test(346, setkey(DT,x)[J(as.IDate("2010-01-02"))], {.x=as.IDate(rep("2010-01-02"
 # Test that invalid keys are reset, without user needing to remove key using key(DT)=NULL first
 DT = data.table(a=letters[1:3],b=letters[6:4],key="a")
 attr(DT,"sorted")="b"  # user can go under the hood
-test(347, setkey(DT,b), warning="Already keyed by this key but had invalid row order, key rebuilt")
-DT = data.table(a=letters[1:3],b=letters[6:4],key="a")
-attr(DT,"sorted")="b"
-test(348, suppressWarnings(setkey(DT,b)), data.table(a=letters[3:1],b=letters[4:6],key="b"))
+test(347, setkey(DT,b), data.table(a=letters[3:1],b=letters[4:6],key="b"),
+          warning="Already keyed by this key but had invalid row order, key rebuilt")
 
 # Test .N==0 with nomatch=NA|0
 DT = data.table(a=1:2,b=1:6,key="a")
@@ -1248,7 +1255,7 @@ test(416, DT[J(2)], error="x must be keyed")
 
 # Test shallow copy warning from := adding a column, and (TO DO) only when X is NAMED.
 DT = data.table(a=1:3,b=4:6)
-test(417, alloc.col(DT,3), warning="Attempt to reduce allocation from.*to 3 ignored. Can only increase allocation via shallow copy")
+test(417, alloc.col(DT,3), DT, warning="Attempt to reduce allocation from.*to 3 ignored. Can only increase allocation via shallow copy")
 old = getOption("datatable.alloccol")   # search for "r-devel" note in this file why not in one step here
 options(datatable.alloccol=3L)
 DT = data.table(a=1:3,b=4:6)
@@ -1266,8 +1273,7 @@ test(423, truelength(DT)>=4)  # with default alloccol, new tl will be 103. But u
 DT <- data.table(a = factor(c("A", "Z")), b = 1:4)
 DT[1,1] <- "Z"
 test(424, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
-test(425, DT[1,1] <- 1, warning="Coerced 'double' RHS to 'integer'")
-suppressWarnings(DT[1,1] <- 1)
+test(425, DT[1,1] <- 1, 1, warning="Coerced 'double' RHS to 'integer'")
 test(426, DT, data.table(a=factor(c("A","Z")),b=1:4))
 DT[1,1] <- 2L
 test(427, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
@@ -1275,8 +1281,8 @@ DT[1,a:="A"]
 test(428, DT, data.table(a=factor(c("A","Z","A","Z")),b=1:4))
 DT[1,a:=2L]
 test(429, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
-test(430, DT[1,1]<- 3L, warning="RHS contains 3 which is outside the levels range.*1,2.*of column 1, NAs generated")
-test(431, DT[1,1:=4L,with=FALSE], warning="RHS contains 4 which is outside the levels range.*1,2.*of column 1, NAs generated")
+test(430, DT[1,1]<- 3L, NA_integer_, warning="RHS contains 3 which is outside the levels range.*1,2.*of column 1, NAs generated")
+test(431, DT[1,1:=4L,with=FALSE], data.table(a=factor(c(NA,"Z","A","Z")),b=1:4), warning="RHS contains 4 which is outside the levels range.*1,2.*of column 1, NAs generated")
 
 # simple realloc test
 if (is.null(getOption("datatable.alloccol"))) {
@@ -1314,12 +1320,9 @@ DT = data.table(a=1:3,b=4:6)
 test(441, rbind(DT,list(a=4L,b=7L)), data.table(a=1:4,b=4:7))
 test(442, rbind(DT,data.frame(a=4L,b=7L)), data.table(a=1:4,b=4:7))
 test(443, rbind(DT,data.table(a=4L,b=7L)), data.table(a=1:4,b=4:7))
-test(444, rbind(DT,list(b=7L,a=4L)), warning="Argument 2 has names in a different order.")
-test(445, rbind(DT,data.frame(b=7L,a=4L)), warning="Argument 2 has names in a different order.")
-test(446, rbind(DT,data.table(b=7L,a=4L)), warning="Argument 2 has names in a different order.")
-test(447, suppressWarnings(rbind(DT,list(b=7L,a=4L))), data.table(a=1:4,b=4:7))
-test(448, suppressWarnings(rbind(DT,data.frame(b=7L,a=4L))), data.table(a=1:4,b=4:7))
-test(449, suppressWarnings(rbind(DT,data.table(b=7L,a=4L))), data.table(a=1:4,b=4:7))
+test(444, rbind(DT,list(b=7L,a=4L)), data.table(a=1:4,b=4:7), warning="Argument 2 has names in a different order.")
+test(445, rbind(DT,data.frame(b=7L,a=4L)), data.table(a=1:4,b=4:7), warning="Argument 2 has names in a different order.")
+test(446, rbind(DT,data.table(b=7L,a=4L)), data.table(a=1:4,b=4:7), warning="Argument 2 has names in a different order.")
 test(450, rbind(DT,list(c=4L,a=7L)), error="Some colnames of argument 2 (c) are not present in colnames of item 1")
 test(451, rbind(DT,data.frame(c=4L,a=7L)), error="Some colnames of argument 2 (c) are not present in colnames of item 1")
 test(452, rbind(DT,data.table(c=4L,a=7L)), error="Some colnames of argument 2 (c) are not present in colnames of item 1")
@@ -1419,9 +1422,7 @@ test(478, DT[,foo:=foo], DT)  # does nothing, with no warning, consistent with b
 
 # Test that recycling now works with oversized inputs and % != 0 length, both with warnings.
 DT = data.table(x=1:4)
-test(479, DT[, a := 5:7], warning="Supplied 3 items to be assigned to 4 items of column 'a' (recycled leaving remainder of 1 items)")
-suppressWarnings(DT[, a := 5:7])
-test(480, DT, data.table(x=1:4,a=c(5:7,5L)))  # no longer error, now recycles with remainder and warning
+test(479, DT[, a:=5:7], data.table(x=1:4,a=c(5:7,5L)), warning="Supplied 3 items to be assigned to 4 items of column 'a' (recycled leaving remainder of 1 items)")
 
 # Test that multiple columns can be added
 DT = data.table(x=1:4)
@@ -1455,11 +1456,9 @@ if ("package:reshape" %in% search()) {
 
 # Test warnings for names<- and colnames<-,  but only warnings when caller is data.table aware.
 DT = data.table(a=1:3,b=4:6)
-test(489, names(DT)[1]<-"A", warning="names(x)<-value syntax.*Please change to setnames")
-suppressWarnings(names(DT)[1]<-"A")  # make sure it still works
+test(489, names(DT)[1]<-"A", "A", warning="names(x)<-value syntax.*Please change to setnames")
 test(490, names(DT), c("A","b"))
-test(491, colnames(DT)[2]<-"B", warning="colnames(x)<-value syntax.*Please change to setnames")
-suppressWarnings(colnames(DT)[2]<-"B")  # make sure it still works
+test(491, colnames(DT)[2]<-"B", "B", warning="colnames(x)<-value syntax.*Please change to setnames")
 test(492, names(DT), c("A","B"))
 
 # Check setnames out of bounds errors
@@ -1505,8 +1504,7 @@ test(505, DT[J(a=1,b=6),sum(i.b*b)]$V1, 24)  # 24 now 'double' because i.b is 'd
 
 # Test := after a key<-
 DT = data.table(a=3:1,b=4:6)
-test(506, key(DT)<-"a", warning="can copy the whole table")
-test(507, suppressWarnings(key(DT)<-"a"), "a")
+test(506, key(DT)<-"a", "a", warning="can copy the whole table")
 test(508, DT, data.table(a=1:3,b=6:4,key="a"))
 test(509, DT[,b:=10L], data.table(a=1:3,b=10L,key="a"))
 test(510, DT[,c:=11L], data.table(a=1:3,b=10L,c=11L,key="a"))  # Used to be warning about invalid .internal.selfref detected and fixed. As from v1.8.3 data.table() returns a NAMED==0 object, and key<- appears not to copy that. But within functions, key<- would still copy. TO DO: add tests.... 
@@ -1521,10 +1519,10 @@ test(514, x %chin% y, x %in% y)
 
 # Test new function set() in v1.8.0
 DT = data.table(a=1:3,b=4:6)
-test(515, set(DT,2,1,3), warning="Coerced i")
+test(515, set(DT,2,1,3), data.table(a=c(1L,3L,3L),b=4:6), warning="Coerced i")
 test(516, set(DT,"2",1,3), error="i is type 'character'")
-test(517, set(DT,2L,1,3), warning="Coerced j")
-test(518, set(DT,2L,1L,3), warning="Coerced 'double' RHS to 'integer'")
+test(517, set(DT,2L,1,3), DT, warning="Coerced j")
+test(518, set(DT,2L,1L,3), DT, warning="Coerced 'double' RHS to 'integer'")
 test(519, set(DT,2L,1L,3L), data.table(a=INT(1,3,3),b=4:6))
 test(520, set(DT,2L,"a",2L), data.table(a=1:3,b=4:6))
 test(521, set(DT,2:3,"b",7:8), data.table(a=1:3,b=INT(4,7,8)))
@@ -1922,7 +1920,7 @@ test(670, DT[,z:=sum(y),keyby=x], ans)
 DT = data.table(x=1:2, y=1:6)
 test(671, DT[,z:=sum(y),keyby="x"], ans)
 DT = data.table(x=1:2, y=1:6)
-test(672, DT[,z:=sum(y),keyby=x%%2], warning=":= keyby not straightforward character column names or list() of column names, treating as a by")
+test(672, DT[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)), warning=":= keyby not straightforward character column names or list() of column names, treating as a by")
 DT = data.table(x=1:2, y=1:6)
 test(673, DT[,z:=sum(y),by=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)))
 DT = data.table(x=1:2, y=1:6)
@@ -2016,7 +2014,7 @@ setnames(DT,c("A","B"))
 test(714, DT[,z:=6:10], data.table(A=1:5,B=5,z=6:10))
 
 # Test J alias (now deprecated) issued warning from v1.8.3
-test(715, J(a=1:3,b=4), warning="deprecated [*]outside[*] DT")
+test(715, J(a=1:3,b=4), data.table(a=1:3,b=4), warning="deprecated [*]outside[*] DT")
 
 # Test get in j
 DT = data.table(a=1:3,b=4:6)
@@ -2091,7 +2089,7 @@ test(745, DT[,ncol(DT):=1L], data.table(c1=1:3,c2=99L,c3=1L))
 DT = data.table(a=letters[c(1:3,3L)],key="a")
 test(746, DT["a",c("new1","new2"):=list(4L, 5L)],
           data.table(a=letters[c(1:3,3L)],new1=INT(4,NA,NA,NA),new2=INT(5,NA,NA,NA),key="a"))
-test(747, DT[,new1:=4:6], warning="recycled leaving remainder of 1 item")
+test(747, DT[,new1:=4:6], data.table(a=letters[c(1:3,3L)],new1=INT(4L,5L,6L,4L),new2=INT(5,NA,NA,NA),key="a"), warning="recycled leaving remainder of 1 item")
 suppressWarnings(DT[,new1:=4:6])
 test(748, DT[c("c","b"),`:=`(new3=.N,new2=sum(new1)+1L)], data.table(a=letters[c(1:3,3L)],new1=INT(4,5,6,4),new2=INT(5,6,11,11),new3=INT(NA,1,2,2),key="a"))
 
@@ -2122,11 +2120,10 @@ test(754.3, DT[,a:=as.character(a),verbose=TRUE], output="Direct plonk.*no copy"
 RHS = as.integer(DT$a)
 test(754.4, DT[,a:=RHS,verbose=TRUE], output="RHS for item 1 has been duplicated")
 
-
 # Test warning on redundant by, #2282.  # ** TO DO ** - add this to FAQ warnings section.
 DT = data.table(a=letters[1:3],b=rep(c("d","e"),each=3),x=1:6,key="a,b")
 test(755, DT[c("b","c"),sum(x)], data.table(a=c("b","c"),V1=c(7L,9L),key="a"))
-test(756, DT[c("b","c"),sum(x),by=a], warning="by.*is not necessary.*by-without-by")
+test(756, DT[c("b","c"),sum(x),by=a], data.table(a=c("b","c"),V1=c(7L,9L),key="a"), warning="by.*is not necessary.*by-without-by")
 test(757, DT[list(c("b","c"),"d"),sum(x),by=a], data.table(a=c("b","c"),V1=2:3,key="a"))  # no warning because 'by' less than number of join columns
 
 # join then by when mult=="last"|"first", #2303 (crash in dev 1.8.3 only)
@@ -2161,8 +2158,8 @@ test(770, DT[J(2:3),.BY[[1]]==b], data.table(a=INT(2,2,3,3),V1=c(TRUE,FALSE),key
 # A data.table RHS of := caused a crash, #2311.
 a = data.table(first=1:6, third=c(1,1,1,3,3,4), key="first")
 b = data.table(first=c(3,4,4,5,6,7,8), second=1:7, key="first")
-test(771, b[,third:=a[b,third]], warning="Supplied 2 items.*to 7.*recycled leaving remainder of 1 item")
-suppressWarnings(test(772, copy(b)[,third:=a[b,third]], b[,third:=as.list(a[b,third])]))
+test(771, b[,third:=a[b,third]], b, warning="Supplied 2 items.*to 7.*recycled leaving remainder of 1 item")
+test(772, copy(b)[,third:=as.list(a[b,third])], b, warning="Supplied 2 items.*to 7.*recycled leaving remainder of 1 item")
 test(773, b[4,third[[1]]], c(1,3,3,3,4,NA,NA))
 test(774, b[,third:=a[b,third,mult="first"]], data.table(first=c(3,4,4,5,6,7,8), second=1:7, third=c(1,3,3,3,4,NA,NA), key="first"))  # This plonk replaces b with what was likely intended.
 
@@ -2229,8 +2226,8 @@ test(811, DT[c("b","foo","c"),which=NA,nomatch=0], error="which=NA with nomatch=
 DT = data.table(a=1:3,b=4:6,c=7:9)
 test(812, DT[,!"b",with=FALSE], DT[,-match("b",names(DT)),with=FALSE])
 test(813, DT[,"foo",with=FALSE], error="column(s) not found: foo")
-test(814, DT[,!"foo",with=FALSE], warning="column(s) not removed because not found: foo")
-test(815, suppressWarnings(DT[,!c("b","foo"),with=FALSE]), DT[,list(a,c)])
+test(814, DT[,!"foo",with=FALSE], data.table(NULL), warning="column(s) not removed because not found: foo")  # TO DO: NULL doesn't seem right
+test(815, DT[,!c("b","foo"),with=FALSE], DT[,list(a,c)], warning="column(s) not removed because not found: foo")
 test(816, DT[,!2:3,with=FALSE], DT[,-(2:3),with=FALSE])  # for consistency, but ! is really for character column names
 mycols = "b"
 test(817, DT[,!mycols,with=FALSE], DT[,list(a,c)])
@@ -2291,7 +2288,7 @@ DT = data.table(a=1:3)
 DT[,a:=scale(a)]    # 1 column matrix auto treated as vector
 test(835, na.omit(DT), DT)
 test(836, DT[,a:=as.integer(a)], data.table(a=INT(-1,0,1)))
-test(837, DT[,a:=cbind(1,2)], warning="2 column matrix RHS of := will be treated as one vector")
+test(837, DT[,a:=cbind(1,2)], data.table(a=c(1L,2L,1L)), warning="2 column matrix RHS of := will be treated as one vector")
 DT = data.table(a=1:3,b=1:6)
 test(838, DT[,c:=scale(b), by=a][,c:=as.integer(1000*c)], data.table(a=1:3,b=1:6,c=rep(as.integer(1000*scale(1:2)), each=3)))
 
@@ -2325,7 +2322,7 @@ l = list(data.table(a=1:3), data.table(b=4:6))
 test(843, l[[2L]][,c:=7:9], data.table(b=4:6,c=7:9))
 test(844, l, list(data.table(a=1:3), data.table(b=4:6,c=7:9)))
 names(l) = c("foo","bar")   # copies all the contents, too
-test(845, l[["foo"]][2,d:=4], warning="Invalid .internal.selfref detected and fixed")
+test(845, l[["foo"]][2,d:=4], data.table(a=1:3,d=c(NA,4L,NA)), warning="Invalid .internal.selfref detected and fixed")
 l = list(data.table(a=1:3), data.table(b=4:6))
 setattr(l,"names",c("foo","bar"))
 test(846, l[["foo"]][2,d:=4], data.table(a=1:3,d=c(NA,4,NA)))
@@ -2344,8 +2341,7 @@ options(datatable.alloccol=old)
 DT1 = data.table(a=1:3, b=4:6)
 DT2 = data.table(c=7:9)
 l = list(DT1, DT2)   # TO DO: implement reflist(). Same as list() but doesn't copy named inputs.
-test(853, l[[1]][,d:=10:12], warning="Invalid .internal.selfref detected and fixed.*R's list.*copies named objects")  # correct and desired warning
-test(854, suppressWarnings(l[[1]][,d:=10:12]), data.table(a=1:3,b=4:6,d=10:12))
+test(853, l[[1]][,d:=10:12], data.table(a=1:3,b=4:6,d=10:12), warning="Invalid .internal.selfref detected and fixed.*R's list.*copies named objects")  # correct and desired warning
 test(855, l[[1]], data.table(a=1:3,b=4:6,d=10:12))
 
 # Test setnames on data.frame, #2273.
@@ -2418,7 +2414,7 @@ DT = data.table(a=1:3, b=4:6)
 test(877, setnames(DT, c(NA, NA)), error="Passed a vector of type 'logical'. Needs to be type 'character'")
 
 # test no warning when use.names explicitly set, #2385
-test(878, rbind(data.table(a=1:3,b=4:6), data.table(b=7:9,a=4:6)), warning="Argument 2 has names in a different order.*bound by name")
+test(878, rbind(data.table(a=1:3,b=4:6), data.table(b=7:9,a=4:6)), data.table(a=1:6,b=4:9), warning="Argument 2 has names in a different order.*bound by name")
 test(879, rbind(data.table(a=1:3,b=4:6), data.table(b=7:9,a=4:6), use.names=TRUE), data.table(a=1:6,b=4:9))
 
 # Test fread()
@@ -2504,7 +2500,7 @@ if ("package:bit64" %in% search()) {
     DT[16, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
     DT[17, r2:="3.14A"]
     write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)  
-    test(899, fread(f), DT)
+    test(899, fread(f), DT, warning="Bumped column.*to type character.*may not be lossless")
     unlink(f)
 } else {
     cat("Tests 897-899 not run. If required call library(bit64) first.\n")
@@ -2519,7 +2515,7 @@ test(901, DT<-fread(f), as.data.table(read.table(f,sep="\t",header=TRUE,colClass
 
 # Tests the coerce of column 23 to character on line 179 due to the 'A' for the first time :
 f = paste(loc,"2008head.csv",sep="")
-test(902, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
+test(902, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)), warning="Bumped column 23 to type character.*may not be lossless")
 
 test(903, fread("A,B\n1,3,foo,5\n2,4,barbaz,6"), data.table(1:2,3:4,c("foo","barbaz"),5:6))  # invalid header (too short) ignored
 test(904, fread("A,B,C,D\n1,3,foo,5\n2,4,barbaz,6"), DT<-data.table(A=1:2,B=3:4,C=c("foo","barbaz"),D=5:6))  # ok
