@@ -53,8 +53,8 @@ BUG FIXES
         Many thanks to statquant for the thorough and reproducible report :
         http://stackoverflow.com/questions/14076065/data-table-inner-outer-join-to-merge-with-na
         
-    o   setnames failed on a keyed table where columns 1:length(key) were not the key.
-        Fixed and test added.
+    o   setnames() of all column names (such as setnames(DT,toupper(names(DT)))) failed on a
+        keyed table where columns 1:length(key) were not the key. Fixed and test added.
 
 NOTES
 
