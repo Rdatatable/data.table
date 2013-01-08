@@ -2529,7 +2529,7 @@ Date and Time,Open,High,Low,Close,Volume
 2007/01/01 22:51:00,5683,5683,5673,5673,64
 2007/01/01 22:52:00,5675,5676,5674,5674,17
 2007/01/01 22:53:00,5674,5674,5673,5674,42
-",sep=",")$Open, c(5683L,5675L,5674L))
+")$Open, c(5683L,5675L,5674L))   # , is higher than ' ' in the hierarchy of separators, so ',' is auto detected here.
 
 # blanks when testing if header row is all character
 test(910, fread("
@@ -2542,26 +2542,33 @@ test(911, fread("02-FEB-2009,09:55:04:962,26022009,2500,PE,36,500,44,200,11850,1
 02-FEB-2009,09:55:04:987,26022009,2800,PE,108.75,200,111,50,11700,1450,,2865.60
 02-FEB-2009,09:55:04:939,26022009,3100,CE,31.1,3000,36.55,200,3500,5250,,2865.60")$V13, rep(2865.60,3))
 
+# Check manually setting separator
+txt = "A;B;C|D,E\n1;3;4|5,6\n2;4;6|8,10\n"
+test(912, names(fread(txt)), c("A;B;C|D","E"))
+test(913, fread(txt,sep=";"), data.table(A=1:2,B=3:4,"C|D,E"=c("4|5,6","6|8,10")))
+test(914, fread(txt,sep="*"), data.table("A;B;C|D,E"=c("1;3;4|5,6","2;4;6|8,10")))  # like a fast readLines when sep not present
+test(915, fread(txt,sep="\n"), data.table("A;B;C|D,E"=c("1;3;4|5,6","2;4;6|8,10"))) # same
+
 # Crash bug when RHS is 0 length and := by group, fixed in 1.8.7
 DT = data.table(a=1:3,b=1:6)
-test(912, DT[,newcol:=logical(0),by=a], data.table(a=1:3,b=1:6,newcol=NA))
+test(916, DT[,newcol:=logical(0),by=a], data.table(a=1:3,b=1:6,newcol=NA))
 
 # roll join error when non last join column is factor, #2450
 X = data.table(id=2001:2004, uid=c(1001,1002,1001,1001), state=factor(c('CA','CA','CA','MA')), ts=c(51,52,53,54), key='state,uid,ts')
 Y = data.table(id=3001:3004, uid=c(1001,1003,1002,1001), state=factor(c('CA','CA','CA','CA')), ts=c(51,57,59,59), key='state,uid,ts')
-test(913, X[Y,roll=TRUE], data.table(state=factor('CA'), uid=c(1001,1001,1002,1003), ts=c(51,59,59,57), id=INT(2001,2003,2002,NA), id.1=INT(3001,3004,3003,3002),key='state,uid,ts'))
+test(917, X[Y,roll=TRUE], data.table(state=factor('CA'), uid=c(1001,1001,1002,1003), ts=c(51,59,59,57), id=INT(2001,2003,2002,NA), id.1=INT(3001,3004,3003,3002),key='state,uid,ts'))
 
 # NA in join column of type double, #2453.
 X = data.table(name=c("Joh","Raf","Jon","Ste","Rob","Smi"),depID=c(NA,31,33,33,34,34),key="depID")
 Y = data.table(depID=c(31,33,34,35),depName=c("Sal","Eng","Cle","Mar"),key="depID")
-test(914, Y[X], data.table(depID=c(NA,31,33,33,34,34),depName=c(NA,"Sal","Eng","Eng","Cle","Cle"),name=c("Joh","Raf","Jon","Ste","Rob","Smi"),key='depID'))   # Y[X] same as merge.data.frame(X,Y,all.x=TRUE)
-test(915, X[Y], data.table(depID=c(31,33,33,34,34,35),name=c("Raf","Jon","Ste","Rob","Smi",NA),depName=c("Sal","Eng","Eng","Cle","Cle","Mar"),key='depID'))
-test(916, X[Y,nomatch=0], data.table(depID=c(31,33,33,34,34),name=c("Raf","Jon","Ste","Rob","Smi"),depName=c("Sal","Eng","Eng","Cle","Cle"),key='depID'))
-test(917, Y[X,nomatch=0], data.table(depID=c(31,33,33,34,34),depName=c("Sal","Eng","Eng","Cle","Cle"),name=c("Raf","Jon","Ste","Rob","Smi"),key='depID'))
+test(918, Y[X], data.table(depID=c(NA,31,33,33,34,34),depName=c(NA,"Sal","Eng","Eng","Cle","Cle"),name=c("Joh","Raf","Jon","Ste","Rob","Smi"),key='depID'))   # Y[X] same as merge.data.frame(X,Y,all.x=TRUE)
+test(919, X[Y], data.table(depID=c(31,33,33,34,34,35),name=c("Raf","Jon","Ste","Rob","Smi",NA),depName=c("Sal","Eng","Eng","Cle","Cle","Mar"),key='depID'))
+test(920, X[Y,nomatch=0], data.table(depID=c(31,33,33,34,34),name=c("Raf","Jon","Ste","Rob","Smi"),depName=c("Sal","Eng","Eng","Cle","Cle"),key='depID'))
+test(921, Y[X,nomatch=0], data.table(depID=c(31,33,33,34,34),depName=c("Sal","Eng","Eng","Cle","Cle"),name=c("Raf","Jon","Ste","Rob","Smi"),key='depID'))
 
 # setnames bug on keyed table, when full vector is given and target key isn't the positions in columns 1:length(key)
 DT = data.table(a=1:2,b=3:4,c=5:6,key="b")
-test(918, setnames(DT,c("A","B","C")), data.table(A=1:2,B=3:4,C=5:6,key="B"))
+test(922, setnames(DT,c("A","B","C")), data.table(A=1:2,B=3:4,C=5:6,key="B"))
 
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")

@@ -2,7 +2,7 @@
 \alias{fread}
 \title{ Fast and friendly file finagler }
 \description{
-   Similar to \code{read.table} but much faster and more convenient. All controls such as delimiter, colClasses and nrows are automatically detected. Dual-delimited files such as BED are automatically detected: columns 11 and 12 are each read directly into list columns where each cell is itself an integer vector (no need for strsplit). bit64::integer64 types are also detected and read directly without needing to read as character then convert.
+   Similar to \code{read.table} but much faster and more convenient. All controls such as delimiter, colClasses and nrows are automatically detected. Dual-delimited files such as BED are automatically detected: columns 11 and 12 are each read directly into list columns where each cell is itself an integer vector (no need for strsplit). bit64::integer64 types are also detected and read directly without needing to read as character before converting.
    
    This help file is in development and may document features that haven't been implemented yet.
 }
@@ -11,18 +11,18 @@ fread(input, sep="auto", sep2="auto", nrows=-1, header="auto", na.strings="NA", 
 }
 \arguments{
   \item{input}{ Either the file name to read (containing no \\n character) or the input itself as a string (containing at least one \\n), see examples. In both cases, a length 1 character string. A filename may be a URL starting http:// or file://. }
-  \item{sep}{ The separator between columns. Defaults to the first character on line \code{datastart} not in the set [a-zA-Z0-9"+-./\]. }
-  \item{sep2}{ The separator \emph{within} columns. Defaults to the first character on line \code{datastart} not in the set [a-zA-Z0-9"+-./\<sep>]. }
+  \item{sep}{ The separator between columns. Defaults to the first character in the set [\code{,\\t |;:}] that exists on line \code{datastart} outside quoted (\code{""}) regions.}
+  \item{sep2}{ The separator \emph{within} columns. For each column this can be different and is the first character in the same set ([,\\t |;:]), other than \code{sep}, that exists inside the field outside quoted (") regions.}
   \item{nrows}{ The number of rows to read, by default -1 means all. Unlike \code{read.table}, it doesn't help speed to set this to the number of rows in the file (or an estimate), since the number of rows is automatically estimated and is already fast. Only set \code{nrows} if you require the first 10 rows, for example, or are reading the file in chunks. }
   \item{header}{ Does the first data line contain column names? Defaults according to a comparison of field types in data line 1 vs 2.}
-  \item{na.strings}{ A character vector of strings to convert to \code{NA_character_}. By default, ",," is read as a blank string (\code{""}) and ",NA," is read as \code{NA_character_}. Typical values might be \code{na.strings=NULL} or perhaps \code{na.strings=c("NA","N/A","")}. }
+  \item{na.strings}{ A character vector of strings to convert to \code{NA_character_}. By default for columns read as type character, ",," is read as a blank string (\code{""}) and ",NA," is read as \code{NA_character_}. Typical alternatives might be \code{na.strings=NULL} or perhaps \code{na.strings=c("NA","N/A","")}. }
   \item{stringsAsFactors}{ Convert all character columns to factors? }
   \item{verbose}{ Be chatty? }
   \item{autostart}{ Any line number within the region of machine readable delimited text, by default 30 (or the last line if the file is shorter). If this line is empty (e.g. short files with trailing blank lines) then the last non empty line before that is found. This line is then used to auto detect \code{sep}, \code{sep2}, the number of columns and guess at the column types (although more rows are used to make a better guess, see Details). We invisage it to be extremely unlikely that \code{autostart} should ever need to be changed. }
 }
 \details{
 
-Once the separator is detected, the number of columns is determined. Then the file is searched backwards from \code{autostart} until a row is found that doesn't have that number of columns, or the start of file is reached. Thus, the first data row is found and any human readable banners are automatically skipped, if present. Rather like in Excel when you click a cell inside a rectangular region of populated cells with empty rows above, then select AutoFilter. The table region is determined by Excel searching outwards from that cell (in our case, line 30) to find the table edges. The time to do this is utterly negligible, but is reported by \code{verbose=TRUE}, just in case.
+Once the separator is detected, the number of columns is determined. Then the file is searched backwards from \code{autostart} until a row is found that doesn't have that number of columns, or the start of file is reached. Thus, the first data row is found and any human readable banners are automatically skipped. Rather like in Excel when you click a cell inside a rectangular region of populated cells with empty rows above and press AutoFilter. The table region to filter is determined by Excel searching outwards from that cell (in our case, line 30) to find the table edges. The time to do this is negligible, but is reported by \code{verbose=TRUE}, just in case.
 
 Once a good guess is made, the file may of course still contain data of a different type. In this case, the type is bumped and existing data coerced. Unlike read.table when colClasses is supplied; it creates NA in this case, silently.
 

@@ -18,7 +18,6 @@
 
 /*****
 TO DO:
-Check that default sep for first column date test is now space not \\. Then implement loop to find separator to find header row.
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
 Post from patricknik on 5 Jan re ""b"" in a field.
 Warn about non whitespace (unprotected by comment.char) after the last column on any line (currently skipped silently)
@@ -30,7 +29,6 @@ A way for user to override type, for particular columns only.
 A few TO DO inline in the code, including some speed fine tuning e.g. specialize Ispace and any other lib calls.
 Save repeated ch<eof checking in main read step. Last line might still be tricky if last line has no eol.
 test using at least "grep read.table ...Rtrunk/tests/
-Remove J and update NEWS about rJava.
 ---
 Secondary separator for list() columns, such as columns 11 and 12 in BED.
 If nrow is small, say 20, then it shouldn't mmap the entire file (that's probably why user just wants to look at head). Try MMAP_DONTNEED in that case to save needing to map the file in chunks.
@@ -355,15 +353,22 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     //   Auto detect separator and number of fields
     // ********************************************************************************************
-    ch = pos;  // start of autostart
+    ch = pos;              // start of autostart
+    char *seps=",\t |;:";  // separators, in order of preference. ':' last as it can be used in time fields
+    j = strlen(seps);
     if (isNull(separg)) {
         if (verbose) Rprintf("Using line %d to detect sep (the last non blank line in the first 30)\n", nline);
-        while (ch<eof && isspace(*ch) && *ch!=eol) ch++;             // skip over any leading space at start of row
-        if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!='\"' && *ch!=eol); ch++;} // if first column is protected skip over it, and the closing "
-        while (ch<eof && (isalnum(*ch) || *ch=='\"' || *ch=='.' || *ch=='+' || *ch=='-' || *ch=='\\' || *ch=='/')) ch++;
-        if (ch==eof) sep=eol; else sep=*ch;
+        for (sep=i=0; i<j && sep==0; i++) {
+            ch=pos;
+            while (ch<eof && *ch!=eol) {   // eof check is for one row input with no \n at end
+                if (*ch=='\"') {while(++ch<eof && *ch!='\"' && *ch!=eol); ch++;} // skip over protection, landing just after closing "
+                if (*ch==seps[i]) { sep=*ch; break; }   // found it, done.
+                ch++;
+            }
+        }
+        if (sep==0) sep=eol;
         if (verbose) {
-            if (sep==eol) Rprintf("Line %d ends before any separator was found. Deducing this is a single column input. Otherwise, please specify 'sep' manually, see ?fread.\n", nline);
+            if (sep==eol) Rprintf("None of the possible separators were found on line %d. Deducing this is a single column input. Otherwise, please specify 'sep' manually, see ?fread.\n", nline);
             else if (sep=='\t') Rprintf("Detected sep as '\\t'\n"); else Rprintf("Detected sep as '%c'\n", sep);
         }
     } else {
