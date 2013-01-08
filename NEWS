@@ -52,10 +52,13 @@ BUG FIXES
         recent addition to data.table, but embarassing all the same. Fixed and tests added.
         Many thanks to statquant for the thorough and reproducible report :
         http://stackoverflow.com/questions/14076065/data-table-inner-outer-join-to-merge-with-na
+        
+    o   setnames failed on a keyed table where columns 1:length(key) were not the key.
+        Fixed and test added.
 
 NOTES
 
-    o   There are now 917 raw tests, as reported by test.data.table().
+    o   There are now 918 raw tests, as reported by test.data.table().
 
 
         *********************************************

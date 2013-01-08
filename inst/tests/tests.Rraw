@@ -2559,6 +2559,10 @@ test(915, X[Y], data.table(depID=c(31,33,33,34,34,35),name=c("Raf","Jon","Ste","
 test(916, X[Y,nomatch=0], data.table(depID=c(31,33,33,34,34),name=c("Raf","Jon","Ste","Rob","Smi"),depName=c("Sal","Eng","Eng","Cle","Cle"),key='depID'))
 test(917, Y[X,nomatch=0], data.table(depID=c(31,33,33,34,34),depName=c("Sal","Eng","Eng","Cle","Cle"),name=c("Raf","Jon","Ste","Rob","Smi"),key='depID'))
 
+# setnames bug on keyed table, when full vector is given and target key isn't the positions in columns 1:length(key)
+DT = data.table(a=1:2,b=3:4,c=5:6,key="b")
+test(918, setnames(DT,c("A","B","C")), data.table(A=1:2,B=3:4,C=5:6,key="B"))
+
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by

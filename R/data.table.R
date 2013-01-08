@@ -1630,7 +1630,7 @@ setnames = function(x,old,new) {
         if (length(m) && any(is.na(m))) stop("Internal error: attr(x,'sorted') not all in names(x)")
         .Call(Csetcharvec, names(x), seq_along(names(x)), old)
         # setcharvec (rather than setattr) so as not to affect selfref.
-        if (length(m)) .Call(Csetcharvec, attr(x,"sorted"), m, old[m])
+        if (length(m)) .Call(Csetcharvec, attr(x,"sorted"), seq_along(key(x)), old[m])
         return(invisible(x))
     } else {
         if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
