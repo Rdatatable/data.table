@@ -58,9 +58,9 @@ BUG FIXES
 
 NOTES
 
-    o   print(DT,topn=2), where topn is provided explicitly, now prints the top and bottom 2 rows,
-        even when nrow(x)<100 [options()$datatable.print.nrows]. The 'topn' argument is now first
-        for easier interactive use.
+    o   print(DT,topn=2), where topn is provided explicitly, now prints the top and bottom 2 rows
+        even when nrow(x)<100 [options()$datatable.print.nrows]. And the 'topn' argument is now first
+        for easier interactive use: print(DT,2), head(DT,2) and tail(DT,2).
         
     o   The J() alias is now removed *outside* DT[...], but will still work inside DT[...];
         i.e., DT[J(...)] is fine. As warned in v1.8.2 (see below in this file) and deprecated
@@ -68,7 +68,7 @@ NOTES
         XLConnect (#1747) and rJava (#2045).
         Please use data.table() directly instead of J(), outside DT[...].
         
-    o   There are now 918 raw tests, as reported by test.data.table().
+    o   There are now 922 raw tests, as reported by test.data.table().
 
 
         *********************************************

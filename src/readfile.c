@@ -64,7 +64,7 @@ static int countfields()
     lch = ch;
     protected = FALSE;
     if (sep=='\"') error("Internal error: sep is \", not an allowed separator");
-    if (lch<eof && *lch!=eol) ncol=1;
+    if (lch<eof && *lch!=eol) ncol=1;   // only empty lines (first char eol) have 0 fields. Even one space is classed as one field.
     if (lch<eof && *lch=='\"') protected = TRUE;  // lch might be mmp, careful not to check lch-1 for '\' before that (not mapped)
     while (lch<eof && *lch!=eol) {
         if (!protected) ncol += (*lch==sep);
@@ -317,7 +317,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (ch>=eof) {
         if (ch>eof) error("Internal error: ch>eof when detecting eol");
         if (verbose) Rprintf("Input ends before any \\r or \\n observed. Input will be treated as a single data row.\n");
-        eol=eol2='\0'; eolLen=0;
+        eol=eol2='\n'; eolLen=1;
     } else {
         eol=eol2=*ch; eolLen=1;
         if (eol=='\r') {
@@ -349,55 +349,64 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     if (lastnonblank==0) error("Input is either empty or fully whitespace in the first 30 rows");
     nline = lastnonblank;   // nline>nonblank when short files (under 30 rows) with trailing newlines
+    if (pos>mmp && *(pos-1)!=eol2) error("Internal error. No eol2 immediately before autostart line %d, '%.1s' instead", nline, pos-1);
     
     // ********************************************************************************************
-    //   Auto detect separator and number of fields
+    //   Auto detect separator, number of fields and location of first data row
     // ********************************************************************************************
-    ch = pos;              // start of autostart
-    char *seps=",\t |;:";  // separators, in order of preference. ':' last as it can be used in time fields
-    j = strlen(seps);
+    char *seps;
     if (isNull(separg)) {
-        if (verbose) Rprintf("Using line %d to detect sep (the last non blank line in the first 30)\n", nline);
-        for (sep=i=0; i<j && sep==0; i++) {
-            ch=pos;
-            while (ch<eof && *ch!=eol) {   // eof check is for one row input with no \n at end
-                if (*ch=='\"') {while(++ch<eof && *ch!='\"' && *ch!=eol); ch++;} // skip over protection, landing just after closing "
-                if (*ch==seps[i]) { sep=*ch; break; }   // found it, done.
-                ch++;
-            }
+        if (verbose) Rprintf("Using line %d to detect sep (the last non blank line in the first 30) ... ", nline);
+        seps=",\t |;:";  // separators, in order of preference. See ?fread. (colon last as it can appear in time fields)
+    } else {
+        seps = (char *)CHAR(STRING_ELT(separg,0));  // length 1 string
+        if (verbose) Rprintf("Looking for supplied sep '%s' on line %d (the last non blank line in the first 30) ... ", seps[0]=='\t'?"\\t":seps, nline);
+    }
+    int nseps = strlen(seps);
+    char *top=pos, *thistop=pos; // see how high we can get with each sep (until we don't read the same number of fields)
+    char topsep=0;               // topsep stores the highest so far
+    int topnline=nline;          // the top's corresponding line number
+    for (i=0; i<nseps; i++) {
+        ch=pos; sep=0;                             // starting from autostart for each sep
+        while (ch<eof && *ch!=eol) {               // Is this sep on this line?  (ch<eof is for one row input with no eol)
+            if (*ch=='\"') {while(++ch<eof && *ch!='\"' && *ch!=eol); ch++;} // skip over protection, landing just after closing "
+            if (*ch==seps[i]) { sep=*ch; break; }  // this sep exists on this line
+            ch++;
         }
-        if (sep==0) sep=eol;
+        if (sep==0) {                              // this sep wasn't found
+            if (i==nseps-1 && topsep==0) sep=eol;  // last sep && none found => single column input. Now search up for last nonblank line.
+            else continue;
+        }
+        if (topsep==0) topsep=sep;       // First sep found is the top so far. Important for single row input.
+        ch = pos; j = 0; thistop = pos;  // back to start of autostart, again
+        if (ch==mmp) continue;           // one line input, no lines above to test for consistency
+        ncol = countfields();            // ncol on autostart using this separator (sep is global which countfieds() uses)
+        do {  ch-=eolLen;                // search up line by line until different number of fields, or (likely) hit the start of file
+              while (ch>mmp && *(ch-1)!=eol2) ch--;
+        } while (countfields()==ncol && (thistop=ch) && ++j && ch>mmp);   // relies on short circuit of first &&
+        if (thistop<top) { top=thistop; topsep=sep; topnline=nline-j; }
+        // often the header row itself resolves (one sep will get up to and including the header, the other only to the top data row)
+    }
+    if (topsep==0) error("Internal error: topsep not set");
+    sep = topsep;
+    if (isNull(separg)) {
         if (verbose) {
-            if (sep==eol) Rprintf("None of the possible separators were found on line %d. Deducing this is a single column input. Otherwise, please specify 'sep' manually, see ?fread.\n", nline);
-            else if (sep=='\t') Rprintf("Detected sep as '\\t'\n"); else Rprintf("Detected sep as '%c'\n", sep);
+            if (sep==eol) Rprintf("\nNo separator (see ?fread) was found on line %d. Deducing this is a single column input. Otherwise, please specify 'sep' manually.\n", nline);
+            else if (sep=='\t') Rprintf("'\\t'\n"); else Rprintf("'%c'\n", sep);
         }
     } else {
-        sep = CHAR(STRING_ELT(separg,0))[0];
-        if (verbose) { if (sep=='\t') Rprintf("Using sep supplied '\\t'\n"); else Rprintf("Using sep supplied '%c'\n", sep); }
+        if (sep==eol && seps[0]!='\n') {if(verbose)Rprintf("\n");error("\nThe supplied 'sep' was not found on line %d. To read the file as a single character column set sep='\\n'.", nline);}
+        else if (verbose) Rprintf("found\n");
     }
     ch = pos;    // back to beginning of autostart
     ncol = countfields();
     if (verbose && sep!=eol) Rprintf("Found %d columns\n",ncol);
-    
-    // ********************************************************************************************
-    //   Search backwards to find column names row or first data row
-    // ********************************************************************************************
-    ch = pos;  // back to start of autostart.  nline is already this line number
-    if (ch>mmp) {
-        if (*(ch-1)!=eol2) error("Internal error. No eol2 immediately before autostart line %d, '%.5s' instead", nline, ch-1);
-        do {
-            ch-=(1+eolLen);
-            while (ch>mmp && *ch!=eol) ch--;
-            if (ch>mmp) ch+=eolLen;
-            nline--;
-        } while ((i=(countfields()==ncol)) && ch>mmp);
-        if (!i) {while (*ch++!=eol); ch+=eolLen-1;}
-    }
-    pos = ch;
+    ch = pos = top; nline = topnline;
+    if ((j=countfields()) != ncol) error("Internal error: Moved to top with sep '%c' but ncol (%d) != ncol on autostart (%d)\n", sep, j, ncol);
     if (verbose) Rprintf("First row with %d fields occurs on line %d (either column names or first row of data)\n", ncol, nline);
     
     // ********************************************************************************************
-    //   Detect and assign column names
+    //   Detect and assign column names (if present)
     // ********************************************************************************************
     if (header!=NA_LOGICAL) Rprintf("'header' changed by user from 'auto' to %s\n", header?"TRUE":"FALSE");
     SEXP names = PROTECT(allocVector(STRSXP, ncol));
