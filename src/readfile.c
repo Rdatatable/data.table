@@ -494,7 +494,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     end = ch + eolLen;
     for (j=0; j<(nrow>15?3:1); j++) {
         switch(j) {
-        case 0: ch = pos;                str="first";   break;
+        case 0: ch = pos;                str="first";    break;
         case 1: ch = pos + (eof-pos)/2;  str="+middle";  break;
         case 2: ch = end;                str="+last";    break;
         }
