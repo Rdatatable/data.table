@@ -222,7 +222,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     x
 }
 
-"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), drop=NULL)
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rolltolast=FALSE, which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allowcartesian"), drop=NULL)
 {
     # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
     # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -338,7 +338,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     # NAs can be produced by this level match, in which case the C code (it knows integer value NA)
                     # can skip over the lookup. It's therefore important we pass NA rather than 0 to the C code.
                 }
-                if (is.integer(x[[rc]]) && is.real(i[[lc]])) {
+                if (is.integer(x[[rc]]) && is.double(i[[lc]])) {
                     # TO DO: add warning if reallyreal about loss of precision
                     # or could coerce in binary search on the fly, at cost
                     if (verbose) cat("Coercing 'double' column i.'",icnam,"' to 'integer' to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
@@ -346,7 +346,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                     mode(newval) = "integer"  # retains column attributes (such as IDateTime class)
                     set(i,j=lc,value=newval)
                 }
-                if (is.real(x[[rc]]) && is.integer(i[[lc]])) {
+                if (is.double(x[[rc]]) && is.integer(i[[lc]])) {
                     if (verbose) cat("Coercing 'integer' column i.'",icnam,"' to 'double' to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
                     newval = i[[lc]]
                     mode(newval) = "double"
@@ -365,7 +365,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             for (ii in resetifactor) set(i,j=ii,value=origi[[ii]])
             if (mult=="all") {
                 if (!missing(by) || which || missing(j) || !with || notjoin) {
-                    irows = if (allLen1) f__ else vecseq(f__,len__)
+                    irows = if (allLen1) f__ else vecseq(f__,len__,if(allow.cartesian)NULL else as.integer(max(nrow(x),nrow(i))))
                     if (!missing(by) && !which && !missing(j) && with && !notjoin)
                         potentialredundantby = TRUE
                 } else {
@@ -1704,7 +1704,7 @@ rbindlist = function(l) {
     alloc.col(ans)
 }
 
-vecseq = function(x,y) .Call(Cvecseq,x,y)
+vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
 
 ":=" = function(LHS,RHS) stop(':= is defined for use in j only, and (currently) only once; i.e., DT[i,col:=1L] and DT[,newcol:=sum(colB),by=colA] are ok, but not DT[i,col]:=1L, not DT[i]$col:=1L and not DT[,{newcol1:=1L;newcol2:=2L}]. Please see help(":="). Check is.data.table(DT) is TRUE.')
 

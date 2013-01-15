@@ -17,7 +17,9 @@
 }
 
 \usage{
-\method{merge}{data.table}(x, y, by = NULL, all = FALSE, all.x = all, all.y = all, suffixes = c(".x", ".y"), ...)
+\method{merge}{data.table}(x, y, by = NULL, all = FALSE, all.x = all, all.y = all, suffixes = c(".x", ".y"), 
+allow.cartesian=getOption("datatable.allowcartesian"),  # default FALSE
+...)
 }
 
 \arguments{
@@ -59,6 +61,10 @@
     non-\code{by} column names unique. The suffix behavior works in a similar 
     fashion as \code{\link{merge.data.frame}} does.
   }
+  
+  \item{allow.cartesian}{
+    See \code{allow.cartesian} in \code{\link{[.data.table}}.
+  }
 
   \item{\dots}{
     Not used at this time.
@@ -90,12 +96,12 @@
 
     (dt1 <- data.table(A = letters[rep(1:3, 2)], X = 1:6, key = "A"))
     (dt2 <- data.table(A = letters[rep(2:4, 2)], Y = 6:1, key = "A"))
-    merge(dt1, dt2)
+    merge(dt1, dt2, allow.cartesian=TRUE)
 
     (dt1 <- data.table(A = c(rep(1L, 5), 2L), B = letters[rep(1:3, 2)], X = 1:6, key = "A,B"))
     (dt2 <- data.table(A = c(rep(1L, 5), 2L), B = letters[rep(2:4, 2)], Y = 6:1, key = "A,B"))
     merge(dt1, dt2)
-    merge(dt1, dt2, by="B")
+    merge(dt1, dt2, by="B", allow.cartesian=TRUE)
 
     # test it more:
     d1 <- data.table(a=rep(1:2,each=3), b=1:6, key="a,b")

@@ -1,5 +1,5 @@
 merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
-                             all.y = all, suffixes = c(".x", ".y"), ...) {
+                             all.y = all, suffixes = c(".x", ".y"), allow.cartesian=getOption("datatable.allowcartesian"), ...) {
     if (!inherits(y, 'data.table')) {
         y <- as.data.table(y)
         if (missing(by)) {
@@ -53,7 +53,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
         y = setnames(shallow(y), dupnames, sprintf("%s.", dupnames))
     }
 
-    dt = y[xkey,nomatch=ifelse(all.x,NA,0)]   # includes JIS columns (with a .1 suffix if conflict with x names)
+    dt = y[xkey,nomatch=ifelse(all.x,NA,0),allow.cartesian=allow.cartesian]   # includes JIS columns (with a .1 suffix if conflict with x names)
 
     end = setdiff(names(y),by)     # X[Y] sytax puts JIS i columns at the end, merge likes them alongside i.
     setcolorder(dt,c(setdiff(names(dt),end),end))
@@ -61,7 +61,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     if (all.y) {
         # Perhaps not very commonly used, so not a huge deal that the join is redone here.
         missingyidx = seq.int(nrow(y))
-        whichy = y[xkey,which=TRUE,nomatch=0]  # TO DO:  Use not join (i=-xkey) here when implemented
+        whichy = y[xkey,which=TRUE,nomatch=0,allow.cartesian=allow.cartesian]  # !!TO DO!!:  Use not join (i=-xkey) here now that's implemented
         whichy = whichy[whichy>0]
         if (length(whichy)) missingyidx = missingyidx[-whichy]
         if (length(missingyidx)) {

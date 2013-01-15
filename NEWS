@@ -28,6 +28,17 @@ NEW FEATURES
              fread("2008.csv")                                           #    40 sec
         See ?fread. Many thanks to Chris Neff, Garrett See, Hideyoshi Maeda and
         Akhil Behl for ideas, discussions and beta testing.
+        
+    o   New argument 'allow.cartesian' (default FALSE) added to X[Y] and merge(X,Y), #2464.
+        Prevents large allocations due to misspecified joins; e.g., duplicate key values in Y
+        joining to the same group in X over and over again. The word 'cartesian' is used loosely
+        for when more than max(nrow(X),nrow(Y)) rows would be returned. The error message is
+        verbose and includes advice. Thanks to a question by Nick Clark :
+          http://stackoverflow.com/questions/14231737/greatest-n-per-group-reference-with-intervals-in-r-or-sql
+        help from user1935457 and a detailed reproducible crash report from JR.
+        If the new option affects existing code you may run :
+            options(datatable.allow.cartesian=TRUE)
+        to restore the previous behaviour until you have time to address.
 
 BUG FIXES
 
@@ -68,7 +79,7 @@ NOTES
         XLConnect (#1747) and rJava (#2045).
         Please use data.table() directly instead of J(), outside DT[...].
         
-    o   There are now 922 raw tests, as reported by test.data.table().
+    o   There are now 924 raw tests, as reported by test.data.table().
 
 
         *********************************************

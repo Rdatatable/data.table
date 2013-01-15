@@ -32,7 +32,8 @@
              "datatable.optimize"="Inf",
              "datatable.print.nrows"="100L",
              "datatable.print.topn"="5L",
-             "datatable.warnredundantby"="TRUE")
+             "datatable.warnredundantby"="TRUE",
+             "datatable.allowcartesian"="FALSE")
 
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))

@@ -32,6 +32,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   mult = "all", roll = FALSE, rolltolast = FALSE,
   which = FALSE, .SDcols,
   verbose=getOption("datatable.verbose"),     # default: FALSE
+  allow.cartesian=getOption("datatable.allowcartesian"),   # default: FALSE
   drop=NULL)
 }
 \arguments{
@@ -124,6 +125,8 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \item{verbose}{ \code{TRUE} turns on status and information messages to the console. Turn this on by default using \code{options(datatable.verbose=TRUE)}. The quantity and types of verbosity may be expanded in future.
 
 }  
+  \item{allow.cartesian}{ \code{FALSE} prevents joins that would result in more than \code{max(nrow(x),nrow(i))} rows. This is usually caused by duplicate values in \code{i}'s join columns, each of which join to the same group in `x` over and over again: a \emph{misspecified} join. Usually this was not intended and the join needs to be changed. The word 'cartesian' is used loosely in this context. The traditional cartesian join is (deliberately) difficult to achieve in \code{data.table}: where every row in \code{i} joins to every row in \code{x} (a \code{nrow(x)*nrow(i)} row result). 'cartesian' is just meant in a 'large multiplicative' sense. }
+  
   \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \code{vignette("datatable-faq")}.
 
 }
