@@ -36,8 +36,8 @@ NEW FEATURES
         verbose and includes advice. Thanks to a question by Nick Clark :
           http://stackoverflow.com/questions/14231737/greatest-n-per-group-reference-with-intervals-in-r-or-sql
         help from user1935457 and a detailed reproducible crash report from JR.
-        If the new option affects existing code you may run :
-            options(datatable.allow.cartesian=TRUE)
+        If the new option affects existing code you can set :
+            options(datatable.allowcartesian=TRUE)
         to restore the previous behaviour until you have time to address.
 
 BUG FIXES
