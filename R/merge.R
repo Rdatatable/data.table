@@ -1,5 +1,5 @@
 merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
-                             all.y = all, suffixes = c(".x", ".y"), allow.cartesian=getOption("datatable.allowcartesian"), ...) {
+                             all.y = all, suffixes = c(".x", ".y"), allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
     if (!inherits(y, 'data.table')) {
         y <- as.data.table(y)
         if (missing(by)) {

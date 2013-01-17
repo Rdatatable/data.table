@@ -25,15 +25,16 @@
     }
 
     # Set options for the speed boost in v1.8.0 by avoiding 'default' arg of getOption(,default=)
-    opts = c("datatable.verbose"="FALSE",
-             "datatable.dfdispatchwarn"="TRUE",
-             "datatable.alloccol"="quote(max(100,2*ncol(DT)))",
-             "datatable.nomatch"="NA_integer_",
-             "datatable.optimize"="Inf",
-             "datatable.print.nrows"="100L",
-             "datatable.print.topn"="5L",
-             "datatable.warnredundantby"="TRUE",
-             "datatable.allowcartesian"="FALSE")
+    opts = c("datatable.verbose"="FALSE",            # datatable.<argument name>
+             "datatable.nomatch"="NA_integer_",      # datatable.<argument name>
+             "datatable.optimize"="Inf",             # datatable.<argument name>
+             "datatable.print.nrows"="100L",         # datatable.<argument name>
+             "datatable.print.topn"="5L",            # datatable.<argument name>
+             "datatable.allow.cartesian"="FALSE",    # datatable.<argument name>
+             "datatable.dfdispatchwarn"="TRUE",                   # not a function argument
+             "datatable.warnredundantby"="TRUE",                  # not a function argument
+             "datatable.alloccol"="quote(max(100,2*ncol(DT)))"    # argument 'n' of alloc.col
+             )
 
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))

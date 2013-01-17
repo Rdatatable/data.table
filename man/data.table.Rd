@@ -32,7 +32,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   mult = "all", roll = FALSE, rolltolast = FALSE,
   which = FALSE, .SDcols,
   verbose=getOption("datatable.verbose"),     # default: FALSE
-  allow.cartesian=getOption("datatable.allowcartesian"),   # default: FALSE
+  allow.cartesian=getOption("datatable.allow.cartesian"),   # default: FALSE
   drop=NULL)
 }
 \arguments{
