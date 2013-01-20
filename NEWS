@@ -66,7 +66,15 @@ BUG FIXES
         
     o   setnames() of all column names (such as setnames(DT,toupper(names(DT)))) failed on a
         keyed table where columns 1:length(key) were not the key. Fixed and test added.
-
+        
+    o   setkey could sort 'double' columns (such as POSIXct) incorrectly when not the
+        last column of the key, #2484. In data.table's C code :
+            x[a]>x[b]-tol
+        should have been :
+            x[a]-x[b]>-tol  [or  x[b]-x[a]<tol ]
+        The difference may have been machine/compiler dependent. Many thanks to statquant
+        for the short reproducible example. Test added.
+        
 NOTES
 
     o   print(DT,topn=2), where topn is provided explicitly, now prints the top and bottom 2 rows
@@ -79,7 +87,7 @@ NOTES
         XLConnect (#1747) and rJava (#2045).
         Please use data.table() directly instead of J(), outside DT[...].
         
-    o   There are now 924 raw tests, as reported by test.data.table().
+    o   There are now 925 raw tests, as reported by test.data.table().
 
 
         *********************************************

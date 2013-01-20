@@ -2578,6 +2578,11 @@ test(923, DT[DT], error="Join results in more than 2^31 rows (internal vecseq re
 X = data.table(x=1:2,y=1:6,key="x")
 test(924, X[J(c(1,1,1))], error="Join results in 9 rows; more than 6 = max(nrow(x),nrow(i)). Check for duplicate key values in i, each of")
 
+# sorting of 'double' columns not correct for ties (tolerance nuance in C code), #2484
+DT = data.table(X=as.POSIXct( c(rep("15DEC2008:00:00:00",10),"15DEC2008:00:00:00",rep("17DEC2008:00:00:00",2)),format="%d%b%Y:%H:%M:%S"),Y=c(1534,61,74,518,519,1519,1520,1524,3127,29250,30609,43,7853))
+setkey(DT,X,Y)
+test(925, DT[,order(X,Y)], 1:nrow(DT))
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
