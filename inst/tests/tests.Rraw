@@ -2583,6 +2583,21 @@ DT = data.table(X=as.POSIXct( c(rep("15DEC2008:00:00:00",10),"15DEC2008:00:00:00
 setkey(DT,X,Y)
 test(925, DT[,order(X,Y)], 1:nrow(DT))
 
+# Test new dogroup warning for zero length columns in result when other columns are >1, #2478
+DT = data.table(a=1:3,b=1:6)
+test(926, DT[, if(a==2L) list(42:43,NULL) else list(42L,3.14), by=a], data.table(a=INT(1,2,2,3),V1=INT(42,42,43,42),V2=c(3.14,NA,NA,3.14)), warning="Item 2 of j's result for group 2 is zero length. This will be filled with 2 NAs to match the")
+test(927, DT[, if(a==2L) list(42:43,numeric()) else list(42L,3.14), by=a], data.table(a=INT(1,2,2,3),V1=INT(42,42,43,42),V2=c(3.14,NA,NA,3.14)), warning="Item 2 of j's result for group 2 is zero length. This will be filled with 2 NAs to match the")
+
+# And the root cause of #2478: that cbind(DT,1:3) created invalid data.table with empty column
+test(928, cbind(data.table(a=1L),b=1:3), data.table(a=1L,b=1:3))
+test(929, cbind(data.table(a=1L,b=2:3),c=1:3), error="argument 1 (nrow 2) cannot be recycled without remainder to match longest nrow (3)")
+test(930, cbind(data.table(a=1L,b=2:3),c=1:4), data.table(a=1L,b=INT(2,3,2,3),c=1:4))
+DT = data.table(x=c(1,1,1,1,2,2,3),y=c(1,1,2,3,1,1,2))
+DT[,rep:=1L][c(2,7),rep:=c(2L,3L)]   # duplicate row 2 and triple row 7
+DT[,num:=1:.N]                       # to group each row by itself
+test(931, DT[,cbind(.SD,dup=1:rep),by="num"], data.table(num=INT(1,2,2,3:7,7,7),x=c(1,1,1,1,1,2,2,3,3,3),y=c(1,1,1,2,3,1,1,2,2,2),rep=INT(1,2,2,1,1,1,1,3,3,3), dup=INT(1,1,2,1,1,1,1,1,2,3)))
+
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key

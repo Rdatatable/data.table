@@ -37,7 +37,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     int protecti=0;
     SEXP names, names2, bynames, dtnames, ans=NULL, jval, thiscol, SD, BY, N, I, GRP, iSD, rownames, s, targetcol, RHS, listwrap, target;
     SEXP *nameSyms;
-    Rboolean wasvector, firstalloc=FALSE;
+    Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
     
     if (TYPEOF(order) != INTSXP) error("Internal error: order not integer");
     //if (TYPEOF(starts) != INTSXP) error("Internal error: starts not integer");
@@ -351,8 +351,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             if (thislen == 0) {
                 // including NULL and typed empty vectors, fill with NA
                 // A NULL in the first group's jval isn't allowed; caught above after allocating ans
-                // ***** New one off warning here.
-                switch (TYPEOF(target)) {     // TO DO - do we really need a switch here?  single memcpy?
+                if (!NullWarnDone && maxn>1) {  // maxn==1 in tests 172,280,281,282,403,405 and 406
+                    warning("Item %d of j's result for group %d is zero length. This will be filled with %d NAs to match the longest column in this result. Later groups may have a similar problem but only the first is reported to save filling the warning buffer.", j+1, i+1, maxn);
+                    NullWarnDone = TRUE;
+                }
+                switch (TYPEOF(target)) {     // rarely called so no need to optimize this switch
                 case LGLSXP :
                 case INTSXP :
                     for (r=0; r<maxn; r++) INTEGER(target)[thisansloc+r] = NA_INTEGER;

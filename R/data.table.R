@@ -165,20 +165,19 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         if (nrows[i]==0L) stop("Item ",i," has no length. Provide at least one item (such as NA, NA_integer_ etc) to be repeated to match the ",nr," rows in the longest column. Or, all columns can be 0 length, for insert()ing rows into.")
         if (nr%%nrows[i] == 0L) {
-            if (nrows[i]<nr && (is.atomic(xi) || is.list(xi))) {
+            if (is.data.frame(xi)) {   # including data.table
+                ..i = rep(seq_len(nrow(xi)), length.out = nr)
+                x[[i]] = xi[..i,,drop=FALSE]
+                next
+            }
+            if (is.atomic(xi) || is.list(xi)) {
                 # TO DO: surely use set() here, or avoid the coercion
                 x[[i]] = rep(xi, length.out = nr)
                 next
             }
-            # don't know why this is here, take it out and see what bites
-            # if (is.character(xi) && class(xi) == "AsIs") {
-            #    cl <- class(xi)
-            #    x[[i]] <- list(structure(rep(xi, length.out = nr), class = cl))
-            #    next
-            #}
             stop("problem recycling column ",i,", try a simpler type")
         }
-        stop("arguments cannot be silently repeated to match max nr: ", paste(unique(nrows), collapse = ", "))
+        stop("argument ",i," (nrow ",nrows[i],") cannot be recycled without remainder to match longest nrow (",nr,")")
     }
     if (any(numcols>0L)) {
         value = vector("list",sum(pmax(numcols,1L)))

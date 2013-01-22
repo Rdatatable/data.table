@@ -69,11 +69,18 @@ BUG FIXES
         
     o   setkey could sort 'double' columns (such as POSIXct) incorrectly when not the
         last column of the key, #2484. In data.table's C code :
-            x[a]>x[b]-tol
+            x[a] > x[b]-tol
         should have been :
-            x[a]-x[b]>-tol  [or  x[b]-x[a]<tol ]
+            x[a]-x[b] > -tol  [or  x[b]-x[a] < tol ]
         The difference may have been machine/compiler dependent. Many thanks to statquant
         for the short reproducible example. Test added.
+        
+    o   cbind(DT,1:n) returned an invalid data.table (some columns were empty) when DT
+        had one row, #2478. Grouping now warns if j evaluates to an invalid data.table,
+        to aid tracing root causes like this in future. Tests added. Many thanks to
+        statquant for the reproducible example revealed by his interesting solution
+        and to user1935457 for the assistance :
+            http://stackoverflow.com/a/14359701/403310
         
 NOTES
 
@@ -87,7 +94,7 @@ NOTES
         XLConnect (#1747) and rJava (#2045).
         Please use data.table() directly instead of J(), outside DT[...].
         
-    o   There are now 925 raw tests, as reported by test.data.table().
+    o   There are now 931 raw tests, as reported by test.data.table().
 
 
         *********************************************
