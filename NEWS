@@ -39,6 +39,18 @@ NEW FEATURES
         If the new option affects existing code you can set :
             options(datatable.allow.cartesian=TRUE)
         to restore the previous behaviour until you have time to address.
+        
+    o   In addition to TRUE/FALSE, 'roll' may now be a positive number (roll forwards/LOCF) or
+        negative number (roll backwards/NOCB). A finite number limits the distance a value is
+        rolled (limited staleness). roll=TRUE and roll=+Inf are equivalent.
+        'rollends' is a new parameter holding two logicals. The first observation is rolled
+        backwards if rollends[1] is TRUE. The last observation is rolled forwards if rollends[2]
+        is TRUE. If roll is a finite number, the same limit applies to the ends.
+        'rolltolast' has been deprecated. For backwards compatibility it is converted to
+        {roll=TRUE;rollends=c(FALSE,FALSE)}.
+        This implements FR#2300 & FR#206 and helps several recent S.O. questions.
+        https://r-forge.r-project.org/tracker/?group_id=240&atid=978&func=detail&aid=2300
+        
 
 BUG FIXES
 
@@ -94,7 +106,7 @@ NOTES
         XLConnect (#1747) and rJava (#2045).
         Please use data.table() directly instead of J(), outside DT[...].
         
-    o   There are now 931 raw tests, as reported by test.data.table().
+    o   There are now 937 raw tests, as reported by test.data.table().
 
 
         *********************************************

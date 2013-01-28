@@ -18,7 +18,7 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
   o options to join to prevailing value (roll join a.k.a locf)
 */
 
-SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP roll, SEXP rolltolast, SEXP nomatch, SEXP tolerance, SEXP retFirst, SEXP retLength, SEXP allLen1 )
+SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP rollarg, SEXP rollends, SEXP nomatch, SEXP tolerance, SEXP retFirst, SEXP retLength, SEXP allLen1)
 {
     // If the left table is large and the right table is large, then sorting the left table first may be
     // quicker depending on how long to sort the left table. This is up to user via use of J() or SJ()
@@ -26,7 +26,9 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     R_len_t lr,nr,low,mid,upp,coln,col,lci,rci,len;
     R_len_t prevlow, prevupp, type, newlow, newupp, /*size,*/ lt, rt;
     double tol = REAL(tolerance)[0];
-    SEXP lc, rc;
+    SEXP lc=NULL, rc=NULL;
+    double roll = REAL(rollarg)[0];
+    if (ISNA(roll)) error("Internal error: roll is NA");
     union {
         int i;
         double d;
@@ -158,18 +160,45 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                 error("Type '%s' not supported as key column", type2char(type));
             }
         }
-        if (low<upp-1) {
-            INTEGER(retFirst)[lr] = low+2;   // extra +1 for 1-based indexing at R level
+        if (low<upp-1) {                   // if value found low and upp surround it, unlike standard binary search where low falls on it
+            INTEGER(retFirst)[lr] = low+2; // extra +1 for 1-based indexing at R level
             len = upp-low-1;
             INTEGER(retLength)[lr] = len;
             if (len > 1) LOGICAL(allLen1)[0] = FALSE;
         } else {
+            // runs once per i row, so not hugely time critical
+            // TO DO: comment out for release :
+                if (low != upp-1) error("Internal error. low != upp-1");
+                if (low<prevlow) error("Internal error. low<prevlow");
+                if (upp>prevupp) error("Internal error. upp>prevupp");
+            // END
+            if (roll!=0.0 && lc && rc && col==coln) {   // Testing double==0.0 is ok i.e. roll=FALSE. '&& lc && rc' is for test 133.
+                if ( (   (roll>0.0 && low>prevlow && (upp<prevupp || LOGICAL(rollends)[1]))
+                      || (roll<0.0 && upp==prevupp && LOGICAL(rollends)[1]) )
+                  && (   (TYPEOF(lc)==REALSXP && REAL(lc)[lr]-REAL(rc)[low]-fabs(roll)<tol)
+                      || (TYPEOF(lc)<=INTSXP && (double)(INTEGER(lc)[lr]-INTEGER(rc)[low])-fabs(roll)<tol ) 
+                      || (TYPEOF(lc)==STRSXP)   )) {
+                    INTEGER(retFirst)[lr] = low+1;
+                    INTEGER(retLength)[lr] = 1;
+                    low -= 1; // for test 148
+                } else if 
+                   (  (  (roll<0.0 && upp<prevupp && (low>prevlow || LOGICAL(rollends)[0]))
+                      || (roll>0.0 && low==prevlow && LOGICAL(rollends)[0]) )
+                  && (   (TYPEOF(lc)==REALSXP && REAL(rc)[upp]-REAL(lc)[lr]-fabs(roll)<tol)
+                      || (TYPEOF(lc)<=INTSXP && (double)(INTEGER(rc)[upp]-INTEGER(lc)[lr])-fabs(roll)<tol )
+                      || (TYPEOF(lc)==STRSXP)   )) {
+                    INTEGER(retFirst)[lr] = upp+1;   // == low+2
+                    INTEGER(retLength)[lr] = 1;
+                    upp += 1;
+                }
+            }
+            /*    
             if (low>prevlow && col==coln && (LOGICAL(roll)[0] ||
                                             (LOGICAL(rolltolast)[0] && upp<prevupp))) {
                 INTEGER(retFirst)[lr] = low+1;
                 INTEGER(retLength)[lr] = 1;
                 low -= 1; // for test 148
-            }
+            }*/
         }
         nextlr :;
     }
