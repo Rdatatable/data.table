@@ -141,7 +141,6 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     // ii) we can directly change type of vectors without an allocation when the size of the data type doesn't change
     SEXP newv;
     R_len_t i, protecti=0;
-    int w, d, e;
     double tCoerce0 = currentTime();
     char *lch=ch;
     while (lch!=eof && *lch!=sep && *lch!=eol) lch++;  // lch now marks the end of field, used in verbose messages and errors
@@ -185,14 +184,17 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
         break;
     case SXP_STR:
         warning("Bumped column %d to type character on data row %d, field contains '%.*s'. Coercing previously read values in this column from integer or numeric back to character which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too (if they occurred in this column before the bump). If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, sofar+1, lch-ch, ch);
+        static char buffer[129];  // 25 to hold [+-]2^63, with spare space to be safe and snprintf too
         switch(oldtype) {
         case SXP_INT :
             // This for loop takes 0.000007 seconds if the bump occurs on line 179, for example, timing showed
             for (i=0; i<sofar; i++) {
                 if (INTEGER(v)[i] == NA_INTEGER)
                     SET_STRING_ELT(newv,i,R_BlankString);
-                else
-                    SET_STRING_ELT(newv, i, mkChar( EncodeInteger(INTEGER(v)[i],0) ));
+                else {
+                    snprintf(buffer,128,"%d",INTEGER(v)[i]);
+                    SET_STRING_ELT(newv, i, mkChar(buffer));
+                }
             }
             break;
         case SXP_INT64 :
@@ -200,19 +202,19 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
                 if (ISNA(REAL(v)[i]))
                     SET_STRING_ELT(newv,i,R_BlankString);
                 else {
-                    static char buffer[25];  // to hold [+-]2^63
-                    snprintf(buffer,24,"%lld",*(long long *)&REAL(v)[i]);
+                    snprintf(buffer,128,"%lld",*(long long *)&REAL(v)[i]);
                     SET_STRING_ELT(newv, i, mkChar(buffer));
                 }
             }
             break;
         case SXP_REAL :
-            formatReal(REAL(v), sofar, &w, &d, &e, 0);
             for (i=0; i<sofar; i++) {
                 if (ISNA(REAL(v)[i]))
                     SET_STRING_ELT(newv,i,R_BlankString);
-                else
-	                SET_STRING_ELT(newv, i, mkChar( EncodeReal(REAL(v)[i], 0, d, e, '.') ));
+                else {
+                    snprintf(buffer,128,"%f",REAL(v)[i]);  // was using formatReal and EncodeReal here but removed from R API in rdevel I think
+	                SET_STRING_ELT(newv, i, mkChar(buffer));
+	            }
             }
             break;
         default :

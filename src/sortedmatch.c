@@ -4,7 +4,6 @@
 #include <Rdefines.h>
 //#include <sys/mman.h>
 #include <fcntl.h>
-extern int Rf_Scollate();   // #include <Defn.h> failed to find Defn.h in development, so this extern stops the warning
 
 /*
 Implements binary search (a.k.a. divide and conquer).
@@ -118,13 +117,9 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                             if (rval.s == lval.s) newupp=mid; else low=mid;
                         }
                         break;
-                    } else if (rval.s==NA_STRING || Rf_Scollate(rval.s, lval.s)<0) {
-                    // } else if (strcmp(CHAR(rval.s), CHAR(lval.s))<0) {
-                    // TO DO: test strcmp; i.e., if restricting to ASCII speeds up (maybe ASCII falls through and is
-                    // fast anyway)
-                    // Using Rf_Scollate caters for all, as does countingcharacter:ssort2. If we speed up later,
-                    // that's better than slowing down later. Switch can be a column level check that all is ascii
-                    // (setkey can check and mark)
+                    } else if (rval.s==NA_STRING || strcmp(CHAR(rval.s), CHAR(lval.s))<0) {
+                    // TO DO: Reinvestigate non-ASCII. Switch can be a column level check that all is ascii
+                    // (setkey can check and mark). Used to use Rf_Scollate but was removed from r-devel API.
                     // We're using the last line of scmp in sort.c since we already dealt with NA and == above
                         low=mid;
                     } else {

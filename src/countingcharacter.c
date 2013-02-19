@@ -24,7 +24,6 @@
 #include <Rinternals.h>
 #include <Rdefines.h>
 
-extern int Rf_Scollate();
 void ssort2(SEXP *x, R_len_t n);
 // See end of this file for comments and modifications.
 
@@ -132,7 +131,7 @@ void ssort2(SEXP *x, R_len_t n)
 	for (i = h; i < n; i++) {
 	    v = x[i];
 	    j = i;
-		while (j>=h && x[j-h]!=v && Rf_Scollate(x[j-h],v) > 0)   // data.table. TO DO: test all ascii and then use strcmp.
+		while (j>=h && x[j-h]!=v && strcmp(CHAR(x[j-h]),CHAR(v)) > 0)   // assumes ASCII.  TO DO: reinvestigate non-ascii.
 		// while (j >= h && scmp(x[j - h], v, TRUE) > 0)         // base
 		{ x[j] = x[j-h]; j-=h; }
 	    x[j] = v;
