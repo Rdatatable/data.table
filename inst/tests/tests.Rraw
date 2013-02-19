@@ -2605,6 +2605,10 @@ test(934, DT[J(c(0,2,6,8)), roll=+Inf, v]$v, INT(NA,1,6,7))
 test(935, DT[J(c(0,2,6,8)), roll=-Inf, v]$v, INT(1,2,7,NA))
 test(936, DT[J(c(-10,-1,2,12,13)), roll=5, rollends=TRUE, v]$v, INT(NA,1,1,7,NA))
 test(937, DT[J(c(-10,-1,2,12,13)), roll=-5, rollends=TRUE, v]$v, INT(NA,1,2,7,NA))
+test(938, DT[J(c(-10,2,6,7,8)), roll="nearest", v]$v, INT(1,1,7,7,7))
+test(939, DT[J(c(-10,2,6,7,8)), roll="nearest", rollends=c(TRUE,FALSE), v]$v, INT(1,1,7,7,NA))
+test(940, DT[J(c(-10,2,6,7,8)), roll="nearest", rollends=c(FALSE,TRUE), v]$v, INT(NA,1,7,7,7))
+test(941, DT[J(c(-10,2,6,7,8)), roll="nearest", rollends=FALSE, v]$v, INT(NA,1,7,7,NA))
 
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")

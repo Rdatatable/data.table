@@ -46,6 +46,8 @@ NEW FEATURES
         'rollends' is a new parameter holding two logicals. The first observation is rolled
         backwards if rollends[1] is TRUE. The last observation is rolled forwards if rollends[2]
         is TRUE. If roll is a finite number, the same limit applies to the ends.
+        Also, roll='nearest' joins to the nearest value (either backwards or forwards) when
+        the value falls in a gap, and to the end value according to 'rollends'.
         'rolltolast' has been deprecated. For backwards compatibility it is converted to
         {roll=TRUE;rollends=c(FALSE,FALSE)}.
         This implements FR#2300 & FR#206 and helps several recent S.O. questions.
@@ -106,7 +108,7 @@ NOTES
         XLConnect (#1747) and rJava (#2045).
         Please use data.table() directly instead of J(), outside DT[...].
         
-    o   There are now 937 raw tests, as reported by test.data.table().
+    o   There are now 941 raw tests, as reported by test.data.table().
 
 
         *********************************************

@@ -25,10 +25,13 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     
     R_len_t lr,nr,low,mid,upp,coln,col,lci,rci,len;
     R_len_t prevlow, prevupp, type, newlow, newupp, /*size,*/ lt, rt;
-    double tol = REAL(tolerance)[0];
+    double tol = REAL(tolerance)[0], roll;
+    Rboolean nearest=FALSE;
     SEXP lc=NULL, rc=NULL;
-    double roll = REAL(rollarg)[0];
-    if (ISNA(roll)) error("Internal error: roll is NA");
+    if (isString(rollarg)) {
+        if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
+        roll=1.0; nearest=TRUE;       // the 1.0 here is just any non-0.0 
+    } else roll = REAL(rollarg)[0];   // more common case (rolling forwards or backwards) or no roll when 0.0
     union {
         int i;
         double d;
@@ -47,6 +50,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
         rt = TYPEOF(VECTOR_ELT(right, rci));
         if (lt != rt) error("typeof x.%s (%s) != typeof i.%s (%s)", CHAR(STRING_ELT(getAttrib(right,R_NamesSymbol),rci)), type2char(rt), CHAR(STRING_ELT(getAttrib(left,R_NamesSymbol),lci)), type2char(lt));
     }
+    if (nearest && TYPEOF(VECTOR_ELT(left, INTEGER(leftcols)[coln-1]))==STRSXP) error("roll='nearest' can't be applied to a character column");
     low=-1;
     for (lr=0; lr < LENGTH(VECTOR_ELT(left,0)); lr++) {  // left row (i.e. from i). TO DO: change left/right to i/x
         upp = prevupp = nr;
@@ -165,14 +169,25 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             len = upp-low-1;
             INTEGER(retLength)[lr] = len;
             if (len > 1) LOGICAL(allLen1)[0] = FALSE;
-        } else {
-            // runs once per i row, so not hugely time critical
-            // TO DO: comment out for release :
-                if (low != upp-1) error("Internal error. low != upp-1");
-                if (low<prevlow) error("Internal error. low<prevlow");
-                if (upp>prevupp) error("Internal error. upp>prevupp");
-            // END
-            if (roll!=0.0 && lc && rc && col==coln) {   // Testing double==0.0 is ok i.e. roll=FALSE. '&& lc && rc' is for test 133.
+        } else if (roll!=0.0 && col==coln && lc && rc && (low>prevlow || upp<prevupp)) {
+            // '&& lc && rc' is for test 133 (empty x).  Testing double roll!=0.0 is ok here, i.e. !(roll==FALSE). 
+            // runs once per i row (not each search test), so not hugely time critical
+            if (low != upp-1) error("Internal error. low != upp-1");
+            if (low<prevlow) error("Internal error. low<prevlow");
+            if (upp>prevupp) error("Internal error. upp>prevupp");
+            if (nearest) {   // value of roll ignored currently when nearest
+                if ( (upp==prevupp && LOGICAL(rollends)[1]) || (low>prevlow &&
+                  (  ( TYPEOF(lc)==REALSXP && REAL(lc)[lr]-REAL(rc)[low] <= REAL(rc)[upp]-REAL(lc)[lr] )
+                  || ( TYPEOF(lc)<=INTSXP && INTEGER(lc)[lr]-INTEGER(rc)[low] <= INTEGER(rc)[upp]-INTEGER(lc)[lr] )))) {
+                    INTEGER(retFirst)[lr] = low+1;
+                    INTEGER(retLength)[lr] = 1;
+                    low -= 1;
+                } else if (low==prevlow ? LOGICAL(rollends)[0] : upp<prevupp) {
+                    INTEGER(retFirst)[lr] = upp+1;
+                    INTEGER(retLength)[lr] = 1;
+                    upp += 1;
+                }
+            } else {
                 if ( (   (roll>0.0 && low>prevlow && (upp<prevupp || LOGICAL(rollends)[1]))
                       || (roll<0.0 && upp==prevupp && LOGICAL(rollends)[1]) )
                   && (   (TYPEOF(lc)==REALSXP && REAL(lc)[lr]-REAL(rc)[low]-fabs(roll)<tol)
@@ -192,13 +207,6 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                     upp += 1;
                 }
             }
-            /*    
-            if (low>prevlow && col==coln && (LOGICAL(roll)[0] ||
-                                            (LOGICAL(rolltolast)[0] && upp<prevupp))) {
-                INTEGER(retFirst)[lr] = low+1;
-                INTEGER(retLength)[lr] = 1;
-                low -= 1; // for test 148
-            }*/
         }
         nextlr :;
     }

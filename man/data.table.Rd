@@ -29,8 +29,10 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 
 \method{[}{data.table}(x, i, j, by, keyby, with=TRUE,
   nomatch = getOption("datatable.nomatch"),   # default: NA_integer_
-  mult = "all", roll = FALSE, rollends=if (roll>0) c(FALSE,TRUE) else c(TRUE,FALSE),
-  which = FALSE, .SDcols,
+  mult = "all",
+  roll = FALSE, rollends = if (roll=="nearest") c(TRUE,TRUE) else { if (roll>0) c(FALSE,TRUE) else c(TRUE,FALSE) },
+  which = FALSE,
+  .SDcols,
   verbose=getOption("datatable.verbose"),     # default: FALSE
   allow.cartesian=getOption("datatable.allow.cartesian"),   # default: FALSE
   drop=NULL,
@@ -115,10 +117,11 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \item{roll}{ Applies to the last join column, generally a date but can be any ordered variable, irregular and including gaps. If \code{roll=TRUE} and \code{i}'s row matches to all but the last \code{x} join column, and its value in the last \code{i} join column falls in a gap (including after the last observation in \code{x} for that group), then the \emph{prevailing} value in \code{x} is \emph{rolled} forward. This operation is particularly fast using a modified binary search. The operation is also known as last observation carried forward (LOCF). Usually, there should be no duplicates in \code{x}'s key, the last key column is a date (or time, or datetime) and all the columns of \code{x}'s key are joined to. A common idiom is to select a contemporaneous regular time series (\code{dts}) across a set of identifiers (\code{ids}):  \code{DT[CJ(ids,dts),roll=TRUE]} where \code{DT} has a 2-column key (id,date) and \code{\link{CJ}} stands for \emph{cross join}.
   When \code{roll} is a positive number, this limits how far values are carried forward. \code{roll=TRUE} is equivalent to \code{roll=+Inf}.
   When \code{roll} is a negative number, values are rolled backwards; i.e., next observation carried backwards (NOCB). Use \code{-Inf} for unlimited roll back.
+  When \code{roll} is \code{"nearest"}, the nearest value is joined to.
   
 }
-  \item{rollends}{ A logical vector length 2 (a single logical is recycled). When rolling forward (e.g. \code{roll=TRUE}) if a value is past the \emph{last} observation within each group defined by the join columns, \code{rollends[2]=TRUE} will roll the last value forwards (by default TRUE). \code{rollends[1]=TRUE} will roll the first value backwards if the value is before it. If \code{rollends=FALSE} the value of \code{i} must fall in a gap in \code{x} but not after the end or before the beginning of the data, for that group defined by all but the last join column. When \code{roll} is a finite number, that limit is also applied when rolling the ends.
-
+  \item{rollends}{ A logical vector length 2 (a single logical is recycled). When rolling forward (e.g. \code{roll=TRUE}) if a value is past the \emph{last} observation within each group defined by the join columns, \code{rollends[2]=TRUE} will roll the last value forwards. \code{rollends[1]=TRUE} will roll the first value backwards if the value is before it. If \code{rollends=FALSE} the value of \code{i} must fall in a gap in \code{x} but not after the end or before the beginning of the data, for that group defined by all but the last join column. When \code{roll} is a finite number, that limit is also applied when rolling the ends.
+  
 }
   \item{which}{ \code{TRUE} returns the row numbers of \code{x} that \code{i} matches to. \code{NA} returns the row numbers of \code{i} that have no match in \code{x}. By default \code{FALSE} and the rows in \code{x} that match are returned.
 

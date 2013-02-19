@@ -221,7 +221,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     x
 }
 
-"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll>0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, rolltolast=FALSE)
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else {if (roll>0) c(FALSE,TRUE) else c(TRUE,FALSE)}, which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, rolltolast=FALSE)
 {
     # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
     # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -235,14 +235,17 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         return(ans)
     }
     if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
-    if (isTRUE(rolltolast)) { roll=+Inf; rollends=c(FALSE,FALSE) }  # backwards compatibility. rolltolast is deprecated.
-    if (isTRUE(roll)) roll = +Inf
-    roll = as.double(roll)
-    if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE or positive/negative integer/double including +Inf and -Inf but not NA")
-    if (!is.logical(rollends)) stop("rollends must be a logical vector")
-    if (length(rollends)>2) stop("rollends must be length 1 or 2")
-    if (length(rollends)==1) rollends=rep(rollends,2)
-    # TO DO. Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
+    if (isTRUE(rolltolast)) { roll=+Inf; rollends=c(FALSE,FALSE) }  # for backwards compatibility (rolltolast is deprecated)
+    else if (!identical(roll,FALSE)) {
+        if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE or positive/negative integer/double including +Inf and -Inf but not NA, or 'nearest'")
+        if (isTRUE(roll)) roll = +Inf
+        else if (is.character(roll)) {if (roll!="nearest") stop("roll is '",roll,"' (type character). Only valid character value is 'nearest'.")}
+        else roll = as.double(roll)
+        if (!is.logical(rollends)) stop("rollends must be a logical vector")
+        if (length(rollends)>2) stop("rollends must be length 1 or 2")
+        if (length(rollends)==1) rollends=rep(rollends,2)
+        # TO DO. Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
+    }
     missingnomatch = missing(nomatch)
     if (!is.na(nomatch) && nomatch!=0L) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
     nomatch = as.integer(nomatch)
@@ -335,7 +338,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                         # Retain original levels of i's factor columns in factor to factor joins (important when NAs,
                         # see tests 687 and 688).
                     }
-                    if (roll!=0.0 && a==length(leftcols)) stop("Attempting roll join on factor column x.",names(x)[rc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns NA for missing chars in x (rather than some integer greater than existing). Note roll!=0.0 is ok in this 0 special floating point case e.g. as.double(FALSE)==0.0 is ok
+                    if (roll!=0.0 && a==length(leftcols)) stop("Attempting roll join on factor column x.",names(x)[rc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns NA for missing chars in x (rather than some integer greater than existing). Note roll!=0.0 is ok in this 0 special floating point case e.g. as.double(FALSE)==0.0 is ok, and "nearest"!=0.0 is also true.
                     newfactor = chmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA_integer_)[i[[lc]]]
                     levels(newfactor) = levels(x[[rc]])
                     class(newfactor) = "factor"
