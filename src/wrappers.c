@@ -17,12 +17,6 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
 SEXP copy(SEXP x)
 {
     return(duplicate(x));
-} 
-LibExtern int	R_EvalDepth;
-
-SEXP EvalDepth()
-{
-    return(ScalarInteger(R_EvalDepth));
 }
 
 SEXP copyattr(SEXP from, SEXP to)

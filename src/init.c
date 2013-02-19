@@ -26,7 +26,6 @@ SEXP readfile();
 SEXP reorder();
 SEXP rorder_tol();
 SEXP rbindlist();
-SEXP EvalDepth();
 SEXP vecseq();
 SEXP copyattr();
 SEXP setlistelt();
@@ -56,7 +55,6 @@ R_CallMethodDef callMethods[] = {
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crorder_tol", (DL_FUNC) &rorder_tol, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
-{"CEvalDepth", (DL_FUNC) &EvalDepth, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
 {"Ccopyattr", (DL_FUNC) &copyattr, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},

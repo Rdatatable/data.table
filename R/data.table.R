@@ -9,9 +9,9 @@ dim.data.table <- function(x) {
 .global$print = TRUE
 .global$depthtrigger =
     if (exists(".global",.GlobalEnv) || getRversion() < "2.14.0") {
-        7L # this is either development, or pre 2.14, where package isn't compiled
+        9L # this is either development, or pre 2.14, where package isn't compiled
     } else {
-        2L # normal value when package is loaded in 2.14+ (where functions are compiled in namespace)
+        3L # normal value when package is loaded in 2.14+ (where functions are compiled in namespace)
     }
 
 print.data.table = function(x,
@@ -465,7 +465,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     if (length(av) && av[1L] == ":=") {
         if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
         if (notj) stop("doesn't make sense to combine !j with :=")
-        if (.Call(CEvalDepth)<=.global$depthtrigger)
+        if (Cstack_info()[["eval_depth"]] <= .global$depthtrigger)
             .global$print = FALSE
         if (!is.null(irows)) {
             if (!length(irows)) {
