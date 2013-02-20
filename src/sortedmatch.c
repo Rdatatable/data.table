@@ -174,6 +174,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             if (low<prevlow) error("Internal error. low<prevlow");
             if (upp>prevupp) error("Internal error. upp>prevupp");
             if (nearest) {   // value of roll ignored currently when nearest
+                //Rprintf("rollends is %d %d\n", LOGICAL(rollends)[0], LOGICAL(rollends)[1]);
                 if ( (upp==prevupp && LOGICAL(rollends)[1]) || (low>prevlow &&
                   (  ( TYPEOF(lc)==REALSXP && REAL(lc)[lr]-REAL(rc)[low] <= REAL(rc)[upp]-REAL(lc)[lr] )
                   || ( TYPEOF(lc)<=INTSXP && INTEGER(lc)[lr]-INTEGER(rc)[low] <= INTEGER(rc)[upp]-INTEGER(lc)[lr] )))) {
