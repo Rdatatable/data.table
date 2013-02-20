@@ -141,6 +141,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     // ii) we can directly change type of vectors without an allocation when the size of the data type doesn't change
     SEXP newv;
     R_len_t i, protecti=0;
+    int w, d, e;
     double tCoerce0 = currentTime();
     char *lch=ch;
     while (lch!=eof && *lch!=sep && *lch!=eol) lch++;  // lch now marks the end of field, used in verbose messages and errors
@@ -208,11 +209,12 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
             }
             break;
         case SXP_REAL :
+            formatReal(REAL(v), sofar, &w, &d, &e, 0);  // fingers crossed formatReal isn't removed from R's API
             for (i=0; i<sofar; i++) {
                 if (ISNA(REAL(v)[i]))
                     SET_STRING_ELT(newv,i,R_BlankString);
                 else {
-                    snprintf(buffer,128,"%f",REAL(v)[i]);  // was using formatReal and EncodeReal here but removed from R API in rdevel I think
+                    snprintf(buffer,128,"%.*f",d,REAL(v)[i]);  // This is hard without formatReal()
 	                SET_STRING_ELT(newv, i, mkChar(buffer));
 	            }
             }

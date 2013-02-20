@@ -110,6 +110,14 @@ const int incs[16] = {1073790977, 268460033, 67121153, 16783361, 4197377,
 		       1050113, 262913, 65921, 16577, 4193, 1073, 281, 77,
 		       23, 8, 1};
 
+int StrCmp(SEXP x, SEXP y)
+{
+    if (x == NA_STRING) return (y == NA_STRING ? 0 : -1);
+    if (y == NA_STRING) return 1;
+    if (x == y) return 0;  // same string in cache
+    return strcmp(CHAR(x), CHAR(y));
+}
+
 void ssort2(SEXP *x, R_len_t n)
 // Copied from src/main/sort.c.
 // ssort2 is declared static in base i.e. not exposed to packages unfortunately.
@@ -131,7 +139,7 @@ void ssort2(SEXP *x, R_len_t n)
 	for (i = h; i < n; i++) {
 	    v = x[i];
 	    j = i;
-		while (j>=h && x[j-h]!=v && strcmp(CHAR(x[j-h]),CHAR(v)) > 0)   // assumes ASCII.  TO DO: reinvestigate non-ascii.
+		while (j>=h && x[j-h]!=v && StrCmp(x[j-h],v) > 0)   // assumes ASCII.  TO DO: reinvestigate non-ascii.
 		// while (j >= h && scmp(x[j - h], v, TRUE) > 0)         // base
 		{ x[j] = x[j-h]; j-=h; }
 	    x[j] = v;
@@ -159,14 +167,6 @@ static void ssort2(SEXP *x, int n, Rboolean decreasing)
 		{ x[j] = x[j - h]; j -= h; }
 	    x[j] = v;
 	}
-}
-static int scmp(SEXP x, SEXP y, Rboolean nalast)
-{
-    if (x == NA_STRING && y == NA_STRING) return 0;
-    if (x == NA_STRING) return nalast?1:-1;
-    if (y == NA_STRING) return nalast?-1:1;
-    if (x == y) return 0;  // same string in cache
-    return Scollate(x, y);
 }
 */
 

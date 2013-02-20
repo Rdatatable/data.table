@@ -5,6 +5,8 @@
 //#include <sys/mman.h>
 #include <fcntl.h>
 
+int StrCmp(SEXP x, SEXP y);   // in countingcharacter.c
+
 /*
 Implements binary search (a.k.a. divide and conquer).
 http://en.wikipedia.org/wiki/Binary_search
@@ -117,7 +119,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                             if (rval.s == lval.s) newupp=mid; else low=mid;
                         }
                         break;
-                    } else if (rval.s==NA_STRING || strcmp(CHAR(rval.s), CHAR(lval.s))<0) {
+                    } else if (StrCmp(rval.s, lval.s)<0) {
                     // TO DO: Reinvestigate non-ASCII. Switch can be a column level check that all is ascii
                     // (setkey can check and mark). Used to use Rf_Scollate but was removed from r-devel API.
                     // We're using the last line of scmp in sort.c since we already dealt with NA and == above
