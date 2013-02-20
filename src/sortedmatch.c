@@ -26,13 +26,17 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     
     R_len_t lr,nr,low,mid,upp,coln,col,lci,rci,len;
     R_len_t prevlow, prevupp, type, newlow, newupp, /*size,*/ lt, rt;
-    double tol = REAL(tolerance)[0], roll;
+    double tol = REAL(tolerance)[0], roll, rollabs;
     Rboolean nearest=FALSE;
     SEXP lc=NULL, rc=NULL;
     if (isString(rollarg)) {
         if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
         roll=1.0; nearest=TRUE;       // the 1.0 here is just any non-0.0 
-    } else roll = REAL(rollarg)[0];   // more common case (rolling forwards or backwards) or no roll when 0.0
+    } else {
+        if (!isReal(rollarg)) error("Internal error: roll is not character or double");
+        roll = REAL(rollarg)[0];   // more common case (rolling forwards or backwards) or no roll when 0.0
+    }
+    rollabs = fabs(roll);
     if (!isLogical(rollends) || LENGTH(rollends)!=2) error("rollends not a length 2 logical");
     union {
         int i;
@@ -174,14 +178,22 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             if (low<prevlow) error("Internal error. low<prevlow");
             if (upp>prevupp) error("Internal error. upp>prevupp");
             if (nearest) {   // value of roll ignored currently when nearest
-                //Rprintf("rollends is %d %d\n", LOGICAL(rollends)[0], LOGICAL(rollends)[1]);
-                if ( (upp==prevupp && LOGICAL(rollends)[1]) || (low>prevlow &&
-                  (  ( TYPEOF(lc)==REALSXP && REAL(lc)[lr]-REAL(rc)[low] <= REAL(rc)[upp]-REAL(lc)[lr] )
-                  || ( TYPEOF(lc)<=INTSXP && INTEGER(lc)[lr]-INTEGER(rc)[low] <= INTEGER(rc)[upp]-INTEGER(lc)[lr] )))) {
+                if ( low>prevlow && upp<prevupp ) {
+                    if (  ( TYPEOF(lc)==REALSXP && REAL(lc)[lr]-REAL(rc)[low] <= REAL(rc)[upp]-REAL(lc)[lr] )
+                       || ( TYPEOF(lc)<=INTSXP && INTEGER(lc)[lr]-INTEGER(rc)[low] <= INTEGER(rc)[upp]-INTEGER(lc)[lr] )) {
+                        INTEGER(retFirst)[lr] = low+1;
+                        INTEGER(retLength)[lr] = 1;
+                        low -= 1;
+                    } else {
+                        INTEGER(retFirst)[lr] = upp+1;
+                        INTEGER(retLength)[lr] = 1;
+                        upp += 1;
+                    }
+                } else if (upp==prevupp && LOGICAL(rollends)[1]) {
                     INTEGER(retFirst)[lr] = low+1;
                     INTEGER(retLength)[lr] = 1;
                     low -= 1;
-                } else if (low==prevlow ? LOGICAL(rollends)[0] : upp<prevupp) {
+                } else if (low==prevlow && LOGICAL(rollends)[0]) {
                     INTEGER(retFirst)[lr] = upp+1;
                     INTEGER(retLength)[lr] = 1;
                     upp += 1;
@@ -189,8 +201,8 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             } else {
                 if ( (   (roll>0.0 && low>prevlow && (upp<prevupp || LOGICAL(rollends)[1]))
                       || (roll<0.0 && upp==prevupp && LOGICAL(rollends)[1]) )
-                  && (   (TYPEOF(lc)==REALSXP && REAL(lc)[lr]-REAL(rc)[low]-fabs(roll)<tol)
-                      || (TYPEOF(lc)<=INTSXP && (double)(INTEGER(lc)[lr]-INTEGER(rc)[low])-fabs(roll)<tol ) 
+                  && (   (TYPEOF(lc)==REALSXP && REAL(lc)[lr]-REAL(rc)[low]-rollabs<tol)
+                      || (TYPEOF(lc)<=INTSXP && (double)(INTEGER(lc)[lr]-INTEGER(rc)[low])-rollabs<tol ) 
                       || (TYPEOF(lc)==STRSXP)   )) {
                     INTEGER(retFirst)[lr] = low+1;
                     INTEGER(retLength)[lr] = 1;
@@ -198,8 +210,8 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                 } else if 
                    (  (  (roll<0.0 && upp<prevupp && (low>prevlow || LOGICAL(rollends)[0]))
                       || (roll>0.0 && low==prevlow && LOGICAL(rollends)[0]) )
-                  && (   (TYPEOF(lc)==REALSXP && REAL(rc)[upp]-REAL(lc)[lr]-fabs(roll)<tol)
-                      || (TYPEOF(lc)<=INTSXP && (double)(INTEGER(rc)[upp]-INTEGER(lc)[lr])-fabs(roll)<tol )
+                  && (   (TYPEOF(lc)==REALSXP && REAL(rc)[upp]-REAL(lc)[lr]-rollabs<tol)
+                      || (TYPEOF(lc)<=INTSXP && (double)(INTEGER(rc)[upp]-INTEGER(lc)[lr])-rollabs<tol )
                       || (TYPEOF(lc)==STRSXP)   )) {
                     INTEGER(retFirst)[lr] = upp+1;   // == low+2
                     INTEGER(retLength)[lr] = 1;
