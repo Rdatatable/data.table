@@ -33,6 +33,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
         if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
         roll=1.0; nearest=TRUE;       // the 1.0 here is just any non-0.0 
     } else roll = REAL(rollarg)[0];   // more common case (rolling forwards or backwards) or no roll when 0.0
+    if (!isLogical(rollends) || LENGTH(rollends)!=2) error("rollends not a length 2 logical");
     union {
         int i;
         double d;
