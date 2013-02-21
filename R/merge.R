@@ -70,7 +70,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             if (length(othercolsx)) {
                 tmp = rep(NA_integer_, length(missingyidx))
                 yy <- cbind(yy, xkey[tmp, othercolsx, with = FALSE])
-                setnames(yy, make.names(names(yy),unique=TRUE))
+                setnames(yy, make.unique(names(yy)))
             }
             setcolorder(yy, names(dt))
             dt = rbind(dt, yy)

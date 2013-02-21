@@ -94,6 +94,10 @@ BUG FIXES
         statquant for the reproducible example revealed by his interesting solution
         and to user1935457 for the assistance :
             http://stackoverflow.com/a/14359701/403310
+            
+    o   merge(...,all.y=TRUE) was 'setcolorder' error if a y column name included a space
+        and there were rows in y not in x, #2555. The non syntactically valid column names
+        are now preserved as intended. Thanks to Simon Judes for reporting. Tests added.
         
 NOTES
 
@@ -107,7 +111,7 @@ NOTES
         XLConnect (#1747) and rJava (#2045).
         Please use data.table() directly instead of J(), outside DT[...].
         
-    o   There are now 941 raw tests, as reported by test.data.table().
+    o   There are now 943 raw tests, as reported by test.data.table().
 
 
         *********************************************
