@@ -221,7 +221,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
                 else {
                     snprintf(buffer,128,
                     #ifdef WIN32
-                       "%l64d"
+                       "%I64d"
                     #else
                        "%lld"
                     #endif
