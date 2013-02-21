@@ -1,5 +1,5 @@
 
-if (!exists(".devtesting")) {
+if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
     suppressWarnings({
         require(reshape)
@@ -14,7 +14,8 @@ if (!exists(".devtesting")) {
     # want to warn about it not being installed. 'R CMD check' is a stricter test that will warn if the
     # packages above are not installed, via DESCRIPTION:Suggests.
     .devtesting=FALSE
-}
+} else
+    .devtesting=TRUE
 options(warn=2)
 nfail = ntest = lastnum = 0
 whichfail = NULL

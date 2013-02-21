@@ -4,7 +4,6 @@ test.data.table = function(verbose=FALSE) {
         # package developer
         if ("package:data.table" %in% search()) stop("data.table package loaded")
         d = path.expand("~/R/datatable/pkg/inst/tests")
-        assign(".devtesting",TRUE,envir=.GlobalEnv)
     } else {
         # user
         d = paste(getNamespaceInfo("data.table","path"),"/tests",sep="")
