@@ -463,15 +463,19 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
     lhs = NULL
     av = all.vars(jsub,TRUE)
     newnames = NULL
+    suppPrint = identity
     if (length(av) && av[1L] == ":=") {
         if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
         if (notj) stop("doesn't make sense to combine !j with :=")
-        if (Cstack_info()[["eval_depth"]] <= .global$depthtrigger)
-            .global$print = FALSE
+        if (Cstack_info()[["eval_depth"]] <= .global$depthtrigger) {
+            suppPrint = function(x) { .global$print=FALSE; x }
+            # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
+            # All appropriate returns following this point are wrapped i.e. return(suppPrint(x)).
+        }
         if (!is.null(irows)) {
             if (!length(irows)) {
                 if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")
-                return(x)
+                return(suppPrint(x))
             }
             if (!missing(keyby)) stop("When i is present, keyby := on a subset of rows doesn't make sense. Either change keyby to by, or remove i")
         }
@@ -871,7 +875,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
         if (!is.null(lhs)) {
             if (verbose) cat("Assigning to ",if (is.null(irows)) "all " else paste(length(irows),"row subset of "), nrow(x)," rows\n",sep="")
             .Call(Cassign,x,irows,cols,newnames,jval,verbose)
-            return(x)
+            return(suppPrint(x))
         }
         if ((is.call(jsub) && is.list(jval) && !is.object(jval)) || !missing(by)) {
             # is.call: selecting from a list column should return list
@@ -1014,7 +1018,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
                 setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.
             else warning(":= keyby not straightforward character column names or list() of column names, treating as a by:",paste(cnames,collapse=","),"\n")
         }
-        return(x)
+        return(suppPrint(x))
     }
     if (is.null(ans)) {
         ans = as.data.table.list(lapply(groups,"[",0L))  # side-effects only such as test 168

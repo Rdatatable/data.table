@@ -70,10 +70,23 @@ NULL
 > DT[2,a:=10L][1]    # yes (because eval depth is above trigger in the := here via nested `[.data.table` calls, iiuc).
    a
 1: 1
-> DT[1,a:=10L][1,a:=10L]   # no
-> DT[,a:=as.integer(a)]   # no
-> DT[1,a:=as.integer(a)]  # no
-> DT[1,a:=10L][]     # yes. ...[] == oops, forgot print(...)
+> DT[1,a:=10L][1,a:=10L]                # no
+> DT[,a:=as.integer(a)]                 # no
+> DT[1,a:=as.integer(a)]                # no
+> DT[1,a:=10L][]                        # yes. ...[] == oops, forgot print(...)
+    a
+1: 10
+2: 10
+> 
+> # Test that error in := doesn't suppress next valid print, bug #2376
+> assign("depthtrigger", 20L, data.table:::.global)   # try() adds 10 levels of depth. But we need try() otherwise this script would stop.
+> try(DT[,foo:=ColumnNameTypo])         # error: not found.
+Error in eval(expr, envir, enclos) : object 'ColumnNameTypo' not found
+> DT                                    # yes  (if we didn't change depthtrigger above this would print for depth reason and not test it)
+    a
+1: 10
+2: 10
+> DT                                    # yes
     a
 1: 10
 2: 10

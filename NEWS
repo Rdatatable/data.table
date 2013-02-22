@@ -99,6 +99,14 @@ BUG FIXES
         and there were rows in y not in x, #2555. The non syntactically valid column names
         are now preserved as intended. Thanks to Simon Judes for reporting. Tests added.
         
+    o   An error in := no longer suppresses the next print, #2376; i.e.,
+            > DT[,foo:=colnameTypo+1]
+            Error: object 'colnameTypo' not found
+            > DT    # now prints DT ok
+            > DT    # used to have to type DT a second time to see it
+        Many thanks to Charles, Joris Meys, and, Spacedman whose solution is now used
+        by data.table internally (http://stackoverflow.com/a/13606880/403310).
+
 NOTES
 
     o   print(DT,topn=2), where topn is provided explicitly, now prints the top and bottom 2 rows
