@@ -119,6 +119,9 @@ NOTES
         XLConnect (#1747) and rJava (#2045).
         Please use data.table() directly instead of J(), outside DT[...].
         
+    o   ?merge.data.table and FAQ 1.12 have been improved (#2457), and FAQ 2.24 added.
+        Thanks to dnlbrky for highlighting : http://stackoverflow.com/a/14164411/403310.
+        
     o   There are now 943 raw tests, as reported by test.data.table().
 
 
