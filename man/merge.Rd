@@ -3,17 +3,24 @@
 \alias{merge.data.table}
 \title{ Merge Two Data Tables }
 \description{
-  Relatively quick merge of data tables based on common keys (by default).
+  Relatively quick merge of two \code{data.table}s based on common key columns (by default).
 
-  This function is meant to act very similarly to the
-  \code{\link{merge.data.frame}} function, with the major exception being that
-  the default columns used to merge two data.tables are the shared key columns,
-  and not the shared columns with the same names.
+  This \code{merge} method for \code{data.table} is meant to act very similarly to the
+  \code{merge} method for \code{data.frame}, with the major exception being that
+  the default columns used to merge two \code{data.table} inputs are the shared key columns
+  rather than the shared columns with the same names.
   
-  For a more \code{data.table}-centric (and faster) way of merging two data.tables,
-  take a look at \code{\link{[.data.table}}; e.g., \code{x[y, ...]}. In recent
+  For a more \code{data.table}-centric (and faster) way of merging two \code{data.table}s,
+  see \code{\link{[.data.table}}; e.g., \code{x[y, ...]}. In recent
   versions, however, \code{merge()} is much closer to the speed of \code{x[y, ...]}.
-  See FAQ 2.12 for a detailed comparison of \code{merge} and \code{x[y, ...]}.
+  See FAQ 1.12 for a detailed comparison of \code{merge} and \code{x[y, ...]}.
+  
+  Note that \code{\link{merge}} is a generic function in base R. It dispatches to either the
+  \code{merge.data.frame} method or \code{merge.data.table} method depending on the class of its first argument.
+  Typing \code{?merge} at the prompt should present a choice of two links:
+  the help pages for each of these \code{merge} methods. You don't need to use the full name of the
+  method although you may if you wish; i.e., \code{merge(DT1,DT2)} is idiomatic R but you can bypass
+  method dispatch by going direct if you wish: \code{merge.data.table(DT1,DT2)}. 
 }
 
 \usage{
@@ -24,23 +31,19 @@ allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
 
 \arguments{
   \item{x, y}{
-    data tables. \code{y} is coerced to a \code{data.table} if
-    it isn't one already
+    \code{data table}s. \code{y} is coerced to a \code{data.table} if
+    it isn't one already.
   }
 
   \item{by}{
     A vector of shared column names in \code{x} and \code{y} to merge on.
     This defaults to the shared key columns between the two tables.
-    If \code{y} has no key columns, this defaults to the keys set for \code{x}.
-    Note that if the specified values in \code{by} are not the keys (or
-    prefixes of keys) for \code{x,y}, then they are first set as the keys
-    prior to performing the merge -- this might make this function perform
-    slower than you are expecting.
+    If \code{y} has no key columns, this defaults to the key of \code{x}.
   }
 
   \item{all}{
-    logical; \code{all = L} is shorthand for \code{all.x = L} and
-    \code{all.y = L}, where L is either TRUE or FALSE.
+    logical; \code{all = TRUE} is shorthand to save setting both \code{all.x = TRUE} and
+    \code{all.y = TRUE}.
   }
 
   \item{all.x}{
@@ -59,7 +62,7 @@ allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
   \item{suffixes}{
     A \code{character(2)} specifying the suffixes to be used for making
     non-\code{by} column names unique. The suffix behavior works in a similar 
-    fashion as \code{\link{merge.data.frame}} does.
+    fashion as the \code{\link{merge.data.frame}} method does.
   }
   
   \item{allow.cartesian}{
@@ -72,14 +75,15 @@ allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
 }
 
 \details{
-  Keys for each data.table are reshuffled to ensure that the columns
-  identified in the \code{by} parameter are prefixes of the keys set for
-  data.tables \code{x} and \code{y} -- this may cause the function to run
-  slower than expected.
+  Note that if the specified columns in \code{by} is not the key (or
+  head of the key) of \code{x} or \code{y}, then a copy is first rekeyed 
+  prior to performing the merge. This might make this function perform
+  slower than you are expecting. When secondary keys are implemented in
+  future we expect performance in this case to improve.
 }
 
 \value{
-  A new \code{data.table} based on the merged data tables, sorted by the
+  A new \code{data.table} based on the merged \code{data table}s, sorted by the
   columns set (or inferred for) the \code{by} argument.
 }
 
