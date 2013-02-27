@@ -1920,9 +1920,8 @@ NEW FEATURES
         data.table-style indexing for i. Both of these changes may
         introduce incompatibilities for existing code.
 
-    o   Logical columns are now allowed in keys. Logical columns (and
-        expressions that evaluate to logical) are now allowed in 'by'.
-        Thanks to David Winsemius for highlighting.
+    o   Logical columns are now allowed in keys and in 'by', as are expressions
+	    that evaluate to logical. Thanks to David Winsemius for highlighting.
 
 
 BUG FIXES
