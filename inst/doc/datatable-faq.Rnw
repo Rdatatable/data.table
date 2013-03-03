@@ -537,7 +537,7 @@ The \href{http://datatable.r-forge.r-project.org/}{homepage} contains links to t
 Sure. You're more likely to get a faster answer from datatable-help or Stack Overflow, though. Asking publicly in those places helps build the knowledge base.
 
 \subsection{I have created a package that depends on \code{data.table}. How do I ensure my package is \code{data.table}-aware so that inheritance from \code{data.frame} works?}
-You don't need to do anything special. As long as your package has a namespace, and imports or depends on \code{data.table}, your package is detected as \code{data.table}-aware.
+You don't need to do anything special. Just include \code{data.table} in either the Imports or Depends field of your package's DESCRIPTION file.
 
 \subsection{Why is this FAQ in pdf format? Can it moved to a website?}
 This FAQ (and the intro and timing documents) are \emph{vignettes} written using Sweave. The benefits of Sweave include the following:
