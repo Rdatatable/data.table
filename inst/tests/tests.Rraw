@@ -2509,15 +2509,15 @@ if ("package:bit64" %in% search()) {
     cat("Tests 897-899 not run. If required call library(bit64) first.\n")
 }
 
-loc = ifelse(.devtesting, "", paste(path.package("data.table"),"/tests/",sep=""))
-f = paste(loc,"ch11b.dat",sep="")  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
+# getwd() has been set by test.data.table() to the location of this tests.Rraw file. Test files should be in the same directory.
+f = "ch11b.dat"  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
 test(900, fread(f), as.data.table(read.table(f)))  
 
-f = paste(loc,"1206FUT.txt",sep="")    # a CRLF line ending file (DOS)
+f = "1206FUT.txt"    # a CRLF line ending file (DOS)
 test(901, DT<-fread(f), as.data.table(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)))))
 
 # Tests the coerce of column 23 to character on line 179 due to the 'A' for the first time :
-f = paste(loc,"2008head.csv",sep="")
+f = "2008head.csv"
 test(902, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)), warning="Bumped column 23 to type character.*may not be lossless")
 
 test(903, fread("A,B\n1,3,foo,5\n2,4,barbaz,6"), data.table(1:2,3:4,c("foo","barbaz"),5:6))  # invalid header (too short) ignored
