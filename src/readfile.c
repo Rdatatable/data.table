@@ -56,9 +56,6 @@ static char TypeName[4][10] = {"INT","INT64","REAL","STR"};  // for messages and
 static int TypeSxp[4] = {INTSXP,REALSXP,REALSXP,STRSXP};
 static union {double d; long long l;} u;
 
-#define protField(x) (while(x<eof) 
-      
-
 static int countfields()
 {
     int ncol=0;
@@ -68,14 +65,11 @@ static int countfields()
     protected = FALSE;
     if (sep=='\"') error("Internal error: sep is \", not an allowed separator");
     if (lch<eof && *lch!=eol) ncol=1;   // only empty lines (first char eol) have 0 fields. Even one space is classed as one field.
-    // if (lch<eof && *lch=='\"') protected = TRUE;  // lch might be mmp, careful not to check lch-1 for '\' before that (not mapped)
+    if (lch<eof && *lch=='\"') protected = TRUE;  // lch might be mmp, careful not to check lch-1 for '\' before that (not mapped)
     while (lch<eof && *lch!=eol) {
-        if (*lch=='\"') protField(lch);
-        ncol += (*lch==sep);
+        if (!protected) ncol += (*lch==sep);
         lch++;
-        if (!protected) 
-        while ((*lch=='\\' || *lch=='\"') && *(lch+1)=='\"') lch+=2;
-        if (lch<eof && *lch=='\"') protected = !protected;
+        if (lch<eof && *lch=='\"' && *(lch-1)!='\\') protected = !protected;   // after lch++ it's now safe to check lch-1 for '\' 
     }
     if (protected) error("Unbalanced \" observed on this line: %.*s\n", lch-ch, ch);
     return(ncol);
@@ -401,7 +395,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     for (i=0; i<nseps; i++) {
         ch=pos; sep=0;                             // starting from autostart for each sep
         while (ch<eof && *ch!=eol) {               // Is this sep on this line?  (ch<eof is for one row input with no eol)
-            if (*ch=='\"') {while(++ch<eof && !(*ch=='\"' && *(ch-1)!='\"' && *(ch-1)=='\\') && *ch!=eol); ch++;} // skip over protection, landing just after closing "
+            if (*ch=='\"') {while(++ch<eof && *ch!='\"' && *ch!=eol); ch++;} // skip over protection, landing just after closing "
             if (*ch==seps[i]) { sep=*ch; break; }  // this sep exists on this line
             ch++;
         }
@@ -445,7 +439,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     protecti++;
     allchar=TRUE;
     for (i=0; i<ncol; i++) {
-        if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\' && *(ch-1)!='\"')); if (ch<eof && *ch++!='\"') error("Format error on line %d: '%.*s'", nline, ch-pos+1, pos); }
+        if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\')); if (ch<eof && *ch++!='\"') error("Format error on line %d: '%.*s'", nline, ch-pos+1, pos); }
         else {                              // if field reads as double ok then it's INT/INT64/REAL; i.e., not character (and so not a column name)
             if (Strtod()) allchar=FALSE;    // thought about testing at least one isalpha, but we want 1E9 to be a value not a column name, here
             else while(ch<eof && *ch!=eol && *ch!=sep) ch++;  // skip over character field
@@ -470,7 +464,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         ch = pos;
         nline++;
         for (i=0; i<ncol; i++) {
-            if (ch<eof && *ch=='\"') {ch++; ch2=ch; while(ch2<eof && !(*ch2=='\"' && *(ch-1)!='\\' && *(ch-1)!='\"') && *ch2!=eol) ch2++;}
+            if (ch<eof && *ch=='\"') {ch++; ch2=ch; while(ch2<eof && *ch2!='\"' && *ch2!=eol) ch2++;}
             else {ch2=ch; while(ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;}
             SET_STRING_ELT(names, i, mkCharLen(ch, ch2-ch));
             if (ch2<eof && *ch2=='\"') ch2++;
@@ -555,7 +549,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     if (Strtod()) break;
                     type[i]++;
                 case SXP_STR:
-                    if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\' && *(ch-1)!='\"')); ch++;}
+                    if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\')); ch++;}
                     else while(ch<eof && *ch!=sep && *ch!=eol) ch++;
                 }
                 if (ch<eof && *ch==sep && i<ncol-1) {ch++; continue;}  // most common case first, done, next field
@@ -618,7 +612,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 SET_VECTOR_ELT(ans, j, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
             case SXP_STR:
                 ch2=ch;
-                if (ch<eof && *ch=='\"') {ch++; while(++ch2<eof && *ch2!=eol && !(*ch2=='\"' && *(ch2-1)!='\\' && *(ch2-1)!='\"'));}
+                if (ch<eof && *ch=='\"') {ch++; while(++ch2<eof && *ch2!=eol && !(*ch2=='\"' && *(ch2-1)!='\\'));}
                 else while (ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;
                 SET_STRING_ELT(thiscol, i, mkCharLen(ch,ch2-ch));
                 if (ch2<eof && *ch2=='\"') ch=ch2+1; else ch=ch2;
