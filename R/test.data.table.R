@@ -19,6 +19,7 @@ test.data.table = function(verbose=FALSE) {
     # oldlocale = Sys.getlocale("LC_CTYPE")
     # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
     olddir = setwd(d)
+    on.exit(setwd(olddir))
     for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
         cat("Running",fn,"\n")
         oldverbose = getOption("datatable.verbose")
@@ -36,7 +37,6 @@ test.data.table = function(verbose=FALSE) {
         # testthat, which probably makes sense anyway to speed it up a bit (was running twice
         # before).
     }
-    setwd(olddir)
     options(encoding=oldenc)
     # Sys.setlocale("LC_CTYPE", oldlocale)
     invisible()
