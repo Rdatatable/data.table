@@ -8,7 +8,7 @@ This NEWS file summarises the main changes.
         **                                         **
         **   CHANGES IN DATA.TABLE VERSION 1.8.7   **
         **                                         **
-        **         In development, unstable        **
+        **                                         **
         **                                         **
         *********************************************
 
@@ -26,16 +26,18 @@ NEW FEATURES
         * airline data: 658MB csv (7 million rows x 29 columns)
              read.table("2008.csv",<all known tricks and known nrows>)   #   360 sec
              fread("2008.csv")                                           #    40 sec
-        See ?fread. Many thanks to Chris Neff, Garrett See, Hideyoshi Maeda and
-        Akhil Behl for ideas, discussions and beta testing.
+        See ?fread. Many thanks to Chris Neff, Garrett See, Hideyoshi Maeda, Patrick
+        Nic, Akhil Behl and Aykut Firat for ideas, discussions and beta testing.
+        ** The fread function is still under development; e.g., dates are read as
+        ** character and embedded quotes ("\"" and """") cause problems.
         
     o   New argument 'allow.cartesian' (default FALSE) added to X[Y] and merge(X,Y), #2464.
         Prevents large allocations due to misspecified joins; e.g., duplicate key values in Y
         joining to the same group in X over and over again. The word 'cartesian' is used loosely
         for when more than max(nrow(X),nrow(Y)) rows would be returned. The error message is
-        verbose and includes advice. Thanks to a question by Nick Clark :
+        verbose and includes advice. Thanks to a question by Nick Clark, help from user1935457
+        and a detailed reproducible crash report from JR.
           http://stackoverflow.com/questions/14231737/greatest-n-per-group-reference-with-intervals-in-r-or-sql
-        help from user1935457 and a detailed reproducible crash report from JR.
         If the new option affects existing code you can set :
             options(datatable.allow.cartesian=TRUE)
         to restore the previous behaviour until you have time to address.
@@ -51,7 +53,7 @@ NEW FEATURES
         'rolltolast' has been deprecated. For backwards compatibility it is converted to
         {roll=TRUE;rollends=c(FALSE,FALSE)}.
         This implements FR#2300 & FR#206 and helps several recent S.O. questions :
-        https://r-forge.r-project.org/tracker/?group_id=240&atid=978&func=detail&aid=2300
+            https://r-forge.r-project.org/tracker/?group_id=240&atid=978&func=detail&aid=2300
         
 BUG FIXES
 
@@ -66,14 +68,14 @@ BUG FIXES
         Damien Challet for the reproducible example using obfuscated data and 
         pinpointing the version that regressed. Fixed and test added.
         
-    o   Error 'attemping to roll join on a factor column' could occur when a non last
-        join column was a factor columnn, #2450. Thanks to Blue Magister for
+    o   Error 'attempting to roll join on a factor column' could occur when a non last
+        join column was a factor column, #2450. Thanks to Blue Magister for
         highlighting.
         
     o   NA in a join column of type double could cause both X[Y] and merge(X,Y)
         to return incorrect results, #2453. Due to an errant x==NA_REAL in the C source
         which should have been ISNA(x). Support for double in keyed joins is a relatively
-        recent addition to data.table, but embarassing all the same. Fixed and tests added.
+        recent addition to data.table, but embarrassing all the same. Fixed and tests added.
         Many thanks to statquant for the thorough and reproducible report :
         http://stackoverflow.com/questions/14076065/data-table-inner-outer-join-to-merge-with-na
         

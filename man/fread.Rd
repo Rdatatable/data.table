@@ -2,9 +2,12 @@
 \alias{fread}
 \title{ Fast and friendly file finagler }
 \description{
-   Similar to \code{read.table} but much faster and more convenient. All controls such as delimiter, colClasses and nrows are automatically detected. Dual-delimited files such as BED are automatically detected: columns 11 and 12 are each read directly into list columns where each cell is itself an integer vector (no need for strsplit). bit64::integer64 types are also detected and read directly without needing to read as character before converting.
+   Similar to \code{read.table} but faster and more convenient. All controls such as delimiter, colClasses and nrows are automatically detected. bit64::integer64 types are also detected and read directly without needing to read as character before converting.
    
-   This help file is in development and may document features that haven't been implemented yet.
+   \bold{This function is still under development}. For example, dates are read as character (they can be converted afterwards using the excellent \code{fasttime} package or standard base functions) and embedded quotes (\code{"\""} and \code{""""}) have problems. There are other known issues that haven't been fixed and features not yet implemented. But, you may find it works in many cases. Please report problems to datatable-help or Stack Overflow's data.table tag.
+   
+   \bold{Not for production use yet}. Not because it's unstable in the sense that it crashes or is buggy (your testing will show whether it is stable in your cases or not) but because \code{fread}'s arguments and behaviour is likely to change in future; i.e., we expect to make (hopefully minor) \emph{non-backwards-compatible} changes. Why has it been released to CRAN then? Because i) a maintenance release was asked for by CRAN maintainers to comply with new stricter tests in R-devel, ii) a few Bioconductor packages depend on data.table and Bioconductor requires packages to pass R-devel checks. It was quicker to leave \code{fread} in and write this paragraph, than take \code{fread} out.
+   
 }
 \usage{
 fread(input, sep="auto", sep2="auto", nrows=-1, header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE, autostart=30)
@@ -12,34 +15,34 @@ fread(input, sep="auto", sep2="auto", nrows=-1, header="auto", na.strings="NA", 
 \arguments{
   \item{input}{ Either the file name to read (containing no \\n character) or the input itself as a string (containing at least one \\n), see examples. In both cases, a length 1 character string. A filename may be a URL starting http:// or file://. }
   \item{sep}{ The separator between columns. Defaults to the first character in the set [\code{,\\t |;:}] that i) exists on line \code{autostart} outside quoted (\code{""}) regions, and ii) separates the rows above \code{autostart} into a consistent number of fields, too. }
-  \item{sep2}{ The separator \emph{within} columns. For each column this can be different and is the first character in the same set [\code{,\\t |;:}], other than \code{sep}, that exists inside each field outside quoted regions on line \code{autostart}. }
-  \item{nrows}{ The number of rows to read, by default -1 means all. Unlike \code{read.table}, it doesn't help speed to set this to the number of rows in the file (or an estimate), since the number of rows is automatically estimated and is already fast. Only set \code{nrows} if you require the first 10 rows, for example, or are reading the file in chunks. }
+  \item{sep2}{ The separator \emph{within} columns. A \code{list} column will be returned where each cell is a vector of values. This is much faster using less working memory than \code{strsplit} afterwards or similar techniques. For each column \code{sep2} can be different and is the first character in the same set above [\code{,\\t |;:}], other than \code{sep}, that exists inside each field outside quoted regions on line \code{autostart}. NB: \code{sep2} is not yet implemented. }
+  \item{nrows}{ The number of rows to read, by default -1 means all. Unlike \code{read.table}, it doesn't help speed to set this to the number of rows in the file (or an estimate), since the number of rows is automatically determined and is already fast. Only set \code{nrows} if you require the first 10 rows, for example, or are reading the file in chunks. }
   \item{header}{ Does the first data line contain column names? Defaults according to whether every field on the first data line is type character. }
   \item{na.strings}{ A character vector of strings to convert to \code{NA_character_}. By default for columns read as type character, ",," is read as a blank string (\code{""}) and ",NA," is read as \code{NA_character_}. Typical alternatives might be \code{na.strings=NULL} or perhaps \code{na.strings=c("NA","N/A","")}. }
   \item{stringsAsFactors}{ Convert all character columns to factors? }
   \item{verbose}{ Be chatty? }
-  \item{autostart}{ Any line number within the region of machine readable delimited text, by default 30. If the file is shorter or this line is empty (e.g. short files with trailing blank lines) then the last non empty line is used. This line (and the lines above it) are used to auto detect \code{sep}, \code{sep2} and the number of fields. We hope it's extremely unlikely that \code{autostart} should ever need to be changed. }
+  \item{autostart}{ Any line number within the region of machine readable delimited text, by default 30. If the file is shorter or this line is empty (e.g. short files with trailing blank lines) then the last non empty line is used. This line (and the lines above it) are used to auto detect \code{sep}, \code{sep2} and the number of fields. It's extremely unlikely that \code{autostart} should ever need to be changed, we hope. }
 }
 \details{
 
 Once the separator is found on line \code{autostart}, the number of columns is determined. Then the file is searched backwards from \code{autostart} until a row is found that doesn't have that number of columns, or the start of file is reached. Thus, the first data row is found and any human readable banners are automatically skipped. This feature can be particularly useful for loading a set of files which may not all have consistently sized banners.
 
-The first 5 rows are then read to determine column types. The lowest type is chosen that the data fits into from the list integer, integer64, double, character. Then the middle 5 rows are read and types bumped up if, say, characters have started to appear in what seemed to be an integer column based on the first 5 rows only. Then the last 5 rows of the file are read and bumped there, too, if necessary. This enables fread to allocate exactly the right number of rows, with columns of the right type, up front once. The file may of course \emph{still} contain data of a different type in rows other than first, middle and last 5. In those case, the column types are bumped mid read and the data read on previous rows is coerced. Setting \code{verbose=TRUE} reports the line and field number of each mid read type bump, and how long they all took (if any).
+The first 5 rows, middle 5 rows and last 5 rows are then read to determine column types. The lowest type for each column is chosen from the ordered list \code{integer}, \code{integer64}, \code{double}, \code{character}. This enables \code{fread} to allocate exactly the right number of rows, with columns of the right type, up front once. The file may of course \emph{still} contain data of a different type in rows other than first, middle and last 5. In that case, the column types are bumped mid read and the data read on previous rows is coerced. Setting \code{verbose=TRUE} reports the line and field number of each mid read type bump, and how long this type bumping took (if any).
 
-There is no line length limit, not even a very large one. Since we are encouraging \code{list} columns (i.e. using \code{sep2}), this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. There is no field width limit either, not even a very large one. There are no buffers used in fread's C code at all. The only limits are those imposed by R itself: the maximum width of a character string perhaps, for example.
+There is no line length limit, not even a very large one. Since we are encouraging \code{list} columns (i.e. \code{sep2}) this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. There is no field width limit either, not even a very large one. There are no buffers used in \code{fread}'s C code at all. The only limits are those imposed by R itself: the maximum width of a character string perhaps, for example.
 
-character columns can be quoted ("), or not quoted at all. Spaces and other whitepace (anything other than sep and newline) may appear in an unquoted character field, provided the field doesn't contain sep itself. Therefore quoting character values is only required if sep itself appears in the string value. Quoting may also be used to signify that numeric data should be read as text (or the column type can be overriden using colClasses). This is automatically detected and no arguments are needed to control it.
+\code{character} columns can be quoted (\code{...,2,"Joe Bloggs",3.14,...}), or not quoted (\code{...,2,Joe Bloggs,3.14,...}). Spaces and other whitepace (other than \code{sep} and \code{\\n}) may appear in an unquoted character field, provided the field doesn't contain \code{sep} itself. Therefore quoting character values is only required if sep itself appears in the string value. Quoting may also be used to signify that numeric data should be read as text (or that can be achieved by specifying the column type using colClasses). Field quoting is automatically detected and no arguments are needed to control it.
 
-The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \code{sep2}. Separator detection is entirely driven by the file contents. This can be useful when loading a set of different files, which may not be named consistently, or may not have the extension .csv despite being csv. Some datasets have been collected over many years, one file per day for example. Sometimes the file name format has changed at some point in the past or even the format of the file itself. So the idea is that you can loop \code{fread} through a set of files and as long as each file is regular and delimited, \code{fread} can read them all.
+The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \code{sep2}. Separator detection is entirely driven by the file contents. This can be useful when loading a set of different files, which may not be named consistently, or may not have the extension .csv despite being csv. Some datasets have been collected over many years, one file per day for example. Sometimes the file name format has changed at some point in the past or even the format of the file itself. So the idea is that you can loop \code{fread} through a set of files and as long as each file is regular and delimited, \code{fread} can read them all. Whether they all stack is another matter but at least each one is read quickly without you needing to vary \code{colClasses} in \code{read.table} or \code{read.csv}.
 
-All known line endings are detected automatically: \\n (*NIX including Mac), \\r\\n (Windows CRLF), \\r (old Mac) and \\n\\r (just in case). There is no need to convert input files first: \code{fread} running on any architecture will read a file from any architecture. Both \\r and \\n may be embedded in character strings (including column names) provided the field is quoted.
+All known line endings are detected automatically: \\n (*NIX including Mac), \\r\\n (Windows CRLF), \\r (old Mac) and \\n\\r (just in case). There is no need to convert input files first. \code{fread} running on any architecture will read a file from any architecture. Both \code{\\r} and \code{\\n} may be embedded in character strings (including column names) provided the field is quoted.
 
 Finally, these few features are for fostering friendliness. Facilitated by a fair farthingsworth of (far from flaky, flawed
 or fatuous) finagling. Furthermore, it's frustrating to forget but fear not, fortunately the (free) fread function's first facet is f; for fast, friendly, file or finagle.
 
 }
 \value{
-    A data.table.
+    A \code{data.table}.
 }
 \references{
 Background :\cr
@@ -142,8 +145,22 @@ fread("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
 # Reads text input directly :
 fread("A,B\n1,2\n3,4")
 
-# including pasted input :
+# Reads pasted input directly :
 fread("A,B
+1,2
+3,4
+")
+
+# Finds the first data line automatically :
+fread("
+This is perhaps a banner line or two or ten.
+A,B
+1,2
+3,4
+")
+
+# Detects whether column names are present automatically :
+fread("
 1,2
 3,4
 ")

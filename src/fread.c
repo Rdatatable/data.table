@@ -31,7 +31,7 @@ A few TO DO inline in the code, including some speed fine tuning e.g. specialize
 Save repeated ch<eof checking in main read step. Last line might still be tricky if last line has no eol.
 test using at least "grep read.table ...Rtrunk/tests/
 ---
-Secondary separator for list() columns, such as columns 11 and 12 in BED.
+Secondary separator for list() columns, such as columns 11 and 12 in BED (no need for strsplit).
 If nrow is small, say 20, then it shouldn't mmap the entire file (that's probably why user just wants to look at head). Try MMAP_DONTNEED in that case to save needing to map the file in chunks.
 Add LaF comparison.
 as.read.table=TRUE/FALSE option.  Or fread.table and fread.csv (see thread on datatable-help).
