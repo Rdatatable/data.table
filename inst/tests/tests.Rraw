@@ -1867,7 +1867,7 @@ tt3 = system.time(ans3<-DT[,list(basemean(x),basemean(y)),by=list(grp1,grp2)])  
 test(646, identical(ans1, ans2))  # identical, not all.equal, deliberately as strong test
 test(647, identical(ans1, ans3))
 test(648, any(is.na(ans1$V1)) && !any(is.nan(ans1$V1)))
-if (.devtesting) test(649, tt1["user.self"] < 2*tt2["user.self"])   # should be same speed, but *2 as large margin
+if (.devtesting) test(649, tt1["user.self"] < 10*tt2["user.self"])   # should be same speed, but *10 as large margin
 if (.devtesting) test(650, tt1["user.self"] < tt3["user.self"]/2)   # 10 times faster, but test 2 times faster as large margin
 
 tt1 = system.time(ans1<-DT[,list(mean(x,na.rm=TRUE),mean(y,na.rm=TRUE)),by=list(grp1,grp2)])   # 2.0s
@@ -2617,7 +2617,11 @@ Y = data.table(a=2:4,"d 1"=5:7) # space in Y's column name
 test(942, merge(X,Y,all=TRUE,by="a"), data.table(a=1:4,b=INT(4:6,NA),"d 1"=INT(NA,5:7),key="a"))
 test(943, merge(X,Y,all.y=TRUE,by="a"), data.table(a=2:4,b=INT(5:6,NA),"d 1"=5:7,key="a"))
 
-
+# Test error message say NULL rather than empty table
+DT = data.table(NULL)
+test(944, DT[,a:=1L], error = "Cannot use := to add columns to a NULL data.table.*You can use")
+DT = data.table(a=numeric())
+test(945, DT[,b:=a+1], data.table(a=numeric(),b=numeric()))
 
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
