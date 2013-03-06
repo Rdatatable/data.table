@@ -12,14 +12,17 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+BUG FIXES
+
+    o   Fixed format errors of timings produced by fread(...,verbose=TRUE).
+
 USER VISIBLE CHANGES
 
-    o   Using := on a NULL data.table now gives a clearer error message.
-        Instead of :
-            "Cannot use := to add columns to an empty data.table, currently"
-        it is now :
-            "Cannot use := to add columns to a NULL data.table (no columns), currently. You can use := 
-             to add (empty) columns to a 0-row data.table (1 or more empty columns), though."
+    o   := on a NULL data.table now gives a clearer error message :
+          "Cannot use := to add columns to a NULL data.table (no columns), currently. You can use := 
+           to add (empty) columns to a 0-row data.table (1 or more empty columns), though."
+        rather than the misleading :
+          "Cannot use := to add columns to an empty data.table, currently"
 
 NOTES
 

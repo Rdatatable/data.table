@@ -43,7 +43,7 @@ extern int sizes[100];
 static char *ch, sep, eol, eol2, *eof; // sep2 TO DO
 static int eolLen;
 static Rboolean verbose;
-static double tCoerce, tCoerceAlloc;
+static clock_t tCoerce, tCoerceAlloc;
 
 // Define our own fread type codes, different to R's SEXPTYPE :
 // i) INTEGER64 is not in R but an add on packages using REAL, we need to make a distinction here, without using class (for speed)
@@ -55,6 +55,20 @@ static double tCoerce, tCoerceAlloc;
 static char TypeName[4][10] = {"INT","INT64","REAL","STR"};  // for messages and errors
 static int TypeSxp[4] = {INTSXP,REALSXP,REALSXP,STRSXP};
 static union {double d; long long l;} u;
+
+static inline Rboolean scanStr(char *lch)
+{
+    // to delete ... if (lch<eof && *lch=='\"') protected = TRUE;  // lch might be mmp, careful not to check lch-1 for '\' before that (not mapped)
+    // returns TRUE if embedded \" or """" are detected
+    Rboolean protected = FALSE;
+    while (lch<eof && *lch!=eol) {
+        if (*lch=='\"') protected = TRUE;
+        //if (!protected) ncol += (*lch==sep);
+        lch++;
+        if (lch<eof && *lch=='\"' && *(lch-1)!='\\') protected = !protected;   // after lch++ it's now safe to check lch-1 for '\' 
+    }
+    return(FALSE);
+}
 
 static int countfields()
 {
@@ -172,7 +186,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
         clock_t tCoerceAlloc0 = clock();
         PROTECT(newv = allocVector(TypeSxp[newtype], LENGTH(v)));
         protecti++;
-        tCoerceAlloc += time(NULL)-tCoerceAlloc0;
+        tCoerceAlloc += clock()-tCoerceAlloc0;
         // This was 1.3s (all of tCoerce) when testing on 2008.csv; might have triggered a gc, included.
         // Happily, mid read bumps are very rarely needed, due to testing types at the start, middle and end of the file, first.
     }
@@ -581,8 +595,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     //   Read the data
     // ********************************************************************************************
-    tCoerce = tCoerceAlloc = 0.0;
-    double nexttime = t0+2;  // start printing % done after a few seconds, if doesn't appear then you know mmap is taking a while
+    tCoerce = tCoerceAlloc = 0;
+    clock_t nexttime = t0+2*CLOCKS_PER_SEC;  // start printing % done after a few seconds, if doesn't appear then you know mmap is taking a while
     ch = pos;   // back to start of first data row
     for (i=0; i<nrow; i++) {
         //Rprintf("Row %d : %.10s\n", i+1, ch);
@@ -662,16 +676,16 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     if (verbose) {
         clock_t tn = clock(), tot=tn-t0;
-        Rprintf("%8.3fs (%3.0f%%) Memory map (rerun may be quicker)\n", (tMap-t0)/CLOCKS_PER_SEC, 100*(tMap-t0)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Sep and header detection\n", (tLayout-tMap)/CLOCKS_PER_SEC, 100*(tLayout-tMap)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", (tRowCount-tLayout)/CLOCKS_PER_SEC, 100*(tRowCount-tLayout)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Colmn type detection (first, middle and last 5 rows)\n", (tColType-tRowCount)/CLOCKS_PER_SEC, 100*(tColType-tRowCount)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (xMB) in RAM\n", (tAlloc-tColType)/CLOCKS_PER_SEC, 100*(tAlloc-tColType)/tot, nrow, ncol);
-        Rprintf("%8.3fs (%3.0f%%) Reading data\n", (tRead-tAlloc-tCoerce)/CLOCKS_PER_SEC, 100*(tRead-tAlloc-tCoerce)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Allocation for type bumps (if any), including gc time if triggered\n", tCoerceAlloc/CLOCKS_PER_SEC, 100*tCoerceAlloc/tot);
-        Rprintf("%8.3fs (%3.0f%%) Coercing data already read in type bumps (if any)\n", (tCoerce-tCoerceAlloc)/CLOCKS_PER_SEC, 100*(tCoerce-tCoerceAlloc)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Changing na.strings to NA\n", (tn-tRead)/CLOCKS_PER_SEC, 100*(tn-tRead)/tot);
-        Rprintf("%8.3fs        Total\n", tot);
+        Rprintf("%8.3fs (%3.0f%%) Memory map (rerun may be quicker)\n", 1.0*(tMap-t0)/CLOCKS_PER_SEC, 100.0*(tMap-t0)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Sep and header detection\n", 1.0*(tLayout-tMap)/CLOCKS_PER_SEC, 100.0*(tLayout-tMap)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", 1.0*(tRowCount-tLayout)/CLOCKS_PER_SEC, 100.0*(tRowCount-tLayout)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Colmn type detection (first, middle and last 5 rows)\n", 1.0*(tColType-tRowCount)/CLOCKS_PER_SEC, 100.0*(tColType-tRowCount)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (xMB) in RAM\n", 1.0*(tAlloc-tColType)/CLOCKS_PER_SEC, 100.0*(tAlloc-tColType)/tot, nrow, ncol);
+        Rprintf("%8.3fs (%3.0f%%) Reading data\n", 1.0*(tRead-tAlloc-tCoerce)/CLOCKS_PER_SEC, 100.0*(tRead-tAlloc-tCoerce)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Allocation for type bumps (if any), including gc time if triggered\n", 1.0*tCoerceAlloc/CLOCKS_PER_SEC, 100.0*tCoerceAlloc/tot);
+        Rprintf("%8.3fs (%3.0f%%) Coercing data already read in type bumps (if any)\n", 1.0*(tCoerce-tCoerceAlloc)/CLOCKS_PER_SEC, 100.0*(tCoerce-tCoerceAlloc)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Changing na.strings to NA\n", 1.0*(tn-tRead)/CLOCKS_PER_SEC, 100.0*(tn-tRead)/tot);
+        Rprintf("%8.3fs        Total\n", 1.0*tot/CLOCKS_PER_SEC);
     }
     return(ans);
 }
