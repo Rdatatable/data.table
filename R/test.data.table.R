@@ -7,7 +7,7 @@ test.data.table = function(verbose=FALSE) {
             d = path.expand("~/R/datatable/pkg/inst/tests")
         else {
             if (!"pkg" %in% dir()) stop("'pkg' not in dir()") 
-            d = paste0(getwd(),"/pkg/inst/tests")
+            d = paste(getwd(),"/pkg/inst/tests",sep="")
         }
     } else {
         # user
