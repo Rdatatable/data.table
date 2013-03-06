@@ -6,9 +6,20 @@ This NEWS file summarises the main changes.
 
         *********************************************
         **                                         **
-        **   CHANGES IN DATA.TABLE VERSION 1.8.7   **
+        **   CHANGES IN DATA.TABLE VERSION 1.8.9   **
         **                                         **
+        **        In development, unstable         **
         **                                         **
+        *********************************************
+
+No changes yet.
+
+
+        *********************************************
+        **                                         **
+        **   CHANGES IN DATA.TABLE VERSION 1.8.8   **
+        **                                         **
+        **          On CRAN : 06 Mar 2013          **
         **                                         **
         *********************************************
 
@@ -125,13 +136,16 @@ NOTES
         Thanks to dnlbrky for highlighting : http://stackoverflow.com/a/14164411/403310.
         
     o   There are now 943 raw tests, as reported by test.data.table().
+    
+    o   v1.8.7 was on R-Forge only. v1.8.8 was released to CRAN.
+        Odd numbers are development, evens on CRAN.
 
 
         *********************************************
         **                                         **
         **   CHANGES IN DATA.TABLE VERSION 1.8.6   **
         **                                         **
-        **           On CRAN: 13 Nov 2012          **
+        **          On CRAN : 13 Nov 2012          **
         **                                         **
         *********************************************
 
