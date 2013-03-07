@@ -30,8 +30,8 @@ USER VISIBLE CHANGES
 NOTES
 
     o   Tests 617,646 and 647 could sometimes fail (e.g. r-prerel-solaris-sparc on 7 Mar 2013)
-	    due to machine tolerance. Fixed.
-		
+        due to machine tolerance. Fixed.
+        
     o   There are now 945 raw tests, as reported by test.data.table().
     
              
@@ -1957,7 +1957,7 @@ NEW FEATURES
         introduce incompatibilities for existing code.
 
     o   Logical columns are now allowed in keys and in 'by', as are expressions
-	    that evaluate to logical. Thanks to David Winsemius for highlighting.
+        that evaluate to logical. Thanks to David Winsemius for highlighting.
 
 
 BUG FIXES
