@@ -2620,7 +2620,7 @@ test(943, merge(X,Y,all.y=TRUE,by="a"), data.table(a=2:4,b=INT(5:6,NA),"d 1"=5:7
 
 # Test error message say NULL rather than empty table
 DT = data.table(NULL)
-test(944, DT[,a:=1L], error = "Cannot use := to add columns to a NULL data.table.*You can use")
+test(944, DT[,a:=1L], error = "Cannot use := to add columns to a null data.table.*You can use")
 DT = data.table(a=numeric())
 test(945, DT[,b:=a+1], data.table(a=numeric(),b=numeric()))
 

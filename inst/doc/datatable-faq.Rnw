@@ -195,8 +195,21 @@ DT[,list(y,z)]
 \subsection{I have built up a complex table with many columns.  I want to use it as a template for a new table; i.e., create a new table with no rows, but with the column names and types copied from my table. Can I do that easily?}
 Yes. If your complex table is called \code{DT}, try \code{NEWDT = DT[0]}.
 
-\subsection{Is a NULL \code{data.table} the same as \code{DT[0]}?}
-No, despite the print method indicating otherwise. Strictly speaking it's not possible to have \code{is.null(data.table(NULL))} return \code{FALSE}.  This FAQ may be revisited in future.
+\subsection{Is a null data.table the same as \code{DT[0]}?}
+No. By "null data.table" we mean the result of \code{data.table(NULL)} or \code{as.data.table(NULL)}; i.e.,
+<<>>=
+data.table(NULL)
+as.data.table(NULL)
+data.frame(NULL)
+as.data.frame(NULL)
+@
+The null \code{data.table|frame} is \code{NULL} with some attributes attached, making it not NULL anymore. In R only pure \code{NULL} is \code{NULL} as tested by \code{is.null()}. When referring to the "null data.table" we use lower case null to help distinguish from upper case \code{NULL}. To test for the null data.table, use \code{length(DT)==0} or \code{ncol(DT)==0} (\code{length} is slightly faster as it's a primitive function).
+An \emph{empty} data.table (\code{DT[0]}) has one or more columns, all of which are empty. Those empty columns still have names and types.
+<<>>=
+DT = data.table(a=1:3,b=c(4,5,6),d=c(7L,8L,9L))
+DT[0]
+sapply(DT[0],class)
+@
 
 \subsection{Why has the \code{DT()} alias been removed?}\label{faq:DTremove1}
 \code{DT} was introduced originally as a wrapper for a list of \code{j} expressions. Since \code{DT} was an alias for \code{data.table}, this was a convenient way to take care of silent recycling in cases where each item of the \code{j} list evaluated to different lengths. The alias was one reason grouping was slow, though.

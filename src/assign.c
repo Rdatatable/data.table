@@ -138,7 +138,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     if (isNull(names)) error("dt passed to assign has no names");
     if (length(names)!=oldncol)
         error("Internal error in assign: length of names (%d) is not length of dt (%d)",length(names),oldncol);
-    if (oldncol<1) error("Cannot use := to add columns to a NULL data.table (no columns), currently. You can use := to add (empty) columns to a 0-row data.table (1 or more empty columns), though.");
+    if (oldncol<1) error("Cannot use := to add columns to a null data.table (no columns), currently. You can use := to add (empty) columns to a 0-row data.table (1 or more empty columns), though.");
     nrow = length(VECTOR_ELT(dt,0));
     if (isNull(rows)) {
         targetlen = nrow;

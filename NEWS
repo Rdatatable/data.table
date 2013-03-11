@@ -21,11 +21,15 @@ BUG FIXES
 
 USER VISIBLE CHANGES
 
-    o   := on a NULL data.table now gives a clearer error message :
-          "Cannot use := to add columns to a NULL data.table (no columns), currently. You can use := 
-           to add (empty) columns to a 0-row data.table (1 or more empty columns), though."
-        rather than the misleading :
+    o   := on a null data.table now gives a clearer error message :
+          "Cannot use := to add columns to a null data.table (no columns), currently. You can use := 
+           to add (empty) columns to an empty data.table (1 or more columns, all 0 length), though."
+        rather than the untrue :
           "Cannot use := to add columns to an empty data.table, currently"
+
+    o   data.table(NULL) now prints "Null data.table (0 rows and 0 cols)" and FAQ 2.5 has been
+        improved. Thanks to:
+          http://stackoverflow.com/questions/15317536/is-null-does-not-work-on-null-data-table-in-r-possible-bug
 
 NOTES
 
