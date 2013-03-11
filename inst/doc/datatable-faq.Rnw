@@ -199,9 +199,11 @@ Yes. If your complex table is called \code{DT}, try \code{NEWDT = DT[0]}.
 No. By "null data.table" we mean the result of \code{data.table(NULL)} or \code{as.data.table(NULL)}; i.e.,
 <<>>=
 data.table(NULL)
-as.data.table(NULL)
 data.frame(NULL)
+as.data.table(NULL)
 as.data.frame(NULL)
+is.null(data.table(NULL))
+is.null(data.frame(NULL))
 @
 The null \code{data.table|frame} is \code{NULL} with some attributes attached, making it not NULL anymore. In R only pure \code{NULL} is \code{NULL} as tested by \code{is.null()}. When referring to the "null data.table" we use lower case null to help distinguish from upper case \code{NULL}. To test for the null data.table, use \code{length(DT)==0} or \code{ncol(DT)==0} (\code{length} is slightly faster as it's a primitive function).
 An \emph{empty} data.table (\code{DT[0]}) has one or more columns, all of which are empty. Those empty columns still have names and types.
