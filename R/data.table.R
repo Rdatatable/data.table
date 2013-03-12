@@ -708,7 +708,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             }
             if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to vector or list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
             for (jj in seq_len(length(byval))) {
-                if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Useage: DT[,sum(colC),by=list(colA,month(colB))]")
+                if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
             }
             tt = sapply(byval,length)
             if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be same length as rows in x or number of rows returned by i (",xnrow,").")
