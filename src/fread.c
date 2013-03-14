@@ -17,25 +17,30 @@
 #include <unistd.h>  // for close()
 #endif
 
-/*****
-TO DO:
+/*****    TO DO    *****
+
+Blank column names cause issue even if header=TRUE. The header line is then read as the first data row and messes up types. (Thanks Simon Judes)
+A way for user to override type, for particular columns only (colClasses)
+"+" or "-" are read as integer but should be character by requiring [0-9]+ after "+" in Stroll. (No need for colClasses for this, actually). Thanks Alvaro Gonzalez. http://stackoverflow.com/questions/15388714/reading-strand-column-with-fread-data-table-package
+Turn off progress counter. Thanks baptiste. http://stackoverflow.com/questions/15370993/strange-output-from-fread-when-called-from-knitr
+Add a way to pick out particular columns only, by name or position.
+
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
 Post from patricknik on 5 Jan re ""b"" in a field. And Aykut Firat on email.
 Warn about non whitespace (unprotected by comment.char) after the last column on any line (currently skipped silently)
 Warning about any blank lines skipped in the middle, and any imperfect number of columns
 Check and correct nline in error messages
 Allow logical columns (currently read as character). T/True/TRUE/true are allowed in main/src/util.c
-Add a way to pick out particular columns only, by name or position.
-A way for user to override type, for particular columns only.
 A few TO DO inline in the code, including some speed fine tuning e.g. specialize Ispace and any other lib calls.
 Save repeated ch<eof checking in main read step. Last line might still be tricky if last line has no eol.
 test using at least "grep read.table ...Rtrunk/tests/
 ---
 Secondary separator for list() columns, such as columns 11 and 12 in BED (no need for strsplit).
-If nrow is small, say 20, then it shouldn't mmap the entire file (that's probably why user just wants to look at head). Try MMAP_DONTNEED in that case to save needing to map the file in chunks.
+If nrow is small, say 20, then it shouldn't mmap the entire file (that's probably *why* user just wants to look at head). Try MMAP_DONTNEED in that case to save needing to map the file in chunks.
 Add LaF comparison.
-as.read.table=TRUE/FALSE option.  Or fread.table and fread.csv (see thread on datatable-help).
+as.read.table=TRUE/FALSE option.  Or fread.table and fread.csv (see http://r.789695.n4.nabble.com/New-function-fread-in-v1-8-7-tp4653745p4654194.html).
 Detect and coerce dates and times. By searching for - and :, and dateTtime etc, or R's own method. POSIXct default, for microseconds? : http://stackoverflow.com/questions/14056370/cast-string-to-idatetime
+
 *****/
 
 extern int sizes[100];
