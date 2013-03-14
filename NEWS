@@ -151,7 +151,7 @@ NOTES
         
     o   The J() alias is now removed *outside* DT[...], but will still work inside DT[...];
         i.e., DT[J(...)] is fine. As warned in v1.8.2 (see below in this file) and deprecated
-        with warning() in v1.8.6. This resolves the conflict with function J() in package
+        with warning() in v1.8.4. This resolves the conflict with function J() in package
         XLConnect (#1747) and rJava (#2045).
         Please use data.table() directly instead of J(), outside DT[...].
         
