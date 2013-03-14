@@ -15,8 +15,8 @@ This NEWS file summarises the main changes.
 BUG FIXES
 
     o   Fixed format errors of timings produced by fread(...,verbose=TRUE). Caused by recent
-	    changes from (double)currentTime() to (clock_t)clock() at C level to pass R-devel
-		checks. Tests don't check the verbose output of fread() so it slipped through.
+        changes from (double)currentTime() to (clock_t)clock() at C level to pass R-devel
+        checks. Tests don't check the verbose output of fread() so it slipped through.
 
 USER VISIBLE CHANGES
 
