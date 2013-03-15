@@ -12,6 +12,12 @@ This NEWS file summarises the main changes.
         **                                         **
         *********************************************
 
+NEW FEATURES
+
+    o   fread :
+        * If some column names are blank they are now given default names rather than causing
+        the header row to be read as a data row. Thanks to Simon Judes for suggesting.    
+
 BUG FIXES
 
     o   Fixed format errors of timings produced by fread(...,verbose=TRUE). Caused by recent
@@ -35,7 +41,7 @@ NOTES
     o   Tests 617,646 and 647 could sometimes fail (e.g. r-prerel-solaris-sparc on 7 Mar 2013)
         due to machine tolerance. Fixed.
         
-    o   There are now 945 raw tests, as reported by test.data.table().
+    o   There are now 949 raw tests, as reported by test.data.table().
     
              
         *********************************************

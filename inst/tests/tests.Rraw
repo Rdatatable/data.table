@@ -2624,6 +2624,13 @@ test(944, DT[,a:=1L], error = "Cannot use := to add columns to a null data.table
 DT = data.table(a=numeric())
 test(945, DT[,b:=a+1], data.table(a=numeric(),b=numeric()))
 
+# fread blank column names get default names
+test(946, fread('A,B,,D\n1,3,foo,5\n2,4,bar,6\n'), data.table(A=1:2,B=3:4,c("foo","bar"),D=5:6))
+test(947, fread('0,2,,4\n1,3,foo,5\n2,4,bar,6\n'), data.table(0:2,2:4,c("","foo","bar"),4:6))
+test(948, fread('A,B,C\nD,E,F\n',header=TRUE), data.table(A="D",B="E",C="F"))
+test(949, fread('A,B,\nD,E,F\n',header=TRUE), data.table(A="D",B="E",V3="F"))
+
+
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by

@@ -19,7 +19,6 @@
 
 /*****    TO DO    *****
 
-Blank column names cause issue even if header=TRUE. The header line is then read as the first data row and messes up types. (Thanks Simon Judes)
 A way for user to override type, for particular columns only (colClasses)
 "+" or "-" are read as integer but should be character by requiring [0-9]+ after "+" in Stroll. (No need for colClasses for this, actually). Thanks Alvaro Gonzalez. http://stackoverflow.com/questions/15388714/reading-strand-column-with-fread-data-table-package
 Turn off progress counter. Thanks baptiste. http://stackoverflow.com/questions/15370993/strange-output-from-fread-when-called-from-knitr
@@ -453,14 +452,14 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     //   Detect and assign column names (if present)
     // ********************************************************************************************
-    if (header!=NA_LOGICAL) Rprintf("'header' changed by user from 'auto' to %s\n", header?"TRUE":"FALSE");
     SEXP names = PROTECT(allocVector(STRSXP, ncol));
     protecti++;
     allchar=TRUE;
     for (i=0; i<ncol; i++) {
         if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\')); if (ch<eof && *ch++!='\"') error("Format error on line %d: '%.*s'", nline, ch-pos+1, pos); }
         else {                              // if field reads as double ok then it's INT/INT64/REAL; i.e., not character (and so not a column name)
-            if (Strtod()) allchar=FALSE;    // thought about testing at least one isalpha, but we want 1E9 to be a value not a column name, here
+            if (*ch!=sep && *ch!=eol && Strtod())  // blank column names (,,) considered character and will get default names
+                allchar=FALSE;                     // considered testing at least one isalpha, but we want 1E9 to be a value not a column name
             else while(ch<eof && *ch!=eol && *ch!=sep) ch++;  // skip over character field
         }
         if (i<ncol-1) {   // not the last column (doesn't have a separator after it)
@@ -470,22 +469,28 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     // *** TO DO discard any whitespace after last column name on first row before the eol ***
     if (ch<eof && *ch!=eol) error("Not positioned correctly after testing format of header row. ch='%c'",*ch);
-    if (!allchar || header==FALSE) {
-        if (verbose && !allchar) Rprintf("Some field on line %d are not type character (or are empty). Treating as a data row and using default column names.\n", nline);
-        char buff[10];
+    if (verbose && header!=NA_LOGICAL) Rprintf("'header' changed by user from 'auto' to %s\n", header?"TRUE":"FALSE");
+    char buff[10]; // to construct default column names
+    if (header==FALSE || (header==NA_LOGICAL && !allchar)) {
+        if (verbose && header==NA_LOGICAL) Rprintf("Some fields on line %d are not type character (or are empty). Treating as a data row and using default column names.\n", nline);
         for (i=0; i<ncol; i++) {
             sprintf(buff,"V%d",i+1);
             SET_STRING_ELT(names, i, mkChar(buff));
         }
         ch = pos;   // back to start of first row. Treat as first data row, no column names present.
     } else {
-        if (verbose && allchar) Rprintf("All the fields on line %d are character fields. Treating as the column names.\n", nline);
+        if (verbose && header==NA_LOGICAL) Rprintf("All the fields on line %d are character fields. Treating as the column names.\n", nline);
         ch = pos;
         nline++;
         for (i=0; i<ncol; i++) {
             if (ch<eof && *ch=='\"') {ch++; ch2=ch; while(ch2<eof && *ch2!='\"' && *ch2!=eol) ch2++;}
             else {ch2=ch; while(ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;}
-            SET_STRING_ELT(names, i, mkCharLen(ch, ch2-ch));
+            if (ch2>ch) {
+                SET_STRING_ELT(names, i, mkCharLen(ch, ch2-ch));
+            } else {
+                sprintf(buff,"V%d",i+1);
+                SET_STRING_ELT(names, i, mkChar(buff));
+            }
             if (ch2<eof && *ch2=='\"') ch2++;
             if (i<ncol-1) ch=++ch2;
         }
