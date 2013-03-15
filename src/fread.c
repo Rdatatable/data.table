@@ -19,9 +19,8 @@
 
 /*****    TO DO    *****
 
-A way for user to override type, for particular columns only (colClasses)
-"+" or "-" are read as integer but should be character by requiring [0-9]+ after "+" in Stroll. (No need for colClasses for this, actually). Thanks Alvaro Gonzalez. http://stackoverflow.com/questions/15388714/reading-strand-column-with-fread-data-table-package
 Turn off progress counter. Thanks baptiste. http://stackoverflow.com/questions/15370993/strange-output-from-fread-when-called-from-knitr
+A way for user to override type, for particular columns only (colClasses)
 Add a way to pick out particular columns only, by name or position.
 
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
