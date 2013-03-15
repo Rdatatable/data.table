@@ -109,8 +109,8 @@ static inline Rboolean Strtoll()
         return(TRUE);                           // caller already set u.l=NA_INTEGR or u.d=NA_REAL as appropriate
     }  
     char *start = lch;                          // start of [+-][0-9]+
-    if (*lch=='-') { sign=0; lch++; }
-    else if (*lch=='+') { sign=1; lch++; }
+    if (*lch=='-') { sign=0; lch++; if (*lch<'0' || *lch>'9') return(FALSE); }   // + or - symbols alone should be character
+    else if (*lch=='+') { sign=1; lch++; if (*lch<'0' || *lch>'9') return(FALSE); }
     while (lch<eof && '0'<=*lch && *lch<='9') { // TO DO can remove lch<eof when last row is specialized in case of no final eol
         acc *= 10;
         acc += *lch-'0';

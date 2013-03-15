@@ -14,15 +14,18 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
-    o   fread :
-        * If some column names are blank they are now given default names rather than causing
-        the header row to be read as a data row. Thanks to Simon Judes for suggesting.    
+  o  fread :
+     * If some column names are blank they are now given default names rather than causing
+       the header row to be read as a data row. Thanks to Simon Judes for suggesting.
+
+     * "+" and "-" are now read as character rather than integer 0. Thanks to Alvaro Gonzalez for reporting.
+       http://stackoverflow.com/questions/15388714/reading-strand-column-with-fread-data-table-package
 
 BUG FIXES
 
-    o   Fixed format errors of timings produced by fread(...,verbose=TRUE). Caused by recent
-        changes from (double)currentTime() to (clock_t)clock() at C level to pass R-devel
-        checks. Tests don't check the verbose output of fread() so it slipped through.
+  o  Fixed format errors of timings produced by fread(...,verbose=TRUE). Caused by recent
+     changes from (double)currentTime() to (clock_t)clock() at C level to pass R-devel
+     checks. Tests don't check the verbose output of fread() so it slipped through.
 
 USER VISIBLE CHANGES
 
@@ -45,7 +48,7 @@ NOTES
         And a pointer to ?truelength has been added to an error message as sugggested and thanks to Roland :
             http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
         
-    o   There are now 949 raw tests, as reported by test.data.table().
+    o   There are now 950 raw tests, as reported by test.data.table().
     
              
         *********************************************
