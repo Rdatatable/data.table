@@ -33,7 +33,7 @@
              "datatable.allow.cartesian"="FALSE",    # datatable.<argument name>
              "datatable.dfdispatchwarn"="TRUE",                   # not a function argument
              "datatable.warnredundantby"="TRUE",                  # not a function argument
-             "datatable.alloccol"="quote(max(100,2*ncol(DT)))"    # argument 'n' of alloc.col
+             "datatable.alloccol"="quote(max(100L,ncol(DT)+64L))" # argument 'n' of alloc.col. Allocate at least 64 spare slots by default. Needs to be 100L floor to save small object reallocs.
              )
 
     for (i in setdiff(names(opts),names(options()))) {

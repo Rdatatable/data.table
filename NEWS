@@ -41,6 +41,10 @@ NOTES
     o   Tests 617,646 and 647 could sometimes fail (e.g. r-prerel-solaris-sparc on 7 Mar 2013)
         due to machine tolerance. Fixed.
         
+    o   The default for datatable.alloccol has changed from max(100L, 2L*ncol(DT)) to max(100L, ncol(DT)+64L).
+        And a pointer to ?truelength has been added to an error message as sugggested and thanks to Roland :
+            http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
+        
     o   There are now 949 raw tests, as reported by test.data.table().
     
              
