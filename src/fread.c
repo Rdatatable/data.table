@@ -23,6 +23,7 @@ Turn off progress counter. Thanks baptiste. http://stackoverflow.com/questions/1
 A way for user to override type, for particular columns only (colClasses)
 Add a way to pick out particular columns only, by name or position.
 
+Deal with row.names e.g. http://stackoverflow.com/questions/15448732/reading-csv-with-row-names-by-fread
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
 Post from patricknik on 5 Jan re ""b"" in a field. And Aykut Firat on email.
 Warn about non whitespace (unprotected by comment.char) after the last column on any line (currently skipped silently)
