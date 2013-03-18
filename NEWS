@@ -17,10 +17,17 @@ NEW FEATURES
   o  fread :
      * If some column names are blank they are now given default names rather than causing
        the header row to be read as a data row. Thanks to Simon Judes for suggesting.
-
+       
      * "+" and "-" are now read as character rather than integer 0. Thanks to Alvaro Gonzalez for reporting.
        http://stackoverflow.com/questions/15388714/reading-strand-column-with-fread-data-table-package
-
+       
+     * % progress console meter has been removed. The ouput was inconvenient in batch mode, log files and
+       reports which don't handle \r. It was too difficult to detect where fread is being called from, plus,
+       removing it speeds up fread a little by saving code inside the C for loop (which is why it wasn't
+       made optional instead). Use your operating system's system monitor to confirm fread is progressing.
+       Thanks to Baptiste for highlighting.
+       http://stackoverflow.com/questions/15370993/strange-output-from-fread-when-called-from-knitr
+       
 BUG FIXES
 
   o  Fixed format errors of timings produced by fread(...,verbose=TRUE). Caused by recent

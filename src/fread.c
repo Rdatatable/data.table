@@ -19,7 +19,6 @@
 
 /*****    TO DO    *****
 
-Turn off progress counter. Thanks baptiste. http://stackoverflow.com/questions/15370993/strange-output-from-fread-when-called-from-knitr
 A way for user to override type, for particular columns only (colClasses)
 Add a way to pick out particular columns only, by name or position.
 
@@ -288,9 +287,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
 #else
     int fd=-1;
 #endif
-   if (NA_INTEGER != INT_MIN) error("Internal error: NA_INTEGER (%d) != INT_MIN (%d).", NA_INTEGER, INT_MIN);  // relied on by Stroll
-   if (sizeof(double) != 8) error("Internal error: sizeof(double) is %d bytes, not 8.", sizeof(double));
-   if (sizeof(long long) != 8) error("Internal error: sizeof(long long) is %d bytes, not 8.", sizeof(long long));
+    if (NA_INTEGER != INT_MIN) error("Internal error: NA_INTEGER (%d) != INT_MIN (%d).", NA_INTEGER, INT_MIN);  // relied on by Stroll
+    if (sizeof(double) != 8) error("Internal error: sizeof(double) is %d bytes, not 8.", sizeof(double));
+    if (sizeof(long long) != 8) error("Internal error: sizeof(long long) is %d bytes, not 8.", sizeof(long long));
 
     // ********************************************************************************************
     //   Point to text input, or open and mmap file
@@ -606,7 +605,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     //   Read the data
     // ********************************************************************************************
     tCoerce = tCoerceAlloc = 0;
-    clock_t nexttime = t0+2*CLOCKS_PER_SEC;  // start printing % done after a few seconds, if doesn't appear then you know mmap is taking a while
     ch = pos;   // back to start of first data row
     for (i=0; i<nrow; i++) {
         //Rprintf("Row %d : %.10s\n", i+1, ch);
@@ -648,15 +646,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         while (ch<eof && *ch!=eol) ch++; // discard after end of line, but before \n. TO DO: warn about uncommented text here
         if (ch<eof && *ch==eol) ch+=eolLen;
         pos = ch;  // start of line position only needed to include the whole line in any error message
-        if (i%10000==0 && clock()>nexttime) {  // %10000 && saves a little bit (apx 0.2 in 4.9 secs, 5%)
-            Rprintf("\r%.0f%%", 100.0*i/nrow);       // prints on first iteration (i%10000==0) if the mmap took a while, is the idea
-            R_FlushConsole();
-            nexttime = clock()+CLOCKS_PER_SEC;
-            R_CheckUserInterrupt();
-        }
     }
-    Rprintf("\r      \r");
-    R_FlushConsole();
     clock_t tRead = clock();
     for (i=0; i<ncol; i++) SETLENGTH(VECTOR_ELT(ans,i), nrow);
     
@@ -687,9 +677,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (verbose) {
         clock_t tn = clock(), tot=tn-t0;
         Rprintf("%8.3fs (%3.0f%%) Memory map (rerun may be quicker)\n", 1.0*(tMap-t0)/CLOCKS_PER_SEC, 100.0*(tMap-t0)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Sep and header detection\n", 1.0*(tLayout-tMap)/CLOCKS_PER_SEC, 100.0*(tLayout-tMap)/tot);
+        Rprintf("%8.3fs (%3.0f%%) sep and header detection\n", 1.0*(tLayout-tMap)/CLOCKS_PER_SEC, 100.0*(tLayout-tMap)/tot);
         Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", 1.0*(tRowCount-tLayout)/CLOCKS_PER_SEC, 100.0*(tRowCount-tLayout)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Colmn type detection (first, middle and last 5 rows)\n", 1.0*(tColType-tRowCount)/CLOCKS_PER_SEC, 100.0*(tColType-tRowCount)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Column type detection (first, middle and last 5 rows)\n", 1.0*(tColType-tRowCount)/CLOCKS_PER_SEC, 100.0*(tColType-tRowCount)/tot);
         Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (xMB) in RAM\n", 1.0*(tAlloc-tColType)/CLOCKS_PER_SEC, 100.0*(tAlloc-tColType)/tot, nrow, ncol);
         Rprintf("%8.3fs (%3.0f%%) Reading data\n", 1.0*(tRead-tAlloc-tCoerce)/CLOCKS_PER_SEC, 100.0*(tRead-tAlloc-tCoerce)/tot);
         Rprintf("%8.3fs (%3.0f%%) Allocation for type bumps (if any), including gc time if triggered\n", 1.0*tCoerceAlloc/CLOCKS_PER_SEC, 100.0*tCoerceAlloc/tot);
