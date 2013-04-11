@@ -30,7 +30,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 \method{[}{data.table}(x, i, j, by, keyby, with=TRUE,
   nomatch = getOption("datatable.nomatch"),   # default: NA_integer_
   mult = "all",
-  roll = FALSE, rollends = if (roll=="nearest") c(TRUE,TRUE) else { if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE) },
+  roll = FALSE, rollends = if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE),
   which = FALSE,
   .SDcols,
   verbose=getOption("datatable.verbose"),     # default: FALSE

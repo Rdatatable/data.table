@@ -45,6 +45,10 @@ USER VISIBLE CHANGES
     o   data.table(NULL) now prints "Null data.table (0 rows and 0 cols)" and FAQ 2.5 has been
         improved. Thanks to:
           http://stackoverflow.com/questions/15317536/is-null-does-not-work-on-null-data-table-in-r-possible-bug
+		  
+    o   The braces {} have been removed from rollends's default, to solve a trace() problem. Thanks
+	    to Josh O'Brien's investigation :
+		http://stackoverflow.com/questions/15931801/why-does-trace-edit-true-not-work-when-data-table
 
 NOTES
 
