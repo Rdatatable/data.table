@@ -33,6 +33,12 @@ BUG FIXES
   o  Fixed format errors of timings produced by fread(...,verbose=TRUE). Caused by recent
      changes from (double)currentTime() to (clock_t)clock() at C level to pass R-devel
      checks. Tests don't check the verbose output of fread() so it slipped through.
+	 
+  o  rbind, cbind and merge on data.table should now work when data.table is Imported but not Depended on.
+     Many thanks to a patch to .onLoad from Ken Williams, and related posts from Victor Kryukov.
+	     http://r.789695.n4.nabble.com/Import-problem-with-data-table-in-packages-tp4665958.html
+     NB: A change from .onLoad to .onAttach may still be required in a further fix.
+	 
 
 USER VISIBLE CHANGES
 
