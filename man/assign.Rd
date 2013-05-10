@@ -6,7 +6,11 @@
     Fast add, remove and modify subsets of columns, by reference.
 }
 \usage{
-    LHS := RHS         # in j only i.e. DT[i, LHS:=RHS, by]
+#   DT[i, LHS:=RHS, by=...] 
+    
+#   DT[i, `:=`(LHS1=RHS1,
+#              LHS2=RHS2,
+#              ...), by=...]
     
     set(x, i=NULL, j, value)
 }
@@ -14,24 +18,27 @@
 \item{LHS}{ A single column name. Or, when \code{with=FALSE}, a vector of column names or numeric positions (or a variable that evaluates as such). If the column doesn't exist, it is added, by reference. }
 \item{RHS}{ A vector of replacement values. It is recycled in the usual way to fill the number of rows satisfying \code{i}, if any. Or, when \code{with=FALSE}, a \code{list} of replacement vectors which are applied (the \code{list} is recycled if necessary) to each column of \code{LHS} . To remove a column use \code{NULL}. }
 \item{x}{ A \code{data.table}. Or, \code{set()} accepts \code{data.frame}, too. }
-\item{i}{ Optional. Integer row numbers to be assigned \code{value}. \code{NULL} represents all rows more efficiently than creating a vector such as \code{1:nrow(x)}. }
-\item{j}{ Integer column number to be assigned \code{value}. }
+\item{i}{ Optional. In set(), integer row numbers to be assigned \code{value}. \code{NULL} represents all rows more efficiently than creating a vector such as \code{1:nrow(x)}. }
+\item{j}{ In set(), integer column number to be assigned \code{value}. }
 \item{value}{ Value to assign by reference to \code{x[i,j]}. }
 }
 \details{
-\code{:=} is defined for use in \code{j} only. This syntax \emph{updates} the column(s) by reference. It makes no copies of any part of memory at all. Typical usages are :
+\code{:=} is defined for use in \code{j} only. It \emph{updates} or \emph{adds} the column(s) by reference. It makes no copies of any part of memory at all. Typical usages are :
 \preformatted{
-    DT[i,colname:=value]
-    DT[i,"colname":=value,with=FALSE]
-    DT[i,(3:6):=value,with=FALSE]
-    DT[i,colnamevector:=value,with=FALSE]
-    DT[i,colC:=mean(colB),by=colA]
+    DT[i,colname:=value]                      # update (or add at the end if doesn't exist) a column called "colname" with value where i and (when new column) NA elsewhere
+    DT[i,"colname %":=value]                  # same. column called "colname %"
+    DT[i,(3:6):=value]                        # update existing columns 3:6 with value. Aside: parens are not required here since : already makes LHS a call rather than a symbol
+    DT[i,colnamevector:=value,with=FALSE]     # old syntax. The contents of colnamevector in calling scope determine the column names or positions to update (or add)
+    DT[i,(colnamevector):=value]              # same, shorthand. Now preferred. The parens are enough to stop the LHS being a symbol
+    DT[i,colC:=mean(colB),by=colA]            # update (or add) column called "colC" by reference by group. A major feature of `:=`.
+    DT[,`:=`(new1=sum(colB), new2=sum(colC))] # multiple :=.  
 }
 The following all result in a friendly error (by design) :
 \preformatted{
     x := 1L                                   # friendly error
     DT[i,colname] := value                    # friendly error
     DT[i]$colname := value                    # friendly error
+    DT[,{col1:=1L;col2:=2L}]                  # friendly error. Use `:=`() instead for multiple := (see above)
 }
 
 \code{:=} in \code{j} can be combined with all types of \code{i} (such as binary search), and all types of \code{by}. This a one reason why \code{:=} has been implemented in \code{j}. See FAQ 2.16 for analogies to SQL. \cr\cr  % for some reason in this .Rd file (but not the others), newlines seem to be ignored.

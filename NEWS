@@ -25,8 +25,12 @@ NEW FEATURES
        reports which don't handle \r. It was too difficult to detect where fread is being called from, plus,
        removing it speeds up fread a little by saving code inside the C for loop (which is why it wasn't
        made optional instead). Use your operating system's system monitor to confirm fread is progressing.
-       Thanks to Baptiste for highlighting.
+       Thanks to Baptiste for highlighting :
        http://stackoverflow.com/questions/15370993/strange-output-from-fread-when-called-from-knitr
+       
+     * colClasses has been added. Same character vector format as read.csv (may be named or unnamed), but
+       additionally may be type list. Type list enables setting ranges of columns by numeric position.
+       NB: colClasses is intended for rare overrides, not needed for routine use.
        
 BUG FIXES
 
@@ -34,8 +38,9 @@ BUG FIXES
      changes from (double)currentTime() to (clock_t)clock() at C level to pass R-devel
      checks. Tests don't check the verbose output of fread() so it slipped through.
 	 
-  o  rbind, cbind and merge on data.table should now work when data.table is Imported but not Depended on.
-     Many thanks to a patch to .onLoad from Ken Williams, and related posts from Victor Kryukov.
+  o  rbind, cbind and merge on data.table should now work in packages that Import but do not
+     Depend on data.table. Many thanks to a patch to .onLoad from Ken Williams, and related
+     posts from Victor Kryukov :
 	     http://r.789695.n4.nabble.com/Import-problem-with-data-table-in-packages-tp4665958.html
      NB: A change from .onLoad to .onAttach may still be required in a further fix.
 	 
@@ -47,6 +52,10 @@ USER VISIBLE CHANGES
            to add (empty) columns to an empty data.table (1 or more columns, all 0 length), though."
         rather than the untrue :
           "Cannot use := to add columns to an empty data.table, currently"
+
+    o   Misuse of := and `:=`() is now caught in more circumstances and gives a clearer and shorter error message :
+          ":= and `:=`(...) are defined for use in j, once only and in particular ways. See
+           help(":="). Check is.data.table(DT) is TRUE."
 
     o   data.table(NULL) now prints "Null data.table (0 rows and 0 cols)" and FAQ 2.5 has been
         improved. Thanks to:
@@ -65,7 +74,7 @@ NOTES
         And a pointer to ?truelength has been added to an error message as sugggested and thanks to Roland :
             http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
         
-    o   There are now 950 raw tests, as reported by test.data.table().
+    o   There are now 966 raw tests, as reported by test.data.table().
     
              
         *********************************************

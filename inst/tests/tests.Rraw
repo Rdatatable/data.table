@@ -30,13 +30,13 @@ test = function(num,x,y=NULL,error,warning,output) {
         patt = gsub("[(]","[(]",patt)
         patt = gsub("[)]","[)]",patt)
         patt = gsub("\\^","\\\\^", patt)  # for test 923 containing 2^31 in error message
+        observedtype = ifelse(length(grep("converted from warning",err)), "warning", "error")
         if (! (inherits(err,"try-error") &&
-              length(grep(patt,err)) &&
-              ((type=="error" && !length(grep("converted from warning",err))) ||
-               (type=="warning" && length(grep("converted from warning",err))))) ) {
+               length(grep(patt,err)) &&
+               type==observedtype)) {
             cat("Test",num,"didn't produce correct",type,":\n")
-            cat("Expected: '",txt,"'\n",sep="")
-            cat("Observed: '",gsub("^[(]converted from warning[)] ","",gsub("\n$","",gsub("^Error.* : \n  ","",as.character(err)))),"'\n",sep="")
+            cat("Expected ",type,": '",txt,"'\n",sep="")
+            cat("Observed ",observedtype,": '",gsub("^[(]converted from warning[)] ","",gsub("\n$","",gsub("^Error.* : \n  ","",as.character(err)))),"'\n",sep="")
             nfail <<- nfail + 1
             whichfail <<- c(whichfail, num)
             return()
@@ -1176,7 +1176,7 @@ test(381, DT[,{if (a==2) {.SD$b[1]=10L;.SD} else .SD}, by=a], error="locked bind
 
 # test that direct := is trapped, but := within a copy of .SD is allowed (FAQ 4.5). See also tests 556-557.
 test(382, DT[,b:=.N*2L,by=a], data.table(a=rep(1:3,1:3),b=rep(2L*(1:3),1:3)))
-test(383, DT[,{z=10L;b:=z},by=a], error=":= is defined for use in j only, and (currently) only once")
+test(383, DT[,{z=10L;b:=z},by=a], error=":= and `:=`(...) are defined for use in j, once only and in particular ways")
 test(384, DT[,{mySD=copy(.SD);mySD[1,b:=99L];mySD},by=a], data.table(a=rep(1:3,1:3),b=c(99L,99L,4L,99L,6L,6L)))
 
 # somehow missed testing := on logical subset with mixed TRUE/FALSE, reported by Muhammad Waliji
@@ -1250,7 +1250,7 @@ test(413, key(cbind(DT,DT)), "x")
 test(414, key(cbind(DT,as.data.frame(DT))), "x")
 
 # Test friendly error when := is used in wrong place
-test(415, x:=1, error="defined for use in j only")
+test(415, x:=1, error="defined for use in j, once only and in particular ways")
 
 # Somehow never tested that X[Y] is error if X is unkeyed.
 DT = data.table(a=1:3,b=4:6)
@@ -2632,6 +2632,33 @@ test(949, fread('A,B,\nD,E,F\n',header=TRUE), data.table(A="D",B="E",V3="F"))
 
 # +/- with no numbers afterwards should read as character
 test(950, fread('A,B,C\n1,+,4\n2,-,5\n3,-,6\n'), data.table(A=1:3,B=c("+","-","-"),C=4:6))
+
+# catching misuse of `:=`
+x = data.table(a=1:5)
+test(951, x[,{b=a+3; `:=`(c=b)}], error="defined for use in j, once only and in particular ways")
+
+# fread colClasses
+input = 'A,B,C\n01,foo,3.140\n002,bar,6.28000\n'
+test(952, fread(input, colClasses=c(C="character")), data.table(A=1:2,B=c("foo","bar"),C=c("3.140","6.28000")))
+test(953, fread(input, colClasses=c(C="character",A="numeric")), data.table(A=c(1.0,2.0),B=c("foo","bar"),C=c("3.140","6.28000")))
+test(954, fread(input, colClasses=c(C="character",A="double")), data.table(A=c(1.0,2.0),B=c("foo","bar"),C=c("3.140","6.28000")))
+test(955, fread(input, colClasses=list(character="C",double="A")), data.table(A=c(1.0,2.0),B=c("foo","bar"),C=c("3.140","6.28000")))
+test(956, fread(input, colClasses=list(character=2:3,double="A")), data.table(A=c(1.0,2.0),B=c("foo","bar"),C=c("3.140","6.28000")))
+test(957, fread(input, colClasses=list(character=1:3)), data.table(A=c("01","002"),B=c("foo","bar"),C=c("3.140","6.28000")))
+test(958, fread(input, colClasses="character"), data.table(A=c("01","002"),B=c("foo","bar"),C=c("3.140","6.28000")))
+test(959, fread(input, colClasses=c("character","double","numeric")), data.table(A=c("01","002"),B=c("foo","bar"),C=c(3.14,6.28)))
+
+test(960, fread(input, colClasses=c("character","double")), error="colClasses is unnamed and length 2 but there are 3 columns. See")
+test(961, fread(input, colClasses=1:3), error="colClasses is not type list or character vector")
+test(962, fread(input, colClasses=list(1:3)), error="colClasses is type list but has no names")
+test(963, fread(input, colClasses=list(character="D")), error="Column name 'D' in colClasses not found in data")
+test(964, fread(input, colClasses=c(D="character")), error="Column name 'D' in colClasses not found in data")
+test(965, fread(input, colClasses=list(character=0)), error="Column number 0 (colClasses..1...1.) is out of range .1,ncol=3.")
+test(966, fread(input, colClasses=list(character=2:4)), error="Column number 4 (colClasses..1...3.) is out of range .1,ncol=3.")
+
+
+
+
 
 # Character input more than 4096 bytes, #2649
 #for (n in c(1023:1025, 10000)) {

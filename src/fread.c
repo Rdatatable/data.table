@@ -19,7 +19,6 @@
 
 /*****    TO DO    *****
 
-A way for user to override type, for particular columns only (colClasses)
 Add a way to pick out particular columns only, by name or position.
 
 Deal with row.names e.g. http://stackoverflow.com/questions/15448732/reading-csv-with-row-names-by-fread
@@ -42,6 +41,7 @@ Detect and coerce dates and times. By searching for - and :, and dateTtime etc, 
 *****/
 
 extern int sizes[100];
+extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
 
 static char *ch, sep, eol, eol2, *eof; // sep2 TO DO
 static int eolLen;
@@ -58,6 +58,9 @@ static clock_t tCoerce, tCoerceAlloc;
 static char TypeName[4][10] = {"INT","INT64","REAL","STR"};  // for messages and errors
 static int TypeSxp[4] = {INTSXP,REALSXP,REALSXP,STRSXP};
 static union {double d; long long l;} u;
+#define NUT        5   // Number of User Types (just for colClasses where "numeric"/"double" are equivalent)
+static char UserTypeName[NUT][10] = {"integer", "integer64", "numeric", "character", "double" };  // double last as first 4 correspond to TypeName
+static int UserTypeNameMap[NUT] =   { SXP_INT,   SXP_INT64,   SXP_REAL,  SXP_STR,     SXP_REAL};
 
 static inline Rboolean scanStr(char *lch)
 {
@@ -270,13 +273,13 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     return(newv);
 }
 
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart)
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP select, SEXP colClasses, SEXP integer64)
 {
     SEXP thiscol, ans, thisstr;
     R_len_t i, j, k, protecti=0, nrow=0, ncol=0, nline, flines;
     int thistype;
     char *fnam=NULL, *pos, *pos1, *mmp, *ch2, *linestart;
-    Rboolean header=LOGICAL(headerarg)[0], allchar;
+    Rboolean header, allchar;
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
     size_t filesize;
@@ -290,6 +293,18 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (NA_INTEGER != INT_MIN) error("Internal error: NA_INTEGER (%d) != INT_MIN (%d).", NA_INTEGER, INT_MIN);  // relied on by Stroll
     if (sizeof(double) != 8) error("Internal error: sizeof(double) is %d bytes, not 8.", sizeof(double));
     if (sizeof(long long) != 8) error("Internal error: sizeof(long long) is %d bytes, not 8.", sizeof(long long));
+    
+    // ********************************************************************************************
+    //   Check inputs.
+    // ********************************************************************************************
+    
+    if (!isLogical(headerarg) || LENGTH(headerarg)!=1) error("'header' must be 'auto', TRUE or FALSE"); // 'auto' was converted to NA at R level
+    header = LOGICAL(headerarg)[0];
+    if (!isNull(nastrings) && !isString(nastrings)) error("'na.strings' is type '",type2char(TYPEOF(nastrings)),"'. Must be a character vector.");
+    if (!isInteger(nrowsarg) || LENGTH(nrowsarg)!=1 || INTEGER(nrowsarg)[0]==NA_INTEGER) error("'nrows' must be a single non-NA number of type numeric or integer");
+    if (!isInteger(autostart) || LENGTH(autostart)!=1 || INTEGER(autostart)[0]<1) error("'autostart' must be a length 1 vector of type numeric or integer and >=1");
+    if (!isNull(separg) && (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1)) error("'sep' must be 'auto' or a single character");
+    if (!isString(integer64) || LENGTH(integer64)!=1) error("'integer64' must be a single character string: 'integer64', 'double' or 'character'");
 
     // ********************************************************************************************
     //   Point to text input, or open and mmap file
@@ -333,7 +348,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             CloseHandle(hFile);
 #endif
             if (sizeof(char *)==4)
-                error("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. This is a 32bit machine. You don't need more RAM per se but this fread function is tuned for 64bit addressability, at the expense of large file support on 32bit machines. You probably need more RAM to store the resulting data.table, anyway. And most speed benefits of data.table are on 64bit with large RAM, too. Please either upgrade to 64bit (e.g. a 64bit netbook with 4GB RAM can cost just £300), or make a case for 32bit large file support to datatable-help.", filesize/1024^2);
+                error("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. This is a 32bit machine. You don't need more RAM per se but this fread function is tuned for 64bit addressability, at the expense of large file support on 32bit machines. You probably need more RAM to store the resulting data.table, anyway. And most speed benefits of data.table are on 64bit with large RAM, too. Please either upgrade to 64bit (e.g. a 64bit netbook with 4GB RAM can cost just £300), or make a case for 32bit large file support to datatable-help.", filesize/(1024.0*1024));
                 // if we support this on 32bit, we may need to use stat64 instead, as R does
             else if (sizeof(char *)==8)
                 error("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. This is a 64bit machine so this is surprising. Please report to datatable-help.", filesize/1024^2);
@@ -583,6 +598,65 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
         if (verbose) { Rprintf("Type codes: "); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf(" (%s 5 rows)\n",str); }
     }
+    if (length(colClasses)) {
+        SEXP UserTypeNameSxp = PROTECT(allocVector(STRSXP, NUT));
+        protecti++;
+        SEXP colTypeIndex, items, itemsInt;
+        int thisType;
+        for (i=0; i<NUT; i++) SET_STRING_ELT(UserTypeNameSxp, i, mkChar(UserTypeName[i]));
+        if (isString(colClasses)) {
+            if (length(getAttrib(colClasses, R_NamesSymbol))) error("Internal error: colClasses has names, but these should have been converted to list format at R level");
+            if (LENGTH(colClasses)!=1 && LENGTH(colClasses)!=ncol) error("colClasses is unnamed and length %d but there are %d columns. See ?data.table for more info about the colClasses argument.", LENGTH(colClasses), ncol);
+            colTypeIndex = PROTECT(chmatch(colClasses, UserTypeNameSxp, NUT, FALSE));  // if type not found then read as character then as. at R level
+            protecti++;
+            for (k=0; k<ncol; k++) {
+                thisType = UserTypeNameMap[ INTEGER(colTypeIndex)[ LENGTH(colClasses)==1 ? 0 : k] -1 ];
+                if (type[k]<thisType) {
+                    if (verbose) Rprintf("Column %d ('%s') was detected as type '%s' but bumped to '%s' as requested by colClasses\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType] );
+                    type[k]=thisType;
+                } else if (verbose && type[k]>thisType) Rprintf("Column %d ('%s') has been detected as type '%s'. Ignoring request from colClasses to read as '%s' (a lower type) since NAs would result.\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType]);    
+            }
+        } else {
+            if (!isNewList(colClasses)) error("colClasses is not type list or character vector");
+            if (!length(getAttrib(colClasses, R_NamesSymbol))) error("colClasses is type list but has no names");
+            colTypeIndex = PROTECT(chmatch(getAttrib(colClasses, R_NamesSymbol), UserTypeNameSxp, NUT, FALSE));
+            protecti++;
+            for (i=0; i<LENGTH(colClasses); i++) {
+                thisType = UserTypeNameMap[INTEGER(colTypeIndex)[i]-1];
+                items = VECTOR_ELT(colClasses,i);
+                if (isString(items)) itemsInt = PROTECT(chmatch(items, names, NA_INTEGER, FALSE));
+                else itemsInt = PROTECT(coerceVector(items, INTSXP));
+                protecti++;
+                for (j=0; j<LENGTH(items); j++) {
+                    k = INTEGER(itemsInt)[j];
+                    if (k==NA_INTEGER) {
+                        if (isString(items)) error("Column name '%s' in colClasses not found in data", CHAR(STRING_ELT(items, j)));
+                        else error("colClasses[[%d]][%d] is NA", i+1, j+1);
+                    } else {
+                        if (k<1 || k>ncol) error("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]",k,i+1,j+1,ncol);
+                        k--;
+                        if (type[k]<thisType) {
+                            if (verbose) Rprintf("Column %d ('%s') was detected as type '%s' but bumped to '%s' as requested by colClasses\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType] );
+                            type[k]=thisType;
+                        } else if (verbose && type[k]>thisType) Rprintf("Column %d ('%s') has been detected as type '%s'. Ignoring request from colClasses to read as '%s' (a lower type) since NAs would result.\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType]);
+                    }
+                }
+            }
+        }
+    }
+    /*if (integer64 = "double" or "character") {
+        for (i=0; i<ncol; i++) if (type[i]==SXP_INT64) type[i] = SXP_REAL or SXP_STR;  // read INT64 as double as read.table does.
+    }
+    if (length(select)) {
+        if (isString(select)) select = match them;  if any missing then warning;  if all missing then return empty dt with warning;
+        else coerceVector(select, integer)
+        select = sort(select);
+        sofar = 0;
+        for (i=0; i<ncol; i++) { 
+            if (select[sofar] = i) sofar++;
+            else type[i] = SXP_SKIP;
+        }
+    */
     clock_t tColType = clock();
     
     // ********************************************************************************************
@@ -676,6 +750,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     if (verbose) {
         clock_t tn = clock(), tot=tn-t0;
+        if (tot<1) tot=1;  // to avoid nan% output in some trivial tests where tot==0
         Rprintf("%8.3fs (%3.0f%%) Memory map (rerun may be quicker)\n", 1.0*(tMap-t0)/CLOCKS_PER_SEC, 100.0*(tMap-t0)/tot);
         Rprintf("%8.3fs (%3.0f%%) sep and header detection\n", 1.0*(tLayout-tMap)/CLOCKS_PER_SEC, 100.0*(tLayout-tMap)/tot);
         Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", 1.0*(tRowCount-tLayout)/CLOCKS_PER_SEC, 100.0*(tRowCount-tLayout)/tot);

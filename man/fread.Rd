@@ -10,18 +10,21 @@
    
 }
 \usage{
-fread(input, sep="auto", sep2="auto", nrows=-1, header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE, autostart=30)
+fread(input, sep="auto", sep2="auto", nrows=-1, header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE, autostart=30L, select=NULL, colClasses=NULL, integer64=getOption("datatable.integer64"))
 }
 \arguments{
   \item{input}{ Either the file name to read (containing no \\n character) or the input itself as a string (containing at least one \\n), see examples. In both cases, a length 1 character string. A filename may be a URL starting http:// or file://. }
   \item{sep}{ The separator between columns. Defaults to the first character in the set [\code{,\\t |;:}] that exists on line \code{autostart} outside quoted (\code{""}) regions, and separates the rows above \code{autostart} into a consistent number of fields, too. }
   \item{sep2}{ The separator \emph{within} columns. A \code{list} column will be returned where each cell is a vector of values. This is much faster using less working memory than \code{strsplit} afterwards or similar techniques. For each column \code{sep2} can be different and is the first character in the same set above [\code{,\\t |;:}], other than \code{sep}, that exists inside each field outside quoted regions on line \code{autostart}. NB: \code{sep2} is not yet implemented. }
-  \item{nrows}{ The number of rows to read, by default -1 means all. Unlike \code{read.table}, it doesn't help speed to set this to the number of rows in the file (or an estimate), since the number of rows is automatically determined and is already fast. Only set \code{nrows} if you require the first 10 rows, for example, or are reading the file in chunks. }
+  \item{nrows}{ The number of rows to read, by default -1 means all. Unlike \code{read.table}, it doesn't help speed to set this to the number of rows in the file (or an estimate), since the number of rows is automatically determined and is already fast. Only set \code{nrows} if you require the first 10 rows, for example. `nrows=0` is a special case that just returns the column names and types; e.g., a dry run for a large file or to quickly check format consistency of a set of files before starting to read any. }
   \item{header}{ Does the first data line contain column names? Defaults according to whether every non-empty field on the first data line is type character. If so, or TRUE is supplied, any empty column names are given a default name. }
   \item{na.strings}{ A character vector of strings to convert to \code{NA_character_}. By default for columns read as type character \code{",,"} is read as a blank string (\code{""}) and \code{",NA,"} is read as \code{NA_character_}. Typical alternatives might be \code{na.strings=NULL} or perhaps \code{na.strings=c("NA","N/A","")}. }
   \item{stringsAsFactors}{ Convert all character columns to factors? }
   \item{verbose}{ Be chatty and report timings? }
   \item{autostart}{ Any line number within the region of machine readable delimited text, by default 30. If the file is shorter or this line is empty (e.g. short files with trailing blank lines) then the last non empty line is used. This line and the lines above it are used to auto detect \code{sep}, \code{sep2} and the number of fields. It's extremely unlikely that \code{autostart} should ever need to be changed, we hope. }
+  \item{select}{ Not yet implemented. Vector of column names or positions to keep. Or, use \code{NULL} in colClasses to drop specified columns (by number if type list is used). }
+  \item{colClasses}{ A character vector of classes (named or unnamed), as read.csv. Or, type list enables setting ranges of columns by numeric position. colClasses in fread is intended for rare overrides, not for routine use. fread will only promote a column to a higher type if colClasses requests it. It won't downgrade a column to a lower type since NAs would result. You have to coerce such columns afterwards yourself, if you really require data loss. }
+  \item{integer64}{ Not yet implemented. "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as base::read.csv does, possibly with loss of precision. Or, "character". }
 }
 \details{
 

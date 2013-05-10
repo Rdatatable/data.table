@@ -4,9 +4,10 @@
     tt = base::cbind.data.frame
     ss = body(tt)
     if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
+    prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
     if (!length(grep("data.table",ss[[2]]))) {
         ss = ss[c(1,NA,2:length(ss))]
-        ss[[2]] = parse(text="if (inherits(..1,'data.table')) return(data.table::data.table(...,key=key(..1)))")[[1]]
+        ss[[2]] = parse(text=paste("if (inherits(..1,'data.table')) return(",prefix,"data.table(...,key=key(..1)))",sep=""))[[1]]
         body(tt)=ss
         (unlockBinding)("cbind.data.frame",baseenv())
         assign("cbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
@@ -17,7 +18,7 @@
     if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
     if (!length(grep("data.table",ss[[2]]))) {
         ss = ss[c(1,NA,2:length(ss))]
-        ss[[2]] = parse(text="if (inherits(..1,'data.table')) return(data.table::.rbind.data.table(...))")[[1]]
+        ss[[2]] = parse(text=paste("if (inherits(..1,'data.table')) return(",prefix,".rbind.data.table(...))",sep=""))[[1]]
         body(tt)=ss
         (unlockBinding)("rbind.data.frame",baseenv())
         assign("rbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
@@ -33,7 +34,8 @@
              "datatable.allow.cartesian"="FALSE",    # datatable.<argument name>
              "datatable.dfdispatchwarn"="TRUE",                   # not a function argument
              "datatable.warnredundantby"="TRUE",                  # not a function argument
-             "datatable.alloccol"="quote(max(100L,ncol(DT)+64L))" # argument 'n' of alloc.col. Allocate at least 64 spare slots by default. Needs to be 100L floor to save small object reallocs.
+             "datatable.alloccol"="quote(max(100L,ncol(DT)+64L))",# argument 'n' of alloc.col. Allocate at least 64 spare slots by default. Needs to be 100L floor to save small object reallocs.
+             "datatable.integer64"="'integer64'"     # datatable.<argument name>    integer64|double|character
              )
 
     for (i in setdiff(names(opts),names(options()))) {
