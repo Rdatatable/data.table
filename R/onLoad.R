@@ -1,4 +1,6 @@
 .onLoad <- function(libname, pkgname) {
+    # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
+    
     "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one line to base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
     # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onAttach
     tt = base::cbind.data.frame
@@ -24,7 +26,6 @@
         assign("rbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
         lockBinding("rbind.data.frame",baseenv())
     }
-
     # Set options for the speed boost in v1.8.0 by avoiding 'default' arg of getOption(,default=)
     opts = c("datatable.verbose"="FALSE",            # datatable.<argument name>
              "datatable.nomatch"="NA_integer_",      # datatable.<argument name>
@@ -37,7 +38,6 @@
              "datatable.alloccol"="quote(max(100L,ncol(DT)+64L))",# argument 'n' of alloc.col. Allocate at least 64 spare slots by default. Needs to be 100L floor to save small object reallocs.
              "datatable.integer64"="'integer64'"     # datatable.<argument name>    integer64|double|character
              )
-
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))
     }

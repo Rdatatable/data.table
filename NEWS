@@ -42,8 +42,6 @@ BUG FIXES
      Depend on data.table. Many thanks to a patch to .onLoad from Ken Williams, and related
      posts from Victor Kryukov :
 	     http://r.789695.n4.nabble.com/Import-problem-with-data-table-in-packages-tp4665958.html
-     NB: A change from .onLoad to .onAttach may still be required in a further fix.
-	 
 
 USER VISIBLE CHANGES
 
