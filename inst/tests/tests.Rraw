@@ -2656,16 +2656,8 @@ test(964, fread(input, colClasses=c(D="character")), error="Column name 'D' in c
 test(965, fread(input, colClasses=list(character=0)), error="Column number 0 (colClasses..1...1.) is out of range .1,ncol=3.")
 test(966, fread(input, colClasses=list(character=2:4)), error="Column number 4 (colClasses..1...3.) is out of range .1,ncol=3.")
 
-
-
-
-
-# Character input more than 4096 bytes, #2649
-#for (n in c(1023:1025, 10000)) {
-# input = paste( rep('a\tb\n', n), collapse='')
-# A = fread(input,verbose=TRUE)
-# cat(nchar(input), nrow(A), "\n")
-#}
+# Character input more than 4096 bytes (used to be passed through path.expand which imposed the limit), #2649
+test(967, nrow(fread( paste( rep('a\tb\n', 10000), collapse=''), header=FALSE)), 10000L)
 
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")

@@ -44,7 +44,8 @@ Detect and coerce dates and times. By searching for - and :, and dateTtime etc, 
 extern int sizes[100];
 extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
 
-static char *ch, sep, eol, eol2, *eof; // sep2 TO DO
+static const char *ch, *eof; 
+static char sep, eol, eol2;  // sep2 TO DO
 static int eolLen;
 static Rboolean verbose;
 static clock_t tCoerce, tCoerceAlloc;
@@ -56,14 +57,14 @@ static clock_t tCoerce, tCoerceAlloc;
 #define SXP_INT64  1   // REALSXP
 #define SXP_REAL   2   // REALSXP
 #define SXP_STR    3   // STRSXP
-static char TypeName[4][10] = {"INT","INT64","REAL","STR"};  // for messages and errors
+static const char TypeName[4][10] = {"INT","INT64","REAL","STR"};  // for messages and errors
 static int TypeSxp[4] = {INTSXP,REALSXP,REALSXP,STRSXP};
 static union {double d; long long l;} u;
 #define NUT        5   // Number of User Types (just for colClasses where "numeric"/"double" are equivalent)
-static char UserTypeName[NUT][10] = {"integer", "integer64", "numeric", "character", "double" };  // double last as first 4 correspond to TypeName
+static const char UserTypeName[NUT][10] = {"integer", "integer64", "numeric", "character", "double" };  // double last as first 4 correspond to TypeName
 static int UserTypeNameMap[NUT] =   { SXP_INT,   SXP_INT64,   SXP_REAL,  SXP_STR,     SXP_REAL};
 
-static inline Rboolean scanStr(char *lch)
+static inline Rboolean scanStr(const char *lch)
 {
     // to delete ... if (lch<eof && *lch=='\"') protected = TRUE;  // lch might be mmp, careful not to check lch-1 for '\' before that (not mapped)
     // returns TRUE if embedded \" or """" are detected
@@ -80,7 +81,7 @@ static inline Rboolean scanStr(char *lch)
 static int countfields()
 {
     int ncol=0;
-    char *lch;  // lch = local ch
+    const char *lch;  // lch = local ch
     Rboolean protected;
     lch = ch;
     protected = FALSE;
@@ -105,13 +106,13 @@ static inline Rboolean Strtoll()
     // iv) safe for mmap which can't be \0 terminated on Windows (but can be on unix and mac)
     // v) fails if whole field isn't consumed such as "3.14" (strtol consumes the 3 and stops)
     // ... all without needing to read into a buffer at all (reads the mmap directly)
-    char *lch=ch; int sign=1; long long acc=0;
+    const char *lch=ch; int sign=1; long long acc=0;
     while (lch<eof && isspace(*lch) && *lch!=sep && *lch!=eol) lch++;
     if (lch==eof || *lch==sep || *lch==eol) {   //  ',,' or ',   ,' or '\t\t' or '\t   \t' etc => NA
         ch = lch;                               // advance global ch over empty field
         return(TRUE);                           // caller already set u.l=NA_INTEGR or u.d=NA_REAL as appropriate
     }  
-    char *start = lch;                          // start of [+-][0-9]+
+    const char *start = lch;                          // start of [+-][0-9]+
     if (*lch=='-') { sign=0; lch++; if (*lch<'0' || *lch>'9') return(FALSE); }   // + or - symbols alone should be character
     else if (*lch=='+') { sign=1; lch++; if (*lch<'0' || *lch>'9') return(FALSE); }
     while (lch<eof && '0'<=*lch && *lch<='9') { // TO DO can remove lch<eof when last row is specialized in case of no final eol
@@ -137,12 +138,12 @@ static inline Rboolean Strtoll()
 static inline Rboolean Strtod()
 {
     // Specialized strtod for same reasons as Strtoll (leading \t dealt with), but still uses strtod (hard to do better, unlike strtoll).
-    char *lch=ch;
+    const char *lch=ch;
     while (lch<eof && isspace(*lch) && *lch!=sep && *lch!=eol) lch++;
     if (lch==eof || *lch==sep || *lch==eol) {u.d=NA_REAL; ch=lch; return(TRUE); }  // e.g. ',,' or '\t\t'
-    char *start=lch;
+    const char *start=lch;
     errno = 0;
-    u.d = strtod(start, &lch);
+    u.d = strtod(start, (char **)&lch);
     if (lch>start && (lch==eof || *lch==sep || *lch==eol) && errno==0) {
         ch = lch;
         return(TRUE);  // double read ok (result in u.d)
@@ -180,7 +181,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     R_len_t i, protecti=0;
     int dp;
     clock_t tCoerce0 = clock();
-    char *lch=ch;
+    const char *lch=ch;
     while (lch!=eof && *lch!=sep && *lch!=eol) lch++;  // lch now marks the end of field, used in verbose messages and errors
     if (verbose) Rprintf("Bumping column %d from %s to %s on data row %d, field contains '%.*s'\n",
                          col+1, TypeName[oldtype], TypeName[newtype], sofar+1, lch-ch, ch);
@@ -279,7 +280,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     SEXP thiscol, ans, thisstr;
     R_len_t i, j, k, protecti=0, nrow=0, ncol=0, nline, flines;
     int thistype;
-    char *fnam=NULL, *pos, *pos1, *mmp, *ch2, *linestart;
+    const char *fnam=NULL, *pos, *pos1, *mmp, *ch2, *linestart;
     Rboolean header, allchar;
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
@@ -310,16 +311,16 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     //   Point to text input, or open and mmap file
     // ********************************************************************************************
-    ch = ch2 = (char *)CHAR(STRING_ELT(input,0));
+    ch = ch2 = (const char *)CHAR(STRING_ELT(input,0));
     while (*ch2!='\n' && *ch2) ch2++;
     if (*ch2=='\n' || !*ch) {
         if (verbose) Rprintf("Input contains a \\n (or is \"\"), taking this to be text input (not a filename)\n");
+        filesize = strlen(ch);
         mmp = ch;
-        filesize = strlen(mmp);
         eof = mmp+filesize;
         if (*eof!='\0') error("Internal error: last byte of character input isn't \\0");
     } else {
-        fnam = ch;
+        fnam = R_ExpandFileName(ch);  // for convenience so user doesn't have to call path.expand() themselves
 #ifndef WIN32
         fd = open(fnam, O_RDONLY);
         if (fd==-1) error("file not found: %s",fnam);
@@ -328,9 +329,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         filesize = stat_buf.st_size;
         if (filesize<=0) {close(fd); error("File is empty: %s", fnam);}
 #ifdef MAP_POPULATE
-        mmp = (char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);    // TO DO?: MAP_HUGETLB
+        mmp = (const char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);    // TO DO?: MAP_HUGETLB
 #else
-        mmp = (char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);    // for Mac
+        mmp = (const char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);    // for Mac
 #endif
         if (mmp == MAP_FAILED) {
             close(fd);
@@ -343,7 +344,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (filesize<=0) { CloseHandle(hFile); error("File is empty: %s", fnam); }
         hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL); // filesize+1 not allowed here, unlike mmap where +1 is zero'd
         if (hMap==NULL) { CloseHandle(hFile); error("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
-        mmp = (char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,filesize);
+        mmp = (const char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,filesize);
         if (mmp == NULL) {
             CloseHandle(hMap);
             CloseHandle(hFile);
@@ -357,7 +358,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 error("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. Size of pointer is %d on this machine. Probably failing because this is neither a 32bit or 64bit machine. Please report to datatable-help.", filesize/1024^2, sizeof(char *));
         }
 #ifndef WIN32
-        if (madvise(mmp, filesize+1, MADV_SEQUENTIAL | MADV_WILLNEED) == -1) warning("Mapped file ok but madvise failed");
+        if (madvise((char *)mmp, filesize+1, MADV_SEQUENTIAL | MADV_WILLNEED) == -1) warning("Mapped file ok but madvise failed");
 #endif
         if (EOF > -1) error("Internal error. EOF is not -1 or less\n");
         if (mmp[filesize-1] < 0) error("mmap'd region has EOF at the end");
@@ -413,16 +414,16 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     //   Auto detect separator, number of fields and location of first data row
     // ********************************************************************************************
-    char *seps;
+    const char *seps;
     if (isNull(separg)) {
         if (verbose) Rprintf("Using line %d to detect sep (the last non blank line in the first 30) ... ", nline);
         seps=",\t |;:";  // separators, in order of preference. See ?fread. (colon last as it can appear in time fields)
     } else {
-        seps = (char *)CHAR(STRING_ELT(separg,0));  // length 1 string
+        seps = (const char *)CHAR(STRING_ELT(separg,0));  // length 1 string
         if (verbose) Rprintf("Looking for supplied sep '%s' on line %d (the last non blank line in the first 30) ... ", seps[0]=='\t'?"\\t":seps, nline);
     }
     int nseps = strlen(seps);
-    char *top=pos, *thistop=pos; // see how high we can get with each sep (until we don't read the same number of fields)
+    const char *top=pos, *thistop=pos; // see how high we can get with each sep (until we don't read the same number of fields)
     char topsep=0;               // topsep stores the highest so far
     int topnline=nline;          // the top's corresponding line number
     for (i=0; i<nseps; i++) {
@@ -501,7 +502,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (ch<eof && *ch=='\"') {ch++; ch2=ch; while(ch2<eof && *ch2!='\"' && *ch2!=eol) ch2++;}
             else {ch2=ch; while(ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;}
             if (ch2>ch) {
-                SET_STRING_ELT(names, i, mkCharLen(ch, ch2-ch));
+                SET_STRING_ELT(names, i, mkCharLen(ch, (int)(ch2-ch)));
             } else {
                 sprintf(buff,"V%d",i+1);
                 SET_STRING_ELT(names, i, mkChar(buff));
@@ -551,7 +552,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     //   Make best guess at column types using first 5 rows, middle 5 rows and last 5 rows
     // ********************************************************************************************
     int type[ncol]; for (i=0; i<ncol; i++) type[i]=SXP_INT;   // default type is lowest
-    char *end=pos, *str;
+    const char *end=pos, *str;
     for (i = 0; i<5; i++) {   // ch is on eol before last line, search back another 5 rows
         while (ch>pos && *--ch!=eol2);
         ch -= eolLen-1;
@@ -711,7 +712,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 ch2=ch;
                 if (ch<eof && *ch=='\"') {ch++; while(++ch2<eof && *ch2!=eol && !(*ch2=='\"' && *(ch2-1)!='\\'));}
                 else while (ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;
-                SET_STRING_ELT(thiscol, i, mkCharLen(ch,ch2-ch));
+                SET_STRING_ELT(thiscol, i, mkCharLen(ch, (int)(ch2-ch)));
                 if (ch2<eof && *ch2=='\"') ch=ch2+1; else ch=ch2;
             }
             if (ch<eof && *ch==sep && j<ncol-1) {ch++; continue;}  // most common case first, done, next field
@@ -745,7 +746,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         CloseHandle(hMap);
         CloseHandle(hFile);
 #else
-        munmap(mmp, filesize);
+        munmap((char *)mmp, filesize);
         close(fd);
 #endif
     }

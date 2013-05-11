@@ -30,17 +30,22 @@ NEW FEATURES
        
      * colClasses has been added. Same character vector format as read.csv (may be named or unnamed), but
        additionally may be type list. Type list enables setting ranges of columns by numeric position.
-       NB: colClasses is intended for rare overrides, not needed for routine use.
+       NB: colClasses is intended for rare overrides, not routine use.
        
      * fread now supports files larger than 4GB on 64bit Windows (#2767 thanks to Paul Harding) and files
        between 2GB and 4GB on 32bit Windows (#2655 thanks to Vishal). A C call to GetFileSize() needed to
        be GetFileSizeEx().
        
+     * When input is the data as a character string, it is no longer truncated to your system's maximum
+       path length, #2649. It was being passed through path.expand() even when it wasn't a filename.
+       Many thanks to Timothee Carayol for the reproducible report. The limit should now be R's character
+       string length limit (2^31-1 bytes = 2GB). Test added.
+       
 BUG FIXES
 
-  o  Fixed format errors of timings produced by fread(...,verbose=TRUE). Caused by recent
-     changes from (double)currentTime() to (clock_t)clock() at C level to pass R-devel
-     checks. Tests don't check the verbose output of fread() so it slipped through.
+  o  Fixed format errors of timings (e.g. "nan%") produced by fread(...,verbose=TRUE). Caused by recent
+     changes from (double)currentTime() to (clock_t)clock() at C level to pass R-devel checks. Tests
+     don't check the verbose output of fread(), so it slipped through.
 	 
   o  rbind, cbind and merge on data.table should now work in packages that Import but do not
      Depend on data.table. Many thanks to a patch to .onLoad from Ken Williams, and related
@@ -76,7 +81,7 @@ NOTES
      And a pointer to ?truelength has been added to an error message as sugggested and thanks to Roland :
        http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
         
-  o  There are now 966 raw tests, as reported by test.data.table().
+  o  There are now 967 raw tests, as reported by test.data.table().
     
              
         *********************************************

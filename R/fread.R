@@ -6,7 +6,7 @@ fread = function(input="test.csv",sep="auto",sep2="auto",nrows=-1,header="auto",
         on.exit(unlink(tt), add=TRUE)
         download.file(input, tt)
         input = tt
-    } else input = path.expand(input)
+    }
     if (identical(header,"auto")) header=NA
     if (identical(sep,"auto")) sep=NULL
     if (is.atomic(colClasses) && !is.null(names(colClasses))) colClasses = tapply(names(colClasses),colClasses,c,simplify=FALSE)
