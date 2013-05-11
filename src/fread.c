@@ -20,6 +20,7 @@
 /*****    TO DO    *****
 
 Add a way to pick out particular columns only, by name or position.
+Add the as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
 
 Deal with row.names e.g. http://stackoverflow.com/questions/15448732/reading-csv-with-row-names-by-fread
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
@@ -286,7 +287,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
 #ifdef WIN32
     HANDLE hFile=0;
     HANDLE hMap=0;
-    DWORD dwFileSize=0;
+    LARGE_INTEGER liFileSize;
 #else
     int fd=-1;
 #endif
@@ -325,7 +326,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         struct stat stat_buf;
         if (fstat(fd,&stat_buf) == -1) {close(fd); error("Opened file ok but couldn't obtain file size: %s", fnam);}
         filesize = stat_buf.st_size;
-        if (filesize==0) {close(fd); error("File is empty: %s", fnam);}
+        if (filesize<=0) {close(fd); error("File is empty: %s", fnam);}
 #ifdef MAP_POPULATE
         mmp = (char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);    // TO DO?: MAP_HUGETLB
 #else
@@ -337,12 +338,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         // Following: http://msdn.microsoft.com/en-gb/library/windows/desktop/aa366548(v=vs.85).aspx
         hFile=CreateFile(fnam, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
         if (hFile==INVALID_HANDLE_VALUE) error("File not found: %s",fnam);
-        dwFileSize=GetFileSize(hFile,NULL);
-        if (dwFileSize==0) { CloseHandle(hFile); error("File is empty: %s", fnam); }
-        filesize = (size_t)dwFileSize;
-        hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL); // dwFileSize+1 not allowed here, unlike mmap where +1 is zero'd
+        if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); error("GetFileSizeEx failed (returned 0) on file: %s", fnam); }
+        filesize = (size_t)liFileSize.QuadPart;
+        if (filesize<=0) { CloseHandle(hFile); error("File is empty: %s", fnam); }
+        hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL); // filesize+1 not allowed here, unlike mmap where +1 is zero'd
         if (hMap==NULL) { CloseHandle(hFile); error("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
-        mmp = (char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,dwFileSize);
+        mmp = (char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,filesize);
         if (mmp == NULL) {
             CloseHandle(hMap);
             CloseHandle(hFile);

@@ -32,6 +32,10 @@ NEW FEATURES
        additionally may be type list. Type list enables setting ranges of columns by numeric position.
        NB: colClasses is intended for rare overrides, not needed for routine use.
        
+     * fread now supports files larger than 4GB on 64bit Windows (#2767 thanks to Paul Harding) and files
+       between 2GB and 4GB on 32bit Windows (#2655 thanks to Vishal). A C call to GetFileSize() needed to
+       be GetFileSizeEx().
+       
 BUG FIXES
 
   o  Fixed format errors of timings produced by fread(...,verbose=TRUE). Caused by recent
