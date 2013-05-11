@@ -49,34 +49,34 @@ BUG FIXES
 
 USER VISIBLE CHANGES
 
-    o   := on a null data.table now gives a clearer error message :
-          "Cannot use := to add columns to a null data.table (no columns), currently. You can use := 
-           to add (empty) columns to an empty data.table (1 or more columns, all 0 length), though."
-        rather than the untrue :
-          "Cannot use := to add columns to an empty data.table, currently"
+  o  := on a null data.table now gives a clearer error message :
+       "Cannot use := to add columns to a null data.table (no columns), currently. You can use := 
+        to add (empty) columns to an empty data.table (1 or more columns, all 0 length), though."
+     rather than the untrue :
+       "Cannot use := to add columns to an empty data.table, currently"
 
-    o   Misuse of := and `:=`() is now caught in more circumstances and gives a clearer and shorter error message :
-          ":= and `:=`(...) are defined for use in j, once only and in particular ways. See
-           help(":="). Check is.data.table(DT) is TRUE."
+  o  Misuse of := and `:=`() is now caught in more circumstances and gives a clearer and shorter error message :
+       ":= and `:=`(...) are defined for use in j, once only and in particular ways. See
+        help(":="). Check is.data.table(DT) is TRUE."
 
-    o   data.table(NULL) now prints "Null data.table (0 rows and 0 cols)" and FAQ 2.5 has been
-        improved. Thanks to:
-          http://stackoverflow.com/questions/15317536/is-null-does-not-work-on-null-data-table-in-r-possible-bug
+  o  data.table(NULL) now prints "Null data.table (0 rows and 0 cols)" and FAQ 2.5 has been
+     improved. Thanks to:
+        http://stackoverflow.com/questions/15317536/is-null-does-not-work-on-null-data-table-in-r-possible-bug
 		  
-    o   The braces {} have been removed from rollends's default, to solve a trace() problem. Thanks
-	    to Josh O'Brien's investigation :
-		http://stackoverflow.com/questions/15931801/why-does-trace-edit-true-not-work-when-data-table
+  o  The braces {} have been removed from rollends's default, to solve a trace() problem. Thanks
+	 to Josh O'Brien's investigation :
+	 http://stackoverflow.com/questions/15931801/why-does-trace-edit-true-not-work-when-data-table
 
 NOTES
 
-    o   Tests 617,646 and 647 could sometimes fail (e.g. r-prerel-solaris-sparc on 7 Mar 2013)
-        due to machine tolerance. Fixed.
+  o  Tests 617,646 and 647 could sometimes fail (e.g. r-prerel-solaris-sparc on 7 Mar 2013)
+     due to machine tolerance. Fixed.
         
-    o   The default for datatable.alloccol has changed from max(100L, 2L*ncol(DT)) to max(100L, ncol(DT)+64L).
-        And a pointer to ?truelength has been added to an error message as sugggested and thanks to Roland :
-            http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
+  o  The default for datatable.alloccol has changed from max(100L, 2L*ncol(DT)) to max(100L, ncol(DT)+64L).
+     And a pointer to ?truelength has been added to an error message as sugggested and thanks to Roland :
+       http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
         
-    o   There are now 966 raw tests, as reported by test.data.table().
+  o  There are now 966 raw tests, as reported by test.data.table().
     
              
         *********************************************
