@@ -43,18 +43,19 @@ NEW FEATURES
        
      * New argument 'skip' overrides automatic banner skipping. When skip>=0, 'autostart' is ignored and
        line skip+1 will be taken as the first data row, or column names according to header="auto"|TRUE|FALSE
-       as usual. Or skip="string" uses the first line containing "string" (chosen to be a substring of the
+       as usual. Or, skip="string" uses the first line containing "string" (chosen to be a substring of the
        column name row unlikely to appear earlier), inspired by read.xls in package gdata.
        Thanks to Gabor Grothendieck for the suggestions.
        
      * fread now stops reading if an empty line is encountered, with warning if any text exists after that
        such as a footer (the first line of which will be included in the warning message).
        
+     * Now reads files that are open in Excel without having to close them first, #2661. And up to 5 attempts
+       are made every 250ms on Windows as recommended here : http://support.microsoft.com/kb/316609.
+       
+     * "nan%" observed in output of fread(...,verbose=TRUE) timings are now 0% when fread takes 0.000 seconds.
+       
 BUG FIXES
-
-  o  Fixed format errors of timings (e.g. "nan%") produced by fread(...,verbose=TRUE). Caused by recent
-     changes from (double)currentTime() to (clock_t)clock() at C level to pass R-devel checks. Tests
-     don't check the verbose output of fread(), so it slipped through.
 	 
   o  rbind, cbind and merge on data.table should now work in packages that Import but do not
      Depend on data.table. Many thanks to a patch to .onLoad from Ken Williams, and related
