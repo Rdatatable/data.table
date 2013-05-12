@@ -21,7 +21,6 @@
 
 Add a way to pick out particular columns only, by name or position.
 Add the as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
-Add skip to set autostart=skip+1 and skip search upwards. Line skip+1 will detect sep and header as usual. Thanks to Gabor Grothendieck's suggestion.
 
 Deal with row.names e.g. http://stackoverflow.com/questions/15448732/reading-csv-with-row-names-by-fread
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
@@ -276,7 +275,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     return(newv);
 }
 
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP select, SEXP colClasses, SEXP integer64)
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP colClasses, SEXP integer64)
 {
     SEXP thiscol, ans, thisstr;
     R_len_t i, j, k, protecti=0, nrow=0, ncol=0, nline, flines;
@@ -305,7 +304,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     header = LOGICAL(headerarg)[0];
     if (!isNull(nastrings) && !isString(nastrings)) error("'na.strings' is type '",type2char(TYPEOF(nastrings)),"'. Must be a character vector.");
     if (!isInteger(nrowsarg) || LENGTH(nrowsarg)!=1 || INTEGER(nrowsarg)[0]==NA_INTEGER) error("'nrows' must be a single non-NA number of type numeric or integer");
-    if (!isInteger(autostart) || LENGTH(autostart)!=1 || INTEGER(autostart)[0]<1) error("'autostart' must be a length 1 vector of type numeric or integer and >=1");
+    if (!isInteger(autostart) || LENGTH(autostart)!=1 || INTEGER(autostart)[0]<1) error("'autostart' must be a length 1 vector of type numeric or integer and >=1");  // NA_INTEGER is covered by <1
+    if (!isInteger(skip) || LENGTH(skip)!=1 || INTEGER(skip)[0]<-1) error("'skip' must be a length 1 vector of type numeric or integer and >=-1");  // NA_INTEGER is covered by <-1
     if (!isNull(separg) && (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1)) error("'sep' must be 'auto' or a single character");
     if (!isString(integer64) || LENGTH(integer64)!=1) error("'integer64' must be a single character string: 'integer64', 'double' or 'character'");
 
@@ -396,11 +396,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
 
     // ********************************************************************************************
-    //   Auto skip human readable banners, if any
+    //   Position to either autostart (default) or skip+1
     // ********************************************************************************************
     nline = 0; int lastnonblank = 0; pos = 0;
     ch = mmp;
-    while (nline<INTEGER(autostart)[0] && ch<eof) {
+    while (nline<(INTEGER(skip)[0]>=0 ? INTEGER(skip)[0]+1 : INTEGER(autostart)[0]) && ch<eof) {
         i = 0;
         pos1 = ch;
         while (ch<eof && *ch!=eol) i += !isspace(*ch++);
@@ -408,20 +408,21 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (ch<eof && *ch==eol) ch+=eolLen;
         if (i) pos=pos1, lastnonblank=nline;
     }
-    if (lastnonblank==0) error("Input is either empty or fully whitespace in the first 30 rows");
-    nline = lastnonblank;   // nline>nonblank when short files (under 30 rows) with trailing newlines
-    if (pos>mmp && *(pos-1)!=eol2) error("Internal error. No eol2 immediately before autostart line %d, '%.1s' instead", nline, pos-1);
+    if (lastnonblank==0) error("Input is either empty or fully whitespace in the first %d rows", nline);
+    nline = lastnonblank;   // nline>nonblank when short files (e.g. under 30 rows) with trailing newlines
+    if (pos>mmp && *(pos-1)!=eol2) error("Internal error. No eol2 immediately before line %d, '%.1s' instead", nline, pos-1);
     
     // ********************************************************************************************
-    //   Auto detect separator, number of fields and location of first data row
+    //   Auto detect separator, number of fields, and location of first data row 
     // ********************************************************************************************
     const char *seps;
+    const char *verbText = INTEGER(skip)[0]>=0 ? "'skip' has been supplied" : "the last non blank line in the first 'autostart'";
     if (isNull(separg)) {
-        if (verbose) Rprintf("Using line %d to detect sep (the last non blank line in the first 30) ... ", nline);
+        if (verbose) Rprintf("Using line %d to detect sep (%s) ... ", nline, verbText);
         seps=",\t |;:";  // separators, in order of preference. See ?fread. (colon last as it can appear in time fields)
     } else {
         seps = (const char *)CHAR(STRING_ELT(separg,0));  // length 1 string
-        if (verbose) Rprintf("Looking for supplied sep '%s' on line %d (the last non blank line in the first 30) ... ", seps[0]=='\t'?"\\t":seps, nline);
+        if (verbose) Rprintf("Looking for supplied sep '%s' on line %d (%s) ... ", seps[0]=='\t'?"\\t":seps, nline, verbText);
     }
     int nseps = strlen(seps);
     const char *top=pos, *thistop=pos; // see how high we can get with each sep (until we don't read the same number of fields)
@@ -440,7 +441,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
         if (topsep==0) topsep=sep;       // First sep found is the top so far. Important for single row input.
         ch = pos; j = 0; thistop = pos;  // back to start of autostart, again
-        if (ch==mmp) continue;           // one line input, no lines above to test for consistency
+        if (ch==mmp || INTEGER(skip)[0]>=0) continue;   // one line input (no lines above to test for consistency) or 'skip' override is set
         ncol = countfields();            // ncol on autostart using this separator (sep is global which countfieds() uses)
         do {  ch-=eolLen;                // search up line by line until different number of fields, or (likely) hit the start of file
               while (ch>mmp && *(ch-1)!=eol2) ch--;
@@ -452,12 +453,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     sep = topsep;
     if (isNull(separg)) {
         if (verbose) {
-            if (sep==eol) Rprintf("\nNo separator (see ?fread) was found on line %d. Deducing this is a single column input. Otherwise, please specify 'sep' manually.\n", nline);
-            else if (sep=='\t') Rprintf("'\\t'\n"); else Rprintf("'%c'\n", sep);
+            if (sep==eol) Rprintf("none found (see ?fread). Deducing this is a single column input. Otherwise, please specify 'sep' manually.\n");
+            else if (sep=='\t') Rprintf("sep='\\t'\n"); else Rprintf("sep='%c'\n", sep);
         }
     } else {
-        if (sep==eol && seps[0]!='\n') {if(verbose)Rprintf("\n");error("\nThe supplied 'sep' was not found on line %d. To read the file as a single character column set sep='\\n'.", nline);}
-        else if (verbose) Rprintf("found\n");
+        if (sep==eol && seps[0]!='\n') {if(verbose)Rprintf("\n");error("The supplied 'sep' was not found on line %d. To read the file as a single character column set sep='\\n'.", nline);}
+        else if (verbose) Rprintf("found ok\n");
     }
     ch = pos;    // back to beginning of autostart
     ncol = countfields();

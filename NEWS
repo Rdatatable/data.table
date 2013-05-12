@@ -41,6 +41,11 @@ NEW FEATURES
        Many thanks to Timothee Carayol for the reproducible report. The limit should now be R's character
        string length limit (2^31-1 bytes = 2GB). Test added.
        
+     * New argument 'skip' overrides automatic banner skipping. When skip>=0, 'autostart' is ignored and
+       line skip+1 will be taken as the first data row, or column names according to header="auto"|TRUE|FALSE
+       as usual. Thanks to Gabor Grothendieck for the suggestion.
+       
+       
 BUG FIXES
 
   o  Fixed format errors of timings (e.g. "nan%") produced by fread(...,verbose=TRUE). Caused by recent

@@ -10,7 +10,7 @@
    
 }
 \usage{
-fread(input, sep="auto", sep2="auto", nrows=-1, header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE, autostart=30L, select=NULL, colClasses=NULL, integer64=getOption("datatable.integer64"))
+fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE, autostart=30L, skip=-1L, select=NULL, colClasses=NULL, integer64=getOption("datatable.integer64"))
 }
 \arguments{
   \item{input}{ Either the file name to read (containing no \\n character) or the input itself as a string (containing at least one \\n), see examples. In both cases, a length 1 character string. A filename input is passed through \code{\link[base]{path.expand}} for convenience and may be a URL starting http:// or file://. }
@@ -22,13 +22,14 @@ fread(input, sep="auto", sep2="auto", nrows=-1, header="auto", na.strings="NA", 
   \item{stringsAsFactors}{ Convert all character columns to factors? }
   \item{verbose}{ Be chatty and report timings? }
   \item{autostart}{ Any line number within the region of machine readable delimited text, by default 30. If the file is shorter or this line is empty (e.g. short files with trailing blank lines) then the last non empty line is used. This line and the lines above it are used to auto detect \code{sep}, \code{sep2} and the number of fields. It's extremely unlikely that \code{autostart} should ever need to be changed, we hope. }
+  \item{skip}{ If -1 (default) use the procedure described below starting on line \code{autostart} to find the first data row. Otherwise, \code{skip>=0} means ignore \code{autostart} and take line \code{skip+1} as the first data row (containing column names according to header="auto"|TRUE|FALSE as usual). }
   \item{select}{ Not yet implemented. Vector of column names or positions to keep. Or, use \code{NULL} in colClasses to drop specified columns (by number if type list is used). }
   \item{colClasses}{ A character vector of classes (named or unnamed), as read.csv. Or, type list enables setting ranges of columns by numeric position. colClasses in fread is intended for rare overrides, not for routine use. fread will only promote a column to a higher type if colClasses requests it. It won't downgrade a column to a lower type since NAs would result. You have to coerce such columns afterwards yourself, if you really require data loss. }
   \item{integer64}{ Not yet implemented. "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as base::read.csv does, possibly with loss of precision. Or, "character". }
 }
 \details{
 
-Once the separator is found on line \code{autostart}, the number of columns is determined. Then the file is searched backwards from \code{autostart} until a row is found that doesn't have that number of columns. Thus, the first data row is found and any human readable banners are automatically skipped. This feature can be particularly useful for loading a set of files which may not all have consistently sized banners.
+Once the separator is found on line \code{autostart}, the number of columns is determined. Then the file is searched backwards from \code{autostart} until a row is found that doesn't have that number of columns. Thus, the first data row is found and any human readable banners are automatically skipped. This feature can be particularly useful for loading a set of files which may not all have consistently sized banners. Setting \code{skip>0} overrides this feature by setting \code{autostart=skip+1} and turning off the search upwards step.
 
 The first 5 rows, middle 5 rows and last 5 rows are then read to determine column types. The lowest type for each column is chosen from the ordered list \code{integer}, \code{integer64}, \code{double}, \code{character}. This enables \code{fread} to allocate exactly the right number of rows, with columns of the right type, up front once. The file may of course \emph{still} contain data of a different type in rows other than first, middle and last 5. In that case, the column types are bumped mid read and the data read on previous rows is coerced. Setting \code{verbose=TRUE} reports the line and field number of each mid read type bump, and how long this type bumping took (if any).
 
