@@ -43,8 +43,12 @@ NEW FEATURES
        
      * New argument 'skip' overrides automatic banner skipping. When skip>=0, 'autostart' is ignored and
        line skip+1 will be taken as the first data row, or column names according to header="auto"|TRUE|FALSE
-       as usual. Thanks to Gabor Grothendieck for the suggestion.
+       as usual. Or skip="string" uses the first line containing "string" (chosen to be a substring of the
+       column name row unlikely to appear earlier), inspired by read.xls in package gdata.
+       Thanks to Gabor Grothendieck for the suggestions.
        
+     * fread now stops reading if an empty line is encountered, with warning if any text exists after that
+       such as a footer (the first line of which will be included in the warning message).
        
 BUG FIXES
 

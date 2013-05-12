@@ -26,7 +26,7 @@ Deal with row.names e.g. http://stackoverflow.com/questions/15448732/reading-csv
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
 Post from patricknik on 5 Jan re ""b"" in a field. And Aykut Firat on email.
 Warn about non whitespace (unprotected by comment.char) after the last column on any line (currently skipped silently)
-Warning about any blank lines skipped in the middle, and any imperfect number of columns
+Warning about any imperfect number of columns
 Check and correct nline in error messages
 Allow logical columns (currently read as character). T/True/TRUE/true are allowed in main/src/util.c
 A few TO DO inline in the code, including some speed fine tuning e.g. specialize Ispace and any other lib calls.
@@ -281,7 +281,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     R_len_t i, j, k, protecti=0, nrow=0, ncol=0, nline, flines;
     int thistype;
     const char *fnam=NULL, *pos, *pos1, *mmp, *ch2, *linestart;
-    Rboolean header, allchar;
+    Rboolean header, allchar, skipon=FALSE;
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
     size_t filesize;
@@ -305,7 +305,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (!isNull(nastrings) && !isString(nastrings)) error("'na.strings' is type '",type2char(TYPEOF(nastrings)),"'. Must be a character vector.");
     if (!isInteger(nrowsarg) || LENGTH(nrowsarg)!=1 || INTEGER(nrowsarg)[0]==NA_INTEGER) error("'nrows' must be a single non-NA number of type numeric or integer");
     if (!isInteger(autostart) || LENGTH(autostart)!=1 || INTEGER(autostart)[0]<1) error("'autostart' must be a length 1 vector of type numeric or integer and >=1");  // NA_INTEGER is covered by <1
-    if (!isInteger(skip) || LENGTH(skip)!=1 || INTEGER(skip)[0]<-1) error("'skip' must be a length 1 vector of type numeric or integer and >=-1");  // NA_INTEGER is covered by <-1
+    if (isNumeric(skip)) { skip = PROTECT(coerceVector(skip, INTSXP)); protecti++; }
+    if (!( (isInteger(skip) && LENGTH(skip)==1 && INTEGER(skip)[0]>=-1)  // NA_INTEGER is covered by >=-1
+         ||(isString(skip) && LENGTH(skip)==1))) error("'skip' must be a length 1 vector of type numeric or integer >=-1, or single character search string");  
     if (!isNull(separg) && (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1)) error("'sep' must be 'auto' or a single character");
     if (!isString(integer64) || LENGTH(integer64)!=1) error("'integer64' must be a single character string: 'integer64', 'double' or 'character'");
 
@@ -396,22 +398,34 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
 
     // ********************************************************************************************
-    //   Position to either autostart (default) or skip+1
+    //   Position to either autostart (default) or skip+1 or skip="string"
     // ********************************************************************************************
-    nline = 0; int lastnonblank = 0; pos = 0;
-    ch = mmp;
-    while (nline<(INTEGER(skip)[0]>=0 ? INTEGER(skip)[0]+1 : INTEGER(autostart)[0]) && ch<eof) {
+    nline = 0; int lastnonblank = 0; pos = mmp;
+    if (isString(skip)) {
+        skipon = TRUE;
+        ch = strstr(mmp, CHAR(STRING_ELT(skip,0)));
+        if (!ch) error("skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)", CHAR(STRING_ELT(skip,0)));
+        while (ch>mmp && *(ch-1)!=eol2) ch--;
+        pos = ch;
+        nline = -1;
+        if (verbose) Rprintf("Found skip string '%s'. Using this line as column names row. nline=-1 now refers to this line as it would need more time to count the \\n before this point.\n", CHAR(STRING_ELT(skip,0)));
+    } else {
+        ch = mmp;
+        skipon = INTEGER(skip)[0]>=0;
         i = 0;
-        pos1 = ch;
-        while (ch<eof && *ch!=eol) i += !isspace(*ch++);
-        nline++;
-        if (ch<eof && *ch==eol) ch+=eolLen;
-        if (i) pos=pos1, lastnonblank=nline;
+        while (nline<(skipon ? INTEGER(skip)[0]+1 : INTEGER(autostart)[0]) && ch<eof) {
+            int lasti = i; i = 0;
+            pos1 = ch;
+            while (ch<eof && *ch!=eol) i += !isspace(*ch++);
+            nline++;
+            if (ch<eof && *ch==eol) ch+=eolLen;
+            if (i && (!lastnonblank || lasti)) pos=pos1, lastnonblank=nline;  // last non blank as long as there's a non blank above that too (to avoid one line footers in short files)
+        }
+        if (lastnonblank==0) error("Input is either empty or fully whitespace in the first %d rows", nline);
+        nline = lastnonblank;   // nline>nonblank when short files (e.g. under 30 rows) with trailing newlines
+        if (pos>mmp && *(pos-1)!=eol2) error("Internal error. No eol2 immediately before line %d, '%.1s' instead", nline, pos-1);
     }
-    if (lastnonblank==0) error("Input is either empty or fully whitespace in the first %d rows", nline);
-    nline = lastnonblank;   // nline>nonblank when short files (e.g. under 30 rows) with trailing newlines
-    if (pos>mmp && *(pos-1)!=eol2) error("Internal error. No eol2 immediately before line %d, '%.1s' instead", nline, pos-1);
-    
+        
     // ********************************************************************************************
     //   Auto detect separator, number of fields, and location of first data row 
     // ********************************************************************************************
@@ -441,7 +455,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
         if (topsep==0) topsep=sep;       // First sep found is the top so far. Important for single row input.
         ch = pos; j = 0; thistop = pos;  // back to start of autostart, again
-        if (ch==mmp || INTEGER(skip)[0]>=0) continue;   // one line input (no lines above to test for consistency) or 'skip' override is set
+        if (ch==mmp || skipon) continue; // one line input (no lines above to test for consistency) or 'skip' override is set
         ncol = countfields();            // ncol on autostart using this separator (sep is global which countfieds() uses)
         do {  ch-=eolLen;                // search up line by line until different number of fields, or (likely) hit the start of file
               while (ch>mmp && *(ch-1)!=eol2) ch--;
@@ -571,9 +585,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (ch<eof && *ch==eol) ch+=eolLen;
         }
         flines = 0;
-        while(flines<5 && flines<nrow && ch<eof) {
-            //ch2=ch; while (ch2<eof && isspace(*ch2) && *ch2!=sep && *ch2!=eol) ch2++;  // skip over any empty lines
-            //if (ch2<eof && *ch2==eol) { ch=ch2+eolLen; continue; }
+        while(flines<5 && flines<nrow && ch<eof && *ch!=eol) {
             flines++;
             linestart = ch;
             for (i=0;i<ncol;i++) {
@@ -686,11 +698,20 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     ch = pos;   // back to start of first data row
     for (i=0; i<nrow; i++) {
         //Rprintf("Row %d : %.10s\n", i+1, ch);
-        while (ch<eof && isspace(*ch) && *ch!=sep && *ch!=eol) ch++;    // skip over any empty lines. TO DO: remove this, leave to fall through
-        if (ch<eof && *ch==eol) { ch+=eolLen; nline++; continue; }
-        ch = pos;                                 //  back to start in case first column is character with leading space to be retained
+        if (*ch==eol) {
+            while (ch<eof && isspace(*ch)) ch++;
+            if (ch<eof) {
+                ch2 = ch;
+                while (ch2<eof && *ch2!=eol) ch2++;
+                if (isString(skip))
+                    warning("Stopped reading at empty line, %d lines after the 'skip' string was found, but text exists afterwards (discarded): %.*s", i, ch2-ch+1, ch);
+                else 
+                    warning("Stopped reading at empty line %d, but text exists afterwards (discarded): %.*s", nline+i, ch2-ch+1, ch);
+            }
+            break;
+        }
         for (j=0;j<ncol;j++) {
-            //Rprintf("Field %d: '%.10s'\n", j+1, ch);
+            // Rprintf("Field %d: '%.10s'\n", j+1, ch);
             thiscol = VECTOR_ELT(ans, j);
             switch (type[j]) {
             case SXP_INT:
@@ -718,7 +739,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 if (ch2<eof && *ch2=='\"') ch=ch2+1; else ch=ch2;
             }
             if (ch<eof && *ch==sep && j<ncol-1) {ch++; continue;}  // most common case first, done, next field
-            if (j<ncol-1) error("Expected sep ('%c') but '%c' ends field %d on line %d: %.*s", sep, *ch, j+1, i+2, ch-pos+1, pos);
+            if (j<ncol-1) error("Expected sep ('%c') but '%c' ends field %d on line %d when reading data: %.*s", sep, *ch, j+1, i+nline, ch-pos+1, pos);
         }
         //Rprintf("At end of line with i=%d and ch='%.10s'\n", i, ch);
         while (ch<eof && *ch!=eol) ch++; // discard after end of line, but before \n. TO DO: warn about uncommented text here
@@ -726,6 +747,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         pos = ch;  // start of line position only needed to include the whole line in any error message
     }
     clock_t tRead = clock();
+    nrow = i;  // A blank line in the middle will have caused reading to stop earlier than expected.
     for (i=0; i<ncol; i++) SETLENGTH(VECTOR_ELT(ans,i), nrow);
     
     // ********************************************************************************************
