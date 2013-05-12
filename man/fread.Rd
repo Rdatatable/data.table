@@ -28,7 +28,7 @@ fread(input, sep="auto", sep2="auto", nrows=-1, header="auto", na.strings="NA", 
 }
 \details{
 
-Once the separator is found on line \code{autostart}, the number of columns is determined. Then the file is searched backwards from \code{autostart} until a row is found that doesn't have that number of columns, or the start of file is reached. Thus, the first data row is found and any human readable banners are automatically skipped. This feature can be particularly useful for loading a set of files which may not all have consistently sized banners.
+Once the separator is found on line \code{autostart}, the number of columns is determined. Then the file is searched backwards from \code{autostart} until a row is found that doesn't have that number of columns. Thus, the first data row is found and any human readable banners are automatically skipped. This feature can be particularly useful for loading a set of files which may not all have consistently sized banners.
 
 The first 5 rows, middle 5 rows and last 5 rows are then read to determine column types. The lowest type for each column is chosen from the ordered list \code{integer}, \code{integer64}, \code{double}, \code{character}. This enables \code{fread} to allocate exactly the right number of rows, with columns of the right type, up front once. The file may of course \emph{still} contain data of a different type in rows other than first, middle and last 5. In that case, the column types are bumped mid read and the data read on previous rows is coerced. Setting \code{verbose=TRUE} reports the line and field number of each mid read type bump, and how long this type bumping took (if any).
 

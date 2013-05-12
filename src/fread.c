@@ -21,6 +21,7 @@
 
 Add a way to pick out particular columns only, by name or position.
 Add the as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
+Add skip to set autostart=skip+1 and skip search upwards. Line skip+1 will detect sep and header as usual. Thanks to Gabor Grothendieck's suggestion.
 
 Deal with row.names e.g. http://stackoverflow.com/questions/15448732/reading-csv-with-row-names-by-fread
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
