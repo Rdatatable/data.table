@@ -57,6 +57,13 @@ NEW FEATURES
        
 BUG FIXES
 	 
+
+  o  merge now properly handles data.tables with zero-rows. This was bug # 2633. 
+     Thank you to Vinicius Almendra for submitting it. 
+
+  o  rbind now handles data.tables and lists with non-standard and/or duplicate names. 
+     These were bugs # 2726 & # 2384 Thank you to Garrett See.
+     
   o  rbind, cbind and merge on data.table should now work in packages that Import but do not
      Depend on data.table. Many thanks to a patch to .onLoad from Ken Williams, and related
      posts from Victor Kryukov :

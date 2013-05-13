@@ -26,6 +26,8 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
     if (!length(cols)) {
         cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
     } else {
+        # remove backticks form cols 
+        cols <- gsub("`", "", cols)
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }

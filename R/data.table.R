@@ -1346,8 +1346,15 @@ tail.data.table = function(x, n=6, ...) {
     # store original names
     nm.original <- copy(names(allargs[[1L]]))
     # clean up all names
-    for (A in allargs)
-        setnames(A, make.names(names(A), unique=TRUE))
+    for (A in allargs)  {
+        mk.nm <- make.names(names(A))
+        if (!identical(names(A), mk.nm)) {
+            if (is.data.table(A))
+                setnames(A, make.names(names(A), unique=TRUE))
+            else 
+                names(A) <- mk.nm
+        }
+    }
 
     nm = names(allargs[[1L]])
     if (use.names && length(nm) && n>1L) {
@@ -1367,7 +1374,8 @@ tail.data.table = function(x, n=6, ...) {
     if (!any(sapply(allargs[[1L]],is.factor))) {
         ret <- rbindlist(allargs)  # do.call("c",...) is now in C  
         # put the original names back
-        setnames(ret, nm.original)
+        if (length(nm.original))
+           setnames(ret, nm.original)
         return(ret)       
     }
     # TO DO: Move earlier logic above for use.names (binding by name) into rbindlist C, too.
@@ -1378,7 +1386,8 @@ tail.data.table = function(x, n=6, ...) {
     # TO DO: Convert factor to character first, so do.call() can be done by rbindlist too. Then
     # call factor() aferwards on those columns. Tidy up c.factor by removing it, depending on what
     # rbind.data.frame does, considering consistency.
-    setattr(l,"names",nm.original)  ## <~~~~ This line was originally:  setattr(l,"names",nm)  
+    if (length(nm.original))
+        setattr(l,"names",nm.original)  ## <~~~~ This line was originally:  setattr(l,"names",nm)  
     setattr(l,"row.names",.set_row_names(length(l[[1L]])))
     setattr(l,"class",c("data.table","data.frame"))
     settruelength(l,0L)
