@@ -340,14 +340,14 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             close(fd);
 #else
         // Following: http://msdn.microsoft.com/en-gb/library/windows/desktop/aa366548(v=vs.85).aspx
-        hfile = INVALID_HANDLE_VALUE;
+        hFile = INVALID_HANDLE_VALUE;
         i = 0;
         while(hFile==INVALID_HANDLE_VALUE && i<5) {
-            hfile = CreateFile(fnam, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL));
+            hFile = CreateFile(fnam, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
             // FILE_SHARE_WRITE is required otherwise if the file is open in Excel, CreateFile fails. Should be ok now.
-            if (hfile==INVALID_HANDLE_VALUE) {
+            if (hFile==INVALID_HANDLE_VALUE) {
                 if (GetLastError()==ERROR_FILE_NOT_FOUND) error("File not found: %s",fnam);
-                if (i<4) nanosleep((struct timespec[]){{1, 250000000L}}, NULL);   // 250ms
+                if (i<4) Sleep(250);  // 250ms
             }
             i++;
             // Looped retry to avoid ephemeral locks by system utilities as recommended here : http://support.microsoft.com/kb/316609
