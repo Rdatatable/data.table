@@ -195,6 +195,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             }
         }
         if (!isNull(lhs)) {
+            R_len_t origncol = LENGTH(dt);
             for (j=0; j<length(lhs); j++) {
                 targetcol = VECTOR_ELT(dt,INTEGER(lhs)[j]-1);
                 RHS = VECTOR_ELT(jval,j%LENGTH(jval));
@@ -204,7 +205,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     if (TRUELENGTH(dt) < INTEGER(lhs)[j]) error("Internal error: Trying to add new column by reference but tl is full; alloc.col should have run first at R level before getting to this point in dogroups");
                     SET_VECTOR_ELT(dt,INTEGER(lhs)[j]-1,allocNAVector(TYPEOF(RHS), LENGTH(VECTOR_ELT(dt,0))));
                     dtnames = getAttrib(dt, R_NamesSymbol);
-                    SET_STRING_ELT(dtnames, INTEGER(lhs)[j]-1, STRING_ELT(newnames,j));
+                    SET_STRING_ELT(dtnames, INTEGER(lhs)[j]-1, STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1));
                     SETLENGTH(dtnames, LENGTH(dtnames)+1);
                     SETLENGTH(dt, LENGTH(dt)+1);
                     targetcol = VECTOR_ELT(dt,INTEGER(lhs)[j]-1);
@@ -213,6 +214,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 size = SIZEOF(targetcol);
                 vlen = length(RHS);
                 if (vlen==0) continue;
+                if (vlen>grpn && j<LENGTH(jval)) warning("RHS %d is length %d (greater than the size (%d) of group %d). The last %d element(s) will be discarded.", j+1, vlen, grpn, i+1, vlen-grpn);
                 if (length(order)==0) {
                     rownum = INTEGER(starts)[i]-1;
                     switch (TYPEOF(targetcol)) {

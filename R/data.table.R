@@ -515,7 +515,7 @@ is.sorted = function(x)identical(FALSE,is.unsorted(x))    # NA's anywhere need t
             cols = as.integer(m)
             newnames=NULL
         } else {
-            # Adding new column(s). TO DO: move after the first eval incase the jsub has an error.
+            # Adding new column(s). TO DO: move after the first eval in case the jsub has an error.
             newnames=setdiff(lhs,names(x))
             m[is.na(m)] = ncol(x)+seq_len(length(newnames))
             cols = as.integer(m)

@@ -2676,6 +2676,35 @@ test(976, fread(input), data.table(E=9:10,F=11:12))   # autostart 30 finds the l
 test(977, fread(input, autostart=8), data.table(C=5:6,D=7:8), warning="Stopped reading at empty line 10.*but text exists afterwards")
 test(978, fread(input, skip="D"), data.table(C=5:6,D=7:8), warning="Stopped reading at empty line, 2 lines after.*but text exists afterward")
 
+# mixed add and update in same `:=` bug/crash, #2528 and #2778
+DT = data.table(x=rep(1:2, c(3,2)), y=6:10)
+DT[, z:=.GRP, by=x]                 # first assignment
+test(979, DT[, `:=`(z=.GRP, w=2), by=x], data.table(x=INT(1,1,1,2,2),y=6:10,z=INT(1,1,1,2,2),w=2))  # mixed update and add
+# and example from http://stackoverflow.com/a/14732348/403310 :
+dt1 = fread("Date,Time,A,B
+01/01/2013,08:00,10,30
+01/01/2013,08:30,15,25
+01/01/2013,09:00,20,20
+02/01/2013,08:00,25,15
+02/01/2013,08:30,30,10
+02/01/2013,09:00,35,5")
+dt2 = fread("Date,A,B,C
+01/01/2013,100,300,1
+02/01/2013,200,400,2")
+setkey(dt1, "Date")
+setkey(dt2, "Date")
+test(980, dt1[dt2, `:=`(A=A+i.A, B=B+i.B, C=i.C)][,list(A,B,C)],
+          data.table(A=INT(110,115,120,225,230,235),B=INT(330,325,320,415,410,405),C=rep(1:2,each=3)))
+DT = data.table(A=1:2,B=3:4,C=5:6)
+test(981, DT[,`:=`(D=B+4L,B=0:1,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
+          data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L)), warning="RHS 2 is length 2")
+DT = data.table(A=1:2,B=3:4,C=5:6)
+test(982, DT[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
+          data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L))) # Also note that G is not yet iterative. In future: c(12,14)
+
+
+
+
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
