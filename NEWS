@@ -64,7 +64,7 @@ BUG FIXES
 
   o  Mixing adding and updating into one DT[, `:=`(existingCol=...,newCol=...), by=...] now works
      without error or segfault, #2778 and #2528. Many thanks to Arunkumar Srinivasan for reporting
-     both, and for the nice reproducible examples. Tests added.
+     and for the nice reproducible examples. Tests added.
 
 USER VISIBLE CHANGES
 
