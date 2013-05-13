@@ -1320,6 +1320,35 @@ tail.data.table = function(x, n=6, ...) {
         f=which(ncols!=ncols[1L])[1L]
         stop("All arguments to rbind must have the same number of columns. Item 1 has ",ncols[1L]," but item ",f," has ",ncols[f],"column(s).")
     }
+
+    ## There are (at least) two possible anomalies relating to column names that can cause undesired results
+    ## (1) Duplicate names and (2) Improper or randomlly-absent names, such as NA or "". 
+    ## We can try to enumerate all the possible error-causing conditions and address eac, or instead we can
+    ##    * store the original names (say, from allargs[[1]] )
+    ##    * then use make.names on all the names
+    ##    * use setnames to apply back the original name right before returning the final value
+    ## This latter method addresses both  #2384 & #2726
+
+    #x  ## THIS IS THE IMPLEMENTATION OF THE FORMER METHOD, SPECIFICALLY FOR NA VALUES. 
+    #X  ## feel free to delete this. I left this simply in case for whatever reason the alternate method was rejected 
+    #x  # Check for NA in column names
+    #x  na.repl <- "NA."  # This is what NA column-names will be replaced with
+    #x  nm.all <- lapply(allargs, names)
+    #x  has.na <- sapply(nm.all, function(nm) any(is.na(nm)))
+    #x  if (any(has.na)) {
+    #x      warning("Some columns have NA column names. These will be replaced with the string \"", na.repl, "\"")
+    #x      # clean up the NA column
+    #x      for (h in which(has.na))
+    #x          # identify which column name is NA and replace that name.
+    #x          setnames(allargs[[h]], which(is.na( nm.all[[h]] )), na.repl )
+    #x  }
+
+    # store original names
+    nm.original <- copy(names(allargs[[1L]]))
+    # clean up all names
+    for (A in allargs)
+        setnames(A, make.names(names(A), unique=TRUE))
+
     nm = names(allargs[[1L]])
     if (use.names && length(nm) && n>1L) {
         for (i in seq.int(2,n)) if (length(names(allargs[[i]]))) {
@@ -1335,8 +1364,12 @@ tail.data.table = function(x, n=6, ...) {
     }
     allargs = lapply(allargs, as.data.table)  # To recycle items to match length if necessary, bug #2003. rbind will always be slow anyway, so not worrying about efficiency here. Later there'll be fast insert() by reference.
 
-    if (!any(sapply(allargs[[1L]],is.factor)))
-        return(rbindlist(allargs))  # do.call("c",...) is now in C
+    if (!any(sapply(allargs[[1L]],is.factor))) {
+        ret <- rbindlist(allargs)  # do.call("c",...) is now in C  
+        # put the original names back
+        setnames(ret, nm.original)
+        return(ret)       
+    }
     # TO DO: Move earlier logic above for use.names (binding by name) into rbindlist C, too.
     l = lapply(seq_along(allargs[[1L]]), function(i) do.call("c", lapply(allargs, "[[", i)))
     # This is why we currently still need c.factor.
@@ -1345,7 +1378,7 @@ tail.data.table = function(x, n=6, ...) {
     # TO DO: Convert factor to character first, so do.call() can be done by rbindlist too. Then
     # call factor() aferwards on those columns. Tidy up c.factor by removing it, depending on what
     # rbind.data.frame does, considering consistency.
-    setattr(l,"names",nm)
+    setattr(l,"names",nm.original)  ## <~~~~ This line was originally:  setattr(l,"names",nm)  
     setattr(l,"row.names",.set_row_names(length(l[[1L]])))
     setattr(l,"class",c("data.table","data.frame"))
     settruelength(l,0L)
