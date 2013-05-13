@@ -61,10 +61,10 @@ BUG FIXES
      Depend on data.table. Many thanks to a patch to .onLoad from Ken Williams, and related
      posts from Victor Kryukov :
 	     http://r.789695.n4.nabble.com/Import-problem-with-data-table-in-packages-tp4665958.html
-	     
+
   o  Mixing adding and updating into one DT[, `:=`(existingCol=...,newCol=...), by=...] now works
-     without error or segfault, #2778 and #2528. Many thanks to Arunkumar Srinivasan for both with
-     reproducible examples. 
+     without error or segfault, #2778 and #2528. Many thanks to Arunkumar Srinivasan for reporting
+     both, and for the nice reproducible examples. Tests added.
 
 USER VISIBLE CHANGES
 
