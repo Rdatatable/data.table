@@ -19,6 +19,11 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
 options(warn=2)
 nfail = ntest = lastnum = 0
 whichfail = NULL
+compactprint = function(DT, topn=2) {
+    cn = paste(" [Key=",paste(key(DT),collapse=",")," Types=",paste(substring(sapply(DT,class),1,3),collapse=","),"]",sep="")
+    print(copy(DT)[,(cn):=""], topn=topn)
+    invisible()
+}
 test = function(num,x,y=NULL,error,warning,output) {
     .lasttest <<- num
     ntest <<- ntest + 1
@@ -71,11 +76,7 @@ test = function(num,x,y=NULL,error,warning,output) {
     if (missing(y)) {
         if (isTRUE(as.vector(x))) return()  # as.vector to drop names of a named vector such as returned by system.time
         cat("Test",num,"expected TRUE (y is missing) but observed:\n")
-        if (is.data.table(x)) {
-            print(x,topn=2)
-            cat("Key: ",paste(key(x),collapse=","),"\n")
-            cat("Types: ",paste(sapply(x,class),collapse=","),"\n")
-        } else print(x)
+        if (is.data.table(x)) compactprint(x) else print(x)
         nfail <<- nfail + 1
         whichfail <<- c(whichfail, num)
         return()
@@ -103,16 +104,8 @@ test = function(num,x,y=NULL,error,warning,output) {
         if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal(x,y))) return()   # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     }
     cat("Test",num,"ran without errors but failed check:\n")
-    if (is.data.table(x)) {
-        print(x,topn=2)
-        cat("Key: ",paste(key(x),collapse=","),"\n")
-        cat("Types: ",paste(sapply(x,class),collapse=","),"\n")
-    } else print(x)
-    if (is.data.table(y)) {
-        print(y,topn=2)
-        cat("Key: ",paste(key(y),collapse=","),"\n")
-        cat("Types: ",paste(sapply(y,class),collapse=","),"\n")
-    } else print(y)
+    if (is.data.table(x)) compactprint(x) else print(x)
+    if (is.data.table(y)) compactprint(y) else print(y)
     nfail <<- nfail + 1
     whichfail <<- c(whichfail, num)
 }
@@ -2726,10 +2719,11 @@ test(982, DT[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
 ##########################
 options(warn=0)
 if (nfail > 0) {
-    stop(nfail," error",ifelse(nfail>1,"s","")," out of ",lastnum, " in test.data.table() : ",paste(whichfail,collapse=","))
+    s = ifelse(nfail>1,"s","")
+    stop(nfail," error",s," out of ",lastnum, " in inst/tests/tests.Rraw. Test number",s," : ",paste(whichfail,collapse=","))
     # important to stop here, so than 'R CMD check' fails
 }
-cat("All",lastnum,"tests in test.data.table() completed ok in",timetaken(started.at),"on",date(),"\n")
+cat("All",lastnum,"tests in inst/tests/tests.Rraw completed ok in",timetaken(started.at),"on",date(),"\n")
 # Reporting lastnum rather than ntest makes it easier to check user has the latest version, assuming
 # each release or patch has extra tests.
 # date() is included so we can tell when CRAN checks were run (in particular if they have been rerun since an update, yet)
