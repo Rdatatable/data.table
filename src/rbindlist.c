@@ -10,9 +10,14 @@ int sizes[100];
 SEXP rbindlist(SEXP l)
 {
     R_len_t i,j,r, nrow=0, first=-1, ansloc, ncol=0, thislen;
-    SEXP ans, li, lf=R_NilValue, thiscol, target;
+    SEXP ans, li, lf=R_NilValue, thiscol, target, levels;
     int size;
-    Rboolean coerced=FALSE;
+    Rboolean coerced=FALSE, bindFactor=FALSE;
+    
+    SEXP factorLangSxp;
+    PROTECT(factorLangSxp = allocList(2));
+    SET_TYPEOF(factorLangSxp, LANGSXP);
+    SETCAR(factorLangSxp, install("factor"));
     
     for (i=0;i<length(l);i++) {
         li = VECTOR_ELT(l,i);
@@ -32,7 +37,13 @@ SEXP rbindlist(SEXP l)
     setAttrib(ans, R_NamesSymbol, getAttrib(lf, R_NamesSymbol));
     for(j=0; j<ncol; j++) {
         thiscol = VECTOR_ELT(lf,j);
-        target = keepattr(allocVector(TYPEOF(thiscol), nrow), thiscol);
+        if (isFactor(thiscol)) {
+            bindFactor = TRUE;
+            target = allocVector(STRSXP, nrow);  // collate as string then factorize afterwards
+        } else {
+            bindFactor = FALSE;
+            target = keepattr(allocVector(TYPEOF(thiscol), nrow), thiscol);
+        }
         SET_VECTOR_ELT(ans, j, target);
         ansloc = 0;
         for (i=first; i<length(l); i++) {
@@ -42,7 +53,8 @@ SEXP rbindlist(SEXP l)
             if (!thislen) continue;
             thiscol = VECTOR_ELT(li,j);
             if (thislen != length(thiscol)) error("Column %d of item %d is length %d, inconsistent with first column of that item which is length %d. rbindlist doesn't recycle as it already expects each item to be a uniform list, data.frame or data.table", j+1, i+1, length(thiscol), thislen);
-            if (TYPEOF(thiscol) != TYPEOF(target)) {
+            if (bindFactor && !isFactor(thiscol)) error("Column %d of item %d is not type factor, inconsistent with the first item where this column was factor", j+1, i+1);
+            if (TYPEOF(thiscol) != TYPEOF(target) && !bindFactor) {
                 thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
                 coerced = TRUE;
                 // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
@@ -50,9 +62,12 @@ SEXP rbindlist(SEXP l)
             }
             switch(TYPEOF(target)) {
             case STRSXP :
-                for (r=0; r<thislen; r++)
-                    SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
-                    // see comments in dogroups.c about possible better way to do this
+                if (bindFactor) {
+                    levels = getAttrib(thiscol, R_LevelsSymbol);
+                    for (r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(levels,INTEGER(thiscol)[r]-1));
+                } else {
+                    for (r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
+                }
                 break;
             case VECSXP :
                 for (r=0; r<thislen; r++)
@@ -75,8 +90,12 @@ SEXP rbindlist(SEXP l)
                 coerced = FALSE;
             }
         }
+        if (bindFactor) {
+            SETCAR(CDR(factorLangSxp), target);
+            SET_VECTOR_ELT(ans, j, eval(factorLangSxp, R_GlobalEnv));
+        }
     }
-    UNPROTECT(1);
+    UNPROTECT(2);  // ans and factorLangSxp
     return(ans);
 }
 

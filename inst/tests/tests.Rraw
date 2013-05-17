@@ -2695,8 +2695,8 @@ DT = data.table(A=1:2,B=3:4,C=5:6)
 test(982, DT[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
           data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L))) # Also note that G is not yet iterative. In future: c(12,14)
 
-
-
+# rbindlist binding factors, #2650
+test(983, rbindlist(list(data.table(factor(c("A","A","B","C","A"))), data.table(factor(c("B","F","A","G"))))), data.table(V1=factor(c("A","A","B","C","A","B","F","A","G"))))
 
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")

@@ -57,7 +57,6 @@ NEW FEATURES
        
 BUG FIXES
 	 
-
   o  merge now properly handles data.tables with zero-rows. This was bug # 2633. 
      Thank you to Vinicius Almendra for submitting it. 
 
@@ -72,6 +71,9 @@ BUG FIXES
   o  Mixing adding and updating into one DT[, `:=`(existingCol=...,newCol=...), by=...] now works
      without error or segfault, #2778 and #2528. Many thanks to Arunkumar Srinivasan for reporting
      and for the nice reproducible examples. Tests added.
+     
+  o  rbindlist() now binds factor columns correctly, #2650. Thanks to Ricardo Saporta for
+     reporting. Test added.
 
 USER VISIBLE CHANGES
 
