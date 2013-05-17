@@ -2697,6 +2697,8 @@ test(982, DT[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
 
 # rbindlist binding factors, #2650
 test(983, rbindlist(list(data.table(factor(c("A","A","B","C","A"))), data.table(factor(c("B","F","A","G"))))), data.table(V1=factor(c("A","A","B","C","A","B","F","A","G"))))
+test(984, rbindlist(list(data.table(factor(c("A","B"))), data.table(c("C","A")))), data.table(factor(c("A","B","C","A"))))
+test(985, rbindlist(list(data.table(c("A","B")), data.table(factor(c("C","A"))))), data.table(c("A","B","C","A")))
 
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
