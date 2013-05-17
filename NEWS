@@ -105,8 +105,8 @@ NOTES
        http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
         
   o  There are now 985 raw tests, as reported by test.data.table().
-    
-             
+
+
         *********************************************
         **                                         **
         **   CHANGES IN DATA.TABLE VERSION 1.8.8   **

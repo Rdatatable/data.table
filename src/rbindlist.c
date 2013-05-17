@@ -53,7 +53,6 @@ SEXP rbindlist(SEXP l)
             if (!thislen) continue;
             thiscol = VECTOR_ELT(li,j);
             if (thislen != length(thiscol)) error("Column %d of item %d is length %d, inconsistent with first column of that item which is length %d. rbindlist doesn't recycle as it already expects each item to be a uniform list, data.frame or data.table", j+1, i+1, length(thiscol), thislen);
-            //if (bindFactor && !isFactor(thiscol)) error("Column %d of item %d is not type factor, inconsistent with the first item where this column was factor", j+1, i+1);
             if (TYPEOF(thiscol) != TYPEOF(target) && !bindFactor && !isFactor(thiscol)) {
                 thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
                 coerced = TRUE;
