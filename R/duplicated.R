@@ -1,8 +1,10 @@
 
-duplicated.data.table <- function(x, incomparables=FALSE, tolerance=.Machine$double.eps ^ 0.5, ...) {
+duplicated.data.table <- function(x, incomparables=FALSE,
+                                  tolerance=.Machine$double.eps ^ 0.5,
+                                  use.key=TRUE, ...) {
     if (!cedta()) return(NextMethod("duplicated"))
     res <- rep(TRUE, nrow(x))
-    if (haskey(x))
+    if (haskey(x) && use.key)
         res[duplist(x[,key(x),with=FALSE],tolerance=tolerance)] = FALSE
     else {
         o = fastorder(x)
@@ -14,10 +16,12 @@ duplicated.data.table <- function(x, incomparables=FALSE, tolerance=.Machine$dou
     res
 }
 
-unique.data.table <- function(x, incomparables=FALSE, tolerance=.Machine$double.eps ^ 0.5, ...) {
+unique.data.table <- function(x, incomparables=FALSE,
+                              tolerance=.Machine$double.eps ^ 0.5,
+                              use.key=TRUE, ...) {
     if (!cedta()) return(NextMethod("unique"))
     # duplist is relatively quick, in C, and copes with NA
-    if (haskey(x)) {
+    if (haskey(x) && use.key) {
         # Already keyed, this should be fast :
         rows = duplist(x[,key(x),with=FALSE],tolerance=tolerance)
         res = x[rows]

@@ -17,52 +17,59 @@ NEW FEATURES
   o  fread :
      * If some column names are blank they are now given default names rather than causing
        the header row to be read as a data row. Thanks to Simon Judes for suggesting.
-       
+
      * "+" and "-" are now read as character rather than integer 0. Thanks to Alvaro Gonzalez for reporting.
        http://stackoverflow.com/questions/15388714/reading-strand-column-with-fread-data-table-package
-       
+
      * % progress console meter has been removed. The ouput was inconvenient in batch mode, log files and
        reports which don't handle \r. It was too difficult to detect where fread is being called from, plus,
        removing it speeds up fread a little by saving code inside the C for loop (which is why it wasn't
        made optional instead). Use your operating system's system monitor to confirm fread is progressing.
        Thanks to Baptiste for highlighting :
        http://stackoverflow.com/questions/15370993/strange-output-from-fread-when-called-from-knitr
-       
+
      * colClasses has been added. Same character vector format as read.csv (may be named or unnamed), but
        additionally may be type list. Type list enables setting ranges of columns by numeric position.
        NB: colClasses is intended for rare overrides, not routine use.
-       
+
      * fread now supports files larger than 4GB on 64bit Windows (#2767 thanks to Paul Harding) and files
        between 2GB and 4GB on 32bit Windows (#2655 thanks to Vishal). A C call to GetFileSize() needed to
        be GetFileSizeEx().
-       
+
      * When input is the data as a character string, it is no longer truncated to your system's maximum
        path length, #2649. It was being passed through path.expand() even when it wasn't a filename.
        Many thanks to Timothee Carayol for the reproducible report. The limit should now be R's character
        string length limit (2^31-1 bytes = 2GB). Test added.
-       
+
      * New argument 'skip' overrides automatic banner skipping. When skip>=0, 'autostart' is ignored and
        line skip+1 will be taken as the first data row, or column names according to header="auto"|TRUE|FALSE
        as usual. Or, skip="string" uses the first line containing "string" (chosen to be a substring of the
        column name row unlikely to appear earlier), inspired by read.xls in package gdata.
        Thanks to Gabor Grothendieck for the suggestions.
-       
+
      * fread now stops reading if an empty line is encountered, with warning if any text exists after that
        such as a footer (the first line of which will be included in the warning message).
-       
+
      * Now reads files that are open in Excel without having to close them first, #2661. And up to 5 attempts
        are made every 250ms on Windows as recommended here : http://support.microsoft.com/kb/316609.
-       
-     * "nan%" observed in output of fread(...,verbose=TRUE) timings are now 0% when fread takes 0.000 seconds.
-       
-BUG FIXES
-	 
-  o  merge now properly handles data.tables with zero-rows. This was bug # 2633. 
-     Thank you to Vinicius Almendra for submitting it. 
 
-  o  rbind now handles data.tables and lists with non-standard and/or duplicate names. 
+     * "nan%" observed in output of fread(...,verbose=TRUE) timings are now 0% when fread takes 0.000 seconds.
+
+     * `use.key` parameter added to unique.data.table and duplicated.data.table,
+        which defaults to TRUE to be consisten with previous default behavior.
+        When `use.key=FALSE`, all columns are used to check for uniqueness of
+        rows, otherwise the default behavior is kept which looks at only keyed
+        columns. Thanks to Arunkumar Srinivasan, Ricardo Saporta, and
+        Frank Erickson for useful discussions.
+
+BUG FIXES
+
+  o  merge now properly handles data.tables with zero-rows. This was bug # 2633.
+     Thank you to Vinicius Almendra for submitting it.
+
+  o  rbind now handles data.tables and lists with non-standard and/or duplicate names.
      These were bugs # 2726 & # 2384 Thank you to Garrett See.
-     
+
   o  rbind, cbind and merge on data.table should now work in packages that Import but do not
      Depend on data.table. Many thanks to a patch to .onLoad from Ken Williams, and related
      posts from Victor Kryukov :
@@ -71,14 +78,14 @@ BUG FIXES
   o  Mixing adding and updating into one DT[, `:=`(existingCol=...,newCol=...), by=...] now works
      without error or segfault, #2778 and #2528. Many thanks to Arunkumar Srinivasan for reporting
      and for the nice reproducible examples. Tests added.
-     
+
   o  rbindlist() now binds factor columns correctly, #2650. Thanks to Ricardo Saporta for
      reporting. Test added.
 
 USER VISIBLE CHANGES
 
   o  := on a null data.table now gives a clearer error message :
-       "Cannot use := to add columns to a null data.table (no columns), currently. You can use := 
+       "Cannot use := to add columns to a null data.table (no columns), currently. You can use :=
         to add (empty) columns to an empty data.table (1 or more columns, all 0 length), though."
      rather than the untrue :
        "Cannot use := to add columns to an empty data.table, currently"
@@ -90,7 +97,7 @@ USER VISIBLE CHANGES
   o  data.table(NULL) now prints "Null data.table (0 rows and 0 cols)" and FAQ 2.5 has been
      improved. Thanks to:
         http://stackoverflow.com/questions/15317536/is-null-does-not-work-on-null-data-table-in-r-possible-bug
-		  
+
   o  The braces {} have been removed from rollends's default, to solve a trace() problem. Thanks
 	 to Josh O'Brien's investigation :
 	 http://stackoverflow.com/questions/15931801/why-does-trace-edit-true-not-work-when-data-table
@@ -99,11 +106,11 @@ NOTES
 
   o  Tests 617,646 and 647 could sometimes fail (e.g. r-prerel-solaris-sparc on 7 Mar 2013)
      due to machine tolerance. Fixed.
-        
+
   o  The default for datatable.alloccol has changed from max(100L, 2L*ncol(DT)) to max(100L, ncol(DT)+64L).
      And a pointer to ?truelength has been added to an error message as sugggested and thanks to Roland :
        http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
-        
+
   o  There are now 985 raw tests, as reported by test.data.table().
 
 
@@ -133,7 +140,7 @@ NEW FEATURES
         Nic, Akhil Behl and Aykut Firat for ideas, discussions and beta testing.
         ** The fread function is still under development; e.g., dates are read as
         ** character and embedded quotes ("\"" and """") cause problems.
-        
+
     o   New argument 'allow.cartesian' (default FALSE) added to X[Y] and merge(X,Y), #2464.
         Prevents large allocations due to misspecified joins; e.g., duplicate key values in Y
         joining to the same group in X over and over again. The word 'cartesian' is used loosely
@@ -144,7 +151,7 @@ NEW FEATURES
         If the new option affects existing code you can set :
             options(datatable.allow.cartesian=TRUE)
         to restore the previous behaviour until you have time to address.
-        
+
     o   In addition to TRUE/FALSE, 'roll' may now be a positive number (roll forwards/LOCF) or
         negative number (roll backwards/NOCB). A finite number limits the distance a value is
         rolled (limited staleness). roll=TRUE and roll=+Inf are equivalent.
@@ -157,7 +164,7 @@ NEW FEATURES
         {roll=TRUE;rollends=c(FALSE,FALSE)}.
         This implements FR#2300 & FR#206 and helps several recent S.O. questions :
             https://r-forge.r-project.org/tracker/?group_id=240&atid=978&func=detail&aid=2300
-        
+
 BUG FIXES
 
     o   setnames(DT,c(NA,NA)) is now a type error rather than a segfault, #2393.
@@ -166,25 +173,25 @@ BUG FIXES
     o   rbind() no longers warns about inputs having columns in a different order
         if use.names has been explicitly set TRUE, #2385. Thanks to Simon Judes
         for reporting.
-        
+
     o   := by group with 0 length RHS could crash in some circumstances. Thanks to
-        Damien Challet for the reproducible example using obfuscated data and 
+        Damien Challet for the reproducible example using obfuscated data and
         pinpointing the version that regressed. Fixed and test added.
-        
+
     o   Error 'attempting to roll join on a factor column' could occur when a non last
         join column was a factor column, #2450. Thanks to Blue Magister for
         highlighting.
-        
+
     o   NA in a join column of type double could cause both X[Y] and merge(X,Y)
         to return incorrect results, #2453. Due to an errant x==NA_REAL in the C source
         which should have been ISNA(x). Support for double in keyed joins is a relatively
         recent addition to data.table, but embarrassing all the same. Fixed and tests added.
         Many thanks to statquant for the thorough and reproducible report :
         http://stackoverflow.com/questions/14076065/data-table-inner-outer-join-to-merge-with-na
-        
+
     o   setnames() of all column names (such as setnames(DT,toupper(names(DT)))) failed on a
         keyed table where columns 1:length(key) were not the key. Fixed and test added.
-        
+
     o   setkey could sort 'double' columns (such as POSIXct) incorrectly when not the
         last column of the key, #2484. In data.table's C code :
             x[a] > x[b]-tol
@@ -192,18 +199,18 @@ BUG FIXES
             x[a]-x[b] > -tol  [or  x[b]-x[a] < tol ]
         The difference may have been machine/compiler dependent. Many thanks to statquant
         for the short reproducible example. Test added.
-        
+
     o   cbind(DT,1:n) returned an invalid data.table (some columns were empty) when DT
         had one row, #2478. Grouping now warns if j evaluates to an invalid data.table,
         to aid tracing root causes like this in future. Tests added. Many thanks to
         statquant for the reproducible example revealed by his interesting solution
         and to user1935457 for the assistance :
             http://stackoverflow.com/a/14359701/403310
-            
+
     o   merge(...,all.y=TRUE) was 'setcolorder' error if a y column name included a space
         and there were rows in y not in x, #2555. The non syntactically valid column names
         are now preserved as intended. Thanks to Simon Judes for reporting. Tests added.
-        
+
     o   An error in := no longer suppresses the next print, #2376; i.e.,
             > DT[,foo:=colnameTypo+1]
             Error: object 'colnameTypo' not found
@@ -217,18 +224,18 @@ NOTES
     o   print(DT,topn=2), where topn is provided explicitly, now prints the top and bottom 2 rows
         even when nrow(x)<100 [options()$datatable.print.nrows]. And the 'topn' argument is now first
         for easier interactive use: print(DT,2), head(DT,2) and tail(DT,2).
-        
+
     o   The J() alias is now removed *outside* DT[...], but will still work inside DT[...];
         i.e., DT[J(...)] is fine. As warned in v1.8.2 (see below in this file) and deprecated
         with warning() in v1.8.4. This resolves the conflict with function J() in package
         XLConnect (#1747) and rJava (#2045).
         Please use data.table() directly instead of J(), outside DT[...].
-        
+
     o   ?merge.data.table and FAQ 1.12 have been improved (#2457), and FAQ 2.24 added.
         Thanks to dnlbrky for highlighting : http://stackoverflow.com/a/14164411/403310.
-        
+
     o   There are now 943 raw tests, as reported by test.data.table().
-    
+
     o   v1.8.7 was on R-Forge only. v1.8.8 was released to CRAN.
         Odd numbers are development, evens on CRAN.
 
@@ -251,7 +258,7 @@ COMPATIBILITY FOR R 2.12.0-2.15.0
 
     o   setnames used paste0() to construct its error messages, a function
         added to R 2.15.0. Reverted to use paste(). Tests added.
-        
+
     o   X[Y] where Y is empty (test 764) failed due to reliance on a pmin()
         enhancement in R 2.15.1. Removed reliance.
 
@@ -259,13 +266,13 @@ NOTES
 
     o   test.data.table() now passes in 2.12.0, the stated dependency, as well as
         2.14.0, 2.15.0, 2.15.1, 2.15.2 and R-devel.
-        
+
     o   Full R CMD check (i.e. including compatibility tests with the 9 Suggest-ed
         packages and S4 tests run using testthat which in turn depends on packages
         which depend on R >= 2.14.0) passes ok in 2.14.0 onwards.
-        
+
     o   There are now 876 raw tests, as reported by test.data.table().
-    
+
     o   v1.8.5 was on R-Forge only. v1.8.6 was released to CRAN.
         Odd numbers are development, evens on CRAN.
 
@@ -288,18 +295,18 @@ NEW FEATURES
         Thanks to Allan Engelhardt and Melanie Bacou for useful discussions :
         http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-September/001303.html
         and see FAQs 2.11 and 2.22.
-        
+
     o   When one or more rows in i have no match to x and i is unkeyed, i is now
         tested to see if it is sorted. If so, the key is retained. As before, when all rows of
         i match to x, the key is retained if i matches to an ordered subset of keyed x without
         needing to test i, even if i is unkeyed.
-        
+
     o   by on a keyed empty table is now keyed by the by columns, for consistency with
         the non empty case when an ordered grouping is detected.
-        
+
     o   DT[,`:=`(col1=val1, col2=val2, ...)] is now valid syntax rather than a crash, #2254.
         Many thanks to Thell Fowler for the suggestion.
-    
+
     o   with=FALSE is no longer needed to use column names or positions on the LHS of :=, #2120.
             DT[,c("newcol","existingcol"):=list(1L,NULL)]   # with=FALSE not needed
             DT[,`:=`(newcol=1L, existingcol:=NULL)]         # same
@@ -309,7 +316,7 @@ NEW FEATURES
             DT[,eval(mycols):=1L]                # same
             DT[,mycols:=1L,with=FALSE]           # same
             DT[,c("existingcol","newcol"):=1L]   # same (with=FALSE not needed)
-            
+
     o   Multiple LHS:= and `:=`(...) now work by group, and by without by. Implementing
         or fixing, and thanks to, #2215 (Florian Oswald), #1710 (Farrel Buchinsky) and
         others.
@@ -319,14 +326,14 @@ NEW FEATURES
                      ...),  by=grp]                        # same but easier to read
             DT[c("grp1","grp2"), `:=`(newcol1=mean(col1),
                                       newcol2=sd(col1))]   # same using by-without-by
-        
+
     o   with=FALSE now works with a symbol LHS of :=, by group (#2120) :
             colname = "newcol"
             DT[,colname:=f(),by=grp,with=FALSE]
         Thanks to Alex Chernyakov :
             http://stackoverflow.com/questions/11745169/dynamic-column-names-in-data-table-r
             http://stackoverflow.com/questions/11680579/assign-multiple-columns-using-in-data-table-by-group
-            
+
     o   .GRP is a new symbol available to j. Value 1 for the first group, 2 for the 2nd, etc. Thanks
         to Josh O'Brien for the suggestion :
             http://stackoverflow.com/questions/13018696/data-table-key-indices-or-group-counter
@@ -348,7 +355,7 @@ NEW FEATURES
               compatible. With '!', DT[!0] returns DT both before (since !0 is TRUE in
               base R) and after this new feature.
             * to leave DT[+J...] and DT[-J...] available for future use
-            
+
     o   When with=FALSE, "!" may also be a prefix on j, #1384ii. This selects all but the named columns.
             DF[,-match("somecol",names(DF))]              # works when somecol exists. If not, NA causes an error.
             DF[,-match("somecol",names(DF),nomatch=0)]    # works when somecol exists. Empty data.frame when it doesn't, silently.
@@ -368,16 +375,16 @@ NEW FEATURES
             DT[,!toremove,with=FALSE]
             toremove = 2:3
             DT[,!toremove,with=FALSE]        # same code works without change
-            
+
     o   'which' now accepts NA. This means return the row numbers in i that don't match, #1384iii.
         Thanks to Santosh Srinivas for the suggestion.
             X[Y,which=TRUE]   # row numbers of X that do match, as before
             X[!Y,which=TRUE]  # row numbers of X that don't match
             X[Y,which=NA]     # row numbers of Y that don't match
             X[!Y,which=NA]    # row numbers of Y that do match (for completeness)
-            
+
     o   setnames() now works on data.frame, #2273. Thanks to Christian Hudon for the suggestion.
-        
+
 BUG FIXES
 
     o   A large slowdown (many minutes instead of a few secs) in X[Y] joins has been fixed, #2216.
@@ -386,37 +393,37 @@ BUG FIXES
         to set mult="first" which is no longer required. Test added.
         Thanks to a question and report from Alex Chernyakov :
             http://stackoverflow.com/questions/12042779/time-of-data-table-join
-        
+
     o   Indexing columns of data.table with a logical vector and `with=FALSE` now works as
         expected, fixing #1797. Thanks to Mani Narayanan for reporting. Test added.
-        
+
     o   In X[Y,cols,with=FALSE], NA matches are now handled correctly. And if cols
         includes join columns, NA matches (if any) are now populated from i. For
         consistency with X[Y] and X[Y,list(...)]. Tests added.
-        
+
     o   "Internal error" when combining join containing missing groups and group by
         is fixed, #2162. For example :
             X[Y,.N,by=NonJoinColumn]
         where Y contains some rows that don't match to X. This bug could also result in a segfault.
         Thanks to Andrey Riabushenko and Michael Schermerhorn for reporting. Tests added.
-        
+
     o   On empty tables, := now changes column type and adds new 0 length columns ok, fixing
         #2274. Tests added.
-        
+
     o   Deleting multiple columns out-of-order is no longer a segfault, #2223. Test added.
             DT[,c(9,2,6):=NULL]
         Reminder: deleting columns by reference is relatively instant, regardless of table size.
-        
+
     o   Mixing column adds and deletes in one := gave incorrect results, #2251. Thanks to
         Michael Nelson for reporting. Test added.
             DT[,c("newcol","col1"):=list(col1+1L,NULL)]
             DT[,`:=`(newcol=col1+1L,col1=NULL)]             # same
-            
+
     o   Out of bound positions in the LHS of := are now caught. Root cause of crash in #2254.
         Thanks to Thell Fowler for reporting. Tests added.
             DT[,(ncol(DT)+1):=1L]   # out of bounds error (add new columns by name only)
             DT[,ncol(DT):=1L]       # ok
-            
+
     o   A recycled column plonk RHS of := no longer messes up setkey and := when used on that
         object afterwards, #2298. For example,
             DT = data.table(a=letters[3:1],x=1:3)
@@ -429,19 +436,19 @@ BUG FIXES
 
     o   Joining an empty i table now works without error (#2194). It also retains key and has a consistent
         number and type of empty columns as the non empty by-without-by case. Tests added.
-        
+
     o   by-without-by with keyed i where key isn't the 1:n columns of i could crash, #2314. Many thanks
         to Garrett See for reporting with reproducible example data file. Tests added.
-        
+
     o   DT[,col1:=X[Y,col2]] was a crash, #2311. Due to RHS being a data.table. mult="first"
         (or drop=TRUE in future) was likely intended. Thanks to Anoop Shah for reporting with
         reproducible example. Root cause (recycling of list columns) fixed and tests added.
-        
+
     o   Grouping by a column which somehow has names, no longer causes an error, #2307.
           DT = data.table(a=1:3,b=c("a","a","b"))
           setattr(DT$b, "names", c("a","b","c"))  # not recommended, just to illustrate
           DT[,sum(a),by=b]  # now ok
-          
+
     o   gWidgetsWWW wasn't known as data.table aware, even though it mimicks executing
         code in .GlobalEnv, #2340. So, data.table is now gWidgetsWWW-aware. Further packages
         can be added if required by changing a new variable :
@@ -454,49 +461,49 @@ BUG FIXES
             DT[,lapply(.SD, "+", 1), by=id]  # no longer an error
             DT[,lapply(.SD, `+`, 1), by=id]  # same, worked before
         Thanks to Michael Nelson for highlighting. Tests added.
-        
+
     o   Syntactically invalid column names (such as "Some rate (%)") are now preserved in X[Y] joins and
         merge(), as intended. Thanks to George Kaupas (#2193i) and Yang Zhang (#2090) for reporting.
         Tests added.
-        
+
     o   merge() and setcolorder() now check for duplicate column names first rather than a less helpful
         error later, #2193ii. Thanks to Peter Fine for reporting. Tests added.
-        
+
     o   Column attributes (such as 'comment') are now retained by X[Y] and merge(), #2270. Thanks to
         Allan Engelhardt for reporting. Tests added.
-        
+
     o   A matrix RHS of := is now treated as vector, with warning if it has more than 1 column, #2333.
         Thanks to Alex Chernyakov for highlighting. Tests added.
             DT[,b:=scale(a)]   # now works rather than creating an invalid column of type matrix
         http://stackoverflow.com/questions/13076509/why-error-from-na-omit-after-running-scale-in-r-in-data-table
-        
+
     o   last() is now S3 generic for compatibility with xts::last, #2312. Strictly speaking, for speed,
         last(x) deals with vector, list and data.table inputs directly before falling back to
         S3 dispatch. Thanks to Garrett See for reporting. Tests added.
-        
+
     o   DT[,lapply(.SD,sum)] in the case of no grouping now returns a data.table for consistency, rather
         than list, #2263. Thanks to Justin and mnel for highlighting. Existing test changed.
             http://stackoverflow.com/a/12290443/403310
-            
+
     o   L[[2L]][,newcol:=] now works, where L is a list of data.table objects, #2204. Thanks to Melanie Bacou
         for reporting. Tests added. A warning is issued when the first column is added if L was created with
         list(DT1,DT2) since R's list() copies named inputs. Until reflist() is implemented, this warning can be
         ignored or suppressed.
             http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-August/001265.html
-            
+
     o   DT[J(data.frame(...))] now works again, giving the same result as DT[data.frame(...)], #2265.
         Thanks to Christian Hudon for reporting. Tests added.
-        
+
     o   A memory leak has been fixed, #2191 and #2284. All data.table objects leaked the over allocated column
         pointer slots; i.e., when a data.table went out of scope or was rm()'d this memory wasn't released and
         gc() would report growing Vcells. For a 3 column data.table with a 100 allocation, the growth was
         1.5Kb per data.table on 64bit (97*8*2 bytes) and 0.75Kb on 32bit (97*4*2 bytes).
         Many thanks to Xavier Saint-Mleux and Sasha Goodman for the reproducible examples and
         assistance. Tests added.
-        
+
     o   rbindlist now skips empty (0 row) items as well as NULL items. So the column types of the result are
         now taken from the first non-empty data.table. Thanks to Garrett See for reporting. Test added.
-        
+
     o   setnames did not update column names correctly when passed integer column positions and those
         column names contained duplicates, fixed. This affected the column names of queries involving
         two or more by expressions with a named list inside {}. Thanks to Steve Lianoglou for finding and
@@ -510,7 +517,7 @@ USER VISIBLE CHANGES
         outside DT[...] is deprecated. See item below in v1.8.2.
         Use data.table() directly instead of J(), outside DT[...]. Or, define
         an alias yourself. J() will continue to work *inside* DT[...] as documented.
-        
+
     o   DT[,LHS:=RHS,...] no longer prints DT. This implements #2128 "Try again to get
         DT[i,j:=value] to return invisibly". Thanks to discussions here :
             http://stackoverflow.com/questions/11359553/how-to-suppress-output-when-using-in-r-data-table
@@ -530,17 +537,17 @@ USER VISIBLE CHANGES
         in case it occurs after upgrading, until those lines can be modified.
         Thanks to Ben Barnes for highlighting :
             http://stackoverflow.com/a/12474211/403310
-            
+
     o   Description of how join columns are determined in X[Y] syntax has been further clarified
         in ?data.table. Thanks to Alex :
             http://stackoverflow.com/questions/12920803/merge-data-table-when-the-number-of-key-columns-are-different
-            
+
     o   ?transform and example(transform) has been fixed and embelished, #2316.
         Thanks to Garrett See's suggestion.
-        
+
     o   ?setattr has been updated to document that it takes any input, not just data.table, and
         can be used on columns of a data.frame, for example.
-        
+
     o   Efficiency warnings when joining between a factor column and a character column are now downgraded
         to messages when verbosity is on, #2265i. Thanks to Christian Hudon for the suggestion.
 
@@ -549,7 +556,7 @@ THANKS TO BETA TESTING (bugs caught in 1.8.3 before release to CRAN)
     o   Combining a join with mult="first"|"last" followed by by inside the same [...] gave incorrect
         results or a crash, #2303. Many thanks to Garrett See for the reproducible example and
         pinpointing in advance which commit had caused the problem. Tests added.
-        
+
     o   Examples in ?data.table have been updated now that := no longer prints. Thanks to Garrett See.
 
 NOTES
@@ -559,7 +566,7 @@ NOTES
         installed; please reinstall from CRAN.
 
     o   v1.8.3 was an R-Forge only beta release. v1.8.4 was released to CRAN.
-    
+
 
         **********************************************
         **                                          **
