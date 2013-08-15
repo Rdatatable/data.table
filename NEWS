@@ -55,12 +55,13 @@ NEW FEATURES
 
      * "nan%" observed in output of fread(...,verbose=TRUE) timings are now 0% when fread takes 0.000 seconds.
 
-     * `use.key` parameter added to unique.data.table and duplicated.data.table,
-        which defaults to TRUE to be consisten with previous default behavior.
-        When `use.key=FALSE`, all columns are used to check for uniqueness of
-        rows, otherwise the default behavior is kept which looks at only keyed
-        columns. Thanks to Arunkumar Srinivasan, Ricardo Saporta, and
-        Frank Erickson for useful discussions.
+  o  "Uniqueness" tests can now specify arbirtray combinations of columns to use to test for duplicates.
+    `by.columns` parameter added to unique.data.table and duplicated.data.table. This allows the user to
+     test for uniqueness using any combination of columns in the data.table, where previously the user only
+     had the option to use the keyed columns (if keyed) or all columns (if not). The default behavior sets
+     `by.columns=key(dt)` to maintain backward compatability. See man/duplicated.Rd and tests 986:991 for
+     more information. Thanks to Arunkumar Srinivasan, Ricardo Saporta, and Frank Erickson for useful
+     discussions.
 
 BUG FIXES
 

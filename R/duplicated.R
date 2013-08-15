@@ -1,40 +1,73 @@
 
 duplicated.data.table <- function(x, incomparables=FALSE,
                                   tolerance=.Machine$double.eps ^ 0.5,
-                                  use.key=TRUE, ...) {
+                                  by.columns=key(x), ...) {
     if (!cedta()) return(NextMethod("duplicated"))
+    if (!identical(incomparables, FALSE)) {
+        .NotYetUsed("incomparables != FALSE")
+    }
+
+    query <- .duplicated.helper(x, by.columns)
     res <- rep(TRUE, nrow(x))
-    if (haskey(x) && use.key)
-        res[duplist(x[,key(x),with=FALSE],tolerance=tolerance)] = FALSE
-    else {
-        o = fastorder(x)
-        f = o[duplist(x,o,tolerance=tolerance)]
+
+    if (query$use.keyprefix) {
+        res[duplist(x[, query$by.columns, with=FALSE], tolerance=tolerance)] = FALSE
+    } else {
+        xx <- x[, query$by.columns, with=FALSE]
+        o = fastorder(xx)
+        f = o[duplist(xx, o, tolerance=tolerance)]
         f = f[sort.list(f, na.last=FALSE, decreasing=FALSE)]
         # TO DO: remove sort.list call by replacing fastorder with fastgroup
         res[f] = FALSE
     }
+
     res
 }
 
 unique.data.table <- function(x, incomparables=FALSE,
                               tolerance=.Machine$double.eps ^ 0.5,
-                              use.key=TRUE, ...) {
+                              by.columns=key(x), ...) {
     if (!cedta()) return(NextMethod("unique"))
-    # duplist is relatively quick, in C, and copes with NA
-    if (haskey(x) && use.key) {
-        # Already keyed, this should be fast :
-        rows = duplist(x[,key(x),with=FALSE],tolerance=tolerance)
-        res = x[rows]
-        setattr(res,"sorted",key(x))
-    } else {
-        # TO DO: could be faster by grouping/hashing rather than sorting.
-        o = fastorder(x)
-        f = o[duplist(x,o,tolerance=tolerance)]
-        f = f[sort.list(f, na.last=FALSE, decreasing=FALSE)]
-        # TO DO: remove sort.list call by replacing fastorder with fastgroup
-        res = x[f]
-    }
-    res
+    dups <- duplicated.data.table(x, incomparables, tolerance, by.columns, ...)
+    x[!dups]
 }
 
+## Specify the column names to be used in the uniqueness query, and if this
+## query can take advantage of the keys of `x` (if present).
+## returns a list
+##
+## This was dropped into a helper because initial implementation of
+## unique.data.table and duplicated.data.table both needed this. However,
+## unique.data.table has bene refactored to simply call duplicated.data.table
+## making the refactor unnecessary, but let's leave it here just in case
+.duplicated.helper <- function(x, by.columns) {
+    use.sub.cols <- !is.null(by.columns) && !isTRUE(by.columns)
 
+    if (use.sub.cols) {
+        ## Did the user specify (integer) indexes for the columns?
+        if (is.numeric(by.columns)) {
+            if (as.integer(by.columns) != by.columns) {
+                stop("Integer values required for by.columns if specifying ",
+                     "column indices")
+            }
+            by.columns <- names(x)[by.columns]
+        }
+        if (!is.character(by.columns)) {
+            stop("Only column indices or names are allowed in by.columns")
+        }
+        bad.cols <- setdiff(by.columns, names(x))
+        if (length(bad.cols)) {
+            stop("by.columns specifies column names that do no exist in `x`")
+        }
+
+        use.keyprefix = haskey(x) &&
+            length(by.columns) <= length(key(x)) &&
+            all(head(key(x), length(by.columns)) == by.columns)
+    } else {
+        ## by.columns is not was explicitly set to
+        use.keyprefix = FALSE
+        by.columns = names(x)
+    }
+
+    list(use.keyprefix=use.keyprefix, by.columns=by.columns)
+}

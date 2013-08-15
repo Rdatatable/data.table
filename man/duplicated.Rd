@@ -14,11 +14,11 @@
 \usage{
 \method{duplicated}{data.table}(x, incomparables=FALSE,
                                 tolerance=.Machine$double.eps ^ 0.5,
-                                use.key=TRUE, ...)
+                                by.columns=TRUE, ...)
 
 \method{unique}{data.table}(x, incomparables=FALSE,
                             tolerance=.Machine$double.eps ^ 0.5,
-                            use.key=TRUE, ...)
+                            by.columns=key(x), ...)
 }
 \arguments{
   \item{x}{ A data.table. }
@@ -28,22 +28,25 @@
     Double precision values are considered equal if they are within this
     tolerance. Same default as \code{\link{all.equal}}.
   }
-  \item{use.key}{
-    Logical (default \code{TRUE}). Indicate if only keyed columns should be
-    considered when checking for uniqueness of rows, or use all columns
-    (\code{FALSE}).
+  \item{by.columns}{
+    \code{character} or \code{integer} vector indicating which combinations of
+    columns form \code{x} to use for uniqueness checks. Defaults to
+    \code{key(x))} which, by default, only uses the keyed columns. A \code{NULL}
+    or \code{FALSE} value uses all columns and acts like the analogous
+    \code{data.frame} methods.
   }
 }
 \details{
   Because data.tables are usually sorted by key, tests for duplication are
-  especially quick when only the keyed columns are considred (\code{use.key=TRUE}).
+  especially quick when only the keyed columns are considred.
   Unlike \code{\link[base]{unique.data.frame}}, \code{paste} is not
   used to ensure equality of floating point data. This is done directly (for speed)
   whilst still respecting tolerance in the same spirit as \code{\link{all.equal}}.
 
-  When \code{x} has a key and \code{use.key=TRUE}, only key columns are checked
-  for duplication; non-key columns are not checked. When \code{x} has no key, or
-  when \code{use.key=FALSE}, all columns are checked.
+  Any combination of columns can be used to test for uniqueness (not just the
+  key columns) and are specified via the \code{by.columns} parameter. To get
+  the analagous \code{data.frame} functionality for \code{unique} and
+  \code{duplicated}, set \code{by.columns} to \code{NULL} or \code{FALSE}.
 }
 \value{
      \code{duplicated} returns a logical vector of length \code{nrow(x)}
@@ -56,6 +59,12 @@
     DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B")
     duplicated(DT)
     unique(DT)
+
+    duplicated(DT, by.columns="B")
+    unique(DT, by.columns="B")
+
+    duplicated(DT, by.columns=c("A", "C"))
+    unique(DT, by.columns=c("A", "C"))
 
     DT = data.table(a=c(2L,1L,2L), b=c(1L,2L,1L))   # no key
     unique(DT)                   # rows 1 and 2 (row 3 is a duplicate of row 1)
