@@ -918,6 +918,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
         if (is.call(jsub)) {
             if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xvars)) {
                 txt = as.list(jsub)[-1L]
+                if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #4839
                 fun = txt[[2L]]
                 if (is.call(fun) && fun[[1L]]=="function") {
                     assign("..FUN",eval(fun),SDenv)  # to avoid creating function() for each column of .SD

@@ -86,6 +86,10 @@ BUG FIXES
   o  Deleting a (0-length) factor column using :=NULL on an empty data.table now works, #4809. Thanks
      to Frank Pinter for reporting. Test added.
          http://stackoverflow.com/questions/18089587/error-deleting-factor-column-in-empty-data-table
+         
+  o  Writing FUN= in DT[,lapply(.SD,FUN=...),] now works, #4893. Thanks to Jan Wijffels for
+     reporting and Arun for suggesting and testing a fix. Committed and test added.
+         http://stackoverflow.com/questions/18314757/why-cant-i-used-fun-in-lapply-when-grouping-by-using-data-table
 
 USER VISIBLE CHANGES
 

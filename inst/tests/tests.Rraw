@@ -2715,6 +2715,12 @@ test(991, unique(dt, by.columns=NULL), dt[!duplicated(df)])
 DT = data.table(A = integer(), B = factor())
 test(992, DT[, B:=NULL], data.table(A=integer()))
 
+# That including FUN= works in j=lapply, #4839
+DT = as.data.table(iris)
+test(993, DT[, lapply(.SD, function(x) sum(!is.na(x), na.rm=TRUE)), by = Species],
+          DT[, lapply(.SD, FUN=function(x) sum(!is.na(x), na.rm=TRUE)), by = Species])
+
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
