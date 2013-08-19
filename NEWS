@@ -82,6 +82,10 @@ BUG FIXES
 
   o  rbindlist() now binds factor columns correctly, #2650. Thanks to Ricardo Saporta for
      reporting. Test added.
+     
+  o  Deleting a (0-length) factor column using :=NULL on an empty data.table now works, #4809. Thanks
+     to Frank Pinter for reporting. Test added.
+         http://stackoverflow.com/questions/18089587/error-deleting-factor-column-in-empty-data-table
 
 USER VISIBLE CHANGES
 

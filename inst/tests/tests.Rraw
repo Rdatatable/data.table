@@ -2711,6 +2711,10 @@ test(989, unique(dt, by.columns='C'), dt[!duplicated(df[, 'C'])])
 test(990, unique(dt, by.columns=c('B', 'C')), dt[!duplicated(df[, c('B', 'C')])])
 test(991, unique(dt, by.columns=NULL), dt[!duplicated(df)])
 
+# :=NULL on factor column in empty data.table, #4809
+DT = data.table(A = integer(), B = factor())
+test(992, DT[, B:=NULL], data.table(A=integer()))
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
