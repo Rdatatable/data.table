@@ -58,11 +58,11 @@ NEW FEATURES
      * An unintended 50,000 column limit has been removed. Thanks to mpmorley for reporting. Test added.
          http://stackoverflow.com/questions/18449997/fread-protection-stack-overflow-error
 
-  o  "Uniqueness" tests can now specify arbirtray combinations of columns to use to test for duplicates.
+  o  "Uniqueness" tests can now specify arbitrary combinations of columns to use to test for duplicates.
     `by.columns` parameter added to unique.data.table and duplicated.data.table. This allows the user to
      test for uniqueness using any combination of columns in the data.table, where previously the user only
-     had the option to use the keyed columns (if keyed) or all columns (if not). The default behavior sets
-     `by.columns=key(dt)` to maintain backward compatability. See man/duplicated.Rd and tests 986:991 for
+     had the option to use the keyed columns (if keyed) or all columns (if not). The default behaviour sets
+     `by.columns=key(dt)` to maintain backward compatibility. See man/duplicated.Rd and tests 986:991 for
      more information. Thanks to Arunkumar Srinivasan, Ricardo Saporta, and Frank Erickson for useful
      discussions.
 
@@ -120,7 +120,7 @@ NOTES
      due to machine tolerance. Fixed.
 
   o  The default for datatable.alloccol has changed from max(100L, 2L*ncol(DT)) to max(100L, ncol(DT)+64L).
-     And a pointer to ?truelength has been added to an error message as sugggested and thanks to Roland :
+     And a pointer to ?truelength has been added to an error message as suggested and thanks to Roland :
        http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
 
   o  There are now 994 raw tests, as reported by test.data.table().
