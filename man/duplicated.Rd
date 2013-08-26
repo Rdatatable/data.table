@@ -14,11 +14,11 @@
 \usage{
 \method{duplicated}{data.table}(x, incomparables=FALSE,
                                 tolerance=.Machine$double.eps ^ 0.5,
-                                by.columns=TRUE, ...)
+                                by=key(x), ...)
 
 \method{unique}{data.table}(x, incomparables=FALSE,
                             tolerance=.Machine$double.eps ^ 0.5,
-                            by.columns=key(x), ...)
+                            by=key(x), ...)
 }
 \arguments{
   \item{x}{ A data.table. }
@@ -28,7 +28,7 @@
     Double precision values are considered equal if they are within this
     tolerance. Same default as \code{\link{all.equal}}.
   }
-  \item{by.columns}{
+  \item{by}{
     \code{character} or \code{integer} vector indicating which combinations of
     columns form \code{x} to use for uniqueness checks. Defaults to
     \code{key(x))} which, by default, only uses the keyed columns. A \code{NULL}
@@ -44,9 +44,9 @@
   whilst still respecting tolerance in the same spirit as \code{\link{all.equal}}.
 
   Any combination of columns can be used to test for uniqueness (not just the
-  key columns) and are specified via the \code{by.columns} parameter. To get
+  key columns) and are specified via the \code{by} parameter. To get
   the analagous \code{data.frame} functionality for \code{unique} and
-  \code{duplicated}, set \code{by.columns} to \code{NULL} or \code{FALSE}.
+  \code{duplicated}, set \code{by} to \code{NULL} or \code{FALSE}.
 }
 \value{
      \code{duplicated} returns a logical vector of length \code{nrow(x)}
@@ -60,11 +60,11 @@
     duplicated(DT)
     unique(DT)
 
-    duplicated(DT, by.columns="B")
-    unique(DT, by.columns="B")
+    duplicated(DT, by="B")
+    unique(DT, by="B")
 
-    duplicated(DT, by.columns=c("A", "C"))
-    unique(DT, by.columns=c("A", "C"))
+    duplicated(DT, by=c("A", "C"))
+    unique(DT, by=c("A", "C"))
 
     DT = data.table(a=c(2L,1L,2L), b=c(1L,2L,1L))   # no key
     unique(DT)                   # rows 1 and 2 (row 3 is a duplicate of row 1)

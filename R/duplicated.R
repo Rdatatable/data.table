@@ -1,19 +1,19 @@
 
 duplicated.data.table <- function(x, incomparables=FALSE,
                                   tolerance=.Machine$double.eps ^ 0.5,
-                                  by.columns=key(x), ...) {
+                                  by=key(x), ...) {
     if (!cedta()) return(NextMethod("duplicated"))
     if (!identical(incomparables, FALSE)) {
         .NotYetUsed("incomparables != FALSE")
     }
 
-    query <- .duplicated.helper(x, by.columns)
+    query <- .duplicated.helper(x, by)
     res <- rep(TRUE, nrow(x))
 
     if (query$use.keyprefix) {
-        res[duplist(x[, query$by.columns, with=FALSE], tolerance=tolerance)] = FALSE
+        res[duplist(x[, query$by, with=FALSE], tolerance=tolerance)] = FALSE
     } else {
-        xx <- x[, query$by.columns, with=FALSE]
+        xx <- x[, query$by, with=FALSE]
         o = fastorder(xx)
         f = o[duplist(xx, o, tolerance=tolerance)]
         f = f[sort.list(f, na.last=FALSE, decreasing=FALSE)]
@@ -26,9 +26,9 @@ duplicated.data.table <- function(x, incomparables=FALSE,
 
 unique.data.table <- function(x, incomparables=FALSE,
                               tolerance=.Machine$double.eps ^ 0.5,
-                              by.columns=key(x), ...) {
+                              by=key(x), ...) {
     if (!cedta()) return(NextMethod("unique"))
-    dups <- duplicated.data.table(x, incomparables, tolerance, by.columns, ...)
+    dups <- duplicated.data.table(x, incomparables, tolerance, by, ...)
     x[!dups]
 }
 
@@ -40,34 +40,34 @@ unique.data.table <- function(x, incomparables=FALSE,
 ## unique.data.table and duplicated.data.table both needed this. However,
 ## unique.data.table has bene refactored to simply call duplicated.data.table
 ## making the refactor unnecessary, but let's leave it here just in case
-.duplicated.helper <- function(x, by.columns) {
-    use.sub.cols <- !is.null(by.columns) && !isTRUE(by.columns)
+.duplicated.helper <- function(x, by) {
+    use.sub.cols <- !is.null(by) && !isTRUE(by)
 
     if (use.sub.cols) {
         ## Did the user specify (integer) indexes for the columns?
-        if (is.numeric(by.columns)) {
-            if (as.integer(by.columns) != by.columns) {
-                stop("Integer values required for by.columns if specifying ",
+        if (is.numeric(by)) {
+            if (as.integer(by) != by) {
+                stop("Integer values required for by if specifying ",
                      "column indices")
             }
-            by.columns <- names(x)[by.columns]
+            by <- names(x)[by]
         }
-        if (!is.character(by.columns)) {
-            stop("Only column indices or names are allowed in by.columns")
+        if (!is.character(by)) {
+            stop("Only column indices or names are allowed in by")
         }
-        bad.cols <- setdiff(by.columns, names(x))
+        bad.cols <- setdiff(by, names(x))
         if (length(bad.cols)) {
-            stop("by.columns specifies column names that do no exist in `x`")
+            stop("by specifies column names that do no exist in `x`")
         }
 
         use.keyprefix = haskey(x) &&
-            length(by.columns) <= length(key(x)) &&
-            all(head(key(x), length(by.columns)) == by.columns)
+            length(by) <= length(key(x)) &&
+            all(head(key(x), length(by)) == by)
     } else {
-        ## by.columns is not was explicitly set to
+        ## by is not was explicitly set to
         use.keyprefix = FALSE
-        by.columns = names(x)
+        by = names(x)
     }
 
-    list(use.keyprefix=use.keyprefix, by.columns=by.columns)
+    list(use.keyprefix=use.keyprefix, by=by)
 }

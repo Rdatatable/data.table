@@ -54,15 +54,15 @@ NEW FEATURES
        are made every 250ms on Windows as recommended here : http://support.microsoft.com/kb/316609.
 
      * "nan%" observed in output of fread(...,verbose=TRUE) timings are now 0% when fread takes 0.000 seconds.
-     
+
      * An unintended 50,000 column limit in fread has been removed. Thanks to mpmorley for reporting. Test added.
          http://stackoverflow.com/questions/18449997/fread-protection-stack-overflow-error
 
   o  "Uniqueness" tests can now specify arbitrary combinations of columns to use to test for duplicates.
-    `by.columns` parameter added to unique.data.table and duplicated.data.table. This allows the user to
+    `by` parameter added to unique.data.table and duplicated.data.table. This allows the user to
      test for uniqueness using any combination of columns in the data.table, where previously the user only
      had the option to use the keyed columns (if keyed) or all columns (if not). The default behaviour sets
-     `by.columns=key(dt)` to maintain backward compatibility. See man/duplicated.Rd and tests 986:991 for
+     `by=key(dt)` to maintain backward compatibility. See man/duplicated.Rd and tests 986:991 for
      more information. Thanks to Arunkumar Srinivasan, Ricardo Saporta, and Frank Erickson for useful
      discussions.
 
@@ -85,11 +85,11 @@ BUG FIXES
 
   o  rbindlist() now binds factor columns correctly, #2650. Thanks to Ricardo Saporta for
      reporting. Test added.
-     
+
   o  Deleting a (0-length) factor column using :=NULL on an empty data.table now works, #4809. Thanks
      to Frank Pinter for reporting. Test added.
          http://stackoverflow.com/questions/18089587/error-deleting-factor-column-in-empty-data-table
-         
+
   o  Writing FUN= in DT[,lapply(.SD,FUN=...),] now works, #4893. Thanks to Jan Wijffels for
      reporting and Arun for suggesting and testing a fix. Committed and test added.
          http://stackoverflow.com/questions/18314757/why-cant-i-used-fun-in-lapply-when-grouping-by-using-data-table
