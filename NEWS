@@ -55,7 +55,7 @@ NEW FEATURES
 
      * "nan%" observed in output of fread(...,verbose=TRUE) timings are now 0% when fread takes 0.000 seconds.
      
-     * An unintended 50,000 column limit has been removed. Thanks to mpmorley for reporting. Test added.
+     * An unintended 50,000 column limit in fread has been removed. Thanks to mpmorley for reporting. Test added.
          http://stackoverflow.com/questions/18449997/fread-protection-stack-overflow-error
 
   o  "Uniqueness" tests can now specify arbitrary combinations of columns to use to test for duplicates.
