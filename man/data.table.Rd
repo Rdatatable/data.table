@@ -77,7 +77,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \code{j} is evaluated within the frame of the \code{data.table}; i.e., it sees column names as if they are variables. Use \code{j=list(...)} to return multiple columns and/or expressions of columns. A single column or single expression returns that type, usually a vector. See the examples.
 
 }
-  \item{by}{ A single unquoted column name, a \code{list()} of expressions of column names, a single character string containing comma separated column names, or a character vector of column names.
+  \item{by}{ A single unquoted column name, a \code{list()} of expressions of column names, a single character string containing comma separated column names (where spaces are significant since column names may contain spaces even at the start or end), or a character vector of column names.
 
   The \code{list()} of expressions is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{j=list(...)} may be omitted when there is just one expression, for convenience, typically a single expression such as \code{sum(colB)}; e.g., \code{DT[,sum(colB),by=colA]}.
 

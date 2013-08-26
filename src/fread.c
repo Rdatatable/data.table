@@ -21,6 +21,7 @@
 
 Add a way to pick out particular columns only, by name or position.
 Add the as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
+Allow comment char to ignore. Important in format detection. But require valid line data before comment character in the read loop.
 
 Deal with row.names e.g. http://stackoverflow.com/questions/15448732/reading-csv-with-row-names-by-fread
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
@@ -694,11 +695,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     setAttrib(ans,R_NamesSymbol,names);
     for (i=0; i<ncol; i++) {
         thistype  = TypeSxp[ type[i] ];
-        thiscol = PROTECT(allocVector(thistype,nrow));
-        protecti++;
+        thiscol = allocVector(thistype,nrow);
+        SET_VECTOR_ELT(ans,i,thiscol);  // no need to PROTECT thiscol, see R-exts 5.9.1
         if (type[i]==SXP_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(mkChar("integer64")));
         SET_TRUELENGTH(thiscol, nrow);
-        SET_VECTOR_ELT(ans,i,thiscol);
     }
     clock_t tAlloc = clock();
     

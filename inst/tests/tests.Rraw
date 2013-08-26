@@ -2720,6 +2720,12 @@ DT = as.data.table(iris)
 test(993, DT[, lapply(.SD, function(x) sum(!is.na(x), na.rm=TRUE)), by = Species],
           DT[, lapply(.SD, FUN=function(x) sum(!is.na(x), na.rm=TRUE)), by = Species])
 
+# fread more than 50,000 columns, the R_PPSSIZE limit in Defn.h
+M = matrix(1,nrow=3,ncol=200000)
+f = tempfile()
+write.csv(M,f,row.names=FALSE)
+test(994, fread(f)[[200000]], rep(1L,3))
+unlink(f)
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
