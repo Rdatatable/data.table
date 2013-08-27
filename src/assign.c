@@ -275,26 +275,24 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         if (length(rows)==0 && targetlen==vlen) {
             if (  NAMED(thisvalue)==2 ||  // NAMED is already 1 from the 'value' local variable at R level passed to Cassign.
                  (TYPEOF(values)==VECSXP && i>LENGTH(values)-1)) { // recycled RHS would have columns pointing to others, #2298.
-                PROTECT(thisvalue = duplicate(thisvalue));
-                protecti++;
+                thisvalue = duplicate(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
                 if (verbose) Rprintf("RHS for item %d has been duplicated. Either NAMED vector or recycled list RHS.\n",i+1);
             } else {
                 if (verbose) Rprintf("Direct plonk of unnamed RHS, no copy.\n");  // e.g. DT[,a:=as.character(a)] as tested by 754.3
             }
+            SET_VECTOR_ELT(dt,coln,thisvalue);
             setAttrib(thisvalue, R_NamesSymbol, R_NilValue);     // clear names such as  DT[,a:=mapvector[a]]
             setAttrib(thisvalue, R_DimSymbol, R_NilValue);       // so that matrix is treated as vector
             setAttrib(thisvalue, R_DimNamesSymbol, R_NilValue);  // the 3rd of the 3 attribs not copied by copyMostAttrib, for consistency.
-            SET_VECTOR_ELT(dt,coln,thisvalue);
             // plonk new column in as it's already the correct length
             // if column exists, 'replace' it (one way to change a column's type i.e. less easy, as it should be, for speed, correctness and to get the user thinking about their intent)        
             continue;
         }
         if (coln+1 > oldncol) {  // new column
-            PROTECT(newcol = allocNAVector(TYPEOF(thisvalue),nrow));
-            protecti++;
+            newcol = allocNAVector(TYPEOF(thisvalue),nrow);  // PROTECT not needed as assigned as element to protected list on next line
+            SET_VECTOR_ELT(dt,coln,newcol);
             if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,newcol);  // class etc but not names
             // else for lists (such as data.frame and data.table) treat them as raw lists and drop attribs
-            SET_VECTOR_ELT(dt,coln,newcol);
             if (vlen<1) continue;   // e.g. DT[,newcol:=integer()] (adding new empty column)
             targetcol = newcol;
             RHS = thisvalue;
