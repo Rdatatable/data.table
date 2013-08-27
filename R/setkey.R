@@ -137,31 +137,50 @@ SJ = function(...) {
 
 # TO DO: Use the CJ list() method for SJ (and inside as.data.table.list?, #2109) too to avoid alloc.col
 
-CJ = function(...)
+CJ = function(..., sorted = TRUE)
 {
     # Pass in a list of unique values, e.g. ids and dates
     # Cross Join will then produce a join table with the combination of all values (cross product).
     # The last vector is varied the quickest in the table, so dates should be last for roll for example
     l = list(...)
     # for (i in seq(along=l)) if (storage.mode(l[[i]])=="double") mode(l[[i]])="integer"
-    if (length(l)>1) {
-        n = sapply(l,length)
+
+	# using rep.int instead of rep speeds things up considerably (but attributes are dropped).
+	j <- vapply(l, class, "")
+	if (length(l) == 1 && sorted) {
+		l[[1]] <- sort.int(l[[1]], na.last = TRUE, method="quick")
+	} else if (length(l) > 1) {
+        n = vapply(l, length, 0L)
         nrow = prod(n)
-        x=c(rev(take(cumprod(rev(n)))),1L)
-        for (i in seq(along=x)) l[[i]] = rep(l[[i]],each=x[i],length=nrow)
+        x = c(rev(take(cumprod(rev(n)))), 1L)
+        for (i in seq(x)) {
+			y <- l[[i]]
+            if (sorted) # using `is.unsorted(y)` as well would be nice, but it'll be trouble with inputs with NA. 
+				y <- sort.int(y, na.last = TRUE, method="quick") # no worries for ties because there are no row.names or attributes to worry about.
+			if (i == 1) 
+				l[[i]] <- rep.int(y, times = rep.int(x[i], n[i])) 
+			else if (i == length(n))
+				l[[i]] <- rep.int(y, times = nrow/(x[i]*n[i]))
+			else
+				l[[i]] <- rep.int(rep.int(y, times = rep.int(x[i], 
+					           n[i])), times = nrow/(x[i]*n[i]))
+		   if (class(l[[i]]) != j[i])
+			   setattr(l[[i]], 'class', j[i]) # reset "Date" class - rep.int coerces to integer
+		}
+	}
+    setattr(l, "row.names", .set_row_names(length(l[[1]])))
+    setattr(l, "class", c("data.table", "data.frame"))
+
+    if (is.null(vnames <- names(l))) 
+        vnames = vector("character", length(l)) 
+    if (any(tt <- vnames == "")) {
+        vnames[tt] = paste0("V", which(tt))
+	    setattr(l, "names", vnames)
     }
-    setattr(l,"row.names",.set_row_names(length(l[[1]])))
-    setattr(l,"class",c("data.table","data.frame"))
-    vnames = names(l)
-    if (is.null(vnames)) vnames=rep("",length(l))
-    tt = vnames==""
-    if (any(tt)) {
-        vnames[tt] = paste("V", which(tt), sep="")
-        setattr(l,"names",vnames)
-    }
-    settruelength(l,0L)
-    l=alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
-    setkey(l)    # TO DO: if inputs are each !is.unsorted, then no need to setkey here, just setattr("sorted") to save sort
+    settruelength(l, 0L)
+    l <- alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
+    if (sorted) 
+		setattr(l, 'sorted', names(l))
     l
 }
 

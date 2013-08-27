@@ -2727,6 +2727,12 @@ write.csv(M,f,row.names=FALSE)
 test(994, fread(f)[[200000]], rep(1L,3))
 unlink(f)
 
+# CJ with `sorted = FALSE` option
+DT <- data.table(x=rep(3:5, each=4), y=rep(1:6, each=2), z=1:12)
+setkey(DT, x, y)
+OUT <- DT[J(c(5,5,3,3), c(5,1,5,1))]
+test(995, DT[CJ(c(5,3), c(5,1), sorted=FALSE)], OUT)
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key

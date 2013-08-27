@@ -66,6 +66,14 @@ NEW FEATURES
      more information. Thanks to Arunkumar Srinivasan, Ricardo Saporta, and Frank Erickson for useful
      discussions.
 
+  o  CJ (cross-join) is modified to be much faster now. This is related to FR #4849:
+     https://r-forge.r-project.org/tracker/index.php?func=detail&aid=4849&group_id=240&atid=978
+	 Thanks to Sean Garborg for sharing his code that contained the idea that `rep.int` speeds 
+	 things up drastically than using `rep`. NOTE: `rep.int` however doesn't preserve attributes. 
+	 CJ now also has an additional logical argument "sorted" that is by default TRUE. When set to 
+	 FALSE, the resulting data.table will not be key'd. As a result, the output will be in the same 
+	 order as the input (not sorted).
+  
 BUG FIXES
 
   o  merge now properly handles data.tables with zero-rows. This was bug # 2633.
@@ -123,7 +131,7 @@ NOTES
      And a pointer to ?truelength has been added to an error message as suggested and thanks to Roland :
        http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
 
-  o  There are now 994 raw tests, as reported by test.data.table().
+  o  There are now 995 raw tests, as reported by test.data.table().
 
 
         *********************************************
