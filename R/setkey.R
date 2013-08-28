@@ -146,7 +146,7 @@ CJ = function(..., sorted = TRUE)
     # for (i in seq(along=l)) if (storage.mode(l[[i]])=="double") mode(l[[i]])="integer"
 
 	# using rep.int instead of rep speeds things up considerably (but attributes are dropped).
-	j <- vapply(l, class, "")
+	j <- lapply(l, class) # changed "vapply" to avoid errors with "ordered" "factor" input
 	if (length(l) == 1 && sorted) {
 		l[[1]] <- sort.int(l[[1]], na.last = TRUE, method="quick")
 	} else if (length(l) > 1) {
@@ -164,8 +164,8 @@ CJ = function(..., sorted = TRUE)
 			else
 				l[[i]] <- rep.int(rep.int(y, times = rep.int(x[i], 
 					           n[i])), times = nrow/(x[i]*n[i]))
-		   if (class(l[[i]]) != j[i])
-			   setattr(l[[i]], 'class', j[i]) # reset "Date" class - rep.int coerces to integer
+		   if (any(class(l[[i]]) != j[[i]]))
+			   setattr(l[[i]], 'class', j[[i]]) # reset "Date" class - rep.int coerces to integer
 		}
 	}
     setattr(l, "row.names", .set_row_names(length(l[[1]])))
