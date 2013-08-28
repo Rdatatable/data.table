@@ -2733,6 +2733,11 @@ setkey(DT, x, y)
 OUT <- DT[J(c(5,5,3,3), c(5,1,5,1))]
 test(995, DT[CJ(c(5,3), c(5,1), sorted=FALSE)], OUT)
 
+# CJ with ordered factor
+xx <- factor(letters[1:2], ordered=TRUE)
+yy <- sample(2)
+test(996, CJ(xx, yy), setkey(data.table(rep(xx, each=2), rep(sort.int(yy), 2))))
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key

@@ -115,17 +115,19 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     # the arguments to the data.table() function form the column names,  otherwise the expression itself
     tt <- as.list(substitute(list(...)))[-1L]  # Intention here is that data.table(X,Y) will automatically put X and Y as the column names.  For longer expressions, name the arguments to data.table(). But in a call to [.data.table, wrap in list() e.g. DT[,list(a=mean(v),b=foobarzoo(zang))] will get the col names
     vnames = names(tt)
-    exptxt = as.character(tt)
     if (is.null(vnames)) vnames = rep("",length(x))
     vnames[is.na(vnames)] = ""
     novname = vnames==""
     if (any(!novname)) {
         if (any(vnames[!novname] == ".SD")) stop("A column may not be called .SD. That has special meaning.")
     }
-    if (any(novname) && length(exptxt)==length(vnames)) {
-        okexptxt =  exptxt[novname] == make.names(exptxt[novname])
-        vnames[novname][okexptxt] = exptxt[novname][okexptxt]
-    }
+	for (i in which(novname)) {
+		# if (ncol(as.data.table(x[[i]])) <= 1) { # cbind call in test 230 fails if I write ncol(as.data.table(eval(tt[[i]], parent.frame()))) <= 1, no idea why... (keep this for later even though all tests pass with ncol(.).. because base uses as.data.frame(.))
+		if (is.null(ncol(x[[i]]))) { 
+			if ((tmp <- deparse(tt[[i]])[1]) == make.names(tmp))
+	        	vnames[i] <- tmp
+		}
+	}
     tt = vnames==""
     if (any(tt)) vnames[tt] = paste("V", which(tt), sep = "")
     # so now finally we have good column names. We also will use novname later to know which were explicitly supplied in the call.
@@ -1199,7 +1201,10 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
     n = sapply(x,length)
     x = copy(x)
     if (any(n<max(n)))
-        for (i in which(n<max(n))) x[[i]] = rep(x[[i]],length=max(n))
+	for (i in which(n<max(n))) {
+		if (!is.null(x[[i]]))
+			x[[i]] = rep(x[[i]],length=max(n))
+	}
     if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
     setattr(x,"row.names",.set_row_names(max(n)))
     setattr(x,"class",c("data.table","data.frame"))
@@ -1208,6 +1213,16 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
 }
 
 as.data.table.data.table = function(x, keep.rownames=FALSE) return(x)
+
+# commented for now. Ask Matthew and decide
+# as.data.table.factor <- as.data.table.ordered <- as.data.table.Date <- as.data.table.numeric <- as.data.table.integer <- 
+# as.data.table.logical <- as.data.table.character <- function(x, keep.rownames=FALSE) {
+# 	tt <- deparse(substitute(x))[1]
+# 	x <- list(x)
+# 	if ( tt == make.names(tt))
+# 		setattr(x, 'names', tt)
+# 	as.data.table.list(x, keep.rownames)
+# }
 
 head.data.table = function(x, n=6, ...) {
     if (!cedta()) return(NextMethod())
