@@ -97,6 +97,8 @@ BUG FIXES
   o  Writing FUN= in DT[,lapply(.SD,FUN=...),] now works, #4893. Thanks to Jan Wijffels for
      reporting and Arun for suggesting and testing a fix. Committed and test added.
          http://stackoverflow.com/questions/18314757/why-cant-i-used-fun-in-lapply-when-grouping-by-using-data-table
+	
+  o  The slowness of "transform" function has been fixed. This was bug #2599.
 
 USER VISIBLE CHANGES
 
