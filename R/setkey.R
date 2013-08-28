@@ -153,7 +153,7 @@ CJ = function(..., sorted = TRUE)
         n = vapply(l, length, 0L)
         nrow = prod(n)
         x = c(rev(take(cumprod(rev(n)))), 1L)
-        for (i in seq(x)) {
+        for (i in seq(along = x)) {
 			y <- l[[i]]
             if (sorted) # using `is.unsorted(y)` as well would be nice, but it'll be trouble with inputs with NA. 
 				y <- sort.int(y, na.last = TRUE, method="quick") # no worries for ties because there are no row.names or attributes to worry about.

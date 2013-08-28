@@ -13,7 +13,7 @@ CJ(..., sorted = TRUE)  # DT[CJ(...)]
 }
 \arguments{
   \item{\dots}{ Each argument is a vector. Generally each vector is the same length but if they are not then usual silent repitition is applied. }
-  \item{sorted}{ logical. Should the resulting data.table be (sorted and) keyed?}
+  \item{sorted}{ logical. Should the input order be retained?}
 }
 \details{
    \code{SJ} and \code{CJ} are convenience functions for creating a data.table in the context of a data.table 'query' on \code{x}.
@@ -23,7 +23,7 @@ CJ(..., sorted = TRUE)  # DT[CJ(...)]
 \value{
     J : the same result as calling list. J is a direct alias for list but results in clearer more readable code.
     SJ : (S)orted (J)oin. The same value as J() but additionally setkey() is called on all the columns in the order they were passed in to SJ. For efficiency, to invoke a binary merge rather than a repeated binary full search for each row of \code{i}.
-    CJ : (C)ross (J)oin. A data.table is formed from the cross product of the vectors. For example, 10 ids, and 100 dates, CJ returns a 1000 row table containing all the dates for all the ids. The option \code{sorted} is by default set to TRUE. If set to FALSE, the resulting data.table will be not be keyed and will be in the same order as the input.
+    CJ : (C)ross (J)oin. A data.table is formed from the cross product of the vectors. For example, 10 ids, and 100 dates, CJ returns a 1000 row table containing all the dates for all the ids. It gains \code{sorted}, which by default is TRUE for backwards compatibility. FALSE retains input order.
 }
 \seealso{ \code{\link{data.table}}, \code{\link{test.data.table}} }
 \examples{
