@@ -660,7 +660,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                 bysubl = as.list.default(bysub)
             }
             allbyvars = intersect(unlist(sapply(bysubl,all.vars,functions=TRUE)),names(x))
-            if (potentialredundantby && all(sapply(bysubl,is.name)) && identical(allbyvars,names(x)[rightcols]) && options("datatable.warnredundantby")[[1L]]) {
+            if (potentialredundantby && all(sapply(bysubl,is.name)) && identical(allbyvars,names(x)[rightcols]) && getOption("datatable.warnredundantby")) {
                 warning("by is not necessary in this query; it equals all the join columns in the same order. j is already evaluated by group of x that each row of i matches to (by-without-by, see ?data.table). Setting by will be slower because a subset of x is taken and then grouped again. Consider removing by, or changing it.")
             }
             orderedirows = is.sorted(irows)  # TRUE when irows is NULL (i.e. no i clause)
@@ -913,7 +913,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
     lockBinding(".GRP",SDenv)
     lockBinding(".I",SDenv)
 
-    if (options("datatable.optimize")[[1L]]>0L) {  # Abilility to turn off if problems
+    if (getOption("datatable.optimize")>0L) {  # Abilility to turn off if problems
         # Optimization to reduce overhead of calling mean and lapply over and over for each group
         nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
         oldjsub = jsub
@@ -1630,7 +1630,7 @@ shallow = function(x) {
     .Call(Cshallowwrapper,x)  # copies VECSXP only
 }
 
-alloc.col = function(DT, n=options("datatable.alloccol")[[1L]], verbose=options("datatable.verbose")[[1L]])
+alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("datatable.verbose"))
 {
     name = substitute(DT)
     if (identical(name,quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")

@@ -10,7 +10,9 @@
    
 }
 \usage{
-fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA", stringsAsFactors=FALSE, verbose=FALSE, autostart=30L, skip=-1L, select=NULL, colClasses=NULL, integer64=getOption("datatable.integer64"))
+fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA",
+stringsAsFactors=FALSE, verbose=FALSE, autostart=30L, skip=-1L, select=NULL,
+colClasses=NULL, integer64=getOption("datatable.integer64"))
 }
 \arguments{
   \item{input}{ Either the file name to read (containing no \\n character) or the input itself as a string (containing at least one \\n), see examples. In both cases, a length 1 character string. A filename input is passed through \code{\link[base]{path.expand}} for convenience and may be a URL starting http:// or file://. }
@@ -90,59 +92,86 @@ DT[2,e:=+Inf]
 DT[3,e:=-Inf]
 
 write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
-cat("File size (MB):",round(file.info("test.csv")$size/1024^2),"\n")    # 50 MB (1e6 rows x 6 columns)
+cat("File size (MB):", round(file.info("test.csv")$size/1024^2),"\n")
+# 50 MB (1e6 rows x 6 columns)
 
-system.time(DF1 <- read.csv("test.csv",stringsAsFactors=FALSE))         # 60 sec (first time in fresh R session)
-system.time(DF1 <- read.csv("test.csv",stringsAsFactors=FALSE))         # 30 sec (immediate repeat is faster, varies)
+system.time(DF1 <-read.csv("test.csv",stringsAsFactors=FALSE))
+# 60 sec (first time in fresh R session)
 
-system.time(DF2 <- read.table("test.csv",header=TRUE,sep=",",quote="",  # 10 sec (consistently)
-    stringsAsFactors=FALSE,comment.char="",nrows=n,                     # ( All known tricks and known
-    colClasses=c("integer","integer","numeric",                         #   nrows, see references )
+system.time(DF1 <- read.csv("test.csv",stringsAsFactors=FALSE))
+# 30 sec (immediate repeat is faster, varies)
+
+system.time(DF2 <- read.table("test.csv",header=TRUE,sep=",",quote="",
+    stringsAsFactors=FALSE,comment.char="",nrows=n,
+    colClasses=c("integer","integer","numeric",
                  "character","numeric","integer")))
+# 10 sec (consistently). All known tricks and known nrows, see references.
 
 require(data.table)
-system.time(DT <- fread("test.csv"))                                    #  3 sec (faster and friendlier)
+system.time(DT <- fread("test.csv"))
+#  3 sec (faster and friendlier)
 
 require(sqldf)
-system.time(SQLDF <- read.csv.sql("test.csv",dbname=NULL))              # 20 sec (friendly too, good defaults)
+system.time(SQLDF <- read.csv.sql("test.csv",dbname=NULL))
+# 20 sec (friendly too, good defaults)
 
 require(ff)
-system.time(FFDF <- read.csv.ffdf(file="test.csv",nrows=n))             # 20 sec (friendly too, good defaults)
+system.time(FFDF <- read.csv.ffdf(file="test.csv",nrows=n))
+# 20 sec (friendly too, good defaults)
 
-identical(DF1,DF2)                                                      # TRUE
-all.equal(as.data.table(DF1), DT)                                       # TRUE
-identical(DF1,within(SQLDF,{b<-as.integer(b);c<-as.numeric(c)}))        # TRUE
-identical(DF1,within(as.data.frame(FFDF),d<-as.character(d)))           # TRUE
+identical(DF1,DF2)
+all.equal(as.data.table(DF1), DT)
+identical(DF1,within(SQLDF,{b<-as.integer(b);c<-as.numeric(c)}))
+identical(DF1,within(as.data.frame(FFDF),d<-as.character(d)))
 
 # Scaling up ...
 l = vector("list",10)
 for (i in 1:10) l[[i]] = DT
 DTbig = rbindlist(l)
 tables()
-write.table(DTbig,"testbig.csv",sep=",",row.names=FALSE,quote=FALSE)    # 500MB (10 million rows x 6 columns)
+write.table(DTbig,"testbig.csv",sep=",",row.names=FALSE,quote=FALSE)
+# 500MB (10 million rows x 6 columns)
 
-system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",         # 100-200 sec (varies)  
+system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",         
     quote="",stringsAsFactors=FALSE,comment.char="",nrows=1e7,                     
     colClasses=c("integer","integer","numeric",
                  "character","numeric","integer")))
+# 100-200 sec (varies)
 
-system.time(DT <- fread("testbig.csv"))                                 # 30-40 sec
-all(mapply(all.equal, DF, DT))                                          # TRUE
+system.time(DT <- fread("testbig.csv"))
+# 30-40 sec
+
+all(mapply(all.equal, DF, DT))
 
 
 # Real data example (Airline data)
 # http://stat-computing.org/dataexpo/2009/the-data.html
 
 download.file("http://stat-computing.org/dataexpo/2009/2008.csv.bz2",
-              destfile="2008.csv.bz2")                                  # 109MB (compressed)
-system("bunzip2 2008.csv.bz2")                                          # 658MB (7,009,728 rows x 29 columns)
-colClasses = sapply(read.csv("2008.csv",nrows=100),class)               # 4 character, 24 integer, 1 logical. Incorrect.
-colClasses = sapply(read.csv("2008.csv",nrows=200),class)               # 5 character, 24 integer. Correct. Might have missed data
+              destfile="2008.csv.bz2")
+# 109MB (compressed)
+
+system("bunzip2 2008.csv.bz2")                                          
+# 658MB (7,009,728 rows x 29 columns)
+
+colClasses = sapply(read.csv("2008.csv",nrows=100),class)
+# 4 character, 24 integer, 1 logical. Incorrect.
+
+colClasses = sapply(read.csv("2008.csv",nrows=200),class)
+# 5 character, 24 integer. Correct. Might have missed data only using 100 rows
+# since read.table assumes colClasses is correct.
+
 system.time(DF <- read.table("2008.csv", header=TRUE, sep=",",          
     quote="",stringsAsFactors=FALSE,comment.char="",nrows=7009730,      
-    colClasses=colClasses)                                              # 360 secs
-system.time(DT <- fread("2008.csv"))                                    #  40 secs
-table(sapply(DT,class))                                                 # 5 character and 24 integer columns
+    colClasses=colClasses)
+# 360 secs
+
+system.time(DT <- fread("2008.csv"))
+#  40 secs
+
+table(sapply(DT,class))
+# 5 character and 24 integer columns. Correct without needing to worry about colClasses
+# issue above.
 
 
 # Reads URLs directly :

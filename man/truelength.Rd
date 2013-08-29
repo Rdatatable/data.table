@@ -8,8 +8,8 @@
 \usage{
 truelength(x)
 alloc.col(DT,
-          n = options("datatable.alloccol")[[1L]],        # default: quote(max(100L,ncol(DT)+64L))
-          verbose = options("datatable.verbose")[[1L]])   # default: FALSE
+    n = getOption("datatable.alloccol"),        # default: quote(max(100L,ncol(DT)+64L))
+    verbose = getOption("datatable.verbose"))   # default: FALSE
 }
 \arguments{
 \item{x}{ Any type of vector, including \code{data.table} which is a \code{list} vector of column pointers. }

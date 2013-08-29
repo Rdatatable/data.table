@@ -76,7 +76,7 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
     tables()              # KEY column reports the key'd columns
     key(DT)
     keycols = c("A","B")
-    setkeyv(DT,keycols)    # rather than key(DT)<-keycols (which copies entire table)
+    setkeyv(DT,keycols)   # rather than key(DT)<-keycols (which copies entire table)
     
     DT = data.table(A=5:1,B=letters[5:1])
     DT2 = DT              # does not copy
@@ -89,7 +89,7 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
     identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
     
     DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies, as of R 2.15.1
-    try(tracemem(DF))                  # try() for non-Windows where R is faster without memory profiling
+    try(tracemem(DF))                  # try() for R sessions opted out of memory profiling
     colnames(DF)[1] <- "A"             # 4 copies of entire object
     names(DF)[1] <- "A"                # 3 copies of entire object
     names(DF) <- c("A", "b")           # 1 copy of entire object
