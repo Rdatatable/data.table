@@ -63,7 +63,11 @@ SEXP rbindlist(SEXP l)
             case STRSXP :
                 if (isFactor(thiscol)) {
                     levels = getAttrib(thiscol, R_LevelsSymbol);
-                    for (r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(levels,INTEGER(thiscol)[r]-1));
+                    for (r=0; r<thislen; r++)
+                        if (INTEGER(thiscol)[r]==NA_INTEGER)
+                            SET_STRING_ELT(target, ansloc+r, NA_STRING);
+                        else
+                            SET_STRING_ELT(target, ansloc+r, STRING_ELT(levels,INTEGER(thiscol)[r]-1));
                 } else {
                     for (r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
                 }
