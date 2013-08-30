@@ -59,13 +59,10 @@ NEW FEATURES
      * An unintended 50,000 column limit in fread has been removed. Thanks to mpmorley for reporting. Test added.
        http://stackoverflow.com/questions/18449997/fread-protection-stack-overflow-error
 
-  o  "Uniqueness" tests can now specify arbitrary combinations of columns to use to test for duplicates.
-    `by` parameter added to unique.data.table and duplicated.data.table. This allows the user to
-     test for uniqueness using any combination of columns in the data.table, where previously the user only
-     had the option to use the keyed columns (if keyed) or all columns (if not). The default behaviour sets
-     `by=key(dt)` to maintain backward compatibility. See man/duplicated.Rd and tests 986:991 for
-     more information. Thanks to Arunkumar Srinivasan, Ricardo Saporta, and Frank Erickson for useful
-     discussions.
+  o  unique() and duplicated() methods gain 'by' to allow testing for uniqueness using any subset of columns,
+     not just the keyed columns (if keyed) or all columns (if not). By default by=key(dt) for backwards
+     compatibility. ?duplicated has been revised and tests added.
+     Thanks to Arunkumar Srinivasan, Ricardo Saporta, and Frank Erickson for useful discussions.
 
   o  CJ() is 90% faster on 1e6 rows for example, #4849. The inputs are now sorted first before combining
      rather than after combining (thanks to Arun Srinivasan), rep.int instead of rep (thanks to Sean Garborg)

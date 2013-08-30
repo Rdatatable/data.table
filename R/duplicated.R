@@ -46,9 +46,9 @@ unique.data.table <- function(x, incomparables=FALSE,
     if (use.sub.cols) {
         ## Did the user specify (integer) indexes for the columns?
         if (is.numeric(by)) {
-            if (as.integer(by) != by) {
-                stop("Integer values required for by if specifying ",
-                     "column indices")
+            if (any(as.integer(by) != by) || any(by<1) || any(by>ncol(x))) {
+                stop("Integer values between 1 and ncol are required for 'by' when ",
+                     "column indices. It's often better to use column names.")
             }
             by <- names(x)[by]
         }
@@ -57,7 +57,7 @@ unique.data.table <- function(x, incomparables=FALSE,
         }
         bad.cols <- setdiff(by, names(x))
         if (length(bad.cols)) {
-            stop("by specifies column names that do no exist in `x`")
+            stop("by specifies column names that do not exist. First 5: ",paste(head(bad.cols,5),collapse=","))
         }
 
         use.keyprefix = haskey(x) &&

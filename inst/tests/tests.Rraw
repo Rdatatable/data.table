@@ -2713,6 +2713,10 @@ test(988, unique(dt, by='B'), dt[!duplicated(df[, 'B'])])
 test(989, unique(dt, by='C'), dt[!duplicated(df[, 'C'])])
 test(990, unique(dt, by=c('B', 'C')), dt[!duplicated(df[, c('B', 'C')])])
 test(991, unique(dt, by=NULL), dt[!duplicated(df)])
+test(991.1, unique(dt, by=4), error="Integer values between 1 and ncol are required")
+test(991.2, unique(dt, by=c(1,3.1)), error="Integer values between 1 and ncol are required")
+test(991.3, unique(dt, by=2:3), dt[!duplicated(df[,c('B','C')])])
+test(991.4, unique(dt, by=c('C','D','E')), error="by specifies column names that do not exist. First 5: D,E")
 
 # :=NULL on factor column in empty data.table, #4809
 DT = data.table(A = integer(), B = factor())
