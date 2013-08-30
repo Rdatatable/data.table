@@ -18,7 +18,8 @@ NEW FEATURES
      * If some column names are blank they are now given default names rather than causing
        the header row to be read as a data row. Thanks to Simon Judes for suggesting.
 
-     * "+" and "-" are now read as character rather than integer 0. Thanks to Alvaro Gonzalez for reporting.
+     * "+" and "-" are now read as character rather than integer 0. Thanks to Alvaro Gonzalez and
+       Roby Joehanes for reporting, #4814.
        http://stackoverflow.com/questions/15388714/reading-strand-column-with-fread-data-table-package
 
      * % progress console meter has been removed. The ouput was inconvenient in batch mode, log files and
@@ -70,7 +71,8 @@ NEW FEATURES
      rather than after combining (thanks to Arun Srinivasan) and rep.int instead of rep (thanks to Sean Garborg).
      Reminder: CJ = Cross Join; i.e., joins to all combinations of its inputs. 
      
-  o  CJ() gains 'sorted' argument, by default TRUE for backwards compatibility. FALSE retains input order and is faster.
+  o  CJ() gains 'sorted' argument, by default TRUE for backwards compatibility. FALSE retains input order and is faster
+     to create the result of CJ() but then slower to join from since unkeyed.
   
 BUG FIXES
 
