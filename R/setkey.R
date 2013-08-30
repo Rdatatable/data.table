@@ -148,7 +148,7 @@ CJ = function(..., sorted = TRUE)
 	# using rep.int instead of rep speeds things up considerably (but attributes are dropped).
 	j <- lapply(l, class) # changed "vapply" to avoid errors with "ordered" "factor" input
 	if (length(l) == 1 && sorted) {
-		l[[1]] <- sort.int(l[[1]], na.last = TRUE, method="quick")
+		l[[1]] <- sort.int(l[[1]], na.last = FALSE, method="quick")
 	} else if (length(l) > 1) {
         n = vapply(l, length, 0L)
         nrow = prod(n)
