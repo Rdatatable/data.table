@@ -8,7 +8,7 @@ duplicated.data.table <- function(x, incomparables=FALSE,
     }
 
     query <- .duplicated.helper(x, by)
-    res <- rep(TRUE, nrow(x))
+    res <- rep.int(TRUE, nrow(x))
 
     if (query$use.keyprefix) {
         res[duplist(x[, query$by, with=FALSE], tolerance=tolerance)] = FALSE

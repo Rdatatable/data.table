@@ -68,7 +68,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             yy <- y[missingyidx]
             othercolsx <- setdiff(names(xkey), by)
             if (length(othercolsx)) {
-                tmp = rep(NA_integer_, length(missingyidx))
+                tmp = rep.int(NA_integer_, length(missingyidx))
                 yy <- cbind(yy, xkey[tmp, othercolsx, with = FALSE])
                 setnames(yy, make.unique(names(yy)))
             }

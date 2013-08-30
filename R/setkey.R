@@ -158,7 +158,7 @@ CJ = function(..., sorted = TRUE)
             if (sorted) # using `is.unsorted(y)` as well would be nice, but it'll be trouble with inputs with NA. 
 				y <- sort.int(y, na.last = TRUE, method="quick") # no worries for ties because there are no row.names or attributes to worry about.
 			if (i == 1) 
-				l[[i]] <- rep.int(y, times = rep.int(x[i], n[i])) 
+				l[[i]] <- rep.int(y, times = rep.int(x[i], n[i]))   # i.e. rep(y, each=x[i])
 			else if (i == length(n))
 				l[[i]] <- rep.int(y, times = nrow/(x[i]*n[i]))
 			else

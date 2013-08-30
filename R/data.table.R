@@ -115,7 +115,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     # the arguments to the data.table() function form the column names,  otherwise the expression itself
     tt <- as.list(substitute(list(...)))[-1L]  # Intention here is that data.table(X,Y) will automatically put X and Y as the column names.  For longer expressions, name the arguments to data.table(). But in a call to [.data.table, wrap in list() e.g. DT[,list(a=mean(v),b=foobarzoo(zang))] will get the col names
     vnames = names(tt)
-    if (is.null(vnames)) vnames = rep("",length(x))
+    if (is.null(vnames)) vnames = rep.int("",length(x))
     vnames[is.na(vnames)] = ""
     novname = vnames==""
     if (any(!novname)) {
@@ -149,7 +149,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         nrows[i] <- NROW(xi)    # for a vector (including list() columns) returns the length
         if (numcols[i]>0L) {
             namesi <- names(xi)  # works for both data.frame's, matrices and data.tables's
-            if (length(namesi)==0L) namesi = rep("",ncol(xi))
+            if (length(namesi)==0L) namesi = rep.int("",ncol(xi))
             namesi[is.na(namesi)] = ""
             tt = namesi==""
             if (any(tt)) namesi[tt] = paste("V", which(tt), sep = "")
@@ -249,7 +249,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
     if (isTRUE(rolltolast)) { roll=+Inf; rollends=c(FALSE,FALSE) }  # for backwards compatibility (rolltolast is deprecated)
     if (!is.logical(rollends)) stop("rollends must be a logical vector")
     if (length(rollends)>2) stop("rollends must be length 1 or 2")
-    if (length(rollends)==1) rollends=rep(rollends,2)
+    if (length(rollends)==1) rollends=rep.int(rollends,2L)
     # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
     missingnomatch = missing(nomatch)
     if (!is.na(nomatch) && nomatch!=0L) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
@@ -582,7 +582,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             for (s in seq_along(j)) ans[[s]] = x[[j[s]]]  # TO DO: return marked/safe shallow copy back to user
         else {
             if (is.data.table(i) && is.na(nomatch) && any(is.na(irows))) {   # TO DO: any(is.na()) => anyNA() and presave it
-                if (any(j %in% rightcols)) ii = rep(seq_len(nrow(i)),len__)
+                if (any(j %in% rightcols)) ii = rep.int(seq_len(nrow(i)),len__)
                 for (s in which(j %in% rightcols))
                     ans[[s]] = i[[leftcols[match(j[s],rightcols)]]][ii]
                     # So that NA matches from i get the i values, as xss expects further below.
@@ -716,7 +716,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             }
             tt = sapply(byval,length)
             if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be same length as rows in x or number of rows returned by i (",xnrow,").")
-            if (is.null(bynames)) bynames = rep("",length(byval))
+            if (is.null(bynames)) bynames = rep.int("",length(byval))
             if (any(bynames=="")) {
                 if (length(bysubl)<2) stop("When 'by' or 'keyby' is list() we expect something inside the brackets")
                 for (jj in seq_along(bynames)) {
@@ -773,7 +773,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
         jsubl = as.list.default(jsub)  # TO DO: names(jsub) and names(jsub)="" seem to work so make use of that
         if (length(jsubl)>1) {
             jvnames = names(jsubl)[-1L]   # check list(a=sum(v),v)
-            if (is.null(jvnames)) jvnames = rep("", length(jsubl)-1L)
+            if (is.null(jvnames)) jvnames = rep.int("", length(jsubl)-1L)
             for (jj in seq.int(2L,length(jsubl))) {
                 if (jvnames[jj-1L] == "" && mode(jsubl[[jj]])=="name")
                     jvnames[jj-1L] = gsub("^[.]N$","N",deparse(jsubl[[jj]]))
@@ -1203,7 +1203,7 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
     if (any(n<max(n)))
 	for (i in which(n<max(n))) {
 		if (!is.null(x[[i]]))
-			x[[i]] = rep(x[[i]],length=max(n))
+			x[[i]] = rep(x[[i]], length.out=max(n))
 	}
     if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
     setattr(x,"row.names",.set_row_names(max(n)))
