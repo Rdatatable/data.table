@@ -1,14 +1,15 @@
 Package: data.table
 Version: 1.8.9
 Title: Extension of data.frame for fast indexing, fast ordered joins, fast assignment, fast grouping and list columns.
-Author: M Dowle, T Short, S Lianoglou
+Author: M Dowle, T Short, S Lianoglou with contributions from A Srinivasan, R Saporta
 Maintainer: Matthew Dowle <mdowle@mdowle.plus.com>
 Depends: R (>= 2.12.0)
 Imports: methods
 Suggests: chron, ggplot2 (>= 0.9.0), plyr, reshape, testthat (>= 0.4), hexbin, fastmatch, nlme, xts, bit64
-Description: Enhanced data.frame. Fast indexing, fast ordered joins, fast assignment, fast grouping and list columns in a short and flexible syntax. i and j may be expressions of column names directly, for faster development.  Example: X[Y] is a fast join for large data.
+Description: Enhanced data.frame. Fast indexing, fast ordered joins, fast assignment by reference, fast grouping and list columns in a short and flexible syntax. i and j may be expressions of column names directly, for faster development.  Example: X[Y] is a fast join for large data.
 License: GPL (>= 2)
-URL: http://datatable.r-forge.r-project.org/
+URL: http://datatable.r-forge.r-project.org/,  http://stackoverflow.com/questions/tagged/data.table
 BugReports: https://r-forge.r-project.org/tracker/?group_id=240
+MailingList: datatable-help@lists.r-forge.r-project.org
 ByteCompile: TRUE
 

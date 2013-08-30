@@ -30,7 +30,7 @@ NEW FEATURES
 
      * colClasses has been added. Same character vector format as read.csv (may be named or unnamed), but
        additionally may be type list. Type list enables setting ranges of columns by numeric position.
-       NB: colClasses is intended for rare overrides, not routine use.
+       NOTE: colClasses is intended for rare overrides, not routine use.
 
      * fread now supports files larger than 4GB on 64bit Windows (#2767 thanks to Paul Harding) and files
        between 2GB and 4GB on 32bit Windows (#2655 thanks to Vishal). A C call to GetFileSize() needed to
@@ -45,7 +45,7 @@ NEW FEATURES
        line skip+1 will be taken as the first data row, or column names according to header="auto"|TRUE|FALSE
        as usual. Or, skip="string" uses the first line containing "string" (chosen to be a substring of the
        column name row unlikely to appear earlier), inspired by read.xls in package gdata.
-       Thanks to Gabor Grothendieck for the suggestions.
+       Thanks to Gabor Grothendieck for these suggestions.
 
      * fread now stops reading if an empty line is encountered, with warning if any text exists after that
        such as a footer (the first line of which will be included in the warning message).
@@ -56,7 +56,7 @@ NEW FEATURES
      * "nan%" observed in output of fread(...,verbose=TRUE) timings are now 0% when fread takes 0.000 seconds.
 
      * An unintended 50,000 column limit in fread has been removed. Thanks to mpmorley for reporting. Test added.
-         http://stackoverflow.com/questions/18449997/fread-protection-stack-overflow-error
+       http://stackoverflow.com/questions/18449997/fread-protection-stack-overflow-error
 
   o  "Uniqueness" tests can now specify arbitrary combinations of columns to use to test for duplicates.
     `by` parameter added to unique.data.table and duplicated.data.table. This allows the user to
@@ -66,14 +66,17 @@ NEW FEATURES
      more information. Thanks to Arunkumar Srinivasan, Ricardo Saporta, and Frank Erickson for useful
      discussions.
 
-  o  CJ = Cross Join; i.e., joins to all combinations of its inputs, is over 90% faster on 1e6 rows. 
-     This is related to # 4849. Thanks to Sean Garborg for suggesting the use of `rep.int` instead of 
-	 `rep`. CJ() gains 'sorted', by default TRUE for backwards compatibility. FALSE retains input order.
+  o  DT[CJ(...)] is 90% faster on 1e6 rows for example, #4849. The inputs are now sorted first before combining
+     rather than after combining (thanks to Arun Srinivasan) and rep.int instead of rep (thanks to Sean Garborg).
+     Reminder: CJ = Cross Join; i.e., joins to all combinations of its inputs. 
+     
+  o  CJ() gains 'sorted' argument, by default TRUE for backwards compatibility. FALSE retains input order and is faster.
   
 BUG FIXES
 
-  o  merge now properly handles data.tables with zero-rows. This was bug # 2633.
-     Thank you to Vinicius Almendra for submitting it.
+  o  merge now returns no rows (rather than NA rows) when y is empty and all.y=TRUE (or all=TRUE), #2633. Thanks
+     to Vinicius Almendra for reporting :
+       http://stackoverflow.com/questions/15566250/merge-data-table-with-all-true-introduces-na-row-is-this-correct
 
   o  rbind now handles data.tables and lists with non-standard and/or duplicate names.
      These were bugs # 2726 & # 2384 Thank you to Garrett See.
@@ -81,7 +84,7 @@ BUG FIXES
   o  rbind, cbind and merge on data.table should now work in packages that Import but do not
      Depend on data.table. Many thanks to a patch to .onLoad from Ken Williams, and related
      posts from Victor Kryukov :
-	     http://r.789695.n4.nabble.com/Import-problem-with-data-table-in-packages-tp4665958.html
+	   http://r.789695.n4.nabble.com/Import-problem-with-data-table-in-packages-tp4665958.html
 
   o  Mixing adding and updating into one DT[, `:=`(existingCol=...,newCol=...), by=...] now works
      without error or segfault, #2778 and #2528. Many thanks to Arunkumar Srinivasan for reporting
@@ -92,13 +95,13 @@ BUG FIXES
 
   o  Deleting a (0-length) factor column using :=NULL on an empty data.table now works, #4809. Thanks
      to Frank Pinter for reporting. Test added.
-         http://stackoverflow.com/questions/18089587/error-deleting-factor-column-in-empty-data-table
+       http://stackoverflow.com/questions/18089587/error-deleting-factor-column-in-empty-data-table
 
   o  Writing FUN= in DT[,lapply(.SD,FUN=...),] now works, #4893. Thanks to Jan Wijffels for
      reporting and Arun for suggesting and testing a fix. Committed and test added.
-         http://stackoverflow.com/questions/18314757/why-cant-i-used-fun-in-lapply-when-grouping-by-using-data-table
+       http://stackoverflow.com/questions/18314757/why-cant-i-used-fun-in-lapply-when-grouping-by-using-data-table
 	
-  o  The slowness of "transform" function has been fixed. This was bug #2599.
+  o  The slowness of transform() on data.table has been fixed, #2599. But, please use :=.
 
 USER VISIBLE CHANGES
 
@@ -114,11 +117,11 @@ USER VISIBLE CHANGES
 
   o  data.table(NULL) now prints "Null data.table (0 rows and 0 cols)" and FAQ 2.5 has been
      improved. Thanks to:
-        http://stackoverflow.com/questions/15317536/is-null-does-not-work-on-null-data-table-in-r-possible-bug
+       http://stackoverflow.com/questions/15317536/is-null-does-not-work-on-null-data-table-in-r-possible-bug
 
   o  The braces {} have been removed from rollends's default, to solve a trace() problem. Thanks
 	 to Josh O'Brien's investigation :
-	 http://stackoverflow.com/questions/15931801/why-does-trace-edit-true-not-work-when-data-table
+	   http://stackoverflow.com/questions/15931801/why-does-trace-edit-true-not-work-when-data-table
 
 NOTES
 
@@ -130,6 +133,12 @@ NOTES
        http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
 
   o  There are now 995 raw tests, as reported by test.data.table().
+  
+  o  Welcome to Arunkumar Srinivasan and Ricardo Saporta who have joined the project and contributed directly
+     by way of commits above.
+     
+  o  v1.8.9 was on R-Forge only. v1.8.10 was released to CRAN.
+     Odd numbers are development, evens on CRAN.
 
 
         *********************************************
