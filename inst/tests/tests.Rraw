@@ -2741,6 +2741,13 @@ xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2)
 test(996, CJ(xx, yy), setkey(data.table(rep(xx, each=2), rep(sort.int(yy), 2))))
 
+# That CJ orders NA consistently with setkey and historically, now it doesn't use setkey.
+# NA must always come first in data.table throughout, since binary search relies on that internally.
+test(997, DT <- CJ(c(1,3,NA,2), 5:6), setkey(setkey(copy(DT),NULL)))  # double setkey to really rebuild key
+test(998, DT <- CJ(as.integer(c(1,3,NA,2)), 5:6), setkey(setkey(copy(DT),NULL)))
+test(999, DT <- CJ(c("A","B",NA,"C"), 5:6), setkey(setkey(copy(DT),NULL)))
+test(1000, DT <- CJ(c(1,NA,3), c("B",NA,"A"), c(5L,NA_integer_)), setkey(setkey(copy(DT),NULL)))
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key

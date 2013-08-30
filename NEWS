@@ -132,7 +132,7 @@ NOTES
      And a pointer to ?truelength has been added to an error message as suggested and thanks to Roland :
        http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
 
-  o  There are now 995 raw tests, as reported by test.data.table().
+  o  There are now 1,000 raw tests, as reported by test.data.table().
   
   o  Welcome to Arunkumar Srinivasan and Ricardo Saporta who have joined the project and contributed directly
      by way of commits above.
