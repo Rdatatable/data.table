@@ -67,8 +67,9 @@ NEW FEATURES
      more information. Thanks to Arunkumar Srinivasan, Ricardo Saporta, and Frank Erickson for useful
      discussions.
 
-  o  DT[CJ(...)] is 90% faster on 1e6 rows for example, #4849. The inputs are now sorted first before combining
-     rather than after combining (thanks to Arun Srinivasan) and rep.int instead of rep (thanks to Sean Garborg).
+  o  CJ() is 90% faster on 1e6 rows for example, #4849. The inputs are now sorted first before combining
+     rather than after combining (thanks to Arun Srinivasan), rep.int instead of rep (thanks to Sean Garborg)
+     and only sorted if is.unsorted(), #2321.
      Reminder: CJ = Cross Join; i.e., joins to all combinations of its inputs. 
      
   o  CJ() gains 'sorted' argument, by default TRUE for backwards compatibility. FALSE retains input order and is faster

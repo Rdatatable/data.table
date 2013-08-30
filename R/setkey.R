@@ -147,17 +147,17 @@ CJ = function(..., sorted = TRUE)
 
 	# using rep.int instead of rep speeds things up considerably (but attributes are dropped).
 	j <- lapply(l, class) # changed "vapply" to avoid errors with "ordered" "factor" input
-	if (length(l) == 1 && sorted) {
-		l[[1]] <- sort.int(l[[1]], na.last = FALSE, method="quick")
-	} else if (length(l) > 1) {
+	if (length(l)==1L && sorted && !identical(is.unsorted(l[[1L]]),FALSE)) {
+		l[[1L]] <- sort.int(l[[1L]], na.last=FALSE, method="quick")
+	} else if (length(l) > 1L) {
         n = vapply(l, length, 0L)
         nrow = prod(n)
         x = c(rev(take(cumprod(rev(n)))), 1L)
         for (i in seq_along(x)) {
 			y <- l[[i]]
-            if (sorted) # using `is.unsorted(y)` as well would be nice, but it'll be trouble with inputs with NA. 
+            if (sorted && !identical(is.unsorted(y),FALSE))  # any NAs will cause a sort, even if they are at the beginning (can live with that)
 				y <- sort.int(y, na.last=FALSE, method="quick") # no worries for ties because there are no row.names or attributes to worry about.
-			if (i == 1) 
+			if (i == 1L) 
 				l[[i]] <- rep.int(y, times = rep.int(x[i], n[i]))   # i.e. rep(y, each=x[i])
 			else if (i == length(n))
 				l[[i]] <- rep.int(y, times = nrow/(x[i]*n[i]))
@@ -168,7 +168,7 @@ CJ = function(..., sorted = TRUE)
 			   setattr(l[[i]], 'class', j[[i]]) # reset "Date" class - rep.int coerces to integer
 		}
 	}
-    setattr(l, "row.names", .set_row_names(length(l[[1]])))
+    setattr(l, "row.names", .set_row_names(length(l[[1L]])))
     setattr(l, "class", c("data.table", "data.frame"))
 
     if (is.null(vnames <- names(l))) 
