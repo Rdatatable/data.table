@@ -143,7 +143,7 @@ CJ = function(..., sorted = TRUE)
     # Cross Join will then produce a join table with the combination of all values (cross product).
     # The last vector is varied the quickest in the table, so dates should be last for roll for example
     l = list(...)
-    # for (i in seq(along=l)) if (storage.mode(l[[i]])=="double") mode(l[[i]])="integer"
+    # for (i in seq_along(l)) if (storage.mode(l[[i]])=="double") mode(l[[i]])="integer"
 
 	# using rep.int instead of rep speeds things up considerably (but attributes are dropped).
 	j <- lapply(l, class) # changed "vapply" to avoid errors with "ordered" "factor" input
@@ -153,7 +153,7 @@ CJ = function(..., sorted = TRUE)
         n = vapply(l, length, 0L)
         nrow = prod(n)
         x = c(rev(take(cumprod(rev(n)))), 1L)
-        for (i in seq(along = x)) {
+        for (i in seq_along(x)) {
 			y <- l[[i]]
             if (sorted) # using `is.unsorted(y)` as well would be nice, but it'll be trouble with inputs with NA. 
 				y <- sort.int(y, na.last = TRUE, method="quick") # no worries for ties because there are no row.names or attributes to worry about.
