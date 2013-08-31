@@ -1341,34 +1341,17 @@ tail.data.table = function(x, n=6, ...) {
 
     ## There are (at least) two possible anomalies relating to column names that can cause undesired results
     ## (1) Duplicate names and (2) Improper or randomly-absent names, such as NA or "". 
-    ## We can try to enumerate all the possible error-causing conditions and address each, or instead we can
+    ## We can try to address (1) and (2) separately, or instead we can
     ##    * store the original names (say, from allargs[[1]] )
     ##    * then use make.names on all the names
     ##    * use setnames to apply back the original name right before returning the final value
-    ## This latter method addresses both  #2384 & #2726
-
-    #x  ## THIS IS THE IMPLEMENTATION OF THE FORMER METHOD, SPECIFICALLY FOR NA VALUES. 
-    #X  ## feel free to delete this. I left this simply in case for whatever reason the alternate method was rejected 
-    #x  # Check for NA in column names
-    #x  na.repl <- "NA."  # This is what NA column-names will be replaced with
-    #x  nm.all <- lapply(allargs, names)
-    #x  has.na <- sapply(nm.all, function(nm) any(is.na(nm)))
-    #x  if (any(has.na)) {
-    #x      warning("Some columns have NA column names. These will be replaced with the string \"", na.repl, "\"")
-    #x      # clean up the NA column
-    #x      for (h in which(has.na))
-    #x          # identify which column name is NA and replace that name.
-    #x          setnames(allargs[[h]], which(is.na( nm.all[[h]] )), na.repl )
-    #x  }
-
-    # store original names
+    ## This latter method addresses both #2384 & #2726
     nm.original <- copy(names(allargs[[1L]]))
-    # clean up all names
     for (A in allargs)  {
-        mk.nm <- make.names(names(A))
+        mk.nm <- make.names(names(A), unique=TRUE)
         if (!identical(names(A), mk.nm)) {
             if (is.data.table(A))
-                setnames(A, make.names(names(A), unique=TRUE))
+                setnames(A, mk.nm)
             else 
                 names(A) <- mk.nm
         }

@@ -2765,6 +2765,13 @@ test(1003, merge(a,b[0],all=TRUE), data.table(merge.data.frame(a,b[0],all=TRUE),
 DT = data.table("Date and Time"=1:3,x=4:6)
 test(1004, setkey(copy(DT),`Date and Time`), setkey(DT,"Date and Time"))
 
+# rbinding with duplicate names, NA or "", #2384 and #2726
+DT = data.table(a=1:3,b=4:6,b=7:9,c=10:12)
+test(1005, rbind(DT,DT), data.table(a=rep(1:3,2),b=rep(4:6,2),b=rep(7:9,2),c=rep(10:12,2)))
+M <- mtcars
+colnames(M)[11] <- NA
+test(1006, print(as.data.table(M), nrows=10), output="gear NA.*1: 21.0")
+
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
