@@ -1340,8 +1340,8 @@ tail.data.table = function(x, n=6, ...) {
     }
 
     ## There are (at least) two possible anomalies relating to column names that can cause undesired results
-    ## (1) Duplicate names and (2) Improper or randomlly-absent names, such as NA or "". 
-    ## We can try to enumerate all the possible error-causing conditions and address eac, or instead we can
+    ## (1) Duplicate names and (2) Improper or randomly-absent names, such as NA or "". 
+    ## We can try to enumerate all the possible error-causing conditions and address each, or instead we can
     ##    * store the original names (say, from allargs[[1]] )
     ##    * then use make.names on all the names
     ##    * use setnames to apply back the original name right before returning the final value

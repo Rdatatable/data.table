@@ -102,6 +102,10 @@ BUG FIXES
        http://stackoverflow.com/questions/18314757/why-cant-i-used-fun-in-lapply-when-grouping-by-using-data-table
 	
   o  The slowness of transform() on data.table has been fixed, #2599. But, please use :=.
+  
+  o  setkey(DT,`Colname with spaces`) now works, #2452.
+     setkey(DT,"Colname with spaces") worked already.
+     
 
 USER VISIBLE CHANGES
 
@@ -132,7 +136,7 @@ NOTES
      And a pointer to ?truelength has been added to an error message as suggested and thanks to Roland :
        http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
 
-  o  There are now 1,000 raw tests, as reported by test.data.table().
+  o  There are now 1,004 raw tests, as reported by test.data.table().
   
   o  Welcome to Arunkumar Srinivasan and Ricardo Saporta who have joined the project and contributed directly
      by way of commits above.
