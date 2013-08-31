@@ -25,6 +25,17 @@ compactprint = function(DT, topn=2) {
     invisible()
 }
 test = function(num,x,y=NULL,error,warning,output) {
+    # Usage:
+    # i) tests that x equals y when both x and y are supplied, the most common usage
+    # ii) tests that x is TRUE when y isn't supplied
+    # iii) if error is supplied, y should be missing and x is tested to result in an error message matching the pattern
+    # iv) if warning is supplied, y (if supplied) is checked to equal x, and x should result in a warning message matching the pattern
+    # v) if output is supplied, x is evaluated and printed and the output is checked to match the pattern
+    # At most one of error, warning or output may be supplied, all single character strings. 
+    # num just needs to be numeric and unique. We normally increment integers at the end, but inserts can be made using decimals e.g. 10,11,11.1,11.2,12,13,...
+    # Motivation: i) we'd like to know all tests that fail not just stop at the first (often helps to reveal a common feature across a set of
+    # failing tests), ii) test() tests more deeply than a diff on output files and iii) each test has a unique id which we refer to in commit
+    # messages, emails etc.
     .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
@@ -40,6 +51,7 @@ test = function(num,x,y=NULL,error,warning,output) {
                length(grep(patt,err)) &&
                type==observedtype)) {
             cat("Test",num,"didn't produce correct",type,":\n")
+            cat(">",deparse(substitute(x)),"\n")
             cat("Expected ",type,": '",txt,"'\n",sep="")
             cat("Observed ",observedtype,": '",gsub("^[(]converted from warning[)] ","",gsub("\n$","",gsub("^Error.* : \n  ","",as.character(err)))),"'\n",sep="")
             nfail <<- nfail + 1
@@ -65,6 +77,7 @@ test = function(num,x,y=NULL,error,warning,output) {
         output = gsub("[)]","[)]",output)
         if (!length(grep(output,out))) {
             cat("Test",num,"didn't produce correct output:\n")
+            cat(">",deparse(substitute(x)),"\n")
             cat("Expected: '",output,"'\n",sep="")
             cat("Observed: '",out,"'\n",sep="")
             nfail <<- nfail + 1
@@ -76,6 +89,7 @@ test = function(num,x,y=NULL,error,warning,output) {
     if (missing(y)) {
         if (isTRUE(as.vector(x))) return()  # as.vector to drop names of a named vector such as returned by system.time
         cat("Test",num,"expected TRUE (y is missing) but observed:\n")
+        cat(">",deparse(substitute(x)),"\n")
         if (is.data.table(x)) compactprint(x) else print(x)
         nfail <<- nfail + 1
         whichfail <<- c(whichfail, num)
@@ -103,8 +117,10 @@ test = function(num,x,y=NULL,error,warning,output) {
         }
         if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal(x,y))) return()   # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     }
-    cat("Test",num,"ran without errors but failed check:\n")
+    cat("Test",num,"ran without errors but failed check that x equals y:\n")
+    cat("> x =",deparse(substitute(x)),"\n")
     if (is.data.table(x)) compactprint(x) else print(x)
+    cat("> y =",deparse(substitute(y)),"\n")
     if (is.data.table(y)) compactprint(y) else print(y)
     nfail <<- nfail + 1
     whichfail <<- c(whichfail, num)
@@ -2793,9 +2809,9 @@ test(1006, print(as.data.table(M), nrows=10), output="gear NA.*1: 21.0")
 ##########################
 options(warn=0)
 if (nfail > 0) {
-    s = ifelse(nfail>1,"s","")
-    stop(nfail," error",s," out of ",lastnum, " in inst/tests/tests.Rraw. Test number",s," : ",paste(whichfail,collapse=","))
-    # important to stop here, so than 'R CMD check' fails
+    if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
+    stop(nfail," error",s1," out of ",lastnum, " in inst/tests/tests.Rraw. Search tests.Rraw for test number",s2,paste(whichfail,collapse=","),". The test() function is defined at the top of tests.Rraw and contains usage info.")
+    # important to stop here, so that 'R CMD check' fails
 }
 cat("All",lastnum,"tests in inst/tests/tests.Rraw completed ok in",timetaken(started.at),"on",date(),"\n")
 # Reporting lastnum rather than ntest makes it easier to check user has the latest version, assuming
