@@ -136,6 +136,11 @@ NOTES
   o  The default for datatable.alloccol has changed from max(100L, 2L*ncol(DT)) to max(100L, ncol(DT)+64L).
      And a pointer to ?truelength has been added to an error message as suggested and thanks to Roland :
        http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
+       
+  o  For packages wishing to use data.table optionally (e.g. according to user of that package) and therefore
+     not wishing to Depend on data.table (which is the normal determination of data.table-awareness via .Depends),
+     `.datatable.aware` may be set to TRUE in such packages which cedta() will look for, as before. But now it doesn't
+     need to be exported. Thanks to Hadley Wickham for the suggestion and solution.
 
   o  There are now 1,006 raw tests, as reported by test.data.table().
   
