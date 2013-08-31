@@ -74,12 +74,12 @@ NEW FEATURES
   
 BUG FIXES
 
-  o  merge now returns no rows (rather than NA rows) when y is empty and all.y=TRUE (or all=TRUE), #2633. Thanks
-     to Vinicius Almendra for reporting :
+  o  merge no longer returns spurious NA row(s) when y is empty and all.y=TRUE (or all=TRUE), #2633. Thanks
+     to Vinicius Almendra for reporting. Test added.
        http://stackoverflow.com/questions/15566250/merge-data-table-with-all-true-introduces-na-row-is-this-correct
 
-  o  rbind now handles data.tables and lists with non-standard and/or duplicate names.
-     These were bugs # 2726 & # 2384 Thank you to Garrett See.
+  o  rbind now handles data.tables and lists with non-standard and/or duplicate names, #2726 & #2384.
+     Thanks to Garrett See for reporting.
 
   o  rbind, cbind and merge on data.table should now work in packages that Import but do not
      Depend on data.table. Many thanks to a patch to .onLoad from Ken Williams, and related

@@ -2753,6 +2753,13 @@ test(999, DT <- CJ(c("A","B",NA,"C"), 5:6), setkey(setkey(copy(DT),NULL)))
 test(1000, DT <- CJ(c(1,NA,3), c("B",NA,"A"), c(5L,NA_integer_)), setkey(setkey(copy(DT),NULL)))
 test(1001, DT <- CJ(c(1,NA,3)), setkey(setkey(copy(DT),NULL)))  # The 1 column case is switched inside CJ() so test that too.
 
+# merge all=TRUE when y is empty, #2633
+a = data.table(P=1:2,Q=3:4,key='P')
+b = data.table(P=2:3,R=5:6,key='P')
+test(1002, merge(a,b[0],all=TRUE), data.table(merge.data.frame(a,b[0],all=TRUE),key='P'))
+a = data.table(c=c(1,2),key='c')
+b = data.table(c=3,key='c')
+test(1003, merge(a,b[0],all=TRUE), data.table(merge.data.frame(a,b[0],all=TRUE),key='c'))
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
