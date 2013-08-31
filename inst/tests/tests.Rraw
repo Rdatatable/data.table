@@ -31,11 +31,14 @@ test = function(num,x,y=NULL,error,warning,output) {
     # iii) if error is supplied, y should be missing and x is tested to result in an error message matching the pattern
     # iv) if warning is supplied, y (if supplied) is checked to equal x, and x should result in a warning message matching the pattern
     # v) if output is supplied, x is evaluated and printed and the output is checked to match the pattern
-    # At most one of error, warning or output may be supplied, all single character strings. 
+    # At most one of error, warning or output may be supplied, all single character strings (passed to grep)
     # num just needs to be numeric and unique. We normally increment integers at the end, but inserts can be made using decimals e.g. 10,11,11.1,11.2,12,13,...
-    # Motivation: i) we'd like to know all tests that fail not just stop at the first (often helps to reveal a common feature across a set of
-    # failing tests), ii) test() tests more deeply than a diff on output files and iii) each test has a unique id which we refer to in commit
-    # messages, emails etc.
+    # Motivations:
+    # 1) we'd like to know all tests that fail not just stop at the first. This often helps by revealing a common feature across a set of
+    #    failing tests
+    # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
+    #    from all.equal and different to identical related to row.names and unused factor levels
+    # 3) each test has a unique id which we refer to in commit messages, emails etc.
     .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
