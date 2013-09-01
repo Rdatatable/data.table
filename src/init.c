@@ -30,6 +30,7 @@ SEXP vecseq();
 SEXP copyattr();
 SEXP setlistelt();
 SEXP setnamed();
+SEXP address();
 
 // .Externals
 SEXP fastmean();
@@ -59,6 +60,7 @@ R_CallMethodDef callMethods[] = {
 {"Ccopyattr", (DL_FUNC) &copyattr, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
 {"Csetnamed", (DL_FUNC) &setnamed, -1},
+{"Caddress", (DL_FUNC) &address, -1},
 {NULL, NULL, 0}
 };
 

@@ -71,6 +71,10 @@ NEW FEATURES
      
   o  CJ() gains 'sorted' argument, by default TRUE for backwards compatibility. FALSE retains input order and is faster
      to create the result of CJ() but then slower to join from since unkeyed.
+     
+  o  New function address() returns the address in RAM of its argument. Sometimes useful in determining whether a value
+     has been copied or not by R, programatically.
+       http://stackoverflow.com/a/10913296/403310
   
 BUG FIXES
 

@@ -1762,6 +1762,8 @@ rbindlist = function(l) {
 
 vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
 
+address = function(x) .Call(Caddress,x)
+
 ":=" = function(...) stop(':= and `:=`(...) are defined for use in j, once only and in particular ways. See help(":="). Check is.data.table(DT) is TRUE.')
 
 

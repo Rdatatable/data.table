@@ -13,6 +13,7 @@ export(setattr, setnames, setcolorder, set)
 export(chmatch, "%chin%", chorder, chgroup)
 export(rbindlist)
 export(fread)
+export(address)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
