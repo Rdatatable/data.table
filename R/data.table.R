@@ -100,19 +100,17 @@ null.data.table = function() {
 
 data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 {
-    # creates a data.table directly, without the overhead of creating a data.frame first (ie the overhead of rownames)
-    # you can convert from matrix and data.frame, to data.table, and retain the rownames in the first column - see as.data.table.matrix()
-    # multiple matrices, and data.frames can be passed in (each with colnames) and each of the colnames will be retained in the new data.table
-    # DONE: allow silent repition of input arguments, like data.frame() does
-    # DONE: expression text is checked to be strict name before using as a column name.
-    # DONE: if M is a matrix with cols a,b and c,  data.table(A=M,B=M) will create colnames A.a,A.b,A.c,B.a,B,b,B.c.  Also  data.table(M,M) will use make.names to make the columns unique (adds .1,.2,.3)
-    # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then class(l)="data.table" at the expense of checking.
-    #  TO DO: Could use nargs()-!missing(keep.rownames)-!missing(check.names)-!missing(key) to get length of `...`
-    x <- list(...)  # NAMED OBJECTS WILL BE A COPY HERE, TO DO: avoid.
-    # TO DO: use ..1 instead, but not clear exactly how in this case.
-    # One reason data.table() is needed, different and independent from data.frame(), is to allow list() columns.
+    # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then setattr(l,"class",c("data.table","data.frame")) at the expense of checking.
+    # TO DO: rewrite data.table(), one of the oldest functions here. Many people use data.table() to convert data.frame rather than
+    # as.data.table which is faster; speed could be better.  Revisit how many copies are taken in for example data.table(DT1,DT2) which
+    # cbind directs to.  And the nested loops for recycling lend themselves to being C level.
+    
+    x <- list(...)   # doesn't copy named inputs as from R 3.1.0 (a very welcome change)
+    if (getRversion() >= "3.1.0") .Call(CcopyNamedInList,x)   # But in this case, we need to copy named inputs. See test 548.2.
+    # **TO DO** Something strange with NAMED on components of `...`. To investigate. Or just port data.table() to C. This is why
+    # it's switched on R version, because extra copies are introduced would be introduced before 3.1.0, I think.
+    
     if (identical(x, list(NULL))) return( null.data.table() )
-    # the arguments to the data.table() function form the column names,  otherwise the expression itself
     tt <- as.list(substitute(list(...)))[-1L]  # Intention here is that data.table(X,Y) will automatically put X and Y as the column names.  For longer expressions, name the arguments to data.table(). But in a call to [.data.table, wrap in list() e.g. DT[,list(a=mean(v),b=foobarzoo(zang))] will get the col names
     vnames = names(tt)
     if (is.null(vnames)) vnames = rep.int("",length(x))

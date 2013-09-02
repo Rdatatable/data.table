@@ -53,4 +53,23 @@ SEXP address(SEXP x)
     return(ScalarString(mkChar(buffer)));
 }
 
+SEXP copyNamedInList(SEXP x)
+{
+    // As from R 3.1.0 list() no longer copies NAMED inputs
+    // Since data.table allows subassignment by reference, we need a way to copy NAMED inputs, still.
+    // But for many other applications (such as in j and elsewhere internally) the new non-copying list() in R 3.1.0 is very welcome.
+    
+    // This is intended to be called just after list(...) in data.table().  It isn't for use on a single data.table, as 
+    // member columns of a list aren't marked as NAMED when the VECSXP is.
+    
+    // For now, this makes the old behaviour of list() in R<3.1.0 available for use, where we need it.
+    
+    if (TYPEOF(x) != VECSXP) error("x isn't a VECSXP");
+    for (int i=0; i<LENGTH(x); i++) {
+	    if (NAMED(VECTOR_ELT(x, i))) {
+	        SET_VECTOR_ELT(x, i, duplicate(VECTOR_ELT(x,i)));
+	    }
+	}
+	return R_NilValue;
+}
 
