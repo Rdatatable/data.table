@@ -2802,6 +2802,11 @@ M <- mtcars
 colnames(M)[11] <- NA
 test(1006, print(as.data.table(M), nrows=10), output="gear NA.*1: 21.0")
 
+# rbinding factor with non-factor/character
+DT1 <- data.table(x=1:5, y=factor("a"))
+DT2 <- data.table(x=1:5, y=2)
+test(1007, rbindlist(list(DT1, DT2)), error="Column 2 of item 2 is not factor or character, inconsistent with column 2 of item 1")
+
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by

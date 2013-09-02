@@ -95,8 +95,7 @@ BUG FIXES
      without error or segfault, #2778 and #2528. Many thanks to Arunkumar Srinivasan for reporting
      and for the nice reproducible examples. Tests added.
 
-  o  rbindlist() now binds factor columns correctly, #2650. Thanks to Ricardo Saporta for
-     reporting. Test added.
+  o  rbindlist() now binds factor columns correctly, #2650. Thanks to many for reporting. Tests added.
 
   o  Deleting a (0-length) factor column using :=NULL on an empty data.table now works, #4809. Thanks
      to Frank Pinter for reporting. Test added.
@@ -146,7 +145,7 @@ NOTES
      `.datatable.aware` may be set to TRUE in such packages which cedta() will look for, as before. But now it doesn't
      need to be exported. Thanks to Hadley Wickham for the suggestion and solution.
 
-  o  There are now 1,006 raw tests, as reported by test.data.table().
+  o  There are now 1,007 raw tests, as reported by test.data.table().
   
   o  Welcome to Arunkumar Srinivasan and Ricardo Saporta who have joined the project and contributed directly
      by way of commits above.

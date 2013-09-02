@@ -69,6 +69,7 @@ SEXP rbindlist(SEXP l)
                         else
                             SET_STRING_ELT(target, ansloc+r, STRING_ELT(levels,INTEGER(thiscol)[r]-1));
                 } else {
+                    if (TYPEOF(thiscol) != STRSXP) error("Column %d of item %d is not factor or character, inconsistent with column %d of item %d", j+1,i+1,j+1,first+1);  // See test 1007 
                     for (r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
                 }
                 break;
