@@ -53,11 +53,17 @@ SEXP rbindlist(SEXP l)
             if (!thislen) continue;
             thiscol = VECTOR_ELT(li,j);
             if (thislen != length(thiscol)) error("Column %d of item %d is length %d, inconsistent with first column of that item which is length %d. rbindlist doesn't recycle as it already expects each item to be a uniform list, data.frame or data.table", j+1, i+1, length(thiscol), thislen);
-            if (TYPEOF(thiscol) != TYPEOF(target) && !bindFactor && !isFactor(thiscol)) {
-                thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
-                coerced = TRUE;
-                // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
-                // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
+            if (bindFactor) {
+                if (!isString(thiscol) && !isFactor(thiscol)) error("Column %d of item %d is not factor or character, inconsistent with column %d of item %d", j+1,i+1,j+1,first+1); // test 1007
+            } else {
+                if (isFactor(thiscol)) {
+                    if (!isString(target)) error("Column %d of item %d is factor, inconsistent with column %d of item %d", j+1,i+1,j+1,first+1); // test 1008
+                } else if (TYPEOF(thiscol) != TYPEOF(target)) {
+                    thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
+                    coerced = TRUE;
+                    // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
+                    // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
+                }
             }
             switch(TYPEOF(target)) {
             case STRSXP :
@@ -69,17 +75,19 @@ SEXP rbindlist(SEXP l)
                         else
                             SET_STRING_ELT(target, ansloc+r, STRING_ELT(levels,INTEGER(thiscol)[r]-1));
                 } else {
-                    if (TYPEOF(thiscol) != STRSXP) error("Column %d of item %d is not factor or character, inconsistent with column %d of item %d", j+1,i+1,j+1,first+1);  // See test 1007 
+                    if (TYPEOF(thiscol) != STRSXP) error("Internal logical error in rbindlist.c (not STRSXP), please report to datatable-help.");
                     for (r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
                 }
                 break;
             case VECSXP :
+                if (TYPEOF(thiscol) != VECSXP) error("Internal logical error in rbindlist.c (not VECSXP), please report to datatable-help.");
                 for (r=0; r<thislen; r++)
                     SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thiscol,r));
                 break;
             case REALSXP:
             case INTSXP:
             case LGLSXP:
+                if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c (thiscol's type should have been coerced to target), please report to datatable-help.");
                 size = SIZEOF(thiscol);
                 memcpy((char *)DATAPTR(target) + ansloc*size,
                        (char *)DATAPTR(thiscol),

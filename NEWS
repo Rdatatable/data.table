@@ -149,7 +149,7 @@ NOTES
      `.datatable.aware` may be set to TRUE in such packages which cedta() will look for, as before. But now it doesn't
      need to be exported. Thanks to Hadley Wickham for the suggestion and solution.
 
-  o  There are now 1,008 raw tests, as reported by test.data.table().
+  o  There are now 1,009 raw tests, as reported by test.data.table().
   
   o  Welcome to Arunkumar Srinivasan and Ricardo Saporta who have joined the project and contributed directly
      by way of commits above.
