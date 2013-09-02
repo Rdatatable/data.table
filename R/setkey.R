@@ -174,7 +174,7 @@ CJ = function(..., sorted = TRUE)
     if (is.null(vnames <- names(l))) 
         vnames = vector("character", length(l)) 
     if (any(tt <- vnames == "")) {
-        vnames[tt] = paste0("V", which(tt))
+        vnames[tt] = paste("V", which(tt), sep="")
 	    setattr(l, "names", vnames)
     }
     settruelength(l, 0L)
