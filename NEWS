@@ -110,6 +110,10 @@ BUG FIXES
   o  setkey(DT,`Colname with spaces`) now works, #2452.
      setkey(DT,"Colname with spaces") worked already.
      
+  o  mean() in j has been optimized since v1.8.2 (see NEWS below) but wasn't respecting na.rm=TRUE (the default).
+     Many thanks to Colin Fang for reporting. Test added.
+       http://stackoverflow.com/questions/18571774/data-table-auto-remove-na-in-by-for-mean-function
+     
 
 USER VISIBLE CHANGES
 
@@ -145,7 +149,7 @@ NOTES
      `.datatable.aware` may be set to TRUE in such packages which cedta() will look for, as before. But now it doesn't
      need to be exported. Thanks to Hadley Wickham for the suggestion and solution.
 
-  o  There are now 1,007 raw tests, as reported by test.data.table().
+  o  There are now 1,008 raw tests, as reported by test.data.table().
   
   o  Welcome to Arunkumar Srinivasan and Ricardo Saporta who have joined the project and contributed directly
      by way of commits above.

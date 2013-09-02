@@ -92,14 +92,14 @@ SEXP fastmean(SEXP args)
 	    case LGLSXP:
 	    case INTSXP:
 	        for (i = 0; i<l; i++) {
-		        if(INTEGER(x)[i] == NA_INTEGER) break;
+		        if(INTEGER(x)[i] == NA_INTEGER) {UNPROTECT(1); return(ans);}
 		        s += INTEGER(x)[i];
 		    }
 		    REAL(ans)[0] = (double) (s/l);
 	        break;
 	    case REALSXP:
 	        for (i = 0; i<l; i++) {
-	            if(ISNAN(REAL(x)[i])) break;
+	            if(ISNAN(REAL(x)[i])) {UNPROTECT(1); return(ans);}
 	            s += REAL(x)[i];
 	        }
 	        s /= l;
