@@ -12,13 +12,22 @@ This NEWS file summarises the main changes.
         **                                          **
         **********************************************
 
+NEW FEATURES
+
+  o  fread's integer64 argument is implemented. Allows reading of integer64 data as 'double' or
+     as 'character' instead of bit64::integer64 (which remains the default as before). Thanks to Chris Neff
+     for the suggestion. The default can be changed globally; e.g, options(datatable.integer64="character")
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
      closes the file first rather than holding a lock open, a Windows only problem.
      Thanks to nigmastar for reporting and Carl Witthoft for the hint. Tests added.
-       http://stackoverflow.com/questions/18597123/fread-data-table-locks-files 
+       http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
+       
+NOTES
 
+  o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.
 
         **********************************************
         **                                          **

@@ -13,7 +13,9 @@
 \usage{
 fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA",
 stringsAsFactors=FALSE, verbose=FALSE, autostart=30L, skip=-1L, select=NULL,
-colClasses=NULL, integer64=getOption("datatable.integer64"))
+colClasses=NULL,
+integer64=getOption("datatable.integer64")    # default: "integer64"
+)
 }
 \arguments{
   \item{input}{ Either the file name to read (containing no \\n character) or the input itself as a string (containing at least one \\n), see examples. In both cases, a length 1 character string. A filename input is passed through \code{\link[base]{path.expand}} for convenience and may be a URL starting http:// or file://. }
@@ -28,7 +30,7 @@ colClasses=NULL, integer64=getOption("datatable.integer64"))
   \item{skip}{ If -1 (default) use the procedure described below starting on line \code{autostart} to find the first data row. \code{skip>=0} means ignore \code{autostart} and take line \code{skip+1} as the first data row (or column names according to header="auto"|TRUE|FALSE as usual). \code{skip="string"} searches for \code{"string"} in the file (e.g. a substring of the column names row) and starts on that line (inspired by read.xls in package gdata). }
   \item{select}{ Not yet implemented. Vector of column names or positions to keep. Or, use \code{NULL} in colClasses to drop specified columns (by number if type list is used). }
   \item{colClasses}{ A character vector of classes (named or unnamed), as read.csv. Or, type list enables setting ranges of columns by numeric position. colClasses in fread is intended for rare overrides, not for routine use. fread will only promote a column to a higher type if colClasses requests it. It won't downgrade a column to a lower type since NAs would result. You have to coerce such columns afterwards yourself, if you really require data loss. }
-  \item{integer64}{ Not yet implemented. "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as base::read.csv does, possibly with loss of precision. Or, "character". }
+  \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{base::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
 }
 \details{
 

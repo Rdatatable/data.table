@@ -345,7 +345,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (!( (isInteger(skip) && LENGTH(skip)==1 && INTEGER(skip)[0]>=-1)  // NA_INTEGER is covered by >=-1
          ||(isString(skip) && LENGTH(skip)==1))) error("'skip' must be a length 1 vector of type numeric or integer >=-1, or single character search string");  
     if (!isNull(separg) && (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1)) error("'sep' must be 'auto' or a single character");
-    if (!isString(integer64) || LENGTH(integer64)!=1) error("'integer64' must be a single character string: 'integer64', 'double' or 'character'");
+    if (!isString(integer64) || LENGTH(integer64)!=1) error("'integer64' must be a single character string");
+    if (strcmp(CHAR(STRING_ELT(integer64,0)), "integer64")!=0 &&
+        strcmp(CHAR(STRING_ELT(integer64,0)), "double")!=0 &&
+        strcmp(CHAR(STRING_ELT(integer64,0)), "numeric")!=0 &&
+        strcmp(CHAR(STRING_ELT(integer64,0)), "character")!=0)
+        error("integer64='%s' which isn't 'integer64'|'double'|'numeric'|'character'", CHAR(STRING_ELT(integer64,0)));
 
     // ********************************************************************************************
     //   Point to text input, or open and mmap file
@@ -680,7 +685,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 if (type[k]<thisType) {
                     if (verbose) Rprintf("Column %d ('%s') was detected as type '%s' but bumped to '%s' as requested by colClasses\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType] );
                     type[k]=thisType;
-                } else if (verbose && type[k]>thisType) Rprintf("Column %d ('%s') has been detected as type '%s'. Ignoring request from colClasses to read as '%s' (a lower type) since NAs would result.\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType]);    
+                } else if (verbose && type[k]>thisType) warning("Column %d ('%s') has been detected as type '%s'. Ignoring request from colClasses to read as '%s' (a lower type) since NAs (or loss of precision) would result.\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType]);    
             }
         } else {
             if (!isNewList(colClasses)) {sprintf(errormsg,"colClasses is not type list or character vector");EXIT();}
@@ -711,9 +716,19 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             }
         }
     }
-    /*if (integer64 = "double" or "character") {
-        for (i=0; i<ncol; i++) if (type[i]==SXP_INT64) type[i] = SXP_REAL or SXP_STR;  // read INT64 as double as read.table does.
+    int readInt64As = SXP_INT64;
+    if (strcmp(CHAR(STRING_ELT(integer64,0)), "integer64")!=0) {
+        if (strcmp(CHAR(STRING_ELT(integer64,0)), "character")==0)
+            readInt64As = SXP_STR;
+        else // either 'double' or 'numeric' as checked above in input checks
+            readInt64As = SXP_REAL;
+        for (i=0; i<ncol; i++) if (type[i]==SXP_INT64) {
+            type[i] = readInt64As;
+            if (verbose) Rprintf("Column %d ('%s') has been detected as type 'integer64'. But reading this as '%s' according to the integer64 parameter.\n", i+1, CHAR(STRING_ELT(names,i)), CHAR(STRING_ELT(integer64,0)));
+        }
     }
+    if (verbose) { Rprintf("Type codes: "); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf(" (after applying colClasses and integer64)\n"); }
+    /*
     if (length(select)) {
         if (isString(select)) select = match them;  if any missing then warning;  if all missing then return empty dt with warning;
         else coerceVector(select, integer)
@@ -771,17 +786,20 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     break;   //  Most common case. Done with this field. Strtoll already moved ch for us to sit on next sep or eol.
                 }
                 ch=ch2;  // moves ch back ready for type bump and reread of this field (an INT64 would have been read fine by Strtoll)
-                SET_VECTOR_ELT(ans, j, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_INT64, i, j));
+                SET_VECTOR_ELT(ans, j, thiscol = coerceVectorSoFar(thiscol, type[j], readInt64As, i, j));
+                type[j] = readInt64As;
+                if (readInt64As == SXP_REAL) goto case_SXP_REAL;  // a goto here seems readable and reasonable to me
+                if (readInt64As == SXP_STR) goto case_SXP_STR;
             case SXP_INT64:
                 u.d = NA_REAL;
                 if (Strtoll()) { REAL(thiscol)[i] = u.d; break; }
                 SET_VECTOR_ELT(ans, j, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_REAL, i, j));
                 // A bump from INT to STR will bump through INT64 and then REAL before STR, coercing each time. Deliberately done this way. It's
                 // a small and very rare cost (see comments in coerceVectorSoFar), for better speed 99% of the time (saving deep branches).
-            case SXP_REAL:
+            case SXP_REAL: case_SXP_REAL:
                 if (Strtod()) { REAL(thiscol)[i] = u.d; break; }
                 SET_VECTOR_ELT(ans, j, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
-            case SXP_STR:
+            case SXP_STR: case_SXP_STR:
                 ch2=ch;
                 if (ch<eof && *ch=='\"') {ch++; while(++ch2<eof && *ch2!=eol && !(*ch2=='\"' && *(ch2-1)!='\\'));}
                 else while (ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;
