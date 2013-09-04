@@ -8,6 +8,7 @@
    
    \bold{Not for production use yet}. Not because it's unstable in the sense that it crashes or is buggy (your testing will show whether it is stable in your cases or not) but because \code{fread}'s arguments and behaviour is likely to change in future; i.e., we expect to make (hopefully minor) non-backwards-compatible changes. Why has it been released to CRAN then? Because a maintenance release was asked for by CRAN maintainers to comply with new stricter tests in R-devel, and a few Bioconductor packages depend on data.table and Bioconductor requires packages to pass R-devel checks. It was quicker to leave \code{fread} in and write these paragraphs, than take \code{fread} out.
    
+   `fread` if for \emph{regular} delimited files; i.e., where every row has the same number of columns. However, a secondary separator may be specified \emph{within} each column. Such columns are read as type \code{list} where each cell is itself a vector.
 }
 \usage{
 fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA",

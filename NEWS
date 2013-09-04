@@ -12,6 +12,12 @@ This NEWS file summarises the main changes.
         **                                          **
         **********************************************
 
+BUG FIXES
+
+  o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
+     closes the file first rather than holding a lock open, a Windows only problem.
+     Thanks to nigmastar for reporting and Carl Witthoft for the hint. Tests added.
+       http://stackoverflow.com/questions/18597123/fread-data-table-locks-files 
 
 
         **********************************************
