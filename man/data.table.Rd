@@ -1,4 +1,6 @@
-\name{data.table}
+\name{data.table-package}
+\alias{data.table-package}
+\docType{package}
 \alias{data.table}
 \alias{as.data.table}
 \alias{is.data.table}
