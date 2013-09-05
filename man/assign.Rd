@@ -26,7 +26,7 @@
 \code{:=} is defined for use in \code{j} only. It \emph{updates} or \emph{adds} the column(s) by reference. It makes no copies of any part of memory at all. Typical usages are :
 \preformatted{
     DT[i,colname:=value]                      # update (or add at the end if doesn't exist) a column called "colname" with value where i and (when new column) NA elsewhere
-    DT[i,"colname %":=value]                  # same. column called "colname %"
+    DT[i,"colname \%":=value]                  # same. column called "colname \%"
     DT[i,(3:6):=value]                        # update existing columns 3:6 with value. Aside: parens are not required here since : already makes LHS a call rather than a symbol
     DT[i,colnamevector:=value,with=FALSE]     # old syntax. The contents of colnamevector in calling scope determine the column names or positions to update (or add)
     DT[i,(colnamevector):=value]              # same, shorthand. Now preferred. The parens are enough to stop the LHS being a symbol

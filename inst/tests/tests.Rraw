@@ -2835,6 +2835,9 @@ test(1016, fread(f,integer64="numeric"), copy(DT)[,A:=as.numeric(A)])
 test(1017, fread(f,integer64="character"), DT, warning="Bumped column.*to type character.*may not be lossless")
 unlink(f)
 
+# ERANGE warning, #4879
+test(1018, fread("1.46761e-313\n"), data.table(V1=as.numeric("1.46761e-313")), warning="strtod() returned ERANGE")
+test(1019, fread("1.23456789123456789123456789\n"), data.table(V1=as.numeric("1.23456789123456789123456789"))) # no warning, as standard
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by

@@ -48,7 +48,7 @@ extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
 static const char *ch, *eof; 
 static char sep, eol, eol2;  // sep2 TO DO
 static int eolLen;
-static Rboolean verbose;
+static Rboolean verbose, ERANGEwarning;
 static clock_t tCoerce, tCoerceAlloc;
 
 // Define our own fread type codes, different to R's SEXPTYPE :
@@ -180,9 +180,25 @@ static inline Rboolean Strtod()
     const char *start=lch;
     errno = 0;
     u.d = strtod(start, (char **)&lch);
-    if (lch>start && (lch==eof || *lch==sep || *lch==eol) && errno==0) {
+    if (errno==0 && lch>start && (lch==eof || *lch==sep || *lch==eol)) {
         ch = lch;
-        return(TRUE);  // double read ok (result in u.d)
+        return(TRUE);  // double read ok (result in u.d). Done. Most common case.
+    }
+    if (errno==ERANGE && lch>start) {
+        lch = start;
+        errno = 0;
+        u.d = (double)strtold(start, (char **)&lch);
+        if (errno==0 && lch>start && (lch==eof || *lch==sep || *lch==eol)) {
+            ch = lch;
+            if (ERANGEwarning) {
+                warning("C function strtod() returned ERANGE for one or more fields. The first was string input '%.*s'. It was read using (double)strtold() as numeric value %.16E (displayed here using %%.16E); loss of accuracy likely occurred. This message is designed to tell you exactly what has been done by fread's C code, so you can search yourself online for many references about double precision accuracy and these specific C functions. You may wish to use colClasses to read the column as character instead and then coerce that column using the Rmpfr package for greater accuracy.", (int)(lch-start), start, u.d);
+                ERANGEwarning = FALSE;   // once only. Set to TRUE just before read data loop. FALSE initially when detecting types.
+                // This is carefully worded as an ERANGE warning because that's precisely what it is.  Calling it a 'precision' warning
+                // might lead the user to think they'll get a precision warning on "1.23456789123456789123456789123456789" too, but they won't
+                // as that will be read fine by the first strtod() with silent loss of precision. IIUC.
+            }
+            return(TRUE);
+        }
     }
     if (lch==start && lch<eof-1 && *lch++=='N' && *lch++=='A' && (lch==eof || *lch==sep || *lch==eol)) {
         ch = lch;
@@ -325,6 +341,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     Rboolean header, allchar, skipon=FALSE;
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
+    ERANGEwarning = FALSE;  // just while detecting types, then TRUE before the read data loop
+    
     errormsg[0] = '\0';  // reset globals.  I know, I know, see comments above where EXIT() is defined. Better ideas?
     fnam = NULL;
 
@@ -761,6 +779,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     tCoerce = tCoerceAlloc = 0;
     ch = pos;   // back to start of first data row
+    ERANGEwarning = TRUE;
     for (i=0; i<nrow; i++) {
         //Rprintf("Row %d : %.10s\n", i+1, ch);
         if (*ch==eol) {

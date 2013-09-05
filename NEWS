@@ -17,6 +17,9 @@ NEW FEATURES
   o  fread's integer64 argument is implemented. Allows reading of integer64 data as 'double' or
      as 'character' instead of bit64::integer64 (which remains the default as before). Thanks to Chris Neff
      for the suggestion. The default can be changed globally; e.g, options(datatable.integer64="character")
+     
+  o  fread("1.46761e-313\n") detected the ERANGE error, so read as character. It now reads as
+     numeric but with a detailed warning. Thanks to Heather Turner for the detailed report, #4879.
 
 BUG FIXES
 

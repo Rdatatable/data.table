@@ -203,6 +203,16 @@ fread("
 3,4
 ")
 
+# Numerical precision :
+
+DT = fread("A\n1.010203040506070809010203040506\n")   # silent loss of precision
+DT[,sprintf("\%.15E",A)]   # stored accurately as far as double precision allows
+
+DT = fread("A\n1.46761e-313\n")   # detailed warning about ERANGE; read as 'numeric'
+DT[,sprintf("\%.15E",A)]   # beyond what double precision can store accurately to 15 digits
+
+# For greater accuracy use colClasses to read as character, then package Rmpfr.
+
 }
 }
 \keyword{ data }
