@@ -20,6 +20,11 @@ NEW FEATURES
      
   o  fread("1.46761e-313\n") detected the ERANGE error, so read as character. It now reads as
      numeric but with a detailed warning. Thanks to Heather Turner for the detailed report, #4879.
+	 
+  o	 as.data.table.table is now implemented. Thanks to Frank Pinter for the FR #4848. Tests added.
+  
+  o  as.data.table also has now methods for integer, numeric, character, logical, factor, ordered and Date. 
+     Tests added.
 
 BUG FIXES
 

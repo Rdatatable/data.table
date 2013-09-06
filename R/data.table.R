@@ -1200,7 +1200,7 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
     x = copy(x)
     if (any(n<max(n)))
 	for (i in which(n<max(n))) {
-		if (!is.null(x[[i]]))
+		if (!is.null(x[[i]])) # avoids warning when a list element is NULL
 			x[[i]] = rep(x[[i]], length.out=max(n))
 	}
     if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
@@ -1212,15 +1212,26 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
 
 as.data.table.data.table = function(x, keep.rownames=FALSE) return(x)
 
-# commented for now. Ask Matthew and decide
-# as.data.table.factor <- as.data.table.ordered <- as.data.table.Date <- as.data.table.numeric <- as.data.table.integer <- 
-# as.data.table.logical <- as.data.table.character <- function(x, keep.rownames=FALSE) {
-# 	tt <- deparse(substitute(x))[1]
-# 	x <- list(x)
-# 	if ( tt == make.names(tt))
-# 		setattr(x, 'names', tt)
-# 	as.data.table.list(x, keep.rownames)
-# }
+# takes care of logical, character, numeric, integer
+as.data.table.factor <- as.data.table.ordered <- 
+as.data.table.integer <- as.data.table.numeric <- 
+as.data.table.logical <- as.data.table.character <- 
+as.data.table.Date <- function(x, keep.rownames=FALSE) {
+	tt <- deparse(substitute(x))[1]
+	x <- list(x) # <~ is a copy being made here?
+	if (tt == make.names(tt))
+		setattr(x, 'names', tt)
+	as.data.table.list(x, keep.rownames)
+}
+
+# as.data.table.table - FR #4848
+as.data.table.table <- function(x, keep.rownames=FALSE) {
+	ans <- data.table(do.call(CJ, c(rev(dimnames(provideDimnames(x))), sorted=FALSE)), N = as.vector(x))
+	nm <- copy(names(ans))
+	setcolorder(ans, c(rev(head(nm, -1)), "N"))
+	setattr(ans, 'names', nm)
+	ans
+}
 
 head.data.table = function(x, n=6, ...) {
     if (!cedta()) return(NextMethod())
