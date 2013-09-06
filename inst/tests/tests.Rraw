@@ -2839,6 +2839,14 @@ unlink(f)
 test(1018, fread("1.46761e-313\n"), data.table(V1=as.numeric("1.46761e-313")), warning="strtod() returned ERANGE")
 test(1019, fread("1.23456789123456789123456789\n"), data.table(V1=as.numeric("1.23456789123456789123456789"))) # no warning, as standard
 
+# crash assigning to row 0, #2754
+DT = data.table(A=1:5)
+test(1020, DT[0,A:=6L], error="i[[]1[]] is 0 which is out of range [[]1,nrow=5[]]")
+test(1021, DT[NA,A:="foo"], error="i[[]1[]] is NA. Can't assign by reference to row 'NA'")
+test(1022, DT[5:0,A:=21L], error="i[[]6[]] is 0 which is out of range [[]1,nrow=5[]]")
+test(1023, DT[c(1,2,NA,3), B:="bar"], error="i[[]3[]] is NA")
+test(1024, DT[6,A:=0L], error="i[[]1[]] is NA. Can't")  # TO DO: earlier point at R level is replacing 6 with NA?
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key

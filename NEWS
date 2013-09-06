@@ -28,6 +28,9 @@ BUG FIXES
      Thanks to nigmastar for reporting and Carl Witthoft for the hint. Tests added.
        http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
        
+  o  DT[0,col:=value] is now a helpful error rather than crash, #2754. Thanks to Ricardo Saporta
+     for reporting. DT[NA,col:=value]'s error message has also been improved. Tests added.
+       
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.

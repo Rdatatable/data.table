@@ -153,7 +153,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         if (!isInteger(rows))
             error("i is type '%s'. Must be integer, or numeric is coerced with warning. If i is a logical subset, simply wrap with which(), and take the which() outside the loop if possible for efficiency.", type2char(TYPEOF(rows)));
         targetlen = length(rows);
-        for (i=0;i<targetlen;i++) if (INTEGER(rows)[i]==NA_INTEGER) error("Internal error: NA exist in 'rows' passed to C assign");
+        for (i=0;i<targetlen;i++) {
+            if (INTEGER(rows)[i]==NA_INTEGER) error("i[%d] is NA. Can't assign by reference to row 'NA'.",i+1);
+            if (INTEGER(rows)[i]<1 || INTEGER(rows)[i]>nrow) error("i[%d] is %d which is out of range [1,nrow=%d].",i+1,INTEGER(rows)[i],nrow);
+        }
     }
     if (!length(cols))
         error("Logical error in assign, no column positions passed to assign");
