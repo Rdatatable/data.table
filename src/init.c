@@ -1,4 +1,3 @@
-
 #include <R.h>
 #define USE_RINTERNALS
 #include <Rinternals.h>
@@ -32,6 +31,7 @@ SEXP setlistelt();
 SEXP setnamed();
 SEXP address();
 SEXP copyNamedInList();
+SEXP fmelt();
 
 // .Externals
 SEXP fastmean();
@@ -63,6 +63,7 @@ R_CallMethodDef callMethods[] = {
 {"Csetnamed", (DL_FUNC) &setnamed, -1},
 {"Caddress", (DL_FUNC) &address, -1},
 {"CcopyNamedInList", (DL_FUNC) &copyNamedInList, -1},
+{"Cfmelt", (DL_FUNC) &fmelt, -1}, 
 {NULL, NULL, 0}
 };
 

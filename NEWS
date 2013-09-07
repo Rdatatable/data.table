@@ -26,6 +26,21 @@ NEW FEATURES
   
   o  as.data.table methods added for integer, numeric, character, logical, factor, ordered and Date.
 
+  o  Added a faster melt function 'fmelt', this takes care of FR #2627 partially. For example, a 
+     benchmark test on 1e7*5 data.table took 1.25 seconds and was 98% faster than melt from reshape2 
+	 package. Also, most settings are identical with reshape2's melt for compatibility. fmelt attempts, 
+	 whereever possible, to set the class attribute of columns back after melting so that, for example, 
+	 'Date' like columns don't get coerced to numeric. See ?fmelt for more details.
+	 
+  o   fmelt is also capable of melting on columns of type 'list'. Have a look at ?fmelt for more details.
+
+  o	 fmelt also gets two additional arguments 'variable.factor' and 'value.factor' which by default are 
+     TRUE and FALSE respectively for compatibility with reshape2's melt. This allows for directly 
+	 controlling the output type of "variable" and "value" columns (as factors or not).
+	 
+  o  fmelt's 'na.rm = TRUE' parameter is optimised to remove NAs directly during melt and therefore avoids the 
+     overhead of subsetting using "!is.na" on the molten data which also speeds up things.
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
