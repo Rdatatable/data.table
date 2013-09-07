@@ -104,7 +104,32 @@ SEXP which_notNA(SEXP x) {
 //     return(VECTOR_ELT(ans, 0));
 // }
 
-SEXP checkVars(SEXP DT, SEXP id, SEXP measure) {
+SEXP concat(SEXP vec, SEXP idx) {
+	
+	SEXP s, t, v, ans;
+	int i;
+	
+	if (TYPEOF(vec) != STRSXP) error("concat: 'vec must be a character vector");
+	if (!isInteger(idx) || length(idx) <= 0) error("concat: 'idx' must be an integer vector of length > 0");
+	for (i=0; i<length(idx); i++) {
+		if (INTEGER(idx)[i] < 0 || INTEGER(idx)[i] > length(vec)) 
+			error("concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= length(vec)");
+	}
+	PROTECT(v = allocVector(STRSXP, length(idx)));
+	for (i=0; i<length(idx); i++) {
+		SET_STRING_ELT(v, i, STRING_ELT(vec, INTEGER(idx)[i]-1));
+	}
+	PROTECT(t = s = allocList(3));
+	SET_TYPEOF(t, LANGSXP);
+	SETCAR(t, install("paste")); t = CDR(t);
+	SETCAR(t, v); t = CDR(t);
+    SETCAR(t, mkString(", "));
+    SET_TAG(t, install("collapse"));
+	UNPROTECT(2); // v, (t,s)
+	return(eval(s, R_GlobalEnv));
+}
+
+SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     int i, ncol=LENGTH(DT), targetcols=0, protecti=0, u=0, v=0;
     SEXP thiscol, idcols = R_NilValue, valuecols = R_NilValue, tmp, booltmp, unqtmp, ans;
     SEXP dtnames = getAttrib(DT, R_NamesSymbol);
@@ -123,6 +148,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure) {
             } else
                 INTEGER(idcols)[v++] = i+1;
         }
+		warning("To be consistent with reshape2's melt, id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are conisdered id.vars, which in this case are columns '%s'. Consider providing at least one of 'id' or 'measure' vars in future.", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
     } else if (!isNull(id) && isNull(measure)) {
         switch(TYPEOF(id)) {
             case STRSXP  : PROTECT(tmp = chmatch(id, dtnames, 0, FALSE)); protecti++; break;
@@ -146,6 +172,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure) {
         }
         PROTECT(valuecols = setDiff(unqtmp, ncol)); protecti++;
         PROTECT(idcols = tmp); protecti++;
+		if (verbose) Rprintf("'measure.var' is missing. Assigning all columns other than 'id.var' columns which are %s as 'measure.var'.\n", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
     } else if (isNull(id) && !isNull(measure)) {
         switch(TYPEOF(measure)) {
             case STRSXP  : PROTECT(tmp = chmatch(measure, dtnames, 0, FALSE)); protecti++; break;
@@ -169,6 +196,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure) {
         }
         PROTECT(idcols = setDiff(unqtmp, ncol)); protecti++;
         PROTECT(valuecols = tmp); protecti++;
+		if (verbose) Rprintf("'id.var' is missing. Assigning all columns other than 'measure.var' columns as 'id.var'. Assigned 'id.var's are %s.\n", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
     } else if (!isNull(id) && !isNull(measure)) {
         switch(TYPEOF(id)) {
             case STRSXP  : PROTECT(tmp = chmatch(id, dtnames, 0, FALSE)); protecti++; break;
@@ -203,12 +231,12 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure) {
     return(ans);
 }
 
-SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP na_rm, SEXP drop_levels) {
+SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP na_rm, SEXP drop_levels, SEXP print_out) {
     
     int i, j, k, nrow, ncol, protecti=0, lids=-1, lvalues=-1, totlen=0, counter=0, thislen=0;
     SEXP thiscol, ans, dtnames, ansnames, idcols, valuecols, levels, factorLangSxp;
     SEXP vars, target, idxkeep = R_NilValue, thisidx = R_NilValue;
-    Rboolean isfactor=FALSE, isidentical=TRUE, narm = FALSE, droplevels=FALSE;
+    Rboolean isfactor=FALSE, isidentical=TRUE, narm = FALSE, droplevels=FALSE, verbose=FALSE;
     SEXPTYPE valtype=NILSXP;
     
     if (TYPEOF(DT) != VECSXP) error("Input is not of type VECSXP, expected a data.table, data.frame or list");
@@ -216,6 +244,8 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     if (TYPEOF(varfactor) != LGLSXP) error("Argument 'variable.factor' should be logical TRUE/FALSE");
     if (TYPEOF(na_rm) != LGLSXP) error("Argument 'na.rm' should be logical TRUE/FALSE");
     if (LOGICAL(na_rm)[0] == TRUE) narm = TRUE;
+    if (TYPEOF(print_out) != LGLSXP) error("Argument 'verbose' should be logical TRUE/FALSE");
+    if (LOGICAL(print_out)[0] == TRUE) verbose = TRUE;
 
     // droplevels future feature request, maybe... should ask on data.table-help
     // if (!isLogical(drop_levels)) error("Argument 'drop.levels' should be logical TRUE/FALSE");
@@ -235,7 +265,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     PROTECT(dtnames = getAttrib(DT, R_NamesSymbol)); protecti++;
     if (isNull(dtnames)) error("names(data) is NULL. Please report to data.table-help");
     
-    vars = checkVars(DT, id, measure);
+    vars = checkVars(DT, id, measure, verbose);
     PROTECT(idcols = VECTOR_ELT(vars, 0)); protecti++;
     PROTECT(valuecols = VECTOR_ELT(vars, 1)); protecti++; // <~~~ not protecting vars leads to  segfault (on big data)
     
@@ -244,6 +274,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     
     // edgecase where lvalues = 0 and lids > 0
     if (lvalues == 0 && lids > 0) {
+		if (verbose) Rprintf("length(measure.var) is 0. Edge case detected. Nothing to melt. Returning data.table with all 'id.vars' which are columns %s\n", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
         PROTECT(ansnames = allocVector(STRSXP, lids)); protecti++;
         PROTECT(ans = allocVector(VECSXP, lids)); protecti++;
         for (i=0; i<lids; i++) {
@@ -254,7 +285,8 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
         UNPROTECT(protecti);
         return(ans);
     }
-    
+    if (lvalues == 0 && lids == 0 && verbose)
+		Rprintf("length(measure.var) and length(id.var) are both 0. Edge case detected. Nothing to melt.\n");
     // set names for 'ans' - the output list
     PROTECT(ansnames = allocVector(STRSXP, lids+2)); protecti++;
     for (i=0; i<lids; i++) {
@@ -270,11 +302,20 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
         if (TYPEOF(thiscol) > valtype) valtype = TYPEOF(thiscol);
     }
     if (isfactor && valtype != VECSXP) valtype = STRSXP;
+
+    for (i=0; i<lvalues; i++) {
+        thiscol = VECTOR_ELT(DT, INTEGER(valuecols)[i]-1);
+        if (TYPEOF(thiscol) != valtype && isidentical) {
+            warning("All 'measure.var's are NOT of the SAME type. The molten data value column will be of type '%s'. Therefore all measure variables that are not of type '%s' will be coerced to. Please see ?fmelt for more details on coercion.\n", type2char(valtype), type2char(valtype));
+            isidentical = FALSE; // for Date like column
+			break;
+        }
+    }
+
     if (valtype == VECSXP && narm) {
         narm = FALSE;
-        warning("'na.rm=TRUE' ignored, 'value' column is a list");
+		if (verbose) Rprintf("The molten data value type is a list. 'na.rm=TRUE' is therefore ignored.\n");
     }
-    
     if (narm) {
         PROTECT(idxkeep = allocVector(VECSXP, lvalues)); protecti++;
         for (i=0; i<lvalues; i++) {
@@ -288,8 +329,6 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     target = PROTECT(allocVector(valtype, totlen));
     for (i=0; i<lvalues; i++) {
         thiscol = VECTOR_ELT(DT, INTEGER(valuecols)[i]-1);
-        if (TYPEOF(thiscol) != valtype && isidentical)
-            isidentical = FALSE; // for Date like column
         if (isFactor(thiscol))
             thiscol = asCharacterFactor(thiscol);
         if (TYPEOF(thiscol) != valtype && !isFactor(thiscol)) {
@@ -347,7 +386,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
                     LOGICAL(target)[i*nrow + j] = LOGICAL(thiscol)[j];
             }
             break;
-            default : error("unknown column type %s in 'data'", type2char(TYPEOF(thiscol))); // for column %s to be added
+            default : error("Unknown column type '%s' for column '%s' in 'data'", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(valuecols)[i]-1)));
         }
         if (narm) counter += thislen;
         if (isidentical && valtype != VECSXP)
@@ -481,7 +520,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
 				}
             }
             break;
-            default : error("Unknown column type %s", type2char(TYPEOF(thiscol))); // for column %s to be added
+            default : error("Unknown column type '%s' for column '%s' in 'data'", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(idcols)[i]-1)));
         }
         if (isFactor(thiscol))
             setAttrib(target, R_LevelsSymbol, getAttrib(thiscol, R_LevelsSymbol));              

@@ -1,8 +1,11 @@
 fmelt <- function(data, id.var = NULL, measure.var = NULL, variable.name = "variable", 
-           value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE) {
+           value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE, 
+           verbose = getOption("datatable.verbose")) {
+    drop.levels <- FALSE # maybe a future FR           
     ans <- .Call("Cfmelt", as.data.table(data), id.var, measure.var, 
                 as.logical(variable.factor), as.logical(value.factor), 
-                as.logical(na.rm), FALSE);
+                as.logical(na.rm), as.logical(drop.levels), 
+				as.logical(verbose));
     setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
     setattr(ans, "class", c("data.table", "data.frame"))
     settruelength(ans, 0L)
