@@ -57,9 +57,10 @@ BUG FIXES
   o  DT[0,col:=value] is now a helpful error rather than crash, #2754. Thanks to Ricardo Saporta
      for reporting. DT[NA,col:=value]'s error message has also been improved. Tests added.
      
-  o  DT[,c("B","B"):=NULL] (delete by reference the same column twice) is now an error rather than
-     crash, #2751. Thanks to Ricardo again for reporting. Assigning to the same column twice in the
-     same query is now also an error (more robust than silently overwriting the first assign).
+  o  Assigning to the same column twice in the same query is now an error rather than a crash in
+     some circumstances; e.g., DT[,c("B","B"):=NULL] (delete by reference the same column twice).
+     Thanks to Ricardo (#2751) and matt_k (#2791) for reporting. Tests added.
+       http://stackoverflow.com/questions/16638484/remove-multiple-columns-from-data-table
 	 
   o  data.table now differentiates between NaN, NA, Inf and -Inf correctly. This is related to 
      two (similar) bugs #4684 and #4815 (thanks to Martin Liberts for filing #4815). Tests added.
