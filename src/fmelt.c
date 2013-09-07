@@ -111,7 +111,7 @@ SEXP concat(SEXP vec, SEXP idx) {
     int i;
     
     if (TYPEOF(vec) != STRSXP) error("concat: 'vec must be a character vector");
-    if (!isInteger(idx) || length(idx) <= 0) error("concat: 'idx' must be an integer vector of length > 0");
+    if (!isInteger(idx) || length(idx) < 0) error("concat: 'idx' must be an integer vector of length >= 0");
     for (i=0; i<length(idx); i++) {
         if (INTEGER(idx)[i] < 0 || INTEGER(idx)[i] > length(vec)) 
             error("concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= length(vec)");

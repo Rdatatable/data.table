@@ -14,7 +14,6 @@ export(chmatch, "%chin%", chorder, chgroup)
 export(rbindlist)
 export(fread)
 export(address)
-export(fmelt)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
@@ -54,6 +53,9 @@ S3method(is.na, data.table)
 S3method(format, data.table)
 S3method(Ops, data.table)
 S3method(all.equal, data.table)
+
+importFrom(reshape2, melt)
+S3method(melt, data.table)
 
 import(utils)
 S3method(tail, data.table)

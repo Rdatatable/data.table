@@ -4,7 +4,7 @@ Title: Extension of data.frame for fast indexing, fast ordered joins, fast assig
 Author: M Dowle, T Short, S Lianoglou with contributions from A Srinivasan, R Saporta
 Maintainer: Matthew Dowle <mdowle@mdowle.plus.com>
 Depends: R (>= 2.12.0)
-Imports: methods
+Imports: methods, reshape2
 Suggests: chron, ggplot2 (>= 0.9.0), plyr, reshape, testthat (>= 0.4), hexbin, fastmatch, nlme, xts, bit64
 Description: Enhanced data.frame. Fast indexing, fast ordered joins, fast assignment by reference, fast grouping and list columns in a short and flexible syntax. i and j may be expressions of column names directly, for faster development.  Example: X[Y] is a fast join for large data.
 License: GPL (>= 2)
