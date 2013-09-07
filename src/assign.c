@@ -166,14 +166,16 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         for (i=0; i<length(cols); i++)
             if (INTEGER(tmp)[i]==0) error("'%s' is not a column name. Cannot add columns with set(), use := instead to add columns by reference.",CHAR(STRING_ELT(cols,i)));
         cols = tmp;
+    } else {
+        if (isReal(cols)) {
+            cols = PROTECT(cols = coerceVector(cols, INTSXP));
+            protecti++;
+            warning("Coerced j from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2");
+        }
+        if (!isInteger(cols))
+            error("j is type '%s'. Must be integer, character, or numeric is coerced with warning.", type2char(TYPEOF(cols)));
     }
-    if (isReal(cols)) {
-        cols = PROTECT(cols = coerceVector(cols, INTSXP));
-        protecti++;
-        warning("Coerced j from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2");
-    }
-    if (!isInteger(cols))
-        error("j is type '%s'. Must be integer, character, or numeric is coerced with warning.", type2char(TYPEOF(cols)));
+    if (any_duplicated(cols,FALSE)) error("Can't assign to the same column twice in the same query (duplicates detected).");
     if (!isNull(newcolnames) && !isString(newcolnames)) error("newcolnames is supplied but isn't a character vector");
     if (isNull(values)) {
         if (!length(cols)) {

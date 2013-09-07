@@ -27,12 +27,12 @@ NEW FEATURES
   o  as.data.table methods added for integer, numeric, character, logical, factor, ordered and Date.
 
   o  Added a faster melt function 'fmelt', this takes care of FR #2627 partially. For example, a 
-     benchmark test on 1e7*5 data.table took 1.25 seconds and was 98% faster than melt from reshape2 
-	 package. Also, most settings are identical with reshape2's melt for compatibility. fmelt attempts, 
-	 whereever possible, to set the class attribute of columns back after melting so that, for example, 
+     benchmark test on 1e7*5 data.table took 1.25 seconds vs 90 seconds from reshape2 
+	 Most settings are identical with reshape2::melt for compatibility. fmelt attempts, 
+	 wherever possible, to set the class attribute of columns back after melting so that, for example, 
 	 'Date' like columns don't get coerced to numeric. See ?fmelt for more details.
 	 
-  o   fmelt is also capable of melting on columns of type 'list'. Have a look at ?fmelt for more details.
+  o  fmelt is also capable of melting on columns of type 'list'. Have a look at ?fmelt for more details.
 
   o	 fmelt also gets two additional arguments 'variable.factor' and 'value.factor' which by default are 
      TRUE and FALSE respectively for compatibility with reshape2's melt. This allows for directly 
@@ -50,6 +50,10 @@ BUG FIXES
        
   o  DT[0,col:=value] is now a helpful error rather than crash, #2754. Thanks to Ricardo Saporta
      for reporting. DT[NA,col:=value]'s error message has also been improved. Tests added.
+     
+  o  DT[,c("B","B"):=NULL] (delete by reference the same column twice) is now an error rather than
+     crash, #2751. Thanks to Ricardo again for reporting. Assigning to the same column twice in the
+     same query is now also an error (more robust than silently overwriting the first assign).
        
 NOTES
 
