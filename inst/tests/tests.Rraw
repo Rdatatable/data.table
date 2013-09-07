@@ -2904,6 +2904,12 @@ if ("package:reshape2" %in% search()) {
 	# add some more tests later maybe.
 }
 
+# bug fix for #4684 and #4815
+DT <- data.table(x = rep(c(1,NA, NaN, Inf, -Inf), each=2))
+OUT <- data.table(x=c(1,NA, NaN, Inf, -Inf), N=2L)
+test(1039, DT[, .N, by=x], OUT) # note: rorder_tol is not stable around Inf and -Inf. Fixed that as well. Will file a bug and add tests for that as well.
+
+
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
 # TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key

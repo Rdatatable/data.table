@@ -60,6 +60,9 @@ BUG FIXES
   o  DT[,c("B","B"):=NULL] (delete by reference the same column twice) is now an error rather than
      crash, #2751. Thanks to Ricardo again for reporting. Assigning to the same column twice in the
      same query is now also an error (more robust than silently overwriting the first assign).
+	 
+  o  data.table now differentiates between NaN, NA, Inf and -Inf correctly. This is related to 
+     two (similar) bugs #4684 and #4815 (thanks to Martin Liberts for filing #4815).
        
 NOTES
 

@@ -5,7 +5,7 @@
 //#include <sys/mman.h>
 #include <fcntl.h>
 
-#define cmpnum(a,b) ((ISNAN(a) && ISNAN(b)) || fabs(a-b)<REAL(tol)[0])
+#define cmpnum(a,b) ((R_IsNaN(a) && R_IsNaN(b)) || (a == R_PosInf && b == R_PosInf) || (a == R_NegInf && b == R_NegInf) || (R_IsNA(a) && R_IsNA(b) && !R_IsNaN(a) && !R_IsNaN(b)) || fabs(a-b)<REAL(tol)[0])
 
 SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol)  //change name to uniqlist
 {
@@ -93,14 +93,14 @@ SEXP rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)
     //Rprintf("%d\n",(long)NA_REAL<0);  True. This would work well, were it not for tolerance. NA_REAL<0 is nan as IEEE returns nan at C level
     
     for (t = 0; incs[t] > hi-lo+1; t++);
-	for (h = incs[t]; t < 16; h = incs[++t])
+    for (h = incs[t]; t < 16; h = incs[++t])
     for (i = lo + h; i <= hi; i++) {
-	    itmp = indx[i];
-	    j = i;
-	    while (j>=lo+h && cmptol(indx[j-h], itmp)) {
-	        indx[j] = indx[j - h]; j -= h;
-		}
-		indx[j] = itmp;
+        itmp = indx[i];
+        j = i;
+        while (j>=lo+h && cmptol(indx[j-h], itmp)) {
+            indx[j] = indx[j - h]; j -= h;
+        }
+        indx[j] = itmp;
     }
     return(R_NilValue);
 }
