@@ -2909,6 +2909,9 @@ DT <- data.table(x = rep(c(1,NA, NaN, Inf, -Inf), each=2))
 OUT <- data.table(x=c(1,NA, NaN, Inf, -Inf), N=2L)
 test(1039, DT[, .N, by=x], OUT) # note: rorder_tol is not stable around Inf and -Inf. Fixed that as well. Will file a bug and add tests for that as well.
 
+# bug fix #4883 - related to the message above in fix #4684 and #4815 on rorder_tol.
+DT <- data.table(y =c(NA, Inf, NA, -Inf, -Inf, NaN, Inf, 1, NaN, 1))
+OUT <- data.table(y = c(NA, Inf, -Inf, NaN, 1), N=2)
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by

@@ -76,7 +76,8 @@ SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol)  //change name
 extern const int incs[];
 
 //#define cmptol(a,b) (x[a] > x[b]+tol || (a>b && x[a]==x[b]))  [from src/main/sort.c]
-#define cmptol(a,b) ((ISNAN(x[a]) && ISNAN(x[b]) && a>b) || (!ISNAN(x[a]) && ( ISNAN(x[b]) || (x[a]-x[b]>tol) || (a>b && x[b]-x[a]<tol)) ))
+// #define cmptol(a,b) ((ISNAN(x[a]) && ISNAN(x[b]) && a>b) || (!ISNAN(x[a]) && ( ISNAN(x[b]) || (x[a]-x[b]>tol) || (a>b && x[b]-x[a]<tol)) ))
+#define cmptol(a,b) ((x[a] == R_PosInf && x[b] == R_PosInf && a>b) || (x[a] == R_NegInf && x[b] == R_NegInf && a>b) || (ISNAN(x[a]) && ISNAN(x[b]) && a>b) || (!ISNAN(x[a]) && ( ISNAN(x[b]) || (x[a]-x[b]>tol) || (a>b && x[b]-x[a]<tol)) ))
 
 
 SEXP rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)

@@ -62,8 +62,13 @@ BUG FIXES
      same query is now also an error (more robust than silently overwriting the first assign).
 	 
   o  data.table now differentiates between NaN, NA, Inf and -Inf correctly. This is related to 
-     two (similar) bugs #4684 and #4815 (thanks to Martin Liberts for filing #4815).
-       
+     two (similar) bugs #4684 and #4815 (thanks to Martin Liberts for filing #4815). Tests added.
+   
+  o  Fixed a bug with unstable ordering of numeric vector with 'Inf' in function 'ordernumtol'. This 
+     could lead to the grouping not preserving the original order when it should. This is also filed 
+	 as a bug #4883 to illustrate the case with an example. Now, this has been rectified. Test 
+	 added.
+         
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.
