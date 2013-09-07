@@ -2882,6 +2882,8 @@ test(1034, as.data.table(x), data.table(x))
 # tests for melt.data.table
 if ("package:reshape2" %in% search()) {
 # using data.table:::melt.data.table instead of melt for now... because when reshape is loaded, cant access melt.data.table from reshape2
+try( {
+	detach(package:reshape)
 	set.seed(45)
 	DT <- data.table(
 	      i1 = c(1:5, NA), 
@@ -2893,15 +2895,16 @@ if ("package:reshape2" %in% search()) {
 	DT[, l1 := DT[, list(c=list(rep(i1, sample(5,1)))), by = i1]$c] # generate list cols
 	DT[, l2 := DT[, list(c=list(rep(c1, sample(5,1)))), by = i1]$c]
 
-	test(1035, data.table:::melt.data.table(DT, id=1:2, measure=3:4), data.table:::melt.data.table(DT, id=c("i1", "i2"), measure=c("f1", "c1")))
+	test(1035, melt(DT, id=1:2, measure=3:4), melt(DT, id=c("i1", "i2"), measure=c("f1", "c1")))
 	ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l1"))
 	ans1[, value := DT$l1]
-	test(1036, data.table:::melt.data.table(DT, id=c("i1", "i2", "l2"), measure=c("l1")), ans1)
+	test(1036, melt(DT, id=c("i1", "i2", "l2"), measure=c("l1")), ans1)
 	ans2 = data.table(c1=DT$c1, variable=rep(c("d1", "d2"), each=6), value=c(DT$d1, DT$d2))[!is.na(value)]
-	test(1037, data.table:::melt.data.table(DT, id=4, measure=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
+	test(1037, melt(DT, id=4, measure=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
 	DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
-	test(1038, data.table:::melt.data.table(DT2, id=1), error="Unknown column type 'complex'")
+	test(1038, melt(DT2, id=1), error="Unknown column type 'complex'")
 	# add some more tests later maybe.
+	})
 }
 
 # bug fix for #4684 and #4815
@@ -2911,7 +2914,8 @@ test(1039, DT[, .N, by=x], OUT) # note: rorder_tol is not stable around Inf and 
 
 # bug fix #4883 - related to the message above in fix #4684 and #4815 on rorder_tol.
 DT <- data.table(y =c(NA, Inf, NA, -Inf, -Inf, NaN, Inf, 1, NaN, 1))
-OUT <- data.table(y = c(NA, Inf, -Inf, NaN, 1), N=2)
+OUT <- data.table(y = c(NA, Inf, -Inf, NaN, 1), N=2L)
+test(1840, DT[, .N, by=y], OUT)
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by

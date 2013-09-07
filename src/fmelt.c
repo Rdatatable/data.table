@@ -107,7 +107,7 @@ SEXP which_notNA(SEXP x) {
 // hack by calling paste using eval. could change this to strcat, but not sure about buffer size for large data.tables... Any ideas Matthew?
 SEXP concat(SEXP vec, SEXP idx) {
     
-    SEXP s, t, v, ans;
+    SEXP s, t, v;
     int i;
     
     if (TYPEOF(vec) != STRSXP) error("concat: 'vec must be a character vector");
