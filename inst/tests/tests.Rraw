@@ -2890,13 +2890,7 @@ DT <- data.table(
 DT[, l1 := DT[, list(c=list(rep(i1, sample(5,1)))), by = i1]$c] # generate list cols
 DT[, l2 := DT[, list(c=list(rep(c1, sample(5,1)))), by = i1]$c]
 
-ans0 <- as.data.table(structure(list(i1 = c(1L, 2L, 3L, 4L, 5L, NA, 1L, 2L, 3L, 4L, 
-5L, NA), i2 = c(NA, 6, 7, 8, 9, 10, NA, 6, 7, 8, 9, 10), variable = structure(c(1L, 
-1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L), class = "factor", .Label = c("f1", 
-"c1")), value = c("c", "b", "a", "b", "b", "b", "a", "c", "a", 
-"a", "b", NA)), .Names = c("i1", "i2", "variable", "value"), row.names = c(NA, 
--12L), class = "data.frame"))
-test(1035, fmelt(DT, id=1:2, measure=3:4), ans0, warning="All 'measure.var's are NOT of the SAME type.")
+test(1035, fmelt(DT, id=1:2, measure=3:4), fmelt(DT, id=c("i1", "i2"), measure=c("f1", "c1")))
 ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l1"))
 ans1[, value := DT$l1]
 test(1036, fmelt(DT, id=c("i1", "i2", "l2"), measure=c("l1")), ans1)

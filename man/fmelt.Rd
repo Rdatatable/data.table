@@ -8,8 +8,11 @@
 }
 \usage{
 ## fast melt a data.table or a data.frame
-fmelt(data, id.var, measure.var, variable.name, 
-    value.name, ..., na.rm, variable.factor, value.factor)
+fmelt(data, id.var = NULL, measure.var = NULL, 
+	variable.name = "variable", value.name = "value", 
+	..., na.rm = FALSE, variable.factor = TRUE, 
+	value.factor = FALSE, 
+	verbose = getOption("datatable.verbose"))
 }
 \arguments{
   \item{data}{ A \code{data.table} (or a \code{data.frame}).}
@@ -20,6 +23,7 @@ fmelt(data, id.var, measure.var, variable.name,
   \item{na.rm}{If \code{TRUE}, \code{NA} values will be removed from the molten data.}
   \item{variable.factor}{If \code{TRUE}, the \code{variable} column will be converted to \code{factor}, else it will be a \code{character} column.}
   \item{value.factor}{If \code{TRUE}, the \code{value} column will be converted to \code{factor}, else the molten value type is left unchanged.}
+  \item{verbose}{\code{TRUE} turns on status and information messages to the console. Turn this on by default using \code{options(datatable.verbose=TRUE)}. The quantity and types of verbosity may be expanded in future.}
   \item{...}{any other arguments to be passed to/from other methods}
 }
 \details{
@@ -29,18 +33,20 @@ If \code{id.var} and \code{measure.var} are both \code{NULL}, all \code{factor} 
 
 If all the measure variables are of a particular class, whose internal representations are different, for example, say, \code{Date}, the molten result from \code{fmelt} will attempt to preserve the (here: \code{Date}) class. Note that this is not the case in \code{melt} from \code{reshape2}. If a coercion were to happen here, that is, if your measure variables are both, say, integer (or numeric) and Date types, then, the type of the first measure var decides the coercion type. Note that, still, when the measure var, for example, is a character and Date, the Date format is lost and the result will be coerced to character (following the hierarchy).
 
+Even if all \code{measure.var}s are factors, the resulting \code{value} column will by default be a character column. This is unless \code{value.factor = TRUE}.
 }
 \value{
     An unkeyed \code{data.table} containing the molten data.
 }
 
 \note{
-\bold{Differences between \code{fmelt} and \code{melt} from \code{reshape2}:}
+\bold{Differences between \code{fmelt} and \code{reshape2:::melt}:}
 \enumerate{
 	\item There are two other arguments \code{variable.factor} and \code{value.factor} which for backwards compatibility with \code{reshape}'s \code{melt} is set to \code{TRUE} and \code{FALSE} respectively. 
 	\item \code{fmelt} can handle list columns in both \code{id} and \code{measure} vairables. The molten data retains list columns as such. \code{list} has highest priority. That is, as long as at least one measure variable is of type list, the \code{value} column of molten data will be a \code{list}.
 	\item \code{fmelt(data, id=integer(0), measure=integer(0))} gives a data.table with 0 rows and 2 columns - \code{variable} and \code{value} (default names), as opposed to \code{melt} from \code{reshape2} which gives a \code{0} columns and \code{nrow(data)} rows.
 	\item \code{fmelt} retains the class of certain objects like those of class \code{Date} whereever possible (See DETAILS section).
+	\item The molten data \code{value} column will not be \code{factor}, even if all \code{measure.var} are \code{factor}, unless \code{value.factor} is set to \code{TRUE}.
 }
 % \bold{Speedup using \code{fmelt}:}
 % Benchmarking on relatively big data set gives over 98% speedup as shown below.
