@@ -205,10 +205,10 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure) {
 
 SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP na_rm, SEXP drop_levels) {
     
-    int i, j, k, u, nrow, ncol, protecti=0, targetcols=0, lids=-1, lvalues=-1, size, totlen=0, counter=0, thislen;
+    int i, j, k, nrow, ncol, protecti=0, lids=-1, lvalues=-1, totlen=0, counter=0, thislen=0;
     SEXP thiscol, ans, dtnames, ansnames, idcols, valuecols, levels, factorLangSxp;
-    SEXP vars, target, idxkeep, thisidx, targetorder, targetunq, targetlist, targetlen, targetans, oldlevels, newlevels;
-    Rboolean coerce=FALSE, isfactor=FALSE, isidentical=TRUE, narm = FALSE, droplevels=FALSE;
+    SEXP vars, target, idxkeep = R_NilValue, thisidx = R_NilValue;
+    Rboolean isfactor=FALSE, isidentical=TRUE, narm = FALSE, droplevels=FALSE;
     SEXPTYPE valtype=NILSXP;
     
     if (TYPEOF(DT) != VECSXP) error("Input is not of type VECSXP, expected a data.table, data.frame or list");
