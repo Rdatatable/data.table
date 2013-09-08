@@ -2853,7 +2853,7 @@ test(1024, DT[6,A:=0L], error="i[[]1[]] is NA. Can't")  # TO DO: earlier point a
 test(1024.1, DT[,c("B","B"):=NULL], error="Can't assign to the same column twice in the same query (duplicates detected).")
 test(1024.2, DT[,c(1,2,1):=NULL], error="Can't assign to the same column twice in the same query (duplicates detected).")
 
-# tests for as.data.table.table # FR 4848
+# as.data.table.table, #4848
 DF <- data.frame(x = c(1,1,2,NA,1,2), y = c("b", "b", "b", "a", "c", "a"), z = c(1,1,1,1,1,2), stringsAsFactors=FALSE	)
 tab1 <- as.data.table(as.data.frame(table(DF$x), stringsAsFactors=FALSE)); setattr(tab1, 'names', c("V1", "N"))
 tab2 <- as.data.table(as.data.frame(table(DF$x, DF$y), stringsAsFactors=FALSE)); setattr(tab2, 'names', c("V1", "V2", "N"))
@@ -2862,28 +2862,20 @@ test(1025, as.data.table(table(DF$x)), tab1)
 test(1026, as.data.table(table(DF$x, DF$y)), tab2)
 test(1027, as.data.table(table(DF$x, DF$y, DF$z)), tab3)
 
-# tests for as.data.table.x where x is integer, numeric, etc...
+# as.data.table.x where x is integer, numeric, etc...
 set.seed(45)
-x <- sample(5)
-test(1028, as.data.table(x), data.table(x))
-x <- as.numeric(x)
-test(1029, as.data.table(x), data.table(x))
-x <- as.Date(x, origin="2013-01-01")
-test(1030, as.data.table(x), data.table(x))
-x <- factor(sample(5))
-test(1031, as.data.table(x), data.table(x))
-x <- factor(x, ordered=TRUE)
-test(1032, as.data.table(x), data.table(x))
-x <- as.logical(sample(0:1, 5, TRUE))
-test(1033, as.data.table(x), data.table(x))
-x <- as.character(sample(letters, 5))
-test(1034, as.data.table(x), data.table(x))
+test(1028, as.data.table(x<-sample(5)), data.table(V1=x))
+test(1029, as.data.table(x<-as.numeric(x)), data.table(V1=x))
+test(1030, as.data.table(x<-as.Date(x, origin="2013-01-01")), data.table(V1=x))
+test(1031, as.data.table(x<-factor(sample(5))), data.table(V1=x))
+test(1032, as.data.table(x<-factor(x, ordered=TRUE)), data.table(V1=x))
+test(1033, as.data.table(x<-as.logical(sample(0:1, 5, TRUE))), data.table(V1=x))
+test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
 
-# tests for melt.data.table
+# melt.data.table
 if ("package:reshape2" %in% search()) {
-# using data.table:::melt.data.table instead of melt for now... because when reshape is loaded, cant access melt.data.table from reshape2
-try( {
-	detach(package:reshape)
+	try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
+	                                           # try() in case reshape isn't loaded (detach gives not found error in that case)
 	set.seed(45)
 	DT <- data.table(
 	      i1 = c(1:5, NA), 
@@ -2903,19 +2895,16 @@ try( {
 	test(1037, melt(DT, id=4, measure=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
 	DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
 	test(1038, melt(DT2, id=1), error="Unknown column type 'complex'")
-	# add some more tests later maybe.
-	})
+	# TO DO: more tests
 }
 
-# bug fix for #4684 and #4815
+# sorting and grouping of Inf, -Inf, NA and NaN,  #4684, #4815 & #4883
 DT <- data.table(x = rep(c(1,NA, NaN, Inf, -Inf), each=2))
 OUT <- data.table(x=c(1,NA, NaN, Inf, -Inf), N=2L)
-test(1039, DT[, .N, by=x], OUT) # note: rorder_tol is not stable around Inf and -Inf. Fixed that as well. Will file a bug and add tests for that as well.
-
-# bug fix #4883 - related to the message above in fix #4684 and #4815 on rorder_tol.
+test(1039, DT[, .N, by=x], OUT)
 DT <- data.table(y =c(NA, Inf, NA, -Inf, -Inf, NaN, Inf, 1, NaN, 1))
 OUT <- data.table(y = c(NA, Inf, -Inf, NaN, 1), N=2L)
-test(1840, DT[, .N, by=y], OUT)
+test(1040, DT[, .N, by=y], OUT)
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
