@@ -119,13 +119,13 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     if (any(!novname)) {
         if (any(vnames[!novname] == ".SD")) stop("A column may not be called .SD. That has special meaning.")
     }
-	for (i in which(novname)) {
-		# if (ncol(as.data.table(x[[i]])) <= 1) { # cbind call in test 230 fails if I write ncol(as.data.table(eval(tt[[i]], parent.frame()))) <= 1, no idea why... (keep this for later even though all tests pass with ncol(.).. because base uses as.data.frame(.))
-		if (is.null(ncol(x[[i]]))) { 
-			if ((tmp <- deparse(tt[[i]])[1]) == make.names(tmp))
-	        	vnames[i] <- tmp
-		}
-	}
+    for (i in which(novname)) {
+        # if (ncol(as.data.table(x[[i]])) <= 1) { # cbind call in test 230 fails if I write ncol(as.data.table(eval(tt[[i]], parent.frame()))) <= 1, no idea why... (keep this for later even though all tests pass with ncol(.).. because base uses as.data.frame(.))
+        if (is.null(ncol(x[[i]]))) { 
+            if ((tmp <- deparse(tt[[i]])[1]) == make.names(tmp))
+                vnames[i] <- tmp
+        }
+    }
     tt = vnames==""
     if (any(tt)) vnames[tt] = paste("V", which(tt), sep = "")
     # so now finally we have good column names. We also will use novname later to know which were explicitly supplied in the call.
@@ -397,9 +397,9 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                 else if (!isTRUE(i)) irows=seq_len(nrow(x))[i]  # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness
             } else {
                 irows = as.integer(i)  # e.g. DT[c(1,3)]
-				# fixes #2697. If irows is -ve, o__ is. When "by", "Cdogroups" uses -ve indexing. Line 154 (I think) doesn't compute correct "rownum" in Cdogroups.
-				if (all(is.finite(irows)) && all(irows < 0) && length(irows) > 0) 
-					irows = setdiff(seq_len(nrow(x)), abs(irows))
+                # fixes #2697. If irows is -ve, o__ is. When "by", "Cdogroups" uses -ve indexing. Line 154 (I think) doesn't compute correct "rownum" in Cdogroups.
+                if (all(is.finite(irows)) && all(irows < 0) && length(irows) > 0) 
+                    irows = setdiff(seq_len(nrow(x)), abs(irows))
                 irows[irows>nrow(x)] = NA_integer_  # not needed for vector subsetting, but for is.unsorted to return NA
             }
         }
@@ -414,7 +414,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
         if (missing(j)) {
             if (!is.data.table(i)) {
                 if (is.null(irows)) return(copy(x))  # Must return a copy. Shallow copy only when i is missing.
-            	ans = vector("list",ncol(x))
+                ans = vector("list",ncol(x))
                 for (s in seq_len(ncol(x))) {
                     ans[[s]] = x[[s]][irows]
                     copyattr(x[[s]],ans[[s]])
@@ -1202,10 +1202,10 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
     n = sapply(x,length)
     x = copy(x)
     if (any(n<max(n)))
-	for (i in which(n<max(n))) {
-		if (!is.null(x[[i]])) # avoids warning when a list element is NULL
-			x[[i]] = rep(x[[i]], length.out=max(n))
-	}
+    for (i in which(n<max(n))) {
+        if (!is.null(x[[i]])) # avoids warning when a list element is NULL
+            x[[i]] = rep(x[[i]], length.out=max(n))
+    }
     if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
     setattr(x,"row.names",.set_row_names(max(n)))
     setattr(x,"class",c("data.table","data.frame"))
@@ -1220,30 +1220,34 @@ as.data.table.factor <- as.data.table.ordered <-
 as.data.table.integer <- as.data.table.numeric <- 
 as.data.table.logical <- as.data.table.character <- 
 as.data.table.Date <- function(x, keep.rownames=FALSE) {
-	tt <- deparse(substitute(x))[1]
-	x <- list(x) # <~ is a copy being made here?
-	if (tt == make.names(tt))
-		setattr(x, 'names', tt)
-	as.data.table.list(x, keep.rownames)
+    tt <- deparse(substitute(x))[1]
+    x <- list(x) # <~ is a copy being made here?
+    if (tt == make.names(tt))
+        setattr(x, 'names', tt)
+    as.data.table.list(x, keep.rownames)
 }
 
 # as.data.table.table - FR #4848
 as.data.table.table <- function(x, keep.rownames=FALSE) {
-	ans <- data.table(do.call(CJ, c(rev(dimnames(provideDimnames(x))), sorted=FALSE)), N = as.vector(x))
-	nm <- copy(names(ans))
-	setcolorder(ans, c(rev(head(nm, -1)), "N"))
-	setattr(ans, 'names', nm)
-	ans
+    ans <- data.table(do.call(CJ, c(rev(dimnames(provideDimnames(x))), sorted=FALSE)), N = as.vector(x))
+    nm <- copy(names(ans))
+    setcolorder(ans, c(rev(head(nm, -1)), "N"))
+    setattr(ans, 'names', nm)
+    ans
 }
 
+# bug #2375. fixed. same as head.data.frame and tail.data.frame to deal with negative indices
 head.data.table = function(x, n=6, ...) {
     if (!cedta()) return(NextMethod())
-    i = seq_len(min(n,nrow(x)))
+    stopifnot(length(n) == 1L)  
+    i = seq_len(if (n<0L) max(nrow(x)+n, 0L) else min(n,nrow(x)))
     x[i]
 }
 tail.data.table = function(x, n=6, ...) {
     if (!cedta()) return(NextMethod())
-    i = seq.int(max(min(1,nrow(x)),nrow(x)-n+1), nrow(x))  # min for 0-row x
+    stopifnot(length(n) == 1L)  
+    n <- if (n<0L) max(nrow(x) + n, 0L) else min(n, nrow(x))
+    i = seq.int(to=nrow(x), length.out=n)
     x[i]
 }
 

@@ -70,6 +70,9 @@ BUG FIXES
   o  Segmentation fault and incorrect aggregate results when grouping with negative indexing
      in 'i' are now fixed. This fixes bug #2697. Thanks to Eduard Antonyan (eddi) for reporting:
 	 http://stackoverflow.com/questions/16046696/data-table-bug-causing-a-segfault-in-r
+
+  o  head() and tail() handle negative 'n' values correctly now. This is related to bug #2375. 
+     Thanks to Garrett See for reporting. Also it results in an error when length(n) != 1.	 
          
 NOTES
 
