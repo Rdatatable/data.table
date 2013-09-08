@@ -398,8 +398,12 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             } else {
                 irows = as.integer(i)  # e.g. DT[c(1,3)]
                 # fixes #2697. If irows is -ve, o__ is. When "by", "Cdogroups" uses -ve indexing. Line 154 (I think) doesn't compute correct "rownum" in Cdogroups.
-                if (all(is.finite(irows)) && all(irows < 0) && length(irows) > 0) 
-                    irows = setdiff(seq_len(nrow(x)), abs(irows))
+                if (all(is.finite(irows)) && all(irows < 0) && length(irows) > 0) {
+					irows = abs(irows)
+					irowsgt = which(irows > nrow(x))
+					if (length(irowsgt) > 0) warning("row(s) ", paste(irows[irowsgt], collapse=","), " do not exist to be removed");
+                    irows = setdiff(seq_len(nrow(x)), irows)
+				}
                 irows[irows>nrow(x)] = NA_integer_  # not needed for vector subsetting, but for is.unsorted to return NA
             }
         }
