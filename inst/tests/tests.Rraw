@@ -2914,18 +2914,25 @@ test(1041, rbindlist(l), data.table(i1=factor(letters[1:5]),val=1:5))
 # negative indexing in *i* leads to crash/wrong aggregates when dogroups is called. bug #2697
 d = data.table(date = c(1,2,3,4,5), value = c(1,2,3,4,5))
 test(1042, d[-5, mean(value), by = list(I(as.integer((date+1)/2)))], data.table(I=I(1:2), V1=c(1.5, 3.5)))
+#  Test #1043 TO DO - mixed negatives
+
+# crash (floating point exception), when assigning null data.table() to multiple cols, #4731
+DT = data.table(x=1:5,y=6:10)
+test(1044, DT[3,c("x","y"):=data.table()],error="Supplied 2 columns to be assigned an empty list.*use NULL instead.*list(list())")
+test(1045, DT[3,c("x","y"):=list()],error="Supplied 2 columns to be assigned an empty list.*use NULL instead.*list(list())")
 
 # negative indexing with head() and tail(). bug #2375
 d1 = data.table(date = c(1,2,3,4,5), value = c(1,2,3,4,5))
 d2 = data.frame(d1)
-test(1043, head(d1, -2), as.data.table(head(d2, -2)))
-test(1044, head(d1, 2), as.data.table(head(d2, 2)))
-test(1045, head(d1, -10), as.data.table(head(d2, -10)))
-test(1046, head(d1, 10), as.data.table(head(d2, 10)))
-test(1047, tail(d1, -2), as.data.table(tail(d2, -2)))
-test(1048, tail(d1, 2), as.data.table(tail(d2, 2)))
-test(1049, tail(d1, -10), as.data.table(tail(d2, -10)))
-test(1040, tail(d1, 10), as.data.table(tail(d2, 10)))
+test(1046, head(d1, -2), as.data.table(head(d2, -2)))
+test(1047, head(d1, 2), as.data.table(head(d2, 2)))
+test(1048, head(d1, -10), as.data.table(head(d2, -10)))
+test(1049, head(d1, 10), as.data.table(head(d2, 10)))
+test(1050, tail(d1, -2), as.data.table(tail(d2, -2)))
+test(1051, tail(d1, 2), as.data.table(tail(d2, 2)))
+test(1052, tail(d1, -10), as.data.table(tail(d2, -10)))
+test(1053, tail(d1, 10), as.data.table(tail(d2, 10)))
+
 
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")

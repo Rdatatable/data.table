@@ -185,6 +185,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     } else {
         if (TYPEOF(values)==VECSXP) {
             if (length(cols)>1) {
+                if (length(values)==0) error("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list()).", length(cols));
                 if (length(values)>length(cols))
                     warning("Supplied %d columns to be assigned a list (length %d) of values (%d unused)", length(cols), length(values), length(values)-length(cols));  
                 else if (length(cols)%length(values) != 0)
