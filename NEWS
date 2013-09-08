@@ -66,6 +66,10 @@ BUG FIXES
      Thanks to Martin Liberts for reporting. Tests added.
      
   o  A test of rbindlist on data.frame input has been added, #4648. Thanks to Minkoo Seo.
+  
+  o  Segmentation fault and incorrect aggregate results when grouping with negative indexing
+     in 'i' are now fixed. This fixes bug #2697. Thanks to Eduard Antonyan (eddi) for reporting:
+	 http://stackoverflow.com/questions/16046696/data-table-bug-causing-a-segfault-in-r
          
 NOTES
 
