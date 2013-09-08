@@ -2912,8 +2912,8 @@ l <- list(u1=data.frame(i1=c('a', 'b', 'c'), val=1:3, stringsAsFactors=TRUE),
 test(1041, rbindlist(l), data.table(i1=factor(letters[1:5]),val=1:5))
 
 # negative indexing in *i* leads to crash/wrong aggregates when dogroups is called. bug #2697
-d = data.table(date = c(1,2,3,4,5), value = c(1,2,3,4,5))
-test(1042, d[-5, mean(value), by = list(I(as.integer((date+1)/2)))], data.table(I=I(1:2), V1=c(1.5, 3.5)))
+DT = data.table(x = c(1,2,3,4,5), group = c(1,1,2,2,3))
+test(1042, DT[-5, mean(x), by = group], data.table(group=1:2, V1=c(1.5, 3.5)))
 #  Test #1043 TO DO - mixed negatives
 
 # crash (floating point exception), when assigning null data.table() to multiple cols, #4731
