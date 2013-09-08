@@ -64,6 +64,8 @@ BUG FIXES
 	 
   o  setkey and by= now distinguish numeric NaN, NA, Inf and -Inf correctly (#4684, #4815 and #4883).
      Thanks to Martin Liberts for reporting. Tests added.
+     
+  o  A test of rbindlist on data.frame input has been added, #4648. Thanks to Minkoo Seo.
          
 NOTES
 
