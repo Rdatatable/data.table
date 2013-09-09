@@ -2861,6 +2861,8 @@ tab3 <- as.data.table(as.data.frame(table(DF$x, DF$y, DF$z), stringsAsFactors=FA
 test(1025, as.data.table(table(DF$x)), tab1)
 test(1026, as.data.table(table(DF$x, DF$y)), tab2)
 test(1027, as.data.table(table(DF$x, DF$y, DF$z)), tab3)
+# catch printing of data.table(table()), #4847 (as.data.table should be used instead)
+test(1027.1, print(data.table(table(1:101))), error="Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
 
 # as.data.table.x where x is integer, numeric, etc...
 set.seed(45)

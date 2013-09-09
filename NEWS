@@ -81,7 +81,10 @@ BUG FIXES
      for reporting. Tests added.
      
   o  print(DT, digits=2) now heeds digits and other parameters, #2535. Thanks to Heather Turner
-     for reporting. Tests added. 
+     for reporting. Tests added.
+     
+  o  print(data.table(table(1:101))) is now an 'invalid column' error and suggests 
+     print(as.data.table(table(1:101))) instead, #4847. Thanks to Frank Pinter for reporting. Test added.
          
 NOTES
 

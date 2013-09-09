@@ -69,6 +69,7 @@ format.data.table <- function (x, ..., justify="none") {
             paste("<",class(x)[1L],">",sep="")
     }
     do.call("cbind",lapply(x,function(col,...){
+        if (!is.null(dim(col))) stop("Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
         if (is.list(col))
             col = sapply(col,format.item)
         format(col, justify=justify, ...)
