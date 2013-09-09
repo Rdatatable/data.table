@@ -18,7 +18,7 @@ x %between% c(lower,upper)
 % \details{
 % }
 \value{
-    Integer vector containing the locations of \code{x} which lie within the range [lower,upper] or (lower,upper).
+    Logical vector as the same length as \code{x} with value \code{TRUE} for those that lie within the range [lower,upper] or (lower,upper).
 }
 \note{ Current implementation does not make use of ordered keys. }
 \seealso{ \code{\link{data.table}}, \code{\link{like}} }
