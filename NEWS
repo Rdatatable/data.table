@@ -86,6 +86,9 @@ BUG FIXES
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.
+  
+  o  ?last has been improved and if xts is needed but not installed the error message is more helpful, #2728.
+     Thanks to Sam Steingold for reporting.
 
         **********************************************
         **                                          **
