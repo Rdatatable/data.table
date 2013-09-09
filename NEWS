@@ -79,9 +79,9 @@ BUG FIXES
      
   o  Crash when assigning empty data table to multiple columns is fixed, #4731. Thanks to Andrew Tinka
      for reporting. Tests added.
-	 
-  o  Corrected documentation of "?between" that it returns a logical vector, #2671. Thanks to Michael
-     Nelson for reporting.
+     
+  o  print(DT, digits=2) now heeds digits and other parameters, #2535. Thanks to Heather Turner
+     for reporting. Tests added. 
          
 NOTES
 
@@ -89,6 +89,8 @@ NOTES
   
   o  ?last has been improved and if xts is needed but not installed the error message is more helpful, #2728.
      Thanks to Sam Steingold for reporting.
+     
+  o  ?between corrected. It returns a logical not integer vector, #2671. Thanks to Michael Nelson for reporting.
 
         **********************************************
         **                                          **

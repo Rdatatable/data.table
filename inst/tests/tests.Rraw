@@ -2942,6 +2942,12 @@ x <- data.table(letters=letters[1:5], number=1:5)
 test(1054, x[-(1:3), number := 1L], x[4:5, number := 1L])
 test(1055, x[0, number := 1L], error="which is out of range")
 
+# print.data.table heeds digits=2 etc, #2535
+DT = data.table(x=rep(c("a","b","c"),each=3), y=(30/7)^(2:10))[, logy := log(y)]
+test(1056, print(DT, digits=2), output="   x       y logy1: a      18  2.92: a      79  4.43: a     337  5.8")
+test(1057, print(DT, digits=2, big.mark=","), output="   x         y logy1: a        18  2.9.*6: b    26,556 10.27: c   113,811 11.6")
+
+
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by

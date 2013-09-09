@@ -17,7 +17,7 @@ dim.data.table <- function(x) {
 print.data.table = function(x,
     topn=getOption("datatable.print.topn"),   # (5) print the top topn and bottom topn rows with '---' inbetween
     nrows=getOption("datatable.print.nrows"), # (100) under this the whole (small) table is printed, unless topn is provided
-    digits=NULL, ...)
+    ...)
 {
     if (!.global$print) {
         #  := in [.data.table sets print=FALSE, when appropriate, to suppress := autoprinting at the console
@@ -46,7 +46,7 @@ print.data.table = function(x,
         rn = seq_len(nrow(x))
         printdots = FALSE
     }
-    toprint=format.data.table(toprint, digits=digits, na.encode = FALSE)
+    toprint=format.data.table(toprint, ...)
     rownames(toprint)=paste(format(rn,right=TRUE),":",sep="")
     if (printdots) {
         toprint = rbind(head(toprint,topn),"---"="",tail(toprint,topn))
@@ -61,7 +61,7 @@ print.data.table = function(x,
     invisible()
 }
 
-format.data.table <- function (x, ..., justify = "none") {
+format.data.table <- function (x, ..., justify="none") {
     format.item = function(x) {
         if (is.atomic(x))
             paste(c(head(x,6),if(length(x)>6)""),collapse=",")
@@ -71,8 +71,8 @@ format.data.table <- function (x, ..., justify = "none") {
     do.call("cbind",lapply(x,function(col,...){
         if (is.list(col))
             col = sapply(col,format.item)
-        format(col,justify=justify,...)
-    }))
+        format(col, justify=justify, ...)
+    },...))
 }
 
 is.data.table = function(x) inherits(x, "data.table")
