@@ -47,10 +47,8 @@ NEW FEATURES
      therefore avoids the overhead of subsetting using "!is.na" on the molten data which also 
 	 speeds up things.
 	 
-  o	 We gain a new feature as a consequence of fixing bug #2697. `:=`, assignmeny by reference, 
-     also now accepts negative indices. It still gives an error when indexed with 0 (as before). 
-	 Thanks again to Eduard Antonyan (eddi)'s filing of #2697 and post on SO:
-	 http://stackoverflow.com/questions/16046696/data-table-bug-causing-a-segfault-in-r
+  o	 Due to fixing #2697 (see BUG FIXES), `:=`, assignmeny by reference, also now accepts negative 
+     indices, but still not '0' as an index. Thanks again to Eduard Antonyan.
 
 BUG FIXES
 
@@ -72,9 +70,8 @@ BUG FIXES
      
   o  A test of rbindlist on data.frame input has been added, #4648. Thanks to Minkoo Seo.
   
-  o  Crash and/or incorrect aggregate results with negative indexing in i is fixed, #2697. A 
-     warning is issued now when the row to be removed with negative indexing is greater than 
-	 total rows in the data.table, 'nrow(DT)'. Thanks to Eduard Antonyan (eddi) for reporting. 
+  o  Crash and/or incorrect aggregate results with negative indexing in 'i' is fixed, with a warning 
+     when the abs(negative index) > nrow(DT), #2697. Thanks to Eduard Antonyan (eddi) for reporting. 
 	 Tests added. http://stackoverflow.com/questions/16046696/data-table-bug-causing-a-segfault-in-r
   
   o  head() and tail() handle negative 'n' values correctly now, #2375. Thanks to Garrett
@@ -82,6 +79,9 @@ BUG FIXES
      
   o  Crash when assigning empty data table to multiple columns is fixed, #4731. Thanks to Andrew Tinka
      for reporting. Tests added.
+	 
+  o  Corrected documentation of "?between" that it returns a logical vector, #2671. Thanks to Michael
+     Nelson for reporting.
          
 NOTES
 
