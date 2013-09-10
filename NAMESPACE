@@ -14,6 +14,7 @@ export(chmatch, "%chin%", chorder, chgroup)
 export(rbindlist)
 export(fread)
 export(address)
+export(.SD,.N,.I,.GRP,.BY)
 
 S3method("[", data.table)
 S3method("[<-", data.table)

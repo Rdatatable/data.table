@@ -94,6 +94,10 @@ NOTES
      Thanks to Sam Steingold for reporting.
      
   o  ?between corrected. It returns a logical not integer vector, #2671. Thanks to Michael Nelson for reporting.
+  
+  o  .SD,.N,.I,.GRP and .BY are now exported (as NULL). So that NOTEs aren't produced for them by R CMD check or
+     codetools::checkUsage via compiler. utils::globalVariables() was considered, but exporting chosen.
+     Thanks to Sam Steingold for raising, #2723.
 
         **********************************************
         **                                          **

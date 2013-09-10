@@ -14,6 +14,12 @@ dim.data.table <- function(x) {
         3L # normal value when package is loaded in 2.14+ (where functions are compiled in namespace)
     }
 
+.SD = .N = .I = .GRP = .BY = NULL
+# These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
+# But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.
+# And NULL makes it clear (to the R's mask check on loading) that they're variables not functions.
+# utils::globalVariables(c(".SD",".N")) was tried as well, but exporting seems better.
+
 print.data.table = function(x,
     topn=getOption("datatable.print.topn"),   # (5) print the top topn and bottom topn rows with '---' inbetween
     nrows=getOption("datatable.print.nrows"), # (100) under this the whole (small) table is printed, unless topn is provided
