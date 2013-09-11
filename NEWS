@@ -85,6 +85,12 @@ BUG FIXES
      
   o  print(data.table(table(1:101))) is now an 'invalid column' error and suggests 
      print(as.data.table(table(1:101))) instead, #4847. Thanks to Frank Pinter for reporting. Test added.
+
+  o	 Crash when grouping with 'i = character(0)' is now fixed. It now returns appropriate empty data.table.
+     This fixes bug #2440. Thanks to Malcolm Cook for reporting. Tests added.
+
+  o	 Grouping when i has value '0' and length(i) > 1 resulted in crash; it is now fixed. It returns a 
+     friendly error instead. This fixes bug #2758. Thanks to Garrett See for reporting. Tests added.
          
 NOTES
 

@@ -114,9 +114,16 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         igrp = length(grporder) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
         for (j=0; j<length(BY); j++) {
             size = SIZEOF(VECTOR_ELT(BY,j));
-            memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),
-                   (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1))+igrp*size,
-                   size);
+            // fixes #2440. crashes when igrp < 0 in 'memcpy' for character type ('memcpy' on 'STRSXP' is dangerous!).
+            // fix: check 'igrp < 0', assumption is groups will be integer(0)/character(0)/etc.. So, assign BY directly - avoids a memcpy
+            // TO DO: Use SET_STRING_ELT when by column is char type. memcpy on STRSXP is dangerous (from what I've read). And it's being done here..
+            if (igrp < 0)
+                SET_VECTOR_ELT(BY, j, VECTOR_ELT(groups, j));
+            else {
+                memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),
+                 (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1))+igrp*size,
+                 size);
+            }
         }
         if (INTEGER(starts)[i] == NA_INTEGER || (length(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)) {
             for (j=0; j<length(SD); j++) {

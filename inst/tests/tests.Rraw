@@ -2949,7 +2949,18 @@ DT = data.table(x=rep(c("a","b","c"),each=3), y=(30/7)^(2:10))[, logy := log(y)]
 test(1056, print(DT, digits=2), output="   x       y logy1: a      18  2.92: a      79  4.43: a     337  5.8")
 test(1057, print(DT, digits=2, big.mark=","), output="   x         y logy1: a        18  2.9.*6: b    26,556 10.27: c   113,811 11.6")
 
+# bug #2758 fix
+x <- data.table(letters=letters[1:5], factor=factor(letters[1:5]), number=1:5)
+test(1058, x[c(0, 3), list(letters, number), by=factor], error="While grouping, i=0 is allowed")
+test(1059, x[c(3, 0), list(letters, number), by=factor], error="While grouping, i=0 is allowed")
+test(1060, x[c(0, 3), number := 5L, by=factor], error="While grouping, i=0 is allowed")
+test(1061, x[c(0, 3), number := 5L], error="which is out of range") # to make sure that `:=` throws correct error without by.
 
+# bug #2440 fix
+DT = data.table(x=rep(c("a","b"),each=3),v=c(42,42,42,4,5,6))
+test(1062, DT[x %in% c('z'),list(x2=x),by=x], output="Empty data.table (0 rows) of 2 cols: x,x2")
+test(1063, DT[x %in% c('z'),list(vpaste=paste(v,collapse=','),x2=paste(x,x)),by=x], output="Empty data.table (0 rows) of 3 cols: x,vpaste,x2")
+test(1064, DT[integer(0), list(x2=x), by=x], output="Empty data.table (0 rows) of 2 cols: x,x2")
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by

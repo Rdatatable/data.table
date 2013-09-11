@@ -406,11 +406,11 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                 irows = as.integer(i)  # e.g. DT[c(1,3)]
                 # fixes #2697. If irows is -ve, o__ is. When "by", "Cdogroups" uses -ve indexing. Line 154 (I think) doesn't compute correct "rownum" in Cdogroups.
                 if (all(is.finite(irows)) && all(irows < 0) && length(irows) > 0) {
-					irows = abs(irows)
-					irowsgt = which(irows > nrow(x))
-					if (length(irowsgt) > 0) warning("row(s) ", paste(irows[irowsgt], collapse=","), " do not exist to be removed");
+                    irows = abs(irows)
+                    irowsgt = which(irows > nrow(x))
+                    if (length(irowsgt) > 0) warning("row(s) ", paste(irows[irowsgt], collapse=","), " do not exist to be removed from subsetting.");
                     irows = setdiff(seq_len(nrow(x)), irows)
-				}
+                }
                 irows[irows>nrow(x)] = NA_integer_  # not needed for vector subsetting, but for is.unsorted to return NA
             }
         }
@@ -1002,6 +1002,8 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
     lockBinding(".BY",SDenv)
     grporder = o__
     if (length(irows) && !isTRUE(irows)) {
+        # fix for bug #2758. TO DO: provide a better error message
+        if (length(irows) > 1 && length(zo__ <- which(irows == 0)) > 0) stop("i[", zo__[1], "] is 0. While grouping, i=0 is allowed when it's the only value. When length(i) > 1, all i should be > 0.")
         if (length(o__) && length(irows)!=length(o__)) stop("Internal error: length(irows)!=length(o__)")
         o__ = if (length(o__)) irows[o__]  # better do this once up front (even though another alloc) than deep repeated branch in dogroups.c
               else irows
@@ -1011,7 +1013,6 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
         # for consistency of empty case in test 184
         f__=len__=0L
     }
-
     if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, verbose)
     if (verbose) {cat("done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
