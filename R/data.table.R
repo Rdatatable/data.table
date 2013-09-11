@@ -492,8 +492,9 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             if (!length(irows)) {
                 if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")
                 return(suppPrint(x))
-            }
-            if (!missing(keyby)) stop("When i is present, keyby := on a subset of rows doesn't make sense. Either change keyby to by, or remove i")
+            } else
+                if (!with) irows <- irows[!is.na(irows)] # fixes 2445. TO DO: added a message if(verbose) or warning?
+                if (!missing(keyby)) stop("When i is present, keyby := on a subset of rows doesn't make sense. Either change keyby to by, or remove i")
         }
         if (is.null(names(jsub))) {
             # regular LHS:=RHS usage, or `:=`(...) with no named arguments (an error)

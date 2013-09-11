@@ -91,6 +91,9 @@ BUG FIXES
 
   o	 Grouping when i has value '0' and length(i) > 1 resulted in crash; it is now fixed. It returns a 
      friendly error instead. This fixes bug #2758. Thanks to Garrett See for reporting. Tests added.
+
+  o  `:=` fails while subsetting yielded NA together with "with=FALSE" is now fixed. This fixes bug #2445. 
+     Thanks to Damian Betebenner for the bug report.
          
 NOTES
 
