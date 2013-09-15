@@ -1,5 +1,5 @@
 
-fread = function(input="test.csv",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=FALSE,autostart=30L,skip=-1L,select=NULL,colClasses=NULL,integer64=getOption("datatable.integer64")) {
+fread = function(input="test.csv",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=FALSE,autostart=30L,skip=-1L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64")) {
     if (!is.character(input) || length(input)!=1) stop("'input' must be a single character string containing a file name, full path to a file, a URL starting 'http://' or 'file://', or the input data itself")
     if (substring(input,1,7) %chin% c("http://","https:/","file://")) {
         tt = tempfile()
@@ -10,7 +10,7 @@ fread = function(input="test.csv",sep="auto",sep2="auto",nrows=-1L,header="auto"
     if (identical(header,"auto")) header=NA
     if (identical(sep,"auto")) sep=NULL
     if (is.atomic(colClasses) && !is.null(names(colClasses))) colClasses = tapply(names(colClasses),colClasses,c,simplify=FALSE)
-    ans = .Call(Creadfile,input,sep,as.integer(nrows),header,na.strings,verbose,as.integer(autostart),skip,select,colClasses,integer64)
+    ans = .Call(Creadfile,input,sep,as.integer(nrows),header,na.strings,verbose,as.integer(autostart),skip,select,drop,colClasses,integer64)
     nr = length(ans[[1]])
     setattr(ans,"row.names",.set_row_names(nr))
     setattr(ans,"class",c("data.table","data.frame"))

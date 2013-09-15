@@ -13,7 +13,7 @@
 \usage{
 fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA",
 stringsAsFactors=FALSE, verbose=FALSE, autostart=30L, skip=-1L, select=NULL,
-colClasses=NULL,
+drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64")    # default: "integer64"
 )
 }
@@ -28,8 +28,9 @@ integer64=getOption("datatable.integer64")    # default: "integer64"
   \item{verbose}{ Be chatty and report timings? }
   \item{autostart}{ Any line number within the region of machine readable delimited text, by default 30. If the file is shorter or this line is empty (e.g. short files with trailing blank lines) then the last non empty line (with a non empty line above that) is used. This line and the lines above it are used to auto detect \code{sep}, \code{sep2} and the number of fields. It's extremely unlikely that \code{autostart} should ever need to be changed, we hope. }
   \item{skip}{ If -1 (default) use the procedure described below starting on line \code{autostart} to find the first data row. \code{skip>=0} means ignore \code{autostart} and take line \code{skip+1} as the first data row (or column names according to header="auto"|TRUE|FALSE as usual). \code{skip="string"} searches for \code{"string"} in the file (e.g. a substring of the column names row) and starts on that line (inspired by read.xls in package gdata). }
-  \item{select}{ Not yet implemented. Vector of column names or positions to keep. Or, use \code{NULL} in colClasses to drop specified columns (by number if type list is used). }
-  \item{colClasses}{ A character vector of classes (named or unnamed), as read.csv. Or, type list enables setting ranges of columns by numeric position. colClasses in fread is intended for rare overrides, not for routine use. fread will only promote a column to a higher type if colClasses requests it. It won't downgrade a column to a lower type since NAs would result. You have to coerce such columns afterwards yourself, if you really require data loss. }
+  \item{select}{ Vector of column names or numbers to keep, drop the rest. }
+  \item{drop}{ Vector of column names or numbers to drop, keep the rest. }
+  \item{colClasses}{ A character vector of classes (named or unnamed), as read.csv. Or a named list of vectors of column names or numbers, see examples. colClasses in fread is intended for rare overrides, not for routine use. fread will only promote a column to a higher type if colClasses requests it. It won't downgrade a column to a lower type since NAs would result. You have to coerce such columns afterwards yourself, if you really require data loss. }
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{base::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
 }
 \details{
@@ -180,6 +181,8 @@ table(sapply(DT,class))
 # Reads URLs directly :
 fread("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
 
+}
+
 # Reads text input directly :
 fread("A,B\n1,2\n3,4")
 
@@ -213,7 +216,23 @@ DT[,sprintf("\%.15E",A)]   # beyond what double precision can store accurately t
 
 # For greater accuracy use colClasses to read as character, then package Rmpfr.
 
-}
+# colClasses
+data = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
+fread(data, colClasses=c(B="character",C="character",D="character"))  # as read.csv
+fread(data, colClasses=list(character=c("B","C","D")))    # saves typing
+fread(data, colClasses=list(character=2:4))     # same using column numbers
+
+# drop
+fread(data, colClasses=c("B"="NULL","C"="NULL"))   # as read.csv
+fread(data, colClasses=list(NULL=c("B","C")))      # 
+fread(data, drop=c("B","C"))      # same but less typing, easier to read
+fread(data, drop=2:3)             # same using column numbers
+
+# select
+# (in read.csv you need to work out which to drop)
+fread(data, select=c("A","D"))    # less typing, easier to read
+fread(data, select=c(1,4))        # same using column numbers
+
 }
 \keyword{ data }
 

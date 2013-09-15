@@ -2481,18 +2481,18 @@ cat("",file=f<-tempfile()); test(885, fread(f), error="empty"); unlink(f)
 test(885.1, fread(""), error="empty")
 test(886, fread("\n"), error="empty")
 test(887, fread("  \n\t  \t  \n    \n  "), error="empty")
-cat("A", file=f<-tempfile()); test(888, fread(f), data.table(A=integer())); unlink(f)
-test(889, fread("A\n"), data.table(A=integer()))
-cat("AB,CDE",file=f<-tempfile()); test(890, fread(f), data.table(AB=integer(),CDE=integer())); unlink(f)
-test(891, fread("AB,CDE\n"), data.table(AB=integer(),CDE=integer()))
+cat("A", file=f<-tempfile()); test(888, fread(f), data.table(A=logical())); unlink(f)
+test(889, fread("A\n"), data.table(A=logical()))
+cat("AB,CDE",file=f<-tempfile()); test(890, fread(f), data.table(AB=logical(),CDE=logical())); unlink(f)
+test(891, fread("AB,CDE\n"), data.table(AB=logical(),CDE=logical()))
 cat("3.14",file=f<-tempfile()); test(892, fread(f), data.table(V1=3.14)); unlink(f)
 cat("A,3",file=f<-tempfile()); test(893, fread(f), data.table(V1="A",V2=3L)); unlink(f)
-if (.Platform$OS.type=="unix") test(893.5, fread("A,B\r\n\r\n"), data.table(A=integer(),B=integer()))
+if (.Platform$OS.type=="unix") test(893.5, fread("A,B\r\n\r\n"), data.table(A=logical(),B=logical()))
 for (nc in c(0,1,2)) {   # 0 means all cols here
 for (nr in c(0,1,2,3,5,10,18,19,20,21,22,28,29,30,31,32,38,39,40,41,42)) {  # 30 and 40 are trigger points for auto skip
 for (eol in if (.Platform$OS.type=="unix") c("\n","\r\n") else "\n") {
     headDT = head(DT,nr)[,seq_len(if (nc==0) ncol(DT) else nc),with=FALSE]
-    if (nr==0) for (j in seq_len(ncol(headDT))) set(headDT,j=j,value=integer())  # when read back in empty cols are the lowest type (int)
+    if (nr==0) for (j in seq_len(ncol(headDT))) set(headDT,j=j,value=logical())  # when read back in empty cols are the lowest type (logical)
     f = tempfile()
     cat(names(headDT),sep=",",file=f)  # no \n at the end here
     for (i in seq_len(nr)) {
@@ -2652,8 +2652,8 @@ test(945, DT[,b:=a+1], data.table(a=numeric(),b=numeric()))
 # fread blank column names get default names
 test(946, fread('A,B,,D\n1,3,foo,5\n2,4,bar,6\n'), data.table(A=1:2,B=3:4,c("foo","bar"),D=5:6))
 test(947, fread('0,2,,4\n1,3,foo,5\n2,4,bar,6\n'), data.table(0:2,2:4,c("","foo","bar"),4:6))
-test(948, fread('A,B,C\nD,E,F\n',header=TRUE), data.table(A="D",B="E",C="F"))
-test(949, fread('A,B,\nD,E,F\n',header=TRUE), data.table(A="D",B="E",V3="F"))
+test(948, fread('A,B,C\nD,E,F\n',header=TRUE), data.table(A="D",B="E",C=FALSE))
+test(949, fread('A,B,\nD,E,F\n',header=TRUE), data.table(A="D",B="E",V3=FALSE))
 
 # +/- with no numbers afterwards should read as character
 test(950, fread('A,B,C\n1,+,4\n2,-,5\n3,-,6\n'), data.table(A=1:3,B=c("+","-","-"),C=4:6))
@@ -2676,8 +2676,8 @@ test(959, fread(input, colClasses=c("character","double","numeric")), data.table
 test(960, fread(input, colClasses=c("character","double")), error="colClasses is unnamed and length 2 but there are 3 columns. See")
 test(961, fread(input, colClasses=1:3), error="colClasses is not type list or character vector")
 test(962, fread(input, colClasses=list(1:3)), error="colClasses is type list but has no names")
-test(963, fread(input, colClasses=list(character="D")), error="Column name 'D' in colClasses not found in data")
-test(964, fread(input, colClasses=c(D="character")), error="Column name 'D' in colClasses not found in data")
+test(963, fread(input, colClasses=list(character="D")), error="Column name 'D' in colClasses..1.. not found")
+test(964, fread(input, colClasses=c(D="character")), error="Column name 'D' in colClasses..1.. not found")
 test(965, fread(input, colClasses=list(character=0)), error="Column number 0 (colClasses..1...1.) is out of range .1,ncol=3.")
 test(966, fread(input, colClasses=list(character=2:4)), error="Column number 4 (colClasses..1...3.) is out of range .1,ncol=3.")
 
@@ -2966,6 +2966,25 @@ test(1064, DT[integer(0), list(x2=x), by=x], output="Empty data.table (0 rows) o
 X = data.table(A=1:3, B=1:6, key="A")
 var <- "B"
 test(1065, X[J(2:5), var:=22L, with=FALSE], data.table(A=rep(1:3, each=2), B=c(1L,4L,rep(22L,4)), key="A"))
+
+# fread single unnamed colClasses
+f = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
+test(1066, fread(f,colClasses=c("integer","integer","character")), error="colClasses is unnamed and length 3 but there are 4 columns")
+test(1067, fread(f,colClasses=c("integer","numeric","character","character")), data.table(A=1:2,B=c(3,4),C=c("5","6"),D=c("7","8")))
+test(1068, fread(f,colClasses="character"), data.table(A=c("1","2"),B=c("3","4"),C=c("5","6"),D=c("7","8")))
+
+# fread select and drop
+test(1069, fread(f,drop=c("D","B")), data.table(A=1:2,C=5:6))
+test(1070, fread(f,drop="E"), fread(f), warning="Column name 'E' in 'drop' not found")
+test(1071, fread(f,select="B",colClasses=list(numeric="C")), data.table(B=3:4))
+test(1072, fread(f,select="B",drop="C"), error="not both")
+test(1073, fread(f,drop=2:3), fread(f,select=c(1,4)))  # tests coercing numeric select as well
+
+
+
+# tests of freading classes like Date and the verbose messages there.
+# Test mid read bump of logical T/F to character, collapse back to T and F.
+
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
