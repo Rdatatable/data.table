@@ -2980,6 +2980,10 @@ test(1071, fread(f,select="B",colClasses=list(numeric="C")), data.table(B=3:4))
 test(1072, fread(f,select="B",drop="C"), error="not both")
 test(1073, fread(f,drop=2:3), fread(f,select=c(1,4)))  # tests coercing numeric select as well
 
+# that problem printing duplicate columns doesn't return, #4788
+DT = data.table(V1 = c(1:1000), V2 = c(10001:11000))
+test(1074, DT[, sum(V2), by = V1], output="1000: 1000 11000")  # x has two columns both called V1 here
+
 
 
 # tests of freading classes like Date and the verbose messages there.
