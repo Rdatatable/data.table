@@ -114,12 +114,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         igrp = length(grporder) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
         for (j=0; j<length(BY); j++) {
             size = SIZEOF(VECTOR_ELT(BY,j));
-            // fixes #2440. crashes when igrp < 0 in 'memcpy' for character type ('memcpy' on 'STRSXP' is dangerous!).
-            // fix: check 'igrp < 0', assumption is groups will be integer(0)/character(0)/etc.. So, assign BY directly - avoids a memcpy
-            // TO DO: Use SET_STRING_ELT when by column is char type. memcpy on STRSXP is dangerous (from what I've read). And it's being done here..
-            if (igrp < 0)
+            if (igrp < 0) {
+                // fixes #2440, otherwise crash when igrp < 0 in memcpy below. Assuming groups will be integer(0)/character(0)/etc
                 SET_VECTOR_ELT(BY, j, VECTOR_ELT(groups, j));
-            else {
+            } else {
+                // dogroups selects subsets of the protected DT. So memcpy is ok (even on STRSXP) and needed for speed to copy in bulk.
                 memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),
                  (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1))+igrp*size,
                  size);
