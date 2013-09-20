@@ -124,6 +124,8 @@ NOTES
      
   o  When DT is empty, DT[,col:=""] is no longer a warning. The warning was :
         Supplied 1 items to be assigned to 0 items of column (1 unused)
+        
+  o  Thanks to Simon Biggs for reporting a bug in fread'ing logicals, caught in beta testing. Test added.
 
 
         **********************************************

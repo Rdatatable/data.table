@@ -20,7 +20,7 @@
 /*****    TO DO    *****
 Allow to increase to top 500, middle 500 and bottom 500.
 Add as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
-Allow comment char to ignore. Important in format detection. But require valid line data before comment character in the read loop.
+Allow comment char to ignore. Important in format detection. But require valid line data before comment character in the read loop? See http://stackoverflow.com/a/18922269/403310
 
 Deal with row.names e.g. http://stackoverflow.com/questions/15448732/reading-csv-with-row-names-by-fread
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
@@ -212,21 +212,22 @@ static inline Rboolean Strtod()
 static inline Rboolean Strtob()
 {
     // String (T,F,True,False,TRUE or FALSE) to boolean.  These usually come from R when it writes out.
-    const char *lch=ch;
-    if (*lch=='T') {
+    const char *start=ch;
+    if (*ch=='T') {
         u.b = TRUE;
-        if (++lch==eof || *lch==sep || *lch==eol) return(TRUE);
-        if (*lch=='R' && *++lch=='U' && *++lch=='E' && (++lch==eof || *lch==sep || *lch==eol)) return(TRUE);
-        lch = ch+1;
-        if (*lch=='r' && *++lch=='u' && *++lch=='e' && (++lch==eof || *lch==sep || *lch==eol)) return(TRUE);
+        if (++ch==eof || *ch==sep || *ch==eol) return(TRUE);
+        if (*ch=='R' && *++ch=='U' && *++ch=='E' && (++ch==eof || *ch==sep || *ch==eol)) return(TRUE);
+        ch = start+1;
+        if (*ch=='r' && *++ch=='u' && *++ch=='e' && (++ch==eof || *ch==sep || *ch==eol)) return(TRUE);
     }
     else if (*ch=='F') {
         u.b = FALSE;
-        if (++lch==eof || *lch==sep || *lch==eol) return(TRUE);
-        if (*lch=='A' && *++lch=='L' && *++lch=='S' && *++lch=='E' && (++lch==eof || *lch==sep || *lch==eol)) return(TRUE);
-        lch = ch+1;
-        if (*lch=='a' && *++lch=='l' && *++lch=='s' && *++lch=='e' && (++lch==eof || *lch==sep || *lch==eol)) return(TRUE);
+        if (++ch==eof || *ch==sep || *ch==eol) return(TRUE);
+        if (*ch=='A' && *++ch=='L' && *++ch=='S' && *++ch=='E' && (++ch==eof || *ch==sep || *ch==eol)) return(TRUE);
+        ch = start+1;
+        if (*ch=='a' && *++ch=='l' && *++ch=='s' && *++ch=='e' && (++ch==eof || *ch==sep || *ch==eol)) return(TRUE);
     }
+    ch = start;
     return(FALSE);     // invalid boolean, need to bump type.
 }
 
