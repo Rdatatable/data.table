@@ -2191,9 +2191,9 @@ test(775, names(DT$b), NULL)
 
 # Test that names of named vectors don't carry through, #2307.
 DT = data.table(a=1:3,b=c("a"="a","b"="a","c"="b"))
-test(776, names(DT$b), c("a","b","c"))  # In future data.table() should drop vector names and this test will change
+test(776, names(DT$b), NULL)  # From v1.8.11, data.table() drops vector names
 DT = data.table(a=1:3,b=c("a","a","b"))
-setattr(DT$b, "names", c("a","b","c"))  # Future proof this test for when data.table() drops names (force them on).
+setattr(DT$b, "names", c("a","b","c"))  # Force names in there to test #2307
 test(777, names(DT$b), c("a","b","c"))
 test(778, DT[,sum(a),by=b], data.table(b=c("a","b"),V1=c(3L,3L)))  #2307 retained names length 3 on the length 2 vector result causing it not to print.
 test(779, print(DT[,sum(a),by=b]), output="   b V11: a  32: b  3$")
@@ -2862,7 +2862,9 @@ test(1025, as.data.table(table(DF$x)), tab1)
 test(1026, as.data.table(table(DF$x, DF$y)), tab2)
 test(1027, as.data.table(table(DF$x, DF$y, DF$z)), tab3)
 # catch printing of data.table(table()), #4847 (as.data.table should be used instead)
-test(1027.1, print(data.table(table(1:101))), error="Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
+test(1027.1, print(data.table(table(1:99))), output="99:  1")
+# data.table() and rbindlist() in v1.8.11 now catch and removes the dim attribute. For it on to test print catches it :
+test(1027.2, {DT<-data.table(table(1:99));setattr(DT[[1]],"dim",99L);print(DT)}, error="Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
 
 # as.data.table.x where x is integer, numeric, etc...
 set.seed(45)
@@ -2998,9 +3000,31 @@ setkey(DT, V2)
 ff <- function(x) { set.seed(45); (sample(x)-1) %/% 10}
 test(1077, DT[, sum(V2),by=ff(V2)], DT[, sum(V2),by=list(ff(V2))])
 
+# rbindlist should discard names on columns, #4890
+d = data.frame(x=1:5)
+f = function(x) {suppressWarnings(DF<-data.frame(x=x, y=1:10)); setattr(DF$x,"names","a");DF}
+l = apply(d, 1, f)
+test(1078.1, length(names(l[[1]]$x)), 10)   # test this test is creating names on the column
+test(1078.2, length(names(l[[2]]$x)), 10)
+a = rbindlist(l)
+test(1078.3, a$x, rep(1:5,each=10))   # a$x would segfault before the fix to rbindlist
+
+# data.table() shouldn't retain column names, root cause of #4890
+x = 1:5
+names(x) = letters[1:5]
+test(1079.1, DF<-data.frame(x=x, y=1:10), data.frame(x=rep(1:5,2),y=1:10), warning="row names.*discarded") 
+test(1079.2, lapply(DF, names), list(x=NULL, y=NULL))
+test(1079.3, DT<-data.table(x=x, y=1:10), data.table(x=rep(1:5,2),y=1:10))
+test(1079.4, lapply(DT, names), list(x=NULL, y=NULL))
+# test from similar #4912 for completeness
+z = c(a=1,b=2,c=3)
+a = data.table(z,x=1:3)
+b = rbind(a, data.table(z=2,x=1))
+test(1080, b$z, c(1,2,3,2))
+
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
-
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by

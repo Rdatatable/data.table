@@ -1202,7 +1202,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
 as.data.table.data.frame = function(x, keep.rownames=FALSE)
 {
     if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
-    ans = copy(x)
+    ans = copy(x)  # TO DO: change this deep copy to be shallow.
     setattr(ans,"row.names",.set_row_names(nrow(x)))
     tt = class(x)
     n=chmatch("data.frame",tt)
@@ -1651,6 +1651,12 @@ alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("d
     name = substitute(DT)
     if (identical(name,quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")
     ans = .Call(Calloccolwrapper,DT,as.integer(eval(n)),verbose)
+    for (i in seq_along(ans)) {
+        # clear the same excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #4890).
+        setattr(ans[[i]],"names",NULL)
+        setattr(ans[[i]],"dim",NULL)
+        setattr(ans[[i]],"dimnames",NULL)
+    }
     if (is.name(name)) {
         name = as.character(name)
         assign(name,ans,parent.frame(),inherits=TRUE)

@@ -18,6 +18,7 @@
 #endif
 
 /*****    TO DO    *****
+Allow to increase to top 500, middle 500 and bottom 500.
 Add as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
 Allow comment char to ignore. Important in format detection. But require valid line data before comment character in the read loop.
 

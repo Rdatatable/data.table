@@ -3,7 +3,6 @@
 #include <Rinternals.h>
 #include <Rdefines.h>
 
-SEXP keepattr();
 int sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
@@ -42,7 +41,8 @@ SEXP rbindlist(SEXP l)
             target = allocVector(STRSXP, nrow);  // collate as string then factorize afterwards
         } else {
             bindFactor = FALSE;
-            target = keepattr(allocVector(TYPEOF(thiscol), nrow), thiscol);
+            target = allocVector(TYPEOF(thiscol), nrow);
+            copyMostAttrib(thiscol, target);  // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
         }
         SET_VECTOR_ELT(ans, j, target);
         ansloc = 0;

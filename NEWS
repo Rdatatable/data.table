@@ -97,11 +97,17 @@ BUG FIXES
   o	 Grouping when i has value '0' and length(i) > 1 resulted in crash; it is now fixed. It returns a 
      friendly error instead. This fixes bug #2758. Thanks to Garrett See for reporting. Tests added.
 
-  o  `:=` fails while subsetting yielded NA together with "with=FALSE" is now fixed. This fixes bug #2445. 
-     Thanks to Damian Betebenner for the bug report.
+  o  := failed while subsetting yielded NA and `with=FALSE`, #2445. Thanks to Damian Betebenner for reporting.
 
-  o  grouping using `by` was incorrect somtimes for expression of keyed columns (#2670) is now fixed. Tests 
-     added.
+  o  by=month(date) gave incorrect results if key(DT)=="date", #2670. Tests added. 
+         DT[,,by=month(date)]         # now ok if key(DT)=="date"
+         DT[,,by=list(month(date))]   # ok before whether or not key(DT)=="date"
+         
+  o  rbind and rbindlist could crash if input columns themselves had hidden names, #4890 & #4912. Thanks to
+     Chris Neff and Stefan Fritsch for reporting. Tests added.
+     
+  o  data.table(), as.data.table() and other paths to create a data.table now detect and drop hidden names,
+     the root cause of #4890. It was never intended that columns could have hidden names attached.
          
 NOTES
 
