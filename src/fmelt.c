@@ -13,12 +13,12 @@ extern SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol);
 extern SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 
 // generate from 1 to n (a simple fun for melt, vecseq is convenient from R due to SEXP inputs)
-SEXP intseq(int n) {
+SEXP intseq(int n, int start) {
     SEXP ans = R_NilValue;
     int i;
     if (n <= 0) return(ans);
     PROTECT(ans = allocVector(INTSXP, n));
-    for (i=0; i<n; i++) INTEGER(ans)[i] = i+1;
+    for (i=0; i<n; i++) INTEGER(ans)[i] = start+i;
     UNPROTECT(1);
     return(ans);
 }
@@ -29,7 +29,7 @@ SEXP setDiff(SEXP x, int n) {
     int i, j = 0, *buf;
     if (TYPEOF(x) != INTSXP) error("'x' must be an integer");
     if (n <= 0) error("'n' must be a positive integer");
-    xmatch = match(x, intseq(n), 0); // took a while to realise: matches vec against x - thanks to comment from Matthew in assign.c!
+    xmatch = match(x, intseq(n, 1), 0); // took a while to realise: matches vec against x - thanks to comment from Matthew in assign.c!
     
     buf = (int *) R_alloc(n, sizeof(int));
     for (i=0; i<n; i++) {
@@ -84,25 +84,25 @@ SEXP which_notNA(SEXP x) {
     return(ans);
 }
 
-// SEXP radixIntOrder(SEXP x) {
-//     SEXP s, t, v, ans;
-//     if (TYPEOF(x) != VECSXP) error("'x' must be VECSXP type");
-//     v = PROTECT(VECTOR_ELT(x, 0));
-//     PROTECT(t = s = allocList(5));
-//     SET_TYPEOF(t, LANGSXP);
-//     SETCAR(t, install("sort.list")); t = CDR(t);
-//     SETCAR(t, v); t = CDR(t);
-//     SETCAR(t, ScalarLogical(0));
-//     SET_TAG(t, install("decreasing")); t=CDR(t);
-//     SETCAR(t, ScalarLogical(0));
-//     SET_TAG(t, install("na.last")); t=CDR(t);
-//     SETCAR(t, mkString("radix"));
-//     SET_TAG(t, install("method"));
-//     ans = PROTECT(allocVector(VECSXP, 1));
-//     SET_VECTOR_ELT(ans, 0, eval(s, R_GlobalEnv));
-//     UNPROTECT(3); // t,s and ans
-//     return(VECTOR_ELT(ans, 0));
-// }
+SEXP which(SEXP x) {
+    
+    int i, j=0, n = length(x), *buf;
+    SEXP ans;
+    if (!isLogical(x)) error("argument to 'which' must be logical");
+    buf = (int *) R_alloc(n, sizeof(int));
+    for (i = 0; i < n; i++) {
+        if (LOGICAL(x)[i] == TRUE) {
+            buf[j] = i + 1;
+            j++;
+        }
+    }
+    n = j;
+    PROTECT(ans = allocVector(INTSXP, n));
+    memcpy(INTEGER(ans), buf, sizeof(int) * n);
+    
+    UNPROTECT(1);
+    return(ans);
+}
 
 // hack by calling paste using eval. could change this to strcat, but not sure about buffer size for large data.tables... Any ideas Matthew?
 SEXP concat(SEXP vec, SEXP idx) {
@@ -159,7 +159,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
         }
         PROTECT(booltmp = duplicated(tmp, FALSE)); protecti++;
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' doesn't exist or not found in 'data'", CHAR(STRING_ELT(id, i)));
+            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(id, i)));
             else if (INTEGER(tmp)[i] > ncol) error("id.var value exceeds ncol(data)");
             else if (!LOGICAL(booltmp)[i]) targetcols++;
             else continue;
@@ -183,7 +183,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
         }
         PROTECT(booltmp = duplicated(tmp, FALSE)); protecti++;
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' doesn't exist or not found in 'data'", CHAR(STRING_ELT(id, i)));
+            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(id, i)));
             else if (INTEGER(tmp)[i] > ncol) error("measure.var value exceeds ncol(data)");
             else if (!LOGICAL(booltmp)[i]) targetcols++;
             else continue;
@@ -206,7 +206,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
             default : error("Unknown 'id.var' type %s, must be character or integer vector", type2char(TYPEOF(id)));
         }
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' doesn't exist or not found in 'data'", CHAR(STRING_ELT(id, i)));
+            if (INTEGER(tmp)[i] <= 0) error("Column '%s' or not found in 'data'", CHAR(STRING_ELT(id, i)));
             else if (INTEGER(tmp)[i] > ncol) error("measure.var value exceeds ncol(data)");
         }
         PROTECT(idcols = allocVector(INTSXP, length(tmp))); protecti++;
@@ -218,7 +218,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
             default : error("Unknown 'measure.var' type %s, must be character or integer vector", type2char(TYPEOF(measure)));
         }
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' doesn't exist or not found in 'data'", CHAR(STRING_ELT(id, i)));
+            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(id, i)));
             else if (INTEGER(tmp)[i] > ncol) error("measure.var value exceeds ncol(data)");
         }
         PROTECT(valuecols = allocVector(INTSXP, length(measure))); protecti++;
@@ -309,9 +309,9 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
         if (TYPEOF(thiscol) != valtype && isidentical) {
             isidentical = FALSE; // for Date like column
             if (!(isFactor(thiscol) && valtype == STRSXP)) {
-                warning("All 'measure.var's are NOT of the SAME type. The molten data value column will be of type '%s'. Therefore all measure variables that are not of type '%s' will be coerced to. Please see ?fmelt for more details on coercion.\n", type2char(valtype), type2char(valtype));
-				break;
-			}
+                warning("All 'measure.var's are NOT of the SAME type. The molten data value column will be of type '%s'. Therefore all measure variables that are not of type '%s' will be coerced to. Please see ?melt.data.table for more details on coercion.\n", type2char(valtype), type2char(valtype));
+                break;
+            }
         }
     }
 
