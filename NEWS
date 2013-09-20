@@ -99,6 +99,9 @@ BUG FIXES
 
   o  `:=` fails while subsetting yielded NA together with "with=FALSE" is now fixed. This fixes bug #2445. 
      Thanks to Damian Betebenner for the bug report.
+
+  o  grouping using `by` was incorrect somtimes for expression of keyed columns (#2670) is now fixed. Tests 
+     added.
          
 NOTES
 

@@ -2949,20 +2949,20 @@ DT = data.table(x=rep(c("a","b","c"),each=3), y=(30/7)^(2:10))[, logy := log(y)]
 test(1056, print(DT, digits=2), output="   x       y logy1: a      18  2.92: a      79  4.43: a     337  5.8")
 test(1057, print(DT, digits=2, big.mark=","), output="   x         y logy1: a        18  2.9.*6: b    26,556 10.27: c   113,811 11.6")
 
-# bug #2758 fix
+# bug #2758 fix - segfault with zeros in i and factors in by
 x <- data.table(letters=letters[1:5], factor=factor(letters[1:5]), number=1:5)
 test(1058, x[c(0, 3), list(letters, number), by=factor], error="While grouping, i=0 is allowed")
 test(1059, x[c(3, 0), list(letters, number), by=factor], error="While grouping, i=0 is allowed")
 test(1060, x[c(0, 3), number := 5L, by=factor], error="While grouping, i=0 is allowed")
 test(1061, x[c(0, 3), number := 5L], error="which is out of range") # to make sure that `:=` throws correct error without by.
 
-# bug #2440 fix
+# bug #2440 fix - seqfault when j refers to grouping variable when results are empty
 DT = data.table(x=rep(c("a","b"),each=3),v=c(42,42,42,4,5,6))
 test(1062, DT[x %in% c('z'),list(x2=x),by=x], output="Empty data.table (0 rows) of 2 cols: x,x2")
 test(1063, DT[x %in% c('z'),list(vpaste=paste(v,collapse=','),x2=paste(x,x)),by=x], output="Empty data.table (0 rows) of 3 cols: x,vpaste,x2")
 test(1064, DT[integer(0), list(x2=x), by=x], output="Empty data.table (0 rows) of 2 cols: x,x2")
 
-# bug #2445 fix
+# bug #2445 fix - := fails when subsetting yields NAs and with=FALSE
 X = data.table(A=1:3, B=1:6, key="A")
 var <- "B"
 test(1065, X[J(2:5), var:=22L, with=FALSE], data.table(A=rep(1:3, each=2), B=c(1L,4L,rep(22L,4)), key="A"))
@@ -2989,6 +2989,14 @@ X = data.table(a=1:3,b=4:6,"c d"=7:9)
 Y = data.table(e=10:12,a=2:4)
 test(1075, merge(X,Y,by="a",all=TRUE), data.table(a=c(1:4),b=c(4:6,NA),"c d"=c(7:9,NA),e=c(NA,10:12),key="a"))
 
+# Fixes #2670. `by` sometimes incorrect for expressions of keyed columns. When by is used like `by=month(date)`, with key column set to "date", grouping+aggregation would be wrong.
+DT = data.table(date=as.Date("2013-01-01")+seq(1,1000,by=10),1:100)
+setkey(DT,date)
+test(1076, DT[,sum(V2),by=month(date)], DT[, sum(V2), by=list(month(date))])
+# just to be sure, second test with another function using sample.
+setkey(DT, V2)
+ff <- function(x) { set.seed(45); (sample(x)-1) %/% 10}
+test(1077, DT[, sum(V2),by=ff(V2)], DT[, sum(V2),by=list(ff(V2))])
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
