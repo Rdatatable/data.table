@@ -3025,6 +3025,16 @@ test(1080, b$z, c(1,2,3,2))
 # mid row logical detection
 test(1081, fread("A,B,C\n1,T,2\n"), data.table(A=1L,B=TRUE,C=2L))
 
+# cartesian join answer's key should contain only the columns considered in binary search. Fixes #2677
+set.seed(45)
+n <- 10
+DT1 <- data.table(a=sample(1:3, n, replace=TRUE), b=sample(1:3, n, replace=TRUE), c=sample(1:10, n,replace=TRUE), key=c("a", "b", "c"))
+DT2 <- data.table(p=sample(1:3, n, replace=TRUE), q=sample(1:3, n, replace=TRUE), r=sample(1:n), w=sample(1:n))
+setkey(DT2, p,q)
+ans <- DT1[DT2, nomatch=0, allow.cartesian=TRUE]
+test(1082, ans, setkeyv(ans, key(ans))) # if key is not set properly, there should be a warning and re-keying that'll be caught.
+check <- setkey(as.data.table(aggregate(r ~a+b+c, ans, length)), a, b)
+test(1083, setkeyv(ans[, list(r = .N), by=key(DT1)], key(ans)), check) # if the key is set properly, then and only then will the aggregation results match with "check"
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.

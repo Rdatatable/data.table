@@ -456,7 +456,8 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                     # TO DO: any(is.na()) could be anyNA() and any0, and we need an efficient is.unsorted(DT) method.
                     # But we only need is.sorted(i) when there are NA matches, so the above should rarely bite.
                     # Most efficient method would be || (is.na(nomatch) && anyNA(f__) && !is.unsorted(f__,na.rm=TRUE) && **where there are NA's, those rows in i are >= previous row in i**!
-                    setattr(ans,"sorted",key(x))
+                    # fix for bug #2677. When 'allow.cartesian=TRUE' and haskey(i) = TRUE and length(key(x)) > length(key(i)), key(ans) can not be key(x)!!
+                    if (allow.cartesian) setattr(ans, "sorted", key(x)[seq_along(leftcols)]) else setattr(ans,"sorted",key(x))
             }
             setattr(ans,"class",c("data.table","data.frame"))
             setattr(ans,"row.names",.set_row_names(nrow(ans)))
@@ -662,7 +663,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                 if (!is.character(tt)) stop("by=c(...), key(...) or names(...) must evaluate to 'character'")
                 bysub=tt
             } else if (is.call(bysub) && !as.character(bysub[[1L]]) %chin% c("list", "as.list", "{")) {
-				# potential use of function, ex: by=month(date). catch it and wrap with "(", because we need to set "bysameorder" to FALSE as we don't know if the function will return ordered results just because "date" is ordered. Fixes #2670.
+                # potential use of function, ex: by=month(date). catch it and wrap with "(", because we need to set "bysameorder" to FALSE as we don't know if the function will return ordered results just because "date" is ordered. Fixes #2670.
                 bysub = as.call(c(as.name('('), list(bysub)))
                 bysubl = as.list.default(bysub)
             }

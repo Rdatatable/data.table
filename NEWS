@@ -108,6 +108,9 @@ BUG FIXES
      
   o  data.table(), as.data.table() and other paths to create a data.table now detect and drop hidden names,
      the root cause of #4890. It was never intended that columns could have hidden names attached.
+
+  o  Cartesian Join (allow.cartesian = TRUE) when both x and i are keyed and length(key(x)) > length(key(i)) 
+     set resulting key incorrectly. This is now fixed, #2677. Thanks to Shir Levkowitz for reporting.
          
 NOTES
 
