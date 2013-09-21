@@ -110,7 +110,14 @@ BUG FIXES
      the root cause of #4890. It was never intended that columns could have hidden names attached.
 
   o  Cartesian Join (allow.cartesian = TRUE) when both x and i are keyed and length(key(x)) > length(key(i)) 
-     set resulting key incorrectly. This is now fixed, #2677. Thanks to Shir Levkowitz for reporting.
+     set resulting key incorrectly. This is now fixed, #2677. Tests added. Thanks to Shir Levkowitz for 
+	 reporting.
+
+  o  `:=` (assignment by reference) loses POSIXct or ITime attribute *while grouping* is now fixed, #2531. 
+     Tests added. Thanks to stat quant for reporting here: 
+	 http://stackoverflow.com/questions/14604820/why-does-this-posixct-or-itime-loses-its-format-attribute
+	 and to Paul Murray for reporting here on SO: 
+	 http://stackoverflow.com/questions/15996692/cannot-assign-columns-as-date-by-reference-in-data-table
          
 NOTES
 

@@ -3036,6 +3036,25 @@ test(1082, ans, setkeyv(ans, key(ans))) # if key is not set properly, there shou
 check <- setkey(as.data.table(aggregate(r ~a+b+c, ans, length)), a, b)
 test(1083, setkeyv(ans[, list(r = .N), by=key(DT1)], key(ans)), check) # if the key is set properly, then and only then will the aggregation results match with "check"
 
+# Tests for #2531. `:=` loses POSIXct or ITime attribute:
+# first test from this SO post: http://stackoverflow.com/questions/15996692/cannot-assign-columns-as-date-by-reference-in-data-table
+dt <- data.table(date = as.IDate(sample(10000:11000, 10), origin = "1970-01-01"))
+dt[, group := rep(1:2, 5)]
+dt[, min.group.date := as.IDate(min(date)), by = group]
+test(1084, class(dt$min.group.date), c("IDate", "Date"))
+
+dt <- data.table(date = as.IDate(sample(10000:11000, 10), origin = "1970-01-01"))
+dt[, group := rep(1:2, 5)]
+dt[, min.group.date := min(date), by = group] # don't need to wrap it with as.IDate(.)
+test(1085, class(dt$min.group.date), c("IDate", "Date"))
+
+# second test from this SO post: http://stackoverflow.com/questions/14604820/why-does-this-posixct-or-itime-loses-its-format-attribute
+DT = data.table(x=as.POSIXct(c("2009-02-17 17:29:23.042", "2009-02-17 17:29:25.160")), y=c(1L,2L))
+DT[,x1:=as.ITime(x)]
+DT[,`:=`(last.x=tail(x,1L),last.x1=tail(x1,1L)),by=y]
+test(1086, class(DT$last.x), c("POSIXct", "POSIXt"))
+test(1087, class(DT$last.x1), "ITime")
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

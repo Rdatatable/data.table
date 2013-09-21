@@ -273,6 +273,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                         error("Unsupported type");
                     }
                 }
+                // fixes bug #2531. Got to set the class back.
+                setAttrib(targetcol, R_ClassSymbol, getAttrib(RHS, R_ClassSymbol));
             }
             UNPROTECT(1);
             continue;
