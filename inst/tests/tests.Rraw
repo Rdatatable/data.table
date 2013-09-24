@@ -3055,35 +3055,37 @@ DT[,`:=`(last.x=tail(x,1L),last.x1=tail(x1,1L)),by=y]
 test(1086, class(DT$last.x), c("POSIXct", "POSIXt"))
 test(1087, class(DT$last.x1), "ITime")
 
-# test for bugs #2538 and #4818 - chmatch doesn't match properly when "characters" are converted to "symbols" and converted back to "characters"
+# chmatch on 'unknown' encoding (e.g. as.character(as.symbol("ä")) )falling back to match, #2538 and #4818
 x1 <- c("alä", "ala", "äallc", "coep")
 x2 <- c("ala", "alä")
-test(1088, chmatch(x1, x2), match(x1, x2)) # should not fallback to "match"
+test(1088.1, chmatch(x1, x2), match(x1, x2)) # should not fallback to "match"
 test(1088.2, x1 %chin% x2, x1 %in% x2)
-
 # change x1 to symbol to character
 x3 <- unlist(lapply(x1, function(x) as.character(as.name(x))), use.names=FALSE)
-test(1089, chmatch(x3, x2), match(x3, x2)) # should fallback to match in "x"
+test(1089.1, chmatch(x3, x2), match(x3, x2)) # should fallback to match in "x"
 test(1089.2, x3 %chin% x2, x3 %in% x2) # should fallback to match in "x"
-
 # change x2 to symbol to character
 x4 <- unlist(lapply(x2, function(x) as.character(as.name(x))), use.names=FALSE)
-test(1090, chmatch(x1,x4), match(x1, x4)) # should fallback to match in "table"
+test(1090.1, chmatch(x1,x4), match(x1, x4)) # should fallback to match in "table"
 test(1090.2, x1 %chin% x4, x1 %in% x4)
-
 # both are symbols to characters
-test(1091, chmatch(x3, x4), match(x3, x4)) # should fallback to "match" in "x" as well.
+test(1091.1, chmatch(x3, x4), match(x3, x4)) # should fallback to "match" in "x" as well.
 test(1091.2, x3 %chin% x4, x3 %in% x4)
+# for completness, include test from #2528 of non ascii LHS of := (it could feasibly fail in future due to something other than chmatch)
+DT = data.table(pas = c(1:5, NA, 6:10), good = c(1:10, NA))
+setnames(DT, "pas", "päs")
+test(1092, DT[is.na(päs), päs := 99L], data.table("päs" = c(1:5, 99L, 6:10), good = c(1:10,NA)))
+test(1093, DT[, päs := 34L], data.table(päs = 34L, good=c(1:10,NA)))
 
-# bug fix for #4934, on unnamed DT with >20 <= 100 rows, print.data.table ends up with an error
+# print of unnamed DT with >20 <= 100 rows, #4934
 DT <- data.table(x=1:25, y=letters[1:25])
 DT.unnamed <- unname(copy(DT))
-test(1092, print(DT.unnamed), output="NA NA 1:  1  a 2:  2  b 3:  3  c")
+test(1094, print(DT.unnamed), output="NA NA 1:  1  a 2:  2  b 3:  3  c")
 
-# bug fix for #4930, DT[!TRUE] or DT[!TRUE, which=TRUE] returns error because "notjoin = TRUE". But !TRUE still can be a recycling operation with !(all TRUE)
+# DT[!TRUE] or DT[!TRUE, which=TRUE], #4930. !TRUE still can be a recycling operation with !(all TRUE)
 DT <- data.table(x=1:3, y=4:6)
-test(1093.1, DT[!TRUE], DT[FALSE])
-test(1093.2, DT[!TRUE, which=TRUE], DT[FALSE, which=TRUE])
+test(1095.1, DT[!TRUE], DT[FALSE])
+test(1095.2, DT[!TRUE, which=TRUE], DT[FALSE, which=TRUE])
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.

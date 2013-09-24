@@ -117,8 +117,9 @@ BUG FIXES
      and to Paul Murray for reporting here on SO: 
      http://stackoverflow.com/questions/15996692/cannot-assign-columns-as-date-by-reference-in-data-table
 
-  o  `chmatch` did not return matches properly for non-ascii characters. This is now resolved, fixing bugs 
-      #2538 and #4818. Thanks to Benjamin Barnes and Stefan Fritsch for reporting. Tests added.
+  o  chmatch() didn't always match non-ascii characters, #2538 and #4818. chmatch is used internally so
+         DT[is.na(päs), päs := 99L]
+     now works. Thanks to Benjamin Barnes and Stefan Fritsch for reporting. Tests added.
 
   o  unname(DT) threw an error when 20 < nrow(DT) <= 100, bug #4934. This is now fixed. Tests added. Thanks 
      to Ricardo Saporta.
