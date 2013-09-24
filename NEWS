@@ -126,6 +126,11 @@ BUG FIXES
 
   o  A special case of not-join and logical TRUE, DT[!TRUE], gave an error whereas it should be identical 
      to DT[FALSE]. Now fixed and tests added. Thanks once again to Ricardo Saporta for filing #4930.
+     
+  o  X[Y,roll=-Inf,rollends=FALSE] didn't roll the middle correctly if Y was keyed. It was ok if Y was
+     unkeyed or rollends left as the default [c(TRUE,FALSE) when roll<0]. Thanks to user338714 for
+     reporting. Tests added.
+         http://stackoverflow.com/questions/18984179/roll-data-table-with-rollends
                
 NOTES
 

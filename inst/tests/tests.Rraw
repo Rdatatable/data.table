@@ -3087,6 +3087,16 @@ DT <- data.table(x=1:3, y=4:6)
 test(1095.1, DT[!TRUE], DT[FALSE])
 test(1095.2, DT[!TRUE, which=TRUE], DT[FALSE, which=TRUE])
 
+# roll backwards when i is keyed and rollends=FALSE
+# http://stackoverflow.com/questions/18984179/roll-data-table-with-rollends
+dt1 = data.table(Date=as.Date(c("2013-01-03","2013-01-07")),key="Date")[,ind:=.I]
+dt2 = data.table(Date=seq(from=as.Date("2013-01-01"),to=as.Date("2013-01-10"), by="1 day"),key="Date")
+test(1096, dt1[dt2,roll=-Inf,rollends=FALSE]$ind, INT(NA,NA,1,2,2,2,2,NA,NA,NA))  # now ok
+test(1097, dt1[dt2,roll=-Inf,rollends=TRUE]$ind, INT(1,1,1,2,2,2,2,2,2,2))  # ok before
+test(1098, dt1[dt2,roll=-Inf,rollends=c(TRUE,FALSE)]$ind, INT(1,1,1,2,2,2,2,NA,NA,NA))  # ok before
+test(1099, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,2,2))  # now ok
+
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

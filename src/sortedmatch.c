@@ -174,29 +174,23 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
         } else if (roll!=0.0 && col==coln && lc && rc && (low>prevlow || upp<prevupp)) {
             // '&& lc && rc' is for test 133 (empty x).  Testing double roll!=0.0 is ok here, i.e. !(roll==FALSE). 
             // runs once per i row (not each search test), so not hugely time critical
-            if (low != upp-1) error("Internal error. low != upp-1");
-            if (low<prevlow) error("Internal error. low<prevlow");
-            if (upp>prevupp) error("Internal error. upp>prevupp");
+            if (low != upp-1 || low<prevlow || upp>prevupp) error("Internal error: low!=upp-1 || low<prevlow || upp>prevupp");
             if (nearest) {   // value of roll ignored currently when nearest
                 if ( low>prevlow && upp<prevupp ) {
                     if (  ( TYPEOF(lc)==REALSXP && REAL(lc)[lr]-REAL(rc)[low] <= REAL(rc)[upp]-REAL(lc)[lr] )
                        || ( TYPEOF(lc)<=INTSXP && INTEGER(lc)[lr]-INTEGER(rc)[low] <= INTEGER(rc)[upp]-INTEGER(lc)[lr] )) {
                         INTEGER(retFirst)[lr] = low+1;
                         INTEGER(retLength)[lr] = 1;
-                        low -= 1;
                     } else {
                         INTEGER(retFirst)[lr] = upp+1;
                         INTEGER(retLength)[lr] = 1;
-                        upp += 1;
                     }
                 } else if (upp==prevupp && LOGICAL(rollends)[1]) {
                     INTEGER(retFirst)[lr] = low+1;
                     INTEGER(retLength)[lr] = 1;
-                    low -= 1;
                 } else if (low==prevlow && LOGICAL(rollends)[0]) {
                     INTEGER(retFirst)[lr] = upp+1;
                     INTEGER(retLength)[lr] = 1;
-                    upp += 1;
                 }
             } else {
                 if ( (   (roll>0.0 && low>prevlow && (upp<prevupp || LOGICAL(rollends)[1]))
@@ -206,7 +200,6 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                       || (TYPEOF(lc)==STRSXP)   )) {
                     INTEGER(retFirst)[lr] = low+1;
                     INTEGER(retLength)[lr] = 1;
-                    low -= 1; // for test 148
                 } else if 
                    (  (  (roll<0.0 && upp<prevupp && (low>prevlow || LOGICAL(rollends)[0]))
                       || (roll>0.0 && low==prevlow && LOGICAL(rollends)[0]) )
@@ -215,9 +208,10 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                       || (TYPEOF(lc)==STRSXP)   )) {
                     INTEGER(retFirst)[lr] = upp+1;   // == low+2
                     INTEGER(retLength)[lr] = 1;
-                    upp += 1;
                 }
             }
+            if (low>prevlow) low -= 1; // for tests 148 and 1096
+            // no point setting upp+=1 as upp gets set to nr again, currently.
         }
         nextlr :;
     }
