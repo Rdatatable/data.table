@@ -1777,7 +1777,18 @@ setcolorder = function(x,neworder)
 
 set = function(x,i=NULL,j,value)
 {
-    .Call(Cassign,x,i,j,NULL,value,FALSE)
+    # FR #2077 - set able to add new cols by reference
+    newnames = NULL
+    if (is.character(j) && is.data.table(x)) { # is.data.table is necessary for test 857 (on data.frame)
+        cols = chmatch(j, names(x), 0L)
+        anynew = which(cols == 0)
+        if (length(anynew)) {
+            newnames = j[anynew]
+            cols[anynew] = ncol(x) + seq_along(anynew)
+            j = cols
+        }
+    }
+    .Call(Cassign,x,i,j,newnames,value,FALSE)
     # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.
     # TO DO: When := or set() do it, make them aware of 'ul' and drop it if necessary.
     invisible(x)

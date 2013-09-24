@@ -53,6 +53,9 @@ NEW FEATURES
   o	 Due to fixing #2697 (see BUG FIXES), `:=`, assignmeny by reference, also now accepts negative 
      indices, but still not '0' as an index. Thanks again to Eduard Antonyan.
 
+  o	 `set()` is able to add new columns by reference now. For example, set(DT, i=3:5, j="bla", 5L) is 
+     equivalent to DT[3:5, bla := 5L]. This was FR #2077. Tests added.
+  
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
