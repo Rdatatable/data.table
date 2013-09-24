@@ -191,24 +191,31 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
     savetl_init();
     for (i=0; i<length(x); i++) {
         s = STRING_ELT(x,i);
-        if (TRUELENGTH(s)>0) savetl(s); // pre-2.14.0 this will save all the uninitialised truelengths
-                                        // so 2.14.0+ may be faster, but isn't required.
-                                        // as from v1.8.0 we assume R's internal hash is positive, so don't
-                                        // save the uninitialised truelengths that by chance are negative
-        SET_TRUELENGTH(s,0);
-        // finally, fix for bugs #2538 and #4818
         if (s != NA_STRING && !ENC_KNOWN(s)) {
+            // symbols (i.e. as.name() or as.symbol()) containing non-ascii characters (>127) seem to be 'unknown' encoding in R.
+            // The same string in different encodings (where unknown encoding is different to known, too) are different
+            // CHARSXP pointers; this chmatch relies on pointer equality only. We tried mkChar(CHAR(s)) [ what install() does ]
+            // but this impacted the fastest cases too much. Hence fall back to match() on the first unknown encoding detected
+            // since match() considers the same string in different encodings as equal (but slower). See #2538 and #4818. 
+            savetl_end();
             return (in ? match_logical(table, x) : match(table, x, nomatch));
         }
+        if (TRUELENGTH(s)>0) savetl(s); 
+        // as from v1.8.0 we assume R's internal hash is positive. So in R < 2.14.0 we
+        // don't save the uninitialised truelengths that by chance are negative, but
+        // will save if positive. Hence R >= 2.14.0 may be faster and preferred now that R
+        // initializes truelength to 0 from R 2.14.0.
+        SET_TRUELENGTH(s,0);
     }
     for (i=length(table)-1; i>=0; i--) {
         s = STRING_ELT(table,i);
-        if (TRUELENGTH(s)>0) savetl(s);
-        SET_TRUELENGTH(s, -i-1);
-        // fix for bugs #2538 and #4818
         if (s != NA_STRING && !ENC_KNOWN(s)) {
+            for (int j=i+1; j<LENGTH(table); j++) SET_TRUELENGTH(STRING_ELT(table,j),0);  // reinstate 0 rather than leave the -i-1
+            savetl_end();  // and then reinstate HASHPRI (if any) over the 0
             return (in ? match_logical(table, x) : match(table, x, nomatch));
         }
+        if (TRUELENGTH(s)>0) savetl(s);
+        SET_TRUELENGTH(s, -i-1);
     }
     if (in) {
         PROTECT(ans = allocVector(LGLSXP,length(x)));
@@ -224,8 +231,8 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
         }
     }
     for (i=0; i<length(table); i++)
-        SET_TRUELENGTH(STRING_ELT(table,i),0);  // good practice to reinstate 0 but might not be needed.
-    savetl_end();   // reinstate HASHPRI (if any)
+        SET_TRUELENGTH(STRING_ELT(table,i),0);  // reinstate 0 rather than leave the -i-1
+    savetl_end();   // and then reinstate HASHPRI (if any) over the 0
     UNPROTECT(1);
     return(ans);
 }
