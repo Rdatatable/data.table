@@ -35,9 +35,7 @@ NEW FEATURES
      performing melt operations on data.table, by extending reshape2:::melt. This takes care 
 	 of FR #2627 partially. For example, a benchmark test on 1e7*5 data took 1.25 seconds 
 	 for melt.data.table vs 90 seconds from reshape2:::melt.data.frame. Most settings are 
-	 identical with reshape2::melt.data.frame for compatibility. melt.data.table attempts, 
-	 wherever possible, to set the class attribute of columns back after melting so that, for 
-	 example, 'Date' like columns don't get coerced to numeric. See ?melt.data.table for more 
+	 identical with reshape2::melt.data.frame for compatibility. See ?melt.data.table for more 
 	 details.
 	 
   o  melt.data.table is also capable of melting on columns of type 'list'. Have a look at 
@@ -115,10 +113,13 @@ BUG FIXES
 
   o  `:=` (assignment by reference) loses POSIXct or ITime attribute *while grouping* is now fixed, #2531. 
      Tests added. Thanks to stat quant for reporting here: 
-	 http://stackoverflow.com/questions/14604820/why-does-this-posixct-or-itime-loses-its-format-attribute
-	 and to Paul Murray for reporting here on SO: 
-	 http://stackoverflow.com/questions/15996692/cannot-assign-columns-as-date-by-reference-in-data-table
-         
+     http://stackoverflow.com/questions/14604820/why-does-this-posixct-or-itime-loses-its-format-attribute
+     and to Paul Murray for reporting here on SO: 
+     http://stackoverflow.com/questions/15996692/cannot-assign-columns-as-date-by-reference-in-data-table
+
+  o  `chmatch` did not return matches properly for non-ascii characters. This is now resolved, fixing bugs 
+      #2538 and #4818. Thanks to Benjamin Barnes and Stefan Fritsch for reporting. Tests added.
+           
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.

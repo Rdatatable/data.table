@@ -24,6 +24,9 @@
 #include <Rinternals.h>
 #include <Rdefines.h>
 
+#define ENC_KNOWN(x) (LEVELS(x) & 76)
+// LATIN1_MASK (1<<2) | UTF8_MASK (1<<3) | ASCII_MASK (1<<6)
+
 void ssort2(SEXP *x, R_len_t n);
 // See end of this file for comments and modifications.
 
@@ -107,8 +110,8 @@ SEXP countingcharacter(SEXP x, SEXP sort)
 
 // Copied as-is directly from src/main/sort.c :
 const int incs[16] = {1073790977, 268460033, 67121153, 16783361, 4197377,
-		       1050113, 262913, 65921, 16577, 4193, 1073, 281, 77,
-		       23, 8, 1};
+               1050113, 262913, 65921, 16577, 4193, 1073, 281, 77,
+               23, 8, 1};
 
 int StrCmp(SEXP x, SEXP y)
 {
@@ -136,14 +139,14 @@ void ssort2(SEXP *x, R_len_t n)
     R_len_t i, j, h, t;
     for (t = 0; incs[t] > n; t++);
     for (h = incs[t]; t < 16; h = incs[++t])
-	for (i = h; i < n; i++) {
-	    v = x[i];
-	    j = i;
-		while (j>=h && x[j-h]!=v && StrCmp(x[j-h],v) > 0)   // assumes ASCII.  TO DO: reinvestigate non-ascii.
-		// while (j >= h && scmp(x[j - h], v, TRUE) > 0)         // base
-		{ x[j] = x[j-h]; j-=h; }
-	    x[j] = v;
-	}
+    for (i = h; i < n; i++) {
+        v = x[i];
+        j = i;
+        while (j>=h && x[j-h]!=v && StrCmp(x[j-h],v) > 0)   // assumes ASCII.  TO DO: reinvestigate non-ascii.
+        // while (j >= h && scmp(x[j - h], v, TRUE) > 0)         // base
+        { x[j] = x[j-h]; j-=h; }
+        x[j] = v;
+    }
 }
 
 /*
@@ -156,20 +159,29 @@ static void ssort2(SEXP *x, int n, Rboolean decreasing)
 
     for (t = 0; incs[t] > n; t++);
     for (h = incs[t]; t < 16; h = incs[++t])
-	for (i = h; i < n; i++) {
-	    v = x[i];
-	    j = i;
-	    if(decreasing)
-		while (j >= h && scmp(x[j - h], v, TRUE) < 0)
-		{ x[j] = x[j - h]; j -= h; }
-	    else
-		while (j >= h && scmp(x[j - h], v, TRUE) > 0)
-		{ x[j] = x[j - h]; j -= h; }
-	    x[j] = v;
-	}
+    for (i = h; i < n; i++) {
+        v = x[i];
+        j = i;
+        if(decreasing)
+        while (j >= h && scmp(x[j - h], v, TRUE) < 0)
+        { x[j] = x[j - h]; j -= h; }
+        else
+        while (j >= h && scmp(x[j - h], v, TRUE) > 0)
+        { x[j] = x[j - h]; j -= h; }
+        x[j] = v;
+    }
 }
 */
-
+SEXP match_logical(SEXP table, SEXP x) {
+    R_len_t i;
+    SEXP ans, m;
+    ans = PROTECT(allocVector(LGLSXP, length(x)));
+    m = PROTECT(match(table, x, 0)); // nomatch=0
+    for (i=0; i<length(x); i++)
+        INTEGER(ans)[i] = INTEGER(m)[i] > 0;
+    UNPROTECT(2);
+    return(ans);
+}
 
 SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
     R_len_t i, m;
@@ -184,11 +196,19 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
                                         // as from v1.8.0 we assume R's internal hash is positive, so don't
                                         // save the uninitialised truelengths that by chance are negative
         SET_TRUELENGTH(s,0);
+        // finally, fix for bugs #2538 and #4818
+        if (s != NA_STRING && !ENC_KNOWN(s)) {
+            return (in ? match_logical(table, x) : match(table, x, nomatch));
+        }
     }
     for (i=length(table)-1; i>=0; i--) {
         s = STRING_ELT(table,i);
         if (TRUELENGTH(s)>0) savetl(s);
         SET_TRUELENGTH(s, -i-1);
+        // fix for bugs #2538 and #4818
+        if (s != NA_STRING && !ENC_KNOWN(s)) {
+            return (in ? match_logical(table, x) : match(table, x, nomatch));
+        }
     }
     if (in) {
         PROTECT(ans = allocVector(LGLSXP,length(x)));
@@ -213,7 +233,4 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
 SEXP chmatchwrapper(SEXP x, SEXP table, SEXP nomatch, SEXP in) {
     return(chmatch(x,table,INTEGER(nomatch)[0],LOGICAL(in)[0]));
 }
-
-
-
 

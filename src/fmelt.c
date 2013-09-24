@@ -11,6 +11,7 @@ int sizes[100];
 extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
 extern SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol);
 extern SEXP allocNAVector(SEXPTYPE type, R_len_t n);
+extern SEXP coerce_to_char(SEXP s, SEXP env);
 
 // generate from 1 to n (a simple fun for melt, vecseq is convenient from R due to SEXP inputs)
 SEXP intseq(int n, int start) {
@@ -287,7 +288,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
         return(ans);
     }
     if (lvalues == 0 && lids == 0 && verbose)
-        Rprintf("length(measure.var) and length(id.var) are both 0. Edge case detected. Nothing to melt.\n");
+        Rprintf("length(measure.var) and length(id.var) are both 0. Edge case detected. Nothing to melt.\n"); // <~~ don't think this will ever happen though with all the checks
     // set names for 'ans' - the output list
     PROTECT(ansnames = allocVector(STRSXP, lids+2)); protecti++;
     for (i=0; i<lids; i++) {
@@ -307,9 +308,9 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     for (i=0; i<lvalues; i++) {
         thiscol = VECTOR_ELT(DT, INTEGER(valuecols)[i]-1);
         if (TYPEOF(thiscol) != valtype && isidentical) {
-            isidentical = FALSE; // for Date like column
+            isidentical = FALSE; // for Date like column (not implemented for now)
             if (!(isFactor(thiscol) && valtype == STRSXP)) {
-                warning("All 'measure.var's are NOT of the SAME type. The molten data value column will be of type '%s'. Therefore all measure variables that are not of type '%s' will be coerced to. Please see ?melt.data.table for more details on coercion.\n", type2char(valtype), type2char(valtype));
+                warning("All 'measure.vars are NOT of the SAME type. By order of hierarchy, the molten data value column will be of type '%s'. Therefore all measure variables that are not of type '%s' will be coerced to. Check the DETAILS section of ?melt.data.table for more on coercion.\n", type2char(valtype), type2char(valtype));
                 break;
             }
         }
@@ -335,6 +336,8 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
         if (isFactor(thiscol))
             thiscol = asCharacterFactor(thiscol);
         if (TYPEOF(thiscol) != valtype && !isFactor(thiscol)) {
+            // thiscol = valtype == STRSXP ? PROTECT(coerce_to_char(thiscol, R_GlobalEnv)) : PROTECT(coerceVector(thiscol, valtype));
+            // protecti++; // for now, no preserving of class attributes
             thiscol = PROTECT(coerceVector(thiscol, valtype)); protecti++;
         }
         if (narm) {
@@ -392,8 +395,8 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
             default : error("Unknown column type '%s' for column '%s' in 'data'", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(valuecols)[i]-1)));
         }
         if (narm) counter += thislen;
-        if (isidentical && valtype != VECSXP)
-            setAttrib(target, R_ClassSymbol, getAttrib(VECTOR_ELT(DT, INTEGER(valuecols)[0]-1), R_ClassSymbol)); // for Date like column
+        // if (isidentical && valtype != VECSXP) // for now, no preserving of class attributes
+        //     setAttrib(target, R_ClassSymbol, getAttrib(VECTOR_ELT(DT, INTEGER(valuecols)[0]-1), R_ClassSymbol)); // for Date like column
     }
     // check for factor
     if (LOGICAL(valfactor)[0] == TRUE && valtype == VECSXP) warning("argument 'value.factor' ignored because 'value' column is a list\n");

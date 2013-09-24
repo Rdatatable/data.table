@@ -2895,7 +2895,7 @@ if ("package:reshape2" %in% search()) {
 	ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l1"))
 	ans1[, value := DT$l1]
 	test(1036, melt(DT, id=c("i1", "i2", "l2"), measure=c("l1")), ans1)
-	ans2 = data.table(c1=DT$c1, variable=rep(c("d1", "d2"), each=6), value=c(DT$d1, DT$d2))[!is.na(value)]
+	ans2 = data.table(c1=DT$c1, variable=rep(c("d1", "d2"), each=6), value=as.numeric(c(DT$d1, DT$d2)))[!is.na(value)]
 	test(1037, melt(DT, id=4, measure=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
 	DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
 	test(1038, melt(DT2, id=1), error="Unknown column type 'complex'")
@@ -3054,6 +3054,26 @@ DT[,x1:=as.ITime(x)]
 DT[,`:=`(last.x=tail(x,1L),last.x1=tail(x1,1L)),by=y]
 test(1086, class(DT$last.x), c("POSIXct", "POSIXt"))
 test(1087, class(DT$last.x1), "ITime")
+
+# test for bugs #2538 and #4818 - chmatch doesn't match properly when "characters" are converted to "symbols" and converted back to "characters"
+x1 <- c("alä", "ala", "äallc", "coep")
+x2 <- c("ala", "alä")
+test(1088, chmatch(x1, x2), match(x1, x2)) # should not fallback to "match"
+test(1088.2, x1 %chin% x2, x1 %in% x2)
+
+# change x1 to symbol to character
+x3 <- unlist(lapply(x1, function(x) as.character(as.name(x))), use.names=FALSE)
+test(1089, chmatch(x3, x2), match(x3, x2)) # should fallback to match in "x"
+test(1089.2, x3 %chin% x2, x3 %in% x2) # should fallback to match in "x"
+
+# change x2 to symbol to character
+x4 <- unlist(lapply(x2, function(x) as.character(as.name(x))), use.names=FALSE)
+test(1090, chmatch(x1,x4), match(x1, x4)) # should fallback to match in "table"
+test(1090.2, x1 %chin% x4, x1 %in% x4)
+
+# both are symbols to characters
+test(1091, chmatch(x3, x4), match(x3, x4)) # should fallback to "match" in "x" as well.
+test(1091.2, x3 %chin% x4, x3 %in% x4)
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.

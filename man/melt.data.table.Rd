@@ -2,7 +2,7 @@
 \alias{melt.data.table}
 \title{Fast melt for data.table}
 \description{
-  A \code{melt.data.table} S3 method extending \code{reshape2:::melt}, for melting a \code{data.table}. \code{reshape2} also has to be loaded for using \code{melt.data.table}. A lot similar to \code{reshape2:::melt.data.frame} , but much faster and with additional features.
+  A \code{melt.data.table} S3 method extending \code{reshape2:::melt}, for melting a \code{data.table}. \code{reshape2} also has to be loaded for using \code{melt.data.table}. A lot similar to \code{reshape2:::melt.data.frame} , but much faster and with some additional features.
 }
 \usage{
 ## fast melt a data.table
@@ -27,11 +27,9 @@
 \details{
 If \code{id.vars} and \code{measure.vars} are both \code{NULL}, all non-\code{numeric/integer/logical} columns are assigned as id variables and the rest of the columns are assigned as measure variables. If only one of \code{id.vars} or \code{measure.vars} is supplied, the rest of the columns will be assigned to the other. Both \code{id.vars} and \code{measure.vars} can have the same column more than once and same column can be as id and measure variables. 
 
-\code{melt.data.table} also accepts \code{list} columns for both id and measure variables. If any of the measure variables is a \code{list}, then entire value column will be coerced to a list. In that case, \code{na.rm = TRUE} will have no effect. That is, \code{list} has the highest priority. If any of the measure variable is a \code{factor} or \code{character}, the value column will be coerced to \code{character}. Similarly, following that, \code{numeric > integer > logical}. 
+\code{melt.data.table} also accepts \code{list} columns for both id and measure variables. When all \code{measure.vars} are not of the same type, they'll be coerced according to the hierarchy \code{list} > \code{character} > \code{numeric > integer > logical}. For example, any of the measure variables is a \code{list}, then entire value column will be coerced to a list. Note that, if the type of \code{value} column is a list, \code{na.rm = TRUE} will have no effect.
 
-If all the measure variables are of a particular class, whose internal representations are different, for example, say, \code{Date}, the molten result from \code{melt.data.table} will attempt to preserve the (here: \code{Date}) class. Note that this is not the case in \code{reshape2:::melt.data.frame}. If a coercion were to happen here, that is, if your measure variables are both, say, integer (or numeric) and Date types, then, the type of the first measure var decides the coercion type. Note that, still, when the measure var, for example, is a character and Date, the Date format is lost and the result will be coerced to character (following the hierarchy).
-
-Even if all \code{measure.vars} are factors, the resulting \code{value} column will by default be a character column. This is unless \code{value.factor = TRUE}. This is also different from \code{reshape2:::melt.data.frame}.
+All class attributes on \code{value} column (example: \code{Date}) are dropped silently.
 }
 \value{
     An unkeyed \code{data.table} containing the molten data.
@@ -41,10 +39,8 @@ Even if all \code{measure.vars} are factors, the resulting \code{value} column w
 \bold{Differences between \code{melt.data.table} and \code{reshape2:::melt.data.frame}:}
 \enumerate{
 	\item There are two other arguments \code{variable.factor} and \code{value.factor} which for backwards compatibility with \code{reshape2:::melt.data.frame} is set to \code{TRUE} and \code{FALSE} respectively.
-	\item \code{melt.data.table} can handle list columns in both \code{id} and \code{measure} vairables. The molten data retains list columns as such. \code{list} has highest priority. That is, as long as at least one measure variable is of type list, the \code{value} column of molten data will be a \code{list}.
+	\item \code{melt.data.table} can handle list columns in both \code{id} and \code{measure} vairables. The molten data retains list columns as such. As long as at least one \code{measure.vars} is a \code{list}, the \code{value} column of molten data will be a \code{list}.
 	\item \code{melt(data, id=integer(0), measure=integer(0))} gives a data.table with 0 rows and 2 columns - \code{variable} and \code{value} (default names), as opposed to \code{reshape2:::melt.data.frame} which gives a \code{0} columns and \code{nrow(data)} rows.
-	\item \code{melt.data.table} retains the class of certain objects like those of class \code{Date} whereever possible (See DETAILS section).
-	\item The molten data \code{value} column will not be \code{factor}, even if all \code{measure.vars} are \code{factor}, unless \code{value.factor} is set to \code{TRUE}.
 }
 % \bold{Speedup using \code{fmelt}:}
 % Benchmarking on relatively big data set gives over 98% speedup as shown below.
@@ -68,6 +64,8 @@ Even if all \code{measure.vars} are factors, the resulting \code{value} column w
 % 	}
 }
 
+% melt(DT, id=c("i1", "f1"), measure=c("d1", "i2")) # i2 coerced to date
+% melt(DT, id=c("i1", "f1"), measure=c("i2", "d1")) # date is coerced to i2
 
 \seealso{ }
 \examples{
@@ -89,13 +87,12 @@ melt(DT, id=1:2, measure=3)
 melt(DT, id=c("i1", "i2"), measure="f1", value.factor=TRUE) # same as above, but value is factor
 
 # on Date
-melt(DT, id=c("i1", "f1"), measure=c("d1", "d2")) # date class preserved
-melt(DT, id=c("i1", "f1"), measure=c("d1", "i2")) # i2 coerced to date
-melt(DT, id=c("i1", "f1"), measure=c("i2", "d1")) # date is coerced to i2
+melt(DT, id=c("i1", "f1"), measure=c("d1", "d2")) # date class attribute lost
+melt(DT, id=c("i1", "f1"), measure=c("c1", "d1")) # value is char, date attribute lost
 
 # on list
 melt(DT, id=1, measure=c("l1", "l2")) # value is a list
-melt(DT, id=1, measure=c("c1", "l1")) # f1 coerced to list
+melt(DT, id=1, measure=c("c1", "l1")) # c1 coerced to list
 
 # on character
 melt(DT, id=1, measure=c("c1", "f1")) # value is char
