@@ -3075,6 +3075,16 @@ test(1090.2, x1 %chin% x4, x1 %in% x4)
 test(1091, chmatch(x3, x4), match(x3, x4)) # should fallback to "match" in "x" as well.
 test(1091.2, x3 %chin% x4, x3 %in% x4)
 
+# bug fix for #4934, on unnamed DT with >20 <= 100 rows, print.data.table ends up with an error
+DT <- data.table(x=1:25, y=letters[1:25])
+DT.unnamed <- unname(copy(DT))
+test(1092, print(DT.unnamed), output="NA NA 1:  1  a 2:  2  b 3:  3  c")
+
+# bug fix for #4930, DT[!TRUE] or DT[!TRUE, which=TRUE] returns error because "notjoin = TRUE". But !TRUE still can be a recycling operation with !(all TRUE)
+DT <- data.table(x=1:3, y=4:6)
+test(1093.1, DT[!TRUE], DT[FALSE])
+test(1093.2, DT[!TRUE, which=TRUE], DT[FALSE, which=TRUE])
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

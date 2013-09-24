@@ -119,7 +119,13 @@ BUG FIXES
 
   o  `chmatch` did not return matches properly for non-ascii characters. This is now resolved, fixing bugs 
       #2538 and #4818. Thanks to Benjamin Barnes and Stefan Fritsch for reporting. Tests added.
-           
+
+  o  unname(DT) threw an error when 20 < nrow(DT) <= 100, bug #4934. This is now fixed. Tests added. Thanks 
+     to Ricardo Saporta.
+
+  o  A special case of not-join and logical TRUE, DT[!TRUE], gave an error whereas it should be identical 
+     to DT[FALSE]. Now fixed and tests added. Thanks once again to Ricardo Saporta for filing #4930.
+               
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.

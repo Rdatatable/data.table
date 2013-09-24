@@ -54,6 +54,7 @@ print.data.table = function(x,
     }
     toprint=format.data.table(toprint, ...)
     rownames(toprint)=paste(format(rn,right=TRUE),":",sep="")
+    if (is.null(names(x))) colnames(toprint)=rep("NA", ncol(toprint)) # fixes bug #4934
     if (printdots) {
         toprint = rbind(head(toprint,topn),"---"="",tail(toprint,topn))
         rownames(toprint) = format(rownames(toprint),justify="right")
@@ -62,7 +63,7 @@ print.data.table = function(x,
     }
     if (nrow(toprint)>20L)
         # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
-        toprint=rbind(toprint,matrix(names(x),nrow=1))
+        toprint=rbind(toprint,matrix(colnames(toprint),nrow=1)) # fixes bug #4934
     print(toprint,right=TRUE,quote=FALSE)
     invisible()
 }
@@ -401,7 +402,9 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
             if (is.logical(i)) {
                 if (length(i)==nrow(x)) irows=which(i)   # e.g. DT[colA>3,which=TRUE]
-                else if (!isTRUE(i)) irows=seq_len(nrow(x))[i]  # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness
+                else irows=seq_len(nrow(x))[i]  # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness 
+                # it could also be DT[!TRUE, which=TRUE] (silly cases, yes). 
+                # replaced the "else if (!isTRUE(i))" to just "else". Fixes bug report #4930 
             } else {
                 irows = as.integer(i)  # e.g. DT[c(1,3)]
                 # fixes #2697. If irows is -ve, o__ is. When "by", "Cdogroups" uses -ve indexing. Line 154 (I think) doesn't compute correct "rownum" in Cdogroups.
