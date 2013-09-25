@@ -2,7 +2,7 @@
 if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
     suppressWarnings({
-	    require(reshape2)
+        require(reshape2)
         require(reshape)
         require(plyr)
         require(ggplot2)      # the 2 ggplot tests take so long they get in the way in dev
@@ -1561,14 +1561,11 @@ mul=c(5.3,2.8)
 for (j in seq_along(mul)) set(DT1, i=NULL, j=paste0("dot", j), mul[j]*DT1[[j]])
 DT2[, `:=`(dot1=5.3*x, dot2=2.8*y)]
 test(1096.1, DT1, DT2)
-
 set(DT1, i=NULL, j="dot2", value=NULL) # remove "dot2"
 test(1096.2, DT1, DT2[, list(x,y,fac, dot1)])
-
 DT2[, dot2 := NULL][5:9, `:=`(bla1 = 0L, x = 3L, bla2 = 2L)]
 set(DT1, i=5:9, j=c("bla1", "x", "bla2"), value=list(0L, 3L, 2L))
 test(1096.3, DT1, DT2) # more testing with many columns including existing columns
-
 
 # Test that data.frame incompability is fixed, came to light in Feb 2012
 DT = data.table(name=c('a','b','c'), value=1:3)
@@ -2869,7 +2866,7 @@ test(1024.1, DT[,c("B","B"):=NULL], error="Can't assign to the same column twice
 test(1024.2, DT[,c(1,2,1):=NULL], error="Can't assign to the same column twice in the same query (duplicates detected).")
 
 # as.data.table.table, #4848
-DF <- data.frame(x = c(1,1,2,NA,1,2), y = c("b", "b", "b", "a", "c", "a"), z = c(1,1,1,1,1,2), stringsAsFactors=FALSE	)
+DF <- data.frame(x = c(1,1,2,NA,1,2), y = c("b", "b", "b", "a", "c", "a"), z = c(1,1,1,1,1,2), stringsAsFactors=FALSE   )
 tab1 <- as.data.table(as.data.frame(table(DF$x), stringsAsFactors=FALSE)); setattr(tab1, 'names', c("V1", "N"))
 tab2 <- as.data.table(as.data.frame(table(DF$x, DF$y), stringsAsFactors=FALSE)); setattr(tab2, 'names', c("V1", "V2", "N"))
 tab3 <- as.data.table(as.data.frame(table(DF$x, DF$y, DF$z), stringsAsFactors=FALSE)); setattr(tab3, 'names', c("V1", "V2", "V3", "N"))
@@ -2893,28 +2890,28 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
 
 # melt.data.table
 if ("package:reshape2" %in% search()) {
-	try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
-	                                           # try() in case reshape isn't loaded (detach gives not found error in that case)
-	set.seed(45)
-	DT <- data.table(
-	      i1 = c(1:5, NA), 
-	      i2 = c(NA,6,7,8,9,10), 
-	      f1 = factor(sample(c(letters[1:3], NA), 6, TRUE)), 
-	      c1 = sample(c(letters[1:3], NA), 6, TRUE), 
-	      d1 = as.Date(c(1:3,NA,4:5), origin="2013-09-01"), 
-	      d2 = as.Date(6:1, origin="2012-01-01"))
-	DT[, l1 := DT[, list(c=list(rep(i1, sample(5,1)))), by = i1]$c] # generate list cols
-	DT[, l2 := DT[, list(c=list(rep(c1, sample(5,1)))), by = i1]$c]
+    try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
+                                               # try() in case reshape isn't loaded (detach gives not found error in that case)
+    set.seed(45)
+    DT <- data.table(
+          i1 = c(1:5, NA), 
+          i2 = c(NA,6,7,8,9,10), 
+          f1 = factor(sample(c(letters[1:3], NA), 6, TRUE)), 
+          c1 = sample(c(letters[1:3], NA), 6, TRUE), 
+          d1 = as.Date(c(1:3,NA,4:5), origin="2013-09-01"), 
+          d2 = as.Date(6:1, origin="2012-01-01"))
+    DT[, l1 := DT[, list(c=list(rep(i1, sample(5,1)))), by = i1]$c] # generate list cols
+    DT[, l2 := DT[, list(c=list(rep(c1, sample(5,1)))), by = i1]$c]
 
-	test(1035, melt(DT, id=1:2, measure=3:4), melt(DT, id=c("i1", "i2"), measure=c("f1", "c1")))
-	ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l1"))
-	ans1[, value := DT$l1]
-	test(1036, melt(DT, id=c("i1", "i2", "l2"), measure=c("l1")), ans1)
-	ans2 = data.table(c1=DT$c1, variable=rep(c("d1", "d2"), each=6), value=as.numeric(c(DT$d1, DT$d2)))[!is.na(value)]
-	test(1037, melt(DT, id=4, measure=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
-	DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
-	test(1038, melt(DT2, id=1), error="Unknown column type 'complex'")
-	# TO DO: more tests
+    test(1035, melt(DT, id=1:2, measure=3:4), melt(DT, id=c("i1", "i2"), measure=c("f1", "c1")))
+    ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l1"))
+    ans1[, value := DT$l1]
+    test(1036, melt(DT, id=c("i1", "i2", "l2"), measure=c("l1")), ans1)
+    ans2 = data.table(c1=DT$c1, variable=rep(c("d1", "d2"), each=6), value=as.numeric(c(DT$d1, DT$d2)))[!is.na(value)]
+    test(1037, melt(DT, id=4, measure=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
+    DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
+    test(1038, melt(DT2, id=1), error="Unknown column type 'complex'")
+    # TO DO: more tests
 }
 
 # sorting and grouping of Inf, -Inf, NA and NaN,  #4684, #4815 & #4883
@@ -3102,14 +3099,36 @@ DT <- data.table(x=1:3, y=4:6)
 test(1095.1, DT[!TRUE], DT[FALSE])
 test(1095.2, DT[!TRUE, which=TRUE], DT[FALSE, which=TRUE])
 
+######### incremented tests by 1 as I've used 1096 for FR #2077 (above along with already existing tests 522): ###########
 # roll backwards when i is keyed and rollends=FALSE
 # http://stackoverflow.com/questions/18984179/roll-data-table-with-rollends
 dt1 = data.table(Date=as.Date(c("2013-01-03","2013-01-07")),key="Date")[,ind:=.I]
 dt2 = data.table(Date=seq(from=as.Date("2013-01-01"),to=as.Date("2013-01-10"), by="1 day"),key="Date")
-test(1096, dt1[dt2,roll=-Inf,rollends=FALSE]$ind, INT(NA,NA,1,2,2,2,2,NA,NA,NA))  # now ok
-test(1097, dt1[dt2,roll=-Inf,rollends=TRUE]$ind, INT(1,1,1,2,2,2,2,2,2,2))  # ok before
-test(1098, dt1[dt2,roll=-Inf,rollends=c(TRUE,FALSE)]$ind, INT(1,1,1,2,2,2,2,NA,NA,NA))  # ok before
-test(1099, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,2,2))  # now ok
+test(1097, dt1[dt2,roll=-Inf,rollends=FALSE]$ind, INT(NA,NA,1,2,2,2,2,NA,NA,NA))  # now ok
+test(1098, dt1[dt2,roll=-Inf,rollends=TRUE]$ind, INT(1,1,1,2,2,2,2,2,2,2))  # ok before
+test(1099, dt1[dt2,roll=-Inf,rollends=c(TRUE,FALSE)]$ind, INT(1,1,1,2,2,2,2,NA,NA,NA))  # ok before
+test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,2,2))  # now ok
+
+# dcast.data.table
+if ("package:reshape2" %in% search()) {
+    try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
+                                               # try() in case reshape isn't loaded (detach gives not found error in that case)
+
+    names(ChickWeight) <- tolower(names(ChickWeight))
+    DT <- melt(as.data.table(ChickWeight), id=2:4) # calls melt.data.table
+
+    # no S3 method yet, have to use "dcast.data.table"
+    test(1101, as.data.frame(dcast.data.table(DT, time ~ variable, fun=mean)), dcast(DT, time~variable, fun=mean))
+    test(1102, as.data.frame(dcast.data.table(DT, diet ~ variable, fun=sum)), dcast(DT, diet~variable, fun=sum))
+	x1 <- as.data.frame(dcast.data.table(DT, diet+chick ~ time, drop=FALSE)) 
+	x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
+    x2 <- dcast(DT, diet+chick~time, drop=FALSE)
+    test(1103, x1,x2)
+	x1 <- as.data.frame(dcast.data.table(DT, diet+chick ~ time, drop=FALSE, fill=0)) 
+	x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
+    x2 <- dcast(DT, diet+chick~time, drop=FALSE, fill=0)
+    test(1104, x1,x2)
+}
 
 
 # tests of freading classes like Date and the verbose messages there.

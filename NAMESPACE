@@ -57,6 +57,7 @@ S3method(all.equal, data.table)
 
 importFrom(reshape2, melt)
 S3method(melt, data.table)
+export(dcast.data.table)
 
 import(utils)
 S3method(tail, data.table)

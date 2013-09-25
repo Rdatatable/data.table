@@ -67,7 +67,6 @@ All class attributes on \code{value} column (example: \code{Date}) are dropped s
 % melt(DT, id=c("i1", "f1"), measure=c("d1", "i2")) # i2 coerced to date
 % melt(DT, id=c("i1", "f1"), measure=c("i2", "d1")) # date is coerced to i2
 
-\seealso{ }
 \examples{
 set.seed(45)
 require(reshape2)
@@ -100,6 +99,9 @@ melt(DT, id=1, measure=c("c1", "i2")) # i2 coerced to char
 
 # on na.rm=TRUE
 melt(DT, id=1, measure=c("c1", "i2"), na.rm=TRUE) # remove NA
+}
+\seealso{
+  \code{\link{dcast.data.table}}, \url{https://r-forge.r-project.org/projects/datatable/}
 }
 \keyword{ data }
 

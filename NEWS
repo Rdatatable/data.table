@@ -55,7 +55,16 @@ NEW FEATURES
 
   o	 `set()` is able to add new columns by reference now. For example, set(DT, i=3:5, j="bla", 5L) is 
      equivalent to DT[3:5, bla := 5L]. This was FR #2077. Tests added.
-  
+
+  o  data.table now also implements a faster version of "dcast" but for data.table. In addition, 
+     `dcast.data.table` can handle bigger datasets without crashing R-session and without compromising 
+     in speed.  Except for "margins" argument from `reshape2:::dcast`, all features are intact. 
+     `dcast.data.table` can also accept 'value.var' columns of type list.
+
+  o  dcast.data.table took, on 1e5*4 data, 0.8 seconds to cast, whereas reshape2:::cast took 
+     8.1 seconds. On 1e6*4 data, reshape2:::dcast crashes R-session, whereas, dcast.data.table 
+     took 6.7 seconds.
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now

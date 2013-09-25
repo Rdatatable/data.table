@@ -32,6 +32,7 @@ SEXP setnamed();
 SEXP address();
 SEXP copyNamedInList();
 SEXP fmelt();
+SEXP fcast();
 
 // .Externals
 SEXP fastmean();
@@ -64,6 +65,7 @@ R_CallMethodDef callMethods[] = {
 {"Caddress", (DL_FUNC) &address, -1},
 {"CcopyNamedInList", (DL_FUNC) &copyNamedInList, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1}, 
+{"Cfcast", (DL_FUNC) &fcast, -1}, 
 {NULL, NULL, 0}
 };
 
