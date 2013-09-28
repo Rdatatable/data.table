@@ -1,10 +1,19 @@
 
 fread = function(input="test.csv",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=FALSE,autostart=30L,skip=-1L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64")) {
-    if (!is.character(input) || length(input)!=1) stop("'input' must be a single character string containing a file name, full path to a file, a URL starting 'http://' or 'file://', or the input data itself")
+    if (!is.character(input) || length(input)!=1) stop("'input' must be a single character string containing a file name, a command, full path to a file, a URL starting 'http://' or 'file://', or the input data itself")
     if (substring(input,1,7) %chin% c("http://","https:/","file://")) {
         tt = tempfile()
         on.exit(unlink(tt), add=TRUE)
         download.file(input, tt)
+        input = tt
+    } else if (!file.exists(input)) {
+        tt = tempfile()
+        on.exit(unlink(tt), add = TRUE)
+        if (.Platform$OS.type == "unix") {
+            system(paste0('(', input, ') > ', tt))
+        } else {
+            shell(paste0('(', input, ') > ', tt))
+        }
         input = tt
     }
     if (identical(header,"auto")) header=NA
