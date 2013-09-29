@@ -13,6 +13,9 @@ fread = function(input="test.csv",sep="auto",sep2="auto",nrows=-1L,header="auto"
         tt = tempfile()
         on.exit(unlink(tt), add = TRUE)
         if (.Platform$OS.type == "unix") {
+            if (file.exists('/dev/shm') && file.info('/dev/shm')$isdir) {
+                tt = tempfile(tmpdir = '/dev/shm')
+            }
             system(paste0('(', input, ') > ', tt))
         } else {
             shell(paste0('(', input, ') > ', tt))
