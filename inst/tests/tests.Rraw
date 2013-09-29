@@ -3146,6 +3146,8 @@ test(1105, x1, x2)
 x1 <- data.table(a = c(1:5), b = c(5:1))
 x1[J(2), key = 'a']
 test(1106, key(x1) == 'a')
+x1[, a, key = NULL]
+test(1107, is.null(key(x1)))
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
