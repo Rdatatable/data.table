@@ -41,6 +41,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
   drop = NULL,
+  key = NULL,
   rolltolast = FALSE   # deprecated
   )
 }

@@ -14,6 +14,10 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
+  o  can set key from `[.data.table` using a new "key" argument. This is for convenience and to
+     address FR #4675 to some degree - the difference from the FR is that the key is not set temporarily
+     but rather is a permanent change.
+
   o  fread can now understand commands, e.g. fread("grep blah file.txt").
 
   o  fread's integer64 argument implemented. Allows reading of integer64 data as 'double' or 'character'
