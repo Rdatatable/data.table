@@ -3130,6 +3130,22 @@ if ("package:reshape2" %in% search()) {
     test(1104, x1,x2)
 }
 
+# test for freading commands
+x1 <- data.table(a = c(1:5), b = c(1:5))
+f <- tempfile()
+write.csv(x1, f, row.names = FALSE)
+if (.Platform$OS.type == "unix") {
+    x1 <- x1[a != 3]
+    x2 <- fread(paste0('grep -v 3 ', f))
+} else {
+    x2 <- fread(paste0('more ', f))
+}
+test(1105, x1, x2)
+
+# test for "key" argument of [.data.table
+x1 <- data.table(a = c(1:5), b = c(5:1))
+x1[J(2), key = 'a']
+test(1106, key(x1) == 'a')
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.

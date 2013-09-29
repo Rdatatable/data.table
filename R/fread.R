@@ -1,11 +1,14 @@
 
 fread = function(input="test.csv",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=FALSE,autostart=30L,skip=-1L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64")) {
-    if (!is.character(input) || length(input)!=1) stop("'input' must be a single character string containing a file name, a command, full path to a file, a URL starting 'http://' or 'file://', or the input data itself")
-    if (substring(input,1,7) %chin% c("http://","https:/","file://")) {
+    if (!is.character(input) || length(input)!=1) {
+        stop("'input' must be a single character string containing a file name, a command, full path to a file, a URL starting 'http://' or 'file://', or the input data itself")
+    } else if (substring(input,1,7) %chin% c("http://","https:/","file://")) {
         tt = tempfile()
         on.exit(unlink(tt), add=TRUE)
         download.file(input, tt)
         input = tt
+    } else if (input == "" || length(grep('\\n|\\r', input)) > 0) {
+        # if text input
     } else if (!file.exists(input)) {
         tt = tempfile()
         on.exit(unlink(tt), add = TRUE)
@@ -27,5 +30,3 @@ fread = function(input="test.csv",sep="auto",sep2="auto",nrows=-1L,header="auto"
         warning("Some columns have been read as type 'integer64' but package bit64 isn't loaded. Those columns will display as strange looking floating point data. There is no need to reload the data. Just require(bit64) to obtain the integer64 print method and print the data again.")
     alloc.col(ans)
 }
-
-
