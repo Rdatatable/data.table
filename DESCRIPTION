@@ -1,7 +1,7 @@
 Package: data.table
 Version: 1.8.11
 Title: Extension of data.frame for fast indexing, fast ordered joins, fast assignment, fast grouping and list columns.
-Author: M Dowle, T Short, S Lianoglou, A Srinivasan with contributions from R Saporta
+Author: M Dowle, T Short, S Lianoglou, A Srinivasan with contributions from R Saporta, E Antonyan
 Maintainer: Matthew Dowle <mdowle@mdowle.plus.com>
 Depends: R (>= 2.12.0)
 Imports: methods, reshape2
