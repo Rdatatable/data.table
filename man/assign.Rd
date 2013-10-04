@@ -6,8 +6,10 @@
     Fast add, remove and modify subsets of columns, by reference.
 }
 \usage{
-#   DT[i, LHS:=RHS, by=...] 
-    
+#   DT[i, LHS:=RHS, by=...]
+
+#   DT[i, c("LHS1","LHS2") := list(RHS1, RHS2), by=...]
+
 #   DT[i, `:=`(LHS1=RHS1,
 #              LHS2=RHS2,
 #              ...), by=...]
