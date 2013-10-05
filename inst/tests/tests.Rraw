@@ -3149,6 +3149,11 @@ test(1106, key(x1) == 'a')
 x1[, a, key = NULL]
 test(1107, is.null(key(x1)))
 
+# test that eval works inside expressions
+DT <- data.table(a = c(1:5))
+s <- quote(a)
+test(1108, DT[, sum(eval(s))], DT[, sum(a)])
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

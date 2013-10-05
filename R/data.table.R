@@ -1,3 +1,39 @@
+deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.frame()) {
+  if (!mode(expr) %in% c("call", "expression")) return(expr)
+
+  if (length(expr) == 1) {
+    if (is.call(expr[[1]])) return (deconstruct_and_eval(expr[[1]]))
+    else return(expr)
+  }
+
+  # don't evaluate eval's if the environment is specified
+  if (expr[[1]] == quote(eval) && length(expr) < 3) {
+    return(deconstruct_and_eval(eval(expr[[2]], envir, enclos), envir, enclos))
+  }
+
+  lapply(expr, function(m) {
+    if (is.call(m)) {
+      if (m[[1]] == quote(eval)) eval(m[[2]], envir, enclos)
+      else deconstruct_and_eval(m, envir, enclos)
+    } else {
+      m
+    }
+  })
+}
+
+construct = function(l) {
+  if (length(l) == 0) return(NULL)
+  if (length(l) == 1) return(l)
+
+  if (identical(l[[1]], quote(`function`))) return(as.call(list(l[[1]], l[[2]], construct(l[[3]]))))
+
+  if (!is.list(l)) return(l)
+
+  as.call(setNames(lapply(l, function(m) {
+    if (length(m) == 1) m
+    else construct(m)
+  }), names(l)))
+}
 
 dim.data.table <- function(x) {
     if (length(x)) c(length(x[[1L]]), length(x))
@@ -477,16 +513,16 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
     } # end of  if !missing(i)
     if (missing(j)) stop("logical error, j missing")
     jsub = substitute(j)
+    # deconstruct and eval everything with just one argument, then reconstruct back to a call
+    if (is.call(jsub))
+        jsub = construct(deconstruct_and_eval(jsub, parent.frame(), parent.frame()))
+
     if (!with && is.call(jsub) && jsub[[1]]==as.name("!")) {
         notj = TRUE
         jsub = jsub[[2]]
     } else notj = FALSE
     if (is.null(jsub)) return(NULL)
-    jsubl = as.list.default(jsub)
-    if (identical(jsubl[[1L]],quote(eval))) {
-        jsub = eval(jsubl[[2L]], parent.frame(), parent.frame())
-        if (is.expression(jsub)) jsub = jsub[[1L]]
-    }
+
     lhs = NULL
     av = all.vars(jsub,TRUE)
     newnames = NULL
