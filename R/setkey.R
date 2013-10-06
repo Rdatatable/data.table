@@ -1,7 +1,7 @@
 setkey = function(x, ..., verbose=getOption("datatable.verbose"))
 {
     if (is.character(x)) stop("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
-    cols = getdots()
+    cols = as.character(substitute(list(...))[-1])
     if (!length(cols)) cols=colnames(x)
     else if (identical(cols,"NULL")) cols=NULL
     setkeyv(x,cols,verbose=verbose)
@@ -22,7 +22,6 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
     }
     if (identical(cols,"")) stop("cols is the empty string. Use NULL to remove the key.")
     if (any(nchar(cols)==0)) stop("cols contains some blanks.")
-    if (length(grep(",",cols))) stop("Don't use comma inside quotes. Please see the examples in help('setkey')") 
     if (!length(cols)) {
         cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
     } else {

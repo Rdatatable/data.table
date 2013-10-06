@@ -1,3 +1,6 @@
+## NOTE: this has problems when '...' contains quoted names that have special symbols
+## for a better option see the logic in setkey
+
 getdots = function()
 {
     # return a string vector of the arguments in '...'
