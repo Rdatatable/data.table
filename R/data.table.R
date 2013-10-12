@@ -791,7 +791,10 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                 for (jj in seq_along(bynames)) {
                     if (bynames[jj]=="") {
                         # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
-                        tt = grep("^eval|^[^[:alpha:]. ]",all.vars(bysubl[[jj+1L]],functions=TRUE),invert=TRUE,value=TRUE)[1L]
+                        byvars = all.vars(bysubl[[jj+1L]], functions = TRUE)
+                        if (length(byvars) == 1) tt = byvars
+                        else tt = grep("^eval|^[^[:alpha:]. ]",byvars,invert=TRUE,value=TRUE)[1L]
+
                         if (!length(tt)) tt = all.vars(bysubl[[jj+1L]])[1L]
                         bynames[jj] = tt
                         # if user doesn't like this inferred name, user has to use by=list() to name the column
