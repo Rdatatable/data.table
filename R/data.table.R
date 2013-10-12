@@ -42,6 +42,7 @@ dim.data.table <- function(x) {
 }
 
 .global = new.env()  # thanks to: http://stackoverflow.com/a/12605694/403310
+setPackageName("data.table",.global)
 .global$print = TRUE
 .global$depthtrigger =
     if (exists(".global",.GlobalEnv) || getRversion() < "2.14.0") {
@@ -344,6 +345,11 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             i = eval(isub, parent.frame(), parent.frame())
         if (is.matrix(i)) stop("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please let datatable-help know if you'd like this, or add your comments to FR #1611.")
         if (is.logical(i)) {
+            if (notjoin) {
+                notjoin = FALSE
+                i = !i
+            }
+
             if (identical(i,NA)) i = NA_integer_  # see DT[NA] thread re recycling of NA logical
             else i[is.na(i)] = FALSE              # avoids DT[!is.na(ColA) & !is.na(ColB) & ColA==ColB], just DT[ColA==ColB]
         }

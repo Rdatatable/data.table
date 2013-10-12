@@ -14,6 +14,9 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
+  o  FR #4650 addressed. The ! at the head of the expressionwill not trigger a not-join if the expression is boolean.
+     Thanks to Arunkumar Srinivasan for reporting.
+
   o  Can call setkey with arbitrary column names now, thanks to Corone from SO for reporting: http://stackoverflow.com/a/19166273/817778
 
   o  Fixed bug #4927, thanks to Ricardo Saporta for reporting.
