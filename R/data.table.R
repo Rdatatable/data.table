@@ -351,7 +351,6 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             }
 
             if (identical(i,NA)) i = NA_integer_  # see DT[NA] thread re recycling of NA logical
-            else i[is.na(i)] = FALSE              # avoids DT[!is.na(ColA) & !is.na(ColB) & ColA==ColB], just DT[ColA==ColB]
         }
         if (is.null(i)) return( null.data.table() )
         if (is.character(i)) i = data.table(V1=i)   # for user convenience

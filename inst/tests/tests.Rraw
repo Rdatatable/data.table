@@ -3158,6 +3158,13 @@ test(1108, DT[, sum(eval(s))], DT[, sum(a)])
 DT <- data.table(a = 1:3, b = c(TRUE,FALSE,NA))
 test(1109, DT[b != TRUE], DT[!(b == TRUE)])
 
+# test the speed of simple comparison
+DT <- data.table(a = 1:1e7)
+t1 = system.time(DT[a == 100])[3]
+t2 = system.time(DT[which(a == 100)])[3]
+# make sure we're at most 10% slower than which (should pass most of the time)
+test(1110, (t2 - t1)/t2 < 0.2)
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 
