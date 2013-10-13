@@ -16,18 +16,18 @@ NEW FEATURES
 
   o  Fixed bug #295 (retain key after order-preserving subset).
 
-  o  Fixed bug #2584, thanks to Zachary Mayer for reporting.
-
-  o  Fixed bug #4927, again.
+  o  Fixed bug #2584 - columns that had function names, in particular "list" had problems with .SD.
+     Thanks to Zachary Mayer for reporting.
 
   o  FR #4652 implemented. Thanks to Arunkumar Srinivasan for timings and suggestion.
 
-  o  FR #4650 addressed. The ! at the head of the expression will not trigger a not-join if the expression is logical.
+  o  FR #4650 addressed. The ! at the head of the expression will no longer trigger a not-join if the expression is logical.
      Thanks to Arunkumar Srinivasan for reporting.
 
   o  Can call setkey with arbitrary column names now, thanks to Corone from SO for reporting: http://stackoverflow.com/a/19166273/817778
 
-  o  Fixed bug #4927, thanks to Ricardo Saporta for reporting.
+  o  Fixed bug #4927 - unusual column names in normal quotes will now work ok in `by`.
+     Thanks to Ricardo Saporta for reporting.
 
   o  FR #4677 has been addressed - eval will now be evaluated anywhere in a j-expression as long as
      it has just one argument. Will still need to use .SD as environment in complex cases. Accidentally
