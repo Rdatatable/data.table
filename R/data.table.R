@@ -23,7 +23,7 @@ deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.fr
 
 construct = function(l) {
   if (length(l) == 0) return(NULL)
-  if (length(l) == 1) return(l)
+  if (length(l) == 1) return(l[[1]])
 
   if (identical(l[[1]], quote(`function`))) return(as.call(list(l[[1]], l[[2]], construct(l[[3]]))))
 
@@ -728,7 +728,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                 bysub = parse(text=paste("list(",paste(bysub,collapse=","),")",sep=""))[[1L]]
                 bysubl = as.list.default(bysub)
             }
-            allbyvars = intersect(unlist(sapply(bysubl,all.vars,functions=TRUE)),names(x))
+            allbyvars = intersect(all.vars(construct(bysubl), FALSE),names(x))
             if (potentialredundantby && all(sapply(bysubl,is.name)) && identical(allbyvars,names(x)[rightcols]) && getOption("datatable.warnredundantby")) {
                 warning("by is not necessary in this query; it equals all the join columns in the same order. j is already evaluated by group of x that each row of i matches to (by-without-by, see ?data.table). Setting by will be slower because a subset of x is taken and then grouped again. Consider removing by, or changing it.")
             }
