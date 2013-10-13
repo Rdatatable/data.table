@@ -968,6 +968,20 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
             setnames(jval, jvnames)
         }
+
+        # if the j-expression is of form list(...) and the list has key elements in it, retain the key
+        if (haskey(x) && is.call(jsub) && identical(jsub[[1]], quote(`list`)) &&
+            (missing(i) || is.logical(i) || (is.data.table(i) && haskey(i)) || is.sorted(irows))) {
+            # the checks are not as trivial as one would think - easy checks are above
+            jsubl = as.list(jsub)[-1]
+
+            jsubl.key = jsubl[as.character(jsubl) %chin% key(x)]
+            if (all(key(x) %chin% as.character(jsubl.key)) && all(names(jsubl.key) == "" | names(jsubl.key) == as.character(jsubl.key)) &&
+                all(key(x) %chin% names(jval))) {
+                setattr(jval, 'sorted', key(x))
+            }
+        }
+
         return(jval)
     }
     alloc = if (length(len__)) seq_len(max(len__)) else 0L

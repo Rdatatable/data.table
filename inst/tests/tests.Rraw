@@ -337,7 +337,7 @@ test(82, TESTDT[,c("a","b")], c("a","b"))
 test(83, TESTDT[,list("a","b")], data.table(V1="a",V2="b"))
 test(83.1, TESTDT[,list("sum(a),sum(b)")], data.table("sum(a),sum(b)"))
 test(83.2, TESTDT[,list("sum(a),sum(b)"),by=a], {tt=data.table(a=c("a","c","d","g"),V1="sum(a),sum(b)",key="a");tt$V1=as.character(tt$V1);tt})
-test(84, TESTDT[1:2,list(a,b)], data.table(a=c("a","c"), b=c("e","e")))
+test(84, TESTDT[1:2,list(a,b)], data.table(a=c("a","c"), b=c("e","e"), key = 'a,b'))
 # test(85, TESTDT[1:2,DT(a,b)], data.table(a=c("a","c"), b=c("e","e")))  #DT() now deprecated
 
 test(86, TESTDT[,sum(v),by="b"], data.table(b=c("e","f","i","b"),V1=INT(3,7,11,7)))  # TESTDT is key'd by a,b, so correct that grouping by b should not be key'd in the result by default
