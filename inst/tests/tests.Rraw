@@ -3176,6 +3176,11 @@ test(1110, (t2 - t1)/t2 < 0.2)
 DT <- data.table(list = 1:6, a = 1:2)
 test(1111, DT[, lapply(.SD, sum), by = a], DT[, list(list = sum(list)), by = a])
 
+# fix for #4995. "rbind" retains key when the first argument isn't a data.table (.rbind.data.table is never run is the issue)
+DT <- data.table(name=c('Guff','Aw'),id=101:102,id2=1:2,key='id')
+y <- rbind(list('No','NON',0L),DT,list('Extra','XTR',3L))
+test(1112, key(y), NULL)
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

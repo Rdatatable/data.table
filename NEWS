@@ -14,35 +14,6 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
-  o  FR #2456 - rbindlist will choose the highest type per column, not the first. Up-conversion follows
-     R defaults, with the addition of factors being the highest type. This also fixes bug #4981 (same as
-     the FR but for the specific case of NA's).
-
-  o  Fixed bug #295 (retain key after order-preserving subset).
-
-  o  Fixed bug #2584 - columns that had function names, in particular "list" had problems with .SD.
-     Thanks to Zachary Mayer for reporting.
-
-  o  FR #4652 implemented. Thanks to Arunkumar Srinivasan for timings and suggestion.
-
-  o  FR #4650 addressed. The ! at the head of the expression will no longer trigger a not-join if the expression is logical.
-     Thanks to Arunkumar Srinivasan for reporting.
-
-  o  Can call setkey with arbitrary column names now, thanks to Corone from SO for reporting: http://stackoverflow.com/a/19166273/817778
-
-  o  Fixed bug #4927 - unusual column names in normal quotes will now work ok in `by`.
-     Thanks to Ricardo Saporta for reporting.
-
-  o  FR #4677 has been addressed - eval will now be evaluated anywhere in a j-expression as long as
-     it has just one argument. Will still need to use .SD as environment in complex cases. Accidentally
-     fixed bug noticed here: http://stackoverflow.com/a/19054962/817778
-
-  o  can set key from `[.data.table` using a new "key" argument. This is for convenience and to
-     address FR #4675 to some degree - the difference from the FR is that the key is not set temporarily
-     but rather is a permanent change.
-
-  o  fread can now understand commands, e.g. fread("grep blah file.txt").
-
   o  fread's integer64 argument implemented. Allows reading of integer64 data as 'double' or 'character'
      instead of bit64::integer64 (which remains the default as before). Thanks to Chris Neff for the
      suggestion. The default can be changed globally; e.g, options(datatable.integer64="character")
@@ -93,6 +64,26 @@ NEW FEATURES
   o  dcast.data.table took, on 1e5*4 data, 0.8 seconds to cast, whereas reshape2:::cast took 
      8.1 seconds. On 1e6*4 data, reshape2:::dcast crashes R-session, whereas, dcast.data.table 
      took 6.7 seconds.
+	 
+  o  fread now understand commands, e.g. fread("grep blah file.txt").
+
+  o  can set key from `[.data.table` using a new "key" argument. This is for convenience and to
+     address FR #4675 to some degree - the difference from the FR is that the key is not set temporarily
+     but rather is a permanent change.
+
+  o  FR #4677 has been addressed - eval will now be evaluated anywhere in a j-expression as long as
+     it has just one argument. Will still need to use .SD as environment in complex cases. Accidentally
+     fixed bug noticed here: http://stackoverflow.com/a/19054962/817778
+
+  o  FR #4650 addressed. The ! at the head of the expression will no longer trigger a not-join if the 
+     expression is logical. Thanks to Arunkumar Srinivasan for reporting.
+
+  o  FR #4652 implemented - slight speed improvement during subsetting. Thanks to Arunkumar Srinivasan 
+     for timings and suggestion.
+
+  o  FR #2456 implemented - rbindlist will choose the highest type per column, not the first. Up-conversion 
+     follows R defaults, with the addition of factors being the highest type. This also fixes bug #4981 (same 
+	 as the FR but for the specific case of NA's).
 
 BUG FIXES
 
@@ -172,6 +163,20 @@ BUG FIXES
      unkeyed or rollends left as the default [c(TRUE,FALSE) when roll<0]. Thanks to user338714 for
      reporting. Tests added.
          http://stackoverflow.com/questions/18984179/roll-data-table-with-rollends
+
+  o  Key is now retained after order-preserving subset, fixing bug #295.
+
+  o  Fixed bug #2584. Now columns that had function names, in particular "list" do not pose problems in .SD.
+     Thanks to Zachary Mayer for reporting.
+
+  o  Fixed bug #4927. Unusual column names in normal quotes, ex: by=".Col", now works as expected in `by`.
+     Thanks to Ricardo Saporta for reporting.
+
+  o  `setkey` resulted in error when column names contained ",". This is now fixed. Thanks to Corone for 
+     reporting on SO: http://stackoverflow.com/a/19166273/817778
+
+  o  `rbind` when at least one argument was a data.table, but not the first, returned the rbind'd data.table 
+     with key. This is now fixed, #4995. Thanks to Frank Erickson for reporting.
                
 NOTES
 
