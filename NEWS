@@ -14,6 +14,10 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
+  o  FR #2456 - rbindlist will choose the highest type per column, not the first. Up-conversion follows
+     R defaults, with the addition of factors being the highest type. This also fixes bug #4981 (same as
+     the FR but for the specific case of NA's).
+
   o  Fixed bug #295 (retain key after order-preserving subset).
 
   o  Fixed bug #2584 - columns that had function names, in particular "list" had problems with .SD.

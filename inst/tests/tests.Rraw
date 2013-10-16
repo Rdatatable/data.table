@@ -2742,10 +2742,10 @@ test(982, DT[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
 # rbindlist binding factors, #2650
 test(983, rbindlist(list(data.table(factor(c("A","A","B","C","A"))), data.table(factor(c("B","F","A","G"))))), data.table(V1=factor(c("A","A","B","C","A","B","F","A","G"))))
 test(984, rbindlist(list(data.table(factor(c("A","B"))), data.table(c("C","A")))), data.table(factor(c("A","B","C","A"))))
-test(985, rbindlist(list(data.table(c("A","B")), data.table(factor(c("C","A"))))), data.table(c("A","B","C","A")))
+test(985, rbindlist(list(data.table(c("A","B")), data.table(factor(c("C","A"))))), data.table(factor(c("A","B","C","A"))))
 # with NA
 test(985.1, rbindlist(list(data.table(factor(c("A","B"))), data.table(factor(c("C",NA))))), data.table(factor(c("A","B","C",NA))))
-test(985.2, rbindlist(list(data.table(c("A","B")), data.table(factor(c("C",NA))))), data.table(c("A","B","C",NA)))
+test(985.2, rbindlist(list(data.table(c("A","B")), data.table(factor(c("C",NA))))), data.table(factor(c("A","B","C",NA))))
 
 ## Allow unique/duplicated to accept custom colum combination to query for
 ## uniqueness
@@ -2819,8 +2819,15 @@ test(1006, print(as.data.table(M), nrows=10), output="gear NA.*1: 21.0")
 # rbinding factor with non-factor/character
 DT1 <- data.table(x=1:5, y=factor("a"))
 DT2 <- data.table(x=1:5, y=2)
-test(1007, rbindlist(list(DT1, DT2)), error="Column 2 of item 2 is not factor or character, inconsistent with column 2 of item 1")
-test(1008, rbindlist(list(DT2, DT1)), error="Column 2 of item 2 is factor, inconsistent with column 2 of item 1")
+test(1007, rbindlist(list(DT1, DT2)), data.table(x = c(1:5, 1:5), y = factor(c(rep('a', 5), rep('2', 5)))))
+test(1008, rbindlist(list(DT2, DT1)), data.table(x = c(1:5, 1:5), y = factor(c(rep('2', 5), rep('a', 5)))))
+
+# rbindlist different types
+DT1 <- data.table(a = 1L, b = 2L)
+DT2 <- data.table(a = 2L, b = 'a')
+DT3 <- data.table(a = 2L, b = 2.5)
+test(1008.1, rbindlist(list(DT1, DT2)), data.table(a = c(1L,2L), b = c('2', 'a')))
+test(1008.2, rbindlist(list(DT1, DT3)), data.table(a = c(1L,2L), b = c(2, 2.5)))
 
 # optimized mean() respects na.rm=TRUE by default, as intended
 DT = data.table(a=c(NA,NA,FALSE,FALSE), b=c(1,1,2,2))

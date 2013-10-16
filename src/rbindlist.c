@@ -11,7 +11,10 @@ SEXP rbindlist(SEXP l)
     R_len_t i,j,r, nrow=0, first=-1, ansloc, ncol=0, thislen;
     SEXP ans, li, lf=R_NilValue, thiscol, target, levels;
     int size;
-    Rboolean coerced=FALSE, bindFactor=FALSE;
+    Rboolean coerced=FALSE;
+    SEXPTYPE * maxtype = NULL;     // TODO: Should these be an R object instead of malloc/free'ing a  pointer?
+    Rboolean * isColFactor = NULL; // Same comment as above
+    SEXPTYPE type;
     
     SEXP factorLangSxp;
     PROTECT(factorLangSxp = allocList(2));
@@ -27,23 +30,39 @@ SEXP rbindlist(SEXP l)
             first = i;   // First non-empty list/data.frame/data.table
             lf = li;
             ncol = length(lf);
+
+            // initialize the max types - will possibly increment later
+            maxtype = malloc(ncol * sizeof(SEXPTYPE));
+            isColFactor = malloc(ncol * sizeof(Rboolean));
+            for (j = 0; j < ncol; ++j) {
+                maxtype[j] = TYPEOF(VECTOR_ELT(lf, j));
+                isColFactor[j] = FALSE;
+            }
         } else {
             if (length(li) != ncol) error("Item %d has %d columns, inconsistent with item %d which has %d columns",i+1,length(li),first+1,ncol);
         }
         nrow+=LENGTH(VECTOR_ELT(li,0));
+
+        // we do this twice for the first list element - will add a tiny performance overhead
+        for (j = 0; j < ncol; ++j) {
+            thiscol = VECTOR_ELT(li, j);
+            if (isFactor(thiscol)) {
+                isColFactor[j] = TRUE;
+                maxtype[j] = STRSXP;   // if any column is a factor everything will be converted to strings and factorized at the end
+            } else {
+                type = TYPEOF(thiscol);
+                if (type > maxtype[j]) maxtype[j] = type;
+            }
+        }
     }
     PROTECT(ans = allocVector(VECSXP, ncol));
     setAttrib(ans, R_NamesSymbol, getAttrib(lf, R_NamesSymbol));
     for(j=0; j<ncol; j++) {
         thiscol = VECTOR_ELT(lf,j);
-        if (isFactor(thiscol)) {
-            bindFactor = TRUE;
-            target = allocVector(STRSXP, nrow);  // collate as string then factorize afterwards
-        } else {
-            bindFactor = FALSE;
-            target = allocVector(TYPEOF(thiscol), nrow);
-            copyMostAttrib(thiscol, target);  // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
-        }
+        target = allocVector(maxtype[j], nrow);
+        if (!isFactor(thiscol))
+          copyMostAttrib(thiscol, target);  // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
+
         SET_VECTOR_ELT(ans, j, target);
         ansloc = 0;
         for (i=first; i<length(l); i++) {
@@ -53,17 +72,12 @@ SEXP rbindlist(SEXP l)
             if (!thislen) continue;
             thiscol = VECTOR_ELT(li,j);
             if (thislen != length(thiscol)) error("Column %d of item %d is length %d, inconsistent with first column of that item which is length %d. rbindlist doesn't recycle as it already expects each item to be a uniform list, data.frame or data.table", j+1, i+1, length(thiscol), thislen);
-            if (bindFactor) {
-                if (!isString(thiscol) && !isFactor(thiscol)) error("Column %d of item %d is not factor or character, inconsistent with column %d of item %d", j+1,i+1,j+1,first+1); // test 1007
-            } else {
-                if (isFactor(thiscol)) {
-                    if (!isString(target)) error("Column %d of item %d is factor, inconsistent with column %d of item %d", j+1,i+1,j+1,first+1); // test 1008
-                } else if (TYPEOF(thiscol) != TYPEOF(target)) {
-                    thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
-                    coerced = TRUE;
-                    // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
-                    // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
-                }
+            
+            if (TYPEOF(thiscol) != TYPEOF(target) && !isFactor(thiscol)) {
+                thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
+                coerced = TRUE;
+                // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
+                // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
             }
             switch(TYPEOF(target)) {
             case STRSXP :
@@ -102,12 +116,16 @@ SEXP rbindlist(SEXP l)
                 coerced = FALSE;
             }
         }
-        if (bindFactor) {
+        if (isColFactor[j]) {
             SETCAR(CDR(factorLangSxp), target);
             SET_VECTOR_ELT(ans, j, eval(factorLangSxp, R_GlobalEnv));
         }
     }
     UNPROTECT(2);  // ans and factorLangSxp
+
+    free(maxtype);
+    free(isColFactor);
+
     return(ans);
 }
 
