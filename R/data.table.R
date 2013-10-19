@@ -975,9 +975,8 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             # the checks are not as trivial as one would think - easy checks are above
             jsubl = as.list(jsub)[-1]
 
-            jsubl.key = jsubl[as.character(jsubl) %chin% key(x)]
-            if (all(key(x) %chin% as.character(jsubl.key)) && all(names(jsubl.key) == "" | names(jsubl.key) == as.character(jsubl.key)) &&
-                all(key(x) %chin% names(jval))) {
+            jsubl.match = jsubl[as.character(jsubl) == jvnames | jvnames == ""]
+            if (all(key(x) %chin% as.character(jsubl.match))) {
                 setattr(jval, 'sorted', key(x))
             }
         }
