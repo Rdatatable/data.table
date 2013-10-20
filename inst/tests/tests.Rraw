@@ -3194,6 +3194,15 @@ setkey(DT, L)
 test(1114, class(DT[, .SD, by = L]$N), class(DT$N))
 test(1115, class(DT[J(unique(L)), .SD]$N), class(DT$N))
 
+# Fix for #4994 - not-join quoted expression dint work...
+dt = data.table(a = 1:2, key = 'a')
+dt1 = data.table(a = 1)
+expr = quote(!dt1)
+test(1116, dt[eval(expr)], dt[2])
+expr = quote(!1)
+test(1117, dt[eval(expr)], dt[2])
+
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

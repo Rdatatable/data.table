@@ -328,6 +328,12 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
     notjoin = FALSE
     if (!missing(i)) {
         isub = substitute(i)
+		# Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires 
+		# the "eval" to be checked before `as.name("!")`. Therefore interchanged.
+        if (is.call(isub) && isub[[1L]]=="eval") {  # TO DO: or ..()
+            isub = eval(.massagei(isub[[2L]]), parent.frame(), parent.frame())
+            if (is.expression(isub)) isub=isub[[1L]]
+        }
         if (is.call(isub) && isub[[1L]] == as.name("!")) {
             notjoin = TRUE
             if (!missingnomatch) stop("not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch.");
@@ -335,10 +341,6 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             isub = isub[[2L]]
         }
         if (is.null(isub)) return( null.data.table() )
-        if (is.call(isub) && isub[[1L]]=="eval") {  # TO DO: or ..()
-            isub = eval(.massagei(isub[[2L]]), parent.frame(), parent.frame())
-            if (is.expression(isub)) isub=isub[[1L]]
-        }
         if (!is.name(isub))
             i = eval(.massagei(isub), x, parent.frame())
         else
