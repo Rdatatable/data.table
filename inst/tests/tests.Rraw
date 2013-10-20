@@ -3182,6 +3182,18 @@ DT <- data.table(name=c('Guff','Aw'),id=101:102,id2=1:2,key='id')
 y <- rbind(list('No','NON',0L),DT,list('Extra','XTR',3L))
 test(1112, key(y), NULL)
 
+# fix for http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
+# where, .SD loses class information.
+format.myclass <- function(x, ...){
+  paste("!!", x, "!!", sep = "")
+}
+DT <- data.table(L = rep(letters[1:3],3), N = 1:9)
+setattr(DT$N, "class", "myclass")
+test(1113, class(DT[, .SD, by = L]$N), class(DT$N))
+setkey(DT, L)
+test(1114, class(DT[, .SD, by = L]$N), class(DT$N))
+test(1115, class(DT[J(unique(L)), .SD]$N), class(DT$N))
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

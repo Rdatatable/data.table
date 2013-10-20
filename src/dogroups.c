@@ -153,6 +153,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),
                        (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+rownum*size,
                        grpn*size);
+					// to fix bug here: http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by   
+					setAttrib(VECTOR_ELT(SD,j), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), R_ClassSymbol));   
                 }
                 for (j=0; j<grpn; j++) INTEGER(I)[j] = rownum+j+1;
             } else {
@@ -163,6 +165,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                         memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)) + k*size,
                            (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1)) + rownum*size,
                            size);
+						// to fix bug here: http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by   
+						setAttrib(VECTOR_ELT(SD,j), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), R_ClassSymbol));
                     }
                     INTEGER(I)[k] = rownum+1;
                 }
