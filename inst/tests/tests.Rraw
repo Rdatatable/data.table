@@ -3202,6 +3202,11 @@ test(1116, dt[eval(expr)], dt[2])
 expr = quote(!1)
 test(1117, dt[eval(expr)], dt[2])
 
+# Fix for #2381 - optimisation of `DT[, lapply(.SD, function(x) FUN(x, bla)), by=key(DT)]` where "bla" is a column in DT dint work.
+set.seed(45)
+dt <- data.table(x=rep(1:4, each=4), b1=sample(16), b2=runif(16))
+setkey(dt, x)
+test(1118, dt[, lapply(.SD, function(y) weighted.mean(y, b2, na.rm=TRUE)), by=x], dt[, lapply(.SD, weighted.mean, b2, na.rm=TRUE), by=x])
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.

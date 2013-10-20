@@ -1010,7 +1010,10 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                 if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #4839
                 fun = txt[[2L]]
                 if (is.call(fun) && fun[[1L]]=="function") {
-                    assign("..FUN",eval(fun),SDenv)  # to avoid creating function() for each column of .SD
+					# Fix for #2381: added SDenv$.SD to 'eval' to take care of cases like: lapply(.SD, function(x) weighted.mean(x, bla)) where "bla" is a column in DT
+					# http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
+					# adding this does not compromise in speed (that is, not any lesser than without SDenv$.SD)
+                    assign("..FUN",eval(fun, SDenv$.SD), SDenv)  # to avoid creating function() for each column of .SD
                     lockBinding("..FUN",SDenv)
                     txt[[1L]] = as.name("..FUN")
                 } else {

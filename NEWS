@@ -186,6 +186,9 @@ BUG FIXES
 
   o  `eval(quote())` returned error when the quoted expression is a not-join, #4994. This is now fixed. Tests added.
 
+  o  `DT[, lapply(.SD, function(), by=]` did not see columns of DT when optimisation is "on". This is 
+     now fixed, #2381. Tests added and tested successfully.
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.
