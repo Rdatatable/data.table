@@ -187,7 +187,8 @@ BUG FIXES
   o  `eval(quote())` returned error when the quoted expression is a not-join, #4994. This is now fixed. Tests added.
 
   o  `DT[, lapply(.SD, function(), by=]` did not see columns of DT when optimisation is "on". This is 
-     now fixed, #2381. Tests added and tested successfully.
+     now fixed, #2381. Tests added and tested successfully. Thanks to David F for reporting on SO:
+	 http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
 
 NOTES
 
