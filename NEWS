@@ -181,7 +181,7 @@ BUG FIXES
   o  `rbind` when at least one argument was a data.table, but not the first, returned the rbind'd data.table 
      with key. This is now fixed, #4995. Thanks to Frank Erickson for reporting.
 	 
-  o  That `.SD` doesn't retain column's class is now fixed. Thanks to Corone for reporting here on SO:
+  o  That `.SD` doesn't retain column's class is now fixed (#2530). Thanks to Corone for reporting here on SO:
      http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
 
 
