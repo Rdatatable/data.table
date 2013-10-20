@@ -9,7 +9,7 @@
     prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
     if (!length(grep("data.table",ss[[2]]))) {
         ss = ss[c(1,NA,2:length(ss))]
-        ss[[2]] = parse(text=paste("if (inherits(..1,'data.table')) return(",prefix,"data.table(...,key=key(..1)))",sep=""))[[1]]
+        ss[[2]] = parse(text=paste("for (ii in list(...)) { if (inherits(ii,'data.table')) return((",prefix,"setattr(",prefix,"data.table(...),'sorted',as.vector(unlist(lapply(list(...),key)))))) }",sep=""))[[1]]
         body(tt)=ss
         (unlockBinding)("cbind.data.frame",baseenv())
         assign("cbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)

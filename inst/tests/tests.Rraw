@@ -1262,7 +1262,8 @@ test(412, DT, data.table(c(99L,2L),3:4,y=10L))
 
 # Test that cbind retains keys
 DT = data.table(x=c("a","b"),y=1:4,key="x")
-test(413, key(cbind(DT,DT)), "x")
+DT1 = data.table(z = c(1,2), w = 1:4, key = "z")
+test(413, key(cbind(DT,DT1)), c("x", "z"))
 test(414, key(cbind(DT,as.data.frame(DT))), "x")
 
 # Test friendly error when := is used in wrong place

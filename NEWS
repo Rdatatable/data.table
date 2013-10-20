@@ -85,6 +85,9 @@ NEW FEATURES
      follows R defaults, with the addition of factors being the highest type. This also fixes bug #4981 (same 
 	 as the FR but for the specific case of NA's).
 
+  o  cbind will dispatch to data.table if any argument is a data.table. Key is now set directly, without a sort
+     and is equal to c(key1, key2, ...).
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
