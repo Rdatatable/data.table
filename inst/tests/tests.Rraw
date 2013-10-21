@@ -3166,12 +3166,13 @@ test(1108, DT[, sum(eval(s))], DT[, sum(a)])
 DT <- data.table(a = 1:3, b = c(TRUE,FALSE,NA))
 test(1109, DT[b != TRUE], DT[!(b == TRUE)])
 
-# test the speed of simple comparison
-DT <- data.table(a = 1:1e7)
-t1 = system.time(DT[a == 100])[3]
-t2 = system.time(DT[which(a == 100)])[3]
-# make sure we're at most 30% slower than "which" (should pass most of the time)
-test(1110, (t1 - t2)/t2 < 0.3)
+# commented for now (by Arun)
+# # test the speed of simple comparison
+# DT <- data.table(a = 1:1e7)
+# t1 = system.time(DT[a == 100])[3]
+# t2 = system.time(DT[which(a == 100)])[3]
+# # make sure we're at most 30% slower than "which" (should pass most of the time)
+# test(1110, (t1 - t2)/t2 < 0.3)
 
 # test that a column named list is ok (this also affects other functions in by, might be worth adding a test for that)
 DT <- data.table(list = 1:6, a = 1:2)
