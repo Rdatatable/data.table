@@ -3170,8 +3170,8 @@ test(1109, DT[b != TRUE], DT[!(b == TRUE)])
 DT <- data.table(a = 1:1e7)
 t1 = system.time(DT[a == 100])[3]
 t2 = system.time(DT[which(a == 100)])[3]
-# make sure we're at most 10% slower than which (should pass most of the time)
-test(1110, (t2 - t1)/t2 < 0.2)
+# make sure we're at most 30% slower than "which" (should pass most of the time)
+test(1110, (t1 - t2)/t2 < 0.3)
 
 # test that a column named list is ok (this also affects other functions in by, might be worth adding a test for that)
 DT <- data.table(list = 1:6, a = 1:2)
@@ -3207,6 +3207,10 @@ set.seed(45)
 dt <- data.table(x=rep(1:4, each=4), b1=sample(16), b2=runif(16))
 setkey(dt, x)
 test(1118, dt[, lapply(.SD, function(y) weighted.mean(y, b2, na.rm=TRUE)), by=x], dt[, lapply(.SD, weighted.mean, b2, na.rm=TRUE), by=x])
+
+# a(nother) test of #295
+DT <- data.table(x=5:1, y=1:5, key="y")
+test(1119, is.null(key(DT[, list(z = y, y = 1/y)])))
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
