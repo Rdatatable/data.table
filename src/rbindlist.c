@@ -461,7 +461,8 @@ SEXP rbindlist(SEXP l)
             UNPROTECT(2);  // finalFactorLevels, factorLangSxp
         }
     }
-    UNPROTECT(2);  // ans, factorLevels
+    if (factorLevels != R_NilValue) UNPROTECT_PTR(factorLevels);
+    UNPROTECT(1);  // ans
 
     free(maxtype);
     free(isColFactor);
