@@ -1,38 +1,41 @@
 deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.frame()) {
-  if (!mode(expr) %in% c("call", "expression")) return(expr)
+    if (!mode(expr) %in% c("call", "expression", "(")) return(expr)
 
-  if (length(expr) == 1) {
-    if (is.call(expr[[1]])) return (deconstruct_and_eval(expr[[1]]))
-    else return(expr)
-  }
-
-  # don't evaluate eval's if the environment is specified
-  if (expr[[1]] == quote(eval) && length(expr) < 3) {
-    return(deconstruct_and_eval(eval(expr[[2]], envir, enclos), envir, enclos))
-  }
-
-  lapply(expr, function(m) {
-    if (is.call(m)) {
-      if (m[[1]] == quote(eval)) eval(m[[2]], envir, enclos)
-      else deconstruct_and_eval(m, envir, enclos)
-    } else {
-      m
+    if (length(expr) == 1L) {
+        if (is.call(expr[[1L]])) return (list(deconstruct_and_eval(expr[[1L]])))
+        else return(expr)
     }
-  })
+
+    # don't evaluate eval's if the environment is specified
+    if (expr[[1L]] == quote(eval) && length(expr) < 3L) {
+        return(deconstruct_and_eval(eval(expr[[2L]], envir, enclos), envir, enclos))
+    }
+
+    lapply(expr, function(m) {
+        if (is.call(m)) {
+            if (m[[1L]] == quote(eval)) eval(m[[2L]], envir, enclos)
+            else deconstruct_and_eval(m, envir, enclos)
+        } else {
+            m
+        }
+    })
 }
 
 construct = function(l) {
-  if (length(l) == 0) return(NULL)
-  if (length(l) == 1) return(l[[1]])
+    if (length(l) == 0L) return(NULL)
+    if (length(l) == 1L) {
+        if (length(l[[1L]]) == 1L) return(l[[1L]])
+        else return(as.call(list(construct(l[[1L]]))))
+    }
 
-  if (identical(l[[1]], quote(`function`))) return(as.call(list(l[[1]], l[[2]], construct(l[[3]]))))
+    if (identical(l[[1L]], quote(`function`))) return(as.call(list(l[[1L]], l[[2L]], construct(l[[3L]]))))
 
-  if (!is.list(l)) return(l)
+    if (!is.list(l)) return(l)
 
-  as.call(setNames(lapply(l, function(m) {
-    if (length(m) == 1) m
-    else construct(m)
-  }), names(l)))
+    as.call(setNames(lapply(l, function(m) {
+        if (length(m) == 1L) m
+        else construct(m)
+    }), names(l)))
 }
 
 dim.data.table <- function(x) {

@@ -3239,6 +3239,10 @@ test(1126, rbind(DT, DT1, fill = TRUE), data.table(a = 1:4, b = c(1, 2, NA, NA),
 DT = data.table(a=character())
 test(1127, rbind(DT, DT), DT)
 
+## check for #5005
+DT = data.table(a=0:2,b=3:5,key="a")
+test(1128, DT[, (function(){b})()], DT[, b])
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

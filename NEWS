@@ -202,6 +202,9 @@ BUG FIXES
 
   o  #4959 - rbind'ing empty data.tables now works
 
+  o  #5005 - some function expressions were not being correctly evaluated in j-expression.
+     Thanks to Tonny Petersen for reporting.
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.
