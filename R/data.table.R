@@ -1422,85 +1422,80 @@ tail.data.table = function(x, n=6, ...) {
     `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
 
-.rbind.data.table = function(...,use.names=TRUE) {
+.rbind.data.table = function(..., use.names = TRUE, fill = FALSE) {
     # See FAQ 2.23
     # Called from base::rbind.data.frame
-    match.names <- function(clabs, nmi) {
-        if (all(clabs == nmi))
-            NULL
-        else if (all(nii <- chmatch(nmi, clabs, 0L)))
-            nii
-        else stop("names don't match previous names:\n\t", paste(nmi[nii ==
-            0L], collapse = ", "))
-    }
-    allargs <- list(...)
-    allargs <- allargs[sapply(allargs, length) > 0L]
-    n <- length(allargs)
-    if (n == 0L)
-        return( null.data.table() )
-    if (!all(sapply(allargs, is.list))) stop("All arguments to rbind must be lists (data.frame and data.table are already lists)")
+    original.names = lapply(list(...), names)
+    allargs = lapply(list(...), as.data.table)
+
+    n = length(allargs)
+    if (n == 0L) return(null.data.table())
+    if (n == 1L) return(allargs[[1L]])
+
     ncols = sapply(allargs, length)
-    if (length(unique(ncols)) != 1L) {
-        f=which(ncols!=ncols[1L])[1L]
+    if (length(unique(ncols)) != 1L && !fill) {
+        f = which(ncols != ncols[1L])[1L]
         stop("All arguments to rbind must have the same number of columns. Item 1 has ",ncols[1L]," but item ",f," has ",ncols[f],"column(s).")
     }
 
-    ## There are (at least) two possible anomalies relating to column names that can cause undesired results
-    ## (1) Duplicate names and (2) Improper or randomly-absent names, such as NA or "". 
-    ## We can try to address (1) and (2) separately, or instead we can
-    ##    * store the original names (say, from allargs[[1]] )
-    ##    * then use make.names on all the names
-    ##    * use setnames to apply back the original name right before returning the final value
-    ## This latter method addresses both #2384 & #2726
-    nm.original <- copy(names(allargs[[1L]]))
-    for (A in allargs)  {
-        mk.nm <- make.names(names(A), unique=TRUE)
-        if (!identical(names(A), mk.nm)) {
-            if (is.data.table(A))
-                setnames(A, mk.nm)
-            else 
-                names(A) <- mk.nm
-        }
-    }
+    if (fill) {
+        if (!use.names)
+            warning("use.names=FALSE is ignored when fill is TRUE")
 
-    nm = names(allargs[[1L]])
-    if (use.names && length(nm) && n>1L) {
-        for (i in seq.int(2,n)) if (length(names(allargs[[i]]))) {
-            if (!all(names(allargs[[i]]) %chin% nm))
-                stop("Some colnames of argument ",i," (",paste(setdiff(names(allargs[[i]]),nm),collapse=","),") are not present in colnames of item 1. If an argument has colnames they can be in a different order, but they must all be present. Alternatively, you can drop names (by using an unnamed list) and the columns will then be joined by position. Or, set use.names=FALSE.")
-            if (!all(names(allargs[[i]]) == nm))
-                if (missing(use.names)) warning("Argument ",i," has names in a different order. Columns will be bound by name for consistency with base. You can drop names (by using an unnamed list) and the columns will then be joined by position, or set use.names=FALSE. Alternatively, explicitly setting use.names to TRUE will remove this warning.")
-                allargs[[i]] = as.list(allargs[[i]])[nm]
-                # TO DO : could use setcolorder() to speed this line up but i) it only currently works on data.table
-                # (not data.frame or list) and ii) it would change the original by reference so would need to be copied
-                # anyway. So, take a shallow copy somehow, or leave as-is and do the 'do.call(' below differently.
+        all.names = lapply(allargs, names)
+        unq.names = unique(unlist(all.names))
+        return(rbindlist(lapply(seq_along(allargs), function(x) {
+            tt = allargs[[x]]
+            settruelength(tt, 0L)
+            invisible(alloc.col(tt))
+            cols = unq.names[!unq.names %chin% all.names[[x]]]
+            if (length(cols) != 0L)
+                tt[, c(cols) := NA]
+            setcolorder(tt, unq.names)
+        })))
+    } else if (!use.names) {
+        return(rbindlist(allargs))
+    } else { # use.names == TRUE && fill == FALSE
+        ## find the first list item with a name - this will be the final name
+        final.name = names(allargs[[1L]])
+        for (i in seq_along(original.names)) {
+            if (!is.null(original.names[[i]])) {
+                final.name = original.names[[i]]
+                break
+            }
         }
-    }
-    allargs = lapply(allargs, as.data.table)  # To recycle items to match length if necessary, bug #2003. rbind will always be slow anyway, so not worrying about efficiency here. Later there'll be fast insert() by reference.
+        ## cal make.names to normalize all names
+        final.name.mk = make.names(final.name, unique = TRUE)
+        for (i in seq_along(allargs)) {
+            if (is.null(original.names[[i]])) {
+                mk.nm = final.name.mk
+            } else {
+                mk.nm = make.names(original.names[[i]], unique = TRUE)
+            }
+            if (!identical(original.names[[i]], mk.nm)) {
+                setnames(allargs[[i]], mk.nm)
+            }
+        }
 
-    if (!any(sapply(allargs[[1L]],is.factor))) {
-        ret <- rbindlist(allargs)  # do.call("c",...) is now in C  
-        # put the original names back
-        if (length(nm.original))
-           setnames(ret, nm.original)
-        return(ret)       
+        nm = names(allargs[[1L]])
+        if (length(nm)) {
+            for (i in seq.int(2,n)) if (!is.null(original.names[[i]])) {
+                if (!all(names(allargs[[i]]) %chin% nm))
+                    stop("Some colnames of argument ",i," (",paste(setdiff(names(allargs[[i]]),nm),collapse=","),") are not present in colnames of item 1. If an argument has colnames they can be in a different order, but they must all be present. Alternatively, you can drop names (by using an unnamed list) and the columns will then be joined by position. Or, set use.names=FALSE.")
+                if (!all(names(allargs[[i]]) == nm))
+                    if (missing(use.names)) warning("Argument ",i," has names in a different order. Columns will be bound by name for consistency with base. You can drop names (by using an unnamed list) and the columns will then be joined by position, or set use.names=FALSE. Alternatively, explicitly setting use.names to TRUE will remove this warning.")
+            }
+        }
+
+        ret = rbindlist(lapply(seq_along(allargs), function(x) {
+            tt = allargs[[x]]
+            setcolorder(tt, nm)
+        }))
+
+        setnames(ret, final.name)
+
+        return(ret)
     }
-    # TO DO: Move earlier logic above for use.names (binding by name) into rbindlist C, too.
-    l = lapply(seq_along(allargs[[1L]]), function(i) do.call("c", lapply(allargs, "[[", i)))
-    # This is why we currently still need c.factor.
-    # Now that character columns are allowed and recommended, c.factor isn't needed as much.
-    # Also, rbind is not called as much as the past since dogroups.c has moved a lot into C.
-    # TO DO: Convert factor to character first, so do.call() can be done by rbindlist too. Then
-    # call factor() aferwards on those columns. Tidy up c.factor by removing it, depending on what
-    # rbind.data.frame does, considering consistency.
-    if (length(nm.original))
-        setattr(l,"names",nm.original)  ## <~~~~ This line was originally:  setattr(l,"names",nm)  
-    setattr(l,"row.names",.set_row_names(length(l[[1L]])))
-    setattr(l,"class",c("data.table","data.frame"))
-    settruelength(l,0L)
-    alloc.col(l)
-    # return(data.table(l))
-    # much of the code in rbind.data.frame that follows this point is either to do with row.names, or coercing various types (and silent rep) which is already done by data.table. therefore removed.
 }
 
 as.data.table = function(x, keep.rownames=FALSE)

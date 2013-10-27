@@ -88,6 +88,16 @@ NEW FEATURES
   o  cbind will dispatch to data.table if any argument is a data.table. Key is now set directly, without a sort
      and is equal to c(key1, key2, ...).
 
+  o  FR #4856 implemented (same as #5019). rbind/rbindlist will preserve ordered factors if it's possible
+     to do so, i.e. if a compatible global order exists. Otherwise the result will be a factor and a warning.
+
+  o  FR #4790 - rbind now has a "fill" argument. When fill=TRUE it will behave in a manner similar to
+     plyr's rbind.fill. This option is incompatible with use.names=FALSE. Thanks to Arunkumar Srinivasan for
+     the base code.
+
+  o  FR #2115 - rbind now relies exclusively on rbindlist to bind data.table's together. This makes rbind'ing
+     factors faster.
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
