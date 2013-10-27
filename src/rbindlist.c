@@ -230,7 +230,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
                             if (!isRowOrdered[pl->i]) continue;
 
                             tmp = VECTOR_ELT(factorLevels, pl->i);
-                            if (locs[pl->i] >= pl->j) {
+                            if (locs[pl->i] > pl->j) {
                                 // failed to construct global order, need to break out of too many loops
                                 // so will use goto :o
                                 warning("ordered factor levels cannot be combined, going to convert to simple factor instead");
