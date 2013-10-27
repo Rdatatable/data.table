@@ -3235,6 +3235,10 @@ DT1 = data.table(a = 3:4, c = 1:2)
 
 test(1126, rbind(DT, DT1, fill = TRUE), data.table(a = 1:4, b = c(1, 2, NA, NA), c = c(NA, NA, 1, 2)))
 
+## check for #4959 - rbind'ing empty data.table's
+DT = data.table(a=character())
+test(1127, rbind(DT, DT), DT)
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

@@ -319,7 +319,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
 
 SEXP rbindlist(SEXP l)
 {
-    R_len_t i,j,r, nrow=0, first=-1, ansloc, ncol=0, thislen;
+    R_len_t i,j,r, nrow=0, first=-2, ansloc, ncol=0, thislen;
     SEXP ans, li, lf=R_NilValue, thiscol, target, levels;
     int size;
     Rboolean coerced=FALSE;
@@ -333,8 +333,17 @@ SEXP rbindlist(SEXP l)
         li = VECTOR_ELT(l,i);
         if (isNull(li)) continue;
         if (TYPEOF(li) != VECSXP) error("Item %d of list input is not a data.frame, data.table or list",i+1);
-        if (!LENGTH(li) || !length(VECTOR_ELT(li,0))) continue;
-        if (first==-1) {
+        if (!LENGTH(li)) continue;
+        if (!length(VECTOR_ELT(li,0))) {
+            if (first == -2) {
+                // will take the names of the first list that has them, until find the first non-empty one
+                first = -1;
+                lf = li;
+                ncol = length(lf);
+            }
+            continue;
+        }
+        if (first <= -1) {
             first = i;   // First non-empty list/data.frame/data.table
             lf = li;
             ncol = length(lf);

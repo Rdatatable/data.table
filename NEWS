@@ -200,6 +200,8 @@ BUG FIXES
      now fixed, #2381. Tests added and tested successfully. Thanks to David F for reporting on SO:
 	 http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
 
+  o  #4959 - rbind'ing empty data.tables now works
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.
