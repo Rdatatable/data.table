@@ -436,6 +436,8 @@ SEXP rbindlist(SEXP l)
 
                     // if this column is going to be a factor, add column to factorLevels
                     if (isColFactor[j]) {
+                        coerced = FALSE;
+                        UNPROTECT(1);  // thiscol - should be protected by factorLevels
                         SET_VECTOR_ELT(factorLevels, i, thiscol);
                     }
                 }
