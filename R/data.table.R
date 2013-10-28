@@ -1448,9 +1448,9 @@ tail.data.table = function(x, n=6, ...) {
         all.names = lapply(allargs, names)
         unq.names = unique(unlist(all.names))
         return(rbindlist(lapply(seq_along(allargs), function(x) {
-            tt = allargs[[x]]
-            settruelength(tt, 0L)
-            invisible(alloc.col(tt))
+            tt = copy(allargs[[x]])
+            #settruelength(tt, 0L)
+            #invisible(alloc.col(tt))
             cols = unq.names[!unq.names %chin% all.names[[x]]]
             if (length(cols) != 0L)
                 tt[, c(cols) := NA]
