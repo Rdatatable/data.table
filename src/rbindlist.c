@@ -3,6 +3,8 @@
 #include <Rinternals.h>
 #include <Rdefines.h>
 
+#include <stdint.h>
+
 int sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
