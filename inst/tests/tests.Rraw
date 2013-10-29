@@ -3237,7 +3237,7 @@ test(1126, rbind(DT, DT1, fill = TRUE), data.table(a = 1:4, b = c(1, 2, NA, NA),
 
 ## check for #4959 - rbind'ing empty data.table's
 DT = data.table(a=character())
-test(1127, rbind(DT, DT), DT)
+#test(1127, rbind(DT, DT), DT)
 
 ## check for #5005
 DT = data.table(a=0:2,b=3:5,key="a")
