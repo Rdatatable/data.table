@@ -358,6 +358,7 @@ SEXP rbindlist(SEXP l)
             isColFactor = malloc(ncol * sizeof(int));
             isRowOrdered = malloc(LENGTH(l) * sizeof(Rboolean));
             for (j = 0; j < ncol; ++j) {
+                thiscol = VECTOR_ELT(li, j);
                 if (isFactor(thiscol)) {
                     if (isOrdered(thiscol)) {
                         isColFactor[j] = 2;
