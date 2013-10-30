@@ -2,7 +2,8 @@ deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.fr
     if (!mode(expr) %in% c("call", "expression", "(")) return(expr)
 
     if (length(expr) == 1L) {
-        if (is.call(expr[[1L]])) return (list(deconstruct_and_eval(expr[[1L]])))
+        if (is.expression(expr)) return (deconstruct_and_eval(expr[[1L]]))
+        else if (is.call(expr[[1L]])) return (list(deconstruct_and_eval(expr[[1L]])))
         else return(expr)
     }
 
