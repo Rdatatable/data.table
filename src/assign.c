@@ -124,10 +124,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key;
     Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, clearkey=FALSE;
     char *s1, *s2, *s3;
+    int *buf, k=0;
     
     if (isNull(dt)) error("assign has been passed a NULL dt");
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
     class = getAttrib(dt, R_ClassSymbol);
+    if (strcmp(CHAR(STRING_ELT(class, 0)), "data.table") != 0) error("Input is not a data.table. set() (and `:=`) can add columns by reference only on a data.table.");
     if (isNull(class)) error("dt passed to assign has no class attribute. Please report to datatable-help.");
     // selfref might not be ok, but that's ok(!) For example, if user has done key<-, seen key<-'s
     // warning, proceeds, then uses := to update an existing column, that's ok without error or warning as updating
@@ -160,11 +162,22 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     }
     if (!length(cols))
         error("Logical error in assign, no column positions passed to assign");
+    // FR #2077 - set able to add new cols by reference
     if (isString(cols)) {
         PROTECT(tmp = chmatch(cols, names, 0, FALSE));
         protecti++;
-        for (i=0; i<length(cols); i++)
-            if (INTEGER(tmp)[i]==0) error("'%s' is not a column name. Cannot add columns with set(), use := instead to add columns by reference.",CHAR(STRING_ELT(cols,i)));
+        buf = (int *) R_alloc(length(cols), sizeof(int));
+        for (i=0; i<length(cols); i++) {
+            if (INTEGER(tmp)[i] == 0) buf[k++] = i;
+        }
+        if (k>0) { 
+            PROTECT(newcolnames = allocVector(STRSXP, k));
+            protecti++;
+            for (i=0; i<k; i++) { 
+                SET_STRING_ELT(newcolnames, i, STRING_ELT(cols, buf[i]));
+                INTEGER(tmp)[buf[i]] = oldncol+i+1;
+            }
+        }
         cols = tmp;
     } else {
         if (isReal(cols)) {
@@ -197,7 +210,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     for (i=0; i<length(cols); i++) {
         coln = INTEGER(cols)[i];
         if (coln<1 || coln>oldncol+length(newcolnames))
-            error("Item %d of j is %d which is outside range. Cannot add columns with set(), use := instead to add columns by reference.",i+1,coln);
+            error("Item %d of j is %d which is outside range. Cannot add columns without a name. Assign column names to 'j' instead instead.",i+1,coln);
+            // error("Item %d of j is %d which is outside range. Cannot add columns with set(), use := instead to add columns by reference.",i+1,coln);
         coln--;
         if (TYPEOF(values)==VECSXP && (length(cols)>1 || length(values)==1))
             thisvalue = VECTOR_ELT(values,i%LENGTH(values));

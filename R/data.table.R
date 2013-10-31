@@ -332,8 +332,8 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
     notjoin = FALSE
     if (!missing(i)) {
         isub = substitute(i)
-		# Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires 
-		# the "eval" to be checked before `as.name("!")`. Therefore interchanged.
+        # Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires 
+        # the "eval" to be checked before `as.name("!")`. Therefore interchanged.
         if (is.call(isub) && isub[[1L]]=="eval") {  # TO DO: or ..()
             isub = eval(.massagei(isub[[2L]]), parent.frame(), parent.frame())
             if (is.expression(isub)) isub=isub[[1L]]
@@ -1014,9 +1014,9 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                 if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #4839
                 fun = txt[[2L]]
                 if (is.call(fun) && fun[[1L]]=="function") {
-					# Fix for #2381: added SDenv$.SD to 'eval' to take care of cases like: lapply(.SD, function(x) weighted.mean(x, bla)) where "bla" is a column in DT
-					# http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
-					# adding this does not compromise in speed (that is, not any lesser than without SDenv$.SD)
+                    # Fix for #2381: added SDenv$.SD to 'eval' to take care of cases like: lapply(.SD, function(x) weighted.mean(x, bla)) where "bla" is a column in DT
+                    # http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
+                    # adding this does not compromise in speed (that is, not any lesser than without SDenv$.SD)
                     assign("..FUN",eval(fun, SDenv$.SD), SDenv)  # to avoid creating function() for each column of .SD
                     lockBinding("..FUN",SDenv)
                     txt[[1L]] = as.name("..FUN")
@@ -1845,18 +1845,8 @@ setcolorder = function(x,neworder)
 
 set = function(x,i=NULL,j,value)
 {
-    # FR #2077 - set able to add new cols by reference
-    newnames = NULL
-    if (is.character(j) && is.data.table(x)) { # is.data.table is necessary for test 857 (on data.frame)
-        cols = chmatch(j, names(x), 0L)
-        anynew = which(cols == 0)
-        if (length(anynew)) {
-            newnames = j[anynew]
-            cols[anynew] = ncol(x) + seq_along(anynew)
-            j = cols
-        }
-    }
-    .Call(Cassign,x,i,j,newnames,value,FALSE)
+	# now check for `j=character` and adding columns then implemented in C
+    .Call(Cassign,x,i,j,NULL,value,FALSE)	
     # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.
     # TO DO: When := or set() do it, make them aware of 'ul' and drop it if necessary.
     invisible(x)

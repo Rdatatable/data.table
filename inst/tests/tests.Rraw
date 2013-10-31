@@ -40,7 +40,7 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
     #    from all.equal and different to identical related to row.names and unused factor levels
     # 3) each test has a unique id which we refer to in commit messages, emails etc.
-    print(paste0("running test #", num))
+    # print(paste0("running test #", num))
     .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
@@ -1556,7 +1556,7 @@ test(525, set(DT,1L,"b",6L), data.table(a=1:3, b=6:8, foo=INT(NA,7,NA)))
 test(525.1, set(DT,j="b",value=9:11), data.table(a=1:3, b=9:11, foo=INT(NA,7,NA))) # plonk syntax via missing i (fixed in 1.8.1)
 test(525.2, set(DT,NULL,"b",12:14), data.table(a=1:3, b=12:14, foo=INT(NA,7,NA)))  # plonk syntax via NULL i
 
-# NEW ADDITIONAL TESTS FOR set() - FR #2077 - for using set to add columns by reference
+# NEW ADDITIONAL TESTS FOR set() - bug #2077 - for using set to add columns by reference
 DT1 <- data.table(x = 1, y = 1:10, fac = sample(LETTERS[1:3], 10, replace = TRUE)) # from SO
 DT2 <- copy(DT1)
 mul=c(5.3,2.8)
@@ -1568,6 +1568,7 @@ test(1096.2, DT1, DT2[, list(x,y,fac, dot1)])
 DT2[, dot2 := NULL][5:9, `:=`(bla1 = 0L, x = 3L, bla2 = 2L)]
 set(DT1, i=5:9, j=c("bla1", "x", "bla2"), value=list(0L, 3L, 2L))
 test(1096.3, DT1, DT2) # more testing with many columns including existing columns
+test(1096.4, set(DT1, i=NULL, j=7L, value=5L), error="Item 1 of j is 7 which is outside range. Cannot add columns without a name.")
 
 # Test that data.frame incompability is fixed, came to light in Feb 2012
 DT = data.table(name=c('a','b','c'), value=1:3)
@@ -2391,8 +2392,8 @@ test(855, l[[1]], data.table(a=1:3,b=4:6,d=10:12))
 DF = data.frame(foo=1:2,bar=3:4)
 setnames(DF,c("baz","qux"))
 test(856, DF, data.frame(baz=1:2,qux=3:4))
-test(857, set(DF,NULL,"quux",5:6), error="'quux' is not a column name.*use := instead to add columns by reference")
-test(858, set(DF,NULL,3L,5:6), error="Item 1 of j is 3 which is outside range.*use := instead to add columns by reference")
+test(857, set(DF,NULL,"quux",5:6), error="Input is not a data.table. set()")
+test(858, set(DF,NULL,3L,5:6), error="Input is not a data.table. set()")
 
 # Test DT[J(data.frame())], #2265
 DT = data.table(foo=c(1,2,3), bar=c(1.1,2.2,3.3), key="foo")
