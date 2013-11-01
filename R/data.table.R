@@ -632,6 +632,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
         if (notj) j = eval(jsub, parent.frame(), parent.frame()) # else j will be evaluated for the first time on next line
         if (is.logical(j)) j <- which(j)
         if (!length(j)) return( null.data.table() )
+        if (is.factor(j)) j = as.character(j) # fix for FR: #4867
         if (is.character(j)) {
             origj = j
             j = chmatch(j, names(x))

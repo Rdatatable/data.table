@@ -98,6 +98,10 @@ NEW FEATURES
   o  FR #2115 - rbind now relies exclusively on rbindlist to bind data.table's together. This makes rbind'ing
      factors faster.
 
+  o  FR #4867 is now implemented. `DT[, as.factor('x'), with=FALSE]` where `x` is a column in `DT`, is now 
+     equivalent to `DT[, "x", with=FALSE]` instead of ending up with an error. Thanks to tresbot for reporting 
+	 on SO: http://stackoverflow.com/questions/18525976/converting-multiple-data-table-columns-to-factors-in-r
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now

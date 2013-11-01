@@ -3244,6 +3244,11 @@ DT = data.table(a=character())
 DT = data.table(a=0:2,b=3:5,key="a")
 test(1128, DT[, (function(){b})()], DT[, b])
 
+## Fix for FR #4867
+DT <- data.table(x=1:5, y=6:10)
+test(1129.1, DT[, as.factor(c("x", "y")), with=FALSE], DT)
+test(1129.2, DT[, as.factor(c("x", "x")), with=FALSE], DT[, list(x, x)])
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 
