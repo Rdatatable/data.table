@@ -3269,6 +3269,9 @@ My_Fun <- function(x=copy(DT)) {
 DT[, (cols) := 10]
 test(1131, My_Fun(), DT)
 
+# Test for #4957 - where `j` doesn't know `.N` when used with `lapply(.SD, function(x) ...)`
+test(1132, DT[, lapply(.SD, function(x) .N), by=ID], data.table(ID=c("A", "B", "C"), Value1=2L, Value2=2L))
+
 # test for FR #2591 (format.data.table issue with column of class "formula") - FIXED but not sure how to add test for this
 
 # tests of freading classes like Date and the verbose messages there.

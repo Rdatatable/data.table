@@ -214,8 +214,12 @@ BUG FIXES
   o  Fixed bug #5007, `j` did not see variables declared within a local (function) environment properly. Now, 
      `DT[, lapply(.SD, function(x) fun_const), by=x]` where "fun_const" is a local variable within a function 
      works as expected. Thanks to Ricardo Saporta for catching this and providing a very nice reproducible 
-     example
+     example.
 
+  o  Fixing #5007 also fixes #4957, where `.N` was not visible during `lapply(.SD, function(x) ...)` in `j`. 
+     Thanks to juba for noticing it here on SO:
+	 http://stackoverflow.com/questions/19094771/replace-values-in-each-column-based-on-conditions-according-to-groups-by-rows
+  
   o  Fixed another case where function expressions were not constructed properly in `j`, while fixing #5007. 
      `DT[, lapply(.SD, function(x) my_const), by=x]` now works as expected instead of ending up in an error.
   
