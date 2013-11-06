@@ -40,7 +40,7 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
     #    from all.equal and different to identical related to row.names and unused factor levels
     # 3) each test has a unique id which we refer to in commit messages, emails etc.
-    # print(paste0("running test #", num))
+    print(paste0("running test #", num))
     .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
@@ -3248,6 +3248,28 @@ test(1128, DT[, (function(){b})()], DT[, b])
 DT <- data.table(x=1:5, y=6:10)
 test(1129.1, DT[, as.factor(c("x", "y")), with=FALSE], DT)
 test(1129.2, DT[, as.factor(c("x", "x")), with=FALSE], DT[, list(x, x)])
+
+# Fix for a specific case that results in error in `construct` function in data.table.R (found and fixed during #5007 bug fix)
+MyValueIsTen <- 10
+set.seed(1)
+DT <- data.table(ID=sample(LETTERS[1:3], 6, TRUE), Value1=rnorm(6), Value2=runif(6))
+cols <- c("Value1", "Value2")
+DT2 <- copy(DT)
+test(1130, DT[, (cols) := lapply(.SD, function(x) MyValueIsTen), by=ID], DT2[, (cols) := 10])
+
+# Fix for #5007 - The value MyValueIsTen = 10 was never recognised (value within the function environment)
+MyValueIsTen <- 5
+set.seed(1)
+DT <- data.table(ID=sample(LETTERS[1:3], 6, TRUE), Value1=rnorm(6), Value2=runif(6))
+My_Fun <- function(x=copy(DT)) {
+    MyValueIsTen <- 10
+    cols <- c("Value1", "Value2")
+    x[, (cols) := lapply(.SD, function(x) MyValueIsTen), by=ID]
+}
+DT[, (cols) := 10]
+test(1131, My_Fun(), DT)
+
+# test for FR #2591 (format.data.table issue with column of class "formula") - FIXED but not sure how to add test for this
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.

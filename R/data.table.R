@@ -24,6 +24,8 @@ deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.fr
 
 construct = function(l) {
     if (length(l) == 0L) return(NULL)
+    if (is.name(l)) return(l) # fix for error in cases as reported in Bug #5007: DT[, (cols) := lapply(.SD, function(x) MyValueIsTen), by=ID]
+                              # construct(l[[3L]] would give an error when l[[3L]] is MyValueIsTen if not for this line)
     if (length(l) == 1L) {
         if (length(l[[1L]]) == 1L) return(l[[1L]])
         else return(as.call(list(construct(l[[1L]]))))
@@ -109,9 +111,12 @@ print.data.table = function(x,
     invisible()
 }
 
+# FR #2591 - format.data.table issue with columns of class "formula"
+is.formula <- function(x) class(x) == "formula"
+
 format.data.table <- function (x, ..., justify="none") {
     format.item = function(x) {
-        if (is.atomic(x))
+        if (is.atomic(x) || is.formula(x)) # FR #2591 - format.data.table issue with columns of class "formula"
             paste(c(head(x,6),if(length(x)>6)""),collapse=",")
         else
             paste("<",class(x)[1L],">",sep="")
@@ -1018,7 +1023,8 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                     # Fix for #2381: added SDenv$.SD to 'eval' to take care of cases like: lapply(.SD, function(x) weighted.mean(x, bla)) where "bla" is a column in DT
                     # http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
                     # adding this does not compromise in speed (that is, not any lesser than without SDenv$.SD)
-                    assign("..FUN",eval(fun, SDenv$.SD), SDenv)  # to avoid creating function() for each column of .SD
+                    # replaced SDenv$.SD to SDenv to deal with Bug #5007 reported by Ricardo (Nice catch!)
+                    assign("..FUN",eval(fun, SDenv, SDenv), SDenv)  # to avoid creating function() for each column of .SD
                     lockBinding("..FUN",SDenv)
                     txt[[1L]] = as.name("..FUN")
                 } else {
@@ -1846,8 +1852,8 @@ setcolorder = function(x,neworder)
 
 set = function(x,i=NULL,j,value)
 {
-	# now check for `j=character` and adding columns then implemented in C
-    .Call(Cassign,x,i,j,NULL,value,FALSE)	
+    # now check for `j=character` and adding columns then implemented in C
+    .Call(Cassign,x,i,j,NULL,value,FALSE)   
     # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.
     # TO DO: When := or set() do it, make them aware of 'ul' and drop it if necessary.
     invisible(x)
