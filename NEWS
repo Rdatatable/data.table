@@ -222,7 +222,11 @@ BUG FIXES
   
   o  Fixed another case where function expressions were not constructed properly in `j`, while fixing #5007. 
      `DT[, lapply(.SD, function(x) my_const), by=x]` now works as expected instead of ending up in an error.
-  
+
+  o  Fixed #4990, where `:=` did not generate a recycling warning during "by", when length(RHS) < group size but 
+     not an integer multiple of group size. Now, DT <- data.table(a=rep(1:2, c(5,2))); DT[, b := c(1:2), by=a] will 
+	 generate a warning (here for first group as RHS length (2) is not an integer multiple of group size (=5)). 
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.

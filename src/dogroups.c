@@ -54,6 +54,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     iSD = findVar(install(".iSD"), env);  // 1-row and possibly no cols (if no i variables are used via JIS)
     I = findVar(install(".I"), env);
     
+    dtnames = getAttrib(dt, R_NamesSymbol); // added here to fix #4990 - `:=` did not issue recycling warning during "by"
     // fetch rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
     // non data.table aware package that uses rownames
     for (s = ATTRIB(SD); s != R_NilValue && TAG(s)!=R_RowNamesSymbol; s = CDR(s));
@@ -153,8 +154,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),
                        (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+rownum*size,
                        grpn*size);
-					// to fix bug here: http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by   
-					setAttrib(VECTOR_ELT(SD,j), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), R_ClassSymbol));   
+                    // to fix bug here: http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by   
+                    setAttrib(VECTOR_ELT(SD,j), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), R_ClassSymbol));   
                 }
                 for (j=0; j<grpn; j++) INTEGER(I)[j] = rownum+j+1;
             } else {
@@ -165,8 +166,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                         memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)) + k*size,
                            (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1)) + rownum*size,
                            size);
-						// to fix bug here: http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by   
-						setAttrib(VECTOR_ELT(SD,j), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), R_ClassSymbol));
+                        // to fix bug here: http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by   
+                        setAttrib(VECTOR_ELT(SD,j), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), R_ClassSymbol));
                     }
                     INTEGER(I)[k] = rownum+1;
                 }
@@ -214,7 +215,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     if (isNull(RHS)) error("RHS is NULL when grouping :=. Makes no sense to delete a column by group. Perhaps use an empty vector instead.");
                     if (TRUELENGTH(dt) < INTEGER(lhs)[j]) error("Internal error: Trying to add new column by reference but tl is full; alloc.col should have run first at R level before getting to this point in dogroups");
                     SET_VECTOR_ELT(dt,INTEGER(lhs)[j]-1,allocNAVector(TYPEOF(RHS), LENGTH(VECTOR_ELT(dt,0))));
-                    dtnames = getAttrib(dt, R_NamesSymbol);
+                    // dtnames = getAttrib(dt, R_NamesSymbol); // commented this here and added it on the beginning to fix #4990
                     SET_STRING_ELT(dtnames, INTEGER(lhs)[j]-1, STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1));
                     SETLENGTH(dtnames, LENGTH(dtnames)+1);
                     SETLENGTH(dt, LENGTH(dt)+1);
@@ -225,6 +226,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 vlen = length(RHS);
                 if (vlen==0) continue;
                 if (vlen>grpn && j<LENGTH(jval)) warning("RHS %d is length %d (greater than the size (%d) of group %d). The last %d element(s) will be discarded.", j+1, vlen, grpn, i+1, vlen-grpn);
+                // fix for #4990 - `:=` did not issue recycling warning during "by" operation.
+                if (vlen<grpn && vlen>0 && grpn%vlen != 0) 
+                    warning("Supplied %d items to be assigned to group %d of size %d in column '%s' (recycled leaving remainder of %d items).",vlen,i+1,grpn,CHAR(STRING_ELT(dtnames,INTEGER(lhs)[j]-1)),grpn%vlen);
                 if (length(order)==0) {
                     rownum = INTEGER(starts)[i]-1;
                     switch (TYPEOF(targetcol)) {

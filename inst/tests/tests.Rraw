@@ -40,7 +40,7 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
     #    from all.equal and different to identical related to row.names and unused factor levels
     # 3) each test has a unique id which we refer to in commit messages, emails etc.
-    print(paste0("running test #", num))
+    # print(paste0("running test #", num))
     .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
@@ -3272,7 +3272,15 @@ test(1131, My_Fun(), DT)
 # Test for #4957 - where `j` doesn't know `.N` when used with `lapply(.SD, function(x) ...)`
 test(1132, DT[, lapply(.SD, function(x) .N), by=ID], data.table(ID=c("A", "B", "C"), Value1=2L, Value2=2L))
 
+# Test for #4990 - `:=` does not generate recycling warning during 'by':
+DT <- data.table(x=c(1,1,1,1,1,2,2))
+# on a new column
+test(1133.1, DT[, new := c(1,2), by=x], data.table(x=c(1,1,1,1,1,2,2), new=c(1,2,1,2,1,1,2)), warning="Supplied 2 items to be assigned to group 1 of size 5 in column 'new'")
+# on an already existing column
+test(1133.2, DT[, new := c(1,2), by=x], data.table(x=c(1,1,1,1,1,2,2), new=c(1,2,1,2,1,1,2)), warning="Supplied 2 items to be assigned to group 1 of size 5 in column 'new'")
+
 # test for FR #2591 (format.data.table issue with column of class "formula") - FIXED but not sure how to add test for this
+
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
