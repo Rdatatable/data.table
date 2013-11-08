@@ -3279,6 +3279,12 @@ test(1133.1, DT[, new := c(1,2), by=x], data.table(x=c(1,1,1,1,1,2,2), new=c(1,2
 # on an already existing column
 test(1133.2, DT[, new := c(1,2), by=x], data.table(x=c(1,1,1,1,1,2,2), new=c(1,2,1,2,1,1,2)), warning="Supplied 2 items to be assigned to group 1 of size 5 in column 'new'")
 
+# Fix for FR #2496 - catch `{` in `:=` expression in `j`:
+DT <- data.table(x=c("A", "A", "B", "B"), val =1:4)
+DT2 <- copy(DT)[, a := 1L]
+test(1134.1, DT[, {a := 1L}], DT2, warning="Caught and removed")
+test(1134.2, DT[, {b := 2L}, by=x], DT2[, b:=2L, by=x], warning="Caught and removed")
+
 # test for FR #2591 (format.data.table issue with column of class "formula") - FIXED but not sure how to add test for this
 
 

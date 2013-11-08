@@ -104,6 +104,10 @@ NEW FEATURES
 
   o  `format.data.table` now understands "formula" and displays embedded formulas as expected, FR #2591.
 
+  o  FR #2496 is now implemented to trap and remove the `{` around `:=` in `j` to obtain desired result. Now, 
+     `DT[, { `:=`(...)}]` and `DT[, {`:=`(...)}, by=(...)]` both work as intended, but with a warning. Thanks to 
+     Alex for reporting on SO: http://stackoverflow.com/questions/14541959/expression-syntax-for-data-table-in-r
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
