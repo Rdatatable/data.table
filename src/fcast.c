@@ -16,7 +16,7 @@ extern SEXP setDiff(SEXP x, int n);
 extern SEXP which_notNA(SEXP x);
 extern SEXP which(SEXP x);
 extern SEXP concat(SEXP vec, SEXP idx);
-extern SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose);
+extern SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose);
 extern SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 extern SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP rollarg, SEXP rollends, SEXP nomatch, SEXP tolerance, SEXP retFirst, SEXP retLength, SEXP allLen1);
 
@@ -209,8 +209,8 @@ SEXP castgroups(SEXP groups, SEXP val, SEXP f__, SEXP value_var, SEXP jsub, SEXP
     R_len_t i, len=length(VECTOR_ELT(groups, 0));
     int protecti=0;
     SEXP tmp, cpy, SDnames, SDclass, ans;
-    SEXP x, xcols, grpcols, grporder, o__, len__, jiscols = R_NilValue;
-    SEXP BY_, GRP_, I_, N_, SD_, iSD_ = R_NilValue;
+    SEXP x, xcols, grpcols, grporder, o__, len__, jiscols = R_NilValue, xjiscols=R_NilValue;
+    SEXP BY_, GRP_, I_, N_, SD_, iSD_ = R_NilValue, xSD_ = R_NilValue;
     SEXP cols = R_NilValue, newnames = R_NilValue, verbose;
         
     xcols = PROTECT(allocVector(INTSXP, 1)); protecti++;
@@ -291,8 +291,9 @@ SEXP castgroups(SEXP groups, SEXP val, SEXP f__, SEXP value_var, SEXP jsub, SEXP
     defineVar(install(".GRP"), GRP_, env);
     defineVar(install(".iSD"), iSD_, env);
     defineVar(install(".SD"), SD_, env);
+    defineVar(install(".xSD"), xSD_, env);
     
-    ans = dogroups(x, xcols, groups, grpcols, jiscols, grporder, o__, f__, len__, jsub, env, cols, newnames, verbose);
+    ans = dogroups(x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, env, cols, newnames, verbose);
     UNPROTECT(protecti);
     return(ans);
 }
@@ -314,6 +315,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
     Rboolean isagg = FALSE, isfill = TRUE;
     char buffer[128], uscore[] = "_";
 
+    // raise(SIGINT);
     if (TYPEOF(DT) != VECSXP) error("'data' should be a data.table or data.frame");
     if (TYPEOF(inames) != STRSXP) error("LHS of parsed formula did not result in character vector, possibly invalid formula");
     if (TYPEOF(mnames) != STRSXP) error("RHS of parsed formula did not result in character vector, possibly invalid formula");

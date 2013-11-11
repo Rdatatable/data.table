@@ -10,6 +10,7 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
         require(nlme)
         require(xts)
         require(bit64)
+		require(gdata)
     })
     # The suppression is for users running test.data.table(). If they don't have ggplot2 installed we don't
     # want to warn about it not being installed. 'R CMD check' is a stricter test that will warn if the
@@ -499,7 +500,7 @@ test(150.1, dt["b",y,verbose=TRUE], output="Coercing character column i.'V1' to 
 test(150.2, dt["b",y]$y, 2L)
 # from Tom's post :
 a = data.table(a=rep(1:5, 2), b=factor(letters[rep(1:5, each =2)], levels=letters[5:1]), key="b")
-test(151.1, a[J("b"),a,verbose=TRUE], output="Coercing character column i.'V1' to factor")
+test(151.1, a[J("b"),a,verbose=TRUE], output="Coercing character column i.'b' to factor") # changed `i.V1` to `i.b` following changes for FR #2693
 test(151.2, a[J("b"),a]$a, 3:4)
 # stretch tests further, two out of order levels, one gets key'd the other not :
 a = data.table(x=factor(letters[rep(1:5, each =2)], levels=letters[5:1]),
@@ -3285,7 +3286,33 @@ DT2 <- copy(DT)[, a := 1L]
 test(1134.1, DT[, {a := 1L}], DT2, warning="Caught and removed")
 test(1134.2, DT[, {b := 2L}, by=x], DT2[, b:=2L, by=x], warning="Caught and removed")
 
+# fix for bug #5069 
+if ("package:gdata" %in% search()) {
+    DT <- data.table(a = c('asdfasdf','asdf','asdgasdgasdgasdg','sdg'), b = runif(4,0,1))
+    test(1135, write.fwf(DT, "df.txt"), NULL)
+}
+
+# FR #2693 and Gabor's suggestions from here: http://r.789695.n4.nabble.com/Problem-with-FAQ-2-8-tt4668878.html (correcting software according to FAQ 2.8)
+d1 <- data.table(id1 = c(1L, 2L, 2L, 3L), val = 1:4, key = "id1") 
+d2 <- data.table(id2 = c(1L, 2L, 4L), val2 = c(11, 12, 14),key = "id2") 
+d3 <- copy(d2)
+setnames(d3, names(d1))
+
+test(1136.1, d1[d2, id1], data.table(id1=d2$id2, id1=c(1L,2L,NA), key="id1"))
+test(1136.2, d1[d2, id2], data.table(id1=d2$id2, id2=d2$id2, key="id1"))
+test(1136.3, d1[d3, i.id1], data.table(id1=d3$id1, i.id1=d3$id1, key="id1"))
+test(1136.4, d1[d2, val], data.table(id1=c(1L, 2L, 2L, 4L), val=c(1:3, NA), key="id1"))
+test(1136.5, d1[d2, val2], data.table(id1=c(1L, 2L,4L), val2=c(11,12,14), key="id1"))
+test(1136.6, d1[d3, list(val, i.val)], data.table(id1=c(1L, 2L,2L,4L), val=c(1:3, NA), i.val=c(11,12,12,14), key="id1"))
+test(1136.7, d1[d3, list(id1, i.id1, val, i.val)], data.table(id1=c(1L, 2L,2L,4L), 
+                id1=c(1L, 2L, 2L, NA), i.id1=c(1L, 2L, 2L, 4L), val=c(1:3, NA), i.val=c(11,12,12,14), key="id1"))
+test(1136.8, d1[d2], data.table(id1=c(1L,2L,2L,4L), val=c(1:3, NA), val2=c(11,12,12,14), key="id1"))
+
+test(1136.9, d1[J(2), id1], data.table(id1=c(2L), id1=c(2L), key="id1")) # id1 refers to x's id1
+test(1136.10, d1[J(2), i.id1], data.table(id1=c(2L), i.id1=c(2L), key="id1")) # i.id1 refers to i's id1
+
 # test for FR #2591 (format.data.table issue with column of class "formula") - FIXED but not sure how to add test for this
+
 
 
 # tests of freading classes like Date and the verbose messages there.

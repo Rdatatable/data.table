@@ -31,12 +31,12 @@ void setSizes() {
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
 
-SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose)
+SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose)
 {
     R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, size, vlen;
     int protecti=0;
-    SEXP names, names2, bynames, dtnames, ans=NULL, jval, thiscol, SD, BY, N, I, GRP, iSD, rownames, s, targetcol, RHS, listwrap, target;
-    SEXP *nameSyms;
+    SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, SD, BY, N, I, GRP, iSD, xSD, rownames, s, targetcol, RHS, listwrap, target;
+    SEXP *nameSyms, *xknameSyms;
     Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
     
     if (TYPEOF(order) != INTSXP) error("Internal error: order not integer");
@@ -44,6 +44,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     //if (TYPEOF(lens) != INTSXP) error("Internal error: lens not integer");
     // starts can now be NA (<0): if (INTEGER(starts)[0]<0 || INTEGER(lens)[0]<0) error("starts[1]<0 or lens[1]<0");
     if (!isNull(jiscols) && length(order)) error("Internal error: jiscols not NULL but o__ has length");
+    if (!isNull(xjiscols) && length(order)) error("Internal error: xjiscols not NULL but o__ has length");
     if(!isEnvironment(env)) error("’env’ should be an environment");
     ngrp = length(starts);  // the number of groups  (nrow(groups) will be larger when by)
     ngrpcols = length(grpcols);
@@ -52,6 +53,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     N = findVar(install(".N"), env);
     GRP = findVar(install(".GRP"), env);
     iSD = findVar(install(".iSD"), env);  // 1-row and possibly no cols (if no i variables are used via JIS)
+    xSD = findVar(install(".xSD"), env);
     I = findVar(install(".I"), env);
     
     dtnames = getAttrib(dt, R_NamesSymbol); // added here to fix #4990 - `:=` did not issue recycling warning during "by"
@@ -75,7 +77,18 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
     }
 
+    xknames = getAttrib(xSD, R_NamesSymbol);
+    if (length(xknames) != length(xSD)) error("length(xknames)!=length(xSD)");
+    xknameSyms = Calloc(length(xknames), SEXP);
+    if (!xknameSyms) error("Calloc failed to allocate %d xknameSyms in dogroups",length(xknames));
+    for(i = 0; i < length(xSD); i++) {
+        if (SIZEOF(VECTOR_ELT(xSD, i))==0)
+            error("Type %d in .xSD column %d", TYPEOF(VECTOR_ELT(xSD, i)), i);
+        xknameSyms[i] = install(CHAR(STRING_ELT(xknames, i)));
+    }
+
     if (length(iSD)!=length(jiscols)) error("length(iSD)[%d] != length(jiscols)[%d]",length(iSD),length(jiscols));
+    if (length(xSD)!=length(xjiscols)) error("length(xSD)[%d] != length(xjiscols)[%d]",length(xSD),length(xjiscols));
     
     bynames = getAttrib(BY, R_NamesSymbol);
     if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols))) error("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]",length(bynames),length(groups),length(grpcols));
@@ -146,6 +159,24 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             }
             grpn = 1;  // TO DO: it is anyway?
             INTEGER(I)[0] = 0;
+            for (j=0; j<length(xSD); j++) {
+                switch (TYPEOF(VECTOR_ELT(xSD, j))) {
+                case LGLSXP :
+                    LOGICAL(VECTOR_ELT(xSD,j))[0] = NA_LOGICAL;
+                    break;
+                case INTSXP :
+                    INTEGER(VECTOR_ELT(xSD,j))[0] = NA_INTEGER;
+                    break;
+                case REALSXP :
+                    REAL(VECTOR_ELT(xSD,j))[0] = NA_REAL;
+                    break;
+                case STRSXP :
+                    SET_STRING_ELT(VECTOR_ELT(xSD,j),0,NA_STRING);
+                    break;
+                default:
+                    error("Logical error. Type of column should have been checked by now");
+                }
+            }
         } else {
             if (length(order)==0) {
                 rownum = INTEGER(starts)[i]-1;
@@ -158,6 +189,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     setAttrib(VECTOR_ELT(SD,j), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), R_ClassSymbol));   
                 }
                 for (j=0; j<grpn; j++) INTEGER(I)[j] = rownum+j+1;
+                for (j=0; j<length(xSD); j++) {
+                    size = SIZEOF(VECTOR_ELT(xSD,j));
+                    memcpy((char *)DATAPTR(VECTOR_ELT(xSD,j)),
+                       (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(xjiscols)[j]-1))+rownum*size,
+                       size);
+                }
             } else {
                 for (k=0; k<grpn; k++) {
                     rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
@@ -179,6 +216,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             defineVar(nameSyms[j], VECTOR_ELT(SD, j), env);
             // In case user's j assigns to the columns names (env is static) (tests 387 and 388)
             // nameSyms pre-stored to save repeated install() for efficiency.
+        }
+        for (j=0; j<length(xSD); j++) {
+            defineVar(xknameSyms[j], VECTOR_ELT(xSD, j), env);
         }
         SETLENGTH(I, grpn);
         PROTECT(jval = eval(jexp, env));
@@ -438,6 +478,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     } else ans = R_NilValue;
     UNPROTECT(protecti);
     Free(nameSyms);
+    Free(xknameSyms);
     return(ans);
 }
 

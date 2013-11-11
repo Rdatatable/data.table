@@ -10,7 +10,7 @@
 \usage{
 ## fast dcast a data.table (not an S3 method yet)
 dcast.data.table(data, formula, fun.aggregate = NULL, 
-	..., margins = FALSE, subset = NULL, fill = NULL, 
+	..., margins = NULL, subset = NULL, fill = NULL, 
 	drop = TRUE, value.var = guess(data), 
 	tolerance = .Machine$double.eps^0.5, 
 	verbose = getOption("datatable.verbose"))
@@ -98,10 +98,13 @@ dcast.data.table(DT, chick ~ time, fun=mean, subset=.(time < 10 & chick < 20))
 
 # on big data
 set.seed(45)
-DT <- data.table(aa=sample(1e4, 1e6, TRUE), bb=sample(1e3, 1e6, TRUE), cc = sample(letters, 1e6, TRUE), dd=runif(1e6))
-system.time(dcast.data.table(DT, aa ~ cc, fun=sum)) # 2.023 seconds. reshape2:::dcast crashes R-session
-system.time(dcast.data.table(DT, bb ~ cc, fun=mean)) # 0.35 seconds.
-system.time(dcast.data.table(DT, aa + bb ~ cc, fun=mean)) # 6.7 seconds.
+DT <- data.table(aa=sample(1e4, 1e6, TRUE), 
+      bb=sample(1e3, 1e6, TRUE), 
+      cc = sample(letters, 1e6, TRUE), dd=runif(1e6))
+dcast.data.table(DT, aa ~ cc, fun=sum))
+system.time(dcast.data.table(DT, bb ~ cc, fun=mean))
+# reshape2:::dcast crashes R-session
+# dcast.data.table(DT, aa + bb ~ cc, fun=mean)
 
 }
 \seealso{

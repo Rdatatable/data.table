@@ -108,6 +108,11 @@ NEW FEATURES
      `DT[, { `:=`(...)}]` and `DT[, {`:=`(...)}, by=(...)]` both work as intended, but with a warning. Thanks to 
      Alex for reporting on SO: http://stackoverflow.com/questions/14541959/expression-syntax-for-data-table-in-r
 
+  o  Implemented FR #2693 from mnel's and Gabor's points (here: http://r.789695.n4.nabble.com/Problem-with-FAQ-2-8-tt4668878.html)
+     regarding FAQ 2.8. Now, `x[J(2), a]`, where "a" is the key column sees "a" in "j". Also, `x[J(2)]` automatically 
+     names the data.table in "i" from the key columns of "x". In cases where the key columns of "x" and "i" are 
+     identical, i's columns are referred to by using "i.name". Ex: `x[J(2), i.a]` here refers to i's column "a".
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
@@ -229,7 +234,10 @@ BUG FIXES
 
   o  Fixed #4990, where `:=` did not generate a recycling warning during "by", when length(RHS) < group size but 
      not an integer multiple of group size. Now, DT <- data.table(a=rep(1:2, c(5,2))); DT[, b := c(1:2), by=a] will 
-	 generate a warning (here for first group as RHS length (2) is not an integer multiple of group size (=5)). 
+     generate a warning (here for first group as RHS length (2) is not an integer multiple of group size (=5)). 
+
+  o  Fixed #5069 where gdata:::write.fwf returned an error with data.table.
+
 
 NOTES
 

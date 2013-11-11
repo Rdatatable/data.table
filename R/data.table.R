@@ -295,7 +295,8 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
         ans = if (Nargs<3L) `[.data.frame`(x,i)  # drop ignored anyway by DF[i]
               else if (missing(drop)) `[.data.frame`(x,i,j)
               else `[.data.frame`(x,i,j,drop)
-        if (!missing(i)) setkey(ans,NULL)  # See test 304
+        # added is.data.table(ans) check to fix bug #5069
+        if (!missing(i) & is.data.table(ans)) setkey(ans,NULL)  # See test 304
         return(ans)
     }
     if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
@@ -374,7 +375,15 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
         if (is.null(i)) return( null.data.table() )
         if (is.character(i)) i = data.table(V1=i)   # for user convenience
         else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) i = as.data.table(i[[1L]])
-        else if (identical(class(i),"list") || identical(class(i),"data.frame")) i = as.data.table(i)
+        else if (identical(class(i),"data.frame")) i = as.data.table(i)
+        else if (identical(class(i),"list")) {
+            i_names = names(i)
+            len_ = seq_len(min(length(i), length(key(x))))
+            i = as.data.table(i)
+            if (is.null(i_names) & haskey(x)) {
+                setnames(i, len_, key(x)[len_])
+            }
+        }
         if (is.data.table(i)) {
             if (!haskey(x)) stop("When i is a data.table (or character vector), x must be keyed (i.e. sorted, and, marked as sorted) so data.table knows which columns to join to and take advantage of x being sorted. Call setkey(x,...) first, see ?setkey.")
             rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in binarysearch
@@ -922,8 +931,10 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
 
     if (".N" %chin% xvars) stop("The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.")
     SDenv$.iSD = NULL  # null.data.table()
+    SDenv$.xSD = NULL  # null.data.table() - introducing for FR #2693 and Gabor's post on fixing for FAQ 2.8
     if (bywithoutby) {
-        jisvars = intersect(gsub("^i[.]","",ws),names(i))
+        xjisvars = intersect(ws, key(x)) # no "x." for xvars
+        jisvars = intersect(gsub("^i[.]","", setdiff(ws, xjisvars)),names(i))
         # JIS (non join cols) but includes join columns too (as there are named in i)
         if (length(jisvars)) {
             tt = min(nrow(i),1L)
@@ -1090,12 +1101,16 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
         grpcols = leftcols # 'leftcols' are the columns in i involved in the join (either head of key(i) or head along i)
         jiscols = chmatch(jisvars,names(i))  # integer() if there are no jisvars (usually there aren't, advanced feature)
         SDenv$.BY = groups[1L,grpcols,with=FALSE]
+        xjiscols = chmatch(xjisvars, names(x))
+        SDenv$.xSD = x[min(nrow(i), 1L), xjisvars, with=FALSE]
     } else {
         groups = byval
         grpcols = seq_along(byval)
         jiscols = NULL   # NULL rather than integer() is used in C to know when using by
         SDenv$.BY = lapply(byval,"[",1L)  # byval is list() not data.table
+        xjiscols = NULL
     }
+    lockBinding(".xSD", SDenv)
     lockBinding(".BY",SDenv)
     grporder = o__
     if (length(irows) && !isTRUE(irows)) {
@@ -1111,7 +1126,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
         f__=len__=0L
     }
     if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
-    ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, verbose)
+    ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, verbose)
     if (verbose) {cat("done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
 
     # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
