@@ -496,7 +496,7 @@ test(149, dt[J(2:3),roll=TRUE], data.table(a=c(2L,3L),b=c(1L,1L),key="a"))  # in
 # 150:158 test out of order factor levels in key columns (now allowed from v1.8.0)
 dt = data.table(x=factor(c("c","b","a"),levels=c("b","a","c")),y=1:3)
 setkey(dt,x)
-test(150.1, dt["b",y,verbose=TRUE], output="Coercing character column i.'V1' to factor")
+test(150.1, dt["b",y,verbose=TRUE], output="Coercing character column i.'x' to factor") # changed i.V1 to i.x as per FR #2693
 test(150.2, dt["b",y]$y, 2L)
 # from Tom's post :
 a = data.table(a=rep(1:5, 2), b=factor(letters[rep(1:5, each =2)], levels=letters[5:1]), key="b")
@@ -1634,7 +1634,7 @@ test(546, DT[,sum(v),by=month(date)], data.table(month=2:3,V1=c(11L,15L)))
 x = factor(LETTERS[1:3], levels=rev(LETTERS), ordered=TRUE)
 DT = data.table(A=x,B=x,v=1:3, key="A")
 test(547,is.ordered(DT$A) && is.ordered(DT$B))
-test(548.1, DT["A",v,verbose=TRUE], output="Coercing character column i.'V1' to factor to match type of x.'A'")
+test(548.1, DT["A",v,verbose=TRUE], output="Coercing character column i.'A' to factor to match type of x.'A'") # changed i.V1 to i.A as per FR #2693
 test(548.2, DT["A",v]$v,1L)
 # Posted by Damian Betebenner ...
 set.seed(123)
@@ -3311,9 +3311,27 @@ test(1136.8, d1[d2], data.table(id1=c(1L,2L,2L,4L), val=c(1:3, NA), val2=c(11,12
 test(1136.9, d1[J(2), id1], data.table(id1=c(2L), id1=c(2L), key="id1")) # id1 refers to x's id1
 test(1136.10, d1[J(2), i.id1], data.table(id1=c(2L), i.id1=c(2L), key="id1")) # i.id1 refers to i's id1
 
+DT <- data.table(x=c("A", "A", "C", "C"), y=1:4, key="x")
+test(1136.11, DT["C", i.x], data.table(x="C", i.x="C", key="x"))
+
 # test for FR #2591 (format.data.table issue with column of class "formula") - FIXED but not sure how to add test for this
+# test for FR #5020 - print.data.table gets new argument "row.names", default=TRUE. if FALSE, the row-names don't get printed - not sure how to add test though.
 
+# test for FR #4979
+DT <- data.table(x=1:5, y=6:10, z=11:15)
+test(1137.1, DT[, .SD, .SDcols=-1L], DT[, 2:3, with=FALSE])
+test(1137.2, DT[, .SD, .SDcols=-(1:2)], DT[, 3, with=FALSE])
+test(1137.3, DT[, .SD, .SDcols=-"y"], DT[, c(1,3), with=FALSE])
+test(1137.4, DT[, .SD, .SDcols=-c("y", "x")], DT[, 3, with=FALSE])
+test(1137.5, DT[, .SD, .SDcols=-which(names(DT) %in% c("x", "y", "z"))], data.table:::null.data.table())
+test(1137.6, DT[, .SD, .SDcols=c(1, -2)], error=".SDcols is numeric but has both")
+test(1137.7, DT[, .SD, .SDcols=c("x", -"y")], error="invalid argument to unary")
+test(1137.8, DT[, .SD, .SDcols=c(-1, "x")], error="Some items of .SDcols are")
 
+DT <- data.table(x=1:5, y=6:10, z=11:15, zz=letters[1:5])
+test(1137.9, DT[, .SD, .SDcols=-grep("^z", names(DT))], DT[, 1:2, with=FALSE])
+test(1137.10, DT[, .SD, .SDcols=-grep("^z", names(DT), value=TRUE)], DT[, 1:2, with=FALSE])
+test(1137.11, DT[, .SD, .SDcols=-grep("^z", names(DT), value=TRUE, invert=TRUE)], DT[, 3:4, with=FALSE])
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.

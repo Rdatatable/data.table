@@ -74,7 +74,7 @@ setPackageName("data.table",.global)
 print.data.table = function(x,
     topn=getOption("datatable.print.topn"),   # (5) print the top topn and bottom topn rows with '---' inbetween
     nrows=getOption("datatable.print.nrows"), # (100) under this the whole (small) table is printed, unless topn is provided
-    ...)
+    row.names = TRUE, ...)
 {
     if (!.global$print) {
         #  := in [.data.table sets print=FALSE, when appropriate, to suppress := autoprinting at the console
@@ -104,7 +104,8 @@ print.data.table = function(x,
         printdots = FALSE
     }
     toprint=format.data.table(toprint, ...)
-    rownames(toprint)=paste(format(rn,right=TRUE),":",sep="")
+    # FR #5020 - add row.names = logical argument to print.data.table
+    if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE),":",sep="") else rownames(toprint)=rep.int("", nrow(x))
     if (is.null(names(x))) colnames(toprint)=rep("NA", ncol(toprint)) # fixes bug #4934
     if (printdots) {
         toprint = rbind(head(toprint,topn),"---"="",tail(toprint,topn))
@@ -373,8 +374,10 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             if (identical(i,NA)) i = NA_integer_  # see DT[NA] thread re recycling of NA logical
         }
         if (is.null(i)) return( null.data.table() )
-        if (is.character(i)) i = data.table(V1=i)   # for user convenience
-        else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) i = as.data.table(i[[1L]])
+        if (is.character(i)) {
+            i = data.table(V1=i)   # for user convenience
+            if (haskey(x)) setnames(i, key(x)[1L])
+        } else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) i = as.data.table(i[[1L]])
         else if (identical(class(i),"data.frame")) i = as.data.table(i)
         else if (identical(class(i),"list")) {
             i_names = names(i)
@@ -893,13 +896,20 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             # really does use all of the .SD columns or not, hence .SDcols for grouping
             # over a subset of columns
         } else {
+            # FR #4979 - negative numeric and character indices for SDcols
+            colsub = substitute(.SDcols)
+            if (colsub[[1L]] == "-") {
+                colm = TRUE
+                .SDcols = eval(colsub[[2L]], parent.frame(), parent.frame())
+            } else colm = FALSE
             if (is.numeric(.SDcols)) {
-                if (any(is.na(.SDcols)) || any(.SDcols>ncol(.SDcols)) || any(.SDcols<1L)) stop(".SDcols is numeric but out of bounds (or NA)")
-                xvars = names(x)[.SDcols]
+                if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
+                if (any(is.na(.SDcols)) || any(abs(.SDcols)>ncol(x)) || any(abs(.SDcols)<1L)) stop(".SDcols is numeric but out of bounds (or NA)")
+                if (colm) xvars = names(x)[-.SDcols] else xvars = names(x)[.SDcols]
             } else {
                 if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
                 if (any(is.na(.SDcols)) || any(!.SDcols %chin% names(x))) stop("Some items of .SDcols are not column names (or are NA)")
-                xvars = .SDcols
+                if (colm) xvars = setdiff(names(x), .SDcols) else xvars = .SDcols
             }
             # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
         }

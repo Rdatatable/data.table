@@ -113,6 +113,14 @@ NEW FEATURES
      names the data.table in "i" from the key columns of "x". In cases where the key columns of "x" and "i" are 
      identical, i's columns are referred to by using "i.name". Ex: `x[J(2), i.a]` here refers to i's column "a".
 
+  o  print.data.table gains a new argument (FR #5020) `row.names` with default=TRUE for backwards compatbility. 
+     When set to FALSE, the row names (along with the :) doesn't get printed. Thanks to Frank Erickson for the FR.
+
+  o  .SDcols now is also able to de-delect columns. This works on both numerics and column names. For example, 
+     DT[, .SD, .SDcols=-c(1,3)] (or) DT[, .SD, .SDcols=-c("x", "z")] now works as expected. However, 
+     DT[, .SD, .SDcols=c(1, -3)] or DT[, .SD, .SDcols=c("x", -"z")] would result in error. Thanks to Tonny 
+     Peterson for filing this FR #4979.
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
