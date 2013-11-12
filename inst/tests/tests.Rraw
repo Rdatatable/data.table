@@ -3314,9 +3314,6 @@ test(1136.10, d1[J(2), i.id1], data.table(id1=c(2L), i.id1=c(2L), key="id1")) # 
 DT <- data.table(x=c("A", "A", "C", "C"), y=1:4, key="x")
 test(1136.11, DT["C", i.x], data.table(x="C", i.x="C", key="x"))
 
-# test for FR #2591 (format.data.table issue with column of class "formula") - FIXED but not sure how to add test for this
-# test for FR #5020 - print.data.table gets new argument "row.names", default=TRUE. if FALSE, the row-names don't get printed - not sure how to add test though.
-
 # test for FR #4979
 DT <- data.table(x=1:5, y=6:10, z=11:15)
 test(1137.1, DT[, .SD, .SDcols=-1L], DT[, 2:3, with=FALSE])
@@ -3336,6 +3333,15 @@ test(1137.11, DT[, .SD, .SDcols=-grep("^z", names(DT), value=TRUE, invert=TRUE)]
 set.seed(45)
 DT = data.table(x=c("A", "A", "C", "C"), y=1:4, z=runif(4))
 test(1137.12, DT[, lapply(.SD, sum), by=x, .SDcols=-"y"], DT[, lapply(.SD, sum), by=x, .SDcols="z"])
+
+# test for FR #5020 - print.data.table gets new argument "row.names", default=TRUE. if FALSE, the row-names don't get printed
+# Thanks to Eddi for `capture.output` function!
+DT <- data.table(x=1:5, y=6:10)
+test(1138, capture.output(print(DT, row.names=FALSE)), c(" x  y", " 1  6", " 2  7", " 3  8", " 4  9", " 5 10"))
+
+# test for FR #2591 (format.data.table issue with column of class "formula")
+DT <- data.table(x=c(a~b, c~d+e), y=1:2)
+test(1139, capture.output(print(DT)), c("           x y", "1:     a ~ b 1", "2: c ~ d + e 2"))
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
