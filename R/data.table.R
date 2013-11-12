@@ -227,7 +227,9 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             next
         }
         if (nrows[i]==0L) stop("Item ",i," has no length. Provide at least one item (such as NA, NA_integer_ etc) to be repeated to match the ",nr," rows in the longest column. Or, all columns can be 0 length, for insert()ing rows into.")
-        if (nr%%nrows[i] == 0L) {
+        # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
+        if (nr%%nrows[i] != 0L) warning("Item ", i, " is of size ", nrows[i], " but maximum size is ", nr, " (recycled leaving remainder of ", nr%%nrows[i], " items)")
+        # if (nr%%nrows[i] == 0L) {
             if (is.data.frame(xi)) {   # including data.table
                 ..i = rep(seq_len(nrow(xi)), length.out = nr)
                 x[[i]] = xi[..i,,drop=FALSE]
@@ -239,7 +241,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 next
             }
             stop("problem recycling column ",i,", try a simpler type")
-        }
+        # }
         stop("argument ",i," (nrow ",nrows[i],") cannot be recycled without remainder to match longest nrow (",nr,")")
     }
     if (any(numcols>0L)) {
@@ -1333,12 +1335,17 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE)
 
 as.data.table.list = function(x, keep.rownames=FALSE) {
     if (!length(x)) return( null.data.table() )
-    n = sapply(x,length)
+    n = vapply(x, length, 0L)
+    mn = max(n)
     x = copy(x)
-    if (any(n<max(n)))
-    for (i in which(n<max(n))) {
-        if (!is.null(x[[i]])) # avoids warning when a list element is NULL
-            x[[i]] = rep(x[[i]], length.out=max(n))
+    if (any(n<mn)) 
+    for (i in which(n<mn)) {
+        if (!is.null(x[[i]])) {# avoids warning when a list element is NULL
+            # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
+            if (mn %% n[i] != 0) 
+                warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
+            x[[i]] = rep(x[[i]], length.out=mn)
+        }
     }
     if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
     setattr(x,"row.names",.set_row_names(max(n)))

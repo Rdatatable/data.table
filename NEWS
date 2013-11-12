@@ -114,12 +114,16 @@ NEW FEATURES
      identical, i's columns are referred to by using "i.name". Ex: `x[J(2), i.a]` here refers to i's column "a".
 
   o  print.data.table gains a new argument (FR #5020) `row.names` with default=TRUE for backwards compatbility. 
-     When set to FALSE, the row names (along with the :) doesn't get printed. Thanks to Frank Erickson for the FR.
+     When set to FALSE, the row names (along with the :) doesn't get printed. Thanks to Frank Erickson.
 
   o  .SDcols now is also able to de-delect columns. This works on both numerics and column names. For example, 
      DT[, .SD, .SDcols=-c(1,3)] (or) DT[, .SD, .SDcols=-c("x", "z")] now works as expected. However, 
      DT[, .SD, .SDcols=c(1, -3)] or DT[, .SD, .SDcols=c("x", -"z")] would result in error. Thanks to Tonny 
      Peterson for filing this FR #4979.
+
+  o  FR #4813 is now implemented. `as.data.table.list` now issues a warning for those items/columns that result in 
+     a remainder due to recycling. `data.table` also now issues a warning (instead of an error previously) when 
+     recycling leaves a remainder (Ex: data.table(x=1:2, y=1:3)).
 
 BUG FIXES
 

@@ -2633,7 +2633,9 @@ test(927, DT[, if(a==2L) list(42:43,numeric()) else list(42L,3.14), by=a], data.
 
 # And the root cause of #2478: that cbind(DT,1:3) created invalid data.table with empty column
 test(928, cbind(data.table(a=1L),b=1:3), data.table(a=1L,b=1:3))
-test(929, cbind(data.table(a=1L,b=2:3),c=1:3), error="argument 1 (nrow 2) cannot be recycled without remainder to match longest nrow (3)")
+# FR #4813 implementation resulted in changing 929 error to warning
+# test(929, cbind(data.table(a=1L,b=2:3),c=1:3), error="argument 1 (nrow 2) cannot be recycled without remainder to match longest nrow (3)")
+test(929, cbind(data.table(a=1L,b=2:3),c=1:3), data.table(a=1L, b=c(2L,3L,2L), c=1:3), warning="Item 1 is of size 2 but maximum size is 3")
 test(930, cbind(data.table(a=1L,b=2:3),c=1:4), data.table(a=1L,b=INT(2,3,2,3),c=1:4))
 DT = data.table(x=c(1,1,1,1,2,2,3),y=c(1,1,2,3,1,1,2))
 DT[,rep:=1L][c(2,7),rep:=c(2L,3L)]   # duplicate row 2 and triple row 7
@@ -3342,6 +3344,13 @@ test(1138, capture.output(print(DT, row.names=FALSE)), c(" x  y", " 1  6", " 2  
 # test for FR #2591 (format.data.table issue with column of class "formula")
 DT <- data.table(x=c(a~b, c~d+e), y=1:2)
 test(1139, capture.output(print(DT)), c("           x y", "1:     a ~ b 1", "2: c ~ d + e 2"))
+
+# FR #4813 - provide warnings if there are remainders for both as.data.table.list(.) and data.table(.)
+X = list(a = 1:2, b = 1:3)
+test(1140, as.data.table(X), data.table(a=c(1,2,1), b=c(1,2,3)), warning="Item 1 is of size 2 but maximum")
+test(1141.1, data.table(a=1:2, b=1:3), data.table(a=c(1L,2L,1L), b=1:3), warning="Item 1 is of size 2 but maximum")
+test(1141.2, data.table(a=1:2, data.table(x=1:5, y=6:10)), data.table(a=c(1L,2L,1L,2L,1L), x=1:5, y=6:10), warning="Item 1 is of size 2 but maximum")
+test(1141.3, data.table(a=1:5, data.table(x=c(1,2), y=c(3,4))), data.table(a=c(1:5), x=c(1,2,1,2,1), y=c(3,4,3,4,3)), warning="Item 2 is of size 2 but maximum")
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
