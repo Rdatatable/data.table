@@ -905,11 +905,11 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             if (is.numeric(.SDcols)) {
                 if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
                 if (any(is.na(.SDcols)) || any(abs(.SDcols)>ncol(x)) || any(abs(.SDcols)<1L)) stop(".SDcols is numeric but out of bounds (or NA)")
-                if (colm) xvars = names(x)[-.SDcols] else xvars = names(x)[.SDcols]
+                if (colm) xvars = setdiff(names(x)[-.SDcols], bynames) else xvars = names(x)[.SDcols]
             } else {
                 if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
                 if (any(is.na(.SDcols)) || any(!.SDcols %chin% names(x))) stop("Some items of .SDcols are not column names (or are NA)")
-                if (colm) xvars = setdiff(names(x), .SDcols) else xvars = .SDcols
+                if (colm) xvars = setdiff(setdiff(names(x), .SDcols), bynames) else xvars = .SDcols
             }
             # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
         }

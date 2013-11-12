@@ -3333,6 +3333,10 @@ test(1137.9, DT[, .SD, .SDcols=-grep("^z", names(DT))], DT[, 1:2, with=FALSE])
 test(1137.10, DT[, .SD, .SDcols=-grep("^z", names(DT), value=TRUE)], DT[, 1:2, with=FALSE])
 test(1137.11, DT[, .SD, .SDcols=-grep("^z", names(DT), value=TRUE, invert=TRUE)], DT[, 3:4, with=FALSE])
 
+set.seed(45)
+DT = data.table(x=c("A", "A", "C", "C"), y=1:4, z=runif(4))
+test(1137.12, DT[, lapply(.SD, sum), by=x, .SDcols=-"y"], DT[, lapply(.SD, sum), by=x, .SDcols="z"])
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 
