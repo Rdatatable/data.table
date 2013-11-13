@@ -24,6 +24,7 @@ dcast.data.table(data, formula, fun.aggregate = NULL,
   \item{subset}{Specified if casting should be done on subset of the data. Ex: subset = .(col1 <= 5) or subset = .(variable != "January").}
   \item{fill}{Value to fill missing cells with. If \code{fun.aggregate} is present, takes the value by applying the function on 0-length vector.}
   \item{drop}{\code{FALSE} will cast by including all missing combinations.}
+  \item{value.var}{Name of the column whose values will be filled to cast. Function `guess()` tries to, well, guess this column automatically, if none is provided.}
   \item{tolerance}{Machine tolerance, used for comparing numerics.}
   \item{verbose}{Not used yet. Maybe dropped in the future or used to provide information messages onto the console.}
 }
