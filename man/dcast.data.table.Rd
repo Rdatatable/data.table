@@ -101,10 +101,10 @@ set.seed(45)
 DT <- data.table(aa=sample(1e4, 1e6, TRUE), 
       bb=sample(1e3, 1e6, TRUE), 
       cc = sample(letters, 1e6, TRUE), dd=runif(1e6))
-dcast.data.table(DT, aa ~ cc, fun=sum))
-system.time(dcast.data.table(DT, bb ~ cc, fun=mean))
+system.time(dcast.data.table(DT, aa ~ cc, fun=sum)) # 0.9 seconds
+system.time(dcast.data.table(DT, bb ~ cc, fun=mean)) # 0.5 seconds
 # reshape2:::dcast crashes R-session
-# dcast.data.table(DT, aa + bb ~ cc, fun=mean)
+# system.time(dcast.data.table(DT, aa + bb ~ cc, fun=mean)) # 6.7 seconds
 
 }
 \seealso{
