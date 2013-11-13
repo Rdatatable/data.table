@@ -125,6 +125,10 @@ NEW FEATURES
      a remainder due to recycling. `data.table` also now issues a warning (instead of an error previously) when 
      recycling leaves a remainder (Ex: data.table(x=1:2, y=1:3)).
 
+  o  FR #2551 is now implemented. `:=` coerces without warning when precision is not lost and length(RHS) = 1. 
+     For example: DT = data.table(x=1:2, y=c(TRUE, FALSE)); DT[1, x:=1] and DT[1, y:=0] and DT[1, y:=0L] all 
+	 don't issue a warning as long as precision is not lost (coercion is done silently).
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now

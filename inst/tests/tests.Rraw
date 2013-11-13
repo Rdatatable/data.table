@@ -952,11 +952,17 @@ test(298, {DT$b<-NULL;DT}, data.table(a=1:3))  # delete column
 test(299, DT$c <- as.character(DT$c), error="zero length")  # to simulate RHS which could (due to user error) be non NULL but zero length. This copies DT too, so the next test checks that a subsequent := detects and fixes that.
 test(299.1, DT[,c:=42L], data.table(a=1:3,c=42L), warning="Invalid .internal.selfref detected and fixed")
 test(299.2, truelength(DT)>length(DT))   # the := over-allocated, by 100 by default, but user may have changed default so just check '>'
-test(299.3, DT[2,c:=42], data.table(a=1:3,c=42L), warning="Coerced 'double' RHS to 'integer' to match the column's type.*length 3 (nrows of entire table)")
+# FR #2551 - old 299.3 and 299.5 are changed to include length(RHS) > 1 to issue the warning
+test(299.3, DT[2:3,c:=c(42, 42)], data.table(a=1:3,c=42L), warning="Coerced 'double' RHS to 'integer' to match the column's type.*length 3 (nrows of entire table)")
+# FR #2551 - length(RHS) = 1 - no warning for type conversion
+test(299.7, DT[2,c:=42], data.table(a=1:3,c=42L))
 # also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
 test(299.4, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
-test(299.5, DT[2,c:=42], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
-test(299.6, DT[2,c:=0L], data.table(a=1:3,c=FALSE), warning="Coerced 'integer' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
+test(299.5, DT[2:3,c:=c(42,0)], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
+# FR #2551 - length(RHS) = 1 - no warning for type conversion
+test(299.8, DT[2,c:=42], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)))
+test(299.9, DT[2,c:=42L], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)))
+test(299.6, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=FALSE), warning="Coerced 'integer' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
 
 
 # Test bug fix #1468, combining i and by.
@@ -1544,7 +1550,9 @@ DT = data.table(a=1:3,b=4:6)
 test(515, set(DT,2,1,3), data.table(a=c(1L,3L,3L),b=4:6), warning="Coerced i")
 test(516, set(DT,"2",1,3), error="i is type 'character'")
 test(517, set(DT,2L,1,3), DT, warning="Coerced j")
-test(518, set(DT,2L,1L,3), DT, warning="Coerced 'double' RHS to 'integer'")
+# FR #2551 implemented - removed warning from 518
+# test(518, set(DT,2L,1L,3), DT, warning="Coerced 'double' RHS to 'integer'")
+test(518, set(DT,2L,1L,3), DT)
 test(519, set(DT,2L,1L,3L), data.table(a=INT(1,3,3),b=4:6))
 test(520, set(DT,2L,"a",2L), data.table(a=1:3,b=4:6))
 test(521, set(DT,2:3,"b",7:8), data.table(a=1:3,b=INT(4,7,8)))
