@@ -35,7 +35,7 @@ construct = function(l) {
     if (is.name(l)) return(l) # fix for error in cases as reported in Bug #5007: DT[, (cols) := lapply(.SD, function(x) MyValueIsTen), by=ID]
                               # construct(l[[3L]] would give an error when l[[3L]] is MyValueIsTen if not for this line)
     if (length(l) == 1L) {
-        if (length(l[[1L]]) == 1L) return(l[[1L]])
+        if (length(l[[1L]]) == 1L & !is.call(l)) return(l[[1L]]) # so that DT[, test()] does not return just the function definition
         else return(as.call(list(construct(l[[1L]]))))
     }
 

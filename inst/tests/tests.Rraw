@@ -3360,6 +3360,12 @@ test(1141.1, data.table(a=1:2, b=1:3), data.table(a=c(1L,2L,1L), b=1:3), warning
 test(1141.2, data.table(a=1:2, data.table(x=1:5, y=6:10)), data.table(a=c(1L,2L,1L,2L,1L), x=1:5, y=6:10), warning="Item 1 is of size 2 but maximum")
 test(1141.3, data.table(a=1:5, data.table(x=c(1,2), y=c(3,4))), data.table(a=c(1:5), x=c(1,2,1,2,1), y=c(3,4,3,4,3)), warning="Item 2 is of size 2 but maximum")
 
+# Fix for bug #5098 - DT[, foo()] returns function definition.
+DT <- data.table(a=1:2)
+foo <- function() sum(1:5)
+test(1142, DT[, foo()], 15L)
+
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

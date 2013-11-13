@@ -254,6 +254,8 @@ BUG FIXES
 
   o  Fixed #5069 where gdata:::write.fwf returned an error with data.table.
 
+  o  Fixed #5098 where construction of j-expression with a function with no-argument returned the function 
+     definition instead of returning the result from executing the function.
 
 NOTES
 
