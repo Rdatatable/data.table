@@ -257,6 +257,13 @@ BUG FIXES
   o  Fixed #5098 where construction of j-expression with a function with no-argument returned the function 
      definition instead of returning the result from executing the function.
 
+  o  Fixed #5106 where DT[, .N, by=y] where y is a vector with length(y) = nrow(DT), but y is not a column in DT. 
+     Thanks to colinfang for reporting.
+
+  o  Fixed #5104 which popped out as a side-effect of fixing #2531. `:=` while grouping and assigning columns that are 
+     factors resulted in wrong results (and the column not being added). This is now fixed. Thanks to Jonathen Owen 
+     for reporting.
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.

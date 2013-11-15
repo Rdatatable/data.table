@@ -322,7 +322,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     }
                 }
                 // fixes bug #2531. Got to set the class back.
-                setAttrib(targetcol, R_ClassSymbol, getAttrib(RHS, R_ClassSymbol));
+                // added !isFactor(RHS) to fix #5104 (side-effect of fixing #2531)
+                if (!isFactor(RHS)) setAttrib(targetcol, R_ClassSymbol, getAttrib(RHS, R_ClassSymbol));
             }
             UNPROTECT(1);
             continue;

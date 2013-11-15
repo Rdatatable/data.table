@@ -3365,6 +3365,17 @@ DT <- data.table(a=1:2)
 foo <- function() sum(1:5)
 test(1142, DT[, foo()], 15L)
 
+# Fix for bug #5106 - DT[, .N, by=y] was slow when "y" is not a column in DT
+DT <- data.table(x=sample.int(10, 1e6, replace=TRUE))
+y <- DT$x
+te1 <- system.time(ans1 <- DT[, .N, by=x])[["elapsed"]]
+te2 <- system.time(ans2 <- DT[, .N, by=y])[["elapsed"]]
+test(1143.1, ans1, setnames(ans2, "y", "x"))
+test(1143.2, abs(te1-te2) < 1, TRUE)
+
+# Fix for bug #5104 - side-effect of fixing #2531 - `:=` with grouping (by) and assigning factor columns 
+DT <- data.table(x=c(1,1,1,2,2), y=factor(letters[1:5]))
+test(1144, DT[, z := y, by=x], data.table(x=c(1,1,1,2,2), y=factor(letters[1:5]), z=1:5))
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.

@@ -731,7 +731,10 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             bysuborig = bysub
             if (is.name(bysub) && !(as.character(bysub) %chin% names(x))) {
                 bysub = eval(bysub, parent.frame(), parent.frame())
-                bysubl = as.list.default(bysub)
+                # fix for # 5106 - http://stackoverflow.com/questions/19983423/why-by-on-a-vector-not-from-a-data-table-column-is-very-slow
+                # case where by=y where y is not a column name, and not a call/symbol/expression, but an atomic vector outside of DT.
+                # note that if y is a list, this'll return an error (not sure if it should).
+                if (is.atomic(bysub)) bysubl = list(bysuborig) else bysubl = as.list.default(bysub)
             }
             if (length(bysubl) && identical(bysubl[[1L]],quote(eval))) {    # TO DO: or by=..()
                 bysub = eval(bysubl[[2]], parent.frame(), parent.frame())
