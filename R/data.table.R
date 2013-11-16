@@ -294,6 +294,7 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
     # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
     # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
     if (!cedta()) {
+        # Fix for #5070 (to do)
         Nargs = nargs() - (!missing(drop))
         ans = if (Nargs<3L) `[.data.frame`(x,i)  # drop ignored anyway by DF[i]
               else if (missing(drop)) `[.data.frame`(x,i,j)
