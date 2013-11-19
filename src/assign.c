@@ -129,7 +129,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     if (isNull(dt)) error("assign has been passed a NULL dt");
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
     class = getAttrib(dt, R_ClassSymbol);
-    if (strcmp(CHAR(STRING_ELT(class, 0)), "data.table") != 0) error("Input is not a data.table. set() (and `:=`) can add columns by reference only on a data.table.");
+    // Fix for #5115. check if there is a class "data.table" somewhere. Not sure if `is.data.table(x)` at R-level is better or this way of checking is - Matthew, any idea?
+    for (i=0; i<length(class); i++) {
+        if (strcmp(CHAR(STRING_ELT(class, i)), "data.table") == 0) break;
+    }
+    if (i >= length(class)) error("Input is not a data.table. set() (and `:=`) can add columns by reference only on a data.table. Check is.dat.table(DT) is TRUE.");
+
     if (isNull(class)) error("dt passed to assign has no class attribute. Please report to datatable-help.");
     // selfref might not be ok, but that's ok(!) For example, if user has done key<-, seen key<-'s
     // warning, proceeds, then uses := to update an existing column, that's ok without error or warning as updating

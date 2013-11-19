@@ -1803,8 +1803,8 @@ test(618, copy(DT)[a>3,r:=sum(b)], DT)
 test(619, copy(DT)[J(-1),r:=sum(b)], DT)
 test(620, copy(DT)[J(-1),r:=sum(b),nomatch=0], DT)
 DT = data.table(x=letters, key="x")
-test(621, copy(DT)[J("bb"), x:="foo"], setkey(copy(DT),NULL))  # even if no update, it should still clear the key for consistency
-test(622, copy(DT)[J("bb"), x:="foo",nomatch=0], setkey(copy(DT),NULL))
+test(621, copy(DT)[J("bb"), x:="foo"], DT)  # when no update, key should be retained
+test(622, copy(DT)[J("bb"), x:="foo",nomatch=0], DT)
 
 set.seed(2)
 DT = data.table(a=rnorm(5)*10, b=1:5)
@@ -3376,6 +3376,39 @@ test(1143.2, abs(te1-te2) < 1, TRUE)
 # Fix for bug #5104 - side-effect of fixing #2531 - `:=` with grouping (by) and assigning factor columns 
 DT <- data.table(x=c(1,1,1,2,2), y=factor(letters[1:5]))
 test(1144, DT[, z := y, by=x], data.table(x=c(1,1,1,2,2), y=factor(letters[1:5]), z=1:5))
+
+# FR #2356 - retain names of named vector as column with keep.rownames=TRUE
+x <- 1:5
+setattr(x, 'names', letters[1:5])
+test(1144.1, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
+x <- as.numeric(x)
+setattr(x, 'names', letters[1:5])
+test(1144.2, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
+x <- as.character(x)
+setattr(x, 'names', letters[1:5])
+test(1144.3, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
+x <- as.factor(x)
+setattr(x, 'names', letters[1:5])
+test(1144.4, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
+x <- as.Date(1:5, origin="2013-01-01")
+setattr(x, 'names', letters[1:5])
+test(1144.5, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
+
+# Fix for bug #5114 - .data.table.locked ISSUE
+DT <- data.table(x=1:5, y=6:10)
+xx <- DT[, .SD, .SDcols="y"]
+test(1145, xx[, y := as.numeric(y)], data.table(y = as.numeric(6:10)))
+
+# Fix for bug #5115 - set not adding columns on class that builds on data.table
+DT <- as.data.table(BOD)
+ans = copy(DT)[, Time := as.numeric(Time)]
+setattr(DT, "class", c("myclass", class(DT)))
+setattr(ans, 'class', class(DT))
+test(1146.1, DT[, Time:= as.numeric(Time)], ans)
+# error on data.frame
+DF <- as.data.frame(DT)
+test(1146.2, set(DF, i=NULL, j=1L, value=seq_len(nrow(DF))), error="Input is not a data.table. set()")
+test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="Input is not a data.table. set()") # adding new column
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.

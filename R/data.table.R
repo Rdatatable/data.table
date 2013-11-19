@@ -574,6 +574,14 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
             # All appropriate returns following this point are wrapped i.e. return(suppPrint(x)).
         }
+        # FR #4996 - verbose message and return when a join matches nothing with `:=` in j
+        if (bywithoutby & !notjoin) {
+            # Note: !notjoin is here only until the notjoin is implemented as a "proper" by-without-by
+            if ((all(is.na(f__)) | (all(f__ == 0L) & nomatch == 0L))) {
+                if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")
+                return(suppPrint(x))
+            }
+        }
         if (!is.null(irows)) {
             if (!length(irows)) {
                 if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")
@@ -1027,7 +1035,8 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                 setattr(jval, 'sorted', key(x))
             }
         }
-
+        # fix for bug #5114 from GSee's - .data.table.locked=TRUE
+        if (identical(jval, SDenv$.SD)) return(copy(jval))
         return(jval)
     }
     alloc = if (length(len__)) seq_len(max(len__)) else 0L
@@ -1365,10 +1374,14 @@ as.data.table.factor <- as.data.table.ordered <-
 as.data.table.integer <- as.data.table.numeric <- 
 as.data.table.logical <- as.data.table.character <- 
 as.data.table.Date <- function(x, keep.rownames=FALSE) {
-    tt <- deparse(substitute(x))[1]
-    x <- list(x) # <~ is a copy being made here?
+    tt = deparse(substitute(x))[1]
+    nm = names(x)
+    # FR #2356 - transfer names of named vector as "rn" column if required
+    if (keep.rownames & !is.null(nm)) 
+        x <- list(nm, unname(x))
+    else x <- list(x)
     if (tt == make.names(tt))
-        setattr(x, 'names', tt)
+        setattr(x, 'names', c(if (length(x) == 2) "rn", tt))
     as.data.table.list(x, keep.rownames)
 }
 
@@ -1896,8 +1909,10 @@ setcolorder = function(x,neworder)
 
 set = function(x,i=NULL,j,value)
 {
+    # `set()` should not be able to modify columns by reference (even if it is on exisitng 
+	# columns) on just a data.frame!
     # now check for `j=character` and adding columns then implemented in C
-    .Call(Cassign,x,i,j,NULL,value,FALSE)   
+    .Call(Cassign,x,i,j,NULL,value,FALSE) 
     # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.
     # TO DO: When := or set() do it, make them aware of 'ul' and drop it if necessary.
     invisible(x)

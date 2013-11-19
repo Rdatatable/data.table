@@ -127,7 +127,14 @@ NEW FEATURES
 
   o  FR #2551 is now implemented. `:=` coerces without warning when precision is not lost and length(RHS) = 1. 
      For example: DT = data.table(x=1:2, y=c(TRUE, FALSE)); DT[1, x:=1] and DT[1, y:=0] and DT[1, y:=0L] all 
-	 don't issue a warning as long as precision is not lost (coercion is done silently).
+     don't issue a warning as long as precision is not lost (coercion is done silently).
+
+  o  as.data.table.*(x, keep.rownames=TRUE), where `x` is a named vector now adds names of `x` into a new column 
+     with default name `rn`. Thanks to Garrett See for this FR #2356.
+
+  o  X[Y, col := value] when no match exists in the join is now caught early and X is simply returned. Also a 
+     message when `datatable.verbose` is TRUE is provided. In addition, if `col` is an existing column, since no 
+     update actually takes place, the key is now retained. Thanks to Frank Erickson for reporting this FR #4996..
 
 BUG FIXES
 
@@ -263,6 +270,12 @@ BUG FIXES
   o  Fixed #5104 which popped out as a side-effect of fixing #2531. `:=` while grouping and assigning columns that are 
      factors resulted in wrong results (and the column not being added). This is now fixed. Thanks to Jonathen Owen 
      for reporting.
+
+  o  Fixed bug #5114 where modifying columns in particular cases resulted in ".SD is locked" error. Thanks to GSee for 
+     the bug report.
+
+  o  Fixed an issue with `set()` and `:=` not being able to add columns by reference when the object is of class that 
+     inherits from data.table (ex: class = c("myclass", "data.table", "data.frame")). Thanks to GSee for #5115.
 
 NOTES
 
