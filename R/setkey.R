@@ -65,7 +65,6 @@ key = function(x) attr(x,"sorted")
 
 haskey = function(x) !is.null(key(x))
 
-
 radixorder1 <- function(x) {
     if(is.object(x)) x = xtfrm(x) # should take care of handling factors, Date's and others, so we don't need unlist
     if(typeof(x) == "logical") return(c(which(is.na(x)),which(!x),which(x))) # logical is a special case of radix sort; just 3 buckets known up front. TO DO - could be faster in C but low priority
@@ -73,6 +72,12 @@ radixorder1 <- function(x) {
         stop("radixorder1 is only for integer 'x'")
     sort.list(x, na.last=FALSE, decreasing=FALSE,method="radix")
     # Always put NAs first, relied on in C binary search by relying on NA_integer_ being -maxint (checked in C).
+}
+
+# For internal use only. R-wrapper for fast radix based order for "double" (numeric) type. Also, NaN < NA < numbers (as data.table requires)
+radixorder2 <- function(x) {
+    if (!is.atomic(x) || typeof(x) != "double") stop("radixorder2 is only for vectors of type double (numeric) 'x'")
+    .Call("Cfradix_order", list(x))
 }
 
 regularorder1 <- function(x) {
@@ -144,29 +149,29 @@ CJ = function(..., sorted = TRUE)
     l = list(...)
     # for (i in seq_along(l)) if (storage.mode(l[[i]])=="double") mode(l[[i]])="integer"
 
-	# using rep.int instead of rep speeds things up considerably (but attributes are dropped).
-	j <- lapply(l, class) # changed "vapply" to avoid errors with "ordered" "factor" input
-	if (length(l)==1L && sorted && !identical(is.unsorted(l[[1L]]),FALSE)) {
-		l[[1L]] <- sort.int(l[[1L]], na.last=FALSE, method="quick")
-	} else if (length(l) > 1L) {
+    # using rep.int instead of rep speeds things up considerably (but attributes are dropped).
+    j <- lapply(l, class) # changed "vapply" to avoid errors with "ordered" "factor" input
+    if (length(l)==1L && sorted && !identical(is.unsorted(l[[1L]]),FALSE)) {
+        l[[1L]] <- sort.int(l[[1L]], na.last=FALSE, method="quick")
+    } else if (length(l) > 1L) {
         n = vapply(l, length, 0L)
         nrow = prod(n)
         x = c(rev(take(cumprod(rev(n)))), 1L)
         for (i in seq_along(x)) {
-			y <- l[[i]]
+            y <- l[[i]]
             if (sorted && !identical(is.unsorted(y),FALSE))  # any NAs will cause a sort, even if they are at the beginning (can live with that)
-				y <- sort.int(y, na.last=FALSE, method="quick") # no worries for ties because there are no row.names or attributes to worry about.
-			if (i == 1L) 
-				l[[i]] <- rep.int(y, times = rep.int(x[i], n[i]))   # i.e. rep(y, each=x[i])
-			else if (i == length(n))
-				l[[i]] <- rep.int(y, times = nrow/(x[i]*n[i]))
-			else
-				l[[i]] <- rep.int(rep.int(y, times = rep.int(x[i], 
-					           n[i])), times = nrow/(x[i]*n[i]))
-		   if (any(class(l[[i]]) != j[[i]]))
-			   setattr(l[[i]], 'class', j[[i]]) # reset "Date" class - rep.int coerces to integer
-		}
-	}
+                y <- sort.int(y, na.last=FALSE, method="quick") # no worries for ties because there are no row.names or attributes to worry about.
+            if (i == 1L) 
+                l[[i]] <- rep.int(y, times = rep.int(x[i], n[i]))   # i.e. rep(y, each=x[i])
+            else if (i == length(n))
+                l[[i]] <- rep.int(y, times = nrow/(x[i]*n[i]))
+            else
+                l[[i]] <- rep.int(rep.int(y, times = rep.int(x[i], 
+                               n[i])), times = nrow/(x[i]*n[i]))
+           if (any(class(l[[i]]) != j[[i]]))
+               setattr(l[[i]], 'class', j[[i]]) # reset "Date" class - rep.int coerces to integer
+        }
+    }
     setattr(l, "row.names", .set_row_names(length(l[[1L]])))
     setattr(l, "class", c("data.table", "data.frame"))
 
@@ -174,12 +179,12 @@ CJ = function(..., sorted = TRUE)
         vnames = vector("character", length(l)) 
     if (any(tt <- vnames == "")) {
         vnames[tt] = paste("V", which(tt), sep="")
-	    setattr(l, "names", vnames)
+        setattr(l, "names", vnames)
     }
     settruelength(l, 0L)
     l <- alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
     if (sorted) 
-		setattr(l, 'sorted', names(l))
+        setattr(l, 'sorted', names(l))
     l
 }
 

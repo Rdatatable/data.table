@@ -3410,6 +3410,13 @@ DF <- as.data.frame(DT)
 test(1146.2, set(DF, i=NULL, j=1L, value=seq_len(nrow(DF))), error="Input is not a data.table. set()")
 test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="Input is not a data.table. set()") # adding new column
 
+# Feature - implemented fast radix order for numeric types (both +ve and -ve numerics).
+# note that if "x" is already a list, then the values will be modified by reference!
+x <- rnorm(1e6)
+test(1147.1, order(x), .Call("Cfradix_order", list(x)))
+x <- c(8, NaN, Inf, -7.18918, NA, -7.18918111, -Inf, NA, 5.18909, NaN)
+test(1147.2, .Call("Cfradix_order", list(x)), c(2L, 10L, 5L, 8L, 7L, 6L, 4L, 9L, 1L, 3L))
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 
