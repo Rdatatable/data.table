@@ -29,22 +29,23 @@ unsigned long invert_flip_double(unsigned long f) {
 // x should be of type numeric
 SEXP fradix_order(SEXP vec) {
     int i;
-    unsigned long fi, pos, si, elements;
-    SEXP ans, order1, order2, x;
+    unsigned long pos, fi, si, n;
+    unsigned long sum0 = 0, sum1 = 0, sum2 = 0, sum3 = 0, sum4 = 0, sum5 = 0, tsum;    
+    SEXP x, xtmp, order, ordertmp;
     
     if (TYPEOF(vec) != VECSXP) error("Input argument to 'fradix_order' must be a list");
     if (length(vec) != 1) error("Input argument to 'fradix_order' must be a list of length 1");
+
     PROTECT(x = VECTOR_ELT(vec, 0));
-    if (!isReal(x) || length(x) <= 0) error("Input argument to 'fradix_order' must be a list of length 1 and it's values should be type 'numeric' of length > 0");
-    elements = length(x);
-    ans  = PROTECT(allocVector(TYPEOF(x), length(x)));
-    order1 = PROTECT(allocVector(INTSXP, length(x)));
-    order2 = PROTECT(allocVector(INTSXP, length(x)));
+    n = length(x);
+    if (!isReal(x) || n <= 0) error("Input argument to 'fradix_order' must be a list of length 1 and it's values should be type 'numeric' of length > 0");
+
+    xtmp  = PROTECT(allocVector(REALSXP, n));
+    ordertmp = PROTECT(allocVector(INTSXP, n));
+    order = PROTECT(allocVector(INTSXP, n));
 
     unsigned long *array = (unsigned long*)REAL(x);
-    unsigned long *sort = (unsigned long*)REAL(ans);
-    int *intorder1 = INTEGER(order1);
-    int *intorder2 = INTEGER(order2);
+    unsigned long *sort = (unsigned long*)REAL(xtmp);
             
     // 6 histograms on the stack:
     const unsigned long stack_hist = 2048;
@@ -59,7 +60,7 @@ SEXP fradix_order(SEXP vec) {
     memset(b0, 0, stack_hist*6*sizeof(unsigned long));
 
     // Step 1:  parallel histogramming pass
-    for (i = 0; i < elements; i++) {
+    for (i=0;i<n;i++) {
         // NA in unsigned long is 7ff00000000007a2 and NaN is 7ff8000000000000
         // flip the sign bit to get fff00000000007a2 and NaN is fff8000000000000
         // this'll result in the right order (NaN first, then NA)
@@ -75,9 +76,7 @@ SEXP fradix_order(SEXP vec) {
     }
     
     // Step 2:  Sum the histograms -- each histogram entry records the number of values preceding itself.
-    unsigned long sum0 = 0, sum1 = 0, sum2 = 0, sum3 = 0, sum4 = 0, sum5 = 0;
-    unsigned long tsum;
-    for (i = 0; i < stack_hist; i++) {
+    for (i=0;i<stack_hist;i++) {
 
         tsum = b0[i] + sum0;
         b0[i] = sum0 - 1;
@@ -104,49 +103,49 @@ SEXP fradix_order(SEXP vec) {
         sum5 = tsum;
     }
 
-    for (i = 0; i < elements; i++) {
+    for (i=0;i<n;i++) {
         fi = array[i];
         flip_double_ref(&fi);
         pos = _0(fi);
         sort[++b0[pos]] = fi;
-        intorder1[b0[pos]] = i;
+        INTEGER(ordertmp)[b0[pos]] = i;
     }
 
-    for (i = 0; i < elements; i++) {
+    for (i=0;i<n;i++) {
         si = sort[i];
         pos = _1(si);
         array[++b1[pos]] = si;
-        intorder2[b1[pos]] = intorder1[i];
+        INTEGER(order)[b1[pos]] = INTEGER(ordertmp)[i];
     }
 
-    for (i = 0; i < elements; i++) {
+    for (i=0;i<n;i++) {
         fi = array[i];
         pos = _2(fi);
         sort[++b2[pos]] = fi;
-        intorder1[b2[pos]] = intorder2[i];
+        INTEGER(ordertmp)[b2[pos]] = INTEGER(order)[i];
     }
 
-    for (i = 0; i < elements; i++) {
+    for (i=0;i<n;i++) {
         si = sort[i];
         pos = _3(si);
         array[++b3[pos]] = si;
-        intorder2[b3[pos]] = intorder1[i];
+        INTEGER(order)[b3[pos]] = INTEGER(ordertmp)[i];
     }
 
-    for (i = 0; i < elements; i++) {
+    for (i=0;i<n;i++) {
         fi = array[i];
         pos = _4(fi);
         sort[++b4[pos]] = fi;
-        intorder1[b4[pos]] = intorder2[i];
+        INTEGER(ordertmp)[b4[pos]] = INTEGER(order)[i];
     }
 
-    for (i = 0; i < elements; i++) {
+    for (i=0;i<n;i++) {
         si = sort[i];
         pos = _5(si);
         array[++b5[pos]] = invert_flip_double(si);
-        intorder2[b5[pos]] = intorder1[i]+1;
+        INTEGER(order)[b5[pos]] = INTEGER(ordertmp)[i]+1;
     }
 
     UNPROTECT(4);
-    return(order2);
+    return(order);
 }
