@@ -277,13 +277,10 @@ BUG FIXES
   o  Fixed an issue with `set()` and `:=` not being able to add columns by reference when the object is of class that 
      inherits from data.table (ex: class = c("myclass", "data.table", "data.frame")). Thanks to GSee for #5115.
 
-<<<<<<< HEAD
-=======
   o  A case where `dcast.data.table` has "." in formula interface along with an aggregate function, did not result in 
      aggregated result. Ex: dcast.data.table(x, a ~ ., mean, value.var="b") - this now returns expected aggregate result.
      This fixes "case 2" of bug report #5149. Thanks to Jakub Szewczyk for reporting.
 
->>>>>>> master
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.

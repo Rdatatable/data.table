@@ -3417,8 +3417,6 @@ test(1147.1, order(x), .Call("Cfradix_order", list(x)))
 x <- c(8, NaN, Inf, -7.18918, NA, -7.18918111, -Inf, NA, 5.18909, NaN)
 test(1147.2, .Call("Cfradix_order", list(x)), c(2L, 10L, 5L, 8L, 7L, 6L, 4L, 9L, 1L, 3L))
 
-<<<<<<< HEAD
-=======
 # Fix for case 2 in bug report #5149 - dcast.data.table dint aggregate properly when formula RHS has "."
 set.seed(45)
 DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
@@ -3437,8 +3435,6 @@ setkey(ans2, "b", "a")
 test(1148.2, dcast.data.table(DT, a ~ .), ans1)
 test(1148.3, dcast.data.table(DT, b+a~.), ans2)
 
-
->>>>>>> master
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 
