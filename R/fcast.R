@@ -59,13 +59,17 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         if (is.list(data[[value.var]]) || is.list(fill.default)) fun.aggregate <- as.call(c(as.name("list"), list(fun.aggregate)))
     }
     if (length(ff$rr) == 0) {
-		# probably silly formula, deal in R
-        agg = data[, .N, keyby=c(ff$ll)]
-        if (all(agg$N == agg$N[1])) return(data)
+        # probably simple formula - should be okay to deal in R
+        agg = data[, .N, keyby=c(ff$ll)] # if any N > 1, then default to length, else return data
+        if (all(agg$N == 1L)) {
+            ans = data[, c(ff$ll, value.var), with=FALSE]
+            if (!identical(key(ans), ff$ll)) setkeyv(ans, ff$ll)
+            return(ans)
+        }
         if (is.null(fun.aggregate)) {
             message("Aggregate function missing, defaulting to 'length'")
             return(agg)
-        } else return(data[, eval(fun.aggregate, ...), keyby=c(ff$ll)])
+        } else return(data[, eval(fun.aggregate), keyby=c(ff$ll)])
     }
     .CASTenv = new.env(parent=parent.frame())
     assign("fastorder", data.table:::fastorder, .CASTenv)   
@@ -83,5 +87,5 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         setnames(ans, make.unique(names(ans)))
     }
     setattr(ans, 'sorted', names(ans)[seq_along(ff$ll)])
-	ans
+    ans
 }
