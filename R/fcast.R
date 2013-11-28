@@ -13,24 +13,25 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
            verbose = getOption("datatable.verbose")) {
     if (!is.data.table(data)) stop("'data' must be a data.table.")
     is.formula <- function(x) class(x) == "formula"
+    strip <- function(x) gsub("[[:space:]]*", "", x)
     if (is.formula(formula)) {
         formula <- deparse(formula, 500)
     }
     if (is.character(formula)) {
-        ff <- strsplit(formula, "[ ]+~[ ]+", perl = TRUE)[[1]]
+            ff <- strsplit(strip(formula), "~", fixed=TRUE)[[1]]
         if (length(ff) > 2)
             stop("Cast formula of length > 2 detected. Data.table has at most two output dimensions.")
-        ff <- strsplit(ff, "[ ]+\\+[ ]+", perl = TRUE)
+        ff <- strsplit(ff, "+", fixed=TRUE)
         setattr(ff, 'names', c("ll", "rr"))
         ff <- lapply(ff, function(x) x[x != "."])
         ff_ <- unlist(ff, use.names=FALSE)
         ff <- lapply(ff, function(x) if (any(x == "...")) c(x[x != "..."], setdiff(names(data), c(value.var, ff_))) else x)
     } else stop("Invalid formula.")
     ff_ <- unlist(ff, use.names=FALSE)
-    if (length(is_wrong <- which(is.na(chmatch(ff_, names(data))))) > 0) stop("Variable ", ff_[is_wrong[1]], " not found.")
+    if (length(is_wrong <- which(is.na(chmatch(ff_, names(data))))) > 0) stop("Column '", ff_[is_wrong[1]], "' not found.")
     if (length(ff$ll) == 0) stop("LHS of formula evaluates to 'character(0)', invalid formula.")
     if (length(value.var) != 1 || !is.character(value.var)) stop("'value.var' must be a character vector of length 1.")
-    if (is.na(chmatch(value.var, names(data)))) stop("'value.var' variable ", value.var, " not found.")
+    if (is.na(chmatch(value.var, names(data)))) stop("'value.var' column '", value.var, "' not found.")
     if (any(unlist(lapply(as.list(data)[ff_], class), use.names=FALSE) == "list")) 
         stop("Only 'value.var' column maybe of type 'list'. This may change in the future.")
     drop <- as.logical(drop[1])

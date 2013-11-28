@@ -3435,6 +3435,17 @@ setkey(ans2, "b", "a")
 test(1148.2, dcast.data.table(DT, a ~ .), ans1)
 test(1148.3, dcast.data.table(DT, b+a~.), ans2)
 
+# test for `radixorder2` when input is numeric(0)
+test(1149, data.table:::radixorder2(numeric(0)), integer(0))
+
+# more tests for `dcast.data.table` with formula being character and errors when formula is a hybrid
+set.seed(1)
+x <- data.table(a=rep(1:5, each=5), b=runif(25))
+test(1150.1, dcast.data.table(x, " a~ . ", value.var="b"), data.table(a=1:5, N=5L, key="a"))
+test(1150.2, dcast.data.table(x, "a ~  c ", value.var="b"), error="Column 'c' not found")
+test(1150.3, dcast.data.table(x, a ~  a, value.var="c"), error="'value.var' column 'c' not found")
+
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

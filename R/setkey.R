@@ -77,7 +77,7 @@ radixorder1 <- function(x) {
 # For internal use only. R-wrapper for fast radix based order for "double" (numeric) type. Also, NaN < NA < numbers (as data.table requires)
 radixorder2 <- function(x) {
     if (!is.atomic(x) || typeof(x) != "double") stop("radixorder2 is only for vectors of type double (numeric) 'x'")
-    .Call("Cfradix_order", list(x))
+    if (length(x) == 0) integer(0) else .Call("Cfradix_order", list(x))
 }
 
 regularorder1 <- function(x) {
