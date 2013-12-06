@@ -486,7 +486,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         binarysearch(ldt, lcj, PROTECT(intseq(ilen, 0)), PROTECT(intseq(ilen, 0)), haskey, roll, rollends, PROTECT(allocZeroVector(1)), tol, f__, len__, allLen1);
         UNPROTECT(9);
         SET_VECTOR_ELT(xx, 0, f__);
-		
+        
         // rcj[rdt]
         f__ = PROTECT(allocZeroVector(length(VECTOR_ELT(rdt, 0))));
         len__ = PROTECT(allocZeroVector(length(f__)));
@@ -572,7 +572,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         UNPROTECT(1); // cjtmp;
         cj = PROTECT(crossJoin(cjtmp)); protecti++;
     }
-	// to do: if we can check whether there are any missing combinations, we can skip this binary search and it should be faster (especially on bigger data).
+    // to do: if we can check whether there are any missing combinations, we can skip this binary search and it should be faster (especially on bigger data).
     // xx[cj] binary search to get missing values
     f__ = PROTECT(allocZeroVector(length(VECTOR_ELT(cj, 0)))); protecti++;
     len__ = PROTECT(allocZeroVector(length(f__)));

@@ -18,7 +18,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         formula <- deparse(formula, 500)
     }
     if (is.character(formula)) {
-            ff <- strsplit(strip(formula), "~", fixed=TRUE)[[1]]
+        ff <- strsplit(strip(formula), "~", fixed=TRUE)[[1]]
         if (length(ff) > 2)
             stop("Cast formula of length > 2 detected. Data.table has at most two output dimensions.")
         ff <- strsplit(ff, "+", fixed=TRUE)

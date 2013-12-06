@@ -856,19 +856,32 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                     if (bysameorder) o__ = integer()   # skip the 1:xnrow vector for efficiency
                 }
                 if (bysameorder) {
-                    f__ = duplist(byval)   # find group starts, given we know they are already grouped.
-                    len__ = as.integer(c(diff(f__), xnrow-last(f__)+1L))
-                    # TO DO: return both f__ and len__ from C level, and, there's a TO DO in duplist.R
+                    rlix = rlixlist(byval)
+                    f__ = rlix[[1L]]
+                    len__ = rlix[[2L]]
+                    # old code - to delete 
+                    # f__ = duplist(byval)   # find group starts, given we know they are already grouped.
+                    # len__ = as.integer(c(diff(f__), xnrow-last(f__)+1L))
+                    # # TO DO: return both f__ and len__ from C level, and, there's a TO DO in duplist.R
                 } else {
-                    f__ = duplist(byval,order=o__)
-                    len__ = as.integer(c(diff(f__), xnrow-last(f__)+1L))
-                    firstofeachgroup = o__[f__]
-                    origorder = sort.list(firstofeachgroup, na.last=FALSE, decreasing=FALSE)
+                    rlix = rlixlist(byval, order=o__)
+                    firstofeachgroup = o__[rlix[[1L]]]
+                    origorder = iradixorder(firstofeachgroup) # should be incredibly faster than sort.list(...) --- >36x speed-up on 1e7 vector
+                    # replace the order first and then assign to f__ and len__ so as to not use twice the memory??
+                    rlix[[1L]] = rlix[[1L]][origorder]
+                    rlix[[2L]] = rlix[[2L]][origorder]
+                    f__ = rlix[[1L]] # because no copy is made here...
+                    len__ = rlix[[2L]]
+                    # old code - to delete
+                    # f__ = duplist(byval,order=o__)
+                    # len__ = as.integer(c(diff(f__), xnrow-last(f__)+1L))
+                    # firstofeachgroup = o__[f__]
+                    # origorder = sort.list(firstofeachgroup, na.last=FALSE, decreasing=FALSE)
                     # radixsort isn't appropriate in this case. 'firstofeachgroup' are row numbers from the
                     # (likely) large table so if nrow>100,000, range will be >100,000. Save time by not trying radix.
                     # TO DO: remove sort.list call by changing fastorder to fastgroup in first place.
-                    f__ = f__[origorder]
-                    len__ = len__[origorder]
+                    # f__ = f__[origorder]
+                    # len__ = len__[origorder]
                 }
             } else {
                 f__=NULL
@@ -1910,7 +1923,7 @@ setcolorder = function(x,neworder)
 set = function(x,i=NULL,j,value)
 {
     # `set()` should not be able to modify columns by reference (even if it is on exisitng 
-	# columns) on just a data.frame!
+    # columns) on just a data.frame!
     # now check for `j=character` and adding columns then implemented in C
     .Call(Cassign,x,i,j,NULL,value,FALSE) 
     # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.

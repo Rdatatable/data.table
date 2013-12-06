@@ -136,6 +136,13 @@ NEW FEATURES
      message when `datatable.verbose` is TRUE is provided. In addition, if `col` is an existing column, since no 
      update actually takes place, the key is now retained. Thanks to Frank Erickson for reporting this FR #4996..
 
+  o  (Internal) Fast radix order is now implemented for both 'integer' and 'numeric' types. This should result in 
+     many operations in data.table *significantly faster*. A speed-up of at least >5x is expected on all operations 
+     that internally depend on ordering (with benchmarks exceeding 30-60x in some cases).
+
+  o  (Internal) 'rlixlist' - A faster version of 'duplist' is now implemented (for run-length index list). It 
+     returns a list with (unique position) indices and their run-lengths.
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now

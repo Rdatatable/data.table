@@ -20,4 +20,18 @@ duplist = function(l,order,tolerance=.Machine$double.eps ^ 0.5)
     ans
 }
 
-
+# Faster duplist - now returns a list with index and length. Doesn't over-allocate result vector and is >2x times faster on numeric types
+rlixlist <- function (l, order = -1L, tolerance = .Machine$double.eps^0.5) 
+{
+    # Assumes input list is ordered by each list item (or by 'order' if supplied), and that all list elements are the same length
+    # Finds the non-duplicate rows.
+    # TO DO: Possibly reinstate reverse argument :
+    #    FALSE works in the usual duplicated() way,  the first in a sequence of dups, will be FALSE
+    #    TRUE has the last in a sequence of dups FALSE (so you can keep the last if thats required)
+    # l = list(...)
+    if (!is.list(l)) 
+        stop("l not type list")
+    if (!length(l))  return(list(0L, 0L))
+    ans <- .Call(Crlixlist, l, as.integer(order), as.numeric(tolerance))
+    ans
+}

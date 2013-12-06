@@ -106,4 +106,76 @@ SEXP rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)
     return(R_NilValue);
 }
 
+// Faster 'duplist' + now it returns the position + length directly as a list. 
+// Also improvements for numeric type with a hack of checking unsigned int (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
+SEXP rlixlist(SEXP l, SEXP order, SEXP tol)
+{
+    // Returns a list of 2 elements similar to 'rle' but instead of 'value', 
+    // the positions of the non-repeated rows are returned along with lengths.
+    // This works like UNIX uniq as referred to by ?base::unique; i.e., it 
+    // drops immediately repeated rows but doesn't drop duplicates of any 
+    // previous row. Unless, order is provided, then it also drops any previous 
+    // row. l must be a list of same length vectors ans is allocated first 
+    // (maximum length the number of rows) and the length returned in anslen.
+    // (Accomplished here) TO DO: grow ans instead
+    Rboolean b, byorder;
+    unsigned long *ulv; // for numeric check speed-up
+    SEXP v, idx, lengths, ans;
+    R_len_t i, j, nrow, ncol, len, thisi, previ, isize=1000;
+
+    int *iidx = Calloc(isize, int); // for 'idx'
+    int *ilen = Calloc(isize, int); // for 'lengths'
+    if (NA_INTEGER != NA_LOGICAL || sizeof(NA_INTEGER)!=sizeof(NA_LOGICAL)) 
+        error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
+    ncol = length(l);
+    nrow = length(VECTOR_ELT(l,0));
+    len = 1;
+    iidx[0] = 1; // first row is always the first of the first group
+    byorder = INTEGER(order)[0] != -1;
+    // Using MISSING() does not seem stable under windows. Always having arguments passed in seems a good idea anyway.
+    thisi = byorder ? INTEGER(order)[0]-1 : 0;
+    for (i=1; i<nrow; i++) {
+        previ = thisi;
+        thisi = byorder ? INTEGER(order)[i]-1 : i;
+        j = ncol;  // the last column varies the most frequently so check that first and work backwards
+        b = TRUE;
+        while (--j>=0 && b) {
+            v=VECTOR_ELT(l,j);
+            switch (TYPEOF(v)) {
+            case INTSXP : case LGLSXP :
+                b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
+            case STRSXP :
+                b=STRING_ELT(v,thisi)==STRING_ELT(v,previ); break;
+            case REALSXP :
+                ulv = (unsigned long *)REAL(v); // allows for direct comparison of NA, NaN, Inf and -Inf instead of individual checks (gives >=2x speedup)
+                b=ulv[thisi] == ulv[previ] || fabs(REAL(v)[thisi]-REAL(v)[previ]) < REAL(tol)[0]; break;
+            default :
+                error("Type '%s' not supported", type2char(TYPEOF(v))); 
+            }
+        }
+        if (!b) {
+            iidx[len] = i+1;
+            ilen[len-1] = iidx[len]-iidx[len-1];
+            len++;
+        }
+        if (len > isize) {
+            // I don't think it's necessary to Realloc separately for iidx and ilen
+            isize = 1.1*isize*nrow/i;
+            iidx = Realloc(iidx, isize, int);
+            ilen = Realloc(ilen, isize, int);
+        }
+    }
+    ilen[len-1] = nrow-iidx[len-1]+1; // last ilen value
+    PROTECT(idx = allocVector(INTSXP, len));
+    PROTECT(lengths = allocVector(INTSXP, len));
+    PROTECT(ans = allocVector(VECSXP, 2));
+    memcpy(INTEGER(idx), iidx, sizeof(int)*len);    
+    memcpy(INTEGER(lengths), ilen, sizeof(int)*len);
+    SET_VECTOR_ELT(ans, 0, idx);
+    SET_VECTOR_ELT(ans, 1, lengths);
+    Free(iidx);
+    Free(ilen);
+    UNPROTECT(3);
+    return(ans);
+}
 

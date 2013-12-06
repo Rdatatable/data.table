@@ -74,10 +74,37 @@ radixorder1 <- function(x) {
     # Always put NAs first, relied on in C binary search by relying on NA_integer_ being -maxint (checked in C).
 }
 
-# For internal use only. R-wrapper for fast radix based order for "double" (numeric) type. Also, NaN < NA < numbers (as data.table requires)
-radixorder2 <- function(x) {
-    if (!is.atomic(x) || typeof(x) != "double") stop("radixorder2 is only for vectors of type double (numeric) 'x'")
-    if (length(x) == 0) integer(0) else .Call("Cfradix_order", list(x))
+# FOR INTERNAL use only. Use at your own risk (values are changed by reference if not used properly)
+# Note that implementing just "sort" (and not order) takes half of this time. Getting order seems to be more time-consuming
+# slightly slower than R's radix order but: 
+# 1) works for any data size - not restricted like R's radix where max-min should be <= 1e5 
+# 2) with any values => also works on -ve integers, NA
+# 3) directly returns sort value instead of sort order by setting last parameter in C function to FALSE (not accessible via iradixorder)
+iradixorder <- function(x) {
+    # copied from radixorder1 and just changed the call to the correct function
+	# xtfrm converts date object to numeric. but this will be called only if it's integer, so do a as.integer(.)
+    if(is.object(x)) x = as.integer(xtfrm(x))
+    if(typeof(x) == "logical") 
+        return(c(which(is.na(x)), which(!x), which(x)))
+    if(typeof(x) != "integer") # this allows factors; we assume the levels are sorted as we always do in data.table
+        stop("iradixorder is only for integer 'x'. Try dradixorder for numeric 'x'")
+    if (length(x) == 0L) return(integer(0))
+    # passing list(x) to C to ensure copy is being made...
+    ans <- .Call(Cfastradixint, list(x), TRUE) # if FALSE returns sort value instead of indices
+    ans
+    # NA first as data.table requires
+}
+
+# FOR INTERNAL use only. Use at your own risk (values are changed by reference if not used properly)
+# at least > 5-30x times faster than ordernumtol and order (depending on the number of groups to find the tolerance on)
+# real-life performances must be towards the much faster side though.
+dradixorder <- function(x, tol=.Machine$double.eps^0.5) {
+    if (!is.atomic(x) || typeof(x) != "double") stop("'dradixorder' is only numeric 'x'. Try iradixorder for integer 'x'")
+    if (length(x) == 0) return(integer(0))
+    # passing list(x) to C to ensure copy is being made...
+    ans <- .Call(Cfastradixdouble, list(x), as.numeric(tol), TRUE) # FALSE returns sort value instead of sort order
+    ans
+    # NA first followed by NaN next as data.table requires
 }
 
 regularorder1 <- function(x) {
@@ -100,23 +127,23 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
     w <- last(which)
     v = lst[[w]]
     o = switch(typeof(v),
-        "double" = ordernumtol(v),
+        "double" = dradixorder(v), # ordernumtol(v),
         "character" = chorder(v),
         # Use a radix sort (fast and stable for ties), but will fail for range > 1e5 elements (and any negatives)
         tryCatch(radixorder1(v),error=function(e) {
             if (verbose) cat("First column",w,"failed radixorder1, reverting to regularorder1\n")
-            regularorder1(v)
+            iradixorder(v) # regularorder1(v)
         })
     )
     # If there is more than one column, run through them back to front to group columns.
     for (w in rev(take(which))) {
         v = lst[[w]]
         o = switch(typeof(v),
-            "double" = o[ordernumtol(v[o])],   # o was changed by reference by ordernumtol, and returned too, but couldn't get it stable within ties (tests now cover the cases).  TO DO: try again another time
+            "double" = o[dradixorder(v[o])], # o[ordernumtol(v[o])],   # o was changed by reference by ordernumtol, and returned too, but couldn't get it stable within ties (tests now cover the cases).  TO DO: try again another time
             "character" = o[chorder(v[o])],   # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol
             tryCatch(o[radixorder1(v[o])], error=function(e) {
                 if (verbose) cat("Non-first column",w,"failed radixorder1, reverting to regularorder1\n")
-                o[regularorder1(v[o])]    # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol
+                o[iradixorder(v[o])] # o[regularorder1(v[o])]    # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol
             })
         )
     }
