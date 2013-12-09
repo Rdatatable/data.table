@@ -106,6 +106,7 @@ SEXP rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)
     return(R_NilValue);
 }
 
+// TO DO: return rlixlist as a vector (same as duplist) and write a separate function to get group sizes
 // Faster 'duplist' + now it returns the position + length directly as a list. 
 // Also improvements for numeric type with a hack of checking unsigned int (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
 SEXP rlixlist(SEXP l, SEXP order, SEXP tol)
@@ -125,6 +126,7 @@ SEXP rlixlist(SEXP l, SEXP order, SEXP tol)
 
     int *iidx = Calloc(isize, int); // for 'idx'
     int *ilen = Calloc(isize, int); // for 'lengths'
+    int *n_iidx, *n_ilen; // to catch allocation errors using Realloc!
     if (NA_INTEGER != NA_LOGICAL || sizeof(NA_INTEGER)!=sizeof(NA_LOGICAL)) 
         error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
     ncol = length(l);
@@ -158,11 +160,13 @@ SEXP rlixlist(SEXP l, SEXP order, SEXP tol)
             ilen[len-1] = iidx[len]-iidx[len-1];
             len++;
         }
-        if (len > isize) {
-            // I don't think it's necessary to Realloc separately for iidx and ilen
+        // fixed bug (corresponding commit is 1049) should be len >= size, not len > size!!
+        if (len >= isize) {
             isize = 1.1*isize*nrow/i;
-            iidx = Realloc(iidx, isize, int);
-            ilen = Realloc(ilen, isize, int);
+            n_iidx = Realloc(iidx, isize, int);
+            if (n_iidx != NULL) iidx = n_iidx; else error("Error in reallocating memory in 'rlixlist'\n");
+            n_ilen = Realloc(ilen, isize, int);
+            if (n_ilen != NULL) ilen = n_ilen; else error("Error in reallocating memory in 'rlixlist'\n");
         }
     }
     ilen[len-1] = nrow-iidx[len-1]+1; // last ilen value

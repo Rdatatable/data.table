@@ -143,6 +143,15 @@ NEW FEATURES
   o  (Internal) 'rlixlist' - A faster version of 'duplist' is now implemented (for run-length index list). It 
      returns a list with (unique position) indices and their run-lengths.
 
+  o  Implementation of radix order for numeric and integer gives a speed-up of 2.5-10x speed-up for `duplicated.data.table`.
+     Comparison between 1.8.10 and 1.8.11 on two data.tables (1e7 * 2), one with 1e3 unique values and other with all 1e7 
+     unique values resulted in 48 vs 4 sec and 55 vs 22 seconds. 
+
+  o  Enhancement: `duplicated.data.table` also had an unnecessary ordering that took a significant portion of the 
+     computation. Removing it gave another 4-5x improvement. In effect, `duplicated.data.table` is at least about 10-12x 
+     faster (tested on 1e7 rows) than 1.8.10. And therefore `unique.data.table` is as well. To contrast, after this 
+     enhancement, it takes 4.2 and 5.7 seconds on 1e3 and 1e7 unique values.
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
@@ -287,6 +296,9 @@ BUG FIXES
   o  A case where `dcast.data.table` has "." in formula interface along with an aggregate function, did not result in 
      aggregated result. Ex: dcast.data.table(x, a ~ ., mean, value.var="b") - this now returns expected aggregate result.
      This fixes "case 2" of bug report #5149. Thanks to Jakub Szewczyk for reporting.
+
+  o  Implementing FR #4979 lead to a bug when grouping with .SDcols, where .SDcols argument was variable name. This bug #5190 
+     is now fixed.
 
 NOTES
 

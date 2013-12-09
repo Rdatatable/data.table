@@ -3465,6 +3465,11 @@ o2 <- data.table:::rlixlist(list(x))
 test(1151.3, o1, o2[[1L]])
 test(1151.4, c(diff(o1), length(x)-tail(o1, 1L)+1L), o2[[2L]])
 
+# #5190 fix - grouping with .SDcols gave "symbol not subsettable error" - consequence of FR #4979 implementation
+dt = data.table(grp = sample(letters[1:3],20, replace = TRUE), v1 = rnorm(20), v2 = rnorm(20))
+sd.cols <- "v1"
+test(1152, dt[, lapply(.SD, mean), by=grp, .SDcols=sd.cols], dt[, list(v1=mean(v1)), by=grp])
+
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.

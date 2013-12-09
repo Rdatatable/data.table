@@ -925,7 +925,8 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
         } else {
             # FR #4979 - negative numeric and character indices for SDcols
             colsub = substitute(.SDcols)
-            if (colsub[[1L]] == "-") {
+            # fix for #5190. colsub[[1L]] gave error when it's a symbol.
+            if (is.call(colsub) && colsub[[1L]] == "-") {
                 colm = TRUE
                 .SDcols = eval(colsub[[2L]], parent.frame(), parent.frame())
             } else colm = FALSE
