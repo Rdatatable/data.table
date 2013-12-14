@@ -76,7 +76,7 @@ SEXP fastorder(SEXP v, SEXP env) {
     // return(eval(s, env));
 }
 
-SEXP uniqlist(SEXP l, SEXP order, SEXP tol) {
+SEXP _uniqlist(SEXP l, SEXP order, SEXP tol) {
     
     SEXP dups, len, tmp, ans;
     R_len_t rows = length(VECTOR_ELT(l, 0));
@@ -400,7 +400,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         vdt = PROTECT(subset(vdt, lro)); protecti++;
     }
     lro = PROTECT(intseq(nrows, 1)); protecti++;
-    lrdup = PROTECT(VECTOR_ELT(uniqlist(lrdt, lro, tol), 0)); protecti++;
+    lrdup = PROTECT(VECTOR_ELT(_uniqlist(lrdt, lro, tol), 0)); protecti++;
     
     // TO DO: look for ways to simplify getting fun.aggregate in a better way
     isagg = isNull(jsub) ? TRUE : FALSE;
@@ -450,7 +450,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
             cpy = PROTECT(allocVector(VECSXP, 1));
             SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(ldt, i));
             dorder = PROTECT(fastorder(cpy, env));
-            ddup = PROTECT(VECTOR_ELT(uniqlist(cpy, dorder, tol), 0));
+            ddup = PROTECT(VECTOR_ELT(_uniqlist(cpy, dorder, tol), 0));
             ddup = PROTECT(subset(dorder, ddup));
             dtmp = PROTECT(subset(VECTOR_ELT(cpy, 0), ddup));
             UNPROTECT(5); // dtmp, cpy
@@ -463,7 +463,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
             cpy = PROTECT(allocVector(VECSXP, 1));
             SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(rdt, i));
             dorder = PROTECT(fastorder(cpy, env));
-            ddup = PROTECT(VECTOR_ELT(uniqlist(cpy, dorder, tol), 0));
+            ddup = PROTECT(VECTOR_ELT(_uniqlist(cpy, dorder, tol), 0));
             ddup = PROTECT(subset(dorder, ddup));
             dtmp = PROTECT(subset(VECTOR_ELT(cpy, 0), ddup));
             UNPROTECT(5);
@@ -516,8 +516,8 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         // we could do a bit faster
         lo = PROTECT(intseq(nrows, 1)); protecti++; // no need for fastorder of "lo", already sorted
         ro = PROTECT(fastorder(rdt, env)); protecti++;
-        ldup = PROTECT(VECTOR_ELT(uniqlist(ldt, lo, tol), 0)); protecti++;
-        rdup = PROTECT(VECTOR_ELT(uniqlist(rdt, ro, tol), 0)); protecti++; 
+        ldup = PROTECT(VECTOR_ELT(_uniqlist(ldt, lo, tol), 0)); protecti++;
+        rdup = PROTECT(VECTOR_ELT(_uniqlist(rdt, ro, tol), 0)); protecti++; 
 
         llen__ = PROTECT(intdiff(ldup, nrows)); protecti++;
         rlen__ = PROTECT(intdiff(rdup, nrows)); protecti++;

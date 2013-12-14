@@ -856,22 +856,19 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                     if (bysameorder) o__ = integer()   # skip the 1:xnrow vector for efficiency
                 }
                 if (bysameorder) {
-                    rlix = rlixlist(byval)
-                    f__ = rlix[[1L]]
-                    len__ = rlix[[2L]]
+                    f__ = uniqlist(byval)
+                    len__ = uniqlengths(f__, xnrow)
                     # old code - to delete 
                     # f__ = duplist(byval)   # find group starts, given we know they are already grouped.
                     # len__ = as.integer(c(diff(f__), xnrow-last(f__)+1L))
                     # # TO DO: return both f__ and len__ from C level, and, there's a TO DO in duplist.R
                 } else {
-                    rlix = rlixlist(byval, order=o__)
-                    firstofeachgroup = o__[rlix[[1L]]]
+                    f__ = uniqlist(byval, order=o__)
+                    len__ = uniqlengths(f__, xnrow)
+                    firstofeachgroup = o__[f__]
                     origorder = iradixorder(firstofeachgroup) # should be incredibly faster than sort.list(...) --- >36x speed-up on 1e7 vector
-                    # replace the order first and then assign to f__ and len__ so as to not use twice the memory??
-                    rlix[[1L]] = rlix[[1L]][origorder]
-                    rlix[[2L]] = rlix[[2L]][origorder]
-                    f__ = rlix[[1L]] # because no copy is made here...
-                    len__ = rlix[[2L]]
+                    f__ = f__[origorder]
+                    len__ = len__[origorder]
                     # old code - to delete
                     # f__ = duplist(byval,order=o__)
                     # len__ = as.integer(c(diff(f__), xnrow-last(f__)+1L))

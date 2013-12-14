@@ -3452,18 +3452,60 @@ test(1150.1, dcast.data.table(x, " a~ . ", value.var="b"), data.table(a=1:5, N=5
 test(1150.2, dcast.data.table(x, "a ~  c ", value.var="b"), error="Column 'c' not found")
 test(1150.3, dcast.data.table(x, a ~  a, value.var="c"), error="'value.var' column 'c' not found")
 
-# testing equivalence of duplist and rlixlist
+# testing equivalence of duplist and uniqlist
 set.seed(45)
 x <- sample(c(NA_integer_, 1:1e5), 1e7, TRUE)
 ox <- data.table:::iradixorder(x)
 o1 <- data.table:::duplist(list(x), ox)
-o2 <- data.table:::rlixlist(list(x), ox)
-test(1151.1, o1, o2[[1L]])
-test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), o2[[2L]])
+o2 <- data.table:::uniqlist(list(x), ox)
+test(1151.1, o1, o2)
+test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), data.table:::uniqlengths(o2, length(x)))
 o1 <- data.table:::duplist(list(x))
-o2 <- data.table:::rlixlist(list(x))
-test(1151.3, o1, o2[[1L]])
-test(1151.4, c(diff(o1), length(x)-tail(o1, 1L)+1L), o2[[2L]])
+o2 <- data.table:::uniqlist(list(x))
+test(1151.3, o1, o2)
+test(1151.4, c(diff(o1), length(x)-tail(o1, 1L)+1L), data.table:::uniqlengths(o2, length(x)))
+
+# #5190 fix - grouping with .SDcols gave "symbol not subsettable error" - consequence of FR #4979 implementation
+dt = data.table(grp = sample(letters[1:3],20, replace = TRUE), v1 = rnorm(20), v2 = rnorm(20))
+sd.cols <- "v1"
+test(1152, dt[, lapply(.SD, mean), by=grp, .SDcols=sd.cols], dt[, list(v1=mean(v1)), by=grp])
+
+# #5171 fix - setattr attribute non-character led to segfault
+x <- FALSE
+if ("package:bit" %in% search()) {
+    try(detach(package:bit64),silent=TRUE)
+    try(detach(package:bit),silent=TRUE)
+    test(1153, data.table:::setattr(x, FALSE, FALSE), error="Attribute name must be")
+}
+
+# Fixed binary search capabilities for NA (for int and double) and NaN (for double):
+set.seed(1)
+DT <- data.table(x=sample(c(NA, NaN, Inf, 1:10), 100, TRUE), y=sample(c(NA, 1:10), 100, TRUE), z=sample(c(NA_character_, letters[1:10]), 100, TRUE))
+setkey(DT, x)
+test(1154.1, DT[J(NaN)], DT[is.nan(x)])
+test(1154.2, DT[J(NA_real_)], DT[is.na(x) & !is.nan(x)])
+setkey(DT, y)
+test(1154.3, setcolorder(DT[J(NA_integer_)], c("x", "y", "z")), DT[is.na(y)])
+setkey(DT, z)
+test(1154.3, setcolorder(DT[J(NA_character_)], c("x", "y", "z")), DT[is.na(z)])
+
+# Fixing the binary search above for NA/NaN also fixes BUG #4918
+dt1 <- data.table(x = c('red','orange','green'), y=c(1,2,NA), key='y')
+dt2 <- data.table(y = c(1,2,3,NA), z = c('a','b','c','missing data'), key='y')
+test(1155.1, merge(dt1, dt2, by=c('y')), data.table(y=dt1$y, x=dt1$x, z=dt2$z[1:3], key="y"))
+test(1155.2, dt2[dt1], data.table(y=dt1$y, z=dt2$z[1:3], x=dt1$x, key="y"))
+test(1155.3, dt1[dt2, nomatch=0L], data.table(y=dt1$y, x=dt1$x, z=dt2$z[1:3], key="y"))
+
+# 'decreasing' argument for iradixorder and dradixorder
+# integer
+set.seed(11)
+x <- sample(c(NA_integer_, -3:4), 20, TRUE)
+test(1156.1, rev(x[data.table:::iradixorder(x, TRUE)]), x[data.table:::iradixorder(x, FALSE)])
+# numeric
+tol = .Machine$double.eps^0.5
+x <- sample(as.numeric(c(NA, 1.222, 1.222+0.8*tol, 1.222-0.7*tol, 1.8928, -1.882, -1.882+0.7*tol, NA, NaN, NaN)))
+ans <- all.equal(rev(x[data.table:::dradixorder(x, tol, TRUE)]), x[data.table:::dradixorder(x, tol, FALSE)])
+test(1156.2, ans, TRUE)
 
 # #5190 fix - grouping with .SDcols gave "symbol not subsettable error" - consequence of FR #4979 implementation
 dt = data.table(grp = sample(letters[1:3],20, replace = TRUE), v1 = rnorm(20), v2 = rnorm(20))

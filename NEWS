@@ -137,11 +137,12 @@ NEW FEATURES
      update actually takes place, the key is now retained. Thanks to Frank Erickson for reporting this FR #4996..
 
   o  (Internal) Fast radix order is now implemented for both 'integer' and 'numeric' types. This should result in 
-     many operations in data.table *significantly faster*. A speed-up of at least >5x is expected on all operations 
-     that internally depend on ordering (with benchmarks exceeding 30-60x in some cases).
+     many operations in data.table *significantly faster*. A speed-up of at least 5-8x is expected on all operations 
+     that internally depend on ordering.
 
-  o  (Internal) 'rlixlist' - A faster version of 'duplist' is now implemented (for run-length index list). It 
-     returns a list with (unique position) indices and their run-lengths.
+  o  (Internal) 'uniqlist' - A faster version of 'duplist' is now implemented, also with effcient memory allocation 
+     (vector is grown as and when required using 'Realloc'). 'uniqlengths', another function, is also implemened, 
+     that returns the length of each unique group.
 
   o  Implementation of radix order for numeric and integer gives a speed-up of 2.5-10x speed-up for `duplicated.data.table`.
      Comparison between 1.8.10 and 1.8.11 on two data.tables (1e7 * 2), one with 1e3 unique values and other with all 1e7 
@@ -151,6 +152,11 @@ NEW FEATURES
      computation. Removing it gave another 4-5x improvement. In effect, `duplicated.data.table` is at least about 10-12x 
      faster (tested on 1e7 rows) than 1.8.10. And therefore `unique.data.table` is as well. To contrast, after this 
      enhancement, it takes 4.2 and 5.7 seconds on 1e3 and 1e7 unique values.
+
+  o  Binary search is now capable of subsetting NA/NaNs and also perform joins and merges by matching NAs/NaNs.
+
+  o  Fast radix order for int and double gains a new 'decreasing = TRUE/FALSE' argument, which allows it to order or sort 
+     in descending order as well (to be used to replace 'order' to 'fastorder' in 'i').
 
 BUG FIXES
 
@@ -299,6 +305,12 @@ BUG FIXES
 
   o  Implementing FR #4979 lead to a bug when grouping with .SDcols, where .SDcols argument was variable name. This bug #5190 
      is now fixed.
+
+  o  Fixed #5171 - where setting the attribute name to a non-character type resulted in a segfault. Ex: 
+     `setattr(x, FALSE, FALSE); x`. Now ends up with a friendly error.
+
+  o  A consequence of implementing the feature where binary search based subsetting or joins/merges is capable of also 
+     handling NAs/NaNs is that bug #4918 is fixed. Thanks to Sameer Manek for reporting.
 
 NOTES
 

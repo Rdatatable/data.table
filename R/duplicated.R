@@ -11,18 +11,18 @@ duplicated.data.table <- function(x, incomparables=FALSE,
     res <- rep.int(TRUE, nrow(x))
 
     if (query$use.keyprefix) {
-        res[duplist(x[, query$by, with=FALSE], tolerance=tolerance)] = FALSE
+        # replaced duplist with uniqlist - incremental memory allocation
+        res[uniqlist(x[, query$by, with=FALSE], tolerance=tolerance)] = FALSE
     } else {
         # changed from x[, query$by, with=FALSE]
         xx <- as.list(x)[query$by] # seems to be tad faster
         o = fastorder(xx)
-        # replaced duplist with rlixlist - incremental memory allocation
-        f = o[rlixlist(xx, o, tolerance=tolerance)[[1]]]
+        # replaced duplist with uniqlist - incremental memory allocation
+        f = o[uniqlist(xx, o, tolerance=tolerance)]
         # spotted and commented. sort.list not necessary here for duplicated.data.table
         # f = f[sort.list(f, na.last=FALSE, decreasing=FALSE)]
         res[f] = FALSE
     }
-
     res
 }
 

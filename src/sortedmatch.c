@@ -67,14 +67,19 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
         for(col=0; col<coln && low<upp-1; col++) {
             lc = VECTOR_ELT(left,INTEGER(leftcols)[col]);
             rc = VECTOR_ELT(right,INTEGER(rightcols)[col]);
+
+            // hack to pull out the binary search results for NA and NaN
+            unsigned long* lc_ul = (unsigned long*)REAL(lc);
+            unsigned long* rc_ul = (unsigned long*)REAL(rc);
+
             prevlow = low;
             prevupp = upp;
             type = TYPEOF(lc);
             switch (type) {
             case LGLSXP : case INTSXP :   // including factors
                 lval.i = INTEGER(lc)[lr];
-                if (lval.i==NA_INTEGER) goto nextlr; // TO DO: remove 'if' if NA are allowed in key (could do)
-                                                     // break breaks out of this switch, but we want to break this loop
+                // if (lval.i==NA_INTEGER) goto nextlr; // TO DO: remove 'if' if NA are allowed in key (could do)
+                //                                      // break breaks out of this switch, but we want to break this loop
                 while(low < upp-1) {
                     mid = low+((upp-low)/2);
                     rval.i = INTEGER(rc)[mid];
@@ -105,7 +110,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                 break;
             case STRSXP :
                 lval.s = STRING_ELT(lc,lr);
-                if (lval.s==NA_STRING) goto nextlr;
+                // if (lval.s==NA_STRING) goto nextlr;
                 while(low < upp-1) {
                     mid = low+((upp-low)/2);
                     rval.s = STRING_ELT(rc,mid);
@@ -137,13 +142,16 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             case REALSXP :
                 // same comments for INTSXP apply here
                 lval.d = REAL(lc)[lr];
-                if (ISNAN(lval.d)) goto nextlr;
+                unsigned long lval_ud, rval_ud;
+                lval_ud = lc_ul[lr];
+                // if (ISNAN(lval.d)) goto nextlr;
                 while(low < upp-1) {
                     mid = low+((upp-low)/2);
                     rval.d = REAL(rc)[mid];
-                    if (rval.d<lval.d-tol || ISNAN(rval.d)) {
+                    rval_ud = rc_ul[mid];
+                    if (rval.d<lval.d-tol || (ISNAN(rval.d) && rval_ud != lval_ud)) {
                         low=mid;
-                    } else if (rval.d>lval.d+tol) {
+                    } else if (rval.d>lval.d+tol || (ISNAN(lval.d) && rval_ud != lval_ud)) {
                         upp=mid;
                     } else { // rval.d == lval.d) 
                         newlow = mid;
@@ -151,12 +159,14 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                         while(newlow<upp-1) {
                             mid = newlow+((upp-newlow)/2);
                             rval.d = REAL(rc)[mid];
-                            if (fabs(rval.d-lval.d)<tol) newlow=mid; else upp=mid;
+                            rval_ud = rc_ul[mid];
+                            if (fabs(rval.d-lval.d)<tol || lval_ud == rval_ud) newlow=mid; else upp=mid;
                         }
                         while(low<newupp-1) {
                             mid = low+((newupp-low)/2);
                             rval.d = REAL(rc)[mid];
-                            if (fabs(rval.d-lval.d)<tol) newupp=mid; else low=mid;
+                            rval_ud = rc_ul[mid];
+                            if (fabs(rval.d-lval.d)<tol || lval_ud == rval_ud) newupp=mid; else low=mid;
                         }
                         break;
                     }
@@ -213,7 +223,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             if (low>prevlow) low -= 1; // for tests 148 and 1096
             // no point setting upp+=1 as upp gets set to nr again, currently.
         }
-        nextlr :;
+        // nextlr :;
     }
     return(R_NilValue);
 }

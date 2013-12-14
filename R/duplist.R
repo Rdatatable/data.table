@@ -20,8 +20,8 @@ duplist = function(l,order,tolerance=.Machine$double.eps ^ 0.5)
     ans
 }
 
-# Faster duplist - now returns a list with index and length. Doesn't over-allocate result vector and is >2x times faster on numeric types
-rlixlist <- function (l, order = -1L, tolerance = .Machine$double.eps^0.5) 
+# Faster duplist - grows vector - doesn't over-allocate result vector and is >2x times faster on numeric types
+uniqlist <- function (l, order = -1L, tolerance = .Machine$double.eps^0.5) 
 {
     # Assumes input list is ordered by each list item (or by 'order' if supplied), and that all list elements are the same length
     # Finds the non-duplicate rows.
@@ -31,7 +31,16 @@ rlixlist <- function (l, order = -1L, tolerance = .Machine$double.eps^0.5)
     # l = list(...)
     if (!is.list(l)) 
         stop("l not type list")
-    if (!length(l))  return(list(0L, 0L))
-    ans <- .Call(Crlixlist, l, as.integer(order), as.numeric(tolerance))
+    if (!length(l))  return(list(0L))
+    ans <- .Call(Cuniqlist, l, as.integer(order), as.numeric(tolerance))
     ans
 }
+
+# wrapper for Cuniqlengths (for internal use only)
+# implemented for returning the lengths of groups obtained from uniqlist
+uniqlengths <- function(x, len) {
+    # check for type happens in C, but still converting to integer here to be sure.
+    ans <- .Call(Cuniqlengths, as.integer(x), as.integer(len))
+    ans
+}
+

@@ -37,9 +37,7 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
   \item{neworder}{ Character vector of the new column name ordering. May also be column numbers. }
 }
 \details{
-  The sort is attempted with the very fast \code{"radix"} method in
-  \code{\link[base]{sort.list}}. If that fails, the sort reverts to the default
-  method in \code{\link[base]{order}}. That logic is repeated column by column.
+  For columns of type \code{integer}, the sort is attempted with the very fast \code{"radix"} method in \code{\link[base]{sort.list}}. If that fails, for versions <= 1.8.10, the sort reverts to the default method in \code{\link[base]{order}} and for versions > 1.8.10 it reverts to a (newly implemented) very fast 3-pass radix order for integers (adapted from Michael Herf's code, see link below). For columns of \code{numeric} type, a modified version of base's comparison sort is used in versions <= 1.8.10. From versions > 1.8.10, a very fast 6-pass radix order for double is implemented and used (also adapted from Michael Herf's code). This gives a speed-up of about 5-8x for versions > 1.8.10 on \code{setkey} and all internal \code{order}/\code{sort} operations.
   
   The sort is \emph{stable}; i.e., the order of ties (if any) is preserved.
   
@@ -59,7 +57,8 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 \references{
 \url{http://en.wikipedia.org/wiki/Radix_sort}\cr
 \url{http://en.wikipedia.org/wiki/Counting_sort}\cr
-\url{http://cran.at.r-project.org/web/packages/bit/index.html}
+\url{http://cran.at.r-project.org/web/packages/bit/index.html}\cr
+\url{http://stereopsis.com/radix.html}
 }
 \note{ Despite its name, \code{base::sort.list(x,method="radix")} actually invokes a \emph{counting sort} in R, not a radix sort. See do_radixsort in src/main/sort.c. A counting sort, however, is particularly suitable for sorting integers and factors, and we like it. In fact we like it so much that \code{data.table} contains a counting sort algorithm for character vectors using R's internal global string cache. This is particularly fast for character vectors containing many duplicates, such as grouped data in a key column. This means that character is often preferred to factor. Factors are still fully supported, in particular ordered factors (where the levels are not in alphabetic order).
 }

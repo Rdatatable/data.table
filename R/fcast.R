@@ -84,7 +84,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     settruelength(ans, 0L)
     alloc.col(ans)
     if (any(duplicated(names(ans)))) {
-        message("Duplicate column names found in molten data.table. Setting unique names using 'make.names'")   
+        message("Duplicate column names found in cast data.table. Setting unique names using 'make.names'")   
         setnames(ans, make.unique(names(ans)))
     }
     setattr(ans, 'sorted', names(ans)[seq_along(ff$ll)])

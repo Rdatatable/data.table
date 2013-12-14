@@ -2,11 +2,20 @@
 #define USE_RINTERNALS
 #include <Rinternals.h>
 #include <Rdefines.h>
-
+#include <Rversion.h>
 #include <stdint.h>
 
 int sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
+
+// Fixes #5150
+// a simple check for R version to decide if the type should be R_len_t or R_xlen_t
+// long vector support was added in R 3.0.0
+#if defined(R_VERSION) && R_VERSION >= R_Version(3, 0, 0)
+  typedef R_xlen_t RLEN;
+#else
+  typedef R_len_t RLEN;
+#endif
 
 int StrCmp(SEXP x, SEXP y);    // in countingcharacter.c
 
@@ -31,9 +40,9 @@ typedef struct _HashData HashData;
 struct _HashData {
     int K;
     hlen M;
-    R_xlen_t nmax;
-    hlen (*hash)(SEXP, R_xlen_t, HashData *);
-    int (*equal)(SEXP, R_xlen_t, SEXP, R_xlen_t);
+    RLEN nmax;
+    hlen (*hash)(SEXP, RLEN, HashData *);
+    int (*equal)(SEXP, RLEN, SEXP, RLEN);
     struct llist ** HashTable;
 
     int nomatch;
@@ -68,7 +77,7 @@ static hlen scatter(unsigned int key, HashData *d)
 
 /* Hash CHARSXP by address. Hash values are int, For 64bit pointers,
  * we do (upper ^ lower) */
-static hlen cshash(SEXP x, R_xlen_t indx, HashData *d)
+static hlen cshash(SEXP x, RLEN indx, HashData *d)
 {
     intptr_t z = (intptr_t) STRING_ELT(x, indx);
     unsigned int z1 = (unsigned int)(z & 0xffffffff), z2 = 0;
@@ -78,7 +87,7 @@ static hlen cshash(SEXP x, R_xlen_t indx, HashData *d)
     return scatter(z1 ^ z2, d);
 }
 
-static hlen shash(SEXP x, R_xlen_t indx, HashData *d)
+static hlen shash(SEXP x, RLEN indx, HashData *d)
 {
     unsigned int k;
     const char *p;
@@ -93,7 +102,7 @@ static hlen shash(SEXP x, R_xlen_t indx, HashData *d)
     return scatter(k, d);
 }
 
-static int sequal(SEXP x, R_xlen_t i, SEXP y, R_xlen_t j)
+static int sequal(SEXP x, RLEN i, SEXP y, RLEN j)
 {
     // using our function instead of copying a lot more code from base
     return !StrCmp(STRING_ELT(x, i), STRING_ELT(y, j));
@@ -108,7 +117,7 @@ Dec 2004: modified from 4*n to 2*n, since in the worst case we have
 a 50% full table, and that is still rather efficient -- see
 R. Sedgewick (1998) Algorithms in C++ 3rd edition p.606.
 */
-static void MKsetup(HashData *d, R_xlen_t n)
+static void MKsetup(HashData *d, RLEN n)
 {
     if(n < 0 || n >= 1073741824) /* protect against overflow to -ve */
         error("length %d is too large for hashing", n);
@@ -124,20 +133,20 @@ static void MKsetup(HashData *d, R_xlen_t n)
 }
 
 #define IMAX 4294967296L
-static void HashTableSetup(HashData *d, R_xlen_t n)
+static void HashTableSetup(HashData *d, RLEN n)
 {
     d->hash = shash;
     d->equal = sequal;
     MKsetup(d, n);
     d->HashTable = malloc(sizeof(struct llist *) * (d->M));
-    for (R_xlen_t i = 0; i < d->M; i++) d->HashTable[i] = NULL;
+    for (RLEN i = 0; i < d->M; i++) d->HashTable[i] = NULL;
 }
 
 static void CleanHashTable(HashData *d)
 {
     struct llist * root, * tmp;
 
-    for (R_xlen_t i = 0; i < d->M; ++i) {
+    for (RLEN i = 0; i < d->M; ++i) {
         root = d->HashTable[i];
         while (root != NULL) {
             tmp = root->next;
@@ -152,7 +161,7 @@ static void CleanHashTable(HashData *d)
 // will simply unique normal factors and attempt to find global order for ordered ones
 SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOrdered) {
     // find total length
-    R_xlen_t size = 0;
+    RLEN size = 0;
     R_len_t len = LENGTH(factorLevels), n, i, j;
     SEXP elem;
     for (i = 0; i < len; ++i) {

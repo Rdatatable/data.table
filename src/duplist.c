@@ -106,13 +106,10 @@ SEXP rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)
     return(R_NilValue);
 }
 
-// TO DO: return rlixlist as a vector (same as duplist) and write a separate function to get group sizes
-// Faster 'duplist' + now it returns the position + length directly as a list. 
+// DONE: return 'uniqlist' as a vector (same as duplist) and write a separate function to get group sizes
 // Also improvements for numeric type with a hack of checking unsigned int (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
-SEXP rlixlist(SEXP l, SEXP order, SEXP tol)
+SEXP uniqlist(SEXP l, SEXP order, SEXP tol)
 {
-    // Returns a list of 2 elements similar to 'rle' but instead of 'value', 
-    // the positions of the non-repeated rows are returned along with lengths.
     // This works like UNIX uniq as referred to by ?base::unique; i.e., it 
     // drops immediately repeated rows but doesn't drop duplicates of any 
     // previous row. Unless, order is provided, then it also drops any previous 
@@ -121,12 +118,11 @@ SEXP rlixlist(SEXP l, SEXP order, SEXP tol)
     // (Accomplished here) TO DO: grow ans instead
     Rboolean b, byorder;
     unsigned long *ulv; // for numeric check speed-up
-    SEXP v, idx, lengths, ans;
+    SEXP v, ans;
     R_len_t i, j, nrow, ncol, len, thisi, previ, isize=1000;
 
     int *iidx = Calloc(isize, int); // for 'idx'
-    int *ilen = Calloc(isize, int); // for 'lengths'
-    int *n_iidx, *n_ilen; // to catch allocation errors using Realloc!
+    int *n_iidx; // to catch allocation errors using Realloc!
     if (NA_INTEGER != NA_LOGICAL || sizeof(NA_INTEGER)!=sizeof(NA_LOGICAL)) 
         error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
     ncol = length(l);
@@ -155,31 +151,33 @@ SEXP rlixlist(SEXP l, SEXP order, SEXP tol)
                 error("Type '%s' not supported", type2char(TYPEOF(v))); 
             }
         }
-        if (!b) {
-            iidx[len] = i+1;
-            ilen[len-1] = iidx[len]-iidx[len-1];
-            len++;
-        }
+        if (!b) iidx[len++] = i+1;
         // fixed bug (corresponding commit is 1049) should be len >= size, not len > size!!
         if (len >= isize) {
             isize = 1.1*isize*nrow/i;
             n_iidx = Realloc(iidx, isize, int);
-            if (n_iidx != NULL) iidx = n_iidx; else error("Error in reallocating memory in 'rlixlist'\n");
-            n_ilen = Realloc(ilen, isize, int);
-            if (n_ilen != NULL) ilen = n_ilen; else error("Error in reallocating memory in 'rlixlist'\n");
+            if (n_iidx != NULL) iidx = n_iidx; else error("Error in reallocating memory in 'uniqlist'\n");
         }
     }
-    ilen[len-1] = nrow-iidx[len-1]+1; // last ilen value
-    PROTECT(idx = allocVector(INTSXP, len));
-    PROTECT(lengths = allocVector(INTSXP, len));
-    PROTECT(ans = allocVector(VECSXP, 2));
-    memcpy(INTEGER(idx), iidx, sizeof(int)*len);    
-    memcpy(INTEGER(lengths), ilen, sizeof(int)*len);
-    SET_VECTOR_ELT(ans, 0, idx);
-    SET_VECTOR_ELT(ans, 1, lengths);
+    PROTECT(ans = allocVector(INTSXP, len));
+    memcpy(INTEGER(ans), iidx, sizeof(int)*len);    
     Free(iidx);
-    Free(ilen);
-    UNPROTECT(3);
+    UNPROTECT(1);
     return(ans);
 }
 
+SEXP uniqlengths(SEXP x, SEXP n) {
+
+    SEXP ans;
+    R_len_t i, len;
+    if (TYPEOF(x) != INTSXP || length(x) <= 0) error("Input argument 'x' to 'uniqlengths' must be of type integer of length >= 1");
+    if (TYPEOF(n) != INTSXP || length(n) != 1) error("Input argument 'n' to 'uniqlengths' must be of type integer of length == 1");
+    PROTECT(ans = allocVector(INTSXP, length(x)));
+    len = length(x);
+    for (i=1; i<len; i++) {
+        INTEGER(ans)[i-1] = INTEGER(x)[i] - INTEGER(x)[i-1];
+    }
+    INTEGER(ans)[len-1] = INTEGER(n)[0] - INTEGER(x)[len-1] + 1;
+    UNPROTECT(1);
+    return(ans);
+}

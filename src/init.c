@@ -33,7 +33,8 @@ SEXP address();
 SEXP copyNamedInList();
 SEXP fmelt();
 SEXP fcast();
-SEXP rlixlist();
+SEXP uniqlist();
+SEXP uniqlengths();
 SEXP fastradixdouble();
 SEXP fastradixint();
 
@@ -69,7 +70,8 @@ R_CallMethodDef callMethods[] = {
 {"CcopyNamedInList", (DL_FUNC) &copyNamedInList, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1}, 
 {"Cfcast", (DL_FUNC) &fcast, -1}, 
-{"Crlixlist", (DL_FUNC) &rlixlist, -1},
+{"Cuniqlist", (DL_FUNC) &uniqlist, -1},
+{"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
 {"Cfastradixdouble", (DL_FUNC) &fastradixdouble, -1}, 
 {"Cfastradixint", (DL_FUNC) &fastradixint, -1},
 {NULL, NULL, 0}

@@ -10,6 +10,7 @@
 
 SEXP setattrib(SEXP x, SEXP name, SEXP value)
 {
+    if (TYPEOF(name) != STRSXP) error("Attribute name must be of type character");
     setAttrib(x,name,value);
     return(R_NilValue);
 }               
