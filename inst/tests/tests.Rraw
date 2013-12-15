@@ -3496,6 +3496,17 @@ test(1155.1, merge(dt1, dt2, by=c('y')), data.table(y=dt1$y, x=dt1$x, z=dt2$z[1:
 test(1155.2, dt2[dt1], data.table(y=dt1$y, z=dt2$z[1:3], x=dt1$x, key="y"))
 test(1155.3, dt1[dt2, nomatch=0L], data.table(y=dt1$y, x=dt1$x, z=dt2$z[1:3], key="y"))
 
+# NaN wasn't properly searched for in some cases. Fixed that. Here's the fix!
+dt <- structure(list(x = c(NaN, NaN, NaN, NaN, NaN, NA, NA, -3, -3, 
+-3, -2, -2, -1, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 3, 3), y = c(16L, 
+25L, 23L, 17L, 21L, 11L, 13L, 15L, 1L, 6L, 4L, 18L, 7L, 3L, 12L, 
+24L, 2L, 10L, 20L, 14L, 9L, 19L, 8L, 22L, 5L)), .Names = c("x", 
+"y"), row.names = c(NA, -25L), class = c("data.table", "data.frame"
+))
+setkey(dt, x)
+test(1155.4, dt[J(NaN)], dt[is.nan(x)])
+
+
 # 'decreasing' argument for iradixorder and dradixorder
 # integer
 set.seed(11)
@@ -3506,11 +3517,6 @@ tol = .Machine$double.eps^0.5
 x <- sample(as.numeric(c(NA, 1.222, 1.222+0.8*tol, 1.222-0.7*tol, 1.8928, -1.882, -1.882+0.7*tol, NA, NaN, NaN)))
 ans <- all.equal(rev(x[data.table:::dradixorder(x, tol, TRUE)]), x[data.table:::dradixorder(x, tol, FALSE)])
 test(1156.2, ans, TRUE)
-
-# #5190 fix - grouping with .SDcols gave "symbol not subsettable error" - consequence of FR #4979 implementation
-dt = data.table(grp = sample(letters[1:3],20, replace = TRUE), v1 = rnorm(20), v2 = rnorm(20))
-sd.cols <- "v1"
-test(1152, dt[, lapply(.SD, mean), by=grp, .SDcols=sd.cols], dt[, list(v1=mean(v1)), by=grp])
 
 
 # tests of freading classes like Date and the verbose messages there.

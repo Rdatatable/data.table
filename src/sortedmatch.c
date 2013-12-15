@@ -149,9 +149,12 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                     mid = low+((upp-low)/2);
                     rval.d = REAL(rc)[mid];
                     rval_ud = rc_ul[mid];
-                    if (rval.d<lval.d-tol || (ISNAN(rval.d) && rval_ud != lval_ud)) {
+                     // if lval is NaN and rval is NA, upp=mid *must* execute - not sure how to incorporate this into existing if-statements
+                    if (rval_ud == 0x7ff00000000007a2 && lval_ud == 0x7ff8000000000000) {
+                        upp = mid;
+                    } else if (rval.d<lval.d-tol || (ISNAN(rval.d) && rval_ud != lval_ud)) {
                         low=mid;
-                    } else if (rval.d>lval.d+tol || (ISNAN(lval.d) && rval_ud != lval_ud)) {
+                    } else if (rval.d>lval.d+tol || (ISNAN(lval.d) && lval_ud != rval_ud)) {
                         upp=mid;
                     } else { // rval.d == lval.d) 
                         newlow = mid;
