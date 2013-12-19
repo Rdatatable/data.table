@@ -27,20 +27,17 @@ void flip_int_decr(unsigned int *f) {
     *f = ((int)(*f ^ 0xFFFFFFFF));
 }
 
-SEXP fastradixint(SEXP vec, SEXP return_index, SEXP decreasing) {
+SEXP fastradixint(SEXP x, SEXP return_index, SEXP decreasing) {
     int i;
     unsigned int pos, fi, si, n;
     unsigned int sum0 = 0, sum1 = 0, sum2 = 0, tsum;    
-    SEXP x, ans, order, ordertmp;
+    SEXP ans, order, ordertmp;
     
-    if (TYPEOF(vec) != VECSXP || length(vec) != 1) error("Argument 'vec' to 'iradix' must be a list of length 1");
+    n = length(x);
+    if (!isInteger(x) || n <= 0) error("Argument 'x' to 'fastradixint' must be non-empty and of type 'integer'");
     if (TYPEOF(return_index) != LGLSXP || length(return_index) != 1) error("Argument 'return_index' to 'iradix' must be logical TRUE/FALSE");
     if (TYPEOF(decreasing) != LGLSXP || length(decreasing) != 1 || LOGICAL(decreasing)[0] == NA_LOGICAL) error("Argument 'decreasing' to 'iradix' must be logical TRUE/FALSE");
     
-    PROTECT(x = VECTOR_ELT(vec, 0));
-    n = length(x);
-    if (!isInteger(x) || n <= 0) error("List argument to 'fradix' must be non-empty and of type 'integer'");
-
     ans  = PROTECT(allocVector(INTSXP, n));
     order = PROTECT(allocVector(INTSXP, n));
     ordertmp = PROTECT(allocVector(INTSXP, n));
@@ -103,7 +100,7 @@ SEXP fastradixint(SEXP vec, SEXP return_index, SEXP decreasing) {
         if (LOGICAL(decreasing)[0]) flip_int_decr(&sort[b2[pos]]);
         INTEGER(order)[b2[pos]] = INTEGER(ordertmp)[i]+1;
     }
-    UNPROTECT(4);
+    UNPROTECT(3); // order, ordertmp, ans
     if (LOGICAL(return_index)[0]) return(order);
     return(ans);
 }

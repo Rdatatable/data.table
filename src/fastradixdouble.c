@@ -40,20 +40,18 @@ void flip_double_decr(unsigned long *f) {
 #define _5(x) (x >> 55)
 
 // x should be of type numeric
-SEXP fastradixdouble(SEXP vec, SEXP tol, SEXP return_index, SEXP decreasing) {
+SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index, SEXP decreasing) {
     int i;
     unsigned long pos, fi, si, n;
     unsigned long sum0 = 0, sum1 = 0, sum2 = 0, sum3 = 0, sum4 = 0, sum5 = 0, tsum;    
-    SEXP x, xtmp, order, ordertmp;
+    SEXP xtmp, order, ordertmp;
     
-    if (TYPEOF(vec) != VECSXP || length(vec) != 1) error("Argument 'vec' to 'fradix' must be a list of length 1");
+    n = length(x);
+    if (!isReal(x) || n <= 0) error("List argument to 'fradix' must be non-empty and of type 'numeric'");
     if (TYPEOF(return_index) != LGLSXP || length(return_index) != 1) error("Argument 'return_index' to 'fradix' must be logical TRUE/FALSE");
     if (TYPEOF(decreasing) != LGLSXP || length(decreasing) != 1 || LOGICAL(decreasing)[0] == NA_LOGICAL) error("Argument 'decreasing' to 'fradix' must be logical TRUE/FALSE");
     if (TYPEOF(tol) != REALSXP) error("Argument 'tol' to 'fradix' must be a numeric vector of length 1");
 
-    PROTECT(x = VECTOR_ELT(vec, 0));
-    n = length(x);
-    if (!isReal(x) || n <= 0) error("List argument to 'fradix' must be non-empty and of type 'numeric'");
 
     xtmp  = PROTECT(allocVector(REALSXP, n));
     ordertmp = PROTECT(allocVector(INTSXP, n));
@@ -172,7 +170,7 @@ SEXP fastradixdouble(SEXP vec, SEXP tol, SEXP return_index, SEXP decreasing) {
     if (length(tol) > 0) {
         i=1;
         int j, start=0, end=0;
-        SEXP vt,st,rt,sq,ridx,dec;
+        SEXP st,dst,rt,sq,ridx,dec;
         PROTECT(ridx = allocVector(LGLSXP, 1));
         PROTECT(dec = allocVector(LGLSXP, 1));
         LOGICAL(ridx)[0] = TRUE;
@@ -208,18 +206,17 @@ SEXP fastradixdouble(SEXP vec, SEXP tol, SEXP return_index, SEXP decreasing) {
                     UNPROTECT(2); // st, sq
                     continue;
                 }
-                PROTECT(vt = allocVector(VECSXP, 1));
                 for (j=0; j<end-start+1; j++) {
                     INTEGER(st)[j] = INTEGER(order)[j+start];
                     REAL(sq)[j] = REAL(x)[j+start];
                 }
-                SET_VECTOR_ELT(vt, 0, duplicate(st)); // duplicate required because 'st' will be modified by reference in fastradixint otherwise
-                PROTECT(rt = fastradixint(vt, ridx, decreasing));
+                PROTECT(dst = duplicate(st));
+                PROTECT(rt = fastradixint(dst, ridx, decreasing));
                 for (j=0; j<end-start+1; j++) {
                     INTEGER(order)[j+start] = INTEGER(st)[INTEGER(rt)[j]-1];
                     REAL(x)[j+start] = REAL(sq)[INTEGER(rt)[j]-1];
                 }
-                UNPROTECT(4); // st, sq, vt, rt
+                UNPROTECT(4); // st, dst, sq, rt
             } else {
                 if (!R_FINITE(REAL(x)[i]) || !R_FINITE(REAL(x)[i-1])) { i++; continue; }
                 // hack to skip checking Inf=Inf, -Inf=-Inf, NA=NA and NaN=NaN... using unsigned int
@@ -250,23 +247,22 @@ SEXP fastradixdouble(SEXP vec, SEXP tol, SEXP return_index, SEXP decreasing) {
                     UNPROTECT(2); // st, sq
                     continue;
                 }
-                PROTECT(vt = allocVector(VECSXP, 1));
                 for (j=0; j<end-start+1; j++) {
                     INTEGER(st)[j] = INTEGER(order)[j+start];
                     REAL(sq)[j] = REAL(x)[j+start];
                 }
-                SET_VECTOR_ELT(vt, 0, duplicate(st)); // duplicate required because 'st' will be modified by reference in fastradixint otherwise
-                PROTECT(rt = fastradixint(vt, ridx, dec));
+                PROTECT(dst = duplicate(st)); // have to duplicate to pass to fastradixint as it modifies by reference
+                PROTECT(rt = fastradixint(dst, ridx, dec));
                 for (j=0; j<end-start+1; j++) {
                     INTEGER(order)[j+start] = INTEGER(st)[INTEGER(rt)[j]-1];
                     REAL(x)[j+start] = REAL(sq)[INTEGER(rt)[j]-1];
                 }
-                UNPROTECT(4); // st, sq, vt, rt
+                UNPROTECT(4); // st, dst, sq, rt
             }
         }
         UNPROTECT(2); // ridx, dec
     }
-    UNPROTECT(4);
+    UNPROTECT(3); // xtmp, order, ordertmp
     if (LOGICAL(return_index)[0]) return(order); 
     return(x);
 }

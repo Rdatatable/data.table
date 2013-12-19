@@ -91,7 +91,8 @@ iradixorder <- function(x, decreasing=FALSE) {
         stop("iradixorder is only for integer 'x'. Try dradixorder for numeric 'x'")
     if (length(x) == 0L) return(integer(0))
     # passing list(x) to C to ensure copy is being made...
-    ans <- .Call(Cfastradixint, list(x), TRUE, decreasing) # first TRUE returns indices, if FALSE returns value. Second is decreasing=FALSE - ascending order
+    # NOTE: passing list(x) does not make a copy in >=3.0.2 (devel version currently), so explicitly copying
+    ans <- .Call(Cfastradixint, copy(x), TRUE, decreasing) # first TRUE returns indices, if FALSE returns value. Second is decreasing=FALSE - ascending order
     ans
     # NA first as data.table requires
 }
@@ -104,7 +105,8 @@ dradixorder <- function(x, tol=.Machine$double.eps^0.5, decreasing=FALSE) {
     if (is.na(decreasing) || !is.logical(decreasing)) stop("Argument 'decreasing' to 'dradixorder' must be logical TRUE/FALSE")
     if (length(x) == 0) return(integer(0))
     # passing list(x) to C to ensure copy is being made...
-    ans <- .Call(Cfastradixdouble, list(x), as.numeric(tol), TRUE, decreasing) # TRUE returns order, FALSE returns sorted vec.
+    # NOTE: passing list(x) does not make a copy in >=3.0.2 (devel version currently), so explicitly copying
+    ans <- .Call(Cfastradixdouble, copy(x), as.numeric(tol), TRUE, decreasing) # TRUE returns order, FALSE returns sorted vec.
     ans
     # NA first followed by NaN next as data.table requires
 }
