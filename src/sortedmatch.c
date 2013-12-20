@@ -6,8 +6,13 @@
 #include <fcntl.h>
 
 // following Kevin's suggestion
-#define R_UNSIGNED_LONG_NA_REAL  0x7ff00000000007a2
-#define R_UNSIGNED_LONG_NAN_REAL 0x7ff8000000000000
+static unsigned long R_NA_unsigned_long() {
+    return (*((unsigned long*)(&NA_REAL)));
+}
+
+static unsigned long R_NaN_unsigned_long() {
+    return (*((unsigned long*)(&R_NaN)));
+}
 
 int StrCmp(SEXP x, SEXP y);   // in countingcharacter.c
 
@@ -33,6 +38,11 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     double tol = REAL(tolerance)[0], roll, rollabs;
     Rboolean nearest=FALSE;
     SEXP lc=NULL, rc=NULL;
+
+    // get value of NA and NaN in unsigned long to check for TYPE=REAL case below.
+    const unsigned long R_UNSIGNED_LONG_NA_REAL  = R_NA_unsigned_long();
+    const unsigned long R_UNSIGNED_LONG_NAN_REAL = R_NaN_unsigned_long();
+
     if (isString(rollarg)) {
         if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
         roll=1.0; nearest=TRUE;       // the 1.0 here is just any non-0.0 
