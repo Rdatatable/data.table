@@ -8,28 +8,49 @@ extern SEXP fastradixint(SEXP vec, SEXP return_index, SEXP decreasing);
 
 // adapted from Michael Herf's code - http://stereopsis.com/radix.html
 // TO IMPLEMENT (probably) - R's long vector support
-// also allows 'return_index' argument to return sort 'order' or 'value' (but not both currently)
-// also allows ordering/sorting with 'tolerance' (another pass through length of input vector will happen + multiple integer radix sort calls). The performance will depend on the number of groups that have to be sorted because under given tolerance they become identical.
-// Added 14th Dec: also now sorts/orders in descending order (argument decreasing=TRUE)
-unsigned long flip_double(unsigned long f) {
-    unsigned long mask = -(long)(f >> 63) | 0x8000000000000000;
+// 1) logical argument 'return_index' = TRUE returns 'order' (indices) and FALSE returns sorted value directly instead of indices
+// 2) also allows ordering/sorting with 'tolerance' (another pass through length of input vector will happen + multiple integer radix sort calls). 
+// The performance will depend on the number of groups that have to be sorted because under given tolerance they become identical. In theory, 
+// most of the times the last pass shouldn't affect the performance at all.
+// 3) now sorts/orders in descending order (argument decreasing=TRUE) as well
+
+// Hack for sorting NA and NaN before all other numbers. The idea is very simple. We just flip the sign bit so that, 
+// NA and NaN become 0xfff80000000007a2 and 0xfff8000000000000
+// NA now is smaller than NaN and will be smaller than any other number (including -Inf)
+
+// Hack for 32-bit and 64-bit versions of R (or architectures)
+// 1) 'unsigned long' in 64-bit is 64-bit, but 32-bit in 32-bit. Therefore we've to use 'unsigned long long' which seems 64-bit in both 32-and 64-bit
+// 2) Inf=0x7ff0000000000000, -Inf=0x7ff0000000000000, NA=0x7ff80000000007a2 and NaN=0x7ff8000000000000 in 32-bit unsigned long long
+// 3) Inf=0x7ff0000000000000, -Inf=0x7ff0000000000000, NA=0x7ff00000000007a2 and NaN=0x7ff8000000000000 in 32-bit unsigned long long
+// Therefore in 32-bit, NA gets sorted before NaN and in 64-bit, NaN gets sorted before NA in 64 bit.
+// As of now the solution is to get NA in 64-bit from NA=0x7ff00000000007a2 to NA=0x7ff80000000007a2
+#define ARCH_32_64_HACK 0x0008000000000000
+#define FLIP_SIGN_BIT   0x8000000000000000
+
+unsigned long long flip_double(unsigned long long f) {
+    unsigned long long mask = -(long long)(f >> 63) | FLIP_SIGN_BIT;
     return f ^ mask;
 }
 
-void flip_double_ref(unsigned long *f) {
-    unsigned long mask = -(long)(*f >> 63) | 0x8000000000000000;
+void flip_double_ref(unsigned long long *f) {
+    unsigned long long mask = -(long long)(*f >> 63) | FLIP_SIGN_BIT;
     *f ^= mask;
 }
 
-unsigned long invert_flip_double(unsigned long f) {
-    unsigned long mask = ((f >> 63) - 1) | 0x8000000000000000;
+unsigned long long invert_flip_double(unsigned long long f) {
+    unsigned long long mask = ((f >> 63) - 1) | FLIP_SIGN_BIT;
     return f ^ mask;
 }
 
-void flip_double_decr(unsigned long *f) {
-    *f ^= 0x8000000000000000;
+void flip_double_decr(unsigned long long *f) {
+    *f ^= FLIP_SIGN_BIT;
 }
 
+void hack_na_nan(unsigned long long *f) {
+    unsigned long long mask = -(long long)(*f >> 63) | FLIP_SIGN_BIT;
+    *f ^= mask;
+    *f |= ARCH_32_64_HACK;
+}
 
 // utils for accessing 11-bit quantities
 #define _0(x) (x & 0x7FF)
@@ -42,8 +63,8 @@ void flip_double_decr(unsigned long *f) {
 // x should be of type numeric
 SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index, SEXP decreasing) {
     int i;
-    unsigned long pos, fi, si, n;
-    unsigned long sum0 = 0, sum1 = 0, sum2 = 0, sum3 = 0, sum4 = 0, sum5 = 0, tsum;    
+    unsigned long long pos, fi, si, n;
+    unsigned long long sum0 = 0, sum1 = 0, sum2 = 0, sum3 = 0, sum4 = 0, sum5 = 0, tsum;    
     SEXP xtmp, order, ordertmp;
     
     n = length(x);
@@ -57,30 +78,27 @@ SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index, SEXP decreasing) {
     ordertmp = PROTECT(allocVector(INTSXP, n));
     order = PROTECT(allocVector(INTSXP, n));
     
-    unsigned long *array = (unsigned long*)REAL(x);
-    unsigned long *sort = (unsigned long*)REAL(xtmp);
+    unsigned long long *array = (unsigned long long*)REAL(x);
+    unsigned long long *sort = (unsigned long long*)REAL(xtmp);
             
     // 6 histograms on the stack:
-    const unsigned long stack_hist = 2048;
-    unsigned long b0[stack_hist * 6];
-    unsigned long *b1 = b0 + stack_hist;
-    unsigned long *b2 = b1 + stack_hist;
-    unsigned long *b3 = b2 + stack_hist;
-    unsigned long *b4 = b3 + stack_hist;
-    unsigned long *b5 = b4 + stack_hist;
+    const unsigned long long stack_hist = 2048;
+    unsigned long long b0[stack_hist * 6];
+    unsigned long long *b1 = b0 + stack_hist;
+    unsigned long long *b2 = b1 + stack_hist;
+    unsigned long long *b3 = b2 + stack_hist;
+    unsigned long long *b4 = b3 + stack_hist;
+    unsigned long long *b5 = b4 + stack_hist;
 
     // definitely faster on big data than a for-loop
-    memset(b0, 0, stack_hist*6*sizeof(unsigned long));
+    memset(b0, 0, stack_hist*6*sizeof(unsigned long long));
 
     // Step 1:  parallel histogramming pass
     for (i=0;i<n;i++) {
-        // NA in unsigned long is 7ff00000000007a2 and NaN is 7ff8000000000000
-        // flip the sign bit to get fff00000000007a2 and NaN is fff8000000000000
-        // this'll result in the right order (NaN first, then NA)
         // flip NaN/NA sign bit so that they get sorted in the front (special for data.table)
-        if (ISNAN(REAL(x)[i])) flip_double_ref(&array[i]);
+        if (ISNAN(REAL(x)[i])) hack_na_nan(&array[i]);
         if (LOGICAL(decreasing)[0]) flip_double_decr(&array[i]);
-        fi = flip_double((unsigned long)array[i]);
+        fi = flip_double((unsigned long long)array[i]);
         b0[_0(fi)]++;
         b1[_1(fi)]++;
         b2[_2(fi)]++;

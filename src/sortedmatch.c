@@ -6,12 +6,12 @@
 #include <fcntl.h>
 
 // following Kevin's suggestion
-static unsigned long R_NA_unsigned_long() {
-    return (*((unsigned long*)(&NA_REAL)));
+static unsigned long long R_NA_unsigned_long() {
+    return (*((unsigned long long*)(&NA_REAL)));
 }
 
-static unsigned long R_NaN_unsigned_long() {
-    return (*((unsigned long*)(&R_NaN)));
+static unsigned long long R_NaN_unsigned_long() {
+    return (*((unsigned long long*)(&R_NaN)));
 }
 
 int StrCmp(SEXP x, SEXP y);   // in countingcharacter.c
@@ -40,8 +40,8 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     SEXP lc=NULL, rc=NULL;
 
     // get value of NA and NaN in unsigned long to check for TYPE=REAL case below.
-    const unsigned long R_UNSIGNED_LONG_NA_REAL  = R_NA_unsigned_long();
-    const unsigned long R_UNSIGNED_LONG_NAN_REAL = R_NaN_unsigned_long();
+    const unsigned long long R_UNSIGNED_LONG_NA_REAL  = R_NA_unsigned_long();
+    const unsigned long long R_UNSIGNED_LONG_NAN_REAL = R_NaN_unsigned_long();
 
     if (isString(rollarg)) {
         if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
@@ -83,8 +83,8 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             rc = VECTOR_ELT(right,INTEGER(rightcols)[col]);
 
             // hack to pull out the binary search results for NA and NaN
-            unsigned long* lc_ul = (unsigned long*)REAL(lc);
-            unsigned long* rc_ul = (unsigned long*)REAL(rc);
+            unsigned long long* lc_ul = (unsigned long long*)REAL(lc);
+            unsigned long long* rc_ul = (unsigned long long*)REAL(rc);
 
             prevlow = low;
             prevupp = upp;
@@ -156,15 +156,15 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             case REALSXP :
                 // same comments for INTSXP apply here
                 lval.d = REAL(lc)[lr];
-                unsigned long lval_ud, rval_ud;
+                unsigned long long lval_ud, rval_ud;
                 lval_ud = lc_ul[lr];
                 // if (ISNAN(lval.d)) goto nextlr;
                 while(low < upp-1) {
                     mid = low+((upp-low)/2);
                     rval.d = REAL(rc)[mid];
                     rval_ud = rc_ul[mid];
-                     // if lval is NaN and rval is NA, upp=mid *must* execute - not sure how to incorporate this into existing if-statements
-                    if (rval_ud == R_UNSIGNED_LONG_NA_REAL && lval_ud == R_UNSIGNED_LONG_NAN_REAL) {
+                     // if lval is NA and rval is NaN, upp=mid *must* execute - not sure how to incorporate this into existing if-statements
+                    if (rval_ud == R_UNSIGNED_LONG_NAN_REAL && lval_ud == R_UNSIGNED_LONG_NA_REAL) {
                         upp = mid;
                     } else if (rval.d<lval.d-tol || (ISNAN(rval.d) && rval_ud != lval_ud)) {
                         low=mid;

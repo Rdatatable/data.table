@@ -117,7 +117,7 @@ SEXP uniqlist(SEXP l, SEXP order, SEXP tol)
     // (maximum length the number of rows) and the length returned in anslen.
     // (Accomplished here) TO DO: grow ans instead
     Rboolean b, byorder;
-    unsigned long *ulv; // for numeric check speed-up
+    unsigned long long *ulv; // for numeric check speed-up
     SEXP v, ans;
     R_len_t i, j, nrow, ncol, len, thisi, previ, isize=1000;
 
@@ -145,7 +145,7 @@ SEXP uniqlist(SEXP l, SEXP order, SEXP tol)
             case STRSXP :
                 b=STRING_ELT(v,thisi)==STRING_ELT(v,previ); break;
             case REALSXP :
-                ulv = (unsigned long *)REAL(v); // allows for direct comparison of NA, NaN, Inf and -Inf instead of individual checks (gives >=2x speedup)
+                ulv = (unsigned long long *)REAL(v); // allows for direct comparison of NA, NaN, Inf and -Inf instead of individual checks (gives >=2x speedup)
                 b=ulv[thisi] == ulv[previ] || fabs(REAL(v)[thisi]-REAL(v)[previ]) < REAL(tol)[0]; break;
             default :
                 error("Type '%s' not supported", type2char(TYPEOF(v))); 

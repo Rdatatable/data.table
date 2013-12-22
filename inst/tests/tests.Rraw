@@ -3421,7 +3421,7 @@ test(1147.2, data.table:::ordernumtol(x), data.table:::dradixorder(x))
 
 tol = .Machine$double.eps^0.5
 x <- c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.18909, NaN, 5.18909-1.2*tol, 5.18909-0.04*tol)
-test(1147.3, data.table:::dradixorder(x), c(2L, 11L, 6L, 9L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
+test(1147.3, data.table:::dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
 
 # Fix for case 2 in bug report #5149 - dcast.data.table dint aggregate properly when formula RHS has "."
 set.seed(45)
@@ -3505,6 +3505,7 @@ dt <- structure(list(x = c(NaN, NaN, NaN, NaN, NaN, NA, NA, -3, -3,
 ))
 setkey(dt, x)
 test(1155.4, dt[J(NaN)], dt[is.nan(x)])
+test(1155.5, dt[J(NA_real_)], dt[is.na(x) & !is.nan(x)])
 
 
 # 'decreasing' argument for iradixorder and dradixorder
