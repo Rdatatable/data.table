@@ -3519,6 +3519,15 @@ x <- sample(as.numeric(c(NA, 1.222, 1.222+0.8*tol, 1.222-0.7*tol, 1.8928, -1.882
 ans <- all.equal(rev(x[data.table:::dradixorder(x, tol, TRUE)]), x[data.table:::dradixorder(x, tol, FALSE)])
 test(1156.2, ans, TRUE)
 
+# Fix for (usually small) memory leak when grouping, #2648.
+# Deliberate worst case: largest group (100000 rows) followed last by a small group (1 row).
+DT = data.table(A=rep(1:2,c(100000,1)), B=runif(100001))
+before = gc()["Vcells",2]
+for (i in 1:50) DT[, sum(B), by=A]
+after = gc()["Vcells",2]
+test(1157, after < 1.05 * before)
+# Before the patch, Vcells grew dramatically from 6MB to 60MB. Now stable at 6MB. Increase 50 to 1000 and it grew to over 1GB for this case.
+
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.

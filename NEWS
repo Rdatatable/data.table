@@ -160,6 +160,14 @@ NEW FEATURES
 
 BUG FIXES
 
+  o  Long outstanding (usually small) memory leak in grouping fixed. When the last group is smaller
+     than the largest group, the difference in those sizes was not being released. Most users run
+     a grouping query once and will never have noticed, but anyone looping calls to grouping (such as when
+     running in parallel) may have suffered, #2648. Test added.
+     Thanks to many including vc273, Y T (**and others to add**) :
+       http://stackoverflow.com/questions/20349159/memory-leak-in-data-table-grouped-assignment-by-reference
+       http://stackoverflow.com/questions/15651515/slow-memory-leak-in-data-table-when-returning-named-lists-in-j-trying-to-reshap
+       
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
      closes the file first rather than holding a lock open, a Windows only problem.
      Thanks to nigmastar for reporting and Carl Witthoft for the hint. Tests added.

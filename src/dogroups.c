@@ -33,7 +33,7 @@ void setSizes() {
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose)
 {
-    R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, size, vlen;
+    R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, size, vlen, origIlen=0, origSDnrow=0;
     int protecti=0;
     SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, SD, BY, N, I, GRP, iSD, xSD, rownames, s, targetcol, RHS, listwrap, target;
     SEXP *nameSyms, *xknameSyms;
@@ -76,6 +76,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             error("Type %d in .SD column %d", TYPEOF(VECTOR_ELT(SD, i)), i);
         nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
     }
+    
+    origIlen = length(I);  // test 762 has length(I)==1 but nrow(SD)==0
+    if (length(SD)) origSDnrow = length(VECTOR_ELT(SD, 0));
 
     xknames = getAttrib(xSD, R_NamesSymbol);
     if (length(xknames) != length(xSD)) error("length(xknames)!=length(xSD)");
@@ -474,9 +477,13 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (ansloc < LENGTH(VECTOR_ELT(ans,0))) {
             if (LOGICAL(verbose)[0]) Rprintf("Wrote less rows (%d) than allocated (%d).\n",ansloc,LENGTH(VECTOR_ELT(ans,0)));
             for (j=0; j<length(ans); j++) SETLENGTH(VECTOR_ELT(ans,j),ansloc);
-            // TO DO: set truelength here (uninitialized by R) to save growing next time on insert() 
+            // TO DO: set truelength here (uninitialized by R) to save growing next time on insert()
+            // TO DO: Such under populated tables (very rare) will cause leak until we make the finalize aware of truelength of columns, too.
         }
     } else ans = R_NilValue;
+    // Now reset length of .SD columns and .I to length of largest group, otherwise leak if the last group is smaller (often is).
+    for (j=0; j<length(SD); j++) SETLENGTH(VECTOR_ELT(SD,j), origSDnrow);
+    SETLENGTH(I, origIlen);
     UNPROTECT(protecti);
     Free(nameSyms);
     Free(xknameSyms);
