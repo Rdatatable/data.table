@@ -393,8 +393,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             } else {
                 estn = ((double)ngrp/i)*1.1*(ansloc+maxn);
                 if (LOGICAL(verbose)[0]) Rprintf("dogroups: growing from %d to %d rows\n", length(VECTOR_ELT(ans,0)), estn);
-                for (j=0; j<ngrpcols; j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), estn));
-                for (j=0; j<njval; j++) SET_VECTOR_ELT(ans, j+ngrpcols, growVector(VECTOR_ELT(ans,j+ngrpcols), estn));
+                if (length(ans) != ngrpcols + njval) error("dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]",length(ans),ngrpcols,njval);
+                for (j=0; j<length(ans); j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), estn));
             }
         }
         // Now copy jval into ans ...
@@ -476,9 +476,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     if (isNull(lhs) && ans!=NULL) {
         if (ansloc < LENGTH(VECTOR_ELT(ans,0))) {
             if (LOGICAL(verbose)[0]) Rprintf("Wrote less rows (%d) than allocated (%d).\n",ansloc,LENGTH(VECTOR_ELT(ans,0)));
-            for (j=0; j<length(ans); j++) SETLENGTH(VECTOR_ELT(ans,j),ansloc);
-            // TO DO: set truelength here (uninitialized by R) to save growing next time on insert()
-            // TO DO: Such under populated tables (very rare) will cause leak until we make the finalize aware of truelength of columns, too.
+            for (j=0; j<length(ans); j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), ansloc));
+            // shrinks (misuse of word 'grow') back to the rows written, otherwise leak until ...
+            // ... TO DO: set truelength to LENGTH(VECTOR_ELT(ans,0)), length to ansloc and enhance finalizer to handle over-allocated rows.
         }
     } else ans = R_NilValue;
     // Now reset length of .SD columns and .I to length of largest group, otherwise leak if the last group is smaller (often is).
@@ -508,16 +508,19 @@ SEXP growVector(SEXP x, R_len_t newlen)
     // * much shorter and faster
     SEXP newx;
     R_len_t i, len = length(x);
+    if (isNull(x)) error("growVector passed NULL");
     PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
+    if (newlen < len) len=newlen;   // i.e. shrink
     switch (TYPEOF(x)) {
     case STRSXP :
         for (i=0; i<len; i++)
             SET_STRING_ELT(newx, i, STRING_ELT(x, i));
-            // Using SET_ to ensure objects are aged, rather than memcpy. Perhaps theres a bulk/fast way to age CHECK_OLD_TO_NEW
+        // TO DO. Using SET_ to ensure objects are aged, rather than memcpy. Perhaps theres a bulk/fast way to age CHECK_OLD_TO_NEW
         break;
     case VECSXP :
         for (i=0; i<len; i++)
             SET_VECTOR_ELT(newx, i, VECTOR_ELT(x, i));
+        // TO DO: Again, is there bulk op to avoid this loop, which still respects older generations    
         break;
     default :
         memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*SIZEOF(x));
