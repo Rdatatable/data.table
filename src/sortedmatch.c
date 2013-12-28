@@ -6,12 +6,16 @@
 #include <fcntl.h>
 
 // following Kevin's suggestion
+// To avoid 'dereferencing type-punned pointer will break strict-aliasing rules' 
+// in recent versions of gcc, casting first and then returning
 static unsigned long long R_NA_unsigned_long() {
-    return (*((unsigned long long*)(&NA_REAL)));
+    unsigned long long *ans = (unsigned long long*)(&NA_REAL);
+    return (*ans);
 }
 
 static unsigned long long R_NaN_unsigned_long() {
-    return (*((unsigned long long*)(&R_NaN)));
+    unsigned long long *ans = (unsigned long long*)(&R_NaN);
+    return (*ans);
 }
 
 int StrCmp(SEXP x, SEXP y);   // in countingcharacter.c

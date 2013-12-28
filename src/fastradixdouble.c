@@ -3,29 +3,45 @@
 #include <Rinternals.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 
+// Tested on:
+// R-3.0.2 osx 10.8.5 64-bit gcc 4.2.1, 
+// R-2.15.2 debian 64-bit gcc-4.7.2, 
+// R-2.15.3 osx 10.8.5 32-bit gcc-4.2.1, 
+// R-2.15.3 osx 10.8.5 64-bit gcc-4.2.1
+
 // for tolerance
 extern SEXP fastradixint(SEXP vec, SEXP return_index, SEXP decreasing);
 
 // adapted from Michael Herf's code - http://stereopsis.com/radix.html
-// TO IMPLEMENT (probably) - R's long vector support
+// TO IMPLEMENT (probably) - R's long vector support (R_xlen_t)
 // 1) logical argument 'return_index' = TRUE returns 'order' (indices) and FALSE returns sorted value directly instead of indices
 // 2) also allows ordering/sorting with 'tolerance' (another pass through length of input vector will happen + multiple integer radix sort calls). 
 // The performance will depend on the number of groups that have to be sorted because under given tolerance they become identical. In theory, 
 // most of the times the last pass shouldn't affect the performance at all.
-// 3) now sorts/orders in descending order (argument decreasing=TRUE) as well
+// 3) now sorts/orders in descending order (argument decreasing=TRUE) as well - NA/NaN go to the end
 
-// Hack for sorting NA and NaN before all other numbers. The idea is very simple. We just flip the sign bit so that, 
-// NA and NaN become 0xfff80000000007a2 and 0xfff8000000000000
-// NA now is smaller than NaN and will be smaller than any other number (including -Inf)
-
-// Hack for 32-bit and 64-bit versions of R (or architectures)
+// Hack for 32-bit and 64-bit versions of R (or architectures):
+// ------------------------------------------------------------
+// data.table requires that NA and NaN be sorted before all other numbers and that NA is before NaN:
 // 1) 'unsigned long' in 64-bit is 64-bit, but 32-bit in 32-bit. Therefore we've to use 'unsigned long long' which seems 64-bit in both 32-and 64-bit
-// 2) Inf=0x7ff0000000000000, -Inf=0x7ff0000000000000, NA=0x7ff80000000007a2 and NaN=0x7ff8000000000000 in 32-bit unsigned long long
-// 3) Inf=0x7ff0000000000000, -Inf=0x7ff0000000000000, NA=0x7ff00000000007a2 and NaN=0x7ff8000000000000 in 32-bit unsigned long long
+// 2) Inf=0x7ff0000000000000, -Inf=0xfff0000000000000, NA=0x7ff80000000007a2 and NaN=0x7ff8000000000000 in 32-bit unsigned long long
+// 3) Inf=0x7ff0000000000000, -Inf=0xfff0000000000000, NA=0x7ff00000000007a2 and NaN=0x7ff8000000000000 in 64-bit unsigned long long
 // Therefore in 32-bit, NA gets sorted before NaN and in 64-bit, NaN gets sorted before NA in 64 bit.
-// As of now the solution is to get NA in 64-bit from NA=0x7ff00000000007a2 to NA=0x7ff80000000007a2
-#define ARCH_32_64_HACK 0x0008000000000000
+// 4) also, sometimes NaN seems to be 0xfff8000000000000 instead of 0x7ff8000000000000.
+// As of now the solution is to 'set' the first 16 bits to 7ff8 if NA/NaN for both 32/64-bit
+// so that all these differences are nullified and then the usual checks are done.
+// At the end, we need NA to be 0x7ff80000000007a2 and NaN to be 0x7ff8000000000000 and that's what we'll make sure of.
+
+// HACK for NA/NaN sort before all the other numbers:
+// --------------------------------------------------
+// Once we set this to be NA/NaN, to make sure that NA/NaN gets sorted before 
+// ALL the other numbers, we just flip the sign bit so that, 
+// NA and NaN become 0xfff80000000007a2 and 0xfff8000000000000
+// NA now is smaller than NaN and will be sorted before any other number (including -Inf)
+
 #define FLIP_SIGN_BIT   0x8000000000000000
+#define RESET_NA_NAN    0x0000ffffffffffff
+#define SET_NA_NAN_COMP 0xfff8000000000000 // we can directly set complement in hack_na_nan
 
 unsigned long long flip_double(unsigned long long f) {
     unsigned long long mask = -(long long)(f >> 63) | FLIP_SIGN_BIT;
@@ -47,9 +63,11 @@ void flip_double_decr(unsigned long long *f) {
 }
 
 void hack_na_nan(unsigned long long *f) {
-    unsigned long long mask = -(long long)(*f >> 63) | FLIP_SIGN_BIT;
-    *f ^= mask;
-    *f |= ARCH_32_64_HACK;
+    // same as flip_double_ref but with bit twiddling first for NA/NaN
+    // removed mask setting as sign bit is always 0, so we just flip it
+    // since we've to flip the sign bit, why not directly set it in #define
+    *f &= RESET_NA_NAN;
+    *f |= SET_NA_NAN_COMP;
 }
 
 // utils for accessing 11-bit quantities
@@ -68,10 +86,10 @@ SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index, SEXP decreasing) {
     SEXP xtmp, order, ordertmp;
     
     n = length(x);
-    if (!isReal(x) || n <= 0) error("List argument to 'fradix' must be non-empty and of type 'numeric'");
-    if (TYPEOF(return_index) != LGLSXP || length(return_index) != 1) error("Argument 'return_index' to 'fradix' must be logical TRUE/FALSE");
-    if (TYPEOF(decreasing) != LGLSXP || length(decreasing) != 1 || LOGICAL(decreasing)[0] == NA_LOGICAL) error("Argument 'decreasing' to 'fradix' must be logical TRUE/FALSE");
-    if (TYPEOF(tol) != REALSXP) error("Argument 'tol' to 'fradix' must be a numeric vector of length 1");
+    if (!isReal(x) || n <= 0) error("List argument to 'fastradixdouble' must be non-empty and of type 'numeric'");
+    if (TYPEOF(return_index) != LGLSXP || length(return_index) != 1) error("Argument 'return_index' to 'fastradixdouble' must be logical TRUE/FALSE");
+    if (TYPEOF(decreasing) != LGLSXP || length(decreasing) != 1 || LOGICAL(decreasing)[0] == NA_LOGICAL) error("Argument 'decreasing' to 'fastradixdouble' must be logical TRUE/FALSE");
+    if (TYPEOF(tol) != REALSXP) error("Argument 'tol' to 'fastradixdouble' must be a numeric vector of length 1");
 
 
     xtmp  = PROTECT(allocVector(REALSXP, n));

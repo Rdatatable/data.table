@@ -35,8 +35,8 @@ SEXP fastradixint(SEXP x, SEXP return_index, SEXP decreasing) {
     
     n = length(x);
     if (!isInteger(x) || n <= 0) error("Argument 'x' to 'fastradixint' must be non-empty and of type 'integer'");
-    if (TYPEOF(return_index) != LGLSXP || length(return_index) != 1) error("Argument 'return_index' to 'iradix' must be logical TRUE/FALSE");
-    if (TYPEOF(decreasing) != LGLSXP || length(decreasing) != 1 || LOGICAL(decreasing)[0] == NA_LOGICAL) error("Argument 'decreasing' to 'iradix' must be logical TRUE/FALSE");
+    if (TYPEOF(return_index) != LGLSXP || length(return_index) != 1) error("Argument 'return_index' to 'fastradixint' must be logical TRUE/FALSE");
+    if (TYPEOF(decreasing) != LGLSXP || length(decreasing) != 1 || LOGICAL(decreasing)[0] == NA_LOGICAL) error("Argument 'decreasing' to 'fastradixint' must be logical TRUE/FALSE");
     
     ans  = PROTECT(allocVector(INTSXP, n));
     order = PROTECT(allocVector(INTSXP, n));
