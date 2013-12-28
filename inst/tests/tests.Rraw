@@ -10,7 +10,7 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
         require(nlme)
         require(xts)
         require(bit64)
-		require(gdata)
+        require(gdata)
     })
     # The suppression is for users running test.data.table(). If they don't have ggplot2 installed we don't
     # want to warn about it not being installed. 'R CMD check' is a stricter test that will warn if the
@@ -3141,12 +3141,12 @@ if ("package:reshape2" %in% search()) {
     # no S3 method yet, have to use "dcast.data.table"
     test(1101, as.data.frame(dcast.data.table(DT, time ~ variable, fun=mean)), dcast(DT, time~variable, fun=mean))
     test(1102, as.data.frame(dcast.data.table(DT, diet ~ variable, fun=sum)), dcast(DT, diet~variable, fun=sum))
-	x1 <- as.data.frame(dcast.data.table(DT, diet+chick ~ time, drop=FALSE)) 
-	x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
+    x1 <- as.data.frame(dcast.data.table(DT, diet+chick ~ time, drop=FALSE)) 
+    x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
     x2 <- dcast(DT, diet+chick~time, drop=FALSE)
     test(1103, x1,x2)
-	x1 <- as.data.frame(dcast.data.table(DT, diet+chick ~ time, drop=FALSE, fill=0)) 
-	x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
+    x1 <- as.data.frame(dcast.data.table(DT, diet+chick ~ time, drop=FALSE, fill=0)) 
+    x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
     x2 <- dcast(DT, diet+chick~time, drop=FALSE, fill=0)
     test(1104, x1,x2)
 }
@@ -3330,7 +3330,11 @@ test(1137.1, DT[, .SD, .SDcols=-1L], DT[, 2:3, with=FALSE])
 test(1137.2, DT[, .SD, .SDcols=-(1:2)], DT[, 3, with=FALSE])
 test(1137.3, DT[, .SD, .SDcols=-"y"], DT[, c(1,3), with=FALSE])
 test(1137.4, DT[, .SD, .SDcols=-c("y", "x")], DT[, 3, with=FALSE])
-test(1137.5, DT[, .SD, .SDcols=-which(names(DT) %in% c("x", "y", "z"))], data.table:::null.data.table())
+if (.devtesting) {
+  test(1137.5, DT[, .SD, .SDcols=-which(names(DT) %in% c("x", "y", "z"))], null.data.table())
+} else {
+  test(1137.5, DT[, .SD, .SDcols=-which(names(DT) %in% c("x", "y", "z"))], data.table:::null.data.table())
+}
 test(1137.6, DT[, .SD, .SDcols=c(1, -2)], error=".SDcols is numeric but has both")
 test(1137.7, DT[, .SD, .SDcols=c("x", -"y")], error="invalid argument to unary")
 test(1137.8, DT[, .SD, .SDcols=c(-1, "x")], error="Some items of .SDcols are")
@@ -3416,13 +3420,20 @@ test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="Input is 
 # R-wrapper is dradixorder
 set.seed(45)
 x <- rnorm(1e6)*1e4
-test(1147.1, order(x), data.table:::dradixorder(x, tol=numeric(0))) # order doesn't test with tolerance
-test(1147.2, data.table:::ordernumtol(x), data.table:::dradixorder(x))
-
+if (.devtesting) {
+  test(1147.1, order(x), dradixorder(x, tol=numeric(0))) # order doesn't test with tolerance
+  test(1147.2, ordernumtol(x), dradixorder(x))
+} else {
+  test(1147.1, order(x), data.table:::dradixorder(x, tol=numeric(0))) # order doesn't test with tolerance
+  test(1147.2, data.table:::ordernumtol(x), data.table:::dradixorder(x))
+}
 tol = .Machine$double.eps^0.5
 x <- c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.18909, NaN, 5.18909-1.2*tol, 5.18909-0.04*tol)
-test(1147.3, data.table:::dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
-
+if (.devtesting) {
+  test(1147.3, dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
+} else {
+  test(1147.3, data.table:::dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
+}
 # Fix for case 2 in bug report #5149 - dcast.data.table dint aggregate properly when formula RHS has "."
 set.seed(45)
 DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
@@ -3442,9 +3453,13 @@ test(1148.2, dcast.data.table(DT, a ~ .), ans1)
 test(1148.3, dcast.data.table(DT, b+a~.), ans2)
 
 # test for `iradixorder` when input is integer(0) and numeric(0)
-test(1149.1, data.table:::iradixorder(integer(0)), integer(0)) 
-test(1149.2, data.table:::iradixorder(numeric(0)), error="iradixorder is only for integer") 
-
+if (.devtesting) {
+  test(1149.1, iradixorder(integer(0)), integer(0)) 
+  test(1149.2, iradixorder(numeric(0)), error="iradixorder is only for integer") 
+} else {
+  test(1149.1, data.table:::iradixorder(integer(0)), integer(0)) 
+  test(1149.2, data.table:::iradixorder(numeric(0)), error="iradixorder is only for integer") 
+}
 # more tests for `dcast.data.table` with formula being character and errors when formula is a hybrid
 set.seed(1)
 x <- data.table(a=rep(1:5, each=5), b=runif(25))
@@ -3455,15 +3470,27 @@ test(1150.3, dcast.data.table(x, a ~  a, value.var="c"), error="'value.var' colu
 # testing equivalence of duplist and uniqlist
 set.seed(45)
 x <- sample(c(NA_integer_, 1:1e5), 1e7, TRUE)
-ox <- data.table:::iradixorder(x)
-o1 <- data.table:::duplist(list(x), ox)
-o2 <- data.table:::uniqlist(list(x), ox)
-test(1151.1, o1, o2)
-test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), data.table:::uniqlengths(o2, length(x)))
-o1 <- data.table:::duplist(list(x))
-o2 <- data.table:::uniqlist(list(x))
-test(1151.3, o1, o2)
-test(1151.4, c(diff(o1), length(x)-tail(o1, 1L)+1L), data.table:::uniqlengths(o2, length(x)))
+if (.devtesting) {
+  ox <- iradixorder(x)
+  o1 <- duplist(list(x), ox)
+  o2 <- uniqlist(list(x), ox)
+  test(1151.1, o1, o2)
+  test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o2, length(x)))
+  o1 <- duplist(list(x))
+  o2 <- uniqlist(list(x))
+  test(1151.3, o1, o2)
+  test(1151.4, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o2, length(x)))
+} else {
+  ox <- data.table:::iradixorder(x)
+  o1 <- data.table:::duplist(list(x), ox)
+  o2 <- data.table:::uniqlist(list(x), ox)
+  test(1151.1, o1, o2)
+  test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), data.table:::uniqlengths(o2, length(x)))
+  o1 <- data.table:::duplist(list(x))
+  o2 <- data.table:::uniqlist(list(x))
+  test(1151.3, o1, o2)
+  test(1151.4, c(diff(o1), length(x)-tail(o1, 1L)+1L), data.table:::uniqlengths(o2, length(x)))
+}
 
 # #5190 fix - grouping with .SDcols gave "symbol not subsettable error" - consequence of FR #4979 implementation
 dt = data.table(grp = sample(letters[1:3],20, replace = TRUE), v1 = rnorm(20), v2 = rnorm(20))
@@ -3475,7 +3502,11 @@ x <- FALSE
 if ("package:bit" %in% search()) {
     try(detach(package:bit64),silent=TRUE)
     try(detach(package:bit),silent=TRUE)
-    test(1153, data.table:::setattr(x, FALSE, FALSE), error="Attribute name must be")
+    if (.devtesting) {
+      test(1153, setattr(x, FALSE, FALSE), error="Attribute name must be")
+    } else {
+      test(1153, data.table:::setattr(x, FALSE, FALSE), error="Attribute name must be")
+    }
 }
 
 # Fixed binary search capabilities for NA (for int and double) and NaN (for double):
@@ -3512,11 +3543,19 @@ test(1155.5, dt[J(NA_real_)], dt[is.na(x) & !is.nan(x)])
 # integer
 set.seed(11)
 x <- sample(c(NA_integer_, -3:4), 20, TRUE)
-test(1156.1, rev(x[data.table:::iradixorder(x, TRUE)]), x[data.table:::iradixorder(x, FALSE)])
+if (.devtesting) {
+  test(1156.1, rev(x[iradixorder(x, TRUE)]), x[iradixorder(x, FALSE)])
+} else {
+  test(1156.1, rev(x[data.table:::iradixorder(x, TRUE)]), x[data.table:::iradixorder(x, FALSE)])
+}
 # numeric
 tol = .Machine$double.eps^0.5
 x <- sample(as.numeric(c(NA, 1.222, 1.222+0.8*tol, 1.222-0.7*tol, 1.8928, -1.882, -1.882+0.7*tol, NA, NaN, NaN)))
-ans <- all.equal(rev(x[data.table:::dradixorder(x, tol, TRUE)]), x[data.table:::dradixorder(x, tol, FALSE)])
+if (.devtesting) {
+  ans <- all.equal(rev(x[dradixorder(x, tol, TRUE)]), x[dradixorder(x, tol, FALSE)])
+} else {
+  ans <- all.equal(rev(x[data.table:::dradixorder(x, tol, TRUE)]), x[data.table:::dradixorder(x, tol, FALSE)])
+}
 test(1156.2, ans, TRUE)
 
 # Fix for (usually small) memory leak when grouping, #2648.
