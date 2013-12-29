@@ -3434,23 +3434,29 @@ if (.devtesting) {
 } else {
   test(1147.3, data.table:::dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
 }
-# Fix for case 2 in bug report #5149 - dcast.data.table dint aggregate properly when formula RHS has "."
-set.seed(45)
-DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
-ans = data.table(dcast(DT, x ~ ., mean, value.var="y"))
-setnames(ans, c("x", "V1"))
-setkey(ans, x)
-test(1148.1, dcast.data.table(DT, x ~ ., mean, value.var="y"), ans)
-# also quashed another bug with `.` in formula (when there's no aggregate function):
-DT <- data.table(a=sample(5), b=runif(5), c=5:1)
-ans1 = data.table(dcast(DT, a ~ .))
-ans2 = data.table(dcast(DT, b+a ~ .))
-setnames(ans1, c("a", "c"))
-setnames(ans2, c("b", "a", "c"))
-setkey(ans1, "a")
-setkey(ans2, "b", "a")
-test(1148.2, dcast.data.table(DT, a ~ .), ans1)
-test(1148.3, dcast.data.table(DT, b+a~.), ans2)
+
+if ("package:reshape2" %in% search()) {
+    try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
+                                               # try() in case reshape isn't loaded (detach gives not found error in that case)
+
+        # Fix for case 2 in bug report #5149 - dcast.data.table dint aggregate properly when formula RHS has "."
+        set.seed(45)
+        DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
+        ans = data.table(dcast(DT, x ~ ., mean, value.var="y"))
+        setnames(ans, c("x", "V1"))
+        setkey(ans, x)
+        test(1148.1, dcast.data.table(DT, x ~ ., mean, value.var="y"), ans)
+        # also quashed another bug with `.` in formula (when there's no aggregate function):
+        DT <- data.table(a=sample(5), b=runif(5), c=5:1)
+        ans1 = data.table(dcast(DT, a ~ .))
+        ans2 = data.table(dcast(DT, b+a ~ .))
+        setnames(ans1, c("a", "c"))
+        setnames(ans2, c("b", "a", "c"))
+        setkey(ans1, "a")
+        setkey(ans2, "b", "a")
+        test(1148.2, dcast.data.table(DT, a ~ .), ans1)
+        test(1148.3, dcast.data.table(DT, b+a~.), ans2)
+}
 
 # test for `iradixorder` when input is integer(0) and numeric(0)
 if (.devtesting) {

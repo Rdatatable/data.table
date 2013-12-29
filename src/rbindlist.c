@@ -445,11 +445,9 @@ SEXP rbindlist(SEXP l)
                     for (r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
 
                     // if this column is going to be a factor, add column to factorLevels
-                    if (isColFactor[j]) {
-                        coerced = FALSE;
-                        UNPROTECT(1);  // thiscol - should be protected by factorLevels
-                        SET_VECTOR_ELT(factorLevels, i, thiscol);
-                    }
+                    if (isColFactor[j]) SET_VECTOR_ELT(factorLevels, i, thiscol);
+                    // removed 'coerced=FALSE; UNPROTECT(1)' as it resulted in a stack imbalance.
+                    // anyways it's taken care of after the switch. So no need here.
                 }
                 break;
             case VECSXP :
