@@ -99,7 +99,8 @@ int _selfrefok(SEXP x, Rboolean names, Rboolean verbose) {
     tag = R_ExternalPtrTag(v);
     if (!(isNull(tag) || isString(tag))) error("Internal error: .internal.selfref tag isn't NULL or a character vector");
     prot = R_ExternalPtrProtected(v);
-    if (TYPEOF(prot) != EXTPTRSXP) error("Internal error: .internal.selfref prot is not itself an extptr");
+    if (TYPEOF(prot) != EXTPTRSXP) return(0);  // Very rare. Was error(".internal.selfref prot is not itself an extptr").
+                                               // See http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
     if (names) {
         return(getAttrib(x, R_NamesSymbol)==tag);
     } else {

@@ -160,14 +160,20 @@ NEW FEATURES
 
 BUG FIXES
 
-  o  Long outstanding (usually small) memory leak in grouping fixed. When the last group is smaller
-     than the largest group, the difference in those sizes was not being released. Also in non-trivial
+  o  Long outstanding (usually small) memory leak in grouping fixed, #2648. When the last group is smaller
+     than the largest group, the difference in those sizes was not being released, and in non-trivial
      aggregations where each group returns a different number of rows. Most users run a grouping
      query once and will never have noticed these, but anyone looping calls to grouping (such as when
-     running in parallel, or benchmarking) may have suffered, #2648. Tests added.
+     running in parallel, or benchmarking) may have suffered. Tests added.
      Thanks to many including vc273, Y T (**and others to add**) :
        http://stackoverflow.com/questions/20349159/memory-leak-in-data-table-grouped-assignment-by-reference
        http://stackoverflow.com/questions/15651515/slow-memory-leak-in-data-table-when-returning-named-lists-in-j-trying-to-reshap
+
+  o  In long running computations where data.table is called many times repetitively the following error
+     could sometimes occur, #2647 :
+       Internal error: .internal.selfref prot is not itself an extptr
+     Fixed. Thanks to theEricStone, StevieP and JasonB for (difficult) reproducible examples.
+       http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
        
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
      closes the file first rather than holding a lock open, a Windows only problem.
