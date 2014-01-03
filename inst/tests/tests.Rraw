@@ -3580,6 +3580,26 @@ for (i in 1:50) DT[ , unlist(.SD), by = 'k']
 after = gc()["Vcells",2]
 test(1158, after < before+1)
 
+# tests for 'setDT' - convert list, DF to DT without copy
+x <- data.frame(a=1:4, b=5:8)
+test(1159.1, setDT(x), data.table(a=1:4, b=5:8))
+x <- list(1:4, 5:8)
+test(1159.2, setDT(x), data.table(1:4, 5:8))
+x <- list(1:4, 5:8)
+test(1159.3, setDT(x, FALSE), setnames(data.table(1:4, 5:8), c("", "")))
+x <- list(a=1:4, b=5:8)
+test(1159.4, setDT(x), data.table(a=1:4, b=5:8))
+x <- list(a=1:4, 5:8)
+test(1159.5, setDT(x), setnames(data.table(1:4, 5:8), c("a", "V1")))
+x <- list(a=1:4, 5:8)
+test(1159.6, setDT(x, FALSE), setnames(data.table(1:4, 5:8), c("a", "")))
+x <- data.table(a=1:4, b=5:8)
+test(1159.7, setDT(x), data.table(a=1:4, b=5:8))
+x <- 1:5
+test(1159.8, setDT(x), error="Argument 'x' to 'setDT' should be a")
+x <- list(1, 2:3)
+test(1159.9, setDT(x), error="All elements in argument 'x' to 'setDT'")
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

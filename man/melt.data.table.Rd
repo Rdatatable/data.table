@@ -1,5 +1,6 @@
 \name{melt.data.table}
 \alias{melt.data.table}
+\alias{melt}
 \title{Fast melt for data.table}
 \description{
   A \code{melt.data.table} S3 method extending \code{reshape2:::melt}, for melting a \code{data.table}. \code{reshape2} also has to be loaded for using \code{melt.data.table}. A lot similar to \code{reshape2:::melt.data.frame} , but much faster and with some additional features.

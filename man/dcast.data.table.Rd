@@ -1,5 +1,6 @@
 \name{dcast.data.table}
 \alias{dcast.data.table}
+\alias{dcast}
 \title{Fast dcast for data.table}
 \description{
   A \code{dcast.data.table} is a much faster version of \code{reshape2:::dcast}, but for data.table. More importantly, it's able to handle bigger data quite efficiently without compromising speed. This is still under development, meaning it's stable, but not all features are complete yet. Once complete, we plan to make it an S3 generic by making changes to \code{reshape2:::dcast}. Then by loading both \code{data.table} and \code{reshape2}, one could use \code{dcast} on \code{data.table} as one would on a \code{data.frame}.
@@ -102,11 +103,10 @@ set.seed(45)
 DT <- data.table(aa=sample(1e4, 1e6, TRUE), 
       bb=sample(1e3, 1e6, TRUE), 
       cc = sample(letters, 1e6, TRUE), dd=runif(1e6))
-system.time(dcast.data.table(DT, aa ~ cc, fun=sum)) # 0.9 seconds
-system.time(dcast.data.table(DT, bb ~ cc, fun=mean)) # 0.5 seconds
-# reshape2:::dcast crashes R-session
-# system.time(dcast.data.table(DT, aa + bb ~ cc, fun=mean)) # 6.7 seconds
-
+system.time(dcast.data.table(DT, aa ~ cc, fun=sum)) # 0.7 seconds
+system.time(dcast.data.table(DT, bb ~ cc, fun=mean)) # 0.35 seconds
+# reshape2:::dcast takes 212.5 seconds
+system.time(dcast.data.table(DT, aa + bb ~ cc, fun=sum)) # 6.6 seconds
 }
 \seealso{
   \code{\link{melt.data.table}}, \url{https://r-forge.r-project.org/projects/datatable/}

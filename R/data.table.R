@@ -1955,4 +1955,39 @@ address = function(x) .Call(Caddress,x)
 
 ":=" = function(...) stop(':= and `:=`(...) are defined for use in j, once only and in particular ways. See help(":="). Check is.data.table(DT) is TRUE.')
 
-
+setDT <- function(x, giveNames=TRUE) {
+    giveNames <- as.logical(giveNames[1L])
+    if (is.na(giveNames))
+        stop("Argument 'giveNames' to 'setDT' must be logical TRUE/FALSE")
+    if (is.data.table(x)) {
+        invisible(x)
+    } else if (is.data.frame(x)) {
+        setattr(x, "class", c("data.table", "data.frame"))
+        settruelength(x, 0L)
+        invisible(alloc.col(x))
+    } else if (is.list(x)) {
+        # copied from as.data.table.list - except removed the copy
+        if (!length(x)) return( null.data.table() )
+        n = vapply(x, length, 0L)
+        mn = max(n)
+        if (any(n<mn))
+            stop("All elements in argument 'x' to 'setDT' must be of same length")
+        xn = names(x)
+        if (is.null(xn)) {
+            if (giveNames) setattr(x, "names", paste("V",seq_len(length(x)),sep=""))
+            else setattr(x, "names", rep("", length(x)))
+        } else {
+            idx = xn == ""
+            if (any(idx) && giveNames) {
+                xn[idx] = paste("V", seq_along(which(idx)), sep="")
+                setattr(x, "names", xn)
+            }
+        }
+        setattr(x,"row.names",.set_row_names(max(n)))
+        setattr(x,"class",c("data.table","data.frame"))
+        settruelength(x, 0L)
+        invisible(alloc.col(x))
+    } else {
+        stop("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
+    }
+}

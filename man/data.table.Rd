@@ -55,7 +55,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \item{check.names}{ Just as \code{check.names} in \code{\link{data.frame}}.
 
 }
-  \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. If specified in \code{[.data.table}, will change the key of \code{x}. 
+  \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. If specified in \code{[.data.table}, will change the key of \code{x}.
 
 }
   \item{x}{ A \code{data.table}.

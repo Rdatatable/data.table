@@ -8,6 +8,7 @@
 \alias{setattr}
 \alias{setnames}
 \alias{setcolorder}
+\alias{setDT}
 \title{ Create key on a data table }
 \description{
   \code{setkey()} sorts a \code{data.table} and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always. The table is changed \emph{by reference}. No copy is made at all, other than temporary working memory as large as one column.
@@ -24,9 +25,10 @@ setattr(x,name,value)
 setnames(x,old,new)
 setcolorder(x,neworder)
 key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
+setDT(x, giveNames=TRUE)
 }
 \arguments{
-  \item{x}{ A \code{data.table}. Other than \code{setattr} which accepts any input; e.g, columns of a \code{data.frame} or \code{data.table}, and \code{setnames} which accepts \code{data.frame}, too. }
+  \item{x}{ A \code{data.table}. Other than \code{setattr} which accepts any input; e.g, columns of a \code{data.frame} or \code{data.table}, and \code{setnames} which accepts \code{data.frame}, and \code{setDT} which takes a \code{list}, \code{data.frame} or \code{data.table} as input, too. }
   \item{\dots}{ The columns to sort by. Do not quote the column names. If \code{\dots} is missing (i.e. \code{setkey(DT)}), all the columns are used. \code{NULL} removes the key. }
   \item{cols}{ A character vector (only) of column names. }
   \item{value}{ In (deprecated) \code{key<-}, a character vector (only) of column names. In \code{setattr}, the value to assign to the attribute or \code{NULL} removes the attribute, if present. }
@@ -35,6 +37,7 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, the new column names, which must be the same length as the number of columns. See examples. }
   \item{new}{ Optional. New column names, the same length as \code{old}. } 
   \item{neworder}{ Character vector of the new column name ordering. May also be column numbers. }
+  \item{giveNames}{ For \code{list} input to \code{setDT}, \code{TRUE} automatically generates missing column names. \code{FALSE} sets column names to \code{""} }
 }
 \details{
   For columns of type \code{integer}, the sort is attempted with the very fast \code{"radix"} method in \code{\link[base]{sort.list}}. If that fails, for versions <= 1.8.10, the sort reverts to the default method in \code{\link[base]{order}} and for versions > 1.8.10 it reverts to a (newly implemented) very fast 3-pass radix order for integers (adapted from Michael Herf's code, see link below). For columns of \code{numeric} type, a modified version of base's comparison sort is used in versions <= 1.8.10. From versions > 1.8.10, a very fast 6-pass radix order for double is implemented and used (also adapted from Michael Herf's code). This gives a speed-up of about 5-8x for versions > 1.8.10 on \code{setkey} and all internal \code{order}/\code{sort} operations.
@@ -106,6 +109,13 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
     
     # And, no copy of DT was made by setnames() at all.
 
+    # setDT
+    X = list(1:4, letters[1:4])
+    setDT(X) # list to data.table by reference, auto-fill names    
+    X = list(a=1:4, letters[1:4])
+    setDT(X, FALSE) # list to data.table by reference, don't give names
+    X = data.frame(a=1:4, b=letters[1:4])
+    setDT(X) # data.frame to data.table by reference
 }
 \keyword{ data }
 
