@@ -1,8 +1,8 @@
 .onLoad <- function(libname, pkgname) {
     # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
     
-    "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one line to base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
-    # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onAttach
+    "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one for loop to the start of base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
+    # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onLoad
     tt = base::cbind.data.frame
     ss = body(tt)
     if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
