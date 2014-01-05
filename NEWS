@@ -85,8 +85,11 @@ NEW FEATURES
      follows R defaults, with the addition of factors being the highest type. This also fixes bug #4981 (same 
 	 as the FR but for the specific case of NA's).
 
-  o  cbind will dispatch to data.table if any argument is a data.table. Key is now set directly, without a sort
-     and is equal to c(key1, key2, ...).
+  o  cbind(x,y,z,...) now creates a data.table if x isn't a data.table but y or z is.
+  
+  o  cbind(x,y,z,...) and data.table(x,y,z,...) now retain keys of any data.table inputs directly (no sort
+     needed, for speed) where the key is c(key(x), key(y), key(z), ...). Provided the data.table inputs with
+     keys are not recycled and there are no ambiguities (i.e. duplicates) in column names.
 
   o  FR #4856 implemented (same as #5019). rbind/rbindlist will preserve ordered factors if it's possible
      to do so, i.e. if a compatible global order exists. Otherwise the result will be a factor and a warning.
@@ -166,7 +169,7 @@ NEW FEATURES
 BUG FIXES
 
   o  Long outstanding (usually small) memory leak in grouping fixed, #2648. When the last group is smaller
-     than the largest group, the difference in those sizes was not being released, and in non-trivial
+     than the largest group, the difference in those sizes was not being released. Also in non-trivial
      aggregations where each group returns a different number of rows. Most users run a grouping
      query once and will never have noticed these, but anyone looping calls to grouping (such as when
      running in parallel, or benchmarking) may have suffered. Tests added.
@@ -331,6 +334,10 @@ BUG FIXES
 
   o  A consequence of implementing the feature where binary search based subsetting or joins/merges is capable of also 
      handling NAs/NaNs is that bug #4918 is fixed. Thanks to Sameer Manek for reporting.
+     
+  o  Dependent packages using cbind may now Import data.table as intended rather than needing to Depend. There was
+     a missing data.table:: prefix on a call to key(). Thanks to Maarten-Jan Kallen for reporting.
+     
 
 NOTES
 

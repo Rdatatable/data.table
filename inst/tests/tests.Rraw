@@ -1268,11 +1268,16 @@ DT2[1,V1:=99L]
 test(411, DT, DT2)
 test(412, DT, data.table(c(99L,2L),3:4,y=10L))
 
-# Test that cbind retains keys
+# Test that cbind dispatched to data.table() and retains keys
 DT = data.table(x=c("a","b"),y=1:4,key="x")
+test(413.1, key(cbind(DT,DT)), NULL)  # key dropped because name "x" ambiguous
 DT1 = data.table(z = c(1,2), w = 1:4, key = "z")
-test(413, key(cbind(DT,DT1)), c("x", "z"))
-test(414, key(cbind(DT,as.data.frame(DT))), "x")
+test(413.2, key(cbind(DT,DT1)), c("x", "z"))
+test(413.3, key(cbind(colA=10:13, DT)), "x")   # data.table() dispatched even though 1st argument isn't data.table
+test(413.4, key(cbind(colA=10:17, DT)), NULL)  # DT recycled so key is dropped
+test(413.5, key(cbind(colA=1, DT)), "x")       # DT not recycled so key retained
+test(414.1, key(cbind(DT,as.data.frame(DT1))), "x")
+test(414.2, key(cbind(as.data.frame(DT),DT1)), "z")
 
 # Test friendly error when := is used in wrong place
 test(415, x:=1, error="defined for use in j, once only and in particular ways")

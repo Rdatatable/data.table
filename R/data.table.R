@@ -219,6 +219,15 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
     }
     nr <- max(nrows)
+    ckey = NULL
+    recycledkey = FALSE
+    for (i in seq_len(n)) {
+        xi = x[[i]]
+        if (is.data.table(xi) && haskey(xi)) {
+            if (nrows[i]<nr) recycledkey = TRUE
+            else ckey = c(ckey, key(xi))
+        }
+    }
     for (i in which(nrows < nr)) {
         # TO DO ... recycle in C, but not high priority as large data already regular from database or file
         xi <- x[[i]]
@@ -274,6 +283,15 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
           # eg key="A,B"; a syntax only useful in key argument to data.table(), really.
       }
       setkeyv(value,key)
+    } else {
+       # retain key of cbind(DT1, DT2, DT3) where DT2 is keyed but not DT1. cbind calls data.table().
+       # If DT inputs with keys have been recycled then can't retain key
+       if (length(ckey)
+           && !recycledkey
+           && !any(duplicated(ckey))
+           && all(ckey %in% names(value))
+           && !any(duplicated(names(value)[names(value) %in% ckey])))
+           setattr(value, "sorted", ckey)
     }
     alloc.col(value)  # returns a NAMED==0 object, unlike data.frame()
 }
