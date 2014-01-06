@@ -1905,9 +1905,9 @@ setnames = function(x,old,new) {
     } else {
         if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
         if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste(old[duplicated(old)],collapse=","))
-        if (any(duplicated(names(x)))) stop("'old' is character but there are duplicate column names: ",paste(names(x)[duplicated(names(x))],collapse=","))
         i = chmatch(old,names(x))
         if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
+        if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
     }
     if (!is.character(new)) stop("'new' is not a character vector")
     if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))

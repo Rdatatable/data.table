@@ -165,6 +165,10 @@ NEW FEATURES
      a function 'setDT' is now implemented that takes a list (named and/or unnamed), data.frame (or data.table) as input 
      and returns the same object as a data.table by reference (without any copy). It also has a logical argument 'giveNames', 
      which is used for a list inputs. See ?setDT examples for more.
+     
+  o  setnames(DT,"oldname","newname") no longer complains about duplicated column names in DT so long
+     as oldname is unique and unambiguous. Thanks to Wet Feet for highlighting.
+       http://stackoverflow.com/questions/20942905/ignore-safety-check-when-using-setnames
 
 BUG FIXES
 
