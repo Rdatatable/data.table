@@ -58,8 +58,8 @@ for (j=0;j<nrow;j++) {
   tmpp += size;
 }
 This added 5s in 4e8 calls (see below) even with -O3. That 5s is insignificant vs page fetch, though, unless already
-ordered when page fetch goes away. (Perhaps memcpy call needs a const 4 or 8 rather than variable 'size' for optimizer
-to remove the call overhead.)
+ordered when page fetch goes away. (Perhaps memcpy(dest, src, 4) and memcpy(dest, src, 8) would be optimized to remove
+call overhead but memcpy(dest, src, size) can't be since optimizer doesn't know value of 'size' variable up front.)
 
 DT = setDT(lapply(1:4, function(x){sample(1e5,1e8,replace=TRUE)}))
 o = fastorder(DT, 1L)
