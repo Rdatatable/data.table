@@ -2457,6 +2457,7 @@ test(873, setnames(DT,"foo","bar"), error="Items of 'old' not found in column na
 test(874, setnames(DT,c(1,1),c("foo","bar")), error="Some duplicates exist in 'old': 1")
 test(875, setnames(DT,"c","b"), data.table(a=1:3,b=4:6,b=7:9))
 test(875.1, setnames(DT,"a","c"), data.table(c=1:3,b=4:6,b=7:9))  # 'a' isn't duplicated so not a problem as from v1.8.11
+test(875.2, setnames(DT,c("c","b"), c("C","B")), error="Some items of 'old' are duplicated (ambiguous) in column names: b")  # check error msg when 2nd one in old is the problem
 
 # Test local var problem introduced in v1.8.3
 DT = data.table(a=1:3,b=1:6)
