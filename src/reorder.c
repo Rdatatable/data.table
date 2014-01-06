@@ -52,29 +52,40 @@ SEXP reorder(SEXP dt, SEXP order)
 
 
 /* 
-used to be memcpy : 
+used to be : 
 for (j=0;j<nrow;j++) {
   memcpy((char *)tmpp, (char *)DATAPTR(VECTOR_ELT(dt,i)) + ((size_t)(INTEGER(order)[j]-1))*size, size);
   tmpp += size;
 }
 This added 5s in 4e8 calls (see below) even with -O3. That 5s is insignificant vs page fetch, though, unless already
-ordered when page fetch goes away. Perhaps memcpy call needs a const 4 or 8 rather than variable size for optimizer
-to remove the call overhead.
+ordered when page fetch goes away. (Perhaps memcpy call needs a const 4 or 8 rather than variable 'size' for optimizer
+to remove the call overhead.)
 
 DT = setDT(lapply(1:4, function(x){sample(1e5,1e8,replace=TRUE)}))
 o = fastorder(DT, 1L)
 none = 1:1e8                           
                                        
-# worst case 5%, thoroughly random     # before   after
-system.time(.Call(Creorder,DT,o))      # 102.301  97.082
-system.time(.Call(Creorder,DT,o))      # 102.602  97.001
+# worst case 5% faster, thoroughly random     # before   after
+system.time(.Call(Creorder,DT,o))             # 102.301  97.082
+system.time(.Call(Creorder,DT,o))             # 102.602  97.001
 
-# best case 50%, already ordered       # before   after
-system.time(.Call(Creorder,DT,none))   # 9.310    4.187
-system.time(.Call(Creorder,DT,none))   # 9.295    4.077
+# best case 50% faster, already ordered       # before   after
+system.time(.Call(Creorder,DT,none))          # 9.310    4.187
+system.time(.Call(Creorder,DT,none))          # 9.295    4.077
 
 # Somewhere inbetween 5%-50% would be e.g. grouped data where we're reordering the blocks.
 # But, likely the worst case speedup most of the time. On my slow netbook anyway, with slow RAM.
+
+# However, on decent laptop (faster RAM/bus etc) it looks better at 40% speedup consistently ...
+
+# thoroughly random                           # before   after
+system.time(.Call("Creorder",DT,o))           # 33.216   19.184
+system.time(.Call("Creorder",DT,o))           # 30.556   18.667
+
+# already ordered                             # before   after
+system.time(.Call("Creorder",DT,none))        # 4.172    2.384
+system.time(.Call("Creorder",DT,none))        # 4.076    2.356
+
 */
 
 
