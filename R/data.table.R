@@ -296,9 +296,13 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     alloc.col(value)  # returns a NAMED==0 object, unlike data.frame()
 }
 
-is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.na(x))}
+is.sorted = function(x) {
+    if (is.list(x)) .Call(CisSortedList, x, sqrt(.Machine$double.eps))
+    else identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.na(x))
+}
 # NA's anywhere need to result in 'not sorted' e.g. test 251 where i table is not sorted but f__ without NAs is sorted. Could check if i is sorted too, but that would take time and that's what SJ is for to make the calling code clear to the reader.
 # Extra logic after && is now needed to maintain backwards compatibility after r-devel's change of is.unsorted(NA) to FALSE (was NA) [May 2013].
+# TO DO: base::is.unsorted calls any(is.na(x)), could avoid by always using CisSortedList
 
 .massagei = function(x) {
     if (is.call(x) && as.character(x[[1L]]) %chin% c("J","."))

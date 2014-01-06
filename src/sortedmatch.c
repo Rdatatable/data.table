@@ -249,6 +249,49 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     return(R_NilValue);
 }
 
+SEXP isSortedList(SEXP l, SEXP tolerance)
+{
+    R_len_t i,j,nrow,ncol;
+    Rboolean b;
+    SEXP v;
+    double tol = REAL(tolerance)[0];
+    ncol = length(l);
+    nrow = length(VECTOR_ELT(l,0));
+    for (j=1; j<ncol; j++) if (length(VECTOR_ELT(l,j)) != nrow) error("length(l[[%d]])==%d != length(l[[1]])==%d", j+1, length(VECTOR_ELT(l,j)), nrow);
+    for (i=1; i<nrow; i++) {
+        b = TRUE;
+        j = -1;
+        while (b && ++j<ncol-1) {
+            v=VECTOR_ELT(l,j);
+            switch (TYPEOF(v)) {      // TO DO: change switch to *(EQ[type])(v,i,i-1)
+            case INTSXP : case LGLSXP :
+                b = INTEGER(v)[i]==INTEGER(v)[i-1]; break;   // TO DO: NA
+            case STRSXP :
+                b = STRING_ELT(v,i)==STRING_ELT(v,i-1); break;
+            case REALSXP :
+                b = fabs(REAL(v)[i] - REAL(v)[i-1])<tol; break;   // TO DO: NA, NaN, Inf
+            default :
+                error("Type '%s' not supported", type2char(TYPEOF(v))); 
+            }
+        }
+        v = VECTOR_ELT(l,j);
+        switch (TYPEOF(v)) {
+        case INTSXP : case LGLSXP :
+            b = INTEGER(v)[i]<INTEGER(v)[i-1]; break;    // TO DO: Check assumption NA largest negative
+        case STRSXP :
+            b = StrCmp(STRING_ELT(v,i), STRING_ELT(v,i-1))<0; break;
+        case REALSXP :
+            b = REAL(v)[i] < REAL(v)[i-1]; break;    // TO DO: NA, NaN, Inf
+        default :
+            error("Type '%s' not supported", type2char(TYPEOF(v))); 
+        }
+        if (b) return(ScalarLogical(FALSE));
+    }
+    return(ScalarLogical(TRUE));
+}
+
+
+
 
 /*SEXP sortedintegermatch (SEXP ans, SEXP left, SEXP right, SEXP nomatch)
 {
