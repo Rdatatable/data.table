@@ -158,9 +158,6 @@ NEW FEATURES
 
   o  Binary search is now capable of subsetting NA/NaNs and also perform joins and merges by matching NAs/NaNs.
 
-  o  Fast radix order for int and double gains a new 'decreasing = TRUE/FALSE' argument, which allows it to order or sort 
-     in descending order as well.
-
   o  Following this S.O. post: http://stackoverflow.com/questions/20345022/convert-a-data-frame-to-a-data-table-without-copy/20346697#20346697
      a function 'setDT' is now implemented that takes a list (named and/or unnamed), data.frame (or data.table) as input 
      and returns the same object as a data.table by reference (without any copy). It also has a logical argument 'giveNames', 

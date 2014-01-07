@@ -8,6 +8,38 @@ extern int sizes[];
 #define SIZEOF(x) sizes[TYPEOF(x)]
 //
 
+// reverse a vector - equivalent of rev(x) in base, but implemented in C and about 12x faster (on 1e8)
+SEXP setrev(SEXP x) {
+    R_len_t j, n, len, size;
+    char *tmp, *xt;
+    if (TYPEOF(x) == VECSXP || isMatrix(x)) error("Input 'x' must be a vector");
+    len = length(x);
+    if (len <= 1) return(x);
+    size = SIZEOF(x);
+    if (!size) error("don't know how to reverse type '%s' of input 'x'.",type2char(TYPEOF(x)));
+    n = (int)(len/2);
+    xt = (char *)DATAPTR(x);
+    if (size==4) {
+        tmp = (char *)Calloc(1, int);
+        for (j=0;j<n;j++) {
+            *(int *)tmp = ((int *)xt)[j];  // just copies 4 bytes (pointers on 32bit too)
+            ((int *)xt)[j] = ((int *)xt)[len-1-j];
+            ((int *)xt)[len-1-j] = *(int *)tmp;
+        }
+    } else {
+        if (size!=8) error("Size of x isn't 4 or 8");
+        tmp = (char *)Calloc(1, double);
+        for (j=0;j<n;j++) {
+            *(double *)tmp = ((double *)xt)[j];  // just copies 8 bytes (pointers on 64bit too)
+            ((double *)xt)[j] = ((double *)xt)[len-1-j];
+            ((double *)xt)[len-1-j] = *(double *)tmp;
+        }
+    }
+    Free(tmp);
+    return(R_NilValue);
+}
+
+
 SEXP reorder(SEXP dt, SEXP order)
 {
     // For internal use only by fastorder().

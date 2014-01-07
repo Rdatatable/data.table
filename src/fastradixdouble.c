@@ -10,7 +10,7 @@
 // R-2.15.3 osx 10.8.5 64-bit gcc-4.2.1
 
 // for tolerance
-extern SEXP fastradixint(SEXP vec, SEXP return_index, SEXP decreasing);
+extern SEXP fastradixint(SEXP vec, SEXP return_index);
 
 // adapted from Michael Herf's code - http://stereopsis.com/radix.html
 // TO IMPLEMENT (probably) - R's long vector support (R_xlen_t)
@@ -18,7 +18,7 @@ extern SEXP fastradixint(SEXP vec, SEXP return_index, SEXP decreasing);
 // 2) also allows ordering/sorting with 'tolerance' (another pass through length of input vector will happen + multiple integer radix sort calls). 
 // The performance will depend on the number of groups that have to be sorted because under given tolerance they become identical. In theory, 
 // most of the times the last pass shouldn't affect the performance at all.
-// 3) now sorts/orders in descending order (argument decreasing=TRUE) as well - NA/NaN go to the end
+// the "decreasing=" feature has been removed. Use 'setrev' instead to get the reverse order if required (small performance improvement by doing this)
 
 // Hack for 32-bit and 64-bit versions of R (or architectures):
 // ------------------------------------------------------------
@@ -58,10 +58,6 @@ unsigned long long invert_flip_double(unsigned long long f) {
     return f ^ mask;
 }
 
-void flip_double_decr(unsigned long long *f) {
-    *f ^= FLIP_SIGN_BIT;
-}
-
 void hack_na_nan(unsigned long long *f) {
     // same as flip_double_ref but with bit twiddling first for NA/NaN
     // removed mask setting as sign bit is always 0, so we just flip it
@@ -79,7 +75,7 @@ void hack_na_nan(unsigned long long *f) {
 #define _5(x) (x >> 55)
 
 // x should be of type numeric
-SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index, SEXP decreasing) {
+SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index) {
     int i;
     unsigned long long pos, fi, si, n;
     unsigned long long sum0 = 0, sum1 = 0, sum2 = 0, sum3 = 0, sum4 = 0, sum5 = 0, tsum;    
@@ -88,7 +84,6 @@ SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index, SEXP decreasing) {
     n = length(x);
     if (!isReal(x) || n <= 0) error("List argument to 'fastradixdouble' must be non-empty and of type 'numeric'");
     if (TYPEOF(return_index) != LGLSXP || length(return_index) != 1) error("Argument 'return_index' to 'fastradixdouble' must be logical TRUE/FALSE");
-    if (TYPEOF(decreasing) != LGLSXP || length(decreasing) != 1 || LOGICAL(decreasing)[0] == NA_LOGICAL) error("Argument 'decreasing' to 'fastradixdouble' must be logical TRUE/FALSE");
     if (TYPEOF(tol) != REALSXP) error("Argument 'tol' to 'fastradixdouble' must be a numeric vector of length 1");
 
 
@@ -115,7 +110,6 @@ SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index, SEXP decreasing) {
     for (i=0;i<n;i++) {
         // flip NaN/NA sign bit so that they get sorted in the front (special for data.table)
         if (ISNAN(REAL(x)[i])) hack_na_nan(&array[i]);
-        if (LOGICAL(decreasing)[0]) flip_double_decr(&array[i]);
         fi = flip_double((unsigned long long)array[i]);
         b0[_0(fi)]++;
         b1[_1(fi)]++;
@@ -193,7 +187,6 @@ SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index, SEXP decreasing) {
         si = sort[i];
         pos = _5(si);
         array[++b5[pos]] = invert_flip_double(si);
-        if (LOGICAL(decreasing)[0]) flip_double_decr(&array[b5[pos]]);
         INTEGER(order)[b5[pos]] = INTEGER(ordertmp)[i]+1;
     }
 
@@ -206,97 +199,52 @@ SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index, SEXP decreasing) {
     if (length(tol) > 0) {
         i=1;
         int j, start=0, end=0;
-        SEXP st,dst,rt,sq,ridx,dec;
+        SEXP st,dst,rt,sq,ridx;
         PROTECT(ridx = allocVector(LGLSXP, 1));
-        PROTECT(dec = allocVector(LGLSXP, 1));
         LOGICAL(ridx)[0] = TRUE;
-        LOGICAL(dec)[0] = FALSE;
         while(i<n) {
-            if (!LOGICAL(decreasing)[0]) {
-                if (!R_FINITE(REAL(x)[i]) || !R_FINITE(REAL(x)[i-1])) { i++; continue; }
-                // hack to skip checking Inf=Inf, -Inf=-Inf, NA=NA and NaN=NaN... using unsigned int
-                if (REAL(x)[i]-REAL(x)[i-1] > REAL(tol)[0] || array[i] == array[i-1]) { i++; continue; }
-                start = i-1;
-                i++;
-                while(i < n && REAL(x)[i] - REAL(x)[i-1] < REAL(tol)[0]) { i++; }
-                end = i-1;
-                i++;
-                if (end-start+1 == 1) continue;
-                PROTECT(st = allocVector(INTSXP, end-start+1));
-                PROTECT(sq = allocVector(REALSXP, end-start+1));
-                // To investigate: probably a simple bubble sort or shell sort may be quicker on groups with < 10 items than a 3-pass radix?
-                // Can't rely on R's base radix order because even if you've two items in group and one of them is 3 and the other is 1e6, then it won't work!
-                // Just doing this gives 4x speed-up under small group sizes. (from 37 to 6-9 seconds)
-                if (end-start+1 == 2) {
-                    // avoid radix sort on 2 items
-                    if (INTEGER(order)[start] > INTEGER(order)[end]) {
-                        // then just swap
-                        INTEGER(st)[0] = INTEGER(order)[start];
-                        INTEGER(order)[start] = INTEGER(order)[end];
-                        INTEGER(order)[end] = INTEGER(st)[0];
-                
-                        REAL(sq)[0] = REAL(x)[start];
-                        REAL(x)[start] = REAL(x)[end];
-                        REAL(x)[end] = REAL(sq)[0];
-                    }
-                    UNPROTECT(2); // st, sq
-                    continue;
+            if (!R_FINITE(REAL(x)[i]) || !R_FINITE(REAL(x)[i-1])) { i++; continue; }
+            // hack to skip checking Inf=Inf, -Inf=-Inf, NA=NA and NaN=NaN... using unsigned int
+            if (REAL(x)[i]-REAL(x)[i-1] > REAL(tol)[0] || array[i] == array[i-1]) { i++; continue; }
+            start = i-1;
+            i++;
+            while(i < n && REAL(x)[i] - REAL(x)[i-1] < REAL(tol)[0]) { i++; }
+            end = i-1;
+            i++;
+            if (end-start+1 == 1) continue;
+            PROTECT(st = allocVector(INTSXP, end-start+1));
+            PROTECT(sq = allocVector(REALSXP, end-start+1));
+            // To investigate: probably a simple bubble sort or shell sort may be quicker on groups with < 10 items than a 3-pass radix?
+            // Can't rely on R's base radix order because even if you've two items in group and one of them is 3 and the other is 1e6, then it won't work!
+            // Just doing this gives 4x speed-up under small group sizes. (from 37 to 6-9 seconds)
+            if (end-start+1 == 2) {
+                // avoid radix sort on 2 items
+                if (INTEGER(order)[start] > INTEGER(order)[end]) {
+                    // then just swap
+                    INTEGER(st)[0] = INTEGER(order)[start];
+                    INTEGER(order)[start] = INTEGER(order)[end];
+                    INTEGER(order)[end] = INTEGER(st)[0];
+            
+                    REAL(sq)[0] = REAL(x)[start];
+                    REAL(x)[start] = REAL(x)[end];
+                    REAL(x)[end] = REAL(sq)[0];
                 }
-                for (j=0; j<end-start+1; j++) {
-                    INTEGER(st)[j] = INTEGER(order)[j+start];
-                    REAL(sq)[j] = REAL(x)[j+start];
-                }
-                PROTECT(dst = duplicate(st));
-                PROTECT(rt = fastradixint(dst, ridx, decreasing));
-                for (j=0; j<end-start+1; j++) {
-                    INTEGER(order)[j+start] = INTEGER(st)[INTEGER(rt)[j]-1];
-                    REAL(x)[j+start] = REAL(sq)[INTEGER(rt)[j]-1];
-                }
-                UNPROTECT(4); // st, dst, sq, rt
-            } else {
-                if (!R_FINITE(REAL(x)[i]) || !R_FINITE(REAL(x)[i-1])) { i++; continue; }
-                // hack to skip checking Inf=Inf, -Inf=-Inf, NA=NA and NaN=NaN... using unsigned int
-                if (REAL(x)[i-1]-REAL(x)[i] > REAL(tol)[0] || array[i] == array[i-1]) { i++; continue; }
-                start = i-1;
-                i++;
-                while(i < n && REAL(x)[i-1] - REAL(x)[i] < REAL(tol)[0]) { i++; }
-                end = i-1;
-                i++;
-                if (end-start+1 == 1) continue;
-                PROTECT(st = allocVector(INTSXP, end-start+1));
-                PROTECT(sq = allocVector(REALSXP, end-start+1));
-                // To investigate: probably a simple bubble sort or shell sort may be quicker on groups with < 10 items than a 3-pass radix?
-                // Can't rely on R's base radix order because even if you've two items in group and one of them is 3 and the other is 1e6, then it won't work!
-                // Just doing this gives 4x speed-up under small group sizes. (from 37 to 6-9 seconds)
-                if (end-start+1 == 2) {
-                    // avoid radix sort on 2 items
-                    if (INTEGER(order)[start] > INTEGER(order)[end]) {
-                        // then just swap
-                        INTEGER(st)[0] = INTEGER(order)[start];
-                        INTEGER(order)[start] = INTEGER(order)[end];
-                        INTEGER(order)[end] = INTEGER(st)[0];
-                
-                        REAL(sq)[0] = REAL(x)[start];
-                        REAL(x)[start] = REAL(x)[end];
-                        REAL(x)[end] = REAL(sq)[0];
-                    }
-                    UNPROTECT(2); // st, sq
-                    continue;
-                }
-                for (j=0; j<end-start+1; j++) {
-                    INTEGER(st)[j] = INTEGER(order)[j+start];
-                    REAL(sq)[j] = REAL(x)[j+start];
-                }
-                PROTECT(dst = duplicate(st)); // have to duplicate to pass to fastradixint as it modifies by reference
-                PROTECT(rt = fastradixint(dst, ridx, dec));
-                for (j=0; j<end-start+1; j++) {
-                    INTEGER(order)[j+start] = INTEGER(st)[INTEGER(rt)[j]-1];
-                    REAL(x)[j+start] = REAL(sq)[INTEGER(rt)[j]-1];
-                }
-                UNPROTECT(4); // st, dst, sq, rt
+                UNPROTECT(2); // st, sq
+                continue;
             }
+            for (j=0; j<end-start+1; j++) {
+                INTEGER(st)[j] = INTEGER(order)[j+start];
+                REAL(sq)[j] = REAL(x)[j+start];
+            }
+            PROTECT(dst = duplicate(st));
+            PROTECT(rt = fastradixint(dst, ridx));
+            for (j=0; j<end-start+1; j++) {
+                INTEGER(order)[j+start] = INTEGER(st)[INTEGER(rt)[j]-1];
+                REAL(x)[j+start] = REAL(sq)[INTEGER(rt)[j]-1];
+            }
+            UNPROTECT(4); // st, dst, sq, rt
         }
-        UNPROTECT(2); // ridx, dec
+        UNPROTECT(1); // ridx
     }
     UNPROTECT(3); // xtmp, order, ordertmp
     if (LOGICAL(return_index)[0]) return(order); 

@@ -65,6 +65,9 @@ key = function(x) attr(x,"sorted")
 
 haskey = function(x) !is.null(key(x))
 
+# reverse a vector by reference (no copy)
+setrev <- function(x) .Call(Csetrev, x)
+
 radixorder1 <- function(x) {
     if(is.object(x)) x = xtfrm(x) # should take care of handling factors, Date's and others, so we don't need unlist
     if(typeof(x) == "logical") return(c(which(is.na(x)),which(!x),which(x))) # logical is a special case of radix sort; just 3 buckets known up front. TO DO - could be faster in C but low priority
@@ -74,41 +77,40 @@ radixorder1 <- function(x) {
     # Always put NAs first, relied on in C binary search by relying on NA_integer_ being -maxint (checked in C).
 }
 
-# FOR INTERNAL use only. Use at your own risk (values are changed by reference if not used properly)
+# FOR INTERNAL use only.
 # Note that implementing just "sort" (and not order) takes half of this time. Getting order seems to be more time-consuming
-# slightly slower than R's radix order but: 
+# slightly slower than R's (improperly named radix order) counting sort but: 
 # 1) works for any data size - not restricted like R's radix where max-min should be <= 1e5 
 # 2) with any values => also works on -ve integers, NA
 # 3) directly returns sort value instead of sort order by setting last parameter in C function to FALSE (not accessible via iradixorder)
-iradixorder <- function(x, decreasing=FALSE) {
+# 4) removed "decreasing=". Use 'setrev' instead to get the reversed order
+iradixorder <- function(x) {
     # copied from radixorder1 and just changed the call to the correct function
     # xtfrm converts date object to numeric. but this will be called only if it's integer, so do a as.integer(.)
-    if (is.na(decreasing) || !is.logical(decreasing)) stop("Argument 'decreasing' to 'iradixorder' must be logical TRUE/FALSE")
     if(is.object(x)) x = as.integer(xtfrm(x))
     if(typeof(x) == "logical") 
         return(c(which(is.na(x)), which(!x), which(x)))
     if(typeof(x) != "integer") # this allows factors; we assume the levels are sorted as we always do in data.table
         stop("iradixorder is only for integer 'x'. Try dradixorder for numeric 'x'")
     if (length(x) == 0L) return(integer(0))
-    # passing list(x) to C to ensure copy is being made...
-    # NOTE: passing list(x) does not make a copy in >=3.0.2 (devel version currently), so explicitly copying
-    ans <- .Call(Cfastradixint, copy(x), TRUE, decreasing) # first TRUE returns indices, if FALSE returns value. Second is decreasing=FALSE - ascending order
+    # OLD: passing list(x) to C to ensure copy is being made...
+    # NOTE: passing list(x) does not make a copy in >3.0.2 (devel version currently), so explicitly copying
+    ans <- .Call(Cfastradixint, copy(x), TRUE) # TRUE returns indices, FALSE returns sorted value directly
     ans
     # NA first as data.table requires
 }
 
-# FOR INTERNAL use only. Use at your own risk (values are changed by reference if not used properly)
+# FOR INTERNAL use only.
 # at least > 5-30x times faster than ordernumtol and order (depending on the number of groups to find the tolerance on)
 # real-life performances must be towards the much faster side though.
-dradixorder <- function(x, tol=.Machine$double.eps^0.5, decreasing=FALSE) {
-    if (!is.atomic(x) || typeof(x) != "double") stop("'dradixorder' is only numeric 'x'. Try iradixorder for integer 'x'")
-    if (is.na(decreasing) || !is.logical(decreasing)) stop("Argument 'decreasing' to 'dradixorder' must be logical TRUE/FALSE")
+dradixorder <- function(x, tol=.Machine$double.eps^0.5) {
+    if (!is.atomic(x) || typeof(x) != "double") stop("'dradixorder' is only numeric 'x'")
     if (length(x) == 0) return(integer(0))
-    # passing list(x) to C to ensure copy is being made...
-    # NOTE: passing list(x) does not make a copy in >=3.0.2 (devel version currently), so explicitly copying
-    ans <- .Call(Cfastradixdouble, copy(x), as.numeric(tol), TRUE, decreasing) # TRUE returns order, FALSE returns sorted vec.
+    # OLD: passing list(x) to C to ensure copy is being made...
+    # NOTE: passing list(x) does not make a copy in >3.0.2 (devel version currently), so explicitly copying
+    ans <- .Call(Cfastradixdouble, copy(x), as.numeric(tol), TRUE) # TRUE returns order, FALSE returns sorted vector.
     ans
-    # NA first followed by NaN next as data.table requires
+    # NA first followed by NaN as data.table requires
 }
 
 regularorder1 <- function(x) {

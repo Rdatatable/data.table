@@ -23,11 +23,7 @@ unsigned int invert_flip_int(unsigned int f) {
     return ((int)(f ^ 0x80000000));
 }
 
-void flip_int_decr(unsigned int *f) {
-    *f = ((int)(*f ^ 0xFFFFFFFF));
-}
-
-SEXP fastradixint(SEXP x, SEXP return_index, SEXP decreasing) {
+SEXP fastradixint(SEXP x, SEXP return_index) {
     int i;
     unsigned int pos, fi, si, n;
     unsigned int sum0 = 0, sum1 = 0, sum2 = 0, tsum;    
@@ -36,7 +32,6 @@ SEXP fastradixint(SEXP x, SEXP return_index, SEXP decreasing) {
     n = length(x);
     if (!isInteger(x) || n <= 0) error("Argument 'x' to 'fastradixint' must be non-empty and of type 'integer'");
     if (TYPEOF(return_index) != LGLSXP || length(return_index) != 1) error("Argument 'return_index' to 'fastradixint' must be logical TRUE/FALSE");
-    if (TYPEOF(decreasing) != LGLSXP || length(decreasing) != 1 || LOGICAL(decreasing)[0] == NA_LOGICAL) error("Argument 'decreasing' to 'fastradixint' must be logical TRUE/FALSE");
     
     ans  = PROTECT(allocVector(INTSXP, n));
     order = PROTECT(allocVector(INTSXP, n));
@@ -56,7 +51,6 @@ SEXP fastradixint(SEXP x, SEXP return_index, SEXP decreasing) {
 
     // Step 1:  parallel histogramming pass
     for (i=0;i<n;i++) {
-        if (LOGICAL(decreasing)[0]) flip_int_decr(&array[i]);
         fi = flip_int((unsigned int)array[i]);
         b0[_0(fi)]++;
         b1[_1(fi)]++;
@@ -97,7 +91,6 @@ SEXP fastradixint(SEXP x, SEXP return_index, SEXP decreasing) {
         fi = array[i];
         pos = _2(fi);
         sort[++b2[pos]] = invert_flip_int(fi);
-        if (LOGICAL(decreasing)[0]) flip_int_decr(&sort[b2[pos]]);
         INTEGER(order)[b2[pos]] = INTEGER(ordertmp)[i]+1;
     }
     UNPROTECT(3); // order, ordertmp, ans

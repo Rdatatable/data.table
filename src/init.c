@@ -38,6 +38,7 @@ SEXP uniqlengths();
 SEXP fastradixdouble();
 SEXP fastradixint();
 SEXP isSortedList();
+SEXP setrev();
 
 // .Externals
 SEXP fastmean();
@@ -76,6 +77,7 @@ R_CallMethodDef callMethods[] = {
 {"Cfastradixdouble", (DL_FUNC) &fastradixdouble, -1}, 
 {"Cfastradixint", (DL_FUNC) &fastradixint, -1},
 {"CisSortedList", (DL_FUNC) &isSortedList, -1},
+{"Csetrev", (DL_FUNC) &setrev, -1},
 {NULL, NULL, 0}
 };
 
