@@ -8,7 +8,7 @@
 
 clock_t t[10];
 
-inline void countingsort(int *x, int n, R_xlen_t *counts, int *ans)
+void countingsort(int *x, int n, R_xlen_t *counts, int *ans)
    // No order of x supplied here because x is looped through several times, hence more
    // page efficient to suffer page hits once outside (untested).
 {

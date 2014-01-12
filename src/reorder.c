@@ -21,6 +21,7 @@ SEXP setrev(SEXP x) {
     xt = (char *)DATAPTR(x);
     if (size==4) {
         tmp = (char *)Calloc(1, int);
+        if (!tmp) error("unable to allocate temporary working memory for reordering x");
         for (j=0;j<n;j++) {
             *(int *)tmp = ((int *)xt)[j];  // just copies 4 bytes (pointers on 32bit too)
             ((int *)xt)[j] = ((int *)xt)[len-1-j];
@@ -29,6 +30,7 @@ SEXP setrev(SEXP x) {
     } else {
         if (size!=8) error("Size of x isn't 4 or 8");
         tmp = (char *)Calloc(1, double);
+        if (!tmp) error("unable to allocate temporary working memory for reordering x");
         for (j=0;j<n;j++) {
             *(double *)tmp = ((double *)xt)[j];  // just copies 8 bytes (pointers on 64bit too)
             ((double *)xt)[j] = ((double *)xt)[len-1-j];
@@ -39,6 +41,40 @@ SEXP setrev(SEXP x) {
     return(R_NilValue);
 }
 
+// reorder a vector given the vec and an order vector
+// note that the idea is a *carbon copy* of 'reorder' (below) - except that 
+// it's convenient to have a separate function for vectors
+SEXP setreordervec(SEXP x, SEXP order) {
+    char *tmp, *xt;
+    R_len_t j, n, size;
+    if (TYPEOF(x) == VECSXP || isMatrix(x)) error("Input 'x' must be a vector");
+    n = length(x);
+    if (n <= 1) return(x); // special case
+    if (length(order) != n) error("logical error, length(x) != length(order)");
+    if (TYPEOF(order) != INTSXP) error("type error, 'order' should be integer type");
+    size = SIZEOF(x);
+    if (!size) error("don't know how to reorder type '%s' of input 'x'.",type2char(TYPEOF(x)));
+    if (sizeof(int) !=  4) error("sizeof(int) isn't 4");
+    if (sizeof(double) != 8) error("sizeof(double) isn't 8");
+    xt = (char *)DATAPTR(x);
+    if (size == 4) {
+        tmp = (char *)Calloc(n, int);
+        if (!tmp) error("unable to allocate temporary working memory for reordering x");
+        for (j = 0; j < n; j++) {
+            ((int *)tmp)[j] = ((int *)xt)[INTEGER(order)[j]-1];  // just copies 4 bytes (pointers on 32bit too)
+        }
+    } else {
+        if (size != 8) error("Size of x's type isn't 4 or 8");
+        tmp = (char *)Calloc(n, double);
+        if (!tmp) error("unable to allocate temporary working memory for reordering x");
+        for (j = 0; j < n; j++) {
+            ((double *)tmp)[j] = ((double *)xt)[INTEGER(order)[j]-1];  // just copies 8 bytes (pointers on 64bit too)
+        }
+    }
+    memcpy(xt, tmp, ((size_t)n)*size);
+    Free(tmp);
+    return(R_NilValue);
+}
 
 SEXP reorder(SEXP dt, SEXP order)
 {

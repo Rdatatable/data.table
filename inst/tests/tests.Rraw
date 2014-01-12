@@ -3620,6 +3620,58 @@ test(1160.6, y, x)
 x <- list(1:10)
 test(1160.7, setrev(x), error="Input 'x' must be a vector")
 
+# tests for setreordervec
+if (!.devtesting) {
+    setreordervec <- data.table:::setreordervec
+}
+# integer
+x <- sample(c(-10:10, NA), 100, TRUE)
+o <- order(x, na.last=FALSE) # using base order here
+y <- copy(x)
+setreordervec(y, o)
+test(1161.1, x[o], y)
+# numeric
+x <- sample(c(NA, rnorm(10)), 100, TRUE)
+o <- order(x, na.last=FALSE)
+y <- copy(x)
+setreordervec(y, o)
+test(1161.2, x[o], y)
+# character
+x <- sample(c(NA, letters), 100, TRUE)
+o <- order(x, na.last=FALSE)
+y <- copy(x)
+setreordervec(y, o)
+test(1161.3, x[o], y)
+
+# tests for setreordervec
+if (!.devtesting) {
+    is.sorted <- data.table:::is.sorted
+}
+DT <- data.table(x=sample(c(NA, -10:10), 2e2, TRUE), 
+      y=sample(c(NA, NaN, -Inf, Inf, -10:10), 2e2, TRUE), 
+      z=sample(c(NA, letters), 2e2, TRUE))
+# when not sorted, should return FALSE
+test(1162.1, is.sorted(as.list(DT)[1L]), FALSE)
+setkey(DT, x)
+test(1162.2, is.sorted(as.list(DT)[1L]), TRUE)
+
+test(1162.3, is.sorted(as.list(DT)[2L]), FALSE)
+setkey(DT, y)
+test(1162.4, is.sorted(as.list(DT)[2L]), TRUE)
+
+test(1162.5, is.sorted(as.list(DT)[3L]), FALSE)
+setkey(DT, z)
+test(1162.6, is.sorted(as.list(DT)[3L]), TRUE)
+
+setkey(DT, x, y)
+test(1162.7, is.sorted(as.list(DT)[1:2]), TRUE)
+setkey(DT, x, z)
+test(1162.8, is.sorted(as.list(DT)[c(1L, 3L)]), TRUE)
+setkey(DT, y, z)
+test(1162.9, is.sorted(as.list(DT)[2:3]), TRUE)
+setkey(DT)
+test(1162.10, is.sorted(as.list(DT)[1:3]), TRUE)
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 

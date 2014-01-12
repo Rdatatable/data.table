@@ -38,9 +38,9 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
         if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not (currently) allowed as a key column type.")
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
-    o = fastorder(x, cols, verbose=verbose)
-    if (is.unsorted(o)) {
+    if (!is.sorted(as.list(x)[cols])) {
         if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
+        o = fastorder(x, cols, verbose=verbose)
         .Call(Creorder,x,o)
     }
     if (!alreadykeyedbythiskey) setattr(x,"sorted",cols)   # the if() just to be a tiny bit faster
@@ -68,11 +68,23 @@ haskey = function(x) !is.null(key(x))
 # reverse a vector by reference (no copy)
 setrev <- function(x) .Call(Csetrev, x)
 
-radixorder1 <- function(x) {
+# reorder a vector based on 'order' (integer)
+# to be used in fastorder instead of x[o], but in general, it's better to replace vector subsetting with this..?
+# note that order will be a non-NA containing non-zero positive integer vector. So these checks are not made in setreordervec
+# FOR INTERNAL USE ONLY
+setreordervec <- function(x, order) .Call(Csetreordervec, x, order)
+
+# radixorder1 is used internally, only with fastorder
+# so adding a new argument is okay. added 'o' for order vector
+radixorder1 <- function(x, o=NULL) {
     if(is.object(x)) x = xtfrm(x) # should take care of handling factors, Date's and others, so we don't need unlist
     if(typeof(x) == "logical") return(c(which(is.na(x)),which(!x),which(x))) # logical is a special case of radix sort; just 3 buckets known up front. TO DO - could be faster in C but low priority
     if(typeof(x) != "integer") # this allows factors; we assume the levels are sorted as we always do in data.table
         stop("radixorder1 is only for integer 'x'")
+    if (!is.null(o)) {
+        x = copy(x)
+        setreordervec(x, o)
+    }
     sort.list(x, na.last=FALSE, decreasing=FALSE,method="radix")
     # Always put NAs first, relied on in C binary search by relying on NA_integer_ being -maxint (checked in C).
 }
@@ -84,7 +96,7 @@ radixorder1 <- function(x) {
 # 2) with any values => also works on -ve integers, NA
 # 3) directly returns sort value instead of sort order by setting last parameter in C function to FALSE (not accessible via iradixorder)
 # 4) removed "decreasing=". Use 'setrev' instead to get the reversed order
-iradixorder <- function(x) {
+iradixorder <- function(x, o=NULL) {
     # copied from radixorder1 and just changed the call to the correct function
     # xtfrm converts date object to numeric. but this will be called only if it's integer, so do a as.integer(.)
     if(is.object(x)) x = as.integer(xtfrm(x))
@@ -95,7 +107,9 @@ iradixorder <- function(x) {
     if (length(x) == 0L) return(integer(0))
     # OLD: passing list(x) to C to ensure copy is being made...
     # NOTE: passing list(x) does not make a copy in >3.0.2 (devel version currently), so explicitly copying
-    ans <- .Call(Cfastradixint, copy(x), TRUE) # TRUE returns indices, FALSE returns sorted value directly
+    x = copy(x)
+    if (!is.null(o)) setreordervec(x, o)
+    ans <- .Call(Cfastradixint, x, TRUE) # TRUE returns indices, FALSE returns sorted value directly
     ans
     # NA first as data.table requires
 }
@@ -103,12 +117,14 @@ iradixorder <- function(x) {
 # FOR INTERNAL use only.
 # at least > 5-30x times faster than ordernumtol and order (depending on the number of groups to find the tolerance on)
 # real-life performances must be towards the much faster side though.
-dradixorder <- function(x, tol=.Machine$double.eps^0.5) {
+dradixorder <- function(x, o=NULL, tol=.Machine$double.eps^0.5) {
     if (!is.atomic(x) || typeof(x) != "double") stop("'dradixorder' is only numeric 'x'")
     if (length(x) == 0) return(integer(0))
     # OLD: passing list(x) to C to ensure copy is being made...
     # NOTE: passing list(x) does not make a copy in >3.0.2 (devel version currently), so explicitly copying
-    ans <- .Call(Cfastradixdouble, copy(x), as.numeric(tol), TRUE) # TRUE returns order, FALSE returns sorted vector.
+    x = copy(x)
+    if (!is.null(o)) setreordervec(x, o)
+    ans <- .Call(Cfastradixdouble, x, as.numeric(tol), TRUE) # TRUE returns order, FALSE returns sorted vector.
     ans
     # NA first followed by NaN as data.table requires
 }
@@ -117,7 +133,6 @@ regularorder1 <- function(x) {
     if(is.object(x)) x = xtfrm(x) # should take care of handling factors, Date's and others, so we don't need unlist
     sort.list(x, na.last=FALSE, decreasing=FALSE)
 }
-
 
 fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.verbose"))
 {
@@ -143,13 +158,16 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
     )
     # If there is more than one column, run through them back to front to group columns.
     for (w in rev(take(which))) {
-        v = lst[[w]]
-        o = switch(typeof(v),
-            "double" = o[dradixorder(v[o])], # o[ordernumtol(v[o])],   # o was changed by reference by ordernumtol, and returned too, but couldn't get it stable within ties (tests now cover the cases).  TO DO: try again another time
-            "character" = o[chorder(v[o])],   # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol
-            tryCatch(o[radixorder1(v[o])], error=function(e) {
+        v = lst[[w]] # We could make the 'copy' here followed by 'setreordervec' 
+                     # instead of creating 'chorder2'. But 'iradixorder' and 'dradixorder' 
+                     # already take a copy internally So it's better to avoid copying twice.
+        switch(typeof(v),
+            "double" = setreordervec(o, dradixorder(v, o)), # PREV: o[dradixorder(v[o])], PPREV: o[ordernumto(v[o])]
+            "character" = setreordervec(o, chorder2(v, o)), # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol (still stands??)
+            tryCatch(setreordervec(o, radixorder1(v, o)), error=function(e) {
                 if (verbose) cat("Non-first column",w,"failed radixorder1, reverting to 'iradixorder'\n")
-                o[iradixorder(v[o])] # o[regularorder1(v[o])]    # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol
+                setreordervec(o, iradixorder(v, o))         # PREV: o[regularorder1(v[o])]
+                                                            # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol (still holds??)
             })
         )
     }

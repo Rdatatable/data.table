@@ -1962,6 +1962,17 @@ chmatch = function(x,table,nomatch=NA_integer_)
 chorder = function(x) .Call(Ccountingcharacter,x,TRUE)
 chgroup = function(x) .Call(Ccountingcharacter,x,FALSE)
 
+# chorder is exported. So don't change existing behaviour
+# add chorder2 to be used only with fastorder
+# for fastorder (internal) - needn't be not exported
+chorder2 = function(x, o=NULL) {
+    if (!is.null(o)) {
+        x = copy(x)
+        setreordervec(x, o)
+    }
+    .Call(Ccountingcharacter, x, TRUE)
+}
+
 rbindlist = function(l) {
     ans = .Call(Crbindlist,l)
     if (!length(ans)) return(null.data.table())

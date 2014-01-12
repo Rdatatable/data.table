@@ -5,6 +5,24 @@
 //#include <sys/mman.h>
 #include <fcntl.h>
 
+/* for isSortedList */
+#define FLIP_SIGN_BIT   0x8000000000000000
+#define RESET_NA_NAN    0x0000ffffffffffff
+#define SET_NA_NAN_COMP 0xfff8000000000000 // we can directly set complement in hack_na_nan
+
+// change NA/NaN so that their values are consistent across 32/64 bit
+// see fastradixdouble for the issues with NA/NaN for why we do it this way
+// for comparison - flip'em by sign bit - then compare in unsigned form...
+unsigned long long flip_cmp_double(unsigned long long f, Rboolean isnan) {
+    if (isnan) {                  // TO DO: ATM, for both i and i-1 we make checks here. if done by ref. we could try to eliminate check at i-1.
+        f &= RESET_NA_NAN;
+        f |= SET_NA_NAN_COMP;
+    }
+    unsigned long long mask = -(long long)(f >> 63) | FLIP_SIGN_BIT;
+    return f ^ mask;
+}
+
+/* for binary search */
 // following Kevin's suggestion
 // To avoid 'dereferencing type-punned pointer will break strict-aliasing rules' 
 // in recent versions of gcc, casting first and then returning
@@ -254,9 +272,12 @@ SEXP isSortedList(SEXP l, SEXP tolerance)
     R_len_t i,j,nrow,ncol;
     Rboolean b;
     SEXP v;
+    unsigned long long *vu;
     double tol = REAL(tolerance)[0];
     ncol = length(l);
     nrow = length(VECTOR_ELT(l,0));
+    if (NA_INTEGER != INT_MIN) error("Internal error: NA_INTEGER (%d) != INT_MIN (%d).", NA_INTEGER, INT_MIN);
+    if (NA_INTEGER != NA_LOGICAL) error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
     for (j=1; j<ncol; j++) if (length(VECTOR_ELT(l,j)) != nrow) error("length(l[[%d]])==%d != length(l[[1]])==%d", j+1, length(VECTOR_ELT(l,j)), nrow);
     for (i=1; i<nrow; i++) {
         b = TRUE;
@@ -265,11 +286,12 @@ SEXP isSortedList(SEXP l, SEXP tolerance)
             v=VECTOR_ELT(l,j);
             switch (TYPEOF(v)) {      // TO DO: change switch to *(EQ[type])(v,i,i-1)
             case INTSXP : case LGLSXP :
-                b = INTEGER(v)[i]==INTEGER(v)[i-1]; break;   // TO DO: NA
+                b = INTEGER(v)[i]==INTEGER(v)[i-1]; break;      // DONE: NA is INT_MIN (checked above) here, so it just works normally
             case STRSXP :
-                b = STRING_ELT(v,i)==STRING_ELT(v,i-1); break;
+                b = STRING_ELT(v,i)==STRING_ELT(v,i-1); break;  // NA seems to work here as well
             case REALSXP :
-                b = fabs(REAL(v)[i] - REAL(v)[i-1])<tol; break;   // TO DO: NA, NaN, Inf
+                vu = (unsigned long long*)REAL(v); // allows equality checking very straightforward (incl. NA, NaN, -Inf and Inf)
+                b = (vu[i] == vu[i-1] || fabs(REAL(v)[i] - REAL(v)[i-1])<tol); break; // DONE: NA, NaN, -Inf and Inf
             default :
                 error("Type '%s' not supported", type2char(TYPEOF(v))); 
             }
@@ -277,11 +299,12 @@ SEXP isSortedList(SEXP l, SEXP tolerance)
         v = VECTOR_ELT(l,j);
         switch (TYPEOF(v)) {
         case INTSXP : case LGLSXP :
-            b = INTEGER(v)[i]<INTEGER(v)[i-1]; break;    // TO DO: Check assumption NA largest negative
+            b = INTEGER(v)[i]<INTEGER(v)[i-1]; break;    // DONE: Check assumption NA largest negative
         case STRSXP :
             b = StrCmp(STRING_ELT(v,i), STRING_ELT(v,i-1))<0; break;
         case REALSXP :
-            b = REAL(v)[i] < REAL(v)[i-1]; break;    // TO DO: NA, NaN, Inf
+            vu = (unsigned long long*)REAL(v);
+            b = flip_cmp_double(vu[i], ISNAN(REAL(v)[i])) < flip_cmp_double(vu[i-1], ISNAN(REAL(v)[i-1])); break; // DONE: NA, NaN, -Inf and Inf
         default :
             error("Type '%s' not supported", type2char(TYPEOF(v))); 
         }
@@ -290,7 +313,29 @@ SEXP isSortedList(SEXP l, SEXP tolerance)
     return(ScalarLogical(TRUE));
 }
 
+// require(data.table)
+// set.seed(1L)
+// DT <- setDT(lapply(1:2, function(x) sample(c(-1e4:1e4), 1e8, TRUE)))
+// system.time(setkey(DT))
 
+ // no NA/NaN implementation (Matthew's way using REAL(.) < REAL(.)')
+// system.time(data.table:::is.sorted(as.list(DT))[1L])
+//  user  system elapsed 
+// 0.830   0.001   0.850 
+// system.time(data.table:::is.sorted(as.list(DT)))
+//  user  system elapsed 
+// 0.826   0.002   0.828 
+
+// with unsigned long long implementation:
+// system.time(data.table:::is.sorted(as.list(DT))[1L])
+//  user  system elapsed 
+// 1.168   0.002   1.172 
+// system.time(data.table:::is.sorted(as.list(DT)))
+//  user  system elapsed 
+// 1.173   0.002   1.187 
+
+// conclusion: about .33 sec checking NA/NaN/-Inf/Inf! Not bad, I suppose? Can we make it quicker?
+// Note that this is on 1e8. On 1e7 size, this doesn't matter at all as the time to check is 0.07 sec.
 
 
 /*SEXP sortedintegermatch (SEXP ans, SEXP left, SEXP right, SEXP nomatch)
