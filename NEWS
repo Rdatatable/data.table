@@ -167,6 +167,9 @@ NEW FEATURES
      as oldname is unique and unambiguous. Thanks to Wet Feet for highlighting.
        http://stackoverflow.com/questions/20942905/ignore-safety-check-when-using-setnames
 
+  o  FR #5152 is implemented. last(x) where length(x)=0 now returns 'x' instead of an error. Thanks to 
+     Garrett See for reporting.
+
 BUG FIXES
 
   o  Long outstanding (usually small) memory leak in grouping fixed, #2648. When the last group is smaller
