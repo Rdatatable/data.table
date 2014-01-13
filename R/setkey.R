@@ -240,4 +240,51 @@ CJ = function(..., sorted = TRUE)
 }
 
 
+bench = function(quick=TRUE, testback=TRUE) {
+    # fastorder benchmark forwards vs backwards
+    if (quick) {Sr = 1:3; Nr = 2:4} else {Sr = 1:5; Nr = 2:8}
+    ans = setkey(CJ(Levels=as.integer(10^Sr),Rows=as.integer(10^Nr)))
+    ans[, SubGroupN:=format(as.integer(ceiling(Rows/Levels)), big.mark=",")]
+    ans[,Rows:=format(Rows,big.mark=",")]
+    ans[,Levels:=format(Levels,big.mark=",")]
+    for (i in 1:nrow(ans)) {
+        ttype = c("user.self","sys.self")  #  elapsed can sometimes be >> user.self+sys.self. TO DO: three repeats as well.
+        S = ans[i,as.integer(gsub(",","",Levels))]
+        N = ans[i,as.integer(gsub(",","",Rows))]
+        DT = setDT(lapply(1:2, function(x){sample(S,N,replace=TRUE)}))
+        
+        if (testback) ans[i, rand.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
+        ans[i, rand.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
+        if (testback) ans[i, faster := rand.forw<rand.back+0.2]
+        if (testback) if (!identical(x,y)) browser()
+        
+        .Call(Creorder,DT,x)
+        
+        if (testback) ans[i, ord.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
+        ans[i, ord.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
+        if (testback) ans[i, faster2 := ord.forw<ord.back+0.2]
+        if (testback) if (!identical(x,y)) browser()
+        
+        DT[3:4, V2:=rev(V2)]  # unsorted near the top to trigger full sort, is.sorted detects quickly.
+        
+        if (testback) ans[i, ordT.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # T for Top
+        ans[i, ordT.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
+        if (testback) ans[i, faster3 := ordT.forw<ordT.back+0.2]
+        if (testback) if (!identical(x,y)) browser()
+        
+        DT[3:4, V2:=rev(V2)]           # undo the change at the top to make it sorted again
+        DT[nrow(DT)-2:3, V2:=rev(V2)]  # unsorted near the very end, so is.sorted does full scan.
+        
+        if (testback) ans[i, ordB.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # B for Bottom
+        ans[i, ordB.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
+        if (testback) ans[i, faster4 := ordB.forw<ordB.back+0.2]
+        if (testback) if (!identical(x,y)) browser()
+
+        if (i==nrow(ans) || ans[i+1,Levels]!=ans[i,Levels]) print(ans[Levels==Levels[i]])  # print each block as we go along
+    }
+    cat("\nFinished.\n\n")
+    ans
+}
+
+
 

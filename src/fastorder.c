@@ -230,19 +230,21 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by
       
       // TO DO: special case j=2  (one 'if'), j=3, more?
       
-      // Is y sorted?  Turned off currently to test the benefit on ordered input (to simulate almost ordered input)
-      // k=0; while(++k<j && y[k-1]<=y[k]);  // ultra low cost, and localised to the this group too. Tested on CJ(1m:100m rows,10:100k levels). 
-      // if (k==j) { j=0; continue; }
-      // TO DO:  turn back on for production.
+      // Is y sorted?
+      k=0; while(++k<j && y[k-1]<=y[k]);  // ultra low cost, and localised to this group too. Tested on 1m:100m rows, 10:100k levels
+      if (k==j) { j=0; continue; }
+      
+      // To do, no need to calc range if j < 200 for all groups. But, calc of range should be ultra quick.
       
       if (j < 200 || range > 20000) {
           for (k=0; k<j; k++) newo[k] = k+1;
           qsort(newo, (size_t)j, sizeof(int), cmpfunc);
+          // TO DO: specialize qsort to ensure working memory (*) is globalized. (*) unknown, since it depends on the particular libc implementation.
       } else {
           // TO DO:  if range>100000 allocated, can't use counting.  Won't happen here with range switch above, but we're depending on that here.
           countingsort(y, j, counts, newo);
       }
-      //  iradix(y, j, newo, radix_x1, radix_o1);  // This garbles y by reference, but that's deliberate and fine.
+      //  iradix(y, j, newo, radix_x1, radix_o1);  // garbles y by reference, but that's deliberate and fine.
       
       for (k=0; k<j; k++) otmp[k] = o[ i-j+1 + newo[k]-3 ];
       memcpy(o+i-j-1, otmp, j*sizeof(int)); 
