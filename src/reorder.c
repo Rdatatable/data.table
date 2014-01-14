@@ -84,6 +84,7 @@ SEXP reorder(SEXP dt, SEXP order)
     // 'order' must strictly be a permutation of 1:n (i.e. no repeats, zeros or NAs)
     // If only a small subset is reordered, this is detected using start and end.
     char *tmp, *tmpp, *vd;
+    int itmp;
     SEXP v;
     R_len_t i, j, nrow, size, start, end;
     nrow = length(VECTOR_ELT(dt,0));
@@ -94,11 +95,17 @@ SEXP reorder(SEXP dt, SEXP order)
     if (length(order) != nrow) error("nrow(dt)[%d]!=length(order)[%d]",nrow,length(order));
     if (sizeof(int)!=4) error("sizeof(int) isn't 4");
     if (sizeof(double)!=8) error("sizeof(double) isn't 8");   // 8 on both 32bit and 64bit.
+    
     start = 0;
     while (start<nrow && INTEGER(order)[start] == start+1) start++;
     if (start==nrow) return(R_NilValue);  // input is 1:n, nothing to do
     end = nrow-1;
     while (INTEGER(order)[end] == end+1) end--;
+    for (i=start; i<=end; i++) { itmp=INTEGER(order)[i]-1; if (itmp<start || itmp>end) error("order is not a permutation of 1:nrow[%d]", nrow); }
+    // Creorder is for internal use (so we should get the input right!), but the check above seems sensible, otherwise
+    // would be segfault below. That for loop will run in neglible time and will also catch NAs.
+    // It won't catch duplicates in order, but that's ok. Checking that would be going too far given this is for internal use only.
+    
     tmp=(char *)Calloc(end-start+1,double);   // Enough working space for one column of the largest type. setSizes() has a check too.
                                               // So we can reorder a 10GB table in 16GB of RAM
     if (!tmp) error("unable to allocate temporary working memory for reordering data.table");
