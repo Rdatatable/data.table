@@ -40,7 +40,6 @@ SEXP fastradixint();
 SEXP isSortedList();
 SEXP setrev();
 SEXP forder();
-SEXP setreordervec();
 
 // .Externals
 SEXP fastmean();
@@ -81,7 +80,6 @@ R_CallMethodDef callMethods[] = {
 {"CisSortedList", (DL_FUNC) &isSortedList, -1},
 {"Csetrev", (DL_FUNC) &setrev, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
-{"Csetreordervec", (DL_FUNC) &setreordervec, -1},
 {NULL, NULL, 0}
 };
 

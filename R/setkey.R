@@ -70,9 +70,9 @@ setrev <- function(x) .Call(Csetrev, x)
 
 # reorder a vector based on 'order' (integer)
 # to be used in fastorder instead of x[o], but in general, it's better to replace vector subsetting with this..?
-# note that order will be a non-NA containing non-zero positive integer vector. So these checks are not made in setreordervec
+# Basic checks that all items of order are in range 1:n with no NAs are now made inside Creorder.
 # FOR INTERNAL USE ONLY
-setreordervec <- function(x, order) .Call(Csetreordervec, x, order)
+setreordervec <- function(x, order) .Call(Creorder, x, order)
 
 # radixorder1 is used internally, only with fastorder
 # so adding a new argument is okay. added 'o' for order vector

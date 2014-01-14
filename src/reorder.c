@@ -41,58 +41,32 @@ SEXP setrev(SEXP x) {
     return(R_NilValue);
 }
 
-// reorder a vector given the vec and an order vector
-// note that the idea is a *carbon copy* of 'reorder' (below) - except that 
-// it's convenient to have a separate function for vectors
-SEXP setreordervec(SEXP x, SEXP order) {
-    char *tmp, *xt;
-    R_len_t j, n, size;
-    if (TYPEOF(x) == VECSXP || isMatrix(x)) error("Input 'x' must be a vector");
-    n = length(x);
-    if (n <= 1) return(x); // special case
-    if (length(order) != n) error("logical error, length(x) != length(order)");
-    if (TYPEOF(order) != INTSXP) error("type error, 'order' should be integer type");
-    size = SIZEOF(x);
-    if (!size) error("don't know how to reorder type '%s' of input 'x'.",type2char(TYPEOF(x)));
-    if (sizeof(int) !=  4) error("sizeof(int) isn't 4");
-    if (sizeof(double) != 8) error("sizeof(double) isn't 8");
-    xt = (char *)DATAPTR(x);
-    if (size == 4) {
-        tmp = (char *)Calloc(n, int);
-        if (!tmp) error("unable to allocate temporary working memory for reordering x");
-        for (j = 0; j < n; j++) {
-            ((int *)tmp)[j] = ((int *)xt)[INTEGER(order)[j]-1];  // just copies 4 bytes (pointers on 32bit too)
-        }
-    } else {
-        if (size != 8) error("Size of x's type isn't 4 or 8");
-        tmp = (char *)Calloc(n, double);
-        if (!tmp) error("unable to allocate temporary working memory for reordering x");
-        for (j = 0; j < n; j++) {
-            ((double *)tmp)[j] = ((double *)xt)[INTEGER(order)[j]-1];  // just copies 8 bytes (pointers on 64bit too)
-        }
-    }
-    memcpy(xt, tmp, ((size_t)n)*size);
-    Free(tmp);
-    return(R_NilValue);
-}
-
-SEXP reorder(SEXP dt, SEXP order)
+SEXP reorder(SEXP x, SEXP order)
 {
     // For internal use only by fastorder().
     // Reordering a vector in-place doesn't change generations so we can skip SET_STRING_ELT overhead etc.
     // Speed is dominated by page fetch when input is randomly ordered so we're at the software limit here (better bus etc should shine).
     // 'order' must strictly be a permutation of 1:n (i.e. no repeats, zeros or NAs)
     // If only a small subset is reordered, this is detected using start and end.
+    // x may be a vector, or a list of vectors e.g. data.table
     char *tmp, *tmpp, *vd;
-    int itmp;
     SEXP v;
-    R_len_t i, j, nrow, size, start, end;
-    nrow = length(VECTOR_ELT(dt,0));
-    for (i=0;i<length(dt);i++) {
-        if (length(VECTOR_ELT(dt,i))!=nrow) error("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table. Check NEWS link at top of ?data.table for latest bug fixes. If not already reported and fixed, please report to datatable-help.", i+1, length(VECTOR_ELT(dt,i)), nrow);
+    R_len_t i, j, itmp, nrow, ncol, size, start, end;
+    if (isNewList(x)) {
+        nrow = length(VECTOR_ELT(x,0));
+        ncol = length(x);
+        for (i=0;i<ncol;i++) {
+            v = VECTOR_ELT(x,i);
+            if (!isVectorAtomic(v)) error("Item %d of list is not a vector", i+1);
+            if (length(v)!=nrow) error("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table.", i+1, length(v), nrow);
+        }
+    } else {
+        if (!isVectorAtomic(x)) error("reorder accepts lists (e.g. data.table) or vectors");
+        nrow = length(x);
+        ncol = 1;
     }
     if (!isInteger(order)) error("order must be an integer vector");
-    if (length(order) != nrow) error("nrow(dt)[%d]!=length(order)[%d]",nrow,length(order));
+    if (length(order) != nrow) error("nrow(x)[%d]!=length(order)[%d]",nrow,length(order));
     if (sizeof(int)!=4) error("sizeof(int) isn't 4");
     if (sizeof(double)!=8) error("sizeof(double) isn't 8");   // 8 on both 32bit and 64bit.
     
@@ -109,10 +83,10 @@ SEXP reorder(SEXP dt, SEXP order)
     tmp=(char *)Calloc(end-start+1,double);   // Enough working space for one column of the largest type. setSizes() has a check too.
                                               // So we can reorder a 10GB table in 16GB of RAM
     if (!tmp) error("unable to allocate temporary working memory for reordering data.table");
-    for (i=0;i<length(dt);i++) {
-        v = VECTOR_ELT(dt,i);
+    for (i=0; i<ncol; i++) {
+        v = isNewList(x) ? VECTOR_ELT(x,i) : x;
         size = SIZEOF(v);
-        if (!size) error("don't know how to reorder type '%s' of column %d. Please send this message to datatable-help",type2char(TYPEOF(VECTOR_ELT(dt,i))),i+1);
+        if (!size) error("don't know how to reorder type '%s' of column %d. Please send this message to datatable-help",type2char(TYPEOF(v)),i+1);
         tmpp=tmp;
         vd = (char *)DATAPTR(v);
         if (size==4) {
