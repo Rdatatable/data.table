@@ -173,26 +173,20 @@ int cmpfunc (const void * a, const void * b)   // passed to qsort
 
 SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by
 {
-    int i, j, k, lastx, thisx, lasti, thisi, range;
+    int i, j, k, tmp, lastx, thisx, lasti, thisi, range;
     
     memset(t, 0, 10*sizeof(clock_t));
     clock_t tt = clock();
     
     int n = length(VECTOR_ELT(DT,0));
     int *x = INTEGER(VECTOR_ELT(DT,0));
-    
+                                                   // TO DO: avoid temp hard coding
     R_xlen_t *counts = Calloc(100000+2, R_xlen_t); // or on the stack, like base.  Test.
                                                    // Worth allocating smaller? We will still find xmin and max to save looping,
                                                    // so it's just reserving enough space here, really.
     memset(counts, 0, (100000+2)*sizeof(R_xlen_t));  // 0.4MB
     
-    SEXP ans = PROTECT(allocVector(INTSXP, n));
-    setRange(x, n);
-    // if xmax is NA_INTEGER, column is all NA. TO DO: catch here and skip
-    // TO DO:  if range>100000 allocated, can't use counting
-    countingsort(x, n, counts, INTEGER(ans));  // returns 1-based by ref. Deliberately for the case of 1 column input
-    int *o = INTEGER(ans);
-    
+    // TO DO: some of these may not be needed. e.g y won't be in the 1-column case where counting sort is ok and radix ones won't be if radix isn't needed.
     y = Calloc(n, int);     // y is a global so cmpfun can see it.   >> 100,000 so not suitable for stack
     int *otmp = Calloc(n, int);  // But could use largest group (max(counts)) (<< n), from counting sort
     int *newo = Calloc(n, int);  // Doesn't matter as the unused space at the end won't make it into cache.  Just total memory footprint, not speed.
@@ -200,6 +194,21 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by
     // 2 working memory vectors that iradix needs
     int *radix_x1 = Calloc(n, int); // becomes 'ans' in iradix
     int *radix_o1 = Calloc(n, int); // becomes 'ordertmp' in iradix
+    
+    
+    SEXP ans = PROTECT(allocVector(INTSXP, n));
+    // TO DO: test now if sorted using central function for vector that Arun tweaked,  and I suggested skips through in large steps on a first sweep
+    setRange(x, n);
+    if (xmax == NA_INTEGER) error("The all-NA case will be caught above by is.sorted (when implemented). Should not happen here, now.");
+    range = xmax;   // just a nicer variable name than xmax 
+    if (range <= 100000) {
+        countingsort(x, n, counts, INTEGER(ans));
+        // returns 1-based by ref. Deliberately for the case of 1 column input.  TO DO: change to 0-based and sweep a +1 in the last step.
+    } else {
+        memcpy(y, x, n*sizeof(int)); 
+        iradix(y, n, INTEGER(ans), radix_x1, radix_o1);  // garbles y by reference, but that's useful and more efficient later below where y is already a copy and doesn't matter if garbed.
+    }
+    int *o = INTEGER(ans);
     
     t[0] = clock()-tt;
     
@@ -217,25 +226,30 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by
       if ( thisx == lastx ) {  // NA are by now sorted to start, no switch needed here for NA since NA_INTEGER==NA_INTEGER ok
         y[j++] = z[lasti];     // trailing random access to z to avoid fetch of z in size 1 subgroups
         lasti = thisi;
-        if (++i<n) continue;  //  TO DO: remove this 'if' but still deal with the last group
+        if (++i<n) continue;  //  TO DO: remove this 'if' but still deal with the last group? Only an 'if' at n-level, though, not deeper.
       }
       lastx = thisx;
       i++;
       if (j==0) {lasti = thisi; continue;}  // skip subgroup with 1 item
+      // else if j==1 then the next line will make j==2
       y[j++] = z[lasti];   // enter final item of group into y
       lasti = thisi;
       
-      //j = 0; continue;  // BASELINE short circuit
-      // Now j >= 2  (group length)
+      // j = 0; continue;  // BASELINE short circuit timing point
       
-      // TO DO: special case j=2  (one 'if'), j=3, more?
+      if (j==2) {
+          if (y[1]<y[0]) { tmp=o[i-2]; o[i-2]=o[i-3]; o[i-3]=tmp; }   // i++ was already done above, plus it's trailing access
+          j = 0;
+          continue;
+      }
+      // Now j (group length) >= 3. Not special casing j==3, for code brevity since type switches will bloat later.
       
       // Is y sorted?
       k=0; while(++k<j && y[k-1]<=y[k]);  // ultra low cost, and localised to this group too. Tested on 1m:100m rows, 10:100k levels
       if (k==j) { j=0; continue; }
+      // TO DO: change to issorted to return -1/0/-1.
       
-      // To do, no need to calc range if j < 200 for all groups. But, calc of range should be ultra quick.
-      
+      // TO DO: no need to calc range if j < 200 for all groups. OTOH, calc of range should be ultra quick.
       if (j < 200 || range > 20000) {
           for (k=0; k<j; k++) newo[k] = k+1;
           qsort(newo, (size_t)j, sizeof(int), cmpfunc);
