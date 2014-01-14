@@ -90,7 +90,8 @@ SEXP reorder(SEXP dt, SEXP order)
     for (i=0;i<length(dt);i++) {
         if (length(VECTOR_ELT(dt,i))!=nrow) error("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table. Check NEWS link at top of ?data.table for latest bug fixes. If not already reported and fixed, please report to datatable-help.", i+1, length(VECTOR_ELT(dt,i)), nrow);
     }
-    if (length(order) != nrow) error("logical error nrow(dt)!=length(order)");
+    if (!isInteger(order)) error("order must be an integer vector");
+    if (length(order) != nrow) error("nrow(dt)[%d]!=length(order)[%d]",nrow,length(order));
     if (sizeof(int)!=4) error("sizeof(int) isn't 4");
     if (sizeof(double)!=8) error("sizeof(double) isn't 8");   // 8 on both 32bit and 64bit.
     start = 0;
