@@ -1990,12 +1990,18 @@ address = function(x) .Call(Caddress,x)
 
 setDT <- function(x, giveNames=TRUE) {
     giveNames <- as.logical(giveNames[1L])
+    name = substitute(x)
     if (is.na(giveNames))
         stop("Argument 'giveNames' to 'setDT' must be logical TRUE/FALSE")
     if (is.data.table(x)) {
         invisible(x)
     } else if (is.data.frame(x)) {
-        setattr(x, "class", c("data.table", "data.frame"))
+        setattr(x, "row.names", .set_row_names(nrow(x)))
+        tt = class(x)
+        n = chmatch("data.frame", tt)
+        tt = c(head(tt, n - 1L), "data.table", "data.frame", tail(tt, 
+            length(tt) - n))
+        setattr(x, "class", tt)
         settruelength(x, 0L)
         invisible(alloc.col(x))
     } else if (is.list(x)) {
@@ -2022,5 +2028,9 @@ setDT <- function(x, giveNames=TRUE) {
         invisible(alloc.col(x))
     } else {
         stop("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
+    }
+    if (is.name(name)) {
+        name = as.character(name)
+        assign(name, x, parent.frame(), inherits=TRUE)
     }
 }
