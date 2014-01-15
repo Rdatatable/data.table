@@ -296,14 +296,6 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     alloc.col(value)  # returns a NAMED==0 object, unlike data.frame()
 }
 
-is.sorted = function(x) {
-    if (is.list(x)) .Call(CisSortedList, x, sqrt(.Machine$double.eps))
-    else identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.na(x))
-}
-# NA's anywhere need to result in 'not sorted' e.g. test 251 where i table is not sorted but f__ without NAs is sorted. Could check if i is sorted too, but that would take time and that's what SJ is for to make the calling code clear to the reader.
-# Extra logic after && is now needed to maintain backwards compatibility after r-devel's change of is.unsorted(NA) to FALSE (was NA) [May 2013].
-# TO DO: base::is.unsorted calls any(is.na(x)), could avoid by always using CisSortedList
-
 .massagei = function(x) {
     if (is.call(x) && as.character(x[[1L]]) %chin% c("J","."))
         x[[1L]] = quote(list)
@@ -558,7 +550,7 @@ is.sorted = function(x) {
                 else
                     for (s in seq_along(xnonjoin)) {ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]; copyattr(x[[xnonjoin[s]]], ans[[s+length(leftcols)]])}
                 setattr(ans, "names", make.unique(c(names(x)[rightcols],names(x)[-rightcols],names(i)[-leftcols])))
-                if (haskey(i) || is.sorted(f__) || (is.na(nomatch) && any(is.na(f__)) && is.sorted(fastorder(i,leftcols))) ||
+                if (haskey(i) || is.sorted(f__) || (is.na(nomatch) && any(is.na(f__)) && is.null(fastorder(i,leftcols))) ||
                                                    (nomatch==0L && any(f__==0L) && is.sorted(f__[f__!=0L])))
                     # TO DO: any(is.na()) could be anyNA() and any0, and we need an efficient is.unsorted(DT) method.
                     # But we only need is.sorted(i) when there are NA matches, so the above should rarely bite.
@@ -874,8 +866,9 @@ is.sorted = function(x) {
             if (length(byval) && length(byval[[1]])) {
                 if (!bysameorder) {
                     o__ = fastorder(byval)
-                    bysameorder = orderedirows && is.sorted(o__)
-                    if (bysameorder) o__ = integer()   # skip the 1:xnrow vector for efficiency
+                    bysameorder = orderedirows && is.null(o__)
+                    if (bysameorder) o__ = integer()   # skip the 1:xnrow vector for efficiency.  TO DO: Why integer() and not NULL?
+                    else if (is.null(o__)) o__ = 1:xnrow  # temp fix.  TO DO: revist orderedirows
                 }
                 if (bysameorder) {
                     f__ = uniqlist(byval)

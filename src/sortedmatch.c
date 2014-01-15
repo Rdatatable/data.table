@@ -267,7 +267,7 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     return(R_NilValue);
 }
 
-SEXP isSortedList(SEXP l, SEXP tolerance)
+SEXP isSortedList(SEXP l, SEXP w, SEXP tolerance)
 {
     R_len_t i,j,nrow,ncol;
     Rboolean b;
@@ -278,12 +278,13 @@ SEXP isSortedList(SEXP l, SEXP tolerance)
     nrow = length(VECTOR_ELT(l,0));
     if (NA_INTEGER != INT_MIN) error("Internal error: NA_INTEGER (%d) != INT_MIN (%d).", NA_INTEGER, INT_MIN);
     if (NA_INTEGER != NA_LOGICAL) error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
-    for (j=1; j<ncol; j++) if (length(VECTOR_ELT(l,j)) != nrow) error("length(l[[%d]])==%d != length(l[[1]])==%d", j+1, length(VECTOR_ELT(l,j)), nrow);
+    for (j=1; j<ncol; j++) if (length(VECTOR_ELT(l,j)) != nrow) error("Column %d is length %d which differs from length of column 1 (%d).", j+1, length(VECTOR_ELT(l,j)), nrow);
+    if (!isInteger(w)) error("vector w of columns to test isn't an integer vector");
     for (i=1; i<nrow; i++) {
         b = TRUE;
         j = -1;
-        while (b && ++j<ncol-1) {
-            v=VECTOR_ELT(l,j);
+        while (b && ++j<LENGTH(w)-1) {
+            v=VECTOR_ELT(l,INTEGER(w)[j]-1);
             switch (TYPEOF(v)) {      // TO DO: change switch to *(EQ[type])(v,i,i-1)
             case INTSXP : case LGLSXP :
                 b = INTEGER(v)[i]==INTEGER(v)[i-1]; break;      // DONE: NA is INT_MIN (checked above) here, so it just works normally
@@ -296,7 +297,7 @@ SEXP isSortedList(SEXP l, SEXP tolerance)
                 error("Type '%s' not supported", type2char(TYPEOF(v))); 
             }
         }
-        v = VECTOR_ELT(l,j);
+        v = VECTOR_ELT(l,INTEGER(w)[j]-1);
         switch (TYPEOF(v)) {
         case INTSXP : case LGLSXP :
             b = INTEGER(v)[i]<INTEGER(v)[i-1]; break;    // DONE: Check assumption NA largest negative

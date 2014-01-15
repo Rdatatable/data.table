@@ -31,23 +31,18 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
     alreadykeyedbythiskey = identical(key(x),cols)
-    coerced = FALSE   # in future we hope to be able to setkeys on any type, this goes away, and saves more potential copies
     if (".xi" %in% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
     for (i in cols) {
         .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-        if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not (currently) allowed as a key column type.")
+        if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
-    if (!is.sorted(as.list(x)[cols])) {
+    o = fastorder(x, cols, verbose=verbose)
+    if (!is.null(o)) {
         if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
-        o = fastorder(x, cols, verbose=verbose)
         .Call(Creorder,x,o)
-    }
-    if (!alreadykeyedbythiskey) setattr(x,"sorted",cols)   # the if() just to be a tiny bit faster
-    if (coerced && alreadykeyedbythiskey) {
-        # if (verbose) cat("setkey incurred a copy of the whole table, due to the coercion(s) above.\n")
-        warning("Already keyed by this key but had invalid structure (e.g. unordered factor levels, or incorrect column types), key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
-    }
+    } # else NULL from fastorder means x is already ordered by those cols, nothing to do.
+    if (!alreadykeyedbythiskey) setattr(x,"sorted",cols)   # the if() just to save plonking an identical vector into the attribute
     invisible(x)
 }
 
@@ -134,38 +129,55 @@ regularorder1 <- function(x) {
     sort.list(x, na.last=FALSE, decreasing=FALSE)
 }
 
-fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.verbose"))
+is.sorted = function(x, by=seq_along(x)) { 
+    # Return value of TRUE/FALSE is relied on in data.table.R quite a bit. Simpler. Stick with that.
+    # Inside fastorder forwards is where to get fancy with -1/0/+1
+    # The following could be moved into fastorder then and is.sorted could merely be defined as: is.null(fastorder(x,by=by))
+    if (is.list(x)) {
+        if (is.character(by)) by = chmatch(by,names(x))
+        .Call(CisSortedList, x, as.integer(by), sqrt(.Machine$double.eps))
+    }
+    else identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.na(x))
+}
+# base::is.unsorted returns NA if any NA is found anywhere, hence converting NA to FALSE above.
+# The && is now needed to maintain backwards compatibility after r-devel's change of is.unsorted(NA) to FALSE (was NA) [May 2013].
+# base::is.unsorted calls any(is.na(x)) at R level, could be avoided.
+# TO DO: hook up our own vector is.sorted which checks NAs are just at the start, and then returns TRUE. Since, in data.table
+# our rule is NA at the start.
+# TO DO: instead of TRUE/FALSE, return -1/0/+1  -1=sorted in reverse, 0=not sorted either way, 1=sorted forwards. Conveniently, if (-1) in R is TRUE, since anything !=0 is TRUE, just like C.
+
+fastorder <- function(x, by=seq_along(x), verbose=getOption("datatable.verbose"))
 {
-    # lst is a list or anything thats stored as a list and can be accessed with [[.
-    # 'which' may be integers or names
-    # It's easier to pass arguments around this way, and we know for sure that [[ doesn't take a copy but l=list(...) might do.
-    # Run through them back to front to group columns.
-    # This is a different approach to src/main/sort.c:ordervector(...,listgreater). In data.table, keys are
-    # almost always only unique including the last column. There are a great number of repeats in the n-1 columns. So
-    # listgreater would be doing a lot of type switching, skipping across columns in RAM, and getting == to previous
-    # column value a lot. Here, in fastorder we order the whole column, column by column in reverse, updating
-    # the very same 1:n vector that sort.c needs (but passing the previous columns order, not 1:n).
-    w <- last(which)
-    v = lst[[w]]
+    # x can be a vector, or anything that's stored as a list (inc data.frame and data.table), thus can be accessed with non-copying base::[[.
+    # When x is a list, 'by' may be integers or names
+    # This function uses the backwards approach; i.e. first orders the last column, then orders the 2nd to last column ordered by the order of
+    # the last column, and so on. This vectorized approach is much faster than base::order(...) [src/main/sort.c:ordervector(...,listgreater)]
+    # which is a comparison sort comparing 2 rows using a loop through columns for that row with a switch on each column type.
+    
+    if (is.atomic(x)) by=NULL
+    if (is.sorted(x, by=by)) return(NULL)  # callers need to check for NULL (meaning already sorted in increasing order)
+    if (is.atomic(x)) { v = x; w = 1 }  # w = 1 just for the error message below
+    else { w = last(by); v = x[[w]] }
     o = switch(typeof(v),
         "double" = dradixorder(v), # ordernumtol(v),
         "character" = chorder(v),
-        # Use a radix sort (fast and stable for ties), but will fail for range > 1e5 elements (and any negatives)
+        # Use a radix sort (fast and stable for ties), but will fail for range > 1e5 elements (and any negatives in base)
         tryCatch(radixorder1(v),error=function(e) {
-            if (verbose) cat("First column",w,"failed radixorder1, reverting to 'iradixorder'\n")
+            if (verbose) cat("Column",w,"failed radixorder1, reverting to 'iradixorder'\n")
             iradixorder(v) # regularorder1(v)
         })
     )
-    # If there is more than one column, run through them back to front to group columns.
-    for (w in rev(take(which))) {
-        v = lst[[w]] # We could make the 'copy' here followed by 'setreordervec' 
+    if (is.atomic(x)) return(o)
+    # If there is more than one column, run through them backwards
+    for (w in rev(take(by))) {
+        v = x[[w]] # We could make the 'copy' here followed by 'setreordervec' 
                      # instead of creating 'chorder2'. But 'iradixorder' and 'dradixorder' 
                      # already take a copy internally So it's better to avoid copying twice.
         switch(typeof(v),
             "double" = setreordervec(o, dradixorder(v, o)), # PREV: o[dradixorder(v[o])], PPREV: o[ordernumto(v[o])]
             "character" = setreordervec(o, chorder2(v, o)), # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol (still stands??)
             tryCatch(setreordervec(o, radixorder1(v, o)), error=function(e) {
-                if (verbose) cat("Non-first column",w,"failed radixorder1, reverting to 'iradixorder'\n")
+                if (verbose) cat("Column",w,"failed radixorder1, reverting to 'iradixorder'\n")
                 setreordervec(o, iradixorder(v, o))         # PREV: o[regularorder1(v[o])]
                                                             # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol (still holds??)
             })
@@ -248,36 +260,39 @@ bench = function(quick=TRUE, testback=TRUE) {
     ans[,Rows:=format(Rows,big.mark=",")]
     ans[,Levels:=format(Levels,big.mark=",")]
     for (i in 1:nrow(ans)) {
-        ttype = c("user.self","sys.self")  #  elapsed can sometimes be >> user.self+sys.self. TO DO: three repeats as well.
+        ttype = c("user.self","sys.self")  # elapsed can sometimes be >> user.self+sys.self. TO DO: three repeats as well.
+        tol = 0.5                          # we don't mind about 0.5s; benefits when almost sorted outweigh
         S = ans[i,as.integer(gsub(",","",Levels))]
         N = ans[i,as.integer(gsub(",","",Rows))]
         DT = setDT(lapply(1:2, function(x){sample(S,N,replace=TRUE)}))
         
         if (testback) ans[i, rand.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
         ans[i, rand.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
-        if (testback) ans[i, faster := rand.forw<rand.back+0.2]
+        if (testback) ans[i, faster := rand.forw<rand.back+tol]
         if (testback) if (!identical(x,y)) browser()
         
         .Call(Creorder,DT,x)
         
         if (testback) ans[i, ord.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
         ans[i, ord.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
-        if (testback) ans[i, faster2 := ord.forw<ord.back+0.2]
+        if (testback) ans[i, faster2 := ord.forw<ord.back+tol]
         if (testback) if (!identical(x,y)) browser()
         
-        DT[3:4, V2:=rev(V2)]  # unsorted near the top to trigger full sort, is.sorted detects quickly.
+        old = DT[3:4, V1]  # can't just rev() those values because they may be equal
+                           # must be column 1 to avoid straddling a group boundary
+        DT[3:4, V1:=2:1]   # unsorted near the top to trigger full sort, is.sorted detects quickly.
         
         if (testback) ans[i, ordT.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # T for Top
         ans[i, ordT.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
-        if (testback) ans[i, faster3 := ordT.forw<ordT.back+0.2]
+        if (testback) ans[i, faster3 := ordT.forw<ordT.back+tol]
         if (testback) if (!identical(x,y)) browser()
         
-        DT[3:4, V2:=rev(V2)]           # undo the change at the top to make it sorted again
-        DT[nrow(DT)-2:3, V2:=rev(V2)]  # unsorted near the very end, so is.sorted does full scan.
+        DT[3:4, V1:=old]           # undo the change at the top to make it sorted again
+        DT[nrow(DT)-2:3, V1:=2:1]  # unsorted near the very end, so is.sorted does full scan.
         
         if (testback) ans[i, ordB.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # B for Bottom
         ans[i, ordB.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
-        if (testback) ans[i, faster4 := ordB.forw<ordB.back+0.2]
+        if (testback) ans[i, faster4 := ordB.forw<ordB.back+tol]
         if (testback) if (!identical(x,y)) browser()
 
         if (i==nrow(ans) || ans[i+1,Levels]!=ans[i,Levels]) print(ans[Levels==Levels[i]])  # print each block as we go along

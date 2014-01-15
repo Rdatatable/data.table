@@ -170,10 +170,27 @@ int cmpfunc (const void * a, const void * b)   // passed to qsort
    // ?: is ultra fast. It's not worth returning y[i-1]-y[j-1] and then checking afterwards (and resolving) any non-stability. Tested repetitively on in-cache 1k vector (saved just 0.5s on 18s at expense of more complex code).
 }
 
+int isorted(int *x, int n)
+{
+    // base:is.unsorted does any(is.na(x)) at R level (inefficient), and returns NA (missing sorted cases where NA are at the start).
+    // Here we deal with NAs in C and return true if NAs are all at the beginning.
+    // We also return -1 if x is sorted, but in reverse order (with NAs all at the end); a common case we optimize in fastorder.
+    // For internal use only in fastorder, which now returns NULL if already sorted (hence no need for separate is.sorted).
+    // TO DO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
+    int i=1, ret;
+    // taken out of deep loop ... if (NA_INTEGER != INT_MIN) error("assumed NA is largest negative integer");
+    while (i<n && x[i]==x[i-1]) i++;   // find first item not equal to previous
+    if (i==n) return(1);    // all one number, or all NAs
+    if (x[i] > x[i-1]) {ret=1; i++; while (i<n && x[i] >= x[i-1]) i++;}
+    else {ret=-1; i++; while (i<n && x[i] <= x[i-1]) i++;}
+    return( i==n ? ret : 0 );
+}
 
-SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by
+
+SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by.  Allow DT to be a vector, too
 {
     int i, j, k, tmp, lastx, thisx, lasti, thisi, range;
+    Rboolean isSorted = TRUE;
     
     memset(t, 0, 10*sizeof(clock_t));
     clock_t tt = clock();
@@ -197,24 +214,34 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by
     
     
     SEXP ans = PROTECT(allocVector(INTSXP, n));
-    // TO DO: test now if sorted using central function for vector that Arun tweaked,  and I suggested skips through in large steps on a first sweep
-    setRange(x, n);
-    if (xmax == NA_INTEGER) error("The all-NA case will be caught above by is.sorted (when implemented). Should not happen here, now.");
-    range = xmax;   // just a nicer variable name than xmax 
-    if (range <= 100000) {
-        countingsort(x, n, counts, INTEGER(ans));
-        // returns 1-based by ref. Deliberately for the case of 1 column input.  TO DO: change to 0-based and sweep a +1 in the last step.
+    
+    if ((tmp = isorted(x, n))) {
+        if (tmp>0)
+            for (i=0; i<n; i++) INTEGER(ans)[i] = i+1;
+        else {
+            isSorted = FALSE;
+            for (i=n-1; i>=0; i--) INTEGER(ans)[i] = n-i;
+        }
     } else {
-        memcpy(y, x, n*sizeof(int)); 
-        iradix(y, n, INTEGER(ans), radix_x1, radix_o1);  // garbles y by reference, but that's useful and more efficient later below where y is already a copy and doesn't matter if garbed.
+        isSorted = FALSE;
+        setRange(x, n);
+        if (xmax == NA_INTEGER) error("The all-NA case should have been caught by isorted above");
+        range = xmax;   // just a nicer variable name than xmax 
+        if (range <= 100000) {
+            countingsort(x, n, counts, INTEGER(ans));
+            // returns 1-based by ref. Deliberately for the case of 1 column input.  TO DO: change to 0-based and sweep a +1 in the last step.
+        } else {
+            memcpy(y, x, n*sizeof(int)); 
+            iradix(y, n, INTEGER(ans), radix_x1, radix_o1);  // garbles y by reference, but that's useful and more efficient later below where y is already a copy and doesn't matter if garbed.
+        }
     }
     int *o = INTEGER(ans);
     
     t[0] = clock()-tt;
     
-    int *z = INTEGER(VECTOR_ELT(DT,1));  // hard coded for now for dev test
+    int *z = INTEGER(VECTOR_ELT(DT,1));  // hard coded for now for dev test. TO DO: fix
     setRange(z, n);
-    // if xmax is NA_INTEGER, column is all NA. TO DO: catch here and skip
+    if (xmax==NA_INTEGER) error("2nd column is all NA. TO DO: catch here and skip");
     range = xmax;   // just a nicer variable name than xmax
     
     lasti = o[0]-1;
@@ -238,16 +265,23 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by
       // j = 0; continue;  // BASELINE short circuit timing point
       
       if (j==2) {
-          if (y[1]<y[0]) { tmp=o[i-2]; o[i-2]=o[i-3]; o[i-3]=tmp; }   // i++ was already done above, plus it's trailing access
+          if (y[1]<y[0]) { isSorted=FALSE; tmp=o[i-2]; o[i-2]=o[i-3]; o[i-3]=tmp; }   // i++ was already done above, plus it's trailing access
           j = 0;
           continue;
       }
       // Now j (group length) >= 3. Not special casing j==3, for code brevity since type switches will bloat later.
-      
-      // Is y sorted?
-      k=0; while(++k<j && y[k-1]<=y[k]);  // ultra low cost, and localised to this group too. Tested on 1m:100m rows, 10:100k levels
-      if (k==j) { j=0; continue; }
-      // TO DO: change to issorted to return -1/0/-1.
+
+      if ((tmp = isorted(y, j))) {
+          // isorted is ultra low cost, and localised to this group too. Tested on 1m:100m rows, 10:100k levels
+          if (tmp<0) {
+              isSorted = FALSE;
+              for (k=0; k<j; k++) otmp[k] = o[ i-j-1 + j-1-k ];  // reverse the order
+              memcpy(o+i-j-1, otmp, j*sizeof(int)); 
+          }
+          j=0;
+          continue;
+      }
+      isSorted = FALSE;
       
       // TO DO: no need to calc range if j < 200 for all groups. OTOH, calc of range should be ultra quick.
       if (j < 200 || range > 20000) {
@@ -272,7 +306,7 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by
     Free(radix_o1);
     UNPROTECT(1);
     // for (i=0; i<10; i++) Rprintf("Timing block %d = %8.3f\n", i, 1.0*t[i]/CLOCKS_PER_SEC);
-    return( ans );
+    return( isSorted ? R_NilValue : ans );
 }
 
 
