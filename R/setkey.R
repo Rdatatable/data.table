@@ -252,7 +252,8 @@ CJ = function(..., sorted = TRUE)
 }
 
 
-bench = function(quick=TRUE, testback=TRUE) {
+bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
+    if (baseline) testback=FALSE  # when baseline return in fastorder.c is uncommented, baseline must be TRUE
     # fastorder benchmark forwards vs backwards
     if (quick) {Sr = 1:3; Nr = 2:4} else {Sr = 1:5; Nr = 2:8}
     ans = setkey(CJ(Levels=as.integer(10^Sr),Rows=as.integer(10^Nr)))
@@ -266,18 +267,21 @@ bench = function(quick=TRUE, testback=TRUE) {
         N = ans[i,as.integer(gsub(",","",Rows))]
         DT = setDT(lapply(1:2, function(x){sample(S,N,replace=TRUE)}))
         
-        if (testback) ans[i, rand.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
+        if (testback || baseline) ans[i, rand.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
+        # in baseline mode, Cforder doesn't order, so y is needed to test baseline on ordered DT
         ans[i, rand.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
         if (testback) ans[i, faster1 := rand.forw<rand.back+tol]
         if (testback) if (!identical(x,y)) browser()
         
-        .Call(Creorder,DT,x)
+        .Call(Creorder,DT, if (baseline) y else x)
+        if (!is.sorted(DT)) stop("Logical error: ordered table is not sorted according to is.sorted!")
+        if (baseline) ans[, rand.back:=NULL]
         
         if (testback) ans[i, ord.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
         ans[i, ord.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
         if (testback) ans[i, faster2 := ord.forw<ord.back+tol]
         if (testback) if (!identical(x,y)) browser()
-
+        
         if (DT[[1]][1] == DT[[1]][2]) v = 2 else v = 1  # make small change to column 2, unless rows 1 and 2 aren't in the same group by column 1
         old = DT[[v]][1:2]
         DT[1:2, (v):=77:76]   # unsorted near the top to trigger full sort, is.sorted detects quickly.
