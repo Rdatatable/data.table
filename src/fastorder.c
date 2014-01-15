@@ -174,22 +174,25 @@ int isorted(int *x, int n)
 {
     // base:is.unsorted does any(is.na(x)) at R level (inefficient), and returns NA (missing sorted cases where NA are at the start).
     // Here we deal with NAs in C and return true if NAs are all at the beginning.
-    // We also return -1 if x is sorted, but in reverse order (with NAs all at the end); a common case we optimize in fastorder.
+    // We also return -1 if x is sorted in _strictly_ reverse order; a common case we optimize in fastorder.
+    // If a vector is in decreasing order *with ties*, then an in-place reverse (no sort) would result in instability of ties.
     // For internal use only in fastorder, which now returns NULL if already sorted (hence no need for separate is.sorted).
     // TO DO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
-    int i=1, ret;
+    int i=1;
     // taken out of deep loop ... if (NA_INTEGER != INT_MIN) error("assumed NA is largest negative integer");
-    while (i<n && x[i]==x[i-1]) i++;   // find first item not equal to previous
-    if (i==n) return(1);    // all one number, or all NAs
-    if (x[i] > x[i-1]) {ret=1; i++; while (i<n && x[i] >= x[i-1]) i++;}
-    else {ret=-1; i++; while (i<n && x[i] <= x[i-1]) i++;}
-    return( i==n ? ret : 0 );
+    while (i<n && x[i]>=x[i-1]) i++;
+    if (i==n) return(1);    // increasing order, possibly with ties
+    if (i==1) {
+        while (i<n && x[i]<x[i-1]) i++;  
+        if (i==n) return(-1);   // strictly decreasing order, no ties; e.g. no more than one NA at the end
+    }
+    return(0);
 }
 
 
 SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by.  Allow DT to be a vector, too
 {
-    int i, j, k, tmp, lastx, thisx, lasti, thisi, range;
+    int i, j, k, tmp, lastx, thisx, lasti, thisi, range, *ot;
     Rboolean isSorted = TRUE;
     
     memset(t, 0, 10*sizeof(clock_t));
@@ -275,8 +278,12 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by.  Allo
           // isorted is ultra low cost, and localised to this group too. Tested on 1m:100m rows, 10:100k levels
           if (tmp<0) {
               isSorted = FALSE;
-              for (k=0; k<j; k++) otmp[k] = o[ i-j-1 + j-1-k ];  // reverse the order
-              memcpy(o+i-j-1, otmp, j*sizeof(int)); 
+              ot = o+i-j-1;
+              for (k=0;k<j/2;k++) {    // reverse the order in-place using no function call or working memory 
+                  tmp = ot[k];         // isorted only returns -1 for _strictly_ decreasing order, otherwise ties wouldn't be stable
+                  ot[k] = ot[j-1-k];
+                  ot[j-1-k] = tmp;
+              }
           }
           j=0;
           continue;
@@ -294,7 +301,8 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by.  Allo
       }
       //  iradix(y, j, newo, radix_x1, radix_o1);  // garbles y by reference, but that's deliberate and fine.
       
-      for (k=0; k<j; k++) otmp[k] = o[ i-j+1 + newo[k]-3 ];
+      // TO DO: could also be done using the in-place rev method above :
+      for (k=0; k<j; k++) otmp[k] = o[ i-j+1 + newo[k]-3 ];  
       memcpy(o+i-j-1, otmp, j*sizeof(int)); 
       j = 0;
     }

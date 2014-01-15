@@ -268,7 +268,7 @@ bench = function(quick=TRUE, testback=TRUE) {
         
         if (testback) ans[i, rand.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
         ans[i, rand.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
-        if (testback) ans[i, faster := rand.forw<rand.back+tol]
+        if (testback) ans[i, faster1 := rand.forw<rand.back+tol]
         if (testback) if (!identical(x,y)) browser()
         
         .Call(Creorder,DT,x)
@@ -289,10 +289,10 @@ bench = function(quick=TRUE, testback=TRUE) {
         if (testback) if (!identical(x,y)) browser()
 
         DT[1:2, (v):=old]          # undo the change at the top to make it sorted again
-        if (!is.sorted(DT)) stop("Logical error: reverting the small change didn't make DT ordered again")
+        if (!is.sorted(DT)) stop("Logical error: reverting the small change at the top didn't make DT ordered again")
         r = c(nrow(DT)-1, nrow(DT))
         if (DT[[1]][r[1]] == DT[[1]][r[2]]) v = 2 else v = 1
-        old = DT[[v]][1:2]
+        old = DT[[v]][r]
         DT[r, (v):=77:76]    # unsorted near the very end, so is.sorted does full scan.
         if (is.sorted(DT)) stop("Table is sorted. Change to the very bottom didn't work.")
         
@@ -300,7 +300,19 @@ bench = function(quick=TRUE, testback=TRUE) {
         ans[i, ordB.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
         if (testback) ans[i, faster4 := ordB.forw<ordB.back+tol]
         if (testback) if (!identical(x,y)) browser()
-
+        
+        DT[r, (v):=old]          # undo the change at the top to make it sorted again
+        if (!is.sorted(DT)) stop("Logical error: reverting the small change at the bottom didn't make DT ordered again")
+        
+        .Call(Creorder,DT,nrow(DT):1)   # Pefect reverse order, some sort algo's worst case e.g. O(n^2)
+        if (is.sorted(DT)) stop("Logical error: reverse order of table is sorted according to is.sorted!")
+        # Adding this test revealed the complexity that a reverse order vector containing ties, would not be stable if the reverse was applied. isorted fixed so that -1 returned only if strictly decreasing order
+        
+        if (testback) ans[i, rev.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # rev = reverse order
+        ans[i, rev.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
+        if (testback) ans[i, faster5 := rev.forw<rev.back+tol]
+        if (testback) if (!identical(x,y)) browser()
+        
         if (i==nrow(ans) || ans[i+1,Levels]!=ans[i,Levels]) print(ans[Levels==Levels[i]])  # print each block as we go along
     }
     cat("\nFinished.\n\n")
