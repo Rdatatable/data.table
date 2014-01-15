@@ -1987,7 +1987,7 @@ setDT <- function(x, giveNames=TRUE) {
     if (is.na(giveNames))
         stop("Argument 'giveNames' to 'setDT' must be logical TRUE/FALSE")
     if (is.data.table(x)) {
-        invisible(x)
+        return(invisible(x))
     } else if (is.data.frame(x)) {
         setattr(x, "row.names", .set_row_names(nrow(x)))
         tt = class(x)
@@ -1996,7 +1996,7 @@ setDT <- function(x, giveNames=TRUE) {
             length(tt) - n))
         setattr(x, "class", tt)
         settruelength(x, 0L)
-        invisible(alloc.col(x))
+        alloc.col(x)
     } else if (is.list(x)) {
         # copied from as.data.table.list - except removed the copy
         if (!length(x)) return( null.data.table() )
@@ -2018,7 +2018,7 @@ setDT <- function(x, giveNames=TRUE) {
         setattr(x,"row.names",.set_row_names(max(n)))
         setattr(x,"class",c("data.table","data.frame"))
         settruelength(x, 0L)
-        invisible(alloc.col(x))
+        alloc.col(x)
     } else {
         stop("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
     }
@@ -2026,4 +2026,6 @@ setDT <- function(x, giveNames=TRUE) {
         name = as.character(name)
         assign(name, x, parent.frame(), inherits=TRUE)
     }
+    invisible(x)
 }
+

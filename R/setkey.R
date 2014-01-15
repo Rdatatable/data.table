@@ -277,18 +277,24 @@ bench = function(quick=TRUE, testback=TRUE) {
         ans[i, ord.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
         if (testback) ans[i, faster2 := ord.forw<ord.back+tol]
         if (testback) if (!identical(x,y)) browser()
-        
-        old = DT[3:4, V1]  # can't just rev() those values because they may be equal
-                           # must be column 1 to avoid straddling a group boundary
-        DT[3:4, V1:=2:1]   # unsorted near the top to trigger full sort, is.sorted detects quickly.
+
+        if (DT[[1]][1] == DT[[1]][2]) v = 2 else v = 1  # make small change to column 2, unless rows 1 and 2 aren't in the same group by column 1
+        old = DT[[v]][1:2]
+        DT[1:2, (v):=77:76]   # unsorted near the top to trigger full sort, is.sorted detects quickly.
+        if (is.sorted(DT)) stop("Table is sorted. Change to the top didn't work.")
         
         if (testback) ans[i, ordT.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # T for Top
         ans[i, ordT.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
         if (testback) ans[i, faster3 := ordT.forw<ordT.back+tol]
         if (testback) if (!identical(x,y)) browser()
-        
-        DT[3:4, V1:=old]           # undo the change at the top to make it sorted again
-        DT[nrow(DT)-2:3, V1:=2:1]  # unsorted near the very end, so is.sorted does full scan.
+
+        DT[1:2, (v):=old]          # undo the change at the top to make it sorted again
+        if (!is.sorted(DT)) stop("Logical error: reverting the small change didn't make DT ordered again")
+        r = c(nrow(DT)-1, nrow(DT))
+        if (DT[[1]][r[1]] == DT[[1]][r[2]]) v = 2 else v = 1
+        old = DT[[v]][1:2]
+        DT[r, (v):=77:76]    # unsorted near the very end, so is.sorted does full scan.
+        if (is.sorted(DT)) stop("Table is sorted. Change to the very bottom didn't work.")
         
         if (testback) ans[i, ordB.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # B for Bottom
         ans[i, ordB.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
