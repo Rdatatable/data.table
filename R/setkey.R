@@ -257,6 +257,10 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
     # fastorder benchmark forwards vs backwards
     if (quick) {Sr = 1:3; Nr = 2:4} else {Sr = 1:5; Nr = 2:8}
     ans = setkey(CJ(Levels=as.integer(10^Sr),Rows=as.integer(10^Nr)))
+    
+    # TO DO:  add a case   S1 : 1e7 levels    S2 : 1:3   Every level has 3 rows.   1e7 calls to iradix
+    #   Sr:  c(1:3, 10^(1:7))    CJ(Sr,Sr) all combinations
+    
     ans[, SubGroupN:=format(as.integer(ceiling(Rows/Levels)), big.mark=",")]
     ans[,Rows:=format(Rows,big.mark=",")]
     ans[,Levels:=format(Levels,big.mark=",")]
