@@ -14,7 +14,7 @@ extern SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 extern SEXP coerce_to_char(SEXP s, SEXP env);
 
 // generate from 1 to n (a simple fun for melt, vecseq is convenient from R due to SEXP inputs)
-SEXP intseq(int n, int start) {
+SEXP seq_int(int n, int start) {
     SEXP ans = R_NilValue;
     int i;
     if (n <= 0) return(ans);
@@ -24,13 +24,13 @@ SEXP intseq(int n, int start) {
     return(ans);
 }
 
-// very specific "setDiff" for integers
-SEXP setDiff(SEXP x, int n) {
+// very specific "set_diff" for integers
+SEXP set_diff(SEXP x, int n) {
     SEXP ans, xmatch;
     int i, j = 0, *buf;
     if (TYPEOF(x) != INTSXP) error("'x' must be an integer");
     if (n <= 0) error("'n' must be a positive integer");
-    xmatch = match(x, intseq(n, 1), 0); // took a while to realise: matches vec against x - thanks to comment from Matthew in assign.c!
+    xmatch = match(x, seq_int(n, 1), 0); // took a while to realise: matches vec against x - thanks to comment from Matthew in assign.c!
     
     buf = (int *) R_alloc(n, sizeof(int));
     for (i=0; i<n; i++) {
@@ -172,7 +172,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
                 INTEGER(unqtmp)[u++] = INTEGER(tmp)[i];
             }
         }
-        PROTECT(valuecols = setDiff(unqtmp, ncol)); protecti++;
+        PROTECT(valuecols = set_diff(unqtmp, ncol)); protecti++;
         PROTECT(idcols = tmp); protecti++;
         if (verbose) Rprintf("'measure.var' is missing. Assigning all columns other than 'id.var' columns which are %s as 'measure.var'.\n", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
     } else if (isNull(id) && !isNull(measure)) {
@@ -196,7 +196,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
                 INTEGER(unqtmp)[u++] = INTEGER(tmp)[i];
             }
         }
-        PROTECT(idcols = setDiff(unqtmp, ncol)); protecti++;
+        PROTECT(idcols = set_diff(unqtmp, ncol)); protecti++;
         PROTECT(valuecols = tmp); protecti++;
         if (verbose) Rprintf("'id.var' is missing. Assigning all columns other than 'measure.var' columns as 'id.var'. Assigned 'id.var's are %s.\n", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
     } else if (!isNull(id) && !isNull(measure)) {

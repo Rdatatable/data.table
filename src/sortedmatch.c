@@ -5,6 +5,9 @@
 //#include <sys/mman.h>
 #include <fcntl.h>
 
+#define ASCII(x) (LEVELS(x) & 76) == 64 // check if encoding is ASCII
+// LATIN1_MASK (1<<2) | UTF8_MASK (1<<3) | ASCII_MASK (1<<6)
+
 /* for isSortedList */
 #define FLIP_SIGN_BIT   0x8000000000000000
 #define RESET_NA_NAN    0x0000ffffffffffff
@@ -60,7 +63,9 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     double tol = REAL(tolerance)[0], roll, rollabs;
     Rboolean nearest=FALSE;
     SEXP lc=NULL, rc=NULL;
-
+    unsigned long long *lc_ul, *rc_ul;  // for NA/NaN numerics
+    const char *lval_c, *rval_c;        // for character encoding checks with strncmp (bug #5256 and first part of bug #5159 - 2nd part is fixed in chmatch in countingcharacter.c)
+    
     // get value of NA and NaN in unsigned long to check for TYPE=REAL case below.
     const unsigned long long R_UNSIGNED_LONG_NA_REAL  = R_NA_unsigned_long();
     const unsigned long long R_UNSIGNED_LONG_NAN_REAL = R_NaN_unsigned_long();
@@ -104,10 +109,6 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             lc = VECTOR_ELT(left,INTEGER(leftcols)[col]);
             rc = VECTOR_ELT(right,INTEGER(rightcols)[col]);
 
-            // hack to pull out the binary search results for NA and NaN
-            unsigned long long* lc_ul = (unsigned long long*)REAL(lc);
-            unsigned long long* rc_ul = (unsigned long long*)REAL(rc);
-
             prevlow = low;
             prevupp = upp;
             type = TYPEOF(lc);
@@ -145,27 +146,32 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                 }
                 break;
             case STRSXP :
+                // lval_c and rval_c are added to address bugs reg. character encoding - bugs #5159 and #5266
                 lval.s = STRING_ELT(lc,lr);
+                lval_c = ASCII(lval.s) ? CHAR(lval.s) : translateCharUTF8(lval.s);
                 // if (lval.s==NA_STRING) goto nextlr;
                 while(low < upp-1) {
                     mid = low+((upp-low)/2);
                     rval.s = STRING_ELT(rc,mid);
+                    rval_c = ASCII(rval.s) ? CHAR(rval.s) : translateCharUTF8(rval.s);
                     // if (rval.s == NA_STRING) error("NA not allowed in keys"); should be in setkey as some NA may be missed by the binary search here.
-                    if (rval.s==lval.s) {
+                    if (strncmp(lval_c, rval_c, strlen(lval_c)) == 0) {
                         newlow = mid;
                         newupp = mid;
                         while(newlow<upp-1) {
                             mid = newlow+((upp-newlow)/2);
                             rval.s = STRING_ELT(rc,mid);
-                            if (rval.s == lval.s) newlow=mid; else upp=mid;
+                            rval_c = ASCII(rval.s) ? CHAR(rval.s) : translateCharUTF8(rval.s);
+                            if (strncmp(lval_c, rval_c, strlen(lval_c)) == 0) newlow=mid; else upp=mid;
                         }
                         while(low<newupp-1) {
                             mid = low+((newupp-low)/2);
                             rval.s = STRING_ELT(rc,mid);
-                            if (rval.s == lval.s) newupp=mid; else low=mid;
+                            rval_c = ASCII(rval.s) ? CHAR(rval.s) : translateCharUTF8(rval.s);
+                            if (strncmp(lval_c, rval_c, strlen(lval_c)) == 0) newupp=mid; else low=mid;
                         }
                         break;
-                    } else if (StrCmp(rval.s, lval.s)<0) {
+                    } else if (strncmp(lval_c, rval_c, strlen(lval_c)) > 0) {
                     // TO DO: Reinvestigate non-ASCII. Switch can be a column level check that all is ascii
                     // (setkey can check and mark). Used to use Rf_Scollate but was removed from r-devel API.
                     // We're using the last line of scmp in sort.c since we already dealt with NA and == above
@@ -176,6 +182,10 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                 }
                 break;
             case REALSXP :
+                // hack to pull out the binary search results for NA and NaN
+                lc_ul = (unsigned long long*)REAL(lc);
+                rc_ul = (unsigned long long*)REAL(rc);
+
                 // same comments for INTSXP apply here
                 lval.d = REAL(lc)[lr];
                 unsigned long long lval_ud, rval_ud;

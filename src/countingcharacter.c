@@ -191,7 +191,13 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
     savetl_init();
     for (i=0; i<length(x); i++) {
         s = STRING_ELT(x,i);
-        if (s != NA_STRING && !ENC_KNOWN(s)) {
+        if (s != NA_STRING && ENC_KNOWN(s) != 64) { // PREV: s != NA_STRING && !ENC_KNOWN(s) - changed to fix for bug #5159. The previous fix 
+                                           // dealt with UNKNOWN encodings. But we could have the same string, where both are in different 
+                                           // encodings than ASCII (ex: UTF8 and Latin1). To fix this, we'll to resort to 'match' if not ASCII.
+                                           // This takes care of all anomalies. It's unfortunate the 'chmatch' can't be used in these cases...
+                                           // // fix for the 2nd part of bug #5159
+
+            // explanation for PREV case: (still useful to keep it here)
             // symbols (i.e. as.name() or as.symbol()) containing non-ascii characters (>127) seem to be 'unknown' encoding in R.
             // The same string in different encodings (where unknown encoding is different to known, too) are different
             // CHARSXP pointers; this chmatch relies on pointer equality only. We tried mkChar(CHAR(s)) [ what install() does ]
@@ -209,7 +215,7 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
     }
     for (i=length(table)-1; i>=0; i--) {
         s = STRING_ELT(table,i);
-        if (s != NA_STRING && !ENC_KNOWN(s)) {
+        if (s != NA_STRING && ENC_KNOWN(s) != 64) { // changed !ENC_KNOWN(s) to !ASCII(s) - check above for explanation	
             for (int j=i+1; j<LENGTH(table); j++) SET_TRUELENGTH(STRING_ELT(table,j),0);  // reinstate 0 rather than leave the -i-1
             savetl_end();  // and then reinstate HASHPRI (if any) over the 0
             return (in ? match_logical(table, x) : match(table, x, nomatch));

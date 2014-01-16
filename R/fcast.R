@@ -36,9 +36,10 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         stop("Only 'value.var' column maybe of type 'list'. This may change in the future.")
     drop <- as.logical(drop[1])
     if (is.na(drop)) stop("'drop' must be TRUE/FALSE")
-    is.sorted <- FALSE
-    if (!is.null(key(data)) && length(ff_) <= length(key(data)) && all(key(data) == ff_[1:length(key(data))])) 
-        is.sorted = TRUE
+    is_sorted <- FALSE # replaced is.sorted with is_sorted (as it clashes with the new function)
+    # added || is.sorted(DT, ff_) after Matthew added is.sorted - now we can check for "sortedness" even if key isn't set
+    if ((!is.null(key(data)) && length(ff_) <= length(key(data)) && all(key(data) == ff_[1:length(key(data))])) || is.sorted(data, ff_)) 
+        is_sorted = TRUE
     # TO DO: better way... not sure how else to get an expression from function (in fun.aggregate)
     m <- as.list(match.call()[-1])
     subset <- m$subset[[2]]
@@ -78,7 +79,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     assign("Cfastmean", Cfastmean, .CASTenv)
     assign("mean", base::mean.default, .CASTenv)
     if (!is.null(vars)) for (i in vars) assign(i, data[[i]], .CASTenv) # assign subset vars directly in env
-    ans <- .Call("Cfcast", data, ff$ll, ff$rr, value.var, fill, tolerance, .CASTenv, is.sorted, fun.aggregate, fill.default, drop, subset)
+    ans <- .Call("Cfcast", data, ff$ll, ff$rr, value.var, fill, tolerance, .CASTenv, is_sorted, fun.aggregate, fill.default, drop, subset)
     setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
     setattr(ans, "class", c("data.table", "data.frame"))
     settruelength(ans, 0L)

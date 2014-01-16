@@ -10,32 +10,35 @@ int sizes[100];
 
 extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
 extern SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol);
+extern SEXP uniqlist(SEXP l, SEXP order, SEXP tol);
 extern SEXP allocNAVector(SEXPTYPE type, R_len_t n);
-extern SEXP intseq(int n, int start);
-extern SEXP setDiff(SEXP x, int n);
+extern SEXP seq_int(int n, int start);
+extern SEXP set_diff(SEXP x, int n);
 extern SEXP which_notNA(SEXP x);
 extern SEXP which(SEXP x);
 extern SEXP concat(SEXP vec, SEXP idx);
 extern SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose);
 extern SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 extern SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP rollarg, SEXP rollends, SEXP nomatch, SEXP tolerance, SEXP retFirst, SEXP retLength, SEXP allLen1);
+extern SEXP reorder(SEXP x, SEXP order);
+extern SEXP isSortedList(SEXP l, SEXP w, SEXP tolerance);
 
 // Note: all these functions below are internal functions and are designed specific to fcast.
-SEXP allocZeroVector(R_len_t n) {
+SEXP zero_init(R_len_t n) {
     R_len_t i;
     SEXP ans;
-    if (n < 0) error("Input argument 'n' to 'allocZeroVector' must be >= 0");
+    if (n < 0) error("Input argument 'n' to 'zero_init' must be >= 0");
     ans = PROTECT(allocVector(INTSXP, n));
     for (i=0; i<n; i++) INTEGER(ans)[i] = 0;
     UNPROTECT(1);
     return(ans);
 }
 
-SEXP initvec(R_len_t n, SEXP val) {
+SEXP vec_init(R_len_t n, SEXP val) {
     
     SEXP ans;
     R_len_t i;
-    if (n < 0) error("Input argument 'n' to 'initvec' must be >= 0");
+    if (n < 0) error("Input argument 'n' to 'vec_init' must be >= 0");
     ans = PROTECT(allocVector(TYPEOF(val), n));
     switch(TYPEOF(val)) {
         case INTSXP :
@@ -60,52 +63,30 @@ SEXP initvec(R_len_t n, SEXP val) {
 }
 
 SEXP fastorder(SEXP v, SEXP env) {
-    SEXP call, r;
+    SEXP call, ans;
     if (TYPEOF(v) != VECSXP) error("Argument 'v' to 'fastorder' must be a list");
-    if (TYPEOF(env) != ENVSXP) error("Argument 'env' to (internal) 'fastorder' must be an environment");
+    if (TYPEOF(env) != ENVSXP) error("Argument 'env' to (data.table internals) 'fastorder' must be an environment");
     PROTECT(call = lang2(install("fastorder"), v));
-    r = eval(call, env);
+    ans = eval(call, env);
     UNPROTECT(1);
-    return r;
-    // for reference here...
-    // PROTECT(t = s = allocList(2));
-    // SET_TYPEOF(t, LANGSXP);
-    // SETCAR(t, install("fastorder")); t = CDR(t);
-    // SETCAR(t, v);
-    // UNPROTECT(1); // t,s
-    // return(eval(s, env));
+    return ans;
 }
 
-SEXP _uniqlist(SEXP l, SEXP order, SEXP tol) {
-    
-    SEXP dups, len, tmp, ans;
-    R_len_t rows = length(VECTOR_ELT(l, 0));
-    dups = PROTECT(allocZeroVector(rows));
-    len = PROTECT(allocZeroVector(1));
-    duplist(l, dups, len, order, tol);
-    ans = PROTECT(allocVector(VECSXP, 1));
-    tmp = PROTECT(allocVector(INTSXP, INTEGER(len)[0]));
-    memcpy((char *)DATAPTR(tmp), (char *)DATAPTR(dups), length(tmp) * SIZEOF(len));
-    SET_VECTOR_ELT(ans, 0, tmp);
-    UNPROTECT(4);
-    return(ans);
-}
-
-SEXP crossJoin(SEXP s) {
+SEXP cross_join(SEXP s) {
     // Calling CJ is faster and don't have to worry about sorting or setting key.
     SEXP call, r;
-    if (!isNewList(s) || isNull(s)) error("Argument 's' to 'crossJoin' must be a list of length > 0");
+    if (!isNewList(s) || isNull(s)) error("Argument 's' to 'cross_join' must be a list of length > 0");
     PROTECT(call = lang3(install("do.call"), mkString("CJ"), s));
     r = eval(call, R_GlobalEnv);
     UNPROTECT(1);
     return r;
 }
 
-SEXP maxval(SEXP x) {
+SEXP max_val(SEXP x) {
     
     R_len_t i;
     SEXP ans;
-    if (TYPEOF(x) != INTSXP || length(x) < 1) error("Argument 'x' to 'maxval' must be an integer vector of length > 0");
+    if (TYPEOF(x) != INTSXP || length(x) < 1) error("Argument 'x' to 'max_val' must be an integer vector of length > 0");
     if (length(x) == 1) return(x);
     ans = PROTECT(allocVector(INTSXP, 1));
     INTEGER(ans)[0] = INTEGER(x)[0];
@@ -119,8 +100,8 @@ SEXP subset(SEXP x, SEXP idx) { // idx is 1-based
     
     SEXP ans;
     R_len_t i;
-    if (TYPEOF(idx) != INTSXP || length(idx) < 1) error("Argument 'idx' to (internal) 'subset' must be an integer vector of length > 0");
-    if (INTEGER(maxval(idx))[0] > length(x)) error("'max(idx)' > length(x)");
+    if (TYPEOF(idx) != INTSXP || length(idx) < 1) error("Argument 'idx' to (data.table internals) 'subset' must be an integer vector of length >= 1");
+    if (INTEGER(max_val(idx))[0] > length(x)) error("'max(idx)' > length(x)");
     ans = PROTECT(allocVector(TYPEOF(x), length(idx)));
     switch(TYPEOF(x)) {
         case INTSXP :
@@ -146,7 +127,7 @@ SEXP subset(SEXP x, SEXP idx) { // idx is 1-based
         default :
         error("Unknown column type '%s'", type2char(TYPEOF(x)));
     }
-    if (isFactor(x)) {
+    if (isFactor(x)) {                                                // TODO: should we set attributes back for Date class and the like as well?
         setAttrib(ans, R_ClassSymbol, getAttrib(x, R_ClassSymbol));
         setAttrib(ans, R_LevelsSymbol, getAttrib(x, R_LevelsSymbol));
     }
@@ -155,11 +136,11 @@ SEXP subset(SEXP x, SEXP idx) { // idx is 1-based
     return(ans);
 }
 
-SEXP intdiff(SEXP x, R_len_t n) {
+SEXP diff_int(SEXP x, R_len_t n) {
     
     R_len_t i;
     SEXP ans;
-    if (TYPEOF(x) != INTSXP) error("Argument 'x' to 'intdiff' must be an integer vector");
+    if (TYPEOF(x) != INTSXP) error("Argument 'x' to 'diff_int' must be an integer vector");
     ans = PROTECT(allocVector(INTSXP, length(x)));
     for (i=1; i<length(x); i++)
         INTEGER(ans)[i-1] = INTEGER(x)[i] - INTEGER(x)[i-1];
@@ -220,10 +201,10 @@ SEXP castgroups(SEXP groups, SEXP val, SEXP f__, SEXP value_var, SEXP jsub, SEXP
         SET_VECTOR_ELT(x, i, VECTOR_ELT(groups, i));
     }
     SET_VECTOR_ELT(x, length(groups), val);
-    grpcols = PROTECT(intseq(length(groups), 1)); protecti++;
+    grpcols = PROTECT(seq_int(length(groups), 1)); protecti++;
     grporder = PROTECT(allocVector(INTSXP, 0)); protecti++;
     o__ = PROTECT(allocVector(INTSXP, 0)); protecti++;
-    len__ = PROTECT(intdiff(f__, len)); protecti++;
+    len__ = PROTECT(diff_int(f__, len)); protecti++;
     
     BY_ = PROTECT(allocVector(VECSXP, length(groups))); protecti++;
     for (i=0; i<length(groups); i++) {
@@ -244,8 +225,8 @@ SEXP castgroups(SEXP groups, SEXP val, SEXP f__, SEXP value_var, SEXP jsub, SEXP
     
     GRP_ = PROTECT(allocVector(INTSXP, 1)); protecti++;
     INTEGER(GRP_)[0] = 1;
-    I_ = PROTECT(intseq(INTEGER(maxval(len__))[0], 1)); protecti++;
-    N_ = PROTECT(allocZeroVector(1)); protecti++;
+    I_ = PROTECT(seq_int(INTEGER(max_val(len__))[0], 1)); protecti++;
+    N_ = PROTECT(zero_init(1)); protecti++;
     SD_ = PROTECT(allocVector(VECSXP, 1)); protecti++;
     tmp = PROTECT(allocVector(TYPEOF(val), length(I_)));
     switch(TYPEOF(val)) {
@@ -316,28 +297,29 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
     char buffer[128], uscore[] = "_";
 
     // raise(SIGINT);
+    // check for arguments - some of these are not necessary as the intention is NOT to call directly, but thro' fcast.R (dcast), but alright
     if (TYPEOF(DT) != VECSXP) error("'data' should be a data.table or data.frame");
     if (TYPEOF(inames) != STRSXP) error("LHS of parsed formula did not result in character vector, possibly invalid formula");
     if (TYPEOF(mnames) != STRSXP) error("RHS of parsed formula did not result in character vector, possibly invalid formula");
     if (TYPEOF(vnames) != STRSXP || length(vnames) != 1) error("'value.var' must be a character vector of length 1");
     if (!isEnvironment(env)) error("'.CASTenv' must be an environment");
-    if (!isLogical(sorted)) error("'is.sorted' must be a logical vector of length 1");
-    if (!isLogical(drop)) error("'drop' must be a logical vector of length 1");
+    if (!isLogical(sorted) || length(sorted) != 1) error("'is.sorted' must be a logical vector of length 1");
+    if (!isLogical(drop) || length(drop) != 1) error("'drop' must be a logical vector of length 1");
     
     nrows = length(VECTOR_ELT(DT, 0));
-    if (nrows < 1) error("nrow(data) is 0, cannot 'cast' an empty data.table");
+    if (nrows < 1) error("nrow(data) is 0, cannot 'cast' an empty data.table"); // TODO: should this be a warning instead + return DT?
     ncols = length(DT);
-    if (ncols < 1) error("ncol(data) is 0, cannot 'cast' an empty data.table");
+    if (ncols < 1) error("ncol(data) is 0, cannot 'cast' an empty data.table"); // TODO: should this be a warning instead + return DT?
 
     dtnames = getAttrib(DT, R_NamesSymbol);
-    if (isNull(dtnames)) error("names(data) is NULL. Possible internal error. Please report to data.table-help");
+    if (isNull(dtnames)) error("'names(data)' is NULL. Possible internal error. Please report to data.table-help");
     
+    // names passed from R-level - no checks
     lidx = PROTECT(chmatch(inames, dtnames, 0, FALSE)); protecti++;
     ridx = PROTECT(chmatch(mnames, dtnames, 0, FALSE)); protecti++;
     vidx = PROTECT(chmatch(vnames, dtnames, 0, FALSE)); protecti++;
 
-    // get lrdt and value
-    lrdt = PROTECT(allocVector(VECSXP, ilen+mlen)); protecti++;
+    // if 'subset' arg is present, we'll have to get indices and update 'nrows'
     if (!isNull(subsetting)) {
         subpos = PROTECT(eval(subsetting, env)); protecti++;
         switch(TYPEOF(subpos)) {
@@ -346,31 +328,32 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
             case LGLSXP :
             subpos = PROTECT(which(subpos)); protecti++;
             break;
-            default : error("Unknown type ...");
+            default : error("Argument 'subset' should evaluate to either integer or logical vector");
         }
         // update nrows!
         nrows = length(subpos);
-        if (nrows < 1) error("'subset(data)' resulted in nrow=0. Cannot 'cast' on an empty data.table.");
+        if (nrows < 1) error("'subset(data)' resulted in nrow=0. Cannot 'cast' on an empty data.table."); // TODO: should give warning + return empty DT instead?
     }
+
+    // get lrdt and value
+    lrdt = PROTECT(allocVector(VECSXP, ilen+mlen)); protecti++;
     for (i=0; i<ilen; i++) {
-        tmp = PROTECT(VECTOR_ELT(DT, INTEGER(lidx)[i]-1));
+        tmp = VECTOR_ELT(DT, INTEGER(lidx)[i]-1); // already protected
         if (!isNull(subsetting)) {
             subtmp = subset(tmp, subpos);
             SET_VECTOR_ELT(lrdt, i, subtmp);
         } else 
             SET_VECTOR_ELT(lrdt, i, tmp);
-        UNPROTECT(1); // tmp
     }
     for (i=0; i<mlen; i++) {
-        tmp = PROTECT(VECTOR_ELT(DT, INTEGER(ridx)[i]-1));
+        tmp = VECTOR_ELT(DT, INTEGER(ridx)[i]-1); // already protected
         if (!isNull(subsetting)) {
             subtmp = subset(tmp, subpos);
             SET_VECTOR_ELT(lrdt, i+ilen, subtmp);
         } else 
             SET_VECTOR_ELT(lrdt, i+ilen, tmp);
-        UNPROTECT(1); // tmp
     }
-        
+
     // value column
     tmp = isFactor(VECTOR_ELT(DT, INTEGER(vidx)[0]-1)) ? PROTECT(asCharacterFactor(VECTOR_ELT(DT, INTEGER(vidx)[0]-1))) : PROTECT(VECTOR_ELT(DT, INTEGER(vidx)[0]-1));
     protecti++; // can't unprotect while passing to subset
@@ -389,31 +372,34 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
     // sort lrdt and vnames if unsorted
     if (!LOGICAL(sorted)[0]) {
         lro = PROTECT(fastorder(lrdt, env));
+        if (isNull(lro)) {
+           // 'is_sorted' is done for checking sortedness at R-level. New 'fastorder' returns 'NULL' when sorted. If NULL, R-level gave wrong result
+            warning("'is.sorted' at R-level check returned FALSE when it should have been TRUE. Please report to data.table help");
+            UNPROTECT(1); // lro
+            lro = PROTECT(seq_int(nrows, 1)); // this case should never happen; that is, this if-statement should never be run. But this is to catch 
+                                              // any issues with 'is.sorted' (as it's new). If it does occur, TODO: here memcpy would be faster than 'subset'
+                                              // in the for-loop below
+        }
         for (i=0; i<length(lrdt); i++) {
             cpy = PROTECT(VECTOR_ELT(lrdt, i));
             tmp = PROTECT(subset(cpy, lro));
-            UNPROTECT(2); // tmp, cpy
+            UNPROTECT(2); // cpy, tmp;
             SET_VECTOR_ELT(lrdt, i, tmp);
         }
         setAttrib(lrdt, R_NamesSymbol, lrnames);
         UNPROTECT(1); // lro
         vdt = PROTECT(subset(vdt, lro)); protecti++;
     }
-    lro = PROTECT(intseq(nrows, 1)); protecti++;
-    lrdup = PROTECT(VECTOR_ELT(_uniqlist(lrdt, lro, tol), 0)); protecti++;
+    lrdup = PROTECT(uniqlist(lrdt, seq_int(1, -1), tol)); protecti++;
     
-    // TO DO: look for ways to simplify getting fun.aggregate in a better way
+    // TODO: look for ways to simplify getting fun.aggregate in a better way
     isagg = isNull(jsub) ? TRUE : FALSE;
     if (isNull(jsub) && length(lrdup) < nrows) {
         isagg = FALSE;
         Rprintf("Aggregate function missing, defaulting to 'length'\n");
         jsub = PROTECT(lang2(install("length"), install(CHAR(STRING_ELT(vnames, 0))))); protecti++;
-        // PROTECT(t = jsub = allocList(2)); protecti++;
-        // SET_TYPEOF(t, LANGSXP);
-        // SETCAR(t, install("length")); t = CDR(t);
-        // SETCAR(t, install(CHAR(STRING_ELT(vnames, 0))));
         if (isNull(fill_d)) { 
-            fill_d = PROTECT(allocZeroVector(1)); protecti++;
+            fill_d = PROTECT(zero_init(1)); protecti++;
         }
     }
     if (isNull(fill)) {
@@ -431,10 +417,10 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         lrdt = PROTECT(allocVector(VECSXP, ilen+mlen)); protecti++;
         for (i=0; i<length(tmp)-1; i++)
             SET_VECTOR_ELT(lrdt, i, VECTOR_ELT(tmp, i));
+        // Set names again... Also nrows -> important. Moved these two lines inside the if-statement.
+        setAttrib(lrdt, R_NamesSymbol, lrnames);
+        nrows = length(VECTOR_ELT(lrdt, 0));         // TODO: do we have to check if nrows < 1 and return error (or) warning + return DT?
     }
-    // Set names again... Also nrows -> important
-    setAttrib(lrdt, R_NamesSymbol, lrnames);
-    nrows = length(VECTOR_ELT(lrdt, 0));
 
     // get ldt and rdt
     ldt = PROTECT(allocVector(VECSXP, ilen)); protecti++;
@@ -449,27 +435,27 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         for (i=0; i<ilen; i++) {
             cpy = PROTECT(allocVector(VECSXP, 1));
             SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(ldt, i));
-            dorder = PROTECT(fastorder(cpy, env));
-            ddup = PROTECT(VECTOR_ELT(_uniqlist(cpy, dorder, tol), 0));
+            dorder = LOGICAL(isSortedList(cpy, seq_int(1,1), tol))[0] == 1 ? PROTECT(seq_int(nrows, 1)) : PROTECT(fastorder(cpy, env));
+            ddup = PROTECT(uniqlist(cpy, dorder, tol));
             ddup = PROTECT(subset(dorder, ddup));
             dtmp = PROTECT(subset(VECTOR_ELT(cpy, 0), ddup));
             UNPROTECT(5); // dtmp, cpy
             SET_VECTOR_ELT(lcj, i, dtmp);
         }
-        lcj = PROTECT(crossJoin(lcj)); protecti++;
+        lcj = PROTECT(cross_join(lcj)); protecti++;
         
         rcj = PROTECT(allocVector(VECSXP, mlen)); protecti++;
         for (i=0; i<mlen; i++) {
             cpy = PROTECT(allocVector(VECSXP, 1));
             SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(rdt, i));
-            dorder = PROTECT(fastorder(cpy, env));
-            ddup = PROTECT(VECTOR_ELT(_uniqlist(cpy, dorder, tol), 0));
+            dorder = LOGICAL(isSortedList(cpy, seq_int(1,1), tol))[0] == 1 ? PROTECT(seq_int(nrows, 1)) : PROTECT(fastorder(cpy, env));
+            ddup = PROTECT(uniqlist(cpy, dorder, tol));
             ddup = PROTECT(subset(dorder, ddup));
             dtmp = PROTECT(subset(VECTOR_ELT(cpy, 0), ddup));
             UNPROTECT(5);
             SET_VECTOR_ELT(rcj, i, dtmp);
         }
-        rcj = PROTECT(crossJoin(rcj)); protecti++;
+        rcj = PROTECT(cross_join(rcj)); protecti++;
         
         outnamevec = PROTECT(allocVector(VECSXP, length(rcj))); protecti++;
         for (i=0; i<length(outnamevec); i++)
@@ -477,50 +463,50 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
 
         xx = PROTECT(allocVector(VECSXP, 2)); protecti++;
         // lcj[ldt]
-        f__ = PROTECT(allocZeroVector(length(VECTOR_ELT(ldt, 0))));
-        len__ = PROTECT(allocZeroVector(length(f__)));
+        f__ = PROTECT(zero_init(length(VECTOR_ELT(ldt, 0))));
+        len__ = PROTECT(zero_init(length(f__)));
         haskey = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(haskey)[0] = 1;
         rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
         allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
         roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        binarysearch(ldt, lcj, PROTECT(intseq(ilen, 0)), PROTECT(intseq(ilen, 0)), haskey, roll, rollends, PROTECT(allocZeroVector(1)), tol, f__, len__, allLen1);
+        binarysearch(ldt, lcj, PROTECT(seq_int(ilen, 0)), PROTECT(seq_int(ilen, 0)), haskey, roll, rollends, PROTECT(zero_init(1)), tol, f__, len__, allLen1);
         UNPROTECT(9);
         SET_VECTOR_ELT(xx, 0, f__);
         
         // rcj[rdt]
-        f__ = PROTECT(allocZeroVector(length(VECTOR_ELT(rdt, 0))));
-        len__ = PROTECT(allocZeroVector(length(f__)));
+        f__ = PROTECT(zero_init(length(VECTOR_ELT(rdt, 0))));
+        len__ = PROTECT(zero_init(length(f__)));
         haskey = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(haskey)[0] = 0; // unsorted
         rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
         allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
         roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        binarysearch(rdt, rcj, PROTECT(intseq(mlen, 0)), PROTECT(intseq(mlen, 0)), haskey, roll, rollends, PROTECT(allocZeroVector(1)), tol, f__, len__, allLen1);
+        binarysearch(rdt, rcj, PROTECT(seq_int(mlen, 0)), PROTECT(seq_int(mlen, 0)), haskey, roll, rollends, PROTECT(zero_init(1)), tol, f__, len__, allLen1);
         UNPROTECT(9);
         SET_VECTOR_ELT(xx, 1, f__);
                 
         cjtmp = PROTECT(allocVector(VECSXP, 2));
-        SET_VECTOR_ELT(cjtmp, 0, PROTECT(intseq(length(VECTOR_ELT(lcj, 0)), 1)));
-        SET_VECTOR_ELT(cjtmp, 1, PROTECT(intseq(length(VECTOR_ELT(rcj, 0)), 1)));
+        SET_VECTOR_ELT(cjtmp, 0, PROTECT(seq_int(length(VECTOR_ELT(lcj, 0)), 1)));
+        SET_VECTOR_ELT(cjtmp, 1, PROTECT(seq_int(length(VECTOR_ELT(rcj, 0)), 1)));
         UNPROTECT(3); // cjtmp
-        cj = PROTECT(crossJoin(cjtmp)); protecti++;
+        cj = PROTECT(cross_join(cjtmp)); protecti++;
         // // binary search to get missing values
-        // f__ = PROTECT(allocZeroVector(length(VECTOR_ELT(cj, 0)))); protecti++;
-        // len__ = PROTECT(allocZeroVector(length(f__)));
+        // f__ = PROTECT(zero_init(length(VECTOR_ELT(cj, 0)))); protecti++;
+        // len__ = PROTECT(zero_init(length(f__)));
         // haskey = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(haskey)[0] = 1;
         // rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
         // allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
         // roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        // binarysearch(cj, xx, PROTECT(intseq(2, 0)), PROTECT(intseq(2,0)), haskey, roll, rollends, PROTECT(allocZeroVector(1)), tol, f__, len__, allLen1);
+        // binarysearch(cj, xx, PROTECT(seq_int(2, 0)), PROTECT(seq_int(2,0)), haskey, roll, rollends, PROTECT(zero_init(1)), tol, f__, len__, allLen1);
         // UNPROTECT(8); // len__, haskey, rollends, allLen1, roll (except f__)        
     } else {
         // we could do a bit faster
-        lo = PROTECT(intseq(nrows, 1)); protecti++; // no need for fastorder of "lo", already sorted
-        ro = PROTECT(fastorder(rdt, env)); protecti++;
-        ldup = PROTECT(VECTOR_ELT(_uniqlist(ldt, lo, tol), 0)); protecti++;
-        rdup = PROTECT(VECTOR_ELT(_uniqlist(rdt, ro, tol), 0)); protecti++; 
+        lo = PROTECT(seq_int(nrows, 1)); protecti++; // no need for fastorder of "lo", already sorted
+        ro = LOGICAL(isSortedList(rdt, seq_int(mlen, 1), tol))[0] == 1 ? PROTECT(seq_int(nrows, 1)) : PROTECT(fastorder(rdt, env)); protecti++;
+        ldup = PROTECT(uniqlist(ldt, lo, tol)); protecti++;
+        rdup = PROTECT(uniqlist(rdt, ro, tol)); protecti++; 
 
-        llen__ = PROTECT(intdiff(ldup, nrows)); protecti++;
-        rlen__ = PROTECT(intdiff(rdup, nrows)); protecti++;
+        llen__ = PROTECT(diff_int(ldup, nrows)); protecti++;
+        rlen__ = PROTECT(diff_int(rdup, nrows)); protecti++;
 
         rdup = PROTECT(subset(ro, rdup)); protecti++;
         tmp = PROTECT(allocVector(VECSXP, mlen+1)); protecti++;
@@ -537,7 +523,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         }
         rdupl = PROTECT(allocVector(VECSXP, 1));
         SET_VECTOR_ELT(rdupl, 0, rdup);
-        ro = PROTECT(fastorder(rdupl, env));
+        ro = LOGICAL(isSortedList(rdupl, seq_int(1,1), tol))[0] == 1 ? PROTECT(seq_int(length(rdup), 1)) : PROTECT(fastorder(rdupl, env));
         rdup = PROTECT(subset(rdup, ro));
         UNPROTECT(3); // ro, rdup, rdupl
         SET_VECTOR_ELT(tmp, mlen, rdup);
@@ -550,13 +536,13 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         setAttrib(tmp, R_NamesSymbol, colnames);
         
         // tmp[rdt] - binary search
-        f__ = PROTECT(allocZeroVector(length(lrdup))); protecti++;
-        len__ = PROTECT(allocZeroVector(length(f__)));
+        f__ = PROTECT(zero_init(length(lrdup))); protecti++;
+        len__ = PROTECT(zero_init(length(f__)));
         haskey = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(haskey)[0] = 0;
         rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
         allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
         roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        binarysearch(rdt, tmp, PROTECT(intseq(length(rdt), 0)), PROTECT(intseq(length(rdt),0)), haskey, roll, rollends, PROTECT(allocZeroVector(1)), tol, f__, len__, allLen1);
+        binarysearch(rdt, tmp, PROTECT(seq_int(length(rdt), 0)), PROTECT(seq_int(length(rdt),0)), haskey, roll, rollends, PROTECT(zero_init(1)), tol, f__, len__, allLen1);
         UNPROTECT(8); // len__, haskey, rollends, allLen1, roll (except f__)
 
         xx = PROTECT(allocVector(VECSXP, 2)); protecti++;
@@ -570,17 +556,17 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         SET_VECTOR_ELT(cjtmp, 0, ldup);
         SET_VECTOR_ELT(cjtmp, 1, rdup);
         UNPROTECT(1); // cjtmp;
-        cj = PROTECT(crossJoin(cjtmp)); protecti++;
+        cj = PROTECT(cross_join(cjtmp)); protecti++;
     }
     // to do: if we can check whether there are any missing combinations, we can skip this binary search and it should be faster (especially on bigger data).
     // xx[cj] binary search to get missing values
-    f__ = PROTECT(allocZeroVector(length(VECTOR_ELT(cj, 0)))); protecti++;
-    len__ = PROTECT(allocZeroVector(length(f__)));
+    f__ = PROTECT(zero_init(length(VECTOR_ELT(cj, 0)))); protecti++;
+    len__ = PROTECT(zero_init(length(f__)));
     haskey = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(haskey)[0] = 1;
     rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
     allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
     roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-    binarysearch(cj, xx, PROTECT(intseq(2, 0)), PROTECT(intseq(2,0)), haskey, roll, rollends, PROTECT(allocZeroVector(1)), tol, f__, len__, allLen1);
+    binarysearch(cj, xx, PROTECT(seq_int(2, 0)), PROTECT(seq_int(2,0)), haskey, roll, rollends, PROTECT(zero_init(1)), tol, f__, len__, allLen1);
     UNPROTECT(8); // len__, haskey, rollends, allLen1, roll (except f__)
     
     ranscols = !LOGICAL(drop)[0] ? length(VECTOR_ELT(rcj, 0)) : length(rdup);

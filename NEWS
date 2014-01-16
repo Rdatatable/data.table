@@ -342,7 +342,12 @@ BUG FIXES
   o  Dependent packages using cbind may now Import data.table as intended rather than needing to Depend. There was
      a missing data.table:: prefix on a call to key(). Thanks to Maarten-Jan Kallen for reporting.
      
+  o  'chmatch' dint handle character encodings properly when the string was identical but the encoding were different. 
+      For ex: UTF8 and Latin1. This is now fixed (a part of bug #5159). Thanks to Stefan Fritsch for reporting.
 
+  o  Joins on character columns with encodings other than ASCII now work as expected. This fixes bugs #5266 and other 
+     part of #5159. Thanks to Stefan Fritsch once again for reporting.
+  
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.
