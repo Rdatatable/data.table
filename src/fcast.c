@@ -338,20 +338,22 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
     // get lrdt and value
     lrdt = PROTECT(allocVector(VECSXP, ilen+mlen)); protecti++;
     for (i=0; i<ilen; i++) {
-        tmp = VECTOR_ELT(DT, INTEGER(lidx)[i]-1); // already protected
+        tmp = PROTECT(VECTOR_ELT(DT, INTEGER(lidx)[i]-1));
         if (!isNull(subsetting)) {
             subtmp = subset(tmp, subpos);
             SET_VECTOR_ELT(lrdt, i, subtmp);
         } else 
             SET_VECTOR_ELT(lrdt, i, tmp);
+        UNPROTECT(1); // tmp
     }
     for (i=0; i<mlen; i++) {
-        tmp = VECTOR_ELT(DT, INTEGER(ridx)[i]-1); // already protected
+        tmp = PROTECT(VECTOR_ELT(DT, INTEGER(ridx)[i]-1));
         if (!isNull(subsetting)) {
             subtmp = subset(tmp, subpos);
             SET_VECTOR_ELT(lrdt, i+ilen, subtmp);
         } else 
             SET_VECTOR_ELT(lrdt, i+ilen, tmp);
+        UNPROTECT(1); // tmp
     }
 
     // value column
