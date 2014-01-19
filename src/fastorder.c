@@ -31,7 +31,7 @@ void setRange(int *x, int n)
     return;
 }
 
-void countingsort(int *x, int n, R_xlen_t *counts, int *ans)
+void countingsort(int *x, int n, R_xlen_t *counts, R_xlen_t *groupsize, int *ngrp, int *ans)
    // No order of x supplied here because x is looped through several times, hence more
    // page efficient to suffer page hits once outside.
 {
@@ -48,11 +48,16 @@ void countingsort(int *x, int n, R_xlen_t *counts, int *ans)
     // TO DO: at this point if the last count==n then it's all the same number and we can stop now.
     // Idea from Terdiman, then improved on that by not needing to loop through counts.
     //t[3] += clock()-tt; tt = clock();
+    *ngrp = 0;
     tmp = counts[0];                        // *** BLOCK 4 ***
+    if (tmp) groupsize[(*ngrp)++] = tmp;
     for (i = 1; i<= xmax+1; i++) {
-        if (counts[i]) counts[i] = (tmp += counts[i]);  // when sparse, don't fill in. Helps zero setting below when n<xmax.
+        if (counts[i]) counts[i] = (tmp += (groupsize[(*ngrp)++] = counts[i]));
+        // when sparse, don't fill in. Helps zero setting below when n<xmax.
         //  counts[i] += counts[i-1];    standard algo as in base
+        // TO DO: we can stop cummulating when tmp==n, too. Similar to Terdiman's idea again.
     }
+    //Rprintf("counting sort passed %d items and %d groups found\n", n, *ngrp);
     //t[4] += clock()-tt; tt = clock();
     for(i = n-1; i >= 0; i--) {
 		tmp = x[i];
@@ -74,10 +79,6 @@ void countingsort(int *x, int n, R_xlen_t *counts, int *ans)
 	return;
 }
 
-
-static unsigned int radixcounts[4][256];
-// static is important, iradix is called repetitively
-// global static rather than local static because first memset is in fastorder so that (skipped) memset can be at the end of iradix
 
 int *iradix(int *x, R_len_t n, int *ans1, int *ans2)
 /*
@@ -106,8 +107,9 @@ int *iradix(int *x, R_len_t n, int *ans1, int *ans2)
     int i, radix;
     unsigned int thisx=0, shift, *thiscounts;
     int *ans, *ord, *tmp;
-    static int skip[4];
-    // radixcounts (static global) are memset to 0 in fastorder initially and set back to 0 here at the end to benefit from skipped radix
+    int skip[4];
+    static unsigned int radixcounts[4][256] = {{0}};
+    // static is important, iradix is called repetitively. radixcounts are set back to 0 at the end to benefit from skipped radix
     
     for (i=0;i<n;i++) {   // parallel histogramming pass; i.e. count occurrences of 0:255 in each byte
         thisx = (unsigned int)x[i];
@@ -122,28 +124,34 @@ int *iradix(int *x, R_len_t n, int *ans1, int *ans2)
         skip[radix] = radixcounts[radix][i] == n;
         if (skip[radix]) radixcounts[radix][i] = 0;  // clear it now, the other counts must be 0 already
     }
-    ans = ans1;      // initialize flip-flop
-    ord = ans2;
-    for (i=0; i<n; i++)   // for coding brevity of x[ord[i]-1] below. First pass could be split out to save this, however, it's a sequential pass to setup 1:n, so should be relatively negligible, and again the needless hop via ord in the first pass is sequential too so should also be negligible
-        ans[i] = i+1;     // but also it's possible all 4 radix are skipped (x contains the same number n times), hence this 1:n would be returned.
-                          // +1 because R is 1-based. Better these tiny +1, then another sweep through n at the end to +1.
-                          // TO DO: do away with these +1 when we change fastorder to be 0-based.
+    ans = ans1;           // initialize flip-flop
+    ord = ans2;                       
+    Rboolean firstTime = TRUE;
     for (radix=0; radix<4; radix++) {
         if (skip[radix]) continue;
         tmp = ord; ord = ans; ans = tmp;     // flip-flop
         shift = radix * 8;
         thiscounts = radixcounts[radix];
         for (i=1;i<256;i++) thiscounts[i] += thiscounts[i-1];
-        for(i = n-1; i >= 0; i--) {
-		    thisx = x[ord[i]-1] >> shift & 0xFF;
-		    ans[--thiscounts[thisx]] = ord[i];
+        if (firstTime) {
+            for(i = n-1; i >= 0; i--) {
+		        thisx = x[i] >> shift & 0xFF;
+		        ans[--thiscounts[thisx]] = i+1;  // TO DO: remove +1 when we change fastorder to be 0-based with one +1 sweep at its end.
+            }
+        } else {
+            for(i = n-1; i >= 0; i--) {
+		        thisx = x[ord[i]-1] >> shift & 0xFF;
+		        ans[--thiscounts[thisx]] = ord[i];
+            }
         }
         memset(thiscounts, 0, 256*sizeof(unsigned int));
+        firstTime = FALSE;
     }
+    if (firstTime) error("Internal error: x is one repeated number so isorted should have skipped iradix, but iradix has been called and skipped all 4 radix");
     return(ans);
 }
 
-int isorted(int *x, int n)
+int isorted(int *x, int n, R_xlen_t *groupsize, int *ngrp)
 {
     // base:is.unsorted does any(is.na(x)) at R level (inefficient), and returns NA (missing sorted cases where NA are at the start).
     // Here we deal with NAs in C and return true if NAs are all at the beginning.
@@ -151,36 +159,48 @@ int isorted(int *x, int n)
     // If a vector is in decreasing order *with ties*, then an in-place reverse (no sort) would result in instability of ties.
     // For internal use only in fastorder, which now returns NULL if already sorted (hence no need for separate is.sorted).
     // TO DO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
-    int i=1;
+    int i=1, tmp;
     // taken out of deep loop ... if (NA_INTEGER != INT_MIN) error("assumed NA is largest negative integer");
-    while (i<n && x[i]>=x[i-1]) i++;
-    if (i==n) return(1);    // increasing order, possibly with ties
-    if (i==1) {
-        while (i<n && x[i]<x[i-1]) i++;  
-        if (i==n) return(-1);   // strictly decreasing order, no ties; e.g. no more than one NA at the end
+    if (n==1) { *ngrp=1; groupsize[0]=1; return(1); }
+    if (x[1]<x[0]) {
+        i = 2;
+        while (i<n && x[i]<x[i-1]) i++;
+        if (i==n) {*ngrp=n; return(-1);}   // strictly decreasing order, no ties; e.g. no more than one NA at the end
+        else return(0);
     }
-    return(0);
+    *ngrp = 0;
+    groupsize[0] = 1;
+    for (i=1; i<n; i++) {
+        tmp = x[i]-x[i-1];
+        if (tmp<0) return(0);
+        if (tmp==0) { groupsize[*ngrp]++; } else { groupsize[++(*ngrp)] = 1; }
+    }
+    (*ngrp)++;
+    return(1);  // increasing order, possibly with ties
 }
 
 // TO DO:  If treatment of Inf,-Inf,NA and Nan is biting anywhere, they can we swept to the front in one pass by shifting the next non-special back however many specials have been observed so far.
 
 SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by.  Allow DT to be a vector, too.
 {
-    int i, j, k, tmp, lastx, thisx, lasti, thisi, range, *otmp;
+    int i, j, k, grp, tmp, range, *otmp;
     Rboolean isSorted = TRUE;
+    
+    int ngrp1, ngrp2;
     
     memset(t, 0, 10*sizeof(clock_t));
     clock_t tt = clock();
     
     int n = length(VECTOR_ELT(DT,0));
     int *x = INTEGER(VECTOR_ELT(DT,0));
-    
-    memset(radixcounts, 0, 4*256*sizeof(unsigned int));
-    // memset once here so that memset only needed on the non-skipped radix at the end of iradix
 
     R_xlen_t *counts = Calloc(100000+2, R_xlen_t); // TO DO: #define 100000.   These are the direct countingsort counts.
                                                    // Worth allocating smaller? We will still find xmin and max to save looping,
                                                    // so it's just reserving enough space here, really.
+    R_xlen_t *groupsize = Calloc(100000+2, R_xlen_t);
+    R_xlen_t *groupsize2 = Calloc(100000+2, R_xlen_t);
+    
+
     memset(counts, 0, (100000+2)*sizeof(R_xlen_t));  // just 0.4MB and we only use the front part of it as large as range, anyway
     
     int *y = Calloc(n, int);    // TO DO: y won't be needed in the 1-column case where counting sort is ok.
@@ -190,13 +210,16 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by.  Allo
     int *newo;                  // TO DO: use largest group (max(counts)) (<< n), from counting sort (other than iradix may be invoked for first column)
     
     SEXP ans = PROTECT(allocVector(INTSXP, n));  // once for the result, needs to be length n.  TO DO: save allocation if NULL is returned (isSorted==TRUE)
+    int *o = INTEGER(ans);
     
-    if ((tmp = isorted(x, n))) {
-        if (tmp==1)
-            for (i=0; i<n; i++) INTEGER(ans)[i] = i+1;
+    if ((tmp = isorted(x, n, groupsize, &ngrp1))) {
+        if (tmp==1) {
+            isSorted = TRUE;
+            for (i=0; i<n; i++) o[i] = i+1;
+        }
         else {  // tmp==-1, strictly decreasing
             isSorted = FALSE;
-            for (i=0; i<n; i++) INTEGER(ans)[i] = n-i;
+            for (i=0; i<n; i++) o[i] = n-i;
         }
     } else {
         isSorted = FALSE;
@@ -204,13 +227,18 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by.  Allo
         if (xmax == NA_INTEGER) error("The all-NA case should have been caught by isorted above");
         range = xmax;   // just a nicer variable name than xmax 
         if (range <= 100000) {
-            countingsort(x, n, counts, INTEGER(ans));
+            countingsort(x, n, counts, groupsize, &ngrp1, o);
             // returns 1-based by ref. Deliberately for the case of 1 column input.  TO DO: change to 0-based and sweep a +1 in the last step.
         } else {
-            memcpy(INTEGER(ans), iradix(x, n, ans1, ans2), n*sizeof(int));   // TO DO: save this memcpy, minor though
+            memcpy(o, iradix(x, n, ans1, ans2), n*sizeof(int));   // TO DO: save this memcpy, minor though
+            
+            // Until we change iradix to return ngrp and grpsize (MSD radix), calc in one sweep now after the LSD radix
+            ngrp1 = 0;
+            groupsize[0] = 1;
+            for (i=1; i<n; i++) { if (x[o[i]-1] == x[o[i-1]-1]) groupsize[ngrp1]++; else groupsize[++ngrp1] = 1; }
+            ngrp1++;
         }
     }
-    int *o = INTEGER(ans);
     
     t[0] = clock()-tt;
     
@@ -219,28 +247,16 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by.  Allo
     if (xmax==NA_INTEGER) error("2nd column is all NA. TO DO: catch here and skip");
     range = xmax;   // just a nicer variable name than xmax
     
-    lasti = o[0]-1;
-    lastx = x[lasti];
-    i=1; j=0;
-    while (i<n) {
-      thisi = o[i]-1;
-      thisx = x[thisi];
-      if ( thisx == lastx ) {  // NA are by now sorted to start, no switch needed here for NA since NA_INTEGER==NA_INTEGER ok
-        y[j++] = z[lasti];     // trailing random access to z to avoid fetch of z in size 1 subgroups
-        lasti = thisi;
-        if (++i<n) continue;  //  TO DO: remove this 'if' but still deal with the last group? Only an 'if' at n-level, though, not deeper.
-      }
-      lastx = thisx;
-      i++;
-      if (j==0) {lasti = thisi; continue;}  // skip subgroup with 1 item
-      // else if j==1 then the next line will make j==2
-      y[j++] = z[lasti];   // enter final item of group into y
-      lasti = thisi;
+    i = 0;
+    if (ngrp1 < n) {
+    for (grp=0; grp<ngrp1; grp++) {
+      if (groupsize[grp] == 1) {i++; continue;}
+      for (j=0; j<groupsize[grp]; j++) y[j] = z[o[i++]-1];
       
       // j = 0; continue;  // BASELINE short circuit timing point. Up to here is the cost of creating the subgroup.
       
       if (j==2) {
-          if (y[1]<y[0]) { isSorted=FALSE; tmp=o[i-2]; o[i-2]=o[i-3]; o[i-3]=tmp; }   // i++ was already done above, plus it's trailing access
+          if (y[1]<y[0]) { isSorted=FALSE; tmp=o[i-1]; o[i-1]=o[i-2]; o[i-2]=tmp; }
           j = 0;
           continue;
       }
@@ -248,11 +264,11 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by.  Allo
       
       // TO DO: in-place insert sort for j<10, before calling issorted (since when sorted, insert sort is the same as isorted)
 
-      if ((tmp = isorted(y, j))) {
+      if ((tmp = isorted(y, j, groupsize2, &ngrp2))) {
           // isorted ultra low cost, and localised to this group too. Tested on 1m:100m rows, 10:100k levels
           if (tmp<0) {
               isSorted = FALSE;
-              otmp = o+i-j-1;
+              otmp = o+i-j;
               for (k=0;k<j/2;k++) {      // reverse the order in-place using no function call or working memory 
                   tmp = otmp[k];         // isorted only returns -1 for _strictly_ decreasing order, otherwise ties wouldn't be stable
                   otmp[k] = otmp[j-1-k];
@@ -268,15 +284,16 @@ SEXP forder(SEXP DT) // TO DO: add argument for which columns to order by.  Allo
       if (j < 200 || range > 20000) {
           newo = iradix(y, j, ans1, ans2);   // counting limited to range 1e5, but when looped, iradix's 256 range is better
       } else {
-          countingsort(y, j, counts, ans1);  // for j<200, a range>256 can bite when looped (BLOCK 4 and 6), hence iradix better with 256 range
+          countingsort(y, j, counts, groupsize2, &ngrp2, ans1);  // for j<200, a range>256 can bite when looped (BLOCK 4 and 6), hence iradix better with 256 range
           newo = ans1;
       }
       // TO DO: no need to calc range if j<200 for all subgroups. OTOH, calc of range should be ultra quick, as sequential over n.
       // TO DO: develop bench() into calibrate()
       otmp = newo==ans1 ? ans2 : ans1;
-      for (k=0; k<j; k++) otmp[k] = o[ i-j-1 + newo[k]-1 ];  // optimizer will take constants inside [] outside the loop 
-      memcpy(o+i-j-1, otmp, j*sizeof(int)); 
+      for (k=0; k<j; k++) otmp[k] = o[ i-j + newo[k]-1 ];  // optimizer will take constants inside [] outside the loop 
+      memcpy(o+i-j, otmp, j*sizeof(int)); 
       j = 0;
+    }
     }
     Free(y);
     Free(counts);
