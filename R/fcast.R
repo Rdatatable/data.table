@@ -74,7 +74,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         } else return(data[, eval(fun.aggregate), keyby=c(ff$ll)])
     }
     .CASTenv = new.env(parent=parent.frame())
-    assign("fastorder", data.table:::fastorder, .CASTenv)   
+    assign("fastorder", fastorder, .CASTenv)   
     assign("print", function(x,...){base::print(x,...);NULL}, .CASTenv)
     assign("Cfastmean", Cfastmean, .CASTenv)
     assign("mean", base::mean.default, .CASTenv)

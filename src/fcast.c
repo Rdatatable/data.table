@@ -9,18 +9,14 @@ int sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
 extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
-extern SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol);
 extern SEXP uniqlist(SEXP l, SEXP order, SEXP tol);
 extern SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 extern SEXP seq_int(int n, int start);
 extern SEXP set_diff(SEXP x, int n);
-extern SEXP which_notNA(SEXP x);
 extern SEXP which(SEXP x);
-extern SEXP concat(SEXP vec, SEXP idx);
 extern SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose);
 extern SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 extern SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP rollarg, SEXP rollends, SEXP nomatch, SEXP tolerance, SEXP retFirst, SEXP retLength, SEXP allLen1);
-extern SEXP reorder(SEXP x, SEXP order);
 extern SEXP isSortedList(SEXP l, SEXP w, SEXP tolerance);
 
 // Note: all these functions below are internal functions and are designed specific to fcast.
@@ -286,17 +282,16 @@ SEXP castgroups(SEXP groups, SEXP val, SEXP f__, SEXP value_var, SEXP jsub, SEXP
 SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, SEXP env, SEXP sorted, SEXP jsub, SEXP fill_d, SEXP drop, SEXP subsetting) {
     
     int protecti = 0;
-    SEXP dtnames, lrnames, ldt, rdt, vdt, lrdt, lidx, ridx, vidx, lo, ro, lro, lrdup, ldup, rdup, rdupl;
-    SEXP tmp, cpy, thiscol, subpos, subtmp;
-    SEXP colnames, llen__, rlen__;
+    SEXP dtnames, lrnames, ldt, rdt, vdt, lrdt, lidx, ridx, vidx, lo, ro, lro, lrdup, ldup=R_NilValue, rdup=R_NilValue, rdupl;
+    SEXP tmp, cpy, thiscol, subpos=R_NilValue, subtmp;
+    SEXP colnames, llen__;
     SEXP haskey, rollends, f__, len__, allLen1, roll;
     SEXP xx, cj, cjtmp, ans, outnamevec, ansnames;
-    SEXP dtmp,lcj, rcj, ddup, dorder;
+    SEXP dtmp,lcj=R_NilValue, rcj=R_NilValue, ddup, dorder;
     R_len_t i, j, nrows, ncols, ilen = length(inames), mlen = length(mnames), lanscols, ranscols;
     Rboolean isagg = FALSE, isfill = TRUE;
     char buffer[128], uscore[] = "_";
 
-    // raise(SIGINT);
     // check for arguments - some of these are not necessary as the intention is NOT to call directly, but thro' fcast.R (dcast), but alright
     if (TYPEOF(DT) != VECSXP) error("'data' should be a data.table or data.frame");
     if (TYPEOF(inames) != STRSXP) error("LHS of parsed formula did not result in character vector, possibly invalid formula");
@@ -382,6 +377,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
                                               // any issues with 'is.sorted' (as it's new). If it does occur, TODO: here memcpy would be faster than 'subset'
                                               // in the for-loop below
         }
+        protecti++; // lro
         for (i=0; i<length(lrdt); i++) {
             cpy = PROTECT(VECTOR_ELT(lrdt, i));
             tmp = PROTECT(subset(cpy, lro));
@@ -389,10 +385,10 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
             SET_VECTOR_ELT(lrdt, i, tmp);
         }
         setAttrib(lrdt, R_NamesSymbol, lrnames);
-        UNPROTECT(1); // lro
         vdt = PROTECT(subset(vdt, lro)); protecti++;
     }
-    lrdup = PROTECT(uniqlist(lrdt, seq_int(1, -1), tol)); protecti++;
+    lro = PROTECT(seq_int(1, -1)); protecti++;
+    lrdup = PROTECT(uniqlist(lrdt, lro, tol)); protecti++;
     
     // TODO: look for ways to simplify getting fun.aggregate in a better way
     isagg = isNull(jsub) ? TRUE : FALSE;
@@ -491,15 +487,6 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         SET_VECTOR_ELT(cjtmp, 1, PROTECT(seq_int(length(VECTOR_ELT(rcj, 0)), 1)));
         UNPROTECT(3); // cjtmp
         cj = PROTECT(cross_join(cjtmp)); protecti++;
-        // // binary search to get missing values
-        // f__ = PROTECT(zero_init(length(VECTOR_ELT(cj, 0)))); protecti++;
-        // len__ = PROTECT(zero_init(length(f__)));
-        // haskey = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(haskey)[0] = 1;
-        // rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
-        // allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
-        // roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        // binarysearch(cj, xx, PROTECT(seq_int(2, 0)), PROTECT(seq_int(2,0)), haskey, roll, rollends, PROTECT(zero_init(1)), tol, f__, len__, allLen1);
-        // UNPROTECT(8); // len__, haskey, rollends, allLen1, roll (except f__)        
     } else {
         // we could do a bit faster
         lo = PROTECT(seq_int(nrows, 1)); protecti++; // no need for fastorder of "lo", already sorted
@@ -508,7 +495,6 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         rdup = PROTECT(uniqlist(rdt, ro, tol)); protecti++; 
 
         llen__ = PROTECT(diff_int(ldup, nrows)); protecti++;
-        rlen__ = PROTECT(diff_int(rdup, nrows)); protecti++;
 
         rdup = PROTECT(subset(ro, rdup)); protecti++;
         tmp = PROTECT(allocVector(VECSXP, mlen+1)); protecti++;
