@@ -5,7 +5,7 @@
 //#include <sys/mman.h>
 #include <fcntl.h>
 
-#define ASCII(x) (LEVELS(x) & 76) == 64 // check if encoding is ASCII
+#define ENCODING(x) (LEVELS(x) & 76) // get encoding
 // LATIN1_MASK (1<<2) | UTF8_MASK (1<<3) | ASCII_MASK (1<<6)
 
 /* for isSortedList */
@@ -61,10 +61,9 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
     R_len_t lr,nr,low,mid,upp,coln,col,lci,rci,len;
     R_len_t prevlow, prevupp, type, newlow, newupp, /*size,*/ lt, rt;
     double tol = REAL(tolerance)[0], roll, rollabs;
-    Rboolean nearest=FALSE;
+    Rboolean nearest=FALSE, enc_warn=TRUE;
     SEXP lc=NULL, rc=NULL;
     unsigned long long *lc_ul, *rc_ul;  // for NA/NaN numerics
-    const char *lval_c, *rval_c;        // for character encoding checks with strncmp (bug #5256 and first part of bug #5159 - 2nd part is fixed in chmatch in countingcharacter.c)
     
     // get value of NA and NaN in unsigned long to check for TYPE=REAL case below.
     const unsigned long long R_UNSIGNED_LONG_NA_REAL  = R_NA_unsigned_long();
@@ -148,35 +147,39 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
             case STRSXP :
                 // lval_c and rval_c are added to address bugs reg. character encoding - bugs #5159 and #5266
                 lval.s = STRING_ELT(lc,lr);
-                lval_c = ASCII(lval.s) ? CHAR(lval.s) : translateCharUTF8(lval.s);
                 // if (lval.s==NA_STRING) goto nextlr;
                 while(low < upp-1) {
                     mid = low+((upp-low)/2);
                     rval.s = STRING_ELT(rc,mid);
-                    rval_c = ASCII(rval.s) ? CHAR(rval.s) : translateCharUTF8(rval.s);
                     // if (rval.s == NA_STRING) error("NA not allowed in keys"); should be in setkey as some NA may be missed by the binary search here.
-                    if (strncmp(lval_c, rval_c, strlen(lval_c)) == 0) {
+                    if (lval.s == rval.s) {
                         newlow = mid;
                         newupp = mid;
                         while(newlow<upp-1) {
                             mid = newlow+((upp-newlow)/2);
                             rval.s = STRING_ELT(rc,mid);
-                            rval_c = ASCII(rval.s) ? CHAR(rval.s) : translateCharUTF8(rval.s);
-                            if (strncmp(lval_c, rval_c, strlen(lval_c)) == 0) newlow=mid; else upp=mid;
+                            if (lval.s == rval.s) newlow=mid; else upp=mid;
                         }
                         while(low<newupp-1) {
                             mid = low+((newupp-low)/2);
                             rval.s = STRING_ELT(rc,mid);
-                            rval_c = ASCII(rval.s) ? CHAR(rval.s) : translateCharUTF8(rval.s);
-                            if (strncmp(lval_c, rval_c, strlen(lval_c)) == 0) newupp=mid; else low=mid;
+                            if (lval.s == rval.s) newupp=mid; else low=mid;
                         }
                         break;
-                    } else if (strncmp(lval_c, rval_c, strlen(lval_c)) > 0) {
+                    } else if (StrCmp(rval.s, lval.s) < 0) {
                     // TO DO: Reinvestigate non-ASCII. Switch can be a column level check that all is ascii
                     // (setkey can check and mark). Used to use Rf_Scollate but was removed from r-devel API.
                     // We're using the last line of scmp in sort.c since we already dealt with NA and == above
                         low=mid;
+                        // if (enc_warn && ENCODING(lval.s) != ENCODING(rval.s) && lval.s != NA_STRING && rval.s != NA_STRING) {
+                        //     warning("Encoding of character column '%s' in X is different from column '%s' in Y in join X[Y]. Joins are not implemented yet for non-identical character encodings and therefore likely to contain unexpected results for those entries. Please ensure that character columns have identical encodings for joins.", CHAR(STRING_ELT(getAttrib(right,R_NamesSymbol),col)), CHAR(STRING_ELT(getAttrib(left,R_NamesSymbol),col)));
+                        //     enc_warn=FALSE; // just warn once
+                        // }
                     } else {
+                        // if (enc_warn && ENCODING(lval.s) != ENCODING(rval.s) && lval.s != NA_STRING && rval.s != NA_STRING) {
+                        //     warning("Encoding of character column '%s' in X is different from column '%s' in Y in join X[Y]. Joins are not implemented yet for non-identical character encodings and therefore likely to contain unexpected results for those entries. Please ensure that character columns have identical encodings for joins.", CHAR(STRING_ELT(getAttrib(right,R_NamesSymbol),col)), CHAR(STRING_ELT(getAttrib(left,R_NamesSymbol),col)));
+                        //     enc_warn=FALSE; // just warn once
+                        // }
                         upp=mid;
                     }
                 }

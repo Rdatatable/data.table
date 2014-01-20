@@ -3531,7 +3531,7 @@ test(1154.2, DT[J(NA_real_)], DT[is.na(x) & !is.nan(x)])
 setkey(DT, y)
 test(1154.3, setcolorder(DT[J(NA_integer_)], c("x", "y", "z")), DT[is.na(y)])
 setkey(DT, z)
-test(1154.3, setcolorder(DT[J(NA_character_)], c("x", "y", "z")), DT[is.na(z)])
+test(1154.4, setcolorder(DT[J(NA_character_)], c("x", "y", "z")), DT[is.na(z)])
 
 # Fixing the binary search above for NA/NaN also fixes BUG #4918
 dt1 <- data.table(x = c('red','orange','green'), y=c(1,2,NA), key='y')
@@ -3676,21 +3676,10 @@ test(1162.10, is.sorted(as.list(DT)[1:3]), TRUE)
 x <- character(0)
 test(1163, last(x), character(0))
 
-# Bug fix for #5159 - chmatch and character encoding
+# Bug fix for #5159 - chmatch and character encoding (for some reason this seems to pass the test on a mac as well)
 a<-c("a","ä","ß","z")
 au<-iconv(a,"UTF8","latin1")
 test(1164.1, chmatch(a, au), match(a, au))
-
-# BUG #5266 and BUG #5159
-dt<-data.table(a,b=1:4,key="a")
-test(1164.2, dt[au], dt[c(1,4,3,2)])
-
-a<-c("a","ä")
-b<-a
-Encoding(a)<-"unknown"
-A<-data.table(a,c=1:2,key="a")
-B<-data.table(b,d=2:1,key="b")
-test(1164.3, A[B], data.table(a=b, c=1:2, d=2:1, key="a"))
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
