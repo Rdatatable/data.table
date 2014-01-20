@@ -170,16 +170,16 @@ SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP iso
                     // TO DO: Reinvestigate non-ASCII. Switch can be a column level check that all is ascii
                     // (setkey can check and mark). Used to use Rf_Scollate but was removed from r-devel API.
                     // We're using the last line of scmp in sort.c since we already dealt with NA and == above
+                        if (enc_warn && ENCODING(lval.s) != ENCODING(rval.s) && lval.s != NA_STRING && rval.s != NA_STRING) {
+                            warning("Encoding of character column '%s' in X is different from column '%s' in Y in join X[Y]. Joins are not implemented yet for non-identical character encodings and therefore likely to contain unexpected results for those entries. Please ensure that character columns have identical encodings for joins.", CHAR(STRING_ELT(getAttrib(right,R_NamesSymbol),col)), CHAR(STRING_ELT(getAttrib(left,R_NamesSymbol),col)));
+                            enc_warn=FALSE; // just warn once
+                        }
                         low=mid;
-                        // if (enc_warn && ENCODING(lval.s) != ENCODING(rval.s) && lval.s != NA_STRING && rval.s != NA_STRING) {
-                        //     warning("Encoding of character column '%s' in X is different from column '%s' in Y in join X[Y]. Joins are not implemented yet for non-identical character encodings and therefore likely to contain unexpected results for those entries. Please ensure that character columns have identical encodings for joins.", CHAR(STRING_ELT(getAttrib(right,R_NamesSymbol),col)), CHAR(STRING_ELT(getAttrib(left,R_NamesSymbol),col)));
-                        //     enc_warn=FALSE; // just warn once
-                        // }
                     } else {
-                        // if (enc_warn && ENCODING(lval.s) != ENCODING(rval.s) && lval.s != NA_STRING && rval.s != NA_STRING) {
-                        //     warning("Encoding of character column '%s' in X is different from column '%s' in Y in join X[Y]. Joins are not implemented yet for non-identical character encodings and therefore likely to contain unexpected results for those entries. Please ensure that character columns have identical encodings for joins.", CHAR(STRING_ELT(getAttrib(right,R_NamesSymbol),col)), CHAR(STRING_ELT(getAttrib(left,R_NamesSymbol),col)));
-                        //     enc_warn=FALSE; // just warn once
-                        // }
+                        if (enc_warn && ENCODING(lval.s) != ENCODING(rval.s) && lval.s != NA_STRING && rval.s != NA_STRING) {
+                            warning("Encoding of character column '%s' in X is different from column '%s' in Y in join X[Y]. Joins are not implemented yet for non-identical character encodings and therefore likely to contain unexpected results for those entries. Please ensure that character columns have identical encodings for joins.", CHAR(STRING_ELT(getAttrib(right,R_NamesSymbol),col)), CHAR(STRING_ELT(getAttrib(left,R_NamesSymbol),col)));
+                            enc_warn=FALSE; // just warn once
+                        }
                         upp=mid;
                     }
                 }
