@@ -1990,8 +1990,8 @@ test(676, rbindlist(l[1:3]), data.table(a=1:6,b=7:12))
 test(677, rbindlist(l[c(10,1,10,2,10)]), data.table(a=1:4,b=7:10))  # NULL items ignored
 test(678, rbindlist(l[c(1,4)]), error="Item 2 has 1 columns, inconsistent with item 1 which has 2")
 test(679, rbindlist(l[c(1:2,5)]), error="Column 2 of item 3 is length 1, inconsistent with first column of that item which is length 2.")
-test(680, rbindlist(l[c(2,6)]), data.table(a=c(3L,4L,18L,19L), V2=c(9:10,20:21)))  # coerces 18 and 19 to integer
-# TO DO when options(datatable.pedantic=TRUE): test(680.5, rbindlist(l[c(2,6)]), warning="Column 1 of item 2 is type 'double', inconsistent with column 1 of item 1's type ('integer')")
+test(680, rbindlist(l[c(2,6)]), data.table(a=c(3,4,18,19), V2=c(9:10,20:21)))  # coerces 18 and 19 to numeric (with eddi's changes in commit 1012 - highest type is preserved now) --- Caught and changed by Arun on 26th Jan 2014 (in commit 1099).
+### ----> Therefore this TO DO may not be necessary here anymore (added by Arun 26th Jan 2014) ---> # TO DO when options(datatable.pedantic=TRUE): test(680.5, rbindlist(l[c(2,6)]), warning="Column 1 of item 2 is type 'double', inconsistent with column 1 of item 1's type ('integer')")
 test(681, rbindlist(list(data.table(a=letters[1:2],b=c(1.2,1.3),c=1:2), list("c",1.4,3L), NULL, list(letters[4:6],c(1.5,1.6,1.7),4:6))), data.table(a=letters[1:6], b=seq(1.2,1.7,by=0.1), c=1:6))
 test(682, rbindlist(NULL), data.table(NULL))
 test(683, rbindlist(list()), data.table(NULL))
@@ -3682,10 +3682,13 @@ au<-iconv(a,"UTF8","latin1")
 test(1164.1, chmatch(a, au), match(a, au))
 
 # Bug fix for #5117 - segfault when rbindlist on empty data.tables
-require(data.table)
 x <- as.data.table(BOD)
 y <- copy(x)
 test(1165, x[Time>100], rbindlist(list(x[Time > 100], y[Time > 200])))
+
+# Bug fix for the #5300 - rbind(DT, NULL) should not result in error
+x <- as.data.table(BOD) 
+test(1166, x, rbind(x, NULL))
 
 
 # tests of freading classes like Date and the verbose messages there.

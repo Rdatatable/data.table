@@ -1521,6 +1521,9 @@ tail.data.table = function(x, n=6, ...) {
     # Called from base::rbind.data.frame
     original.names = lapply(list(...), names)
     allargs = lapply(list(...), as.data.table)
+    # To fix the issue of rbind(DT, NULL) to work - NULL data.tables should be removed even when fill=FALSE (like base:::rbind does)
+    # thanks to Garrett See for reporting - added as a new bug #5300 for future reference
+    allargs = allargs[sapply(allargs, length) > 0L]
 
     n = length(allargs)
     if (n == 0L) return(null.data.table())

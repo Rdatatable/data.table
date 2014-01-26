@@ -254,7 +254,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
                                 SET_STRING_ELT(finalLevels, counter++, STRING_ELT(tmp, k));
                             }
                             locs[pl->i] = pl->j + 1;
-                        } while (pl = pl->next);
+                        } while ( (pl = pl->next) ); // added parenthesis to remove compiler warning 'suggest parentheses around assignment used as truth value'
                         SET_STRING_ELT(finalLevels, counter++, STRING_ELT(elem, j));
                         break;
                     }
@@ -284,7 +284,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
                                 record = FALSE;
                                 break;
                             }
-                        } while (pl = pl->next);
+                        } while ( (pl = pl->next) ); // added parenthesis to remove compiler warning 'suggest parentheses around assignment used as truth value'
                         if (record)
                             SET_STRING_ELT(finalLevels, counter++, STRING_ELT(elem, j));
 
@@ -404,9 +404,11 @@ SEXP rbindlist(SEXP l)
     }
     if (nrow == 0) {
         // fixes bug #5117 - all data.tables are empty case.
-        // TO DO: to verify that base:::rbind gives the same outout (ex: on factor levels).
-        return (VECTOR_ELT(l, 0));
+        if (ncol == 0) return(R_NilValue); 
+        return (duplicate(VECTOR_ELT(l, 0))); // ELSE case. 'duplicate' so as to not return the same pointer.
+        // TO DO: to verify that base:::rbind gives the same outout (ex: on factor levels)
     }
+
     PROTECT(ans = allocVector(VECSXP, ncol));
     setAttrib(ans, R_NamesSymbol, getAttrib(lf, R_NamesSymbol));
     for(j=0; j<ncol; j++) {
