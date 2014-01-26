@@ -349,7 +349,9 @@ BUG FIXES
      results for those indices with different encodings. That is, when "a" in X's key column and "a" in Y's key column  
      are of different encodings, a warning is issued. This takes care of bugs #5266 and other part of #5159 for the 
      moment. Thanks to Stefan Fritsch once again for reporting.
-  
+
+  o  Fixed #5117 - segfault when `rbindlist` on empty data.tables. Thanks to Garrett See for reporting.
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.

@@ -402,6 +402,11 @@ SEXP rbindlist(SEXP l)
             }
         }
     }
+    if (nrow == 0) {
+        // fixes bug #5117 - all data.tables are empty case.
+        // TO DO: to verify that base:::rbind gives the same outout (ex: on factor levels).
+        return (VECTOR_ELT(l, 0));
+    }
     PROTECT(ans = allocVector(VECSXP, ncol));
     setAttrib(ans, R_NamesSymbol, getAttrib(lf, R_NamesSymbol));
     for(j=0; j<ncol; j++) {

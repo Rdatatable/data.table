@@ -3681,6 +3681,13 @@ a<-c("a","ä","ß","z")
 au<-iconv(a,"UTF8","latin1")
 test(1164.1, chmatch(a, au), match(a, au))
 
+# Bug fix for #5117 - segfault when rbindlist on empty data.tables
+require(data.table)
+x <- as.data.table(BOD)
+y <- copy(x)
+test(1165, x[Time>100], rbindlist(list(x[Time > 100], y[Time > 200])))
+
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 
