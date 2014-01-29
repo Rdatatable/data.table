@@ -352,7 +352,7 @@ BUG FIXES
 
   o  Fixed #5117 - segfault when `rbindlist` on empty data.tables. Thanks to Garrett See for reporting.
 
-  o  Fixed a rare segfault on grouping (with 'by') that occurred on *very large data*; closes #5305. Thanks to 
+  o  Fixed a rare segfault on grouping (with 'by') that occurred on >250m rows; closes #5305. Thanks to 
      Guenter J. Hitsch for reporting.
 
 NOTES
