@@ -73,13 +73,13 @@ setreordervec <- function(x, order) .Call(Creorder, x, order)
 # so adding a new argument is okay. added 'o' for order vector
 radixorder1 <- function(x, o=NULL) {
     if(is.object(x)) x = xtfrm(x) # should take care of handling factors, Date's and others, so we don't need unlist
-    if(typeof(x) == "logical") return(c(which(is.na(x)),which(!x),which(x))) # logical is a special case of radix sort; just 3 buckets known up front. TO DO - could be faster in C but low priority
-    if(typeof(x) != "integer") # this allows factors; we assume the levels are sorted as we always do in data.table
-        stop("radixorder1 is only for integer 'x'")
-    if (!is.null(o)) {
+    if (!is.null(o)) { # fix for http://stackoverflow.com/questions/21437546/data-table-1-8-11-and-aggregation-issues (moved this if-check to before checking logical)
         x = copy(x)
         setreordervec(x, o)
     }
+    if(typeof(x) == "logical") return(c(which(is.na(x)),which(!x),which(x))) # logical is a special case of radix sort; just 3 buckets known up front. TO DO - could be faster in C but low priority
+    if(typeof(x) != "integer") # this allows factors; we assume the levels are sorted as we always do in data.table
+        stop("radixorder1 is only for integer 'x'")
     sort.list(x, na.last=FALSE, decreasing=FALSE,method="radix")
     # Always put NAs first, relied on in C binary search by relying on NA_integer_ being -maxint (checked in C).
 }
@@ -95,8 +95,13 @@ iradixorder <- function(x, o=NULL) {
     # copied from radixorder1 and just changed the call to the correct function
     # xtfrm converts date object to numeric. but this will be called only if it's integer, so do a as.integer(.)
     if(is.object(x)) x = as.integer(xtfrm(x))
-    if(typeof(x) == "logical") 
+    if(typeof(x) == "logical") {
+        if (!is.null(o)) { # since iradixorder requires a copy this check is better to be inside this if-statement unlike radixorder1
+            x = copy(x)
+            setreordervec(x, o)
+        }
         return(c(which(is.na(x)), which(!x), which(x)))
+    }
     if(typeof(x) != "integer") # this allows factors; we assume the levels are sorted as we always do in data.table
         stop("iradixorder is only for integer 'x'. Try dradixorder for numeric 'x'")
     if (length(x) == 0L) return(integer(0))

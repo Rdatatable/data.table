@@ -3690,6 +3690,10 @@ test(1165, x[Time>100], rbindlist(list(x[Time > 100], y[Time > 200])))
 x <- as.data.table(BOD) 
 test(1166, x, rbind(x, NULL))
 
+# fix for bug #5307 - ordering with multiple columns in which at least one of them is a logical column
+foo = data.table(a=rep(c(0L,1L,0L,1L),2), b=rep(c(TRUE,TRUE,FALSE,FALSE),2), c=1L)
+test(1167, foo[, .N, by=list(b,a)], data.table(b=c(TRUE, TRUE, FALSE, FALSE), a=c(0L,1L,0L,1L), N=2L))
+
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.

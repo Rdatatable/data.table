@@ -355,6 +355,10 @@ BUG FIXES
   o  Fixed a rare segfault on grouping (with 'by') that occurred on >250m rows; closes #5305. Thanks to 
      Guenter J. Hitsch for reporting.
 
+  o  Fixed a bug that arose due to recent fixes to fastorder, where aggregating with logical type at times lead to 
+     to wrong result. This closes #5307. Thanks to Clayton Stanley for reporting on SO: 
+     http://stackoverflow.com/questions/21437546/data-table-1-8-11-and-aggregation-issues
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.
