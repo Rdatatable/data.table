@@ -352,6 +352,9 @@ BUG FIXES
 
   o  Fixed #5117 - segfault when `rbindlist` on empty data.tables. Thanks to Garrett See for reporting.
 
+  o  Fixed a rare segfault on grouping (with 'by') that occurred on *very large data*; closes #5305. Thanks to 
+     Guenter J. Hitsch for reporting.
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.

@@ -40,7 +40,7 @@ SEXP set_diff(SEXP x, int n) {
     }
     n = j;
     PROTECT(ans = allocVector(INTSXP, n));
-    memcpy(INTEGER(ans), buf, sizeof(int) * n);
+    memcpy(INTEGER(ans), buf, sizeof(int) * n); // sizeof is of type size_t - no integer overflow issues
     UNPROTECT(1);
     return(ans);
 }

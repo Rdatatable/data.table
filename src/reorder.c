@@ -51,7 +51,9 @@ SEXP reorder(SEXP x, SEXP order)
     // x may be a vector, or a list of vectors e.g. data.table
     char *tmp, *tmpp, *vd;
     SEXP v;
-    R_len_t i, j, itmp, nrow, ncol, size, start, end;
+    R_len_t i, j, itmp, nrow, ncol, start, end;
+    size_t size; // to avoid bug #5305 - integer overflow in memcpy
+
     if (isNewList(x)) {
         nrow = length(VECTOR_ELT(x,0));
         ncol = length(x);

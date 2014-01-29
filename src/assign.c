@@ -121,12 +121,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     // newcolnames : add these columns (if any)
     // cols : column names or numbers corresponding to the values to set
     // rows : row numbers to assign
-    R_len_t i, j, nrow, size, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum;
+    R_len_t i, j, nrow, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum;
     SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key;
     Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, clearkey=FALSE;
     char *s1, *s2, *s3;
     int *buf, k=0;
-    
+    size_t size; // to avoid bug #5305 - integer overflow in memcpy
     if (isNull(dt)) error("assign has been passed a NULL dt");
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
     class = getAttrib(dt, R_ClassSymbol);
@@ -718,7 +718,7 @@ SEXP setcolorder(SEXP x, SEXP o)
     SEXP *tmp = Calloc(LENGTH(x),SEXP);
     for (int i=0; i<LENGTH(x); i++)
         tmp[i] = VECTOR_ELT(x, INTEGER(o)[i]-1);
-    memcpy((char *)DATAPTR(x),(char *)tmp,LENGTH(x)*sizeof(char *));
+    memcpy((char *)DATAPTR(x),(char *)tmp,LENGTH(x)*sizeof(char *)); // sizeof is of type size_t (unsigned) - so no issues here
     SEXP names = getAttrib(x,R_NamesSymbol);
     if (isNull(names)) error("dt passed to setcolorder has no names");
     for (int i=0; i<LENGTH(x); i++)

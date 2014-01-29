@@ -332,7 +332,7 @@ SEXP rbindlist(SEXP l)
 {
     R_len_t i,j,r, nrow=0, first=-2, ansloc, ncol=0, thislen;
     SEXP ans, li, lf=R_NilValue, thiscol, target, levels;
-    int size;
+    size_t size; // to avoid bug #5305 - integer overflow in memcpy (changed from (previously) 'int')
     Rboolean coerced=FALSE;
     SEXPTYPE * maxtype = NULL;     // TODO: should memory allocation be done differently from malloc/free? (also in a few places above and below)
     int * isColFactor = NULL;      // for each column this is 0 if not a factor, 1 if a factor, and 2 if an ordered factor

@@ -211,7 +211,7 @@ SEXP castgroups(SEXP groups, SEXP val, SEXP f__, SEXP value_var, SEXP jsub, SEXP
             case INTSXP :
             case LGLSXP :
             case STRSXP : 
-            memcpy((char *)DATAPTR(tmp), (char *)DATAPTR(cpy), SIZEOF(tmp)); break;
+            memcpy((char *)DATAPTR(tmp), (char *)DATAPTR(cpy), SIZEOF(tmp)); break; // SIZEOF is size_t - no integer overflow issues
             default : error("Unknown column type '%s'", type2char(TYPEOF(cpy)));
         }
         UNPROTECT(2); // tmp, cpy

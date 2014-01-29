@@ -33,12 +33,13 @@ void setSizes() {
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose)
 {
-    R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, size, vlen, origIlen=0, origSDnrow=0;
+    R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, vlen, origIlen=0, origSDnrow=0;
     int protecti=0;
     SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, SD, BY, N, I, GRP, iSD, xSD, rownames, s, targetcol, RHS, listwrap, target;
     SEXP *nameSyms, *xknameSyms;
     Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
-    
+    size_t size; // to avoid bug #5305 - integer overflow in memcpy
+
     if (TYPEOF(order) != INTSXP) error("Internal error: order not integer");
     //if (TYPEOF(starts) != INTSXP) error("Internal error: starts not integer");
     //if (TYPEOF(lens) != INTSXP) error("Internal error: lens not integer");
@@ -523,7 +524,7 @@ SEXP growVector(SEXP x, R_len_t newlen)
         // TO DO: Again, is there bulk op to avoid this loop, which still respects older generations    
         break;
     default :
-        memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*SIZEOF(x));
+        memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*SIZEOF(x)); // SIZEOF returns size_t - no integer overflow issues here.
     }
     // if (verbose) Rprintf("Growing vector from %d to %d items of type '%s'\n", len, newlen, type2char(TYPEOF(x)));
     // Would print for every column if here. Now just up in dogroups (one msg for each table grow).

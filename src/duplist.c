@@ -160,7 +160,7 @@ SEXP uniqlist(SEXP l, SEXP order, SEXP tol)
         }
     }
     PROTECT(ans = allocVector(INTSXP, len));
-    memcpy(INTEGER(ans), iidx, sizeof(int)*len);    
+    memcpy(INTEGER(ans), iidx, sizeof(int)*len); // sizeof is of type size_t - no integer overflow issues   
     Free(iidx);
     UNPROTECT(1);
     return(ans);
