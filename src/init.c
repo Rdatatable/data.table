@@ -98,6 +98,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
     R_registerRoutines(info, NULL, callMethods, NULL, externalMethods);
     R_useDynamicSymbols(info, FALSE);
     setSizes();
+    if (NA_INTEGER != INT_MIN) error("data.table relies on NA_INTEGER [%d] == INT_MIN [%d]. If this is no longer true, please email the maintainer.", NA_INTEGER, INT_MIN);
 }
 
 
