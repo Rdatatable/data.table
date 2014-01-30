@@ -30,8 +30,6 @@
 void ssort2(SEXP *x, R_len_t n);
 // See end of this file for comments and modifications.
 
-extern SEXP *saveds;
-extern R_len_t *savedtl, nalloc, nsaved;
 extern void savetl_init(), savetl(SEXP s), savetl_end();
 
 SEXP countingcharacter(SEXP x, SEXP sort)

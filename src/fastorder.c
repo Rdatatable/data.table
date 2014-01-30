@@ -357,11 +357,56 @@ static int isorted(int *x, int n)
     return(1);  // increasing order, possibly with ties
 }
 
+
+extern void savetl_init(), savetl(SEXP s), savetl_end();
+
+static void ccount(SEXP *x, int *o, int n, Rboolean sort)
+{
+    SEXP s, tmp, *u;
+    int i, k, cumsum, un=0, ualloc;
+    
+    savetl_init();
+    for(i=0; i<n; i++) {
+        s = x[i];
+        if (TRUELENGTH(s)!=0) {  // Save any of R's own usage of tl first to put back afterwards. pre-2.14.0 this saved all the uninitialised 
+            savetl(s);           // truelength (i.e. random data). From 2.14.0 tl is initialized to 0.
+            SET_TRUELENGTH(s,0);
+        }
+    }
+    ualloc = 10000;              // 78k of 8byte pointers. Small initial guess, negligible time to alloc. 
+    if (ualloc > n) ualloc = n;
+    u = malloc(ualloc * sizeof(SEXP));
+    for(i=0; i<n; i++) {
+        tmp = x[i];
+        if (!TRUELENGTH(tmp)) {
+            if (un==ualloc) u = realloc(u, (un*2>n ? n : un*2) * sizeof(SEXP));
+            u[un++] = tmp;
+        }
+        SET_TRUELENGTH(tmp, TRUELENGTH(tmp)+1);
+    }
+    //if (sort) ssort2(u,un);  // NB: length is the nchar of each char *, not 1.
+    cumsum = TRUELENGTH(u[0]);
+    for(i=1; i<un; i++)                                      // 0.000
+        SET_TRUELENGTH(u[i], cumsum += TRUELENGTH(u[i]));
+    for(i=n; i>0; i--) {   // i>0 in case i changed to unsigned in future. >=0 would then result in underflow and infinite loop.
+        tmp = x[i-1];                                        // 0.400 (page fetches on string cache)
+        SET_TRUELENGTH(tmp, k = TRUELENGTH(tmp)-1);
+        o[k] = i;                                            // 0.800 (random access to o)
+    }
+    for(i=0; i<un; i++) SET_TRUELENGTH(u[i],0);     // The cumsum meant the counts are left non zero so reset for next time (0.00).
+    // TO DO: push() here
+    savetl_end();
+    free(u);
+    return;
+}
+
+
 // TO DO: for dradix, if treatment of Inf,-Inf,NA and Nan is biting anywhere, they can we swept to the front in one pass by shifting the next non-special back however many specials have been observed so far.
 
-SEXP forder(SEXP DT, SEXP by, SEXP retGrp)
-// TO DO: check fast for a unique integer vector such as origorder = iradixorder(firstofeachgroup) in [.data.table ad hoc by 
+SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStr)
+// TO DO: check fast for a unique integer vector such as origorder = iradixorder(firstofeachgroup) in [.data.table ad hoc by (no groups needed).
 // TO DO: attach group sizes to result, if retGrp is TRUE
+// sortChar TRUE from setkey, FALSE from by=
 {
     int i, j, k, grp, tmp, *osub, thisgrpn, n, *x, col;
     Rboolean isSorted = TRUE;
@@ -383,6 +428,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp)
         x = INTEGER(DT);
     }
     if (!isLogical(retGrp) || LENGTH(retGrp)!=1 || INTEGER(retGrp)[0]==NA_LOGICAL) error("retGrp must be TRUE or FALSE");
+    if (!isLogical(sortStr) || LENGTH(sortStr)!=1 || INTEGER(sortStr)[0]==NA_LOGICAL ) error("sortStr must be TRUE or FALSE");
     gsmaxalloc = n;  // upper limit for stack size (all size 1 groups). We'll detect and avoid that limit, but if just one non-1 group (say 2), that can't be avoided.
     
     
@@ -422,7 +468,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp)
     
     TEND(0)
     
-    for (col=2; col<=LENGTH(by); col++) {
+    for (col=2; col<=length(by); col++) {
         x = INTEGER(VECTOR_ELT(DT,INTEGER(by)[col-1]-1));
         int ngrp = gsngrp[flip];
         if (ngrp == n) break;
