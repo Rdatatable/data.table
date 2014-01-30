@@ -59,6 +59,7 @@ static void gsfree() {
 }
 
 #ifdef TIMING_ON
+  // many calls to clock() can be expensive, hence compiled out rather than switch(verbose) 
   #include <time.h>
   static clock_t tblock[10], tstart;
   static int nblock[10];
@@ -358,12 +359,11 @@ static int isorted(int *x, int n)
 
 // TO DO: for dradix, if treatment of Inf,-Inf,NA and Nan is biting anywhere, they can we swept to the front in one pass by shifting the next non-special back however many specials have been observed so far.
 
-SEXP forder(SEXP DT)
-// TO DO: add argument for which columns to order by.
-// TO DO: allow DT to be a vector and fast for a unique integer vector such as origorder = iradixorder(firstofeachgroup) in [.data.table ad hoc by 
-// TO DO: attach group sizes to the result, if returnGroups is TRUE
+SEXP forder(SEXP DT, SEXP by, SEXP retGrp)
+// TO DO: check fast for a unique integer vector such as origorder = iradixorder(firstofeachgroup) in [.data.table ad hoc by 
+// TO DO: attach group sizes to result, if retGrp is TRUE
 {
-    int i, j, k, grp, tmp, *osub, thisgrpn;
+    int i, j, k, grp, tmp, *osub, thisgrpn, n, *x, col;
     Rboolean isSorted = TRUE;
 #ifdef TIMING_ON
     memset(tblock, 0, 10*sizeof(clock_t));
@@ -371,14 +371,25 @@ SEXP forder(SEXP DT)
 #endif
     TBEG()
     
-    int n = length(VECTOR_ELT(DT,0));
-    int *x = INTEGER(VECTOR_ELT(DT,0));
+    if (isNewList(DT)) {
+        if (!length(DT)) error("DT is an empty list() of 0 columns");
+        if (!isInteger(by) || !length(by)) error("DT has %d columns but 'by' is either not integer or length 0", length(DT));  // seq_along(x) at R level
+        for (i=0; i<LENGTH(by); i++) if (INTEGER(by)[i] < 1 || INTEGER(by)[i] > length(DT)) error("'by' value %d out of range [1,%d]", INTEGER(by)[i], length(DT));
+        n = length(VECTOR_ELT(DT,0));
+        x = INTEGER(VECTOR_ELT(DT,INTEGER(by)[0]-1));        
+    } else {
+        if (!isNull(by)) error("Input is a single vector but 'by' is not NULL");
+        n = length(DT);
+        x = INTEGER(DT);
+    }
+    if (!isLogical(retGrp) || LENGTH(retGrp)!=1 || INTEGER(retGrp)[0]==NA_LOGICAL) error("retGrp must be TRUE or FALSE");
     gsmaxalloc = n;  // upper limit for stack size (all size 1 groups). We'll detect and avoid that limit, but if just one non-1 group (say 2), that can't be avoided.
+    
     
     SEXP ans = PROTECT(allocVector(INTSXP, n));  // once for the result, needs to be length n.
     int *o = INTEGER(ans);                       // TO DO: save allocation if NULL is returned (isSorted==TRUE)
     
-    // TO DO: if more than 1 column || returnGroups
+    // TO DO: if more than 1 column || returnGroups. Remember iradix needs stackgrps for all but last radix, regardless.
     stackgrps = TRUE;
     
     if ((tmp = isorted(x, n))) {
@@ -411,64 +422,63 @@ SEXP forder(SEXP DT)
     
     TEND(0)
     
-    // TO DO: for each column ...
-    x = INTEGER(VECTOR_ELT(DT,1));
-    int ngrp = gsngrp[flip];
-    if (ngrp < n) {
-    flipflop();
-    // TO DO: if last column && !returnGroups
-    stackgrps = FALSE;
-    i = 0;
-    for (grp=0; grp<ngrp; grp++) {
-      thisgrpn = gs[1-flip][grp];
-      if (thisgrpn == 1) {i++; push(1); continue;}
-      TBEG()
-      osub = o+i;
-      for (j=0; j<thisgrpn; j++) xsub[j] = x[o[i++]-1];
-      TEND(1)
-      
-      // continue;  // BASELINE short circuit timing point. Up to here is the cost of creating xsub.
-      
-      if (thisgrpn==2) {
-          if (xsub[1]<xsub[0]) { isSorted=FALSE; tmp=osub[0]; osub[0]=osub[1]; osub[1]=tmp; }
-          push(1); push(1);
-          continue;
-      }
-      tmp = isorted(xsub, thisgrpn);  // very low cost and localised to thisgrp
-      TEND(2)
-      if (tmp) {
-          // isorted will have already push()'d the groups
-          if (tmp<0) {
-              isSorted = FALSE;
-              for (k=0;k<thisgrpn/2;k++) {      // reverse the order in-place using no function call or working memory 
-                  tmp = osub[k];                // isorted only returns -1 for _strictly_ decreasing order, otherwise ties wouldn't be stable
-                  osub[k] = osub[thisgrpn-1-k];
-                  osub[thisgrpn-1-k] = tmp;
-              }
-              TEND(3)
-          }
-          continue;
-      }
-      isSorted = FALSE;
-      if (thisgrpn<200) {    // see comment above in iradix_r re 200.
-          iinsert(xsub, osub, thisgrpn);  // pushes inside too
-          TEND(4)
-          continue;
-      }
-      setRange(xsub, thisgrpn);   // Tighter range (e.g. copes better with a few abormally large values in some groups), but also, when setRange was once at colum level that caused an extra scan of (long) x first. 10,000 calls to setRange takes just 0.04s i.e. negligible.
-      if (range==NA_INTEGER) error("2nd column is all NA in this subgroup. issorted should have caught this above");
-      TEND(5)
-      if (range < 10000) {   // 1e4 rather than 1e5 here because iterated
-          icount(xsub, newo, thisgrpn);  
-          TEND(6)
-      } else {                            // was (thisgrpn < 200 || range > 20000) then radix
-          iradix(xsub, newo, thisgrpn);   // since a short vector with large range can bite icount when iterated (BLOCK 4 and 6)
-          TEND(7)                         // TO DO: add calibrate() to init.c
-      }
-      for (k=0; k<j; k++) xsub[k] = osub[ newo[k]-1 ];   // reuse xsub to reorder osub
-      memcpy(osub, xsub, thisgrpn*sizeof(int)); 
-      TEND(8)
-    }
+    for (col=2; col<=LENGTH(by); col++) {
+        x = INTEGER(VECTOR_ELT(DT,INTEGER(by)[col-1]-1));
+        int ngrp = gsngrp[flip];
+        if (ngrp == n) break;
+        flipflop();
+        stackgrps = (col!=LENGTH(by) || LOGICAL(retGrp)[0]);
+        i = 0;
+        for (grp=0; grp<ngrp; grp++) {
+            thisgrpn = gs[1-flip][grp];
+            if (thisgrpn == 1) {i++; push(1); continue;}
+            TBEG()
+            osub = o+i;
+            for (j=0; j<thisgrpn; j++) xsub[j] = x[o[i++]-1];
+            TEND(1)
+          
+            // continue;  // BASELINE short circuit timing point. Up to here is the cost of creating xsub.
+          
+            if (thisgrpn==2) {
+                if (xsub[1]<xsub[0]) { isSorted=FALSE; tmp=osub[0]; osub[0]=osub[1]; osub[1]=tmp; }
+                push(1); push(1);
+                continue;
+            }
+            tmp = isorted(xsub, thisgrpn);  // very low cost and localised to thisgrp
+            TEND(2)
+            if (tmp) {
+                // isorted will have already push()'d the groups
+                if (tmp<0) {
+                    isSorted = FALSE;
+                    for (k=0;k<thisgrpn/2;k++) {      // reverse the order in-place using no function call or working memory 
+                        tmp = osub[k];                // isorted only returns -1 for _strictly_ decreasing order, otherwise ties wouldn't be stable
+                        osub[k] = osub[thisgrpn-1-k];
+                        osub[thisgrpn-1-k] = tmp;
+                    }
+                    TEND(3)
+                }
+                continue;
+            }
+            isSorted = FALSE;
+            if (thisgrpn<200) {    // see comment above in iradix_r re 200.
+                iinsert(xsub, osub, thisgrpn);  // pushes inside too
+                TEND(4)
+                continue;
+            }
+            setRange(xsub, thisgrpn);   // Tighter range (e.g. copes better with a few abormally large values in some groups), but also, when setRange was once at colum level that caused an extra scan of (long) x first. 10,000 calls to setRange takes just 0.04s i.e. negligible.
+            if (range==NA_INTEGER) error("2nd column is all NA in this subgroup. issorted should have caught this above");
+            TEND(5)
+            if (range < 10000) {   // 1e4 rather than 1e5 here because iterated
+                icount(xsub, newo, thisgrpn);  
+                TEND(6)
+            } else {                            // was (thisgrpn < 200 || range > 20000) then radix
+                iradix(xsub, newo, thisgrpn);   // since a short vector with large range can bite icount when iterated (BLOCK 4 and 6)
+                TEND(7)                         // TO DO: add calibrate() to init.c
+            }
+            for (k=0; k<j; k++) xsub[k] = osub[ newo[k]-1 ];   // reuse xsub to reorder osub
+            memcpy(osub, xsub, thisgrpn*sizeof(int)); 
+            TEND(8)
+        }
     }
 #ifdef TIMING_ON
     for (i=0; i<10; i++) Rprintf("Timing block %d = %8.3f   %8d\n", i, 1.0*tblock[i]/CLOCKS_PER_SEC, nblock[i]);

@@ -141,8 +141,10 @@ is.sorted = function(x, by=seq_along(x)) {
     if (is.list(x)) {
         if (is.character(by)) by = chmatch(by,names(x))
         .Call(CisSortedList, x, as.integer(by), sqrt(.Machine$double.eps))
+    } else {
+        if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense.")
+        identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.na(x))
     }
-    else identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.na(x))
 }
 # base::is.unsorted returns NA if any NA is found anywhere, hence converting NA to FALSE above.
 # The && is now needed to maintain backwards compatibility after r-devel's change of is.unsorted(NA) to FALSE (was NA) [May 2013].
@@ -150,6 +152,16 @@ is.sorted = function(x, by=seq_along(x)) {
 # TO DO: hook up our own vector is.sorted which checks NAs are just at the start, and then returns TRUE. Since, in data.table
 # our rule is NA at the start.
 # TO DO: instead of TRUE/FALSE, return -1/0/+1  -1=sorted in reverse, 0=not sorted either way, 1=sorted forwards. Conveniently, if (-1) in R is TRUE, since anything !=0 is TRUE, just like C.
+
+forder = function(x, by=seq_along(x), verbose=getOption("datatable.verbose"))
+{
+    # TO DO: export and document forder
+    if (is.atomic(x)) {
+        if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
+        by = NULL
+    }
+    .Call(Cforder, x, by, FALSE)
+}
 
 fastorder <- function(x, by=seq_along(x), verbose=getOption("datatable.verbose"))
 {
@@ -278,16 +290,16 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         
         if (testback || baseline) ans[i, rand.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
         # in baseline mode, Cforder doesn't order, so y is needed to test baseline on ordered DT
-        ans[i, rand.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
+        ans[i, rand.forw := sum(system.time(x<<-forder(DT))[ttype])]
         if (testback) ans[i, faster1 := rand.forw<rand.back+tol]
         if (testback) if (!identical(x,y)) browser()
         
-        .Call(Creorder,DT, if (baseline) y else x)
+        .Call(Creorder,DT, if (baseline) y else x)  # in baseline mode, x is deliberately wrong. And if testback=FALSE, we won't have y
         if (!is.sorted(DT)) stop("Logical error: ordered table is not sorted according to is.sorted!")
         if (baseline) ans[, rand.back:=NULL]
         
         if (testback) ans[i, ord.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
-        ans[i, ord.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
+        ans[i, ord.forw := sum(system.time(x<<-forder(DT))[ttype])]
         if (testback) ans[i, faster2 := ord.forw<ord.back+tol]
         if (testback) if (!identical(x,y)) browser()
         
@@ -297,7 +309,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         if (is.sorted(DT)) stop("Table is sorted. Change to the top didn't work.")
         
         if (testback) ans[i, ordT.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # T for Top
-        ans[i, ordT.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
+        ans[i, ordT.forw := sum(system.time(x<<-forder(DT))[ttype])]
         if (testback) ans[i, faster3 := ordT.forw<ordT.back+tol]
         if (testback) if (!identical(x,y)) browser()
 
@@ -310,7 +322,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         if (is.sorted(DT)) stop("Table is sorted. Change to the very bottom didn't work.")
         
         if (testback) ans[i, ordB.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # B for Bottom
-        ans[i, ordB.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
+        ans[i, ordB.forw := sum(system.time(x<<-forder(DT))[ttype])]
         if (testback) ans[i, faster4 := ordB.forw<ordB.back+tol]
         if (testback) if (!identical(x,y)) browser()
         
@@ -322,7 +334,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         # Adding this test revealed the complexity that a reverse order vector containing ties, would not be stable if the reverse was applied. isorted fixed so that -1 returned only if strictly decreasing order
         
         if (testback) ans[i, rev.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # rev = reverse order
-        ans[i, rev.forw := sum(system.time(x<<-.Call(Cforder, DT))[ttype])]
+        ans[i, rev.forw := sum(system.time(x<<-forder(DT))[ttype])]
         if (testback) ans[i, faster5 := rev.forw<rev.back+tol]
         if (testback) if (!identical(x,y)) browser()
         
