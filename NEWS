@@ -376,6 +376,8 @@ NOTES
         Supplied 1 items to be assigned to 0 items of column (1 unused)
         
   o  Thanks to Simon Biggs for reporting a bug in fread'ing logicals, caught in beta testing. Test added.
+  
+  o  data.table now depends on R 2.14.0, now over 2 years old (Oct 2011)
 
 
         **********************************************

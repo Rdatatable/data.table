@@ -153,14 +153,14 @@ is.sorted = function(x, by=seq_along(x)) {
 # our rule is NA at the start.
 # TO DO: instead of TRUE/FALSE, return -1/0/+1  -1=sorted in reverse, 0=not sorted either way, 1=sorted forwards. Conveniently, if (-1) in R is TRUE, since anything !=0 is TRUE, just like C.
 
-forder = function(x, by=seq_along(x), verbose=getOption("datatable.verbose"))
+forder = function(x, by=seq_along(x), retGrp=FALSE, sortStr=TRUE)
 {
     # TO DO: export and document forder
     if (is.atomic(x)) {
         if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
         by = NULL
     }
-    .Call(Cforder, x, by, FALSE)
+    .Call(Cforder, x, by, retGrp, sortStr)
 }
 
 fastorder <- function(x, by=seq_along(x), verbose=getOption("datatable.verbose"))
