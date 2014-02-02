@@ -411,9 +411,8 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     for (i=0;i<256;i++) {
         thisgrpn = thiscounts[i];
         thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to clear! Also more portable for machines where 0 isn't all bits 0 (?!)
-        if (thisgrpn < 2) continue;
-        // TO DO: if thisgrpn==2
-        cradix_r(xsub+itmp, thisgrpn, radix+1);   // this does cinsert at the top
+        if (thisgrpn >= 2)
+            cradix_r(xsub+itmp, thisgrpn, radix+1);   // TO DO: cinsert at the top (or here?) and special case thisgrpn==2
         itmp += thisgrpn;
     }
 }
@@ -434,14 +433,27 @@ static void ccount(SEXP *x, int *o, int n)
     
     // savetl_init() is called once at the start of forder
     maxlen = 0;  // set the global maxlen to save looping inside cradix_r too much 
+    un = 0;
     for(i=0; i<n; i++) {
         s = x[i];
-        if (TRUELENGTH(s)!=0) {  // Save any of R's own usage of tl first to put back afterwards. pre-2.14.0 this saved all the uninitialised 
-            savetl(s);           // truelength (i.e. random data). From 2.14.0 tl is initialized to 0.
+        if (TRUELENGTH(s)<0) {                   // this case first as it's the most frequent
+            SET_TRUELENGTH(s, TRUELENGTH(s)-1);  // use negative counts so as to detect R's own (positive) usage of tl on CHARSXP
+            continue;
+        }
+        if (TRUELENGTH(s)>0) {  // Save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
+            savetl(s);          // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
             SET_TRUELENGTH(s,0);
         }
-        if (sortStr && x[i]!=NA_STRING && LENGTH(x[i]) > maxlen) maxlen=LENGTH(x[i]);  // length on CHARSXP is the nchar of char *
+        if (ualloc<=un) {
+            ualloc = (ualloc == 0) ? 10000 : ualloc*2;  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc. 
+            if (ualloc>n) ualloc = n;
+            u = realloc(u, ualloc * sizeof(SEXP));
+        }
+        SET_TRUELENGTH(s, -1); 
+        u[un++] = s;
+        if (sortStr && s!=NA_STRING && LENGTH(s)>maxlen) maxlen=LENGTH(s);  // length on CHARSXP is the nchar of char * (excluding \0)
     }
+    // TO DO:  Test all "" and all NA.  Does NA_character_ come before ""? (should do).
     if (sortStr) {
         if (cradix_counts_alloc < maxlen) {
             cradix_counts_alloc = cradix_counts_alloc == 0 ? 20 : maxlen + 20;   // +20 to save many reallocs for very long and varying strings
@@ -454,27 +466,12 @@ static void ccount(SEXP *x, int *o, int n)
             if (!cradix_xtmp) error("Failed to alloc cradix_tmp");
             cradix_xtmp_alloc = n;
         }
-    }    
-    // TO DO:  Test all "" and all NA.  Does NA_character_ come before ""? (should do).
-    
-    un = 0;
-    for(i=0; i<n; i++) {
-        s = x[i];
-        if (!TRUELENGTH(s)) {
-            if (ualloc<=un) {
-                ualloc = (ualloc == 0) ? 10000 : ualloc*2;  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc. 
-                if (ualloc>n) ualloc = n;
-                u = realloc(u, ualloc * sizeof(SEXP));
-            }
-            u[un++] = s;
-        }
-        SET_TRUELENGTH(s, TRUELENGTH(s)+1);
+        cradix_r(u,un,0);  // changes u by reference
     }
-    if (sortStr) cradix_r(u,un,0);  // changes u by reference
     cumsum = 0;
     for(i=0; i<un; i++) {                                    // 0.000
-        push(TRUELENGTH(u[i]));                            
-        SET_TRUELENGTH(u[i], cumsum += TRUELENGTH(u[i]));
+        push(-TRUELENGTH(u[i]));                            
+        SET_TRUELENGTH(u[i], cumsum += -TRUELENGTH(u[i]));
     }
     for(i=n-1; i>=0; i--) {                     
         s = x[i];                                            // 0.400 (page fetches on string cache)
