@@ -283,10 +283,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             // strong error message for now.
         else if (TRUELENGTH(names) != oldtncol)
             error("selfrefnames is ok but tl names [%d] != tl [%d]", TRUELENGTH(names), oldtncol);
-        for (i=0; i<LENGTH(newcolnames); i++)
-            SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
         SETLENGTH(dt, oldncol+LENGTH(newcolnames));
         SETLENGTH(names, oldncol+LENGTH(newcolnames));
+        for (i=0; i<LENGTH(newcolnames); i++)
+            SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
         // truelengths of both already set by alloccol
     }
     for (i=0; i<length(cols); i++) {
@@ -492,15 +492,15 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                 memmove((char *)DATAPTR(dt)+coln*size,     
                         (char *)DATAPTR(dt)+(coln+1)*size,
                         (LENGTH(dt)-coln-1)*size);
+                SET_VECTOR_ELT(dt, LENGTH(dt)-1, R_NilValue);
                 SETLENGTH(dt, LENGTH(dt)-1);
-                SET_VECTOR_ELT(dt, LENGTH(dt), R_NilValue);
                 // adding using := by group relies on NULL here to know column slot is empty.
                 // good to tidy up the vector anyway.
                 memmove((char *)DATAPTR(names)+coln*size,     
                     (char *)DATAPTR(names)+(coln+1)*size,
                     (LENGTH(names)-coln-1)*size);
+                SET_STRING_ELT(names, LENGTH(names)-1, NA_STRING);  // no need really, just to be tidy.
                 SETLENGTH(names, LENGTH(names)-1);
-                SET_STRING_ELT(names, LENGTH(names), NA_STRING);  // no need really, just tidy
                 if (LENGTH(names)==0) {
                     // That was last column deleted, leaving NULL data.table, so we need to reset .row_names, so that it really is the NULL data.table.
                     PROTECT(nullint=allocVector(INTSXP, 0));
