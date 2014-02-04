@@ -428,28 +428,26 @@ static void dradix(double *x, int *o, int n)
         if (xtmp == NULL) error("Failed to realloc working memory %d*4bytes (xtmp in dradix), radix=%d", maxgrpn, radix);
         oxtmpalloc = maxgrpn;
     }
-    
-    itmp = n;
-    for (i=2047;i>=0;i--)   // undo cummulate earlier.  TO DO: merge into loop below, as in cradix_r
-        if (thiscounts[i]) itmp -= (thiscounts[i] = itmp - thiscounts[i]);
-    thiscounts[0] = itmp;  // the first non-zero may not have been at 0 originally, but that's ok; now only need the sizes in sequence.
     nextradix = radix-1;
     while (nextradix>=0 && skip[nextradix]) nextradix--;
+    if (thiscounts[0] != 0) error("Logical error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix);
     itmp = 0;
-    for (i=0;i<2048;i++) {
-        thisgrpn = thiscounts[i];
-        if (thisgrpn==0) continue;
+    for (i=1;itmp<n && i<=2048;i++) {
+        if (i==2048) {
+            thisgrpn = n - itmp;  // must be >=1 since itmp<n.  TO DO: increase counts to 2049, to allow n in the last spot and save this branch.
+        } else {
+            if (thiscounts[i] == 0) continue;
+            thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
+        }
         if (thisgrpn == 1 || nextradix==-1) {
             push(thisgrpn);
         } else {
-            for (j=0; j<thisgrpn; j++) {
-                ((unsigned long long *)radix_xsub)[j] = twiddle(&x[o[itmp+j]-1]);
-            }
+            for (j=0; j<thisgrpn; j++) ((unsigned long long *)radix_xsub)[j] = twiddle(&x[o[itmp+j]-1]);
             dradix_r(radix_xsub, o+itmp, thisgrpn, nextradix);          // changes xsub and o by reference recursively.
         }
-        itmp += thisgrpn;
+        itmp = thiscounts[i];
+        thiscounts[i] = 0;
     }
-    memset(thiscounts, 0, 2048*sizeof(unsigned int));  // TO DO: can save this memset as well, like in cradix_r
     // all free()s are at the end of forder.
 }
 
