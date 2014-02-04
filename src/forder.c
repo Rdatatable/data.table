@@ -181,14 +181,16 @@ static void iinsert(int *x, int *o, int n)
 */
 
 static unsigned int iradixcounts[4][256] = {{0}};
-static int skip[4];
+static int skip[6];   // 6 because we reuse for dradix below
 // global because iradix and iradix_r interact and are called repetitively. 
 // counts are set back to 0 after each use, to benefit from skipped radix.
-static int *radix_xsub=NULL;
+static void *radix_xsub=NULL;
 static int radix_xsuballoc=0;
 
-static int *otmp=NULL, *xtmp=NULL;  // TO DO: save one of these if possible
+static int *otmp=NULL;
+static void *xtmp=NULL;  // TO DO: save one of these if possible
 static int oxtmpalloc = 0;
+// TO DO:  central allocator function here,  which could change oxtmpalloc in terms of bytes,  so would distinguish int and double
 
 static void iradix_r(int *xsub, int *osub, int n, int radix);
 
@@ -217,7 +219,7 @@ static void iradix(int *x, int *o, int n)
     
     radix = 3;  // MSD
     while (radix>=0 && skip[radix]) radix--;
-    if (radix==-1) error("All radix are skipped!  Not yet coded.");
+    if (radix==-1) error("All radix are skipped in iradix!  Not yet coded.");
     for (i=radix-1; i>=0; i--) {
         if (!skip[i]) memset(iradixcounts[i], 0, 256*sizeof(unsigned int));
         // clear the counts as we only needed the parallel pass for skip[] and we're going to use iradixcounts again below. Can't use parallel lower counts in MSD radix, unlike LSD.
@@ -242,20 +244,20 @@ static void iradix(int *x, int *o, int n)
         // The largest group according to the first non-skipped radix, so could be big (if radix is needed on first column)
         // TO DO: could include extra bits to divide the first radix up more. Often the MSD has groups in just 0-4 out of 256.
         // free'd at the end of forder once we're done calling iradix repetitively
-        radix_xsub = (int *)realloc(radix_xsub, maxgrpn*sizeof(int));  // realloc(NULL) == malloc
-        if (!radix_xsub) error("Failed to realloc working memory %d*4bytes (xsub in iradix), radix=%d", maxgrpn, radix);
+        radix_xsub = (int *)realloc(radix_xsub, maxgrpn*sizeof(double));  // realloc(NULL) == malloc
+        if (!radix_xsub) error("Failed to realloc working memory %d*8bytes (xsub in iradix), radix=%d", maxgrpn, radix);
         radix_xsuballoc = maxgrpn;
     }
     if (oxtmpalloc < maxgrpn) {
         otmp = (int *)realloc(otmp, maxgrpn * sizeof(int));
         if (otmp == NULL) error("Failed to realloc working memory %d*4bytes (otmp in iradix), radix=%d", maxgrpn, radix);
-        xtmp = (int *)realloc(xtmp, maxgrpn * sizeof(int));
-        if (xtmp == NULL) error("Failed to realloc working memory %d*4bytes (xtmp in iradix), radix=%d", maxgrpn, radix);
+        xtmp = (int *)realloc(xtmp, maxgrpn * sizeof(double));  // TO DO: centralize with dradix
+        if (xtmp == NULL) error("Failed to realloc working memory %d*8bytes (xtmp in iradix), radix=%d", maxgrpn, radix);
         oxtmpalloc = maxgrpn;
     }
     
     itmp = n;
-    for (i=255;i>=0;i--)   // undo cummulate earlier
+    for (i=255;i>=0;i--)   // undo cummulate earlier.  TO DO: merge into loop below, as in cradix_r
         if (thiscounts[i]) itmp -= (thiscounts[i] = itmp - thiscounts[i]);
     thiscounts[0] = itmp;  // the first non-zero may not have been at 0 originally, but that's ok; now only need the sizes in sequence.
     nextradix = radix-1;
@@ -267,7 +269,7 @@ static void iradix(int *x, int *o, int n)
         if (thisgrpn == 1 || nextradix==-1) {
             push(thisgrpn);
         } else {
-            for (j=0; j<thisgrpn; j++) radix_xsub[j] = x[o[itmp+j]-1];  // this is why this xsub here can't be the same memory as xsub in forder
+            for (j=0; j<thisgrpn; j++) ((int *)radix_xsub)[j] = x[o[itmp+j]-1];  // this is why this xsub here can't be the same memory as xsub in forder
             iradix_r(radix_xsub, o+itmp, thisgrpn, nextradix);          // changes xsub and o by reference recursively.
         }
         itmp += thisgrpn;
@@ -275,6 +277,7 @@ static void iradix(int *x, int *o, int n)
     memset(thiscounts, 0, 256*sizeof(unsigned int));
     // all free()s are at the end of forder.
 }
+
 
 static void iradix_r(int *xsub, int *osub, int n, int radix)
     // xsub is a recursive offset into xsub working memory above in iradix, reordered by reference.
@@ -298,7 +301,7 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
         thisx = (unsigned int)xsub[i] >> shift & 0xFF;
         j = --thiscounts[thisx];
         otmp[j] = osub[i];
-        xtmp[j] = xsub[i];
+        ((int *)xtmp)[j] = xsub[i];
     }
     memcpy(osub, otmp, n*sizeof(int));
     memcpy(xsub, xtmp, n*sizeof(int));
@@ -309,7 +312,7 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
     
     if (thiscounts[0] != 0) error("Logical error. thiscounts[0]=%d but should have been decremented to 0. radix=%d", thiscounts[0], radix);
     itmp = n;
-    for (i=255;i>=0;i--)   // undo cummulate earlier
+    for (i=255;i>=0;i--)   // undo cummulate earlier.  TO DO: merge into loop below, as in cradix_r
         if (thiscounts[i]) itmp -= (thiscounts[i] = itmp - thiscounts[i]);
     thiscounts[0] = itmp;  // the first non-zero may not have been at 0 originally, but that's ok; now only need the sizes in sequence.
     itmp = 0;
@@ -329,6 +332,211 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
     }
     memset(thiscounts, 0, 256*sizeof(unsigned int));
 }
+
+
+// dradix from Arun's fastradixdouble.c
+// + changed to MSD and hooked into forder framework here.
+// + replaced tolerance with rounding s.f.
+
+#define FLIP_SIGN_BIT   0x8000000000000000
+#define RESET_NA_NAN    0x0000ffffffffffff
+#define SET_NA_NAN_COMP 0xfff8000000000000 // we can directly set complement in twiddle()
+
+static union {double d; unsigned long long ll;} u;
+
+static unsigned long long twiddle(void *p)
+{
+    double mant;
+    int exp, sgn=1;
+    u.d = *(double *)p;
+    if (R_FINITE(u.d)) {
+        // round to 8 s.f. so we can group and join to float using ==, stable within ties. TO DO: create snap() and use it in DT[numCol==3.14]
+        if (u.d<0) { sgn=-1; u.d=-u.d; }
+        mant = frexp(u.d, &exp);   // returns mantissa (significand) in range [0.5,1.0)
+        mant = floor(mant*100000000.0 + 0.5)/100000000.0;   // hopefully, 8 d.p. here corresponds roughly to 8 d.p. after base 2 is applied. TO DO: revisit
+        u.d = sgn*ldexp(mant, exp);
+    } else {
+        if (ISNAN(u.d)) u.ll = (u.ll & RESET_NA_NAN) | SET_NA_NAN_COMP;  // flip NaN/NA sign bit so that they sort to front (data.table's rule to make binary search easier and consistent)
+    }
+    unsigned long long mask = -(long long)(u.ll >> 63) | FLIP_SIGN_BIT;
+    return(u.ll ^ mask);
+}
+
+
+static unsigned int dradixcounts[6][2048] = {{0}};
+// reuse the same skip[] as iradix which was allocated for 6 above 
+
+static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix);
+
+static void dradix(double *x, int *o, int n)
+{
+    int i, j, radix, nextradix, itmp, thisgrpn, maxgrpn;
+    unsigned int shift, *thiscounts;
+    unsigned long long thisx=0;
+    // see comments in iradix for structure.  This follows the same.
+
+    for (i=0;i<n;i++) {
+        thisx = twiddle(&x[i]);
+        dradixcounts[0][thisx & 0x7FF]++;        // unrolled since inside n-loop
+        dradixcounts[1][thisx >> 11 & 0x7FF]++;
+        dradixcounts[2][thisx >> 22 & 0x7FF]++;
+        dradixcounts[3][thisx >> 33 & 0x7FF]++;
+        dradixcounts[4][thisx >> 44 & 0x7FF]++;
+        dradixcounts[5][thisx >> 55 & 0x7FF]++;
+        // TO DO: First 12 bits in first radix (or use counting for the range in this radix since so small, usually)
+    }
+    for (radix=0; radix<6; radix++) {
+        i = thisx >> (radix*11) & 0x7FF;    // thisll is the last x after loop above
+        skip[radix] = dradixcounts[radix][i] == n;
+        if (skip[radix]) dradixcounts[radix][i] = 0;  // clear it now, the other counts must be 0 already
+    }
+    
+    radix = 5;  // MSD
+    while (radix>=0 && skip[radix]) radix--;
+    if (radix==-1) error("All radix are skipped in dradix!  Not yet coded.");
+    for (i=radix-1; i>=0; i--) {  // clear the lower radix counts, we only did them to know skip. will be reused within each group
+        if (!skip[i]) memset(dradixcounts[i], 0, 2048*sizeof(unsigned int));
+    }
+    thiscounts = dradixcounts[radix];
+    shift = radix * 11;
+    
+    itmp = thiscounts[0];
+    maxgrpn = itmp;
+    for (i=1; i<2048; i++) {
+        thisgrpn = thiscounts[i];
+        if (thisgrpn) {  // don't cummulate through 0s, important below
+            if (thisgrpn>maxgrpn) maxgrpn = thisgrpn;
+            thiscounts[i] = (itmp += thisgrpn);
+        }
+    }
+    for (i=n-1; i>=0; i--) {
+        thisx = twiddle(&x[i]);
+        o[ --thiscounts[thisx >> shift & 0x7FF] ] = i+1;
+    }
+    if (radix_xsuballoc < maxgrpn) {   // TO DO: centralize this alloc
+        // The largest group according to the first non-skipped radix, so could be big (if radix is needed on first column)
+        // TO DO: could include extra bits to divide the first radix up more. Often the MSD has groups in just 0-4 out of 256.
+        // free'd at the end of forder once we're done calling iradix repetitively
+        radix_xsub = (double *)realloc(radix_xsub, maxgrpn*sizeof(double));  // realloc(NULL) == malloc
+        if (!radix_xsub) error("Failed to realloc working memory %d*8bytes (xsub in dradix), radix=%d", maxgrpn, radix);
+        radix_xsuballoc = maxgrpn;
+    }
+    if (oxtmpalloc < maxgrpn) {
+        otmp = (int *)realloc(otmp, maxgrpn * sizeof(int));
+        if (otmp == NULL) error("Failed to realloc working memory %d*4bytes (otmp in dradix), radix=%d", maxgrpn, radix);
+        xtmp = (double *)realloc(xtmp, maxgrpn * sizeof(double));
+        if (xtmp == NULL) error("Failed to realloc working memory %d*4bytes (xtmp in dradix), radix=%d", maxgrpn, radix);
+        oxtmpalloc = maxgrpn;
+    }
+    
+    itmp = n;
+    for (i=2048;i>=0;i--)   // undo cummulate earlier.  TO DO: merge into loop below, as in cradix_r
+        if (thiscounts[i]) itmp -= (thiscounts[i] = itmp - thiscounts[i]);
+    thiscounts[0] = itmp;  // the first non-zero may not have been at 0 originally, but that's ok; now only need the sizes in sequence.
+    nextradix = radix-1;
+    while (nextradix>=0 && skip[nextradix]) nextradix--;
+    itmp = 0;
+    for (i=0;i<2048;i++) {
+        thisgrpn = thiscounts[i];
+        if (thisgrpn==0) continue;
+        if (thisgrpn == 1 || nextradix==-1) {
+            push(thisgrpn);
+        } else {
+            for (j=0; j<thisgrpn; j++) {
+                ((unsigned long long *)radix_xsub)[j] = twiddle(&x[o[itmp+j]-1]);
+            }
+            dradix_r(radix_xsub, o+itmp, thisgrpn, nextradix);          // changes xsub and o by reference recursively.
+        }
+        itmp += thisgrpn;
+    }
+    memset(thiscounts, 0, 2048*sizeof(unsigned int));  // TO DO: can save this memset as well, like in cradix_r
+    // all free()s are at the end of forder.
+}
+
+static void dinsert(unsigned long long *x, int *o, int n)
+// orders both x and o by reference in-place. Fast for small vectors, low overhead.
+// don't be tempted to binsearch backwards here, have to shift anyway; many memmove would have overhead and do the same thing
+{
+    int i, j, otmp, tt;
+    unsigned long long xtmp;
+    for (i=1; i<n; i++) {
+        xtmp = x[i];
+        if (xtmp < x[i-1]) {
+            j = i-1;
+            otmp = o[i];
+            while (j>=0 && xtmp < x[j]) { x[j+1] = x[j]; o[j+1] = o[j]; j--; }
+            x[j+1] = xtmp;
+            o[j+1] = otmp;
+        }
+    }
+    tt = 0;
+    for (i=1; i<n; i++) if (x[i]==x[i-1]) tt++; else { push(tt+1); tt=0; }
+    push(tt+1);
+}
+
+static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix)
+    // xsub is a recursive offset into xsub working memory above in dradix, reordered by reference.
+    // osub is a an offset into the main answer o, reordered by reference.
+    // dradix iterates 5,4,3,2,1,0
+{
+    int i, j, itmp, thisgrpn, nextradix, shift;
+    unsigned int *thiscounts;
+    
+    shift = radix*11;
+    thiscounts = dradixcounts[radix];
+    
+    for (i=0; i<n; i++)
+        thiscounts[xsub[i] >> shift & 0x7FF]++;
+    itmp = thiscounts[0];
+    for (i=1; i<2048; i++)
+        if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
+    for (i=n-1; i>=0; i--) {
+        j = --thiscounts[ xsub[i] >> shift & 0x7FF ];
+        otmp[j] = osub[i];
+        ((unsigned long long *)xtmp)[j] = xsub[i];   // invalid write of size 8 here.
+    }
+    memcpy(osub, otmp, n*sizeof(int));
+    memcpy(xsub, xtmp, n*sizeof(unsigned long long));
+    
+    nextradix = radix-1;
+    while (nextradix>=0 && skip[nextradix]) nextradix--;
+    // TO DO:  If nextradix==-1 and no further columns from forder,  we're done. We have o. Remember to memset thiscounts before returning.
+    
+    if (thiscounts[0] != 0) error("Logical error. thiscounts[0]=%d but should have been decremented to 0. radix=%d", thiscounts[0], radix);
+    itmp = n;
+    for (i=2047;i>=0;i--)   // undo cummulate earlier.  TO DO: merge into loop below, as in cradix_r
+        if (thiscounts[i]) itmp -= (thiscounts[i] = itmp - thiscounts[i]);
+    thiscounts[0] = itmp;  // the first non-zero may not have been at 0 originally, but that's ok; now only need the sizes in sequence.
+    /*itmp = 0;
+    for (i=1;i<256;i++) {
+        if (thiscounts[i] == 0) continue;
+        thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
+        if (thisgrpn >= 2) cradix_r(xsub+itmp, thisgrpn, radix+1);   // TO DO: cinsert at the top (or here?) and special case thisgrpn==2
+        itmp = thiscounts[i];
+        thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to clear! Also more portable for machines where 0 isn't all bits 0 (?!)
+    }
+    if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
+    */
+    
+    itmp = 0;  //******************
+    for (i=0;i<2048;i++) {
+        thisgrpn = thiscounts[i];  
+        if (thisgrpn==0) continue;
+        if (thisgrpn == 1 || nextradix==-1) {
+            push(thisgrpn);
+        } else {
+            if (thisgrpn<200) {   // 200 is guess based on limited testing. Needs calibrate(). Was 50 based on sum(1:50)=1275 worst -vs- 256 cummulate + 256 memset + allowance since reverse order is unlikely
+                dinsert(xsub+itmp, osub+itmp, thisgrpn);
+            } else {
+                dradix_r(xsub+itmp, osub+itmp, thisgrpn, nextradix);
+            }
+        }
+        itmp += thisgrpn;
+    }
+    memset(thiscounts, 0, 2048*sizeof(unsigned int));   // TO DO:  again, save the memset using technique in cradix
+}
+
+
 
 static int isorted(int *x, int n)
 {
@@ -374,7 +582,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 // a forwards (MSD) radix for efficiency, although more complicated
 // This part has nothing to do with truelength. The truelength stuff is to do with finding the unique strings.
 {
-    int i, j, itmp, *thiscounts, thisgrpn, thisx=0;
+    int i, j, itmp, *thiscounts, thisgrpn=0, thisx=0;
     
     // TO DO?: chmatch to existing sorted vector, then grow it.
     // TO DO?: if (n<200) insert sort, then loop through groups via ==
@@ -403,24 +611,21 @@ static void cradix_r(SEXP *xsub, int n, int radix)
         return;
     }
     if (thiscounts[0] != 0) error("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d", thiscounts[0], radix);
-    itmp = n;
-    for (i=255;i>=0;i--)   // undo cummulate earlier. TO DO: merge into one loop below.
-        if (thiscounts[i]) itmp -= (thiscounts[i] = itmp - thiscounts[i]);
-    thiscounts[0] = itmp;  // the first non-zero may not have been at 0 originally, but that's ok; now only need the sizes in sequence.
     itmp = 0;
-    for (i=0;i<256;i++) {
-        thisgrpn = thiscounts[i];
+    for (i=1;i<256;i++) {
+        if (thiscounts[i] == 0) continue;
+        thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
+        if (thisgrpn >= 2) cradix_r(xsub+itmp, thisgrpn, radix+1);   // TO DO: cinsert at the top (or here?) and special case thisgrpn==2
+        itmp = thiscounts[i];
         thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to clear! Also more portable for machines where 0 isn't all bits 0 (?!)
-        if (thisgrpn >= 2)
-            cradix_r(xsub+itmp, thisgrpn, radix+1);   // TO DO: cinsert at the top (or here?) and special case thisgrpn==2
-        itmp += thisgrpn;
     }
+    if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
 }
 
 extern void savetl_init(), savetl(SEXP s), savetl_end();
 
-static SEXP *u = NULL;
-static int ualloc = 0;
+static SEXP *ustr = NULL;
+static int ustr_alloc = 0;
 
 static void ccount(SEXP *x, int *o, int n)
 // As icount :
@@ -444,13 +649,13 @@ static void ccount(SEXP *x, int *o, int n)
             savetl(s);          // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
             SET_TRUELENGTH(s,0);
         }
-        if (ualloc<=un) {
-            ualloc = (ualloc == 0) ? 10000 : ualloc*2;  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc. 
-            if (ualloc>n) ualloc = n;
-            u = realloc(u, ualloc * sizeof(SEXP));
+        if (ustr_alloc<=un) {
+            ustr_alloc = (ustr_alloc == 0) ? 10000 : ustr_alloc*2;  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc. 
+            if (ustr_alloc>n) ustr_alloc = n;
+            ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
         }
         SET_TRUELENGTH(s, -1); 
-        u[un++] = s;
+        ustr[un++] = s;
         if (sortStr && s!=NA_STRING && LENGTH(s)>maxlen) maxlen=LENGTH(s);  // length on CHARSXP is the nchar of char * (excluding \0)
     }
     // TO DO:  Test all "" and all NA.  Does NA_character_ come before ""? (should do).
@@ -466,19 +671,19 @@ static void ccount(SEXP *x, int *o, int n)
             if (!cradix_xtmp) error("Failed to alloc cradix_tmp");
             cradix_xtmp_alloc = n;
         }
-        cradix_r(u,un,0);  // changes u by reference
+        cradix_r(ustr,un,0);  // changes ustr by reference
     }
     cumsum = 0;
     for(i=0; i<un; i++) {                                    // 0.000
-        push(-TRUELENGTH(u[i]));                            
-        SET_TRUELENGTH(u[i], cumsum += -TRUELENGTH(u[i]));
+        push(-TRUELENGTH(ustr[i]));                            
+        SET_TRUELENGTH(ustr[i], cumsum += -TRUELENGTH(ustr[i]));
     }
     for(i=n-1; i>=0; i--) {                     
         s = x[i];                                            // 0.400 (page fetches on string cache)
         SET_TRUELENGTH(s, k = TRUELENGTH(s)-1);
         o[k] = i+1;                                          // 0.800 (random access to o)
     }
-    for(i=0; i<un; i++) SET_TRUELENGTH(u[i],0);     // The cumsum meant the counts are left non zero, so reset for next time (0.00).
+    for(i=0; i<un; i++) SET_TRUELENGTH(ustr[i],0);     // The cumsum meant the counts are left non zero, so reset for next time (0.00).
     //   savetl_end()  is at the end of forder, once
 }
 
@@ -529,6 +734,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     if (isString(x)) {
         ccount(xd, o, n);
         isSorted = FALSE;  // TO DO: check o for sortedness if ccount is so fast, or create csorted.
+    } else if (isReal(x)) { 
+        dradix(xd, o, n);
+        isSorted = FALSE;
     } else {
         if (!isInteger(x)) error("First column being ordered is type '%s', not yet supported", type2char(TYPEOF(x)));
         if ((tmp = isorted(xd, n))) {
@@ -563,6 +771,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     
     TEND(1)
     
+    void (*f)();
+    
     for (col=2; col<=length(by); col++) {
         x = VECTOR_ELT(DT,INTEGER(by)[col-1]-1);
         xd = DATAPTR(x);
@@ -571,16 +781,17 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
         flipflop();
         stackgrps = (col!=LENGTH(by) || LOGICAL(retGrp)[0]);
         i = 0;
-        if (isString(x)) {
+        if (isString(x) || isReal(x)) {
+            if (isString(x)) f = &ccount; else f = &dradix;  
             for (grp=0; grp<ngrp; grp++) {
                 thisgrpn = gs[1-flip][grp];
                 if (thisgrpn == 1) {i++; push(1); continue;}
                 TBEG()
                 osub = o+i;
-                for (j=0; j<thisgrpn; j++) ((SEXP *)xsub)[j] = ((SEXP *)xd)[o[i++]-1];
+                for (j=0; j<thisgrpn; j++) ((SEXP *)xsub)[j] = ((SEXP *)xd)[o[i++]-1];  // same size as double. TO DO: tidy and 32bit
                 TEND(2)
                 // TO DO: if thisngrp==2
-                ccount(xsub, newo, thisgrpn);
+                (*f)(xsub, newo, thisgrpn);
                 TEND(3)
                 for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = osub[ newo[j]-1 ];   // reuse xsub to reorder osub
                 memcpy(osub, xsub, thisgrpn*sizeof(int));
@@ -650,7 +861,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     free(xsub); free(newo);    xsub=newo=NULL;
     free(xtmp); free(otmp);    xtmp=otmp=NULL;     oxtmpalloc=0;
 
-    free(u);                   u=NULL;             ualloc=0;
+    free(ustr);                ustr=NULL;          ustr_alloc=0;
     free(cradix_counts);       cradix_counts=NULL; cradix_counts_alloc=0;
     free(cradix_xtmp);         cradix_xtmp=NULL;   cradix_xtmp_alloc=0;   // TO DO: use xtmp already got
     
