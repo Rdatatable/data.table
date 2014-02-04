@@ -26,7 +26,7 @@ NEW FEATURES
   o  fread("1.46761e-313\n") detected the ERANGE error, so read as character. It now reads as
      numeric but with a detailed warning. Thanks to Heather Turner for the detailed report, #4879.
 	 
-  o	 as.data.table method for table() implemented, #4848. Thanks to Frank Pinter for suggesting :
+  o	 as.data.table method for table() implemented, #4848. Thanks to Frank Pinter for suggesting here on SO:
        http://stackoverflow.com/questions/18390947/data-table-of-table-is-very-different-from-data-frame-of-table
   
   o  as.data.table methods added for integer, numeric, character, logical, factor, ordered and Date.
@@ -50,7 +50,7 @@ NEW FEATURES
      therefore avoids the overhead of subsetting using "!is.na" on the molten data which also 
 	 speeds up things.
 	 
-  o	 Due to fixing #2697 (see BUG FIXES), `:=`, assignmeny by reference, also now accepts negative 
+  o	 Due to fixing #2697 (see BUG FIXES), `:=`, assignment by reference, also now accepts negative 
      indices, but still not '0' as an index. Thanks again to Eduard Antonyan.
 
   o	 `set()` is able to add new columns by reference now. For example, set(DT, i=3:5, j="bla", 5L) is 
@@ -61,9 +61,9 @@ NEW FEATURES
      in speed.  Except for "margins" argument from `reshape2:::dcast`, all features are intact. 
      `dcast.data.table` can also accept 'value.var' columns of type list.
 
-  o  dcast.data.table took, on 1e5*4 data, 0.8 seconds to cast, whereas reshape2:::cast took 
-     8.1 seconds. On 1e6*4 data, reshape2:::dcast crashes R-session, whereas, dcast.data.table 
-     took 6.7 seconds.
+  o  dcast.data.table took, on 1e5*4 data, 0.8 seconds to cast, whereas reshape2:::dcast took 
+     8.1 seconds. On 1e6*4 data, reshape2:::dcast takes 192.1 secs, whereas, dcast.data.table 
+     took 6.1 seconds.
 	 
   o  fread now understand commands, e.g. fread("grep blah file.txt").
 
@@ -98,7 +98,7 @@ NEW FEATURES
      plyr's rbind.fill. This option is incompatible with use.names=FALSE. Thanks to Arunkumar Srinivasan for
      the base code.
 
-  o  FR #2115 - rbind now relies exclusively on rbindlist to bind data.table's together. This makes rbind'ing
+  o  FR #2115 - rbind now relies exclusively on rbindlist to bind data.tables together. This makes rbind'ing
      factors faster.
 
   o  FR #4867 is now implemented. `DT[, as.factor('x'), with=FALSE]` where `x` is a column in `DT`, is now 
@@ -119,7 +119,7 @@ NEW FEATURES
   o  print.data.table gains a new argument (FR #5020) `row.names` with default=TRUE for backwards compatbility. 
      When set to FALSE, the row names (along with the :) doesn't get printed. Thanks to Frank Erickson.
 
-  o  .SDcols now is also able to de-delect columns. This works on both numerics and column names. For example, 
+  o  .SDcols now is also able to de-select columns. This works on both numerics and column names. For example, 
      DT[, .SD, .SDcols=-c(1,3)] (or) DT[, .SD, .SDcols=-c("x", "z")] now works as expected. However, 
      DT[, .SD, .SDcols=c(1, -3)] or DT[, .SD, .SDcols=c("x", -"z")] would result in error. Thanks to Tonny 
      Peterson for filing this FR #4979.
@@ -137,14 +137,14 @@ NEW FEATURES
 
   o  X[Y, col := value] when no match exists in the join is now caught early and X is simply returned. Also a 
      message when `datatable.verbose` is TRUE is provided. In addition, if `col` is an existing column, since no 
-     update actually takes place, the key is now retained. Thanks to Frank Erickson for reporting this FR #4996..
+     update actually takes place, the key is now retained. Thanks to Frank Erickson for reporting this FR #4996.
 
   o  (Internal) Fast radix order is now implemented for both 'integer' and 'numeric' types. This should result in 
      many operations in data.table *significantly faster*. A speed-up of at least 5-8x is expected on all operations 
      that internally depend on ordering.
 
-  o  (Internal) 'uniqlist' - A faster version of 'duplist' is now implemented, also with effcient memory allocation 
-     (vector is grown as and when required using 'Realloc'). 'uniqlengths', another function, is also implemened, 
+  o  (Internal) 'uniqlist' - A faster version of 'duplist' is now implemented, also with efficient memory allocation 
+     (vector is grown as and when required using 'Realloc'). 'uniqlengths', another function, is also implemented, 
      that returns the length of each unique group.
 
   o  Implementation of radix order for numeric and integer gives a speed-up of 2.5-10x speed-up for `duplicated.data.table`.
