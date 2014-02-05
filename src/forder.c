@@ -250,7 +250,7 @@ static void iradix(int *x, int *o, int n)
     if (oxtmpalloc < maxgrpn) {
         otmp = (int *)realloc(otmp, maxgrpn * sizeof(int));
         if (otmp == NULL) error("Failed to realloc working memory %d*4bytes (otmp in iradix), radix=%d", maxgrpn, radix);
-        xtmp = (int *)realloc(xtmp, maxgrpn * sizeof(double));  // TO DO: centralize with dradix
+        xtmp = (double *)realloc(xtmp, maxgrpn * sizeof(double));  // TO DO: centralize with dradix
         if (xtmp == NULL) error("Failed to realloc working memory %d*8bytes (xtmp in iradix), radix=%d", maxgrpn, radix);
         oxtmpalloc = maxgrpn;
     }
@@ -712,7 +712,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
         dradix(xd, o, n);
         isSorted = FALSE;
     } else {
-        if (!isInteger(x)) error("First column being ordered is type '%s', not yet supported", type2char(TYPEOF(x)));
+        if (TYPEOF(x) != INTSXP && TYPEOF(x) != LGLSXP) error("First column being ordered is type '%s', not yet supported", type2char(TYPEOF(x)));
         if ((tmp = isorted(xd, n))) {
             if (tmp==1) {
                 isSorted = TRUE;
@@ -756,6 +756,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
         i = 0;
         if (isString(x) || isReal(x)) {
             if (isString(x)) f = &ccount; else f = &dradix;  
+            isSorted = FALSE;  // TO DO: include csorted and dsorted
             for (grp=0; grp<ngrp; grp++) {
                 thisgrpn = gs[1-flip][grp];
                 if (thisgrpn == 1) {i++; push(1); continue;}
@@ -764,9 +765,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
                 for (j=0; j<thisgrpn; j++) ((SEXP *)xsub)[j] = ((SEXP *)xd)[o[i++]-1];  // same size as double. TO DO: tidy and 32bit
                 TEND(2)
                 // TO DO: if thisgrpn==2
-                if (thisgrpn < 200 && isReal(x)) {
-                    dinsert(xsub, osub, thisgrpn);
-                    continue;
+                if (isReal(x)) {
+                    for (j=0; j<thisgrpn; j++) ((unsigned long long *)xsub)[j] = twiddle(&((double *)xsub)[j]);
+                    if (thisgrpn < 200) {
+                        dinsert(xsub, osub, thisgrpn);
+                        continue;
+                    }
                 }
                 (*f)(xsub, newo, thisgrpn);
                 TEND(3)
@@ -775,7 +779,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
                 TEND(4)
             }
         } else {
-            if (!isInteger(x)) error("Column %d being ordered is type '%s', not yet supported", col, type2char(TYPEOF(x)));
+            if (TYPEOF(x) != INTSXP && TYPEOF(x) != LGLSXP) error("Column %d being ordered is type '%s', not yet supported", col, type2char(TYPEOF(x)));
             for (grp=0; grp<ngrp; grp++) {
                 thisgrpn = gs[1-flip][grp];
                 if (thisgrpn == 1) {i++; push(1); continue;}

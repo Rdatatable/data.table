@@ -38,6 +38,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
     o = fastorder(x, cols, verbose=verbose)
+    # o = forder(x, cols, sortStr=TRUE, retGrp=FALSE)
     if (!is.null(o)) {
         if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
         .Call(Creorder,x,o)
@@ -159,8 +160,11 @@ forder = function(x, by=seq_along(x), retGrp=FALSE, sortStr=TRUE)
     if (is.atomic(x)) {
         if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
         by = NULL
+    } else {
+        if (is.character(by)) by=chmatch(by, names(x))
+        by = as.integer(by)
     }
-    .Call(Cforder, x, by, retGrp, sortStr)
+    .Call(Cforder, x, by, retGrp, sortStr)  # returns NULL if already sorted
 }
 
 fastorder <- function(x, by=seq_along(x), verbose=getOption("datatable.verbose"))
