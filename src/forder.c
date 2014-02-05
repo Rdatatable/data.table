@@ -116,12 +116,11 @@ static void icount(int *x, int *o, int n)
     // Idea from Terdiman, then improved on that by not needing to loop through counts.
     
     tmp = 0;                  // *** BLOCK 4 ***
-    for (i=0; i<=range; i++) {
+    for (i=0; i<=range; i++) {   // no point in adding tmp<n && i<=range, since range includes max, need to go to max, unlike 256 loops elsewhere in forder.c
         if (counts[i]) {      // cummulate but not through 0's.  Helps resetting zeros when n<range, below.
             push(counts[i]);
             counts[i] = (tmp += counts[i]);
         }
-        // TO DO: we can stop cummulating when tmp==n, too. Similar to Terdiman's idea again.
     }
     for(i=n-1; i>=0; i--) {
 		tmp = x[i];
@@ -180,7 +179,7 @@ static void iinsert(int *x, int *o, int n)
  Recall: there are no comparisons at all in counting and radix, there is wide random access in each LSD radix pass, though.
 */
 
-static unsigned int iradixcounts[4][256] = {{0}};
+static unsigned int iradixcounts[4][257] = {{0}};
 static int skip[6];   // 6 because we reuse for dradix below
 // global because iradix and iradix_r interact and are called repetitively. 
 // counts are set back to 0 after each use, to benefit from skipped radix.
@@ -221,7 +220,7 @@ static void iradix(int *x, int *o, int n)
     while (radix>=0 && skip[radix]) radix--;
     if (radix==-1) { for (i=0; i<n; i++) o[i]=i+1; push(n); return; }  // All radix are skipped; i.e. one number repeated n times.
     for (i=radix-1; i>=0; i--) {
-        if (!skip[i]) memset(iradixcounts[i], 0, 256*sizeof(unsigned int));
+        if (!skip[i]) memset(iradixcounts[i], 0, 257*sizeof(unsigned int));
         // clear the counts as we only needed the parallel pass for skip[] and we're going to use iradixcounts again below. Can't use parallel lower counts in MSD radix, unlike LSD.
     }
     thiscounts = iradixcounts[radix];
@@ -229,7 +228,7 @@ static void iradix(int *x, int *o, int n)
     
     itmp = thiscounts[0];
     maxgrpn = itmp;
-    for (i=1; i<256; i++) {
+    for (i=1; itmp<n && i<256; i++) {
         thisgrpn = thiscounts[i];
         if (thisgrpn) {  // don't cummulate through 0s, important below
             if (thisgrpn>maxgrpn) maxgrpn = thisgrpn;
@@ -255,27 +254,23 @@ static void iradix(int *x, int *o, int n)
         if (xtmp == NULL) error("Failed to realloc working memory %d*8bytes (xtmp in iradix), radix=%d", maxgrpn, radix);
         oxtmpalloc = maxgrpn;
     }
-    
-    itmp = n;
-    for (i=255;i>=0;i--)   // undo cummulate earlier.  TO DO: merge into loop below, as in cradix_r
-        if (thiscounts[i]) itmp -= (thiscounts[i] = itmp - thiscounts[i]);
-    thiscounts[0] = itmp;  // the first non-zero may not have been at 0 originally, but that's ok; now only need the sizes in sequence.
     nextradix = radix-1;
     while (nextradix>=0 && skip[nextradix]) nextradix--;
+    if (thiscounts[0] != 0) error("Internal error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix);
+    thiscounts[256] = n;
     itmp = 0;
-    for (i=0;i<256;i++) {
-        thisgrpn = thiscounts[i];
-        if (thisgrpn==0) continue;
+    for (i=1; itmp<n && i<=256; i++) {
+        if (thiscounts[i] == 0) continue;
+        thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
         if (thisgrpn == 1 || nextradix==-1) {
             push(thisgrpn);
         } else {
             for (j=0; j<thisgrpn; j++) ((int *)radix_xsub)[j] = x[o[itmp+j]-1];  // this is why this xsub here can't be the same memory as xsub in forder
             iradix_r(radix_xsub, o+itmp, thisgrpn, nextradix);          // changes xsub and o by reference recursively.
         }
-        itmp += thisgrpn;
+        itmp = thiscounts[i];
+        thiscounts[i] = 0;
     }
-    memset(thiscounts, 0, 256*sizeof(unsigned int));
-    // all free()s are at the end of forder.
 }
 
 
@@ -295,7 +290,7 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
         thiscounts[thisx >> shift & 0xFF]++;
     }
     itmp = thiscounts[0];
-    for (i=1; i<256; i++)
+    for (i=1; itmp<n && i<256; i++)
         if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
     for (i=n-1; i>=0; i--) {
         thisx = (unsigned int)xsub[i] >> shift & 0xFF;
@@ -308,17 +303,14 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
     
     nextradix = radix-1;
     while (nextradix>=0 && skip[nextradix]) nextradix--;
-    // TO DO:  If nextradix==-1 and no further columns from forder,  we're done. We have o. Remember to memset thiscounts before returning.
+    // TO DO:  If nextradix==-1 AND no further columns from forder AND !retGrp,  we're done. We have o. Remember to memset thiscounts before returning.
     
     if (thiscounts[0] != 0) error("Logical error. thiscounts[0]=%d but should have been decremented to 0. radix=%d", thiscounts[0], radix);
-    itmp = n;
-    for (i=255;i>=0;i--)   // undo cummulate earlier.  TO DO: merge into loop below, as in cradix_r
-        if (thiscounts[i]) itmp -= (thiscounts[i] = itmp - thiscounts[i]);
-    thiscounts[0] = itmp;  // the first non-zero may not have been at 0 originally, but that's ok; now only need the sizes in sequence.
+    thiscounts[256] = n;
     itmp = 0;
-    for (i=0;i<256;i++) {
-        thisgrpn = thiscounts[i];  
-        if (thisgrpn==0) continue;
+    for (i=1; itmp<n && i<=256; i++) {
+        if (thiscounts[i] == 0) continue;
+        thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
         if (thisgrpn == 1 || nextradix==-1) {
             push(thisgrpn);
         } else {
@@ -328,9 +320,9 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
                 iradix_r(xsub+itmp, osub+itmp, thisgrpn, nextradix);
             }
         }
-        itmp += thisgrpn;
+        itmp = thiscounts[i];
+        thiscounts[i] = 0;
     }
-    memset(thiscounts, 0, 256*sizeof(unsigned int));
 }
 
 
@@ -363,8 +355,8 @@ static unsigned long long twiddle(void *p)
 }
 
 
-static unsigned int dradixcounts[6][2048] = {{0}};
-// reuse the same skip[] as iradix which was allocated for 6 above 
+static unsigned int dradixcounts[6][2049] = {{0}};
+// reuse the same skip[] as iradix which was allocated for 6 above
 
 static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix);
 
@@ -395,14 +387,14 @@ static void dradix(double *x, int *o, int n)
     while (radix>=0 && skip[radix]) radix--;
     if (radix==-1) { for (i=0; i<n; i++) o[i]=i+1; push(n); return; }  // All radix are skipped; i.e. one number repeated n times.
     for (i=radix-1; i>=0; i--) {  // clear the lower radix counts, we only did them to know skip. will be reused within each group
-        if (!skip[i]) memset(dradixcounts[i], 0, 2048*sizeof(unsigned int));
+        if (!skip[i]) memset(dradixcounts[i], 0, 2049*sizeof(unsigned int));
     }
     thiscounts = dradixcounts[radix];
     shift = radix * 11;
     
     itmp = thiscounts[0];
     maxgrpn = itmp;
-    for (i=1; i<2048; i++) {
+    for (i=1; itmp<n && i<2048; i++) {
         thisgrpn = thiscounts[i];
         if (thisgrpn) {  // don't cummulate through 0s, important below
             if (thisgrpn>maxgrpn) maxgrpn = thisgrpn;
@@ -431,14 +423,11 @@ static void dradix(double *x, int *o, int n)
     nextradix = radix-1;
     while (nextradix>=0 && skip[nextradix]) nextradix--;
     if (thiscounts[0] != 0) error("Logical error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix);
+    thiscounts[2048] = n;
     itmp = 0;
-    for (i=1;itmp<n && i<=2048;i++) {
-        if (i==2048) {
-            thisgrpn = n - itmp;  // must be >=1 since itmp<n.  TO DO: increase counts to 2049, to allow n in the last spot and save this branch.
-        } else {
-            if (thiscounts[i] == 0) continue;
-            thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
-        }
+    for (i=1; itmp<n && i<=2048; i++) {
+        if (thiscounts[i] == 0) continue;
+        thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
         if (thisgrpn == 1 || nextradix==-1) {
             push(thisgrpn);
         } else {
@@ -448,7 +437,6 @@ static void dradix(double *x, int *o, int n)
         itmp = thiscounts[i];
         thiscounts[i] = 0;
     }
-    // all free()s are at the end of forder.
 }
 
 static void dinsert(unsigned long long *x, int *o, int n)
@@ -486,7 +474,7 @@ static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix)
     for (i=0; i<n; i++)
         thiscounts[xsub[i] >> shift & 0x7FF]++;
     itmp = thiscounts[0];
-    for (i=1; i<2048; i++)
+    for (i=1; itmp<n && i<2048; i++)
         if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
     for (i=n-1; i>=0; i--) {
         j = --thiscounts[ xsub[i] >> shift & 0x7FF ];
@@ -501,8 +489,9 @@ static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix)
     // TO DO:  If nextradix==-1 and no further columns from forder,  we're done. We have o. Remember to memset thiscounts before returning.
     
     if (thiscounts[0] != 0) error("Logical error. thiscounts[0]=%d but should have been decremented to 0. radix=%d", thiscounts[0], radix);    
+    thiscounts[2048] = n;
     itmp = 0;
-    for (i=1;i<2048;i++) {
+    for (i=1; itmp<n && i<=2048; i++) {
         if (thiscounts[i] == 0) continue;
         thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
         if (thisgrpn == 1 || nextradix==-1) {
@@ -517,14 +506,10 @@ static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix)
         itmp = thiscounts[i];
         thiscounts[i] = 0;
     }
-    thisgrpn = n - itmp;   // final group
-    if (thisgrpn) {
-        if (thisgrpn==1 || nextradix==-1) push(thisgrpn);
-        else dradix_r(xsub+itmp, osub+itmp, thisgrpn, nextradix);
-    }
 }
 
-
+// TO DO: dcount.  Find step size, then range = (max-min)/step.  Many fixed precision floats (such as prices) may be suitable.
+//                 However, due to radix skipping, dradix may not be much worse.
 
 static int isorted(int *x, int n)
 {
