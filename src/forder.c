@@ -1,9 +1,23 @@
-
 #include <R.h>
 #define USE_RINTERNALS
 #include <Rinternals.h>
 
-// #define TIMING_ON
+//#define TIMING_ON
+
+static void binary(unsigned long long n)
+// trace utility for dev, since couldn't get stdlib::atoi() to link
+{
+    int sofar = 0;
+    for(int shift=sizeof(long long)*8-1; shift>=0; shift--)
+    {
+       if (n >> shift & 1)
+         Rprintf("1");
+       else
+         Rprintf("0");
+       if (++sofar == 1 || sofar == 12) Rprintf(" ");
+    }
+    printf("\n");
+}
 
 // For dev test only
 
@@ -180,7 +194,7 @@ static void iinsert(int *x, int *o, int n)
 */
 
 static unsigned int iradixcounts[4][257] = {{0}};
-static int skip[6];   // 6 because we reuse for dradix below
+static int skip[8];   // 8 because we reuse for dradix below
 // global because iradix and iradix_r interact and are called repetitively. 
 // counts are set back to 0 after each use, to benefit from skipped radix.
 static void *radix_xsub=NULL;
@@ -339,9 +353,10 @@ static union {double d; unsigned long long ll;} u;
 
 static unsigned long long twiddle(void *p)
 {
+    u.d = *(double *)p;
+    /*
     double mant;
     int exp, sgn=1;
-    u.d = *(double *)p;
     if (R_FINITE(u.d)) {
         // round to 8 s.f. so we can group and join to float using ==, stable within ties. TO DO: create snap() and use it in DT[numCol==3.14]
         if (u.d<0) { sgn=-1; u.d=-u.d; }
@@ -349,14 +364,25 @@ static unsigned long long twiddle(void *p)
         mant = floor(mant*100000000.0 + 0.5)/100000000.0;   // hopefully, 8 d.p. here corresponds roughly to 8 d.p. after base 2 is applied. TO DO: revisit
         u.d = sgn*ldexp(mant, exp);
     } else {
-        if (ISNAN(u.d)) u.ll = (u.ll & RESET_NA_NAN) | SET_NA_NAN_COMP;  // flip NaN/NA sign bit so that they sort to front (data.table's rule to make binary search easier and consistent)
+        
+    */
+    if (ISNAN(u.d)) {
+        u.ll = (u.ll & RESET_NA_NAN) | SET_NA_NAN_COMP;  // flip NaN/NA sign bit so that they sort to front (data.table's rule to make binary search easier and consistent)
+    } else {
+        //Rprintf("Before: "); binary(u.ll);
+        if (u.ll >> 15 & 0x1)
+            u.ll = ((u.ll >> 16) + 1) << 16;  // round
+        else
+            u.ll = (u.ll >> 16) << 16;  // clear final 16 as these interact with mask otherwise, it seems
+        //Rprintf(" After: "); binary(u.ll);
     }
-    unsigned long long mask = -(long long)(u.ll >> 63) | FLIP_SIGN_BIT;
+    unsigned long long mask = -(long long)(u.ll >> 63) | FLIP_SIGN_BIT;   // leaves bits in lowest 16 (ok, will be skipped)
+    //Rprintf("  Mask: "); binary(mask);
     return(u.ll ^ mask);
 }
 
 
-static unsigned int dradixcounts[6][2049] = {{0}};
+static unsigned int dradixcounts[8][257] = {{0}};
 // reuse the same skip[] as iradix which was allocated for 6 above
 
 static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix);
@@ -367,45 +393,51 @@ static void dradix(double *x, int *o, int n)
     unsigned int shift, *thiscounts;
     unsigned long long thisx=0;
     // see comments in iradix for structure.  This follows the same.
-
+    TBEG()
     for (i=0;i<n;i++) {
         thisx = twiddle(&x[i]);
-        dradixcounts[0][thisx & 0x7FF]++;        // unrolled since inside n-loop
-        dradixcounts[1][thisx >> 11 & 0x7FF]++;
-        dradixcounts[2][thisx >> 22 & 0x7FF]++;
-        dradixcounts[3][thisx >> 33 & 0x7FF]++;
-        dradixcounts[4][thisx >> 44 & 0x7FF]++;
-        dradixcounts[5][thisx >> 55 & 0x7FF]++;
+        //dradixcounts[0][thisx & 0xFF]++;        // unrolled since inside n-loop
+        //dradixcounts[1][thisx >> 8 & 0xFF]++;
+        dradixcounts[2][thisx >> 16 & 0xFF]++;
+        dradixcounts[3][thisx >> 24 & 0xFF]++;
+        dradixcounts[4][thisx >> 32 & 0xFF]++;
+        dradixcounts[5][thisx >> 40 & 0xFF]++;
+        dradixcounts[6][thisx >> 48 & 0xFF]++;
+        dradixcounts[7][thisx >> 56 & 0xFF]++;
         // TO DO: First 12 bits in first radix (or use counting for the range in this radix since so small, usually)
     }
-    for (radix=0; radix<6; radix++) {
-        i = thisx >> (radix*11) & 0x7FF;    // thisll is the last x after loop above
+    TEND(13)
+    skip[0] = skip[1] = 1; // we rounded the final 16 bits in twiddle
+    for (radix=2; radix<8; radix++) {
+        i = thisx >> (radix*8) & 0xFF;    // thisll is the last x after loop above
         skip[radix] = dradixcounts[radix][i] == n;
         if (skip[radix]) dradixcounts[radix][i] = 0;  // clear it now, the other counts must be 0 already
     }
-    
-    radix = 5;  // MSD
+    TEND(14)
+    radix = 7;  // MSD
     while (radix>=0 && skip[radix]) radix--;
     if (radix==-1) { for (i=0; i<n; i++) o[i]=i+1; push(n); return; }  // All radix are skipped; i.e. one number repeated n times.
     for (i=radix-1; i>=0; i--) {  // clear the lower radix counts, we only did them to know skip. will be reused within each group
-        if (!skip[i]) memset(dradixcounts[i], 0, 2049*sizeof(unsigned int));
+        if (!skip[i]) memset(dradixcounts[i], 0, 257*sizeof(unsigned int));
     }
     thiscounts = dradixcounts[radix];
-    shift = radix * 11;
-    
+    shift = radix * 8;
+    TEND(15)
     itmp = thiscounts[0];
     maxgrpn = itmp;
-    for (i=1; itmp<n && i<2048; i++) {
+    for (i=1; itmp<n && i<256; i++) {
         thisgrpn = thiscounts[i];
         if (thisgrpn) {  // don't cummulate through 0s, important below
             if (thisgrpn>maxgrpn) maxgrpn = thisgrpn;
             thiscounts[i] = (itmp += thisgrpn);
         }
     }
+    TEND(16)
     for (i=n-1; i>=0; i--) {
         thisx = twiddle(&x[i]);
-        o[ --thiscounts[thisx >> shift & 0x7FF] ] = i+1;
+        o[ --thiscounts[thisx >> shift & 0xFF] ] = i+1;
     }
+    TEND(17)
     if (radix_xsuballoc < maxgrpn) {   // TO DO: centralize this alloc
         // The largest group according to the first non-skipped radix, so could be big (if radix is needed on first column)
         // TO DO: could include extra bits to divide the first radix up more. Often the MSD has groups in just 0-4 out of 256.
@@ -424,9 +456,9 @@ static void dradix(double *x, int *o, int n)
     nextradix = radix-1;
     while (nextradix>=0 && skip[nextradix]) nextradix--;
     if (thiscounts[0] != 0) error("Logical error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix);
-    thiscounts[2048] = n;
+    thiscounts[256] = n;
     itmp = 0;
-    for (i=1; itmp<n && i<=2048; i++) {
+    for (i=1; itmp<n && i<=256; i++) {
         if (thiscounts[i] == 0) continue;
         thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
         if (thisgrpn == 1 || nextradix==-1) {
@@ -438,6 +470,7 @@ static void dradix(double *x, int *o, int n)
         itmp = thiscounts[i];
         thiscounts[i] = 0;
     }
+    TEND(18)
 }
 
 static void dinsert(unsigned long long *x, int *o, int n)
@@ -464,7 +497,7 @@ static void dinsert(unsigned long long *x, int *o, int n)
 static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix)
     // xsub is a recursive offset into xsub working memory above in dradix, reordered by reference.
     // osub is a an offset into the main answer o, reordered by reference.
-    // dradix iterates 5,4,3,2,1,0
+    // dradix iterates 7,6,5,4,3,2,1,0
 {
     int i, j, itmp, thisgrpn, nextradix, shift;
     unsigned int *thiscounts;
@@ -474,16 +507,16 @@ static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix)
         return;
     }
 
-    shift = radix*11;
+    shift = radix*8;
     thiscounts = dradixcounts[radix];
     
     for (i=0; i<n; i++)
-        thiscounts[xsub[i] >> shift & 0x7FF]++;
+        thiscounts[xsub[i] >> shift & 0xFF]++;
     itmp = thiscounts[0];
-    for (i=1; itmp<n && i<2048; i++)
+    for (i=1; itmp<n && i<256; i++)
         if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
     for (i=n-1; i>=0; i--) {
-        j = --thiscounts[ xsub[i] >> shift & 0x7FF ];
+        j = --thiscounts[ xsub[i] >> shift & 0xFF ];
         otmp[j] = osub[i];
         ((unsigned long long *)xtmp)[j] = xsub[i];
     }
@@ -495,9 +528,9 @@ static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix)
     // TO DO:  If nextradix==-1 and no further columns from forder,  we're done. We have o. Remember to memset thiscounts before returning.
     
     if (thiscounts[0] != 0) error("Logical error. thiscounts[0]=%d but should have been decremented to 0. radix=%d", thiscounts[0], radix);    
-    thiscounts[2048] = n;
+    thiscounts[256] = n;
     itmp = 0;
-    for (i=1; itmp<n && i<=2048; i++) {
+    for (i=1; itmp<n && i<=256; i++) {
         if (thiscounts[i] == 0) continue;
         thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
         if (thisgrpn == 1 || nextradix==-1) {
@@ -666,6 +699,9 @@ static void ccount(SEXP *x, int *o, int n)
 // TO DO: for dradix, if treatment of Inf,-Inf,NA and Nan is biting anywhere, they can we swept to the front in one pass by shifting the next non-special back however many specials have been observed so far.
 //
 
+
+
+
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
 // TO DO: check fast for a unique integer vector such as origorder = iradixorder(firstofeachgroup) in [.data.table ad hoc by (no groups needed).
 // TO DO: attach group sizes to result, if retGrp is TRUE
@@ -699,9 +735,14 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     gsmaxalloc = n;  // upper limit for stack size (all size 1 groups). We'll detect and avoid that limit, but if just one non-1 group (say 2), that can't be avoided.
     
     
+    
     SEXP ans = PROTECT(allocVector(INTSXP, n));  // once for the result, needs to be length n.
     int *o = INTEGER(ans);                       // TO DO: save allocation if NULL is returned (isSorted==TRUE)
     xd = DATAPTR(x);
+    
+    //for (i=0; i<n; i++) binary( ((unsigned long long *)xd)[i] );
+    //Rprintf("\n");
+    //for (i=0; i<n; i++) binary( twiddle(&((double *)xd)[i]) );
     
     stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
     
