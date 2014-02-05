@@ -282,6 +282,11 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
     int i, j, itmp, thisx, thisgrpn, nextradix, shift;
     unsigned int *thiscounts;
     
+    if (n<200) {   // 200 is guess based on limited testing. Needs calibrate(). Was 50 based on sum(1:50)=1275 worst -vs- 256 cummulate + 256 memset + allowance since reverse order is unlikely
+        iinsert(xsub, osub, n);
+        return;
+    }
+    
     shift = radix*8;
     thiscounts = iradixcounts[radix];
     
@@ -314,11 +319,7 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
         if (thisgrpn == 1 || nextradix==-1) {
             push(thisgrpn);
         } else {
-            if (thisgrpn<200) {   // 200 is guess based on limited testing. Needs calibrate(). Was 50 based on sum(1:50)=1275 worst -vs- 256 cummulate + 256 memset + allowance since reverse order is unlikely
-                iinsert(xsub+itmp, osub+itmp, thisgrpn);
-            } else {
-                iradix_r(xsub+itmp, osub+itmp, thisgrpn, nextradix);
-            }
+            iradix_r(xsub+itmp, osub+itmp, thisgrpn, nextradix);
         }
         itmp = thiscounts[i];
         thiscounts[i] = 0;
@@ -468,6 +469,11 @@ static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix)
     int i, j, itmp, thisgrpn, nextradix, shift;
     unsigned int *thiscounts;
     
+    if (n<200) {   // 200 is guess based on limited testing. Needs calibrate(). Was 50 based on sum(1:50)=1275 worst -vs- 256 cummulate + 256 memset + allowance since reverse order is unlikely
+        dinsert(xsub, osub, n);
+        return;
+    }
+
     shift = radix*11;
     thiscounts = dradixcounts[radix];
     
@@ -497,11 +503,7 @@ static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix)
         if (thisgrpn == 1 || nextradix==-1) {
             push(thisgrpn);
         } else {
-            if (thisgrpn<200) {   // 200 is guess based on limited testing. Needs calibrate(). Was 50 based on sum(1:50)=1275 worst -vs- 256 cummulate + 256 memset + allowance since reverse order is unlikely
-                dinsert(xsub+itmp, osub+itmp, thisgrpn);
-            } else {
-                dradix_r(xsub+itmp, osub+itmp, thisgrpn, nextradix);
-            }
+            dradix_r(xsub+itmp, osub+itmp, thisgrpn, nextradix);
         }
         itmp = thiscounts[i];
         thiscounts[i] = 0;
@@ -701,13 +703,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     int *o = INTEGER(ans);                       // TO DO: save allocation if NULL is returned (isSorted==TRUE)
     xd = DATAPTR(x);
     
-    // TO DO: if more than 1 column || returnGroups. Remember iradix needs stackgrps for all but last radix, regardless.
-    stackgrps = TRUE;
+    stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
     
     if (isString(x)) {
         ccount(xd, o, n);
-        isSorted = FALSE;  // TO DO: check o for sortedness if ccount is so fast, or create csorted.
-    } else if (isReal(x)) { 
+        isSorted = FALSE;  // TO DO: check o for sortedness if ccount is fast, or create csorted.
+    } else if (isReal(x)) {
         dradix(xd, o, n);
         isSorted = FALSE;
     } else {
@@ -751,9 +752,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
         int ngrp = gsngrp[flip];
         if (ngrp == n) break;
         flipflop();
-        stackgrps = (col!=LENGTH(by) || LOGICAL(retGrp)[0]);
+        stackgrps = col!=LENGTH(by) || LOGICAL(retGrp)[0];
         i = 0;
-        
         if (isString(x) || isReal(x)) {
             if (isString(x)) f = &ccount; else f = &dradix;  
             for (grp=0; grp<ngrp; grp++) {
@@ -763,7 +763,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
                 osub = o+i;
                 for (j=0; j<thisgrpn; j++) ((SEXP *)xsub)[j] = ((SEXP *)xd)[o[i++]-1];  // same size as double. TO DO: tidy and 32bit
                 TEND(2)
-                // TO DO: if thisngrp==2
+                // TO DO: if thisgrpn==2
+                if (thisgrpn < 200 && isReal(x)) {
+                    dinsert(xsub, osub, thisgrpn);
+                    continue;
+                }
                 (*f)(xsub, newo, thisgrpn);
                 TEND(3)
                 for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = osub[ newo[j]-1 ];   // reuse xsub to reorder osub
@@ -829,6 +833,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     Rprintf("Found %d groups and maxgrpn=%d\n", gsngrp[flip], gsmax[flip]);
 #endif
     
+    savetl_end();  // hence important no early returns or error()s above. TO DO: wrap error() with globError() to clear up.
+    
+    if (isSorted) ans = R_NilValue;
+    if (LOGICAL(retGrp)[0]) {
+        SEXP grps = PROTECT(allocVector(INTSXP, gsngrp[flip]));
+        memcpy(INTEGER(grps), gs[flip], gsngrp[flip] * sizeof(int));
+        setAttrib(ans, install("grps"), grps);
+        UNPROTECT(1);
+    }
+    
     gsfree();
     free(radix_xsub);          radix_xsub=NULL;    radix_xsuballoc=0;
     free(xsub); free(newo);    xsub=newo=NULL;
@@ -838,11 +852,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     free(cradix_counts);       cradix_counts=NULL; cradix_counts_alloc=0;
     free(cradix_xtmp);         cradix_xtmp=NULL;   cradix_xtmp_alloc=0;   // TO DO: use xtmp already got
     
-    savetl_end();  // hence important no early returns or error()s above. TO DO: wrap error() with globError() to clear up.
-    
     UNPROTECT(1);
-
-    return( isSorted ? R_NilValue : ans );
+    return( ans );
 }
 
 /*
