@@ -2,22 +2,7 @@
 #define USE_RINTERNALS
 #include <Rinternals.h>
 
-//#define TIMING_ON
-
-static void binary(unsigned long long n)
-// trace utility for dev, since couldn't get stdlib::atoi() to link
-{
-    int sofar = 0;
-    for(int shift=sizeof(long long)*8-1; shift>=0; shift--)
-    {
-       if (n >> shift & 1)
-         Rprintf("1");
-       else
-         Rprintf("0");
-       if (++sofar == 1 || sofar == 12) Rprintf(" ");
-    }
-    printf("\n");
-}
+// #define TIMING_ON
 
 // For dev test only
 
@@ -77,6 +62,7 @@ static void gsfree() {
   // many calls to clock() can be expensive, hence compiled out rather than switch(verbose) 
   #include <time.h>
   #define NBLOCK 20
+  static void binary(unsigned long long n);
   static clock_t tblock[NBLOCK], tstart;
   static int nblock[NBLOCK];
   #define TBEG() tstart = clock();
@@ -85,6 +71,8 @@ static void gsfree() {
   #define TBEG()
   #define TEND(i)
 #endif
+
+
 
 static int range, off;   // used by both icount and forder
 
@@ -354,18 +342,6 @@ static union {double d; unsigned long long ll;} u;
 static unsigned long long twiddle(void *p)
 {
     u.d = *(double *)p;
-    /*
-    double mant;
-    int exp, sgn=1;
-    if (R_FINITE(u.d)) {
-        // round to 8 s.f. so we can group and join to float using ==, stable within ties. TO DO: create snap() and use it in DT[numCol==3.14]
-        if (u.d<0) { sgn=-1; u.d=-u.d; }
-        mant = frexp(u.d, &exp);   // returns mantissa (significand) in range [0.5,1.0)
-        mant = floor(mant*100000000.0 + 0.5)/100000000.0;   // hopefully, 8 d.p. here corresponds roughly to 8 d.p. after base 2 is applied. TO DO: revisit
-        u.d = sgn*ldexp(mant, exp);
-    } else {
-        
-    */
     if (ISNAN(u.d)) {
         u.ll = (u.ll & RESET_NA_NAN) | SET_NA_NAN_COMP;  // flip NaN/NA sign bit so that they sort to front (data.table's rule to make binary search easier and consistent)
     } else {
@@ -393,27 +369,21 @@ static void dradix(double *x, int *o, int n)
     unsigned int shift, *thiscounts;
     unsigned long long thisx=0;
     // see comments in iradix for structure.  This follows the same.
-    TBEG()
     for (i=0;i<n;i++) {
         thisx = twiddle(&x[i]);
-        //dradixcounts[0][thisx & 0xFF]++;        // unrolled since inside n-loop
-        //dradixcounts[1][thisx >> 8 & 0xFF]++;
-        dradixcounts[2][thisx >> 16 & 0xFF]++;
+        dradixcounts[2][thisx >> 16 & 0xFF]++;   // unrolled since inside n-loop
         dradixcounts[3][thisx >> 24 & 0xFF]++;
         dradixcounts[4][thisx >> 32 & 0xFF]++;
         dradixcounts[5][thisx >> 40 & 0xFF]++;
         dradixcounts[6][thisx >> 48 & 0xFF]++;
         dradixcounts[7][thisx >> 56 & 0xFF]++;
-        // TO DO: First 12 bits in first radix (or use counting for the range in this radix since so small, usually)
     }
-    TEND(13)
-    skip[0] = skip[1] = 1; // we rounded the final 16 bits in twiddle
+    skip[0] = skip[1] = 1; // the lowest 16 bits were rounded in twiddle
     for (radix=2; radix<8; radix++) {
-        i = thisx >> (radix*8) & 0xFF;    // thisll is the last x after loop above
+        i = thisx >> (radix*8) & 0xFF;    // thisx is the last x after loop above
         skip[radix] = dradixcounts[radix][i] == n;
         if (skip[radix]) dradixcounts[radix][i] = 0;  // clear it now, the other counts must be 0 already
     }
-    TEND(14)
     radix = 7;  // MSD
     while (radix>=0 && skip[radix]) radix--;
     if (radix==-1) { for (i=0; i<n; i++) o[i]=i+1; push(n); return; }  // All radix are skipped; i.e. one number repeated n times.
@@ -422,7 +392,6 @@ static void dradix(double *x, int *o, int n)
     }
     thiscounts = dradixcounts[radix];
     shift = radix * 8;
-    TEND(15)
     itmp = thiscounts[0];
     maxgrpn = itmp;
     for (i=1; itmp<n && i<256; i++) {
@@ -432,12 +401,10 @@ static void dradix(double *x, int *o, int n)
             thiscounts[i] = (itmp += thisgrpn);
         }
     }
-    TEND(16)
     for (i=n-1; i>=0; i--) {
         thisx = twiddle(&x[i]);
         o[ --thiscounts[thisx >> shift & 0xFF] ] = i+1;
     }
-    TEND(17)
     if (radix_xsuballoc < maxgrpn) {   // TO DO: centralize this alloc
         // The largest group according to the first non-skipped radix, so could be big (if radix is needed on first column)
         // TO DO: could include extra bits to divide the first radix up more. Often the MSD has groups in just 0-4 out of 256.
@@ -470,7 +437,6 @@ static void dradix(double *x, int *o, int n)
         itmp = thiscounts[i];
         thiscounts[i] = 0;
     }
-    TEND(18)
 }
 
 static void dinsert(unsigned long long *x, int *o, int n)
@@ -714,6 +680,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
 #ifdef TIMING_ON
     memset(tblock, 0, NBLOCK*sizeof(clock_t));
     memset(nblock, 0, NBLOCK*sizeof(int));
+    clock_t tstart;  // local variable to mask the global tstart for ease when timing sub funs
 #endif
     TBEG()
     savetl_init();
@@ -874,7 +841,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
         }
     }
 #ifdef TIMING_ON
-    for (i=0; i<NBLOCK; i++) Rprintf("Timing block %d = %8.3f   %8d\n", i, 1.0*tblock[i]/CLOCKS_PER_SEC, nblock[i]);
+    for (i=0; i<NBLOCK; i++) {
+        Rprintf("Timing block %d = %8.3f   %8d\n", i, 1.0*tblock[i]/CLOCKS_PER_SEC, nblock[i]);
+        if (i==12) Rprintf("\n");
+    }
     Rprintf("Found %d groups and maxgrpn=%d\n", gsngrp[flip], gsmax[flip]);
 #endif
     
@@ -931,4 +901,21 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
 }
 
 */
+
+#ifdef TIMING_ON
+static void binary(unsigned long long n)
+// trace utility for dev, since couldn't get stdlib::atoi() to link
+{
+    int sofar = 0;
+    for(int shift=sizeof(long long)*8-1; shift>=0; shift--)
+    {
+       if (n >> shift & 1)
+         Rprintf("1");
+       else
+         Rprintf("0");
+       if (++sofar == 1 || sofar == 12) Rprintf(" ");
+    }
+    printf("\n");
+}
+#endif
 

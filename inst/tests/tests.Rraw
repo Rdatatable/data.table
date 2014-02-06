@@ -138,45 +138,6 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
 .timingtests = FALSE
 started.at = Sys.time()
 
-# Test counting character grouping and sorting
-# Now at the start of this file, so that any errors elsewhere show up in the
-# last 13 lines displayed by CRAN checks.
-# TO DO: test range of n and m and plot, on variety of machines, 32bit and 64bit with RAM and L2 variances
-if (.timingtests) {
-    n = as.integer(1e6)
-    m = as.integer(1e4)
-} else {
-    n = as.integer(1e4)
-    m = as.integer(1e2)
-}
-cat("x = ",format(n,big.mark=","),"sample from",format(m,big.mark=","),"strings (quick test to save load on CRAN servers where tests run every day. In dev we increase n and m a lot for meaningful times.\n")
-x = sample(as.character(as.hexmode(1:m)),n,replace=TRUE)
-tt = system.time(f <- factor(x))                             # 7.079   (timings from MD's tiny 32bit netbook)
-cat(format(tt["elapsed"],nsmall=3),": f=factor(x) [high up front cost, plus storage and maintenance of levels]\n")
-tt = system.time(o1 <- sort.list(f,method="radix"))          # 1.025
-cat(format(tt["elapsed"],nsmall=3),": sort.list(,'radix') on f\n")      # (setkey = 7.079+1.025 = 8.104 + update to DT)
-tt = system.time(u <- unique(x))                             # 5.213
-cat(format(tt["elapsed"],nsmall=3),": u=unique(x)\n")
-tt = system.time(.Internal(order(na.last=FALSE, decreasing=FALSE, u)))   # 0.161
-cat(format(tt["elapsed"],nsmall=3),": .Internal(order(u))\n")
-fsorted = f[o1]
-xsorted = x[o1]
-tt = system.time(o2 <- sort.list(fsorted,method="radix"))    # 0.318
-cat(format(tt["elapsed"],nsmall=3),": sort.list(,'radix') on fsorted\n")     # (page fetches on counts minimised)
-
-cat("-vs-\n")
-
-tt = system.time(o3 <- chgroup(x))        # 2.186
-cat(format(tt["elapsed"],nsmall=3),": char group on x (ad hoc by)  [slower than radix on f but without up front cost]\n")
-tt = system.time(o4 <- chorder(x))        # 2.400
-cat(format(tt["elapsed"],nsmall=3),": char sort on x (setkey)  [lower up front cost than factor(x)]\n")
-tt = system.time(o5 <- chgroup(xsorted))  # 0.222
-cat(format(tt["elapsed"],nsmall=3),": char group on xsorted (keyed by)  [faster than sort.list(,'radix') on fsorted, same result]\n")
-test(389,identical(o1,o4))
-test(390,identical(o2,o5))
-test(391,identical(o5,1:length(x)))
-# tests 392-394 removed. They were to test a switch depending on pre and post 2.14.0, which was removed. The same code runs in pre 2.14.0 and we still support from 2.12.0+. Of course we test the package in pre-2.14.0 (as does CRAN), both 32bit and 64bit.
-
 TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
 setkey(TESTDT,a,b)
 # i.e.       a b v
