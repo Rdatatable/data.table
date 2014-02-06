@@ -181,17 +181,31 @@ static void iinsert(int *x, int *o, int n)
  Recall: there are no comparisons at all in counting and radix, there is wide random access in each LSD radix pass, though.
 */
 
-static unsigned int iradixcounts[4][257] = {{0}};
+static unsigned int iradixcounts[4][257] = {{0}};   // TO DO: combine iradixcounts and dradixcounts,  size 8,  with 2 unused.
 static int skip[8];   // 8 because we reuse for dradix below
 // global because iradix and iradix_r interact and are called repetitively. 
 // counts are set back to 0 after each use, to benefit from skipped radix.
 static void *radix_xsub=NULL;
 static int radix_xsuballoc=0;
 
-static int *otmp=NULL;
-static void *xtmp=NULL;  // TO DO: save one of these if possible
-static int oxtmpalloc = 0;
-// TO DO:  central allocator function here,  which could change oxtmpalloc in terms of bytes,  so would distinguish int and double
+static int *otmp=NULL, otmp_alloc=0;
+static void alloc_otmp(int n) {
+    if (otmp_alloc >= n) return;
+    otmp = (int *)realloc(otmp, n * sizeof(int));
+    if (otmp == NULL) error("Failed to allocate working memory for otmp. Requested %d * %d bytes", n, sizeof(int));
+    otmp_alloc = n;
+}
+
+static void *xtmp=NULL; int xtmp_alloc=0;  // TO DO: save xtmp if possible, see allocs in forder
+static void alloc_xtmp(int n) {        // TO DO: currently always the largest type (double) but could be int if that's all that's needed
+    if (xtmp_alloc >= n) return;
+    xtmp = (double *)realloc(xtmp, n * sizeof(double));
+    if (xtmp == NULL) error("Failed to allocate working memory for xtmp. Requested %d * %d bytes", n, sizeof(double));
+    xtmp_alloc = n;
+}
+    
+
+
 
 static void iradix_r(int *xsub, int *osub, int n, int radix);
 
@@ -249,13 +263,10 @@ static void iradix(int *x, int *o, int n)
         if (!radix_xsub) error("Failed to realloc working memory %d*8bytes (xsub in iradix), radix=%d", maxgrpn, radix);
         radix_xsuballoc = maxgrpn;
     }
-    if (oxtmpalloc < maxgrpn) {
-        otmp = (int *)realloc(otmp, maxgrpn * sizeof(int));
-        if (otmp == NULL) error("Failed to realloc working memory %d*4bytes (otmp in iradix), radix=%d", maxgrpn, radix);
-        xtmp = (double *)realloc(xtmp, maxgrpn * sizeof(double));  // TO DO: centralize with dradix
-        if (xtmp == NULL) error("Failed to realloc working memory %d*8bytes (xtmp in iradix), radix=%d", maxgrpn, radix);
-        oxtmpalloc = maxgrpn;
-    }
+    
+    alloc_otmp(maxgrpn);   // TO DO: can we leave this to forder and remove these calls??
+    alloc_xtmp(maxgrpn);
+    
     nextradix = radix-1;
     while (nextradix>=0 && skip[nextradix]) nextradix--;
     if (thiscounts[0] != 0) error("Internal error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix);
@@ -413,13 +424,10 @@ static void dradix(double *x, int *o, int n)
         if (!radix_xsub) error("Failed to realloc working memory %d*8bytes (xsub in dradix), radix=%d", maxgrpn, radix);
         radix_xsuballoc = maxgrpn;
     }
-    if (oxtmpalloc < maxgrpn) {
-        otmp = (int *)realloc(otmp, maxgrpn * sizeof(int));
-        if (otmp == NULL) error("Failed to realloc working memory %d*4bytes (otmp in dradix), radix=%d", maxgrpn, radix);
-        xtmp = (double *)realloc(xtmp, maxgrpn * sizeof(double));
-        if (xtmp == NULL) error("Failed to realloc working memory %d*4bytes (xtmp in dradix), radix=%d", maxgrpn, radix);
-        oxtmpalloc = maxgrpn;
-    }
+    
+    alloc_otmp(maxgrpn);   // TO DO: leave to forder and remove these calls?
+    alloc_xtmp(maxgrpn);
+    
     nextradix = radix-1;
     while (nextradix>=0 && skip[nextradix]) nextradix--;
     if (thiscounts[0] != 0) error("Logical error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix);
@@ -599,20 +607,21 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 extern void savetl_init(), savetl(SEXP s), savetl_end();
 
 static SEXP *ustr = NULL;
-static int ustr_alloc = 0;
+static int ustr_alloc = 0, ustr_n = 0;
 
-static void ccount(SEXP *x, int *o, int n)
+static void cgroup(SEXP *x, int *o, int n)
 // As icount :
 //   Places the ordering into o directly, overwriting whatever was there
 //   Doesn't change x
 //   Pushes group sizes onto stack
+// Only run when sortStr==FALSE. Basically a counting sort, in first appearance order, directly.
+// Since it doesn't sort the strings, the name is cgroup.
 {
     SEXP s;
-    int i, k, cumsum, un;
-    
+    int i, k, cumsum;
     // savetl_init() is called once at the start of forder
-    maxlen = 0;  // set the global maxlen to save looping inside cradix_r too much 
-    un = 0;
+    // there is no _pre for this.  ustr created and cleared each time.
+    if (ustr_n != 0) error("Internal error. ustr isn't empty when starting cgroup: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);
     for(i=0; i<n; i++) {
         s = x[i];
         if (TRUELENGTH(s)<0) {                   // this case first as it's the most frequent
@@ -623,32 +632,17 @@ static void ccount(SEXP *x, int *o, int n)
             savetl(s);          // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
             SET_TRUELENGTH(s,0);
         }
-        if (ustr_alloc<=un) {
+        if (ustr_alloc<=ustr_n) {
             ustr_alloc = (ustr_alloc == 0) ? 10000 : ustr_alloc*2;  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc. 
             if (ustr_alloc>n) ustr_alloc = n;
             ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
         }
         SET_TRUELENGTH(s, -1); 
-        ustr[un++] = s;
-        if (sortStr && s!=NA_STRING && LENGTH(s)>maxlen) maxlen=LENGTH(s);  // length on CHARSXP is the nchar of char * (excluding \0)
+        ustr[ustr_n++] = s;
     }
-    // TO DO:  Test all "" and all NA.  Does NA_character_ come before ""? (should do).
-    if (sortStr) {
-        if (cradix_counts_alloc < maxlen) {
-            cradix_counts_alloc = cradix_counts_alloc == 0 ? 20 : maxlen + 20;   // +20 to save many reallocs for very long and varying strings
-            cradix_counts = (int *)realloc(cradix_counts, cradix_counts_alloc * 256 * sizeof(int) );  // stack of counts
-            if (!cradix_counts) error("Failed to alloc cradix_counts");
-            memset(cradix_counts, 0, cradix_counts_alloc * 256 * sizeof(int));
-        }
-        if (cradix_xtmp_alloc < n) {
-            cradix_xtmp = (SEXP *)realloc( cradix_xtmp,  n * sizeof(SEXP) );  // TO DO: Reuse the one we have in forder. Does it need to be n length?
-            if (!cradix_xtmp) error("Failed to alloc cradix_tmp");
-            cradix_xtmp_alloc = n;
-        }
-        cradix_r(ustr,un,0);  // changes ustr by reference
-    }
+    // TO DO: the same string in different encodings will be considered different here. Sweep through ustr and merge counts where equal (sort needed therefore, unfortunately?, only if there are any marked encodings present)
     cumsum = 0;
-    for(i=0; i<un; i++) {                                    // 0.000
+    for(i=0; i<ustr_n; i++) {                                    // 0.000
         push(-TRUELENGTH(ustr[i]));                            
         SET_TRUELENGTH(ustr[i], cumsum += -TRUELENGTH(ustr[i]));
     }
@@ -657,15 +651,93 @@ static void ccount(SEXP *x, int *o, int n)
         SET_TRUELENGTH(s, k = TRUELENGTH(s)-1);
         o[k] = i+1;                                          // 0.800 (random access to o)
     }
-    for(i=0; i<un; i++) SET_TRUELENGTH(ustr[i],0);     // The cumsum meant the counts are left non zero, so reset for next time (0.00).
-    //   savetl_end()  is at the end of forder, once
+    for(i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i],0);     // The cummulate meant counts are left non zero, so reset for next time (0.00s).
+    ustr_n = 0;
 }
 
-//
-// TO DO: for dradix, if treatment of Inf,-Inf,NA and Nan is biting anywhere, they can we swept to the front in one pass by shifting the next non-special back however many specials have been observed so far.
-//
+static int *csort_otmp=NULL, csort_otmp_alloc=0;
+static void alloc_csort_otmp(int n) {
+    if (csort_otmp_alloc >= n) return;
+    csort_otmp = (int *)realloc(csort_otmp, n * sizeof(int));
+    if (csort_otmp == NULL) error("Failed to allocate working memory for csort_otmp. Requested %d * %d bytes", n, sizeof(int));
+    csort_otmp_alloc = n;
+}
+
+static void csort(SEXP *x, int *o, int n)
+// As icount :
+//   Places the ordering into o directly, overwriting whatever was there
+//   Doesn't change x
+//   Pushes group sizes onto stack
+// Requires csort_pre() to have created and sorted ustr already
+{
+    int i;
+    // can't use otmp, since iradix might be called here and that uses otmp (and xtmp).
+    // alloc_csort_otmp(n) is called from forder for either n=nrow if 1st column, or n=maxgrpn if onwards columns
+    for(i=0; i<n; i++) csort_otmp[i] = -TRUELENGTH(x[i]);
+    if (n<200) {   // TO DO: calibrate()
+        for (i=0; i<n; i++) o[i] = i+1;  // TO DO: use o from caller directly if not 1st column
+        iinsert(csort_otmp, o, n);
+    } else {
+        setRange(csort_otmp, n);
+        if (range == NA_INTEGER) error("Internal error. csort's otmp contains all-NA");
+        if (range <= 10000)   // 1e4 rather than 1e5, see comment below.  TO DO: consolidate
+            icount(csort_otmp, o, n);
+        else
+            iradix(csort_otmp, o, n);
+    }
+    // all i* push onto stack. Using their counts may be faster here than thrashing SEXP fetches over several passes as cgroup does
+    // (but cgroup needs that to keep orginal order, and cgroup saves the sort in csort_pre).
+}
+
+static void csort_pre(SEXP *x, int n)
+// Finds ustr and sorts it.
+// Runs once for each column (if sortStr==TRUE), then ustr is used by csort within each group
+// ustr is grown on each character column, to save sorting the same strings again if several columns cotain the same strings
+{
+    SEXP s;
+    int i, old_un, new_un;
+    // savetl_init() is called once at the start of forder
+    // maxlen = 0;  initialized to 0, and reset to 0 in csort_post. So that cradix_r knows the maximum radix. 
+    old_un = ustr_n;
+    for(i=0; i<n; i++) {
+        s = x[i];
+        if (TRUELENGTH(s)<0) continue;   // this case first as it's the most frequent. Already in ustr, this negative is its ordering.
+        if (TRUELENGTH(s)>0) {  // Save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
+            savetl(s);          // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
+            SET_TRUELENGTH(s,0);
+        }
+        if (ustr_alloc<=ustr_n) {
+            ustr_alloc = (ustr_alloc == 0) ? 10000 : ustr_alloc*2;  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc. 
+            if (ustr_alloc > old_un+n) ustr_alloc = old_un + n;
+            ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
+        }
+        SET_TRUELENGTH(s, -1);  // this -1 will become its ordering later below
+        ustr[ustr_n++] = s;
+        if (s!=NA_STRING && LENGTH(s)>maxlen) maxlen=LENGTH(s);  // length on CHARSXP is the nchar of char * (excluding \0)
+    }
+    new_un = ustr_n;
+    if (new_un == old_un) return;  // No new strings observed, seen them all before in previous column. ustr already sufficient.
+    // If we ever make ustr permanently held by data.table, we'll just need to make the final loop to set -i-1 before returning here.
+    // sort ustr.  TO DO: just sort new ones and merge them in.
+    // These allocs are here, to save them being in the recursive cradix_r()
+    if (cradix_counts_alloc < maxlen) {
+        cradix_counts_alloc = cradix_counts_alloc == 0 ? 20 : maxlen + 20;   // +20 to save many reallocs for very long and varying strings
+        cradix_counts = (int *)realloc(cradix_counts, cradix_counts_alloc * 256 * sizeof(int) );  // stack of counts
+        if (!cradix_counts) error("Failed to alloc cradix_counts");
+        memset(cradix_counts, 0, cradix_counts_alloc * 256 * sizeof(int));
+    }
+    if (cradix_xtmp_alloc < ustr_n) {
+        cradix_xtmp = (SEXP *)realloc( cradix_xtmp,  ustr_n * sizeof(SEXP) );  // TO DO: Reuse the one we have in forder. Does it need to be n length?
+        if (!cradix_xtmp) error("Failed to alloc cradix_tmp");
+        cradix_xtmp_alloc = ustr_n;
+    }
+    cradix_r(ustr, ustr_n, 0);  // sorts ustr in-place by reference
+    for(i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
+        SET_TRUELENGTH(ustr[i], -i-1);
+}
 
 
+// TO DO: check that tests.Rraw should tests all-"" and all-NA cases.  Does NA_character_ come before ""? (should do).
 
 
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
@@ -701,8 +773,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     sortStr = LOGICAL(sortStrArg)[0];
     gsmaxalloc = n;  // upper limit for stack size (all size 1 groups). We'll detect and avoid that limit, but if just one non-1 group (say 2), that can't be avoided.
     
-    
-    
     SEXP ans = PROTECT(allocVector(INTSXP, n));  // once for the result, needs to be length n.
     int *o = INTEGER(ans);                       // TO DO: save allocation if NULL is returned (isSorted==TRUE)
     xd = DATAPTR(x);
@@ -714,7 +784,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
     
     if (isString(x)) {
-        ccount(xd, o, n);
+        if (sortStr) {
+            csort_pre(xd, n);
+            alloc_csort_otmp(n);
+            csort(xd, o, n);
+        } else {
+            cgroup(xd, o, n);
+        }
         isSorted = FALSE;  // TO DO: check o for sortedness if ccount is fast, or create csorted.
     } else if (isReal(x)) {
         dradix(xd, o, n);
@@ -734,11 +810,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
             isSorted = FALSE;
             setRange(xd, n);
             if (range == NA_INTEGER) error("The all-NA case should have been caught by isorted above");
-            if (range <= 100000) {
+            if (range <= 100000)
                 icount(xd, o, n);
-            } else {
+            else
                 iradix(xd, o, n);
-            }
         }
     }
     TEND(0)
@@ -763,7 +838,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
         stackgrps = col!=LENGTH(by) || LOGICAL(retGrp)[0];
         i = 0;
         if (isString(x) || isReal(x)) {
-            if (isString(x)) f = &ccount; else f = &dradix;  
+            if (isString(x)) {
+               if (sortStr) { csort_pre(xd, n); alloc_csort_otmp(maxgrpn); f = &csort; }
+               else { f = &cgroup; }
+            } else f = &dradix;  
             isSorted = FALSE;  // TO DO: include csorted and dsorted
             for (grp=0; grp<ngrp; grp++) {
                 thisgrpn = gs[1-flip][grp];
@@ -848,7 +926,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     Rprintf("Found %d groups and maxgrpn=%d\n", gsngrp[flip], gsmax[flip]);
 #endif
     
+    if (!sortStr && ustr_n!=0) error("Internal error: at the end of forder sortStr==FALSE but ustr_n!=0 [%d]", ustr_n);
+    for(int i=0; i<ustr_n; i++)
+        SET_TRUELENGTH(ustr[i],0);
+    maxlen = 0;  // reset global
+    ustr_n = 0;
     savetl_end();  // hence important no early returns or error()s above. TO DO: wrap error() with globError() to clear up.
+    free(ustr);                ustr=NULL;          ustr_alloc=0;
     
     if (isSorted) ans = R_NilValue;
     if (LOGICAL(retGrp)[0]) {
@@ -861,9 +945,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     gsfree();
     free(radix_xsub);          radix_xsub=NULL;    radix_xsuballoc=0;
     free(xsub); free(newo);    xsub=newo=NULL;
-    free(xtmp); free(otmp);    xtmp=otmp=NULL;     oxtmpalloc=0;
+    free(xtmp);                xtmp=NULL;          xtmp_alloc=0;
+    free(otmp);                otmp=NULL;          otmp_alloc=0;
+    free(csort_otmp);          csort_otmp=NULL;    csort_otmp_alloc=0;
 
-    free(ustr);                ustr=NULL;          ustr_alloc=0;
     free(cradix_counts);       cradix_counts=NULL; cradix_counts_alloc=0;
     free(cradix_xtmp);         cradix_xtmp=NULL;   cradix_xtmp_alloc=0;   // TO DO: use xtmp already got
     
