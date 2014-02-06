@@ -2,7 +2,7 @@
 #define USE_RINTERNALS
 #include <Rinternals.h>
 
-// #define TIMING_ON
+//#define TIMING_ON
 
 // For dev test only
 
@@ -353,15 +353,15 @@ static union {double d; unsigned long long ll;} u;
 static unsigned long long twiddle(void *p)
 {
     u.d = *(double *)p;
-    if (ISNAN(u.d)) {
-        u.ll = (u.ll & RESET_NA_NAN) | SET_NA_NAN_COMP;  // flip NaN/NA sign bit so that they sort to front (data.table's rule to make binary search easier and consistent)
-    } else {
+    if (R_FINITE(u.d)) {
         //Rprintf("Before: "); binary(u.ll);
-        if (u.ll >> 15 & 0x1)
+        if (u.ll >> 15 & 0x1)   // bit 49
             u.ll = ((u.ll >> 16) + 1) << 16;  // round
         else
             u.ll = (u.ll >> 16) << 16;  // clear final 16 as these interact with mask otherwise, it seems
         //Rprintf(" After: "); binary(u.ll);
+    } else if (ISNAN(u.d)) {
+        u.ll = (u.ll & RESET_NA_NAN) | SET_NA_NAN_COMP;  // flip NaN/NA sign bit so that they sort to front (data.table's rule to make binary search easier and consistent)
     }
     unsigned long long mask = -(long long)(u.ll >> 63) | FLIP_SIGN_BIT;   // leaves bits in lowest 16 (ok, will be skipped)
     //Rprintf("  Mask: "); binary(mask);
@@ -852,8 +852,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
                 TEND(2)
                 // TO DO: if thisgrpn==2
                 if (isReal(x)) {
-                    for (j=0; j<thisgrpn; j++) ((unsigned long long *)xsub)[j] = twiddle(&((double *)xsub)[j]);
                     if (thisgrpn < 200) {
+                        for (j=0; j<thisgrpn; j++) ((unsigned long long *)xsub)[j] = twiddle(&((double *)xsub)[j]);
                         dinsert(xsub, osub, thisgrpn);
                         continue;
                     }
