@@ -33,8 +33,8 @@ NEW FEATURES
 
   o  data.table now imports 'reshape2' and implements a faster S3 method 'melt.data.table' for 
      performing melt operations on data.table, by extending reshape2:::melt. This takes care 
-	 of FR #2627 partially. For example, a benchmark test on 1e7*5 data took 1.25 seconds 
-	 for melt.data.table vs 90 seconds from reshape2:::melt.data.frame. Most settings are 
+	 of FR #2627 partially. For example, a benchmark test on 1e7*5 data took 1.17 seconds 
+	 for melt.data.table vs 61.3 seconds from reshape2:::melt.data.frame. Most settings are 
 	 identical with reshape2::melt.data.frame for compatibility. See ?melt.data.table for more 
 	 details.
 	 
