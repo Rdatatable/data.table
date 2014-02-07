@@ -2,7 +2,7 @@
 #define USE_RINTERNALS
 #include <Rinternals.h>
 
-//#define TIMING_ON
+// #define TIMING_ON
 
 // For dev test only
 
@@ -28,14 +28,14 @@ static void growstack(int newlen) {
 }
 
 static void push(int x) {
-    if (!stackgrps) return;
+    if (!stackgrps || x==0) return;
     if (gsalloc[flip] == gsngrp[flip]) growstack(gsngrp[flip]*2);
     gs[flip][gsngrp[flip]++] = x;
     if (x > gsmax[flip]) gsmax[flip] = x;
 }
 
 static void mpush(int x, int n) {
-    if (!stackgrps) return;
+    if (!stackgrps || x==0) return;
     if (gsalloc[flip] < gsngrp[flip]+n) growstack((gsngrp[flip]+n)*2);
     for (int i=0; i<n; i++) gs[flip][gsngrp[flip]++] = x;
     if (x > gsmax[flip]) gsmax[flip] = x;
@@ -59,14 +59,14 @@ static void gsfree() {
 }
 
 #ifdef TIMING_ON
-  // many calls to clock() can be expensive, hence compiled out rather than switch(verbose) 
+  // many calls to clock() can be expensive, hence compiled out rather than switch(verbose)
   #include <time.h>
-  #define NBLOCK 20
-  static void binary(unsigned long long n);
+  #define NBLOCK 20  
   static clock_t tblock[NBLOCK], tstart;
   static int nblock[NBLOCK];
   #define TBEG() tstart = clock();
   #define TEND(i) tblock[i] += clock()-tstart; nblock[i]++; tstart = clock();
+  static void binary(unsigned long long n);  //utility function for dev, nothing to do with timing, but not used, so avoids compile warning
 #else
   #define TBEG()
   #define TEND(i)
@@ -368,6 +368,11 @@ static unsigned long long twiddle(void *p)
     return(u.ll ^ mask);
 }
 
+// binPrint(SEXP x)   // utility function for dev, to do.
+// for (i=0; i<n; i++) binary( ((unsigned long long *)xd)[i] );
+// Rprintf("\n");
+// for (i=0; i<n; i++) binary( twiddle(&((double *)xd)[i]) );
+
 
 static unsigned int dradixcounts[8][257] = {{0}};
 // reuse the same skip[] as iradix which was allocated for 6 above
@@ -517,41 +522,24 @@ static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix)
     }
 }
 
-// TO DO: dcount.  Find step size, then range = (max-min)/step.  Many fixed precision floats (such as prices) may be suitable.
-//                 However, due to radix skipping, dradix may not be much worse.
+// TO DO?: dcount. Find step size, then range = (max-min)/step and proceed as icount. Many fixed precision floats (such as prices)
+// may be suitable. Fixed precision such as 1.10, 1.15, 1.20, 1.25, 1.30 ... do use all bits so dradix skipping may not help.
 
-static int isorted(int *x, int n)
-{
-    // base:is.unsorted does any(is.na(x)) at R level (inefficient), and returns NA (missing sorted cases where NA are at the start).
-    // Here we deal with NAs in C and return true if NAs are all at the beginning.
-    // We also return -1 if x is sorted in _strictly_ reverse order; a common case we optimize in fastorder.
-    // If a vector is in decreasing order *with ties*, then an in-place reverse (no sort) would result in instability of ties.
-    // For internal use only in fastorder, which now returns NULL if already sorted (hence no need for separate is.sorted).
-    // TO DO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
-    int i=1, tmp;
-    if (n==1) { push(1); return(1); }
-    if (x[1]<x[0]) {
-        i = 2;
-        while (i<n && x[i]<x[i-1]) i++;
-        if (i==n) { mpush(1,n); return(-1);}  // strictly decreasing order, no ties; e.g. no more than one NA at the end
-        else return(0);                       // TO DO: improve to be stable for ties in reverse
-    }
-    int old = gsngrp[flip];
-    int tt = 1;
-    for (i=1; i<n; i++) {
-        tmp = x[i]-x[i-1];
-        if (tmp<0) { gsngrp[flip] = old; return(0); }
-        if (tmp==0) tt++; else { push(tt); tt=1; }
-    }
-    push(tt);
-    return(1);  // increasing order, possibly with ties
-}
 
 static int *cradix_counts = NULL;
 static int cradix_counts_alloc = 0;
-static int maxlen = 0;
+static int maxlen = 1;
 static SEXP *cradix_xtmp = NULL;
 static int cradix_xtmp_alloc = 0;
+
+static int StrCmp(SEXP x, SEXP y)     // a local static copy of StrCmp since countingcharacter.c will mostly be deprecated
+{
+    if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
+    if (x == NA_STRING) return -1;    // x<y
+    if (y == NA_STRING) return 1;     // x>y
+    return strcmp(CHAR(x), CHAR(y));  // can return 0 here for the same string in different encodings (good),
+}                                     // but ordering is ascii only. TO DO: revisit. See scmp in base.
+
 
 static void cradix_r(SEXP *xsub, int n, int radix)
 // xsub is a unique set of CHARSXP, to be ordered by reference
@@ -565,14 +553,21 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 // This part has nothing to do with truelength. The truelength stuff is to do with finding the unique strings.
 {
     int i, j, itmp, *thiscounts, thisgrpn=0, thisx=0;
+    SEXP stmp;
     
     // TO DO?: chmatch to existing sorted vector, then grow it.
     // TO DO?: if (n<200) insert sort, then loop through groups via ==
+    if (n<=1) return;
+    if (n==2) {
+        if (StrCmp(xsub[1],xsub[0])<0) { stmp=xsub[0]; xsub[0]=xsub[1]; xsub[1]=stmp; }
+        return;
+    }
+    // TO DO: if (n<50) cinsert (continuing from radix offset into CHAR) or using StrCmp. But 256 is narrow, so quick and not too much an issue.
     
     thiscounts = cradix_counts + radix*256;
     for (i=0; i<n; i++) {
-        thisx = radix<LENGTH(xsub[i]) ? (int)CHAR(xsub[i])[radix] : 0;
-        thiscounts[ thisx ]++;
+        thisx = xsub[i]==NA_STRING ? 0 : (radix<LENGTH(xsub[i]) ? (int)CHAR(xsub[i])[radix] : 1);
+        thiscounts[ thisx ]++;   // 0 for NA,  1 for ""
     }
     if (thiscounts[thisx] == n && radix < maxlen-1) {   // this also catches when subx has shorter strings than the rest, thiscounts[0]==n and we'll recurse very quickly through to the overall maxlen with no 256 overhead each time
         cradix_r(xsub, n, radix+1);
@@ -583,7 +578,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     for (i=1; i<256; i++)
         if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
     for (i=n-1; i>=0; i--) {
-        thisx = radix<LENGTH(xsub[i]) ? (int)CHAR(xsub[i])[radix] : 0;
+        thisx = xsub[i]==NA_STRING ? 0 : (radix<LENGTH(xsub[i]) ? (int)CHAR(xsub[i])[radix] : 1);
         j = --thiscounts[thisx];
         cradix_xtmp[j] = xsub[i];
     }
@@ -597,7 +592,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     for (i=1;i<256;i++) {
         if (thiscounts[i] == 0) continue;
         thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
-        if (thisgrpn >= 2) cradix_r(xsub+itmp, thisgrpn, radix+1);   // TO DO: cinsert at the top (or here?) and special case thisgrpn==2
+        cradix_r(xsub+itmp, thisgrpn, radix+1);
         itmp = thiscounts[i];
         thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to clear! Also more portable for machines where 0 isn't all bits 0 (?!)
     }
@@ -697,7 +692,7 @@ static void csort_pre(SEXP *x, int n)
     SEXP s;
     int i, old_un, new_un;
     // savetl_init() is called once at the start of forder
-    // maxlen = 0;  initialized to 0, and reset to 0 in csort_post. So that cradix_r knows the maximum radix. 
+    // maxlen = 1;  initialized to 1, and reset to 1 in csort_post. So that cradix_r knows the maximum radix. 1 not 0 for when only "" and NA
     old_un = ustr_n;
     for(i=0; i<n; i++) {
         s = x[i];
@@ -737,13 +732,88 @@ static void csort_pre(SEXP *x, int n)
 }
 
 
-// TO DO: check that tests.Rraw should tests all-"" and all-NA cases.  Does NA_character_ come before ""? (should do).
+// functions to test vectors for sortedness: isorted, dsorted and csorted
+// base:is.unsorted uses any(is.na(x)) at R level (inefficient), and returns NA in the presence of any NA.
+// Hence, here we deal with NAs in C and return true if NAs are all at the beginning (what we need in data.table).
+// We also return -1 if x is sorted in _strictly_ reverse order; a common case we optimize in forder.
+// If a vector is in decreasing order *with ties*, then an in-place reverse (no sort) would result in instability of ties (TO DO).
+// For use by forder only, which now returns NULL if already sorted (hence no need for separate is.sorted).
+// TO DO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
+// These are all sequential access to x, so very quick and cache efficient.
+
+static int isorted(int *x, int n)
+{
+    // Relies on NA_INTEGER==INT_MIN, checked in init.c
+    int i=1, tmp;
+    if (n<=1) { push(n); return(1); }
+    if (x[1]<x[0]) {
+        i = 2;
+        while (i<n && x[i]<x[i-1]) i++;
+        if (i==n) { mpush(1,n); return(-1);}  // strictly decreasing order, no ties; e.g. no more than one NA at the end
+        else return(0);
+    }
+    int old = gsngrp[flip];
+    int tt = 1;
+    for (i=1; i<n; i++) {
+        tmp = x[i]-x[i-1];
+        if (tmp<0) { gsngrp[flip] = old; return(0); }
+        if (tmp==0) tt++; else { push(tt); tt=1; }
+    }
+    push(tt);
+    return(1);  // increasing order, NAs at the beginning, possibly with ties
+}
+
+static int dsorted(double *x, int n)
+{
+    int i=1;
+    unsigned long long prev, this;
+    if (n<=1) { push(n); return(1); }
+    prev = twiddle(&x[0]);
+    this = twiddle(&x[1]);
+    if (this<prev) {
+        i = 2;
+        prev=this;
+        while (i<n && (this=twiddle(&x[i]))<prev) {i++; prev=this; }
+        if (i==n) { mpush(1,n); return(-1);}  // strictly decreasing order, no ties; e.g. no more than one NA at the end
+        else return(0);                       // TO DO: improve to be stable for ties in reverse
+    }
+    int old = gsngrp[flip];
+    int tt = 1;
+    for (i=1; i<n; i++) {
+        this = twiddle(&x[i]);
+        if (this<prev) { gsngrp[flip] = old; return(0); }
+        if (this==prev) tt++; else { push(tt); tt=1; }
+        prev = this;
+    }
+    push(tt);
+    return(1);  // increasing order, possibly with ties
+}
+
+
+static int csorted(SEXP *x, int n)
+{
+    int i=1, tmp;
+    if (n<=1) { push(n); return(1); }
+    if (StrCmp(x[1],x[0])<0) {
+        i = 2;
+        while (i<n && StrCmp(x[i],x[i-1])<0) i++;
+        if (i==n) { mpush(1,n); return(-1);}  // strictly decreasing order, no ties; e.g. no more than one NA at the end
+        else return(0);
+    }
+    int old = gsngrp[flip];
+    int tt = 1;
+    for (i=1; i<n; i++) {
+        tmp = StrCmp(x[i],x[i-1]);
+        if (tmp<0) { gsngrp[flip] = old; return(0); }
+        if (tmp==0) tt++; else { push(tt); tt=1; }
+    }
+    push(tt);
+    return(1);  // increasing order, possibly with ties
+}
 
 
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
-// TO DO: check fast for a unique integer vector such as origorder = iradixorder(firstofeachgroup) in [.data.table ad hoc by (no groups needed).
-// TO DO: attach group sizes to result, if retGrp is TRUE
-// sortChar TRUE from setkey, FALSE from by=
+// sortStr TRUE from setkey, FALSE from by=
 {
     int i, j, k, grp, tmp, *osub, thisgrpn, n, col;
     Rboolean isSorted = TRUE;
@@ -777,43 +847,51 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     int *o = INTEGER(ans);                       // TO DO: save allocation if NULL is returned (isSorted==TRUE)
     xd = DATAPTR(x);
     
-    //for (i=0; i<n; i++) binary( ((unsigned long long *)xd)[i] );
-    //Rprintf("\n");
-    //for (i=0; i<n; i++) binary( twiddle(&((double *)xd)[i]) );
-    
     stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
     
-    if (isString(x)) {
-        if (sortStr) {
-            csort_pre(xd, n);
-            alloc_csort_otmp(n);
-            csort(xd, o, n);
-        } else {
-            cgroup(xd, o, n);
-        }
-        isSorted = FALSE;  // TO DO: check o for sortedness if ccount is fast, or create csorted.
-    } else if (isReal(x)) {
-        dradix(xd, o, n);
-        isSorted = FALSE;
-    } else {
-        if (TYPEOF(x) != INTSXP && TYPEOF(x) != LGLSXP) error("First column being ordered is type '%s', not yet supported", type2char(TYPEOF(x)));
-        if ((tmp = isorted(xd, n))) {
-            if (tmp==1) {
-                isSorted = TRUE;
-                for (i=0; i<n; i++) o[i] = i+1;
-            }
-            else {  // tmp==-1, strictly decreasing
-                isSorted = FALSE;
-                for (i=0; i<n; i++) o[i] = n-i;
-            }
-        } else {
+    switch(TYPEOF(x)) {
+    case INTSXP : case LGLSXP :
+        tmp = isorted(xd, n); break;
+    case REALSXP :
+        tmp = dsorted(xd, n); break;
+    case STRSXP :
+        tmp = csorted(xd, n); break;
+    default :
+        error("First column being ordered is type '%s', not yet supported", type2char(TYPEOF(x)));
+    }
+    if (tmp) {  // -1 or 1
+        if (tmp==1) {
+            isSorted = TRUE;
+            for (i=0; i<n; i++) o[i] = i+1;
+        } else {  // -1 (or -n for result of strcmp), strictly decreasing
             isSorted = FALSE;
+            for (i=0; i<n; i++) o[i] = n-i;
+        }
+    } else {
+        isSorted = FALSE;
+        switch(TYPEOF(x)) {
+        case INTSXP : case LGLSXP :
             setRange(xd, n);
             if (range == NA_INTEGER) error("The all-NA case should have been caught by isorted above");
-            if (range <= 100000)
+            if (range <= 100000)   // TO DO: wrap up into one isort function.  The issue to resolve is that iinsert reorders o, whereas count and radix write into o,   and whether 10,000 or 100,000 when iterated.
                 icount(xd, o, n);
             else
                 iradix(xd, o, n);
+            break;
+        case REALSXP :
+            dradix(xd, o, n);
+            break;
+        case STRSXP :
+            if (sortStr) {
+                csort_pre(xd, n);
+                alloc_csort_otmp(n);
+                csort(xd, o, n);
+            } else {
+                cgroup(xd, o, n);
+            }
+            break;
+        default :
+            error("Internal error: previous default should have caught unsupported type");
         }
     }
     TEND(0)
@@ -929,7 +1007,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     if (!sortStr && ustr_n!=0) error("Internal error: at the end of forder sortStr==FALSE but ustr_n!=0 [%d]", ustr_n);
     for(int i=0; i<ustr_n; i++)
         SET_TRUELENGTH(ustr[i],0);
-    maxlen = 0;  // reset global
+    maxlen = 1;  // reset global. Minimum needed to count "" and NA
     ustr_n = 0;
     savetl_end();  // hence important no early returns or error()s above. TO DO: wrap error() with globError() to clear up.
     free(ustr);                ustr=NULL;          ustr_alloc=0;
@@ -990,6 +1068,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
 #ifdef TIMING_ON
 static void binary(unsigned long long n)
 // trace utility for dev, since couldn't get stdlib::atoi() to link
+// nothing to do with TIMING, but it isn't used so inside TIMING_ON (for dev) avoids not-used compile warning
 {
     int sofar = 0;
     for(int shift=sizeof(long long)*8-1; shift>=0; shift--)
@@ -1003,4 +1082,5 @@ static void binary(unsigned long long n)
     printf("\n");
 }
 #endif
+
 

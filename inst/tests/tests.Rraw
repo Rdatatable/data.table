@@ -41,7 +41,7 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
     #    from all.equal and different to identical related to row.names and unused factor levels
     # 3) each test has a unique id which we refer to in commit messages, emails etc.
-    print(paste0("running test #", num))
+    # print(paste0("running test #", num))
     .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
@@ -3677,6 +3677,19 @@ Ct = 214L, Wt = 100.001, CtTotRet = 406.26, TotRet = 406.255937440626), .Names =
 
 ans <- rbind(tmp1, tmp2)
 test(1168.2, as.data.frame(ans), rbind(as.data.frame(tmp1), as.data.frame(tmp2)))
+
+# checks of "" and NA_character_ ordering.
+test(1169, forder(c(NA,"","a","NA")), INT(1,2,4,3))  # data.table does ascii ordering currently, so N comes before a
+test(1170, forder(c(NA,"","NA","a")), NULL)
+test(1171, forder(c("",NA,"a","NA")), INT(2,1,4,3))
+test(1172, forder(NA_character_), NULL)
+test(1173, forder(c(NA_character_,NA_character_)), NULL)
+test(1174, forder(c(NA_character_,NA_character_,NA_character_)), NULL)
+test(1175, forder(""), NULL)
+test(1176, forder(c("","")), NULL)
+test(1177, forder(c("","","")), NULL)
+test(1178, forder(c("",NA,"")), INT(2,1,3))
+
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
