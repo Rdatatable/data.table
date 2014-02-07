@@ -3690,9 +3690,19 @@ test(1176, forder(c("","")), NULL)
 test(1177, forder(c("","","")), NULL)
 test(1178, forder(c("",NA,"")), INT(2,1,3))
 
+# Test no invalid sort order warning when key is ok and 2nd colum is character/double
+DT = CJ(a=rep(1:3),b=c("a","b"))
+test(1179.1, key(DT), c("a","b"))
+test(1179.2, setkey(DT), DT)  # i.e. no warning
+DT = CJ(a=rep(1:3),b=c(3.14,3.15))
+test(1180.1, key(DT), c("a","b"))
+test(1180.2, setkey(DT), DT)  # i.e. no warning
 
-# tests of freading classes like Date and the verbose messages there.
-# Test mid read bump of logical T/F to character, collapse back to T and F.
+
+##########################
+
+# TO DO: tests of freading classes like Date and the verbose messages there.
+# TO DO: Test mid read bump of logical T/F to character, collapse back to T and F.
 
 # TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
