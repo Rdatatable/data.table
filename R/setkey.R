@@ -37,8 +37,8 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
         if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
-    o = fastorder(x, cols, verbose=verbose)
-    # o = forder(x, cols, sortStr=TRUE, retGrp=FALSE)
+    # o = fastorder(x, cols, verbose=verbose)
+    o = forder(x, cols, sortStr=TRUE, retGrp=FALSE)
     if (!is.null(o)) {
         if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
         .Call(Creorder,x,o)
