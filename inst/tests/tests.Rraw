@@ -3605,9 +3605,7 @@ setreordervec(y, o)
 test(1161.3, x[o], y)
 
 # tests for setreordervec
-if (!.devtesting) {
-    is.sorted <- data.table:::is.sorted
-}
+if (!.devtesting) is.sorted <- data.table:::is.sorted
 DT <- data.table(x=sample(c(NA, -10:10), 2e2, TRUE), 
       y=sample(c(NA, NaN, -Inf, Inf, -10:10), 2e2, TRUE), 
       z=sample(c(NA, letters), 2e2, TRUE))
@@ -3679,6 +3677,7 @@ ans <- rbind(tmp1, tmp2)
 test(1168.2, as.data.frame(ans), rbind(as.data.frame(tmp1), as.data.frame(tmp2)))
 
 # checks of "" and NA_character_ ordering.
+if (!.devtesting) forder <- data.table:::forder
 test(1169, forder(c(NA,"","a","NA")), INT(1,2,4,3))  # data.table does ascii ordering currently, so N comes before a
 test(1170, forder(c(NA,"","NA","a")), NULL)
 test(1171, forder(c("",NA,"a","NA")), INT(2,1,4,3))
