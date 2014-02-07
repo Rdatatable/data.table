@@ -4,10 +4,8 @@
 
 // #define TIMING_ON
 
-// For dev test only
-
-// Only fastorder() is meant for use by other C code in data.table, hence all functions here other than fastorder are static.
-// They make use of global variables, so access must be via fastorder only.
+// Only forder() is meant for use by other C code in data.table, hence all functions here other than forder are static.
+// They make use of global variables, so access must be via forder only.
 // The coding techniques deployed here are for efficiency.
 
 static int *gs[2] = {NULL};    // gs = groupsizes e.g. 23,12,87,2,1,34,...
@@ -18,6 +16,10 @@ static int gsmax[2] = {0};     // max grpn so far
 static int gsmaxalloc = 0;     // max size of stack, set by forder to nrows
 static Rboolean stackgrps = TRUE;  // switched off for last column when not needed by setkey
 static Rboolean sortStr = TRUE;    // TRUE for setkey, FALSE for by=
+static int *newo = NULL;       // used by forder and [i|d|c]sort to reorder order. not needed if length(by)==1
+
+extern int sizes[];             // See dogroups.c for this shared variable
+#define SIZEOF(x) sizes[TYPEOF(x)]
 
 static void growstack(int newlen) {
     if (newlen==0) newlen=100000;   // no link to icount range restriction, just 100,000 seems a good minimum at 0.4MB.
@@ -71,8 +73,6 @@ static void gsfree() {
   #define TBEG()
   #define TEND(i)
 #endif
-
-
 
 static int range, off;   // used by both icount and forder
 
@@ -162,7 +162,6 @@ static void iinsert(int *x, int *o, int n)
     push(tt+1);
 }
 
-
 /*
  iradix is a counting sort performed forwards from MSB to LSB, with some tricks and short circuits building on Terdiman and Herf.
   http://codercorner.com/RadixSortRevisited.htm 
@@ -203,9 +202,6 @@ static void alloc_xtmp(int n) {        // TO DO: currently always the largest ty
     if (xtmp == NULL) error("Failed to allocate working memory for xtmp. Requested %d * %d bytes", n, sizeof(double));
     xtmp_alloc = n;
 }
-    
-
-
 
 static void iradix_r(int *xsub, int *osub, int n, int radix);
 
@@ -286,7 +282,6 @@ static void iradix(int *x, int *o, int n)
     }
 }
 
-
 static void iradix_r(int *xsub, int *osub, int n, int radix)
     // xsub is a recursive offset into xsub working memory above in iradix, reordered by reference.
     // osub is a an offset into the main answer o, reordered by reference.
@@ -339,7 +334,6 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
     }
 }
 
-
 // dradix from Arun's fastradixdouble.c
 // + changed to MSD and hooked into forder framework here.
 // + replaced tolerance with rounding s.f.
@@ -372,7 +366,6 @@ static unsigned long long twiddle(void *p)
 // for (i=0; i<n; i++) binary( ((unsigned long long *)xd)[i] );
 // Rprintf("\n");
 // for (i=0; i<n; i++) binary( twiddle(&((double *)xd)[i]) );
-
 
 static unsigned int dradixcounts[8][257] = {{0}};
 // reuse the same skip[] as iradix which was allocated for 6 above
@@ -525,7 +518,6 @@ static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix)
 // TO DO?: dcount. Find step size, then range = (max-min)/step and proceed as icount. Many fixed precision floats (such as prices)
 // may be suitable. Fixed precision such as 1.10, 1.15, 1.20, 1.25, 1.30 ... do use all bits so dradix skipping may not help.
 
-
 static int *cradix_counts = NULL;
 static int cradix_counts_alloc = 0;
 static int maxlen = 1;
@@ -539,7 +531,6 @@ static int StrCmp(SEXP x, SEXP y)     // a local static copy of StrCmp since cou
     if (y == NA_STRING) return 1;     // x>y
     return strcmp(CHAR(x), CHAR(y));  // can return 0 here for the same string in different encodings (good),
 }                                     // but ordering is ascii only. TO DO: revisit. See scmp in base.
-
 
 static void cradix_r(SEXP *xsub, int n, int radix)
 // xsub is a unique set of CHARSXP, to be ordered by reference
@@ -641,10 +632,11 @@ static void cgroup(SEXP *x, int *o, int n)
         push(-TRUELENGTH(ustr[i]));                            
         SET_TRUELENGTH(ustr[i], cumsum += -TRUELENGTH(ustr[i]));
     }
+    int *target = o[0] ? newo : o;
     for(i=n-1; i>=0; i--) {                     
         s = x[i];                                            // 0.400 (page fetches on string cache)
         SET_TRUELENGTH(s, k = TRUELENGTH(s)-1);
-        o[k] = i+1;                                          // 0.800 (random access to o)
+        target[k] = i+1;                                     // 0.800 (random access to o)
     }
     for(i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i],0);     // The cummulate meant counts are left non zero, so reset for next time (0.00s).
     ustr_n = 0;
@@ -669,16 +661,17 @@ static void csort(SEXP *x, int *o, int n)
     // can't use otmp, since iradix might be called here and that uses otmp (and xtmp).
     // alloc_csort_otmp(n) is called from forder for either n=nrow if 1st column, or n=maxgrpn if onwards columns
     for(i=0; i<n; i++) csort_otmp[i] = -TRUELENGTH(x[i]);
-    if (n<200) {   // TO DO: calibrate()
-        for (i=0; i<n; i++) o[i] = i+1;  // TO DO: use o from caller directly if not 1st column
+    if (n<200) {   // TO DO: calibrate() 200
+        if (o[0]==0) for (i=0; i<n; i++) o[i] = i+1;  // else use o from caller directly (not 1st column)
         iinsert(csort_otmp, o, n);
     } else {
         setRange(csort_otmp, n);
         if (range == NA_INTEGER) error("Internal error. csort's otmp contains all-NA");
-        if (range <= 10000)   // 1e4 rather than 1e5, see comment below.  TO DO: consolidate
-            icount(csort_otmp, o, n);
+        int *target = o[0] ? newo : o; 
+        if (range<=10000) // && range<n)  TO DO: calibrate(). radix was faster (9.2s "range<=10000" instead of 11.6s "range<=100000 && range<n") for run(7) where range=100000 n=10000000
+            icount(csort_otmp, target, n);
         else
-            iradix(csort_otmp, o, n);
+            iradix(csort_otmp, target, n);
     }
     // all i* push onto stack. Using their counts may be faster here than thrashing SEXP fetches over several passes as cgroup does
     // (but cgroup needs that to keep orginal order, and cgroup saves the sort in csort_pre).
@@ -731,7 +724,6 @@ static void csort_pre(SEXP *x, int n)
         SET_TRUELENGTH(ustr[i], -i-1);
 }
 
-
 // functions to test vectors for sortedness: isorted, dsorted and csorted
 // base:is.unsorted uses any(is.na(x)) at R level (inefficient), and returns NA in the presence of any NA.
 // Hence, here we deal with NAs in C and return true if NAs are all at the beginning (what we need in data.table).
@@ -744,7 +736,7 @@ static void csort_pre(SEXP *x, int n)
 static int isorted(int *x, int n)
 {
     // Relies on NA_INTEGER==INT_MIN, checked in init.c
-    int i=1, tmp;
+    int i=1;
     if (n<=1) { push(n); return(1); }
     if (x[1]<x[0]) {
         i = 2;
@@ -755,9 +747,8 @@ static int isorted(int *x, int n)
     int old = gsngrp[flip];
     int tt = 1;
     for (i=1; i<n; i++) {
-        tmp = x[i]-x[i-1];
-        if (tmp<0) { gsngrp[flip] = old; return(0); }
-        if (tmp==0) tt++; else { push(tt); tt=1; }
+        if (x[i]<x[i-1]) { gsngrp[flip] = old; return(0); }
+        if (x[i]==x[i-1]) tt++; else { push(tt); tt=1; }
     }
     push(tt);
     return(1);  // increasing order, NAs at the beginning, possibly with ties
@@ -789,7 +780,6 @@ static int dsorted(double *x, int n)
     return(1);  // increasing order, possibly with ties
 }
 
-
 static int csorted(SEXP *x, int n)
 {
     int i=1, tmp;
@@ -811,6 +801,35 @@ static int csorted(SEXP *x, int n)
     return(1);  // increasing order, possibly with ties
 }
 
+static void isort(int *x, int *o, int n)
+{
+    if (n<=2) error("Internal error: isort received n=%d. isorted should have dealt with this (e.g. as a reverse sorted vector) already",n);
+    if (n<200 && o[0]) {    // see comment above in iradix_r re 200.
+        // if not o[0] then can't just populate with 1:n here, since x is changed by ref too (so would need to be copied).
+        iinsert(x, o, n);  // pushes inside too.  changes x and o by reference, so not suitable in first column when o hasn't been populated yet and x is the actual column in DT (hence check on o[0])
+        return;
+    }
+    setRange(x, n);   // Tighter range (e.g. copes better with a few abormally large values in some groups), but also, when setRange was once at colum level that caused an extra scan of (long) x first. 10,000 calls to setRange takes just 0.04s i.e. negligible.
+    if (range==NA_INTEGER) error("Internal error: isort passed all-NA. isorted should have caught this before this point");
+    int *target = o[0] ? newo : o;
+    if (range<=100000 && range<n) {   // was range<10000 for subgroups, but 1e5 for the first column, tried to generalise here.  1e4 rather than 1e5 here because iterated
+        icount(x, target, n);
+    } else {                    // was (thisgrpn < 200 || range > 20000) then radix
+        iradix(x, target, n);   // a short vector with large range can bite icount when iterated (BLOCK 4 and 6)
+    }
+    // TO DO: add calibrate() to init.c
+}
+
+static void dsort(double *x, int *o, int n)
+{
+    if (n<=2) error("Internal error: dsort received n=%d. dsorted should have dealt with this (e.g. as a reverse sorted vector) already",n); 
+    if (n<200 && o[0]) {    // see comment above in iradix_r re 200,  and isort for o[0]
+        for (int i=0; i<n; i++) ((unsigned long long *)x)[i] = twiddle(&x[i]);
+        dinsert((unsigned long long *)x, o, n);
+    } else {
+        dradix(x, o[0] ? newo : o, n);
+    }
+}
 
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
 // sortStr TRUE from setkey, FALSE from by=
@@ -845,6 +864,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     
     SEXP ans = PROTECT(allocVector(INTSXP, n));  // once for the result, needs to be length n.
     int *o = INTEGER(ans);                       // TO DO: save allocation if NULL is returned (isSorted==TRUE)
+    o[0] = 0;  // so [i|c|d]sort know they can populate o directly with no working memory needed to reorder existing order
     xd = DATAPTR(x);
     
     stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
@@ -862,7 +882,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     if (tmp) {  // -1 or 1
         if (tmp==1) {
             isSorted = TRUE;
-            for (i=0; i<n; i++) o[i] = i+1;
+            for (i=0; i<n; i++) o[i] = i+1;   // TO DO: we don't need this if returning NULL? Save it? Unlikely huge gain, though.
         } else {  // -1 (or -n for result of strcmp), strictly decreasing
             isSorted = FALSE;
             for (i=0; i<n; i++) o[i] = n-i;
@@ -871,24 +891,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
         isSorted = FALSE;
         switch(TYPEOF(x)) {
         case INTSXP : case LGLSXP :
-            setRange(xd, n);
-            if (range == NA_INTEGER) error("The all-NA case should have been caught by isorted above");
-            if (range <= 100000)   // TO DO: wrap up into one isort function.  The issue to resolve is that iinsert reorders o, whereas count and radix write into o,   and whether 10,000 or 100,000 when iterated.
-                icount(xd, o, n);
-            else
-                iradix(xd, o, n);
+            isort(xd, o, n); break;
             break;
         case REALSXP :
-            dradix(xd, o, n);
-            break;
+            dsort(xd, o, n); break;
         case STRSXP :
-            if (sortStr) {
-                csort_pre(xd, n);
-                alloc_csort_otmp(n);
-                csort(xd, o, n);
-            } else {
-                cgroup(xd, o, n);
-            }
+            if (sortStr) { csort_pre(xd, n); alloc_csort_otmp(n); csort(xd, o, n); }
+            else cgroup(xd, o, n);
             break;
         default :
             error("Internal error: previous default should have caught unsupported type");
@@ -897,15 +906,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     TEND(0)
     
     int maxgrpn = gsmax[flip];  // biggest group in the first column
-    // TO DO: if more columns {
-    void *xsub = (void *)malloc(maxgrpn * sizeof(double));   // double is the largest type, 8. TO DO: check in init.c
-    if (xsub==NULL) error("Couldn't allocate xsub in forder. TO DO: improve error message.");
-    int *newo = (int *)malloc(maxgrpn * sizeof(int));
-    if (newo==NULL) error("Couldn't allocate newo in forder. TO DO: improve error message.");
-    // }
+    void *xsub = NULL;  // local to forder
+    int (*f)(); void (*g)();
     
-    TEND(1)
-    void (*f)();
+    if (length(by)>1 && gsngrp[flip]<n) {
+        xsub = (void *)malloc(maxgrpn * sizeof(double));   // double is the largest type, 8. TO DO: check in init.c
+        if (xsub==NULL) error("Couldn't allocate xsub in forder, requested %d * %d bytes.", maxgrpn, sizeof(double));
+        newo = (int *)malloc(maxgrpn * sizeof(int));  // global variable, used by isort, dsort, sort and cgroup
+        if (newo==NULL) error("Couldn't allocate newo in forder, requested %d * %d bytes.", maxgrpn, sizeof(int));
+    }
+    TEND(1)  // should be negligible time to malloc even large blocks, but time it anyway to be sure
     
     for (col=2; col<=length(by); col++) {
         x = VECTOR_ELT(DT,INTEGER(by)[col-1]-1);
@@ -914,86 +924,64 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
         if (ngrp == n) break;
         flipflop();
         stackgrps = col!=LENGTH(by) || LOGICAL(retGrp)[0];
+        switch(TYPEOF(x)) {
+        case INTSXP : case LGLSXP :
+            f = &isorted; g = &isort; break;
+        case REALSXP :
+            f = &dsorted; g = &dsort; break;
+        case STRSXP :
+            f = &csorted;
+            if (sortStr) { csort_pre(xd, n); alloc_csort_otmp(gsmax[flip-1]); g = &csort; }
+            else g = &cgroup;
+            break;
+        default:
+           error("Column %d of 'by' (%d) is type '%s', not yet supported", col, INTEGER(by)[col-1], type2char(TYPEOF(x)));
+        }
+        int size = SIZEOF(x);
+        if (size!=4 && size!=8) error("Column %d of 'by' is supported type '%s' but size (%d) isn't 4 or 8\n", col, type2char(TYPEOF(x)), size);
+        // sizes of int and double are checked to be 4 and 8 respectively in init.c
         i = 0;
-        if (isString(x) || isReal(x)) {
-            if (isString(x)) {
-               if (sortStr) { csort_pre(xd, n); alloc_csort_otmp(maxgrpn); f = &csort; }
-               else { f = &cgroup; }
-            } else f = &dradix;  
-            isSorted = FALSE;  // TO DO: include csorted and dsorted
-            for (grp=0; grp<ngrp; grp++) {
-                thisgrpn = gs[1-flip][grp];
-                if (thisgrpn == 1) {i++; push(1); continue;}
-                TBEG()
-                osub = o+i;
-                for (j=0; j<thisgrpn; j++) ((SEXP *)xsub)[j] = ((SEXP *)xd)[o[i++]-1];  // same size as double. TO DO: tidy and 32bit
-                TEND(2)
-                // TO DO: if thisgrpn==2
-                if (isReal(x)) {
-                    if (thisgrpn < 200) {
-                        for (j=0; j<thisgrpn; j++) ((unsigned long long *)xsub)[j] = twiddle(&((double *)xsub)[j]);
-                        dinsert(xsub, osub, thisgrpn);
-                        continue;
-                    }
-                }
-                (*f)(xsub, newo, thisgrpn);
-                TEND(3)
-                for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = osub[ newo[j]-1 ];   // reuse xsub to reorder osub
-                memcpy(osub, xsub, thisgrpn*sizeof(int));
-                TEND(4)
-            }
-        } else {
-            if (TYPEOF(x) != INTSXP && TYPEOF(x) != LGLSXP) error("Column %d being ordered is type '%s', not yet supported", col, type2char(TYPEOF(x)));
-            for (grp=0; grp<ngrp; grp++) {
-                thisgrpn = gs[1-flip][grp];
-                if (thisgrpn == 1) {i++; push(1); continue;}
-                TBEG()
-                osub = o+i;
+        for (grp=0; grp<ngrp; grp++) {
+            thisgrpn = gs[1-flip][grp];
+            if (thisgrpn == 1) {i++; push(1); continue;}
+            TBEG()
+            osub = o+i;
+            // TO DO: if isSorted,  we can just point xsub into x directly. If (*f)() returns 0, though, will have to copy x at that point
+            //        When doing this,  xsub could be allocated at that point for the first time.
+            if (size==4)
                 for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = ((int *)xd)[o[i++]-1];
-                TEND(5)
-              
-                // continue;  // BASELINE short circuit timing point. Up to here is the cost of creating xsub.
-              
-                if (thisgrpn==2) {
-                    if (((int *)xsub)[1]<((int *)xsub)[0]) { isSorted=FALSE; tmp=osub[0]; osub[0]=osub[1]; osub[1]=tmp; }
-                    push(1); push(1);
-                    continue;
-                }
-                tmp = isorted(xsub, thisgrpn);  // very low cost and localised to thisgrp
-                TEND(6)
-                if (tmp) {
-                    // isorted will have already push()'d the groups
-                    if (tmp<0) {
-                        isSorted = FALSE;
-                        for (k=0;k<thisgrpn/2;k++) {      // reverse the order in-place using no function call or working memory 
-                            tmp = osub[k];                // isorted only returns -1 for _strictly_ decreasing order, otherwise ties wouldn't be stable
-                            osub[k] = osub[thisgrpn-1-k];
-                            osub[thisgrpn-1-k] = tmp;
-                        }
-                        TEND(7)
+            else
+                for (j=0; j<thisgrpn; j++) ((double *)xsub)[j] = ((double *)xd)[o[i++]-1];
+            TEND(2)
+            
+            // continue;  // BASELINE short circuit timing point. Up to here is the cost of creating xsub.
+            
+            tmp = (*f)(xsub, thisgrpn);     // [i|d|c]sorted(); very low cost, sequential
+            TEND(3)
+            
+            if (tmp) {
+                // *sorted will have already push()'d the groups
+                if (tmp==-1) {
+                    isSorted = FALSE;
+                    for (k=0;k<thisgrpn/2;k++) {      // reverse the order in-place using no function call or working memory 
+                        tmp = osub[k];                // isorted only returns -1 for _strictly_ decreasing order, otherwise ties wouldn't be stable
+                        osub[k] = osub[thisgrpn-1-k];
+                        osub[thisgrpn-1-k] = tmp;
                     }
-                    continue;
+                    TEND(4)
                 }
-                isSorted = FALSE;
-                if (thisgrpn<200) {    // see comment above in iradix_r re 200.
-                    iinsert(xsub, osub, thisgrpn);  // pushes inside too
-                    TEND(8)
-                    continue;
-                }
-                setRange((int *)xsub, thisgrpn);   // Tighter range (e.g. copes better with a few abormally large values in some groups), but also, when setRange was once at colum level that caused an extra scan of (long) x first. 10,000 calls to setRange takes just 0.04s i.e. negligible.
-                if (range==NA_INTEGER) error("2nd column is all NA in this subgroup. issorted should have caught this above");
-                TEND(9)
-                if (range < 10000) {   // 1e4 rather than 1e5 here because iterated
-                    icount(xsub, newo, thisgrpn);  
-                    TEND(10)
-                } else {                            // was (thisgrpn < 200 || range > 20000) then radix
-                    iradix(xsub, newo, thisgrpn);   // since a short vector with large range can bite icount when iterated (BLOCK 4 and 6)
-                    TEND(11)                         // TO DO: add calibrate() to init.c
-                }
-                for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = osub[ newo[j]-1 ];   // reuse xsub to reorder osub
-                memcpy(osub, xsub, thisgrpn*sizeof(int));
-                TEND(12)
+                continue;
             }
+            isSorted = FALSE;
+            newo[0] = 0;
+            (*g)(xsub, osub, thisgrpn);  // may update osub directly, or if not will put the result in global newo
+            TEND(5)
+            
+            if (newo[0]) {
+                for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = osub[ newo[j]-1 ];   // reuse xsub to reorder osub
+                memcpy(osub, xsub, thisgrpn*sizeof(int));            
+            }
+            TEND(6)
         }
     }
 #ifdef TIMING_ON
