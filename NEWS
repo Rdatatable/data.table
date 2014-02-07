@@ -359,6 +359,11 @@ BUG FIXES
      to wrong result. This closes #5307. Thanks to Clayton Stanley for reporting on SO: 
      http://stackoverflow.com/questions/21437546/data-table-1-8-11-and-aggregation-issues
 
+  o  `rbindlist` with at least one factor column along with the presence of at least one empty data.table resulted in 
+     segfault (or in linux/mac reported an error related to hash tables). This is now fixed, #5355. Thanks to Trevor 
+     Alexander for reporting on SO (and mnel for filing the bug report): 
+     http://stackoverflow.com/questions/21591433/merging-really-not-that-large-data-tables-immediately-results-in-r-being-killed
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.

@@ -4,6 +4,8 @@
 #include <Rdefines.h>
 #include <Rversion.h>
 #include <stdint.h>
+// #include <signal.h> // the debugging machinery + breakpoint aidee
+// raise(SIGINT);
 
 int sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
@@ -330,7 +332,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
 
 SEXP rbindlist(SEXP l)
 {
-    R_len_t i,j,r, nrow=0, first=-2, ansloc, ncol=0, thislen;
+    R_len_t i,j,jj,r, nrow=0, first=-1, ansloc, ncol=0, thislen, lcount=0;
     SEXP ans, li, lf=R_NilValue, thiscol, target, levels;
     size_t size; // to avoid bug #5305 - integer overflow in memcpy (changed from (previously) 'int')
     Rboolean coerced=FALSE;
@@ -339,33 +341,24 @@ SEXP rbindlist(SEXP l)
     Rboolean * isRowOrdered = NULL;
     SEXPTYPE type;
     SEXP factorLevels = R_NilValue, finalFactorLevels;
-    
+
+    ncol = length(VECTOR_ELT(l, 0)); // to take care of all empty data.tables
     for (i=0;i<length(l);i++) {
         li = VECTOR_ELT(l,i);
         if (isNull(li)) continue;
         if (TYPEOF(li) != VECSXP) error("Item %d of list input is not a data.frame, data.table or list",i+1);
-        if (!LENGTH(li)) continue;
-        if (!length(VECTOR_ELT(li,0))) {
-            if (first == -2) {
-                // will take the names of the first list that has them, until find the first non-empty one
-                first = -1;
-                lf = li;
-                ncol = length(lf);
-            }
-            continue;
-        }
-        if (first <= -1) {
+        if (!LENGTH(li) || !length(VECTOR_ELT(li,0))) continue;
+        lcount++; // to get the count of non-empty data.tables
+        // we'll skip empty data.tables entirely. The case where all are empty is taken care of underneath this loop.
+        // so we don't need 'first == -2' here. ncol is set before the loop to take care of all empty data.tables
+        if (first == -1) {
             first = i;   // First non-empty list/data.frame/data.table
             lf = li;
             ncol = length(lf);
 
-            // initialize factorLevels - will keep factor levels for factors and the entire column for everything else
-            factorLevels = PROTECT(allocVector(VECSXP, LENGTH(l)));
-
             // initialize the max types - will possibly increment later
             maxtype = malloc(ncol * sizeof(SEXPTYPE));
             isColFactor = malloc(ncol * sizeof(int));
-            isRowOrdered = malloc(LENGTH(l) * sizeof(Rboolean));
             for (j = 0; j < ncol; ++j) {
                 thiscol = VECTOR_ELT(li, j);
                 if (isFactor(thiscol)) {
@@ -380,10 +373,12 @@ SEXP rbindlist(SEXP l)
                     maxtype[j] = TYPEOF(VECTOR_ELT(lf, j));
                 }
             }
+            nrow += LENGTH(VECTOR_ELT(li,0));
+            continue;
         } else {
             if (length(li) != ncol) error("Item %d has %d columns, inconsistent with item %d which has %d columns",i+1,length(li),first+1,ncol);
         }
-        nrow+=LENGTH(VECTOR_ELT(li,0));
+        nrow += LENGTH(VECTOR_ELT(li,0));
 
         for (j = 0; j < ncol; ++j) {
             if (isColFactor[j] == 2) continue;
@@ -409,6 +404,12 @@ SEXP rbindlist(SEXP l)
         // TO DO: to verify that base:::rbind gives the same outout (ex: on factor levels)
     }
 
+    // initialize factorLevels - will keep factor levels for factors and the entire column for everything else
+    // these two statements are moved here from the above for-loop. Because 'lcount' will be known only after the for-loop above.
+    // http://stackoverflow.com/questions/21591433/merging-really-not-that-large-data-tables-immediately-results-in-r-being-killed
+    factorLevels = PROTECT(allocVector(VECSXP, lcount));
+    isRowOrdered = malloc(lcount * sizeof(Rboolean));
+
     PROTECT(ans = allocVector(VECSXP, ncol));
     setAttrib(ans, R_NamesSymbol, getAttrib(lf, R_NamesSymbol));
     for(j=0; j<ncol; j++) {
@@ -418,7 +419,8 @@ SEXP rbindlist(SEXP l)
           copyMostAttrib(thiscol, target);  // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
 
         SET_VECTOR_ELT(ans, j, target);
-        ansloc = 0;
+        ansloc = 0; 
+        jj=0; // to increment factorLevels 
         for (i=first; i<length(l); i++) {
             li = VECTOR_ELT(l,i);
             if (!length(li)) continue;  // majority of time though, each item of l is populated
@@ -445,14 +447,19 @@ SEXP rbindlist(SEXP l)
                             SET_STRING_ELT(target, ansloc+r, STRING_ELT(levels,INTEGER(thiscol)[r]-1));
 
                     // add levels to factorLevels
-                    SET_VECTOR_ELT(factorLevels, i, levels);
+                    // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
+                    SET_VECTOR_ELT(factorLevels, jj, levels); jj++;
                     if (isOrdered(thiscol)) isRowOrdered[i] = TRUE;
                 } else {
                     if (TYPEOF(thiscol) != STRSXP) error("Internal logical error in rbindlist.c (not STRSXP), please report to datatable-help.");
                     for (r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
 
                     // if this column is going to be a factor, add column to factorLevels
-                    if (isColFactor[j]) SET_VECTOR_ELT(factorLevels, i, thiscol);
+                    // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
+                    if (isColFactor[j]) {
+                        SET_VECTOR_ELT(factorLevels, jj, thiscol);
+                        jj++;
+                    }
                     // removed 'coerced=FALSE; UNPROTECT(1)' as it resulted in a stack imbalance.
                     // anyways it's taken care of after the switch. So no need here.
                 }
