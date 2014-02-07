@@ -342,7 +342,7 @@ SEXP rbindlist(SEXP l)
     SEXPTYPE type;
     SEXP factorLevels = R_NilValue, finalFactorLevels;
 
-    ncol = length(VECTOR_ELT(l, 0)); // to take care of all empty data.tables
+    if (length(l)) ncol = length(VECTOR_ELT(l, 0)); // to take care of all empty data.tables
     for (i=0;i<length(l);i++) {
         li = VECTOR_ELT(l,i);
         if (isNull(li)) continue;
