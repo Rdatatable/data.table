@@ -352,8 +352,8 @@ BUG FIXES
 
   o  Fixed #5117 - segfault when `rbindlist` on empty data.tables. Thanks to Garrett See for reporting.
 
-  o  Fixed a rare segfault on grouping (with 'by') that occurred on >250m rows; closes #5305. Thanks to 
-     Guenter J. Hitsch for reporting.
+  o  Fixed a rare segfault that occurred on >250m rows (integer overflow during memory allocation); closes #5305. 
+     Thanks to Guenter J. Hitsch for reporting.
 
   o  Fixed a bug that arose due to recent fixes to fastorder, where aggregating with logical type at times lead to 
      to wrong result. This closes #5307. Thanks to Clayton Stanley for reporting on SO: 
