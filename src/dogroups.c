@@ -200,16 +200,27 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                        size);
                 }
             } else {
-                for (k=0; k<grpn; k++) {
-                    rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                    for (j=0; j<length(SD); j++) {
-                        size = SIZEOF(VECTOR_ELT(SD,j));
-                        memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)) + k*size,
-                           (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1)) + rownum*size,
-                           size);
-                        // to fix bug here: http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by   
-                        setAttrib(VECTOR_ELT(SD,j), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), R_ClassSymbol));
+                for (j=0; j<length(SD); j++) {
+                    size = SIZEOF(VECTOR_ELT(SD,j));
+                    if (size==4) {
+                        for (k=0; k<grpn; k++) {
+                            rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
+                            INTEGER(VECTOR_ELT(SD,j))[k] = INTEGER(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))[rownum];  // copies pointers on 32bit too
+                            if (j==0) INTEGER(I)[k] = rownum+1;   // faster here (despite 'if'), while order has been fetched
+                        }
+                    } else {  // size 8 
+                        for (k=0; k<grpn; k++) {
+                            rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
+                            REAL(VECTOR_ELT(SD,j))[k] = REAL(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))[rownum];  // copies pointers on 64bit too
+                            if (j==0) INTEGER(I)[k] = rownum+1;
+                        }
                     }
+                    // TO DO: Why this setAttrib even this deep?
+                    setAttrib(VECTOR_ELT(SD,j), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), R_ClassSymbol));
+                    // to fix bug here: http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
+                }
+                if (!length(SD)) for (k=0; k<grpn; k++) {
+                    rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
                     INTEGER(I)[k] = rownum+1;
                 }
             }
