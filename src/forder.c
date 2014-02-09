@@ -931,7 +931,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
             f = &dsorted; g = &dsort; break;
         case STRSXP :
             f = &csorted;
-            if (sortStr) { csort_pre(xd, n); alloc_csort_otmp(gsmax[flip-1]); g = &csort; }
+            if (sortStr) { csort_pre(xd, n); alloc_csort_otmp(gsmax[1-flip]); g = &csort; }
             else g = &cgroup;
             break;
         default:
