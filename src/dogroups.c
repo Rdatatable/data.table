@@ -76,6 +76,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (SIZEOF(VECTOR_ELT(SD, i))==0)
             error("Type %d in .SD column %d", TYPEOF(VECTOR_ELT(SD, i)), i);
         nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
+        setAttrib(VECTOR_ELT(SD,i), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), R_ClassSymbol)); // fixes http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
     }
     
     origIlen = length(I);  // test 762 has length(I)==1 but nrow(SD)==0
@@ -189,8 +190,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),
                        (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+rownum*size,
                        grpn*size);
-                    // to fix bug here: http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by   
-                    setAttrib(VECTOR_ELT(SD,j), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), R_ClassSymbol));   
                 }
                 for (j=0; j<grpn; j++) INTEGER(I)[j] = rownum+j+1;
                 for (j=0; j<length(xSD); j++) {
@@ -215,9 +214,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                             if (j==0) INTEGER(I)[k] = rownum+1;
                         }
                     }
-                    // TO DO: Why this setAttrib even this deep?
-                    setAttrib(VECTOR_ELT(SD,j), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), R_ClassSymbol));
-                    // to fix bug here: http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
                 }
                 if (!length(SD)) for (k=0; k<grpn; k++) {
                     rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
