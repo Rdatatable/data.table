@@ -552,7 +552,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
 }
 
 void savetl_init() {
-    if (nsaved || nalloc || saveds || savedtl) error("Internal error: savetl_init detects that savetl_end hasn't cleared up correctly (%d %d %p %p). Please report to datatable-help.", nsaved, nalloc, saveds, savedtl);
+    if (nsaved || nalloc || saveds || savedtl) error("Internal error: savetl_init checks failed (%d %d %p %p). Please report to datatable-help.", nsaved, nalloc, saveds, savedtl);
     nsaved = 0;
     nalloc = 100;
     saveds = Calloc(nalloc, SEXP);
@@ -573,7 +573,7 @@ void savetl(SEXP s)
 
 void savetl_end() {
     int i;
-    if (nalloc == 0 || nsaved>nalloc || saveds == NULL || savedtl == NULL) error("Internal error: savetl_end checks failed (%d %d %p %p). Please report to datatable-help.", nsaved, nalloc, saveds, savedtl);
+    if (nalloc==0 || nsaved>nalloc || saveds==NULL || savedtl==NULL) error("Internal error: savetl_end checks failed (%d %d %p %p). Please report to datatable-help.", nsaved, nalloc, saveds, savedtl);
     for (i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
     Free(saveds);
     Free(savedtl);
