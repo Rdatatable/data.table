@@ -14,8 +14,8 @@ int sizes[100];
 extern SEXP growVector(SEXP x, R_len_t newlen, Rboolean verbose);
 extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-SEXP *saveds;
-R_len_t *savedtl, nalloc, nsaved;
+SEXP *saveds=NULL;
+R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 
@@ -552,9 +552,10 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
 }
 
 void savetl_init() {
+    if (nsaved || nalloc || saveds || savedtl) error("Internal error: savetl_init detects that savetl_end hasn't cleared up correctly (%d %d %p %p). Please report to datatable-help.", nsaved, nalloc, saveds, savedtl);
     nsaved = 0;
     nalloc = 100;
-    saveds = Calloc(nalloc, SEXP);     // TO DO  ****  Allocate first 100 only when first needed, OR (better) keep it static. No need to Free it as small working memory.  Or, could free it here with some rule if it has got too big.
+    saveds = Calloc(nalloc, SEXP);
     savedtl = Calloc(nalloc, R_len_t);
 }
 
@@ -568,14 +569,17 @@ void savetl(SEXP s)
     saveds[nsaved] = s;
     savedtl[nsaved] = TRUELENGTH(s);
     nsaved++;
-    //Rprintf("saved %s %d\n", CHAR(s), TRUELENGTH(s));
 }
 
 void savetl_end() {
     int i;
+    if (nalloc == 0 || nsaved>nalloc || saveds == NULL || savedtl == NULL) error("Internal error: savetl_end checks failed (%d %d %p %p). Please report to datatable-help.", nsaved, nalloc, saveds, savedtl);
     for (i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
     Free(saveds);
     Free(savedtl);
+    nsaved = nalloc = 0;
+    saveds = NULL;
+    savedtl = NULL;
 }
 
 static SEXP shallow(SEXP dt, R_len_t n)
