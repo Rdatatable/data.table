@@ -550,7 +550,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 else
                     for (s in seq_along(xnonjoin)) {ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]; copyattr(x[[xnonjoin[s]]], ans[[s+length(leftcols)]])}
                 setattr(ans, "names", make.unique(c(names(x)[rightcols],names(x)[-rightcols],names(i)[-leftcols])))
-                if (haskey(i) || is.sorted(f__) || (is.na(nomatch) && any(is.na(f__)) && is.null(fastorder(i,leftcols))) ||
+                if (haskey(i) || is.sorted(f__) || (is.na(nomatch) && any(is.na(f__)) && !length(forder(i,leftcols))) ||
                                                    (nomatch==0L && any(f__==0L) && is.sorted(f__[f__!=0L])))
                     # TO DO: any(is.na()) could be anyNA() and any0, and we need an efficient is.unsorted(DT) method.
                     # But we only need is.sorted(i) when there are NA matches, so the above should rarely bite.

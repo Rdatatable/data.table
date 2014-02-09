@@ -14,14 +14,9 @@ duplicated.data.table <- function(x, incomparables=FALSE,
         # replaced duplist with uniqlist - incremental memory allocation
         f = uniqlist(x[, query$by, with=FALSE], tolerance=tolerance)
     } else {
-        # changed from x[, query$by, with=FALSE]
-        xx <- as.list(x)[query$by] # seems to be tad faster.   TO DO: pass 'by' through to C level to avoid the (shallow?) copies
-        o = fastorder(xx)
-        # replaced duplist with uniqlist - incremental memory allocation
-        if (is.null(o))
-            f = uniqlist(xx, tolerance=tolerance)
-        else
-            f = o[uniqlist(xx, o, tolerance=tolerance)]
+        o = forder(x, by=query$by, sort=FALSE, retGrp=TRUE)
+        f = attr(o,"starts")
+        if (length(o)) f=o[f]
     }
     res[f] = FALSE
     res

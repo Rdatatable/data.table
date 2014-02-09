@@ -137,8 +137,8 @@ regularorder1 <- function(x) {
 
 is.sorted = function(x, by=seq_along(x)) { 
     # Return value of TRUE/FALSE is relied on in data.table.R quite a bit. Simpler. Stick with that.
-    # Inside fastorder forwards is where to get fancy with -1/0/+1
-    # The following could be moved into fastorder then and is.sorted could merely be defined as: is.null(fastorder(x,by=by))
+    # TO DO: This could be implemented as !length(forder(x,by)),  or, better, check calling use and avoid is.sorted as that's inside forder
+    # TO DO: at least use twiddle in isSortedList.c rather than tolerance
     if (is.list(x)) {
         if (is.character(by)) by = chmatch(by,names(x))
         .Call(CisSortedList, x, as.integer(by), sqrt(.Machine$double.eps))
