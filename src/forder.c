@@ -18,7 +18,7 @@ static Rboolean stackgrps = TRUE;  // switched off for last column when not need
 static Rboolean sortStr = TRUE;    // TRUE for setkey, FALSE for by=
 static int *newo = NULL;       // used by forder and [i|d|c]sort to reorder order. not needed if length(by)==1
 
-extern int sizes[];             // See dogroups.c for this shared variable
+extern size_t sizes[];             // See dogroups.c for this shared variable
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
 static void growstack(int newlen) {
@@ -937,7 +937,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
         default:
            error("Column %d of 'by' (%d) is type '%s', not yet supported", col, INTEGER(by)[col-1], type2char(TYPEOF(x)));
         }
-        int size = SIZEOF(x);
+        size_t size = SIZEOF(x);
         if (size!=4 && size!=8) error("Column %d of 'by' is supported type '%s' but size (%d) isn't 4 or 8\n", col, type2char(TYPEOF(x)), size);
         // sizes of int and double are checked to be 4 and 8 respectively in init.c
         i = 0;

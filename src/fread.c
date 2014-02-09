@@ -18,10 +18,17 @@
 #endif
 
 /*****    TO DO    *****
+And even more diagnostics to verbose=TRUE so we can see where crashes are.
+Add R_CheckUserInterrupt() and bring back progress meter.
+Fill in too-short lines :  http://stackoverflow.com/questions/21124372/fread-doesnt-like-lines-with-less-fields-than-other-lines
 Allow to increase to top 500, middle 500 and bottom 500.
+madvise is too eager when reading just the top 10 rows.
 Add as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
 Allow comment char to ignore. Important in format detection. But require valid line data before comment character in the read loop? See http://stackoverflow.com/a/18922269/403310
-
+Unbalanced quotes : http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value
+            and   : http://rcrastinate.blogspot.co.uk/2013/12/catching-errors-in-r-and-trying.html
+            and   : http://stackoverflow.com/questions/16094025/data-tablefread-and-unbalanced
+Jim Holtman requested column names be stipped of whitespace.  On datatable-help 22 Jan 2014.
 Deal with row.names e.g. http://stackoverflow.com/questions/15448732/reading-csv-with-row-names-by-fread
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
 Post from patricknik on 5 Jan re ""b"" in a field. And Aykut Firat on email.
@@ -41,7 +48,7 @@ Detect and coerce dates and times. By searching for - and :, and dateTtime etc, 
 
 *****/
 
-extern int sizes[100];
+extern size_t sizes[100];
 extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
 
 static const char *ch, *eof; 

@@ -4,13 +4,14 @@
 #include <Rdefines.h>
 
 // See dogroups.c for these shared variables.
-extern int sizes[];
+extern size_t sizes[];
 #define SIZEOF(x) sizes[TYPEOF(x)]
 //
 
 // reverse a vector - equivalent of rev(x) in base, but implemented in C and about 12x faster (on 1e8)
 SEXP setrev(SEXP x) {
-    R_len_t j, n, len, size;
+    R_len_t j, n, len;
+    size_t size;
     char *tmp, *xt;
     if (TYPEOF(x) == VECSXP || isMatrix(x)) error("Input 'x' must be a vector");
     len = length(x);
@@ -52,7 +53,7 @@ SEXP reorder(SEXP x, SEXP order)
     char *tmp, *tmpp, *vd;
     SEXP v;
     R_len_t i, j, itmp, nrow, ncol, start, end;
-    size_t size; // to avoid bug #5305 - integer overflow in memcpy
+    size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
 
     if (isNewList(x)) {
         nrow = length(VECTOR_ELT(x,0));

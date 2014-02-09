@@ -5,7 +5,7 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-int sizes[100];
+extern size_t sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
 extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);

@@ -5,7 +5,7 @@
 //#include <sys/mman.h>
 #include <fcntl.h>
 
-int sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
+size_t sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
 SEXP SelfRefSymbol;
 
 SEXP keepattr(SEXP to, SEXP from);
@@ -38,7 +38,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, SD, BY, N, I, GRP, iSD, xSD, rownames, s, targetcol, RHS, listwrap, target;
     SEXP *nameSyms, *xknameSyms;
     Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
-    size_t size; // to avoid bug #5305 - integer overflow in memcpy
+    size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
 
     if (TYPEOF(order) != INTSXP) error("Internal error: order not integer");
     //if (TYPEOF(starts) != INTSXP) error("Internal error: starts not integer");
@@ -524,7 +524,7 @@ SEXP growVector(SEXP x, R_len_t newlen)
         // TO DO: Again, is there bulk op to avoid this loop, which still respects older generations    
         break;
     default :
-        memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*SIZEOF(x)); // SIZEOF returns size_t - no integer overflow issues here.
+        memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*SIZEOF(x));   // SIZEOF() returns size_t (just as sizeof()) so * shouldn't overflow 
     }
     // if (verbose) Rprintf("Growing vector from %d to %d items of type '%s'\n", len, newlen, type2char(TYPEOF(x)));
     // Would print for every column if here. Now just up in dogroups (one msg for each table grow).

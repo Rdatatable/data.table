@@ -7,7 +7,7 @@
 
 // See dogroups.c for these shared variables.
 SEXP SelfRefSymbol; 
-int sizes[100];
+extern size_t sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
 //
 
@@ -126,7 +126,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, clearkey=FALSE;
     char *s1, *s2, *s3;
     int *buf, k=0;
-    size_t size; // to avoid bug #5305 - integer overflow in memcpy
+    size_t size; // must be size_t otherwise overflow later in memcpy
     if (isNull(dt)) error("assign has been passed a NULL dt");
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
     class = getAttrib(dt, R_ClassSymbol);
@@ -722,7 +722,7 @@ SEXP setcolorder(SEXP x, SEXP o)
     SEXP *tmp = Calloc(LENGTH(x),SEXP);
     for (int i=0; i<LENGTH(x); i++)
         tmp[i] = VECTOR_ELT(x, INTEGER(o)[i]-1);
-    memcpy((char *)DATAPTR(x),(char *)tmp,LENGTH(x)*sizeof(char *)); // sizeof is of type size_t (unsigned) - so no issues here
+    memcpy((char *)DATAPTR(x),(char *)tmp,LENGTH(x)*sizeof(char *)); // sizeof is of type size_t (unsigned) - so no overflow here
     SEXP names = getAttrib(x,R_NamesSymbol);
     if (isNull(names)) error("dt passed to setcolorder has no names");
     for (int i=0; i<LENGTH(x); i++)

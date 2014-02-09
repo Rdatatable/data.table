@@ -7,7 +7,7 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-int sizes[100];
+extern size_t sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
 // Fixes #5150
@@ -334,7 +334,7 @@ SEXP rbindlist(SEXP l)
 {
     R_len_t i,j,jj,r, nrow=0, first=-1, ansloc, ncol=0, thislen, lcount=0;
     SEXP ans, li, lf=R_NilValue, thiscol, target, levels;
-    size_t size; // to avoid bug #5305 - integer overflow in memcpy (changed from (previously) 'int')
+    size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
     Rboolean coerced=FALSE;
     SEXPTYPE * maxtype = NULL;     // TODO: should memory allocation be done differently from malloc/free? (also in a few places above and below)
     int * isColFactor = NULL;      // for each column this is 0 if not a factor, 1 if a factor, and 2 if an ordered factor
