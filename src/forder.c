@@ -215,7 +215,7 @@ static void iradix(int *x, int *o, int n)
     unsigned int thisx=0, shift, *thiscounts;
     
     for (i=0;i<n;i++) {   // parallel histogramming pass; i.e. count occurrences of 0:255 in each byte.  Sequential so almost negligible.
-        thisx = (unsigned int)x[i];
+        thisx = (unsigned int)x[i] - INT_MIN;
         iradixcounts[0][thisx & 0xFF]++;        // unrolled since inside n-loop
         iradixcounts[1][thisx >> 8 & 0xFF]++;
         iradixcounts[2][thisx >> 16 & 0xFF]++;
@@ -248,7 +248,7 @@ static void iradix(int *x, int *o, int n)
         }
     }
     for (i=n-1; i>=0; i--) {
-        thisx = (unsigned int)x[i] >> shift & 0xFF;
+        thisx = ((unsigned int)x[i] - INT_MIN) >> shift & 0xFF;
         o[--thiscounts[thisx]] = i+1;
     }
     if (radix_xsuballoc < maxgrpn) {
@@ -299,14 +299,14 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
     thiscounts = iradixcounts[radix];
     
     for (i=0; i<n; i++) {
-        thisx = (unsigned int)xsub[i];   // sequential in xsub
+        thisx = (unsigned int)xsub[i] - INT_MIN;   // sequential in xsub
         thiscounts[thisx >> shift & 0xFF]++;
     }
     itmp = thiscounts[0];
     for (i=1; itmp<n && i<256; i++)
         if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
     for (i=n-1; i>=0; i--) {
-        thisx = (unsigned int)xsub[i] >> shift & 0xFF;
+        thisx = ((unsigned int)xsub[i] - INT_MIN) >> shift & 0xFF;
         j = --thiscounts[thisx];
         otmp[j] = osub[i];
         ((int *)xtmp)[j] = xsub[i];
@@ -812,7 +812,7 @@ static void isort(int *x, int *o, int n)
     setRange(x, n);   // Tighter range (e.g. copes better with a few abormally large values in some groups), but also, when setRange was once at colum level that caused an extra scan of (long) x first. 10,000 calls to setRange takes just 0.04s i.e. negligible.
     if (range==NA_INTEGER) error("Internal error: isort passed all-NA. isorted should have caught this before this point");
     int *target = o[0] ? newo : o;
-    if (range<=100000 && range<n) {   // was range<10000 for subgroups, but 1e5 for the first column, tried to generalise here.  1e4 rather than 1e5 here because iterated
+    if (range<=100000 && range<=n) {   // was range<10000 for subgroups, but 1e5 for the first column, tried to generalise here.  1e4 rather than 1e5 here because iterated
         icount(x, target, n);
     } else {                    // was (thisgrpn < 200 || range > 20000) then radix
         iradix(x, target, n);   // a short vector with large range can bite icount when iterated (BLOCK 4 and 6)
@@ -834,7 +834,7 @@ static void dsort(double *x, int *o, int n)
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
 // sortStr TRUE from setkey, FALSE from by=
 {
-    int i, j, k, grp, tmp, *osub, thisgrpn, n, col;
+    int i, j, k, grp, ngrp, tmp, *osub, thisgrpn, n, col;
     Rboolean isSorted = TRUE;
     SEXP x;
     void *xd;
@@ -920,7 +920,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     for (col=2; col<=length(by); col++) {
         x = VECTOR_ELT(DT,INTEGER(by)[col-1]-1);
         xd = DATAPTR(x);
-        int ngrp = gsngrp[flip];
+        ngrp = gsngrp[flip];
         if (ngrp == n) break;
         flipflop();
         stackgrps = col!=LENGTH(by) || LOGICAL(retGrp)[0];
@@ -1000,12 +1000,22 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     savetl_end();  // hence important no early returns or error()s above. TO DO: wrap error() with globError() to clear up.
     free(ustr);                ustr=NULL;          ustr_alloc=0;
     
-    if (isSorted) ans = R_NilValue;
+    if (isSorted) {
+        UNPROTECT(1);  // The existing o vector, which we may save in future, if in future we only create when isSorted becomes FALSE
+        ans = PROTECT(allocVector(INTSXP, 0));  // Can't attach attributes to NULL
+    }
     if (LOGICAL(retGrp)[0]) {
-        SEXP grps = PROTECT(allocVector(INTSXP, gsngrp[flip]));
-        memcpy(INTEGER(grps), gs[flip], gsngrp[flip] * sizeof(int));
-        setAttrib(ans, install("grps"), grps);
-        UNPROTECT(1);
+        ngrp = gsngrp[flip];
+        setAttrib(ans, install("starts"), x = allocVector(INTSXP, ngrp));
+        //if (isSorted || LOGICAL(sort)[0])
+            for (INTEGER(x)[0]=1, i=1; i<ngrp; i++) INTEGER(x)[i] = INTEGER(x)[i-1] + gs[flip][i-1];
+        //else {
+            // it's not sorted already and we want to keep original group order
+        //    cumsum = 0;
+        //    for (i=0; i<ngrp; i++) { INTEGER(x)[i] = o[i+cumsum]; cumsum+=gs[flip][i]; }
+        //    isort(INTEGER(x), ngrp);
+        //}
+        setAttrib(ans, install("maxgrpn"), ScalarInteger(gsmax[flip]));
     }
     
     gsfree();

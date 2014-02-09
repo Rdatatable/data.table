@@ -865,35 +865,22 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}
             if (length(byval) && length(byval[[1]])) {
                 if (!bysameorder) {
-                    o__ = fastorder(byval)
-                    bysameorder = orderedirows && is.null(o__)
-                    if (bysameorder) o__ = integer()   # skip the 1:xnrow vector for efficiency.  TO DO: Why integer() and not NULL?
-                    else if (is.null(o__)) o__ = 1:xnrow  # temp fix.  TO DO: revist orderedirows
-                }
-                if (bysameorder) {
+                    o__ = forder(byval, sort=FALSE, retGrp=TRUE)   # returns integer() (not NULL) if already ordered, to save 1:xnrow for efficiency
+                    bysameorder = orderedirows && !length(o__)
+                    f__ = attr(o__, "starts")
+                    len__ = uniqlengths(f__, xnrow)
+                    if (!bysameorder) {    # TO DO: lower this into forder.c
+                        firstofeachgroup = o__[f__]    
+                        if (length(origorder <- forder(firstofeachgroup))) {
+                            f__ = f__[origorder]
+                            len__ = len__[origorder]
+                        }
+                    }
+                    if (!orderedirows && !length(o__)) o__ = 1:xnrow  # temp fix.  TO DO: revist orderedirows
+                } else {
                     f__ = uniqlist(byval)
                     len__ = uniqlengths(f__, xnrow)
-                    # old code - to delete 
-                    # f__ = duplist(byval)   # find group starts, given we know they are already grouped.
-                    # len__ = as.integer(c(diff(f__), xnrow-last(f__)+1L))
-                    # # TO DO: return both f__ and len__ from C level, and, there's a TO DO in duplist.R
-                } else {
-                    f__ = uniqlist(byval, order=o__)
-                    len__ = uniqlengths(f__, xnrow)
-                    firstofeachgroup = o__[f__]
-                    origorder = iradixorder(firstofeachgroup) # should be incredibly faster than sort.list(...) --- >36x speed-up on 1e7 vector
-                    f__ = f__[origorder]
-                    len__ = len__[origorder]
-                    # old code - to delete
-                    # f__ = duplist(byval,order=o__)
-                    # len__ = as.integer(c(diff(f__), xnrow-last(f__)+1L))
-                    # firstofeachgroup = o__[f__]
-                    # origorder = sort.list(firstofeachgroup, na.last=FALSE, decreasing=FALSE)
-                    # radixsort isn't appropriate in this case. 'firstofeachgroup' are row numbers from the
-                    # (likely) large table so if nrow>100,000, range will be >100,000. Save time by not trying radix.
-                    # TO DO: remove sort.list call by changing fastorder to fastgroup in first place.
-                    # f__ = f__[origorder]
-                    # len__ = len__[origorder]
+                    # TO DO: combine uniqlist and uniquelengths into one call.  Or, just set len__ to NULL when dogroups infers that.
                 }
             } else {
                 f__=NULL

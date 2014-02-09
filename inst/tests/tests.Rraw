@@ -3679,14 +3679,14 @@ test(1168.2, as.data.frame(ans), rbind(as.data.frame(tmp1), as.data.frame(tmp2))
 # checks of "" and NA_character_ ordering.
 if (!.devtesting) forder <- data.table:::forder
 test(1169, forder(c(NA,"","a","NA")), INT(1,2,4,3))  # data.table does ascii ordering currently, so N comes before a
-test(1170, forder(c(NA,"","NA","a")), NULL)
+test(1170, length(forder(c(NA,"","NA","a"))), 0)
 test(1171, forder(c("",NA,"a","NA")), INT(2,1,4,3))
-test(1172, forder(NA_character_), NULL)
-test(1173, forder(c(NA_character_,NA_character_)), NULL)
-test(1174, forder(c(NA_character_,NA_character_,NA_character_)), NULL)
-test(1175, forder(""), NULL)
-test(1176, forder(c("","")), NULL)
-test(1177, forder(c("","","")), NULL)
+test(1172, length(forder(NA_character_)), 0)
+test(1173, length(forder(c(NA_character_,NA_character_))), 0)
+test(1174, length(forder(c(NA_character_,NA_character_,NA_character_))), 0)
+test(1175, length(forder("")), 0)
+test(1176, length(forder(c("",""))), 0)
+test(1177, length(forder(c("","",""))), 0)
 test(1178, forder(c("",NA,"")), INT(2,1,3))
 
 # Test no invalid sort order warning when key is ok and 2nd colum is character/double
@@ -3696,6 +3696,11 @@ test(1179.2, setkey(DT), DT)  # i.e. no warning
 DT = CJ(a=rep(1:3),b=c(3.14,3.15))
 test(1180.1, key(DT), c("a","b"))
 test(1180.2, setkey(DT), DT)  # i.e. no warning
+
+# test for iradix (NA and negatives). Tests need large range to trigger iradix.
+test(1181, forder(INT(1,3,5000000,NA)), INT(4,1,2,3))
+test(1182, forder(INT(1,-1,5000000,NA)), INT(4,2,1,3))
+test(1183, forder(INT(-3,-7,1,-6000000,NA,3,5000000,NA,8)), INT(5,8,4,2,1,3,6,9,7))
 
 
 ##########################

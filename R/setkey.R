@@ -38,11 +38,11 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
     # o = fastorder(x, cols, verbose=verbose)
-    o = forder(x, cols, sortStr=TRUE, retGrp=FALSE)
-    if (!is.null(o)) {
+    o = forder(x, cols, sort=TRUE, retGrp=FALSE)
+    if (length(o)) {
         if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
         .Call(Creorder,x,o)
-    } # else NULL from fastorder means x is already ordered by those cols, nothing to do.
+    } # else empty integer() from forder means x is already ordered by those cols, nothing to do.
     if (!alreadykeyedbythiskey) setattr(x,"sorted",cols)   # the if() just to save plonking an identical vector into the attribute
     invisible(x)
 }
@@ -154,8 +154,9 @@ is.sorted = function(x, by=seq_along(x)) {
 # our rule is NA at the start.
 # TO DO: instead of TRUE/FALSE, return -1/0/+1  -1=sorted in reverse, 0=not sorted either way, 1=sorted forwards. Conveniently, if (-1) in R is TRUE, since anything !=0 is TRUE, just like C.
 
-forder = function(x, by=seq_along(x), retGrp=FALSE, sortStr=TRUE)
+forder = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE)
 {
+    if (!(sort || retGrp)) stop("At least one of retGrp or sort must be TRUE")
     # TO DO: export and document forder
     if (is.atomic(x)) {
         if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
@@ -164,7 +165,7 @@ forder = function(x, by=seq_along(x), retGrp=FALSE, sortStr=TRUE)
         if (is.character(by)) by=chmatch(by, names(x))
         by = as.integer(by)
     }
-    .Call(Cforder, x, by, retGrp, sortStr)  # returns NULL if already sorted
+    .Call(Cforder, x, by, retGrp, sort)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
 fastorder <- function(x, by=seq_along(x), verbose=getOption("datatable.verbose"))
