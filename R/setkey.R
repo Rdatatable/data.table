@@ -286,6 +286,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
     ans[, SubGroupN:=format(as.integer(ceiling(Rows/Levels)), big.mark=",")]
     ans[,Rows:=format(Rows,big.mark=",")]
     ans[,Levels:=format(Levels,big.mark=",")]
+    ident = function(x,y) if (length(x)==0) length(y)==0 else identical(x,y)
     for (i in 1:nrow(ans)) {
         ttype = c("user.self","sys.self")  # elapsed can sometimes be >> user.self+sys.self. TO DO: three repeats as well.
         tol = 0.5                          # we don't mind about 0.5s; benefits when almost sorted outweigh
@@ -297,7 +298,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         # in baseline mode, Cforder doesn't order, so y is needed to test baseline on ordered DT
         ans[i, rand.forw := sum(system.time(x<<-forder(DT))[ttype])]
         if (testback) ans[i, faster1 := rand.forw<rand.back+tol]
-        if (testback) if (!identical(x,y)) browser()
+        if (testback) if (!ident(x,y)) browser()
         
         .Call(Creorder,DT, if (baseline) y else x)  # in baseline mode, x is deliberately wrong. And if testback=FALSE, we won't have y
         if (!is.sorted(DT)) stop("Logical error: ordered table is not sorted according to is.sorted!")
@@ -306,7 +307,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         if (testback) ans[i, ord.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
         ans[i, ord.forw := sum(system.time(x<<-forder(DT))[ttype])]
         if (testback) ans[i, faster2 := ord.forw<ord.back+tol]
-        if (testback) if (!identical(x,y)) browser()
+        if (testback) if (!ident(x,y)) browser()
         
         if (DT[[1]][1] == DT[[1]][2]) v = 2 else v = 1  # make small change to column 2, unless rows 1 and 2 aren't in the same group by column 1
         old = DT[[v]][1:2]
@@ -316,7 +317,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         if (testback) ans[i, ordT.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # T for Top
         ans[i, ordT.forw := sum(system.time(x<<-forder(DT))[ttype])]
         if (testback) ans[i, faster3 := ordT.forw<ordT.back+tol]
-        if (testback) if (!identical(x,y)) browser()
+        if (testback) if (!ident(x,y)) browser()
 
         DT[1:2, (v):=old]          # undo the change at the top to make it sorted again
         if (!is.sorted(DT)) stop("Logical error: reverting the small change at the top didn't make DT ordered again")
@@ -329,7 +330,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         if (testback) ans[i, ordB.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # B for Bottom
         ans[i, ordB.forw := sum(system.time(x<<-forder(DT))[ttype])]
         if (testback) ans[i, faster4 := ordB.forw<ordB.back+tol]
-        if (testback) if (!identical(x,y)) browser()
+        if (testback) if (!ident(x,y)) browser()
         
         DT[r, (v):=old]          # undo the change at the top to make it sorted again
         if (!is.sorted(DT)) stop("Logical error: reverting the small change at the bottom didn't make DT ordered again")
@@ -341,7 +342,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         if (testback) ans[i, rev.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # rev = reverse order
         ans[i, rev.forw := sum(system.time(x<<-forder(DT))[ttype])]
         if (testback) ans[i, faster5 := rev.forw<rev.back+tol]
-        if (testback) if (!identical(x,y)) browser()
+        if (testback) if (!ident(x,y)) browser()
         
         if (i==nrow(ans) || ans[i+1,Levels]!=ans[i,Levels]) print(ans[Levels==Levels[i]])  # print each block as we go along
     }
