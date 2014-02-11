@@ -557,7 +557,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     
     thiscounts = cradix_counts + radix*256;
     for (i=0; i<n; i++) {
-        thisx = xsub[i]==NA_STRING ? 0 : (radix<LENGTH(xsub[i]) ? (int)CHAR(xsub[i])[radix] : 1);
+        thisx = xsub[i]==NA_STRING ? 0 : (radix<LENGTH(xsub[i]) ? (unsigned char)(CHAR(xsub[i])[radix]) : 1);
         thiscounts[ thisx ]++;   // 0 for NA,  1 for ""
     }
     if (thiscounts[thisx] == n && radix < maxlen-1) {   // this also catches when subx has shorter strings than the rest, thiscounts[0]==n and we'll recurse very quickly through to the overall maxlen with no 256 overhead each time
@@ -569,7 +569,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     for (i=1; i<256; i++)
         if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
     for (i=n-1; i>=0; i--) {
-        thisx = xsub[i]==NA_STRING ? 0 : (radix<LENGTH(xsub[i]) ? (int)CHAR(xsub[i])[radix] : 1);
+        thisx = xsub[i]==NA_STRING ? 0 : (radix<LENGTH(xsub[i]) ? (unsigned char)(CHAR(xsub[i])[radix]) : 1);
         j = --thiscounts[thisx];
         cradix_xtmp[j] = xsub[i];
     }
@@ -701,7 +701,7 @@ static void csort_pre(SEXP *x, int n)
         }
         SET_TRUELENGTH(s, -1);  // this -1 will become its ordering later below
         ustr[ustr_n++] = s;
-        if (s!=NA_STRING && LENGTH(s)>maxlen) maxlen=LENGTH(s);  // length on CHARSXP is the nchar of char * (excluding \0)
+        if (s!=NA_STRING && LENGTH(s)>maxlen) maxlen=LENGTH(s);  // length on CHARSXP is the nchar of char * (excluding \0), and treats marked encodings as if ascii.
     }
     new_un = ustr_n;
     if (new_un == old_un) return;  // No new strings observed, seen them all before in previous column. ustr already sufficient.
@@ -709,7 +709,7 @@ static void csort_pre(SEXP *x, int n)
     // sort ustr.  TO DO: just sort new ones and merge them in.
     // These allocs are here, to save them being in the recursive cradix_r()
     if (cradix_counts_alloc < maxlen) {
-        cradix_counts_alloc = maxlen + 20;   // +20 to save many reallocs
+        cradix_counts_alloc = maxlen + 10;   // +10 to save too many reallocs
         cradix_counts = (int *)realloc(cradix_counts, cradix_counts_alloc * 256 * sizeof(int) );  // stack of counts
         if (!cradix_counts) error("Failed to alloc cradix_counts");
         memset(cradix_counts, 0, cradix_counts_alloc * 256 * sizeof(int));
