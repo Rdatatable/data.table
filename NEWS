@@ -364,6 +364,11 @@ BUG FIXES
      Alexander for reporting on SO (and mnel for filing the bug report): 
      http://stackoverflow.com/questions/21591433/merging-really-not-that-large-data-tables-immediately-results-in-r-being-killed
 
+THANKS TO
+
+  o  Zach Mayer for a reproducible segfault in the development version related to radix sorting
+     character strings longer than 20. Test added.
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.
