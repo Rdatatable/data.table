@@ -416,7 +416,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             for (r=0; r<maxn; r++) {
                 memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*size,  // TO DO: a switched assign here?
                     (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1)) + igrp*size,   // generations a concern but this one ok I think
-                    1 * size);
+                    1 * size);   //  **TO DO**  replace memcpy
             }
         }
         for (j=0; j<njval; j++) {

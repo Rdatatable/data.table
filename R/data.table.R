@@ -1066,8 +1066,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     lockBinding(".N",SDenv)
     lockBinding(".GRP",SDenv)
     lockBinding(".I",SDenv)
-
-    if (getOption("datatable.optimize")>0L) {  # Abilility to turn off if problems
+    GForce = FALSE
+    if (getOption("datatable.optimize")>=1) {  # Abilility to turn off if problems
         # Optimization to reduce overhead of calling mean and lapply over and over for each group
         nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
         oldjsub = jsub
@@ -1131,8 +1131,27 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         # Maybe change to :
         #     assign("mean", fastmean, SDenv)  # neater than the hard work above, but slower
         # when fastmean can do trim.
+     
+        if (getOption("datatable.optimize")>=2 && !bywithoutby && !length(irows) && length(f__) && length(xvars) && !length(lhs) && is.call(jsub)) {
+            # Apply GForce
+            .ok = function(q) {
+                ans = is.call(q) && q[[1L]] == "sum" && !is.call(q[[2L]]) && (length(q)==2 || as.character(q[[3L]]) %in% c("TRUE","FALSE","T","F"))
+                if (is.na(ans)) ans=FALSE
+                ans
+            }
+            if (jsub[[1L]]=="list") {
+                GForce = TRUE
+                for (ii in seq_along(jsub)[-1L]) if (!.ok(jsub[[ii]])) GForce = FALSE
+            } else GForce = .ok(jsub)
+            if (GForce) {
+                if (jsub[[1L]]=="list")
+                    for (ii in seq_along(jsub)[-1L])  jsub[[ii]][[1L]] = quote(gsum)
+                else
+                    jsub[[1L]] = quote(gsum)
+                if (verbose) cat("GForce optimized j to '",deparse(jsub,width.cutoff=200),"'\n",sep="")
+            }
+        }
     }
-
     xcols = chmatch(xvars,names(x))
     if (bywithoutby) {
         groups = i
@@ -1163,10 +1182,21 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         # for consistency of empty case in test 184
         f__=len__=0L
     }
-    if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
-    ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, verbose)
-    if (verbose) {cat("done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
-
+    if (GForce) {
+        thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
+        for (ii in xvars) assign(ii, x[[ii]], thisEnv)
+        gstart(o__, f__, len__)
+        ans = eval(jsub, thisEnv)
+        if (is.atomic(ans)) ans=list(ans)  # won't copy named argument in new version of R, good
+        gend()
+        gi = if (length(o__)) o__[f__] else f__
+        g = lapply(grpcols, function(i) groups[[i]][gi])
+        ans = c(g, ans)
+    } else {
+        if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
+        ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, verbose)
+        if (verbose) {cat("done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+    }
     # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
     # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
     # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
@@ -2018,4 +2048,9 @@ setDT <- function(x, giveNames=TRUE) {
     }
     invisible(x)
 }
+
+gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
+gstart = function(o, f, l) .Call(Cgstart, o, f, l)
+gend = function() .Call(Cgend)
+
 

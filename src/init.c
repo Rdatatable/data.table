@@ -40,6 +40,9 @@ SEXP fastradixint();
 SEXP isSortedList();
 SEXP setrev();
 SEXP forder();
+SEXP gstart();
+SEXP gend();
+SEXP gsum();
 
 // .Externals
 SEXP fastmean();
@@ -80,6 +83,9 @@ R_CallMethodDef callMethods[] = {
 {"CisSortedList", (DL_FUNC) &isSortedList, -1},
 {"Csetrev", (DL_FUNC) &setrev, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
+{"Cgstart", (DL_FUNC) &gstart, -1},
+{"Cgend", (DL_FUNC) &gend, -1},
+{"Cgsum", (DL_FUNC) &gsum, -1},
 {NULL, NULL, 0}
 };
 
@@ -101,6 +107,21 @@ void attribute_visible R_init_datatable(DllInfo *info)
     if (NA_INTEGER != INT_MIN) error("NA_INTEGER [%d] != INT_MIN [%d]. Please report to datatable-help.", NA_INTEGER, INT_MIN);
     if (sizeof(int) != 4) error("sizeof(int) is not 4 but %d. Please report to datatable-help.", sizeof(int));
     if (sizeof(double) != 8) error("sizeof(double) is not 8 but %d. Please report to datatable-help.", sizeof(double));
+
+    // According to IEEE (http://en.wikipedia.org/wiki/IEEE_754-1985#Zero) we can rely on 0.0 being all 0 bits.
+    // But check here anyway just to be sure, just in case this answer is right (http://stackoverflow.com/a/2952680/403310).
+    int i = 314;
+    memset(&i, 0, sizeof(int));
+    if (i != 0) error("memset0 != (int)0.  Please report to data.table-help");
+    unsigned int ui = 314;
+    memset(&ui, 0, sizeof(unsigned int));
+    if (ui != 0) error("memset0 != (unsigned int)0.  Please report to data.table-help");
+    double d = 3.14;
+    memset(&d, 0, sizeof(double));
+    if (d != 0.0) error("memset0 != (double)0.0.  Please report to data.table-help");
+    long double ld = 3.14;
+    memset(&ld, 0, sizeof(long double));
+    if (ld != 0.0) error("memset0 != (long double)0.0.  Please report to data.table-help");
 }
 
 
