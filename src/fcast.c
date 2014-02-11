@@ -58,14 +58,18 @@ SEXP vec_init(R_len_t n, SEXP val) {
     return(ans);
 }
 
-SEXP fastorder(SEXP v, SEXP env) {
+SEXP cast_order(SEXP v, SEXP env) {
     SEXP call, ans;
-    if (TYPEOF(v) != VECSXP) error("Argument 'v' to 'fastorder' must be a list");
-    if (TYPEOF(env) != ENVSXP) error("Argument 'env' to (data.table internals) 'fastorder' must be an environment");
-    PROTECT(call = lang2(install("fastorder"), v));
-    ans = eval(call, env);
-    UNPROTECT(1);
-    return ans;
+    if (TYPEOF(v) != VECSXP) error("Argument 'v' to 'cast_order' must be a list");
+    if (TYPEOF(env) != ENVSXP) error("Argument 'env' to (data.table internals) 'cast_order' must be an environment");
+    PROTECT(call = lang2(install("forder"), v));
+    ans = PROTECT(eval(call, env));
+    if (length(ans) == 0) { // newly implemented fastorder/forder returns integer(0) if it's already sorted
+        UNPROTECT(1); // ans
+        ans = PROTECT(seq_int(length(VECTOR_ELT(v, 0)), 1)); 
+    }
+    UNPROTECT(2);
+    return(ans);
 }
 
 SEXP cross_join(SEXP s) {
@@ -75,7 +79,7 @@ SEXP cross_join(SEXP s) {
     PROTECT(call = lang3(install("do.call"), mkString("CJ"), s));
     r = eval(call, R_GlobalEnv);
     UNPROTECT(1);
-    return r;
+    return(r);
 }
 
 SEXP max_val(SEXP x) {
@@ -279,6 +283,9 @@ SEXP castgroups(SEXP groups, SEXP val, SEXP f__, SEXP value_var, SEXP jsub, SEXP
 // SEXP margins(...) {
 // }
 
+// TO DO: for sorted case - when forder is integer(0), just "duplicate" instead of using "subset" - will gain speed (as that'll use memcpy)
+// TO DO: can we just move "subsetting" to R-side? Will simplify things a lot here and I'm not sure if there's any advantage of having it here
+// TO DO: Remove "sorted" and implement that as well with "setkey" just on c(ff_, value.var) at R side?
 SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, SEXP env, SEXP sorted, SEXP jsub, SEXP fill_d, SEXP drop, SEXP subsetting) {
     
     int protecti = 0;
@@ -368,15 +375,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
     
     // sort lrdt and vnames if unsorted
     if (!LOGICAL(sorted)[0]) {
-        lro = PROTECT(fastorder(lrdt, env));
-        if (isNull(lro)) {
-           // 'is_sorted' is done for checking sortedness at R-level. New 'fastorder' returns 'NULL' when sorted. If NULL, R-level gave wrong result
-            warning("'is.sorted' at R-level check returned FALSE when it should have been TRUE. Please report to data.table help");
-            UNPROTECT(1); // lro
-            lro = PROTECT(seq_int(nrows, 1)); // this case should never happen; that is, this if-statement should never be run. But this is to catch 
-                                              // any issues with 'is.sorted' (as it's new). If it does occur, TODO: here memcpy would be faster than 'subset'
-                                              // in the for-loop below
-        }
+        lro = PROTECT(cast_order(lrdt, env));
         protecti++; // lro
         for (i=0; i<length(lrdt); i++) {
             cpy = PROTECT(VECTOR_ELT(lrdt, i));
@@ -433,7 +432,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         for (i=0; i<ilen; i++) {
             cpy = PROTECT(allocVector(VECSXP, 1));
             SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(ldt, i));
-            dorder = LOGICAL(isSortedList(cpy, seq_int(1,1), tol))[0] == 1 ? PROTECT(seq_int(nrows, 1)) : PROTECT(fastorder(cpy, env));
+            dorder = PROTECT(cast_order(cpy, env));
             ddup = PROTECT(uniqlist(cpy, dorder, tol));
             ddup = PROTECT(subset(dorder, ddup));
             dtmp = PROTECT(subset(VECTOR_ELT(cpy, 0), ddup));
@@ -446,7 +445,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         for (i=0; i<mlen; i++) {
             cpy = PROTECT(allocVector(VECSXP, 1));
             SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(rdt, i));
-            dorder = LOGICAL(isSortedList(cpy, seq_int(1,1), tol))[0] == 1 ? PROTECT(seq_int(nrows, 1)) : PROTECT(fastorder(cpy, env));
+            dorder = PROTECT(cast_order(cpy, env));
             ddup = PROTECT(uniqlist(cpy, dorder, tol));
             ddup = PROTECT(subset(dorder, ddup));
             dtmp = PROTECT(subset(VECTOR_ELT(cpy, 0), ddup));
@@ -489,8 +488,8 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         cj = PROTECT(cross_join(cjtmp)); protecti++;
     } else {
         // we could do a bit faster
-        lo = PROTECT(seq_int(nrows, 1)); protecti++; // no need for fastorder of "lo", already sorted
-        ro = LOGICAL(isSortedList(rdt, seq_int(mlen, 1), tol))[0] == 1 ? PROTECT(seq_int(nrows, 1)) : PROTECT(fastorder(rdt, env)); protecti++;
+        lo = PROTECT(seq_int(nrows, 1)); protecti++; // no need for cast_order of "lo", already sorted
+        ro = PROTECT(cast_order(rdt, env)); protecti++;
         ldup = PROTECT(uniqlist(ldt, lo, tol)); protecti++;
         rdup = PROTECT(uniqlist(rdt, ro, tol)); protecti++; 
 
@@ -511,7 +510,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         }
         rdupl = PROTECT(allocVector(VECSXP, 1));
         SET_VECTOR_ELT(rdupl, 0, rdup);
-        ro = LOGICAL(isSortedList(rdupl, seq_int(1,1), tol))[0] == 1 ? PROTECT(seq_int(length(rdup), 1)) : PROTECT(fastorder(rdupl, env));
+        ro = PROTECT(cast_order(rdupl, env));
         rdup = PROTECT(subset(rdup, ro));
         UNPROTECT(3); // ro, rdup, rdupl
         SET_VECTOR_ELT(tmp, mlen, rdup);

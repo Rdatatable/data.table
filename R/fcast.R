@@ -74,16 +74,13 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         } else return(data[, eval(fun.aggregate), keyby=c(ff$ll)])
     }
     .CASTenv = new.env(parent=parent.frame())
-    assign("fastorder", fastorder, .CASTenv)   
+    assign("forder", forder, .CASTenv)
     assign("print", function(x,...){base::print(x,...);NULL}, .CASTenv)
     assign("Cfastmean", Cfastmean, .CASTenv)
     assign("mean", base::mean.default, .CASTenv)
     if (!is.null(vars)) for (i in vars) assign(i, data[[i]], .CASTenv) # assign subset vars directly in env
     ans <- .Call("Cfcast", data, ff$ll, ff$rr, value.var, fill, tolerance, .CASTenv, is_sorted, fun.aggregate, fill.default, drop, subset)
-    setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
-    setattr(ans, "class", c("data.table", "data.frame"))
-    settruelength(ans, 0L)
-    alloc.col(ans)
+    setDT(ans)
     if (any(duplicated(names(ans)))) {
         message("Duplicate column names found in cast data.table. Setting unique names using 'make.names'")   
         setnames(ans, make.unique(names(ans)))
