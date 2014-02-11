@@ -709,7 +709,7 @@ static void csort_pre(SEXP *x, int n)
     // sort ustr.  TO DO: just sort new ones and merge them in.
     // These allocs are here, to save them being in the recursive cradix_r()
     if (cradix_counts_alloc < maxlen) {
-        cradix_counts_alloc = cradix_counts_alloc == 0 ? 20 : maxlen + 20;   // +20 to save many reallocs for very long and varying strings
+        cradix_counts_alloc = maxlen + 20;   // +20 to save many reallocs
         cradix_counts = (int *)realloc(cradix_counts, cradix_counts_alloc * 256 * sizeof(int) );  // stack of counts
         if (!cradix_counts) error("Failed to alloc cradix_counts");
         memset(cradix_counts, 0, cradix_counts_alloc * 256 * sizeof(int));
