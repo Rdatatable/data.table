@@ -53,232 +53,327 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
   o options to join to prevailing value (roll join a.k.a locf)
 */
 
-SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP rollarg, SEXP rollends, SEXP nomatch, SEXP tolerance, SEXP retFirst, SEXP retLength, SEXP allLen1)
-{
-    // If the left table is large and the right table is large, then sorting the left table first may be
-    // quicker depending on how long to sort the left table. This is up to user via use of J() or SJ()
-    
-    R_len_t lr,nr,low,mid,upp,coln,col,lci,rci,len;
-    R_len_t prevlow, prevupp, type, newlow, newupp, /*size,*/ lt, rt;
-    double tol = REAL(tolerance)[0], roll, rollabs;
-    Rboolean nearest=FALSE, enc_warn=TRUE;
-    SEXP lc=NULL, rc=NULL;
-    unsigned long long *lc_ul, *rc_ul;  // for NA/NaN numerics
-    
-    // get value of NA and NaN in unsigned long to check for TYPE=REAL case below.
-    const unsigned long long R_UNSIGNED_LONG_NA_REAL  = R_NA_unsigned_long();
-    const unsigned long long R_UNSIGNED_LONG_NAN_REAL = R_NaN_unsigned_long();
+static double tol;  // TO DO: remove and use twiddle
+static SEXP i, x;
+static int ncol, *icols, *xcols, *o, *retFirst, *retLength, *allLen1, *rollends;
+static unsigned long long R_UNSIGNED_LONG_NA_REAL;
+static unsigned long long R_UNSIGNED_LONG_NAN_REAL;
+static double roll, rollabs;
+static Rboolean nearest=FALSE, enc_warn=TRUE;
 
+extern SEXP forder();
+
+void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int lowmax, int uppmax);
+
+SEXP binarysearch(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP rollarg, SEXP rollendsArg, SEXP nomatch, SEXP tolerance, SEXP retFirstArg, SEXP retLengthArg, SEXP allLen1Arg)
+{
+    int xN, iN, protecti=0;
+
+    // get value of NA and NaN in unsigned long to check for TYPE=REAL case below.  TO DO: replace with twiddle()
+    R_UNSIGNED_LONG_NA_REAL  = R_NA_unsigned_long();
+    R_UNSIGNED_LONG_NAN_REAL = R_NaN_unsigned_long();
+    tol = REAL(tolerance)[0];   // TO DO: remove
+    roll = 0.0;
+    nearest = FALSE;
+    enc_warn = TRUE;
     if (isString(rollarg)) {
         if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
-        roll=1.0; nearest=TRUE;       // the 1.0 here is just any non-0.0 
+        roll=1.0; nearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
     } else {
         if (!isReal(rollarg)) error("Internal error: roll is not character or double");
         roll = REAL(rollarg)[0];   // more common case (rolling forwards or backwards) or no roll when 0.0
     }
     rollabs = fabs(roll);
-    if (!isLogical(rollends) || LENGTH(rollends)!=2) error("rollends not a length 2 logical");
-    union {
-        int i;
-        double d;
-        SEXP s;
-    } lval, rval;
-    if (NA_INTEGER != INT_MIN) error("Internal error: NA_INTEGER (%d) != INT_MIN (%d).", NA_INTEGER, INT_MIN);
-    if (NA_INTEGER != NA_LOGICAL) error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
-    nr = LENGTH(VECTOR_ELT(right,0));   // num rows in right hand table
-    coln = LENGTH(leftcols);    // there may be more sorted columns in x than involved in the join
-    for(col=0; col<coln; col++) {
-        lci = INTEGER(leftcols)[col];
-        if (lci==NA_INTEGER) error("Internal error. Missing column name(s) in sorted attribute of i");
-        rci = INTEGER(rightcols)[col];
-        if (rci==NA_INTEGER) error("Internal error. Missing column name(s) in sorted attribute of x");
-        lt = TYPEOF(VECTOR_ELT(left, lci));
-        rt = TYPEOF(VECTOR_ELT(right, rci));
-        if (lt != rt) error("typeof x.%s (%s) != typeof i.%s (%s)", CHAR(STRING_ELT(getAttrib(right,R_NamesSymbol),rci)), type2char(rt), CHAR(STRING_ELT(getAttrib(left,R_NamesSymbol),lci)), type2char(lt));
+    
+    i = iArg; x = xArg;  // set globals so bmerge_r can see them.
+    if (!isInteger(icolsArg)) error("Internal error: icols is not integer vector");
+    if (!isInteger(xcolsArg)) error("Internal error: xcols is not integer vector");
+    if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error("Internal error: length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg)); 
+    icols = INTEGER(icolsArg);
+    xcols = INTEGER(xcolsArg);
+    xN = LENGTH(VECTOR_ELT(x,0));
+    iN = LENGTH(VECTOR_ELT(i,0));
+    ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
+    for(int col=0; col<ncol; col++) {
+        if (icols[col]==NA_INTEGER) error("Internal error. icols[%d] is NA", col);
+        if (xcols[col]==NA_INTEGER) error("Internal error. xcols[%d] is NA", col);
+        if (icols[col]>LENGTH(i) || icols[col]<1) error("icols[%d]=%d outside range [1,length(i)=%d]", col, icols[col], LENGTH(i));
+        if (xcols[col]>LENGTH(x) || xcols[col]<1) error("xcols[%d]=%d outside range [1,length(x)=%d]", col, xcols[col], LENGTH(x));
+        int it = TYPEOF(VECTOR_ELT(i, icols[col]-1));
+        int xt = TYPEOF(VECTOR_ELT(x, xcols[col]-1));
+        if (it != xt) error("typeof x.%s (%s) != typeof i.%s (%s)", CHAR(STRING_ELT(getAttrib(x,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(i,R_NamesSymbol),icols[col]-1)), type2char(it));
     }
-    if (nearest && TYPEOF(VECTOR_ELT(left, INTEGER(leftcols)[coln-1]))==STRSXP) error("roll='nearest' can't be applied to a character column");
-    low=-1;
-    for (lr=0; lr < LENGTH(VECTOR_ELT(left,0)); lr++) {  // left row (i.e. from i). TO DO: change left/right to i/x
-        upp = prevupp = nr;
-        low = prevlow = (LOGICAL(isorted)[0]) ? low : -1;
-        INTEGER(retFirst)[lr] = INTEGER(nomatch)[0];   // default to no match for NA goto below
-        // INTEGER(retLength)[lr] = 0;   // could do this to save the branch and later branches in R to set .N to 0
-        INTEGER(retLength)[lr] = INTEGER(nomatch)[0]==0 ? 0 : 1;
-        for(col=0; col<coln && low<upp-1; col++) {
-            lc = VECTOR_ELT(left,INTEGER(leftcols)[col]);
-            rc = VECTOR_ELT(right,INTEGER(rightcols)[col]);
-
-            prevlow = low;
-            prevupp = upp;
-            type = TYPEOF(lc);
-            switch (type) {
-            case LGLSXP : case INTSXP :   // including factors
-                lval.i = INTEGER(lc)[lr];
-                // if (lval.i==NA_INTEGER) goto nextlr; // TO DO: remove 'if' if NA are allowed in key (could do)
-                //                                      // break breaks out of this switch, but we want to break this loop
-                while(low < upp-1) {
-                    mid = low+((upp-low)/2);
-                    rval.i = INTEGER(rc)[mid];
-                    if (rval.i<lval.i) {          // relies on NA_INTEGER == INT_MIN, tested above with error if not
-                        low=mid;
-                    } else if (rval.i>lval.i) {   // TO DO:  more efficient 3-way branch using C ?.
-                        upp=mid;
-                    } else { // rval.i == lval.i)
-                        // branch mid to find start and end of this == series [multi-column binary search]
-                        // TO DO: not if mult=first or last 
-                        newlow = mid;
-                        newupp = mid;
-                        while(newlow<upp-1) {  // considered switching off these two whiles if only first or last are required. But these loops will be within the final page and all in cache so unlikely to make much difference. And, we need them anyway for penultimate columns (the first for column 2 is unlikely to be the first matching column 1).
-                            mid = newlow+((upp-newlow)/2);
-                            rval.i = INTEGER(rc)[mid];
-                            if (rval.i == lval.i) newlow=mid; else upp=mid;
-                            // TO DO: replace if with ?: using essentially c(newlow,upp)[rval==lval]=mid; maybe sign()
-                        }
-                        while(low<newupp-1) {
-                            mid = low+((newupp-low)/2);
-                            rval.i = INTEGER(rc)[mid];
-                            if (rval.i == lval.i) newupp=mid; else low=mid;
-                        }
-                        break;
-                        // low and upp now surround the group and we only need this range of the next column
-                    }
-                }
-                break;
-            case STRSXP :
-                // lval_c and rval_c are added to address bugs reg. character encoding - bugs #5159 and #5266
-                lval.s = STRING_ELT(lc,lr);
-                // if (lval.s==NA_STRING) goto nextlr;
-                while(low < upp-1) {
-                    mid = low+((upp-low)/2);
-                    rval.s = STRING_ELT(rc,mid);
-                    // if (rval.s == NA_STRING) error("NA not allowed in keys"); should be in setkey as some NA may be missed by the binary search here.
-                    if (lval.s == rval.s) {
-                        newlow = mid;
-                        newupp = mid;
-                        while(newlow<upp-1) {
-                            mid = newlow+((upp-newlow)/2);
-                            rval.s = STRING_ELT(rc,mid);
-                            if (lval.s == rval.s) newlow=mid; else upp=mid;
-                        }
-                        while(low<newupp-1) {
-                            mid = low+((newupp-low)/2);
-                            rval.s = STRING_ELT(rc,mid);
-                            if (lval.s == rval.s) newupp=mid; else low=mid;
-                        }
-                        break;
-                    } else if (StrCmp(rval.s, lval.s) < 0) {
-                    // TO DO: Reinvestigate non-ASCII. Switch can be a column level check that all is ascii
-                    // (setkey can check and mark). Used to use Rf_Scollate but was removed from r-devel API.
-                    // We're using the last line of scmp in sort.c since we already dealt with NA and == above
-                        if (enc_warn && ENCODING(lval.s) != ENCODING(rval.s) && lval.s != NA_STRING && rval.s != NA_STRING) {
-                            warning("Encoding of character column '%s' in X is different from column '%s' in Y in join X[Y]. Joins are not implemented yet for non-identical character encodings and therefore likely to contain unexpected results for those entries. Please ensure that character columns have identical encodings for joins.", CHAR(STRING_ELT(getAttrib(right,R_NamesSymbol),col)), CHAR(STRING_ELT(getAttrib(left,R_NamesSymbol),col)));
-                            enc_warn=FALSE; // just warn once
-                        }
-                        low=mid;
-                    } else {
-                        if (enc_warn && ENCODING(lval.s) != ENCODING(rval.s) && lval.s != NA_STRING && rval.s != NA_STRING) {
-                            warning("Encoding of character column '%s' in X is different from column '%s' in Y in join X[Y]. Joins are not implemented yet for non-identical character encodings and therefore likely to contain unexpected results for those entries. Please ensure that character columns have identical encodings for joins.", CHAR(STRING_ELT(getAttrib(right,R_NamesSymbol),col)), CHAR(STRING_ELT(getAttrib(left,R_NamesSymbol),col)));
-                            enc_warn=FALSE; // just warn once
-                        }
-                        upp=mid;
-                    }
-                }
-                break;
-            case REALSXP :
-                // hack to pull out the binary search results for NA and NaN
-                lc_ul = (unsigned long long*)REAL(lc);
-                rc_ul = (unsigned long long*)REAL(rc);
-
-                // same comments for INTSXP apply here
-                lval.d = REAL(lc)[lr];
-                unsigned long long lval_ud, rval_ud;
-                lval_ud = lc_ul[lr];
-                // if (ISNAN(lval.d)) goto nextlr;
-                while(low < upp-1) {
-                    mid = low+((upp-low)/2);
-                    rval.d = REAL(rc)[mid];
-                    rval_ud = rc_ul[mid];
-                     // if lval is NA and rval is NaN, upp=mid *must* execute - not sure how to incorporate this into existing if-statements
-                    if (rval_ud == R_UNSIGNED_LONG_NAN_REAL && lval_ud == R_UNSIGNED_LONG_NA_REAL) {
-                        upp = mid;
-                    } else if (rval.d<lval.d-tol || (ISNAN(rval.d) && rval_ud != lval_ud)) {
-                        low=mid;
-                    } else if (rval.d>lval.d+tol || (ISNAN(lval.d) && lval_ud != rval_ud)) {
-                        upp=mid;
-                    } else { // rval.d == lval.d) 
-                        newlow = mid;
-                        newupp = mid;
-                        while(newlow<upp-1) {
-                            mid = newlow+((upp-newlow)/2);
-                            rval.d = REAL(rc)[mid];
-                            rval_ud = rc_ul[mid];
-                            if (fabs(rval.d-lval.d)<tol || lval_ud == rval_ud) newlow=mid; else upp=mid;
-                        }
-                        while(low<newupp-1) {
-                            mid = low+((newupp-low)/2);
-                            rval.d = REAL(rc)[mid];
-                            rval_ud = rc_ul[mid];
-                            if (fabs(rval.d-lval.d)<tol || lval_ud == rval_ud) newupp=mid; else low=mid;
-                        }
-                        break;
-                    }
-                }
-                break;
-            default:
-                error("Type '%s' not supported as key column", type2char(type));
-            }
-        }
-        if (low<upp-1) {                   // if value found low and upp surround it, unlike standard binary search where low falls on it
-            INTEGER(retFirst)[lr] = low+2; // extra +1 for 1-based indexing at R level
-            len = upp-low-1;
-            INTEGER(retLength)[lr] = len;
-            if (len > 1) LOGICAL(allLen1)[0] = FALSE;
-        } else if (roll!=0.0 && col==coln && lc && rc && (low>prevlow || upp<prevupp)) {
-            // '&& lc && rc' is for test 133 (empty x).  Testing double roll!=0.0 is ok here, i.e. !(roll==FALSE). 
-            // runs once per i row (not each search test), so not hugely time critical
-            if (low != upp-1 || low<prevlow || upp>prevupp) error("Internal error: low!=upp-1 || low<prevlow || upp>prevupp");
-            if (nearest) {   // value of roll ignored currently when nearest
-                if ( low>prevlow && upp<prevupp ) {
-                    if (  ( TYPEOF(lc)==REALSXP && REAL(lc)[lr]-REAL(rc)[low] <= REAL(rc)[upp]-REAL(lc)[lr] )
-                       || ( TYPEOF(lc)<=INTSXP && INTEGER(lc)[lr]-INTEGER(rc)[low] <= INTEGER(rc)[upp]-INTEGER(lc)[lr] )) {
-                        INTEGER(retFirst)[lr] = low+1;
-                        INTEGER(retLength)[lr] = 1;
-                    } else {
-                        INTEGER(retFirst)[lr] = upp+1;
-                        INTEGER(retLength)[lr] = 1;
-                    }
-                } else if (upp==prevupp && LOGICAL(rollends)[1]) {
-                    INTEGER(retFirst)[lr] = low+1;
-                    INTEGER(retLength)[lr] = 1;
-                } else if (low==prevlow && LOGICAL(rollends)[0]) {
-                    INTEGER(retFirst)[lr] = upp+1;
-                    INTEGER(retLength)[lr] = 1;
-                }
-            } else {
-                if ( (   (roll>0.0 && low>prevlow && (upp<prevupp || LOGICAL(rollends)[1]))
-                      || (roll<0.0 && upp==prevupp && LOGICAL(rollends)[1]) )
-                  && (   (TYPEOF(lc)==REALSXP && REAL(lc)[lr]-REAL(rc)[low]-rollabs<tol)
-                      || (TYPEOF(lc)<=INTSXP && (double)(INTEGER(lc)[lr]-INTEGER(rc)[low])-rollabs<tol ) 
-                      || (TYPEOF(lc)==STRSXP)   )) {
-                    INTEGER(retFirst)[lr] = low+1;
-                    INTEGER(retLength)[lr] = 1;
-                } else if 
-                   (  (  (roll<0.0 && upp<prevupp && (low>prevlow || LOGICAL(rollends)[0]))
-                      || (roll>0.0 && low==prevlow && LOGICAL(rollends)[0]) )
-                  && (   (TYPEOF(lc)==REALSXP && REAL(rc)[upp]-REAL(lc)[lr]-rollabs<tol)
-                      || (TYPEOF(lc)<=INTSXP && (double)(INTEGER(rc)[upp]-INTEGER(lc)[lr])-rollabs<tol )
-                      || (TYPEOF(lc)==STRSXP)   )) {
-                    INTEGER(retFirst)[lr] = upp+1;   // == low+2
-                    INTEGER(retLength)[lr] = 1;
-                }
-            }
-            if (low>prevlow) low -= 1; // for tests 148 and 1096
-            // no point setting upp+=1 as upp gets set to nr again, currently.
-        }
-        // nextlr :;
+    if (!isInteger(retFirstArg) || LENGTH(retFirstArg)!=iN) error("retFirst must be integer vector the same length as nrow(i)");
+    retFirst = INTEGER(retFirstArg);
+    if (!isInteger(retLengthArg) || LENGTH(retLengthArg)!=iN) error("retLength must be integer vector the same length as nrow(i)");
+    retLength = INTEGER(retLengthArg);
+    if (!isLogical(allLen1Arg) || LENGTH(allLen1Arg) != 1) error("allLen1 must be a length 1 logical vector");
+    allLen1 = LOGICAL(allLen1Arg);
+    if (!isLogical(rollendsArg) || LENGTH(rollendsArg) != 2) error("rollends must be a length 2 logical vector");
+    rollends = LOGICAL(rollendsArg);
+    
+    if (nearest && TYPEOF(VECTOR_ELT(i, icols[ncol-1]-1))==STRSXP) error("roll='nearest' can't be applied to a character column, yet.");
+         
+    for (int j=0; j<iN; j++) {
+        // defaults need to populated here as bmerge_r may well not touch many locations, say if the last row of i is before the first row of x.
+        retFirst[j] = INTEGER(nomatch)[0];   // default to no match for NA goto below
+        // retLength[j] = 0;   // TO DO: do this to save the branch below and later branches at R level to set .N to 0
+        retLength[j] = INTEGER(nomatch)[0]==0 ? 0 : 1;
     }
+    allLen1[0] = TRUE;  // All-0 and All-NA are considered all length 1 according to R code currently. Really, it means any(length>1).
+    
+    o = NULL;
+    if (!LOGICAL(isorted)[0]) {
+        SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE)));
+        protecti++;
+        if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
+    }
+    
+    bmerge_r(-1,xN,-1,iN,0,1,1);
+    
+    UNPROTECT(protecti);
     return(R_NilValue);
 }
+
+static union {
+  int i;
+  double d;
+  SEXP s;
+} ival, xval;
+
+static int mid, tmplow, tmpupp;  // global to save them being added to recursive stack. Maybe optimizer would do this anyway.
+static SEXP ic, xc;
+static unsigned long long *ic_ul, *xc_ul;  // for NA/NaN numerics.   TO DO: remove.
+
+void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowmax, int uppmax)
+// col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
+// lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
+// uppmax=1 if xuppIn is the upper bound of this group (needed for roll)
+{
+    int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn, j, k, ir, lir; 
+    ir = lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
+    if (o) ir = o[lir]-1;                      // ir = the actual i row if i were ordered
+
+    ic = VECTOR_ELT(i,icols[col]-1);  // ic = i column
+    xc = VECTOR_ELT(x,xcols[col]-1);  // xc = x column
+    // it was checked in bmerge that the types are equal
+    
+    switch (TYPEOF(xc)) {
+    case LGLSXP : case INTSXP :   // including factors
+        ival.i = INTEGER(ic)[ir];
+        // if (lval.i==NA_INTEGER) goto nextlr; // TO DO: remove 'if' if NA are allowed in key (could do)
+        //                                      // break breaks out of this switch, but we want to break this loop
+        while(xlow < xupp-1) {
+            mid = xlow+((xupp-xlow)/2);   // (upp+low)/2 may overflow
+            xval.i = INTEGER(xc)[mid];
+            if (xval.i<ival.i) {          // relies on NA_INTEGER == INT_MIN, tested in init.c
+                xlow=mid;
+            } else if (xval.i>ival.i) {   // TO DO: is *(&xlow, &xupp)[0|1]=mid more efficient than branch?
+                xupp=mid;
+            } else { // xval.i == ival.i)
+                // branch mid to find start and end of this group in this column
+                // TO DO?: not if mult=first|last and col<ncol-1
+                tmplow = mid;
+                tmpupp = mid;
+                while(tmplow<xupp-1) {
+                    mid = tmplow+((xupp-tmplow)/2);
+                    xval.i = INTEGER(xc)[mid];
+                    if (xval.i == ival.i) tmplow=mid; else xupp=mid;
+                }
+                while(xlow<tmpupp-1) {
+                    mid = xlow+((tmpupp-xlow)/2);
+                    xval.i = INTEGER(xc)[mid];
+                    if (xval.i == ival.i) tmpupp=mid; else xlow=mid;
+                }
+                // xlow and xupp now surround the group in xc, we only need this range for the next column
+                break;
+            }
+        }
+        tmplow = lir;
+        tmpupp = lir;
+        while(tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
+            mid = tmplow+((iupp-tmplow)/2);
+            xval.i = INTEGER(ic)[ o ? o[mid]-1 : mid ];   // reuse xval to search in i
+            if (xval.i == ival.i) tmplow=mid; else iupp=mid;
+        }
+        while(ilow<tmpupp-1) {
+            mid = ilow+((tmpupp-ilow)/2);
+            xval.i = INTEGER(ic)[ o ? o[mid]-1 : mid ];
+            if (xval.i == ival.i) tmpupp=mid; else ilow=mid;
+        }
+        // ilow and iupp now surround the group in ic, too
+        break;
+    case STRSXP :
+        // lval_c and rval_c are added to address bugs reg. character encoding - bugs #5159 and #5266
+        ival.s = STRING_ELT(ic,ir);
+        // if (lval.s==NA_STRING) goto nextlr;
+        while(xlow < xupp-1) {
+            mid = xlow+((xupp-xlow)/2);
+            xval.s = STRING_ELT(xc,mid);
+            // if (xval.s == NA_STRING) error("NA not allowed in keys"); should be in setkey as some NA may be missed by the binary search here.
+            if (ival.s == xval.s) {   // TO DO: StrCmp does this inside it, so why not call StrCmp on line above to allow the same string in different encodings to match
+                tmplow = mid;
+                tmpupp = mid;
+                while(tmplow<xupp-1) {
+                    mid = tmplow+((xupp-tmplow)/2);
+                    xval.s = STRING_ELT(xc,mid);
+                    if (ival.s == xval.s) tmplow=mid; else xupp=mid;
+                }
+                while(xlow<tmpupp-1) {
+                    mid = xlow+((tmpupp-xlow)/2);
+                    xval.s = STRING_ELT(xc,mid);
+                    if (ival.s == xval.s) tmpupp=mid; else xlow=mid;
+                }
+                break;
+            } else if (StrCmp(xval.s, ival.s) < 0) {
+            // TO DO: Reinvestigate non-ASCII. Switch can be a column level check that all is ascii
+            // (setkey can check and mark). Used to use Rf_Scollate but was removed from r-devel API.
+            // We're using the last line of scmp in sort.c since we already dealt with NA and == above
+                if (enc_warn && ENCODING(ival.s) != ENCODING(xval.s) && ival.s != NA_STRING && xval.s != NA_STRING) {
+                    warning("Encoding of '%s' in X is different from '%s' in Y in join X[Y]. Joins are not implemented yet for non-identical character encodings and therefore likely to contain unexpected results for those entries. Please ensure that character columns have identical encodings for joins.", CHAR(xval.s), CHAR(ival.s));
+                    enc_warn=FALSE; // just warn once
+                }
+                xlow=mid;
+            } else {
+                if (enc_warn && ENCODING(ival.s) != ENCODING(xval.s) && ival.s != NA_STRING && xval.s != NA_STRING) {
+                    warning("Encoding of '%s' in X is different from '%s' in Y in join X[Y]. Joins are not implemented yet for non-identical character encodings and therefore likely to contain unexpected results for those entries. Please ensure that character columns have identical encodings for joins.", CHAR(xval.s), CHAR(ival.s));
+                    enc_warn=FALSE; // just warn once
+                }
+                xupp=mid;
+            }
+        }
+        tmplow = lir;
+        tmpupp = lir;
+        while(tmplow<iupp-1) {
+            mid = tmplow+((iupp-tmplow)/2);
+            xval.s = STRING_ELT(ic, o ? o[mid]-1 : mid);
+            if (xval.s == ival.s) tmplow=mid; else iupp=mid;
+        }
+        while(ilow<tmpupp-1) {
+            mid = ilow+((tmpupp-ilow)/2);
+            xval.s = STRING_ELT(ic, o ? o[mid]-1 : mid);
+            if (xval.s == ival.s) tmpupp=mid; else ilow=mid;
+        }
+        break;
+    case REALSXP :
+        // hack to pull out the binary search results for NA and NaN.  TO DO: revisit
+        ic_ul = (unsigned long long*)REAL(ic);
+        xc_ul = (unsigned long long*)REAL(xc);
+
+        ival.d = REAL(ic)[ir];
+        unsigned long long ival_ud, xval_ud;
+        ival_ud = ic_ul[ir];
+        // if (ISNAN(ival.d)) goto nextlr;
+        while(xlow < xupp-1) {
+            mid = xlow+((xupp-xlow)/2);
+            xval.d = REAL(xc)[mid];
+            xval_ud = xc_ul[mid];
+             // if ival is NA and xval is NaN, upp=mid *must* execute - not sure how to incorporate this into existing if-statements
+            if (xval_ud == R_UNSIGNED_LONG_NAN_REAL && ival_ud == R_UNSIGNED_LONG_NA_REAL) {
+                xupp = mid;
+            } else if (xval.d<ival.d-tol || (ISNAN(xval.d) && xval_ud != ival_ud)) {
+                xlow=mid;
+            } else if (xval.d>ival.d+tol || (ISNAN(ival.d) && ival_ud != xval_ud)) {
+                xupp=mid;
+            } else { // xval.d == ival.d) 
+                tmplow = mid;
+                tmpupp = mid;
+                while(tmplow<xupp-1) {
+                    mid = tmplow+((xupp-tmplow)/2);
+                    xval.d = REAL(xc)[mid];
+                    xval_ud = xc_ul[mid];
+                    if (fabs(xval.d-ival.d)<tol || ival_ud == xval_ud) tmplow=mid; else xupp=mid;
+                }
+                while(xlow<tmpupp-1) {
+                    mid = xlow+((tmpupp-xlow)/2);
+                    xval.d = REAL(xc)[mid];
+                    xval_ud = xc_ul[mid];
+                    if (fabs(xval.d-ival.d)<tol || ival_ud == xval_ud) tmpupp=mid; else xlow=mid;
+                }
+                break;
+            }
+        }
+        tmplow = lir;
+        tmpupp = lir;
+        while(tmplow<iupp-1) {
+            mid = tmplow+((iupp-tmplow)/2);
+            xval.d = REAL(ic)[ o ? o[mid]-1 : mid ];
+            if (xval.d == ival.d) tmplow=mid; else iupp=mid;
+        }
+        while(ilow<tmpupp-1) {
+            mid = ilow+((tmpupp-ilow)/2);
+            xval.d = REAL(ic)[ o ? o[mid]-1 : mid ];
+            if (xval.d == ival.d) tmpupp=mid; else ilow=mid;
+        }
+        break;
+    default:
+        error("Type '%s' not supported as key column", type2char(TYPEOF(xc)));
+    }
+    
+    if (xlow<xupp-1) {      // if value found, low and upp surround it, unlike standard binary search where low falls on it
+        if (col<ncol-1) bmerge_r(xlow, xupp, ilow, iupp, col+1, 1, 1);  // final two 1's are lowmax and uppmax
+        else {
+            int len = xupp-xlow-1;
+            if (len>1) allLen1[0] = FALSE;
+            for (j=ilow+1; j<iupp; j++) {   // usually iterates once only for j=ir
+                if (o) k=o[j]-1; else k=j;
+                retFirst[k] = xlow+2;       // extra +1 for 1-based indexing at R level
+                retLength[k]= len; 
+            }
+        }
+    }
+    else if (roll!=0.0 && col==ncol-1) {
+        // runs once per i row (not each search test), so not hugely time critical
+        if (xlow != xupp-1 || xlow<xlowIn || xupp>xuppIn) error("Internal error: xlow!=xupp-1 || xlow<xlowIn || xupp>xuppIn");
+        if (nearest) {   // value of roll ignored currently when nearest
+            if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {
+                if (  ( TYPEOF(ic)==REALSXP && REAL(ic)[ir]-REAL(xc)[xlow] <= REAL(xc)[xupp]-REAL(ic)[ir] )
+                   || ( TYPEOF(ic)<=INTSXP && INTEGER(ic)[ir]-INTEGER(xc)[xlow] <= INTEGER(xc)[xupp]-INTEGER(ic)[ir] )) {
+                    retFirst[ir] = xlow+1;
+                    retLength[ir] = 1;
+                } else {
+                    retFirst[ir] = xupp+1;
+                    retLength[ir] = 1;
+                }
+            } else if (uppmax && xupp==xuppIn && rollends[1]) {
+                retFirst[ir] = xlow+1;
+                retLength[ir] = 1;
+            } else if (lowmax && xlow==xlowIn && rollends[0]) {
+                retFirst[ir] = xupp+1;
+                retLength[ir] = 1;
+            }
+        } else {
+            if ( (   (roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
+                  || (roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )
+              && (   (TYPEOF(ic)==REALSXP && REAL(ic)[ir]-REAL(xc)[xlow]-rollabs<tol)
+                  || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(ic)[ir]-INTEGER(xc)[xlow])-rollabs<tol ) 
+                  || (TYPEOF(ic)==STRSXP)   )) {
+                retFirst[ir] = xlow+1;
+                retLength[ir] = 1;
+            } else if
+               (  (  (roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))
+                  || (roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )
+              && (   (TYPEOF(ic)==REALSXP && REAL(xc)[xupp]-REAL(ic)[ir]-rollabs<tol)
+                  || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(xc)[xupp]-INTEGER(ic)[ir])-rollabs<tol )
+                  || (TYPEOF(ic)==STRSXP)   )) {
+                retFirst[ir] = xupp+1;   // == xlow+2
+                retLength[ir] = 1;
+            }
+        }
+        if (iupp-ilow > 2 && retFirst[ir]!=NA_INTEGER) {  // >=2 equal values in the last column being rolling to the same point.  
+            for (j=ilow+1; j<iupp; j++) {                 // will rewrite retFirst[ir] to itself, but that's ok
+                if (o) k=o[j]-1; else k=j;
+                retFirst[k] = retFirst[ir];
+                retLength[k]= 1; 
+            }
+        }
+    }
+    if (ilow>ilowIn && (xlow>xlowIn || (roll!=0.0 && col==ncol-1)))
+        bmerge_r(xlowIn, xlow+1, ilowIn, ilow+1, col, lowmax, uppmax && xlow+1==xuppIn);
+    if (iupp<iuppIn && (xupp<xuppIn || (roll!=0.0 && col==ncol-1)))
+        bmerge_r(xupp-1, xuppIn, iupp-1, iuppIn, col, lowmax && xupp-1==xlowIn, uppmax);
+}
+
 
 SEXP isSortedList(SEXP l, SEXP w, SEXP tolerance)
 {

@@ -105,6 +105,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
     R_useDynamicSymbols(info, FALSE);
     setSizes();
     if (NA_INTEGER != INT_MIN) error("NA_INTEGER [%d] != INT_MIN [%d]. Please report to datatable-help.", NA_INTEGER, INT_MIN);
+    if (NA_INTEGER != NA_LOGICAL) error("NA_INTEGER [%d] != NA_LOGICAL [%d]. Please report to datatable-help.", NA_INTEGER, NA_LOGICAL);
     if (sizeof(int) != 4) error("sizeof(int) is not 4 but %d. Please report to datatable-help.", sizeof(int));
     if (sizeof(double) != 8) error("sizeof(double) is not 8 but %d. Please report to datatable-help.", sizeof(double));
 

@@ -325,7 +325,10 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         roll = if (isTRUE(roll)) +Inf else as.double(roll)
     }
     force(rollends)
-    if (isTRUE(rolltolast)) { roll=+Inf; rollends=c(FALSE,FALSE) }  # for backwards compatibility (rolltolast is deprecated)
+    if (!missing(rolltolast)) {
+        warning("'rolltolast' has been marked 'deprecated' in ?data.table since v1.8.8 on CRAN 3 Mar 2013, see NEWS. Please change to the more flexible 'rollends' instead. 'rolltolast' will be removed in the next version.")
+        if (isTRUE(rolltolast)) { roll=+Inf; rollends=c(FALSE,FALSE) }
+    }
     if (!is.logical(rollends)) stop("rollends must be a logical vector")
     if (length(rollends)>2) stop("rollends must be length 1 or 2")
     if (length(rollends)==1) rollends=rep.int(rollends,2L)
@@ -468,11 +471,11 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                     set(i,j=lc,value=newval)
                 }
             }
-            f__ = integer(nrow(i))
+            f__ = integer(nrow(i))   # these could be returned as a list from bmerge?
             len__ = integer(nrow(i))
-            allLen1 = TRUE
+            allLen1 = logical(1)
             if (verbose) {last.started.at=proc.time()[3];cat("Starting binary search ...");flush.console()}
-            .Call(Cbinarysearch, i, x, as.integer(leftcols-1L), as.integer(rightcols-1L), haskey(i), roll, rollends, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1)
+            .Call(Cbinarysearch, i, x, as.integer(leftcols), as.integer(rightcols), haskey(i), roll, rollends, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1)
             if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
             # length of input nomatch (single 0 or NA) is 1 in both cases.
             # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N

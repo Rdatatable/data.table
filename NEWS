@@ -366,8 +366,11 @@ BUG FIXES
 
 THANKS TO
 
-  o  Zach Mayer for a reproducible segfault in the development version related to radix sorting
-     character strings longer than 20. Test added.
+  o  Zach Mayer for a reproducible segfault in beta test related to radix sorting character
+     strings longer than 20. Test added.
+     
+  o  Simon Biggs for reporting a bug in fread'ing logicals, caught in beta testing. Test added.
+  
 
 NOTES
 
@@ -385,7 +388,9 @@ NOTES
   o  When DT is empty, DT[,col:=""] is no longer a warning. The warning was :
         Supplied 1 items to be assigned to 0 items of column (1 unused)
         
-  o  Thanks to Simon Biggs for reporting a bug in fread'ing logicals, caught in beta testing. Test added.
+  o  Using rolltolast still works but now issues the following warning :
+        "'rolltolast' has been marked 'deprecated' in ?data.table since v1.8.8 on CRAN 3 Mar 2013, see NEWS. Please
+         change to the more flexible 'rollends' instead. 'rolltolast' will be removed in the next version."
   
   o  data.table now depends on R 2.14.0, now over 2 years old (Oct 2011)
 
