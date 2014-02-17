@@ -7,7 +7,7 @@
 
 // .Calls
 SEXP setattrib();
-SEXP binarysearch();
+SEXP bmerge();
 SEXP assign();
 SEXP dogroups();
 SEXP copy();
@@ -50,7 +50,7 @@ SEXP fastmean();
 static const
 R_CallMethodDef callMethods[] = {
 {"Csetattrib", (DL_FUNC) &setattrib, -1},
-{"Cbinarysearch", (DL_FUNC) &binarysearch, -1},
+{"Cbmerge", (DL_FUNC) &bmerge, -1},
 {"Cassign", (DL_FUNC) &assign, -1},
 {"Cdogroups", (DL_FUNC) &dogroups, -1},
 {"Ccopy", (DL_FUNC) &copy, -1},

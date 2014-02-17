@@ -409,7 +409,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         if (is.data.table(i)) {
             if (!haskey(x)) stop("When i is a data.table (or character vector), x must be keyed (i.e. sorted, and, marked as sorted) so data.table knows which columns to join to and take advantage of x being sorted. Call setkey(x,...) first, see ?setkey.")
-            rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in binarysearch
+            rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in bmerge()
             leftcols = if (haskey(i))
                 chmatch(head(key(i),length(rightcols)),names(i))
             else
@@ -474,8 +474,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             f__ = integer(nrow(i))   # these could be returned as a list from bmerge?
             len__ = integer(nrow(i))
             allLen1 = logical(1)
-            if (verbose) {last.started.at=proc.time()[3];cat("Starting binary search ...");flush.console()}
-            .Call(Cbinarysearch, i, x, as.integer(leftcols), as.integer(rightcols), haskey(i), roll, rollends, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1)
+            if (verbose) {last.started.at=proc.time()[3];cat("Starting bmerge ...");flush.console()}
+            .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), haskey(i), roll, rollends, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1)
             if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
             # length of input nomatch (single 0 or NA) is 1 in both cases.
             # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N

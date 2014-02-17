@@ -65,7 +65,7 @@ extern SEXP forder();
 
 void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int lowmax, int uppmax);
 
-SEXP binarysearch(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP rollarg, SEXP rollendsArg, SEXP nomatch, SEXP tolerance, SEXP retFirstArg, SEXP retLengthArg, SEXP allLen1Arg)
+SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP rollarg, SEXP rollendsArg, SEXP nomatch, SEXP tolerance, SEXP retFirstArg, SEXP retLengthArg, SEXP allLen1Arg)
 {
     int xN, iN, protecti=0;
 
