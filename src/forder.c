@@ -524,13 +524,14 @@ static int maxlen = 1;
 static SEXP *cradix_xtmp = NULL;
 static int cradix_xtmp_alloc = 0;
 
-static int StrCmp(SEXP x, SEXP y)     // a local static copy of StrCmp since countingcharacter.c will mostly be deprecated
+int StrCmp(SEXP x, SEXP y)            // also used by bmerge and chmatch
 {
     if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
     if (x == NA_STRING) return -1;    // x<y
     if (y == NA_STRING) return 1;     // x>y
-    return strcmp(CHAR(x), CHAR(y));  // can return 0 here for the same string in different encodings (good),
-}                                     // but ordering is ascii only (C locale). TO DO: revisit and allow user to change to strcoll.
+    return strcmp(CHAR(x), CHAR(y));  // can return 0 here for the same string in known and unknown encodings, good if the unknown string is in that encoding but not if not
+}                                     // ordering is ascii only (C locale). TO DO: revisit and allow user to change to strcoll, and take account of Encoding
+                                      // see comments in bmerge()
 
 static void cradix_r(SEXP *xsub, int n, int radix)
 // xsub is a unique set of CHARSXP, to be ordered by reference

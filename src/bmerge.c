@@ -5,8 +5,8 @@
 //#include <sys/mman.h>
 #include <fcntl.h>
 
-#define ENCODING(x) (LEVELS(x) & 76) // get encoding
-// LATIN1_MASK (1<<2) | UTF8_MASK (1<<3) | ASCII_MASK (1<<6)
+#define ENC_KNOWN(x) (LEVELS(x) & 12)
+// 12 = LATIN1_MASK (1<<2) | UTF8_MASK (1<<3),  but I couldn't find a way to use these macros in Defn.h so assumed they are private to R
 
 /* for isSortedList */
 #define FLIP_SIGN_BIT   0x8000000000000000
@@ -39,7 +39,8 @@ static unsigned long long R_NaN_unsigned_long() {
     return (*ans);
 }
 
-int StrCmp(SEXP x, SEXP y);   // in countingcharacter.c
+extern SEXP forder();
+extern int StrCmp(SEXP x, SEXP y);   // in forder.c
 
 /*
 Implements binary search (a.k.a. divide and conquer).
@@ -60,8 +61,6 @@ static unsigned long long R_UNSIGNED_LONG_NA_REAL;
 static unsigned long long R_UNSIGNED_LONG_NAN_REAL;
 static double roll, rollabs;
 static Rboolean nearest=FALSE, enc_warn=TRUE;
-
-extern SEXP forder();
 
 void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int lowmax, int uppmax);
 
@@ -150,19 +149,17 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
 // lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
 // uppmax=1 if xuppIn is the upper bound of this group (needed for roll)
 {
-    int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn, j, k, ir, lir; 
+    int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn, j, k, ir, lir, tmp; 
     ir = lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
     if (o) ir = o[lir]-1;                      // ir = the actual i row if i were ordered
 
     ic = VECTOR_ELT(i,icols[col]-1);  // ic = i column
     xc = VECTOR_ELT(x,xcols[col]-1);  // xc = x column
-    // it was checked in bmerge that the types are equal
+    // it was checked in bmerge() that the types are equal
     
     switch (TYPEOF(xc)) {
     case LGLSXP : case INTSXP :   // including factors
         ival.i = INTEGER(ic)[ir];
-        // if (lval.i==NA_INTEGER) goto nextlr; // TO DO: remove 'if' if NA are allowed in key (could do)
-        //                                      // break breaks out of this switch, but we want to break this loop
         while(xlow < xupp-1) {
             mid = xlow+((xupp-xlow)/2);   // (upp+low)/2 may overflow
             xval.i = INTEGER(xc)[mid];
@@ -170,7 +167,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
                 xlow=mid;
             } else if (xval.i>ival.i) {   // TO DO: is *(&xlow, &xupp)[0|1]=mid more efficient than branch?
                 xupp=mid;
-            } else { // xval.i == ival.i)
+            } else { // xval.i == ival.i  including NA_INTEGER==NA_INTEGER
                 // branch mid to find start and end of this group in this column
                 // TO DO?: not if mult=first|last and col<ncol-1
                 tmplow = mid;
@@ -204,41 +201,36 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         // ilow and iupp now surround the group in ic, too
         break;
     case STRSXP :
-        // lval_c and rval_c are added to address bugs reg. character encoding - bugs #5159 and #5266
         ival.s = STRING_ELT(ic,ir);
-        // if (lval.s==NA_STRING) goto nextlr;
         while(xlow < xupp-1) {
             mid = xlow+((xupp-xlow)/2);
             xval.s = STRING_ELT(xc,mid);
-            // if (xval.s == NA_STRING) error("NA not allowed in keys"); should be in setkey as some NA may be missed by the binary search here.
-            if (ival.s == xval.s) {   // TO DO: StrCmp does this inside it, so why not call StrCmp on line above to allow the same string in different encodings to match
+            if (enc_warn && (ENC_KNOWN(ival.s) || ENC_KNOWN(xval.s))) {
+                // The || is only done here to avoid the warning message being repeating in this code.
+                warning("A known encoding (latin1 or UTF-8) was detected in a join column. data.table compares the bytes currently, so doesn't support *mixed* encodings well; i.e., using both latin1 and UTF-8, or if any unknown encodings are non-ascii and some of those are marked known and others not. But if either latin1 or UTF-8 is used exclusively, and all unknown encodings are ascii, then the result should be ok. In future we will check for you and avoid this warning if everything is ok. The tricky part is doing this without impacting performance for ascii-only cases.");
+                // TO DO: check and warn in forder whether any strings are non-ascii (>127) but unknown encoding
+                //        check in forder whether both latin1 and UTF-8 have been used
+                //        See bugs #5159 and #5266 and related #5295 to revisit
+                enc_warn = FALSE;  // just warn once
+            }
+            tmp = StrCmp(xval.s, ival.s);  // uses pointer equality first, NA_STRING are allowed and joined to, then uses strcmp on CHAR().
+            if (tmp == 0) {                // TO DO: deal with mixed encodings and locale optionally
                 tmplow = mid;
                 tmpupp = mid;
                 while(tmplow<xupp-1) {
                     mid = tmplow+((xupp-tmplow)/2);
                     xval.s = STRING_ELT(xc,mid);
-                    if (ival.s == xval.s) tmplow=mid; else xupp=mid;
-                }
+                    if (ival.s == xval.s) tmplow=mid; else xupp=mid;  // the == here assumes (within this column) no mixing of latin1 and UTF-8, and no unknown non-ascii
+                }                                                     // TO DO: add checks to forder, see above.
                 while(xlow<tmpupp-1) {
                     mid = xlow+((tmpupp-xlow)/2);
                     xval.s = STRING_ELT(xc,mid);
-                    if (ival.s == xval.s) tmpupp=mid; else xlow=mid;
+                    if (ival.s == xval.s) tmpupp=mid; else xlow=mid;  // see above re ==
                 }
                 break;
-            } else if (StrCmp(xval.s, ival.s) < 0) {
-            // TO DO: Reinvestigate non-ASCII. Switch can be a column level check that all is ascii
-            // (setkey can check and mark). Used to use Rf_Scollate but was removed from r-devel API.
-            // We're using the last line of scmp in sort.c since we already dealt with NA and == above
-                if (enc_warn && ENCODING(ival.s) != ENCODING(xval.s) && ival.s != NA_STRING && xval.s != NA_STRING) {
-                    warning("Encoding of '%s' in X is different from '%s' in Y in join X[Y]. Joins are not implemented yet for non-identical character encodings and therefore likely to contain unexpected results for those entries. Please ensure that character columns have identical encodings for joins.", CHAR(xval.s), CHAR(ival.s));
-                    enc_warn=FALSE; // just warn once
-                }
+            } else if (tmp < 0) {
                 xlow=mid;
             } else {
-                if (enc_warn && ENCODING(ival.s) != ENCODING(xval.s) && ival.s != NA_STRING && xval.s != NA_STRING) {
-                    warning("Encoding of '%s' in X is different from '%s' in Y in join X[Y]. Joins are not implemented yet for non-identical character encodings and therefore likely to contain unexpected results for those entries. Please ensure that character columns have identical encodings for joins.", CHAR(xval.s), CHAR(ival.s));
-                    enc_warn=FALSE; // just warn once
-                }
                 xupp=mid;
             }
         }
@@ -247,12 +239,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         while(tmplow<iupp-1) {
             mid = tmplow+((iupp-tmplow)/2);
             xval.s = STRING_ELT(ic, o ? o[mid]-1 : mid);
-            if (xval.s == ival.s) tmplow=mid; else iupp=mid;
+            if (xval.s == ival.s) tmplow=mid; else iupp=mid;   // see above re ==
         }
         while(ilow<tmpupp-1) {
             mid = ilow+((tmpupp-ilow)/2);
             xval.s = STRING_ELT(ic, o ? o[mid]-1 : mid);
-            if (xval.s == ival.s) tmpupp=mid; else ilow=mid;
+            if (xval.s == ival.s) tmpupp=mid; else ilow=mid;   // see above re == 
         }
         break;
     case REALSXP :

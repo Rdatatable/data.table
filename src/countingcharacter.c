@@ -111,13 +111,15 @@ const int incs[16] = {1073790977, 268460033, 67121153, 16783361, 4197377,
                1050113, 262913, 65921, 16577, 4193, 1073, 281, 77,
                23, 8, 1};
 
-int StrCmp(SEXP x, SEXP y)
+extern int StrCmp(SEXP x, SEXP y);
+/*
 {
     if (x == NA_STRING) return (y == NA_STRING ? 0 : -1);
     if (y == NA_STRING) return 1;
-    if (x == y) return 0;  // same string in cache
+    if (x == y) return 0;  // same string in cache.   This line should be first,  as it is now in forder.c
     return strcmp(CHAR(x), CHAR(y));
 }
+*/
 
 void ssort2(SEXP *x, R_len_t n)
 // Copied from src/main/sort.c.
