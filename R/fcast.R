@@ -36,10 +36,10 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         stop("Only 'value.var' column maybe of type 'list'. This may change in the future.")
     drop <- as.logical(drop[1])
     if (is.na(drop)) stop("'drop' must be TRUE/FALSE")
-    is_sorted <- FALSE # replaced is.sorted with is_sorted (as it clashes with the new function)
-    # added || is.sorted(DT, ff_) after Matthew added is.sorted - now we can check for "sortedness" even if key isn't set
-    if ((!is.null(key(data)) && length(ff_) <= length(key(data)) && all(key(data) == ff_[1:length(key(data))])) || is.sorted(data, ff_)) 
-        is_sorted = TRUE
+    
+    is_sorted = length(key(data)) && length(ff_)<=length(key(data)) && all(key(data) == ff_[1:length(key(data))]) 
+    # is_sorted means by_key really. Not calling is.sorted() here, as that's done by forder at C level inside Cfcast
+    
     # TO DO: better way... not sure how else to get an expression from function (in fun.aggregate)
     m <- as.list(match.call()[-1])
     subset <- m$subset[[2]]

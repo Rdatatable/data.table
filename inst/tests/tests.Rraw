@@ -138,6 +138,21 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
 .timingtests = FALSE
 started.at = Sys.time()
 
+if (!.devtesting) {
+    is.sorted = data.table:::is.sorted
+    forder = data.table:::forder
+    null.data.table = data.table:::null.data.table
+    ordernumtol = data.table:::ordernumtol   # TO DO: deprecated, remove
+    iradixorder = data.table:::iradixorder   # TO DO: deprecated, remove
+    dradixorder = data.table:::dradixorder   # TO DO: deprecated, remove
+    duplist = data.table:::duplist
+    uniqlist = data.table:::uniqlist
+    uniqlengths = data.table:::uniqlengths
+    setrev = data.table:::setrev
+    setreordervec = data.table:::setreordervec
+}
+
+
 TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
 setkey(TESTDT,a,b)
 # i.e.       a b v
@@ -379,7 +394,7 @@ test(116, TESTDT[,a[1],by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d
 test(117, TESTDT[,list(a[1],v[1]),by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d","d"), V2=INT(7,1,3,5), key="b"))
 
 # We no longer check i for out of bounds, for consistency with data.frame. NA rows should be returned for i>nrow
-test(118, TESTDT[8], data.table(a=as.character(NA), b=as.character(NA), v=as.integer(NA)))
+test(118, TESTDT[8], data.table(a=as.character(NA), b=as.character(NA), v=as.integer(NA), key="b"))
 test(119, TESTDT[6:9], data.table(a=c("d","d",NA,NA), b=c("i","i",NA,NA), v=c(5L,6L,NA,NA)))
 
 n=10000
@@ -467,12 +482,12 @@ test(151.2, a[J("b"),a]$a, 3:4)
 a = data.table(x=factor(letters[rep(1:5, each =2)], levels=letters[5:1]),
                y=factor(letters[rep(c(6,9,7,10,8), each =2)], levels=letters[10:6]),
                z=1:10)
-test(152, is.unsorted(levels(a$x)), TRUE)
-test(153, is.unsorted(levels(a$y)), TRUE)
+test(152, is.sorted(levels(a$x)), FALSE)
+test(153, is.sorted(levels(a$y)), FALSE)
 test(154, a[,sum(z),by=x][1,paste(x,V1)], "a 3")  # ad hoc by doesn't sort the groups so 'a' (5th level) should be first
 setkey(a,x)    # 'e' (level 1) should come first now.
-test(155, is.unsorted(levels(a$x)), TRUE)
-test(156, is.unsorted(levels(a$y)), TRUE)
+test(155, is.sorted(levels(a$x)), FALSE)
+test(156, is.sorted(levels(a$y)), FALSE)
 test(157, a[,sum(z),by=x][1,paste(x,V1)], "e 19")  # 1st level is now first
 test(158, a[,sum(z),by=y][1,paste(y,V1)], "h 19")  # not 'f'
 test(158.5, a[,sum(z),keyby=y][1,paste(y,V1)], "j 15")  # not 'f' either
@@ -609,7 +624,7 @@ test(205, x[y,list(d),mult="all"][,d], c(1,2,NA,NA))
 # be returned all NA (rarely useful and often confusing, but consistent
 # with data.frame).
 TESTDT = data.table(a=1:3,v=1:3,key="a")
-test(206, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_))  # NA not allowed in keys, so doesn't retain key
+test(206, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_,key="a"))  # NA are now allowed in keys, so retains key
 setkey(TESTDT,NULL)
 test(207, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_))
 
@@ -1212,11 +1227,7 @@ test(407, data.table(list(1:2,3:5)), as.data.table(list(list(1:2,3:5))))
 # With over-allocation, null data.table has truelength 100. Replaced the calls to structure() in the
 # code to new null.data.table(), so test internal function. User may have changed default, so this
 # doesn't test "100" explicitly.
-if (.devtesting) {
-    test(408, null.data.table(), data.table(NULL))
-} else {
-    test(408, data.table:::null.data.table(), data.table(NULL))
-}
+test(408, null.data.table(), data.table(NULL))
 test(408.5, data.table(), data.table(NULL))
 
 # Test that adding a column using := is fully by reference rather than a shallow copy, #1646
@@ -1562,8 +1573,8 @@ if ("package:nlme" %in% search()) {
 if (.timingtests) {
   cat("Running 30sec (max) test ...");flush.console()
   n = 1e6
-  a = as.character(as.hexmode(sample(n,replace=T)))
-  b = as.character(as.hexmode(sample(n,replace=T)))
+  a = as.character(as.hexmode(sample(n,replace=TRUE)))
+  b = as.character(as.hexmode(sample(n,replace=TRUE)))
   test(529, system.time(ans1<-match(a,b))["user.self"] > system.time(ans2<-chmatch(a,b))["user.self"])
   test(530, ans1, ans2)
   # sorting a and b no longer makes a difference since both match and chmatch work via hash in some way or another
@@ -1727,9 +1738,9 @@ test(599, DT[c(8,9,4,11,2,10,7,1,3,5,6)], setkey(setkey(DT),NULL))
 set.seed(1)
 DT = data.table(x=rep(c(1,2), each=10), y=rnorm(20))
 setkey(DT, x, y)
-test(600, !is.unsorted(DT$x))
-test(601, is.unsorted(DT$y))
-test(602, order(DT$x,DT$y), 1:20)
+test(600, is.sorted(DT$x))
+test(601, !is.sorted(DT$y))
+test(602, base::order(DT$x,DT$y), 1:20)
 
 # Test that as.list.data.table no longer copies via unclass, so speeding up sapply(DT,class) and lapply(.SD,...) etc, #2000
 N = if (.devtesting) 1e6 else 1e4
@@ -1748,8 +1759,8 @@ test(607, system.time(for (i in 1:1000) DT[i,V1:=i])["user.self"] < 10)  # 10 to
 test(608, DT[1:1000,V1], 1:1000)
 
 # Crash bug of chorder(character()), #2026
-test(609, chorder(character()), order(character()))
-test(610, chorder(""), order(""))
+test(609, chorder(character()), base::order(character()))
+test(610, chorder(""), base::order(""))
 
 # := by group
 DT = data.table(a=1:3,b=(1:9)/10)
@@ -2160,7 +2171,7 @@ Y[,A:=1:26]
 Y[,p:=factor(p)]  # coerce type to match DT$Species to save warning. Crash was related to .BY internally, not the coercion.
 setkey(Y,p)
 for (i in 1:10){DT[Y,Petal.Width];DT[Y];NULL}  # reliable crash in 1.8.2 (tested).
-test(768, DT[Y,Petal.Width], data.table(Species=factor(LETTERS),Petal.Width=NA_real_))
+test(768, DT[Y,Petal.Width], data.table(Species=factor(LETTERS),Petal.Width=NA_real_,key="Species"))
 DT = data.table(a=1:3,b=1:6,c=7:12, key="a")
 test(769, DT[,.BY[[1]]==a,by=a], data.table(a=1:3,V1=TRUE,key="a"))
 test(770, DT[J(2:3),.BY[[1]]==b], data.table(a=INT(2,2,3,3),V1=c(TRUE,FALSE),key="a"))
@@ -2600,7 +2611,7 @@ test(924, X[J(c(1,1,1))], error="Join results in 9 rows; more than 6 = max(nrow(
 # sorting of 'double' columns not correct for ties (tolerance nuance in C code), #2484
 DT = data.table(X=as.POSIXct( c(rep("15DEC2008:00:00:00",10),"15DEC2008:00:00:00",rep("17DEC2008:00:00:00",2)),format="%d%b%Y:%H:%M:%S"),Y=c(1534,61,74,518,519,1519,1520,1524,3127,29250,30609,43,7853))
 setkey(DT,X,Y)
-test(925, DT[,order(X,Y)], 1:nrow(DT))
+test(925, DT[,base::order(X,Y)], 1:nrow(DT))
 
 # Test new dogroup warning for zero length columns in result when other columns are >1, #2478
 DT = data.table(a=1:3,b=1:6)
@@ -2769,7 +2780,7 @@ test(995, DT[CJ(c(5,3), c(5,1), sorted=FALSE)], OUT)
 # CJ with ordered factor
 xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2)
-test(996, CJ(xx, yy), setkey(data.table(rep(xx, each=2), rep(sort.int(yy), 2))))
+test(996, CJ(xx, yy), setkey(data.table(rep(xx, each=2), rep(base::sort.int(yy), 2))))
 
 # That CJ orders NA consistently with setkey and historically, now it doesn't use setkey.
 # NA must always come first in data.table throughout, since binary search relies on that internally.
@@ -3298,11 +3309,7 @@ test(1137.1, DT[, .SD, .SDcols=-1L], DT[, 2:3, with=FALSE])
 test(1137.2, DT[, .SD, .SDcols=-(1:2)], DT[, 3, with=FALSE])
 test(1137.3, DT[, .SD, .SDcols=-"y"], DT[, c(1,3), with=FALSE])
 test(1137.4, DT[, .SD, .SDcols=-c("y", "x")], DT[, 3, with=FALSE])
-if (.devtesting) {
-  test(1137.5, DT[, .SD, .SDcols=-which(names(DT) %in% c("x", "y", "z"))], null.data.table())
-} else {
-  test(1137.5, DT[, .SD, .SDcols=-which(names(DT) %in% c("x", "y", "z"))], data.table:::null.data.table())
-}
+test(1137.5, DT[, .SD, .SDcols=-which(names(DT) %in% c("x", "y", "z"))], null.data.table())
 test(1137.6, DT[, .SD, .SDcols=c(1, -2)], error=".SDcols is numeric but has both")
 test(1137.7, DT[, .SD, .SDcols=c("x", -"y")], error="invalid argument to unary")
 test(1137.8, DT[, .SD, .SDcols=c(-1, "x")], error="Some items of .SDcols are")
@@ -3388,20 +3395,11 @@ test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="Input is 
 # R-wrapper is dradixorder
 set.seed(45)
 x <- rnorm(1e6)*1e4
-if (.devtesting) {
-  test(1147.1, order(x), dradixorder(x, tol=numeric(0))) # order doesn't test with tolerance
-  test(1147.2, ordernumtol(x), dradixorder(x))
-} else {
-  test(1147.1, order(x), data.table:::dradixorder(x, tol=numeric(0))) # order doesn't test with tolerance
-  test(1147.2, data.table:::ordernumtol(x), data.table:::dradixorder(x))
-}
+test(1147.1, base::order(x), dradixorder(x, tol=numeric(0))) # base::order doesn't test with tolerance
+test(1147.2, ordernumtol(x), dradixorder(x))
 tol = .Machine$double.eps^0.5
 x <- c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.18909, NaN, 5.18909-1.2*tol, 5.18909-0.04*tol)
-if (.devtesting) {
-  test(1147.3, dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
-} else {
-  test(1147.3, data.table:::dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
-}
+test(1147.3, dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
 
 if ("package:reshape2" %in% search()) {
     try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
@@ -3427,13 +3425,9 @@ if ("package:reshape2" %in% search()) {
 }
 
 # test for `iradixorder` when input is integer(0) and numeric(0)
-if (.devtesting) {
-  test(1149.1, iradixorder(integer(0)), integer(0)) 
-  test(1149.2, iradixorder(numeric(0)), error="iradixorder is only for integer") 
-} else {
-  test(1149.1, data.table:::iradixorder(integer(0)), integer(0)) 
-  test(1149.2, data.table:::iradixorder(numeric(0)), error="iradixorder is only for integer") 
-}
+test(1149.1, iradixorder(integer(0)), integer(0)) 
+test(1149.2, iradixorder(numeric(0)), error="iradixorder is only for integer") 
+
 # more tests for `dcast.data.table` with formula being character and errors when formula is a hybrid
 set.seed(1)
 x <- data.table(a=rep(1:5, each=5), b=runif(25))
@@ -3444,27 +3438,15 @@ test(1150.3, dcast.data.table(x, a ~  a, value.var="c"), error="'value.var' colu
 # testing equivalence of duplist and uniqlist
 set.seed(45)
 x <- sample(c(NA_integer_, 1:1e5), 1e7, TRUE)
-if (.devtesting) {
-  ox <- iradixorder(x)
-  o1 <- duplist(list(x), ox)
-  o2 <- uniqlist(list(x), ox)
-  test(1151.1, o1, o2)
-  test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o2, length(x)))
-  o1 <- duplist(list(x))
-  o2 <- uniqlist(list(x))
-  test(1151.3, o1, o2)
-  test(1151.4, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o2, length(x)))
-} else {
-  ox <- data.table:::iradixorder(x)
-  o1 <- data.table:::duplist(list(x), ox)
-  o2 <- data.table:::uniqlist(list(x), ox)
-  test(1151.1, o1, o2)
-  test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), data.table:::uniqlengths(o2, length(x)))
-  o1 <- data.table:::duplist(list(x))
-  o2 <- data.table:::uniqlist(list(x))
-  test(1151.3, o1, o2)
-  test(1151.4, c(diff(o1), length(x)-tail(o1, 1L)+1L), data.table:::uniqlengths(o2, length(x)))
-}
+ox <- iradixorder(x)
+o1 <- duplist(list(x), ox)
+o2 <- uniqlist(list(x), ox)
+test(1151.1, o1, o2)
+test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o2, length(x)))
+o1 <- duplist(list(x))
+o2 <- uniqlist(list(x))
+test(1151.3, o1, o2)
+test(1151.4, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o2, length(x)))
 
 # #5190 fix - grouping with .SDcols gave "symbol not subsettable error" - consequence of FR #4979 implementation
 dt = data.table(grp = sample(letters[1:3],20, replace = TRUE), v1 = rnorm(20), v2 = rnorm(20))
@@ -3549,10 +3531,6 @@ test(1159.8, setDT(x), error="Argument 'x' to 'setDT' should be a")
 x <- list(1, 2:3)
 test(1159.9, setDT(x), error="All elements in argument 'x' to 'setDT'")
 
-if (!.devtesting) {
-    setrev <- data.table:::setrev
-}
-
 # tests for setrev
 x <- sample(10)
 y <- rev(x)
@@ -3582,55 +3560,51 @@ x <- list(1:10)
 test(1160.7, setrev(x), error="Input 'x' must be a vector")
 
 # tests for setreordervec
-if (!.devtesting) {
-    setreordervec <- data.table:::setreordervec
-}
 # integer
 x <- sample(c(-10:10, NA), 100, TRUE)
-o <- order(x, na.last=FALSE) # using base order here
+o <- base::order(x, na.last=FALSE)
 y <- copy(x)
 setreordervec(y, o)
 test(1161.1, x[o], y)
 # numeric
 x <- sample(c(NA, rnorm(10)), 100, TRUE)
-o <- order(x, na.last=FALSE)
+o <- base::order(x, na.last=FALSE)
 y <- copy(x)
 setreordervec(y, o)
 test(1161.2, x[o], y)
 # character
 x <- sample(c(NA, letters), 100, TRUE)
-o <- order(x, na.last=FALSE)
+o <- base::order(x, na.last=FALSE)
 y <- copy(x)
 setreordervec(y, o)
 test(1161.3, x[o], y)
 
 # tests for setreordervec
-if (!.devtesting) is.sorted <- data.table:::is.sorted
 DT <- data.table(x=sample(c(NA, -10:10), 2e2, TRUE), 
       y=sample(c(NA, NaN, -Inf, Inf, -10:10), 2e2, TRUE), 
       z=sample(c(NA, letters), 2e2, TRUE))
 # when not sorted, should return FALSE
-test(1162.1, is.sorted(DT, by=1L), FALSE)
+test(1162.1, is.sorted(DT[[1L]]), FALSE)
 setkey(DT, x)
-test(1162.2, is.sorted(DT, by=1L), TRUE)
+test(1162.2, is.sorted(DT[[1L]]), TRUE)
 
-test(1162.3, is.sorted(DT, by=2L), FALSE)
+test(1162.3, is.sorted(DT[[2L]]), FALSE)
 setkey(DT, y)
-test(1162.4, is.sorted(DT, by=2L), TRUE)
+test(1162.4, is.sorted(DT[[2L]]), TRUE)
 
-test(1162.5, is.sorted(DT, by=3L), FALSE)
+test(1162.5, is.sorted(DT[[3L]]), FALSE)
 setkey(DT, z)
-test(1162.6, is.sorted(DT, by=3L), TRUE)
+test(1162.6, is.sorted(DT[[3L]]), TRUE)
 
 setkey(DT, x, y)
-test(1162.7, is.sorted(DT, by=1:2), TRUE)
+test(1162.7, length(forder(DT, by=1:2)), 0)
 setkey(DT, x, z)
-test(1162.8, is.sorted(DT, by=c(1L, 3L)), TRUE)
+test(1162.8, length(forder(DT, by=c(1L, 3L))), 0)
 setkey(DT, y, z)
-test(1162.9, is.sorted(DT, by=2:3), TRUE)
+test(1162.9, length(forder(DT, by=2:3)), 0)
 setkey(DT)
-# test 1162.10 skipped because if it fails it confusingly prints out as 1662.1 not 1662.10 
-test(1162.11, is.sorted(DT, by=1:3), TRUE)
+# test number 1162.10 skipped because if it fails it confusingly prints out as 1662.1 not 1662.10 
+test(1162.11, length(forder(DT, by=1:3)), 0)
 
 # FR #5152 - last on length=0 arguments
 x <- character(0)
@@ -3677,7 +3651,6 @@ ans <- rbind(tmp1, tmp2)
 test(1168.2, as.data.frame(ans), rbind(as.data.frame(tmp1), as.data.frame(tmp2)))
 
 # checks of "" and NA_character_ ordering.
-if (!.devtesting) forder <- data.table:::forder
 test(1169, forder(c(NA,"","a","NA")), INT(1,2,4,3))  # data.table does ascii ordering currently, so N comes before a
 test(1170, length(forder(c(NA,"","NA","a"))), 0)
 test(1171, forder(c("",NA,"a","NA")), INT(2,1,4,3))
@@ -3722,8 +3695,12 @@ a <- c("\"\"\"\")  \" \"   \"  \"    \"",  "\"\"\"\")  \" \"   \"  \"   \"",  "\
 test(1188, forder(a), INT(1,3,2))
 
 # test as.ITime vectorization
-T = c("18:00", "18:00:12")
-test(1189, all(as.character(as.ITime(T)) == c("18:00:00", "18:00:12")))
+x = c("18:00", "18:00:12")
+test(1189, all(as.character(as.ITime(x)) == c("18:00:00", "18:00:12")))
+
+# that CJ() orders in the same order as setkey, #5375
+DT = CJ(c("Corp", "CORP"), 1:3)
+test(1190, setkey(DT), DT)   # tests no warning here from setkey, was "key rebuilt" due to inconsistent locale sorting in v1.8.10
 
 
 ##########################

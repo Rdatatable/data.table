@@ -37,9 +37,10 @@ SEXP uniqlist();
 SEXP uniqlengths();
 SEXP fastradixdouble();
 SEXP fastradixint();
-SEXP isSortedList();
+// SEXP isSortedList();
 SEXP setrev();
 SEXP forder();
+SEXP fsorted();
 SEXP gstart();
 SEXP gend();
 SEXP gsum();
@@ -80,9 +81,10 @@ R_CallMethodDef callMethods[] = {
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
 {"Cfastradixdouble", (DL_FUNC) &fastradixdouble, -1}, 
 {"Cfastradixint", (DL_FUNC) &fastradixint, -1},
-{"CisSortedList", (DL_FUNC) &isSortedList, -1},
+// {"CisSortedList", (DL_FUNC) &isSortedList, -1},
 {"Csetrev", (DL_FUNC) &setrev, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
+{"Cfsorted", (DL_FUNC) &fsorted, -1},
 {"Cgstart", (DL_FUNC) &gstart, -1},
 {"Cgend", (DL_FUNC) &gend, -1},
 {"Cgsum", (DL_FUNC) &gsum, -1},

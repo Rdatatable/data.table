@@ -375,6 +375,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
 }
 
 
+/*
+Deprecated isSortedList.
+Wherever we used this before (e.g. fastorder) we wanted the ordering afterwards anyway if not sorted. These two steps are now done in one in forder.
+This isSortedList wasn't using the new twiddle, either (is still using tolerance).  We need everything consistent going via forder.c
+Timings are secondary, but forder does it column by column which should be faster at detecting unsortedness at the bottom as usually shows up
+in the first column.  If at the top in 2nd column, the 1st column is so fast anyway, that it'll get there quickly.
+
 SEXP isSortedList(SEXP l, SEXP w, SEXP tolerance)
 {
     R_len_t i,j,nrow,ncol;
@@ -384,8 +391,6 @@ SEXP isSortedList(SEXP l, SEXP w, SEXP tolerance)
     double tol = REAL(tolerance)[0];
     ncol = length(l);
     nrow = length(VECTOR_ELT(l,0));
-    if (NA_INTEGER != INT_MIN) error("Internal error: NA_INTEGER (%d) != INT_MIN (%d).", NA_INTEGER, INT_MIN);
-    if (NA_INTEGER != NA_LOGICAL) error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
     for (j=1; j<ncol; j++) if (length(VECTOR_ELT(l,j)) != nrow) error("Column %d is length %d which differs from length of column 1 (%d).", j+1, length(VECTOR_ELT(l,j)), nrow);
     if (!isInteger(w)) error("vector w of columns to test isn't an integer vector");
     for (i=1; i<nrow; i++) {
@@ -421,6 +426,7 @@ SEXP isSortedList(SEXP l, SEXP w, SEXP tolerance)
     }
     return(ScalarLogical(TRUE));
 }
+*/
 
 // require(data.table)
 // set.seed(1L)
@@ -446,27 +452,5 @@ SEXP isSortedList(SEXP l, SEXP w, SEXP tolerance)
 // conclusion: about .33 sec checking NA/NaN/-Inf/Inf! Not bad, I suppose? Can we make it quicker?
 // Note that this is on 1e8. On 1e7 size, this doesn't matter at all as the time to check is 0.07 sec.
 
-
-/*SEXP sortedintegermatch (SEXP ans, SEXP left, SEXP right, SEXP nomatch)
-{
-    // As sortedstringmatch, see comments above, but for integers.
-    int lr,nr,low,mid,upp;
-    if (NA_INTEGER > 0) error("expected internal value of NA_INTEGER %d to be negative",NA_INTEGER);
-    nr = length(right); 
-    for (lr=0; lr < length(left); lr++) {
-        low = -1;
-        upp = nr;
-        while(low < upp-1) {
-            mid = low + (upp-low)/2;
-            if (INTEGER(left)[lr]>INTEGER(right)[mid]) {
-                low=mid;
-            } else {
-                upp=mid;
-            }
-        }
-        INTEGER(ans)[lr] = (upp<nr && INTEGER(left)[lr] == INTEGER(right)[upp]) ? upp+1 : INTEGER(nomatch)[0];
-    }
-    return(R_NilValue);
-}*/
 
 

@@ -17,7 +17,6 @@ extern SEXP which(SEXP x);
 extern SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose);
 extern SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 extern SEXP binarysearch(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP rollarg, SEXP rollends, SEXP nomatch, SEXP tolerance, SEXP retFirst, SEXP retLength, SEXP allLen1);
-extern SEXP isSortedList(SEXP l, SEXP w, SEXP tolerance);
 
 // Note: all these functions below are internal functions and are designed specific to fcast.
 SEXP zero_init(R_len_t n) {
@@ -62,11 +61,11 @@ SEXP cast_order(SEXP v, SEXP env) {
     SEXP call, ans;
     if (TYPEOF(v) != VECSXP) error("Argument 'v' to 'cast_order' must be a list");
     if (TYPEOF(env) != ENVSXP) error("Argument 'env' to (data.table internals) 'cast_order' must be an environment");
-    PROTECT(call = lang2(install("forder"), v));
+    PROTECT(call = lang2(install("forder"), v));   // [Matt] TO DO?: just call forder directly at C level
     ans = PROTECT(eval(call, env));
     if (length(ans) == 0) { // newly implemented fastorder/forder returns integer(0) if it's already sorted
         UNPROTECT(1); // ans
-        ans = PROTECT(seq_int(length(VECTOR_ELT(v, 0)), 1)); 
+        ans = PROTECT(seq_int(length(VECTOR_ELT(v, 0)), 1)); // [Matt] TO DO?: leave it as integer(0) and save reorder in caller
     }
     UNPROTECT(2);
     return(ans);
@@ -305,7 +304,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
     if (TYPEOF(mnames) != STRSXP) error("RHS of parsed formula did not result in character vector, possibly invalid formula");
     if (TYPEOF(vnames) != STRSXP || length(vnames) != 1) error("'value.var' must be a character vector of length 1");
     if (!isEnvironment(env)) error("'.CASTenv' must be an environment");
-    if (!isLogical(sorted) || length(sorted) != 1) error("'is.sorted' must be a logical vector of length 1");
+    if (!isLogical(sorted) || length(sorted) != 1) error("'sorted' must be a logical vector of length 1");
     if (!isLogical(drop) || length(drop) != 1) error("'drop' must be a logical vector of length 1");
     
     nrows = length(VECTOR_ELT(DT, 0));
@@ -373,12 +372,12 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
     memcpy((char *)DATAPTR(lrnames) + ilen*SIZEOF(inames), (char *)DATAPTR(mnames), mlen * SIZEOF(mnames));
     setAttrib(lrdt, R_NamesSymbol, lrnames);
     
-    // sort lrdt and vnames if unsorted
+    // sort lrdt and vnames if unsorted.   [Matt] TO DO?: should be if (length(o = forder(...))) ...
     if (!LOGICAL(sorted)[0]) {
         lro = PROTECT(cast_order(lrdt, env));
         protecti++; // lro
         for (i=0; i<length(lrdt); i++) {
-            cpy = PROTECT(VECTOR_ELT(lrdt, i));
+            cpy = PROTECT(VECTOR_ELT(lrdt, i));  // [Matt] TO DO?: use Creorder here
             tmp = PROTECT(subset(cpy, lro));
             UNPROTECT(2); // cpy, tmp;
             SET_VECTOR_ELT(lrdt, i, tmp);

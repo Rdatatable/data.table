@@ -365,6 +365,10 @@ BUG FIXES
      segfault (or in linux/mac reported an error related to hash tables). This is now fixed, #5355. Thanks to Trevor 
      Alexander for reporting on SO (and mnel for filing the bug report): 
      http://stackoverflow.com/questions/21591433/merging-really-not-that-large-data-tables-immediately-results-in-r-being-killed
+     
+  o  CJ() now orders character vectors in a locale consistent with setkey, #5375. Typically this affected whether
+     upper case letters were ordered before lower case letters; they were by setkey() but not by CJ(). Test added and avenues
+     for differences closed off and nailed down. Many thanks to Malcolm Hawkes for reporting.
 
 THANKS TO
 
@@ -393,6 +397,12 @@ NOTES
   o  Using rolltolast still works but now issues the following warning :
         "'rolltolast' has been marked 'deprecated' in ?data.table since v1.8.8 on CRAN 3 Mar 2013, see NEWS. Please
          change to the more flexible 'rollends' instead. 'rolltolast' will be removed in the next version."
+
+  o  The key is now retained in NA subsets; e.g.,
+        DT = data.table(a=1:3,b=4:6,key="a")
+        DT[NA]   # 1-row of NA now keyed by 'a'
+        DT[5]    # 1-row of NA now keyed by 'a'
+        DT[2:4]  # not keyed as before because NA (last row of result) sorts first in keyed data.table
   
   o  data.table now depends on R 2.14.0, now over 2 years old (Oct 2011)
 

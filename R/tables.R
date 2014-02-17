@@ -20,7 +20,8 @@ tables = function(mb=TRUE,order.col="NAME",width=80,env=parent.frame(),silent=FA
     }
     info$COLS = as.vector(sapply(tab, function(x) paste(colnames(get(x,envir=env)),collapse=",")))
     info$KEY = as.vector(sapply(tab, function(x) paste(attr(get(x,envir=env),"sorted"),collapse=",")))
-    info = info[order(get(order.col))]
+    if (!order.col %in% names(info)) stop("order.col='",order.col,"' not a column name of info") 
+    info = info[base::order(info[[order.col]])]  # base::order to maintain locale ordering of table names
     m = as.matrix(info)
     colnames(m)[2] = sprintf(paste("%",nchar(m[1,"NROW"]),"s",sep=""), "NROW")
     if (mb) colnames(m)[3] = sprintf(paste("%",nchar(m[1,"MB"]),"s",sep=""), "MB")

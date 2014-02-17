@@ -530,7 +530,7 @@ static int StrCmp(SEXP x, SEXP y)     // a local static copy of StrCmp since cou
     if (x == NA_STRING) return -1;    // x<y
     if (y == NA_STRING) return 1;     // x>y
     return strcmp(CHAR(x), CHAR(y));  // can return 0 here for the same string in different encodings (good),
-}                                     // but ordering is ascii only. TO DO: revisit. See scmp in base.
+}                                     // but ordering is ascii only (C locale). TO DO: revisit and allow user to change to strcoll.
 
 static void cradix_r(SEXP *xsub, int n, int radix)
 // xsub is a unique set of CHARSXP, to be ordered by reference
@@ -771,7 +771,7 @@ static int dsorted(double *x, int n)
     int old = gsngrp[flip];
     int tt = 1;
     for (i=1; i<n; i++) {
-        this = twiddle(&x[i]);
+        this = twiddle(&x[i]);    // TO DO: once we get past -Inf, NA and NaN at the bottom,  and +Inf at the top, the middle only need be twiddled for tolerance (worth it?)
         if (this<prev) { gsngrp[flip] = old; return(0); }
         if (this==prev) tt++; else { push(tt); tt=1; }
         prev = this;
@@ -946,7 +946,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
             if (thisgrpn == 1) {i++; push(1); continue;}
             TBEG()
             osub = o+i;
-            // TO DO: if isSorted,  we can just point xsub into x directly. If (*f)() returns 0, though, will have to copy x at that point
+            // ** TO DO **: if isSorted,  we can just point xsub into x directly. If (*f)() returns 0, though, will have to copy x at that point
             //        When doing this,  xsub could be allocated at that point for the first time.
             if (size==4)
                 for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = ((int *)xd)[o[i++]-1];
@@ -1030,6 +1030,30 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg)
     
     UNPROTECT(1);
     return( ans );
+}
+
+
+SEXP fsorted(SEXP x)
+{
+    // Just checks if ordered and returns FALSE early if not (and don't return ordering if so, unlike forder).
+    int tmp,n;
+    void *xd;
+    n = length(x);
+    if (n <= 1) return(ScalarLogical(TRUE));
+    if (!isVectorAtomic(x)) error("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level");
+    xd = DATAPTR(x);
+    stackgrps = FALSE;
+    switch(TYPEOF(x)) {
+    case INTSXP : case LGLSXP :
+        tmp = isorted(xd, n); break;
+    case REALSXP :
+        tmp = dsorted(xd, n); break;
+    case STRSXP :
+        tmp = csorted(xd, n); break;
+    default :
+        error("type '%s' is not yet supported", type2char(TYPEOF(x)));
+    }
+    return(ScalarLogical( tmp==1 ? TRUE : FALSE ));
 }
 
 /*
