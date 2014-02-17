@@ -82,32 +82,21 @@ sort = sort.int = sort.list = order = is.unsorted = function(...)
 # The others (order, sort.int etc) are turned off to protect ourselves from using them internally, for speed and for
 # consistency; e.g., consistent twiddling of numeric/integer64, NA at the beginning of integer, locale ordering of character vectors.
 
-is.sorted = function(x) .Call(Cfsorted, x)
-# Cfsorted could be named CfIsSorted, but since "sorted" is an adjective not verb, it's clear; e.g., Cfsort would sort it ("sort" is verb).
-# Return value of TRUE/FALSE is relied on in data.table.R quite a bit. Simple. Stick with that.
-# Important to call forder.c::fsorted here, for consistent character ordering and numeric/integer64 twiddling.
-# If caller is using is.sorted to know whether to call forder, use forder instead (it returns integer() if already sorted).
-# If a list/data.table is passed to is.sorted,  Cfsorted issues a long error pointing to use if(length(o<-forder(.))) for efficiency.
-
-#    # 
-#    if (is.list(x)) {
-#        if (is.character(by)) by = chmatch(by,names(x))
-#        .Call(CisSortedList, x, as.integer(by), sqrt(.Machine$double.eps))   # TO DO: fsorted will get rid of this tolerance, too.
-#        # TO DO: replace with fsorted for consistency. isSortedList is pretty inconsistent right now.
-#    } else {
-#        if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense.")
-#        identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.na(x))
-#        # TO DO: replace with fsorted for consistency since base::is.unsorted respects locale.  But probably never passed a single character vector here.
-#    }
-#}
-# to delete ...
-# base::is.unsorted returns NA if any NA is found anywhere, hence converting NA to FALSE above.
-# The && is now needed to maintain backwards compatibility after r-devel's change of is.unsorted(NA) to FALSE (was NA) [May 2013].
-# base::is.unsorted calls any(is.na(x)) at R level, could be avoided.
-# TO DO: hook up our own vector is.sorted which checks NAs are just at the start, and then returns TRUE. Since, in data.table
-# our rule is NA at the start.
-# TO DO: instead of TRUE/FALSE, return -1/0/+1  -1=sorted in reverse, 0=not sorted either way, 1=sorted forwards. Conveniently, if (-1) in R is TRUE, since anything !=0 is TRUE, just like C.
-# end to delete.
+is.sorted = function(x, by=seq_along(x)) {
+    if (is.list(x)) {
+        warning("Use 'if (length(o<-forder(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted.")
+        # could pass through a flag for forder to return early on first FALSE. But we don't need that internally
+        # since internally we always then need ordering, an it's better in one step. Don't want inefficiency to creep in.
+        # This is only here for user/debugging use to check/test valid keys; e.g. data.table:::is.sorted(DT,by)
+        0 == length(forder(x,by,retGrp=FALSE,sort=TRUE))
+    } else {
+        if (!missing(by)) stop("x is vector but 'by' is supplied")
+        .Call(Cfsorted, x)
+    }
+    # Cfsorted could be named CfIsSorted, but since "sorted" is an adjective not verb, it's clear; e.g., Cfsort would sort it ("sort" is verb).
+    # Return value of TRUE/FALSE is relied on in [.data.table quite a bit on vectors. Simple. Stick with that (rather than -1/0/+1)
+    # Important to call forder.c::fsorted here, for consistent character ordering and numeric/integer64 twiddling.
+}
 
 forder = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE)
 {

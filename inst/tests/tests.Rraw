@@ -3605,6 +3605,8 @@ test(1162.9, length(forder(DT, by=2:3)), 0)
 setkey(DT)
 # test number 1162.10 skipped because if it fails it confusingly prints out as 1662.1 not 1662.10 
 test(1162.11, length(forder(DT, by=1:3)), 0)
+test(1162.12, is.sorted(DT, by=1:3), TRUE, warning="Use.*forder.*for efficiency in one step, so you have o as well if not sorted")
+test(1162.13, is.sorted(DT, by=2:1), FALSE, warning="Use.*forder.*for efficiency in one step, so you have o as well if not sorted")
 
 # FR #5152 - last on length=0 arguments
 x <- character(0)

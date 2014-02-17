@@ -367,8 +367,9 @@ BUG FIXES
      http://stackoverflow.com/questions/21591433/merging-really-not-that-large-data-tables-immediately-results-in-r-being-killed
      
   o  CJ() now orders character vectors in a locale consistent with setkey, #5375. Typically this affected whether
-     upper case letters were ordered before lower case letters; they were by setkey() but not by CJ(). Test added and avenues
-     for differences closed off and nailed down. Many thanks to Malcolm Hawkes for reporting.
+     upper case letters were ordered before lower case letters; they were by setkey() but not by CJ(). This difference started
+     in v1.8.10 with the change "CJ() is 90% faster...", see NEWS below. Test added and avenues for differences closed off and
+     nailed down, with no loss in performance. Many thanks to Malcolm Hawkes for reporting.
 
 THANKS TO
 
