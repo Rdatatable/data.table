@@ -3721,6 +3721,10 @@ test(1187, DT[, list(sum(y), sum(v), sum(y,na.rm=TRUE), sum(v,na.rm=TRUE)), by=x
 a <- c("\"\"\"\")  \" \"   \"  \"    \"",  "\"\"\"\")  \" \"   \"  \"   \"",  "\"\"\"\")  \" \"   \"  \"    ,\"")
 test(1188, forder(a), INT(1,3,2))
 
+# test as.ITime vectorization
+T = c("18:00", "18:00:12")
+test(1189, all(as.character(as.ITime(T)) == c("18:00:00", "18:00:12")))
+
 
 ##########################
 

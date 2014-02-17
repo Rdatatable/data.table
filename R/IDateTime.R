@@ -59,9 +59,9 @@ as.ITime.character <- function(x, format, ...) {
     if (!missing(format)) 
         return(as.ITime(strptime(x, format = format, ...)))
     y <- strptime(x, format = "%H:%M:%OS", ...)
-    if (!is.na(y))
-        return(as.ITime(y))
-    y <- strptime(x, format = "%H:%M", ...)
+    y.nas <- is.na(y)
+    y[y.nas] <- strptime(x[y.nas], format = "%H:%M", ...)
+
     return(as.ITime(y))
 }
 

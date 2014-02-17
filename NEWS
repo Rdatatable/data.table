@@ -170,6 +170,8 @@ NEW FEATURES
   o  FR #5152 is implemented. last(x) where length(x)=0 now returns 'x' instead of an error. Thanks to 
      Garrett See for reporting.
 
+  o  as.ITime.character will not complain any longer when given vector input and will accept mixed format time entries, e.g. c("12:00", "13:12:25")
+
 BUG FIXES
 
   o  Long outstanding (usually small) memory leak in grouping fixed, #2648. When the last group is smaller
