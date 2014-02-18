@@ -315,9 +315,24 @@ regularorder1 <- function(x) {
 }
 
 ordernumtol = function(x, tol=.Machine$double.eps^0.5) {
-    o=seq_along(x)
-    .Call(Crorder_tol,x,o,tol)
-    o
+    forder(x)
+    # was as follows, but we removed Crorder_tol at C level. 
+    #   o=seq_along(x)
+    #   .Call(Crorder_tol,x,o,tol)
+    #   o
+    # Retaining this function (ordernumtol) so that fastorder and bench() still works. So we can
+    # still test forwards vs backwards through columns, but just using the new forder to sort the
+    # entire numeric column when backwards with fastorder.
+}
+
+# chorder2 to be used only with fastorder
+# neither are exported
+chorder2 = function(x, o=NULL) {
+    if (!is.null(o)) {
+        x = copy(x)
+        setreordervec(x, o)
+    }
+    forder(x,sort=TRUE)   #  was .Call(Ccountingcharacter, x, TRUE) but that's now removed
 }
 
 fastorder <- function(x, by=seq_along(x), verbose=getOption("datatable.verbose"))

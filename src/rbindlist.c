@@ -19,7 +19,7 @@ extern size_t sizes[100];
   typedef R_len_t RLEN;
 #endif
 
-int StrCmp(SEXP x, SEXP y);    // in countingcharacter.c
+extern int StrCmp(SEXP x, SEXP y);    // in forder.c
 
 // a simple linked list, will use this when finding global order for ordered factors
 // will keep two ints

@@ -74,6 +74,15 @@ static void gsfree() {
   #define TEND(i)
 #endif
 
+
+// icount originally copied from do_radixsort in src/main/sort.c @ rev 51389. Then reworked here again in forder.c in v1.8.11
+// base::sort.list(method="radix") turns out not to be a radix sort, but a counting sort, and we like it.
+// See http://r.789695.n4.nabble.com/method-radix-in-sort-list-isn-t-actually-a-radix-sort-tp3309470p3309470.html
+// Main changes :
+//   1. Negatives are fine. Wish raised for simple change to base R : <link needed>
+//   2. Doesn't cummulate through 0's for speed in repeated calls of sparse counts by saving memset back to 0 of many 0
+//   3. Separated setRange so forder can redirect to iradix
+
 static int range, off;   // used by both icount and forder
 
 static void setRange(int *x, int n)
@@ -543,6 +552,8 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 // Fortunately, UTF sorts in the same order if treated as ASCII, so we can simplify by doing it by bytes.  TO DO: confirm
 // a forwards (MSD) radix for efficiency, although more complicated
 // This part has nothing to do with truelength. The truelength stuff is to do with finding the unique strings.
+// We may be able to improve CHARSXP derefencing by submitting patch to R to make R's string cache contiguous
+// but would likely be difficult. If we strxfrm, then it'll then be contiguous and compact then anyway.
 {
     int i, j, itmp, *thiscounts, thisgrpn=0, thisx=0;
     SEXP stmp;

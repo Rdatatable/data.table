@@ -1761,6 +1761,13 @@ test(608, DT[1:1000,V1], 1:1000)
 # Crash bug of chorder(character()), #2026
 test(609, chorder(character()), base::order(character()))
 test(610, chorder(""), base::order(""))
+# Extra tests of chorder and chgroup
+x = sample(LETTERS)
+test(610.1, chorder(x), base::order(x))
+test(610.2, chgroup(x), seq_along(x))
+x = sample(LETTERS,1000,replace=TRUE)
+test(610.3, chorder(x), base::order(x))
+test(610.4, unique(x[chgroup(x)]), unique(x))
 
 # := by group
 DT = data.table(a=1:3,b=(1:9)/10)

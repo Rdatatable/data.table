@@ -19,11 +19,9 @@ SEXP settruelength();
 SEXP setcharvec();
 SEXP setcolorder();
 SEXP chmatchwrapper();
-SEXP countingcharacter();
 SEXP duplist();
 SEXP readfile();
 SEXP reorder();
-SEXP rorder_tol();
 SEXP rbindlist();
 SEXP vecseq();
 SEXP copyattr();
@@ -62,11 +60,9 @@ R_CallMethodDef callMethods[] = {
 {"Csetcharvec", (DL_FUNC) &setcharvec, -1},
 {"Csetcolorder", (DL_FUNC) &setcolorder, -1},
 {"Cchmatchwrapper", (DL_FUNC) &chmatchwrapper, -1},
-{"Ccountingcharacter", (DL_FUNC) &countingcharacter, -1},
 {"Cduplist", (DL_FUNC) &duplist, -1},
 {"Creadfile", (DL_FUNC) &readfile, -1},
 {"Creorder", (DL_FUNC) &reorder, -1},
-{"Crorder_tol", (DL_FUNC) &rorder_tol, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
 {"Ccopyattr", (DL_FUNC) &copyattr, -1},

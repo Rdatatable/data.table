@@ -1975,18 +1975,15 @@ chmatch = function(x,table,nomatch=NA_integer_)
     .Call(Cchmatchwrapper,x,table,NA_integer_,TRUE)
 }
 
-chorder = function(x) .Call(Ccountingcharacter,x,TRUE)
-chgroup = function(x) .Call(Ccountingcharacter,x,FALSE)
+chorder = function(x) {
+    o = forder(x, sort=TRUE, retGrp=FALSE)
+    if (length(o)) o else seq_along(x)
+}
 
-# chorder is exported. So don't change existing behaviour
-# add chorder2 to be used only with fastorder
-# for fastorder (internal) - needn't be not exported
-chorder2 = function(x, o=NULL) {
-    if (!is.null(o)) {
-        x = copy(x)
-        setreordervec(x, o)
-    }
-    .Call(Ccountingcharacter, x, TRUE)
+chgroup = function(x) {
+    # TO DO: deprecate and remove this. It's exported but doubt anyone uses it. Think the plan was to use it internally, but forder superceded.
+    o = forder(x, sort=FALSE, retGrp=TRUE)
+    if (length(o)) as.vector(o) else seq_along(x)  # as.vector removes the attributes
 }
 
 rbindlist = function(l) {
