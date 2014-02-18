@@ -177,7 +177,8 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
     if (baseline) testback=FALSE  # when baseline return in fastorder.c is uncommented, baseline must be TRUE
     # fastorder benchmark forwards vs backwards
     
-    Levels=Rows=SubGroupN=rand.forw=rand.back=ordT.forw=ordT.back=ordB.forw=ordB.back=rev.forw=rev.back=x=y=NULL  # to keep R CMD check quiet
+    Levels=Rows=SubGroupN=rand.forw=rand.back=ordT.forw=ordT.back=ordB.forw=ordB.back=rev.forw=rev.back=NULL  
+    x=y=faster1=faster2=faster3=faster4=NULL  # to keep R CMD check quiet
     
     if (quick) {Sr = 1:3; Nr = 2:4} else {Sr = 1:5; Nr = 2:8}
     ans = setkey(CJ(Levels=as.integer(10^Sr),Rows=as.integer(10^Nr)))
