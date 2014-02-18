@@ -176,16 +176,25 @@ CJ = function(..., sorted = TRUE)
 bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
     if (baseline) testback=FALSE  # when baseline return in fastorder.c is uncommented, baseline must be TRUE
     # fastorder benchmark forwards vs backwards
+    
+    Levels=Rows=SubGroupN=rand.forw=rand.back=ordT.forw=ordT.back=ordB.forw=ordB.back=rev.forw=rev.back=x=y=NULL  # to keep R CMD check quiet
+    
     if (quick) {Sr = 1:3; Nr = 2:4} else {Sr = 1:5; Nr = 2:8}
     ans = setkey(CJ(Levels=as.integer(10^Sr),Rows=as.integer(10^Nr)))
     
     # TO DO:  add a case   S1 : 1e7 levels    S2 : 1:3   Every level has 3 rows.   1e7 calls to iradix
     #   Sr:  c(1:3, 10^(1:7))    CJ(Sr,Sr) all combinations
-    
+
+    # fastorder (backwards) doesn't call isSortedList anymore (we removed that at C level). It now proceeds as if
+    # unsorted always. This is always more favourable to fastorder timings, unless, the data is actually perfectly
+    # sorted. Hence we no longer test perfectly ordered here, as that was just testing isSortedList anyway. ordT
+    # and ordB tests dominate.
+
     ans[, SubGroupN:=format(as.integer(ceiling(Rows/Levels)), big.mark=",")]
     ans[,Rows:=format(Rows,big.mark=",")]
     ans[,Levels:=format(Levels,big.mark=",")]
-    ident = function(x,y) if (length(x)==0) length(y)==0 else identical(x,y)
+    ident = function(x,y) if (length(x)==0) length(y)==0 || identical(y,seq_along(y)) else identical(x,y)
+    IS.SORTED = function(...)suppressWarnings(is.sorted(...))  # just needed here to ensure the test data construction is working
     for (i in 1:nrow(ans)) {
         ttype = c("user.self","sys.self")  # elapsed can sometimes be >> user.self+sys.self. TO DO: three repeats as well.
         tol = 0.5                          # we don't mind about 0.5s; benefits when almost sorted outweigh
@@ -200,47 +209,50 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         if (testback) if (!ident(x,y)) browser()
         
         .Call(Creorder,DT, if (baseline) y else x)  # in baseline mode, x is deliberately wrong. And if testback=FALSE, we won't have y
-        if (!is.sorted(DT)) stop("Logical error: ordered table is not sorted according to is.sorted!")
-        if (baseline) ans[, rand.back:=NULL]
+        if (!IS.SORTED(DT)) stop("Logical error: ordered table is not sorted according to IS.SORTED!")
+        if (baseline) ans[, rand.back := NULL]
         
-        if (testback) ans[i, ord.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
-        ans[i, ord.forw := sum(system.time(x<<-forder(DT))[ttype])]
-        if (testback) ans[i, faster2 := ord.forw<ord.back+tol]
-        if (testback) if (!ident(x,y)) browser()
+        if (FALSE) {
+          # don't test perfectly ordered case. See note above.
+          if (testback) ans[i, ord.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
+          ans[i, ord.forw := sum(system.time(x<<-forder(DT))[ttype])]
+          if (testback) ans[i, faster2 := ord.forw<ord.back+tol]
+          if (testback) if (!ident(x,y)) browser()
+        }
         
         if (DT[[1]][1] == DT[[1]][2]) v = 2 else v = 1  # make small change to column 2, unless rows 1 and 2 aren't in the same group by column 1
         old = DT[[v]][1:2]
         DT[1:2, (v):=77:76]   # unsorted near the top to trigger full sort, is.sorted detects quickly.
-        if (is.sorted(DT)) stop("Table is sorted. Change to the top didn't work.")
+        if (IS.SORTED(DT)) stop("Table is sorted. Change to the top didn't work.")
         
         if (testback) ans[i, ordT.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # T for Top
         ans[i, ordT.forw := sum(system.time(x<<-forder(DT))[ttype])]
-        if (testback) ans[i, faster3 := ordT.forw<ordT.back+tol]
+        if (testback) ans[i, faster2 := ordT.forw<ordT.back+tol]
         if (testback) if (!ident(x,y)) browser()
 
         DT[1:2, (v):=old]          # undo the change at the top to make it sorted again
-        if (!is.sorted(DT)) stop("Logical error: reverting the small change at the top didn't make DT ordered again")
+        if (!IS.SORTED(DT)) stop("Logical error: reverting the small change at the top didn't make DT ordered again")
         r = c(nrow(DT)-1, nrow(DT))
         if (DT[[1]][r[1]] == DT[[1]][r[2]]) v = 2 else v = 1
         old = DT[[v]][r]
         DT[r, (v):=77:76]    # unsorted near the very end, so is.sorted does full scan.
-        if (is.sorted(DT)) stop("Table is sorted. Change to the very bottom didn't work.")
+        if (IS.SORTED(DT)) stop("Table is sorted. Change to the very bottom didn't work.")
         
         if (testback) ans[i, ordB.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # B for Bottom
         ans[i, ordB.forw := sum(system.time(x<<-forder(DT))[ttype])]
-        if (testback) ans[i, faster4 := ordB.forw<ordB.back+tol]
+        if (testback) ans[i, faster3 := ordB.forw<ordB.back+tol]
         if (testback) if (!ident(x,y)) browser()
         
         DT[r, (v):=old]          # undo the change at the top to make it sorted again
-        if (!is.sorted(DT)) stop("Logical error: reverting the small change at the bottom didn't make DT ordered again")
+        if (!IS.SORTED(DT)) stop("Logical error: reverting the small change at the bottom didn't make DT ordered again")
         
         .Call(Creorder,DT,nrow(DT):1)   # Pefect reverse order, some sort algo's worst case e.g. O(n^2)
-        if (is.sorted(DT)) stop("Logical error: reverse order of table is sorted according to is.sorted!")
+        if (IS.SORTED(DT)) stop("Logical error: reverse order of table is sorted according to IS.SORTED!")
         # Adding this test revealed the complexity that a reverse order vector containing ties, would not be stable if the reverse was applied. isorted fixed so that -1 returned only if strictly decreasing order
         
         if (testback) ans[i, rev.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # rev = reverse order
         ans[i, rev.forw := sum(system.time(x<<-forder(DT))[ttype])]
-        if (testback) ans[i, faster5 := rev.forw<rev.back+tol]
+        if (testback) ans[i, faster4 := rev.forw<rev.back+tol]
         if (testback) if (!ident(x,y)) browser()
         
         if (i==nrow(ans) || ans[i+1,Levels]!=ans[i,Levels]) print(ans[Levels==Levels[i]])  # print each block as we go along
@@ -315,7 +327,8 @@ regularorder1 <- function(x) {
 }
 
 ordernumtol = function(x, tol=.Machine$double.eps^0.5) {
-    forder(x)
+    o = forder(x)
+    if (length(o)) o else seq_along(x)
     # was as follows, but we removed Crorder_tol at C level. 
     #   o=seq_along(x)
     #   .Call(Crorder_tol,x,o,tol)
@@ -344,16 +357,9 @@ fastorder <- function(x, by=seq_along(x), verbose=getOption("datatable.verbose")
     # which is a comparison sort comparing 2 rows using a loop through columns for that row with a switch on each column type.
     
     # Now here only for dev testing to compare to forder, e.g. in bench()
-    if (is.atomic(x)) {
-        by=NULL
-        if (is.sorted(x)) return(NULL)  # callers need to check for length==0 (meaning already sorted in increasing order)
-    } else {
-        if (is.sorted(x[[by[1]]])) {   # deliberately call is.sorted() even when more than one 'by' column to at least take some time when comparing to forder
-            if (length(by)==1) return(NULL)  
-        }
-        if (length(by==1)) warning("fastorder didn't call isSortedList (we took that away). Proceeding as if unsorted. More favourable to fastorder timings, unless the data is actually sorted.")
-    }
-    if (is.atomic(x)) { v = x; w = 1 }  # w = 1 just for the error message below
+    # Always orders without testing for sortedness. This is favourable to fastorder (!), unless, data is perfectly ordered. See message in bench().
+
+    if (is.atomic(x)) { by=NULL; v = x; w = 1 }  # w = 1 just for the error message below
     else { w = last(by); v = x[[w]] }
     o = switch(typeof(v),
         "double" = dradixorder(v), # ordernumtol(v),
