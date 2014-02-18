@@ -1,7 +1,7 @@
 
-cedta.override = c("gWidgetsWWW")
-# user may add more to this (e.g. adding statET) using :
-# assignInNamespace("cedta.override",c("gWidgetsWWW","statET"),"data.table")
+cedta.override = c("gWidgetsWWW","statET","FastRWeb")
+# user may add more to this using :
+# assignInNamespace("cedta.override", c(data.table:::cedta.override,"<nsname>"), "data.table")
 
 cedta = function(n=2L) {
     # Calling Environment Data Table Aware
