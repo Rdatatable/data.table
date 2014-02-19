@@ -540,7 +540,10 @@ int StrCmp(SEXP x, SEXP y)            // also used by bmerge and chmatch
     if (y == NA_STRING) return 1;     // x>y
     return strcmp(CHAR(x), CHAR(y));  // can return 0 here for the same string in known and unknown encodings, good if the unknown string is in that encoding but not if not
 }                                     // ordering is ascii only (C locale). TO DO: revisit and allow user to change to strcoll, and take account of Encoding
-                                      // see comments in bmerge()
+                                      // see comments in bmerge().  10k calls of strcmp = 0.37s, 10k calls of strcoll = 4.7s. See ?Comparison, ?Encoding, Scollate in R internals.
+// TO DO: check that all unknown encodings are ascii; i.e. no non-ascii unknowns are present, and that either Latin1
+//        or UTF-8 is used by user, not both. Then error if not. If ok, then can proceed with byte level. ascii is never marked known by R, but non-ascii (i.e. knowable encoding) could be marked unknown.
+//        does R internals have is_ascii function exported?  If not, simple enough.
 
 static void cradix_r(SEXP *xsub, int n, int radix)
 // xsub is a unique set of CHARSXP, to be ordered by reference

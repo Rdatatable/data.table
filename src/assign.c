@@ -428,19 +428,31 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         size = SIZEOF(targetcol);
         //Rprintf("Recycling assign to coln %d of type '%s' vlen %d targetlen %d size %d\n", coln, typename[TYPEOF(targetcol)], vlen,targetlen,size);
         if (TYPEOF(RHS) != TYPEOF(targetcol)) error("Internal error, TYPEOF(targetcol)!=TYPEOF(RHS)");
+        r = 0;
         if (length(rows)==0) {
             switch (TYPEOF(targetcol)) {
             case STRSXP :
-                for (r=0; r<targetlen; r++)
-                    SET_STRING_ELT(targetcol, r, STRING_ELT(RHS, r%vlen));
+                for (; r<vlen; r++)     // only one SET_STRING_ELT per RHS item is needed to set generations (overhead)
+                    SET_STRING_ELT(targetcol, r, STRING_ELT(RHS, r));
                 break;
             case VECSXP :
-                for (r=0; r<targetlen; r++)
-                    SET_VECTOR_ELT(targetcol, r, VECTOR_ELT(RHS, r%vlen));
-                    // TO DO: would need duplicate here if := in future could ever change a list item's contents by reference.
+                for (; r<vlen; r++)
+                    SET_VECTOR_ELT(targetcol, r, VECTOR_ELT(RHS, r));
+                    // TO DO: if := in future could ever change a list item's contents by reference, would need to duplicate at that point
                 break;
-            default :
-                for (r=0; r<(targetlen/vlen); r++) {
+            }    
+            if (vlen == 1) {  
+                if (size==4) for (; r<targetlen; r++)
+                    INTEGER(targetcol)[r] = INTEGER(RHS)[0];   // copies pointer on 32bit, sizes checked in init.c
+                else for (; r<targetlen; r++)
+                    REAL(targetcol)[r] = REAL(RHS)[0];         // copies pointer on 64bit, sizes checked in init.c
+            } else if (vlen<10) {    // 10 is just a guess for when memcpy is faster. Certainly slower when vlen==1, but vlen==1 is the most common case by far so not high priority to discover the optimum here. TO DO: revisit
+                if (size==4) for (; r<targetlen; r++)
+                    INTEGER(targetcol)[r] = INTEGER(RHS)[r%vlen];
+                else for (; r<targetlen; r++)
+                    REAL(targetcol)[r] = REAL(RHS)[r%vlen];
+            } else {
+                for (r=r>0?1:0; r<(targetlen/vlen); r++) {   // if the first vlen were done in the switch above, convert r=vlen to r=1
                     memcpy((char *)DATAPTR(targetcol) + r*vlen*size,
                            (char *)DATAPTR(RHS),
                            vlen * size);
@@ -452,18 +464,24 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         } else {
             switch (TYPEOF(targetcol)) {
             case STRSXP :
-                for (r=0; r<targetlen; r++)
-                    SET_STRING_ELT(targetcol, INTEGER(rows)[r]-1, STRING_ELT(RHS, r%vlen));
+                for (; r<vlen; r++)
+                    SET_STRING_ELT(targetcol, INTEGER(rows)[r]-1, STRING_ELT(RHS, r));
                 break;
             case VECSXP :
-                for (r=0; r<targetlen; r++)
-                    SET_VECTOR_ELT(targetcol, INTEGER(rows)[r]-1, VECTOR_ELT(RHS, r%vlen));
+                for (; r<vlen; r++)
+                    SET_VECTOR_ELT(targetcol, INTEGER(rows)[r]-1, VECTOR_ELT(RHS, r));
                 break;
-            default :
-                for (r=0; r<targetlen; r++)
-                    memcpy((char *)DATAPTR(targetcol) + (INTEGER(rows)[r]-1)*size, 
-                           (char *)DATAPTR(RHS) + (r%vlen) * size,
-                           size);
+            }    
+            if (vlen == 1) {
+                if (size==4) for (; r<targetlen; r++)
+                    INTEGER(targetcol)[ INTEGER(rows)[r]-1 ] = INTEGER(RHS)[0];
+                else for (; r<targetlen; r++)
+                    REAL(targetcol)[ INTEGER(rows)[r]-1 ] = REAL(RHS)[0];
+            } else {
+                if (size==4) for (; r<targetlen; r++)
+                    INTEGER(targetcol)[ INTEGER(rows)[r]-1 ] = INTEGER(RHS)[r%vlen];
+                else for (; r<targetlen; r++)
+                    REAL(targetcol)[ INTEGER(rows)[r]-1 ] = REAL(RHS)[r%vlen];
             }
         }
     }

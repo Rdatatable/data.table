@@ -104,6 +104,8 @@ void attribute_visible R_init_datatable(DllInfo *info)
     if (NA_INTEGER != NA_LOGICAL) error("NA_INTEGER [%d] != NA_LOGICAL [%d]. Please report to datatable-help.", NA_INTEGER, NA_LOGICAL);
     if (sizeof(int) != 4) error("sizeof(int) is not 4 but %d. Please report to datatable-help.", sizeof(int));
     if (sizeof(double) != 8) error("sizeof(double) is not 8 but %d. Please report to datatable-help.", sizeof(double));
+    if (sizeof(int *) != 4 && sizeof(int *) != 8) error("sizeof(pointer) is not 4 or 8 but %d. Please report to datatable-help.", sizeof(int *));
+    if (sizeof(SEXP) != sizeof(int *)) error("sizeof(SEXP) [%d] != sizeof(pointer) [%d]. Please report to datatable-help.", sizeof(SEXP), sizeof(int *));
 
     // According to IEEE (http://en.wikipedia.org/wiki/IEEE_754-1985#Zero) we can rely on 0.0 being all 0 bits.
     // But check here anyway just to be sure, just in case this answer is right (http://stackoverflow.com/a/2952680/403310).

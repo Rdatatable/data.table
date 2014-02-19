@@ -20,6 +20,7 @@
 /*****    TO DO    *****
 And even more diagnostics to verbose=TRUE so we can see where crashes are.
 Add R_CheckUserInterrupt() and bring back progress meter.
+colClasses shouldn't be ignored but rather respected and then warn if data accuracy is lost. See first NOTE in NEWS.
 Fill in too-short lines :  http://stackoverflow.com/questions/21124372/fread-doesnt-like-lines-with-less-fields-than-other-lines
 Allow to increase to top 500, middle 500 and bottom 500.
 madvise is too eager when reading just the top 10 rows.
