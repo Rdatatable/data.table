@@ -39,7 +39,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     int protecti=0;
     SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, SD, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source;
     SEXP *nameSyms, *xknameSyms;
-    Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
+    Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE, recycleWarn=TRUE;
     size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
     clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
 
@@ -398,37 +398,13 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 }
                 continue;
             }
-            // TO DO: remove this restriction and add extra memcpy for last chunk later below ...
-            if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen);
             if (TYPEOF(source) != TYPEOF(target))
-                error("columns of j don't evaluate to consistent types for each group: result for group %d has column %d type '%s' but expecting type '%s'", i+1, j+1, type2char(TYPEOF(source)), type2char(TYPEOF(target)));
-            // TO DO : a switch would be neater here ...
-            if (TYPEOF(source)==STRSXP) {
-                for (r=0; r<maxn; r++) {
-                    SET_STRING_ELT(target, thisansloc, STRING_ELT(source,r%thislen));
-                    thisansloc++;
-                }
-                continue;
-                // TO DO: Replace SET_STRING_ELT and SET_VECTOR_ELT with direct CHK and CHECK_OLD_TO_NEW calls,
-                // once per item in jval, then the rest can be memcpy'd after?. But, it seems we do need to
-                // ensure objects are aged.
+                error("Column %d of result for group %d is type '%s' but expecting type '%s'. Column types must be consistent for each group.", j+1, i+1, type2char(TYPEOF(source)), type2char(TYPEOF(target)));
+            if (recycleWarn && maxn%thislen != 0) {
+                warning("Column %d of result for group %d is length %d but the longest column in this result is %d. Recycled leaving remainder of %d items. This warning is once only for the first group with this issue.",j+1,i+1,thislen,maxn,maxn%thislen);
+                recycleWarn = FALSE;
             }
-            if (TYPEOF(source)==VECSXP) {
-                for (r=0; r<maxn; r++) {
-                    SET_VECTOR_ELT(target, thisansloc, VECTOR_ELT(source,r%thislen));
-                    thisansloc++;
-                }
-                continue;
-            }
-            // else integer or real
-            size = SIZEOF(source);
-            for (r=0; r<(maxn/thislen); r++) {
-                memcpy((char *)DATAPTR(target) + thisansloc*size,
-                   (char *)DATAPTR(source),
-                   thislen * size);
-                thisansloc += thislen;
-            }
-            // TO DO : extra memcpy needed on this line if we allow non exact multiples
+            memrecycle(target, R_NilValue, thisansloc, maxn, source);
         }
         ansloc += maxn;
         if (firstalloc) {

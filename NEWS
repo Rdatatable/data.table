@@ -172,6 +172,12 @@ NEW FEATURES
 
   o  as.ITime.character will not complain any longer when given vector input and will accept mixed format time entries, e.g. c("12:00", "13:12:25")
 
+  o  Each column in the result for each group has always been recycled (if necessary) to match the
+     longest column in that group's result. If it doesn't recycle exactly, though, it was caught gracefully
+     as an error. Now it is recycled with remainder with warning.
+         DT = data.table(a=1:2,b=1:6)
+         DT[, list(b,1:2), by=a]  # now recycles the 1:2 with warning to length 3
+
 BUG FIXES
 
   o  Long outstanding (usually small) memory leak in grouping fixed, #2648. When the last group is smaller

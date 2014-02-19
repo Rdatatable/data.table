@@ -1218,7 +1218,7 @@ test(402, duplicated(DT), c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE))
 DT = data.table(a=1:3,b=4:6)
 test(403, DT[,list(3,if(a==2)NULL else b),by=a], data.table(a=1:3,V1=3,V2=c(4L,NA_integer_,6L)))
 test(404, DT[,list(3,if(a==1)NULL else b),by=a], error="Please use a typed empty vector instead.*such as integer.*or numeric")
-test(405, DT[,list(3,if(a==1)numeric() else b),by=a], error="evaluate to consistent types")
+test(405, DT[,list(3,if(a==1)numeric() else b),by=a], error="Column 2 of result for group.*integer.*double.*types must be consistent for each group")
 test(406, DT[,list(3,if(a==1)integer() else b),by=a], data.table(a=1:3,V1=3,V2=c(NA_integer_,5:6)))
 
 # Test that first column can be list, #1640
@@ -3711,6 +3711,10 @@ test(1189, all(as.character(as.ITime(x)) == c("18:00:00", "18:00:12")))
 DT = CJ(c("Corp", "CORP"), 1:3)
 test(1190, setkey(DT), DT)   # tests no warning here from setkey, was "key rebuilt" due to inconsistent locale sorting in v1.8.10
 
+# non-exact recycling in j results.  Was caught with error in v1.8.10, now recycles with remainder and warning
+DT = data.table(a=1:2,b=1:6)
+test(1191, DT[, list(b,1:2), by=a], data.table(a=INT(1,1,1,2,2,2),b=INT(1,3,5,2,4,6),V2=INT(1,2,1,1,2,1)),
+           warning="Recycled leaving remainder of 1 item.*This warning is once only")
 
 ##########################
 
