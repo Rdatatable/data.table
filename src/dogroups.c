@@ -129,9 +129,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         
         for (j=0; j<length(iSD); j++) {   // either this or the next for() will run, not both
             size = SIZEOF(VECTOR_ELT(iSD,j));
-            memcpy((char *)DATAPTR(VECTOR_ELT(iSD,j)),
+            memcpy((char *)DATAPTR(VECTOR_ELT(iSD,j)),  // ok use of memcpy. Loop'd through columns not rows
                    (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(jiscols)[j]-1))+i*size,
-                   size);
+                   size);  
         }
         igrp = length(grporder) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
         for (j=0; j<length(BY); j++) {
@@ -141,9 +141,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 SET_VECTOR_ELT(BY, j, VECTOR_ELT(groups, j));
             } else {
                 // dogroups selects subsets of the protected DT. So memcpy is ok (even on STRSXP) and needed for speed to copy in bulk.
-                memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),
+                memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),  // ok use of memcpy. Loop'd through columns not rows
                  (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1))+igrp*size,
-                 size);
+                 size);   
             }
         }
         if (INTEGER(starts)[i] == NA_INTEGER || (length(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)) {
@@ -190,16 +190,16 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 rownum = INTEGER(starts)[i]-1;
                 for (j=0; j<length(SD); j++) {
                     size = SIZEOF(VECTOR_ELT(SD,j));
-                    memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),
+                    memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),  // usually big groups so direct memcpy here is best
                        (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+rownum*size,
-                       grpn*size);
+                       grpn*size);  
                 }
                 for (j=0; j<grpn; j++) INTEGER(I)[j] = rownum+j+1;
                 for (j=0; j<length(xSD); j++) {
                     size = SIZEOF(VECTOR_ELT(xSD,j));
-                    memcpy((char *)DATAPTR(VECTOR_ELT(xSD,j)),
+                    memcpy((char *)DATAPTR(VECTOR_ELT(xSD,j)),  // ok use of memcpy. Loop'd through columns not rows
                        (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(xjiscols)[j]-1))+rownum*size,
-                       size);
+                       size);  
                 }
             } else {
                 if (LOGICAL(verbose)[0]) tstart = clock();
