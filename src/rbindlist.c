@@ -334,7 +334,6 @@ SEXP rbindlist(SEXP l)
 {
     R_len_t i,j,jj,r, nrow=0, first=-1, ansloc, ncol=0, thislen, lcount=0;
     SEXP ans, li, lf=R_NilValue, thiscol, target, levels;
-    size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
     Rboolean coerced=FALSE;
     SEXPTYPE * maxtype = NULL;     // TODO: should memory allocation be done differently from malloc/free? (also in a few places above and below)
     int * isColFactor = NULL;      // for each column this is 0 if not a factor, 1 if a factor, and 2 if an ordered factor
@@ -473,10 +472,9 @@ SEXP rbindlist(SEXP l)
             case INTSXP:
             case LGLSXP:
                 if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c (thiscol's type should have been coerced to target), please report to datatable-help.");
-                size = SIZEOF(thiscol);
-                memcpy((char *)DATAPTR(target) + ansloc*size,
+                memcpy((char *)DATAPTR(target) + ansloc * SIZEOF(thiscol),
                        (char *)DATAPTR(thiscol),
-                       thislen * size);
+                       thislen * SIZEOF(thiscol));
                 break;
             default :
                 error("Unsupported column type '%s'", type2char(TYPEOF(target))); 

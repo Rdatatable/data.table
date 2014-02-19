@@ -115,6 +115,8 @@ Rboolean selfrefnamesok(SEXP x, Rboolean verbose) {
     return(_selfrefok(x, TRUE, verbose)==1);
 }
 
+void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
+
 SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP verb)
 {
     // For internal use only by [<-.data.table.
@@ -425,65 +427,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                 }
             }
         }
-        size = SIZEOF(targetcol);
-        //Rprintf("Recycling assign to coln %d of type '%s' vlen %d targetlen %d size %d\n", coln, typename[TYPEOF(targetcol)], vlen,targetlen,size);
-        if (TYPEOF(RHS) != TYPEOF(targetcol)) error("Internal error, TYPEOF(targetcol)!=TYPEOF(RHS)");
-        r = 0;
-        if (length(rows)==0) {
-            switch (TYPEOF(targetcol)) {
-            case STRSXP :
-                for (; r<vlen; r++)     // only one SET_STRING_ELT per RHS item is needed to set generations (overhead)
-                    SET_STRING_ELT(targetcol, r, STRING_ELT(RHS, r));
-                break;
-            case VECSXP :
-                for (; r<vlen; r++)
-                    SET_VECTOR_ELT(targetcol, r, VECTOR_ELT(RHS, r));
-                    // TO DO: if := in future could ever change a list item's contents by reference, would need to duplicate at that point
-                break;
-            }    
-            if (vlen == 1) {  
-                if (size==4) for (; r<targetlen; r++)
-                    INTEGER(targetcol)[r] = INTEGER(RHS)[0];   // copies pointer on 32bit, sizes checked in init.c
-                else for (; r<targetlen; r++)
-                    REAL(targetcol)[r] = REAL(RHS)[0];         // copies pointer on 64bit, sizes checked in init.c
-            } else if (vlen<10) {    // 10 is just a guess for when memcpy is faster. Certainly slower when vlen==1, but vlen==1 is the most common case by far so not high priority to discover the optimum here. TO DO: revisit
-                if (size==4) for (; r<targetlen; r++)
-                    INTEGER(targetcol)[r] = INTEGER(RHS)[r%vlen];
-                else for (; r<targetlen; r++)
-                    REAL(targetcol)[r] = REAL(RHS)[r%vlen];
-            } else {
-                for (r=r>0?1:0; r<(targetlen/vlen); r++) {   // if the first vlen were done in the switch above, convert r=vlen to r=1
-                    memcpy((char *)DATAPTR(targetcol) + r*vlen*size,
-                           (char *)DATAPTR(RHS),
-                           vlen * size);
-                }
-                memcpy((char *)DATAPTR(targetcol) + r*vlen*size,
-                       (char *)DATAPTR(RHS),
-                       (targetlen%vlen) * size);
-            }
-        } else {
-            switch (TYPEOF(targetcol)) {
-            case STRSXP :
-                for (; r<vlen; r++)
-                    SET_STRING_ELT(targetcol, INTEGER(rows)[r]-1, STRING_ELT(RHS, r));
-                break;
-            case VECSXP :
-                for (; r<vlen; r++)
-                    SET_VECTOR_ELT(targetcol, INTEGER(rows)[r]-1, VECTOR_ELT(RHS, r));
-                break;
-            }    
-            if (vlen == 1) {
-                if (size==4) for (; r<targetlen; r++)
-                    INTEGER(targetcol)[ INTEGER(rows)[r]-1 ] = INTEGER(RHS)[0];
-                else for (; r<targetlen; r++)
-                    REAL(targetcol)[ INTEGER(rows)[r]-1 ] = REAL(RHS)[0];
-            } else {
-                if (size==4) for (; r<targetlen; r++)
-                    INTEGER(targetcol)[ INTEGER(rows)[r]-1 ] = INTEGER(RHS)[r%vlen];
-                else for (; r<targetlen; r++)
-                    REAL(targetcol)[ INTEGER(rows)[r]-1 ] = REAL(RHS)[r%vlen];
-            }
-        }
+        memrecycle(targetcol, rows, 0, length(rows) ? LENGTH(rows) : LENGTH(targetcol), RHS);  // also called from dogroups
     }
     if (anytodelete) {
         // Delete any columns assigned NULL (there was a 'continue' earlier in loop above)
@@ -536,6 +480,81 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     }
     UNPROTECT(protecti);
     return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
+}
+
+void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
+// like memcpy but recycles source and takes care of aging
+// 'where' a 1-based INTEGER vector subset of target to assign to,  or NULL or integer()
+// assigns to target[start:start+len-1] or target[where[start:start+len-1]]  where start is 0-based
+{
+    int r = 0;
+    if (TYPEOF(target) != TYPEOF(source)) error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s']", type2char(TYPEOF(target)),type2char(TYPEOF(source)));
+    int slen = LENGTH(source);   // internal use only, sometimes inside loops, for speed.
+    size_t size = SIZEOF(target);
+    if (!length(where)) {
+        switch (TYPEOF(target)) {
+        case INTSXP : case REALSXP : case LGLSXP :
+            break;
+        case STRSXP :
+            for (; r<slen; r++)     // only one SET_STRING_ELT per RHS item is needed to set generations (overhead)
+                SET_STRING_ELT(target, start+r, STRING_ELT(source, r));
+            break;
+        case VECSXP :
+            for (; r<slen; r++)
+                SET_VECTOR_ELT(target, start+r, VECTOR_ELT(source, r));
+                // TO DO: if := in future could ever change a list item's contents by reference, would need to duplicate at that point
+            break;
+        default :
+            error("Unsupported type '%s'", type2char(TYPEOF(target)));
+        }
+        if (slen == 1) {  
+            if (size==4) for (; r<len; r++)
+                INTEGER(target)[start+r] = INTEGER(source)[0];   // copies pointer on 32bit, sizes checked in init.c
+            else for (; r<len; r++)
+                REAL(target)[start+r] = REAL(source)[0];         // copies pointer on 64bit, sizes checked in init.c
+        } else if (slen<10) {    // 10 is just a guess for when memcpy is faster. Certainly memcpy is slower when slen==1, but that's the most common case by far so not high priority to discover the optimum here. TO DO: revisit
+            if (size==4) for (; r<len; r++)
+                INTEGER(target)[start+r] = INTEGER(source)[r%slen];
+            else for (; r<len; r++)
+                REAL(target)[start+r] = REAL(source)[r%slen];
+        } else {
+            for (r=r>0?1:0; r<(len/slen); r++) {   // if the first slen were done in the switch above, convert r=slen to r=1
+                memcpy((char *)DATAPTR(target) + (start+r*slen)*size,
+                       (char *)DATAPTR(source),
+                       slen * size);
+            }
+            memcpy((char *)DATAPTR(target) + (start+r*slen)*size,
+                   (char *)DATAPTR(source),
+                   (len%slen) * size);
+        }
+    } else {
+        switch (TYPEOF(target)) {
+        case INTSXP : case REALSXP : case LGLSXP :
+            break;
+        case STRSXP :
+            for (; r<slen; r++)
+                SET_STRING_ELT(target, INTEGER(where)[start+r]-1, STRING_ELT(source, r));
+            break;
+        case VECSXP :
+            for (; r<slen; r++)
+                SET_VECTOR_ELT(target, INTEGER(where)[start+r]-1, VECTOR_ELT(source, r));
+            break;
+        default :
+            error("Unsupported type '%s'", type2char(TYPEOF(target)));
+        }    
+        if (slen == 1) {
+            if (size==4) for (; r<len; r++)
+                INTEGER(target)[ INTEGER(where)[start+r]-1 ] = INTEGER(source)[0];
+            else for (; r<len; r++)
+                REAL(target)[ INTEGER(where)[start+r]-1 ] = REAL(source)[0];
+        } else {
+            if (size==4) for (; r<len; r++)
+                INTEGER(target)[ INTEGER(where)[start+r]-1 ] = INTEGER(source)[r%slen];
+            else for (; r<len; r++)
+                REAL(target)[ INTEGER(where)[start+r]-1 ] = REAL(source)[r%slen];
+        }
+        // if slen>10 it may be worth memcpy, but we'd need to first know if 'where' was a contiguous subset
+    }
 }
 
 SEXP allocNAVector(SEXPTYPE type, R_len_t n)

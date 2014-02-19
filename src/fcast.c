@@ -207,8 +207,8 @@ SEXP castgroups(SEXP groups, SEXP val, SEXP f__, SEXP value_var, SEXP jsub, SEXP
     
     BY_ = PROTECT(allocVector(VECSXP, length(groups))); protecti++;
     for (i=0; i<length(groups); i++) {
-        cpy = PROTECT(VECTOR_ELT(groups, i));
-        tmp = PROTECT(allocVector(TYPEOF(cpy), 1));
+        cpy = VECTOR_ELT(groups, i);
+        SET_VECTOR_ELT(BY_, i, tmp = allocVector(TYPEOF(cpy), 1));  // protects by virtue of being a member of BY_
         switch (TYPEOF(cpy)) {
             case REALSXP : 
             case INTSXP :
@@ -217,8 +217,6 @@ SEXP castgroups(SEXP groups, SEXP val, SEXP f__, SEXP value_var, SEXP jsub, SEXP
             memcpy((char *)DATAPTR(tmp), (char *)DATAPTR(cpy), SIZEOF(tmp)); break; // SIZEOF is size_t - no integer overflow issues
             default : error("Unknown column type '%s'", type2char(TYPEOF(cpy)));
         }
-        UNPROTECT(2); // tmp, cpy
-        SET_VECTOR_ELT(BY_, i, tmp);
     }    
     setAttrib(BY_, R_NamesSymbol, getAttrib(groups, R_NamesSymbol));
     

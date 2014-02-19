@@ -31,6 +31,7 @@ void setSizes() {
 }
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
+extern void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose)
 {
@@ -285,61 +286,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 // fix for #4990 - `:=` did not issue recycling warning during "by" operation.
                 if (vlen<grpn && vlen>0 && grpn%vlen != 0) 
                     warning("Supplied %d items to be assigned to group %d of size %d in column '%s' (recycled leaving remainder of %d items).",vlen,i+1,grpn,CHAR(STRING_ELT(dtnames,INTEGER(lhs)[j]-1)),grpn%vlen);
-                if (length(order)==0) {
-                    rownum = INTEGER(starts)[i]-1;
-                    switch (TYPEOF(target)) {
-                    case STRSXP :
-                        for (r=0; r<grpn; r++)
-                            SET_STRING_ELT(target, rownum+r, STRING_ELT(RHS, r%vlen));
-                        break;
-                    case VECSXP :
-                        for (r=0; r<grpn; r++)
-                            SET_VECTOR_ELT(target, rownum+r, STRING_ELT(RHS, r%vlen));
-                        break;
-                    default :
-                        for (r=0; r<(grpn/vlen); r++) {
-                            memcpy((char *)DATAPTR(target) + (rownum+r*vlen)*size,
-                                   (char *)DATAPTR(RHS),
-                                   vlen * size);
-                        }
-                        memcpy((char *)DATAPTR(target) + (rownum+r*vlen)*size,
-                               (char *)DATAPTR(RHS),
-                               (grpn%vlen) * size);
-                    }
-                } else {
-                    switch (TYPEOF(target)) {
-                    case STRSXP :
-                        for (k=0; k<grpn; k++) {
-                            rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                            SET_STRING_ELT(target, rownum, STRING_ELT(RHS, k%vlen));
-                        }
-                        break;
-                    case VECSXP :
-                        for (k=0; k<grpn; k++) {
-                            rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                            SET_VECTOR_ELT(target, rownum, VECTOR_ELT(RHS, k%vlen));
-                        }
-                        break;
-                    case INTSXP :
-                    case LGLSXP :
-                        for (k=0; k<grpn; k++) {
-                            rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                            INTEGER(target)[rownum] = INTEGER(RHS)[k%vlen];
-                        }
-                        break;
-                    case REALSXP :
-                        for (k=0; k<grpn; k++) {
-                            rownum = INTEGER(order)[ INTEGER(starts)[i]-1 + k ] -1;
-                            REAL(target)[rownum] = REAL(RHS)[k%vlen];
-                        }
-                        break;
-                    default :
-                        error("Unsupported type");
-                    }
-                }
+                memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);
+                if (!isFactor(RHS)) setAttrib(target, R_ClassSymbol, getAttrib(RHS, R_ClassSymbol));
                 // fixes bug #2531. Got to set the class back.
                 // added !isFactor(RHS) to fix #5104 (side-effect of fixing #2531)
-                if (!isFactor(RHS)) setAttrib(target, R_ClassSymbol, getAttrib(RHS, R_ClassSymbol));
             }
             UNPROTECT(1);
             continue;
@@ -412,16 +362,18 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         // Now copy jval into ans ...
         for (j=0; j<ngrpcols; j++) {
-            size = SIZEOF(VECTOR_ELT(groups, INTEGER(grpcols)[j]-1));
-            for (r=0; r<maxn; r++) {
-                memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*size,  // TO DO: a switched assign here?
-                    (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1)) + igrp*size,   // generations a concern but this one ok I think
-                    1 * size);   //  **TO DO**  replace memcpy
-            }
+            target = VECTOR_ELT(ans,j);
+            source = VECTOR_ELT(groups, INTEGER(grpcols)[j]-1);  // target and source the same type by construction above
+            if (SIZEOF(target)==4) for (r=0; r<maxn; r++)
+                INTEGER(target)[ansloc+r] = INTEGER(source)[igrp];
+            else for (r=0; r<maxn; r++)
+                REAL(target)[ansloc+r] = REAL(source)[igrp];
+            // Shouldn't need SET_* to age objects here sice groups, TO DO revisit.
         }
         for (j=0; j<njval; j++) {
             thisansloc = ansloc;
-            thislen = length(VECTOR_ELT(jval,j));
+            source = VECTOR_ELT(jval,j);
+            thislen = length(source);
             target = VECTOR_ELT(ans, j+ngrpcols);
             if (thislen == 0) {
                 // including NULL and typed empty vectors, fill with NA
@@ -448,12 +400,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             }
             // TO DO: remove this restriction and add extra memcpy for last chunk later below ...
             if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen);
-            if (TYPEOF(VECTOR_ELT(jval, j)) != TYPEOF(VECTOR_ELT(ans, j+ngrpcols)))
-                error("columns of j don't evaluate to consistent types for each group: result for group %d has column %d type '%s' but expecting type '%s'", i+1, j+1, type2char(TYPEOF(VECTOR_ELT(jval, j))), type2char(TYPEOF(VECTOR_ELT(ans, j+ngrpcols))));
+            if (TYPEOF(source) != TYPEOF(target))
+                error("columns of j don't evaluate to consistent types for each group: result for group %d has column %d type '%s' but expecting type '%s'", i+1, j+1, type2char(TYPEOF(source)), type2char(TYPEOF(target)));
             // TO DO : a switch would be neater here ...
-            if (TYPEOF(VECTOR_ELT(jval,j))==STRSXP) {
+            if (TYPEOF(source)==STRSXP) {
                 for (r=0; r<maxn; r++) {
-                    SET_STRING_ELT(VECTOR_ELT(ans,j+ngrpcols), thisansloc, STRING_ELT(VECTOR_ELT(jval,j),r%thislen));
+                    SET_STRING_ELT(target, thisansloc, STRING_ELT(source,r%thislen));
                     thisansloc++;
                 }
                 continue;
@@ -461,18 +413,18 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 // once per item in jval, then the rest can be memcpy'd after?. But, it seems we do need to
                 // ensure objects are aged.
             }
-            if (TYPEOF(VECTOR_ELT(jval,j))==VECSXP) {
+            if (TYPEOF(source)==VECSXP) {
                 for (r=0; r<maxn; r++) {
-                    SET_VECTOR_ELT(VECTOR_ELT(ans,j+ngrpcols), thisansloc, VECTOR_ELT(VECTOR_ELT(jval,j),r%thislen));
+                    SET_VECTOR_ELT(target, thisansloc, VECTOR_ELT(source,r%thislen));
                     thisansloc++;
                 }
                 continue;
             }
             // else integer or real
-            size = SIZEOF(VECTOR_ELT(jval,j));
+            size = SIZEOF(source);
             for (r=0; r<(maxn/thislen); r++) {
-                memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+ngrpcols)) + thisansloc*size,
-                   (char *)DATAPTR(VECTOR_ELT(jval,j)),
+                memcpy((char *)DATAPTR(target) + thisansloc*size,
+                   (char *)DATAPTR(source),
                    thislen * size);
                 thisansloc += thislen;
             }

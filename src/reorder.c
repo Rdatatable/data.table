@@ -44,7 +44,7 @@ SEXP setrev(SEXP x) {
 
 SEXP reorder(SEXP x, SEXP order)
 {
-    // For internal use only by fastorder().
+    // For internal use only by setkey().
     // Reordering a vector in-place doesn't change generations so we can skip SET_STRING_ELT overhead etc.
     // Speed is dominated by page fetch when input is randomly ordered so we're at the software limit here (better bus etc should shine).
     // 'order' must strictly be a permutation of 1:n (i.e. no repeats, zeros or NAs)
@@ -70,8 +70,6 @@ SEXP reorder(SEXP x, SEXP order)
     }
     if (!isInteger(order)) error("order must be an integer vector");
     if (length(order) != nrow) error("nrow(x)[%d]!=length(order)[%d]",nrow,length(order));
-    if (sizeof(int)!=4) error("sizeof(int) isn't 4");
-    if (sizeof(double)!=8) error("sizeof(double) isn't 8");   // 8 on both 32bit and 64bit.
     
     start = 0;
     while (start<nrow && INTEGER(order)[start] == start+1) start++;
@@ -80,12 +78,12 @@ SEXP reorder(SEXP x, SEXP order)
     while (INTEGER(order)[end] == end+1) end--;
     for (i=start; i<=end; i++) { itmp=INTEGER(order)[i]-1; if (itmp<start || itmp>end) error("order is not a permutation of 1:nrow[%d]", nrow); }
     // Creorder is for internal use (so we should get the input right!), but the check above seems sensible, otherwise
-    // would be segfault below. That for loop will run in neglible time and will also catch NAs.
+    // would be segfault below. The for loop above should run in neglible time (sequential) and will also catch NAs.
     // It won't catch duplicates in order, but that's ok. Checking that would be going too far given this is for internal use only.
     
-    tmp=(char *)Calloc(end-start+1,double);   // Enough working space for one column of the largest type. setSizes() has a check too.
-                                              // So we can reorder a 10GB table in 16GB of RAM
-    if (!tmp) error("unable to allocate temporary working memory for reordering data.table");
+    tmp=(char *)malloc((end-start+1)*sizeof(double));   // Enough working space for one column of the largest type. setSizes() has a check too.
+                                                        // So we can reorder a 10GB table in 16GB of RAM
+    if (!tmp) error("unable to allocate %d * %d bytes of working memory for reordering data.table", end-start+1, sizeof(double));
     for (i=0; i<ncol; i++) {
         v = isNewList(x) ? VECTOR_ELT(x,i) : x;
         size = SIZEOF(v);
@@ -106,7 +104,7 @@ SEXP reorder(SEXP x, SEXP order)
         }
         memcpy(vd + start*size, tmp, (end-start+1) * size);
     }
-    Free(tmp);
+    free(tmp);
     return(R_NilValue);
 }
 
@@ -117,9 +115,9 @@ for (j=0;j<nrow;j++) {
   memcpy((char *)tmpp, (char *)DATAPTR(VECTOR_ELT(dt,i)) + ((size_t)(INTEGER(order)[j]-1))*size, size);
   tmpp += size;
 }
-This added 5s in 4e8 calls (see below) even with -O3. That 5s is insignificant vs page fetch, though, unless already
-ordered when page fetch goes away. (Perhaps memcpy(dest, src, 4) and memcpy(dest, src, 8) would be optimized to remove
-call overhead but memcpy(dest, src, size) can't be since optimizer doesn't know value of 'size' variable up front.)
+This added 5s in 4e8 calls (see below) [-O3 on]. That 5s is insignificant vs page fetch, though, unless already
+ordered when page fetch goes away. Perhaps memcpy(dest, src, 4) and memcpy(dest, src, 8) would be optimized to remove
+call overhead but memcpy(dest, src, size) isn't since optimizer doesn't know value of 'size' variable up front.
 
 DT = setDT(lapply(1:4, function(x){sample(1e5,1e8,replace=TRUE)}))
 o = fastorder(DT, 1L)
