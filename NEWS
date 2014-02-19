@@ -354,7 +354,7 @@ BUG FIXES
       For ex: UTF8 and Latin1. This is now fixed (a part of bug #5159). Thanks to Stefan Fritsch for reporting.
 
   o  Joins (X[Y]) on character columns with different encodings now issue a warning that join may result in unexpected 
-     results for those indices with different encodings. That is, when "a" in X's key column and "a" in Y's key column  
+     results for those indices with different encodings. That is, when "ä" in X's key column and "ä" in Y's key column  
      are of different encodings, a warning is issued. This takes care of bugs #5266 and other part of #5159 for the 
      moment. Thanks to Stefan Fritsch once again for reporting.
 
