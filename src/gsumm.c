@@ -3,9 +3,9 @@
 #include <Rinternals.h>
 //#include <time.h>
 
-static int *grp = NULL;
-static int grpn = 0;
-static int ngrp = 0;
+static int *grp = NULL;  // vector of group sizes
+static int ngrp = 0;     // number of groups i.e. length of grp
+static int grpn = 0;     // sum(grp) i.e. length of underlying x
 
 SEXP gstart(SEXP o, SEXP f, SEXP l) {
     int i, j, g, *this;

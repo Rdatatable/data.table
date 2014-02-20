@@ -1,25 +1,28 @@
 #include <R.h>
 #define USE_RINTERNALS
 #include <Rinternals.h>
-
-#define ENC_KNOWN(x) (LEVELS(x) & 12)
-// 12 = LATIN1_MASK (1<<2) | UTF8_MASK (1<<3),  but I couldn't find a way to use these macros in Defn.h so assumed they are private to R
-
-extern SEXP forder();
-extern int StrCmp(SEXP x, SEXP y);   // in forder.c
-extern unsigned long long twiddle(void *);
-
 /*
 Implements binary search (a.k.a. divide and conquer).
 http://en.wikipedia.org/wiki/Binary_search
 http://www.tbray.org/ongoing/When/200x/2003/03/22/Binary
-http://googleresearch.blogspot.com/2006/06/extra-extra-read-all-about-it-nearly.html.
-Potential integer overflow in (low+upp)/2 is avoided using (low+(upp-low)/2).
+http://googleresearch.blogspot.com/2006/06/extra-extra-read-all-about-it-nearly.html
 Differences over standard binary search (e.g. bsearch in stdlib.h) :
   o list of vectors (key of many columns) of different types
   o ties (groups)
-  o options to join to prevailing value (roll join a.k.a locf)
+  o NA,NAN,-Inf,+Inf are distinct values and can be joined to
+  o type double is joined within tolerance (apx 11 s.f.)
+  o join to prevailing value (roll join a.k.a locf), forwards or backwards
+  o join to nearest
+  o roll the beginning and end optionally
+  o limit the roll distance to a user provided value
 */
+
+#define ENC_KNOWN(x) (LEVELS(x) & 12)
+// 12 = LATIN1_MASK (1<<2) | UTF8_MASK (1<<3)  // Would use these definitions from Defn.h, but that appears to be private to R. Hence 12.
+
+extern SEXP forder();
+extern int StrCmp(SEXP x, SEXP y);  // in forder.c
+extern unsigned long long twiddle(void *);
 
 static SEXP i, x;
 static int ncol, *icols, *xcols, *o, *retFirst, *retLength, *allLen1, *rollends;
@@ -120,7 +123,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
     case LGLSXP : case INTSXP :   // including factors
         ival.i = INTEGER(ic)[ir];
         while(xlow < xupp-1) {
-            mid = xlow+((xupp-xlow)/2);   // (upp+low)/2 may overflow
+            mid = xlow + (xupp-xlow)/2;   // Same as (xlow+xupp)/2 but without risk of overflow
             xval.i = INTEGER(xc)[mid];
             if (xval.i<ival.i) {          // relies on NA_INTEGER == INT_MIN, tested in init.c
                 xlow=mid;
@@ -132,12 +135,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
                 tmplow = mid;
                 tmpupp = mid;
                 while(tmplow<xupp-1) {
-                    mid = tmplow+((xupp-tmplow)/2);
+                    mid = tmplow + (xupp-tmplow)/2;
                     xval.i = INTEGER(xc)[mid];
                     if (xval.i == ival.i) tmplow=mid; else xupp=mid;
                 }
                 while(xlow<tmpupp-1) {
-                    mid = xlow+((tmpupp-xlow)/2);
+                    mid = xlow + (tmpupp-xlow)/2;
                     xval.i = INTEGER(xc)[mid];
                     if (xval.i == ival.i) tmpupp=mid; else xlow=mid;
                 }
@@ -148,12 +151,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         tmplow = lir;
         tmpupp = lir;
         while(tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
-            mid = tmplow+((iupp-tmplow)/2);
+            mid = tmplow + (iupp-tmplow)/2;
             xval.i = INTEGER(ic)[ o ? o[mid]-1 : mid ];   // reuse xval to search in i
             if (xval.i == ival.i) tmplow=mid; else iupp=mid;
         }
         while(ilow<tmpupp-1) {
-            mid = ilow+((tmpupp-ilow)/2);
+            mid = ilow + (tmpupp-ilow)/2;
             xval.i = INTEGER(ic)[ o ? o[mid]-1 : mid ];
             if (xval.i == ival.i) tmpupp=mid; else ilow=mid;
         }
@@ -162,7 +165,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
     case STRSXP :
         ival.s = STRING_ELT(ic,ir);
         while(xlow < xupp-1) {
-            mid = xlow+((xupp-xlow)/2);
+            mid = xlow + (xupp-xlow)/2;
             xval.s = STRING_ELT(xc,mid);
             if (enc_warn && (ENC_KNOWN(ival.s) || ENC_KNOWN(xval.s))) {
                 // The || is only done here to avoid the warning message being repeating in this code.
@@ -177,12 +180,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
                 tmplow = mid;
                 tmpupp = mid;
                 while(tmplow<xupp-1) {
-                    mid = tmplow+((xupp-tmplow)/2);
+                    mid = tmplow + (xupp-tmplow)/2;
                     xval.s = STRING_ELT(xc,mid);
                     if (ival.s == xval.s) tmplow=mid; else xupp=mid;  // the == here assumes (within this column) no mixing of latin1 and UTF-8, and no unknown non-ascii
                 }                                                     // TO DO: add checks to forder, see above.
                 while(xlow<tmpupp-1) {
-                    mid = xlow+((tmpupp-xlow)/2);
+                    mid = xlow + (tmpupp-xlow)/2;
                     xval.s = STRING_ELT(xc,mid);
                     if (ival.s == xval.s) tmpupp=mid; else xlow=mid;  // see above re ==
                 }
@@ -196,12 +199,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         tmplow = lir;
         tmpupp = lir;
         while(tmplow<iupp-1) {
-            mid = tmplow+((iupp-tmplow)/2);
+            mid = tmplow + (iupp-tmplow)/2;
             xval.s = STRING_ELT(ic, o ? o[mid]-1 : mid);
             if (xval.s == ival.s) tmplow=mid; else iupp=mid;   // see above re ==
         }
         while(ilow<tmpupp-1) {
-            mid = ilow+((tmpupp-ilow)/2);
+            mid = ilow + (tmpupp-ilow)/2;
             xval.s = STRING_ELT(ic, o ? o[mid]-1 : mid);
             if (xval.s == ival.s) tmpupp=mid; else ilow=mid;   // see above re == 
         }
@@ -209,7 +212,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
     case REALSXP :
         ival.ll = twiddle(&REAL(ic)[ir]);
         while(xlow < xupp-1) {
-            mid = xlow+((xupp-xlow)/2);
+            mid = xlow + (xupp-xlow)/2;
             xval.ll = twiddle(&REAL(xc)[mid]);
             if (xval.ll<ival.ll) {
                 xlow=mid;
@@ -219,12 +222,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
                 tmplow = mid;
                 tmpupp = mid;
                 while(tmplow<xupp-1) {
-                    mid = tmplow+((xupp-tmplow)/2);
+                    mid = tmplow + (xupp-tmplow)/2;
                     xval.ll = twiddle(&REAL(xc)[mid]);
                     if (xval.ll == ival.ll) tmplow=mid; else xupp=mid;
                 }
                 while(xlow<tmpupp-1) {
-                    mid = xlow+((tmpupp-xlow)/2);
+                    mid = xlow + (tmpupp-xlow)/2;
                     xval.ll = twiddle(&REAL(xc)[mid]);
                     if (xval.ll == ival.ll) tmpupp=mid; else xlow=mid;
                 }
@@ -234,12 +237,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         tmplow = lir;
         tmpupp = lir;
         while(tmplow<iupp-1) {
-            mid = tmplow+((iupp-tmplow)/2);
+            mid = tmplow + (iupp-tmplow)/2;
             xval.ll = twiddle(&REAL(ic)[ o ? o[mid]-1 : mid ]);
             if (xval.ll == ival.ll) tmplow=mid; else iupp=mid;
         }
         while(ilow<tmpupp-1) {
-            mid = ilow+((tmpupp-ilow)/2);
+            mid = ilow + (tmpupp-ilow)/2;
             xval.ll = twiddle(&REAL(ic)[ o ? o[mid]-1 : mid ]);
             if (xval.ll == ival.ll) tmpupp=mid; else ilow=mid;
         }

@@ -45,7 +45,7 @@ SEXP uniqlist(SEXP l, SEXP order)
             case REALSXP :
                 ulv = (unsigned long long *)REAL(v);  // (gives >=2x speedup)
                 b = ulv[thisi]==ulv[previ] || twiddle(&REAL(v)[thisi])==twiddle(&REAL(v)[previ]); break;  // twiddle rounds and normalises NaNs
-                // TO DO: save previous twiddle call, but this is in a loop through columns and hopefully the first == will short circuit most often
+                // TO DO: store previ twiddle call, but it'll need to be vector since this is in a loop through columns. Hopefully the first == will short circuit most often
             default :
                 error("Type '%s' not supported", type2char(TYPEOF(v))); 
             }

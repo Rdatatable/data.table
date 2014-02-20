@@ -14,6 +14,42 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
+  o  Fast methods of melt and dcast from package reshape2 have been implemeneted for data.table, FR#2627.
+     Most settings are identical to reshape2, see ?melt.data.table.
+	 melt: 10 million rows and 5 columns, 61.3 seconds reduced to 1.2 seconds.
+	 dcast: 1 million rows and 4 columns, 192 seconds reduced to 6.1 seconds.
+	 dcast: larger sizes can fail in reshape2 but work in data.table
+     * melt.data.table is also capable of melting on columns of type 'list'.
+     * melt.data.table gains 'variable.factor' and 'value.factor' which by default are TRUE and FALSE respectively
+       for compatibility with reshape2. This allows for directly controlling the output type of "variable"
+       and "value" columns (as factors or not).
+     * melt.data.table's 'na.rm = TRUE' parameter is optimised to remove NAs directly during melt and therefore
+       avoids the overhead of subsetting using "!is.na" afterwards on the molten data.
+     * except for "margins" argument from `reshape2:::dcast`, all features of dcast are intact. 
+       dcast.data.table can also accept 'value.var' columns of type list
+  
+  o  Joins scale better as the number of rows increases. The binary merge used to start on row 1
+     of i, it now starts on the middle row of i. Many thanks to Mike Crowe for the suggestion. This
+     has been done within column so scales much better as the number of join columns increases, too.
+     Reminder: bmerge allows the rolling join feature: forwards, backwards, limited and nearest.
+     
+  o  Sorting (setkey and ad-hoc by=) is faster and scales better on randomly ordered data and now
+     adapts to almost sorted data. The remaining comparison sorts have been removed. We use a
+     combination of counting sort and forwards radix (MSD) for all types including double, character
+     and integer64; forwards not backwards through columns. This was inspired by Terdiman and
+     Herf's (LSD) radix approach for floating point :
+         http://codercorner.com/RadixSortRevisited.htm 
+         http://stereopsis.com/radix.html
+     
+  o  NA, NaN, +Inf and -Inf are considered distinct values, may be in keys and can be joined to, as
+     requested by users.
+  
+  o  Numeric data is still joined and grouped within tolerance as before but instead of tolerance
+     being sqrt(.Machine$double.eps) == 1.490116e-08 (the same as base::all.equal's default) the
+     the significand is now rounded to the last 2 bytes, apx 11 s.f. This is more appropriate
+     for large (1.23e20) and small (1.23e-20) numerics and is faster via a simple bit twiddle.
+     We aim to make this rounding optional (2, 1, or 0 byte rounding) in a future release.
+
   o  fread's integer64 argument implemented. Allows reading of integer64 data as 'double' or 'character'
      instead of bit64::integer64 (which remains the default as before). Thanks to Chris Neff for the
      suggestion. The default can be changed globally; e.g, options(datatable.integer64="character")
@@ -30,40 +66,12 @@ NEW FEATURES
        http://stackoverflow.com/questions/18390947/data-table-of-table-is-very-different-from-data-frame-of-table
   
   o  as.data.table methods added for integer, numeric, character, logical, factor, ordered and Date.
-
-  o  data.table now imports 'reshape2' and implements a faster S3 method 'melt.data.table' for 
-     performing melt operations on data.table, by extending reshape2:::melt. This takes care 
-	 of FR #2627 partially. For example, a benchmark test on 1e7*5 data took 1.17 seconds 
-	 for melt.data.table vs 61.3 seconds from reshape2:::melt.data.frame. Most settings are 
-	 identical with reshape2::melt.data.frame for compatibility. See ?melt.data.table for more 
-	 details.
-	 
-  o  melt.data.table is also capable of melting on columns of type 'list'. Have a look at 
-     ?melt.data.table for more details.
-
-  o	 melt.data.table also gets two additional arguments 'variable.factor' and 'value.factor' which 
-     by default are TRUE and FALSE respectively for compatibility with reshape2's melt. This 
-	 allows for directly controlling the output type of "variable" and "value" columns 
-	 (as factors or not).
-	 
-  o  melt.data.table's 'na.rm = TRUE' parameter is optimised to remove NAs directly during melt and 
-     therefore avoids the overhead of subsetting using "!is.na" on the molten data which also 
-	 speeds up things.
 	 
   o	 Due to fixing #2697 (see BUG FIXES), `:=`, assignment by reference, also now accepts negative 
      indices, but still not '0' as an index. Thanks again to Eduard Antonyan.
 
   o	 `set()` is able to add new columns by reference now. For example, set(DT, i=3:5, j="bla", 5L) is 
      equivalent to DT[3:5, bla := 5L]. This was FR #2077. Tests added.
-
-  o  data.table now also implements a faster version of "dcast" but for data.table. In addition, 
-     `dcast.data.table` can handle bigger datasets without crashing R-session and without compromising 
-     in speed.  Except for "margins" argument from `reshape2:::dcast`, all features are intact. 
-     `dcast.data.table` can also accept 'value.var' columns of type list.
-
-  o  dcast.data.table took, on 1e5*4 data, 0.8 seconds to cast, whereas reshape2:::dcast took 
-     8.1 seconds. On 1e6*4 data, reshape2:::dcast takes 192.1 secs, whereas, dcast.data.table 
-     took 6.1 seconds.
 	 
   o  fread now understand commands, e.g. fread("grep blah file.txt").
 
@@ -334,10 +342,6 @@ BUG FIXES
   o  Fixed an issue with `set()` and `:=` not being able to add columns by reference when the object is of class that 
      inherits from data.table (ex: class = c("myclass", "data.table", "data.frame")). Thanks to GSee for #5115.
 
-  o  A case where `dcast.data.table` has "." in formula interface along with an aggregate function, did not result in 
-     aggregated result. Ex: dcast.data.table(x, a ~ ., mean, value.var="b") - this now returns expected aggregate result.
-     This fixes "case 2" of bug report #5149. Thanks to Jakub Szewczyk for reporting.
-
   o  Implementing FR #4979 lead to a bug when grouping with .SDcols, where .SDcols argument was variable name. This bug #5190 
      is now fixed.
 
@@ -377,13 +381,15 @@ BUG FIXES
      in v1.8.10 with the change "CJ() is 90% faster...", see NEWS below. Test added and avenues for differences closed off and
      nailed down, with no loss in performance. Many thanks to Malcolm Hawkes for reporting.
 
-THANKS TO
+THANKS TO BETA TESTERS
 
-  o  Zach Mayer for a reproducible segfault in beta test related to radix sorting character
-     strings longer than 20. Test added.
+  o  Zach Mayer for a reproducible segfault related to radix sorting character strings longer than 20. Test added.
      
-  o  Simon Biggs for reporting a bug in fread'ing logicals, caught in beta testing. Test added.
+  o  Simon Biggs for reporting a bug in fread'ing logicals. Test added.
   
+  o  Jakub Szewczyk for reporting that where "." is used in formula interface of dcast.data.table along with an aggregate
+     function, it did not result in aggregated result, #5149. Test added.
+         dcast.data.table(x, a ~ ., mean, value.var="b")
 
 NOTES
 
