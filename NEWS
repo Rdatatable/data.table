@@ -14,7 +14,7 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
-  o  Fast methods of melt and dcast from package reshape2 have been implemeneted for data.table, FR#2627.
+  o  Fast methods of melt and dcast from package reshape2 have been implemented for data.table, FR#2627.
      Most settings are identical to reshape2, see ?melt.data.table.
 	 melt: 10 million rows and 5 columns, 61.3 seconds reduced to 1.2 seconds.
 	 dcast: 1 million rows and 4 columns, 192 seconds reduced to 6.1 seconds.
