@@ -119,7 +119,7 @@ void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
 
 SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP verb)
 {
-    // For internal use only by [<-.data.table.
+    // For internal use only by := in [.data.table, and set()
     // newcolnames : add these columns (if any)
     // cols : column names or numbers corresponding to the values to set
     // rows : row numbers to assign
@@ -303,23 +303,27 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         }
         vlen = length(thisvalue);
         if (length(rows)==0 && targetlen==vlen) {
-            if (  NAMED(thisvalue)==2 ||  // NAMED is already 1 from the 'value' local variable at R level passed to Cassign.
+            if (  NAMED(thisvalue)==2 ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
                  (TYPEOF(values)==VECSXP && i>LENGTH(values)-1)) { // recycled RHS would have columns pointing to others, #2298.
+                if (verbose) {
+                    if (NAMED(thisvalue)==2) Rprintf("RHS for item %d has been duplicated because NAMED is %d, but then is being plonked.\n",i+1, NAMED(thisvalue));
+                    else Rprintf("RHS for item %d has been duplicated because the list of RHS values (length %d) is being recycled, but then is being plonked.\n", i+1, length(values));
+                }
                 thisvalue = duplicate(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
-                if (verbose) Rprintf("RHS for item %d has been duplicated. Either NAMED vector or recycled list RHS.\n",i+1);
             } else {
                 if (verbose) Rprintf("Direct plonk of unnamed RHS, no copy.\n");  // e.g. DT[,a:=as.character(a)] as tested by 754.3
             }
-            SET_VECTOR_ELT(dt,coln,thisvalue);
+            SET_VECTOR_ELT(dt,coln,thisvalue);                   // plonk new column in as it's already the correct length
             setAttrib(thisvalue, R_NamesSymbol, R_NilValue);     // clear names such as  DT[,a:=mapvector[a]]
             setAttrib(thisvalue, R_DimSymbol, R_NilValue);       // so that matrix is treated as vector
             setAttrib(thisvalue, R_DimNamesSymbol, R_NilValue);  // the 3rd of the 3 attribs not copied by copyMostAttrib, for consistency.
-            // plonk new column in as it's already the correct length
-            // if column exists, 'replace' it (one way to change a column's type i.e. less easy, as it should be, for speed, correctness and to get the user thinking about their intent)        
             continue;
         }
         if (coln+1 > oldncol) {  // new column
-            newcol = allocNAVector(TYPEOF(thisvalue),nrow);  // PROTECT not needed as assigned as element to protected list on next line
+            if (length(rows)) 
+                newcol = allocNAVector(TYPEOF(thisvalue),nrow);  // fill with NAs first for where 'rows' (a subset) doesn't touch
+            else              
+                newcol = allocVector(TYPEOF(thisvalue),nrow);    // PROTECT not needed, protected by SET_VECTOR_ELT on next line
             SET_VECTOR_ELT(dt,coln,newcol);
             if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,newcol);  // class etc but not names
             // else for lists (such as data.frame and data.table) treat them as raw lists and drop attribs

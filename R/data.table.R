@@ -1968,14 +1968,12 @@ setcolorder = function(x,neworder)
     invisible(x)
 }
 
-set = function(x,i=NULL,j,value)
+set = function(x,i=NULL,j,value)  # low overhead, loopable
 {
-    # `set()` should not be able to modify columns by reference (even if it is on exisitng 
-    # columns) on just a data.frame!
-    # now check for `j=character` and adding columns then implemented in C
-    .Call(Cassign,x,i,j,NULL,value,FALSE) 
-    # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.
-    # TO DO: When := or set() do it, make them aware of 'ul' and drop it if necessary.
+    vsub = substitute(value)  
+    if (!is.call(vsub) || vsub[[1]]!="list")    # protect NAMED of atomic value from .Call's NAMED=2 by wrapping with list()
+        value = eval(call("list",vsub), parent.frame())
+    .Call(Cassign,x,i,j,NULL,value,FALSE)   #  verbose=FALSE for speed to avoid getOption()  TO DO: somehow read getOption("datatable.verbose") from C level
     invisible(x)
 }
 

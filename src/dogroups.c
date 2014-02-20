@@ -274,6 +274,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     SETLENGTH(dtnames, LENGTH(dtnames)+1);
                     SETLENGTH(dt, LENGTH(dt)+1);
                     SET_VECTOR_ELT(dt, INTEGER(lhs)[j]-1, allocNAVector(TYPEOF(RHS), LENGTH(VECTOR_ELT(dt,0))));
+                    // Even if we could know reliably to switch from allocNAVector to allocVector for slight speedup, user code could still contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than uninitialized or 0.
                     // dtnames = getAttrib(dt, R_NamesSymbol); // commented this here and added it on the beginning to fix #4990
                     SET_STRING_ELT(dtnames, INTEGER(lhs)[j]-1, STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1));
                     target = VECTOR_ELT(dt,INTEGER(lhs)[j]-1);
