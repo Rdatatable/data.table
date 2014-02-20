@@ -9,8 +9,7 @@ guess <- function(x) {
 }
 
 dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins = NULL, 
-    subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), tolerance = .Machine$double.eps^0.5, 
-           verbose = getOption("datatable.verbose")) {
+    subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
     if (!is.data.table(data)) stop("'data' must be a data.table.")
     is.formula <- function(x) class(x) == "formula"
     strip <- function(x) gsub("[[:space:]]*", "", x)
@@ -49,7 +48,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     fill.default <- NULL
     if (!is.null(fun.aggregate)) {
         fill.default = fun.aggregate(data[[value.var]][0], ...)
-        args <- c("data", "formula", "margins", "subset", "fill", "value.var", "tolerance", "verbose", "drop")
+        args <- c("data", "formula", "margins", "subset", "fill", "value.var", "verbose", "drop")
         m <- m[setdiff(names(m), args)]
         if (getOption("datatable.optimize") > 0L && m[[1]] == "mean") {
             fun.aggregate <- as.call(c(as.name(".External"), as.name("Cfastmean"), as.name(value.var), 
@@ -79,7 +78,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     assign("Cfastmean", Cfastmean, .CASTenv)
     assign("mean", base::mean.default, .CASTenv)
     if (!is.null(vars)) for (i in vars) assign(i, data[[i]], .CASTenv) # assign subset vars directly in env
-    ans <- .Call("Cfcast", data, ff$ll, ff$rr, value.var, fill, tolerance, .CASTenv, is_sorted, fun.aggregate, fill.default, drop, subset)
+    ans <- .Call("Cfcast", data, ff$ll, ff$rr, value.var, fill, .CASTenv, is_sorted, fun.aggregate, fill.default, drop, subset)
     setDT(ans)
     if (any(duplicated(names(ans)))) {
         message("Duplicate column names found in cast data.table. Setting unique names using 'make.names'")   

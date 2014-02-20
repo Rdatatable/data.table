@@ -3717,13 +3717,14 @@ x = 0.0275016249293408
 DT = data.table(rnk = c(0, 0.0909090909090909, 0.181818181818182, 0.272727272727273),
                 val = c(0.0233775088495975, 0.0270831481152598, 0.0275016216267234, 0.0275016249293408))
 # 2 byte rounding is about 11 s.f., so val[3] and val[4] are considered different
-test(1192, DT[,.N,keyby=val], setkey(DT,val)[,.N,by=val])  # tests forder()$starts vs uniqlist on the key
+test(1192, DT[,.N,keyby=val], setkey(DT,val)[,.N,by=val])  # tests uniqlist uses twiddle
 test(1193, DT[,.N,by=val]$N, INT(1,1,1,1))
+test(1194, DT[.(x),.N]$N, 1)  # tests bmerge uses twiddle
 DT[3, val:=0.0275016249291963]
 setkey(DT, NULL)  # val[3] and val[4] are now equal, within 2 byte rounding
-test(1194, DT[,.N,keyby=val], setkey(DT,val)[,.N,by=val])
-test(1195, DT[,.N,by=val]$N, INT(1,1,2))
-
+test(1195, DT[,.N,keyby=val], setkey(DT,val)[,.N,by=val])
+test(1196, DT[,.N,by=val]$N, INT(1,1,2))
+test(1197, DT[.(x),.N]$N, 2)
 
 
 ##########################

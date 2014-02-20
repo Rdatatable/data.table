@@ -1,46 +1,13 @@
 #include <R.h>
 #define USE_RINTERNALS
 #include <Rinternals.h>
-#include <Rdefines.h>
-//#include <sys/mman.h>
-#include <fcntl.h>
 
 #define ENC_KNOWN(x) (LEVELS(x) & 12)
 // 12 = LATIN1_MASK (1<<2) | UTF8_MASK (1<<3),  but I couldn't find a way to use these macros in Defn.h so assumed they are private to R
 
-/* for isSortedList */
-#define FLIP_SIGN_BIT   0x8000000000000000
-#define RESET_NA_NAN    0x0000ffffffffffff
-#define SET_NA_NAN_COMP 0xfff8000000000000 // we can directly set complement in hack_na_nan
-
-// change NA/NaN so that their values are consistent across 32/64 bit
-// see fastradixdouble for the issues with NA/NaN for why we do it this way
-// for comparison - flip'em by sign bit - then compare in unsigned form...
-unsigned long long flip_cmp_double(unsigned long long f, Rboolean isnan) {
-    if (isnan) {                  // TO DO: ATM, for both i and i-1 we make checks here. if done by ref. we could try to eliminate check at i-1.
-        f &= RESET_NA_NAN;
-        f |= SET_NA_NAN_COMP;
-    }
-    unsigned long long mask = -(long long)(f >> 63) | FLIP_SIGN_BIT;
-    return f ^ mask;
-}
-
-/* for binary search */
-// following Kevin's suggestion
-// To avoid 'dereferencing type-punned pointer will break strict-aliasing rules' 
-// in recent versions of gcc, casting first and then returning
-static unsigned long long R_NA_unsigned_long() {
-    unsigned long long *ans = (unsigned long long*)(&NA_REAL);
-    return (*ans);
-}
-
-static unsigned long long R_NaN_unsigned_long() {
-    unsigned long long *ans = (unsigned long long*)(&R_NaN);
-    return (*ans);
-}
-
 extern SEXP forder();
 extern int StrCmp(SEXP x, SEXP y);   // in forder.c
+extern unsigned long long twiddle(void *);
 
 /*
 Implements binary search (a.k.a. divide and conquer).
@@ -54,24 +21,16 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
   o options to join to prevailing value (roll join a.k.a locf)
 */
 
-static double tol;  // TO DO: remove and use twiddle
 static SEXP i, x;
 static int ncol, *icols, *xcols, *o, *retFirst, *retLength, *allLen1, *rollends;
-static unsigned long long R_UNSIGNED_LONG_NA_REAL;
-static unsigned long long R_UNSIGNED_LONG_NAN_REAL;
 static double roll, rollabs;
 static Rboolean nearest=FALSE, enc_warn=TRUE;
 
 void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int lowmax, int uppmax);
 
-SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP rollarg, SEXP rollendsArg, SEXP nomatch, SEXP tolerance, SEXP retFirstArg, SEXP retLengthArg, SEXP allLen1Arg)
+SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP rollarg, SEXP rollendsArg, SEXP nomatch, SEXP retFirstArg, SEXP retLengthArg, SEXP allLen1Arg)
 {
     int xN, iN, protecti=0;
-
-    // get value of NA and NaN in unsigned long to check for TYPE=REAL case below.  TO DO: replace with twiddle()
-    R_UNSIGNED_LONG_NA_REAL  = R_NA_unsigned_long();
-    R_UNSIGNED_LONG_NAN_REAL = R_NaN_unsigned_long();
-    tol = REAL(tolerance)[0];   // TO DO: remove
     roll = 0.0;
     nearest = FALSE;
     enc_warn = TRUE;
@@ -137,12 +96,12 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
 static union {
   int i;
   double d;
+  unsigned long long ll;
   SEXP s;
 } ival, xval;
 
 static int mid, tmplow, tmpupp;  // global to save them being added to recursive stack. Maybe optimizer would do this anyway.
 static SEXP ic, xc;
-static unsigned long long *ic_ul, *xc_ul;  // for NA/NaN numerics.   TO DO: remove.
 
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowmax, int uppmax)
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
@@ -248,39 +207,26 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         }
         break;
     case REALSXP :
-        // hack to pull out the binary search results for NA and NaN.  TO DO: revisit
-        ic_ul = (unsigned long long*)REAL(ic);
-        xc_ul = (unsigned long long*)REAL(xc);
-
-        ival.d = REAL(ic)[ir];
-        unsigned long long ival_ud, xval_ud;
-        ival_ud = ic_ul[ir];
-        // if (ISNAN(ival.d)) goto nextlr;
+        ival.ll = twiddle(&REAL(ic)[ir]);
         while(xlow < xupp-1) {
             mid = xlow+((xupp-xlow)/2);
-            xval.d = REAL(xc)[mid];
-            xval_ud = xc_ul[mid];
-             // if ival is NA and xval is NaN, upp=mid *must* execute - not sure how to incorporate this into existing if-statements
-            if (xval_ud == R_UNSIGNED_LONG_NAN_REAL && ival_ud == R_UNSIGNED_LONG_NA_REAL) {
-                xupp = mid;
-            } else if (xval.d<ival.d-tol || (ISNAN(xval.d) && xval_ud != ival_ud)) {
+            xval.ll = twiddle(&REAL(xc)[mid]);
+            if (xval.ll<ival.ll) {
                 xlow=mid;
-            } else if (xval.d>ival.d+tol || (ISNAN(ival.d) && ival_ud != xval_ud)) {
+            } else if (xval.ll>ival.ll) {
                 xupp=mid;
-            } else { // xval.d == ival.d) 
+            } else { // xval.ll == ival.ll) 
                 tmplow = mid;
                 tmpupp = mid;
                 while(tmplow<xupp-1) {
                     mid = tmplow+((xupp-tmplow)/2);
-                    xval.d = REAL(xc)[mid];
-                    xval_ud = xc_ul[mid];
-                    if (fabs(xval.d-ival.d)<tol || ival_ud == xval_ud) tmplow=mid; else xupp=mid;
+                    xval.ll = twiddle(&REAL(xc)[mid]);
+                    if (xval.ll == ival.ll) tmplow=mid; else xupp=mid;
                 }
                 while(xlow<tmpupp-1) {
                     mid = xlow+((tmpupp-xlow)/2);
-                    xval.d = REAL(xc)[mid];
-                    xval_ud = xc_ul[mid];
-                    if (fabs(xval.d-ival.d)<tol || ival_ud == xval_ud) tmpupp=mid; else xlow=mid;
+                    xval.ll = twiddle(&REAL(xc)[mid]);
+                    if (xval.ll == ival.ll) tmpupp=mid; else xlow=mid;
                 }
                 break;
             }
@@ -289,13 +235,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         tmpupp = lir;
         while(tmplow<iupp-1) {
             mid = tmplow+((iupp-tmplow)/2);
-            xval.d = REAL(ic)[ o ? o[mid]-1 : mid ];
-            if (xval.d == ival.d) tmplow=mid; else iupp=mid;
+            xval.ll = twiddle(&REAL(ic)[ o ? o[mid]-1 : mid ]);
+            if (xval.ll == ival.ll) tmplow=mid; else iupp=mid;
         }
         while(ilow<tmpupp-1) {
             mid = ilow+((tmpupp-ilow)/2);
-            xval.d = REAL(ic)[ o ? o[mid]-1 : mid ];
-            if (xval.d == ival.d) tmpupp=mid; else ilow=mid;
+            xval.ll = twiddle(&REAL(ic)[ o ? o[mid]-1 : mid ]);
+            if (xval.ll == ival.ll) tmpupp=mid; else ilow=mid;
         }
         break;
     default:
@@ -337,16 +283,16 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         } else {
             if ( (   (roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
                   || (roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )
-              && (   (TYPEOF(ic)==REALSXP && REAL(ic)[ir]-REAL(xc)[xlow]-rollabs<tol)
-                  || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(ic)[ir]-INTEGER(xc)[xlow])-rollabs<tol ) 
+              && (   (TYPEOF(ic)==REALSXP && REAL(ic)[ir]-REAL(xc)[xlow]-rollabs<1e-6)
+                  || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(ic)[ir]-INTEGER(xc)[xlow])-rollabs<1e-6 ) 
                   || (TYPEOF(ic)==STRSXP)   )) {
                 retFirst[ir] = xlow+1;
                 retLength[ir] = 1;
             } else if
                (  (  (roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))
                   || (roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )
-              && (   (TYPEOF(ic)==REALSXP && REAL(xc)[xupp]-REAL(ic)[ir]-rollabs<tol)
-                  || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(xc)[xupp]-INTEGER(ic)[ir])-rollabs<tol )
+              && (   (TYPEOF(ic)==REALSXP && REAL(xc)[xupp]-REAL(ic)[ir]-rollabs<1e-6)
+                  || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(xc)[xupp]-INTEGER(ic)[ir])-rollabs<1e-6 )
                   || (TYPEOF(ic)==STRSXP)   )) {
                 retFirst[ir] = xupp+1;   // == xlow+2
                 retLength[ir] = 1;

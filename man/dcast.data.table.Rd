@@ -12,8 +12,7 @@
 ## fast dcast a data.table (not an S3 method yet)
 dcast.data.table(data, formula, fun.aggregate = NULL, 
 	..., margins = NULL, subset = NULL, fill = NULL, 
-	drop = TRUE, value.var = guess(data), 
-	tolerance = .Machine$double.eps^0.5, 
+	drop = TRUE, value.var = guess(data),
 	verbose = getOption("datatable.verbose"))
 }
 \arguments{
@@ -26,7 +25,6 @@ dcast.data.table(data, formula, fun.aggregate = NULL,
   \item{fill}{Value to fill missing cells with. If \code{fun.aggregate} is present, takes the value by applying the function on 0-length vector.}
   \item{drop}{\code{FALSE} will cast by including all missing combinations.}
   \item{value.var}{Name of the column whose values will be filled to cast. Function `guess()` tries to, well, guess this column automatically, if none is provided.}
-  \item{tolerance}{Machine tolerance, used for comparing numerics.}
   \item{verbose}{Not used yet. Maybe dropped in the future or used to provide information messages onto the console.}
 }
 \details{

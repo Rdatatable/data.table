@@ -9,7 +9,6 @@ extern size_t sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
 extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
-extern SEXP duplist(SEXP l, SEXP ans, SEXP anslen, SEXP order, SEXP tol);
 extern SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 extern SEXP coerce_to_char(SEXP s, SEXP env);
 

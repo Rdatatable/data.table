@@ -9,14 +9,14 @@ extern size_t sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
 extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
-extern SEXP uniqlist(SEXP l, SEXP order, SEXP tol);
+extern SEXP uniqlist(SEXP l, SEXP order);
 extern SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 extern SEXP seq_int(int n, int start);
 extern SEXP set_diff(SEXP x, int n);
 extern SEXP which(SEXP x);
 extern SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose);
 extern SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-extern SEXP bmerge(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP rollarg, SEXP rollends, SEXP nomatch, SEXP tolerance, SEXP retFirst, SEXP retLength, SEXP allLen1);
+extern SEXP bmerge(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP rollarg, SEXP rollends, SEXP nomatch, SEXP retFirst, SEXP retLength, SEXP allLen1);
 
 // Note: all these functions below are internal functions and are designed specific to fcast.
 SEXP zero_init(R_len_t n) {
@@ -283,7 +283,7 @@ SEXP castgroups(SEXP groups, SEXP val, SEXP f__, SEXP value_var, SEXP jsub, SEXP
 // TO DO: for sorted case - when forder is integer(0), just "duplicate" instead of using "subset" - will gain speed (as that'll use memcpy)
 // TO DO: can we just move "subsetting" to R-side? Will simplify things a lot here and I'm not sure if there's any advantage of having it here
 // TO DO: Remove "sorted" and implement that as well with "setkey" just on c(ff_, value.var) at R side?
-SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, SEXP env, SEXP sorted, SEXP jsub, SEXP fill_d, SEXP drop, SEXP subsetting) {
+SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP env, SEXP sorted, SEXP jsub, SEXP fill_d, SEXP drop, SEXP subsetting) {
     
     int protecti = 0;
     SEXP dtnames, lrnames, ldt, rdt, vdt, lrdt, lidx, ridx, vidx, lo, ro, lro, lrdup, ldup=R_NilValue, rdup=R_NilValue, rdupl;
@@ -384,7 +384,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         vdt = PROTECT(subset(vdt, lro)); protecti++;
     }
     lro = PROTECT(seq_int(1, -1)); protecti++;
-    lrdup = PROTECT(uniqlist(lrdt, lro, tol)); protecti++;
+    lrdup = PROTECT(uniqlist(lrdt, lro)); protecti++;
     
     // TODO: look for ways to simplify getting fun.aggregate in a better way
     isagg = isNull(jsub) ? TRUE : FALSE;
@@ -430,7 +430,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
             cpy = PROTECT(allocVector(VECSXP, 1));
             SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(ldt, i));
             dorder = PROTECT(cast_order(cpy, env));
-            ddup = PROTECT(uniqlist(cpy, dorder, tol));
+            ddup = PROTECT(uniqlist(cpy, dorder));
             ddup = PROTECT(subset(dorder, ddup));
             dtmp = PROTECT(subset(VECTOR_ELT(cpy, 0), ddup));
             UNPROTECT(5); // dtmp, cpy
@@ -443,7 +443,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
             cpy = PROTECT(allocVector(VECSXP, 1));
             SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(rdt, i));
             dorder = PROTECT(cast_order(cpy, env));
-            ddup = PROTECT(uniqlist(cpy, dorder, tol));
+            ddup = PROTECT(uniqlist(cpy, dorder));
             ddup = PROTECT(subset(dorder, ddup));
             dtmp = PROTECT(subset(VECTOR_ELT(cpy, 0), ddup));
             UNPROTECT(5);
@@ -463,7 +463,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
         allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
         roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        bmerge(ldt, lcj, PROTECT(seq_int(ilen, 1)), PROTECT(seq_int(ilen, 1)), haskey, roll, rollends, PROTECT(zero_init(1)), tol, f__, len__, allLen1);
+        bmerge(ldt, lcj, PROTECT(seq_int(ilen, 1)), PROTECT(seq_int(ilen, 1)), haskey, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
         UNPROTECT(9);
         SET_VECTOR_ELT(xx, 0, f__);
         
@@ -474,7 +474,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
         allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
         roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        bmerge(rdt, rcj, PROTECT(seq_int(mlen, 1)), PROTECT(seq_int(mlen, 1)), haskey, roll, rollends, PROTECT(zero_init(1)), tol, f__, len__, allLen1);
+        bmerge(rdt, rcj, PROTECT(seq_int(mlen, 1)), PROTECT(seq_int(mlen, 1)), haskey, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
         UNPROTECT(9);
         SET_VECTOR_ELT(xx, 1, f__);
                 
@@ -487,8 +487,8 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         // we could do a bit faster
         lo = PROTECT(seq_int(nrows, 1)); protecti++; // no need for cast_order of "lo", already sorted
         ro = PROTECT(cast_order(rdt, env)); protecti++;
-        ldup = PROTECT(uniqlist(ldt, lo, tol)); protecti++;
-        rdup = PROTECT(uniqlist(rdt, ro, tol)); protecti++; 
+        ldup = PROTECT(uniqlist(ldt, lo)); protecti++;
+        rdup = PROTECT(uniqlist(rdt, ro)); protecti++; 
 
         llen__ = PROTECT(diff_int(ldup, nrows)); protecti++;
 
@@ -526,7 +526,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
         rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
         allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
         roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        bmerge(rdt, tmp, PROTECT(seq_int(length(rdt), 1)), PROTECT(seq_int(length(rdt),1)), haskey, roll, rollends, PROTECT(zero_init(1)), tol, f__, len__, allLen1);
+        bmerge(rdt, tmp, PROTECT(seq_int(length(rdt), 1)), PROTECT(seq_int(length(rdt),1)), haskey, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
         UNPROTECT(8); // len__, haskey, rollends, allLen1, roll (except f__)
 
         xx = PROTECT(allocVector(VECSXP, 2)); protecti++;
@@ -550,7 +550,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP tol, 
     rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
     allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
     roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-    bmerge(cj, xx, PROTECT(seq_int(2, 1)), PROTECT(seq_int(2,1)), haskey, roll, rollends, PROTECT(zero_init(1)), tol, f__, len__, allLen1);
+    bmerge(cj, xx, PROTECT(seq_int(2, 1)), PROTECT(seq_int(2,1)), haskey, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
     UNPROTECT(8); // len__, haskey, rollends, allLen1, roll (except f__)
     
     ranscols = !LOGICAL(drop)[0] ? length(VECTOR_ELT(rcj, 0)) : length(rdup);

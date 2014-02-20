@@ -475,7 +475,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             len__ = integer(nrow(i))
             allLen1 = logical(1)
             if (verbose) {last.started.at=proc.time()[3];cat("Starting bmerge ...");flush.console()}
-            .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), haskey(i), roll, rollends, nomatch, sqrt(.Machine$double.eps), f__, len__, allLen1)
+            .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), haskey(i), roll, rollends, nomatch, f__, len__, allLen1)
             if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
             # length of input nomatch (single 0 or NA) is 1 in both cases.
             # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
