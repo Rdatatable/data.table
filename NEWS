@@ -391,6 +391,9 @@ THANKS TO BETA TESTERS
   o  Jakub Szewczyk for reporting that where "." is used in formula interface of dcast.data.table along with an aggregate
      function, it did not result in aggregated result, #5149. Test added.
          dcast.data.table(x, a ~ ., mean, value.var="b")
+     
+  o  Jonathan Owen for reporting that DT[,sum(.SD),by=] failed with GForce optimization, #5380. Added test and error
+     message redirecting to use DT[,lapply(.SD,sum),by=], base::sum and how to turn off GForce.  
 
 NOTES
 

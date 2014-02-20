@@ -3759,6 +3759,9 @@ if ("package:reshape2" %in% search()) {
     test(1198.3, setkey(setDT(dcast(df, a1+a2+a3~b, drop=FALSE)), a1,a2,a3), dcast.data.table(dt, a1+a2+a3~b, drop=FALSE))
 }
 
+DT = data.table(id=1:2, val1=6:1, val2=6:1)   #5380
+test(1199, DT[, sum(.SD), by=id], error="GForce sum can only be applied to columns, not .SD or similar.*looking for.*lappy(.SD")
+
 ##########################
 
 # TO DO: tests of freading classes like Date and the verbose messages there.

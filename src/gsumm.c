@@ -45,6 +45,7 @@ SEXP gend() {
 SEXP gsum(SEXP x, SEXP narm)
 {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
+    if (!isVectorAtomic(x)) error("GForce sum can only be applied to columns, not .SD or similar. To sum all items in a list such as .SD, either add the prefix base::sum(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lappy(.SD,sum),by=,.SDcols=]'");
     int i, thisgrp;
     int n = LENGTH(x);
     //clock_t start = clock();
@@ -93,7 +94,7 @@ SEXP gsum(SEXP x, SEXP narm)
 	    break;
     default:
         free(s);
-        error("Type '%s' not supported in gsum", type2char(TYPEOF(x)));
+        error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
     }
     free(s);
     UNPROTECT(1);
@@ -107,6 +108,7 @@ SEXP gmean(SEXP x, SEXP narm)
     int i, protecti=0, thisgrp, n;
     //clock_t start = clock();
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
+    if (!isVectorAtomic(x)) error("GForce mean can only be applied to columns, not .SD or similar. Likely you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table.");
     if (!LOGICAL(narm)[0]) {
         ans = PROTECT(gsum(x,narm)); protecti++;
         switch(TYPEOF(ans)) {
@@ -152,7 +154,7 @@ SEXP gmean(SEXP x, SEXP narm)
 	    break;
     default:
         free(s); free(c);
-        error("Type '%s' not supported in gmean na.rm=TRUE", type2char(TYPEOF(x)));
+        error("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
     }
     ans = PROTECT(allocVector(REALSXP, ngrp));
     for (i=0; i<ngrp; i++) {
