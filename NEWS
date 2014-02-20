@@ -186,8 +186,6 @@ NEW FEATURES
          DT[, list(b,1:2), by=a]  # now recycles the 1:2 with warning to length 3
 
 BUG FIXES
-  o  Fixed a bug in `dcast.data.table` when LHS of formula had factor columns with unused levels was used 
-     along with `drop=FALSE` argument. Closes #5379.
 
   o  Long outstanding (usually small) memory leak in grouping fixed, #2648. When the last group is smaller
      than the largest group, the difference in those sizes was not being released. Also in non-trivial
