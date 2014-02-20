@@ -3732,6 +3732,32 @@ test(1195, DT[,.N,keyby=val], setkey(DT,val)[,.N,by=val])
 test(1196, DT[,.N,by=val]$N, INT(1,1,2))
 test(1197, DT[.(x),.N]$N, 2)
 
+# fix for #5379 - issue when factor columns on formula LHS along with `drop=FALSE`
+if ("package:reshape2" %in% search()) {
+    try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
+                                               # try() in case reshape isn't loaded (detach gives not found error in that case)
+    set.seed(1L)
+    df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]),
+                 b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+    dt <- as.data.table(df)
+    test(1198.1, setkey(setDT(dcast(df, a~b, drop=FALSE)), a), dcast.data.table(dt, a~b, drop=FALSE))
+    
+    # reverse the levels
+    set.seed(1L)
+    df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[5:1]),
+                 b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+    dt <- as.data.table(df)
+    test(1198.2, setkey(setDT(dcast(df, a~b, drop=FALSE)), a), dcast.data.table(dt, a~b, drop=FALSE))
+    
+    # more factor cols
+    set.seed(1L)
+    df <- data.frame(a1=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]), # factor col 1
+                 a2=factor(sample(letters[6:10], 10, replace=TRUE), letters[6:10]), # factor col 2
+                 a3=sample(letters[1:3], 10, TRUE), # no factor
+                 b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+    dt <- as.data.table(df)
+    test(1198.3, setkey(setDT(dcast(df, a1+a2+a3~b, drop=FALSE)), a1,a2,a3), dcast.data.table(dt, a1+a2+a3~b, drop=FALSE))
+}
 
 ##########################
 

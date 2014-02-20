@@ -295,6 +295,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP env, 
     R_len_t i, j, nrows, ncols, ilen = length(inames), mlen = length(mnames), lanscols, ranscols;
     Rboolean isagg = FALSE, isfill = TRUE;
     char buffer[128], uscore[] = "_";
+    SEXP lvls; // to get levels for drop=FALSE in case of factor column - #5379
 
     // check for arguments - some of these are not necessary as the intention is NOT to call directly, but thro' fcast.R (dcast), but alright
     if (TYPEOF(DT) != VECSXP) error("'data' should be a data.table or data.frame");
@@ -429,11 +430,19 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP env, 
         for (i=0; i<ilen; i++) {
             cpy = PROTECT(allocVector(VECSXP, 1));
             SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(ldt, i));
-            dorder = PROTECT(cast_order(cpy, env));
-            ddup = PROTECT(uniqlist(cpy, dorder));
-            ddup = PROTECT(subset(dorder, ddup));
-            dtmp = PROTECT(subset(VECTOR_ELT(cpy, 0), ddup));
-            UNPROTECT(5); // dtmp, cpy
+            if (isFactor(VECTOR_ELT(ldt, i))) {
+                lvls = PROTECT(getAttrib(VECTOR_ELT(ldt, i), R_LevelsSymbol));
+                dtmp = PROTECT(seq_int(length(lvls), 1));
+                setAttrib(dtmp, R_ClassSymbol, mkString("factor"));
+                setAttrib(dtmp, R_LevelsSymbol, lvls);
+                UNPROTECT(3);
+            } else {
+                dorder = PROTECT(cast_order(cpy, env));
+                ddup = PROTECT(uniqlist(cpy, dorder));
+                ddup = PROTECT(subset(dorder, ddup));
+                dtmp = PROTECT(subset(VECTOR_ELT(cpy, 0), ddup));
+                UNPROTECT(5); // dtmp, cpy, dorder, ddup
+            }
             SET_VECTOR_ELT(lcj, i, dtmp);
         }
         lcj = PROTECT(cross_join(lcj)); protecti++;
