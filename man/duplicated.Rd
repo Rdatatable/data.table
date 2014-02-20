@@ -12,22 +12,14 @@
      (when no key) duplicated rows by all columns removed.
 }
 \usage{
-\method{duplicated}{data.table}(x, incomparables=FALSE,
-                                tolerance=.Machine$double.eps ^ 0.5,
-                                by=key(x), ...)
+\method{duplicated}{data.table}(x, incomparables=FALSE, by=key(x), ...)
 
-\method{unique}{data.table}(x, incomparables=FALSE,
-                            tolerance=.Machine$double.eps ^ 0.5,
-                            by=key(x), ...)
+\method{unique}{data.table}(x, incomparables=FALSE, by=key(x), ...)
 }
 \arguments{
   \item{x}{ A data.table. }
   \item{\dots}{ Not used at this time. }
   \item{incomparables}{ Not used. Here for S3 method consistency. }
-  \item{tolerance}{
-    Double precision values are considered equal if they are within this
-    tolerance. Same default as \code{\link{all.equal}}.
-  }
   \item{by}{
     \code{character} or \code{integer} vector indicating which combinations of
     columns form \code{x} to use for uniqueness checks. Defaults to

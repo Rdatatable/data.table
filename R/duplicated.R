@@ -1,7 +1,5 @@
 
-duplicated.data.table <- function(x, incomparables=FALSE,
-                                  tolerance=.Machine$double.eps ^ 0.5,
-                                  by=key(x), ...) {
+duplicated.data.table <- function(x, incomparables=FALSE, by=key(x), ...) {
     if (!cedta()) return(NextMethod("duplicated"))
     if (!identical(incomparables, FALSE)) {
         .NotYetUsed("incomparables != FALSE")
@@ -11,8 +9,7 @@ duplicated.data.table <- function(x, incomparables=FALSE,
     res <- rep.int(TRUE, nrow(x))
     
     if (query$use.keyprefix) {
-        # replaced duplist with uniqlist - incremental memory allocation
-        f = uniqlist(x[, query$by, with=FALSE], tolerance=tolerance)
+        f = uniqlist(x[, query$by, with=FALSE])
     } else {
         o = forder(x, by=query$by, sort=FALSE, retGrp=TRUE)
         f = attr(o,"starts")
@@ -22,11 +19,9 @@ duplicated.data.table <- function(x, incomparables=FALSE,
     res
 }
 
-unique.data.table <- function(x, incomparables=FALSE,
-                              tolerance=.Machine$double.eps ^ 0.5,
-                              by=key(x), ...) {
+unique.data.table <- function(x, incomparables=FALSE, by=key(x), ...) {
     if (!cedta()) return(NextMethod("unique"))
-    dups <- duplicated.data.table(x, incomparables, tolerance, by, ...)
+    dups <- duplicated.data.table(x, incomparables, by, ...)
     x[!dups]
 }
 
@@ -69,3 +64,5 @@ unique.data.table <- function(x, incomparables=FALSE,
 
     list(use.keyprefix=use.keyprefix, by=by)
 }
+
+

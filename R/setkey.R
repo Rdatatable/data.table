@@ -112,7 +112,9 @@ forder = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE)
     .Call(Cforder, x, by, retGrp, sort)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-
+twiddle = function(x) {
+    .Call(Ctwiddlewrapper, x)
+}
 
 SJ = function(...) {
     JDT = as.data.table(list(...))

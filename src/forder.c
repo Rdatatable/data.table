@@ -353,7 +353,7 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
 
 static union {double d; unsigned long long ll;} u;
 
-static unsigned long long twiddle(void *p)
+unsigned long long twiddle(void *p)
 {
     u.d = *(double *)p;
     if (R_FINITE(u.d)) {
@@ -369,6 +369,26 @@ static unsigned long long twiddle(void *p)
     unsigned long long mask = -(long long)(u.ll >> 63) | FLIP_SIGN_BIT;   // leaves bits in lowest 16 (ok, will be skipped)
     //Rprintf("  Mask: "); binary(mask);
     return(u.ll ^ mask);
+}
+
+SEXP twiddlewrapper(SEXP x)
+{
+// Expose bit rounding part of twiddle to R level to demonstrate/inspect only. Not for use internally at R level.
+// Don't expose the other parts of twiddle, since those only make sense when viewed as a long long.
+    if (!isReal(x)) error("x not a 'numeric' vector");
+    SEXP ans = PROTECT(duplicate(x));
+    for (int i=0; i<LENGTH(x); i++) {
+        u.d = REAL(ans)[i];
+        if (R_FINITE(u.d)) {
+            if (u.ll >> 15 & 0x1)   // bit 49.  TO DO: allow optionally 2|1|0 byte rounding
+                u.ll = ((u.ll >> 16) + 1) << 16;  // round
+            else
+                u.ll = (u.ll >> 16) << 16;  // clear final 16
+        }
+        REAL(ans)[i] = u.d;
+    }
+    UNPROTECT(1);
+    return(ans);
 }
 
 // binPrint(SEXP x)   // utility function for dev, to do.

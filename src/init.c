@@ -19,7 +19,6 @@ SEXP settruelength();
 SEXP setcharvec();
 SEXP setcolorder();
 SEXP chmatchwrapper();
-SEXP duplist();
 SEXP readfile();
 SEXP reorder();
 SEXP rbindlist();
@@ -41,6 +40,7 @@ SEXP fsorted();
 SEXP gstart();
 SEXP gend();
 SEXP gsum();
+SEXP twiddlewrapper();
 
 // .Externals
 SEXP fastmean();
@@ -60,7 +60,6 @@ R_CallMethodDef callMethods[] = {
 {"Csetcharvec", (DL_FUNC) &setcharvec, -1},
 {"Csetcolorder", (DL_FUNC) &setcolorder, -1},
 {"Cchmatchwrapper", (DL_FUNC) &chmatchwrapper, -1},
-{"Cduplist", (DL_FUNC) &duplist, -1},
 {"Creadfile", (DL_FUNC) &readfile, -1},
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
@@ -82,6 +81,7 @@ R_CallMethodDef callMethods[] = {
 {"Cgstart", (DL_FUNC) &gstart, -1},
 {"Cgend", (DL_FUNC) &gend, -1},
 {"Cgsum", (DL_FUNC) &gsum, -1},
+{"Ctwiddlewrapper", (DL_FUNC) &twiddlewrapper, -1},
 {NULL, NULL, 0}
 };
 
