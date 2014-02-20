@@ -3,9 +3,10 @@
 #include <Rinternals.h>
 //#include <time.h>
 
-static int *grp = NULL;  // vector of group sizes
-static int ngrp = 0;     // number of groups i.e. length of grp
-static int grpn = 0;     // sum(grp) i.e. length of underlying x
+static int *grp = NULL;      // the group of each x item, like a factor
+static int ngrp = 0;         // number of groups
+static int *grpsize = NULL;  // size of each group, used by gmean not gsum
+static int grpn = 0;         // length of underlying x == length(grp)
 
 SEXP gstart(SEXP o, SEXP f, SEXP l) {
     int i, j, g, *this;
@@ -16,19 +17,20 @@ SEXP gstart(SEXP o, SEXP f, SEXP l) {
     ngrp = LENGTH(l);
     if (LENGTH(f) != ngrp) error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp);
     grpn=0;
-    for (i=0; i<ngrp; i++) grpn+=INTEGER(l)[i];
+    grpsize = INTEGER(l);  // l will be protected in calling R scope until gend(), too
+    for (i=0; i<ngrp; i++) grpn+=grpsize[i];
     if (LENGTH(o) && LENGTH(o)!=grpn) error("o has length %d but sum(l)=%d", LENGTH(o), grpn);
     grp = malloc(grpn * sizeof(int));
     if (!grp) error("Unable to allocate %d * %d bytes in gstart", grpn, sizeof(int));
     if (LENGTH(o)) {
         for (g=0; g<ngrp; g++) {
             this = INTEGER(o) + INTEGER(f)[g]-1;
-            for (j=0; j<INTEGER(l)[g]; j++)  grp[ this[j]-1 ] = g;
+            for (j=0; j<grpsize[g]; j++)  grp[ this[j]-1 ] = g;
         }
     } else {
         for (g=0; g<ngrp; g++) {
             this = grp + INTEGER(f)[g]-1;
-            for (j=0; j<INTEGER(l)[g]; j++)  this[j] = g;
+            for (j=0; j<grpsize[g]; j++)  this[j] = g;
         }
     }
     // Rprintf("gstart took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
@@ -52,14 +54,14 @@ SEXP gsum(SEXP x, SEXP narm)
     if (!s) error("Unable to allocate %d * %d bytes for gsum", ngrp, sizeof(long double));
     memset(s, 0, ngrp * sizeof(long double)); // all-0 bits == (long double)0, checked in init.c
     switch(TYPEOF(x)) {
-    case LGLSXP:
-    case INTSXP:
+    case LGLSXP: case INTSXP:
         for (i=0; i<n; i++) {
             thisgrp = grp[i];
-            if (thisgrp<0 || thisgrp>ngrp-1) error("grp contains an integer outside the range [0,ngrp-1=%d]", ngrp);  // TO DO: remove when code is stable, but likely negligble time.
-	        if(INTEGER(x)[i] == NA_INTEGER) { if (!LOGICAL(narm)[0]) s[thisgrp] = NA_REAL;  continue; }  // Let NA_REAL propogate from here. R_NaReal is IEEE.
+            if(INTEGER(x)[i] == NA_INTEGER) { 
+	            if (!LOGICAL(narm)[0]) s[thisgrp] = NA_REAL;  // Let NA_REAL propogate from here. R_NaReal is IEEE.
+	            continue;
+	        }
 	        s[thisgrp] += INTEGER(x)[i];  // no under/overflow here, s is long double (like base)
-	        // n++;  // count the non-NA, needed for mean
 	    }
 	    ans = PROTECT(allocVector(INTSXP, ngrp));
         for (i=0; i<ngrp; i++) {
@@ -80,10 +82,8 @@ SEXP gsum(SEXP x, SEXP narm)
         ans = PROTECT(allocVector(REALSXP, ngrp));
         for (i=0; i<n; i++) {
             thisgrp = grp[i];
-            if (thisgrp<0 || thisgrp>ngrp-1) error("grp contains an integer outside the range [0,ngrp-1=%d]", ngrp);
-	        if(ISNAN(REAL(x)[i]) && LOGICAL(narm)[0]) continue;  // else let NA_REAL propogate from here
+            if(ISNAN(REAL(x)[i]) && LOGICAL(narm)[0]) continue;  // else let NA_REAL propogate from here
 	        s[thisgrp] += REAL(x)[i];  // done in long double, like base
-	        // n++;  // count the non-NA, needed for mean
 	    }
 	    for (i=0; i<ngrp; i++) {
 	        if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
@@ -93,7 +93,7 @@ SEXP gsum(SEXP x, SEXP narm)
 	    break;
     default:
         free(s);
-        error("Type '%s' not yet supported in gsum", type2char(TYPEOF(x)));
+        error("Type '%s' not supported in gsum", type2char(TYPEOF(x)));
     }
     free(s);
     UNPROTECT(1);
@@ -101,6 +101,73 @@ SEXP gsum(SEXP x, SEXP narm)
     return(ans);
 }
 
-// TO DO: gmean, gmin, gmax, gsd, gprod, gwhich.min, gwhich.max
+SEXP gmean(SEXP x, SEXP narm)
+{
+    SEXP ans;
+    int i, protecti=0, thisgrp, n;
+    //clock_t start = clock();
+    if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
+    if (!LOGICAL(narm)[0]) {
+        ans = PROTECT(gsum(x,narm)); protecti++;
+        switch(TYPEOF(ans)) {
+        case LGLSXP: case INTSXP:
+            ans = PROTECT(coerceVector(ans, REALSXP)); protecti++;
+        case REALSXP:
+            for (i=0; i<ngrp; i++) REAL(ans)[i] /= grpsize[i];  // let NA propogate
+            break;
+        default :
+            error("Internal error: gsum returned type '%s'. typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x)));
+        }
+        UNPROTECT(protecti);
+        return(ans);
+    }
+    // na.rm=TRUE.  Similar to gsum, but we need to count the non-NA as well for the divisor
+    n = LENGTH(x);
+    if (grpn != n) error("grpn [%d] != length(x) [%d] in gsum", grpn, length(x));
+
+    long double *s = malloc(ngrp * sizeof(long double));
+    if (!s) error("Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE", ngrp, sizeof(long double));
+    memset(s, 0, ngrp * sizeof(long double)); // all-0 bits == (long double)0, checked in init.c
+
+    int *c = malloc(ngrp * sizeof(int));
+    if (!c) error("Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE", ngrp, sizeof(int));
+    memset(c, 0, ngrp * sizeof(int)); // all-0 bits == (int)0, checked in init.c
+        
+    switch(TYPEOF(x)) {
+    case LGLSXP: case INTSXP:
+        for (i=0; i<n; i++) {
+            thisgrp = grp[i];
+            if(INTEGER(x)[i] == NA_INTEGER) continue;
+	        s[thisgrp] += INTEGER(x)[i];  // no under/overflow here, s is long double
+	        c[thisgrp]++;
+	    }
+        break;
+    case REALSXP:
+        for (i=0; i<n; i++) {
+            thisgrp = grp[i];
+            if (ISNAN(REAL(x)[i])) continue;
+	        s[thisgrp] += REAL(x)[i];
+	        c[thisgrp]++;
+	    }
+	    break;
+    default:
+        free(s); free(c);
+        error("Type '%s' not supported in gmean na.rm=TRUE", type2char(TYPEOF(x)));
+    }
+    ans = PROTECT(allocVector(REALSXP, ngrp));
+    for (i=0; i<ngrp; i++) {
+        if (c[i]==0) { REAL(ans)[i] = R_NaN; continue; }  // NaN to follow base::mean
+        s[i] /= c[i]; 
+        if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
+        else if (s[i] < -DBL_MAX) REAL(ans)[i] = R_NegInf;
+        else REAL(ans)[i] = (double)s[i];
+    }
+    free(s); free(c);
+    UNPROTECT(1);
+    // Rprintf("this gmean na.rm=TRUE took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+    return(ans);
+}
+
+// TO DO: gmin, gmax, gsd, gprod, gwhich.min, gwhich.max
 
 

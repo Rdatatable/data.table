@@ -40,6 +40,7 @@ SEXP fsorted();
 SEXP gstart();
 SEXP gend();
 SEXP gsum();
+SEXP gmean();
 SEXP twiddlewrapper();
 
 // .Externals
@@ -81,6 +82,7 @@ R_CallMethodDef callMethods[] = {
 {"Cgstart", (DL_FUNC) &gstart, -1},
 {"Cgend", (DL_FUNC) &gend, -1},
 {"Cgsum", (DL_FUNC) &gsum, -1},
+{"Cgmean", (DL_FUNC) &gmean, -1},
 {"Ctwiddlewrapper", (DL_FUNC) &twiddlewrapper, -1},
 {NULL, NULL, 0}
 };

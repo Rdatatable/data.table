@@ -1908,9 +1908,9 @@ setnames(ans2,"y","V2")
 test(654, ans1, ans2)
 test(655, abs(tt1["user.self"] - tt2["user.self"])<2.0)  # unoptimized tt2 takes 30 seconds rather than 2. The difference between tt1 and tt2 is under 0.2 seconds usually, so 2.0 is very large margin for error to ensure it's not 30secs.
 
-test(656, DT[,mean(x),by=grp1,verbose=TRUE], output="Optimized j from 'mean(x)' to '.External(Cfastmean, x, FALSE)'")
-test(657, DT[,list(mean(x)),by=grp1,verbose=TRUE], output="Optimized j from 'list(mean(x))' to 'list(.External(Cfastmean, x, FALSE))'")
-test(658, DT[,list(mean(x),mean(y)),by=grp1,verbose=TRUE], output="Optimized j from 'list(mean(x), mean(y))' to 'list(.External(Cfastmean, x, FALSE), .External(Cfastmean, y, FALSE))'")
+test(656, DT[,mean(x),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
+test(657, DT[,list(mean(x)),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
+test(658, DT[,list(mean(x),mean(y)),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
 tt = capture.output(DT[,list(mean(x),mean(y)),by=list(grp1,grp2),verbose=TRUE])
 test(659, !length(grep("Wrote less rows", tt)))  # first group is one row with this seed. Ensure we treat this as aggregate case rather than allocate too many rows.
 
@@ -3679,18 +3679,24 @@ test(1181, forder(INT(1,3,5000000,NA)), INT(4,1,2,3))
 test(1182, forder(INT(1,-1,5000000,NA)), INT(4,2,1,3))
 test(1183, forder(INT(-3,-7,1,-6000000,NA,3,5000000,NA,8)), INT(5,8,4,2,1,3,6,9,7))
 
-# tests of gsum with NA
+# tests of gsum and gmean with NA
 DT = data.table(x=rep(c("a","b","c","d"),each=3), y=c(1L,3L,6L), v=as.numeric(1:12))
 set(DT,c(3L,8L),"y",NA)
 set(DT,c(5L,9L),"v",NA)
 set(DT,10:12,"y",NA)
 set(DT,10:12,"v",NA)
 options(datatable.optimize=1)  # turn off GForce
-test(1184, DT[, sum(v), by=x, verbose=TRUE], output="dogroups")
-test(1185, DT[, list(sum(y), sum(v), sum(y,na.rm=TRUE), sum(v,na.rm=TRUE)), by=x],
+test(1184.1, DT[, sum(v), by=x, verbose=TRUE], output="dogroups")
+test(1184.2, DT[, mean(v), by=x, verbose=TRUE], output="dogroups")
+test(1185.1, DT[, list(sum(y), sum(v), sum(y,na.rm=TRUE), sum(v,na.rm=TRUE)), by=x],
            data.table(x=c("a","b","c","d"), V1=c(NA,10L,NA,NA), V2=c(6,NA,NA,NA), V3=c(4L,10L,7L,0L), V4=c(6,10,15,0)))
+options(datatable.optimize=0)  # turn off fastmean optimization to get the answer to match to
+test(1185.2, ans <- DT[, list(mean(y), mean(v), mean(y,na.rm=TRUE), mean(v,na.rm=TRUE)), by=x, verbose=TRUE], output="All optimizations.*off")
+options(datatable.optimize=1)  # turn on old fastmean optimization only
+test(1185.3, DT[, list(mean(y), mean(v), mean(y,na.rm=TRUE), mean(v,na.rm=TRUE)), by=x, verbose=TRUE], ans, output="Old mean.*changed j")
 options(datatable.optimize=Inf)  # turn on GForce
-test(1186, DT[, sum(v), by=x, verbose=TRUE], output="GForce")
+test(1185.4, DT[, list(mean(y), mean(v), mean(y,na.rm=TRUE), mean(v,na.rm=TRUE)), by=x, verbose=TRUE], ans, output="GForce optimized j to")
+test(1186, DT[, sum(v), by=x, verbose=TRUE], output="GForce optimized j to")
 test(1187, DT[, list(sum(y), sum(v), sum(y,na.rm=TRUE), sum(v,na.rm=TRUE)), by=x],
            data.table(x=c("a","b","c","d"), V1=c(NA,10L,NA,NA), V2=c(6,NA,NA,NA), V3=c(4L,10L,7L,0L), V4=c(6,10,15,0)))
 

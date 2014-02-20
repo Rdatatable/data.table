@@ -1070,75 +1070,56 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     lockBinding(".GRP",SDenv)
     lockBinding(".I",SDenv)
     GForce = FALSE
-    if (getOption("datatable.optimize")>=1) {  # Abilility to turn off if problems
-        # Optimization to reduce overhead of calling mean and lapply over and over for each group
-        nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
+    if (getOption("datatable.optimize")>=1 && is.call(jsub)) {  # Abilility to turn off if problems or to benchmark the benefit
+        # Optimization to reduce overhead of calling lapply over and over for each group
         oldjsub = jsub
-        if (is.call(jsub)) {
-            if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xvars)) {
-                txt = as.list(jsub)[-1L]
-                if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #4839
-                fun = txt[[2L]]
-                if (is.call(fun) && fun[[1L]]=="function") {
-                    # Fix for #2381: added SDenv$.SD to 'eval' to take care of cases like: lapply(.SD, function(x) weighted.mean(x, bla)) where "bla" is a column in DT
-                    # http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
-                    # adding this does not compromise in speed (that is, not any lesser than without SDenv$.SD)
-                    # replaced SDenv$.SD to SDenv to deal with Bug #5007 reported by Ricardo (Nice catch!)
-                    assign("..FUN",eval(fun, SDenv, SDenv), SDenv)  # to avoid creating function() for each column of .SD
-                    lockBinding("..FUN",SDenv)
-                    txt[[1L]] = as.name("..FUN")
-                } else {
-                    if (is.character(fun)) fun = as.name(fun)
-                    txt[[1L]] = fun
-                }
-                ans = vector("list",length(xvars)+1L)
-                ans[[1L]] = as.name("list")
-                for (ii in seq_along(xvars)) {
-                    txt[[2L]] = as.name(xvars[ii])
-                    ans[[ii+1L]] = as.call(txt)
-                }
-                jsub = as.call(ans)  # important no names here
-                jvnames = xvars      # but here instead
-                # It may seem inefficient to constuct a potentially long expression. But, consider calling
-                # lapply 100000 times. The C code inside lapply does the LCONS stuff anyway, every time it
-                # is called, involving small memory allocations.
-                # The R level lapply calls as.list which needs a shallow copy.
-                # lapply also does a setAttib of names (duplicating the same names over and over again
-                # for each group) which is terrible for our needs. We replace all that with a
-                # (ok, long, but not huge in memory terms) list() which is primitive (so avoids symbol
-                # lookup), and the eval() inside dogroups hardly has to do anything. All this results in
-                # overhead minimised. We don't need to worry about the env passed to the eval in a possible
-                # lapply replacement, or how to pass ... efficiently to it.
-                # Plus we optimize lapply first, so that mean() can be optimized too as well, next.
+        if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xvars)) {
+            txt = as.list(jsub)[-1L]
+            if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #4839
+            fun = txt[[2L]]
+            if (is.call(fun) && fun[[1L]]=="function") {
+                # Fix for #2381: added SDenv$.SD to 'eval' to take care of cases like: lapply(.SD, function(x) weighted.mean(x, bla)) where "bla" is a column in DT
+                # http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
+                # adding this does not compromise in speed (that is, not any lesser than without SDenv$.SD)
+                # replaced SDenv$.SD to SDenv to deal with Bug #5007 reported by Ricardo (Nice catch!)
+                assign("..FUN",eval(fun, SDenv, SDenv), SDenv)  # to avoid creating function() for each column of .SD
+                lockBinding("..FUN",SDenv)
+                txt[[1L]] = as.name("..FUN")
+            } else {
+                if (is.character(fun)) fun = as.name(fun)
+                txt[[1L]] = fun
             }
-            if (jsub[[1L]]=="list") {
-                for (ii in seq_along(jsub)[-1L])
-                    if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]]=="mean")
-                        jsub[[ii]] = .optmean(jsub[[ii]])
-            } else if (jsub[[1L]]=="mean") {
-                jsub = .optmean(jsub)
+            ans = vector("list",length(xvars)+1L)
+            ans[[1L]] = as.name("list")
+            for (ii in seq_along(xvars)) {
+                txt[[2L]] = as.name(xvars[ii])
+                ans[[ii+1L]] = as.call(txt)
             }
-        }
-        if (nomeanopt) {
-            warning("Unable to optimize call to mean() and could be very slow. Only mean(x) and mean(x,na.rm=TRUE) are optimized, and you must name 'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean 'trim' which is the 2nd argument. 'trim' is not yet optimized.",immediate.=TRUE)
+            jsub = as.call(ans)  # important no names here
+            jvnames = xvars      # but here instead
+            # It may seem inefficient to constuct a potentially long expression. But, consider calling
+            # lapply 100000 times. The C code inside lapply does the LCONS stuff anyway, every time it
+            # is called, involving small memory allocations.
+            # The R level lapply calls as.list which needs a shallow copy.
+            # lapply also does a setAttib of names (duplicating the same names over and over again
+            # for each group) which is terrible for our needs. We replace all that with a
+            # (ok, long, but not huge in memory terms) list() which is primitive (so avoids symbol
+            # lookup), and the eval() inside dogroups hardly has to do anything. All this results in
+            # overhead minimised. We don't need to worry about the env passed to the eval in a possible
+            # lapply replacement, or how to pass ... efficiently to it.
+            # Plus we optimize lapply first, so that mean() can be optimized too as well, next.
         }
         if (verbose) {
             if (!identical(oldjsub, jsub))
-                cat("Optimized j from '",deparse(oldjsub),"' to '",deparse(jsub,width.cutoff=200),"'\n",sep="")
+                cat("lapply optimization changed j from '",deparse(oldjsub),"' to '",deparse(jsub,width.cutoff=200),"'\n",sep="")
             else
-                cat("Optimization is on but j left unchanged as '",deparse(jsub,width.cutoff=200),"'\n",sep="")
+                cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200),"'\n",sep="")
         }
-        assign("Cfastmean", Cfastmean, SDenv)
-        assign("mean", base::mean.default, SDenv)
-        # Here in case nomeanopt=TRUE or some calls to mean weren't detected somehow. Better but still very slow.
-        # Maybe change to :
-        #     assign("mean", fastmean, SDenv)  # neater than the hard work above, but slower
-        # when fastmean can do trim.
-     
-        if (getOption("datatable.optimize")>=2 && !bywithoutby && !length(irows) && length(f__) && length(xvars) && !length(lhs) && is.call(jsub)) {
+        if (getOption("datatable.optimize")>=2 && !bywithoutby && !length(irows) && length(f__) && length(xvars) && !length(lhs)) {
             # Apply GForce
+            gfuns = c("sum","mean")
             .ok = function(q) {
-                ans = is.call(q) && q[[1L]] == "sum" && !is.call(q[[2L]]) && (length(q)==2 || as.character(q[[3L]]) %in% c("TRUE","FALSE","T","F"))
+                ans = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]]) && (length(q)==2 || as.character(q[[3L]]) %in% c("TRUE","FALSE","T","F"))
                 if (is.na(ans)) ans=FALSE
                 ans
             }
@@ -1148,12 +1129,43 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             } else GForce = .ok(jsub)
             if (GForce) {
                 if (jsub[[1L]]=="list")
-                    for (ii in seq_along(jsub)[-1L])  jsub[[ii]][[1L]] = quote(gsum)
+                    for (ii in seq_along(jsub)[-1L])  jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
                 else
-                    jsub[[1L]] = quote(gsum)
+                    jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
                 if (verbose) cat("GForce optimized j to '",deparse(jsub,width.cutoff=200),"'\n",sep="")
-            }
+            } else if (verbose) cat("GForce is on, left j unchanged\n");
         }
+        if (!GForce) {
+            # Still do the old speedup for mean, for now
+            nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
+            oldjsub = jsub
+            if (jsub[[1L]]=="list") {
+                for (ii in seq_along(jsub)[-1L])
+                    if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]]=="mean")
+                        jsub[[ii]] = .optmean(jsub[[ii]])
+            } else if (jsub[[1L]]=="mean") {
+                jsub = .optmean(jsub)
+            }
+            if (nomeanopt) {
+                warning("Unable to optimize call to mean() and could be very slow. You must name 'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean 'trim' which is the 2nd argument of mean. 'trim' is not yet optimized.",immediate.=TRUE)
+            }
+            if (verbose) {
+                if (!identical(oldjsub, jsub))
+                    cat("Old mean optimization changed j from '",deparse(oldjsub),"' to '",deparse(jsub,width.cutoff=200),"'\n",sep="")
+                else
+                    cat("Old mean optimization is on, left j unchanged.\n")
+            }
+            assign("Cfastmean", Cfastmean, SDenv)
+            assign("mean", base::mean.default, SDenv)
+            # Old comments still here for now ...
+            # Here in case nomeanopt=TRUE or some calls to mean weren't detected somehow. Better but still slow.
+            # Maybe change to :
+            #     assign("mean", fastmean, SDenv)  # neater than the hard work above, but slower
+            # when fastmean can do trim.
+        }
+    } else if (verbose) {
+        if (getOption("datatable.optimize")<1) cat("All optimizations are turned off\n")
+        else cat("Optimization is on but left j unchanged (single plain symbol): '",deparse(jsub,width.cutoff=200),"'\n")
     }
     xcols = chmatch(xvars,names(x))
     if (bywithoutby) {
@@ -2050,6 +2062,7 @@ setDT <- function(x, giveNames=TRUE) {
 }
 
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
+gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gstart = function(o, f, l) .Call(Cgstart, o, f, l)
 gend = function() .Call(Cgend)
 

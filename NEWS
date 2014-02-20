@@ -14,7 +14,7 @@ This NEWS file summarises the main changes.
 
 NEW FEATURES
 
-  o  Fast methods of melt and dcast from package reshape2 have been implemented for data.table, FR#2627.
+  o  Fast methods of reshape2's melt and dcast have been implemented for data.table, FR#2627.
      Most settings are identical to reshape2, see ?melt.data.table.
 	 melt: 10 million rows and 5 columns, 61.3 seconds reduced to 1.2 seconds.
 	 dcast: 1 million rows and 4 columns, 192 seconds reduced to 3.6 seconds.
@@ -34,8 +34,8 @@ NEW FEATURES
      
   o  Sorting (setkey and ad-hoc by=) is faster and scales better on randomly ordered data and now
      adapts to almost sorted data. The remaining comparison sorts have been removed. We use a
-     combination of counting sort and forwards radix (MSD) for all types including double, character
-     and integer64; forwards not backwards through columns. This was inspired by Terdiman and
+     combination of counting sort and forwards radix (MSD) for all types including double and
+     character; forwards not backwards through columns. This was inspired by Terdiman and
      Herf's (LSD) radix approach for floating point :
          http://codercorner.com/RadixSortRevisited.htm 
          http://stereopsis.com/radix.html
@@ -47,7 +47,7 @@ NEW FEATURES
      being sqrt(.Machine$double.eps) == 1.490116e-08 (the same as base::all.equal's default) the
      the significand is now rounded to the last 2 bytes, apx 11 s.f. This is more appropriate
      for large (1.23e20) and small (1.23e-20) numerics and is faster via a simple bit twiddle.
-     We aim to make this rounding optional (2, 1, or 0 byte rounding) in a future release.
+     We aim to make this rounding optional (e.g. 2, 1 or 0 byte rounding) in a future release.
 
   o  fread's integer64 argument implemented. Allows reading of integer64 data as 'double' or 'character'
      instead of bit64::integer64 (which remains the default as before). Thanks to Chris Neff for the
