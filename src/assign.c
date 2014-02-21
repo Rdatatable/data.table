@@ -492,8 +492,10 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
 // assigns to target[start:start+len-1] or target[where[start:start+len-1]]  where start is 0-based
 {
     int r = 0;
+    if (len<1) return;
+    int slen = length(source);
+    if (slen<1) return;
     if (TYPEOF(target) != TYPEOF(source)) error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s']", type2char(TYPEOF(target)),type2char(TYPEOF(source)));
-    int slen = LENGTH(source);   // internal use only, sometimes inside loops, for speed.
     size_t size = SIZEOF(target);
     if (!length(where)) {
         switch (TYPEOF(target)) {

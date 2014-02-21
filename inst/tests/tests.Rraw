@@ -45,7 +45,8 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
-    err <- if (is.null(output)) try(x,TRUE) else out<-paste(capture.output(try(x,TRUE)),collapse="")
+    if (is.null(output)) err <<- try(x,TRUE)
+    else out = gsub("NULL$","",paste(capture.output(print(err<<-try(x,TRUE))),collapse=""))
     if (!is.null(error) || !is.null(warning)) {
         type = ifelse(!is.null(error),"error","warning")
         patt = txt = ifelse(!is.null(error),error,warning)
@@ -2349,8 +2350,9 @@ if ("package:xts" %in% search()) {  # e.g. when run via R CMD check
 l = list(data.table(a=1:3), data.table(b=4:6))
 test(843, l[[2L]][,c:=7:9], data.table(b=4:6,c=7:9))
 test(844, l, list(data.table(a=1:3), data.table(b=4:6,c=7:9)))
-names(l) = c("foo","bar")   # copies all the contents, too
-test(845, l[["foo"]][2,d:=4], data.table(a=1:3,d=c(NA,4L,NA)), warning="Invalid .internal.selfref detected and fixed")
+names(l) = c("foo","bar")   # R > 3.0.2 no longer copies all the contents, yay
+test(845, l[["foo"]][2,d:=4], data.table(a=1:3,d=c(NA,4L,NA)),
+    warning= if (getRversion()>"3.0.2") NULL else "Invalid .internal.selfref detected and fixed")
 l = list(data.table(a=1:3), data.table(b=4:6))
 setattr(l,"names",c("foo","bar"))
 test(846, l[["foo"]][2,d:=4], data.table(a=1:3,d=c(NA,4,NA)))
@@ -2369,8 +2371,8 @@ options(datatable.alloccol=old)
 DT1 = data.table(a=1:3, b=4:6)
 DT2 = data.table(c=7:9)
 l = list(DT1, DT2)
-if (getRversion() >= "3.1.0") {
-    # list() no longer copies NAMED inputs (a very welcome change in R 3.1.0, r63767)
+if (getRversion() > "3.0.2") {
+    # list() no longer copies NAMED inputs (a very welcome change in Rdevel, r63767)
     test(853, address(DT1) == address(l[[1L]]))
     w = NULL
 } else {
@@ -2522,7 +2524,7 @@ if ("package:bit64" %in% search()) {
     DT = data.table( a=sample(1:1000,n,replace=TRUE),
                      b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
                      c=sample(c("foo","bar","baz"),n,replace=TRUE) )
-    write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
+    write.table(copy(DT),f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)  # TO DO: copy needed because write.table seems to set truelength in Rdevel?!
     test(897, class(DT$b), "integer64")
     test(898, fread(f), DT)
     unlink(f)
@@ -2771,11 +2773,12 @@ test(993, DT[, lapply(.SD, function(x) sum(!is.na(x), na.rm=TRUE)), by = Species
           DT[, lapply(.SD, FUN=function(x) sum(!is.na(x), na.rm=TRUE)), by = Species])
 
 # fread more than 50,000 columns, the R_PPSSIZE limit in Defn.h
-M = matrix(1,nrow=3,ncol=200000)
-f = tempfile()
-write.csv(M,f,row.names=FALSE)
-test(994, fread(f)[[200000]], rep(1L,3))
-unlink(f)
+# Takes too long for routine use. TO DO: move to a long running stress test script
+#M = matrix(1,nrow=3,ncol=200000)
+#f = tempfile()
+#write.csv(M,f,row.names=FALSE)
+#test(994, fread(f)[[200000]], rep(1L,3))
+#unlink(f)
 
 # CJ with `sorted = FALSE` option
 DT <- data.table(x=rep(3:5, each=4), y=rep(1:6, each=2), z=1:12)

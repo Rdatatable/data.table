@@ -1165,7 +1165,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
     } else if (verbose) {
         if (getOption("datatable.optimize")<1) cat("All optimizations are turned off\n")
-        else cat("Optimization is on but left j unchanged (single plain symbol): '",deparse(jsub,width.cutoff=200),"'\n")
+        else cat("Optimization is on but left j unchanged (single plain symbol): '",deparse(jsub,width.cutoff=200),"'\n",sep="")
     }
     xcols = chmatch(xvars,names(x))
     if (bywithoutby) {
@@ -1210,7 +1210,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     } else {
         if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
         ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, verbose)
-        if (verbose) {cat("done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+        if (verbose) {cat("done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
     }
     # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
     # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
@@ -1468,9 +1468,8 @@ tail.data.table = function(x, n=6, ...) {
 }
 
 "[<-.data.table" = function (x, i, j, value) {
-    # It is not recommended to use <-. Instead, use := for efficiency.
-    # [<- is still provided for consistency and backwards compatibility, but we hope users don't use it.
-    #settruelength(x,0L)  # it was copied to `*tmp*`, so truelength is length, now. But set to 0L to reset it and be safe.
+    # [<- is provided for consistency, but := is preferred as it allows by group and by reference to subsets of columns
+    # with no copy of the (very large, say 10GB) columns at all. := is like an UPDATE in SQL and we like and want two symbols to change.
     if (!cedta()) {
         x = if (nargs()<4) `[<-.data.frame`(x, i, value=value)
             else `[<-.data.frame`(x, i, j, value)
@@ -1522,7 +1521,12 @@ tail.data.table = function(x, n=6, ...) {
         # search for one other .Call to assign in [.data.table to see how it differs
     }
     verbose=getOption("datatable.verbose")
-    .Call(Cassign,x,i,cols,newnames,value,verbose)
+    if (getRversion() > "3.0.2") {
+        # [<- no longer copies via *tmp*, iiuc, but R still copies/shallow copies via different mechanism. So we now need to copy here.
+        x = .Call(Cassign,copy(x),i,cols,newnames,value,verbose)
+    } else {
+        .Call(Cassign,x,i,cols,newnames,value,verbose)
+    }
     settruelength(x,0L) #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
     alloc.col(x)
     if (length(reinstatekey)) setkeyv(x,reinstatekey)
@@ -1560,13 +1564,11 @@ tail.data.table = function(x, n=6, ...) {
     n = length(allargs)
     if (n == 0L) return(null.data.table())
     if (n == 1L) return(allargs[[1L]])
-
     ncols = sapply(allargs, length)
     if (length(unique(ncols)) != 1L && !fill) {
         f = which(ncols != ncols[1L])[1L]
-        stop("All arguments to rbind must have the same number of columns. Item 1 has ",ncols[1L]," but item ",f," has ",ncols[f],"column(s).")
+        stop("When fill=FALSE, all arguments to rbind must have the same number of columns. Item 1 has ",ncols[1L]," but item ",f," has ",ncols[f],"column(s).")
     }
-
     if (fill) {
         if (!use.names)
             warning("use.names=FALSE is ignored when fill is TRUE")
@@ -1585,44 +1587,29 @@ tail.data.table = function(x, n=6, ...) {
     } else if (!use.names) {
         return(rbindlist(allargs))
     } else { # use.names == TRUE && fill == FALSE
-        ## find the first list item with a name - this will be the final name
-        final.name = names(allargs[[1L]])
+        final.names = NULL    # find the first list item with names, these will be the final column names
         for (i in seq_along(original.names)) {
             if (!is.null(original.names[[i]])) {
-                final.name = original.names[[i]]
+                final.names = original.names[[i]]
                 break
             }
         }
-        ## cal make.names to normalize all names
-        final.name.mk = make.names(final.name, unique = TRUE)
-        for (i in seq_along(allargs)) {
-            if (is.null(original.names[[i]])) {
-                mk.nm = final.name.mk
-            } else {
-                mk.nm = make.names(original.names[[i]], unique = TRUE)
-            }
-            if (!identical(original.names[[i]], mk.nm)) {
-                setnames(allargs[[i]], mk.nm)
-            }
+        if (is.null(final.names)) stop("use.names is TRUE but no input has any column names")
+        match.names = make.names(final.names, unique=TRUE)  # make duplicate names unique, and convert NA colnames to "NA."
+        for (i in seq.int(1,n)) if (!is.null(original.names[[i]])) {
+            tmp = make.names(original.names[[i]], unique=TRUE)   # make.names for the NA in test #1006
+            if (!all(tmp %chin% match.names))
+                stop("Some colnames of argument ",i," (",paste(setdiff(names(allargs[[i]]),match.names),collapse=","),") are not present in colnames of item 1. If an argument has colnames they can be in a different order, but they must all be present. Alternatively, you can supply unnamed lists and they will then be joined by position. Or, set use.names=FALSE.")
+            if (!all(tmp == match.names))
+                if (missing(use.names)) warning("Argument ",i," has names in a different order. Columns will be bound by name for consistency with base. You can supply unnamed lists and the columns will then be joined by position, or set use.names=FALSE. Alternatively, explicitly setting use.names to TRUE will remove this warning.")
         }
-
-        nm = names(allargs[[1L]])
-        if (length(nm)) {
-            for (i in seq.int(2,n)) if (!is.null(original.names[[i]])) {
-                if (!all(names(allargs[[i]]) %chin% nm))
-                    stop("Some colnames of argument ",i," (",paste(setdiff(names(allargs[[i]]),nm),collapse=","),") are not present in colnames of item 1. If an argument has colnames they can be in a different order, but they must all be present. Alternatively, you can drop names (by using an unnamed list) and the columns will then be joined by position. Or, set use.names=FALSE.")
-                if (!all(names(allargs[[i]]) == nm))
-                    if (missing(use.names)) warning("Argument ",i," has names in a different order. Columns will be bound by name for consistency with base. You can drop names (by using an unnamed list) and the columns will then be joined by position, or set use.names=FALSE. Alternatively, explicitly setting use.names to TRUE will remove this warning.")
-            }
-        }
-
         ret = rbindlist(lapply(seq_along(allargs), function(x) {
             tt = allargs[[x]]
-            setcolorder(tt, nm)
+            if (!is.null(original.names[[x]]))
+                setcolorder(tt, chmatch(match.names, make.names(original.names[[x]], unique=TRUE)))
+            tt
         }))
-
-        setnames(ret, final.name)
-
+        setnames(ret, final.names)
         return(ret)
     }
 }
@@ -1952,10 +1939,10 @@ setnames = function(x,old,new) {
 setcolorder = function(x,neworder)
 {
     if (!is.data.table(x)) stop("x is not a data.table")
-    if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
     if (length(neworder)!=length(x)) stop("neworder is length ",length(neworder)," but x has ",length(x)," columns.")
     if (is.character(neworder)) {
         if (any(duplicated(neworder))) stop("neworder contains duplicate column names")
+        if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
         o = as.integer(chmatch(neworder,names(x)))
         if (any(is.na(o))) stop("Names in neworder not found in x: ",paste(neworder[is.na(o)],collapse=","))
     } else {

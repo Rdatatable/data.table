@@ -391,7 +391,7 @@ THANKS TO BETA TESTERS
          dcast.data.table(x, a ~ ., mean, value.var="b")
      
   o  Jonathan Owen for reporting that DT[,sum(.SD),by=] failed with GForce optimization, #5380. Added test and error
-     message redirecting to use DT[,lapply(.SD,sum),by=], base::sum and how to turn off GForce.  
+     message redirecting to use DT[,lapply(.SD,sum),by=] or base::sum and how to turn off GForce.
 
 NOTES
 
