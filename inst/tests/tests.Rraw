@@ -3762,8 +3762,18 @@ if ("package:reshape2" %in% search()) {
     test(1198.3, setkey(setDT(dcast(df, a1+a2+a3~b, drop=FALSE)), a1,a2,a3), dcast.data.table(dt, a1+a2+a3~b, drop=FALSE))
 }
 
-DT = data.table(id=1:2, val1=6:1, val2=6:1)   #5380
+DT = data.table(id=1:2, val1=6:1, val2=6:1)   # 5380
 test(1199, DT[, sum(.SD), by=id], error="GForce sum can only be applied to columns, not .SD or similar.*looking for.*lappy(.SD")
+
+# Selection of columns, copy column to maintain the same as R <= 3.0.2, in Rdevel, for now
+# Otherwise e.g. setkey changes the original columns too.  TO DO: could allow shallow copy, perhaps.
+DT = data.table(a=1:3, b=6:4, c=7:9)
+test(1200, address(DT[,"b",with=FALSE]$b) != address(DT$b))
+test(1201, address(DT[,c("b","c"),with=FALSE]$c) != address(DT$c))
+test(1202, address(DT[,list(b)]$b) != address(DT$b))
+test(1203, address(DT[,list(b,c)]$c) != address(DT$c))
+test(1204, address(DT[1:3,"b",with=FALSE]$b) != address(DT$b))
+test(1205, address(DT[TRUE,"b",with=FALSE]$b) != address(DT$b))
 
 ##########################
 

@@ -170,10 +170,10 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     # as.data.table which is faster; speed could be better.  Revisit how many copies are taken in for example data.table(DT1,DT2) which
     # cbind directs to.  And the nested loops for recycling lend themselves to being C level.
     
-    x <- list(...)   # doesn't copy named inputs as from R 3.1.0 (a very welcome change)
-    if (getRversion() >= "3.1.0") .Call(CcopyNamedInList,x)   # But in this case, we need to copy named inputs. See test 548.2.
+    x <- list(...)   # doesn't copy named inputs as from R > 3.0.2 (a very welcome change)
+    if (getRversion() > "3.0.2") .Call(CcopyNamedInList,x)   # But in this case, we need to copy named inputs. See test 548.2.
     # **TO DO** Something strange with NAMED on components of `...`. To investigate. Or just port data.table() to C. This is why
-    # it's switched on R version, because extra copies are introduced would be introduced before 3.1.0, I think.
+    # it's switched on R version, because extra copies are introduced would be introduced in R <= 3.0.2, iiuc.
     
     if (identical(x, list(NULL))) return( null.data.table() )
     tt <- as.list(substitute(list(...)))[-1L]  # Intention here is that data.table(X,Y) will automatically put X and Y as the column names.  For longer expressions, name the arguments to data.table(). But in a call to [.data.table, wrap in list() e.g. DT[,list(a=mean(v),b=foobarzoo(zang))] will get the col names
@@ -650,7 +650,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             m[is.na(m)] = ncol(x)+seq_len(length(newnames))
             cols = as.integer(m)
             if ((ok<-selfrefok(x,verbose))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-                warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or been created manually using structure() or similar). Avoid key<-, names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. Also, in R<v3.1.0, list(DT1,DT2) copied the entire DT1 and DT2 (R's list() used to copy named objects); please upgrade to R>=v3.1.0 if that is biting. If this message doesn't help, please report to datatable-help so the root cause can be fixed.")
+                warning("Invalid .internal.selfref detected and fixed by taking a copy of the whole table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or been created manually using structure() or similar). Avoid key<-, names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. Also, in R<=v3.0.2, list(DT1,DT2) copied the entire DT1 and DT2 (R's list() used to copy named objects); please upgrade to R>v3.0.2 if that is biting. If this message doesn't help, please report to datatable-help so the root cause can be fixed.")
             if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
                 n = max(ncol(x)+100, ncol(x)+2*length(newnames))
                 name = substitute(x)
@@ -705,9 +705,17 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         if (any(j<0L)) j = seq_len(ncol(x))[j]
         if (notj) j = seq_len(ncol(x))[-j]  # DT[,!"columntoexclude",with=FALSE], if a copy is needed, rather than :=NULL
         ans = vector("list",length(j))
-        if (is.null(irows))
-            for (s in seq_along(j)) ans[[s]] = x[[j[s]]]  # TO DO: return marked/safe shallow copy back to user
-        else {
+        if (is.null(irows)) {
+            for (s in seq_along(j)) {
+                ans[[s]] = x[[j[s]]]
+                if (address(ans[[s]]) == address(x[[j[s]]])) ans[[s]] = copy(ans[[s]])
+                # for R > 3.0.2,  temp fix. TO DO: allow shallow copy here, ideally yes for when user never needs :=
+                # or set() or setkey() on the result. Then make := and set() look at NAMED on columns, with warning if
+                # they copy.  Since then, even foo = DT$b would cause the next set or := to copy that column.  To
+                # tackle that, we could have our own DT.NAMED attribute, perhaps.
+                # Or keep the rule that [.data.table always returns new memory,  and create view() or view= as well, maybe cleaner.
+            }
+        } else {
             if (is.data.table(i) && is.na(nomatch) && any(is.na(irows))) {   # TO DO: any(is.na()) => anyNA() and presave it
                 if (any(j %in% rightcols)) ii = rep.int(seq_len(nrow(i)),len__)
                 for (s in which(j %in% rightcols))
@@ -1530,11 +1538,10 @@ tail.data.table = function(x, n=6, ...) {
     invisible(x)
     # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
     # or uses data.table := syntax; i.e. DT[i,j:=value]
-    # but, there is one copy by R in [<- dispatch to `*tmp*`; i.e. DT[i,j]<-value
-    # (IIUC, and, as of R 2.13.1
+    # but, there is one copy by R in [<- dispatch to `*tmp*`; i.e. DT[i,j]<-value. *Update: not from R > 3.0.2, yay*
     # That copy is via main/duplicate.c which preserves truelength but copies length amount. Hence alloc.col(x,length(x)).
     # No warn passed to assign here because we know it'll be copied via *tmp*.
-    # Simplest is ... just use := to avoid all this.
+    # := allows subassign to a column with no copy of the column at all,  and by group, etc.
 }
 
 "$<-.data.table" = function(x, name, value) {
