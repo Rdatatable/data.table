@@ -53,7 +53,22 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     ngrp = length(starts);  // the number of groups  (nrow(groups) will be larger when by)
     ngrpcols = length(grpcols);
     SD = findVar(install(".SD"), env);
-    BY = findVar(install(".BY"), env);
+    
+    defineVar(install(".BY"), BY = allocVector(VECSXP, ngrpcols), env);
+    bynames = PROTECT(allocVector(STRSXP, ngrpcols));  protecti++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?
+    for (i=0; i<ngrpcols; i++) {
+        j = INTEGER(grpcols)[i]-1;
+        SET_VECTOR_ELT(BY, i, allocVector(TYPEOF(VECTOR_ELT(groups, j)),
+            LENGTH(VECTOR_ELT(groups,0)) ? 1 : 0));    // This might be able to be 1 always; 0 when 'groups' are integer(0) seem sensible. #2440 was involved in the past.
+        SET_STRING_ELT(bynames, i, STRING_ELT(getAttrib(groups,R_NamesSymbol), j));
+        defineVar(install(CHAR(STRING_ELT(bynames,i))), VECTOR_ELT(BY,i), env);      // by vars can be used by name in j as well as via .BY
+        if (SIZEOF(VECTOR_ELT(BY,i))==0)
+            error("Unsupported type '%s' in column %d of 'by'", type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1);
+    }
+    R_LockBinding(install(".BY"), env);
+    if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols))) error("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]",length(bynames),length(groups),length(grpcols));
+    // TO DO: check this check above.
+    
     N = findVar(install(".N"), env);
     GRP = findVar(install(".GRP"), env);
     iSD = findVar(install(".iSD"), env);  // 1-row and possibly no cols (if no i variables are used via JIS)
@@ -98,18 +113,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     if (length(iSD)!=length(jiscols)) error("length(iSD)[%d] != length(jiscols)[%d]",length(iSD),length(jiscols));
     if (length(xSD)!=length(xjiscols)) error("length(xSD)[%d] != length(xjiscols)[%d]",length(xSD),length(xjiscols));
     
-    bynames = getAttrib(BY, R_NamesSymbol);
-    if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols))) error("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]",length(bynames),length(groups),length(grpcols));
-    // TO DO: check above.
-    
-    for(i = 0; i < length(BY); i++) {
-        // by vars can be used by name or via .BY
-        defineVar(install(CHAR(STRING_ELT(bynames,i))),VECTOR_ELT(BY,i),env);
-        if (TYPEOF(VECTOR_ELT(BY,i)) != TYPEOF(VECTOR_ELT(groups,INTEGER(grpcols)[i]-1)))
-            error("Type mismatch between .BY and groups, column %d",i);
-        if (SIZEOF(VECTOR_ELT(BY,i))==0)
-            error("Unsupported type '%s' in by column %d", type2char(TYPEOF(VECTOR_ELT(BY, i))), i);
-    }
     
     PROTECT(listwrap = allocVector(VECSXP, 1));
     protecti++;
@@ -134,17 +137,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                    size);  
         }
         igrp = length(grporder) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
-        for (j=0; j<length(BY); j++) {
+        if (igrp >= 0) for (j=0; j<length(BY); j++) {    // igrp can be -1 so 'if' is important, otherwise memcpy crash
             size = SIZEOF(VECTOR_ELT(BY,j));
-            if (igrp < 0) {
-                // fixes #2440, otherwise crash when igrp < 0 in memcpy below. Assuming groups will be integer(0)/character(0)/etc
-                SET_VECTOR_ELT(BY, j, VECTOR_ELT(groups, j));
-            } else {
-                // dogroups selects subsets of the protected DT. So memcpy is ok (even on STRSXP) and needed for speed to copy in bulk.
-                memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),  // ok use of memcpy. Loop'd through columns not rows
-                 (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1))+igrp*size,
-                 size);   
-            }
+            memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),  // ok use of memcpy size 1. Loop'd through columns not rows
+                   (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1))+igrp*size,
+                   size);
         }
         if (INTEGER(starts)[i] == NA_INTEGER || (length(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)) {
             for (j=0; j<length(SD); j++) {
@@ -190,9 +187,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 rownum = INTEGER(starts)[i]-1;
                 for (j=0; j<length(SD); j++) {
                     size = SIZEOF(VECTOR_ELT(SD,j));
-                    memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),  // usually big groups so direct memcpy here is best
+                    memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),  // direct memcpy best here, for usually large size groups. by= each row is slow and not recommended anyway, so we don't mind there's no switch here for grpn==1
                        (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+rownum*size,
-                       grpn*size);  
+                       grpn*size);
+                    // SD is our own alloc'd memory, and the source (DT) is protected throughout, so no need for SET_* overhead
                 }
                 for (j=0; j<grpn; j++) INTEGER(I)[j] = rownum+j+1;
                 for (j=0; j<length(xSD); j++) {
@@ -203,6 +201,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 }
             } else {
                 if (LOGICAL(verbose)[0]) tstart = clock();
+                // Fairly happy with this block. No need for SET_* here. See comment above. 
                 for (k=0; k<grpn; k++) INTEGER(I)[k] = INTEGER(order)[ INTEGER(starts)[i]-1 + k ];
                 for (j=0; j<length(SD); j++) {
                     size = SIZEOF(VECTOR_ELT(SD,j));

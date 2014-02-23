@@ -2524,7 +2524,8 @@ if ("package:bit64" %in% search()) {
     DT = data.table( a=sample(1:1000,n,replace=TRUE),
                      b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
                      c=sample(c("foo","bar","baz"),n,replace=TRUE) )
-    write.table(copy(DT),f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)  # TO DO: copy needed because write.table seems to set truelength in Rdevel?!
+    write.table(copy(DT),f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
+    # TO DO: copy needed because write.table seems to set truelength in Rdevel?!
     test(897, class(DT$b), "integer64")
     test(898, fread(f), DT)
     unlink(f)

@@ -70,6 +70,8 @@ setPackageName("data.table",.global)
 # But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.
 # And NULL makes it clear (to the R's mask check on loading) that they're variables not functions.
 # utils::globalVariables(c(".SD",".N")) was tried as well, but exporting seems better.
+# So even though, .BY doesn't appear in this file, it should still be NULL here and exported because it's
+# defined in SDenv and can be used by users.
 
 print.data.table = function(x,
     topn=getOption("datatable.print.topn"),   # (5) print the top topn and bottom topn rows with '---' inbetween
@@ -986,8 +988,6 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
     }
 
-    for (ii in names(SDenv$.BY)) assign(ii, SDenv$.BY[[ii]], SDenv)
-
     assign("print", function(x,...){base::print(x,...);NULL}, SDenv)
     # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
 
@@ -1172,18 +1172,15 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         groups = i
         grpcols = leftcols # 'leftcols' are the columns in i involved in the join (either head of key(i) or head along i)
         jiscols = chmatch(jisvars,names(i))  # integer() if there are no jisvars (usually there aren't, advanced feature)
-        SDenv$.BY = groups[1L,grpcols,with=FALSE]
         xjiscols = chmatch(xjisvars, names(x))
         SDenv$.xSD = x[min(nrow(i), 1L), xjisvars, with=FALSE]
     } else {
         groups = byval
         grpcols = seq_along(byval)
         jiscols = NULL   # NULL rather than integer() is used in C to know when using by
-        SDenv$.BY = lapply(byval,"[",1L)  # byval is list() not data.table
         xjiscols = NULL
     }
     lockBinding(".xSD", SDenv)
-    lockBinding(".BY",SDenv)
     grporder = o__
     if (length(irows) && !isTRUE(irows)) {
         # fix for bug #2758. TO DO: provide a better error message
@@ -1249,7 +1246,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
         setattr(ans, "names", c(bynames, jvnames))
     } else {
-        setnames(ans,seq_along(bynames),bynames)   # TO DO: why doesn't .BY (where dogroups gets names when j is named list) have bynames?
+        setnames(ans,seq_along(bynames),bynames)   # TO DO: reinvestigate bynames flowing from dogroups here and simplify
     }
     if (haskey(x) && ((!missing(by) && bysameorder) || (!missing(i) && (haskey(i) || is.sorted(f__))))) {
         setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
