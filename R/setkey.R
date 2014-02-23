@@ -70,8 +70,11 @@ setrev <- function(x) .Call(Csetrev, x)
 # FOR INTERNAL USE ONLY
 setreordervec <- function(x, order) .Call(Creorder, x, order)
 
-sort = sort.int = sort.list = order = is.unsorted = function(...)
-    stop("Should never be called by data.table internals. Use is.sorted() on vectors, or forder() for lists and vectors.")
+# sort = sort.int = sort.list = order = is.unsorted = function(...)
+#    stop("Should never be called by data.table internals. Use is.sorted() on vectors, or forder() for lists and vectors.")
+# Nice idea, but users might use these in i or j e.g. blocking order caused tests 304 to fail.
+# Maybe just a grep through *.R for use of these function internally would be better (TO DO).
+
 # Don't use base::is.unsorted internally, because :
 #    1) it returns NA if any(is.na(.)) where NAs are detected at R level, inefficiently
 #    2) it uses locale whereas in data.table we control locale sorting independently (C locale currently, but

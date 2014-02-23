@@ -49,13 +49,14 @@ void setselfref(SEXP x) {
     setAttrib(x, SelfRefSymbol, p=R_MakeExternalPtr(
         R_NilValue,                  // for identical() to return TRUE. identical() doesn't look at tag and prot
         getAttrib(x, R_NamesSymbol), // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
-        R_MakeExternalPtr(           // to avoid an infinite loop in object.size(), if prot=x here
+        PROTECT(R_MakeExternalPtr(   // to avoid an infinite loop in object.size(), if prot=x here
             x,                       // to know if this data.table has been copied by key<-, attr<-, names<-, etc.
             R_NilValue,              // this tag and prot currently unused
             R_NilValue
-        )
+        ))
     ));
     R_RegisterCFinalizerEx(p, finalizer, FALSE);
+    UNPROTECT(1);  // The PROTECT above was needed by --enable-strict-barrier (it seemed, iiuc)
     
 /*  *  base::identical doesn't check prot and tag of EXTPTR, just that the ptr itself is the
        same in both objects. R_NilValue is always equal to R_NilValue.  R_NilValue is a memory
@@ -731,15 +732,11 @@ SEXP settruelength(SEXP x, SEXP n) {
     // Only needed in pre 2.14.0. From 2.14.0+, truelength is initialized to 0 by R.
     // For prior versions we set truelength to 0 in data.table creation, before calling alloc.col.
     SET_TRUELENGTH(x, INTEGER(n)[0]);
-    return(R_NilValue);
+    return R_NilValue;
 }
 
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
-    SEXP ans;
-    PROTECT(ans = allocVector(INTSXP, 1));
-    INTEGER(ans)[0] = _selfrefok(x,FALSE,LOGICAL(verbose)[0]);
-    UNPROTECT(1);
-    return(ans);
+    return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
 }
 
 SEXP setcharvec(SEXP x, SEXP which, SEXP new)
@@ -754,7 +751,7 @@ SEXP setcharvec(SEXP x, SEXP which, SEXP new)
         if (w==NA_INTEGER || w<1 || w>LENGTH(x)) error("Item %d of 'which' is %d which is outside range of the length %d character vector", i+1,w,LENGTH(x));
         SET_STRING_ELT(x, w-1, STRING_ELT(new, i));
     }
-    return(R_NilValue);
+    return R_NilValue;
 }
 
 SEXP setcolorder(SEXP x, SEXP o)

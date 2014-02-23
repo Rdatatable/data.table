@@ -964,7 +964,7 @@ test(303, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,84L,84L,7L),key="a"))
 # Test key is dropped when non-dt-aware packages reorder rows of data.table (for example)
 if ("package:plyr" %in% search()) {
     DT = data.table(a=1:10,b=1:2,key="a")
-    test(304, haskey(arrange(DT,b)), FALSE)
+    test(304, arrange(DT,b), data.table(a=INT(1,3,5,7,9,2,4,6,8,10),b=INT(1,1,1,1,1,2,2,2,2,2)))  # testing no key here, too
 } else {
     cat("Test 304 not run. If required call library(plyr) first.\n")
 }
@@ -3774,6 +3774,11 @@ test(1202, address(DT[,list(b)]$b) != address(DT$b))
 test(1203, address(DT[,list(b,c)]$c) != address(DT$c))
 test(1204, address(DT[1:3,"b",with=FALSE]$b) != address(DT$b))
 test(1205, address(DT[TRUE,"b",with=FALSE]$b) != address(DT$b))
+
+# Somehow we didn't test DT[order(...)] anywhere yet (other than via plyr's arrange in test 304)
+DT = data.table(a=6:1, b=1:2)
+test(1206, DT[order(b,a)], data.table(a=INT(2,4,6,1,3,5),b=INT(1,1,1,2,2,2)))
+
 
 ##########################
 
