@@ -380,7 +380,7 @@ BUG FIXES
      in v1.8.10 with the change "CJ() is 90% faster...", see NEWS below. Test added and avenues for differences closed off and
      nailed down, with no loss in performance. Many thanks to Malcolm Hawkes for reporting.
 
-THANKS TO BETA TESTERS
+THANKS FOR BETA TESTING TO :
 
   o  Zach Mayer for a reproducible segfault related to radix sorting character strings longer than 20. Test added.
      
@@ -392,6 +392,9 @@ THANKS TO BETA TESTERS
      
   o  Jonathan Owen for reporting that DT[,sum(.SD),by=] failed with GForce optimization, #5380. Added test and error
      message redirecting to use DT[,lapply(.SD,sum),by=] or base::sum and how to turn off GForce.
+     
+  o  Luke Tierney for guidance in finding a corruption of R_TrueValue which needed --enable-strict-barier,
+     gctorture2 and a hardware watchpoint to ferret out. Started after a change in Rdevel on 11 Feb 2014, r64973.
 
 NOTES
 
