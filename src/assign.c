@@ -683,7 +683,6 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
         error("Internal error: length of names (%d) is not length of dt (%d)",length(names),l);
     
     if (!selfrefok(dt,verbose)) {
-        // TO DO: think we can remove all the settruelength's up in data.table.R now we just rely on selfrefok.
         tl=l;
         SET_TRUELENGTH(dt,l);
         if (!isNull(names)) SET_TRUELENGTH(names,l);
@@ -726,13 +725,6 @@ SEXP truelength(SEXP x) {
     }
     UNPROTECT(1);
     return(ans);
-}
-
-SEXP settruelength(SEXP x, SEXP n) {
-    // Only needed in pre 2.14.0. From 2.14.0+, truelength is initialized to 0 by R.
-    // For prior versions we set truelength to 0 in data.table creation, before calling alloc.col.
-    SET_TRUELENGTH(x, INTEGER(n)[0]);
-    return R_NilValue;
 }
 
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {

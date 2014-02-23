@@ -159,7 +159,6 @@ null.data.table = function() {
     ans = list()
     setattr(ans,"class",c("data.table","data.frame"))
     setattr(ans,"row.names",.set_row_names(0L))
-    settruelength(ans,0L)
     alloc.col(ans)
 }
 
@@ -565,7 +564,6 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             }
             setattr(ans,"class",c("data.table","data.frame"))
             setattr(ans,"row.names",.set_row_names(nrow(ans)))
-            settruelength(ans,0L)  # what 2.14.0+ would be for consistency, not nrow(ans) (could be too, but then we couldn't drop this line later if we ever make a dependency on 2.14.0+)
             return(alloc.col(ans))
         }
     } # end of  if !missing(i)
@@ -735,7 +733,6 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         setattr(ans,"class",c("data.table","data.frame"))
         setattr(ans,"row.names",.set_row_names(nrow(ans)))
-        settruelength(ans,0L)
         return(alloc.col(ans))
     }
     o__ = integer()
@@ -1137,9 +1134,9 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             } else GForce = .ok(jsub)
             if (GForce) {
                 if (jsub[[1L]]=="list")
-                    for (ii in seq_along(jsub)[-1L])  jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
+                    for (ii in seq_along(jsub)[-1L])  jsub[[ii]][[1L]] = as.name(paste("g", jsub[[ii]][[1L]], sep=""))
                 else
-                    jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
+                    jsub[[1L]] = as.name(paste("g", jsub[[1L]], sep=""))
                 if (verbose) cat("GForce optimized j to '",deparse(jsub,width.cutoff=200),"'\n",sep="")
             } else if (verbose) cat("GForce is on, left j unchanged\n");
         }
@@ -1263,8 +1260,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         # but if 'bykey' and 'bysameorder' then the setattr in branch above will run instead for
         # speed (because !missing(by) when bykey, too)
     }
-    settruelength(ans,0L)  # TO DO: overallocate in dogroups in the first place and remove these lines
-    alloc.col(ans)
+    alloc.col(ans)   # TO DO: overallocate in dogroups in the first place and remove this line
 }
 
 .optmean = function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
@@ -1390,7 +1386,6 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
         setattr(value, "names", paste("V", ic, sep = ""))
     setattr(value,"row.names",.set_row_names(nrows))
     setattr(value,"class",c("data.table","data.frame"))
-    settruelength(value,0L)
     alloc.col(value)
 }
 
@@ -1405,7 +1400,6 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE)
     # for nlme::groupedData which has class c("nfnGroupedData","nfGroupedData","groupedData","data.frame")
     # See test 527.
     setattr(ans,"class",tt)
-    settruelength(ans,0L)
     alloc.col(ans)
 }
 
@@ -1426,7 +1420,6 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
     if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
     setattr(x,"row.names",.set_row_names(max(n)))
     setattr(x,"class",c("data.table","data.frame"))
-    settruelength(x,0L)
     alloc.col(x)
 }
 
@@ -1448,9 +1441,27 @@ as.data.table.Date <- function(x, keep.rownames=FALSE) {
     as.data.table.list(x, keep.rownames)
 }
 
+R300_provideDimnames = function (x, sep = "", base = list(LETTERS))   # backported from R3.0.0 so data.table can depend on R 2.14.0 
+{
+    dx <- dim(x)
+    dnx <- dimnames(x)
+    if (new <- is.null(dnx)) 
+        dnx <- vector("list", length(dx))
+    k <- length(M <- vapply(base, length, 1L))
+    for (i in which(vapply(dnx, is.null, NA))) {
+        ii <- 1L + (i - 1L)%%k
+        dnx[[i]] <- make.unique(base[[ii]][1L + 0:(dx[i] - 1L)%%M[ii]], 
+            sep = sep)
+        new <- TRUE
+    }
+    if (new) 
+        dimnames(x) <- dnx
+    x
+}
+
 # as.data.table.table - FR #4848
 as.data.table.table <- function(x, keep.rownames=FALSE) {
-    ans <- data.table(do.call(CJ, c(rev(dimnames(provideDimnames(x))), sorted=FALSE)), N = as.vector(x))
+    ans <- data.table(do.call(CJ, c(rev(dimnames(R300_provideDimnames(x))), sorted=FALSE)), N = as.vector(x))
     nm <- copy(names(ans))
     setcolorder(ans, c(rev(head(nm, -1)), "N"))
     setattr(ans, 'names', nm)
@@ -1478,7 +1489,6 @@ tail.data.table = function(x, n=6, ...) {
     if (!cedta()) {
         x = if (nargs()<4) `[<-.data.frame`(x, i, value=value)
             else `[<-.data.frame`(x, i, j, value)
-        settruelength(x,0L)     # TO DO: remove all settruelength(), no longer needed.
         return(alloc.col(x))    # over-allocate (again).   Avoid all this by using :=.
     }
     # TO DO: warning("Please use DT[i,j:=value] syntax instead of DT[i,j]<-value, for efficiency. See ?':='")
@@ -1488,7 +1498,6 @@ tail.data.table = function(x, n=6, ...) {
         if (is.matrix(i)) {
             if (!missing(j)) stop("When i is matrix in DT[i]<-value syntax, it doesn't make sense to provide j")
             x = `[<-.data.frame`(x, i, value=value)
-            settruelength(x,0L)
             return(alloc.col(x))
         }
         i = x[i, which=TRUE]
@@ -1532,8 +1541,7 @@ tail.data.table = function(x, n=6, ...) {
     } else {
         .Call(Cassign,x,i,cols,newnames,value,verbose)
     }
-    settruelength(x,0L) #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
-    alloc.col(x)
+    alloc.col(x)  #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
     if (length(reinstatekey)) setkeyv(x,reinstatekey)
     invisible(x)
     # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
@@ -1545,11 +1553,8 @@ tail.data.table = function(x, n=6, ...) {
 }
 
 "$<-.data.table" = function(x, name, value) {
-    # TO DO: remove these 2 lines.  ... settruelength(x,0L)
-    # x = alloc.col(x)  #,length(x))
     if (!cedta()) {
         ans = `$<-.data.frame`(x, name, value)
-        settruelength(ans,0L)    # alloc.col(ans,0L)  # length(ans))  # set to what is allocated, see above
         return(alloc.col(ans))           # over-allocate (again)
     }
     x = copy(x)
@@ -1581,8 +1586,7 @@ tail.data.table = function(x, n=6, ...) {
         unq.names = unique(unlist(all.names))
         return(rbindlist(lapply(seq_along(allargs), function(x) {
             tt = allargs[[x]]
-            settruelength(tt, 0L)
-            invisible(alloc.col(tt))
+            alloc.col(tt)
             cols = unq.names[!unq.names %chin% all.names[[x]]]
             if (length(cols) != 0L)
                 tt[, c(cols) := NA]
@@ -1632,7 +1636,7 @@ as.data.frame.data.table = function(x, ...)
     setattr(ans,"class","data.frame")
     setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
     setattr(ans,".internal.selfref",NULL)
-    suppressWarnings(settruelength(ans,0L))
+    # leave tl intact, no harm, 
     ans
 }
 
@@ -1813,16 +1817,13 @@ split.data.table = function(...) {
 
 # TO DO, add more warnings e.g. for by.data.table(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
 
-
 copy = function(x) {
     newx = .Call(Ccopy,x)  # copies at length but R's duplicate() also copies truelength over.
+                           # TO DO: inside Ccopy it could reset tl to 0 or length, but no matter as selfrefok detects it
+                           # TO DO: revisit duplicate.c in R 3.0.3 and see where it's at
     if (!is.data.table(x)) return(newx)   # e.g. in as.data.table.list() the list is copied before changing to data.table
     setattr(newx,".data.table.locked",NULL)
-    settruelength(newx,0L)
     alloc.col(newx)
-    # TO DO: speedup duplicate.c using memcpy, suggested to r-devel, would benefit copy()
-    # Could construct data.table and use memcpy ourselves but deep copies e.g. list() columns
-    # may be tricky; more robust to rely on R's duplicate which deep copies.
 }
 
 copyattr = function(from, to) {
@@ -1857,24 +1858,9 @@ selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
 }
 
 truelength = function(x) .Call(Ctruelength,x)
-# deliberately no "truelength<-" method.  alloc.col is the mechanism for that (maybe alloc.col should be renamed "truelength<-".
-
-settruelength = function(x,n) {
-    "Truly an internal function only. Users can call this using :::, but please don't."
-    # if (n!=0L) warning("settruelength should only be used to set to 0, and is for 2.13.2-")
-    #if (getRversion() >= "2.14.0")
-    #    if (truelength(x) != 0L) warning("This is R>=2.14.0 but truelength isn't initialized to 0")
-        # grep for suppressWarnings(settruelength) for where this is needed in 2.14.0+ (otherwise an option would be to make data.table depend on 2.14.0 so settruelength could be removed)
-
-
-    .Call(Csettruelength,x,as.integer(n))
-
-
-
-    #if (is.data.table(x))
-    #    .Call(Csettruelength,attr(x,"class"),-999L)
-    #    # So that (in R 2.13.2-) we can detect tables loaded from disk (tl is not initialized there)
-}
+# deliberately no "truelength<-" method.  alloc.col is the mechanism for that.
+# settruelength() no longer need (and so removed) now that data.table depends on R 2.14.0
+# which initializes tl to zero rather than leaving uninitialized.
 
 setattr = function(x,name,value) {
     # Wrapper for setAttrib internal R function
@@ -1992,7 +1978,6 @@ rbindlist = function(l) {
     if (!length(ans)) return(null.data.table())
     setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
     setattr(ans,"class",c("data.table","data.frame"))
-    settruelength(ans,0L)
     alloc.col(ans)
 }
 
@@ -2016,7 +2001,6 @@ setDT <- function(x, giveNames=TRUE) {
         tt = c(head(tt, n - 1L), "data.table", "data.frame", tail(tt, 
             length(tt) - n))
         setattr(x, "class", tt)
-        settruelength(x, 0L)
         alloc.col(x)
     } else if (is.list(x)) {
         # copied from as.data.table.list - except removed the copy
@@ -2038,7 +2022,6 @@ setDT <- function(x, giveNames=TRUE) {
         }
         setattr(x,"row.names",.set_row_names(max(n)))
         setattr(x,"class",c("data.table","data.frame"))
-        settruelength(x, 0L)
         alloc.col(x)
     } else {
         stop("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")

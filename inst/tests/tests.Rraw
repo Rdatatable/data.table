@@ -41,7 +41,7 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
     #    from all.equal and different to identical related to row.names and unused factor levels
     # 3) each test has a unique id which we refer to in commit messages, emails etc.
-    # print(paste0("running test #", num))
+    # print(paste("running test #", num, sep=""))
     .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
@@ -1546,7 +1546,7 @@ test(525.2, set(DT,NULL,"b",12:14), data.table(a=1:3, b=12:14, foo=INT(NA,7,NA))
 DT1 <- data.table(x = 1, y = 1:10, fac = sample(LETTERS[1:3], 10, replace = TRUE)) # from SO
 DT2 <- copy(DT1)
 mul=c(5.3,2.8)
-for (j in seq_along(mul)) set(DT1, i=NULL, j=paste0("dot", j), mul[j]*DT1[[j]])
+for (j in seq_along(mul)) set(DT1, i=NULL, j=paste("dot", j, sep=""), mul[j]*DT1[[j]])
 DT2[, `:=`(dot1=5.3*x, dot2=2.8*y)]
 test(1096.1, DT1, DT2)
 set(DT1, i=NULL, j="dot2", value=NULL) # remove "dot2"
@@ -2524,7 +2524,7 @@ if ("package:bit64" %in% search()) {
     DT = data.table( a=sample(1:1000,n,replace=TRUE),
                      b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
                      c=sample(c("foo","bar","baz"),n,replace=TRUE) )
-    write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
+    write.table(copy(DT),f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
     test(897, class(DT$b), "integer64")
     test(898, fread(f), DT)
     unlink(f)
@@ -3145,9 +3145,9 @@ f <- tempfile()
 write.csv(x1, f, row.names = FALSE)
 if (.Platform$OS.type == "unix") {
     x1 <- x1[a != 3]
-    x2 <- fread(paste0('grep -v 3 ', f))
+    x2 <- fread(paste('grep -v 3 ', f, sep=""))
 } else {
-    x2 <- fread(paste0('more ', f))
+    x2 <- fread(paste('more ', f, sep=""))
 }
 test(1105, x1, x2)
 

@@ -164,7 +164,6 @@ CJ = function(..., sorted = TRUE)
         vnames[tt] = paste("V", which(tt), sep="")
         setattr(l, "names", vnames)
     }
-    settruelength(l, 0L)
     l <- alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
     if (sorted) setattr(l, 'sorted', names(l))
     l

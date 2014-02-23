@@ -15,7 +15,6 @@ SEXP shallowwrapper();
 SEXP alloccolwrapper();
 SEXP selfrefokwrapper();
 SEXP truelength();
-SEXP settruelength();
 SEXP setcharvec();
 SEXP setcolorder();
 SEXP chmatchwrapper();
@@ -57,7 +56,6 @@ R_CallMethodDef callMethods[] = {
 {"Calloccolwrapper", (DL_FUNC) &alloccolwrapper, -1},
 {"Cselfrefokwrapper", (DL_FUNC) &selfrefokwrapper, -1},
 {"Ctruelength", (DL_FUNC) &truelength, -1},
-{"Csettruelength", (DL_FUNC) &settruelength, -1},
 {"Csetcharvec", (DL_FUNC) &setcharvec, -1},
 {"Csetcolorder", (DL_FUNC) &setcolorder, -1},
 {"Cchmatchwrapper", (DL_FUNC) &chmatchwrapper, -1},

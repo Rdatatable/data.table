@@ -9,8 +9,7 @@ melt.data.table <- function(data, id.vars = NULL, measure.vars = NULL, variable.
                 as.logical(verbose));
     setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
     setattr(ans, "class", c("data.table", "data.frame"))
-    settruelength(ans, 0L)
-    invisible(alloc.col(ans))
+    alloc.col(ans)
     if (variable.name != "variable") setnames(ans, "variable", variable.name)
     if (value.name != "value") setnames(ans, "value", value.name)
     if (any(duplicated(names(ans)))) {
