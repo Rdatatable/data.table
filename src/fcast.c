@@ -367,8 +367,8 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP env, 
     
     // get names
     lrnames = PROTECT(allocVector(STRSXP, ilen+mlen)); protecti++;
-    memcpy((char *)DATAPTR(lrnames), (char *)DATAPTR(inames), ilen * SIZEOF(inames));
-    memcpy((char *)DATAPTR(lrnames) + ilen*SIZEOF(inames), (char *)DATAPTR(mnames), mlen * SIZEOF(mnames));
+    for (i=0; i<ilen; i++) SET_STRING_ELT(lrnames, i, STRING_ELT(inames, i));
+    for (i=0; i<mlen; i++) SET_STRING_ELT(lrnames, i+ilen, STRING_ELT(mnames, i));
     setAttrib(lrdt, R_NamesSymbol, lrnames);
     
     // sort lrdt and vnames if unsorted.   [Matt] TO DO?: should be if (length(o = forder(...))) ...
