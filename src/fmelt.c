@@ -239,7 +239,8 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     SEXP vars, target, idxkeep = R_NilValue, thisidx = R_NilValue;
     Rboolean isfactor=FALSE, isidentical=TRUE, narm = FALSE, droplevels=FALSE, verbose=FALSE;
     SEXPTYPE valtype=NILSXP;
-    
+    size_t size;
+
     if (TYPEOF(DT) != VECSXP) error("Input is not of type VECSXP, expected a data.table, data.frame or list");
     if (TYPEOF(valfactor) != LGLSXP) error("Argument 'value.factor' should be logical TRUE/FALSE");
     if (TYPEOF(varfactor) != LGLSXP) error("Argument 'variable.factor' should be logical TRUE/FALSE");
@@ -307,8 +308,8 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     for (i=0; i<lvalues; i++) {
         thiscol = VECTOR_ELT(DT, INTEGER(valuecols)[i]-1);
         if (TYPEOF(thiscol) != valtype && isidentical) {
-            isidentical = FALSE; // for Date like column (not implemented for now)
             if (!(isFactor(thiscol) && valtype == STRSXP)) {
+                isidentical = FALSE; // for Date like column (not implemented for now)
                 warning("All 'measure.vars are NOT of the SAME type. By order of hierarchy, the molten data value column will be of type '%s'. Therefore all measure variables that are not of type '%s' will be coerced to. Check the DETAILS section of ?melt.data.table for more on coercion.\n", type2char(valtype), type2char(valtype));
                 break;
             }
@@ -339,6 +340,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
             // protecti++; // for now, no preserving of class attributes
             thiscol = PROTECT(coerceVector(thiscol, valtype)); protecti++;
         }
+        size = SIZEOF(thiscol);
         if (narm) {
             thisidx = VECTOR_ELT(idxkeep, i);
             thislen = length(thisidx);
@@ -359,9 +361,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
                 for (j=0; j<thislen; j++)
                     SET_STRING_ELT(target, counter + j, STRING_ELT(thiscol, INTEGER(thisidx)[j]-1));
             } else {
-                for (j=0; j<nrow; j++) {
-                    SET_STRING_ELT(target, i*nrow + j, STRING_ELT(thiscol, j));
-                }
+                memcpy((char *)DATAPTR(target)+i*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
             }
             break;
             case REALSXP : 
@@ -369,8 +369,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
                 for (j=0; j<thislen; j++)
                     REAL(target)[counter + j] = REAL(thiscol)[INTEGER(thisidx)[j]-1];
             } else {
-                for (j=0; j<nrow; j++) 
-                    REAL(target)[i*nrow + j] = REAL(thiscol)[j];
+                memcpy((char *)DATAPTR(target)+i*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
             }
             break;
             case INTSXP : 
@@ -378,8 +377,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
                 for (j=0; j<thislen; j++)
                     INTEGER(target)[counter + j] = INTEGER(thiscol)[INTEGER(thisidx)[j]-1];
             } else {
-                for (j=0; j<nrow; j++) 
-                    INTEGER(target)[i*nrow + j] = INTEGER(thiscol)[j];
+                memcpy((char *)DATAPTR(target)+i*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
             }
             break;
             case LGLSXP :
@@ -387,8 +385,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
                 for (j=0; j<thislen; j++)
                     LOGICAL(target)[counter + j] = LOGICAL(thiscol)[INTEGER(thisidx)[j]-1];
             } else {
-                for (j=0; j<nrow; j++) 
-                    LOGICAL(target)[i*nrow + j] = LOGICAL(thiscol)[j];
+                memcpy((char *)DATAPTR(target)+i*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
             }
             break;
             default : error("Unknown column type '%s' for column '%s' in 'data'", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(valuecols)[i]-1)));
@@ -452,6 +449,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     for (i=0; i<lids; i++) {
         counter = 0;
         thiscol = VECTOR_ELT(DT, INTEGER(idcols)[i]-1);
+        size = SIZEOF(thiscol);
         target = PROTECT(allocVector(TYPEOF(thiscol), totlen)); 
         switch(TYPEOF(thiscol)) {
             case REALSXP :
@@ -464,9 +462,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
                     counter += thislen;
                     UNPROTECT(1); // thisidx
                 } else {
-                    for (k=0; k<nrow; k++) {
-                        REAL(target)[j*nrow + k] = REAL(thiscol)[k];
-                    }
+                    memcpy((char *)DATAPTR(target)+j*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
                 }
             }
             break;
@@ -480,9 +476,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
                     counter += thislen;
                     UNPROTECT(1); // thisidx
                 } else {
-                    for (k=0; k<nrow; k++) {
-                        INTEGER(target)[j*nrow + k] = INTEGER(thiscol)[k];
-                    }
+                    memcpy((char *)DATAPTR(target)+j*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
                 }
             }
             break;
@@ -496,9 +490,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
                     counter += thislen;
                     UNPROTECT(1); // thisidx
                 } else {
-                    for (k=0; k<nrow; k++) {
-                        LOGICAL(target)[j*nrow + k] = LOGICAL(thiscol)[k];
-                    }
+                    memcpy((char *)DATAPTR(target)+j*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
                 }
             }
             break;
@@ -512,9 +504,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
                     counter += thislen;
                     UNPROTECT(1); // thisidx
                 } else {
-                    for (k=0; k<nrow; k++) {
-                        SET_STRING_ELT(target, j*nrow + k, STRING_ELT(thiscol, k));
-                    }
+                    memcpy((char *)DATAPTR(target)+j*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
                 }
             }
             break;
