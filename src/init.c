@@ -100,27 +100,33 @@ void attribute_visible R_init_datatable(DllInfo *info)
     R_registerRoutines(info, NULL, callMethods, NULL, externalMethods);
     R_useDynamicSymbols(info, FALSE);
     setSizes();
-    if (NA_INTEGER != INT_MIN) error("NA_INTEGER [%d] != INT_MIN [%d]. Please report to datatable-help.", NA_INTEGER, INT_MIN);
-    if (NA_INTEGER != NA_LOGICAL) error("NA_INTEGER [%d] != NA_LOGICAL [%d]. Please report to datatable-help.", NA_INTEGER, NA_LOGICAL);
-    if (sizeof(int) != 4) error("sizeof(int) is not 4 but %d. Please report to datatable-help.", sizeof(int));
-    if (sizeof(double) != 8) error("sizeof(double) is not 8 but %d. Please report to datatable-help.", sizeof(double));  // 8 on both 32bit and 64bit.
-    if (sizeof(int *) != 4 && sizeof(int *) != 8) error("sizeof(pointer) is not 4 or 8 but %d. Please report to datatable-help.", sizeof(int *));
-    if (sizeof(SEXP) != sizeof(int *)) error("sizeof(SEXP) [%d] != sizeof(pointer) [%d]. Please report to datatable-help.", sizeof(SEXP), sizeof(int *));
+    const char *msg = "... failed. Please forward this message to maintainer('data.table') or datatable-help.";
+    if (NA_INTEGER != INT_MIN) error("Checking NA_INTEGER [%d] == INT_MIN [%d] %s", NA_INTEGER, INT_MIN, msg);
+    if (NA_INTEGER != NA_LOGICAL) error("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s", NA_INTEGER, NA_LOGICAL, msg);
+    if (sizeof(int) != 4) error("Checking sizeof(int) [%d] is 4 %s", sizeof(int), msg);
+    if (sizeof(double) != 8) error("Checking sizeof(double) [%d] is 8 %s", sizeof(double), msg);  // 8 on both 32bit and 64bit.
+    if (sizeof(int *) != 4 && sizeof(int *) != 8) error("Checking sizeof(pointer) [%d] is 4 or 8 %s", sizeof(int *), msg);
+    if (sizeof(SEXP) != sizeof(int *)) error("Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s", sizeof(SEXP), sizeof(int *), msg);
+    
+    SEXP tmp = PROTECT(allocVector(INTSXP,2));
+    if (LENGTH(tmp)!=2) error("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s", LENGTH(tmp), msg);
+    if (TRUELENGTH(tmp)!=0) error("Checking TRUELENGTH(allocVector(INTSXP,2)) [%d] is 0 %s", TRUELENGTH(tmp), msg);
+    UNPROTECT(1);
 
     // According to IEEE (http://en.wikipedia.org/wiki/IEEE_754-1985#Zero) we can rely on 0.0 being all 0 bits.
     // But check here anyway just to be sure, just in case this answer is right (http://stackoverflow.com/a/2952680/403310).
     int i = 314;
     memset(&i, 0, sizeof(int));
-    if (i != 0) error("memset0 != (int)0.  Please report to data.table-help");
+    if (i != 0) error("Checking memset(&i,0,sizeof(int)); i == (int)0 %s", msg);
     unsigned int ui = 314;
     memset(&ui, 0, sizeof(unsigned int));
-    if (ui != 0) error("memset0 != (unsigned int)0.  Please report to data.table-help");
+    if (ui != 0) error("Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s", msg);
     double d = 3.14;
     memset(&d, 0, sizeof(double));
-    if (d != 0.0) error("memset0 != (double)0.0.  Please report to data.table-help");
+    if (d != 0.0) error("Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s", msg);
     long double ld = 3.14;
     memset(&ld, 0, sizeof(long double));
-    if (ld != 0.0) error("memset0 != (long double)0.0.  Please report to data.table-help");
+    if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
 }
 
 

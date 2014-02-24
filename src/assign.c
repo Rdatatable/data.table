@@ -41,7 +41,7 @@ static void finalizer(SEXP p)
     return;
 }
 
-void setselfref(SEXP x) {   
+static void setselfref(SEXP x) {   
     SEXP p;
     // Store pointer to itself so we can detect if the object has been copied. See
     // ?copy for why copies are not just inefficient but cause a problem for over-allocated data.tables.
@@ -56,7 +56,7 @@ void setselfref(SEXP x) {
         ))
     ));
     R_RegisterCFinalizerEx(p, finalizer, FALSE);
-    UNPROTECT(1);  // The PROTECT above was needed by --enable-strict-barrier (it seemed, iiuc)
+    UNPROTECT(1);  // The PROTECT above is needed by --enable-strict-barrier (it seems, iiuc)
     
 /*  *  base::identical doesn't check prot and tag of EXTPTR, just that the ptr itself is the
        same in both objects. R_NilValue is always equal to R_NilValue.  R_NilValue is a memory
@@ -80,8 +80,8 @@ void setselfref(SEXP x) {
 */
 }
 
-int _selfrefok(SEXP x, Rboolean names, Rboolean verbose) {
-    SEXP v, p, tag, prot;
+static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
+    SEXP v, p, tag, prot, names;
     v = getAttrib(x, SelfRefSymbol);
     if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
         // .internal.selfref missing is expected and normal for i) a pre v1.7.8 data.table loaded
@@ -89,32 +89,135 @@ int _selfrefok(SEXP x, Rboolean names, Rboolean verbose) {
         //  Not being an extptr is for when users contruct a data.table via structure() using dput, post
         //  a question, and find the extptr doesn't parse so put quotes around it (for example).
         //  In both cases the selfref is not ok.
-        return(0);
+        return 0;
     }
     p = R_ExternalPtrAddr(v);
     if (p==NULL) {
         if (verbose) Rprintf(".internal.selfref ptr is NULL. This is expected and normal for a data.table loaded from disk. If not, please report to datatable-help.\n");
-        return(-1);
+        return -1;
     }
     if (!isNull(p)) error("Internal error: .internal.selfref ptr is not NULL or R_NilValue");
     tag = R_ExternalPtrTag(v);
     if (!(isNull(tag) || isString(tag))) error("Internal error: .internal.selfref tag isn't NULL or a character vector");
+    names = getAttrib(x, R_NamesSymbol);
+    if (names != tag && isString(names))
+        SET_TRUELENGTH(names, LENGTH(names)); 
+        // R copied this vector not data.table; it's not actually over-allocated. It looks over-allocated
+        // because R copies the original vector's tl over despite allocating length.
     prot = R_ExternalPtrProtected(v);
-    if (TYPEOF(prot) != EXTPTRSXP) return(0);  // Very rare. Was error(".internal.selfref prot is not itself an extptr").
-                                               // See http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
-    if (names) {
-        return(getAttrib(x, R_NamesSymbol)==tag);
-    } else {
-        return(x==R_ExternalPtrAddr(prot));
-    }
+    if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(".internal.selfref prot is not itself an extptr").
+        return 0;                    // See http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
+    if (x != R_ExternalPtrAddr(prot))
+        SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
+    return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
 }
 
-Rboolean selfrefok(SEXP x, Rboolean verbose) {   // for readability
+static Rboolean selfrefok(SEXP x, Rboolean verbose) {   // for readability
     return(_selfrefok(x, FALSE, verbose)==1);
 }
-Rboolean selfrefnamesok(SEXP x, Rboolean verbose) {
+static Rboolean selfrefnamesok(SEXP x, Rboolean verbose) {
     return(_selfrefok(x, TRUE, verbose)==1);
 }
+
+static SEXP shallow(SEXP dt, R_len_t n)
+{
+    // called from alloccol where n is checked carefully, or from shallow() at R level
+    // where n is set to truelength (i.e. a shallow copy only with no size change)
+    SEXP newdt, names, newnames;
+    R_len_t i,l;
+    int protecti=0;
+    PROTECT(newdt = allocVector(VECSXP, n));   // to do, use growVector here?
+    protecti++;
+    //copyMostAttrib(dt, newdt);   // including class
+    DUPLICATE_ATTRIB(newdt, dt);
+    // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
+    //        also increases truelength. Perhaps make that distinction, then, and split out, but marked
+    //        so that the next change knows to duplicate.
+    //        Does copyMostAttrib duplicate each attrib or does it point? It seems to point, hence DUPLICATE_ATTRIB
+    //        for now otherwise example(merge.data.table) fails (since attr(d4,"sorted") gets written by setnames).
+    l = LENGTH(dt);
+    for (i=0; i<l; i++)
+        SET_VECTOR_ELT(newdt,i,VECTOR_ELT(dt,i));
+    names = getAttrib(dt,R_NamesSymbol); 
+    PROTECT(newnames = allocVector(STRSXP, n));
+    protecti++;
+    if (length(names)) {
+        if (length(names) < l) error("Internal error: length(names)>0 but <length(dt)");
+        for (i=0; i<l; i++)
+            SET_STRING_ELT(newnames,i,STRING_ELT(names,i));
+    } // else an unnamed data.table is valid e.g. unname(DT) done by ggplot2, and .SD may have its names cleared in dogroups, but shallow will always create names for data.table(NULL) which has 100 slots all empty so you can add to an empty data.table by reference ok.
+    setAttrib(newdt, R_NamesSymbol, newnames);
+    // setAttrib appears to change length and truelength, so need to do that first _then_ SET next,
+    // otherwise (if the SET were were first) the 100 tl is assigned to length.
+    SETLENGTH(newnames,l);
+    SET_TRUELENGTH(newnames,n);
+    SETLENGTH(newdt,l);
+    SET_TRUELENGTH(newdt,n);
+    setselfref(newdt);
+    // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
+    UNPROTECT(protecti);
+    return(newdt);
+}
+        
+
+SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
+{
+    SEXP names, class;
+    R_len_t l, tl;
+    if (isNull(dt)) error("alloccol has been passed a NULL dt");
+    if (TYPEOF(dt) != VECSXP) error("dt passed to alloccol isn't type VECSXP");
+    class = getAttrib(dt, R_ClassSymbol);
+    if (isNull(class)) error("dt passed to alloccol has no class attribute. Please report result of traceback() to datatable-help.");
+    l = LENGTH(dt);
+    names = getAttrib(dt,R_NamesSymbol);
+    // names may be NULL when null.data.table() passes list() to alloccol for example.
+    // So, careful to use length() on names, not LENGTH(). 
+    if (length(names)!=l) error("Internal error: length of names (%d) is not length of dt (%d)",length(names),l);
+    if (!selfrefok(dt,verbose))
+        return shallow(dt,n);  // e.g. test 848 and 851 in R > 3.0.2  
+    // TO DO:  test realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
+    // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
+    //    error("Internal error: tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol)));
+    
+    tl = TRUELENGTH(dt);
+    if (tl<0) error("Internal error, tl of class is marked but tl<0.");  // R <= 2.13.2 and we didn't catch uninitialized tl somehow
+    if (tl>0 && tl<l) error("Internal error, please report (including result of sessionInfo()) to datatable-help: tl (%d) < l (%d) but tl of class is marked.", tl, l);
+    if (tl>l+1000) warning("tl (%d) is greater than 1000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report this to datatable-help including the result of sessionInfo().",tl,l);
+    if (n>tl) return(shallow(dt,n)); // usual case (increasing alloc)
+    if (n<tl) warning("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy.",tl,n);
+              // otherwise the finalizer can't clear up the Large Vector heap
+    return(dt);
+}
+
+SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP verbose) {
+    if (!isInteger(newncol) || length(newncol)!=1) error("n must be integer length 1. Has datatable.alloccol somehow become unset?");
+    if (!isLogical(verbose) || length(verbose)!=1) error("verbose must be TRUE or FALSE"); 
+    return(alloccol(dt, INTEGER(newncol)[0], LOGICAL(verbose)[0]));
+}
+
+SEXP shallowwrapper(SEXP dt) {
+    if (!selfrefok(dt,FALSE))
+        return(shallow(dt, length(dt)));  // a manually created data.table via dput() and structure(), for example
+    else 
+        return(shallow(dt, TRUELENGTH(dt)));
+}
+
+SEXP truelength(SEXP x) {
+    SEXP ans;
+    PROTECT(ans = allocVector(INTSXP, 1));
+    if (!isNull(x)) {
+       INTEGER(ans)[0] = TRUELENGTH(x);
+    } else {
+       INTEGER(ans)[0] = 0;
+    }
+    UNPROTECT(1);
+    return(ans);
+}
+
+SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
+    return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
+}
+
 
 void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
 
@@ -624,111 +727,6 @@ void savetl_end() {
     nsaved = nalloc = 0;
     saveds = NULL;
     savedtl = NULL;
-}
-
-static SEXP shallow(SEXP dt, R_len_t n)
-{
-    // called from alloccol where n is checked carefully, or from shallow() where n is set to
-    // truelength (i.e. a shallow copy only with no size change)
-    SEXP newdt, names, newnames;
-    R_len_t i,l;
-    int protecti=0;
-    PROTECT(newdt = allocVector(VECSXP, n));   // to do, use growVector here?
-    protecti++;
-    //copyMostAttrib(dt, newdt);   // including class
-    DUPLICATE_ATTRIB(newdt, dt);
-    // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
-    //        also increases truelength. Perhaps make that distinction, then, and split out, but marked
-    //        so that the next change knows to duplicate.
-    //        Does copyMostAttrib duplicate each attrib or does it point? It seems to point, hence DUPLICATE_ATTRIB
-    //        for now otherwise example(merge.data.table) fails (since attr(d4,"sorted") gets written by setnames).
-    l = LENGTH(dt);
-    for (i=0; i<l; i++)
-        SET_VECTOR_ELT(newdt,i,VECTOR_ELT(dt,i));
-    names = getAttrib(dt,R_NamesSymbol); 
-    PROTECT(newnames = allocVector(STRSXP, n));
-    protecti++;
-    if (length(names)) {
-        if (length(names) < l) error("Internal error: length(names)>0 but <length(dt)");
-        for (i=0; i<l; i++)
-            SET_STRING_ELT(newnames,i,STRING_ELT(names,i));
-    } // else an unnamed data.table is valid e.g. unname(DT) done by ggplot2, and .SD may have its names cleared in dogroups, but shallow will always create names for data.table(NULL) which has 100 slots all empty so you can add to an empty data.table by reference ok.
-    setAttrib(newdt, R_NamesSymbol, newnames);
-    // setAttrib appears to change length and truelength, so need to do that first _then_ SET next,
-    // otherwise (if the SET were were first) the 100 tl is assigned to length.
-    SETLENGTH(newnames,l);
-    SET_TRUELENGTH(newnames,n);
-    SETLENGTH(newdt,l);
-    SET_TRUELENGTH(newdt,n);
-    setselfref(newdt);
-    // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
-    UNPROTECT(protecti);
-    return(newdt);
-}
-        
-
-SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
-{
-    SEXP names, class;
-    R_len_t l, tl;
-    if (isNull(dt)) error("alloccol has been passed a NULL dt");
-    if (TYPEOF(dt) != VECSXP) error("dt passed to alloccol isn't type VECSXP");
-    class = getAttrib(dt, R_ClassSymbol);
-    if (isNull(class)) error("dt passed to alloccol has no class attribute. Please report result of traceback() to datatable-help.");
-    l = LENGTH(dt);
-    names = getAttrib(dt,R_NamesSymbol);
-    // names may be NULL, when null.data.table() passes list() to alloccol for example.
-    // So, careful to use length() on names, not LENGTH(). 
-    if (length(names)!=l)
-        error("Internal error: length of names (%d) is not length of dt (%d)",length(names),l);
-    
-    if (!selfrefok(dt,verbose)) {
-        tl=l;
-        SET_TRUELENGTH(dt,l);
-        if (!isNull(names)) SET_TRUELENGTH(names,l);
-        if (n==l) setselfref(dt);  // never happens, other than test 849 where we reduce datatable.alloccol to 2L, for testing 
-    } else {
-        tl = TRUELENGTH(dt);
-        if (tl<0) error("Internal error, tl of class is marked but tl<0.");  // R <= 2.13.2 and we didn't catch uninitialized tl somehow
-        if (tl>0 && tl<l) error("Internal error, please report (including result of sessionInfo()) to datatable-help: tl (%d) < l (%d) but tl of class is marked.", tl, l);
-        if (tl>l+1000) warning("tl (%d) is greater than 1000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report this to datatable-help including the result of sessionInfo().",tl,l);
-        // TO DO:  realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
-        // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
-        //    error("Internal error: tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol)));
-    }
-    if (n>tl) return(shallow(dt,n)); // usual case (increasing alloc)
-    if (n<tl) warning("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy.",tl,n);
-              // otherwise the finalizer can't clear up the Large Vector heap
-    return(dt);
-}
-
-SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP verbose) {
-    if (!isInteger(newncol) || length(newncol)!=1) error("n must be integer length 1. Has datatable.alloccol somehow become unset?");
-    if (!isLogical(verbose) || length(verbose)!=1) error("verbose must be TRUE or FALSE"); 
-    return(alloccol(dt, INTEGER(newncol)[0], LOGICAL(verbose)[0]));
-}
-
-SEXP shallowwrapper(SEXP dt) {
-    if (!selfrefok(dt,FALSE))
-        return(shallow(dt, length(dt)));  // a manually created data.table via dput() and structure(), for example
-    else 
-        return(shallow(dt, TRUELENGTH(dt)));
-}
-
-SEXP truelength(SEXP x) {
-    SEXP ans;
-    PROTECT(ans = allocVector(INTSXP, 1));
-    if (!isNull(x)) {
-       INTEGER(ans)[0] = TRUELENGTH(x);
-    } else {
-       INTEGER(ans)[0] = 0;
-    }
-    UNPROTECT(1);
-    return(ans);
-}
-
-SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
-    return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
 }
 
 SEXP setcharvec(SEXP x, SEXP which, SEXP new)
