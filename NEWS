@@ -47,7 +47,8 @@ NEW FEATURES
      being sqrt(.Machine$double.eps) == 1.490116e-08 (the same as base::all.equal's default) the
      the significand is now rounded to the last 2 bytes, apx 11 s.f. This is more appropriate
      for large (1.23e20) and small (1.23e-20) numerics and is faster via a simple bit twiddle.
-     We aim to make this rounding optional (e.g. 2, 1 or 0 byte rounding) in a future release.
+     A few functions provided a 'tolerance' argument but this wasn't being passed through so has
+     been removed. We aim to add a global option (e.g. 2, 1 or 0 byte rounding) in a future release.
 
   o  fread's integer64 argument implemented. Allows reading of integer64 data as 'double' or 'character'
      instead of bit64::integer64 (which remains the default as before). Thanks to Chris Neff for the

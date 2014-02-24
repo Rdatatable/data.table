@@ -24,15 +24,11 @@ test.data.table = function(verbose=FALSE) {
         cat("Running",fn,"\n")
         oldverbose = getOption("datatable.verbose")
         if (verbose) options(datatable.verbose=TRUE)
-        sys.source(fn,envir=new.env(parent=.GlobalEnv))  # using source(local=) would break 2.12 compatibility
+        sys.source(fn,envir=new.env(parent=.GlobalEnv))
         options(data.table.verbose=oldverbose)
-        # the new.env() is required for when a *user* runs test.data.table() because
-        # the context of this function is sealed in the namespace w.r.t S4.
-        # It is also tidier to protect the tests from the variable 'd' above.
-        
         # As from v1.7.2, testthat doesn't run the tests.Rraw (hence file name change to .Rraw).
         # There were environment issues with system.time() (when run by test_package) that only
-        # showed up when CRAN maintainers tested on 64bit. Matthew spent a long time including
+        # showed up when CRAN maintainers tested on 64bit. Matt spent a long time including
         # testing on 64bit in Amazon EC2. Solution was simply to not run the tests.R from
         # testthat, which probably makes sense anyway to speed it up a bit (was running twice
         # before).

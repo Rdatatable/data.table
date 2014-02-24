@@ -1124,7 +1124,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             # Apply GForce
             gfuns = c("sum","mean")
             .ok = function(q) {
-                ans = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]]) && (length(q)==2 || as.character(q[[3L]]) %in% c("TRUE","FALSE","T","F"))
+                ans = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]]) && (length(q)==2 || identical("na",substring(names(q)[3L],1,2)))
                 if (is.na(ans)) ans=FALSE
                 ans
             }
@@ -1134,9 +1134,14 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             } else GForce = .ok(jsub)
             if (GForce) {
                 if (jsub[[1L]]=="list")
-                    for (ii in seq_along(jsub)[-1L])  jsub[[ii]][[1L]] = as.name(paste("g", jsub[[ii]][[1L]], sep=""))
-                else
+                    for (ii in seq_along(jsub)[-1L]) { 
+                        jsub[[ii]][[1L]] = as.name(paste("g", jsub[[ii]][[1L]], sep=""))
+                        if (length(jsub[[ii]])==3) jsub[[ii]][[3]] = eval(jsub[[ii]][[3]], parent.frame())  # tests 1187.2 & 1187.4
+                    }
+                else {
                     jsub[[1L]] = as.name(paste("g", jsub[[1L]], sep=""))
+                    if (length(jsub)==3) jsub[[3]] = eval(jsub[[3]], parent.frame())   # tests 1187.3 & 1187.5
+                }
                 if (verbose) cat("GForce optimized j to '",deparse(jsub,width.cutoff=200),"'\n",sep="")
             } else if (verbose) cat("GForce is on, left j unchanged\n");
         }

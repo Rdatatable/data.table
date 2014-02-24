@@ -3701,8 +3701,19 @@ test(1185.3, DT[, list(mean(y), mean(v), mean(y,na.rm=TRUE), mean(v,na.rm=TRUE))
 options(datatable.optimize=Inf)  # turn on GForce
 test(1185.4, DT[, list(mean(y), mean(v), mean(y,na.rm=TRUE), mean(v,na.rm=TRUE)), by=x, verbose=TRUE], ans, output="GForce optimized j to")
 test(1186, DT[, sum(v), by=x, verbose=TRUE], output="GForce optimized j to")
-test(1187, DT[, list(sum(y), sum(v), sum(y,na.rm=TRUE), sum(v,na.rm=TRUE)), by=x],
+test(1187.1, DT[, list(sum(y), sum(v), sum(y,na.rm=TRUE), sum(v,na.rm=TRUE)), by=x],
            data.table(x=c("a","b","c","d"), V1=c(NA,10L,NA,NA), V2=c(6,NA,NA,NA), V3=c(4L,10L,7L,0L), V4=c(6,10,15,0)))
+MyVar = TRUE
+test(1187.2, DT[, list(sum(y,na.rm=MyVar), mean(y,na.rm=MyVar)), by=x, verbose=TRUE],           
+             DT[, list(sum(y,na.rm=TRUE), mean(y,na.rm=TRUE)), by=x],  output="GForce optimized j to")
+test(1187.3, DT[, mean(y,na.rm=MyVar), by=x, verbose=TRUE],
+             DT[, mean(y,na.rm=TRUE), by=x, verbose=TRUE], output="GForce optimized j to")
+MyVar = FALSE
+test(1187.4, DT[, list(sum(y,na.rm=MyVar), mean(y,na.rm=MyVar)), by=x, verbose=TRUE],           
+             DT[, list(sum(y,na.rm=FALSE), mean(y,na.rm=FALSE)), by=x],  output="GForce optimized j to")
+test(1187.5, DT[, mean(y,na.rm=MyVar), by=x, verbose=TRUE],
+             DT[, mean(y,na.rm=FALSE), by=x, verbose=TRUE], output="GForce optimized j to")
+
 
 # test from Zach Mayer
 a <- c("\"\"\"\")  \" \"   \"  \"    \"",  "\"\"\"\")  \" \"   \"  \"   \"",  "\"\"\"\")  \" \"   \"  \"    ,\"")
