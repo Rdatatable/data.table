@@ -3440,7 +3440,7 @@ test(1149.2, iradixorder(numeric(0)), error="iradixorder is only for integer")
 # more tests for `dcast.data.table` with formula being character and errors when formula is a hybrid
 set.seed(1)
 x <- data.table(a=rep(1:5, each=5), b=runif(25))
-// adding all extra arguments for no verbose during "test.data.table()" to all dcast.data.table tests
+### adding all extra arguments for no verbose during "test.data.table()" to all dcast.data.table tests
 test(1150.1, dcast.data.table(x, " a~ . ", value.var="b", fun=length), data.table(a=1:5, V1=5L, key="a"))
 test(1150.2, dcast.data.table(x, "a ~  c ", value.var="b"), error="Column 'c' not found")
 test(1150.3, dcast.data.table(x, a ~  a, value.var="c"), error="'value.var' column 'c' not found")
