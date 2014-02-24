@@ -361,7 +361,10 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
                 for (j=0; j<thislen; j++)
                     SET_STRING_ELT(target, counter + j, STRING_ELT(thiscol, INTEGER(thisidx)[j]-1));
             } else {
-                memcpy((char *)DATAPTR(target)+i*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
+                // no memcpy for STRSXP
+                for (j=0; j<nrow; j++) {
+                    SET_STRING_ELT(target, i*nrow + j, STRING_ELT(thiscol, j));
+                }
             }
             break;
             case REALSXP : 
@@ -504,7 +507,10 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
                     counter += thislen;
                     UNPROTECT(1); // thisidx
                 } else {
-                    memcpy((char *)DATAPTR(target)+j*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
+                    // no memcpy for STRSXP
+                    for (k=0; k<nrow; k++) {
+                        SET_STRING_ELT(target, j*nrow + k, STRING_ELT(thiscol, k));
+                    }
                 }
             }
             break;
