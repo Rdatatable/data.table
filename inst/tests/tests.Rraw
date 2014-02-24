@@ -41,7 +41,7 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
     #    from all.equal and different to identical related to row.names and unused factor levels
     # 3) each test has a unique id which we refer to in commit messages, emails etc.
-    # print(paste("running test #", num, sep=""))
+    print(paste("running test #", num, sep=""))
     .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
@@ -3423,14 +3423,14 @@ if ("package:reshape2" %in% search()) {
         test(1148.1, dcast.data.table(DT, x ~ ., mean, value.var="y"), ans)
         # also quashed another bug with `.` in formula (when there's no aggregate function):
         DT <- data.table(a=sample(5), b=runif(5), c=5:1)
-        ans1 = data.table(dcast(DT, a ~ .))
-        ans2 = data.table(dcast(DT, b+a ~ .))
+        ans1 = data.table(dcast(DT, a ~ ., value.var="c"))
+        ans2 = data.table(dcast(DT, b+a ~ ., value.var="c"))
         setnames(ans1, c("a", "c"))
         setnames(ans2, c("b", "a", "c"))
         setkey(ans1, "a")
         setkey(ans2, "b", "a")
-        test(1148.2, dcast.data.table(DT, a ~ .), ans1)
-        test(1148.3, dcast.data.table(DT, b+a~.), ans2)
+        test(1148.2, dcast.data.table(DT, a ~ ., value.var="c"), ans1)
+        test(1148.3, dcast.data.table(DT, b+a~., value.var="c"), ans2)
 }
 
 # test for `iradixorder` when input is integer(0) and numeric(0)
@@ -3440,7 +3440,7 @@ test(1149.2, iradixorder(numeric(0)), error="iradixorder is only for integer")
 # more tests for `dcast.data.table` with formula being character and errors when formula is a hybrid
 set.seed(1)
 x <- data.table(a=rep(1:5, each=5), b=runif(25))
-test(1150.1, dcast.data.table(x, " a~ . ", value.var="b"), data.table(a=1:5, N=5L, key="a"))
+test(1150.1, dcast.data.table(x, " a~ . ", value.var="b", fun=length), data.table(a=1:5, V1=5L, key="a"))
 test(1150.2, dcast.data.table(x, "a ~  c ", value.var="b"), error="Column 'c' not found")
 test(1150.3, dcast.data.table(x, a ~  a, value.var="c"), error="'value.var' column 'c' not found")
 
@@ -3743,14 +3743,14 @@ if ("package:reshape2" %in% search()) {
     df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]),
                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
     dt <- as.data.table(df)
-    test(1198.1, setkey(setDT(dcast(df, a~b, drop=FALSE)), a), dcast.data.table(dt, a~b, drop=FALSE))
+    test(1198.1, setkey(setDT(dcast(df, a~b, drop=FALSE, value.var="b", fun=length)), a), dcast.data.table(dt, a~b, drop=FALSE, fun=length, value.var="b"))
     
     # reverse the levels
     set.seed(1L)
     df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[5:1]),
                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
     dt <- as.data.table(df)
-    test(1198.2, setkey(setDT(dcast(df, a~b, drop=FALSE)), a), dcast.data.table(dt, a~b, drop=FALSE))
+    test(1198.2, setkey(setDT(dcast(df, a~b, drop=FALSE, value.var="b", fun=length)), a), dcast.data.table(dt, a~b, drop=FALSE, value.var="b", fun=length))
     
     # more factor cols
     set.seed(1L)
@@ -3759,7 +3759,7 @@ if ("package:reshape2" %in% search()) {
                  a3=sample(letters[1:3], 10, TRUE), # no factor
                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
     dt <- as.data.table(df)
-    test(1198.3, setkey(setDT(dcast(df, a1+a2+a3~b, drop=FALSE)), a1,a2,a3), dcast.data.table(dt, a1+a2+a3~b, drop=FALSE))
+    test(1198.3, setkey(setDT(dcast(df, a1+a2+a3~b, drop=FALSE, value.var="b")), a1,a2,a3), dcast.data.table(dt, a1+a2+a3~b, drop=FALSE, value.var="b"))
 }
 
 DT = data.table(id=1:2, val1=6:1, val2=6:1)   # 5380
