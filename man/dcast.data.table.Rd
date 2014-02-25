@@ -96,6 +96,7 @@ dcast.data.table(DT, diet+chick ~ time, drop=FALSE, fill=0)
 # using subset
 dcast.data.table(DT, chick ~ time, fun=mean, subset=.(time < 10 & chick < 20))
 
+\dontrun{
 # on big data
 set.seed(45)
 DT <- data.table(aa=sample(1e4, 1e6, TRUE), 
@@ -105,6 +106,7 @@ system.time(dcast.data.table(DT, aa ~ cc, fun=sum)) # 0.59 seconds
 system.time(dcast.data.table(DT, bb ~ cc, fun=mean)) # 0.26 seconds
 # reshape2:::dcast takes 192.1 seconds
 system.time(dcast.data.table(DT, aa + bb ~ cc, fun=sum)) # 3.6 seconds
+}
 }
 \seealso{
   \code{\link{melt.data.table}}, \url{https://r-forge.r-project.org/projects/datatable/}

@@ -42,6 +42,7 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     #    from all.equal and different to identical related to row.names and unused factor levels
     # 3) each test has a unique id which we refer to in commit messages, emails etc.
     # print(paste("running test #", num, sep=""))
+    # TO DO: every line should be inside test() so we don't have to show the numbers.
     .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
@@ -3144,12 +3145,15 @@ x1 <- data.table(a = c(1:5), b = c(1:5))
 f <- tempfile()
 write.csv(x1, f, row.names = FALSE)
 if (.Platform$OS.type == "unix") {
-    x1 <- x1[a != 3]
-    x2 <- fread(paste('grep -v 3 ', f, sep=""))
+    test(1105, x1[a != 3], fread(paste('grep -v 3 ', f, sep="")))
 } else {
-    x2 <- fread(paste('more ', f, sep=""))
+    # x2 <- fread(paste('more ', f, sep=""))
+    # Doesn't work on winbuilder. Relies on 'more' available in DOS via Cygwin?
+    # Error:
+    # Syntax error: end of file unexpected (expecting ")")
+    #  Error: (converted from warning) running command 'sh.exe -c (more D:\temp\RtmpgB8D2P\file1ed828a511cd) > D:\temp\RtmpgB8D2P\file1ed84f9f44f8' had status 2
+    # test(1105, x1, x2)
 }
-test(1105, x1, x2)
 
 # test for "key" argument of [.data.table
 x1 <- data.table(a = c(1:5), b = c(5:1))

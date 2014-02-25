@@ -1,12 +1,12 @@
 Package: data.table
-Version: 1.8.11
+Version: 1.9.1
 Title: Extension of data.frame for fast indexing, fast ordered joins, fast assignment, fast grouping and list columns.
 Author: M Dowle, T Short, S Lianoglou, A Srinivasan with contributions from R Saporta, E Antonyan
 Maintainer: Matt Dowle <mdowle@mdowle.plus.com>
 Depends: R (>= 2.14.0)
 Imports: methods, reshape2
 Suggests: chron, ggplot2 (>= 0.9.0), plyr, reshape, testthat (>= 0.4), hexbin, fastmatch, nlme, xts, bit64
-Description: Enhanced data.frame. Fast aggregation of large datasets, fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns and a fast file reader (fread). Offers a natural and flexible syntax, for faster development.
+Description: Enhanced data.frame. Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns and a fast file reader (fread). Offers a natural and flexible syntax, for faster development.
 License: GPL (>= 2)
 URL: http://datatable.r-forge.r-project.org/,  http://stackoverflow.com/questions/tagged/data.table
 BugReports: https://r-forge.r-project.org/tracker/?group_id=240

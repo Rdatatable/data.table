@@ -6,9 +6,19 @@ This NEWS file summarises the main changes.
 
         **********************************************
         **                                          **
-        **   CHANGES IN DATA.TABLE VERSION 1.8.11   **
+        **   CHANGES IN DATA.TABLE VERSION 1.9.1    **
         **                                          **
-        **         In development, unstable         **
+        **              in development              **
+        **                                          **
+        **********************************************
+        
+        
+
+        **********************************************
+        **                                          **
+        **   CHANGES IN DATA.TABLE VERSION 1.9.0    **
+        **                                          **
+        **          On CRAN : 25 Feb 2014           **
         **                                          **
         **********************************************
 
@@ -61,10 +71,11 @@ NEW FEATURES
      repetitively for each group. Plan is to add gmin, gmax, gsd, gprod, gwhich.min and gwhich.max.
      Examples where GForce applies now :
        DT[,sum(x,na.rm=),by=...]                       # yes
-       DT[,list(sum(x,na.rm=),mean(y,na.rm=),by=...]   # yes
+       DT[,list(sum(x,na.rm=),mean(y,na.rm=)),by=...]  # yes
        DT[,lapply(.SD,sum,na.rm=),by=...]              # yes
        DT[,list(sum(x),min(y)),by=...]                 # no. gmin not yet available, only sum and mean so far.
      GForce is a level 2 optimization. To turn it off: options(datatable.optimize=1)
+     Reminder: to see the optimizations and other info, set verbose=TRUE
 
   o  fread's integer64 argument implemented. Allows reading of integer64 data as 'double' or 'character'
      instead of bit64::integer64 (which remains the default as before). Thanks to Chris Neff for the
