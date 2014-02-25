@@ -11,14 +11,22 @@ This NEWS file summarises the main changes.
         **              in development              **
         **                                          **
         **********************************************
-        
-        
+
+BUG FIXES
+
+  o  New and very welcome ASAN and UBSAN checks on CRAN detected integer64 overflow
+     in test 899 (reading of integers longer than apx 18 digits).
+         fread("Col1\n12345678901234567890")   # works as before, bumped to character
+         
+NOTES
+
+  o  We have bumped the version so as to make absolutely sure that two slightly different
+     versions of v1.9.0 can never be in use. We know from experience this can happen. 
+     
 
         **********************************************
         **                                          **
         **   CHANGES IN DATA.TABLE VERSION 1.9.0    **
-        **                                          **
-        **          On CRAN : 25 Feb 2014           **
         **                                          **
         **********************************************
 
@@ -439,8 +447,12 @@ NOTES
 
   o  There are now 1,217 raw tests, as reported by test.data.table().
 
-  o  data.table now depends on R 2.14.0, now over 2 years old (Oct 2011)
-
+  o  data.table's dependency has been moved forward from R 2.12.0 to R 2.14.0, now over 2
+     years old (Oct 2011). As usual before release to CRAN, we ensure data.table passes
+     R CMD check on the stated dependency and keep this as old as possible for as long as
+     possible. As requested by users in managed environments. For this reason we still
+     don't use paste0() internally, since that was added to R 2.15.0. 
+  
 
         **********************************************
         **                                          **

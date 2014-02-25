@@ -144,7 +144,7 @@ static inline Rboolean Strtoll()
     // iv) safe for mmap which can't be \0 terminated on Windows (but can be on unix and mac)
     // v) fails if whole field isn't consumed such as "3.14" (strtol consumes the 3 and stops)
     // ... all without needing to read into a buffer at all (reads the mmap directly)
-    const char *lch=ch; int sign=1; long long acc=0;
+    const char *lch=ch; int sign=1;
     while (lch<eof && isspace(*lch) && *lch!=sep && *lch!=eol) lch++;
     if (lch==eof || *lch==sep || *lch==eol) {   //  ',,' or ',   ,' or '\t\t' or '\t   \t' etc => NA
         ch = lch;                               // advance global ch over empty field
@@ -153,24 +153,24 @@ static inline Rboolean Strtoll()
     const char *start = lch;                          // start of [+-][0-9]+
     if (*lch=='-') { sign=0; lch++; if (*lch<'0' || *lch>'9') return(FALSE); }   // + or - symbols alone should be character
     else if (*lch=='+') { sign=1; lch++; if (*lch<'0' || *lch>'9') return(FALSE); }
-    while (lch<eof && '0'<=*lch && *lch<='9') { // TO DO can remove lch<eof when last row is specialized in case of no final eol
-        acc *= 10;
-        acc += *lch-'0';
-        lch++;
+    long long acc = 0;
+    while (lch<eof && '0'<=*lch && *lch<='9' && acc<(LLONG_MAX-10)/10) { 
+        acc *= 10;            // overflow avoided, thanks to BDR and CRAN's new ASAN checks, 25 Feb 2014
+        acc += *lch-'0';      // have assumed compiler will optimize the constant expression (LLONG_MAX-10)/10
+        lch++;                // TO DO can remove lch<eof when last row is specialized in case of no final eol
     }
     int len = lch-start;
     //Rprintf("Strtoll field '%.*s' has len %d\n", lch-ch+1, ch, len);
-    if (len>0 && len<19 &&   // 18 = 2^63 width. If wider, *= above overflowed (ok). Including [+-] in len<19 is for len==0 NA check.
-        (lch==eof || *lch==sep || *lch==eol)) {   // only if field fully consumed (e.g. not ,123456A,)
+    if (lch==eof || *lch==sep || *lch==eol) {   // only if field fully consumed (e.g. not ,123456A,)
         ch = lch;
         u.l = sign ? acc : -acc;
-        return(TRUE);     // either int or int64 read ok, result in u.l.  INT_MIN and INT_MAX checked by caller.
+        return(TRUE);     // either int or int64 read ok, result in u.l.  INT_MIN and INT_MAX checked by caller, as appropriate
     }
     if (len==0 && lch<eof-1 && *lch++=='N' && *lch++=='A' && (lch==eof || *lch==sep || *lch==eol)) {   // ',NA,'
         ch = lch;       // advance over NA
         return(TRUE);   // NA_INTEGER or NA_REAL (for SXP_INT64) was already set by caller
     }
-    return(FALSE);  // invalid integer such as "3.14" or "123ABC,". Need to bump type.
+    return(FALSE);  // invalid integer such as "3.14", "123ABC," or "12345678901234567890" (larger than even int64) => bump type.
 }
 
 static inline Rboolean Strtod()
