@@ -28,20 +28,24 @@ NEW FEATURES
        dcast.data.table can also accept 'value.var' columns of type list
   
   o  Joins scale better as the number of rows increases. The binary merge used to start on row 1
-     of i, it now starts on the middle row of i. Many thanks to Mike Crowe for the suggestion. This
-     has been done within column so scales much better as the number of join columns increases, too.
+     of i; it now starts on the middle row of i. Many thanks to Mike Crowe for the suggestion. This
+     has been done within column so scales much better as the number of join columns increase, too.
      Reminder: bmerge allows the rolling join feature: forwards, backwards, limited and nearest.
      
   o  Sorting (setkey and ad-hoc by=) is faster and scales better on randomly ordered data and now
-     adapts to almost sorted data. The remaining comparison sorts have been removed. We use a
+     also adapts to almost sorted data. The remaining comparison sorts have been removed. We use a
      combination of counting sort and forwards radix (MSD) for all types including double and
      character; forwards not backwards through columns. This was inspired by Terdiman and
      Herf's (LSD) radix approach for floating point :
          http://codercorner.com/RadixSortRevisited.htm 
          http://stereopsis.com/radix.html
+         
+  o  unique and duplicated methods for data.table are significantly faster especially for type
+     numeric (i.e. double), and type integer where range > 100,000 or contains negatives.
      
-  o  NA, NaN, +Inf and -Inf are considered distinct values, may be in keys and can be joined to, as
-     requested by users.
+  o  NA, NaN, +Inf and -Inf are now considered distinct values, may be in keys, can be
+     joined to and can be grouped. data.table defines: NA < NaN < -Inf
+     Thanks to Martin Liberts for the suggestions, #4684, #4815 and #4883.
   
   o  Numeric data is still joined and grouped within tolerance as before but instead of tolerance
      being sqrt(.Machine$double.eps) == 1.490116e-08 (the same as base::all.equal's default) the
@@ -49,6 +53,18 @@ NEW FEATURES
      for large (1.23e20) and small (1.23e-20) numerics and is faster via a simple bit twiddle.
      A few functions provided a 'tolerance' argument but this wasn't being passed through so has
      been removed. We aim to add a global option (e.g. 2, 1 or 0 byte rounding) in a future release.
+     
+  o  New optimization: GForce. Rather than grouping the data, the group locations are passed into
+     grouped versions of sum and mean (gsum and gmean) which then compute the result for all groups
+     in a single sequential pass through the column for cache efficiency. Further, since the g*
+     function is called just once, we don't need to find ways to speed up calling sum or mean
+     repetitively for each group. Plan is to add gmin, gmax, gsd, gprod, gwhich.min and gwhich.max.
+     Examples where GForce applies now :
+       DT[,sum(x,na.rm=),by=...]                       # yes
+       DT[,list(sum(x,na.rm=),mean(y,na.rm=),by=...]   # yes
+       DT[,lapply(.SD,sum,na.rm=),by=...]              # yes
+       DT[,list(sum(x),min(y)),by=...]                 # no. gmin not yet available, only sum and mean so far.
+     GForce is a level 2 optimization. To turn it off: options(datatable.optimize=1)
 
   o  fread's integer64 argument implemented. Allows reading of integer64 data as 'double' or 'character'
      instead of bit64::integer64 (which remains the default as before). Thanks to Chris Neff for the
@@ -61,7 +77,7 @@ NEW FEATURES
   
   o  fread now accepts quotes (both ' and ") in the middle of fields, whether the field starts with "
      or not, rather than the 'unbalanced quotes' error, #2694. Thanks to baidao for reporting. It was
-     known and documented at the top of ?fread (text now removed). If a field starts with " it must end
+     known and documented at the top of ?fread (now removed). If a field starts with " it must end
      with " (necessary to include the field separator itself in the field contents). Embedded quotes
      can be in column names, too. Newlines (\n) still can't be in quoted fields or quoted column names, yet.
      
@@ -69,139 +85,129 @@ NEW FEATURES
      
   o  fread("1.46761e-313\n") detected the ERANGE error, so read as character. It now reads as
      numeric but with a detailed warning. Thanks to Heather Turner for the detailed report, #4879.
-	 
-  o	 as.data.table method for table() implemented, #4848. Thanks to Frank Pinter for suggesting here on SO:
+     
+  o  fread now understand system commands; e.g., fread("grep blah file.txt").
+
+  o	 as.data.table method for table() implemented, #4848. Thanks to Frank Pinter for suggesting :
        http://stackoverflow.com/questions/18390947/data-table-of-table-is-very-different-from-data-frame-of-table
   
   o  as.data.table methods added for integer, numeric, character, logical, factor, ordered and Date.
 	 
-  o	 Due to fixing #2697 (see BUG FIXES), `:=`, assignment by reference, also now accepts negative 
-     indices, but still not '0' as an index. Thanks again to Eduard Antonyan.
+  o	 DT[i,:=,] now accepts negative indices in i. Thanks to Eduard Antonyan. See also bug fix #2697.
 
-  o	 `set()` is able to add new columns by reference now. For example, set(DT, i=3:5, j="bla", 5L) is 
-     equivalent to DT[3:5, bla := 5L]. This was FR #2077. Tests added.
-	 
-  o  fread now understand commands, e.g. fread("grep blah file.txt").
+  o	 set() is now able to add new columns by reference, #2077.
+         DT[3:5, newCol := 5L]
+         set(DT, i=3:5, j="newCol", 5L)   # same
+         
+  o  DT[...] gains 'key' argument. This is for convenience to partially address FR#4675. It may
+     change in future.
 
-  o  can set key from `[.data.table` using a new "key" argument. This is for convenience and to
-     address FR #4675 to some degree - the difference from the FR is that the key is not set temporarily
-     but rather is a permanent change.
+  o  eval will now be evaluated anywhere in a j-expression as long as it has just one argument, #4677.
+     Will still need to use .SD as environment in complex cases. Also fixes bug here :
+       http://stackoverflow.com/a/19054962/817778
 
-  o  FR #4677 has been addressed - eval will now be evaluated anywhere in a j-expression as long as
-     it has just one argument. Will still need to use .SD as environment in complex cases. Accidentally
-     fixed bug noticed here: http://stackoverflow.com/a/19054962/817778
+  o  ! at the head of the expression will no longer trigger a not-join if the expression is
+     logical, #4650. Thanks to Arunkumar Srinivasan for reporting.
 
-  o  FR #4650 addressed. The ! at the head of the expression will no longer trigger a not-join if the 
-     expression is logical. Thanks to Arunkumar Srinivasan for reporting.
-
-  o  FR #4652 implemented - slight speed improvement during subsetting. Thanks to Arunkumar Srinivasan 
-     for timings and suggestion.
-
-  o  FR #2456 implemented - rbindlist will choose the highest type per column, not the first. Up-conversion 
-     follows R defaults, with the addition of factors being the highest type. This also fixes bug #4981 (same 
-	 as the FR but for the specific case of NA's).
+  o  rbindlist now chooses the highest type per column, not the first, #2456. Up-conversion follows
+     R defaults, with the addition of factors being the highest type. Also fixes #4981 for the
+     specific case of NA's.
 
   o  cbind(x,y,z,...) now creates a data.table if x isn't a data.table but y or z is.
   
   o  cbind(x,y,z,...) and data.table(x,y,z,...) now retain keys of any data.table inputs directly (no sort
-     needed, for speed) where the key is c(key(x), key(y), key(z), ...). Provided the data.table inputs with
-     keys are not recycled and there are no ambiguities (i.e. duplicates) in column names.
+     needed, for speed). The result's key is c(key(x), key(y), key(z), ...), provided, that the data.table
+     inputs that have keys are not recycled and there are no ambiguities (i.e. duplicates) in column names.
 
-  o  FR #4856 implemented (same as #5019). rbind/rbindlist will preserve ordered factors if it's possible
-     to do so, i.e. if a compatible global order exists. Otherwise the result will be a factor and a warning.
+  o  rbind/rbindlist will preserve ordered factors if it's possible to do so; i.e., if a compatible global
+     order exists, #4856 & #5019. Otherwise the result will be a factor and a warning.
 
-  o  FR #4790 - rbind now has a "fill" argument. When fill=TRUE it will behave in a manner similar to
-     plyr's rbind.fill. This option is incompatible with use.names=FALSE. Thanks to Arunkumar Srinivasan for
+  o  rbind now has a "fill" argument, #4790. When fill=TRUE it will behave in a manner similar to plyr's
+     rbind.fill. This option is incompatible with use.names=FALSE. Thanks to Arunkumar Srinivasan for
      the base code.
 
-  o  FR #2115 - rbind now relies exclusively on rbindlist to bind data.tables together. This makes rbind'ing
-     factors faster.
+  o  rbind now relies exclusively on rbindlist to bind data.tables together. This makes rbind'ing
+     factors faster, #2115.
 
-  o  FR #4867 is now implemented. `DT[, as.factor('x'), with=FALSE]` where `x` is a column in `DT`, is now 
-     equivalent to `DT[, "x", with=FALSE]` instead of ending up with an error. Thanks to tresbot for reporting 
-	 on SO: http://stackoverflow.com/questions/18525976/converting-multiple-data-table-columns-to-factors-in-r
+  o  DT[, as.factor('x'), with=FALSE] where `x` is a column in DT is now equivalent to 
+     DT[, "x", with=FALSE] instead of ending up with an error, #4867. Thanks to tresbot for reporting :
+	   http://stackoverflow.com/questions/18525976/converting-multiple-data-table-columns-to-factors-in-r
 
-  o  `format.data.table` now understands "formula" and displays embedded formulas as expected, FR #2591.
+  o  format.data.table now understands 'formula' and displays embedded formulas as expected, FR #2591.
 
-  o  FR #2496 is now implemented to trap and remove the `{` around `:=` in `j` to obtain desired result. Now, 
-     `DT[, { `:=`(...)}]` and `DT[, {`:=`(...)}, by=(...)]` both work as intended, but with a warning. Thanks to 
-     Alex for reporting on SO: http://stackoverflow.com/questions/14541959/expression-syntax-for-data-table-in-r
+  o  {} around := in j now obtain desired result, but with a warning #2496. Now, 
+       DT[, { `:=`(...)}]             # now works
+       DT[, {`:=`(...)}, by=(...)]    # now works
+     Thanks to Alex for reporting : 
+       http://stackoverflow.com/questions/14541959/expression-syntax-for-data-table-in-r
 
-  o  Implemented FR #2693 from mnel's and Gabor's points (here: http://r.789695.n4.nabble.com/Problem-with-FAQ-2-8-tt4668878.html)
-     regarding FAQ 2.8. Now, `x[J(2), a]`, where "a" is the key column sees "a" in "j". Also, `x[J(2)]` automatically 
-     names the data.table in "i" from the key columns of "x". In cases where the key columns of "x" and "i" are 
-     identical, i's columns are referred to by using "i.name". Ex: `x[J(2), i.a]` here refers to i's column "a".
+  o  x[J(2), a], where 'a' is the key column sees 'a' in 'j', #2693 and FAQ 2.8. Also, x[J(2)] automatically 
+     names the columns from 'i' using the key columns of 'x'. In cases where the key columns of 'x' and 'i' are 
+     identical, i's columns can be referred to by using 'i.name'; e.g., x[J(2), i.a].
+     Thanks to mnel and Gabor :
+       http://r.789695.n4.nabble.com/Problem-with-FAQ-2-8-tt4668878.html
 
-  o  print.data.table gains a new argument (FR #5020) `row.names` with default=TRUE for backwards compatbility. 
-     When set to FALSE, the row names (along with the :) doesn't get printed. Thanks to Frank Erickson.
+  o  print.data.table gains 'row.names', default=TRUE. When FALSE, the row names (along with the :) are
+     not printed, #5020. Thanks to Frank Erickson.
 
-  o  .SDcols now is also able to de-select columns. This works on both numerics and column names. For example, 
-     DT[, .SD, .SDcols=-c(1,3)] (or) DT[, .SD, .SDcols=-c("x", "z")] now works as expected. However, 
-     DT[, .SD, .SDcols=c(1, -3)] or DT[, .SD, .SDcols=c("x", -"z")] would result in error. Thanks to Tonny 
-     Peterson for filing this FR #4979.
+  o  .SDcols now is also able to de-select columns. This works both with column names and column numbers. 
+         DT[, lapply(.SD,...), by=..., .SDcols=-c(1,3)]       # .SD all but columns 1 and 3
+         DT[, lapply(.SD,...), by=..., .SDcols=-c("x", "z")]  # .SD all but columns 'x' and 'z'
+         DT[..., .SDcols=c(1, -3)]           # can't mix signs, error
+         DT[, .SD, .SDcols=c("x", -"z")]     # can't mix signs, error
+     Thanks to Tonny Peterson for filing FR#4979.
 
-  o  FR #4813 is now implemented. `as.data.table.list` now issues a warning for those items/columns that result in 
-     a remainder due to recycling. `data.table` also now issues a warning (instead of an error previously) when 
-     recycling leaves a remainder (Ex: data.table(x=1:2, y=1:3)).
+  o  as.data.table.list now issues a warning for those items/columns that result in a remainder due
+     to recycling, #4813. data.table() also now issues a warning (instead of an error previously) when 
+     recycling leaves a remainder; e.g., data.table(x=1:2, y=1:3).
 
-  o  FR #2551 is now implemented. `:=` coerces without warning when precision is not lost and length(RHS) = 1. 
-     For example: DT = data.table(x=1:2, y=c(TRUE, FALSE)); DT[1, x:=1] and DT[1, y:=0] and DT[1, y:=0L] all 
-     don't issue a warning as long as precision is not lost (coercion is done silently).
+  o  := now coerces without warning when precision is not lost and length(RHS) == 1, #2551.
+         DT = data.table(x=1:2, y=c(TRUE, FALSE))
+         DT[1, x:=1]   # ok, now silent
+         DT[1, y:=0]   # ok, now silent
+         DT[1, y:=0L]  # ok, now silent
 
   o  as.data.table.*(x, keep.rownames=TRUE), where `x` is a named vector now adds names of `x` into a new column 
-     with default name `rn`. Thanks to Garrett See for this FR #2356.
+     with default name `rn`. Thanks to Garrett See for FR #2356.
 
-  o  X[Y, col := value] when no match exists in the join is now caught early and X is simply returned. Also a 
+  o  X[Y, col:=value] when no match exists in the join is now caught early and X is simply returned. Also a 
      message when `datatable.verbose` is TRUE is provided. In addition, if `col` is an existing column, since no 
-     update actually takes place, the key is now retained. Thanks to Frank Erickson for reporting this FR #4996.
+     update actually takes place, the key is now retained. Thanks to Frank Erickson for suggesting, #4996.
 
-  o  (Internal) Fast radix order is now implemented for both 'integer' and 'numeric' types. This should result in 
-     many operations in data.table *significantly faster*. A speed-up of at least 5-8x is expected on all operations 
-     that internally depend on ordering.
-
-  o  (Internal) 'uniqlist' - A faster version of 'duplist' is now implemented, also with efficient memory allocation 
-     (vector is grown as and when required using 'Realloc'). 'uniqlengths', another function, is also implemented, 
-     that returns the length of each unique group.
-
-  o  Implementation of radix order for numeric and integer gives a speed-up of 2.5-10x speed-up for `duplicated.data.table`.
-     Comparison between 1.8.10 and 1.8.11 on two data.tables (1e7 * 2), one with 1e3 unique values and other with all 1e7 
-     unique values resulted in 48 vs 4 sec and 55 vs 22 seconds. 
-
-  o  Enhancement: `duplicated.data.table` also had an unnecessary ordering that took a significant portion of the 
-     computation. Removing it gave another 4-5x improvement. In effect, `duplicated.data.table` is at least about 10-12x 
-     faster (tested on 1e7 rows) than 1.8.10. And therefore `unique.data.table` is as well. To contrast, after this 
-     enhancement, it takes 4.2 and 5.7 seconds on 1e3 and 1e7 unique values.
-
-  o  Binary search is now capable of subsetting NA/NaNs and also perform joins and merges by matching NAs/NaNs.
-
-  o  Following this S.O. post: http://stackoverflow.com/questions/20345022/convert-a-data-frame-to-a-data-table-without-copy/20346697#20346697
-     a function 'setDT' is now implemented that takes a list (named and/or unnamed), data.frame (or data.table) as input 
-     and returns the same object as a data.table by reference (without any copy). It also has a logical argument 'giveNames', 
-     which is used for a list inputs. See ?setDT examples for more.
+  o  New function setDT() takes a list (named and/or unnamed) or data.frame and changes its type by reference
+     to data.table, without any copy. It also has a logical argument 'giveNames' which is used for a list
+     inputs. See ?setDT examples for more.
+       http://stackoverflow.com/questions/20345022/convert-a-data-frame-to-a-data-table-without-copy/20346697#20346697
      
-  o  setnames(DT,"oldname","newname") no longer complains about duplicated column names in DT so long
+  o  setnames(DT,"oldname","newname") no longer complains about any duplicated column names in DT so long
      as oldname is unique and unambiguous. Thanks to Wet Feet for highlighting.
        http://stackoverflow.com/questions/20942905/ignore-safety-check-when-using-setnames
 
-  o  FR #5152 is implemented. last(x) where length(x)=0 now returns 'x' instead of an error. Thanks to 
-     Garrett See for reporting.
+  o  last(x) where length(x)=0 now returns 'x' instead of an error, #5152. Thanks to Garrett See for reporting.
 
-  o  as.ITime.character will not complain any longer when given vector input and will accept mixed format time entries, e.g. c("12:00", "13:12:25")
-
+  o  as.ITime.character no longer complains when given vector input, and will accept mixed format time
+     entries; e.g., c("12:00", "13:12:25")
+     
+  o  The key is now retained in NA subsets; e.g.,
+        DT = data.table(a=1:3,b=4:6,key="a")
+        DT[NA]   # 1-row of NA now keyed by 'a'
+        DT[5]    # 1-row of NA now keyed by 'a'
+        DT[2:4]  # not keyed as before because NA (last row of result) sorts first in keyed data.table
+  
   o  Each column in the result for each group has always been recycled (if necessary) to match the
      longest column in that group's result. If it doesn't recycle exactly, though, it was caught gracefully
-     as an error. Now it is recycled with remainder with warning.
+     as an error. Now, it is recycled, with remainder with warning.
          DT = data.table(a=1:2,b=1:6)
-         DT[, list(b,1:2), by=a]  # now recycles the 1:2 with warning to length 3
+         DT[, list(b,1:2), by=a]        # now recycles the 1:2 with warning to length 3
 
 BUG FIXES
 
   o  Long outstanding (usually small) memory leak in grouping fixed, #2648. When the last group is smaller
-     than the largest group, the difference in those sizes was not being released. Also in non-trivial
+     than the largest group, the difference in those sizes was not being released. Also evident in non-trivial
      aggregations where each group returns a different number of rows. Most users run a grouping
      query once and will never have noticed these, but anyone looping calls to grouping (such as when
      running in parallel, or benchmarking) may have suffered. Tests added.
-     Thanks to many including vc273, Y T (**and others to add**) :
+     Thanks to many including vc273 and Y T :
        http://stackoverflow.com/questions/20349159/memory-leak-in-data-table-grouped-assignment-by-reference
        http://stackoverflow.com/questions/15651515/slow-memory-leak-in-data-table-when-returning-named-lists-in-j-trying-to-reshap
 
@@ -211,7 +217,7 @@ BUG FIXES
      Fixed. Thanks to theEricStone, StevieP and JasonB for (difficult) reproducible examples.
        http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
        
-  o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
+  o  If fread returns a data error (such as no closing quote on a quoted field) it now
      closes the file first rather than holding a lock open, a Windows only problem.
      Thanks to nigmastar for reporting and Carl Witthoft for the hint. Tests added.
        http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
@@ -223,11 +229,6 @@ BUG FIXES
      some circumstances; e.g., DT[,c("B","B"):=NULL] (delete by reference the same column twice).
      Thanks to Ricardo (#2751) and matt_k (#2791) for reporting. Tests added.
        http://stackoverflow.com/questions/16638484/remove-multiple-columns-from-data-table
-	 
-  o  setkey and by= now distinguish numeric NaN, NA, Inf and -Inf correctly (#4684, #4815 and #4883).
-     Thanks to Martin Liberts for reporting. Tests added.
-     
-  o  A test of rbindlist on data.frame input has been added, #4648. Thanks to Minkoo Seo.
   
   o  Crash and/or incorrect aggregate results with negative indexing in 'i' is fixed, with a warning 
      when the abs(negative index) > nrow(DT), #2697. Thanks to Eduard Antonyan (eddi) for reporting. 
@@ -286,9 +287,9 @@ BUG FIXES
   o  X[Y,roll=-Inf,rollends=FALSE] didn't roll the middle correctly if Y was keyed. It was ok if Y was
      unkeyed or rollends left as the default [c(TRUE,FALSE) when roll<0]. Thanks to user338714 for
      reporting. Tests added.
-         http://stackoverflow.com/questions/18984179/roll-data-table-with-rollends
+       http://stackoverflow.com/questions/18984179/roll-data-table-with-rollends
 
-  o  Key is now retained after order-preserving subset, fixing bug #295.
+  o  Key is now retained after an order-preserving subset, #295.
 
   o  Fixed bug #2584. Now columns that had function names, in particular "list" do not pose problems in .SD.
      Thanks to Zachary Mayer for reporting.
@@ -303,13 +304,13 @@ BUG FIXES
      with key. This is now fixed, #4995. Thanks to Frank Erickson for reporting.
 	 
   o  That `.SD` doesn't retain column's class is now fixed (#2530). Thanks to Corone for reporting here on SO:
-     http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
+       http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
 
   o  `eval(quote())` returned error when the quoted expression is a not-join, #4994. This is now fixed. Tests added.
 
   o  `DT[, lapply(.SD, function(), by=]` did not see columns of DT when optimisation is "on". This is 
-     now fixed, #2381. Tests added and tested successfully. Thanks to David F for reporting on SO:
-	 http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
+     now fixed, #2381. Tests added. Thanks to David F for reporting on SO:
+	   http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
 
   o  #4959 - rbind'ing empty data.tables now works
 
@@ -355,14 +356,11 @@ BUG FIXES
 
   o  Fixed #5171 - where setting the attribute name to a non-character type resulted in a segfault. Ex: 
      `setattr(x, FALSE, FALSE); x`. Now ends up with a friendly error.
-
-  o  A consequence of implementing the feature where binary search based subsetting or joins/merges is capable of also 
-     handling NAs/NaNs is that bug #4918 is fixed. Thanks to Sameer Manek for reporting.
      
   o  Dependent packages using cbind may now Import data.table as intended rather than needing to Depend. There was
      a missing data.table:: prefix on a call to key(). Thanks to Maarten-Jan Kallen for reporting.
      
-  o  'chmatch' dint handle character encodings properly when the string was identical but the encoding were different. 
+  o  'chmatch' didn't handle character encodings properly when the string was identical but the encoding were different. 
       For ex: UTF8 and Latin1. This is now fixed (a part of bug #5159). Thanks to Stefan Fritsch for reporting.
 
   o  Joins (X[Y]) on character columns with different encodings now issue a warning that join may result in unexpected 
@@ -374,10 +372,6 @@ BUG FIXES
 
   o  Fixed a rare segfault that occurred on >250m rows (integer overflow during memory allocation); closes #5305. 
      Thanks to Guenter J. Hitsch for reporting.
-
-  o  Fixed a bug that arose due to recent fixes to fastorder, where aggregating with logical type at times lead to 
-     to wrong result. This closes #5307. Thanks to Clayton Stanley for reporting on SO: 
-     http://stackoverflow.com/questions/21437546/data-table-1-8-11-and-aggregation-issues
 
   o  `rbindlist` with at least one factor column along with the presence of at least one empty data.table resulted in 
      segfault (or in linux/mac reported an error related to hash tables). This is now fixed, #5355. Thanks to Trevor 
@@ -397,17 +391,24 @@ THANKS FOR BETA TESTING TO :
   
   o  Jakub Szewczyk for reporting that where "." is used in formula interface of dcast.data.table along with an aggregate
      function, it did not result in aggregated result, #5149. Test added.
-         dcast.data.table(x, a ~ ., mean, value.var="b")
+       dcast.data.table(x, a ~ ., mean, value.var="b")
      
   o  Jonathan Owen for reporting that DT[,sum(.SD),by=] failed with GForce optimization, #5380. Added test and error
      message redirecting to use DT[,lapply(.SD,sum),by=] or base::sum and how to turn off GForce.
      
   o  Luke Tierney for guidance in finding a corruption of R_TrueValue which needed --enable-strict-barier,
      gctorture2 and a hardware watchpoint to ferret out. Started after a change in Rdevel on 11 Feb 2014, r64973.
+     
+  o  Minkoo Seo for a new test on rbindlist, #4648.
+  
+  o  Clayton Stanley for reporting #5307: aggregating logical types could give wrong results.
+       http://stackoverflow.com/questions/21437546/data-table-1-8-11-and-aggregation-issues
 
 NOTES
 
-  o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.
+  o  If fread detects data which would be lost if the column was read according to type supplied in colClasses, e.g.
+     a numeric column specified as integer in colClasses, the message that it has ignored colClasses is upgraded to
+     warning instead of just a line in verbose=TRUE mode.
   
   o  ?last has been improved and if xts is needed but not installed the error message is more helpful, #2728.
      Thanks to Sam Steingold for reporting.
@@ -420,17 +421,13 @@ NOTES
      
   o  When DT is empty, DT[,col:=""] is no longer a warning. The warning was :
         Supplied 1 items to be assigned to 0 items of column (1 unused)
-        
+
   o  Using rolltolast still works but now issues the following warning :
         "'rolltolast' has been marked 'deprecated' in ?data.table since v1.8.8 on CRAN 3 Mar 2013, see NEWS. Please
          change to the more flexible 'rollends' instead. 'rolltolast' will be removed in the next version."
 
-  o  The key is now retained in NA subsets; e.g.,
-        DT = data.table(a=1:3,b=4:6,key="a")
-        DT[NA]   # 1-row of NA now keyed by 'a'
-        DT[5]    # 1-row of NA now keyed by 'a'
-        DT[2:4]  # not keyed as before because NA (last row of result) sorts first in keyed data.table
-  
+  o  There are now 1,217 raw tests, as reported by test.data.table().
+
   o  data.table now depends on R 2.14.0, now over 2 years old (Oct 2011)
 
 

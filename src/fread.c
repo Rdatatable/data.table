@@ -940,7 +940,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     }
                     ch = ch2;
                 }
-                if (ch<eof && *ch==sep && j<ncol-1) {ch++; continue;}  // most common case first, done, next field
+                if (ch<eof && *ch==sep && j<ncol-1) {ch++; continue;}  // done, next field
                 if (j<ncol-1) {sprintf(errormsg, "Expected sep ('%c') but '%c' ends field %d on line %d when reading data: %.*s", sep, *ch, j+1, i+nline, (int)(ch-pos+1), pos);EXIT();}
             }
             //Rprintf("At end of line with i=%d and ch='%.10s'\n", i, ch);
