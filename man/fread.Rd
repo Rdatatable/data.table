@@ -4,11 +4,9 @@
 \description{
    Similar to \code{read.table} but faster and more convenient. All controls such as \code{sep}, \code{colClasses} and \code{nrows} are automatically detected. \code{bit64::integer64} types are also detected and read directly without needing to read as character before converting.
    
-   \bold{This function is still under development}. For example, dates are read as character (they can be converted afterwards using the excellent \code{fasttime} package or standard base functions) and embedded quotes (\code{"\""} and \code{""""}) have problems. There are other known issues that haven't been fixed and features not yet implemented. But, you may find it works in many cases. Please report problems to datatable-help or Stack Overflow's data.table tag.
-   
-   \bold{Not for production use yet}. Not because it's unstable in the sense that it crashes or is buggy (your testing will show whether it is stable in your cases or not) but because \code{fread}'s arguments and behaviour is likely to change in future; i.e., we expect to make (hopefully minor) non-backwards-compatible changes. Why has it been released to CRAN then? Because a maintenance release was asked for by CRAN maintainers to comply with new stricter tests in R-devel, and a few Bioconductor packages depend on data.table and Bioconductor requires packages to pass R-devel checks. It was quicker to leave \code{fread} in and write these paragraphs, than take \code{fread} out.
-   
-   `fread` if for \emph{regular} delimited files; i.e., where every row has the same number of columns. However, a secondary separator may be specified \emph{within} each column. Such columns are read as type \code{list} where each cell is itself a vector.
+   Dates are read as character currently. They can be converted afterwards using the excellent \code{fasttime} package or standard base functions.
+
+   `fread` is for \emph{regular} delimited files; i.e., where every row has the same number of columns. In future, secondary separator (\code{sep2}) may be specified \emph{within} each column. Such columns will be read as type \code{list} where each cell is itself a vector.
 }
 \usage{
 fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA",

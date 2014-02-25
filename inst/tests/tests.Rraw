@@ -2838,12 +2838,12 @@ test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(
 # an fread error shouldn't hold a lock on the file on Windows.
 f = tempfile()
 cat('A,B\n"aa",2\n"bb,2\n"cc",3\n', file=f)
-test(1010, fread(f), error="Unbalanced.*observed on this line.*bb,2")
-cat('"dd",3\n',file=f,append=TRUE)
-test(1011, fread(f), error="Unbalanced.*observed on this line.*bb,2")
-cat('A,B\n"aa",1\n"bb",2\n"cc",3\n', file=f)
+test(1010, fread(f), error="A field starting with quote.*doesn't end with a quote on this line.*bb,2")
+cat('"dd",3\n',file=f,append=TRUE)  # testing file lock after error
+test(1011, fread(f), error="A field starting with quote.*doesn't end with a quote on this line.*bb,2")
+cat('A,B\n"aa",1\n"bb",2\n"cc",3\n', file=f)   # testing overwrite
 test(1012, fread(f), data.table(A=c("aa","bb","cc"),B=1:3))
-unlink(f)
+unlink(f)  # testing file can be removed after error
 
 # integer64 control to fread
 test(1013, fread("A,B\n123,123\n", integer64="integer"), error="integer64='%s' which isn't 'integer64'|'double'|'numeric'|'character'")
@@ -3802,6 +3802,15 @@ test(1212, DT[,sum(B),by=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,Inf,1,2,3
 test(1213, DT[,sum(B),keyby=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,1,2,3,Inf),V1=INT(20,17,7,13,14,7),key="g"))
 # test(1214, DT[.(-200.0),roll=TRUE]$B, 3L)  # TO DO: roll to -Inf.  Also remove -Inf and test rolling to NaN and NA
 
+# that fread reads quotes in the middle of fields ok, #2694
+test(1215,
+   fread('N_ID VISIT_DATE REQ_URL REQType\n175931 2013-03-08T23:40:30 http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU 1'),
+   data.table(N_ID=175931L, VISIT_DATE="2013-03-08T23:40:30", REQ_URL='http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU', REQType=1L)
+)
+test(1216, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n'),
+           data.table(A=c('1.2','fo"o'), B=c('Foo"Bar','bar'),C=c('a"b"c"d','b,az"')))
+test(1217, fread('"One,Two","Three",Four\n12,3,4\n56,7,8\n'),  # quoted column names including the separator
+           data.table("One,Two"=c(12L,56L),Three=c(3L,7L),Four=c(4L,8L)))
 
 
 ##########################

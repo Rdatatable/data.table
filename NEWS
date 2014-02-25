@@ -59,6 +59,13 @@ NEW FEATURES
      
   o  fread now detects T,F,True,False,TRUE and FALSE as type logical, consistent with read.csv.
   
+  o  fread now accepts quotes (both ' and ") in the middle of fields, whether the field starts with "
+     or not, rather than the 'unbalanced quotes' error, #2694. Thanks to baidao for reporting. It was
+     known and documented at the top of ?fread (text now removed).
+     If a field starts with " it must end with ", necessary to include the field separator in the field.
+     Embedded quotes can be in column names too.
+     Newlines (\n) still can't be in fields or column names, yet.
+     
   o  fread("1.46761e-313\n") detected the ERANGE error, so read as character. It now reads as
      numeric but with a detailed warning. Thanks to Heather Turner for the detailed report, #4879.
 	 
