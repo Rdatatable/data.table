@@ -355,8 +355,8 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     return(newv);
 }
 
-
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64)   // can't be called fread because that's already a C function (from which the R level fread took its name)
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP showProgressArg)
+// can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP thiscol, ans, thisstr;
     R_len_t i, resi, j, resj, k, protecti=0, nrow=0, ncol=0, nline, flines;
@@ -366,6 +366,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
     ERANGEwarning = FALSE;  // just while detecting types, then TRUE before the read data loop
+    if (!isInteger(showProgressArg) || LENGTH(showProgressArg)!=1 || (INTEGER(showProgressArg)[0]!=0 && INTEGER(showProgressArg)[0]!=1))
+        error("showProgress must be 0 or 1, currently");
+    int showProgress = INTEGER(showProgressArg)[0];
     
     errormsg[0] = '\0';  // reset globals.  I know, I know, see comments above where EXIT() is defined. Better ideas?
     fnam = NULL;
@@ -416,6 +419,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (fstat(fd,&stat_buf) == -1) {close(fd); error("Opened file ok but couldn't obtain file size: %s", fnam);}
         filesize = stat_buf.st_size;
         if (filesize<=0) {close(fd); error("File is empty: %s", fnam);}
+        if (verbose) Rprintf("File opened, filesize is %.3f GB\n", 1.0*filesize/(1024*1024*1024));
 #ifdef MAP_POPULATE
         mmp = (const char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);    // TO DO?: MAP_HUGETLB
 #else
@@ -444,6 +448,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (filesize<=0) { CloseHandle(hFile); error("File is empty: %s", fnam); }
         hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL); // filesize+1 not allowed here, unlike mmap where +1 is zero'd
         if (hMap==NULL) { CloseHandle(hFile); error("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
+        if (verbose) Rprintf("File opened, filesize is %.3 GB\n", 1.0*filesize/(1024*1024*1024));
         mmp = (const char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,filesize);
         if (mmp == NULL) {
             CloseHandle(hMap);
@@ -458,14 +463,16 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 error("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. Size of pointer is %d on this machine. Probably failing because this is neither a 32bit or 64bit machine. Please report to datatable-help.", filesize/1024^2, sizeof(char *));
         }
 #ifndef WIN32
-        if (madvise((char *)mmp, filesize+1, MADV_SEQUENTIAL | MADV_WILLNEED) == -1) warning("Mapped file ok but madvise failed");
+        // if (madvise((char *)mmp, filesize+1, MADV_SEQUENTIAL | MADV_WILLNEED) == -1) warning("Mapped file ok but madvise failed");
+        // TO DO: commented this out for the case of nrow=100, more testing to do.
 #endif
         if (EOF > -1) error("Internal error. EOF is not -1 or less\n");
         if (mmp[filesize-1] < 0) error("mmap'd region has EOF at the end");
         eof = mmp+filesize;  // byte after last byte of file.  Never dereference eof as it's not mapped.
+        if (verbose) Rprintf("File is opened and mapped ok\n");
     }
     clock_t tMap = clock();
-    // File is now open and mapped ok, use EXIT() wrapper instead of error() from now on. To close it on Windows on error.
+    // From now use EXIT() wrapper instead of error(), to close it on Windows so as not to lock the file after an error.
     
     // ********************************************************************************************
     //   Auto detect eol, first eol where there are two (i.e. CRLF)
@@ -865,66 +872,88 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     tCoerce = tCoerceAlloc = 0;
     ch = pos;   // back to start of first data row
     ERANGEwarning = TRUE;
-    for (i=0; i<nrow; i++) {
-        //Rprintf("Row %d : %.10s\n", i+1, ch);
-        if (*ch==eol) {
-            while (ch<eof && isspace(*ch)) ch++;
-            if (ch<eof) {
-                ch2 = ch;
-                while (ch2<eof && *ch2!=eol) ch2++;
-                if (isString(skip))
-                    warning("Stopped reading at empty line, %d lines after the 'skip' string was found, but text exists afterwards (discarded): %.*s", i, ch2-ch+1, ch);
-                else 
-                    warning("Stopped reading at empty line %d, but text exists afterwards (discarded): %.*s", nline+i, ch2-ch+1, ch);
-            }
-            break;
+    clock_t nexttime = t0+2*CLOCKS_PER_SEC;  // start printing % done after a few seconds. If doesn't appear then you know mmap is taking a while.
+                                             // We don't want to be bothered by progress meter for quick tasks
+    int batchend; Rboolean hasPrinted=FALSE, whileBreak=FALSE;
+    i = 0;
+    while (i<nrow) {
+        if (showProgress==1 && clock()>nexttime) {
+            Rprintf("\rRead %.1f%% of %d rows", (100.0*i)/nrow, nrow);   // prints straight away if the mmap above took a while, is the idea
+            R_FlushConsole();    // for Windows
+            nexttime = clock()+CLOCKS_PER_SEC;
+            hasPrinted = TRUE;
         }
-        for (j=0,resj=0; j<ncol; resj+=(type[j]!=SXP_NULL),j++) {
-            //Rprintf("Field %d: '%.10s' as type %d\n", j+1, ch, type[j]);
-            thiscol = VECTOR_ELT(ans, resj);
-            switch (type[j]) {
-            case SXP_LGL:
-                if (Strtob()) { LOGICAL(thiscol)[i] = u.b; break; }
-                SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_INT, i, j));
-            case SXP_INT:
-                ch2=ch; u.l=NA_INTEGER;
-                if (Strtoll() && INT_MIN<=u.l && u.l<=INT_MAX) {  // relies on INT_MIN==NA.INTEGER, checked earlier
-                    INTEGER(thiscol)[i] = (int)u.l;
-                    break;   //  Most common case. Done with this field. Strtoll already moved ch for us to sit on next sep or eol.
+        R_CheckUserInterrupt();
+        batchend = i+10000;    // batched into 10k rows to save (expensive) calls to clock()
+        if (batchend>nrow) batchend=nrow;
+        for (; i<batchend; i++) {
+            //Rprintf("Row %d : %.10s\n", i+1, ch);
+            if (*ch==eol) {
+                while (ch<eof && isspace(*ch)) ch++;
+                if (ch<eof) {
+                    ch2 = ch;
+                    while (ch2<eof && *ch2!=eol) ch2++;
+                    if (isString(skip))
+                        warning("Stopped reading at empty line, %d lines after the 'skip' string was found, but text exists afterwards (discarded): %.*s", i, ch2-ch+1, ch);
+                    else 
+                        warning("Stopped reading at empty line %d of file, but text exists afterwards (discarded): %.*s", nline+i, ch2-ch+1, ch);
                 }
-                ch=ch2;  // moves ch back ready for type bump and reread of this field (an INT64 would have been read fine by Strtoll)
-                SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j], readInt64As, i, j));
-                type[j] = readInt64As;
-                if (readInt64As == SXP_REAL) goto case_SXP_REAL;  // a goto here seems readable and reasonable to me
-                if (readInt64As == SXP_STR) goto case_SXP_STR;
-            case SXP_INT64:
-                u.d = NA_REAL;
-                if (Strtoll()) { REAL(thiscol)[i] = u.d; break; }
-                SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_REAL, i, j));
-                // A bump from INT to STR will bump through INT64 and then REAL before STR, coercing each time. Deliberately done this way. It's
-                // a small and very rare cost (see comments in coerceVectorSoFar), for better speed 99% of the time (saving deep branches).
-                // TO DO: avoid coercing several times and bump straight to the new type once, somehow.
-            case SXP_REAL: case_SXP_REAL:
-                if (Strtod()) { REAL(thiscol)[i] = u.d; break; }
-                SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
-            case SXP_STR: case SXP_NULL: case_SXP_STR:
-                ch2=ch;
-                if (*ch=='\"') { // protected, now look for the next [^\]"[,|eol]
-                    while(++ch2<eof && *ch2!=eol && !(*ch2==sep && *(ch2-1)=='\"' && (ch2<mmp+2 || *(ch2-2)!='\\')));
-                    if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLen(ch+1, (int)(ch2-ch-2))); // else skip field
-                } else {           // unprotected, look for next next [,|eol]
-                    while(ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;
-                    if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLen(ch, (int)(ch2-ch)));
-                }
-                ch = ch2;
+                whileBreak = TRUE;  // break the enclosing while too, without changing i
+                break;              // break this for
             }
-            if (ch<eof && *ch==sep && j<ncol-1) {ch++; continue;}  // most common case first, done, next field
-            if (j<ncol-1) {sprintf(errormsg, "Expected sep ('%c') but '%c' ends field %d on line %d when reading data: %.*s", sep, *ch, j+1, i+nline, (int)(ch-pos+1), pos);EXIT();}
+            for (j=0,resj=0; j<ncol; resj+=(type[j]!=SXP_NULL),j++) {
+                //Rprintf("Field %d: '%.10s' as type %d\n", j+1, ch, type[j]);
+                thiscol = VECTOR_ELT(ans, resj);
+                switch (type[j]) {
+                case SXP_LGL:
+                    if (Strtob()) { LOGICAL(thiscol)[i] = u.b; break; }
+                    SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_INT, i, j));
+                case SXP_INT:
+                    ch2=ch; u.l=NA_INTEGER;
+                    if (Strtoll() && INT_MIN<=u.l && u.l<=INT_MAX) {  // relies on INT_MIN==NA.INTEGER, checked earlier
+                        INTEGER(thiscol)[i] = (int)u.l;
+                        break;   //  Most common case. Done with this field. Strtoll already moved ch for us to sit on next sep or eol.
+                    }
+                    ch=ch2;  // moves ch back ready for type bump and reread of this field (an INT64 would have been read fine by Strtoll)
+                    SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j], readInt64As, i, j));
+                    type[j] = readInt64As;
+                    if (readInt64As == SXP_REAL) goto case_SXP_REAL;  // a goto here seems readable and reasonable to me
+                    if (readInt64As == SXP_STR) goto case_SXP_STR;
+                case SXP_INT64:
+                    u.d = NA_REAL;
+                    if (Strtoll()) { REAL(thiscol)[i] = u.d; break; }
+                    SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_REAL, i, j));
+                    // A bump from INT to STR will bump through INT64 and then REAL before STR, coercing each time. Deliberately done this way. It's
+                    // a small and very rare cost (see comments in coerceVectorSoFar), for better speed 99% of the time (saving deep branches).
+                    // TO DO: avoid coercing several times and bump straight to the new type once, somehow.
+                case SXP_REAL: case_SXP_REAL:
+                    if (Strtod()) { REAL(thiscol)[i] = u.d; break; }
+                    SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
+                case SXP_STR: case SXP_NULL: case_SXP_STR:
+                    ch2=ch;
+                    if (*ch=='\"') { // protected, now look for the next [^\]"[,|eol]
+                        while(++ch2<eof && *ch2!=eol && !(*ch2==sep && *(ch2-1)=='\"' && (ch2<mmp+2 || *(ch2-2)!='\\')));
+                        if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLen(ch+1, (int)(ch2-ch-2))); // else skip field
+                    } else {           // unprotected, look for next next [,|eol]
+                        while(ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;
+                        if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLen(ch, (int)(ch2-ch)));
+                    }
+                    ch = ch2;
+                }
+                if (ch<eof && *ch==sep && j<ncol-1) {ch++; continue;}  // most common case first, done, next field
+                if (j<ncol-1) {sprintf(errormsg, "Expected sep ('%c') but '%c' ends field %d on line %d when reading data: %.*s", sep, *ch, j+1, i+nline, (int)(ch-pos+1), pos);EXIT();}
+            }
+            //Rprintf("At end of line with i=%d and ch='%.10s'\n", i, ch);
+            while (ch<eof && *ch!=eol) ch++; // discard after end of line, but before \n. TO DO: warn about uncommented text here
+            if (ch<eof && *ch==eol) ch+=eolLen;
+            pos = ch;  // start of line position only needed to include the whole line in any error message
         }
-        //Rprintf("At end of line with i=%d and ch='%.10s'\n", i, ch);
-        while (ch<eof && *ch!=eol) ch++; // discard after end of line, but before \n. TO DO: warn about uncommented text here
-        if (ch<eof && *ch==eol) ch+=eolLen;
-        pos = ch;  // start of line position only needed to include the whole line in any error message
+        if (whileBreak) break;
+    }
+    if (showProgress==1 && hasPrinted) {
+        j = 1+(clock()-t0)/CLOCKS_PER_SEC;
+        Rprintf("\rRead %d rows and %d (of %d) columns from %.3f GB file in %02d:%02d:%02d\n", i, ncol-numNULL, ncol, 1.0*filesize/(1024*1024*1024), j/3600, (j%3600)/60, j%60);
+        R_FlushConsole();
     }
     clock_t tRead = clock();
     nrow = i;  // A blank line in the middle will have caused reading to stop earlier than expected.

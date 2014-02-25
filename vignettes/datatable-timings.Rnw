@@ -55,7 +55,8 @@ DF = data.frame(x=rep(LETTERS,each=26*n),
                 y=rep(letters,each=n),
                 v=rnorm(n*26^2),
                 stringsAsFactors=FALSE)
-DT = data.table(DF,key="x,y")
+DT = as.data.table(DF)
+system.time(setkey(DT,x,y))  # one-off cost, usually
 tables()
 
 tt=system.time(ans1 <- DF[DF$x=="R" & DF$y=="h",]); tt

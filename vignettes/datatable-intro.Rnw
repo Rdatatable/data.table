@@ -178,8 +178,8 @@ dim(ans1)
 Now convert to a \code{data.table} and extract the same group:
 
 <<>>=
-DT = data.table(DF)
-setkey(DT,x,y)
+DT = as.data.table(DF)       # but normally use fread() or data.table() directly, originally 
+system.time(setkey(DT,x,y))  # one-off cost, usually
 @
 <<print=TRUE>>=
 ss=system.time(ans2 <- DT[J("R","h")])   # binary search

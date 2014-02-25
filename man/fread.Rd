@@ -12,7 +12,8 @@
 fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA",
 stringsAsFactors=FALSE, verbose=FALSE, autostart=30L, skip=-1L, select=NULL,
 drop=NULL, colClasses=NULL,
-integer64=getOption("datatable.integer64")    # default: "integer64"
+integer64=getOption("datatable.integer64"),         # default: "integer64"
+showProgress=getOption("datatable.showProgress")    # default: TRUE
 )
 }
 \arguments{
@@ -30,6 +31,7 @@ integer64=getOption("datatable.integer64")    # default: "integer64"
   \item{drop}{ Vector of column names or numbers to drop, keep the rest. }
   \item{colClasses}{ A character vector of classes (named or unnamed), as read.csv. Or a named list of vectors of column names or numbers, see examples. colClasses in fread is intended for rare overrides, not for routine use. fread will only promote a column to a higher type if colClasses requests it. It won't downgrade a column to a lower type since NAs would result. You have to coerce such columns afterwards yourself, if you really require data loss. }
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{base::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
+  \item{showProgress}{ TRUE displays progress on the console using \code{\\r}. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
 }
 \details{
 
@@ -46,9 +48,6 @@ The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \c
 All known line endings are detected automatically: \code{\\n} (*NIX including Mac), \code{\\r\\n} (Windows CRLF), \code{\\r} (old Mac) and \code{\\n\\r} (just in case). There is no need to convert input files first. \code{fread} running on any architecture will read a file from any architecture. Both \code{\\r} and \code{\\n} may be embedded in character strings (including column names) provided the field is quoted.
 
 If an empty line is encountered then reading stops there, with warning if any text exists after the empty line such as a footer. The first line of any text discarded is included in the warning message.
-
-Furthermore, these few features are for fostering friendliness. Facilitated by a fair farthingsworth of (far from flaky, flawed
-or fatuous) finagling. Finally, it's frustrating to forget but fear not fine friends, fortunately the (free) fread function's first facet is f; for fast, friendly, file or finagle.
 
 }
 \value{
