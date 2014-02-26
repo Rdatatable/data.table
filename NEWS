@@ -14,14 +14,13 @@ This NEWS file summarises the main changes.
 
 BUG FIXES
 
-  o  New and very welcome ASAN and UBSAN checks on CRAN detected integer64 overflow
-     in test 899 (reading of integers longer than apx 18 digits).
+  o  New and very welcome ASAN and UBSAN checks on CRAN detected :
+     * integer64 overflow in test 899 reading integers longer than apx 18 digits
          fread("Col1\n12345678901234567890")   # works as before, bumped to character
-         
-NOTES
-
-  o  We have bumped the version so as to make absolutely sure that two slightly different
-     versions of v1.9.0 can never be in use. We know from experience this can happen. 
+     * a memory fault in rbindlist when binding ordered factors, and, some items in
+       the list of data.table/list are empty or NULL.
+     In both cases we had anticipated and added tests for these cases, which is why ASAN
+     and UBSAN were able to detect a problem for us.
      
 
         **********************************************

@@ -141,6 +141,7 @@ static void HashTableSetup(HashData *d, RLEN n)
     d->equal = sequal;
     MKsetup(d, n);
     d->HashTable = malloc(sizeof(struct llist *) * (d->M));
+    if (d->HashTable == NULL) error("malloc failed in rbindlist.c. This part of the code will be reworked.");
     for (RLEN i = 0; i < d->M; i++) d->HashTable[i] = NULL;
 }
 
@@ -209,6 +210,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
             if (data.nmax-- < 0) error("hash table is full");
 
             pl = malloc(sizeof(struct llist));
+            if (pl == NULL) error("malloc failed in rbindlist.c. This part of the code will be reworked.");
             pl->next = NULL;
             pl->i = i;
             pl->j = j;
@@ -225,6 +227,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
     R_len_t counter = 0;
     if (*factorType == 2) {
         int * locs = malloc(sizeof(int) * len);
+        if (locs == NULL) error("malloc failed in rbindlist.c. This part of the code will be reworked.");
         for (i = 0; i < len; ++i) locs[i] = 0;
 
         R_len_t k;
@@ -332,10 +335,10 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
 
 SEXP rbindlist(SEXP l)
 {
-    R_len_t i,j,jj,r, nrow=0, first=-1, ansloc, ncol=0, thislen, lcount=0;
+    R_len_t i,j,jj,r, nrow=0, first=-1, ansloc, ncol=0, thislen, lcount=0, resi;
     SEXP ans, li, lf=R_NilValue, thiscol, target, levels;
     Rboolean coerced=FALSE;
-    SEXPTYPE * maxtype = NULL;     // TODO: should memory allocation be done differently from malloc/free? (also in a few places above and below)
+    SEXPTYPE * maxtype = NULL;
     int * isColFactor = NULL;      // for each column this is 0 if not a factor, 1 if a factor, and 2 if an ordered factor
     Rboolean * isRowOrdered = NULL;
     SEXPTYPE type;
@@ -356,8 +359,8 @@ SEXP rbindlist(SEXP l)
             ncol = length(lf);
 
             // initialize the max types - will possibly increment later
-            maxtype = malloc(ncol * sizeof(SEXPTYPE));
-            isColFactor = malloc(ncol * sizeof(int));
+            maxtype = Calloc(ncol, SEXPTYPE);
+            isColFactor = Calloc(ncol, int);
             for (j = 0; j < ncol; ++j) {
                 thiscol = VECTOR_ELT(li, j);
                 if (isFactor(thiscol)) {
@@ -407,7 +410,7 @@ SEXP rbindlist(SEXP l)
     // these two statements are moved here from the above for-loop. Because 'lcount' will be known only after the for-loop above.
     // http://stackoverflow.com/questions/21591433/merging-really-not-that-large-data-tables-immediately-results-in-r-being-killed
     factorLevels = PROTECT(allocVector(VECSXP, lcount));
-    isRowOrdered = malloc(lcount * sizeof(Rboolean));
+    isRowOrdered = Calloc(lcount, Rboolean);
 
     PROTECT(ans = allocVector(VECSXP, ncol));
     setAttrib(ans, R_NamesSymbol, getAttrib(lf, R_NamesSymbol));
@@ -419,7 +422,8 @@ SEXP rbindlist(SEXP l)
 
         SET_VECTOR_ELT(ans, j, target);
         ansloc = 0; 
-        jj=0; // to increment factorLevels 
+        jj=0; // to increment factorLevels
+        resi = -1; 
         for (i=first; i<length(l); i++) {
             li = VECTOR_ELT(l,i);
             if (!length(li)) continue;  // majority of time though, each item of l is populated
@@ -427,7 +431,7 @@ SEXP rbindlist(SEXP l)
             if (!thislen) continue;
             thiscol = VECTOR_ELT(li,j);
             if (thislen != length(thiscol)) error("Column %d of item %d is length %d, inconsistent with first column of that item which is length %d. rbindlist doesn't recycle as it already expects each item to be a uniform list, data.frame or data.table", j+1, i+1, length(thiscol), thislen);
-            
+            resi++;  // after the first, there might be NULL or empty which are skipped, resi increments up until lcount
             if (TYPEOF(thiscol) != TYPEOF(target) && !isFactor(thiscol)) {
                 thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
                 coerced = TRUE;
@@ -436,7 +440,7 @@ SEXP rbindlist(SEXP l)
             }
             switch(TYPEOF(target)) {
             case STRSXP :
-                isRowOrdered[i] = FALSE;
+                isRowOrdered[resi] = FALSE;
                 if (isFactor(thiscol)) {
                     levels = getAttrib(thiscol, R_LevelsSymbol);
                     for (r=0; r<thislen; r++)
@@ -448,7 +452,7 @@ SEXP rbindlist(SEXP l)
                     // add levels to factorLevels
                     // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
                     SET_VECTOR_ELT(factorLevels, jj, levels); jj++;
-                    if (isOrdered(thiscol)) isRowOrdered[i] = TRUE;
+                    if (isOrdered(thiscol)) isRowOrdered[resi] = TRUE;
                 } else {
                     if (TYPEOF(thiscol) != STRSXP) error("Internal logical error in rbindlist.c (not STRSXP), please report to datatable-help.");
                     for (r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
@@ -497,9 +501,9 @@ SEXP rbindlist(SEXP l)
     if (factorLevels != R_NilValue) UNPROTECT_PTR(factorLevels);
     UNPROTECT(1);  // ans
 
-    free(maxtype);
-    free(isColFactor);
-    free(isRowOrdered);
+    Free(maxtype);
+    Free(isColFactor);
+    Free(isRowOrdered);
 
     return(ans);
 }
