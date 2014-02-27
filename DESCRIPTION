@@ -1,5 +1,5 @@
 Package: data.table
-Version: 1.9.1
+Version: 1.9.3
 Title: Extension of data.frame
 Author: M Dowle, T Short, S Lianoglou, A Srinivasan with contributions from R Saporta, E Antonyan
 Maintainer: Matt Dowle <mdowle@mdowle.plus.com>
