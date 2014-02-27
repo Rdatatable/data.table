@@ -3,29 +3,12 @@ The ChangeLog for data.table is the SVN commit log itself :
     $ svn log svn://svn.r-forge.r-project.org/svnroot/datatable
 
 This NEWS file summarises the main changes.
-
-        **********************************************
-        **                                          **
-        **   CHANGES IN DATA.TABLE VERSION 1.9.1    **
-        **                                          **
-        **              in development              **
-        **                                          **
-        **********************************************
-
-BUG FIXES
-
-  o  New and very welcome ASAN and UBSAN checks on CRAN detected :
-     * integer64 overflow in test 899 reading integers longer than apx 18 digits
-         fread("Col1\n12345678901234567890")   # works as before, bumped to character
-     * a memory fault in rbindlist when binding ordered factors, and, some items in
-       the list of data.table/list are empty or NULL.
-     In both cases we had anticipated and added tests for these cases, which is why ASAN
-     and UBSAN were able to detect a problem for us.
      
-
         **********************************************
         **                                          **
-        **   CHANGES IN DATA.TABLE VERSION 1.9.0    **
+        **   CHANGES IN DATA.TABLE VERSION 1.9.2    **
+        **                                          **
+        **          On CRAN 27 Feb 2014             **
         **                                          **
         **********************************************
 
@@ -116,9 +99,6 @@ NEW FEATURES
   o	 set() is now able to add new columns by reference, #2077.
          DT[3:5, newCol := 5L]
          set(DT, i=3:5, j="newCol", 5L)   # same
-         
-  o  DT[...] gains 'key' argument. This is for convenience to partially address FR#4675. It may
-     change in future.
 
   o  eval will now be evaluated anywhere in a j-expression as long as it has just one argument, #4677.
      Will still need to use .SD as environment in complex cases. Also fixes bug here :
@@ -131,7 +111,8 @@ NEW FEATURES
      R defaults, with the addition of factors being the highest type. Also fixes #4981 for the
      specific case of NA's.
 
-  o  cbind(x,y,z,...) now creates a data.table if x isn't a data.table but y or z is.
+  o  cbind(x,y,z,...) now creates a data.table if x isn't a data.table but y or z is, unless x is a
+     data.frame in which case a data.frame is returned (use data.table(DF,DT) instead for that).
   
   o  cbind(x,y,z,...) and data.table(x,y,z,...) now retain keys of any data.table inputs directly (no sort
      needed, for speed). The result's key is c(key(x), key(y), key(z), ...), provided, that the data.table
@@ -366,9 +347,6 @@ BUG FIXES
   o  Fixed bug #5114 where modifying columns in particular cases resulted in ".SD is locked" error. Thanks to GSee for 
      the bug report.
 
-  o  Fixed an issue with `set()` and `:=` not being able to add columns by reference when the object is of class that 
-     inherits from data.table (ex: class = c("myclass", "data.table", "data.frame")). Thanks to GSee for #5115.
-
   o  Implementing FR #4979 lead to a bug when grouping with .SDcols, where .SDcols argument was variable name. This bug #5190 
      is now fixed.
 
@@ -419,8 +397,22 @@ THANKS FOR BETA TESTING TO :
      
   o  Minkoo Seo for a new test on rbindlist, #4648.
   
+  o  Gsee for reporting that set() and := could no longer add columns by reference to an object that 
+     inherits from data.table; e.g., class = c("myclass", "data.table", "data.frame")), #5115.
+  
   o  Clayton Stanley for reporting #5307: aggregating logical types could give wrong results.
        http://stackoverflow.com/questions/21437546/data-table-1-8-11-and-aggregation-issues
+
+  o  New and very welcome ASAN and UBSAN checks on CRAN detected :
+     * integer64 overflow in test 899 reading integers longer than apx 18 digits
+         fread("Col1\n12345678901234567890")   # works as before, bumped to character
+     * a memory fault in rbindlist when binding ordered factors, and, some items in
+       the list of data.table/list are empty or NULL.
+     In both cases we had anticipated and added tests for these cases, which is why ASAN
+     and UBSAN were able to detect a problem for us.
+     
+  o  Ricardo Saporta for finding a crash when i is empty and a join column is
+     character, #5387. Test added.
 
 NOTES
 
@@ -444,7 +436,7 @@ NOTES
         "'rolltolast' has been marked 'deprecated' in ?data.table since v1.8.8 on CRAN 3 Mar 2013, see NEWS. Please
          change to the more flexible 'rollends' instead. 'rolltolast' will be removed in the next version."
 
-  o  There are now 1,217 raw tests, as reported by test.data.table().
+  o  There are now 1,220 raw tests, as reported by test.data.table().
 
   o  data.table's dependency has been moved forward from R 2.12.0 to R 2.14.0, now over 2
      years old (Oct 2011). As usual before release to CRAN, we ensure data.table passes

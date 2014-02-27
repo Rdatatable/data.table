@@ -59,10 +59,10 @@ dim.data.table <- function(x) {
 setPackageName("data.table",.global)
 .global$print = TRUE
 .global$depthtrigger =
-    if (exists(".global",.GlobalEnv) || getRversion() < "2.14.0") {
-        9L # this is either development, or pre 2.14, where package isn't compiled
+    if (exists(".global",.GlobalEnv)) {
+        9L # this is development
     } else {
-        3L # normal value when package is loaded in 2.14+ (where functions are compiled in namespace)
+        3L # normal value when package is loaded in 2.14+ (where functions are compiled in namespace). data.table depends on R >= 2.14.0
     }
 
 .SD = .N = .I = .GRP = .BY = NULL
@@ -169,10 +169,10 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     # as.data.table which is faster; speed could be better.  Revisit how many copies are taken in for example data.table(DT1,DT2) which
     # cbind directs to.  And the nested loops for recycling lend themselves to being C level.
     
-    x <- list(...)   # doesn't copy named inputs as from R > 3.0.2 (a very welcome change)
-    if (getRversion() > "3.0.2") .Call(CcopyNamedInList,x)   # But in this case, we need to copy named inputs. See test 548.2.
+    x <- list(...)   # doesn't copy named inputs as from R >= 3.1 (a very welcome change)
+    if (!.R.listCopiesNamed) .Call(CcopyNamedInList,x)   # to maintain the old behaviour going forwards, for now. See test 548.2.
     # **TO DO** Something strange with NAMED on components of `...`. To investigate. Or just port data.table() to C. This is why
-    # it's switched on R version, because extra copies are introduced would be introduced in R <= 3.0.2, iiuc.
+    # it's switched, because extra copies would be introduced in R <= 3.1, iiuc.
     
     if (identical(x, list(NULL))) return( null.data.table() )
     tt <- as.list(substitute(list(...)))[-1L]  # Intention here is that data.table(X,Y) will automatically put X and Y as the column names.  For longer expressions, name the arguments to data.table(). But in a call to [.data.table, wrap in list() e.g. DT[,list(a=mean(v),b=foobarzoo(zang))] will get the col names
@@ -303,7 +303,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     x
 }
 
-"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, key, rolltolast=FALSE)
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, rolltolast=FALSE)
 {
     # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
     # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -342,10 +342,19 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
 
     # NOTE: make sure that key() is not used before this
-    if (!missing(key)) {
-        setkeyv(x, key)
-    }
-    key = match.fun('key')
+    #if (!missing(key)) {
+    #    setkeyv(x, key)
+    #}
+    #key = match.fun('key')
+    # Had to remove key argument for 1.9.2 on CRAN. It caused package 'gems' to fail with :
+    # > # transition probability
+    # > tr <- transitionProbabilities(cohort, times=seq(0,4,.1))
+    # Error in get(as.character(FUN), mode = "function", envir = envir) : 
+    #   object 'key' of mode 'function' was not found
+    # Calls: transitionProbabilities ... msmDataPrep -> [ -> [.data.table -> match.fun -> get
+    # Execution halted
+    # Would like to think a bit more about this key argument as well, before releasing it.
+
 
     if (missing(i) && missing(j)) {
         # ...[] == oops at console, forgot print(...)
@@ -1540,8 +1549,7 @@ tail.data.table = function(x, n=6, ...) {
         # search for one other .Call to assign in [.data.table to see how it differs
     }
     verbose=getOption("datatable.verbose")
-    if (getRversion() > "3.0.2") {
-        # [<- no longer copies via *tmp*, iiuc, but R still copies/shallow copies via different mechanism. So we now need to copy here.
+    if (!.R.subassignCopiesOthers) {   # From 3.1, DF[2,"b"] = 7 no longer copies DF$a, but the VECSXP is copied (i.e. a shallow copy).
         x = .Call(Cassign,copy(x),i,cols,newnames,value,verbose)
     } else {
         .Call(Cassign,x,i,cols,newnames,value,verbose)
@@ -1952,9 +1960,12 @@ setcolorder = function(x,neworder)
 
 set = function(x,i=NULL,j,value)  # low overhead, loopable
 {
-    vsub = substitute(value)  
-    if (!is.call(vsub) || vsub[[1]]!="list")    # protect NAMED of atomic value from .Call's NAMED=2 by wrapping with list()
-        value = eval(call("list",vsub), parent.frame())
+    if (is.atomic(value)) {
+        # protect NAMED of atomic value from .Call's NAMED=2 by wrapping with list()
+        l = vector("list",1)
+        .Call(Csetlistelt,l,1L,value)  # to avoid the copy by list() in R < 3.1
+        value = l
+    }
     .Call(Cassign,x,i,j,NULL,value,FALSE)   #  verbose=FALSE for speed to avoid getOption()  TO DO: somehow read getOption("datatable.verbose") from C level
     invisible(x)
 }
@@ -1990,7 +2001,7 @@ vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
 
 address = function(x) .Call(Caddress,x)
 
-":=" = function(...) stop(':= and `:=`(...) are defined for use in j, once only and in particular ways. See help(":="). Check is.data.table(DT) is TRUE.')
+":=" = function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
 
 setDT <- function(x, giveNames=TRUE) {
     giveNames <- as.logical(giveNames[1L])

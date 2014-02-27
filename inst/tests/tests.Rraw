@@ -151,6 +151,10 @@ if (!.devtesting) {
     uniqlengths = data.table:::uniqlengths
     setrev = data.table:::setrev
     setreordervec = data.table:::setreordervec
+    .R.listCopiesNamed = data.table:::.R.listCopiesNamed
+    .R.assignNamesCopiesAll = data.table:::.R.assignNamesCopiesAll
+    .R.subassignCopiesOthers = data.table:::.R.subassignCopiesOthers
+    .R.subassignCopiesVecsxp = data.table:::.R.subassignCopiesVecsxp
 }
 
 
@@ -1250,7 +1254,12 @@ test(413.3, key(cbind(colA=10:13, DT)), "x")   # data.table() dispatched even th
 test(413.4, key(cbind(colA=10:17, DT)), NULL)  # DT recycled so key is dropped
 test(413.5, key(cbind(colA=1, DT)), "x")       # DT not recycled so key retained
 test(414.1, key(cbind(DT,as.data.frame(DT1))), "x")
-test(414.2, key(cbind(as.data.frame(DT),DT1)), "z")
+
+test(414.2, cbind(as.data.frame(DT),DT1), data.frame(DT,DT1))
+# cbind(DF,...) should return a data.frame for consistency with base. Package treemap (at least) depends
+# on this in the return() in treepalette().
+# Use data.table(DF,DT) if a data.table result is required.
+ 
 
 # Test friendly error when := is used in wrong place
 test(415, x:=1, error="defined for use in j, once only and in particular ways")
@@ -1555,7 +1564,7 @@ test(1096.2, DT1, DT2[, list(x,y,fac, dot1)])
 DT2[, dot2 := NULL][5:9, `:=`(bla1 = 0L, x = 3L, bla2 = 2L)]
 set(DT1, i=5:9, j=c("bla1", "x", "bla2"), value=list(0L, 3L, 2L))
 test(1096.3, DT1, DT2) # more testing with many columns including existing columns
-test(1096.4, set(DT1, i=NULL, j=7L, value=5L), error="Item 1 of j is 7 which is outside range. Cannot add columns without a name.")
+test(1096.4, set(DT1, i=NULL, j=7L, value=5L), error="Item 1 of column numbers in j is 7 which is outside range.*1.*6.*Use column names instead in j to add new columns.")
 
 # Test that data.frame incompability is fixed, came to light in Feb 2012
 DT = data.table(name=c('a','b','c'), value=1:3)
@@ -1755,9 +1764,10 @@ test(604, system.time(for (i in 1:1000) nrow(DT))["user.self"] < 0.5)
 test(605, system.time(for (i in 1:1000) ncol(DT))["user.self"] < 0.5)
 test(606, system.time(for (i in 1:1000) length(DT[[1L]]))["user.self"] < 0.5) # much faster than nrow, TO DO: replace internally
 }
-DT = as.data.table(matrix(1L,nrow=100000,ncol=100))
-test(607, system.time(for (i in 1:1000) DT[i,V1:=i])["user.self"] < 10)  # 10 to be very wide margin for CRAN
-test(608, DT[1:1000,V1], 1:1000)
+# TO DO: move to stress test script off CRAN ... 
+# DT = as.data.table(matrix(1L,nrow=100000,ncol=100))
+# test(607, system.time(for (i in 1:1000) DT[i,V1:=i])["user.self"] < 10)  # 10 to be very wide margin for CRAN
+# test(608, DT[1:1000,V1], 1:1000)
 
 # Crash bug of chorder(character()), #2026
 test(609, chorder(character()), base::order(character()))
@@ -2351,9 +2361,9 @@ if ("package:xts" %in% search()) {  # e.g. when run via R CMD check
 l = list(data.table(a=1:3), data.table(b=4:6))
 test(843, l[[2L]][,c:=7:9], data.table(b=4:6,c=7:9))
 test(844, l, list(data.table(a=1:3), data.table(b=4:6,c=7:9)))
-names(l) = c("foo","bar")   # R > 3.0.2 no longer copies all the contents, yay
+names(l) = c("foo","bar")   # R >= 3.1 no longer copies all the contents, yay
 test(845, l[["foo"]][2,d:=4], data.table(a=1:3,d=c(NA,4L,NA)),
-    warning= if (getRversion()>"3.0.2") NULL else "Invalid .internal.selfref detected and fixed")
+    warning= if (!.R.assignNamesCopiesAll) NULL else "Invalid .internal.selfref detected and fixed")
 l = list(data.table(a=1:3), data.table(b=4:6))
 setattr(l,"names",c("foo","bar"))
 test(846, l[["foo"]][2,d:=4], data.table(a=1:3,d=c(NA,4,NA)))
@@ -2372,8 +2382,8 @@ options(datatable.alloccol=old)
 DT1 = data.table(a=1:3, b=4:6)
 DT2 = data.table(c=7:9)
 l = list(DT1, DT2)
-if (getRversion() > "3.0.2") {
-    # list() no longer copies NAMED inputs (a very welcome change in Rdevel, r63767)
+if (!.R.listCopiesNamed) {
+    # From R>=3.1, list() no longer copies NAMED inputs (a very welcome change in Rdevel, r63767)
     test(853, address(DT1) == address(l[[1L]]))
     w = NULL
 } else {
@@ -2387,8 +2397,10 @@ test(855, l[[1]], data.table(a=1:3,b=4:6,d=10:12))
 DF = data.frame(foo=1:2,bar=3:4)
 setnames(DF,c("baz","qux"))
 test(856, DF, data.frame(baz=1:2,qux=3:4))
-test(857, set(DF,NULL,"quux",5:6), error="Input is not a data.table. set()")
-test(858, set(DF,NULL,3L,5:6), error="Input is not a data.table. set()")
+test(857.1, set(DF,NULL,"quux",5:6), error="set() on a data.frame is for changing existing columns, not adding new ones")
+test(857.2, set(DF,NULL,3L,5:6), error="set() on a data.frame is for changing existing columns, not adding new ones")
+test(858.1, set(DF,NULL,"qux",5:6), data.frame(baz=1:2, qux=5:6))
+test(858.2, set(DF,NULL,2L,7:8), data.frame(baz=1:2, qux=7:8))
 
 # Test DT[J(data.frame())], #2265
 DT = data.table(foo=c(1,2,3), bar=c(1.1,2.2,3.3), key="foo")
@@ -3156,11 +3168,11 @@ if (.Platform$OS.type == "unix") {
 }
 
 # test for "key" argument of [.data.table
-x1 <- data.table(a = c(1:5), b = c(5:1))
-x1[J(2), key = 'a']
-test(1106, key(x1) == 'a')
-x1[, a, key = NULL]
-test(1107, is.null(key(x1)))
+#x1 <- data.table(a = c(1:5), b = c(5:1))
+#x1[J(2), key = 'a']
+#test(1106, key(x1) == 'a')
+#x1[, a, key = NULL]
+#test(1107, is.null(key(x1)))
 
 # test that eval works inside expressions
 DT <- data.table(a = c(1:5))
@@ -3397,10 +3409,9 @@ ans = copy(DT)[, Time := as.numeric(Time)]
 setattr(DT, "class", c("myclass", class(DT)))
 setattr(ans, 'class', class(DT))
 test(1146.1, DT[, Time:= as.numeric(Time)], ans)
-# error on data.frame
 DF <- as.data.frame(DT)
-test(1146.2, set(DF, i=NULL, j=1L, value=seq_len(nrow(DF))), error="Input is not a data.table. set()")
-test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="Input is not a data.table. set()") # adding new column
+test(1146.2, {set(DF, i=NULL, j=1L, value=seq_len(nrow(DF)));setattr(DF,"reference",NULL);DF}, data.frame(Time=1:nrow(BOD), demand=BOD$demand))
+test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="set() on a data.frame is for changing existing columns, not adding new ones. Please use a data.table for that.")
 
 # Feature - implemented fast radix order for numeric types (both +ve and -ve numerics).
 # note that if "x" is already a list, then the values will be modified by reference!
@@ -3815,6 +3826,17 @@ test(1216, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n'),
            data.table(A=c('1.2','fo"o'), B=c('Foo"Bar','bar'),C=c('a"b"c"d','b,az"')))
 test(1217, fread('"One,Two","Three",Four\n12,3,4\n56,7,8\n'),  # quoted column names including the separator
            data.table("One,Two"=c(12L,56L),Three=c(3L,7L),Four=c(4L,8L)))
+
+# joining from empty character, #5387
+DT = data.table(a=1:3, b=c("a","b","c"), key="b")
+test(1218, DT[ DT[FALSE] ], data.table(b=character(),a=integer(),a.1=integer(),key="b"))
+
+# set() multiple columns
+DT = data.table(a=1:3,b=4:6,c=7:9)
+newVals = data.table(10:12,13:15)
+test(1219, set(DT,j=2:3,value=newVals), data.table(a=1:3,b=10:12,c=13:15))
+newVals = list(16:18,19:21)
+test(1220, set(DT,j=2:3,value=newVals), data.table(a=1:3,b=16:18,c=19:21))
 
 
 ##########################

@@ -90,7 +90,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
         if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
     }
     
-    bmerge_r(-1,xN,-1,iN,0,1,1);
+    if (iN) bmerge_r(-1,xN,-1,iN,0,1,1);
     
     UNPROTECT(protecti);
     return(R_NilValue);

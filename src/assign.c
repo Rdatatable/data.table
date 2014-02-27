@@ -229,24 +229,31 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     // rows : row numbers to assign
     R_len_t i, j, nrow, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum;
     SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key;
-    Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, clearkey=FALSE;
+    Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, clearkey=FALSE, isDataTable=FALSE;
     char *s1, *s2, *s3;
     int *buf, k=0;
     size_t size; // must be size_t otherwise overflow later in memcpy
     if (isNull(dt)) error("assign has been passed a NULL dt");
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
+    
     class = getAttrib(dt, R_ClassSymbol);
-    // Fix for #5115. check if there is a class "data.table" somewhere. Not sure if `is.data.table(x)` at R-level is better or this way of checking is - Matthew, any idea?
-    for (i=0; i<length(class); i++) {
+    if (isNull(class)) error("Input passed to assign has no class attribute. Must be a data.table or data.frame.");
+    // Check if there is a class "data.table" somewhere (#5115).
+    // We allow set() on data.frame too; e.g. package Causata uses set() on a data.frame in tests/testTransformationReplay.R
+    // := is only allowed on a data.table. However, the ":=" = stop(...) message in data.table.R will have already
+    // detected use on a data.frame before getting to this point.
+    for (i=0; i<length(class); i++) {   // There doesn't seem to be an R API interface to inherits(), but manually here isn't too bad.
         if (strcmp(CHAR(STRING_ELT(class, i)), "data.table") == 0) break;
     }
-    if (i >= length(class)) error("Input is not a data.table. set() (and `:=`) can add columns by reference only on a data.table. Check is.dat.table(DT) is TRUE.");
-
-    if (isNull(class)) error("dt passed to assign has no class attribute. Please report to datatable-help.");
-    // selfref might not be ok, but that's ok(!) For example, if user has done key<-, seen key<-'s
-    // warning, proceeds, then uses := to update an existing column, that's ok without error or warning as updating
-    // an existing column is not affected by over-allocation. If they add a new column using :=, however, then a
-    // warning at R level in [.data.table reallocs the data.table and then proceeds.
+    if (i<length(class))
+        isDataTable = TRUE;
+    else {
+        for (i=0; i<length(class); i++) {
+            if (strcmp(CHAR(STRING_ELT(class, i)), "data.frame") == 0) break;
+        }
+        if (i == length(class)) error("Input is not a data.table, data.frame or an object that inherits from either.");
+        isDataTable = FALSE;   // meaning data.frame from now on. Can use set() on existing columns but not add new ones because DF aren't over-allocated.
+    }
     oldncol = LENGTH(dt);
     names = getAttrib(dt,R_NamesSymbol);
     if (isNull(names)) error("dt passed to assign has no names");
@@ -282,7 +289,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         for (i=0; i<length(cols); i++) {
             if (INTEGER(tmp)[i] == 0) buf[k++] = i;
         }
-        if (k>0) { 
+        if (k>0) {
+            if (!isDataTable) error("set() on a data.frame is for changing existing columns, not adding new ones. Please use a data.table for that. data.table's are over-allocated and don't shallow copy.");
             PROTECT(newcolnames = allocVector(STRSXP, k));
             protecti++;
             for (i=0; i<k; i++) { 
@@ -321,9 +329,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     // Check all inputs :
     for (i=0; i<length(cols); i++) {
         coln = INTEGER(cols)[i];
-        if (coln<1 || coln>oldncol+length(newcolnames))
-            error("Item %d of j is %d which is outside range. Cannot add columns without a name. Assign column names to 'j' instead instead.",i+1,coln);
-            // error("Item %d of j is %d which is outside range. Cannot add columns with set(), use := instead to add columns by reference.",i+1,coln);
+        if (coln<1 || coln>oldncol+length(newcolnames)) {
+            if (!isDataTable) error("Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. set() on a data.frame is for changing existing columns, not adding new ones. Please use a data.table for that.", i+1, coln, oldncol);
+            else error("Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. Use column names instead in j to add new columns.", i+1, coln, oldncol);
+        }
         coln--;
         if (TYPEOF(values)==VECSXP && (length(cols)>1 || length(values)==1))
             thisvalue = VECTOR_ELT(values,i%LENGTH(values));
