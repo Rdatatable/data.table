@@ -232,7 +232,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     return(ans);
 }
 
-SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP na_rm, SEXP drop_levels, SEXP print_out) {
+SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP var_name, SEXP val_name, SEXP na_rm, SEXP drop_levels, SEXP print_out) {
     
     int i, j, k, nrow, ncol, protecti=0, lids=-1, lvalues=-1, totlen=0, counter=0, thislen=0;
     SEXP thiscol, ans, dtnames, ansnames, idcols, valuecols, levels, factorLangSxp;
@@ -248,6 +248,9 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     if (LOGICAL(na_rm)[0] == TRUE) narm = TRUE;
     if (TYPEOF(print_out) != LGLSXP) error("Argument 'verbose' should be logical TRUE/FALSE");
     if (LOGICAL(print_out)[0] == TRUE) verbose = TRUE;
+    // check for var and val names
+    if (TYPEOF(var_name) != STRSXP || length(var_name) != 1) error("Argument 'variable.name' must be a character vector of length 1");
+    if (TYPEOF(val_name) != STRSXP || length(val_name) != 1) error("Argument 'value.name' must be a character vector of length 1");
 
     // droplevels future feature request, maybe... should ask on data.table-help
     // if (!isLogical(drop_levels)) error("Argument 'drop.levels' should be logical TRUE/FALSE");
@@ -257,11 +260,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     ncol = LENGTH(DT);
     nrow = length(VECTOR_ELT(DT, 0));
     if (ncol <= 0) {
-        warning("ncol(data) is 0. Nothing to do");
-        return(DT);
-    }
-    if (nrow <= 0) {
-        warning("nrow(data) is 0. Nothing to do");
+        warning("ncol(data) is 0. Nothing to do, returning original data.table.");
         return(DT);
     }
     PROTECT(dtnames = getAttrib(DT, R_NamesSymbol)); protecti++;
@@ -294,8 +293,8 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     for (i=0; i<lids; i++) {
         SET_STRING_ELT(ansnames, i, STRING_ELT(dtnames, INTEGER(idcols)[i]-1));
     }
-    SET_STRING_ELT(ansnames, lids, mkChar("variable"));
-    SET_STRING_ELT(ansnames, lids+1, mkChar("value"));
+    SET_STRING_ELT(ansnames, lids, mkChar(CHAR(STRING_ELT(var_name, 0)))); // mkChar("variable")
+    SET_STRING_ELT(ansnames, lids+1, mkChar(CHAR(STRING_ELT(val_name, 0)))); // mkChar("value")
     
     // get "value" column
     for (i=0; i<lvalues; i++) {
@@ -351,20 +350,15 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
                 for (j=0; j<thislen; j++)
                     SET_VECTOR_ELT(target, counter + j, VECTOR_ELT(thiscol, INTEGER(thisidx)[j]-1));
             } else {
-                for (j=0; j<nrow; j++) {
-                    SET_VECTOR_ELT(target, i*nrow + j, VECTOR_ELT(thiscol, j));
-                }
+                for (j=0; j<nrow; j++) SET_VECTOR_ELT(target, i*nrow + j, VECTOR_ELT(thiscol, j));
             }
             break;
-            case STRSXP : 
+            case STRSXP :
             if (narm) {
                 for (j=0; j<thislen; j++)
                     SET_STRING_ELT(target, counter + j, STRING_ELT(thiscol, INTEGER(thisidx)[j]-1));
             } else {
-                // no memcpy for STRSXP
-                for (j=0; j<nrow; j++) {
-                    SET_STRING_ELT(target, i*nrow + j, STRING_ELT(thiscol, j));
-                }
+                for (j=0; j<nrow; j++) SET_STRING_ELT(target, i*nrow + j, STRING_ELT(thiscol, j));
             }
             break;
             case REALSXP : 
@@ -456,62 +450,66 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
         target = PROTECT(allocVector(TYPEOF(thiscol), totlen)); 
         switch(TYPEOF(thiscol)) {
             case REALSXP :
-            for (j=0; j<lvalues; j++) {
-                if (narm) {
+            if (narm) {
+                for (j=0; j<lvalues; j++) {
                     thisidx = PROTECT(VECTOR_ELT(idxkeep, j));
                     thislen = length(thisidx);
                     for (k=0; k<thislen; k++)
                         REAL(target)[counter + k] = REAL(thiscol)[INTEGER(thisidx)[k]-1];
                     counter += thislen;
                     UNPROTECT(1); // thisidx
-                } else {
+                } 
+            } else { 
+                for (j=0; j<lvalues; j++)
                     memcpy((char *)DATAPTR(target)+j*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
-                }
             }
             break;
             case INTSXP :
-            for (j=0; j<lvalues; j++) {
-                if (narm) {
+            if (narm) {
+                for (j=0; j<lvalues; j++) {
                     thisidx = PROTECT(VECTOR_ELT(idxkeep, j));
                     thislen = length(thisidx);
                     for (k=0; k<thislen; k++)
                         INTEGER(target)[counter + k] = INTEGER(thiscol)[INTEGER(thisidx)[k]-1];
                     counter += thislen;
                     UNPROTECT(1); // thisidx
-                } else {
+                } 
+            } else {
+                for (j=0; j<lvalues; j++)
                     memcpy((char *)DATAPTR(target)+j*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
-                }
             }
             break;
             case LGLSXP :
-            for (j=0; j<lvalues; j++) {
-                if (narm) {
+            if (narm) {
+                for (j=0; j<lvalues; j++) {
                     thisidx = PROTECT(VECTOR_ELT(idxkeep, j));
                     thislen = length(thisidx);
                     for (k=0; k<thislen; k++)
                         LOGICAL(target)[counter + k] = LOGICAL(thiscol)[INTEGER(thisidx)[k]-1];
                     counter += thislen;
                     UNPROTECT(1); // thisidx
-                } else {
+                } 
+            } else {
+                for (j=0; j<lvalues; j++)
                     memcpy((char *)DATAPTR(target)+j*nrow*size, (char *)DATAPTR(thiscol), nrow*size);
-                }
             }
             break;
             case STRSXP :
-            for (j=0; j<lvalues; j++) {
-                if (narm) {
+            if (narm) {
+                for (j=0; j<lvalues; j++) {
                     thisidx = PROTECT(VECTOR_ELT(idxkeep, j));
                     thislen = length(thisidx);
                     for (k=0; k<thislen; k++)
                         SET_STRING_ELT(target, counter + k, STRING_ELT(thiscol, INTEGER(thisidx)[k]-1));
                     counter += thislen;
                     UNPROTECT(1); // thisidx
-                } else {
-                    // no memcpy for STRSXP
-                    for (k=0; k<nrow; k++) {
-                        SET_STRING_ELT(target, j*nrow + k, STRING_ELT(thiscol, k));
-                    }
-                }
+                } 
+            } else {
+                // SET_STRING_ELT for j=0 and memcpy for j>0, WHY?
+                // From assign.c's memcrecycle - only one SET_STRING_ELT per RHS item is needed to set generations (overhead)
+                for (k=0; k<nrow; k++) SET_STRING_ELT(target, k, STRING_ELT(thiscol, k));
+                for (j=1; j<lvalues; j++)
+                    memcpy((char *)DATAPTR(target)+j*nrow*size, (char *)DATAPTR(target), nrow*size);
             }
             break;
             case VECSXP :
