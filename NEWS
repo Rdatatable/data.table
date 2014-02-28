@@ -18,9 +18,9 @@ BUG FIXES
   o  When joining to fewer columns than the key has, using one of the later key columns
      explicitly in j repeated the first value. A problem introduced by v1.9.2 and not
      caught by our 1,220 tests, or tests in 37 dependent packages. Test added. Many
-     thanks to Michele Carrier for reporting.
+     thanks to Michele Carriero for reporting.
        DT = data.table(a=1:2, b=letters[1:6], key="a,b")    # keyed by a and b
-       DT[.(1), b]    # correct result again (joining just to a not b but using b)
+       DT[.(1), list(b,...)]    # correct result again (joining just to a not b but using b)
 
 
         **********************************************
