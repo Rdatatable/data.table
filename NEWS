@@ -3,14 +3,15 @@ The ChangeLog for data.table is the SVN commit log itself :
     $ svn log svn://svn.r-forge.r-project.org/svnroot/datatable
 
 This NEWS file summarises the main changes.
-     
-        **********************************************
-        **                                          **
-        **   CHANGES IN DATA.TABLE VERSION 1.9.3    **
-        **                                          **
-        **         available from R-Forge           **
-        **                                          **
-        **********************************************
+
+        *********************************************
+        **                                         **
+        **   CHANGES IN DATA.TABLE VERSION 1.9.3   **
+        **                                         **
+        **    install.packages("data.table",       **
+        ** repos = "http://R-Forge.R-project.org") **
+        **                                         **
+        *********************************************
 
 BUG FIXES
 
@@ -18,8 +19,8 @@ BUG FIXES
      explicitly in j repeated the first value. A problem introduced by v1.9.2 and not
      caught by our 1,220 tests, or tests in 37 dependent packages. Test added. Many
      thanks to Michele Carrier for reporting.
-       DT = data.table(a=1:2, b=letters[1:6], key="a,b")
-       DT[.(1), b]  # correct result again (joining just to a not b but using b)
+       DT = data.table(a=1:2, b=letters[1:6], key="a,b")    # keyed by a and b
+       DT[.(1), b]    # correct result again (joining just to a not b but using b)
 
 
         **********************************************
