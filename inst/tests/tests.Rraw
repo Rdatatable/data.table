@@ -3838,6 +3838,11 @@ test(1219, set(DT,j=2:3,value=newVals), data.table(a=1:3,b=10:12,c=13:15))
 newVals = list(16:18,19:21)
 test(1220, set(DT,j=2:3,value=newVals), data.table(a=1:3,b=16:18,c=19:21))
 
+# Test non-join key columns used in j work again (spotted straight away by Michele on datatable-help when v1.9.2 was released).
+# Introduced at commit 1030. Very extensive new tests 1136* still all pass (great stuff Arun).
+DT = data.table(a=1:2,b=letters[1:6],key="a,b")
+test(1221, DT[.(1),b], data.table(a=1L,b=c("a","c","e"),key="a"))
+
 
 ##########################
 
@@ -3865,14 +3870,14 @@ test(1220, set(DT,j=2:3,value=newVals), data.table(a=1:3,b=16:18,c=19:21))
 options(warn=0)
 if (nfail > 0) {
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
-    stop(nfail," error",s1," out of ",lastnum, " in inst/tests/tests.Rraw. Search tests.Rraw for test number",s2,paste(whichfail,collapse=","),". The test() function is defined at the top of tests.Rraw and contains usage info.")
-    # important to stop here, so that 'R CMD check' fails
+    stop(nfail," error",s1," out of ",lastnum, " in inst/tests/tests.Rraw on ",date(),". Search tests.Rraw for test number",s2,paste(whichfail,collapse=", "),". The test() function is defined at the top of tests.Rraw and contains usage info.")
+    # important to stop() here, so that 'R CMD check' fails
 }
 cat("All",lastnum,"tests in inst/tests/tests.Rraw completed ok in",timetaken(started.at),"on",date(),"\n")
 # Reporting lastnum rather than ntest makes it easier to check user has the latest version, assuming
 # each release or patch has extra tests.
-# date() is included so we can tell when CRAN checks were run (in particular if they have been rerun since an update, yet)
-# since there appears to be no other way to see the timestamp CRAN checks were run.
-
+# date() is included so we can tell when CRAN checks were run (in particular if they have been rerun since
+# an update to Rdevel itself; data.table doesn't have any other dependency) since there appears to be no other
+# way to see the timestamp that CRAN checks were run. Some CRAN machines lag by several days.
 
 

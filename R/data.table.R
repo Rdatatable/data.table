@@ -989,7 +989,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     SDenv$.iSD = NULL  # null.data.table()
     SDenv$.xSD = NULL  # null.data.table() - introducing for FR #2693 and Gabor's post on fixing for FAQ 2.8
     if (bywithoutby) {
-        xjisvars = intersect(ws, key(x)) # no "x." for xvars
+        xjisvars = intersect(ws, names(x)[rightcols])  # no "x." for xvars.
         jisvars = intersect(gsub("^i[.]","", setdiff(ws, xjisvars)),names(i))
         # JIS (non join cols) but includes join columns too (as there are named in i)
         if (length(jisvars)) {

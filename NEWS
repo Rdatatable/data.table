@@ -12,6 +12,14 @@ This NEWS file summarises the main changes.
         **                                          **
         **********************************************
 
+BUG FIXES
+
+  o  When joining to fewer columns than the key has, using one of the later key columns
+     explicitly in j repeated the first value. A problem introduced by v1.9.2 and not
+     caught by our 1,220 tests, or tests in 37 dependent packages. Test added. Many
+     thanks to Michele Carrier for reporting.
+       DT = data.table(a=1:2, b=letters[1:6], key="a,b")
+       DT[.(1), b]  # correct result again (joining just to a not b but using b)
 
 
         **********************************************
@@ -99,16 +107,16 @@ NEW FEATURES
      
   o  fread now understand system commands; e.g., fread("grep blah file.txt").
 
-  o	 as.data.table method for table() implemented, #4848. Thanks to Frank Pinter for suggesting :
+  o  as.data.table method for table() implemented, #4848. Thanks to Frank Pinter for suggesting :
        http://stackoverflow.com/questions/18390947/data-table-of-table-is-very-different-from-data-frame-of-table
   
   o  as.data.table methods added for integer, numeric, character, logical, factor, ordered and Date.
 	 
-  o	 DT[i,:=,] now accepts negative indices in i. Thanks to Eduard Antonyan. See also bug fix #2697.
+  o  DT[i,:=,] now accepts negative indices in i. Thanks to Eduard Antonyan. See also bug fix #2697.
 
-  o	 set() is now able to add new columns by reference, #2077.
-         DT[3:5, newCol := 5L]
-         set(DT, i=3:5, j="newCol", 5L)   # same
+  o  set() is now able to add new columns by reference, #2077.
+       DT[3:5, newCol := 5L]
+       set(DT, i=3:5, j="newCol", 5L)   # same
 
   o  eval will now be evaluated anywhere in a j-expression as long as it has just one argument, #4677.
      Will still need to use .SD as environment in complex cases. Also fixes bug here :
@@ -140,7 +148,7 @@ NEW FEATURES
 
   o  DT[, as.factor('x'), with=FALSE] where `x` is a column in DT is now equivalent to 
      DT[, "x", with=FALSE] instead of ending up with an error, #4867. Thanks to tresbot for reporting :
-	   http://stackoverflow.com/questions/18525976/converting-multiple-data-table-columns-to-factors-in-r
+       http://stackoverflow.com/questions/18525976/converting-multiple-data-table-columns-to-factors-in-r
 
   o  format.data.table now understands 'formula' and displays embedded formulas as expected, FR #2591.
 
@@ -160,10 +168,10 @@ NEW FEATURES
      not printed, #5020. Thanks to Frank Erickson.
 
   o  .SDcols now is also able to de-select columns. This works both with column names and column numbers. 
-         DT[, lapply(.SD,...), by=..., .SDcols=-c(1,3)]       # .SD all but columns 1 and 3
-         DT[, lapply(.SD,...), by=..., .SDcols=-c("x", "z")]  # .SD all but columns 'x' and 'z'
-         DT[..., .SDcols=c(1, -3)]           # can't mix signs, error
-         DT[, .SD, .SDcols=c("x", -"z")]     # can't mix signs, error
+       DT[, lapply(.SD,...), by=..., .SDcols=-c(1,3)]       # .SD all but columns 1 and 3
+       DT[, lapply(.SD,...), by=..., .SDcols=-c("x", "z")]  # .SD all but columns 'x' and 'z'
+       DT[..., .SDcols=c(1, -3)]           # can't mix signs, error
+       DT[, .SD, .SDcols=c("x", -"z")]     # can't mix signs, error
      Thanks to Tonny Peterson for filing FR#4979.
 
   o  as.data.table.list now issues a warning for those items/columns that result in a remainder due
@@ -171,10 +179,10 @@ NEW FEATURES
      recycling leaves a remainder; e.g., data.table(x=1:2, y=1:3).
 
   o  := now coerces without warning when precision is not lost and length(RHS) == 1, #2551.
-         DT = data.table(x=1:2, y=c(TRUE, FALSE))
-         DT[1, x:=1]   # ok, now silent
-         DT[1, y:=0]   # ok, now silent
-         DT[1, y:=0L]  # ok, now silent
+       DT = data.table(x=1:2, y=c(TRUE, FALSE))
+       DT[1, x:=1]   # ok, now silent
+       DT[1, y:=0]   # ok, now silent
+       DT[1, y:=0L]  # ok, now silent
 
   o  as.data.table.*(x, keep.rownames=TRUE), where `x` is a named vector now adds names of `x` into a new column 
      with default name `rn`. Thanks to Garrett See for FR #2356.
@@ -198,16 +206,16 @@ NEW FEATURES
      entries; e.g., c("12:00", "13:12:25")
      
   o  The key is now retained in NA subsets; e.g.,
-        DT = data.table(a=1:3,b=4:6,key="a")
-        DT[NA]   # 1-row of NA now keyed by 'a'
-        DT[5]    # 1-row of NA now keyed by 'a'
-        DT[2:4]  # not keyed as before because NA (last row of result) sorts first in keyed data.table
+       DT = data.table(a=1:3,b=4:6,key="a")
+       DT[NA]   # 1-row of NA now keyed by 'a'
+       DT[5]    # 1-row of NA now keyed by 'a'
+       DT[2:4]  # not keyed as before because NA (last row of result) sorts first in keyed data.table
   
   o  Each column in the result for each group has always been recycled (if necessary) to match the
      longest column in that group's result. If it doesn't recycle exactly, though, it was caught gracefully
      as an error. Now, it is recycled, with remainder with warning.
-         DT = data.table(a=1:2,b=1:6)
-         DT[, list(b,1:2), by=a]        # now recycles the 1:2 with warning to length 3
+       DT = data.table(a=1:2,b=1:6)
+       DT[, list(b,1:2), by=a]        # now recycles the 1:2 with warning to length 3
 
 BUG FIXES
 
@@ -264,8 +272,8 @@ BUG FIXES
   o  := failed while subsetting yielded NA and `with=FALSE`, #2445. Thanks to Damian Betebenner for reporting.
 
   o  by=month(date) gave incorrect results if key(DT)=="date", #2670. Tests added. 
-         DT[,,by=month(date)]         # now ok if key(DT)=="date"
-         DT[,,by=list(month(date))]   # ok before whether or not key(DT)=="date"
+       DT[,,by=month(date)]         # now ok if key(DT)=="date"
+       DT[,,by=list(month(date))]   # ok before whether or not key(DT)=="date"
          
   o  rbind and rbindlist could crash if input columns themselves had hidden names, #4890 & #4912. Thanks to
      Chris Neff and Stefan Fritsch for reporting. Tests added.
@@ -284,7 +292,7 @@ BUG FIXES
      http://stackoverflow.com/questions/15996692/cannot-assign-columns-as-date-by-reference-in-data-table
 
   o  chmatch() didn't always match non-ascii characters, #2538 and #4818. chmatch is used internally so
-         DT[is.na(päs), päs := 99L]
+       DT[is.na(päs), päs := 99L]
      now works. Thanks to Benjamin Barnes and Stefan Fritsch for reporting. Tests added.
 
   o  unname(DT) threw an error when 20 < nrow(DT) <= 100, bug #4934. This is now fixed. Tests added. Thanks 
@@ -440,11 +448,11 @@ NOTES
      Thanks to Sam Steingold for raising, #2723.
      
   o  When DT is empty, DT[,col:=""] is no longer a warning. The warning was :
-        Supplied 1 items to be assigned to 0 items of column (1 unused)
+       "Supplied 1 items to be assigned to 0 items of column (1 unused)"
 
   o  Using rolltolast still works but now issues the following warning :
-        "'rolltolast' has been marked 'deprecated' in ?data.table since v1.8.8 on CRAN 3 Mar 2013, see NEWS. Please
-         change to the more flexible 'rollends' instead. 'rolltolast' will be removed in the next version."
+       "'rolltolast' has been marked 'deprecated' in ?data.table since v1.8.8 on CRAN 3 Mar 2013, see NEWS. Please
+        change to the more flexible 'rollends' instead. 'rolltolast' will be removed in the next version."
 
   o  There are now 1,220 raw tests, as reported by test.data.table().
 
