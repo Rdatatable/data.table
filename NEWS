@@ -45,6 +45,8 @@ NEW FEATURES
        avoids the overhead of subsetting using "!is.na" afterwards on the molten data.
      * except for "margins" argument from `reshape2:::dcast`, all features of dcast are intact. 
        dcast.data.table can also accept 'value.var' columns of type list
+     Reminder of Cologne (Dec 2013) presentation slide 32 : "Why not submit a [dcast] pull request to reshape2" :
+       http://datatable.r-forge.r-project.org/CologneR_2013.pdf
   
   o  Joins scale better as the number of rows increases. The binary merge used to start on row 1
      of i; it now starts on the middle row of i. Many thanks to Mike Crowe for the suggestion. This
