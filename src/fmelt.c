@@ -521,9 +521,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
             break;
             default : error("Unknown column type '%s' for column '%s' in 'data'", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(idcols)[i]-1)));
         }
-        if (isFactor(thiscol))
-            setAttrib(target, R_LevelsSymbol, getAttrib(thiscol, R_LevelsSymbol));              
-        setAttrib(target, R_ClassSymbol, getAttrib(thiscol, R_ClassSymbol));
+        copyMostAttrib(thiscol, target); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
         SET_VECTOR_ELT(ans, i, target);
         UNPROTECT(1); // target
     }

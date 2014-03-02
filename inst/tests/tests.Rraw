@@ -2933,6 +2933,7 @@ if ("package:reshape2" %in% search()) {
     test(1037, melt(DT, id=4, measure=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
     DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
     test(1038, melt(DT2, id=1), error="Unknown column type 'complex'")
+    
     # TO DO: more tests
 }
 
@@ -3842,6 +3843,17 @@ test(1220, set(DT,j=2:3,value=newVals), data.table(a=1:3,b=16:18,c=19:21))
 # Introduced at commit 1030. Very extensive new tests 1136* still all pass (great stuff Arun).
 DT = data.table(a=1:2,b=letters[1:6],key="a,b")
 test(1221, DT[.(1),b], data.table(a=1L,b=c("a","c","e"),key="a"))
+
+# test to ensure attributes on non-factor id-columns are preserved after melt
+if ("package:reshape2" %in% search()) {
+    try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
+                                               # try() in case reshape isn't loaded (detach gives not found error in that case)
+    DT <- data.table(x=1:3, y=letters[1:3], z1=8:10, z2=11:13)
+    setattr(DT$x, 'foo', 'bla1')
+    setattr(DT$y, 'bar', 1:4)
+    test(1222.1, attr(melt(DT, id=1:2)$x, "foo"), "bla1")
+    test(1222.2, attr(melt(DT, id=1:2)$y, "bar"), 1:4)
+}
 
 
 ##########################
