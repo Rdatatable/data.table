@@ -210,9 +210,8 @@ setorderv = function(x, cols, order=1L)
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey.")
 
     o = forder(x, cols, sort=TRUE, retGrp=FALSE, order=order)
-    if (length(o)) {
-        .Call(Creorder, x, o)
-    }
+    if (length(o)) .Call(Creorder, x, o)
+    setattr(x, 'sorted', NULL) # setorder will by default set key to NULL, TODO: revisit cases where we can retain key
     invisible(x)
 }
 
