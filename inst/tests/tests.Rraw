@@ -3860,7 +3860,7 @@ if ("package:reshape2" %in% search()) {
 ##########################################################################################
 # - Generate a random seed each time; the randomness allows catching errors quicker
 # - But save the seed so that we can generate the same data back if any error occurs
-seed = sample(9999L, 1L)
+seed = as.integer(Sys.time()) # sample(9999L, 1L) temporary fix, because all the set.seed(.) used above makes this sample() step deterministic (always seed=9107)
 cat("Newly added 'forder' decreasing argument test: seed =", seed, "\n", sep=" ")
 # no NA/NaN (because it's hard to match with base:::order)                             ## TO DO: add tests with NA and NaN
 set.seed(seed)
@@ -3919,6 +3919,20 @@ test(1226.2, data.table(data.frame(NULL)), null.data.table())
 test(1226.3, data.table(data.table(NULL)), null.data.table())
 test(1226.4, data.table(data.frame()), null.data.table())
 test(1226.5, data.table(data.table()), null.data.table())
+
+# fix for bug #5321 - POSIXlt issue.
+setDT(DT1 <- data.frame(id=1:3, d=strptime(c("06:02:36", "06:02:48", "07:03:12"), "%H:%M:%S")))
+test(1227, data.table(id=1:3, d=strptime(c("06:02:36", "06:02:48", "07:03:12"), "%H:%M:%S")), DT1, warning="POSIXlt column type detected and converted to")
+
+# fix for bug #5296 - retaining class of original data.table after passing through `[.data.table`
+DT <- data.table(a=1:2,b=3:4)
+setattr(DT, "class", c("newclass", class(DT)))
+test(1228.1, class(DT), class(DT[a>1]))
+test(1228.2, class(DT), class(DT[, list(b)]))
+test(1228.3, class(DT), class(DT[, "b", with=FALSE]))
+test(1228.4, class(DT), class(DT[, sum(b), by=a]))
+test(1228.5, class(DT), class(DT[a>1, sum(b), by=a]))
+test(1228.6, class(DT), class(DT[a>1, c:=sum(b), by=a]))
 
 ##########################
 

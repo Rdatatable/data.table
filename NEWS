@@ -28,6 +28,19 @@ BUG FIXES
   o  unique(NULL data.table) returns a null data.table back as expected. Closes #5405. Thanks to 
      agstudy for reporting.
 
+  o  Columns with POSIXlt type during data.table(.) creation are converted to POSIXct, consistent with 
+     base:::data.frame(.). However, data.table(.) provides a helpful warning instead of coercing silently.
+     This closes #5321. Thanks to Brodie Gaslam for reporting. And to Patrick for posting here on SO:
+     http://stackoverflow.com/questions/21487614/error-creating-r-data-table-with-date-time-posixlt and to 
+     Ragy Isaac for asking here on SO: 
+     http://stackoverflow.com/questions/21320215/converting-from-data-frame-to-data-table-i-get-an-error-with-head
+
+  o  `[.data.table` now retains the original (additional, if any) class attributes on the result as well. That is,
+      If,    DT <- data.table(x=1:2, y=3:4); setattr(DT, 'class', c(myclass, class(DT)))
+      Then,  a) DT[x>1], b) DT[, list(y)], c) DT[, "x", with=FALSE], d) DT[x>1, list(y)], e) DT[, sum(y), by=x], 
+             f) DT[x>1, sum(y), by=x] etc... all retain the class c('myclass', 'data.table', 'data.frame')
+      This closes #5296. Thanks to Daniel Krizian for reporting.
+
         **********************************************
         **                                          **
         **   CHANGES IN DATA.TABLE VERSION 1.9.2    **

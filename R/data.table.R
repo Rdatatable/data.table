@@ -205,6 +205,10 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     for (i in seq_len(n)) {
         xi = x[[i]]
         if (is.null(xi)) stop("column or argument ",i," is NULL")
+        if ("POSIXlt" %chin% class(xi)) {
+            warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+            x[[i]] = as.POSIXct(xi)
+        }
         if (is.matrix(xi) || is.data.frame(xi)) {  # including data.table (a data.frame, too)
             xi = as.data.table(xi, keep.rownames=keep.rownames)       # TO DO: allow a matrix to be a column of a data.table. This could allow a key'd lookup to a matrix, not just by a single rowname vector, but by a combination of several columns. A matrix column could be stored either by row or by column contiguous in memory.
             x[[i]] = xi
@@ -573,7 +577,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                     # fix for bug #2677. When 'allow.cartesian=TRUE' and haskey(i) = TRUE and length(key(x)) > length(key(i)), key(ans) can not be key(x)!!
                     if (allow.cartesian) setattr(ans, "sorted", key(x)[seq_along(leftcols)]) else setattr(ans,"sorted",key(x))
             }
-            setattr(ans,"class",c("data.table","data.frame"))
+            setattr(ans,"class",class(x)) # fix for #5296
             setattr(ans,"row.names",.set_row_names(nrow(ans)))
             return(alloc.col(ans))
         }
@@ -742,7 +746,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             setattr(ans,"sorted",key(x))
             # TO DO: see ordered subset comments above
         }
-        setattr(ans,"class",c("data.table","data.frame"))
+        setattr(ans,"class",class(x)) # fix for #5296
         setattr(ans,"row.names",.set_row_names(nrow(ans)))
         return(alloc.col(ans))
     }
@@ -1069,6 +1073,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         # fix for bug #5114 from GSee's - .data.table.locked=TRUE
         if (identical(jval, SDenv$.SD)) return(copy(jval))
+        if (is.data.table(jval)) setattr(jval, 'class', class(x)) # fix for #5296
         return(jval)
     }
     alloc = if (length(len__)) seq_len(max(len__)) else 0L
@@ -1257,7 +1262,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         return(ans)
     }
     setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
-    setattr(ans,"class",c("data.table","data.frame"))
+    setattr(ans,"class",class(x)) # fix for #5296
     if (is.null(names(ans))) {
         # Efficiency gain of dropping names has been successful. Ordinarily this will run.
         if (is.null(jvnames)) jvnames = character(length(ans)-length(bynames))
