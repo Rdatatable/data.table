@@ -41,8 +41,8 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
     #    from all.equal and different to identical related to row.names and unused factor levels
     # 3) each test has a unique id which we refer to in commit messages, emails etc.
-    # print(paste("running test #", num, sep=""))
-    # TO DO: every line should be inside test() so we don't have to show the numbers.
+    if (.devtesting) cat("\rRunning test id", num,"     ")
+    # TO DO: every line that could possibly fail should be inside test() so we don't have to show the numbers.
     .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
