@@ -111,6 +111,8 @@ forder = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L)
         if ( !missing(order) && (length(order) != 1L || !(order %in% c(1L, -1L))) )
             stop("x is a single vector, length(order) must be =1 and it's value should be 1 (ascending) or -1 (descending).")
     } else {
+        if (!length(x)) return(integer(0)) # to be consistent with base:::order. this'll make sure forder(NULL) will result in error 
+                                           # (as base does) but forder(data.table(NULL)) and forder(list()) will return integer(0))
         if (is.character(by)) by=chmatch(by, names(x))
         by = as.integer(by)
         if ( (length(order) != 1L && length(order) != length(by)) || any(!order %in% c(1L, -1L)) )

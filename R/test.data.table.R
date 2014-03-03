@@ -3,7 +3,7 @@ test.data.table = function(verbose=FALSE) {
     if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
         # package developer
         if ("package:data.table" %in% search()) stop("data.table package loaded")
-        if (.Platform$OS.type == "unix")
+        if (.Platform$OS.type == "unix" && Sys.info()['sysname'] != "Darwin")
             d = path.expand("~/R/datatable/pkg/inst/tests")
         else {
             if (!"pkg" %in% dir()) stop("'pkg' not in dir()") 

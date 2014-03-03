@@ -174,7 +174,9 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     # **TO DO** Something strange with NAMED on components of `...`. To investigate. Or just port data.table() to C. This is why
     # it's switched, because extra copies would be introduced in R <= 3.1, iiuc.
     
-    if (identical(x, list(NULL))) return( null.data.table() )
+    # fix for #5377 - data.table(null list, data.frame and data.table) should return null data.table. Simple fix: check all scenarios here at the top.
+    if (identical(x, list(NULL)) || identical(x, list(list())) || 
+           identical(x, list(data.frame(NULL))) || identical(x, list(data.table(NULL)))) return( null.data.table() )
     tt <- as.list(substitute(list(...)))[-1L]  # Intention here is that data.table(X,Y) will automatically put X and Y as the column names.  For longer expressions, name the arguments to data.table(). But in a call to [.data.table, wrap in list() e.g. DT[,list(a=mean(v),b=foobarzoo(zang))] will get the col names
     vnames = names(tt)
     if (is.null(vnames)) vnames = rep.int("",length(x))

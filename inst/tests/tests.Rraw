@@ -3877,7 +3877,6 @@ DT = data.table(i1, i2, d1, d2, c1, c2)
 colorder=sample(ncol(DT))
 setcolorder(DT, names(DT)[colorder])
 cat("colorder =", paste(colorder, collapse=","), "\n", sep=" ")
-forder = data.table:::forder
 ans = vector("list", length(names(DT)))
 
 test_no = 1223.0
@@ -3906,6 +3905,20 @@ for (i in seq_along(names(DT))) {
     })
 }
 ans = NULL
+
+# fix for bug #5405 - unique on null data.table should return null data.table
+test(1224, unique(data.table(NULL)), data.table(NULL))
+
+# forder should return 'integer(0)' when 'x' is not atomic and of 0 length (to be consistent with base:::order)
+test(1225.1, forder(list()), integer(0))
+test(1225.2, forder(data.table(NULL)), integer(0))
+
+# fix for bug #5377 - data.table(null list, data.frame, data.table) should return null data.table
+test(1226.1, data.table(list()), null.data.table())
+test(1226.2, data.table(data.frame(NULL)), null.data.table())
+test(1226.3, data.table(data.table(NULL)), null.data.table())
+test(1226.4, data.table(data.frame()), null.data.table())
+test(1226.5, data.table(data.table()), null.data.table())
 
 ##########################
 

@@ -6,6 +6,10 @@ duplicated.data.table <- function(x, incomparables=FALSE, by=key(x), ...) {
     }
 
     query <- .duplicated.helper(x, by)
+    # fix for bug #5405 - unique on null data table returns error (because of 'forder')
+    # however, in this case we can bypass having to go to forder at all.
+    # TODO: Still 'forder' will need a fix to not return an error in case of null data.tables (that's for later)
+    if (!length(query$by)) return(logical(0))
     res <- rep.int(TRUE, nrow(x))
     
     if (query$use.keyprefix) {
