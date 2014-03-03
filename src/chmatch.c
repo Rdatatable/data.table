@@ -23,7 +23,8 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
     R_len_t i, m;
     SEXP ans, s;
     if (!isString(x) && !isNull(x)) error("x is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(x)));
-    if (!isString(table) && !isNull(table)) error("table is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(table)));    
+    if (!isString(table) && !isNull(table)) error("table is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(table)));
+    PROTECT(ans = allocVector(in ? LGLSXP : INTSXP,length(x))); // if fails, it fails before savetl
     savetl_init();
     for (i=0; i<length(x); i++) {
         s = STRING_ELT(x,i);
@@ -40,9 +41,10 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
             // but this impacted the fastest cases too much. Hence fall back to match() on the first unknown encoding detected
             // since match() considers the same string in different encodings as equal (but slower). See #2538 and #4818. 
             savetl_end();
+            UNPROTECT(1);
             return (in ? match_logical(table, x) : match(table, x, nomatch));
         }
-        if (TRUELENGTH(s)>0) savetl(s); 
+        if (TRUELENGTH(s)>0) savetl(s);
         // as from v1.8.0 we assume R's internal hash is positive. So in R < 2.14.0 we
         // don't save the uninitialised truelengths that by chance are negative, but
         // will save if positive. Hence R >= 2.14.0 may be faster and preferred now that R
@@ -53,20 +55,19 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
         s = STRING_ELT(table,i);
         if (s != NA_STRING && ENC_KNOWN(s) != 64) { // changed !ENC_KNOWN(s) to !ASCII(s) - check above for explanation	
             for (int j=i+1; j<LENGTH(table); j++) SET_TRUELENGTH(STRING_ELT(table,j),0);  // reinstate 0 rather than leave the -i-1
-            savetl_end();  // and then reinstate HASHPRI (if any) over the 0
+            savetl_end();
+            UNPROTECT(1);
             return (in ? match_logical(table, x) : match(table, x, nomatch));
         }
         if (TRUELENGTH(s)>0) savetl(s);
         SET_TRUELENGTH(s, -i-1);
     }
     if (in) {
-        PROTECT(ans = allocVector(LGLSXP,length(x)));
         for (i=0; i<length(x); i++) {
             LOGICAL(ans)[i] = TRUELENGTH(STRING_ELT(x,i))<0;
             // nomatch ignored for logical as base does I think
         }
     } else {
-        PROTECT(ans = allocVector(INTSXP,length(x)));
         for (i=0; i<length(x); i++) {
             m = TRUELENGTH(STRING_ELT(x,i));
             INTEGER(ans)[i] = (m<0) ? -m : nomatch;
@@ -74,7 +75,7 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
     }
     for (i=0; i<length(table); i++)
         SET_TRUELENGTH(STRING_ELT(table,i),0);  // reinstate 0 rather than leave the -i-1
-    savetl_end();   // and then reinstate HASHPRI (if any) over the 0
+    savetl_end();
     UNPROTECT(1);
     return(ans);
 }

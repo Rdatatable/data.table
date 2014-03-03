@@ -14,8 +14,8 @@ extern size_t sizes[100];
 extern SEXP growVector(SEXP x, R_len_t newlen, Rboolean verbose);
 extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-SEXP *saveds=NULL;
-R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
+static SEXP *saveds=NULL;
+static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 
@@ -456,7 +456,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                 targetlevels = getAttrib(targetcol, R_LevelsSymbol);
                 if (isNull(targetlevels)) error("somehow this factor column has no levels");
                 if (isString(thisvalue)) {
-                    savetl_init();
+                    savetl_init();  // ** TO DO **: remove allocs that could fail between here and _end, or different way
                     for (j=0; j<length(thisvalue); j++) {
                         s = STRING_ELT(thisvalue,j);
                         if (TRUELENGTH(s)>0) {
@@ -711,16 +711,32 @@ void savetl_init() {
     if (nsaved || nalloc || saveds || savedtl) error("Internal error: savetl_init checks failed (%d %d %p %p). Please report to datatable-help.", nsaved, nalloc, saveds, savedtl);
     nsaved = 0;
     nalloc = 100;
-    saveds = Calloc(nalloc, SEXP);
-    savedtl = Calloc(nalloc, R_len_t);
+    saveds = (SEXP *)malloc(nalloc * sizeof(SEXP));
+    if (saveds == NULL) error("Couldn't allocate saveds in savetl_init");
+    savedtl = (R_len_t *)malloc(nalloc * sizeof(R_len_t));
+    if (savedtl == NULL) {
+        free(saveds);
+        error("Couldn't allocate saveds in savetl_init");
+    }
 }
 
 void savetl(SEXP s)
 {
     if (nsaved>=nalloc) {
         nalloc *= 2;
-        saveds = Realloc(saveds, nalloc, SEXP);
-        savedtl = Realloc(savedtl, nalloc, R_len_t);
+        char *tmp;
+        tmp = (char *)realloc(saveds, nalloc * sizeof(SEXP));
+        if (tmp == NULL) {
+            savetl_end();
+            error("Couldn't realloc saveds in savetl");
+        }
+        saveds = (SEXP *)tmp;
+        tmp = (char *)realloc(savedtl, nalloc * sizeof(R_len_t));
+        if (tmp == NULL) {
+            savetl_end();
+            error("Couldn't realloc savedtl in savetl");
+        }
+        savedtl = (R_len_t *)tmp;
     }
     saveds[nsaved] = s;
     savedtl[nsaved] = TRUELENGTH(s);
@@ -731,8 +747,8 @@ void savetl_end() {
     // Can get called if nothing has been saved yet (nsaved==0), or even if _init() hasn't been called yet (pointers NULL). Such
     // as to clear up before error. Also, it might be that nothing needed to be saved anyway.
     for (int i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
-    Free(saveds);  // does nothing on NULL input
-    Free(savedtl);
+    free(saveds);  // does nothing on NULL input
+    free(savedtl);
     nsaved = nalloc = 0;
     saveds = NULL;
     savedtl = NULL;
