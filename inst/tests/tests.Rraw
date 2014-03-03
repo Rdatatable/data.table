@@ -3855,6 +3855,57 @@ if ("package:reshape2" %in% search()) {
     test(1222.2, attr(melt(DT, id=1:2)$y, "bar"), 1:4)
 }
 
+##########################################################################################
+# extensive testing of forder with decreasing order of sorting (total of >700 tests so far
+##########################################################################################
+# - Generate a random seed each time; the randomness allows catching errors quicker
+# - But save the seed so that we can generate the same data back if any error occurs
+seed = sample(9999L, 1L)
+cat("Newly added 'forder' decreasing argument test: seed =", seed, "\n", sep=" ")
+# no NA/NaN (because it's hard to match with base:::order)                             ## TO DO: add tests with NA and NaN
+set.seed(seed)
+foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, sep="")
+i1 = as.integer(sample(c(-100:100), 1e3, TRUE))
+i2 = as.integer(sample(c(-100:100, -1e6, 1e6), 1e3, TRUE))
+d1 = as.numeric(sample(c(-100:100,Inf,-Inf), 1e3, TRUE))
+d2 = as.numeric(rnorm(1e3))
+c1 = sample(c(letters), 1e3, TRUE)
+c2 = sample(foo(200), 1e3, TRUE)
+
+DT = data.table(i1, i2, d1, d2, c1, c2)
+# randomise col order as well
+colorder=sample(ncol(DT))
+setcolorder(DT, names(DT)[colorder])
+cat("colorder =", paste(colorder, collapse=","), "\n", sep=" ")
+forder = data.table:::forder
+ans = vector("list", length(names(DT)))
+
+test_no = 1223.0
+for (i in seq_along(names(DT))) {
+    cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
+    ans[[i]] = combn(names(DT), i, function(x) {
+        tmp = apply(cj, 1, function(y) {
+            test_no <<- signif(test_no+.001, 7)
+            ll = as.call(c(as.name("order"), 
+                    lapply(seq_along(x), function(j) {
+                        if (y[j] == 1L) 
+                            as.name(x[j]) 
+                        else {
+                            if (class(DT[[x[j]]]) =="character") 
+                                as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
+                            else 
+                                as.call(list(as.name("-"), as.name(x[j])))
+                            }
+                        })
+                    )
+                )
+            test(test_no, forder(DT, by=x, order=y), with(DT, eval(ll)))
+        })
+        dim(tmp)=NULL
+        list(tmp)
+    })
+}
+ans = NULL
 
 ##########################
 

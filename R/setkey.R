@@ -101,18 +101,117 @@ is.sorted = function(x, by=seq_along(x)) {
     # Important to call forder.c::fsorted here, for consistent character ordering and numeric/integer64 twiddling.
 }
 
-forder = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE)
+forder = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L)
 {
     if (!(sort || retGrp)) stop("At least one of retGrp or sort must be TRUE")
     # TO DO: export and document forder
     if (is.atomic(x)) {
         if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
         by = NULL
+        if ( !missing(order) && (length(order) != 1L || !(order %in% c(1L, -1L))) )
+            stop("x is a single vector, length(order) must be =1 and it's value should be 1 (ascending) or -1 (descending).")
     } else {
         if (is.character(by)) by=chmatch(by, names(x))
         by = as.integer(by)
+        if ( (length(order) != 1L && length(order) != length(by)) || any(!order %in% c(1L, -1L)) )
+            stop("x is a list, length(order) must be either =1 or =length(by) and each value should be 1 or -1 for each column in 'by', corresponding to ascending or descending order, respectively. If length(order) == 1, it will be recycled to length(by).")
+        if (length(order) == 1L) order = rep(order, length(by))
     }
-    .Call(Cforder, x, by, retGrp, sort)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
+    order = as.integer(order)
+    .Call(Cforder, x, by, retGrp, sort, order)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
+}
+
+fast_order = function(x, ...)
+{
+    if (!is.data.table(x)) stop("x must be a data.table.")
+    cols = substitute(list(...))[-1]
+    if (identical(as.character(cols),"NULL") || !length(cols)) return(NULL) # to provide the same output as base:::order
+    if (length(cols)) {
+        cols=as.list(cols)
+        order=rep(1L, length(cols))
+        for (i in seq_along(cols)) {
+            v=as.list(cols[[i]])
+            if (length(v) > 1 && v[[1L]] == "+") v=v[[-1L]]
+            else if (length(v) > 1 && v[[1L]] == "-") {
+                v=v[[-1L]]
+                order[i] = -1L
+            }
+            cols[[i]]=as.character(v)
+        }
+        cols=unlist(cols, use.names=FALSE)
+    } else {
+        cols=colnames(x)
+        order=rep(1L, length(cols))
+    }
+    if (any(nchar(cols)==0)) stop("cols contains some blanks.")
+    cols <- gsub("`", "", cols) # remove backticks from cols
+    miss = !(cols %in% colnames(x))                          # TODO: probably I'm checking more than necessary here.. there are checks in 'forder' as well
+    if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
+    if (".xi" %in% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
+    for (i in cols) {
+        .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
+        if (!typeof(.xi) %chin% c("integer","logical","character","double")) 
+            stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
+    }
+    if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey.")
+    forder(x, cols, sort=TRUE, retGrp=FALSE, order=order)
+}
+
+setorder = function(x, ...)
+{
+    if (!is.data.table(x)) stop("x must be a data.table.")
+    cols = substitute(list(...))[-1]
+    if (identical(as.character(cols),"NULL")) return(invisible(x))
+    if (length(cols)) {
+        cols=as.list(cols)
+        order=rep(1L, length(cols))
+        for (i in seq_along(cols)) {
+            v=as.list(cols[[i]])
+            if (length(v) > 1 && v[[1L]] == "+") v=v[[-1L]]
+            else if (length(v) > 1 && v[[1L]] == "-") {
+                v=v[[-1L]]
+                order[i] = -1L
+            }
+            cols[[i]]=as.character(v)
+        }
+        cols=unlist(cols, use.names=FALSE)
+    } else {
+        cols=colnames(x)
+        order=rep(1L, length(cols))
+    }
+    setorderv(x, cols, order)
+}
+
+setorderv = function(x, cols, order=1L)
+{
+    if (is.null(cols)) return(x)
+    if (!is.data.table(x)) stop("x is not a data.table")
+    if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setorder.")
+    if (!length(cols)) {
+        warning("cols is a character vector of zero length. Use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
+        return(x)
+    }
+    if (any(nchar(cols)==0)) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forder' as well
+    if (!length(cols)) {
+        cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
+    } else {
+        # remove backticks from cols 
+        cols <- gsub("`", "", cols)
+        miss = !(cols %in% colnames(x))
+        if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
+    }
+    if (".xi" %in% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
+    for (i in cols) {
+        .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
+        if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
+    }
+    if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey.")
+
+    o = forder(x, cols, sort=TRUE, retGrp=FALSE, order=order)
+    if (length(o)) {
+        .Call(Creorder, x, o)
+    }
+    invisible(x)
 }
 
 twiddle = function(x) {

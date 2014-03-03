@@ -1084,7 +1084,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     lockBinding(".GRP",SDenv)
     lockBinding(".I",SDenv)
     GForce = FALSE
-    if (getOption("datatable.optimize")>=1 && is.call(jsub)) {  # Abilility to turn off if problems or to benchmark the benefit
+    if (getOption("datatable.optimize")>=1 && is.call(jsub)) {  # Ability to turn off if problems or to benchmark the benefit
         # Optimization to reduce overhead of calling lapply over and over for each group
         oldjsub = jsub
         if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xvars)) {

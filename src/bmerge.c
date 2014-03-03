@@ -23,6 +23,7 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 extern SEXP forder();
 extern int StrCmp(SEXP x, SEXP y);  // in forder.c
 extern unsigned long long twiddle(void *);
+extern SEXP vec_init(R_len_t n, SEXP val);
 
 static SEXP i, x;
 static int ncol, *icols, *xcols, *o, *retFirst, *retLength, *allLen1, *rollends;
@@ -85,8 +86,9 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     
     o = NULL;
     if (!LOGICAL(isorted)[0]) {
-        SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE)));
-        protecti++;
+        SEXP order = PROTECT(vec_init(length(icolsArg), ScalarInteger(1))); // rep(1, length(icolsArg))
+        SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order));
+        protecti += 2;
         if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
     }
     
