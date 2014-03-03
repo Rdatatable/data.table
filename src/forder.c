@@ -79,7 +79,7 @@ static void gsfree() {
 // base::sort.list(method="radix") turns out not to be a radix sort, but a counting sort, and we like it.
 // See http://r.789695.n4.nabble.com/method-radix-in-sort-list-isn-t-actually-a-radix-sort-tp3309470p3309470.html
 // Main changes :
-//   1. Negatives are fine. Wish raised for simple change to base R : <link needed>
+//   1. Negatives are fine. Btw, wish raised for simple change to base R : https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=15644
 //   2. Doesn't cummulate through 0's for speed in repeated calls of sparse counts by saving memset back to 0 of many 0
 //   3. Separated setRange so forder can redirect to iradix
 
@@ -97,7 +97,6 @@ static void setRange(int *x, int n, int order)
     for(; i < n; i++) {
         tmp = x[i];
         if(tmp == NA_INTEGER) continue;
-        // TO DO: test and document that negatives are fine. Have filed wish to remove one line error("negatives") from base sort.c
         if (tmp > xmax) xmax = tmp;
         else if (tmp < xmin) xmin = tmp;
     }
@@ -722,7 +721,7 @@ static void csort(SEXP *x, int *o, int n, int order)
 static void csort_pre(SEXP *x, int n)
 // Finds ustr and sorts it.
 // Runs once for each column (if sortStr==TRUE), then ustr is used by csort within each group
-// ustr is grown on each character column, to save sorting the same strings again if several columns cotain the same strings
+// ustr is grown on each character column, to save sorting the same strings again if several columns contain the same strings
 {
     SEXP s;
     int i, old_un, new_un;

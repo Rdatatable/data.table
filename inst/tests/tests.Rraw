@@ -3922,6 +3922,7 @@ test(1226.5, data.table(data.table()), null.data.table())
 
 ##########################
 
+# TO DO: test and highlight in docs that negatives are fine and fast in forder (ref R wish #15644)
 # TO DO: tests of freading classes like Date and the verbose messages there.
 # TO DO: Test mid read bump of logical T/F to character, collapse back to T and F.
 

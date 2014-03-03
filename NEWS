@@ -431,6 +431,8 @@ THANKS FOR BETA TESTING TO :
        the list of data.table/list are empty or NULL.
      In both cases we had anticipated and added tests for these cases, which is why ASAN
      and UBSAN were able to detect a problem for us.
+  
+  o  Karl Millar for reporting a similar fault that ASAN detected, #5042. Also fixed.
      
   o  Ricardo Saporta for finding a crash when i is empty and a join column is
      character, #5387. Test added.
