@@ -3934,6 +3934,25 @@ test(1228.4, class(DT), class(DT[, sum(b), by=a]))
 test(1228.5, class(DT), class(DT[a>1, sum(b), by=a]))
 test(1228.6, class(DT), class(DT[a>1, c:=sum(b), by=a]))
 
+# savetl_init error after error, in v1.9.2, thanks Arun
+DT <- data.table(x=1:5, y=10:6)
+test(1229.1, DT[forder(DT, -1)], error="out of range.*1,2")
+test(1229.2, setkey(DT), data.table(x=1:5, y=10:6, key="x,y"))
+# umlaut in column names (red herring I think, but testing anyway)
+sentEx = data.table(abend = c(1, 1, 0, 0, 2),
+                    aber = c(0, 1, 0, 0, 0), 
+                    über = c(1, 0, 0, 0, 0),
+                    überall = c(0, 0, 0, 0, 0),
+                    überlegt = c(0, 0, 0, 0, 0),
+                    ID = structure(c(1L, 1L, 2L, 2L, 2L), .Label = c("0019", "0021"), class = "factor"),
+                    abgeandert = c(1, 1, 1, 0, 0),
+                    abgebildet = c(0, 0, 1, 1, 0),
+                    abgelegt = c(0, 0, 0, 0, 3))
+test(1229.3, sentEx[, lapply(.SD, sum), by=ID], data.table(ID=factor(c("0019","0021")), abend=c(2,2), aber=c(1,0), über=c(1,0),
+             überall=c(0,0), überlegt = c(0,0), abgeandert=c(2,1), abgebildet = c(0,2), abgelegt=c(0,3)))
+
+
+
 ##########################
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forder (ref R wish #15644)

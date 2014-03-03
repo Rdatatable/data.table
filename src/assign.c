@@ -728,10 +728,10 @@ void savetl(SEXP s)
 }
 
 void savetl_end() {
-    int i;
-    if (nalloc==0 || nsaved>nalloc || saveds==NULL || savedtl==NULL) error("Internal error: savetl_end checks failed (%d %d %p %p). Please report to datatable-help.", nsaved, nalloc, saveds, savedtl);
-    for (i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
-    Free(saveds);
+    // Can get called if nothing has been saved yet (nsaved==0), or even if _init() hasn't been called yet (pointers NULL). Such
+    // as to clear up before error. Also, it might be that nothing needed to be saved anyway.
+    for (int i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
+    Free(saveds);  // does nothing on NULL input
     Free(savedtl);
     nsaved = nalloc = 0;
     saveds = NULL;

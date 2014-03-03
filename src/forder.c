@@ -21,11 +21,17 @@ static int *newo = NULL;       // used by forder and [i|d|c]sort to reorder orde
 extern size_t sizes[];             // See dogroups.c for this shared variable
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
+extern void savetl_init(), savetl(SEXP s), savetl_end();  // in assign.c currently but will move to chmatch.c
+#define Error(...) do {savetl_end(); error(__VA_ARGS__);} while(0)   // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
+#undef warning
+#define warning(...) Do not use warning in this file  // since it can be turned to error via warn=2
+// use malloc/realloc (not Calloc/Realloc) so we can trap errors and call savetl_end() before the error().
+
 static void growstack(int newlen) {
     if (newlen==0) newlen=100000;   // no link to icount range restriction, just 100,000 seems a good minimum at 0.4MB.
     if (newlen>gsmaxalloc) newlen=gsmaxalloc;
     gs[flip] = realloc(gs[flip], newlen*sizeof(int));
-    if (gs[flip] == NULL) error("Failed to realloc working memory stack to %d*4bytes (flip=%d)", newlen, flip);
+    if (gs[flip] == NULL) Error("Failed to realloc working memory stack to %d*4bytes (flip=%d)", newlen, flip);
     gsalloc[flip] = newlen;
 }
 
@@ -124,7 +130,7 @@ static void icount(int *x, int *o, int n, int order)
     // static is important, countingsort called repetitively. counts are set back to 0 at the end efficiently.
     // 1e5 = 0.4MB i.e tiny. We'll only use the front part of it, as large as range. So it's just reserving space, not using it.
     // TO DO: #define 100000.
-    if (range > 100000) error("Internal error: range=%d; isorted can't handle range>1e5", range);
+    if (range > 100000) Error("Internal error: range=%d; isorted can't handle range>1e5", range);
     for(i=0; i<n; i++) {
         if (x[i] == NA_INTEGER) counts[napos]++;
         else counts[off+ order*x[i]]++;
@@ -206,7 +212,7 @@ static int *otmp=NULL, otmp_alloc=0;
 static void alloc_otmp(int n) {
     if (otmp_alloc >= n) return;
     otmp = (int *)realloc(otmp, n * sizeof(int));
-    if (otmp == NULL) error("Failed to allocate working memory for otmp. Requested %d * %d bytes", n, sizeof(int));
+    if (otmp == NULL) Error("Failed to allocate working memory for otmp. Requested %d * %d bytes", n, sizeof(int));
     otmp_alloc = n;
 }
 
@@ -214,7 +220,7 @@ static void *xtmp=NULL; int xtmp_alloc=0;  // TO DO: save xtmp if possible, see 
 static void alloc_xtmp(int n) {        // TO DO: currently always the largest type (double) but could be int if that's all that's needed
     if (xtmp_alloc >= n) return;
     xtmp = (double *)realloc(xtmp, n * sizeof(double));
-    if (xtmp == NULL) error("Failed to allocate working memory for xtmp. Requested %d * %d bytes", n, sizeof(double));
+    if (xtmp == NULL) Error("Failed to allocate working memory for xtmp. Requested %d * %d bytes", n, sizeof(double));
     xtmp_alloc = n;
 }
 
@@ -271,7 +277,7 @@ static void iradix(int *x, int *o, int n, int order)
         // TO DO: could include extra bits to divide the first radix up more. Often the MSD has groups in just 0-4 out of 256.
         // free'd at the end of forder once we're done calling iradix repetitively
         radix_xsub = (int *)realloc(radix_xsub, maxgrpn*sizeof(double));  // realloc(NULL) == malloc
-        if (!radix_xsub) error("Failed to realloc working memory %d*8bytes (xsub in iradix), radix=%d", maxgrpn, radix);
+        if (!radix_xsub) Error("Failed to realloc working memory %d*8bytes (xsub in iradix), radix=%d", maxgrpn, radix);
         radix_xsuballoc = maxgrpn;
     }
     
@@ -280,7 +286,7 @@ static void iradix(int *x, int *o, int n, int order)
     
     nextradix = radix-1;
     while (nextradix>=0 && skip[nextradix]) nextradix--;
-    if (thiscounts[0] != 0) error("Internal error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix);
+    if (thiscounts[0] != 0) Error("Internal error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix);
     thiscounts[256] = n;
     itmp = 0;
     for (i=1; itmp<n && i<=256; i++) {
@@ -333,7 +339,7 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
     while (nextradix>=0 && skip[nextradix]) nextradix--;
     // TO DO:  If nextradix==-1 AND no further columns from forder AND !retGrp,  we're done. We have o. Remember to memset thiscounts before returning.
     
-    if (thiscounts[0] != 0) error("Logical error. thiscounts[0]=%d but should have been decremented to 0. radix=%d", thiscounts[0], radix);
+    if (thiscounts[0] != 0) Error("Logical error. thiscounts[0]=%d but should have been decremented to 0. radix=%d", thiscounts[0], radix);
     thiscounts[256] = n;
     itmp = 0;
     for (i=1; itmp<n && i<=256; i++) {
@@ -381,7 +387,7 @@ SEXP twiddlewrapper(SEXP x)
 {
 // Expose bit rounding part of twiddle to R level to demonstrate/inspect only. Not for use internally at R level.
 // Don't expose the other parts of twiddle, since those only make sense when viewed as a long long.
-    if (!isReal(x)) error("x not a 'numeric' vector");
+    if (!isReal(x)) Error("x not a 'numeric' vector");
     SEXP ans = PROTECT(duplicate(x));
     for (int i=0; i<LENGTH(x); i++) {
         u.d = REAL(ans)[i];
@@ -454,7 +460,7 @@ static void dradix(double *x, int *o, int n, int order)
         // TO DO: could include extra bits to divide the first radix up more. Often the MSD has groups in just 0-4 out of 256.
         // free'd at the end of forder once we're done calling iradix repetitively
         radix_xsub = (double *)realloc(radix_xsub, maxgrpn*sizeof(double));  // realloc(NULL) == malloc
-        if (!radix_xsub) error("Failed to realloc working memory %d*8bytes (xsub in dradix), radix=%d", maxgrpn, radix);
+        if (!radix_xsub) Error("Failed to realloc working memory %d*8bytes (xsub in dradix), radix=%d", maxgrpn, radix);
         radix_xsuballoc = maxgrpn;
     }
     
@@ -463,7 +469,7 @@ static void dradix(double *x, int *o, int n, int order)
     
     nextradix = radix-1;
     while (nextradix>=0 && skip[nextradix]) nextradix--;
-    if (thiscounts[0] != 0) error("Logical error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix);
+    if (thiscounts[0] != 0) Error("Logical error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix);
     thiscounts[256] = n;
     itmp = 0;
     for (i=1; itmp<n && i<=256; i++) {
@@ -534,7 +540,7 @@ static void dradix_r(unsigned long long *xsub, int *osub, int n, int radix)
     while (nextradix>=0 && skip[nextradix]) nextradix--;
     // TO DO:  If nextradix==-1 and no further columns from forder,  we're done. We have o. Remember to memset thiscounts before returning.
     
-    if (thiscounts[0] != 0) error("Logical error. thiscounts[0]=%d but should have been decremented to 0. radix=%d", thiscounts[0], radix);    
+    if (thiscounts[0] != 0) Error("Logical error. thiscounts[0]=%d but should have been decremented to 0. radix=%d", thiscounts[0], radix);    
     thiscounts[256] = n;
     itmp = 0;
     for (i=1; itmp<n && i<=256; i++) {
@@ -619,7 +625,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
         memset(thiscounts, 0, 256*sizeof(int)); 
         return;
     }
-    if (thiscounts[0] != 0) error("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d", thiscounts[0], radix);
+    if (thiscounts[0] != 0) Error("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d", thiscounts[0], radix);
     itmp = 0;
     for (i=1;i<256;i++) {
         if (thiscounts[i] == 0) continue;
@@ -631,8 +637,6 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
 }
 
-extern void savetl_init(), savetl(SEXP s), savetl_end();
-
 static SEXP *ustr = NULL;
 static int ustr_alloc = 0, ustr_n = 0;
 
@@ -643,12 +647,12 @@ static void cgroup(SEXP *x, int *o, int n, int order)
 //   Pushes group sizes onto stack
 // Only run when sortStr==FALSE. Basically a counting sort, in first appearance order, directly.
 // Since it doesn't sort the strings, the name is cgroup.
+// there is no _pre for this.  ustr created and cleared each time.
 {
     SEXP s;
     int i, k, cumsum;
     // savetl_init() is called once at the start of forder
-    // there is no _pre for this.  ustr created and cleared each time.
-    if (ustr_n != 0) error("Internal error. ustr isn't empty when starting cgroup: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);
+    if (ustr_n != 0) Error("Internal error. ustr isn't empty when starting cgroup: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);
     for(i=0; i<n; i++) {
         s = x[i];
         if (TRUELENGTH(s)<0) {                   // this case first as it's the most frequent
@@ -663,6 +667,7 @@ static void cgroup(SEXP *x, int *o, int n, int order)
             ustr_alloc = (ustr_alloc == 0) ? 10000 : ustr_alloc*2;  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc. 
             if (ustr_alloc>n) ustr_alloc = n;
             ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
+            if (ustr == NULL) Error("Unable to realloc %d * %d bytes in cgroup", ustr_alloc, sizeof(SEXP));
         }
         SET_TRUELENGTH(s, -1); 
         ustr[ustr_n++] = s;
@@ -687,7 +692,7 @@ static int *csort_otmp=NULL, csort_otmp_alloc=0;
 static void alloc_csort_otmp(int n) {
     if (csort_otmp_alloc >= n) return;
     csort_otmp = (int *)realloc(csort_otmp, n * sizeof(int));
-    if (csort_otmp == NULL) error("Failed to allocate working memory for csort_otmp. Requested %d * %d bytes", n, sizeof(int));
+    if (csort_otmp == NULL) Error("Failed to allocate working memory for csort_otmp. Requested %d * %d bytes", n, sizeof(int));
     csort_otmp_alloc = n;
 }
 
@@ -707,7 +712,7 @@ static void csort(SEXP *x, int *o, int n, int order)
         iinsert(csort_otmp, o, n, order);
     } else {
         setRange(csort_otmp, n, order);
-        if (range == NA_INTEGER) error("Internal error. csort's otmp contains all-NA");
+        if (range == NA_INTEGER) Error("Internal error. csort's otmp contains all-NA");
         int *target = o[0] ? newo : o; 
         if (range<=10000) // && range<n)  TO DO: calibrate(). radix was faster (9.2s "range<=10000" instead of 11.6s "range<=100000 && range<n") for run(7) where range=100000 n=10000000
             icount(csort_otmp, target, n, order);
@@ -726,7 +731,6 @@ static void csort_pre(SEXP *x, int n)
     SEXP s;
     int i, old_un, new_un;
     // savetl_init() is called once at the start of forder
-    // maxlen = 1;  initialized to 1, and reset to 1 in csort_post. So that cradix_r knows the maximum radix. 1 not 0 for when only "" and NA
     old_un = ustr_n;
     for(i=0; i<n; i++) {
         s = x[i];
@@ -739,6 +743,7 @@ static void csort_pre(SEXP *x, int n)
             ustr_alloc = (ustr_alloc == 0) ? 10000 : ustr_alloc*2;  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc. 
             if (ustr_alloc > old_un+n) ustr_alloc = old_un + n;
             ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
+            if (ustr==NULL) Error("Failed to realloc ustr. Requested %d * %d bytes", ustr_alloc, sizeof(SEXP));
         }
         SET_TRUELENGTH(s, -1);  // this -1 will become its ordering later below
         ustr[ustr_n++] = s;
@@ -752,12 +757,12 @@ static void csort_pre(SEXP *x, int n)
     if (cradix_counts_alloc < maxlen) {
         cradix_counts_alloc = maxlen + 10;   // +10 to save too many reallocs
         cradix_counts = (int *)realloc(cradix_counts, cradix_counts_alloc * 256 * sizeof(int) );  // stack of counts
-        if (!cradix_counts) error("Failed to alloc cradix_counts");
+        if (!cradix_counts) Error("Failed to alloc cradix_counts");
         memset(cradix_counts, 0, cradix_counts_alloc * 256 * sizeof(int));
     }
     if (cradix_xtmp_alloc < ustr_n) {
         cradix_xtmp = (SEXP *)realloc( cradix_xtmp,  ustr_n * sizeof(SEXP) );  // TO DO: Reuse the one we have in forder. Does it need to be n length?
-        if (!cradix_xtmp) error("Failed to alloc cradix_tmp");
+        if (!cradix_xtmp) Error("Failed to alloc cradix_tmp");
         cradix_xtmp_alloc = ustr_n;
     }
     cradix_r(ustr, ustr_n, 0);  // sorts ustr in-place by reference
@@ -844,14 +849,14 @@ static int csorted(SEXP *x, int n, int order)
 
 static void isort(int *x, int *o, int n, int order)
 {
-    if (n<=2) error("Internal error: isort received n=%d. isorted should have dealt with this (e.g. as a reverse sorted vector) already",n);
+    if (n<=2) Error("Internal error: isort received n=%d. isorted should have dealt with this (e.g. as a reverse sorted vector) already",n);
     if (n<200 && o[0]) {    // see comment above in iradix_r re 200.
         // if not o[0] then can't just populate with 1:n here, since x is changed by ref too (so would need to be copied).
         iinsert(x, o, n, order);  // pushes inside too.  changes x and o by reference, so not suitable in first column when o hasn't been populated yet and x is the actual column in DT (hence check on o[0])
         return;
     }
     setRange(x, n, order);   // Tighter range (e.g. copes better with a few abormally large values in some groups), but also, when setRange was once at colum level that caused an extra scan of (long) x first. 10,000 calls to setRange takes just 0.04s i.e. negligible.
-    if (range==NA_INTEGER) error("Internal error: isort passed all-NA. isorted should have caught this before this point");
+    if (range==NA_INTEGER) Error("Internal error: isort passed all-NA. isorted should have caught this before this point");
     int *target = o[0] ? newo : o;
     if (range<=100000 && range<=n) {   // was range<10000 for subgroups, but 1e5 for the first column, tried to generalise here.  1e4 rather than 1e5 here because iterated
         icount(x, target, n, order);
@@ -863,7 +868,7 @@ static void isort(int *x, int *o, int n, int order)
 
 static void dsort(double *x, int *o, int n, int order)
 {
-    if (n<=2) error("Internal error: dsort received n=%d. dsorted should have dealt with this (e.g. as a reverse sorted vector) already",n); 
+    if (n<=2) Error("Internal error: dsort received n=%d. dsorted should have dealt with this (e.g. as a reverse sorted vector) already",n); 
     if (n<200 && o[0]) {    // see comment above in iradix_r re 200,  and isort for o[0]
         for (int i=0; i<n; i++) ((unsigned long long *)x)[i] = twiddle(&x[i]);
         dinsert((unsigned long long *)x, o, n, order);
@@ -885,7 +890,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg)
     clock_t tstart;  // local variable to mask the global tstart for ease when timing sub funs
 #endif
     TBEG()
-    savetl_init();
     
     if (isNewList(DT)) {
         if (!length(DT)) error("DT is an empty list() of 0 columns");
@@ -912,7 +916,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg)
     xd = DATAPTR(x);
     
     stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
-    
+    savetl_init();   // now use Error not error.
+
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :
         tmp = isorted(xd, n, order[0]); break;
@@ -921,7 +926,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg)
     case STRSXP :
         tmp = csorted(xd, n, order[0]); break;
     default :
-        error("First column being ordered is type '%s', not yet supported", type2char(TYPEOF(x)));
+        Error("First column being ordered is type '%s', not yet supported", type2char(TYPEOF(x)));
     }
     if (tmp) {  // -1 or 1
         if (tmp==1) {                         // same as expected in 'order' (1 = increasing, -1 = decreasing)
@@ -944,7 +949,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg)
             else cgroup(xd, o, n, order[0]); // no increasing/decreasing order required if sortStr = FALSE, order[0] here is just a dummy argument
             break;
         default :
-            error("Internal error: previous default should have caught unsupported type");
+            Error("Internal error: previous default should have caught unsupported type");
         }
     }
     TEND(0)
@@ -955,9 +960,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg)
     
     if (length(by)>1 && gsngrp[flip]<n) {
         xsub = (void *)malloc(maxgrpn * sizeof(double));   // double is the largest type, 8. TO DO: check in init.c
-        if (xsub==NULL) error("Couldn't allocate xsub in forder, requested %d * %d bytes.", maxgrpn, sizeof(double));
+        if (xsub==NULL) Error("Couldn't allocate xsub in forder, requested %d * %d bytes.", maxgrpn, sizeof(double));
         newo = (int *)malloc(maxgrpn * sizeof(int));  // global variable, used by isort, dsort, sort and cgroup
-        if (newo==NULL) error("Couldn't allocate newo in forder, requested %d * %d bytes.", maxgrpn, sizeof(int));
+        if (newo==NULL) Error("Couldn't allocate newo in forder, requested %d * %d bytes.", maxgrpn, sizeof(int));
     }
     TEND(1)  // should be negligible time to malloc even large blocks, but time it anyway to be sure
     
@@ -979,10 +984,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg)
             else g = &cgroup; // no increasing/decreasing order required if sortStr = FALSE, just a dummy argument
             break;
         default:
-           error("Column %d of 'by' (%d) is type '%s', not yet supported", col, INTEGER(by)[col-1], type2char(TYPEOF(x)));
+           Error("Column %d of 'by' (%d) is type '%s', not yet supported", col, INTEGER(by)[col-1], type2char(TYPEOF(x)));
         }
         size_t size = SIZEOF(x);
-        if (size!=4 && size!=8) error("Column %d of 'by' is supported type '%s' but size (%d) isn't 4 or 8\n", col, type2char(TYPEOF(x)), size);
+        if (size!=4 && size!=8) Error("Column %d of 'by' is supported type '%s' but size (%d) isn't 4 or 8\n", col, type2char(TYPEOF(x)), size);
         // sizes of int and double are checked to be 4 and 8 respectively in init.c
         i = 0;
         for (grp=0; grp<ngrp; grp++) {
@@ -1036,12 +1041,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg)
     Rprintf("Found %d groups and maxgrpn=%d\n", gsngrp[flip], gsmax[flip]);
 #endif
     
-    if (!sortStr && ustr_n!=0) error("Internal error: at the end of forder sortStr==FALSE but ustr_n!=0 [%d]", ustr_n);
+    if (!sortStr && ustr_n!=0) Error("Internal error: at the end of forder sortStr==FALSE but ustr_n!=0 [%d]", ustr_n);
     for(int i=0; i<ustr_n; i++)
         SET_TRUELENGTH(ustr[i],0);
     maxlen = 1;  // reset global. Minimum needed to count "" and NA
     ustr_n = 0;
-    savetl_end();  // hence important no early returns or error()s above. TO DO: wrap error() with globError() to clear up.
+    savetl_end();
     free(ustr);                ustr=NULL;          ustr_alloc=0;
     
     if (isSorted) {
@@ -1085,7 +1090,7 @@ SEXP fsorted(SEXP x)
     void *xd;
     n = length(x);
     if (n <= 1) return(ScalarLogical(TRUE));
-    if (!isVectorAtomic(x)) error("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level");
+    if (!isVectorAtomic(x)) Error("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level");
     xd = DATAPTR(x);
     stackgrps = FALSE;
     switch(TYPEOF(x)) {
@@ -1096,7 +1101,7 @@ SEXP fsorted(SEXP x)
     case STRSXP :
         tmp = csorted(xd, n, 1); break;
     default :
-        error("type '%s' is not yet supported", type2char(TYPEOF(x)));
+        Error("type '%s' is not yet supported", type2char(TYPEOF(x)));
     }
     return(ScalarLogical( tmp==1 ? TRUE : FALSE ));
 }
@@ -1127,7 +1132,7 @@ SEXP fsorted(SEXP x)
         t[6+radix] += clock()-tt;
         firstTime = FALSE;
     }
-    if (firstTime) error("Internal error: x is one repeated number so isorted should have skipped iradix, but iradix has been called and skipped all 4 radix");
+    if (firstTime) Error("Internal error: x is one repeated number so isorted should have skipped iradix, but iradix has been called and skipped all 4 radix");
 }
 
 */
