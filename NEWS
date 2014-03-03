@@ -22,6 +22,11 @@ BUG FIXES
        DT = data.table(a=1:2, b=letters[1:6], key="a,b")    # keyed by a and b
        DT[.(1), list(b,...)]    # correct result again (joining just to a not b but using b)
 
+  o  data.table(list()), data.table(data.table()), data.table(data.frame()) return null data.table 
+     as expected. Closes #5377. Thanks to Shubh Bansal for reporting.
+
+  o  unique(NULL data.table) returns a null data.table back as expected. Closes #5405. Thanks to 
+     agstudy for reporting.
 
         **********************************************
         **                                          **
