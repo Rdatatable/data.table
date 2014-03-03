@@ -163,7 +163,7 @@ setorder = function(x, ...)
 {
     if (!is.data.table(x)) stop("x must be a data.table.")
     cols = substitute(list(...))[-1]
-    if (identical(as.character(cols),"NULL")) return(invisible(x))
+    if (identical(as.character(cols),"NULL")) return(x)
     if (length(cols)) {
         cols=as.list(cols)
         order=rep(1L, length(cols))
