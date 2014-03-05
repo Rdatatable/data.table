@@ -43,6 +43,10 @@ BUG FIXES
      supported in column names in data.table. Fix implemented and test added.
        http://stackoverflow.com/questions/22128047/how-to-avoid-weird-umlaute-error-when-using-data-table
 
+  o  'setkey' doesn't allow list columns as keys. However, a bug in 'setkey' did not allow setting key on data.table 
+     just containing list columns. This is now fixed. Closes #5366. Thanks to James Sams for reporting and to Michael 
+     Nelson for pinpointing the issue with a minimal reproducible example. Also thanks to MusX for reporting on SO:
+     http://stackoverflow.com/questions/22186798/r-data-table-1-9-2-issue-on-setkey
 
         **********************************************
         **                                          **

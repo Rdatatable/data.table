@@ -3956,6 +3956,12 @@ test(1229.3, sentEx[, lapply(.SD, sum), by=ID], data.table(ID=factor(c("0019","0
 DT <- data.table(x=1:5, y=6:10, key="x")
 test(1230, key(setorder(DT, x)), NULL)
 
+# Fix for bug #5366 - setkey fails when non-key columns are of type list.
+DT <- data.table(x=5:1, y=as.list(1:5))
+test(1238.1, setkey(DT, x), setattr(data.table(x=1:5, y=as.list(5:1)), 'sorted', 'x'))
+DT <- data.table(x=5:1, y=as.list(1:5))
+test(1238.2, setorder(DT, x), data.table(x=1:5, y=as.list(5:1)))
+
 ##########################
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forder (ref R wish #15644)
