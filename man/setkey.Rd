@@ -7,7 +7,6 @@
 \alias{copy}
 \alias{setattr}
 \alias{setnames}
-\alias{setDT}
 \title{ Create key on a data table }
 \description{
   \code{setkey()} sorts a \code{data.table} and marks it as sorted. The sorted columns are the key. The key can be any columns in any order. The columns are sorted in ascending order always. The table is changed \emph{by reference}. No copy is made at all, other than temporary working memory as large as one column.
@@ -22,12 +21,10 @@ haskey(x)
 copy(x)
 setattr(x,name,value)
 setnames(x,old,new)
-setcolorder(x,neworder)
 key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
-setDT(x, giveNames=TRUE)
 }
 \arguments{
-  \item{x}{ A \code{data.table}. Other than \code{setattr} which accepts any input; e.g, columns of a \code{data.frame} or \code{data.table}, and \code{setnames} which accepts \code{data.frame}, and \code{setDT} which takes a \code{list}, \code{data.frame} or \code{data.table} as input, too. }
+  \item{x}{ A \code{data.table}. Other than \code{setattr} which accepts any input; e.g, columns of a \code{data.frame} or \code{data.table}, and \code{setnames} which accepts \code{data.frame}, too. }
   \item{\dots}{ The columns to sort by. Do not quote the column names. If \code{\dots} is missing (i.e. \code{setkey(DT)}), all the columns are used. \code{NULL} removes the key. }
   \item{cols}{ A character vector (only) of column names. }
   \item{value}{ In (deprecated) \code{key<-}, a character vector (only) of column names. In \code{setattr}, the value to assign to the attribute or \code{NULL} removes the attribute, if present. }
@@ -35,8 +32,6 @@ setDT(x, giveNames=TRUE)
   \item{verbose}{ Output status and information. }
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, the new column names, which must be the same length as the number of columns. See examples. }
   \item{new}{ Optional. New column names, the same length as \code{old}. } 
-  \item{neworder}{ Character vector of the new column name ordering. May also be column numbers. }
-  \item{giveNames}{ For \code{list} input to \code{setDT}, \code{TRUE} automatically generates missing column names. \code{FALSE} sets column names to \code{""} }
 }
 \details{
   For columns of type \code{integer}, the sort is attempted with the very fast \code{"radix"} method in \code{\link[base]{sort.list}}. If that fails, for versions <= 1.8.10, the sort reverts to the default method in \code{\link[base]{order}} and for versions > 1.8.10 it reverts to a (newly implemented) very fast 3-pass radix order for integers (adapted from Michael Herf's code, see link below). For columns of \code{numeric} type, a modified version of base's comparison sort is used in versions <= 1.8.10. From versions > 1.8.10, a very fast 6-pass radix order for double is implemented and used (also adapted from Michael Herf's code). This gives a speed-up of about 5-8x for versions > 1.8.10 on \code{setkey} and all internal \code{order}/\code{sort} operations.
@@ -64,7 +59,7 @@ setDT(x, giveNames=TRUE)
 }
 \note{ Despite its name, \code{base::sort.list(x,method="radix")} actually invokes a \emph{counting sort} in R, not a radix sort. See do_radixsort in src/main/sort.c. A counting sort, however, is particularly suitable for sorting integers and factors, and we like it. In fact we like it so much that \code{data.table} contains a counting sort algorithm for character vectors using R's internal global string cache. This is particularly fast for character vectors containing many duplicates, such as grouped data in a key column. This means that character is often preferred to factor. Factors are still fully supported, in particular ordered factors (where the levels are not in alphabetic order).
 }
-\seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}}, \code{\link[base]{sort.list}}, \code{\link{copy}}, \code{\link{:=}}, \code{\link{setorder}}
+\seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}}, \code{\link[base]{sort.list}}, \code{\link{copy}}, \code{\link{set}} \code{\link{:=}}, \code{\link{setorder}}, \code{\link{setDT}}
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
@@ -107,14 +102,6 @@ setDT(x, giveNames=TRUE)
     setnames(DT,c("X","Y","Z"))        # replace all
     
     # And, no copy of DT was made by setnames() at all.
-
-    # setDT
-    X = list(1:4, letters[1:4])
-    setDT(X) # list to data.table by reference, auto-fill names    
-    X = list(a=1:4, letters[1:4])
-    setDT(X, FALSE) # list to data.table by reference, don't give names
-    X = data.frame(a=1:4, b=letters[1:4])
-    setDT(X) # data.frame to data.table by reference
 }
 \keyword{ data }
 
