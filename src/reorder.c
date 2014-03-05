@@ -60,12 +60,11 @@ SEXP reorder(SEXP x, SEXP order)
         ncol = length(x);
         for (i=0;i<ncol;i++) {
             v = VECTOR_ELT(x,i);
-            // changed from previous "!isVectorAtomic(v)". Fix for #5366 - should work okay on list columns.
-            if (SIZEOF(v) == 0) error("Item %d of list is not a vector", i+1);
+            if (SIZEOF(v) == 0) error("Item %d of list is type '%s' which isn't yet supported", i+1, type2char(TYPEOF(v)));
             if (length(v)!=nrow) error("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table.", i+1, length(v), nrow);
         }
     } else {
-        if (!isVectorAtomic(x)) error("reorder accepts lists (e.g. data.table) or vectors");
+        if (SIZEOF(x) == 0) error("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported", type2char(TYPEOF(x)));
         nrow = length(x);
         ncol = 1;
     }
