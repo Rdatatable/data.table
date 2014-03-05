@@ -48,6 +48,9 @@ BUG FIXES
      Nelson for pinpointing the issue with a minimal reproducible example. Also thanks to MusX for reporting on SO:
      http://stackoverflow.com/questions/22186798/r-data-table-1-9-2-issue-on-setkey
 
+  o  Column order was reversed in certain cases with as.data.table.table(.). This is now fixed. Closes #5408.
+     Thanks to Benjamin Barnes for reporting.
+
         **********************************************
         **                                          **
         **   CHANGES IN DATA.TABLE VERSION 1.9.2    **

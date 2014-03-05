@@ -3962,6 +3962,16 @@ test(1238.1, setkey(DT, x), setattr(data.table(x=1:5, y=as.list(5:1)), 'sorted',
 DT <- data.table(x=5:1, y=as.list(1:5))
 test(1238.2, setorder(DT, x), data.table(x=1:5, y=as.list(5:1)))
 
+# Fix for bug #5408 - order of as.data.table.table is different when doing as.data.table(with(DT, table(x,y)))
+set.seed(123)
+DT <- data.table(XX = sample(LETTERS[1:5], 1000, replace = TRUE), yy = sample(1:5, 1000, replace = TRUE))
+ans1 <- as.data.table(DT[, table(XX, yy)])
+ans2 <- as.data.table(table(DT$XX, DT$yy))
+setnames(ans1, 'N', 'Freq')
+setnames(ans2, names(ans1))
+test(1239.1, ans1, setDT(as.data.frame(with(DT, table(XX, yy)), stringsAsFactors=FALSE)))
+test(1239.2, ans2, ans1)
+
 ##########################
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forder (ref R wish #15644)

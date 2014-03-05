@@ -1482,10 +1482,12 @@ R300_provideDimnames = function (x, sep = "", base = list(LETTERS))   # backport
 
 # as.data.table.table - FR #4848
 as.data.table.table <- function(x, keep.rownames=FALSE) {
-    ans <- data.table(do.call(CJ, c(rev(dimnames(R300_provideDimnames(x))), sorted=FALSE)), N = as.vector(x))
-    nm <- copy(names(ans))
-    setcolorder(ans, c(rev(head(nm, -1)), "N"))
-    setattr(ans, 'names', nm)
+    # Fix for bug #5408 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
+    val = rev(dimnames(R300_provideDimnames(x)))
+    if (is.null(names(val)) || all(nchar(names(val)) == 0L)) 
+        setattr(val, 'names', paste("V", rev(seq_along(val)), sep=""))
+    ans <- data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x))
+    setcolorder(ans, c(rev(head(names(ans), -1)), "N"))
     ans
 }
 
