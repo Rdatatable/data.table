@@ -3954,7 +3954,24 @@ test(1229.3, sentEx[, lapply(.SD, sum), by=ID], data.table(ID=factor(c("0019","0
 
 # check that key is not preserved when length of fastorder is > 0
 DT <- data.table(x=1:5, y=6:10, key="x")
-test(1230, key(setorder(DT, x)), NULL)
+test(1230.1, key(setorder(DT, x)), "x")
+test(1230.2, key(setorder(DT, -x)), NULL)
+
+# Fix for bug #5366 - setkey fails when non-key columns are of type list.
+DT <- data.table(x=5:1, y=as.list(1:5))
+test(1238.1, setkey(DT, x), setattr(data.table(x=1:5, y=as.list(5:1)), 'sorted', 'x'))
+DT <- data.table(x=5:1, y=as.list(1:5))
+test(1238.2, setorder(DT, x), data.table(x=1:5, y=as.list(5:1)))
+
+# Fix for bug #5408 - order of as.data.table.table is different when doing as.data.table(with(DT, table(x,y)))
+set.seed(123)
+DT <- data.table(XX = sample(LETTERS[1:5], 1000, replace = TRUE), yy = sample(1:5, 1000, replace = TRUE))
+ans1 <- as.data.table(DT[, table(XX, yy)])
+ans2 <- as.data.table(table(DT$XX, DT$yy))
+setnames(ans1, 'N', 'Freq')
+setnames(ans2, names(ans1))
+test(1239.1, ans1, setDT(as.data.frame(with(DT, table(XX, yy)), stringsAsFactors=FALSE)))
+test(1239.2, ans2, ans1)
 
 # Fix for bug #5366 - setkey fails when non-key columns are of type list.
 DT <- data.table(x=5:1, y=as.list(1:5))
