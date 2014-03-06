@@ -18,8 +18,8 @@
 #endif
 
 /*****    TO DO    *****
+construct test and investigate skip for completeness here: http://stackoverflow.com/questions/22086780/data-table-fread-error
 And even more diagnostics to verbose=TRUE so we can see where crashes are.
-Add R_CheckUserInterrupt() and bring back progress meter.
 colClasses shouldn't be ignored but rather respected and then warn if data accuracy is lost. See first NOTE in NEWS.
 Detect and coerce dates and times. By searching for - and :, and dateTtime etc, or R's own method or fasttime. POSIXct default, for microseconds? : http://stackoverflow.com/questions/14056370/cast-string-to-idatetime
 Fill in too-short lines :  http://stackoverflow.com/questions/21124372/fread-doesnt-like-lines-with-less-fields-than-other-lines
@@ -448,7 +448,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (filesize<=0) { CloseHandle(hFile); error("File is empty: %s", fnam); }
         hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL); // filesize+1 not allowed here, unlike mmap where +1 is zero'd
         if (hMap==NULL) { CloseHandle(hFile); error("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
-        if (verbose) Rprintf("File opened, filesize is %.3 GB\n", 1.0*filesize/(1024*1024*1024));
+        if (verbose) Rprintf("File opened, filesize is %.3f GB\n", 1.0*filesize/(1024*1024*1024));
         mmp = (const char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,filesize);
         if (mmp == NULL) {
             CloseHandle(hMap);
@@ -479,7 +479,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     ch = mmp;
     while (ch<eof && *ch!='\n' && *ch!='\r') {
-        if (*ch=='\"') while(++ch<eof && *ch!='\"');  // allow protection of \n and \r inside column names
+        if (*ch=='\"') while(++ch<eof && *ch!='\"');  // allow protection of \n and \r inside column names.  TO DO: ignore escaped \"
         ch++;                                         // this 'if' needed in case opening protection is not closed before eof
     }
     if (ch>=eof) {
@@ -687,9 +687,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     end = ch + eolLen;
     for (j=0; j<(nrow>15?3:1); j++) {
         switch(j) {
-        case 0: ch = pos;                str="first";    break;
-        case 1: ch = pos + (eof-pos)/2;  str="+middle";  break;
-        case 2: ch = end;                str="+last";    break;
+        case 0: ch = pos;                str="   first";  break;  // str same width so the codes line up vertically
+        case 1: ch = pos + (eof-pos)/2;  str="+ middle";  break;
+        case 2: ch = end;                str="+   last";  break;
         }
         if (j) {  // find start of next line
             while (ch<eof && *ch!=eol) ch++;
@@ -728,7 +728,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             while (ch<eof && *ch!=eol) ch++;
             if (ch<eof && *ch==eol) ch+=eolLen;
         }
-        if (verbose) { Rprintf("Type codes: "); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf(" (%s 5 rows)\n",str); }
+        if (verbose) { Rprintf("Type codes (%s 5 rows): ",str); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf("\n"); }
     }
     
     // ********************************************************************************************
@@ -843,7 +843,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     // Allocate columns for known nrow
     // ********************************************************************************************
-    if (verbose) Rprintf("Allocating %d column slots (%d - %d NULL)\n", ncol-numNULL, ncol, numNULL);
+    if (verbose) Rprintf("Allocating %d column slots (%d - %d dropped)\n", ncol-numNULL, ncol, numNULL);
     ans=PROTECT(allocVector(VECSXP,ncol-numNULL));  // safer to leave over allocation to alloc.col on return in fread.R
     protecti++;
     if (numNULL==0) {
