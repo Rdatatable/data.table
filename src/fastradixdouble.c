@@ -74,6 +74,8 @@ void hack_na_nan(unsigned long long *f) {
 #define _4(x) (x >> 44 & 0x7FF)
 #define _5(x) (x >> 55)
 
+#define STACK_HIST 2048
+
 // x should be of type numeric
 SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index) {
     int i;
@@ -95,16 +97,15 @@ SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index) {
     unsigned long long *sort = (unsigned long long*)REAL(xtmp);
             
     // 6 histograms on the stack:
-    const unsigned long long stack_hist = 2048;
-    unsigned long long b0[stack_hist * 6];
-    unsigned long long *b1 = b0 + stack_hist;
-    unsigned long long *b2 = b1 + stack_hist;
-    unsigned long long *b3 = b2 + stack_hist;
-    unsigned long long *b4 = b3 + stack_hist;
-    unsigned long long *b5 = b4 + stack_hist;
+    unsigned long long b0[STACK_HIST * 6];
+    unsigned long long *b1 = b0 + STACK_HIST;
+    unsigned long long *b2 = b1 + STACK_HIST;
+    unsigned long long *b3 = b2 + STACK_HIST;
+    unsigned long long *b4 = b3 + STACK_HIST;
+    unsigned long long *b5 = b4 + STACK_HIST;
 
     // definitely faster on big data than a for-loop
-    memset(b0, 0, stack_hist*6*sizeof(unsigned long long));
+    memset(b0, 0, STACK_HIST*6*sizeof(unsigned long long));
 
     // Step 1:  parallel histogramming pass
     for (i=0;i<n;i++) {
@@ -120,7 +121,7 @@ SEXP fastradixdouble(SEXP x, SEXP tol, SEXP return_index) {
     }
     
     // Step 2:  Sum the histograms -- each histogram entry records the number of values preceding itself.
-    for (i=0;i<stack_hist;i++) {
+    for (i=0;i<STACK_HIST;i++) {
 
         tsum = b0[i] + sum0;
         b0[i] = sum0 - 1;

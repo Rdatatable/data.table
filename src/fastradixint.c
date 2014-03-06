@@ -23,6 +23,8 @@ unsigned int invert_flip_int(unsigned int f) {
     return ((int)(f ^ 0x80000000));
 }
 
+#define STACK_HIST 2048
+
 SEXP fastradixint(SEXP x, SEXP return_index) {
     int i;
     unsigned int pos, fi, si, n;
@@ -41,13 +43,12 @@ SEXP fastradixint(SEXP x, SEXP return_index) {
     unsigned int *sort = (unsigned int*)INTEGER(ans);     
 
     // 3 histograms on the stack:
-    const unsigned int stack_hist = 2048;
-    unsigned int b0[stack_hist * 3];
-    unsigned int *b1 = b0 + stack_hist;
-    unsigned int *b2 = b1 + stack_hist;
+    unsigned int b0[STACK_HIST * 3];
+    unsigned int *b1 = b0 + STACK_HIST;
+    unsigned int *b2 = b1 + STACK_HIST;
     
     // definitely faster on big data than a for-loop
-    memset(b0, 0, stack_hist*3*sizeof(unsigned int));
+    memset(b0, 0, STACK_HIST*3*sizeof(unsigned int));
 
     // Step 1:  parallel histogramming pass
     for (i=0;i<n;i++) {
@@ -57,7 +58,7 @@ SEXP fastradixint(SEXP x, SEXP return_index) {
         b2[_2(fi)]++;
     }
     
-    for (i=0;i<stack_hist;i++) {
+    for (i=0;i<STACK_HIST;i++) {
 
         tsum = b0[i] + sum0;
         b0[i] = sum0 - 1;
