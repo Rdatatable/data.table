@@ -30,7 +30,7 @@ setorderv(x, cols, order=1L)
   
   By implementing \code{\link{forder}} to handle decreasing order as well, we now don't have to rely on \code{base:::order} anymore. It is now possible to reorder the rows of a \code{data.table} based on columns by reference, ex: \code{setorder(x, a, -b, c)}. Note that, \code{-b} also works with columns of type \code{character}, unlike \code{base:::order} which requires \code{-xtfrm(y)} (and is slow) instead.
   
-  Note that if the \code{data.table} is keyed, \code{setorder} will set it's key to \code{NULL}. 
+  Note that if \code{setorder} results in reordering of the rows of a keyed \code{data.table}, then it's key will be set to \code{NULL}.
   }
 \value{
     The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setorder(DT,a,-b)[, cumsum(c), by=list(a,b)]}. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). See \code{?copy}.
