@@ -11,6 +11,7 @@ guess <- function(x) {
 dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins = NULL, 
     subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
     if (!is.data.table(data)) stop("'data' must be a data.table.")
+    if (anyDuplicated(names(data))) stop('data.table to cast must have unique column names')
     is.formula <- function(x) class(x) == "formula"
     strip <- function(x) gsub("[[:space:]]*", "", x)
     if (is.formula(formula)) formula <- deparse(formula, 500)
@@ -38,9 +39,8 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     m <- as.list(match.call()[-1])
     subset <- m$subset[[2]]
     if (!is.null(subset)) data = data[eval(subset), unique(c(ff_, value.var)), with=FALSE] # TODO: revisit. Maybe too costly on large data
-    # From benchmarking A LOT on large data, I'm quite sure this'll hit performance on large data. Factors: as many 'malloc' as columns + "GC". See 'setorder' 
-    # example under 'what's new' section of our website to get an idea of why this is happening... Maybe we can move it to the C-side and do it ourselves using 
-    # 'reorder'? We do already have it!
+
+    # if original or subset'd data.table has 0 rows or cols, error.
     if (nrow(data) == 0L || ncol(data) == 0L) stop("Can't 'cast' on an empty data.table")
 
     # next, check and set 'fun.aggregate = length' it's null but at least one group size is > 1.
@@ -61,20 +61,32 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         m <- m[setdiff(names(m), args)]
         fun.aggregate <- as.call(c(m[1], as.name(value.var), m[-1]))
         fun.aggregate <- as.call(c(as.name("list"), setattr(list(fun.aggregate), 'names', value.var)))
+        # checking for #5191 (until fixed, this is a workaround
+        if (length(intersect(value.var, ff_))) fun.aggregate = as.call(list(as.name("{"), as.name(".SD"), fun.aggregate))
     }
     if (length(ff$rr) == 0) {
         if (is.null(fun.aggregate)) 
             ans = data[, c(ff$ll, value.var), with=FALSE]
         else {
-            ans = data[, eval(fun.aggregate), by=c(ff$ll)]
-            setnames(ans, value.var, "N")
+            # checking for #5191 (until fixed, this is a workaround
+            if (length(intersect(value.var, ff_))) ans = data[, eval(fun.aggregate), by=c(ff$ll), .SDcols=value.var]
+            else ans = data[, eval(fun.aggregate), by=c(ff$ll)]
         }
-        if (!identical(key(ans), ff$ll)) setkeyv(ans, ff$ll)
+        if (any(duplicated(names(ans)))) {
+            message("Duplicate column names found in cast data.table. Setting unique names using 'make.names'")   
+            setnames(ans, make.unique(names(ans)))
+        }
+        if (!identical(key(ans), ff$ll)) setkeyv(ans, names(ans)[seq_along(ff$ll)])
         return(ans)
     }
     # if fun.aggregate exists, then aggregate in R-side (now that 'adhoc-by' is extremely fast!)
     if (!is.null(fun.aggregate)) {
-        data = data[, eval(fun.aggregate), by=c(ff_)]
+        if (length(intersect(value.var, ff_))) {
+            data = data[, eval(fun.aggregate), by=c(ff_), .SDcols=value.var]
+            value.var = tail(make.unique(names(data)), 1L)
+            setnames(data, ncol(data), value.var)
+        }
+        else data = data[, eval(fun.aggregate), by=c(ff_)]
         setkeyv(data, ff_) # can't use 'oo' here, but should be faster as it's uncommon to have huge number of groups.
     }
     if (is.null(subset) && is.null(fun.aggregate)) {
@@ -82,7 +94,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         data = data[, unique(c(ff_, value.var)), with=FALSE] # we need the copy. using subsetting instead of copy(.) ensures copying of only required columns
         if (length(oo) && oo == 0L) setkeyv(data, ff_)
         else { # we can avoid 'forder' as it's already done
-            .Call(Creorder, data, oo)
+            if (length(oo)).Call(Creorder, data, oo)
             setattr(data, 'sorted', ff_)
         }
     }

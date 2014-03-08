@@ -43,7 +43,7 @@ The only feature that's not implemented from \code{reshape2:::dcast} *yet* is th
 }
 
 \note{
-\bold{Currently unimplemented features from \code{reshape2:::melt}:}
+\bold{Currently unimplemented features from \code{reshape2:::dcast}:}
 \enumerate{
 	\item At the moment, only formula interface is supported. That the argument \code{formula} can accept a list of quoted expressions is yet to be implemented. 
 	\item The argument \code{margins} is yet to be implemented. 
