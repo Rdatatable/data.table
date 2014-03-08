@@ -28,7 +28,7 @@ setorderv(x, cols, order=1L)
   
   \code{data.table} internally implements extremely fast radix based ordering, which will soon be exported and available as \code{forder}. However, in versions <= 1.9.2, fast ordering was only capable of increasing order (ascending). In versions >1.9.2, \code{data.table}'s internal fast order is also capable of sorting in decreasing order. Note that \code{\link{setkey}} still requires and will only sort in ascending order, and is not related to \code{setorder}. 
   
-  By implementing \code{\link{forder}} to handle decreasing order as well, we now don't have to rely on \code{base:::order} anymore. It is now possible to reorder the rows of a \code{data.table} based on columns by reference, ex: \code{setorder(x, a, -b, c)}. Note that, \code{-b} also works with columns of type \code{character}, unlike \code{base:::order} which requires \code{-xtfrm(y)} (and is slow) instead.
+  By implementing \code{forder} to handle decreasing order as well, we now don't have to rely on \code{base:::order} anymore. It is now possible to reorder the rows of a \code{data.table} based on columns by reference, ex: \code{setorder(x, a, -b, c)}. Note that, \code{-b} also works with columns of type \code{character}, unlike \code{base:::order} which requires \code{-xtfrm(y)} (and is slow) instead.
   
   Note that if \code{setorder} results in reordering of the rows of a keyed \code{data.table}, then it's key will be set to \code{NULL}.
   }

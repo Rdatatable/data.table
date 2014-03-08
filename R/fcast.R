@@ -13,9 +13,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     if (!is.data.table(data)) stop("'data' must be a data.table.")
     is.formula <- function(x) class(x) == "formula"
     strip <- function(x) gsub("[[:space:]]*", "", x)
-    if (is.formula(formula)) {
-        formula <- deparse(formula, 500)
-    }
+    if (is.formula(formula)) formula <- deparse(formula, 500)
     if (is.character(formula)) {
         ff <- strsplit(strip(formula), "~", fixed=TRUE)[[1]]
         if (length(ff) > 2)
@@ -35,50 +33,62 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         stop("Only 'value.var' column maybe of type 'list'. This may change in the future.")
     drop <- as.logical(drop[1])
     if (is.na(drop)) stop("'drop' must be TRUE/FALSE")
-    
-    is_sorted = length(key(data)) && length(ff_)<=length(key(data)) && all(key(data) == ff_[1:length(key(data))]) 
-    # is_sorted means by_key really. Not calling is.sorted() here, as that's done by forder at C level inside Cfcast
-    
-    # TO DO: better way... not sure how else to get an expression from function (in fun.aggregate)
+
+    # deal with 'subset' first
     m <- as.list(match.call()[-1])
     subset <- m$subset[[2]]
-    if (!is.null(subset))
-        vars <- intersect(names(data), all.vars(subset))
-    else vars <- NULL
+    if (!is.null(subset)) data = data[eval(subset), unique(c(ff_, value.var)), with=FALSE] # TODO: revisit. Maybe too costly on large data
+    # From benchmarking A LOT on large data, I'm quite sure this'll hit performance on large data. Factors: as many 'malloc' as columns + "GC". See 'setorder' 
+    # example under 'what's new' section of our website to get an idea of why this is happening... Maybe we can move it to the C-side and do it ourselves using 
+    # 'reorder'? We do already have it!
+    if (nrow(data) == 0L || ncol(data) == 0L) stop("Can't 'cast' on an empty data.table")
+
+    # next, check and set 'fun.aggregate = length' it's null but at least one group size is > 1.
+    oo = 0L
+    if (is.null(fun.aggregate)) {
+        oo = forder(data, by=ff_, retGrp=TRUE) # to check if the maximum group size is > 1 and is TRUE set fun.aggregate to length if it's NULL
+        if (attr(oo, 'maxgrpn') > 1L) {
+            message("Aggregate function missing, defaulting to 'length'")
+            fun.aggregate <- length
+            m[["fun.aggregate"]] = quote(length)
+        }
+    }
+    # TO DO: better way... not sure how else to get an expression from function (in fun.aggregate)
     fill.default <- NULL
     if (!is.null(fun.aggregate)) {
         fill.default = fun.aggregate(data[[value.var]][0], ...)
         args <- c("data", "formula", "margins", "subset", "fill", "value.var", "verbose", "drop")
         m <- m[setdiff(names(m), args)]
-        if (getOption("datatable.optimize") > 0L && m[[1]] == "mean") {
-            fun.aggregate <- as.call(c(as.name(".External"), as.name("Cfastmean"), as.name(value.var), 
-                                  if(!is.null(m[["na.rm"]])) list(m[["na.rm"]]) else list(FALSE)))
-        } else {
-            fun.aggregate <- as.call(c(m[1], as.name(value.var), m[-1]))
-        }
-        # make sure list columns on aggregation gives back a list column - have to do this because grouping returns a list only with list(list(.))
-        if (is.list(data[[value.var]]) || is.list(fill.default)) fun.aggregate <- as.call(c(as.name("list"), list(fun.aggregate)))
+        fun.aggregate <- as.call(c(m[1], as.name(value.var), m[-1]))
+        fun.aggregate <- as.call(c(as.name("list"), setattr(list(fun.aggregate), 'names', value.var)))
     }
     if (length(ff$rr) == 0) {
-        # probably simple formula - should be okay to deal in R
-        agg = data[, .N, keyby=c(ff$ll)] # if any N > 1, then default to length, else return data
-        if (all(agg$N == 1L)) {
+        if (is.null(fun.aggregate)) 
             ans = data[, c(ff$ll, value.var), with=FALSE]
-            if (!identical(key(ans), ff$ll)) setkeyv(ans, ff$ll)
-            return(ans)
+        else {
+            ans = data[, eval(fun.aggregate), by=c(ff$ll)]
+            setnames(ans, value.var, "N")
         }
-        if (is.null(fun.aggregate)) {
-            message("Aggregate function missing, defaulting to 'length'")
-            return(agg)
-        } else return(data[, eval(fun.aggregate), keyby=c(ff$ll)])
+        if (!identical(key(ans), ff$ll)) setkeyv(ans, ff$ll)
+        return(ans)
+    }
+    # if fun.aggregate exists, then aggregate in R-side (now that 'adhoc-by' is extremely fast!)
+    if (!is.null(fun.aggregate)) {
+        data = data[, eval(fun.aggregate), by=c(ff_)]
+        setkeyv(data, ff_) # can't use 'oo' here, but should be faster as it's uncommon to have huge number of groups.
+    }
+    if (is.null(subset) && is.null(fun.aggregate)) {
+        # 'data' has not been modified yet, so setkey and go to C.
+        data = data[, unique(c(ff_, value.var)), with=FALSE] # we need the copy. using subsetting instead of copy(.) ensures copying of only required columns
+        if (length(oo) && oo == 0L) setkeyv(data, ff_)
+        else { # we can avoid 'forder' as it's already done
+            .Call(Creorder, data, oo)
+            setattr(data, 'sorted', ff_)
+        }
     }
     .CASTenv = new.env(parent=parent.frame())
     assign("forder", forder, .CASTenv)
-    assign("print", function(x,...){base::print(x,...);NULL}, .CASTenv)
-    assign("Cfastmean", Cfastmean, .CASTenv)
-    assign("mean", base::mean.default, .CASTenv)
-    if (!is.null(vars)) for (i in vars) assign(i, data[[i]], .CASTenv) # assign subset vars directly in env
-    ans <- .Call("Cfcast", data, ff$ll, ff$rr, value.var, fill, .CASTenv, is_sorted, fun.aggregate, fill.default, drop, subset)
+    ans <- .Call("Cfcast", data, ff$ll, ff$rr, value.var, fill, fill.default, is.null(fun.aggregate), .CASTenv, drop)
     setDT(ans)
     if (any(duplicated(names(ans)))) {
         message("Duplicate column names found in cast data.table. Setting unique names using 'make.names'")   

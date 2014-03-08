@@ -3151,6 +3151,10 @@ if ("package:reshape2" %in% search()) {
     x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
     x2 <- dcast(DT, diet+chick~time, drop=FALSE, fill=0)
     test(1104, x1,x2)
+	# add test for 'subset' in dcast.data.table
+    x1 <- dcast(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20))
+    x2 <- as.data.frame(dcast.data.table(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20)))
+    test(1104.1, x1, x2)
 }
 
 # test for freading commands
@@ -3433,14 +3437,14 @@ if ("package:reshape2" %in% search()) {
         # Fix for case 2 in bug report #5149 - dcast.data.table dint aggregate properly when formula RHS has "."
         set.seed(45)
         DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
-        ans = data.table(dcast(DT, x ~ ., mean, value.var="y"))
+        ans = setDT(dcast(DT, x ~ ., mean, value.var="y"))
         setnames(ans, c("x", "V1"))
         setkey(ans, x)
         test(1148.1, dcast.data.table(DT, x ~ ., mean, value.var="y"), ans)
         # also quashed another bug with `.` in formula (when there's no aggregate function):
         DT <- data.table(a=sample(5), b=runif(5), c=5:1)
-        ans1 = data.table(dcast(DT, a ~ ., value.var="c"))
-        ans2 = data.table(dcast(DT, b+a ~ ., value.var="c"))
+        ans1 = setDT(dcast(DT, a ~ ., value.var="c"))
+        ans2 = setDT(dcast(DT, b+a ~ ., value.var="c"))
         setnames(ans1, c("a", "c"))
         setnames(ans2, c("b", "a", "c"))
         setkey(ans1, "a")
@@ -3457,7 +3461,7 @@ test(1149.2, iradixorder(numeric(0)), error="iradixorder is only for integer")
 set.seed(1)
 x <- data.table(a=rep(1:5, each=5), b=runif(25))
 ### adding all extra arguments for no verbose during "test.data.table()" to all dcast.data.table tests
-test(1150.1, dcast.data.table(x, " a~ . ", value.var="b", fun=length), data.table(a=1:5, V1=5L, key="a"))
+test(1150.1, dcast.data.table(x, " a~ . ", value.var="b", fun=length), data.table(a=1:5, N=5L, key="a"))
 test(1150.2, dcast.data.table(x, "a ~  c ", value.var="b"), error="Column 'c' not found")
 test(1150.3, dcast.data.table(x, a ~  a, value.var="c"), error="'value.var' column 'c' not found")
 
