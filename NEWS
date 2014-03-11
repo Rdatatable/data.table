@@ -61,6 +61,9 @@ BUG FIXES
   o  Column order was reversed in certain cases with as.data.table.table(.). This is now fixed. Closes #5408.
      Thanks to Benjamin Barnes for reporting.
 
+  o  `:=` adds new columns on empty data.tables as well now, ex: DT[, col := character(0)] adds 'col' when nrow(DT) = 0.
+     Closes #5376. Thanks to Shubh Bhansal for reporting.
+
         **********************************************
         **                                          **
         **   CHANGES IN DATA.TABLE VERSION 1.9.2    **
