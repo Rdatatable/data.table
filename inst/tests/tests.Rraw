@@ -4004,9 +4004,6 @@ test(1240.2, t1 < t2, TRUE)
 options(datatable.optimize=optim)
 # DONE
 
-# Fix for bug #5376 - := doesn't add empty cols on empty data.table
-DT = data.table(a=character(0),b=numeric(0))
-test(1241, DT[, c := integer(0)], data.table(a=character(0), b=numeric(0), c=integer(0)))
 
 ##########################
 
