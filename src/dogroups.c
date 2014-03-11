@@ -281,7 +281,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 if (TYPEOF(target)!=TYPEOF(RHS)) error("Type of RHS ('%s') must match LHS ('%s'). To check and coerce would impact performance too much for the fastest cases. Either change the type of the target column, or coerce the RHS of := yourself (e.g. by using 1L instead of 1)", type2char(TYPEOF(RHS)), type2char(TYPEOF(target)));
                 size = SIZEOF(target);
                 vlen = length(RHS);
-                // if (vlen==0) continue; // commented to fix bug #5376 - `:=` on 0-row data.table will add columns by reference now
+                if (vlen==0) continue;
                 if (vlen>grpn && j<LENGTH(jval)) warning("RHS %d is length %d (greater than the size (%d) of group %d). The last %d element(s) will be discarded.", j+1, vlen, grpn, i+1, vlen-grpn);
                 // fix for #4990 - `:=` did not issue recycling warning during "by" operation.
                 if (vlen<grpn && vlen>0 && grpn%vlen != 0) 
