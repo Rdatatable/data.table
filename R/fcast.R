@@ -46,7 +46,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     # next, check and set 'fun.aggregate = length' it's null but at least one group size is > 1.
     oo = 0L
     if (is.null(fun.aggregate)) {
-        oo = forder(data, by=ff_, retGrp=TRUE) # to check if the maximum group size is > 1 and is TRUE set fun.aggregate to length if it's NULL
+        oo = forderv(data, by=ff_, retGrp=TRUE) # to check if the maximum group size is > 1 and is TRUE set fun.aggregate to length if it's NULL
         if (attr(oo, 'maxgrpn') > 1L) {
             message("Aggregate function missing, defaulting to 'length'")
             fun.aggregate <- length
@@ -93,13 +93,13 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         # 'data' has not been modified yet, so setkey and go to C.
         data = data[, unique(c(ff_, value.var)), with=FALSE] # we need the copy. using subsetting instead of copy(.) ensures copying of only required columns
         if (length(oo) && oo == 0L) setkeyv(data, ff_)
-        else { # we can avoid 'forder' as it's already done
+        else { # we can avoid 'forderv' as it's already done
             if (length(oo)).Call(Creorder, data, oo)
             setattr(data, 'sorted', ff_)
         }
     }
     .CASTenv = new.env(parent=parent.frame())
-    assign("forder", forder, .CASTenv)
+    assign("forder", forderv, .CASTenv)
     ans <- .Call("Cfcast", data, ff$ll, ff$rr, value.var, fill, fill.default, is.null(fun.aggregate), .CASTenv, drop)
     setDT(ans)
     if (any(duplicated(names(ans)))) {

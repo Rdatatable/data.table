@@ -38,11 +38,11 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
     # o = fastorder(x, cols, verbose=verbose)
-    o = forder(x, cols, sort=TRUE, retGrp=FALSE)
+    o = forderv(x, cols, sort=TRUE, retGrp=FALSE)
     if (length(o)) {
         if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
         .Call(Creorder,x,o)
-    } # else empty integer() from forder means x is already ordered by those cols, nothing to do.
+    } # else empty integer() from forderv means x is already ordered by those cols, nothing to do.
     if (!alreadykeyedbythiskey) setattr(x,"sorted",cols)   # the if() just to save plonking an identical vector into the attribute
     invisible(x)
 }
@@ -87,11 +87,11 @@ setreordervec <- function(x, order) .Call(Creorder, x, order)
 
 is.sorted = function(x, by=seq_along(x)) {
     if (is.list(x)) {
-        warning("Use 'if (length(o<-forder(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted.")
-        # could pass through a flag for forder to return early on first FALSE. But we don't need that internally
+        warning("Use 'if (length(o<-forderv(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted.")
+        # could pass through a flag for forderv to return early on first FALSE. But we don't need that internally
         # since internally we always then need ordering, an it's better in one step. Don't want inefficiency to creep in.
         # This is only here for user/debugging use to check/test valid keys; e.g. data.table:::is.sorted(DT,by)
-        0 == length(forder(x,by,retGrp=FALSE,sort=TRUE))
+        0 == length(forderv(x,by,retGrp=FALSE,sort=TRUE))
     } else {
         if (!missing(by)) stop("x is vector but 'by' is supplied")
         .Call(Cfsorted, x)
@@ -101,7 +101,7 @@ is.sorted = function(x, by=seq_along(x)) {
     # Important to call forder.c::fsorted here, for consistent character ordering and numeric/integer64 twiddling.
 }
 
-forder = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L)
+forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L)
 {
     if (!(sort || retGrp)) stop("At least one of retGrp or sort must be TRUE")
     # TO DO: export and document forder
@@ -111,8 +111,8 @@ forder = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L)
         if ( !missing(order) && (length(order) != 1L || !(order %in% c(1L, -1L))) )
             stop("x is a single vector, length(order) must be =1 and it's value should be 1 (ascending) or -1 (descending).")
     } else {
-        if (!length(x)) return(integer(0)) # to be consistent with base:::order. this'll make sure forder(NULL) will result in error 
-                                           # (as base does) but forder(data.table(NULL)) and forder(list()) will return integer(0))
+        if (!length(x)) return(integer(0)) # to be consistent with base:::order. this'll make sure forderv(NULL) will result in error 
+                                           # (as base does) but forderv(data.table(NULL)) and forderv(list()) will return integer(0))
         if (is.character(by)) by=chmatch(by, names(x))
         by = as.integer(by)
         if ( (length(order) != 1L && length(order) != length(by)) || any(!order %in% c(1L, -1L)) )
@@ -123,7 +123,7 @@ forder = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L)
     .Call(Cforder, x, by, retGrp, sort, order)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-fast_order = function(x, ...)
+forder = function(x, ...)
 {
     if (!is.data.table(x)) stop("x must be a data.table.")
     cols = substitute(list(...))[-1]
@@ -147,7 +147,7 @@ fast_order = function(x, ...)
     }
     if (any(nchar(cols)==0)) stop("cols contains some blanks.")
     cols <- gsub("`", "", cols) # remove backticks from cols
-    miss = !(cols %in% colnames(x))                          # TODO: probably I'm checking more than necessary here.. there are checks in 'forder' as well
+    miss = !(cols %in% colnames(x))                          # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
     if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     if (".xi" %in% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
     for (i in cols) {
@@ -156,7 +156,7 @@ fast_order = function(x, ...)
             stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey.")
-    forder(x, cols, sort=TRUE, retGrp=FALSE, order=order)
+    forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order)
 }
 
 setorder = function(x, ...)
@@ -193,7 +193,7 @@ setorderv = function(x, cols, order=1L)
         warning("cols is a character vector of zero length. Use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
         return(x)
     }
-    if (any(nchar(cols)==0)) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forder' as well
+    if (any(nchar(cols)==0)) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
     if (!length(cols)) {
         cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
     } else {
@@ -209,10 +209,10 @@ setorderv = function(x, cols, order=1L)
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey.")
 
-    o = forder(x, cols, sort=TRUE, retGrp=FALSE, order=order)
+    o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order)
     if (length(o)) {
         .Call(Creorder, x, o)
-        setattr(x, 'sorted', NULL) # if 'forder' is not 0-length, it means order has changed. So, set key to NULL, else retain key.
+        setattr(x, 'sorted', NULL) # if 'forderv' is not 0-length, it means order has changed. So, set key to NULL, else retain key.
     }
     invisible(x)
 }
@@ -238,7 +238,7 @@ CJ = function(..., sorted = TRUE)
 
     # using rep.int instead of rep speeds things up considerably (but attributes are dropped).
     j = lapply(l, class)  # changed "vapply" to avoid errors with "ordered" "factor" input
-    if (length(l)==1L && sorted && length(o <- forder(l[[1L]])))
+    if (length(l)==1L && sorted && length(o <- forderv(l[[1L]])))
         l[[1L]] = l[[1L]][o]
     else if (length(l) > 1L) {
         n = vapply(l, length, 0L)
@@ -246,7 +246,7 @@ CJ = function(..., sorted = TRUE)
         x = c(rev(take(cumprod(rev(n)))), 1L)
         for (i in seq_along(x)) {
             y = l[[i]]
-            if (sorted && length(o <- forder(y))) y = y[o]
+            if (sorted && length(o <- forderv(y))) y = y[o]
             if (i == 1L) 
                 l[[i]] = rep.int(y, times = rep.int(x[i], n[i]))   # i.e. rep(y, each=x[i])
             else if (i == length(n))
@@ -311,7 +311,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         
         if (testback || baseline) ans[i, rand.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
         # in baseline mode, Cforder doesn't order, so y is needed to test baseline on ordered DT
-        ans[i, rand.forw := sum(system.time(x<<-forder(DT))[ttype])]
+        ans[i, rand.forw := sum(system.time(x<<-forderv(DT))[ttype])]
         if (testback) ans[i, faster1 := rand.forw<rand.back+tol]
         if (testback) if (!ident(x,y)) browser()
         
@@ -322,7 +322,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         if (FALSE) {
           # don't test perfectly ordered case. See note above.
           if (testback) ans[i, ord.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]
-          ans[i, ord.forw := sum(system.time(x<<-forder(DT))[ttype])]
+          ans[i, ord.forw := sum(system.time(x<<-forderv(DT))[ttype])]
           if (testback) ans[i, faster2 := ord.forw<ord.back+tol]
           if (testback) if (!ident(x,y)) browser()
         }
@@ -333,7 +333,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         if (IS.SORTED(DT)) stop("Table is sorted. Change to the top didn't work.")
         
         if (testback) ans[i, ordT.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # T for Top
-        ans[i, ordT.forw := sum(system.time(x<<-forder(DT))[ttype])]
+        ans[i, ordT.forw := sum(system.time(x<<-forderv(DT))[ttype])]
         if (testback) ans[i, faster2 := ordT.forw<ordT.back+tol]
         if (testback) if (!ident(x,y)) browser()
 
@@ -346,7 +346,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         if (IS.SORTED(DT)) stop("Table is sorted. Change to the very bottom didn't work.")
         
         if (testback) ans[i, ordB.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # B for Bottom
-        ans[i, ordB.forw := sum(system.time(x<<-forder(DT))[ttype])]
+        ans[i, ordB.forw := sum(system.time(x<<-forderv(DT))[ttype])]
         if (testback) ans[i, faster3 := ordB.forw<ordB.back+tol]
         if (testback) if (!ident(x,y)) browser()
         
@@ -358,7 +358,7 @@ bench = function(quick=TRUE, testback=TRUE, baseline=FALSE) {
         # Adding this test revealed the complexity that a reverse order vector containing ties, would not be stable if the reverse was applied. isorted fixed so that -1 returned only if strictly decreasing order
         
         if (testback) ans[i, rev.back := sum(system.time(y<<-fastorder(DT, 1:2))[ttype])]   # rev = reverse order
-        ans[i, rev.forw := sum(system.time(x<<-forder(DT))[ttype])]
+        ans[i, rev.forw := sum(system.time(x<<-forderv(DT))[ttype])]
         if (testback) ans[i, faster4 := rev.forw<rev.back+tol]
         if (testback) if (!ident(x,y)) browser()
         
@@ -434,14 +434,14 @@ regularorder1 <- function(x) {
 }
 
 ordernumtol = function(x, tol=.Machine$double.eps^0.5) {
-    o = forder(x)
+    o = forderv(x)
     if (length(o)) o else seq_along(x)
     # was as follows, but we removed Crorder_tol at C level. 
     #   o=seq_along(x)
     #   .Call(Crorder_tol,x,o,tol)
     #   o
     # Retaining this function (ordernumtol) so that fastorder and bench() still works. So we can
-    # still test forwards vs backwards through columns, but just using the new forder to sort the
+    # still test forwards vs backwards through columns, but just using the new forderv to sort the
     # entire numeric column when backwards with fastorder.
 }
 
@@ -452,7 +452,7 @@ chorder2 = function(x, o=NULL) {
         x = copy(x)
         setreordervec(x, o)
     }
-    forder(x,sort=TRUE)   #  was .Call(Ccountingcharacter, x, TRUE) but that's now removed
+    forderv(x,sort=TRUE)   #  was .Call(Ccountingcharacter, x, TRUE) but that's now removed
 }
 
 fastorder <- function(x, by=seq_along(x), verbose=getOption("datatable.verbose"))
@@ -463,7 +463,7 @@ fastorder <- function(x, by=seq_along(x), verbose=getOption("datatable.verbose")
     # the last column, and so on. This vectorized approach is much faster than base::order(...) [src/main/sort.c:ordervector(...,listgreater)]
     # which is a comparison sort comparing 2 rows using a loop through columns for that row with a switch on each column type.
     
-    # Now here only for dev testing to compare to forder, e.g. in bench()
+    # Now here only for dev testing to compare to forderv, e.g. in bench()
     # Always orders without testing for sortedness. This is favourable to fastorder (!), unless, data is perfectly ordered. See message in bench().
 
     if (is.atomic(x)) { by=NULL; v = x; w = 1 }  # w = 1 just for the error message below

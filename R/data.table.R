@@ -395,11 +395,15 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             nomatch = 0L
             isub = isub[[2L]]
         }
+        if (is.call(isub) && isub[[1L]] == as.name("order") && getOption("datatable.optimize") >= 1) { # optimize here so that we can switch it off if needed
+            if (verbose) cat("order optimisation is on, i changed from 'order(...)' to 'forder(DT, ...)'.\n")
+            isub = as.list(isub)
+            isub = as.call(c(list(as.name("forder"), as.name("x")), isub[-1L]))
+        }
         if (is.null(isub)) return( null.data.table() )
-        if (!is.name(isub))
-            i = eval(.massagei(isub), x, parent.frame())
-        else
-            i = eval(isub, parent.frame(), parent.frame())
+        if (is.call(isub) && isub[[1L]] == as.name("forder")) i = eval(isub) # for optimisation of 'order' to 'forder'
+        else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
+        else i = eval(isub, parent.frame(), parent.frame())
         if (is.matrix(i)) stop("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please let datatable-help know if you'd like this, or add your comments to FR #1611.")
         if (is.logical(i)) {
             if (notjoin) {
@@ -569,7 +573,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 else
                     for (s in seq_along(xnonjoin)) {ans[[s+length(leftcols)]] = x[[xnonjoin[s]]][irows]; copyattr(x[[xnonjoin[s]]], ans[[s+length(leftcols)]])}
                 setattr(ans, "names", make.unique(c(names(x)[rightcols],names(x)[-rightcols],names(i)[-leftcols])))
-                if (haskey(i) || is.sorted(f__) || (is.na(nomatch) && any(is.na(f__)) && !length(forder(i,leftcols))) ||
+                if (haskey(i) || is.sorted(f__) || (is.na(nomatch) && any(is.na(f__)) && !length(forderv(i,leftcols))) ||
                                                    (nomatch==0L && any(f__==0L) && is.sorted(f__[f__!=0L])))
                     # TO DO: any(is.na()) could be anyNA() and any0, and we need an efficient is.unsorted(DT) method.
                     # But we only need is.sorted(i) when there are NA matches, so the above should rarely bite.
@@ -890,13 +894,13 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}
             if (length(byval) && length(byval[[1]])) {
                 if (!bysameorder) {
-                    o__ = forder(byval, sort=FALSE, retGrp=TRUE)   # returns integer() (not NULL) if already ordered, to save 1:xnrow for efficiency
+                    o__ = forderv(byval, sort=FALSE, retGrp=TRUE)   # returns integer() (not NULL) if already ordered, to save 1:xnrow for efficiency
                     bysameorder = orderedirows && !length(o__)
                     f__ = attr(o__, "starts")
                     len__ = uniqlengths(f__, xnrow)
                     if (!bysameorder) {    # TO DO: lower this into forder.c
                         firstofeachgroup = o__[f__]    
-                        if (length(origorder <- forder(firstofeachgroup))) {
+                        if (length(origorder <- forderv(firstofeachgroup))) {
                             f__ = f__[origorder]
                             len__ = len__[origorder]
                         }
@@ -1988,13 +1992,13 @@ chmatch = function(x,table,nomatch=NA_integer_)
 }
 
 chorder = function(x) {
-    o = forder(x, sort=TRUE, retGrp=FALSE)
+    o = forderv(x, sort=TRUE, retGrp=FALSE)
     if (length(o)) o else seq_along(x)
 }
 
 chgroup = function(x) {
-    # TO DO: deprecate and remove this. It's exported but doubt anyone uses it. Think the plan was to use it internally, but forder superceded.
-    o = forder(x, sort=FALSE, retGrp=TRUE)
+    # TO DO: deprecate and remove this. It's exported but doubt anyone uses it. Think the plan was to use it internally, but forderv superceded.
+    o = forderv(x, sort=FALSE, retGrp=TRUE)
     if (length(o)) as.vector(o) else seq_along(x)  # as.vector removes the attributes
 }
 

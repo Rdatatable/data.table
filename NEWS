@@ -12,6 +12,16 @@ This NEWS file summarises the main changes.
         ** repos = "http://R-Forge.R-project.org") **
         **                                         **
         *********************************************
+NEW FEATURES
+
+  o  A new function `setorder` is now implemented which uses data.table's internal fast order 
+     to reorder rows of a data.table by reference. It returns the result invisibly (like `setkey`) 
+     that allows for compound statements, ex: setorder(DT, a, -b)[, cumsum(c), by=list(a,b)]. 
+     Check `?setorder` for more info.
+
+  o  `DT[order(x, -y)]` is now by default optimised to use data.table's internal fast order as
+     `DT[forder(DT, x, -y)]`. It can be turned off by setting datatable.optimize to < 1L. For 
+     example, it resuls in 20x speedup on data.table of 10 million rows with 2 integer columns.
 
 BUG FIXES
 

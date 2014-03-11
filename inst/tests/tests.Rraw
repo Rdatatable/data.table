@@ -142,7 +142,7 @@ started.at = Sys.time()
 
 if (!.devtesting) {
     is.sorted = data.table:::is.sorted
-    forder = data.table:::forder
+    forderv = data.table:::forderv
     null.data.table = data.table:::null.data.table
     ordernumtol = data.table:::ordernumtol   # TO DO: deprecated, remove
     iradixorder = data.table:::iradixorder   # TO DO: deprecated, remove
@@ -3474,7 +3474,7 @@ test(1150.3, dcast.data.table(x, a ~  a, value.var="c"), error="'value.var' colu
 # test uniqlengths
 set.seed(45)
 x <- sample(c(NA_integer_, 1:1e5), 1e7, TRUE)
-ox <- forder(x)
+ox <- forderv(x)
 o1 <- uniqlist(list(x), ox)
 test(1151.1, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o1, length(x)))
 o1 <- uniqlist(list(x))
@@ -3629,16 +3629,16 @@ setkey(DT, z)
 test(1162.6, is.sorted(DT[[3L]]), TRUE)
 
 setkey(DT, x, y)
-test(1162.7, length(forder(DT, by=1:2)), 0)
+test(1162.7, length(forderv(DT, by=1:2)), 0)
 setkey(DT, x, z)
-test(1162.8, length(forder(DT, by=c(1L, 3L))), 0)
+test(1162.8, length(forderv(DT, by=c(1L, 3L))), 0)
 setkey(DT, y, z)
-test(1162.9, length(forder(DT, by=2:3)), 0)
+test(1162.9, length(forderv(DT, by=2:3)), 0)
 setkey(DT)
 # test number 1162.10 skipped because if it fails it confusingly prints out as 1662.1 not 1662.10 
-test(1162.11, length(forder(DT, by=1:3)), 0)
-test(1162.12, is.sorted(DT, by=1:3), TRUE, warning="Use.*forder.*for efficiency in one step, so you have o as well if not sorted")
-test(1162.13, is.sorted(DT, by=2:1), FALSE, warning="Use.*forder.*for efficiency in one step, so you have o as well if not sorted")
+test(1162.11, length(forderv(DT, by=1:3)), 0)
+test(1162.12, is.sorted(DT, by=1:3), TRUE, warning="Use.*forderv.*for efficiency in one step, so you have o as well if not sorted")
+test(1162.13, is.sorted(DT, by=2:1), FALSE, warning="Use.*forderv.*for efficiency in one step, so you have o as well if not sorted")
 
 # FR #5152 - last on length=0 arguments
 x <- character(0)
@@ -3685,16 +3685,16 @@ ans <- rbind(tmp1, tmp2)
 test(1168.2, as.data.frame(ans), rbind(as.data.frame(tmp1), as.data.frame(tmp2)))
 
 # checks of "" and NA_character_ ordering.
-test(1169, forder(c(NA,"","a","NA")), INT(1,2,4,3))  # data.table does ascii ordering currently, so N comes before a
-test(1170, length(forder(c(NA,"","NA","a"))), 0)
-test(1171, forder(c("",NA,"a","NA")), INT(2,1,4,3))
-test(1172, length(forder(NA_character_)), 0)
-test(1173, length(forder(c(NA_character_,NA_character_))), 0)
-test(1174, length(forder(c(NA_character_,NA_character_,NA_character_))), 0)
-test(1175, length(forder("")), 0)
-test(1176, length(forder(c("",""))), 0)
-test(1177, length(forder(c("","",""))), 0)
-test(1178, forder(c("",NA,"")), INT(2,1,3))
+test(1169, forderv(c(NA,"","a","NA")), INT(1,2,4,3))  # data.table does ascii ordering currently, so N comes before a
+test(1170, length(forderv(c(NA,"","NA","a"))), 0)
+test(1171, forderv(c("",NA,"a","NA")), INT(2,1,4,3))
+test(1172, length(forderv(NA_character_)), 0)
+test(1173, length(forderv(c(NA_character_,NA_character_))), 0)
+test(1174, length(forderv(c(NA_character_,NA_character_,NA_character_))), 0)
+test(1175, length(forderv("")), 0)
+test(1176, length(forderv(c("",""))), 0)
+test(1177, length(forderv(c("","",""))), 0)
+test(1178, forderv(c("",NA,"")), INT(2,1,3))
 
 # Test no invalid sort order warning when key is ok and 2nd colum is character/double
 DT = CJ(a=rep(1:3),b=c("a","b"))
@@ -3705,9 +3705,9 @@ test(1180.1, key(DT), c("a","b"))
 test(1180.2, setkey(DT), DT)  # i.e. no warning
 
 # test for iradix (NA and negatives). Tests need large range to trigger iradix.
-test(1181, forder(INT(1,3,5000000,NA)), INT(4,1,2,3))
-test(1182, forder(INT(1,-1,5000000,NA)), INT(4,2,1,3))
-test(1183, forder(INT(-3,-7,1,-6000000,NA,3,5000000,NA,8)), INT(5,8,4,2,1,3,6,9,7))
+test(1181, forderv(INT(1,3,5000000,NA)), INT(4,1,2,3))
+test(1182, forderv(INT(1,-1,5000000,NA)), INT(4,2,1,3))
+test(1183, forderv(INT(-3,-7,1,-6000000,NA,3,5000000,NA,8)), INT(5,8,4,2,1,3,6,9,7))
 
 # tests of gsum and gmean with NA
 DT = data.table(x=rep(c("a","b","c","d"),each=3), y=c(1L,3L,6L), v=as.numeric(1:12))
@@ -3743,7 +3743,7 @@ test(1187.5, DT[, mean(y,na.rm=MyVar), by=x, verbose=TRUE], output="GForce optim
 
 # test from Zach Mayer
 a <- c("\"\"\"\")  \" \"   \"  \"    \"",  "\"\"\"\")  \" \"   \"  \"   \"",  "\"\"\"\")  \" \"   \"  \"    ,\"")
-test(1188, forder(a), INT(1,3,2))
+test(1188, forderv(a), INT(1,3,2))
 
 # test as.ITime vectorization
 x = c("18:00", "18:00:12")
@@ -3866,12 +3866,12 @@ if ("package:reshape2" %in% search()) {
 }
 
 ##########################################################################################
-# extensive testing of forder with decreasing order of sorting (total of >700 tests so far
+# extensive testing of forderv with decreasing order of sorting (total of >700 tests so far
 ##########################################################################################
 # - Generate a random seed each time; the randomness allows catching errors quicker
 # - But save the seed so that we can generate the same data back if any error occurs
 seed = as.integer(Sys.time()) # sample(9999L, 1L) temporary fix, because all the set.seed(.) used above makes this sample() step deterministic (always seed=9107)
-cat("Newly added 'forder' decreasing argument test: seed =", seed, "\n", sep=" ")
+cat("Newly added 'forderv' decreasing argument test: seed =", seed, "\n", sep=" ")
 # no NA/NaN (because it's hard to match with base:::order)                             ## TO DO: add tests with NA and NaN
 set.seed(seed)
 foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, sep="")
@@ -3908,7 +3908,7 @@ for (i in seq_along(names(DT))) {
                         })
                     )
                 )
-            test(test_no, forder(DT, by=x, order=y), with(DT, eval(ll)))
+            test(test_no, forderv(DT, by=x, order=y), with(DT, eval(ll)))
         })
         dim(tmp)=NULL
         list(tmp)
@@ -3919,9 +3919,9 @@ ans = NULL
 # fix for bug #5405 - unique on null data.table should return null data.table
 test(1224, unique(data.table(NULL)), data.table(NULL))
 
-# forder should return 'integer(0)' when 'x' is not atomic and of 0 length (to be consistent with base:::order)
-test(1225.1, forder(list()), integer(0))
-test(1225.2, forder(data.table(NULL)), integer(0))
+# forderv should return 'integer(0)' when 'x' is not atomic and of 0 length (to be consistent with base:::order)
+test(1225.1, forderv(list()), integer(0))
+test(1225.2, forderv(data.table(NULL)), integer(0))
 
 # fix for bug #5377 - data.table(null list, data.frame, data.table) should return null data.table
 test(1226.1, data.table(list()), null.data.table())
@@ -3946,7 +3946,7 @@ test(1228.6, class(DT), class(DT[a>1, c:=sum(b), by=a]))
 
 # savetl_init error after error, in v1.9.2, thanks Arun
 DT <- data.table(x=1:5, y=10:6)
-test(1229.1, DT[forder(DT, -1)], error="out of range.*1,2")
+test(1229.1, DT[forderv(DT, -1)], error="out of range.*1,2")
 test(1229.2, setkey(DT), data.table(x=1:5, y=10:6, key="x,y"))
 # umlaut in column names (red herring I think, but testing anyway)
 sentEx = data.table(abend = c(1, 1, 0, 0, 2),
@@ -3983,9 +3983,31 @@ setnames(ans2, names(ans1))
 test(1239.1, ans1, setDT(as.data.frame(with(DT, table(XX, yy)), stringsAsFactors=FALSE)))
 test(1239.2, ans2, ans1)
 
+##############################################
+# Test for optimisation of 'order' to 'forder'
+##############################################
+# We'll test on a relatively larger data.table, 
+#  - test answer for identical and 
+#  - time (with optimisation must be faster!)
+set.seed(45L)
+DT <- data.table(x=sample(1e2, 1e6,TRUE), y=sample(1e2, 1e6,TRUE))
+# with optimisation -> order will be optimised to forder
+optim = getOption("datatable.optimize")
+options(datatable.optimize=Inf)
+t1 = unname(system.time(ans1 <- DT[order(x,-y)])['elapsed'])
+# without optimisation
+options(datatable.optimize=0L)
+t2 = unname(system.time(ans2 <- DT[order(x,-y)])['elapsed'])
+test(1240.1, ans1, ans2)
+test(1240.2, t1 < t2, TRUE)
+# restore optimisation
+options(datatable.optimize=optim)
+# DONE
+
+
 ##########################
 
-# TO DO: test and highlight in docs that negatives are fine and fast in forder (ref R wish #15644)
+# TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)
 # TO DO: tests of freading classes like Date and the verbose messages there.
 # TO DO: Test mid read bump of logical T/F to character, collapse back to T and F.
 
