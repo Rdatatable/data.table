@@ -4024,7 +4024,14 @@ options(datatable.optimize=optim)
 # check no warning yet for with=FALSE and :=.  To be helpful warning, then helpful error.
 DT = data.table(a=1:3, b=4:6)
 myCol = "a"
-test(1242, DT[2,myCol:=6L,with=FALSE], data.table(a=INT(1,6,3), b=4:6))  
+test(1242, DT[2,myCol:=6L,with=FALSE], data.table(a=INT(1,6,3), b=4:6))
+
+# consistency of output type of mult, #5378
+DT = data.table(id=rep(1:2,each=2), var=rnorm(4), key="id")
+test(1243, DT[.(1:2), list(var)][c(2,4)], DT[.(1:2), list(var), mult="last"])
+test(1244, DT[.(1:2), var], DT$var)
+test(1245, DT[.(1:2), var][c(2,4)], DT[.(1:2), var, mult="last"])
+
 
 ##########################
 
