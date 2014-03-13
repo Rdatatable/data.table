@@ -363,7 +363,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     byjoin = FALSE
     if (!missing(by)) {
         if (missing(j)) stop("'by' or 'keyby' is supplied but not j")
-        byjoin = is.symbol(bysub) && bysub==".JOIN"
+        byjoin = is.symbol(bysub) && bysub==".EACHI"
     }
     irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
     notjoin = FALSE
@@ -1041,7 +1041,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     if (byjoin) {
         # The groupings come instead from each row of the i data.table.
         # Much faster for a few known groups vs a 'by' for all followed by a subset
-        if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by'=.JOIN")
+        if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by'=.EACHI")
         byval = i
         bynames = head(key(x),length(leftcols))
         allbyvars = NULL

@@ -188,7 +188,7 @@ test(14, TESTDT[SJ(c(-3,2,4,4,5,7,8)),v,mult="last",roll=TRUE], INT(NA,1,6,6,6,7
 test(15, TESTDT[SJ(c(-3,2,4,4,5,7,8)),v,mult="last",nomatch=0], INT(6,6,7))
 test(16, TESTDT[SJ(c(4)),v], INT(3,4,5,6))
 #test(17, suppressWarnings(TESTDT[SJ(c(4,4)),v,mult="all",incbycols=FALSE][[1]]), INT(3:6,3:6))
-test(18, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",nomatch=0,by=.JOIN][[2]], INT(3:6))
+test(18, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",nomatch=0,by=.EACHI][[2]], INT(3:6))
 test(185, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",nomatch=NA], INT(NA,NA,3:6,NA))
 test(19, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",roll=TRUE,nomatch=0], INT(1,3:6,7))
 test(186, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",roll=TRUE,nomatch=NA], INT(NA,1,3:6,7))
@@ -296,9 +296,9 @@ test(69, "TESTDT" %in% tables(silent=TRUE)[,as.character(NAME)]) # an old test (
 a = "d"
 # Variable Twister.  a in this scope has same name as a inside DT scope.
 # Aug 2010 : As a result of bug 1005, and consistency with 'j' and 'by' we now allow self joins (test 183) in 'i'.
-test(70, TESTDT[eval(J(a)),v,by=.JOIN], data.table(a="d",v=3:6,key="a"))   # the eval() enabled you to use the 'a' in the calling scope, not 'a' in the TESTDT.  TO DO: document this.
-test(71, TESTDT[eval(SJ(a)),v,by=.JOIN], data.table(a="d",v=3:6,key="a"))
-test(72, TESTDT[eval(CJ(a)),v,by=.JOIN], data.table(a="d",v=3:6,key="a"))
+test(70, TESTDT[eval(J(a)),v,by=.EACHI], data.table(a="d",v=3:6,key="a"))   # the eval() enabled you to use the 'a' in the calling scope, not 'a' in the TESTDT.  TO DO: document this.
+test(71, TESTDT[eval(SJ(a)),v,by=.EACHI], data.table(a="d",v=3:6,key="a"))
+test(72, TESTDT[eval(CJ(a)),v,by=.EACHI], data.table(a="d",v=3:6,key="a"))
 
 test(73, TESTDT[,v], 1:7)
 test(74, TESTDT[,3], 3)
@@ -332,19 +332,19 @@ test(88, TESTDT[,list(MySum=sum(v),Sq=v*v),by="b"][1:3], data.table(b=c("e","e",
 test(88.5, TESTDT[a=="d",list(MySum=sum(v)),by=list(b)], data.table(b=c("f","i"), MySum=INT(7,11), key="b"))
 
 setkey(TESTDT,b)
-test(90, TESTDT[J(c("f","i")),sum(v),by=.JOIN], data.table(b=c("f","i"),V1=c(7L,11L),key="b"))
-test(90.5, TESTDT[J(c("i","f")),sum(v),by=.JOIN], data.table(b=c("i","f"),V1=c(11L,7L)))  # test not keyed
-test(91, TESTDT[SJ(c("f","i")),sum(v),by=.JOIN], data.table(b=c("f","i"),V1=c(7L,11L),key="b"))
+test(90, TESTDT[J(c("f","i")),sum(v),by=.EACHI], data.table(b=c("f","i"),V1=c(7L,11L),key="b"))
+test(90.5, TESTDT[J(c("i","f")),sum(v),by=.EACHI], data.table(b=c("i","f"),V1=c(11L,7L)))  # test not keyed
+test(91, TESTDT[SJ(c("f","i")),sum(v),by=.EACHI], data.table(b=c("f","i"),V1=c(7L,11L),key="b"))
 # Test 92 dropped same reason as 89 ... test(TESTDT[92, J(c("f","i")),sum(v),mult="all",simplify=FALSE], list(7L,11L))
 
 test(93, TESTDT[c("f","i"), which=TRUE], 4:7)
 test(94, TESTDT[c("i","f"), mult="last", which=TRUE], INT(7,5))
 
 test(95, TESTDT["f",v], 3:4)
-test(96, TESTDT["f",v,by=.JOIN], data.table(b="f",v=3:4,key="b"))
-test(97, TESTDT[c("f","i","b"),list(GroupSum=sum(v)),by=.JOIN], data.table(b=c("f","i","b"), GroupSum=c(7L,11L,7L)))
+test(96, TESTDT["f",v,by=.EACHI], data.table(b="f",v=3:4,key="b"))
+test(97, TESTDT[c("f","i","b"),list(GroupSum=sum(v)),by=.EACHI], data.table(b=c("f","i","b"), GroupSum=c(7L,11L,7L)))
 # that line above doesn't create a key on the result so that the order fib is preserved.
-test(98, TESTDT[SJ(c("f","i","b")),list(GroupSum=sum(v)),by=.JOIN], data.table(b=c("b","f","i"), GroupSum=c(7L,7L,11L), key="b"))
+test(98, TESTDT[SJ(c("f","i","b")),list(GroupSum=sum(v)),by=.EACHI], data.table(b=c("b","f","i"), GroupSum=c(7L,7L,11L), key="b"))
 # line above is the way to group, sort by group and setkey on the result by group.
 
 dt <- data.table(A = rep(1:3, each=4), B = rep(11:14, each=3), C = rep(21:22, 6), key = "A,B")
@@ -729,10 +729,10 @@ test(238, merge(d1, d2, by="xkey"), ans2)
 # Join Inherited Scope, and X[Y] including Y's non-join columns
 X=data.table(a=rep(1:3,c(3,3,2)),foo=1:8,key="a")
 Y=data.table(a=2:3,bar=6:7)
-test(239, X[Y,sum(foo),by=.JOIN], data.table(a=2:3,V1=c(15L,15L),key="a"))
-test(240, X[Y,sum(foo*bar),by=.JOIN], data.table(a=2:3,V1=c(90L,105L),key="a"))
+test(239, X[Y,sum(foo),by=.EACHI], data.table(a=2:3,V1=c(15L,15L),key="a"))
+test(240, X[Y,sum(foo*bar),by=.EACHI], data.table(a=2:3,V1=c(90L,105L),key="a"))
 test(241, X[Y], data.table(a=rep(2:3,3:2),foo=4:8,bar=rep(6:7,3:2),key="a"))
-test(242, X[Y,list(foo,bar),by=.JOIN][,sum(foo*bar)], 195L)
+test(242, X[Y,list(foo,bar),by=.EACHI][,sum(foo*bar)], 195L)
 test(243, X[Y][,sum(foo*bar)], 195L)
 # not sure about these yet :
 # test(244, X[Y,sum(foo*bar),mult="first"], data.table(a=2:3,V1=c(24L,49L)))
@@ -1077,11 +1077,11 @@ test(347, setkey(DT,b), data.table(a=letters[3:1],b=letters[4:6],key="b"),
 
 # Test .N==0 with nomatch=NA|0
 DT = data.table(a=1:2,b=1:6,key="a")
-test(349, DT[J(2:3),.N,nomatch=NA,by=.JOIN]$N, c(3L,0L))
+test(349, DT[J(2:3),.N,nomatch=NA,by=.EACHI]$N, c(3L,0L))
 test(350, DT[J(2:3),.N,nomatch=0], c(3L))
 # Test first .N==0 with nomatch=NA|0
 test(350.1, DT[J(4),.N], 0L)
-test(350.2, DT[J(0:4),.N,by=.JOIN]$N, c(0L,3L,3L,0L,0L))
+test(350.2, DT[J(0:4),.N,by=.EACHI]$N, c(0L,3L,3L,0L,0L))
 
 # Test recycling list() on RHS of :=
 DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12)
@@ -1361,7 +1361,7 @@ test(456, DT[J(c(1,2,4)), mult="last", nomatch=0], data.table(id=1:2,val=c(1L,3L
 
 # Test join inherited scope respexts nomatch=0, #1663
 DT2 = data.table(id=c(1L,2L,4L), val2=c(11,12,14),key="id")
-test(457, DT[DT2, list(val, val2), nomatch=0, by=.JOIN], data.table(id=c(1L,2L,2L),val=1:3,val2=c(11,12,12),key="id"))
+test(457, DT[DT2, list(val, val2), nomatch=0, by=.EACHI], data.table(id=c(1L,2L,2L),val=1:3,val2=c(11,12,12),key="id"))
 
 # Test bysameorder edge cases, #1631
 DT = data.table(a=1:3,v=4:9,key="a")
@@ -1381,7 +1381,7 @@ unlink(f)
 test(463, all(sapply(CJ(1:2,1:3),length)==6L))
 DT = data.table(x=1:4,y=1:2,cnt=1L,key="x,y")
 test(464, DT[CJ(1:4,1:4)]$cnt, INT(1,rep(NA,4),1,NA,NA,1,rep(NA,4),1,NA,NA))
-test(465, DT[CJ(1:4,1:4), sum(cnt>0), by=.JOIN]$y, rep(1:4,4))
+test(465, DT[CJ(1:4,1:4), sum(cnt>0), by=.EACHI]$y, rep(1:4,4))
 f1 = factor(c("READING","MATHEMATICS"))
 f2 = factor(c("2010_2011","2009_2010","2008_2009"), levels=paste(2006:2010,2007:2011,sep="_"))
 test(466, all(sapply(CJ(f1, f2),length)==6L))
@@ -1456,7 +1456,7 @@ test(484, DT, data.table(x=1:4))  # i.e. DT as it was before, without foo being 
 d1 <- data.table(a=1:2, b=11:14, key="a,b")
 d2 <- data.table(A=0:1, B=1:4, key="A")
 test(485, d2[d1, allow.cartesian=TRUE], data.table(A=INT(1,1,1,1,2,2),B=INT(2,4,2,4,NA,NA),b=INT(11,11,13,13,12,14),key="A"))
-test(486, d2[d1,sum(B),by=.JOIN], data.table(A=INT(1,1,2,2),V1=INT(6,6,NA,NA),key="A"))  # no allow.cartesian needed due to by-without-by
+test(486, d2[d1,sum(B),by=.EACHI], data.table(A=INT(1,1,2,2),V1=INT(6,6,NA,NA),key="A"))  # no allow.cartesian needed due to by-without-by
 
 if ("package:reshape" %in% search()) {
     DT <- data.table(ID=rep(1:3, each=3), TIME=rep(1:3, 3), X=1:9)
@@ -1493,8 +1493,8 @@ test(498.1, setcolorder(DT,c("d","a","b")), error="Names in neworder not found i
 # test first group listens to nomatch when j uses join inherited scope.
 x <- data.table(x=c(1,3,8),x1=10:12, key="x")
 y <- data.table(x=c(3,8,10),y1=10:12, key="x")
-test(499, y[x,x1,nomatch=0,by=.JOIN], data.table(x=c(3,8),x1=11:12, key="x"))
-test(500, y[x,x1,nomatch=NA,by=.JOIN], data.table(x=c(1,3,8),x1=10:12, key="x"))
+test(499, y[x,x1,nomatch=0,by=.EACHI], data.table(x=c(3,8),x1=11:12, key="x"))
+test(500, y[x,x1,nomatch=NA,by=.EACHI], data.table(x=c(1,3,8),x1=10:12, key="x"))
 
 # Test merge bug of unkeyed tables introduced in 1.6.8 and 1.6.9 reported by Eric, and ...
 dt1 <- data.table(l = factor(c("a","b","a","b")))
@@ -1516,7 +1516,7 @@ test(504, dtB$k, 1:4)  # or dtB
 
 # Test new i. JIS prefix in 1.7.10
 DT = data.table(a=1:2,b=1:4,key="a")
-test(505, DT[J(a=1,b=6),sum(i.b*b),by=.JOIN]$V1, 24)  # 24 now 'double' because i.b is 'double'
+test(505, DT[J(a=1,b=6),sum(i.b*b),by=.EACHI]$V1, 24)  # 24 now 'double' because i.b is 'double'
 
 # Test := after a key<-
 DT = data.table(a=3:1,b=4:6)
@@ -2080,12 +2080,12 @@ test(726, DT[c("a", "b", "d"), sum(v), by=y, nomatch=0], data.table(y=INT(1,3,6)
 test(727, DT[c("a", "b", "d"), sum(v), by=y], data.table(y=INT(1,3,6,NA),V1=INT(5,7,9,NA)))
 test(728, DT[c("a", "b", "d"), sum(v), by=y], DT[J(c("a", "b", "d"))][, sum(v), by=y])
 oldv = options(datatable.verbose=FALSE)
-test(729, capture.output(DT[c("a", "b", "d"), print(.SD), by=.JOIN]),
+test(729, capture.output(DT[c("a", "b", "d"), print(.SD), by=.EACHI]),
           capture.output(suppressWarnings(DT[c("a", "b", "d"), print(.SD), by=x])))
 test(729.1, capture.output(DT[c("a", "b"), print(.SD), by=y]),   # TO DO: why doesn't last group have x=d, maybe groups=i in dogroups
             capture.output(DT[c("a", "b")][, print(.SD), by=y]))
 options(oldv)
-test(729.2, DT[c("b","d"),.SD,by=.JOIN], data.table(x=c("b","b","b","d"),y=INT(1,3,6,NA),v=INT(4,5,6,NA)))   # no debate here
+test(729.2, DT[c("b","d"),.SD,by=.EACHI], data.table(x=c("b","b","b","d"),y=INT(1,3,6,NA),v=INT(4,5,6,NA)))   # no debate here
 test(729.3, DT[c("b","d"),.SD, by=y], DT[c("b","d")][,.SD, by=y][4L,x:=NA_character_])   # the i groups when no match don't get carried through (would be hard to implement this and very unlikely to be useful. Just break into compound query, if needed to be used in j, to get them to carry through. TO DO: add to FAQ.
 
 # That unnamed i gets x's join column names when j is .SD (or any named list, which verbose warns is inefficient), #2281
@@ -2130,7 +2130,7 @@ test(746, DT["a",c("new1","new2"):=list(4L, 5L)],
           data.table(a=letters[c(1:3,3L)],new1=INT(4,NA,NA,NA),new2=INT(5,NA,NA,NA),key="a"))
 test(747, DT[,new1:=4:6], data.table(a=letters[c(1:3,3L)],new1=INT(4L,5L,6L,4L),new2=INT(5,NA,NA,NA),key="a"), warning="recycled leaving remainder of 1 item")
 suppressWarnings(DT[,new1:=4:6])
-test(748, DT[c("c","b"),`:=`(new3=.N,new2=sum(new1)+1L),by=.JOIN], data.table(a=letters[c(1:3,3L)],new1=INT(4,5,6,4),new2=INT(5,6,11,11),new3=INT(NA,1,2,2),key="a"))
+test(748, DT[c("c","b"),`:=`(new3=.N,new2=sum(new1)+1L),by=.EACHI], data.table(a=letters[c(1:3,3L)],new1=INT(4,5,6,4),new2=INT(5,6,11,11),new3=INT(NA,1,2,2),key="a"))
 
 # and multiple LHS by group, #1710
 DT = data.table(a=rep(6:8,1:3),b=1:6)
@@ -2159,9 +2159,9 @@ test(754.3, DT[,a:=as.character(a),verbose=TRUE], output="Direct plonk.*no copy"
 RHS = as.integer(DT$a)
 test(754.4, DT[,a:=RHS,verbose=TRUE], output="RHS for item 1 has been duplicated")
 
-# Used to test warning on redundant by (#2282) but by=.JOIN has now superseded
+# Used to test warning on redundant by (#2282) but by=.EACHI has now superseded
 DT = data.table(a=letters[1:3],b=rep(c("d","e"),each=3),x=1:6,key="a,b")
-test(755, DT[c("b","c"),sum(x),by=.JOIN], data.table(a=c("b","c"),V1=c(7L,9L),key="a"))
+test(755, DT[c("b","c"),sum(x),by=.EACHI], data.table(a=c("b","c"),V1=c(7L,9L),key="a"))
 test(756, DT[c("b","c"),sum(x),by=a], data.table(a=c("b","c"),V1=c(7L,9L),key="a"))
 test(757, DT[list(c("b","c"),"d"),sum(x),by=a], data.table(a=c("b","c"),V1=2:3,key="a"))  # 'by' less than number of join columns
 
@@ -2174,12 +2174,12 @@ test(761, DT[2:5,sum(c),by=b%%2], DT[2:5][,sum(c),by=b%%2])
 
 # joining from empty i table, #2194
 DT = data.table(a=1:3,b=4:6,key="a")
-test(762, DT[J(integer()),b,by=.JOIN], data.table(a=integer(),b=integer(),key="a"))
+test(762, DT[J(integer()),b,by=.EACHI], data.table(a=integer(),b=integer(),key="a"))
 test(763, DT[J(integer()),1L,by=b], data.table(b=integer(),V1=integer(),key="b"))  # ordered by is detected now (empty is ordered), otherwise a join to the result would fail just because it's empty which wouldn't be consistent with non empty case
 test(764, DT[J(integer()),b,mult="last"], integer())
 test(765, DT[J(2L),b,mult="last"], 5L)
-test(766, DT[J(5L),b,nomatch=0,by=.JOIN], data.table(a=integer(),b=integer(),key="a"))
-test(767, DT[J(5:6),b,nomatch=0,by=.JOIN], data.table(a=integer(),b=integer(),key="a"))
+test(766, DT[J(5L),b,nomatch=0,by=.EACHI], data.table(a=integer(),b=integer(),key="a"))
+test(767, DT[J(5:6),b,nomatch=0,by=.EACHI], data.table(a=integer(),b=integer(),key="a"))
 
 # Crash on by-without-by with mixed type non join i columns, #2314. Despite not being used by j they were still being assigned to .BY.
 DT = data.table(iris,key="Species")
@@ -2189,16 +2189,16 @@ Y[,A:=1:26]
 Y[,p:=factor(p)]  # coerce type to match DT$Species to save warning. Crash was related to .BY internally, not the coercion.
 setkey(Y,p)
 for (i in 1:10){DT[Y,Petal.Width];DT[Y];NULL}  # reliable crash in 1.8.2 (tested).
-test(768, DT[Y,Petal.Width,by=.JOIN], data.table(Species=factor(LETTERS),Petal.Width=NA_real_,key="Species"))
+test(768, DT[Y,Petal.Width,by=.EACHI], data.table(Species=factor(LETTERS),Petal.Width=NA_real_,key="Species"))
 DT = data.table(a=1:3,b=1:6,c=7:12, key="a")
 test(769, DT[,.BY[[1]]==a,by=a], data.table(a=1:3,V1=TRUE,key="a"))
-test(770, DT[J(2:3),.BY[[1]]==b,by=.JOIN], data.table(a=INT(2,2,3,3),V1=c(TRUE,FALSE),key="a"))
+test(770, DT[J(2:3),.BY[[1]]==b,by=.EACHI], data.table(a=INT(2,2,3,3),V1=c(TRUE,FALSE),key="a"))
 
 # A data.table RHS of := caused a crash, #2311.
 a = data.table(first=1:6, third=c(1,1,1,3,3,4), key="first")
 b = data.table(first=c(3,4,4,5,6,7,8), second=1:7, key="first")
-test(771, b[,third:=a[b,third,by=.JOIN]], b, warning="Supplied 2 items.*to 7.*recycled leaving remainder of 1 item")
-test(772, copy(b)[,third:=as.list(a[b,third,by=.JOIN])], b, warning="Supplied 2 items.*to 7.*recycled leaving remainder of 1 item")
+test(771, b[,third:=a[b,third,by=.EACHI]], b, warning="Supplied 2 items.*to 7.*recycled leaving remainder of 1 item")
+test(772, copy(b)[,third:=as.list(a[b,third,by=.EACHI])], b, warning="Supplied 2 items.*to 7.*recycled leaving remainder of 1 item")
 test(773, b[4,third[[1]]], c(1,3,3,3,4,NA,NA))
 test(774.1, b[,third:=a[b,third,mult="first"]], ans<-data.table(first=c(3,4,4,5,6,7,8), second=1:7, third=c(1,3,3,3,4,NA,NA), key="first"))
 test(774.2, b[,third:=a[b,third]], ans) # mult="first" no longer needed as from v1.9.3.  It now does what was naturally expected.
@@ -2230,8 +2230,8 @@ setkey(DT,a)
 test(783, DT[,.I,by=a]$.I, 1:8)
 test(784, DT[,.I[which.max(b)],by=a], data.table(a=1:4,V1=INT(2,4,6,8),key="a"))
 test(785, DT[J(2:4),.I,by=a%%2L], data.table(a=rep(0:1,c(4,2)),.I=INT(3,4,7,8,5,6)))
-test(786, DT[J(c(3,2,4)),list(.I,.GRP),by=.JOIN], data.table(a=rep(c(3L,2L,4L),each=2),.I=INT(5,6,3,4,7,8),.GRP=rep(1:3,each=2L)))
-test(787, DT[J(3:2),`:=`(i=.I,grp=.GRP),by=.JOIN][,list(i,grp)], data.table(i=INT(NA,NA,3:6,NA,NA),grp=INT(NA,NA,2,2,1,1,NA,NA)))
+test(786, DT[J(c(3,2,4)),list(.I,.GRP),by=.EACHI], data.table(a=rep(c(3L,2L,4L),each=2),.I=INT(5,6,3,4,7,8),.GRP=rep(1:3,each=2L)))
+test(787, DT[J(3:2),`:=`(i=.I,grp=.GRP),by=.EACHI][,list(i,grp)], data.table(i=INT(NA,NA,3:6,NA,NA),grp=INT(NA,NA,2,2,1,1,NA,NA)))
 
 # New not-join (a.k.a. not-select, since not just for data.table i but integer, logical and character too)
 DT = data.table(A=rep(1:3,each=2),B=1:6,key="A")
@@ -2251,7 +2251,7 @@ myi = c("a","c")
 test(800, DT[!myi], DT["b"])
 test(801, DT[!"c",sum(B),by=A], data.table(A=c("a","b"),V1=c(3L,7L),key="A"))
 test(802, DT[!"missing",sum(B),by=A], DT[,sum(B),by=A])
-test(803, DT[!c("a","missing","b","missing2"),sum(B),by=A], DT["c",sum(B),by=.JOIN])
+test(803, DT[!c("a","missing","b","missing2"),sum(B),by=A], DT["c",sum(B),by=.EACHI])
 # Combining not-join with which
 test(804, DT[!"b",which=TRUE], INT(1:2,5:6))  # row numbers in DT that don't match
 # New which=NA value
@@ -2441,7 +2441,7 @@ test(867, names(ans2<-DT[,list(name1=sum(v),name2=sum(w)),by="a,b"]), c("a","b",
 test(868, ans1, ans2)
 # and related to setnames, too
 DT = data.table(a=1:3,b=1:6,key="a")
-test(869, DT[J(2,42,84),print(.SD),by=.JOIN], output="   b1: 22: 5.*Empty data.table (0 rows) of 3 cols: a,V2,V3")
+test(869, DT[J(2,42,84),print(.SD),by=.EACHI], output="   b1: 22: 5.*Empty data.table (0 rows) of 3 cols: a,V2,V3")
 
 # Test setnames with duplicate colnames
 DT = data.table(a=1:3,b=4:6,b=7:9)
@@ -3224,7 +3224,7 @@ setattr(DT$N, "class", "myclass")
 test(1113, class(DT[, .SD, by = L]$N), class(DT$N))
 setkey(DT, L)
 test(1114, class(DT[, .SD, by = L]$N), class(DT$N))
-test(1115, class(DT[J(unique(L)), .SD, by=.JOIN]$N), class(DT$N))
+test(1115, class(DT[J(unique(L)), .SD, by=.EACHI]$N), class(DT$N))
 
 # Fix for #4994 - not-join quoted expression dint work...
 dt = data.table(a = 1:2, key = 'a')
@@ -3980,9 +3980,9 @@ test(1232, DT[, sum(b), by=a+1, verbose=TRUE], output="memcpy contiguous groups"
 test(1233, DT[, sum(b), by=a%%2, verbose=TRUE], output="collecting discontiguous groups")
 test(1234, DT[, sum(a), by=b, verbose=TRUE], output="collecting discontiguous groups")
 setkey(DT,a)
-test(1235, DT[.(2:3),sum(b),by=.JOIN,verbose=TRUE], data.table(a=2:3,V1=c(7L,9L),key="a"), output="memcpy contiguous groups")
-test(1236, DT[.(3:2),sum(b),by=.JOIN,verbose=TRUE], data.table(a=3:2,V1=c(9L,7L)), output="memcpy contiguous groups")
-test(1237, DT[.(3:2),sum(b),keyby=.JOIN,verbose=TRUE], data.table(a=2:3,V1=c(7L,9L),key="a"), output="memcpy contiguous groups")
+test(1235, DT[.(2:3),sum(b),by=.EACHI,verbose=TRUE], data.table(a=2:3,V1=c(7L,9L),key="a"), output="memcpy contiguous groups")
+test(1236, DT[.(3:2),sum(b),by=.EACHI,verbose=TRUE], data.table(a=3:2,V1=c(9L,7L)), output="memcpy contiguous groups")
+test(1237, DT[.(3:2),sum(b),keyby=.EACHI,verbose=TRUE], data.table(a=2:3,V1=c(7L,9L),key="a"), output="memcpy contiguous groups")
 options(datatable.optimize=Inf)
 
 # check that key is not preserved when length of fastorder is > 0
