@@ -12,8 +12,37 @@ This NEWS file summarises the main changes.
         ** repos = "http://R-Forge.R-project.org") **
         **                                         **
         *********************************************
+        
 NEW FEATURES
 
+  o  by=.JOIN runs j for each group in x that each row of i joins to.
+       DT[.(c("id1","id2")), sum(val)]                 # single total across both id1 and id2
+       DT[.(c("id1","id2")), sum(val), by=.JOIN]       # sum(val) for each id
+       DT[.(c("id1","id2")), sum(val), by=key(DT)[1]]  # same
+     In other words, 'by-without-by' is now explicit, for clarity and consistency.
+     NOTE : when i contains duplicates, by=.JOIN is different to by=key(DT); e.g,
+       setkey(DT, ID)
+       ids = c("id1","id2,"id1")
+       DT[ids, sum(val), by=ID]      #  2 rows returned
+       DT[ids, sum(val), by=.JOIN]   #  3 rows, in the order of ids (result 1 and 3 separate)
+     This can be useful when i is event data for example, where you don't want the events
+     aggregated by common join values but wish the output to be ordered with repeats.
+     
+  o  X[Y] now names non-join columns from i that have the same name as a column in x, with an "i."
+     prefix for consistency with the "i." prefix that has been available in j for some time.
+     This is now documented.
+     
+  o  For a keyed table X where the key columns are not at the beginning in order, X[Y] now retains the
+     original order of columns in X rather than moving the join columns to the beginning of the result.
+     
+  o  It is no longer an error to assign to row 0 or row NA.
+        DT[0, colA:=1L]            # now does nothing, silently (was error)
+        DT[NA, colA:=1L]           # now does nothing, silently (was error)
+        DT[c(1,NA,0,2), colA:=1L]  # now ignores the NA and 0 silently (was error)
+        DT[nrow(DT)+1, colA:=1L]   # error (out-of-range) as before
+     This is for convenience to avoid the need for a switch in user code that evals various i conditions
+     in a loop passing in i as an integer vector which may containing 0 or NA.
+      
   o  A new function `setorder` is now implemented which uses data.table's internal fast order 
      to reorder rows of a data.table by reference. It returns the result invisibly (like `setkey`) 
      that allows for compound statements, ex: setorder(DT, a, -b)[, cumsum(c), by=list(a,b)]. 
@@ -22,6 +51,7 @@ NEW FEATURES
   o  `DT[order(x, -y)]` is now by default optimised to use data.table's internal fast order as
      `DT[forder(DT, x, -y)]`. It can be turned off by setting datatable.optimize to < 1L. For 
      example, it resuls in 20x speedup on data.table of 10 million rows with 2 integer columns.
+
 
 BUG FIXES
 
@@ -32,34 +62,55 @@ BUG FIXES
        DT = data.table(a=1:2, b=letters[1:6], key="a,b")    # keyed by a and b
        DT[.(1), list(b,...)]    # correct result again (joining just to a not b but using b)
 
-  o  data.table(list()), data.table(data.table()), data.table(data.frame()) return null data.table 
-     as expected. Closes #5377. Thanks to Shubh Bansal for reporting.
+  o  setkey works again when a non-key column is type list (e.g. each cell can itself be a
+     vector), #5366. Test added. Thanks to James Sams, Michael Nelson and Musx for the
+     reproducible examples.
+       http://stackoverflow.com/questions/22186798/r-data-table-1-9-2-issue-on-setkey
 
-  o  unique(NULL data.table) returns a null data.table back as expected. Closes #5405. Thanks to 
-     agstudy for reporting.
+  o  data.table(list()), data.table(data.table()) and data.table(data.frame()) now return
+     a null data.table (no columns) rather than one empty column, #5377. Test added. 
+     Thanks to Shubh Bansal for reporting.
 
-  o  Columns with POSIXlt type during data.table(.) creation are converted to POSIXct, consistent with
-     base:::data.frame(.). However, data.table(.) provides a helpful warning instead of coercing silently.
-     This closes #5321. Thanks to Brodie Gaslam for reporting. And to Patrick for posting here on SO:
-     http://stackoverflow.com/questions/21487614/error-creating-r-data-table-with-date-time-posixlt and to 
-     Ragy Isaac for asking here on SO:
-     http://stackoverflow.com/questions/21320215/converting-from-data-frame-to-data-table-i-get-an-error-with-head
+  o  unique(NULL data.table) returns a null data.table, #5405. Thanks to agstudy for reporting.
+
+  o  data.table(.) converted POSIXlt to POSIXct, consistent with base:::data.frame(.), but now
+     also provides a helpful warning instead of coercing silently, #5321.
+     Thanks to Brodie Gaslam, Patrick and Ragy Isaac for reporting.
+       http://stackoverflow.com/questions/21487614/error-creating-r-data-table-with-date-time-posixlt
+       http://stackoverflow.com/questions/21320215/converting-from-data-frame-to-data-table-i-get-an-error-with-head
 
   o  If another class inherits from data.table; e.g. class(DT) == c("UserClass","data.table","data.frame") then
      DT[...] now retains UserClass in the result. Thanks to Daniel Krizian for reporting, #5296. Test added.
 
   o  An error "object '<name>' not found" could occur in some circumstances, particularly after a previous error.
      Reported with non-ASCII characters in a column name, a red herring we hope since non-ASCII characters are
-     supported in column names in data.table. Fix implemented and test added.
+     fully supported in data.table including in column names. Fix implemented and tests added.
        http://stackoverflow.com/questions/22128047/how-to-avoid-weird-umlaute-error-when-using-data-table
-
-  o  'setkey' doesn't allow list columns as keys. However, a bug in 'setkey' did not allow setting key on data.table 
-     just containing list columns. This is now fixed. Closes #5366. Thanks to James Sams for reporting and to Michael 
-     Nelson for pinpointing the issue with a minimal reproducible example. Also thanks to MusX for reporting on SO:
-     http://stackoverflow.com/questions/22186798/r-data-table-1-9-2-issue-on-setkey
 
   o  Column order was reversed in certain cases with as.data.table.table(.). This is now fixed. Closes #5408.
      Thanks to Benjamin Barnes for reporting.
+     
+  o  DT[, !"missingcol", with=FALSE] now returns DT (rather than a NULL data.table) with warning that "missingcol"
+     is not present.
+
+
+NOTES
+
+  o  Reminder: using rolltolast still works but since v1.9.2 now issues the following warning :
+     "'rolltolast' has been marked 'deprecated' in ?data.table since v1.8.8 on CRAN 3 Mar 2013, see NEWS. Please
+      change to the more flexible 'rollends' instead. 'rolltolast' will be removed in the next version."
+
+  o  Using with=FALSE with := is now deprecated in all cases, given that wrapping the LHS of
+     := with parentheses has been preferred for some time.
+         colVar = "col1"
+         DT[, colVar:=1, with=FALSE]                   # deprecated, still works silently as before
+         DT[, (colVar):=1]                             # please change to this
+         DT[, c("col1","col2"):=1]                     # no change
+         DT[, 2:4 := 1]                                # no change
+         DT[, c("col1","col2"):=list(sum(a),mean(b)]   # no change
+         DT[, `:=`(...), by=...]                       # no change
+     The next release will issue a warning when with=FALSE is used with :=.
+
 
         **********************************************
         **                                          **
@@ -93,9 +144,9 @@ NEW FEATURES
      
   o  Sorting (setkey and ad-hoc by=) is faster and scales better on randomly ordered data and now
      also adapts to almost sorted data. The remaining comparison sorts have been removed. We use a
-     combination of counting sort and forwards radix (MSD) for all types including double and
-     character; forwards not backwards through columns. This was inspired by Terdiman and
-     Herf's (LSD) radix approach for floating point :
+     combination of counting sort and forwards radix (MSD) for all types including double, character
+     and integers with range>100,000; forwards not backwards through columns. This was inspired
+     by Terdiman and Herf's (LSD) radix approach for floating point :
          http://codercorner.com/RadixSortRevisited.htm 
          http://stereopsis.com/radix.html
          

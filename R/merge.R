@@ -43,7 +43,7 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     # of key(x). Also NAMED on each column would allow subset references. Also, a secondary key may be
     # much simpler but just need an argument to tell [.data.table to use the 2key of i.
 
-
+    # with i. prefix in v1.9.3, this goes away. Left here for now ...
     ## sidestep the auto-increment column number feature-leading-to-bug by
     ## ensuring no names end in ".1", see unit test
     ## "merge and auto-increment columns in y[x]" in test-data.frame.like.R
@@ -53,11 +53,8 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
         y = setnames(shallow(y), dupnames, sprintf("%s.", dupnames))
     }
 
-    dt = y[xkey,nomatch=ifelse(all.x,NA,0),allow.cartesian=allow.cartesian]   # includes JIS columns (with a .1 suffix if conflict with x names)
+    dt = y[xkey,nomatch=ifelse(all.x,NA,0),allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
 
-    end = setdiff(names(y),by)     # X[Y] sytax puts JIS i columns at the end, merge likes them alongside i.
-    setcolorder(dt,c(setdiff(names(dt),end),end))
-    
     if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
         # Perhaps not very commonly used, so not a huge deal that the join is redone here.
         missingyidx = seq.int(nrow(y))
@@ -70,18 +67,19 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
             if (length(othercolsx)) {
                 tmp = rep.int(NA_integer_, length(missingyidx))
                 yy <- cbind(yy, xkey[tmp, othercolsx, with = FALSE])
-                setnames(yy, make.unique(names(yy)))
             }
-            setcolorder(yy, names(dt))
-            dt = rbind(dt, yy)
+            dt = rbind(dt, yy, use.names=FALSE)
         }
     }
-
+    
+    end = setdiff(names(y),by)     # X[Y] sytax puts JIS i columns at the end, merge likes them alongside i.
+    setcolorder(dt,c(setdiff(names(dt),end),end))
+    
     if (nrow(dt) > 0) setkeyv(dt,by)
 
     if (length(dupnames)) {
         setnames(dt, sprintf("%s.", dupnames), paste(dupnames, suffixes[2], sep=""))
-        setnames(dt, sprintf("%s..1", dupnames), paste(dupnames, suffixes[1], sep=""))
+        setnames(dt, sprintf("i.%s.", dupnames), paste(dupnames, suffixes[1], sep=""))
     }
     
     dt

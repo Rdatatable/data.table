@@ -1106,6 +1106,30 @@ SEXP fsorted(SEXP x)
     return(ScalarLogical( tmp==1 ? TRUE : FALSE ));
 }
 
+SEXP isOrderedSubset(SEXP x, SEXP nrow)
+// specialized for use in [.data.table only
+// Ignores 0s but heeds NAs and any out-of-range (which result in NA)
+{
+    int i=0, last, this;
+    if (!length(x)) return(ScalarLogical(TRUE));
+    if (!isInteger(x)) error("x has non-0 length but isn't an integer vector");
+    if (!isInteger(nrow) || LENGTH(nrow)!=1 || INTEGER(nrow)[0]<0) error("nrow must be integer vector length 1 and >=0");
+    if (LENGTH(x)<=1) return(ScalarLogical(TRUE));
+    while (i<LENGTH(x) && INTEGER(x)[i]==0) i++;
+    if (i==LENGTH(x)) return(ScalarLogical(TRUE));
+    last = INTEGER(x)[i];  // the first non-0
+    i++;
+    for (; i<LENGTH(x); i++) {
+        this = INTEGER(x)[i];
+        if (this == 0) continue;
+        if (this < last || this < 0 || this > INTEGER(nrow)[0])
+            return(ScalarLogical(FALSE));
+        last = this;
+    }
+    return(ScalarLogical(TRUE));
+}
+
+
 /*
     // LSD approach ...
     
@@ -1134,7 +1158,6 @@ SEXP fsorted(SEXP x)
     }
     if (firstTime) Error("Internal error: x is one repeated number so isorted should have skipped iradix, but iradix has been called and skipped all 4 radix");
 }
-
 */
 
 #ifdef TIMING_ON

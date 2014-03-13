@@ -19,6 +19,8 @@
 
 /*****    TO DO    *****
 construct test and investigate skip for completeness here: http://stackoverflow.com/questions/22086780/data-table-fread-error
+http://stackoverflow.com/questions/22229109/r-data-table-fread-command-how-to-read-large-files-with-irregular-separators
+http://r.789695.n4.nabble.com/Odd-problem-using-fread-to-read-in-a-csv-file-no-data-just-headers-tp4686302.html
 And even more diagnostics to verbose=TRUE so we can see where crashes are.
 colClasses shouldn't be ignored but rather respected and then warn if data accuracy is lost. See first NOTE in NEWS.
 Detect and coerce dates and times. By searching for - and :, and dateTtime etc, or R's own method or fasttime. POSIXct default, for microseconds? : http://stackoverflow.com/questions/14056370/cast-string-to-idatetime

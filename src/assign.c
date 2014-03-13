@@ -274,10 +274,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         if (!isInteger(rows))
             error("i is type '%s'. Must be integer, or numeric is coerced with warning. If i is a logical subset, simply wrap with which(), and take the which() outside the loop if possible for efficiency.", type2char(TYPEOF(rows)));
         targetlen = length(rows);
+        Rboolean anyToDo = FALSE;
         for (i=0;i<targetlen;i++) {
-            if (INTEGER(rows)[i]==NA_INTEGER) error("i[%d] is NA. Can't assign by reference to row 'NA'.",i+1);
-            if (INTEGER(rows)[i]<1 || INTEGER(rows)[i]>nrow) error("i[%d] is %d which is out of range [1,nrow=%d].",i+1,INTEGER(rows)[i],nrow);
+            if ((INTEGER(rows)[i]<0 && INTEGER(rows)[i]!=NA_INTEGER) || INTEGER(rows)[i]>nrow)
+                error("i[%d] is %d which is out of range [1,nrow=%d].",i+1,INTEGER(rows)[i],nrow);
+            if (INTEGER(rows)[i]>=1) anyToDo = TRUE;
         }
+        if (!anyToDo) return(dt);  // all items of rows either 0 or NA, nothing to do.  
     }
     if (!length(cols))
         error("Logical error in assign, no column positions passed to assign");
@@ -604,7 +607,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
 // 'where' a 1-based INTEGER vector subset of target to assign to,  or NULL or integer()
 // assigns to target[start:start+len-1] or target[where[start:start+len-1]]  where start is 0-based
 {
-    int r = 0;
+    int r = 0, w;
     if (len<1) return;
     int slen = length(source);
     if (slen<1) return;
@@ -651,26 +654,36 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
         case INTSXP : case REALSXP : case LGLSXP :
             break;
         case STRSXP :
-            for (; r<slen; r++)
-                SET_STRING_ELT(target, INTEGER(where)[start+r]-1, STRING_ELT(source, r));
+            for (; r<slen; r++) {
+                w = INTEGER(where)[start+r]; if (w<1) continue;  // 0 or NA
+                SET_STRING_ELT(target, w-1, STRING_ELT(source, r));
+            }
             break;
         case VECSXP :
-            for (; r<slen; r++)
-                SET_VECTOR_ELT(target, INTEGER(where)[start+r]-1, VECTOR_ELT(source, r));
+            for (; r<slen; r++) {
+                w = INTEGER(where)[start+r]; if (w<1) continue;
+                SET_VECTOR_ELT(target, w-1, VECTOR_ELT(source, r));
+            }
             break;
         default :
             error("Unsupported type '%s'", type2char(TYPEOF(target)));
         }    
         if (slen == 1) {
-            if (size==4) for (; r<len; r++)
-                INTEGER(target)[ INTEGER(where)[start+r]-1 ] = INTEGER(source)[0];
-            else for (; r<len; r++)
-                REAL(target)[ INTEGER(where)[start+r]-1 ] = REAL(source)[0];
+            if (size==4) for (; r<len; r++) {
+                w = INTEGER(where)[start+r]; if (w<1) continue;
+                INTEGER(target)[ w-1 ] = INTEGER(source)[0];
+            } else for (; r<len; r++) {
+                w = INTEGER(where)[start+r]; if (w<1) continue;
+                REAL(target)[ w-1 ] = REAL(source)[0];
+            }
         } else {
-            if (size==4) for (; r<len; r++)
-                INTEGER(target)[ INTEGER(where)[start+r]-1 ] = INTEGER(source)[r%slen];
-            else for (; r<len; r++)
-                REAL(target)[ INTEGER(where)[start+r]-1 ] = REAL(source)[r%slen];
+            if (size==4) for (; r<len; r++) {
+                w = INTEGER(where)[start+r]; if (w<1) continue;
+                INTEGER(target)[ w-1 ] = INTEGER(source)[r%slen];
+            } else for (; r<len; r++) {
+                w = INTEGER(where)[start+r]; if (w<1) continue;
+                REAL(target)[ w-1 ] = REAL(source)[r%slen];
+            }
         }
         // if slen>10 it may be worth memcpy, but we'd need to first know if 'where' was a contiguous subset
     }

@@ -37,11 +37,22 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
         if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
-    # o = fastorder(x, cols, verbose=verbose)
-    o = forderv(x, cols, sort=TRUE, retGrp=FALSE)
+    if (verbose) {
+        tt = system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
+        cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
+    } else {
+        o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
+    }
     if (length(o)) {
         if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
-        .Call(Creorder,x,o)
+        if (verbose) {
+            tt = system.time(.Call(Creorder,x,o))
+            cat("reorder took", tt["user.self"]+tt["sys.self"], "sec\n")
+        } else {
+            .Call(Creorder,x,o)
+        }
+    } else {
+        if (verbose) cat("x is already ordered by these columns, no need to call reorder\n")
     } # else empty integer() from forderv means x is already ordered by those cols, nothing to do.
     if (!alreadykeyedbythiskey) setattr(x,"sorted",cols)   # the if() just to save plonking an identical vector into the attribute
     invisible(x)

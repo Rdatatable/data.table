@@ -43,12 +43,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
     clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
 
-    if (TYPEOF(order) != INTSXP) error("Internal error: order not integer");
+    if (!isInteger(order)) error("Internal error: order not integer vector");
     //if (TYPEOF(starts) != INTSXP) error("Internal error: starts not integer");
     //if (TYPEOF(lens) != INTSXP) error("Internal error: lens not integer");
     // starts can now be NA (<0): if (INTEGER(starts)[0]<0 || INTEGER(lens)[0]<0) error("starts[1]<0 or lens[1]<0");
-    if (!isNull(jiscols) && length(order)) error("Internal error: jiscols not NULL but o__ has length");
-    if (!isNull(xjiscols) && length(order)) error("Internal error: xjiscols not NULL but o__ has length");
+    if (!isNull(jiscols) && LENGTH(order)) error("Internal error: jiscols not NULL but o__ has length");
+    if (!isNull(xjiscols) && LENGTH(order)) error("Internal error: xjiscols not NULL but o__ has length");
     if(!isEnvironment(env)) error("’env’ should be an environment");
     ngrp = length(starts);  // the number of groups  (nrow(groups) will be larger when by)
     ngrpcols = length(grpcols);
@@ -123,7 +123,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (INTEGER(starts)[i] == 0 && (i>0 || !isNull(lhs))) continue;
         if (!isNull(lhs) &&
                (INTEGER(starts)[i] == NA_INTEGER ||
-                (length(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)))
+                (LENGTH(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)))
             continue;
         grpn = INTEGER(lens)[i];
         INTEGER(N)[0] = INTEGER(starts)[i] == NA_INTEGER ? 0 : grpn;
@@ -143,7 +143,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                    (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1))+igrp*size,
                    size);
         }
-        if (INTEGER(starts)[i] == NA_INTEGER || (length(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)) {
+        if (INTEGER(starts)[i] == NA_INTEGER || (LENGTH(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)) {
             for (j=0; j<length(SD); j++) {
                 switch (TYPEOF(VECTOR_ELT(SD, j))) {
                 case LGLSXP :
@@ -183,7 +183,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 }
             }
         } else {
-            if (length(order)==0) {
+            if (LOGICAL(verbose)[0]) tstart = clock();
+            if (LENGTH(order)==0) {
                 rownum = INTEGER(starts)[i]-1;
                 for (j=0; j<length(SD); j++) {
                     size = SIZEOF(VECTOR_ELT(SD,j));
@@ -199,8 +200,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                        (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(xjiscols)[j]-1))+rownum*size,
                        size);  
                 }
+                if (LOGICAL(verbose)[0]) { tblock[0] += clock()-tstart; nblock[0]++; }
             } else {
-                if (LOGICAL(verbose)[0]) tstart = clock();
                 // Fairly happy with this block. No need for SET_* here. See comment above. 
                 for (k=0; k<grpn; k++) INTEGER(I)[k] = INTEGER(order)[ INTEGER(starts)[i]-1 + k ];
                 for (j=0; j<length(SD); j++) {
@@ -219,7 +220,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                         }
                     }
                 }
-                if (LOGICAL(verbose)[0]) { tblock[0] += clock()-tstart; nblock[0]++; }
+                if (LOGICAL(verbose)[0]) { tblock[1] += clock()-tstart; nblock[1]++; }
+                // The two blocks have separate timing statements to make sure which is running
             }
         }
         INTEGER(rownames)[1] = -grpn;  // the .set_row_names() of .SD. Not .N when nomatch=NA and this is a nomatch
@@ -236,7 +238,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         
         if (LOGICAL(verbose)[0]) tstart = clock();  // call to clock() is more expensive than an 'if'
         PROTECT(jval = eval(jexp, env));
-        if (LOGICAL(verbose)[0]) { tblock[1] += clock()-tstart; nblock[1]++; }
+        if (LOGICAL(verbose)[0]) { tblock[2] += clock()-tstart; nblock[2]++; }
         
         if (isNull(jval))  {
             // j may be a plot or other side-effect only
@@ -426,8 +428,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     for (j=0; j<length(SD); j++) SETLENGTH(VECTOR_ELT(SD,j), origSDnrow);
     SETLENGTH(I, origIlen);
     if (LOGICAL(verbose)[0]) {
-        Rprintf("\n  collecting ad hoc groups took %.3fs for %d calls\n", 1.0*tblock[0]/CLOCKS_PER_SEC, nblock[0]);
-        Rprintf("  eval(j) took %.3fs for %d calls\n", 1.0*tblock[1]/CLOCKS_PER_SEC, nblock[1]);
+        if (nblock[0] && nblock[1]) error("Internal error: block 0 [%d] and block 1 [%d] have both run", nblock[0], nblock[1]);
+        int w = nblock[1]>0;
+        Rprintf("\n  %s took %.3fs for %d groups\n", w ? "collecting discontiguous groups" : "memcpy contiguous groups",
+                                                    1.0*tblock[w]/CLOCKS_PER_SEC, nblock[w]);
+        Rprintf("  eval(j) took %.3fs for %d calls\n", 1.0*tblock[2]/CLOCKS_PER_SEC, nblock[2]);
     }
     UNPROTECT(protecti);
     Free(nameSyms);

@@ -51,13 +51,13 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, ...) {
         if (length(target)) {
             for (i in which(sapply(target, is.factor))) {
                 .xi = factor(target[[i]])
-                target[,i:=.xi,with=FALSE]
+                target[,(i):=.xi]
             }
         }
         if (length(current)) {
             for (i in which(sapply(current, is.factor))) {
                 .xi = factor(current[[i]])
-                current[,i:=.xi,with=FALSE]
+                current[,(i):=.xi]
             }
         }
     }
