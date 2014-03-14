@@ -65,6 +65,11 @@ NEW FEATURES (subject to discussion and change)
   o  mult="all" -vs- mult="first"|"last" now return consistent types and columns, #5378. Thanks
      to Michele Carriero for highlighting.
 
+  o  `duplicated.data.table` and `unique.data.table` gains `fromLast = TRUE/FALSE` argument, similar 
+     to base. Default value is FALSE. Closes FR #5205.
+
+  o  `anyDuplicated.data.table` is now implemented. Closes FR #5172. Thanks to M C (bluemagister) for 
+     filing the FR.
 
 BUG FIXES
 
@@ -106,6 +111,10 @@ BUG FIXES
   o  DT[, !"missingcol", with=FALSE] now returns DT (rather than a NULL data.table) with warning that "missingcol"
      is not present.
 
+  o  `DT[,y := y * eval(parse(text="1*2"))]` resulted in error unless `eval()` is wrapped with paranthesis. That is, 
+     `DT[,y := y * (eval(parse(text="1*2")))]`. Now fixed, closes #5423. Thanks to Wet Feet for reporting and to 
+     Simon O'Hanlon for identifying the issue here on SO:
+     http://stackoverflow.com/questions/22375404/unable-to-use-evalparse-in-data-table-function/22375557#22375557
 
 NOTES
 
@@ -124,6 +133,9 @@ NOTES
          DT[, `:=`(...), by=...]                       # no change
      The next release will issue a warning when with=FALSE is used with :=.
 
+  o  `?duplicated.data.table` explained that `by=NULL` or `by=FALSE` would use all columns, however by=FALSE
+     resulted in error. `by=FALSE` is removed from help and duplicated returns an error when by=TRUE/FALSE now. 
+     Closes #5424. 
 
         **********************************************
         **                                          **

@@ -10,21 +10,27 @@
 
      \code{unique} returns a data table with duplicated rows (by key) removed, or
      (when no key) duplicated rows by all columns removed.
+
+     \code{anyDuplicated} returns the \emph{index} \code{i} of the first duplicated entry if there is one, and 0 otherwise. 
 }
 \usage{
-\method{duplicated}{data.table}(x, incomparables=FALSE, by=key(x), ...)
+\method{duplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...)
 
-\method{unique}{data.table}(x, incomparables=FALSE, by=key(x), ...)
+\method{unique}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...)
+
+\method{anyDuplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...)
+
 }
 \arguments{
   \item{x}{ A data.table. }
   \item{\dots}{ Not used at this time. }
   \item{incomparables}{ Not used. Here for S3 method consistency. }
+  \item{fromLast}{ logical indicating if duplication should be considered from the reverse side, i.e., the last (or rightmost) of identical elements would correspond to \code{duplicated = FALSE}.}
   \item{by}{
     \code{character} or \code{integer} vector indicating which combinations of
     columns form \code{x} to use for uniqueness checks. Defaults to
-    \code{key(x))} which, by default, only uses the keyed columns. A \code{NULL}
-    or \code{FALSE} value uses all columns and acts like the analogous
+    \code{key(x))} which, by default, only uses the keyed columns. \code{by=NULL}
+    uses all columns and acts like the analogous
     \code{data.frame} methods.
   }
 }
@@ -38,7 +44,13 @@
   Any combination of columns can be used to test for uniqueness (not just the
   key columns) and are specified via the \code{by} parameter. To get
   the analagous \code{data.frame} functionality for \code{unique} and
-  \code{duplicated}, set \code{by} to \code{NULL} or \code{FALSE}.
+  \code{duplicated}, set \code{by} to \code{NULL}.
+  
+  From \code{v1.9.4}, both \code{duplicated} and \code{unique} methods also gain the logical argument \code{fromLast}, as in base, and by default is \code{FALSE}. 
+  
+  Conceptually \code{duplicated(x, by=cols, fromLast=TRUE)} is equivalent to \code{rev(duplicated(rev(x), by=cols))}, but is much faster. \code{rev(x)} is used just to illustrate the concept, as it clearly applies only to vectors. In the context of \code{data.table}, \code{rev(x)} would mean rearranging the rows of all columns in reverse order.
+  
+  \code{v1.9.4} also implements \code{anyDuplicated} method for \code{data.table}. It calculates the duplicate entries and returns the first duplicated index, if one exists, and 0 otherwise. It's very similar to \code{any(duplicated(DT))} except that this returns \code{TRUE} or \code{FALSE}.
 }
 \value{
      \code{duplicated} returns a logical vector of length \code{nrow(x)}
@@ -70,6 +82,15 @@
     DT[,which.min(a)]            # row 10, the strictly smallest floating point value
     identical(unique(DT),DT[1])  # TRUE, stable within tolerance
     identical(unique(DT),DT[10]) # FALSE
+
+    # fromLast=TRUE
+    DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B")
+    duplicated(DT, by="B", fromLast=TRUE)
+    unique(DT, by="B", fromLast=TRUE)
+
+    # anyDuplicated
+    anyDuplicated(DT, by=c("A", "B"))    # 3L
+    any(duplicated(DT, by=c("A", "B")))  # TRUE
 }
 \keyword{ data }
 

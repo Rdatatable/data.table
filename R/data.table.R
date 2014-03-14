@@ -22,7 +22,8 @@ deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.fr
 
     lapply(expr, function(m) {
         if (is.call(m)) {
-            if (m[[1L]] == quote(eval)) eval(m[[2L]], envir, enclos)
+            if (m[[1L]] == quote(eval)) 
+                if (is.call(m[[2L]]) && m[[2L]][[1L]] == quote(parse)) eval(m, envir, enclos) else eval(m[[2L]], envir, enclos)
             else deconstruct_and_eval(m, envir, enclos)
         } else {
             m
@@ -389,8 +390,10 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             isub = as.call(c(list(as.name("forder"), as.name("x")), isub[-1L]))
         }
         if (is.null(isub)) return( null.data.table() )
-        if (is.call(isub) && isub[[1L]] == as.name("forder")) i = eval(isub) # for optimisation of 'order' to 'forder'
-        else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
+        if (is.call(isub) && isub[[1L]] == as.name("forder")) {
+            i = eval(isub) # for optimisation of 'order' to 'forder'
+            if (!length(i)) i = seq_len(nrow(x)) # forder returns integer(0) if already sorted! 
+        } else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
         else i = eval(isub, parent.frame(), parent.frame())
         if (is.matrix(i)) stop("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please let datatable-help know if you'd like this, or add your comments to FR #1611.")
         if (is.logical(i)) {

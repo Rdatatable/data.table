@@ -4032,6 +4032,83 @@ test(1243, DT[.(1:2), list(var)][c(2,4)], DT[.(1:2), list(var), mult="last"])
 test(1244, DT[.(1:2), var], DT$var)
 test(1245, DT[.(1:2), var][c(2,4)], DT[.(1:2), var, mult="last"])
 
+#############################################
+# FR #5205 - fromLast argument to duplicated
+#############################################
+seed = as.integer(Sys.time())
+seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
+set.seed(seed)
+
+DT <- data.table(w=sample(-5:5, 100, TRUE), 
+x=as.numeric(sample(-5:5, 100, TRUE)), 
+y=sample(paste0("id", 1:10), 100, TRUE), 
+z=sample(c(TRUE, FALSE), 100, TRUE))
+
+colorder=sample(ncol(DT))
+setcolorder(DT, names(DT)[colorder])
+seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
+
+test_no = 1246.0
+oldnfail = nfail
+for (i in seq_along(names(DT))) {
+    cc = combn(names(DT), i)
+    apply(cc, 2L, function(jj) { 
+        test_no <<- signif(test_no+.01, 7) # first without key
+        test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+        test_no <<- signif(test_no+.01, 7)
+        setkeyv(DT, jj) # with key
+        test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    })
+}
+if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
+
+# with NA
+DT <- data.table(w=sample(c(-5:5,NA_integer_), 100, TRUE), 
+x=as.numeric(sample(c(-5:5, NA), 100, TRUE)), 
+y=sample(c(NA, paste0("id", 1:10)), 100, TRUE), 
+z=sample(c(NA, TRUE, FALSE), 100, TRUE))
+
+colorder=sample(ncol(DT))
+setcolorder(DT, names(DT)[colorder])
+seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
+
+oldnfail = nfail
+for (i in seq_along(names(DT))) {
+    cc = combn(names(DT), i)
+    apply(cc, 2L, function(jj) { 
+        test_no <<- signif(test_no+.01, 7) # first without key
+        test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+        test_no <<- signif(test_no+.01, 7)
+        setkeyv(DT, jj) # with key
+        test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    })
+}
+if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
+
+# FR #5172 - anyDuplicated.data.table
+set.seed(45L)
+dt <- data.table(x=sample(3,10,TRUE), y=sample(letters[1:3], 10,TRUE))
+test(1247.1, anyDuplicated(dt), anyDuplicated.data.frame(dt))
+test(1247.2, anyDuplicated(dt, fromLast=TRUE), anyDuplicated.data.frame(dt, fromLast=TRUE))
+test(1247.3, anyDuplicated(dt, by="y"), anyDuplicated.data.frame(dt[, "y", with=FALSE]))
+test(1247.4, anyDuplicated(dt, by="y", fromLast=TRUE), anyDuplicated.data.frame(dt[, "y", with=FALSE], fromLast=TRUE))
+
+# Fix for #5423 - j-expression y * eval(parse(..)) should work without needing "("
+DT <- data.table(x = seq(1,10,1), y = seq(2,20,2))
+test(1248, DT[, y := y * eval(parse(text="1*2"))], data.table(x=seq(1,10,1), y=seq(4,40,4)))
+
+# test to make sure DT[order(...)] works fine when it's already sorted (forgot the case where forder returns integer(0) before)
+DT <- data.table(x=rep(1:4, each=5), y=1:20)
+test(1249.1, DT[order(x)], DT)
+test(1249.2, DT[order(y)], DT)
+test(1249.3, DT[order(x,y)], DT)
+
+# Fix for #5424 - duplicated 'by=FALSE' inconsistency
+set.seed(1L)
+DT <- data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE), key="x")
+test(1250.1, duplicated(DT, by=NULL), duplicated.data.frame(DT))
+test(1250.2, duplicated(DT, by=FALSE), error="Only NULL, column indices or column names are allowed in by")
+test(1250.3, duplicated(DT, by=TRUE), error="Only NULL, column indices or column names are allowed in by")
 
 ##########################
 
