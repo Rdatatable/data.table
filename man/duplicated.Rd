@@ -57,6 +57,9 @@
   indicating which rows are duplicates.
 
      \code{unique} returns a data table with duplicated rows removed.
+
+     \code{anyDuplicated} returns a integer value with the index of first duplicate. If none exists, 0L is returned.
+
 }
 \seealso{ \code{\link{data.table}}, \code{\link{duplicated}}, \code{\link{unique}}, \code{\link{all.equal}}}
 \examples{
