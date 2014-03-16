@@ -391,8 +391,10 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         if (is.null(isub)) return( null.data.table() )
         if (is.call(isub) && isub[[1L]] == as.name("forder")) {
-            i = eval(isub, parent.frame(), parent.frame()) # for optimisation of 'order' to 'forder'
-            if (!length(i)) i = seq_len(nrow(x)) # forder returns integer(0) if already sorted! 
+            order_env = new.env(parent=parent.frame())            # until 'forder' is exported
+            assign("forder", forder, order_env)
+            i = eval(isub, order_env, parent.frame())             # for optimisation of 'order' to 'forder'
+            if (!length(i)) i = seq_len(nrow(x))                  # forder returns integer(0) if already sorted! 
         } else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
         else i = eval(isub, parent.frame(), parent.frame())
         if (is.matrix(i)) stop("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please let datatable-help know if you'd like this, or add your comments to FR #1611.")

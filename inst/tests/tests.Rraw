@@ -143,6 +143,7 @@ started.at = Sys.time()
 if (!.devtesting) {
     is.sorted = data.table:::is.sorted
     forderv = data.table:::forderv
+    forder = data.table:::forder
     null.data.table = data.table:::null.data.table
     ordernumtol = data.table:::ordernumtol   # TO DO: deprecated, remove
     iradixorder = data.table:::iradixorder   # TO DO: deprecated, remove
