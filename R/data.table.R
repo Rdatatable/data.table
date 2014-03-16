@@ -387,11 +387,11 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         if (is.call(isub) && isub[[1L]] == as.name("order") && getOption("datatable.optimize") >= 1) { # optimize here so that we can switch it off if needed
             if (verbose) cat("order optimisation is on, i changed from 'order(...)' to 'forder(DT, ...)'.\n")
             isub = as.list(isub)
-            isub = as.call(c(list(as.name("forder"), as.name("x")), isub[-1L]))
+            isub = as.call(c(list(as.name("forder"), substitute(x)), isub[-1L]))
         }
         if (is.null(isub)) return( null.data.table() )
         if (is.call(isub) && isub[[1L]] == as.name("forder")) {
-            i = eval(isub) # for optimisation of 'order' to 'forder'
+            i = eval(isub, parent.frame(), parent.frame()) # for optimisation of 'order' to 'forder'
             if (!length(i)) i = seq_len(nrow(x)) # forder returns integer(0) if already sorted! 
         } else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
         else i = eval(isub, parent.frame(), parent.frame())
@@ -1863,6 +1863,10 @@ copy = function(x) {
 
 copyattr = function(from, to) {
     .Call(Ccopyattr, from, to)
+}
+
+point = function(to, to_idx, from, from_idx) {
+    .Call(CpointWrapper, to, to_idx, from, from_idx)
 }
 
 shallow = function(x) {

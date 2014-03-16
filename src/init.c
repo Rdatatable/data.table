@@ -42,6 +42,7 @@ SEXP gsum();
 SEXP gmean();
 SEXP twiddlewrapper();
 SEXP isOrderedSubset();
+SEXP pointWrapper();
 
 // .Externals
 SEXP fastmean();
@@ -84,6 +85,7 @@ R_CallMethodDef callMethods[] = {
 {"Cgmean", (DL_FUNC) &gmean, -1},
 {"Ctwiddlewrapper", (DL_FUNC) &twiddlewrapper, -1},
 {"CisOrderedSubset", (DL_FUNC) &isOrderedSubset, -1},
+{"CpointWrapper", (DL_FUNC) &pointWrapper, -1},
 {NULL, NULL, 0}
 };
 

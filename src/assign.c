@@ -801,6 +801,21 @@ SEXP setcolorder(SEXP x, SEXP o)
     return(R_NilValue);
 }
 
+SEXP pointWrapper(SEXP to, SEXP to_idx, SEXP from, SEXP from_idx) {
+
+    R_len_t i, fidx, tidx, l_to=length(to), l_from=length(from), l_idx=length(from_idx);
+    if (!isNewList(to) || !isNewList(from)) error("'to' and 'from' must be of type list");
+    if (length(from_idx) != length(to_idx) || l_idx == 0) error("'from_idx' and 'to_idx' must be non-empty integer vectors of same length.");
+    for (i=0; i<l_idx; i++) {
+        fidx = INTEGER(from_idx)[i]-1; // 1-based to 0-based
+        tidx = INTEGER(to_idx)[i]-1;   // 1-based to 0-based
+        if (fidx < 0 || fidx > l_from-1) error("invalid from_idx[%d]=%d, falls outside 1 and length(from)=%d.", i+1, fidx, l_from);
+        if (tidx < 0 || tidx > l_to-1) error("invalid to_idx[%d]=%d, falls outside 1 and length(to)=%d.", i+1, tidx, l_to);
+        SET_VECTOR_ELT(to, tidx, VECTOR_ELT(from, fidx));
+    }
+    return(to);
+}
+
 /*
 SEXP pointer(SEXP x) {
     SEXP ans;

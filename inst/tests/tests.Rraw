@@ -4110,6 +4110,24 @@ test(1250.1, duplicated(DT, by=NULL), duplicated.data.frame(DT))
 test(1250.2, duplicated(DT, by=FALSE), error="Only NULL, column indices or column names are allowed in by")
 test(1250.3, duplicated(DT, by=TRUE), error="Only NULL, column indices or column names are allowed in by")
 
+# more tests for DT[order(...)] - now testing 'decreasing=FALSE/TRUE' argument
+set.seed(1L)
+DT <- data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE))
+test(1251.1, DT[order(x,y,decreasing=TRUE)], DT[order(-x,-y)])
+test(1251.2, DT[order(x,-y,decreasing=TRUE)], DT[order(-x,y)])
+# test in case of complex calls. check out the note in setkey.R under 'forder' for differences in forder and order for 'list' inputs. base is inconsistent I find. 
+ix = with(DT, order(x+y))
+test(1251.3, DT[order(x+y)], DT[ix])
+ix = with(DT, order(-x-y))
+test(1251.4, DT[order(-x-y)], DT[ix])
+ix = with(DT, order(x+y, decreasing=TRUE))
+test(1251.5, DT[order(x+y, decreasing=TRUE)], DT[ix])
+ix = with(DT, order(4*x-5*y, decreasing=TRUE))
+test(1251.6, DT[order(4*x-5*y, decreasing=TRUE)], DT[ix])
+ix = with(DT, order(1-DT$x, decreasing=TRUE))
+test(1251.7, DT[order(1-DT$x, decreasing=TRUE)], DT[ix])
+test(1251.8, DT[order(x, list(-y), decreasing=TRUE)], DT[order(x, -y, decreasing=TRUE)]) # list(.) will have no effect and will work fine in optimisation (check the comment above).
+
 ##########################
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)

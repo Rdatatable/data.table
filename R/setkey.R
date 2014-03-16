@@ -134,40 +134,45 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L)
     .Call(Cforder, x, by, retGrp, sort, order)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-forder = function(x, ...)
+forder = function(x, ..., decreasing=FALSE)
 {
     if (!is.data.table(x)) stop("x must be a data.table.")
+    if (ncol(x) == 0) stop("Attempting to order a 0-column data.table.")
+    if (is.na(decreasing) || !is.logical(decreasing)) stop("'decreasing' must be logical TRUE or FALSE")
     cols = substitute(list(...))[-1]
     if (identical(as.character(cols),"NULL") || !length(cols)) return(NULL) # to provide the same output as base:::order
+    ans = x
+    order = rep(1L, length(cols))
     if (length(cols)) {
-        cols=as.list(cols)
-        order=rep(1L, length(cols))
+        ans = vector("list", length(cols))
+        cols = as.list(cols)
+        xcols = names(x)
         for (i in seq_along(cols)) {
-            v=as.list(cols[[i]])
-            if (length(v) > 1 && v[[1L]] == "+") v=v[[-1L]]
-            else if (length(v) > 1 && v[[1L]] == "-") {
-                v=v[[-1L]]
-                order[i] = -1L
+            v=cols[[i]]
+            while (is.call(v) && length(v) == 2L) { 
+                # take care of "--x", "{-x}", "(---+x)" etc., cases and also "list(y)". 'list(y)' is ambiguous though. In base, with(DT, order(x, list(y))) will error 
+                # that 'arguments are not of same lengths'. But with(DT, order(list(x), list(y))) will return 1L, which is very strange. On top of that, with(DT, 
+                # order(x, as.list(10:1)) would return 'unimplemented type list'. So I find 'base' quite inconsistent here. In our case, currently, we remove 'list' 
+                # from list(y). So, 'list(y)' becomes 'y'. TODO: Revisit and decide if we'd like to error, just add "&& v[[1L]] != 'list'" in while(.).
+                if (v[[1L]] == "-") order[i] = -order[i]
+                v = v[[-1L]]
             }
-            cols[[i]]=as.character(v)
+            if (is.name(v)) {
+                if ((ix <- chmatch(as.character(v), xcols, nomatch=0L)) == 0L) 
+                    stop(cat("object '", as.character(v), "' not found", sep=""))
+                ans <- point(ans, i, x, ix) # see 'point' in data.table.R and C-version pointWrapper in assign.c - avoid copies
+            } else if (is.call(v)) {
+                v = as.call(list(as.name("list"), v)) 
+                ans <- point(ans, i, eval(v, x, parent.frame()), 1L) # eval has to make a copy here (not due to list(.), but due to ex: "4-5*y"), unavoidable.
+            } else stop("Column arguments to order by in 'forder' should be of type name/symbol (ex: quote(x)) or call (ex: quote(-x), quote(x+5*y))")
         }
-        cols=unlist(cols, use.names=FALSE)
-    } else {
-        cols=colnames(x)
-        order=rep(1L, length(cols))
     }
-    if (any(nchar(cols)==0)) stop("cols contains some blanks.")
-    cols <- gsub("`", "", cols) # remove backticks from cols
-    miss = !(cols %in% colnames(x))                          # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
-    if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
-    if (".xi" %in% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
+    cols = seq_along(ans)
     for (i in cols) {
-        .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-        if (!typeof(.xi) %chin% c("integer","logical","character","double")) 
-            stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
+        if (!typeof(ans[[i]]) %chin% c("integer","logical","character","double")) 
+            stop("Column '",i,"' is type '",typeof(ans[[i]]),"' which is not supported for ordering currently.")
     }
-    if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey.")
-    forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order)
+    forderv(ans, cols, sort=TRUE, retGrp=FALSE, order= if (decreasing) -order else order)
 }
 
 setorder = function(x, ...)
