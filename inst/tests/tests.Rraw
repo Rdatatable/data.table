@@ -4127,8 +4127,12 @@ ix = with(DT, order(4*x-5*y, decreasing=TRUE))
 test(1251.6, DT[order(4*x-5*y, decreasing=TRUE)], DT[ix])
 ix = with(DT, order(1-DT$x, decreasing=TRUE))
 test(1251.7, DT[order(1-DT$x, decreasing=TRUE)], DT[ix])
-test(1251.8, DT[order(x, list(-y), decreasing=TRUE)], DT[order(x, -y, decreasing=TRUE)]) # list(.) will have no effect and will work fine in optimisation (check the comment above).
-
+test(1251.8, DT[order(x, list(-y), decreasing=TRUE)], error = "Column .* for ordering currently") # consistent with base (not the same error, but will error with "forder's" error instead)
+# more "edge cases" to ensure we're consistent with base
+test(1251.9, DT[order("a")], DT[1L])
+test(1251.10, DT[order("b", "a")], DT[1L])
+test(1251.11, DT[order(list("b", "a"))], error = "Column .* for ordering currently")
+test(1251.12, DT[order(list("b"), list("a"))], DT[1L])
 ##########################
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)

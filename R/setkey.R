@@ -149,22 +149,25 @@ forder = function(x, ..., decreasing=FALSE)
         xcols = names(x)
         for (i in seq_along(cols)) {
             v=cols[[i]]
-            while (is.call(v) && length(v) == 2L) { 
+            if (i == 1L && is.call(v) && length(v) == 2L && v[[1L]] == "list") return(1L) # to be consistent with base, see comment below under while loop
+            while (is.call(v) && length(v) == 2L && v[[1L]] != "list") { 
                 # take care of "--x", "{-x}", "(---+x)" etc., cases and also "list(y)". 'list(y)' is ambiguous though. In base, with(DT, order(x, list(y))) will error 
                 # that 'arguments are not of same lengths'. But with(DT, order(list(x), list(y))) will return 1L, which is very strange. On top of that, with(DT, 
-                # order(x, as.list(10:1)) would return 'unimplemented type list'. So I find 'base' quite inconsistent here. In our case, currently, we remove 'list' 
-                # from list(y). So, 'list(y)' becomes 'y'. TODO: Revisit and decide if we'd like to error, just add "&& v[[1L]] != 'list'" in while(.).
+                # order(x, as.list(10:1)) would return 'unimplemented type list'. It's all very inconsistent. But we HAVE to be consistent with base HERE.
                 if (v[[1L]] == "-") order[i] = -order[i]
                 v = v[[-1L]]
             }
             if (is.name(v)) {
-                if ((ix <- chmatch(as.character(v), xcols, nomatch=0L)) == 0L) 
-                    stop(cat("object '", as.character(v), "' not found", sep=""))
-                ans <- point(ans, i, x, ix) # see 'point' in data.table.R and C-version pointWrapper in assign.c - avoid copies
-            } else if (is.call(v)) {
-                v = as.call(list(as.name("list"), v)) 
+                ix <- chmatch(as.character(v), xcols, nomatch=0L)
+                if (ix != 0L) ans <- point(ans, i, x, ix) # see 'point' in data.table.R and C-version pointWrapper in assign.c - avoid copies
+                else {
+                    v = as.call(list(as.name("list"), v))
+                    ans <- point(ans, i, eval(v, x, parent.frame()), 1L)
+                }
+            } else {
+                v = as.call(list(as.name("list"), v))
                 ans <- point(ans, i, eval(v, x, parent.frame()), 1L) # eval has to make a copy here (not due to list(.), but due to ex: "4-5*y"), unavoidable.
-            } else stop("Column arguments to order by in 'forder' should be of type name/symbol (ex: quote(x)) or call (ex: quote(-x), quote(x+5*y))")
+            } # else stop("Column arguments to order by in 'forder' should be of type name/symbol (ex: quote(x)) or call (ex: quote(-x), quote(x+5*y))")
         }
     }
     cols = seq_along(ans)
@@ -172,7 +175,9 @@ forder = function(x, ..., decreasing=FALSE)
         if (!typeof(ans[[i]]) %chin% c("integer","logical","character","double")) 
             stop("Column '",i,"' is type '",typeof(ans[[i]]),"' which is not supported for ordering currently.")
     }
-    forderv(ans, cols, sort=TRUE, retGrp=FALSE, order= if (decreasing) -order else order)
+    o = forderv(ans, cols, sort=TRUE, retGrp=FALSE, order= if (decreasing) -order else order)
+    if (!length(o)) o = seq_along(ans[[1L]]) else o
+    o
 }
 
 setorder = function(x, ...)
