@@ -3,6 +3,8 @@
 \alias{duplicated.data.table}
 \alias{unique}
 \alias{unique.data.table}
+\alias{anyDuplicated}
+\alias{anyDuplicated.data.table}
 \title{ Determine Duplicate Rows }
 \description{
      \code{duplicated} returns a logical vector indicating which rows of a \code{data.table}

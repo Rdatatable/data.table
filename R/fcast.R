@@ -44,7 +44,6 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     if (nrow(data) == 0L || ncol(data) == 0L) stop("Can't 'cast' on an empty data.table")
 
     # next, check and set 'fun.aggregate = length' it's null but at least one group size is > 1.
-    oo = 0L
     if (is.null(fun.aggregate)) {
         oo = forderv(data, by=ff_, retGrp=TRUE) # to check if the maximum group size is > 1 and is TRUE set fun.aggregate to length if it's NULL
         if (attr(oo, 'maxgrpn') > 1L) {
@@ -53,9 +52,8 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
             m[["fun.aggregate"]] = quote(length)
         }
     }
-    # TO DO: better way... not sure how else to get an expression from function (in fun.aggregate)
     fill.default <- NULL
-    if (!is.null(fun.aggregate)) {
+    if (!is.null(fun.aggregate)) { # construct the 'call'
         fill.default = fun.aggregate(data[[value.var]][0], ...)
         args <- c("data", "formula", "margins", "subset", "fill", "value.var", "verbose", "drop")
         m <- m[setdiff(names(m), args)]
@@ -64,7 +62,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         # checking for #5191 (until fixed, this is a workaround
         if (length(intersect(value.var, ff_))) fun.aggregate = as.call(list(as.name("{"), as.name(".SD"), fun.aggregate))
     }
-    if (length(ff$rr) == 0) {
+    if (length(ff$rr) == 0) { # take care of special case
         if (is.null(fun.aggregate)) 
             ans = data[, c(ff$ll, value.var), with=FALSE]
         else {
@@ -88,15 +86,11 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         }
         else data = data[, eval(fun.aggregate), by=c(ff_)]
         setkeyv(data, ff_) # can't use 'oo' here, but should be faster as it's uncommon to have huge number of groups.
-    }
-    if (is.null(subset) && is.null(fun.aggregate)) {
-        # 'data' has not been modified yet, so setkey and go to C.
-        data = data[, unique(c(ff_, value.var)), with=FALSE] # we need the copy. using subsetting instead of copy(.) ensures copying of only required columns
-        if (length(oo) && oo == 0L) setkeyv(data, ff_)
-        else { # we can avoid 'forderv' as it's already done
-            if (length(oo)).Call(Creorder, data, oo)
-            setattr(data, 'sorted', ff_)
-        }
+    } else {
+        if (is.null(subset))
+            data = data[, unique(c(ff_, value.var)), with=FALSE] # data is untouched so far. subset only required columns
+        if (length(oo)) .Call(Creorder, data, oo)
+        setattr(data, 'sorted', ff_)
     }
     .CASTenv = new.env(parent=parent.frame())
     assign("forder", forderv, .CASTenv)

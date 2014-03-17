@@ -4133,6 +4133,11 @@ test(1251.9, DT[order("a")], DT[1L])
 test(1251.10, DT[order("b", "a")], DT[1L])
 test(1251.11, DT[order(list("b", "a"))], error = "Column .* for ordering currently")
 test(1251.12, DT[order(list("b"), list("a"))], DT[1L])
+
+# dcast.data.table bug fix for 'subset' argument (it doesn't get key set before to run C-fcast):
+dt <- data.table(x=c(1,1,1,2,2,2,1,1), y=c(1,2,3,1,2,1,1,2), z=c(1,2,3,NA,4,5,NA,NA))
+test(1252, dcast.data.table(dt, x~y, value.var="z", subset=.(!is.na(z))), data.table(x=c(1,2), `1`=c(1,5), `2`=c(2,4), `3`=c(3,NA), key="x"))
+
 ##########################
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)
