@@ -243,6 +243,7 @@ twiddle = function(x) {
 }
 
 setNumericRounding = function(x) .Call(CsetNumericRounding, as.integer(x))
+getNumericRounding = function() .Call(CgetNumericRounding)
 
 SJ = function(...) {
     JDT = as.data.table(list(...))

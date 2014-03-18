@@ -44,6 +44,7 @@ SEXP twiddlewrapper();
 SEXP isOrderedSubset();
 SEXP pointWrapper();
 SEXP setNumericRounding();
+SEXP getNumericRounding();
 
 // .Externals
 SEXP fastmean();
@@ -88,6 +89,7 @@ R_CallMethodDef callMethods[] = {
 {"CisOrderedSubset", (DL_FUNC) &isOrderedSubset, -1},
 {"CpointWrapper", (DL_FUNC) &pointWrapper, -1},
 {"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},
+{"CgetNumericRounding", (DL_FUNC) &getNumericRounding, -1},
 {NULL, NULL, 0}
 };
 

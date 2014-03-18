@@ -1,24 +1,30 @@
 \name{setNumericRounding}
 \alias{setNumericRounding}
+\alias{getNumericRounding}
 \title{ Change or turn off numeric rounding }
 \description{
   Change rounding to 0, 1 or 2 bytes when joining or grouping numeric (i.e. double) columns.
 }
 \usage{
 setNumericRounding(x)
+getNumericRounding()
 }
 \arguments{
-  \item{x}{ integer or numeric vector: 2, 1 or 0 byte rounding }
+  \item{x}{ integer or numeric vector: 2 (default), 1 or 0 byte rounding }
 }
 \details{
   Computers cannot represent some floating point numbers (such as 0.6) precisely, using base 2. This leads to unexpected behaviour when
   joining or grouping columns of type 'numeric'; i.e. 'double', see example below.  To deal with this automatically for convenience, 
   when joining or grouping, data.table rounds such data to apx 11 s.f. which is plenty of digits for many cases. This is achieved by
   rounding the last 2 bytes of the significand.  Where this is not enough, \code{setNumericRounding} can be used to reduce to 1 byte
-  rounding, or no rounding for full precision.
+  rounding, or no rounding (0 bytes rounded) for full precision available.
+  
+  It's bytes rather than bits because it's tied in with the radix sort algorithm for sorting numerics which sorts byte by byte. With the
+  default rounding of 2 bytes, at most 6 passes are needed. With no rounding, at most 8 passes are needed and hence may be slower. The
+  choice of default is not for speed however, but to avoid surprising results such as in the example below.
 }
 \value{
-    No return value. The new value is applied.
+    \code{setNumericRounding} returns no value; the new value is applied. \code{getNumericRounding} returns the current value: 0, 1 or 2.
 }
 \seealso{
 \url{http://en.wikipedia.org/wiki/Double-precision_floating-point_format}\cr

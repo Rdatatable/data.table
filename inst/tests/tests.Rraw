@@ -4149,12 +4149,29 @@ test(1254, DT[,.N,by=upc], data.table(upc=DT$upc, N=1L))
 test(1255, unique(DT, by="upc"), DT)
 setNumericRounding(2)
 test(1256, DT[,.N,by=upc]$N, rep.int(2L,5L))
+DT = data.table(upc=rep(c(360734147771, 360734147770), each=3), year=rep(2009:2011, times=2))
+setNumericRounding(0)
+test(1257, DT[,.N,by=upc], data.table(upc=c(360734147771, 360734147770), N=3L))
+test(1258, DT[,.N,by=upc][order(upc)], data.table(upc=c(360734147770, 360734147771), N=3L))
+setNumericRounding(1)
+test(1257, DT[,.N,by=upc], data.table(upc=c(360734147771, 360734147770), N=3L))
+test(1258, DT[,.N,by=upc][order(upc)], data.table(upc=c(360734147770, 360734147771), N=3L))
+test(1259, getNumericRounding(), 1L)
+# the limit of double precision (16 s.f.) ...
+test(1260, length(unique(c(1.2345678901234560, 1.2345678901234561, 1.2345678901234562, 1.2345678901234563))), 2L)  # 2 not 4 is double precision limit, unrelated to data.table and R
+DT = data.table(id=c(1.234567890123450, 1.234567890123451, 1.234567890123452, 1.234567890123453))  # one less digit is limit
+test(1261, length(unique(DT$id)), 4L)
+test(1262, DT[,.N,by=id]$N, 4L)  # 1 byte rounding isn't enough
+setNumericRounding(0)
+test(1263, DT[,.N,by=id]$N, INT(1,1,1,1))
+test(1264, getNumericRounding(), 0L)
+setNumericRounding(2)
 
 # fread reading TRUE, #4766  TO DO
 DF = data.frame(I=1:3, L=c(T,F,NA))
 write.csv(DF,f<-tempfile(),row.names=F)
 # read.csv(f)     
-# test(1257, fread(f)$L, c(TRUE, FALSE, NA))
+# test(1265, fread(f)$L, c(TRUE, FALSE, NA))
 unlink(f)
 
 ##########################

@@ -375,6 +375,11 @@ SEXP setNumericRounding(SEXP droundArg)
     return R_NilValue;
 }
 
+SEXP getNumericRounding()
+{
+    return ScalarInteger(dround);
+}
+
 static union {double d; unsigned long long ull;} u;
 
 unsigned long long twiddle(void *p)
@@ -425,15 +430,16 @@ static void dradix(double *x, int *o, int n, int order)
     // see comments in iradix for structure.  This follows the same.
     for (i=0;i<n;i++) {
         thisx = order*twiddle(&x[i]);
-        dradixcounts[2][thisx >> 16 & 0xFF]++;   // unrolled since inside n-loop
+        dradixcounts[0][thisx       & 0xFF]++;    // unrolled since inside n-loop
+        dradixcounts[1][thisx >>  8 & 0xFF]++;    // if dround==2 then radix 0 and 1 will be all 0 here and skipped
+        dradixcounts[2][thisx >> 16 & 0xFF]++;
         dradixcounts[3][thisx >> 24 & 0xFF]++;
         dradixcounts[4][thisx >> 32 & 0xFF]++;
         dradixcounts[5][thisx >> 40 & 0xFF]++;
         dradixcounts[6][thisx >> 48 & 0xFF]++;
         dradixcounts[7][thisx >> 56 & 0xFF]++;
     }
-    skip[0] = skip[1] = 1; // the lowest 16 bits were rounded in twiddle
-    for (radix=2; radix<8; radix++) {
+    for (radix=0; radix<8; radix++) {
         i = thisx >> (radix*8) & 0xFF;    // thisx is the last x after loop above
         skip[radix] = dradixcounts[radix][i] == n;
         if (skip[radix]) dradixcounts[radix][i] = 0;  // clear it now, the other counts must be 0 already

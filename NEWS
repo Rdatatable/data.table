@@ -71,9 +71,10 @@ NEW FEATURES (subject to discussion and change)
   o  `anyDuplicated.data.table` is now implemented. Closes FR #5172. Thanks to M C (bluemagister) for 
      filing the FR.
      
-  o  New function setNumericRounding() may be used to reduce rounding to 1 byte or 0 bytes (i.e. no
-     rounding) when joining to or grouping columns of type 'numeric', #5369. See example in
-     ?setNumericRounding and NEWS item below for v1.9.2. Thanks to James Sams for highlighting UPCs.
+  o  New function setNumericRounding() may be used to reduce to 1 byte or 0 byte rounding when joining
+     to or grouping columns of type 'numeric', #5369. See example in ?setNumericRounding and NEWS
+     item below for v1.9.2. getNumericRounding() returns the current setting.
+     Thanks to James Sams for highlighting UPCs.
 
 BUG FIXES
 
