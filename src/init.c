@@ -43,6 +43,7 @@ SEXP gmean();
 SEXP twiddlewrapper();
 SEXP isOrderedSubset();
 SEXP pointWrapper();
+SEXP setNumericRounding();
 
 // .Externals
 SEXP fastmean();
@@ -86,6 +87,7 @@ R_CallMethodDef callMethods[] = {
 {"Ctwiddlewrapper", (DL_FUNC) &twiddlewrapper, -1},
 {"CisOrderedSubset", (DL_FUNC) &isOrderedSubset, -1},
 {"CpointWrapper", (DL_FUNC) &pointWrapper, -1},
+{"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},
 {NULL, NULL, 0}
 };
 
@@ -131,6 +133,8 @@ void attribute_visible R_init_datatable(DllInfo *info)
     long double ld = 3.14;
     memset(&ld, 0, sizeof(long double));
     if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
+    
+    setNumericRounding(ScalarInteger(2));
 }
 
 

@@ -187,6 +187,7 @@ static void iinsert(int *x, int *o, int n, int order)
  iradix is a counting sort performed forwards from MSB to LSB, with some tricks and short circuits building on Terdiman and Herf.
   http://codercorner.com/RadixSortRevisited.htm 
   http://stereopsis.com/radix.html
+  
  Note they are LSD, but we do MSD here which is more complicated, for efficiency.
  NAs need no special treatment as NA is the most negative integer in R (checked in init.c once, for efficiency) so NA naturally sort to the front.
  Using 4-pass 1-byte radix for the following reasons :
@@ -359,28 +360,33 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
 // + changed to MSD and hooked into forder framework here.
 // + replaced tolerance with rounding s.f.
 
-#define FLIP_SIGN_BIT   0x8000000000000000
-#define RESET_NA_NAN    0x0000ffffffffffff
-#define SET_NA_NAN_COMP 0xfff8000000000000 // we can directly set complement in twiddle()
+static int dround = 2;
+static unsigned long long dmask1;
+static unsigned long long dmask2;
 
-static union {double d; unsigned long long ll;} u;
+SEXP setNumericRounding(SEXP droundArg)
+// init.c has initial call with default of 2
+{
+    if (!isInteger(droundArg) || LENGTH(droundArg)!=1) error("Must an integer or numeric vector length 1");
+    if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2) error("Must be 2 (default) or 1 or 0");
+    dround = INTEGER(droundArg)[0];
+    dmask1 = 1 << (8*dround-1);
+    dmask2 = 0xffffffffffffffff << dround*8;
+    return R_NilValue;
+}
+
+static union {double d; unsigned long long ull;} u;
 
 unsigned long long twiddle(void *p)
 {
     u.d = *(double *)p;
     if (R_FINITE(u.d)) {
-        //Rprintf("Before: "); binary(u.ll);
-        if (u.ll >> 15 & 0x1)   // bit 49
-            u.ll = ((u.ll >> 16) + 1) << 16;  // round
-        else
-            u.ll = (u.ll >> 16) << 16;  // clear final 16 as these interact with mask otherwise, it seems
-        //Rprintf(" After: "); binary(u.ll);
+        u.ull += (u.ull & dmask1) << 1;
     } else if (ISNAN(u.d)) {
-        u.ll = (u.ll & RESET_NA_NAN) | SET_NA_NAN_COMP;  // flip NaN/NA sign bit so that they sort to front (data.table's rule to make binary search easier and consistent)
+        return( u.ull & 0x000fffffffffffff ); // bit 13 distinguishes NaN from NA.  1954 lies in the last 2 bytes and ignored when dround==2
     }
-    unsigned long long mask = -(long long)(u.ll >> 63) | FLIP_SIGN_BIT;   // leaves bits in lowest 16 (ok, will be skipped)
-    //Rprintf("  Mask: "); binary(mask);
-    return(u.ll ^ mask);
+    unsigned long long mask = -(long long)(u.ull >> 63) | 0x8000000000000000;
+    return( (u.ull ^ mask) & dmask2 );
 }
 
 SEXP twiddlewrapper(SEXP x)
@@ -392,10 +398,8 @@ SEXP twiddlewrapper(SEXP x)
     for (int i=0; i<LENGTH(x); i++) {
         u.d = REAL(ans)[i];
         if (R_FINITE(u.d)) {
-            if (u.ll >> 15 & 0x1)   // bit 49.  TO DO: allow optionally 2|1|0 byte rounding
-                u.ll = ((u.ll >> 16) + 1) << 16;  // round
-            else
-                u.ll = (u.ll >> 16) << 16;  // clear final 16
+            u.ull += (u.ull & dmask1) << 1;
+            u.ull &= dmask2;
         }
         REAL(ans)[i] = u.d;
     }
@@ -1161,7 +1165,7 @@ SEXP isOrderedSubset(SEXP x, SEXP nrow)
 */
 
 #ifdef TIMING_ON
-static void binary(unsigned long long n)
+void binary(unsigned long long n)
 // trace utility for dev, since couldn't get stdlib::atoi() to link
 // nothing to do with TIMING, but it isn't used so inside TIMING_ON (for dev) avoids not-used compile warning
 {
@@ -1174,7 +1178,7 @@ static void binary(unsigned long long n)
          Rprintf("0");
        if (++sofar == 1 || sofar == 12) Rprintf(" ");
     }
-    printf("\n");
+    Rprintf("\n");
 }
 #endif
 

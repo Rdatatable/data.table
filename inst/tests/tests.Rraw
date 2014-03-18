@@ -2941,8 +2941,8 @@ if ("package:reshape2" %in% search()) {
 }
 
 # sorting and grouping of Inf, -Inf, NA and NaN,  #4684, #4815 & #4883
-DT <- data.table(x = rep(c(1,NA, NaN, Inf, -Inf), each=2))
-OUT <- data.table(x=c(1,NA, NaN, Inf, -Inf), N=2L)
+DT <- data.table(x = rep(c(1, NA, NaN, Inf, -Inf), each=2))
+OUT <- data.table(x=c(1, NA, NaN, Inf, -Inf), N=2L)
 test(1039, DT[, .N, by=x], OUT)
 DT <- data.table(y =c(NA, Inf, NA, -Inf, -Inf, NaN, Inf, 1, NaN, 1))
 OUT <- data.table(y = c(NA, Inf, -Inf, NaN, 1), N=2L)
@@ -3827,14 +3827,17 @@ test(1206, DT[order(b,a)], data.table(a=INT(2,4,6,1,3,5),b=INT(1,1,1,2,2,2)))
 
 # Test joining to Inf, -Inf and mixed non-finites, and grouping
 DT = data.table(A=c(1,2,-Inf,+Inf,3,-1.1,NaN,NA,3.14,NaN,2.8,NA), B=1:12, key="A")
-test(1207, DT[.(c(NA_real_,Inf)),B], INT(8,12,4))
-test(1208, DT[.(c(Inf,NA_real_)),B], INT(4,8,12))
-test(1209, DT[.(c(NaN,NA_real_)),B], INT(7,10,8,12))
-test(1210, DT[.(c(NA_real_,NaN)),B], INT(8,12,7,10))
-test(1211, DT[,sum(B),by=A]$V1, INT(20,17,3,6,1,2,11,5,9,4)) 
-test(1212, DT[,sum(B),by=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,Inf,1,2,3),V1=INT(20,17,7,7,13,14)))
-test(1213, DT[,sum(B),keyby=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,1,2,3,Inf),V1=INT(20,17,7,13,14,7),key="g"))
-# test(1214, DT[.(-200.0),roll=TRUE]$B, 3L)  # TO DO: roll to -Inf.  Also remove -Inf and test rolling to NaN and NA
+for (i in 1:2) {
+    setNumericRounding(if (i==1L) 0L else 2L)
+    test(1207+i*0.1, DT[.(c(NA_real_,Inf)),B], INT(8,12,4))
+    test(1208+i*0.1, DT[.(c(Inf,NA_real_)),B], INT(4,8,12))
+    test(1209+i*0.1, DT[.(c(NaN,NA_real_)),B], INT(7,10,8,12))
+    test(1210+i*0.1, DT[.(c(NA_real_,NaN)),B], INT(8,12,7,10))
+    test(1211+i*0.1, DT[,sum(B),by=A]$V1, INT(20,17,3,6,1,2,11,5,9,4)) 
+    test(1212+i*0.1, DT[,sum(B),by=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,Inf,1,2,3),V1=INT(20,17,7,7,13,14)))
+    test(1213+i*0.1, DT[,sum(B),keyby=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,1,2,3,Inf),V1=INT(20,17,7,13,14,7),key="g"))
+    # test(1214+i*0.1, DT[.(-200.0),roll=TRUE]$B, 3L)  # TO DO: roll to -Inf.  Also remove -Inf and test rolling to NaN and NA
+}
 
 # that fread reads quotes in the middle of fields ok, #2694
 test(1215,
@@ -4039,7 +4042,6 @@ test(1245, DT[.(1:2), var][c(2,4)], DT[.(1:2), var, mult="last"])
 seed = as.integer(Sys.time())
 seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
 set.seed(seed)
-
 DT <- data.table(w=sample(-5:5, 100, TRUE), 
 x=as.numeric(sample(-5:5, 100, TRUE)), 
 y=sample(paste0("id", 1:10), 100, TRUE), 
@@ -4137,6 +4139,23 @@ test(1251.12, DT[order(list("b"), list("a"))], DT[1L])
 # dcast.data.table bug fix for 'subset' argument (it doesn't get key set before to run C-fcast):
 dt <- data.table(x=c(1,1,1,2,2,2,1,1), y=c(1,2,3,1,2,1,1,2), z=c(1,2,3,NA,4,5,NA,NA))
 test(1252, dcast.data.table(dt, x~y, value.var="z", subset=.(!is.na(z))), data.table(x=c(1,2), `1`=c(1,5), `2`=c(2,4), `3`=c(3,NA), key="x"))
+
+# turning off tolerance for UPCs (> 11 s.f. stored in numeric), #5369
+DT <- data.table(upc = c(301426027592, 301426027593, 314775802939, 314775802940, 314775803490, 314775803491, 314775815510, 314775815511, 314933000171, 314933000172),
+                 year = 2006:2007)
+test(1253, DT[,.N,by=upc]$N, rep.int(2L,5L))
+setNumericRounding(0)
+test(1254, DT[,.N,by=upc], data.table(upc=DT$upc, N=1L))
+test(1255, unique(DT, by="upc"), DT)
+setNumericRounding(2)
+test(1256, DT[,.N,by=upc]$N, rep.int(2L,5L))
+
+# fread reading TRUE, #4766  TO DO
+DF = data.frame(I=1:3, L=c(T,F,NA))
+write.csv(DF,f<-tempfile(),row.names=F)
+# read.csv(f)     
+# test(1257, fread(f)$L, c(TRUE, FALSE, NA))
+unlink(f)
 
 ##########################
 

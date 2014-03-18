@@ -242,6 +242,8 @@ twiddle = function(x) {
     .Call(Ctwiddlewrapper, x)
 }
 
+setNumericRounding = function(x) .Call(CsetNumericRounding, as.integer(x))
+
 SJ = function(...) {
     JDT = as.data.table(list(...))
     setkey(JDT)

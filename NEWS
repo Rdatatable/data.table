@@ -70,6 +70,10 @@ NEW FEATURES (subject to discussion and change)
 
   o  `anyDuplicated.data.table` is now implemented. Closes FR #5172. Thanks to M C (bluemagister) for 
      filing the FR.
+     
+  o  New function setNumericRounding() may be used to reduce rounding to 1 byte or 0 bytes (i.e. no
+     rounding) when joining to or grouping columns of type 'numeric', #5369. See example in
+     ?setNumericRounding and NEWS item below for v1.9.2. Thanks to James Sams for highlighting UPCs.
 
 BUG FIXES
 
@@ -209,7 +213,8 @@ NEW FEATURES
   o  fread's drop, select and NULL in colClasses are implemented. To drop or select columns by name
      or by number. See examples in ?fread.
      
-  o  fread now detects T,F,True,False,TRUE and FALSE as type logical, consistent with read.csv.
+  o  fread now detects T,F,True,False,TRUE and FALSE as type logical, consistent with read.csv, #4766.
+     Thanks to Adam November for highlighting.
   
   o  fread now accepts quotes (both ' and ") in the middle of fields, whether the field starts with "
      or not, rather than the 'unbalanced quotes' error, #2694. Thanks to baidao for reporting. It was
