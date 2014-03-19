@@ -4174,6 +4174,60 @@ write.csv(DF,f<-tempfile(),row.names=F)
 # test(1265, fread(f)$L, c(TRUE, FALSE, NA))
 unlink(f)
 
+### FR #2722 test begins here ###
+#################################
+# FR #2722 optimise j=c(lapply(.SD,sum, ...)) - here any amount of such lapply(.SD, ...) can occur and in any order
+set.seed(45L)
+dt <- data.table(a=sample(2,10,TRUE), b=sample(3,10,TRUE), c=sample(4,10,TRUE), d=sample(5,10,TRUE))
+
+options(datatable.optimize=1L)
+ans2 <- dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a]
+options(datatable.optimize=Inf)
+options(datatable.verbose=TRUE)
+out1 <- capture.output(ans1 <- dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a])
+test(1258.1, ans1, ans2)
+test(1258.2, out1[3L], "GForce optimized j to 'list(gmean(b), gmean(c), gmean(d), gsum(b), gsum(c), gsum(d))'")
+options(datatable.verbose=FALSE)
+
+options(datatable.optimize=1L)
+ans2 <- dt[, c(lapply(.SD, mean), .N), by=a]
+options(datatable.optimize=Inf)
+options(datatable.verbose=TRUE)
+out1 <- capture.output(ans1 <- dt[, c(lapply(.SD, mean), .N), by=a])
+test(1258.3, ans1, ans2)
+test(1258.4, out1[2L], "lapply optimization changed j from 'c(lapply(.SD, mean), .N)' to 'list(mean(b), mean(c), mean(d), .N)'")
+options(datatable.verbose=FALSE)
+
+options(datatable.optimize=1L)
+ans2 <- dt[, c(list(c), lapply(.SD, mean)), by=a]
+options(datatable.optimize=Inf)
+options(datatable.verbose=TRUE)
+out1 <- capture.output(ans1 <- dt[, c(list(c), lapply(.SD, mean)), by=a])
+test(1258.5, ans1, ans2)
+test(1258.6, out1[2L], "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(list(c), mean(b), mean(c), mean(d))'")
+options(datatable.verbose=FALSE)
+
+options(datatable.optimize=1L)
+ans2 <- dt[, c(as.list(c), lapply(.SD, mean)), by=a]
+options(datatable.optimize=Inf)
+options(datatable.verbose=TRUE)
+out1 <- capture.output(ans1 <- dt[, c(as.list(c), lapply(.SD, mean)), by=a])
+test(1258.7, ans1, ans2)
+test(1258.8, out1[2L], "lapply optimization changed j from 'c(as.list(c), lapply(.SD, mean))' to 'list(as.list(c), mean(b), mean(c), mean(d))'")
+options(datatable.verbose=FALSE)
+
+options(datatable.optimize=1L)
+ans2 <- dt[, c(sum(d), lapply(.SD, mean)), by=a]
+options(datatable.optimize=Inf)
+options(datatable.verbose=TRUE)
+out1 <- capture.output(ans1 <- dt[, c(sum(d), lapply(.SD, mean)), by=a])
+test(1258.9, ans1, ans2)
+test(1258.10, out1[3L], "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
+options(datatable.verbose=FALSE)
+
+# TO DO: TODO: Add more test cases. Just add here as and when you think of a case.
+### FR #2722 tests end here ###
+
 ##########################
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)

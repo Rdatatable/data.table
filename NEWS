@@ -76,6 +76,13 @@ NEW FEATURES (subject to discussion and change)
      item below for v1.9.2. getNumericRounding() returns the current setting.
      Thanks to James Sams for highlighting UPCs.
 
+  o  Complex j-expressions of the form `DT[, c(..., lapply(.SD, fun)), by=grp]`are now optimised, 
+     as long as `.SD` is only present in the form `lapply(.SD, fun)`. 
+     For ex:          DT[, c(.I, lapply(.SD, sum), mean(x), lapply(.SD, log)), by=grp] 
+     is optimised to: DT[, list(.I, x=sum(x), y=sum(y), ..., mean(x), log(x), log(y), ...), by=grp]
+     But `DT[, c(.SD, lapply(.SD, sum)), by=grp]` for example isn't optimised yet. This partially 
+     resolves FR #2722. Thanks to Sam Steingold for filing the FR.
+
 BUG FIXES
 
   o  When joining to fewer columns than the key has, using one of the later key columns

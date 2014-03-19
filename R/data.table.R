@@ -738,7 +738,6 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 } # else empty list is needed for test 468: adding an empty list column
             } # else maybe a call to transform or something which returns a list.
             av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
-            
             if (".SD" %chin% av) {
                 if (missing(.SDcols)) {
                     ansvars = setdiff(names(x),union(bynames,allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
@@ -1115,7 +1114,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     if (getOption("datatable.optimize")>=1 && is.call(jsub)) {  # Ability to turn off if problems or to benchmark the benefit
         # Optimization to reduce overhead of calling lapply over and over for each group
         oldjsub = jsub
-        if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols)) {
+        # convereted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
+        .massageSD <- function(jsub) {
             txt = as.list(jsub)[-1L]
             if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #4839
             fun = txt[[2L]]
@@ -1139,6 +1139,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             }
             jsub = as.call(ans)  # important no names here
             jvnames = ansvars      # but here instead
+            list(jsub, jvnames)
             # It may seem inefficient to constuct a potentially long expression. But, consider calling
             # lapply 100000 times. The C code inside lapply does the LCONS stuff anyway, every time it
             # is called, involving small memory allocations.
@@ -1150,6 +1151,54 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             # overhead minimised. We don't need to worry about the env passed to the eval in a possible
             # lapply replacement, or how to pass ... efficiently to it.
             # Plus we optimize lapply first, so that mean() can be optimized too as well, next.
+        }
+        if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols)) {
+            deparse_ans = .massageSD(jsub)
+            jsub = deparse_ans[[1L]]
+            jvnames = deparse_ans[[2L]]
+        } else if (jsub[[1L]] == "c" && length(jsub) > 1L) {
+            # TODO, TO DO: raise the checks for 'jvnames' earlier (where jvnames is set by checking 'jsub') and set 'jvnames' already.
+            # FR #2722 - optimisation of j=c(..., lapply(.SD, .), ...)
+            is_valid = TRUE
+            any_SD = FALSE
+            jsubl = as.list.default(jsub)
+            oldjvnames = jvnames
+            jvnames = NULL           # TODO: not let jvnames grow, maybe use (number of lapply(.SD, .))*lenght(ansvars) + other jvars ?? not straightforward.
+            for (i in 2:length(jsubl)) {
+                this = jsub[[i]]
+                if (is.call(this) && this[[1L]]=="lapply" && this[[2L]]==".SD" && length(xcols)) {
+                    any_SD = TRUE
+                    deparse_ans = .massageSD(this)
+                    jsubl[[i]] = as.list(deparse_ans[[1L]][-1L]) # just keep the '.' from list(.)
+                    jvnames = c(jvnames, deparse_ans[[2L]])
+                } else {
+                    if (any(all.vars(this) == ".SD")) {
+                        # TODO, TO DO: revisit complex cases (as illustrated below)
+                        # complex cases like DT[, c(.SD, .SD[x>1], .SD[J(.)], c(.SD), a + .SD, lapply(.SD, sum)), by=grp]
+                        # hard to optimise such cases (+ difficulty in counting exact columns and therefore names). revert back to no optimisation.
+                        is_valid=FALSE
+                        break
+                    } else if (is.name(this)) {
+                        if ((is.null(names(jsubl)) || names(jsubl)[i] == "") && this == ".N") jvnames = c(jvnames, "N")
+                        else jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i])
+                    } else if (is.call(this)) {
+                        jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i])
+                    } else { # just to be sure that any other case (I've overlooked) runs smoothly, without optimisation
+                        # TO DO, TODO: maybe a message/warning here so that we can catch the overlooked cases, if any?
+                        is_valid=FALSE
+                        break
+                    }
+                }
+            }
+            if (!is_valid || !any_SD) { # restore if c(...) doesn't contain lapply(.SD, ..) or if it's just invalid
+                jvnames=oldjvnames             # reset jvnames
+                jsub = oldjsub                 # reset jsub
+                jsubl = as.list.default(jsubl) # reset jsubl
+            } else {
+                setattr(jsubl, 'names', NULL)
+                jsub = as.call(unlist(jsubl))
+                jsub[[1L]] = quote(list)
+            }
         }
         if (verbose) {
             if (!identical(oldjsub, jsub))
