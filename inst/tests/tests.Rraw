@@ -4241,6 +4241,20 @@ if ("package:bit64" %in% search()) {
     test(1277, duplicated(DT), rep(c(FALSE,TRUE),3))
 }
 
+# distinguishing small numbers from 0.0 as from v1.9.2,  test from Rick
+# http://stackoverflow.com/questions/22290544/grouping-very-small-numbers-e-g-1e-28-and-0-0-in-data-table-v1-8-10-vs-v1-9-2
+test_no = 1278.0
+i = 1
+for (dround in c(0,2)) {
+    setNumericRounding(dround)  # rounding should not affect the result here because although small, it's very accurace (1 s.f.)
+    for (i in (-30):(-2) ) {
+        DT = data.table(c(1 * (10^i),2,9999,0))
+        test(test_no + i/100, nrow(DT.test[, .N, by=V1]), 4)
+        i = i+1 
+    }
+}
+ 
+
 ##########################
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)

@@ -39,6 +39,7 @@ NEW FEATURES (subject to discussion and change)
        http://stackoverflow.com/a/16222108/403310
 
   o  bit64::integer64 now works in grouping and joins, #5369. Thanks to James Sams for highlighting UPCs.
+     Reminder: fread() has been able to detect and read integer64 for a while.
 
   o  New function setNumericRounding() may be used to reduce to 1 byte or 0 byte rounding when joining
      to or grouping columns of type 'numeric', #5369. See example in ?setNumericRounding and NEWS
@@ -148,7 +149,10 @@ NOTES
 
   o  `?duplicated.data.table` explained that `by=NULL` or `by=FALSE` would use all columns, however by=FALSE
      resulted in error. `by=FALSE` is removed from help and duplicated returns an error when by=TRUE/FALSE now. 
-     Closes #5424. 
+     Closes #5424.
+     
+  o  More info about distinguishing small numbers from 0.0 from v1.9.2+ here :
+       http://stackoverflow.com/questions/22290544/grouping-very-small-numbers-e-g-1e-28-and-0-0-in-data-table-v1-8-10-vs-v1-9-2
 
         **********************************************
         **                                          **
@@ -197,7 +201,7 @@ NEW FEATURES
   
   o  Numeric data is still joined and grouped within tolerance as before but instead of tolerance
      being sqrt(.Machine$double.eps) == 1.490116e-08 (the same as base::all.equal's default) the
-     the significand is now rounded to the last 2 bytes, apx 11 s.f. This is more appropriate
+     significand is now rounded to the last 2 bytes, apx 11 s.f. This is more appropriate
      for large (1.23e20) and small (1.23e-20) numerics and is faster via a simple bit twiddle.
      A few functions provided a 'tolerance' argument but this wasn't being passed through so has
      been removed. We aim to add a global option (e.g. 2, 1 or 0 byte rounding) in a future release.
