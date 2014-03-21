@@ -17,7 +17,7 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     # packages above are not installed, via DESCRIPTION:Suggests.
     .devtesting=FALSE
 } else {
-    require(bit64)  # integer64 is more fundamental than the other packages,  so include it in dev too
+    # Matt has suppressMessages(require(bit64)) in .Rprofile
     .devtesting=TRUE
 }
 options(warn=2)
@@ -4243,21 +4243,29 @@ if ("package:bit64" %in% search()) {
 
 # distinguishing small numbers from 0.0 as from v1.9.2,  test from Rick
 # http://stackoverflow.com/questions/22290544/grouping-very-small-numbers-e-g-1e-28-and-0-0-in-data-table-v1-8-10-vs-v1-9-2
-test_no = 1278.01
+test_no = 1278.001
 for (dround in c(0,2)) {
     setNumericRounding(dround)  # rounding should not affect the result here because although small, it's very accurace (1 s.f.)
-    for (i in (-30):(-2) ) {
-        DT = data.table(c(1 * (10^i),2,9999,0))
-        test(test_no, nrow(DT[, .N, by=V1]), 4)
-        test_no = test_no + 0.01
+    for (i in c(-30:-1,1:30)) {
+        DT = data.table(c(1 * (10^i),2,9999,-1,0,1))
+        test(test_no, nrow(DT[, .N, by=V1]), 6)
+        test_no = test_no + 0.001
     }
 }
 
+# rounding of milliseconds, workaround, TO DO: #5445
+# http://stackoverflow.com/questions/22356957/rounding-milliseconds-of-posixct-in-data-table-v1-9-2-ok-in-1-8-10
 DT = data.table(timestamp=c(as.POSIXct("2013-01-01 17:51:00.707"),
                             as.POSIXct("2013-01-01 17:51:59.996"),
                             as.POSIXct("2013-01-01 17:52:00.059"),
                             as.POSIXct("2013-01-01 17:54:23.901"),
+                            as.POSIXct("2013-01-01 17:54:23.913"),
                             as.POSIXct("2013-01-01 17:54:23.914")))
+setNumericRounding(2)
+test(1279, duplicated(DT), rep(c(FALSE,TRUE), c(4,2)))
+setNumericRounding(1)
+test(1280, duplicated(DT), rep(FALSE, 6))
+setNumericRounding(2)
 
 
 ##########################
