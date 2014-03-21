@@ -16,8 +16,10 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     # want to warn about it not being installed. 'R CMD check' is a stricter test that will warn if the
     # packages above are not installed, via DESCRIPTION:Suggests.
     .devtesting=FALSE
-} else
+} else {
+    require(bit64)  # integer64 is more fundamental than the other packages,  so include it in dev too
     .devtesting=TRUE
+}
 options(warn=2)
 nfail = ntest = lastnum = 0
 whichfail = NULL
@@ -130,9 +132,9 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     }
     cat("Test",num,"ran without errors but failed check that x equals y:\n")
     cat("> x =",deparse(substitute(x)),"\n")
-    if (is.data.table(x)) compactprint(x) else print(x)
+    if (is.data.table(x)) compactprint(x) else if (length(x)>6) {cat("First 6 of", length(x),":");print(head(x))} else print(x)
     cat("> y =",deparse(substitute(y)),"\n")
-    if (is.data.table(y)) compactprint(y) else print(y)
+    if (is.data.table(y)) compactprint(y) else if (length(y)>6) {cat("First 6 of", length(y),":");print(head(y))} else print(y)
     nfail <<- nfail + 1
     whichfail <<- c(whichfail, num)
 }
@@ -152,6 +154,7 @@ if (!.devtesting) {
     uniqlengths = data.table:::uniqlengths
     setrev = data.table:::setrev
     setreordervec = data.table:::setreordervec
+    setattr = data.table::setattr     # so as not to use bit::setattr
     .R.listCopiesNamed = data.table:::.R.listCopiesNamed
     .R.assignNamesCopiesAll = data.table:::.R.assignNamesCopiesAll
     .R.subassignCopiesOthers = data.table:::.R.subassignCopiesOthers
@@ -3495,15 +3498,7 @@ test(1152, dt[, lapply(.SD, mean), by=grp, .SDcols=sd.cols], dt[, list(v1=mean(v
 
 # #5171 fix - setattr attribute non-character led to segfault
 x <- FALSE
-if ("package:bit" %in% search()) {
-    try(detach(package:bit64),silent=TRUE)
-    try(detach(package:bit),silent=TRUE)
-    if (.devtesting) {
-      test(1153, setattr(x, FALSE, FALSE), error="Attribute name must be")
-    } else {
-      test(1153, data.table:::setattr(x, FALSE, FALSE), error="Attribute name must be")
-    }
-}
+test(1153, setattr(x, FALSE, FALSE), error="Attribute name must be")
 
 # Fixed binary search capabilities for NA (for int and double) and NaN (for double):
 set.seed(1)
@@ -4154,24 +4149,24 @@ setNumericRounding(0)
 test(1257, DT[,.N,by=upc], data.table(upc=c(360734147771, 360734147770), N=3L))
 test(1258, DT[,.N,by=upc][order(upc)], data.table(upc=c(360734147770, 360734147771), N=3L))
 setNumericRounding(1)
-test(1257, DT[,.N,by=upc], data.table(upc=c(360734147771, 360734147770), N=3L))
-test(1258, DT[,.N,by=upc][order(upc)], data.table(upc=c(360734147770, 360734147771), N=3L))
-test(1259, getNumericRounding(), 1L)
+test(1259, DT[,.N,by=upc], data.table(upc=c(360734147771, 360734147770), N=3L))
+test(1260, DT[,.N,by=upc][order(upc)], data.table(upc=c(360734147770, 360734147771), N=3L))
+test(1261, getNumericRounding(), 1L)
 # the limit of double precision (16 s.f.) ...
-test(1260, length(unique(c(1.2345678901234560, 1.2345678901234561, 1.2345678901234562, 1.2345678901234563))), 2L)  # 2 not 4 is double precision limit, unrelated to data.table and R
+test(1262, length(unique(c(1.2345678901234560, 1.2345678901234561, 1.2345678901234562, 1.2345678901234563))), 2L)  # 2 not 4 is double precision limit, unrelated to data.table and R
 DT = data.table(id=c(1.234567890123450, 1.234567890123451, 1.234567890123452, 1.234567890123453))  # one less digit is limit
-test(1261, length(unique(DT$id)), 4L)
-test(1262, DT[,.N,by=id]$N, 4L)  # 1 byte rounding isn't enough
+test(1263, length(unique(DT$id)), 4L)
+test(1264, DT[,.N,by=id]$N, 4L)  # 1 byte rounding isn't enough
 setNumericRounding(0)
-test(1263, DT[,.N,by=id]$N, INT(1,1,1,1))
-test(1264, getNumericRounding(), 0L)
+test(1265, DT[,.N,by=id]$N, INT(1,1,1,1))
+test(1266, getNumericRounding(), 0L)
 setNumericRounding(2)
 
 # fread reading TRUE, #4766  TO DO
 DF = data.frame(I=1:3, L=c(T,F,NA))
 write.csv(DF,f<-tempfile(),row.names=F)
 # read.csv(f)     
-# test(1265, fread(f)$L, c(TRUE, FALSE, NA))
+# test(1267, fread(f)$L, c(TRUE, FALSE, NA))
 unlink(f)
 
 ### FR #2722 test begins here ###
@@ -4185,8 +4180,8 @@ ans2 <- dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a]
 options(datatable.optimize=Inf)
 options(datatable.verbose=TRUE)
 out1 <- capture.output(ans1 <- dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a])
-test(1258.1, ans1, ans2)
-test(1258.2, out1[3L], "GForce optimized j to 'list(gmean(b), gmean(c), gmean(d), gsum(b), gsum(c), gsum(d))'")
+test(1268.1, ans1, ans2)
+test(1268.2, out1[3L], "GForce optimized j to 'list(gmean(b), gmean(c), gmean(d), gsum(b), gsum(c), gsum(d))'")
 options(datatable.verbose=FALSE)
 
 options(datatable.optimize=1L)
@@ -4194,8 +4189,8 @@ ans2 <- dt[, c(lapply(.SD, mean), .N), by=a]
 options(datatable.optimize=Inf)
 options(datatable.verbose=TRUE)
 out1 <- capture.output(ans1 <- dt[, c(lapply(.SD, mean), .N), by=a])
-test(1258.3, ans1, ans2)
-test(1258.4, out1[2L], "lapply optimization changed j from 'c(lapply(.SD, mean), .N)' to 'list(mean(b), mean(c), mean(d), .N)'")
+test(1268.3, ans1, ans2)
+test(1268.4, out1[2L], "lapply optimization changed j from 'c(lapply(.SD, mean), .N)' to 'list(mean(b), mean(c), mean(d), .N)'")
 options(datatable.verbose=FALSE)
 
 options(datatable.optimize=1L)
@@ -4203,8 +4198,8 @@ ans2 <- dt[, c(list(c), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
 options(datatable.verbose=TRUE)
 out1 <- capture.output(ans1 <- dt[, c(list(c), lapply(.SD, mean)), by=a])
-test(1258.5, ans1, ans2)
-test(1258.6, out1[2L], "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(list(c), mean(b), mean(c), mean(d))'")
+test(1268.5, ans1, ans2)
+test(1268.6, out1[2L], "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(list(c), mean(b), mean(c), mean(d))'")
 options(datatable.verbose=FALSE)
 
 options(datatable.optimize=1L)
@@ -4212,8 +4207,8 @@ ans2 <- dt[, c(as.list(c), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
 options(datatable.verbose=TRUE)
 out1 <- capture.output(ans1 <- dt[, c(as.list(c), lapply(.SD, mean)), by=a])
-test(1258.7, ans1, ans2)
-test(1258.8, out1[2L], "lapply optimization changed j from 'c(as.list(c), lapply(.SD, mean))' to 'list(as.list(c), mean(b), mean(c), mean(d))'")
+test(1268.7, ans1, ans2)
+test(1268.8, out1[2L], "lapply optimization changed j from 'c(as.list(c), lapply(.SD, mean))' to 'list(as.list(c), mean(b), mean(c), mean(d))'")
 options(datatable.verbose=FALSE)
 
 options(datatable.optimize=1L)
@@ -4221,12 +4216,26 @@ ans2 <- dt[, c(sum(d), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
 options(datatable.verbose=TRUE)
 out1 <- capture.output(ans1 <- dt[, c(sum(d), lapply(.SD, mean)), by=a])
-test(1258.9, ans1, ans2)
-test(1258.10, out1[3L], "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
+test(1268.9, ans1, ans2)
+test(1268.10, out1[3L], "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
 options(datatable.verbose=FALSE)
-
-# TO DO: TODO: Add more test cases. Just add here as and when you think of a case.
 ### FR #2722 tests end here ###
+
+# Wide range numeric and integer64, to test all bits
+x = sample( c(seq(-1e100, 1e100, length=1e5), c(seq(-1e-100,1e-100,length=1e5))) )
+setNumericRounding(0)
+test(1269, forderv(x), base::order(x))
+setNumericRounding(2)   # not affected by rounding
+test(1270, forderv(x), base::order(x))
+if (FALSE) { # "package:bit64" %in% search()) {   # not quite working yet ...
+    x = as.integer64(2)^(0:62)
+    x = sample(c(x,-x,0))
+    test(1271, forderv(x), order(x))
+    DT = data.table( a=as.integer64(2)^45 + 1:3, b=1:6 )
+    test(1272, DT[,sum(b),by=a], data.table(a=DT$a[1:3], INT(5,7,9)))
+    setkey(DT,a)
+    test(1273, DT[.(as.integer64(35184372088834))], DT[3:4])
+}
 
 ##########################
 

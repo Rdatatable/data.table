@@ -20,15 +20,19 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 #define ENC_KNOWN(x) (LEVELS(x) & 12)
 // 12 = LATIN1_MASK (1<<2) | UTF8_MASK (1<<3)  // Would use these definitions from Defn.h, but that appears to be private to R. Hence 12.
 
+// from forder.c ...
 extern SEXP forder();
-extern int StrCmp(SEXP x, SEXP y);  // in forder.c
-extern unsigned long long twiddle(void *);
+extern int StrCmp(SEXP x, SEXP y);
 extern SEXP vec_init(R_len_t n, SEXP val);
+extern unsigned long long dtwiddle(void *, int);
+extern unsigned long long i64twiddle(void *, int);
+extern SEXP char_integer64;
 
 static SEXP i, x;
 static int ncol, *icols, *xcols, *o, *retFirst, *retLength, *allLen1, *rollends;
 static double roll, rollabs;
 static Rboolean nearest=FALSE, enc_warn=TRUE;
+static unsigned long long (*twiddle)(void *, int);
 
 void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int lowmax, int uppmax);
 
@@ -106,14 +110,14 @@ static union {
 } ival, xval;
 
 static int mid, tmplow, tmpupp;  // global to save them being added to recursive stack. Maybe optimizer would do this anyway.
-static SEXP ic, xc;
+static SEXP ic, xc, class;
 
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowmax, int uppmax)
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
 // lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
 // uppmax=1 if xuppIn is the upper bound of this group (needed for roll)
 {
-    int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn, j, k, ir, lir, tmp; 
+    int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn, j, k, ir, lir, tmp;
     ir = lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
     if (o) ir = o[lir]-1;                      // ir = the actual i row if i were ordered
 
@@ -212,10 +216,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         }
         break;
     case REALSXP :
-        ival.ll = twiddle(&REAL(ic)[ir]);
+        class = getAttrib(xc, R_ClassSymbol);
+        twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
+        ival.ll = twiddle(DATAPTR(ic), ir);
         while(xlow < xupp-1) {
             mid = xlow + (xupp-xlow)/2;
-            xval.ll = twiddle(&REAL(xc)[mid]);
+            xval.ll = twiddle(DATAPTR(xc), mid);
             if (xval.ll<ival.ll) {
                 xlow=mid;
             } else if (xval.ll>ival.ll) {
@@ -225,12 +231,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
                 tmpupp = mid;
                 while(tmplow<xupp-1) {
                     mid = tmplow + (xupp-tmplow)/2;
-                    xval.ll = twiddle(&REAL(xc)[mid]);
+                    xval.ll = twiddle(DATAPTR(xc), mid);
                     if (xval.ll == ival.ll) tmplow=mid; else xupp=mid;
                 }
                 while(xlow<tmpupp-1) {
                     mid = xlow + (tmpupp-xlow)/2;
-                    xval.ll = twiddle(&REAL(xc)[mid]);
+                    xval.ll = twiddle(DATAPTR(xc), mid);
                     if (xval.ll == ival.ll) tmpupp=mid; else xlow=mid;
                 }
                 break;
@@ -240,12 +246,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         tmpupp = lir;
         while(tmplow<iupp-1) {
             mid = tmplow + (iupp-tmplow)/2;
-            xval.ll = twiddle(&REAL(ic)[ o ? o[mid]-1 : mid ]);
+            xval.ll = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid );
             if (xval.ll == ival.ll) tmplow=mid; else iupp=mid;
         }
         while(ilow<tmpupp-1) {
             mid = ilow + (tmpupp-ilow)/2;
-            xval.ll = twiddle(&REAL(ic)[ o ? o[mid]-1 : mid ]);
+            xval.ll = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid );
             if (xval.ll == ival.ll) tmpupp=mid; else ilow=mid;
         }
         break;

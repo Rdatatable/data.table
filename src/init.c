@@ -101,6 +101,7 @@ R_ExternalMethodDef externalMethods[] = {
 };
 
 void setSizes();
+SEXP char_integer64;
 
 void attribute_visible R_init_datatable(DllInfo *info)
 // relies on pkg/src/Makevars to mv data.table.so to datatable.so
@@ -113,8 +114,9 @@ void attribute_visible R_init_datatable(DllInfo *info)
     if (NA_INTEGER != NA_LOGICAL) error("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s", NA_INTEGER, NA_LOGICAL, msg);
     if (sizeof(int) != 4) error("Checking sizeof(int) [%d] is 4 %s", sizeof(int), msg);
     if (sizeof(double) != 8) error("Checking sizeof(double) [%d] is 8 %s", sizeof(double), msg);  // 8 on both 32bit and 64bit.
-    if (sizeof(int *) != 4 && sizeof(int *) != 8) error("Checking sizeof(pointer) [%d] is 4 or 8 %s", sizeof(int *), msg);
-    if (sizeof(SEXP) != sizeof(int *)) error("Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s", sizeof(SEXP), sizeof(int *), msg);
+    if (sizeof(long long) != 8) error("Checking sizeof(long long) [%d] is 8 %s", sizeof(long long), msg);
+    if (sizeof(char *) != 4 && sizeof(char *) != 8) error("Checking sizeof(pointer) [%d] is 4 or 8 %s", sizeof(char *), msg);
+    if (sizeof(SEXP) != sizeof(char *)) error("Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s", sizeof(SEXP), sizeof(char *), msg);
     
     SEXP tmp = PROTECT(allocVector(INTSXP,2));
     if (LENGTH(tmp)!=2) error("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s", LENGTH(tmp), msg);
@@ -137,6 +139,8 @@ void attribute_visible R_init_datatable(DllInfo *info)
     if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
     
     setNumericRounding(ScalarInteger(2));
+    
+    char_integer64 = mkChar("integer64");  // for speed, similar to R_*Symbol.
 }
 
 

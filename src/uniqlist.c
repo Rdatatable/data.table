@@ -2,7 +2,10 @@
 #define USE_RINTERNALS
 #include <Rinternals.h>
 
-extern unsigned long long twiddle(void *p);  // in forder.c
+extern unsigned long long dtwiddle(void *, int);  // in forder.c
+extern unsigned long long i64twiddle(void *, int);
+unsigned long long (*twiddle)(void *, int);
+extern SEXP char_integer64;
 
 // DONE: return 'uniqlist' as a vector (same as duplist) and write a separate function to get group sizes
 // Also improvements for numeric type with a hack of checking unsigned int (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
@@ -16,7 +19,7 @@ SEXP uniqlist(SEXP l, SEXP order)
     // DONE: ans is now grown
     Rboolean b, byorder;
     unsigned long long *ulv; // for numeric check speed-up
-    SEXP v, ans;
+    SEXP v, ans, class;
     R_len_t i, j, nrow, ncol, len, thisi, previ, isize=1000;
 
     int *iidx = Calloc(isize, int); // for 'idx'
@@ -43,8 +46,14 @@ SEXP uniqlist(SEXP l, SEXP order)
             case STRSXP :
                 b=STRING_ELT(v,thisi)==STRING_ELT(v,previ); break;  // forder checks no non-ascii unknown, and either UTF-8 or Latin1 but not both. So == pointers is ok given that check.
             case REALSXP :
-                ulv = (unsigned long long *)REAL(v);  // (gives >=2x speedup)
-                b = ulv[thisi]==ulv[previ] || twiddle(&REAL(v)[thisi])==twiddle(&REAL(v)[previ]); break;  // twiddle rounds and normalises NaNs
+                ulv = (unsigned long long *)REAL(v);  
+                b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
+                if (!b) {
+                    class = getAttrib(v, R_ClassSymbol);
+                    twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
+                    b = twiddle(ulv, thisi) == twiddle(ulv, previ);
+                }
+                break;
                 // TO DO: store previ twiddle call, but it'll need to be vector since this is in a loop through columns. Hopefully the first == will short circuit most often
             default :
                 error("Type '%s' not supported", type2char(TYPEOF(v))); 
