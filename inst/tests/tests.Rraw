@@ -24,7 +24,7 @@ options(warn=2)
 nfail = ntest = lastnum = 0
 whichfail = NULL
 compactprint = function(DT, topn=2) {
-    cn = paste(" [Key=",paste(key(DT),collapse=",")," Types=",paste(substring(sapply(DT,class),1,3),collapse=","),"]",sep="")
+    cn = paste(" [Key=",paste(key(DT),collapse=",")," Types=",paste(substring(gsub("integer64","i64",sapply(DT,class)),1,3),collapse=","),"]",sep="")
     print(copy(DT)[,(cn):=""], topn=topn)
     invisible()
 }
@@ -4227,12 +4227,12 @@ setNumericRounding(0)
 test(1269, forderv(x), base::order(x))
 setNumericRounding(2)   # not affected by rounding
 test(1270, forderv(x), base::order(x))
-if (FALSE) { # "package:bit64" %in% search()) {   # not quite working yet ...
+if ("package:bit64" %in% search()) {
     x = as.integer64(2)^(0:62)
     x = sample(c(x,-x,0))
     test(1271, forderv(x), order(x))
     DT = data.table( a=as.integer64(2)^45 + 1:3, b=1:6 )
-    test(1272, DT[,sum(b),by=a], data.table(a=DT$a[1:3], INT(5,7,9)))
+    test(1272, DT[,sum(b),by=a], data.table(a=DT$a[1:3], V1=INT(5,7,9)))
     setkey(DT,a)
     test(1273, DT[.(as.integer64(35184372088834))], DT[3:4])
 }

@@ -37,6 +37,12 @@ NEW FEATURES (subject to discussion and change)
        http://r.789695.n4.nabble.com/changing-data-table-by-without-by-syntax-to-require-a-quot-by-quot-td4664770.html
        http://stackoverflow.com/questions/16093289/data-table-join-and-j-expression-unexpected-behavior
        http://stackoverflow.com/a/16222108/403310
+
+  o  bit64::integer64 now works in grouping and joins, #5369. Thanks to James Sams for highlighting UPCs.
+
+  o  New function setNumericRounding() may be used to reduce to 1 byte or 0 byte rounding when joining
+     to or grouping columns of type 'numeric', #5369. See example in ?setNumericRounding and NEWS
+     item below for v1.9.2. getNumericRounding() returns the current setting.
      
   o  X[Y] now names non-join columns from i that have the same name as a column in x, with an "i."
      prefix for consistency with the "i." prefix that has been available in j for some time.
@@ -70,11 +76,6 @@ NEW FEATURES (subject to discussion and change)
 
   o  `anyDuplicated.data.table` is now implemented. Closes FR #5172. Thanks to M C (bluemagister) for 
      filing the FR.
-     
-  o  New function setNumericRounding() may be used to reduce to 1 byte or 0 byte rounding when joining
-     to or grouping columns of type 'numeric', #5369. See example in ?setNumericRounding and NEWS
-     item below for v1.9.2. getNumericRounding() returns the current setting.
-     Thanks to James Sams for highlighting UPCs.
 
   o  Complex j-expressions of the form `DT[, c(..., lapply(.SD, fun)), by=grp]`are now optimised, 
      as long as `.SD` is only present in the form `lapply(.SD, fun)`. 
