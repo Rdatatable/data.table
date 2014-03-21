@@ -4233,8 +4233,12 @@ if ("package:bit64" %in% search()) {
     test(1271, forderv(x), order(x))
     DT = data.table( a=as.integer64(2)^45 + 1:3, b=1:6 )
     test(1272, DT[,sum(b),by=a], data.table(a=DT$a[1:3], V1=INT(5,7,9)))
+    test(1273, unique(DT, by="a"), DT[1:3])
+    test(1274, duplicated(DT, by="a"), rep(c(FALSE,TRUE),each=3))
     setkey(DT,a)
-    test(1273, DT[.(as.integer64(35184372088834))], DT[3:4])
+    test(1275, DT[.(as.integer64(35184372088834))], DT[3:4])
+    test(1276, unique(DT), DT[c(1,3,5)])
+    test(1277, duplicated(DT), rep(c(FALSE,TRUE),3))
 }
 
 ##########################
