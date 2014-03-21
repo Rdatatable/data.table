@@ -34,6 +34,7 @@ getNumericRounding()
 }
 \examples{
     DT = data.table(a=seq(0,1,by=0.2),b=1:2, key="a")
+    DT
     setNumericRounding(0)   # turn off rounding
     DT[.(0.4)]   # works
     DT[.(0.6)]   # no match, confusing since 0.6 is clearing there in DT
@@ -43,6 +44,7 @@ getNumericRounding()
     
     # using type 'numeric' for integers > 2^31 (typically ids)
     DT = data.table(id = c(1234567890123, 1234567890124, 1234567890125), val=1:3)
+    print(DT, digits=15)
     DT[,.N,by=id]   # 1 row
     setNumericRounding(0)
     DT[,.N,by=id]   # 3 rows

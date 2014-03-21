@@ -38,12 +38,13 @@ NEW FEATURES (subject to discussion and change)
        http://stackoverflow.com/questions/16093289/data-table-join-and-j-expression-unexpected-behavior
        http://stackoverflow.com/a/16222108/403310
 
-  o  bit64::integer64 now works in grouping and joins, #5369. Thanks to James Sams for highlighting UPCs.
-     Reminder: fread() has been able to detect and read integer64 for a while.
+  o  bit64::integer64 now works in grouping and joins, #5369. Thanks to James Sams for highlighting UPCs
+     and Clayton Stanley. Reminder: fread() has been able to detect and read integer64 for a while.
+       http://stackoverflow.com/questions/22273321/large-integers-in-data-table-grouping-results-different-in-1-9-2-compared-to-1
 
-  o  New function setNumericRounding() may be used to reduce to 1 byte or 0 byte rounding when joining
-     to or grouping columns of type 'numeric', #5369. See example in ?setNumericRounding and NEWS
-     item below for v1.9.2. getNumericRounding() returns the current setting.
+  o  setNumericRounding() may be used to reduce to 1 byte or 0 byte rounding when joining to or grouping
+     columns of type 'numeric', #5369. See example in ?setNumericRounding and NEWS item below for
+     v1.9.2. getNumericRounding() returns the current setting.
      
   o  X[Y] now names non-join columns from i that have the same name as a column in x, with an "i."
      prefix for consistency with the "i." prefix that has been available in j for some time.
