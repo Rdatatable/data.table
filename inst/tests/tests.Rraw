@@ -4243,17 +4243,22 @@ if ("package:bit64" %in% search()) {
 
 # distinguishing small numbers from 0.0 as from v1.9.2,  test from Rick
 # http://stackoverflow.com/questions/22290544/grouping-very-small-numbers-e-g-1e-28-and-0-0-in-data-table-v1-8-10-vs-v1-9-2
-test_no = 1278.0
-i = 1
+test_no = 1278.01
 for (dround in c(0,2)) {
     setNumericRounding(dround)  # rounding should not affect the result here because although small, it's very accurace (1 s.f.)
     for (i in (-30):(-2) ) {
         DT = data.table(c(1 * (10^i),2,9999,0))
-        test(test_no + i/100, nrow(DT.test[, .N, by=V1]), 4)
-        i = i+1 
+        test(test_no, nrow(DT[, .N, by=V1]), 4)
+        test_no = test_no + 0.01
     }
 }
- 
+
+DT = data.table(timestamp=c(as.POSIXct("2013-01-01 17:51:00.707"),
+                            as.POSIXct("2013-01-01 17:51:59.996"),
+                            as.POSIXct("2013-01-01 17:52:00.059"),
+                            as.POSIXct("2013-01-01 17:54:23.901"),
+                            as.POSIXct("2013-01-01 17:54:23.914")))
+
 
 ##########################
 
