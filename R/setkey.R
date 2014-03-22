@@ -238,9 +238,7 @@ setorderv = function(x, cols, order=1L)
     invisible(x)
 }
 
-twiddle = function(x) {
-    .Call(Ctwiddlewrapper, x)
-}
+binary = function(x) .Call(Cbinary, x)
 
 setNumericRounding = function(x) {.Call(CsetNumericRounding, as.integer(x)); invisible()}
 getNumericRounding = function() .Call(CgetNumericRounding)

@@ -413,29 +413,6 @@ unsigned long long i32twiddle(void *p, int i)
 }
 */
 
-SEXP twiddlewrapper(SEXP x)
-{
-// Expose bit rounding part of twiddle to R level to demonstrate/inspect only. Not for use internally at R level.
-// Don't expose the other parts of twiddle, since those only make sense when viewed as a long long.
-    if (!isReal(x)) Error("x not a 'numeric' vector");
-    SEXP ans = PROTECT(duplicate(x));
-    for (int i=0; i<LENGTH(x); i++) {
-        u.d = REAL(ans)[i];
-        if (R_FINITE(u.d)) {
-            u.ull += (u.ull & dmask1) << 1;
-            u.ull &= dmask2;
-        }
-        REAL(ans)[i] = u.d;
-    }
-    UNPROTECT(1);
-    return(ans);
-}
-
-// binPrint(SEXP x)   // utility function for dev, to do.
-// for (i=0; i<n; i++) binary( ((unsigned long long *)xd)[i] );
-// Rprintf("\n");
-// for (i=0; i<n; i++) binary( twiddle(&((double *)xd)[i]) );
-
 unsigned long long (*twiddle)(void *, int);
 size_t colSize=8;  // the size of the column type (4 or 8). Just 8 currently until iradix is merged in.
 
@@ -1207,8 +1184,8 @@ SEXP isOrderedSubset(SEXP x, SEXP nrow)
 }
 */
 
-void binary(unsigned long long n)
-// trace utility for dev, since couldn't get stdlib::atoi() to link
+void pbin(unsigned long long n)
+// trace utility for dev to be used in gdb, since couldn't get stdlib::atoi() to link
 {
     int sofar = 0;
     for(int shift=sizeof(long long)*8-1; shift>=0; shift--)
@@ -1220,6 +1197,28 @@ void binary(unsigned long long n)
        if (++sofar == 1 || sofar == 12) Rprintf(" ");
     }
     Rprintf("\n");
+}
+
+SEXP binary(SEXP x)
+// base::intToBits is close, but why does it print the result as "00 00 00 00" (raw) rather than ("0000") bits, seems odd.
+{
+    char buffer[69];
+    int j;
+    if (!isReal(x)) error("x must be type 'double'");
+    SEXP ans = PROTECT(allocVector(STRSXP, LENGTH(x)));
+    for (int i=0; i<LENGTH(x); i++) {
+        u.d = REAL(x)[i];
+        j = 0;
+        for(int bit=64; bit>=1; bit--)
+        {
+           buffer[j++] = '0' + (u.ull >> (bit-1) & 1);         
+           if (bit==64 || bit==53 || bit==17 || bit==9) buffer[j++]=' ';
+           //       ^sign      ^exponent  ^last 2 byte rounding
+        }
+        SET_STRING_ELT(ans, i, mkCharLen(buffer,68));  // 64 bits + 4 spaces
+    }
+    UNPROTECT(1);
+    return ans;
 }
 
 

@@ -40,11 +40,11 @@ SEXP gstart();
 SEXP gend();
 SEXP gsum();
 SEXP gmean();
-SEXP twiddlewrapper();
 SEXP isOrderedSubset();
 SEXP pointWrapper();
 SEXP setNumericRounding();
 SEXP getNumericRounding();
+SEXP binary();
 
 // .Externals
 SEXP fastmean();
@@ -85,11 +85,11 @@ R_CallMethodDef callMethods[] = {
 {"Cgend", (DL_FUNC) &gend, -1},
 {"Cgsum", (DL_FUNC) &gsum, -1},
 {"Cgmean", (DL_FUNC) &gmean, -1},
-{"Ctwiddlewrapper", (DL_FUNC) &twiddlewrapper, -1},
 {"CisOrderedSubset", (DL_FUNC) &isOrderedSubset, -1},
 {"CpointWrapper", (DL_FUNC) &pointWrapper, -1},
 {"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},
 {"CgetNumericRounding", (DL_FUNC) &getNumericRounding, -1},
+{"Cbinary", (DL_FUNC) &binary, -1},
 {NULL, NULL, 0}
 };
 

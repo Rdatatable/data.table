@@ -4255,12 +4255,13 @@ for (dround in c(0,2)) {
 
 # rounding of milliseconds, workaround, TO DO: #5445
 # http://stackoverflow.com/questions/22356957/rounding-milliseconds-of-posixct-in-data-table-v1-9-2-ok-in-1-8-10
-DT = data.table(timestamp=c(as.POSIXct("2013-01-01 17:51:00.707"),
-                            as.POSIXct("2013-01-01 17:51:59.996"),
-                            as.POSIXct("2013-01-01 17:52:00.059"),
-                            as.POSIXct("2013-01-01 17:54:23.901"),
-                            as.POSIXct("2013-01-01 17:54:23.913"),
-                            as.POSIXct("2013-01-01 17:54:23.914")))
+DT = data.table(timestamp=as.POSIXct(
+        c("2013-01-01 17:51:00.707",
+          "2013-01-01 17:51:59.996",
+          "2013-01-01 17:52:00.059",
+          "2013-01-01 17:54:23.901",
+          "2013-01-01 17:54:23.913",
+          "2013-01-01 17:54:23.914")))
 setNumericRounding(2)
 test(1279, duplicated(DT), rep(c(FALSE,TRUE), c(4,2)))
 setNumericRounding(1)
