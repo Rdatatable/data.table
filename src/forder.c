@@ -396,7 +396,7 @@ unsigned long long dtwiddle(void *p, int i)
         // NaN twiddled to bit 13 set only, sorts next.  13th bit to be consistent with quiet na bit, but any bit outside last 2 bytes would do.
         // This also normalises a difference between NA on 32bit R (bit 13 set) and 64bit R (bit 13 not set)
     }
-    unsigned long long mask = -(long long)(u.ull >> 63) | 0x8000000000000000;    // -1 cast to unsigned => 1111111111...,  -0 cast to unsigned => 0000000000...  but always flip sign bit hence | 0x8000...
+    unsigned long long mask = (u.ull & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000;  // always flip sign bit and if negative (sign bit was set) flip other bits too
     return( (u.ull ^ mask) & dmask2 );
     // -Inf twiddled to : 0 sign, exponent all 0, mantissa all 1, sorts after NaN
     // +Inf twiddled to : 1 sign, exponent all 1, mantissa all 0, sorts last since finite numbers are defined by not-all-1 in exponent
