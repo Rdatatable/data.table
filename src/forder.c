@@ -391,10 +391,15 @@ unsigned long long dtwiddle(void *p, int i)
     if (R_FINITE(u.d)) {
         u.ull += (u.ull & dmask1) << 1;
     } else if (ISNAN(u.d)) {
-        return( u.ull & 0x000fffffffffffff ); // bit 13 distinguishes NaN from NA.  1954 lies in the last 2 bytes and ignored when dround==2
+        return ( ISNA(u.d) ? 0 : (1ULL << 51) );
+        // NA twiddled to all bits 0, sorts first.  R's value 1954 cleared.
+        // NaN twiddled to bit 13 set only, sorts next.  13th bit to be consistent with quiet na bit, but any bit outside last 2 bytes would do.
+        // This also normalises a difference between NA on 32bit R (bit 13 set) and 64bit R (bit 13 not set)
     }
     unsigned long long mask = -(long long)(u.ull >> 63) | 0x8000000000000000;
     return( (u.ull ^ mask) & dmask2 );
+    // -Inf twiddled to : 0 sign, exponent all 0, mantissa all 1, sorts after NaN
+    // +Inf twiddled to : 1 sign, exponent all 1, mantissa all 0, sorts last
 }
 
 unsigned long long i64twiddle(void *p, int i)
