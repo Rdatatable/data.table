@@ -24,15 +24,15 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 extern SEXP forder();
 extern int StrCmp(SEXP x, SEXP y);
 extern SEXP vec_init(R_len_t n, SEXP val);
-extern unsigned long long dtwiddle(void *, int);
-extern unsigned long long i64twiddle(void *, int);
+extern unsigned long long dtwiddle(void *, int, int);
+extern unsigned long long i64twiddle(void *, int, int);
 extern SEXP char_integer64;
 
 static SEXP i, x;
 static int ncol, *icols, *xcols, *o, *retFirst, *retLength, *allLen1, *rollends;
 static double roll, rollabs;
 static Rboolean nearest=FALSE, enc_warn=TRUE;
-static unsigned long long (*twiddle)(void *, int);
+static unsigned long long (*twiddle)(void *, int, int);
 
 void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int lowmax, int uppmax);
 
@@ -91,7 +91,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     o = NULL;
     if (!LOGICAL(isorted)[0]) {
         SEXP order = PROTECT(vec_init(length(icolsArg), ScalarInteger(1))); // rep(1, length(icolsArg))
-        SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order));
+        SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
         protecti += 2;
         if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
     }
@@ -218,10 +218,10 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
     case REALSXP :
         class = getAttrib(xc, R_ClassSymbol);
         twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
-        ival.ll = twiddle(DATAPTR(ic), ir);
+        ival.ll = twiddle(DATAPTR(ic), ir, 1);
         while(xlow < xupp-1) {
             mid = xlow + (xupp-xlow)/2;
-            xval.ll = twiddle(DATAPTR(xc), mid);
+            xval.ll = twiddle(DATAPTR(xc), mid, 1);
             if (xval.ll<ival.ll) {
                 xlow=mid;
             } else if (xval.ll>ival.ll) {
@@ -231,12 +231,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
                 tmpupp = mid;
                 while(tmplow<xupp-1) {
                     mid = tmplow + (xupp-tmplow)/2;
-                    xval.ll = twiddle(DATAPTR(xc), mid);
+                    xval.ll = twiddle(DATAPTR(xc), mid, 1);
                     if (xval.ll == ival.ll) tmplow=mid; else xupp=mid;
                 }
                 while(xlow<tmpupp-1) {
                     mid = xlow + (tmpupp-xlow)/2;
-                    xval.ll = twiddle(DATAPTR(xc), mid);
+                    xval.ll = twiddle(DATAPTR(xc), mid, 1);
                     if (xval.ll == ival.ll) tmpupp=mid; else xlow=mid;
                 }
                 break;
@@ -246,12 +246,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         tmpupp = lir;
         while(tmplow<iupp-1) {
             mid = tmplow + (iupp-tmplow)/2;
-            xval.ll = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid );
+            xval.ll = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid, 1 );
             if (xval.ll == ival.ll) tmplow=mid; else iupp=mid;
         }
         while(ilow<tmpupp-1) {
             mid = ilow + (tmpupp-ilow)/2;
-            xval.ll = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid );
+            xval.ll = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid, 1 );
             if (xval.ll == ival.ll) tmpupp=mid; else ilow=mid;
         }
         break;

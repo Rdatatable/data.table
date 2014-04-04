@@ -3871,14 +3871,14 @@ if ("package:reshape2" %in% search()) {
     test(1222.2, attr(melt(DT, id=1:2)$y, "bar"), 1:4)
 }
 
-##########################################################################################
-# extensive testing of forderv with decreasing order of sorting (total of >700 tests so far
-##########################################################################################
+###########################################################################################
+# extensive testing of forderv with decreasing order of sorting (total of >700 tests so far - without NaN/NA
+###########################################################################################
 # - Generate a random seed each time; the randomness allows catching errors quicker
 # - But save the seed so that we can generate the same data back if any error occurs
 seed = as.integer(Sys.time()) # sample(9999L, 1L) temporary fix, because all the set.seed(.) used above makes this sample() step deterministic (always seed=9107)
 seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
-# no NA/NaN (because it's hard to match with base:::order)                             ## TO DO: add tests with NA and NaN
+# no NaN (because it's hard to match with base:::order)                             ## TODO: add tests with NaN
 set.seed(seed)
 foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, sep="")
 i1 = as.integer(sample(c(-100:100), 1e3, TRUE))
@@ -4130,6 +4130,63 @@ test(1251.9, DT[order("a")], DT[1L])
 test(1251.10, DT[order("b", "a")], DT[1L])
 test(1251.11, DT[order(list("b", "a"))], error = "Column .* for ordering currently")
 test(1251.12, DT[order(list("b"), list("a"))], DT[1L])
+
+##############################################################
+# extensive tests for order optimisation within `[.data.table`
+##############################################################
+seed = as.integer(Sys.time())
+seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
+set.seed(seed)
+# these variable try to simulate groups of length 1, 2, < 200, > 200 so as to cover all different internal implementations
+foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, sep="")
+i1 = as.integer(sample(rep(c(-3:3, NA_integer_), c(1, 2, 190, 300, 7, 190, 210, 100))))
+i2 = as.integer(sample(rep(c(-2:2, -1e6, 1e6, NA_integer_), c(1, 2, 190, 300, 7, 190, 210, 100))))
+d1 = as.numeric(sample(rep(c(-2:2,Inf,-Inf, NA_real_, 5, -1e3), c(1, 190, 2, 300, 7, 50, 50, 100, 150, 150))))
+c1 = sample(rep(c(letters[1:5], NA_character_, "z"), c(1, 2, 190, 7, 300, 200, 300)))
+c2 = sample(c(foo(200), NA_character_), 1e3, TRUE)
+
+DT = data.table(i1, i2, d1, c1, c2)
+# randomise col order as well
+colorder=sample(ncol(DT))
+setcolorder(DT, names(DT)[colorder])
+seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
+ans = vector("list", length(names(DT)))
+
+test_no = 1253.13
+oldnfail = nfail
+for (i in seq_along(names(DT))) {
+    cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
+    ans[[i]] = combn(names(DT), i, function(x) {
+        tmp = apply(cj, 1, function(y) {
+            test_no <<- signif(test_no+.001, 7)
+            ll = as.call(c(as.name("order"), 
+                    lapply(seq_along(x), function(j) {
+                        if (y[j] == 1L) 
+                            as.name(x[j]) 
+                        else {
+                            if (class(DT[[x[j]]]) =="character") 
+                                as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
+                            else 
+                                as.call(list(as.name("-"), as.name(x[j])))
+                            }
+                        })
+                    )
+                )
+            ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
+            test(test_no, ans1, with(DT, eval(ll)))
+            test_no <<- signif(test_no+.001, 7)
+            ll <- as.call(c(as.list(ll), na.last=NA))
+            ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
+            test(test_no, ans1[ans1 != 0], with(DT, eval(ll)))
+        })
+        dim(tmp)=NULL
+        list(tmp)
+    })
+}
+ans = NULL
+if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
+
+###############
 
 # dcast.data.table bug fix for 'subset' argument (it doesn't get key set before to run C-fcast):
 dt <- data.table(x=c(1,1,1,2,2,2,1,1), y=c(1,2,3,1,2,1,1,2), z=c(1,2,3,NA,4,5,NA,NA))

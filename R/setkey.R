@@ -112,9 +112,15 @@ is.sorted = function(x, by=seq_along(x)) {
     # Important to call forder.c::fsorted here, for consistent character ordering and numeric/integer64 twiddling.
 }
 
-forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L)
+forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
 {
     if (!(sort || retGrp)) stop("At least one of retGrp or sort must be TRUE")
+    na.last = as.logical(na.last)
+    if (!length(na.last)) stop('length(na.last) = 0')
+    if (length(na.last) != 1L) {
+        warning("length(na.last) > 1, only the first element will be used")
+        na.last = na.last[1L]
+    }
     # TO DO: export and document forder
     if (is.atomic(x)) {
         if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
@@ -131,10 +137,10 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L)
         if (length(order) == 1L) order = rep(order, length(by))
     }
     order = as.integer(order)
-    .Call(Cforder, x, by, retGrp, sort, order)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
+    .Call(Cforder, x, by, retGrp, sort, order, na.last)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-forder = function(x, ..., decreasing=FALSE)
+forder = function(x, ..., na.last=TRUE, decreasing=FALSE)
 {
     if (!is.data.table(x)) stop("x must be a data.table.")
     if (ncol(x) == 0) stop("Attempting to order a 0-column data.table.")
@@ -175,7 +181,7 @@ forder = function(x, ..., decreasing=FALSE)
         if (!typeof(ans[[i]]) %chin% c("integer","logical","character","double")) 
             stop("Column '",i,"' is type '",typeof(ans[[i]]),"' which is not supported for ordering currently.")
     }
-    o = forderv(ans, cols, sort=TRUE, retGrp=FALSE, order= if (decreasing) -order else order)
+    o = forderv(ans, cols, sort=TRUE, retGrp=FALSE, order= if (decreasing) -order else order, na.last)
     if (!length(o)) o = seq_along(ans[[1L]]) else o
     o
 }

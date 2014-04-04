@@ -2,9 +2,9 @@
 #define USE_RINTERNALS
 #include <Rinternals.h>
 
-extern unsigned long long dtwiddle(void *, int);  // in forder.c
-extern unsigned long long i64twiddle(void *, int);
-unsigned long long (*twiddle)(void *, int);
+extern unsigned long long dtwiddle(void *, int, int);  // in forder.c
+extern unsigned long long i64twiddle(void *, int, int);
+unsigned long long (*twiddle)(void *, int, int);
 extern SEXP char_integer64;
 
 // DONE: return 'uniqlist' as a vector (same as duplist) and write a separate function to get group sizes
@@ -51,7 +51,7 @@ SEXP uniqlist(SEXP l, SEXP order)
                 if (!b) {
                     class = getAttrib(v, R_ClassSymbol);
                     twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
-                    b = twiddle(ulv, thisi) == twiddle(ulv, previ);
+                    b = twiddle(ulv, thisi, 1) == twiddle(ulv, previ, 1);
                 }
                 break;
                 // TO DO: store previ twiddle call, but it'll need to be vector since this is in a loop through columns. Hopefully the first == will short circuit most often

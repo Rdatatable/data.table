@@ -68,7 +68,9 @@ NEW FEATURES (subject to discussion and change)
 
   o  `DT[order(x, -y)]` is now by default optimised to use data.table's internal fast order as
      `DT[forder(DT, x, -y)]`. It can be turned off by setting datatable.optimize to < 1L. For 
-     example, it resuls in 20x speedup on data.table of 10 million rows with 2 integer columns.
+     example, it results in 20x speedup on data.table of 10 million rows with 2 integer columns. 
+     To order character vectors in descending order it's sufficient to do DT[order(x, -y)] as 
+     opposed to DT[order(x, -xtfrm(y))] in base. This closes FR #2405.
      
   o  mult="all" -vs- mult="first"|"last" now return consistent types and columns, #5378. Thanks
      to Michele Carriero for highlighting.
