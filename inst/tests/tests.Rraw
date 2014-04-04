@@ -4325,6 +4325,10 @@ setNumericRounding(1)
 test(1280, duplicated(DT), rep(FALSE, 6))
 setNumericRounding(2)
 
+# FR #5465, keep.rownames argument for setDT, just for data.frames:
+DF <- data.frame(x=1:5, y=10:6)
+rownames(DF) <- letters[1:5]
+test(1281, setDT(DF, keep.rownames=TRUE), data.table(rn=letters[1:5], x=1:5, y=10:6))
 
 ##########################
 

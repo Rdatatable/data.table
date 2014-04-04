@@ -8,11 +8,12 @@
   
 }
 \usage{
-setDT(x, giveNames=TRUE)
+setDT(x, giveNames=TRUE, keep.rownames=FALSE)
 }
 \arguments{
   \item{x}{ A named or unnamed \code{list}, \code{data.frame} or \code{data.table}. }
   \item{giveNames}{ For list input to \code{setDT}, \code{TRUE} automatically generates missing column names. \code{FALSE} sets all column names to \code{""}. }
+  \item{keep.rownames}{ For \code{data.frame}s, \code{TRUE} retains the \code{data.frame}'s row names under a new column \code{rn}. }
 }
 
 \details{

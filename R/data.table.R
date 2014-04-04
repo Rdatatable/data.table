@@ -2080,7 +2080,7 @@ address = function(x) .Call(Caddress,x)
 
 ":=" = function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
 
-setDT <- function(x, giveNames=TRUE) {
+setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
     giveNames <- as.logical(giveNames[1L])
     name = substitute(x)
     if (is.na(giveNames))
@@ -2088,6 +2088,7 @@ setDT <- function(x, giveNames=TRUE) {
     if (is.data.table(x)) {
         return(invisible(x))
     } else if (is.data.frame(x)) {
+        rn = if (keep.rownames) rownames(x) else NULL
         setattr(x, "row.names", .set_row_names(nrow(x)))
         tt = class(x)
         n = chmatch("data.frame", tt)
@@ -2095,6 +2096,11 @@ setDT <- function(x, giveNames=TRUE) {
             length(tt) - n))
         setattr(x, "class", tt)
         alloc.col(x)
+        if (!is.null(rn)) {
+            nm = copy(names(x))
+            x[, rn := rn]
+            setcolorder(x, c("rn", nm))
+        }
     } else if (is.list(x)) {
         # copied from as.data.table.list - except removed the copy
         if (!length(x)) return( null.data.table() )

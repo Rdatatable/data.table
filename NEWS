@@ -88,6 +88,9 @@ NEW FEATURES (subject to discussion and change)
      But `DT[, c(.SD, lapply(.SD, sum)), by=grp]` for example isn't optimised yet. This partially 
      resolves FR #2722. Thanks to Sam Steingold for filing the FR.
 
+  o  'setDT' gains keep.rownames=TRUE/FALSE argument, which works only on data.frames. TRUE retains 
+     the data.frame's row names as a new column named 'rn'.
+
 BUG FIXES
 
   o  When joining to fewer columns than the key has, using one of the later key columns
