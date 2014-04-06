@@ -60,6 +60,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         j = INTEGER(grpcols)[i]-1;
         SET_VECTOR_ELT(BY, i, allocVector(TYPEOF(VECTOR_ELT(groups, j)),
             LENGTH(VECTOR_ELT(groups,0)) ? 1 : 0));    // This might be able to be 1 always; 0 when 'groups' are integer(0) seem sensible. #2440 was involved in the past.
+        // Fix for #5437, by cols with attributes when also used in `j` lost the attribute.
+        copyMostAttrib(VECTOR_ELT(groups, j), VECTOR_ELT(BY,i));  // not names, otherwise test 778 would fail
         SET_STRING_ELT(bynames, i, STRING_ELT(getAttrib(groups,R_NamesSymbol), j));
         defineVar(install(CHAR(STRING_ELT(bynames,i))), VECTOR_ELT(BY,i), env);      // by vars can be used by name in j as well as via .BY
         if (SIZEOF(VECTOR_ELT(BY,i))==0)
@@ -94,7 +96,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (SIZEOF(VECTOR_ELT(SD, i))==0)
             error("Type %d in .SD column %d", TYPEOF(VECTOR_ELT(SD, i)), i);
         nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
-        setAttrib(VECTOR_ELT(SD,i), R_ClassSymbol, getAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), R_ClassSymbol)); // fixes http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
+        // fixes http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
+        copyMostAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), VECTOR_ELT(SD,i));  // not names, otherwise test 778 would fail
     }
     
     origIlen = length(I);  // test 762 has length(I)==1 but nrow(SD)==0
@@ -289,9 +292,15 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 if (vlen<grpn && vlen>0 && grpn%vlen != 0) 
                     warning("Supplied %d items to be assigned to group %d of size %d in column '%s' (recycled leaving remainder of %d items).",vlen,i+1,grpn,CHAR(STRING_ELT(dtnames,INTEGER(lhs)[j]-1)),grpn%vlen);
                 memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);
-                if (!isFactor(RHS)) setAttrib(target, R_ClassSymbol, getAttrib(RHS, R_ClassSymbol));
-                // fixes bug #2531. Got to set the class back.
-                // added !isFactor(RHS) to fix #5104 (side-effect of fixing #2531)
+                // fixes bug #2531. Got to set the class back. See comment below for explanation. This is the new fix. Works great!
+                // Also fix for #5437 (bug due to regression in 1.9.2+)
+                copyMostAttrib(RHS, target);  // not names, otherwise test 778 would fail
+                /* OLD FIX: commented now. The fix below resulted in segfault on factor columns because I dint set the "levels"
+                   Instead of fixing that, I just removed setting class if it's factor. Not appropriate fix.
+                   Correct fix of copying all attributes (except names) added above. Now, everything should be alright.
+                   Test 1144 (#5104) will provide the right output now. Modified accordingly.
+                OUTDATED: if (!isFactor(RHS)) setAttrib(target, R_ClassSymbol, getAttrib(RHS, R_ClassSymbol));
+                OUTDATED: // added !isFactor(RHS) to fix #5104 (side-effect of fixing #2531) */
             }
             UNPROTECT(1);
             continue;

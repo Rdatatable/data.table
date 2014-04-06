@@ -75,7 +75,7 @@ unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key(x),
 # In that sense, this anyDuplicated is *not* the same as base's - meaning it's not a different implementation
 # This is just a wrapper. That being said, it should be incredibly fast on data.tables (due to data.table's fast forder)
 anyDuplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...) {
-    if (!cedta()) return(NextMethod("unique"))
+    if (!cedta()) return(NextMethod("anyDuplicated"))
     dups <- duplicated(x, incomparables, fromLast, by, ...)
     if (fromLast) idx = tail(which(dups), 1L) else idx = head(which(dups), 1L)
     if (!length(idx)) idx=0L

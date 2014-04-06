@@ -136,6 +136,10 @@ BUG FIXES
      Simon O'Hanlon for identifying the issue here on SO:
      http://stackoverflow.com/questions/22375404/unable-to-use-evalparse-in-data-table-function/22375557#22375557
 
+  o  Using `by` columns with attributes (ex: factor, Date) in `j` did not retain the attributes, also in case of `:=`.
+     This was partially a regression from an earlier fix (bug #2531) due to recent changes for R3.1.0. Now fixed and 
+     clearer tests added. Thanks to Christophe Dervieux for reporting. Closes #5437.
+
 NOTES
 
   o  Reminder: using rolltolast still works but since v1.9.2 now issues the following warning :
