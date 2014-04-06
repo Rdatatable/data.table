@@ -146,6 +146,9 @@ BUG FIXES
      `.BY$grpcol` in `j`. Ex: `DT[, .BY$x, by=x]`. This is now fixed. Closes #5415. Thanks to Stephane Vernede for 
      the bug report.
 
+  o  Fixed another issue with eval(parse(...)) in `j` along with assignment by reference `:=`. Closes #5527. Thanks to 
+     Michele Carriero for reporting. 
+  
 NOTES
 
   o  Reminder: using rolltolast still works but since v1.9.2 now issues the following warning :

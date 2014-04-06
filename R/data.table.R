@@ -23,7 +23,9 @@ deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.fr
     lapply(expr, function(m) {
         if (is.call(m)) {
             if (m[[1L]] == quote(eval)) 
-                if (is.call(m[[2L]]) && m[[2L]][[1L]] == quote(parse)) eval(m, envir, enclos) else eval(m[[2L]], envir, enclos)
+                if (is.call(m[[2L]]) && m[[2L]][[1L]] == quote(parse)) 
+                    deconstruct_and_eval(eval(m[[2L]], envir, enclos), envir, enclos) 
+                else eval(m[[2L]], envir, enclos)
             else deconstruct_and_eval(m, envir, enclos)
         } else {
             m

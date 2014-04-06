@@ -4101,7 +4101,13 @@ test(1247.4, anyDuplicated(dt, by="y", fromLast=TRUE), anyDuplicated.data.frame(
 
 # Fix for #5423 - j-expression y * eval(parse(..)) should work without needing "("
 DT <- data.table(x = seq(1,10,1), y = seq(2,20,2))
-test(1248, DT[, y := y * eval(parse(text="1*2"))], data.table(x=seq(1,10,1), y=seq(4,40,4)))
+test(1248.1, DT[, y := y * eval(parse(text="1*2"))], data.table(x=seq(1,10,1), y=seq(4,40,4)))
+# fix in 1248 was not complete. resurfaced again as bug #5527. Fixed now, test added here below:
+DT <- data.table(id=1:5, var=letters[1:5])
+ans <- copy(DT)
+id <- "va"
+test(1248.2, DT[, eval(parse(text=paste0(id,"r")))], letters[1:5])
+test(1248.3, DT[, id2:=eval(parse(text=paste0(id,"r")))], ans[, id2 := var])
 
 # test to make sure DT[order(...)] works fine when it's already sorted (forgot the case where forder returns integer(0) before)
 DT <- data.table(x=rep(1:4, each=5), y=1:20)
