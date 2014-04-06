@@ -3402,6 +3402,8 @@ test(1143.2, abs(te1-te2) < 1, TRUE)
 # Fix for bug #5104 - side-effect of fixing #2531 - `:=` with grouping (by) and assigning factor columns 
 DT <- data.table(x=c(1,1,1,2,2), y=factor(letters[1:5]))
 test(1144.1, DT[, z := y, by=x], data.table(x=c(1,1,1,2,2), y=factor(letters[1:5]), z=factor(letters[1:5])))
+# Added 3 more tests to close bug #5437 - partial regression due to recent changes (in 1.9.2)
+# This should catch any attributes being lost hereafter.
 DT<-data.table(X=factor(2006:2012),Y=rep(1:7,2))
 test(1144.2, DT[, Z:=paste(X,.N,sep=" - "), by=list(X)], data.table(X=factor(2006:2012),Y=rep(1:7,2), Z=paste(as.character(2006:2012), 2L, sep=" - ")))
 DT = data.table(x=as.POSIXct(c("2009-02-17 17:29:23.042", "2009-02-17 17:29:25.160")), y=c(1L,2L))
@@ -4335,6 +4337,10 @@ setNumericRounding(2)
 DF <- data.frame(x=1:5, y=10:6)
 rownames(DF) <- letters[1:5]
 test(1281, setDT(DF, keep.rownames=TRUE), data.table(rn=letters[1:5], x=1:5, y=10:6))
+
+# Bug #5415 fix - BY doesn't retain names:
+DT <- data.table(fruit=c("apple","peach","pear"))
+test(1282, DT[, ans := .BY$fruit, by=fruit], data.table(fruit=DT$fruit, ans=DT$fruit))
 
 ##########################
 

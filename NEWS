@@ -138,13 +138,13 @@ BUG FIXES
 
   o  Using `by` columns with attributes (ex: factor, Date) in `j` did not retain the attributes, also in case of `:=`.
      This was partially a regression from an earlier fix (bug #2531) due to recent changes for R3.1.0. Now fixed and 
-<<<<<<< HEAD
-     clearer tests added. Thanks to Christophe Dervieux for reporting. Closes #5437.
-=======
      clearer tests added. Thanks to Christophe Dervieux for reporting and to Adam B for reporting here on SO:
      http://stackoverflow.com/questions/22536586/by-seems-to-not-retain-attribute-of-date-type-columns-in-data-table-possibl. 
      Closes #5437.
->>>>>>> master
+
+  o  ".BY" special variable did not retain names of the grouping columns which resulted in not being able to access 
+     `.BY$grpcol` in `j`. Ex: `DT[, .BY$x, by=x]`. This is now fixed. Closes #5415. Thanks to Stephane Vernede for 
+     the bug report.
 
 NOTES
 
