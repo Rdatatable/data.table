@@ -4348,6 +4348,20 @@ test(1281, setDT(DF, keep.rownames=TRUE), data.table(rn=letters[1:5], x=1:5, y=1
 DT <- data.table(fruit=c("apple","peach","pear"))
 test(1282, DT[, ans := .BY$fruit, by=fruit], data.table(fruit=DT$fruit, ans=DT$fruit))
 
+# bug #5443 - get() doesn't see i's columns, when i is a data.table:
+set.seed(1L)
+dt1 <- data.table(a=rep(1:2, each=2), c=sample(10,4))
+dt2 <- data.table(b=rep(2:3), c=sample(20,2), d=sample(20,2))
+setkey(dt1, a)
+setkey(dt2, b)
+
+# without by
+test(1283.1, dt1[dt2, list(a=a, c=get('c'), i.c=get('i.c'))], dt1[dt2, list(a=a, c=c, i.c=i.c)])
+test(1283.2, dt1[dt2, list(a=a, d=get('d'))], dt1[dt2, list(a=a, d=d)])
+# with by
+test(1283.3, dt1[dt2, list(a=a, c=get('c'), i.c=get('i.c')), by=.EACHI], dt1[dt2, list(a=a, c=c, i.c=i.c), by=.EACHI])
+test(1283.4, dt1[dt2, list(a=a, d=get('d')), by=.EACHI], dt1[dt2, list(a=a, d=d), by=.EACHI])
+
 ##########################
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)

@@ -148,7 +148,12 @@ BUG FIXES
 
   o  Fixed another issue with eval(parse(...)) in `j` along with assignment by reference `:=`. Closes #5527. Thanks to 
      Michele Carriero for reporting. 
-  
+
+  o  'get(.)' in `j` did not see i's columns when `i` is a data.table which lead to errors while doing operations 
+     like: `DT1[DT2, list(get('c'))]`. Now, use of 'get' makes *all* x's and i's columns visible (fetches all columns). 
+     Still, as the verbose message states, using `.SDcols` or `eval(macro)` would be able to select just the columns 
+     used, which is better for efficiency. Closes #5443. Thanks to Eddi for reporting.
+
 NOTES
 
   o  Reminder: using rolltolast still works but since v1.9.2 now issues the following warning :

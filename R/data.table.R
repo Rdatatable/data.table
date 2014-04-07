@@ -782,7 +782,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                     # get('varname') is too difficult to detect which columns are used in general
                     # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
                 }
-                ansvars = setdiff(names(x),bynames)
+                ansvars = setdiff(c(names(x), if (is.data.table(i)) c(names(i), paste("i.", names(i), sep=""))),bynames) # fix for bug #5443
                 if (verbose) cat("New:",paste(ansvars,collapse=","),"\n")
             }
 
@@ -1054,7 +1054,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         bysameorder = haskey(i) || is.sorted(f__)
         ##  'av' correct here ??  *** TO DO ***
         xjisvars = intersect(av, names(x)[rightcols])  # no "x." for xvars.
-        jisvars = intersect(gsub("^i[.]","", setdiff(av, xjisvars)),names(i))
+        # if 'get' is in 'av' use all cols in 'i', fix for bug #5443
+        jisvars = if ("get" %chin% av) names(i) else intersect(gsub("^i[.]","", setdiff(av, xjisvars)), names(i))
         # JIS (non join cols) but includes join columns too (as there are named in i)
         if (length(jisvars)) {
             tt = min(nrow(i),1L)
