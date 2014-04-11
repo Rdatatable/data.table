@@ -156,7 +156,11 @@ BUG FIXES
 
   o  Fixed an edge case with `unique` and `duplicated`, which on empty data.tables returned a 1-row data.table with 
      all NAs. Closes #5582. Thanks to Shubh Bansal for reporting.
-     
+
+  o  `dcast.data.table` resuled in error (because function CJ() was not visible) in packages that "import" data.table. 
+     This did not happen if the package "depends" on data.table. Closes bug #5519. Thanks to K Davis for the excellent 
+     report. 
+
 NOTES
 
   o  Reminder: using rolltolast still works but since v1.9.2 now issues the following warning :

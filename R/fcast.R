@@ -94,6 +94,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     }
     .CASTenv = new.env(parent=parent.frame())
     assign("forder", forderv, .CASTenv)
+    assign("CJ", CJ, .CASTenv)
     ans <- .Call("Cfcast", data, ff$ll, ff$rr, value.var, fill, fill.default, is.null(fun.aggregate), .CASTenv, drop)
     setDT(ans)
     if (any(duplicated(names(ans)))) {

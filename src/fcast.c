@@ -73,12 +73,12 @@ SEXP cast_order(SEXP v, SEXP env) {
     return(ans);
 }
 
-SEXP cross_join(SEXP s) {
+SEXP cross_join(SEXP s, SEXP env) {
     // Calling CJ is faster and don't have to worry about sorting or setting key.
     SEXP call, r;
     if (!isNewList(s) || isNull(s)) error("Argument 's' to 'cross_join' must be a list of length > 0");
-    PROTECT(call = lang3(install("do.call"), mkString("CJ"), s));
-    r = eval(call, R_GlobalEnv);
+    PROTECT(call = lang3(install("do.call"), install("CJ"), s));
+    r = eval(call, env);
     UNPROTECT(1);
     return(r);
 }
@@ -280,7 +280,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
             }
             SET_VECTOR_ELT(lcj, i, dtmp);
         }
-        lcj = PROTECT(cross_join(lcj)); protecti++;
+        lcj = PROTECT(cross_join(lcj, env)); protecti++;
         
         rcj = PROTECT(allocVector(VECSXP, mlen)); protecti++;
         for (i=0; i<mlen; i++) {
@@ -293,7 +293,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
             UNPROTECT(5);
             SET_VECTOR_ELT(rcj, i, dtmp);
         }
-        rcj = PROTECT(cross_join(rcj)); protecti++;
+        rcj = PROTECT(cross_join(rcj, env)); protecti++;
         
         outnamevec = PROTECT(allocVector(VECSXP, length(rcj))); protecti++;
         for (i=0; i<length(outnamevec); i++)
@@ -326,7 +326,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
         SET_VECTOR_ELT(cjtmp, 0, PROTECT(seq_int(length(VECTOR_ELT(lcj, 0)), 1)));
         SET_VECTOR_ELT(cjtmp, 1, PROTECT(seq_int(length(VECTOR_ELT(rcj, 0)), 1)));
         UNPROTECT(3); // cjtmp
-        cj = PROTECT(cross_join(cjtmp)); protecti++;
+        cj = PROTECT(cross_join(cjtmp, env)); protecti++;
     } else {
         // we could do a bit faster
         lo = PROTECT(seq_int(nrows, 1)); protecti++; // no need for cast_order of "lo", already sorted
@@ -382,7 +382,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
         SET_VECTOR_ELT(cjtmp, 0, ldup);
         SET_VECTOR_ELT(cjtmp, 1, rdup);
         UNPROTECT(1); // cjtmp;
-        cj = PROTECT(cross_join(cjtmp)); protecti++;
+        cj = PROTECT(cross_join(cjtmp, env)); protecti++;
     }
     // to do: if we can check whether there are any missing combinations, we can skip this binary search and it should be faster (especially on bigger data).
     // xx[cj] binary search to get missing values
