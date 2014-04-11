@@ -4367,6 +4367,11 @@ dt <- data.table(x=c(1L,-2L,3L))
 test(1284.1, dt[order(abs(x))], dt)
 test(1284.2, dt[order(-abs(x))], dt[3:1])
 
+# fix for bug #5582 - unique/duplicated on empty data.table returned NA
+dt <- data.table(x=numeric(0), y=character(0), key="x")
+test(1285.1, duplicated(dt), duplicated.data.frame(dt))
+test(1285.2, unique(dt), dt)
+
 ##########################
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)

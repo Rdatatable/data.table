@@ -4,6 +4,7 @@ duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key
     if (!identical(incomparables, FALSE)) {
         .NotYetUsed("incomparables != FALSE")
     }
+    if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0)) # fix for bug #5582
     if (is.na(fromLast) || !is.logical(fromLast)) stop("'fromLast' must be TRUE or FALSE")
     query <- .duplicated.helper(x, by)
     # fix for bug #5405 - unique on null data table returns error (because of 'forderv')

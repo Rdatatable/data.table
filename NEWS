@@ -154,6 +154,9 @@ BUG FIXES
      Still, as the verbose message states, using `.SDcols` or `eval(macro)` would be able to select just the columns 
      used, which is better for efficiency. Closes #5443. Thanks to Eddi for reporting.
 
+  o  Fixed an edge case with `unique` and `duplicated`, which on empty data.tables returned a 1-row data.table with 
+     all NAs. Closes #5582. Thanks to Shubh Bansal for reporting.
+     
 NOTES
 
   o  Reminder: using rolltolast still works but since v1.9.2 now issues the following warning :
