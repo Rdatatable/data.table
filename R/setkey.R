@@ -160,6 +160,7 @@ forder = function(x, ..., na.last=TRUE, decreasing=FALSE)
                 # take care of "--x", "{-x}", "(---+x)" etc., cases and also "list(y)". 'list(y)' is ambiguous though. In base, with(DT, order(x, list(y))) will error 
                 # that 'arguments are not of same lengths'. But with(DT, order(list(x), list(y))) will return 1L, which is very strange. On top of that, with(DT, 
                 # order(x, as.list(10:1)) would return 'unimplemented type list'. It's all very inconsistent. But we HAVE to be consistent with base HERE.
+                if (!as.character(v[[1L]]) %chin% c("+", "-")) break   # FIX for bug #5583
                 if (v[[1L]] == "-") order[i] = -order[i]
                 v = v[[-1L]]
             }

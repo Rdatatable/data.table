@@ -4362,6 +4362,11 @@ test(1283.2, dt1[dt2, list(a=a, d=get('d'))], dt1[dt2, list(a=a, d=d)])
 test(1283.3, dt1[dt2, list(a=a, c=get('c'), i.c=get('i.c')), by=.EACHI], dt1[dt2, list(a=a, c=c, i.c=i.c), by=.EACHI])
 test(1283.4, dt1[dt2, list(a=a, d=get('d')), by=.EACHI], dt1[dt2, list(a=a, d=d), by=.EACHI])
 
+# fix for bug #5583 - missed cases like dt[order(abs(x))].
+dt <- data.table(x=c(1L,-2L,3L))
+test(1284.1, dt[order(abs(x))], dt)
+test(1284.2, dt[order(-abs(x))], dt[3:1])
+
 ##########################
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)
