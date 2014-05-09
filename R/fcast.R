@@ -23,7 +23,15 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         setattr(ff, 'names', c("ll", "rr"))
         ff <- lapply(ff, function(x) x[x != "."])
         ff_ <- unlist(ff, use.names=FALSE)
-        ff <- lapply(ff, function(x) if (any(x == "...")) c(x[x != "..."], setdiff(names(data), c(value.var, ff_))) else x)
+        replace_dots <- function(x) {
+            if (!is.list(x)) x = as.list(x)
+            for (i in seq_along(x)) {
+                if (x[[i]] == "...") 
+                    x[[i]] = setdiff(names(data), c(value.var, ff_))
+            }
+            unlist(x)
+        }
+        ff <- lapply(ff, replace_dots)
     } else stop("Invalid formula.")
     ff_ <- unlist(ff, use.names=FALSE)
     if (length(is_wrong <- which(is.na(chmatch(ff_, names(data))))) > 0) stop("Column '", ff_[is_wrong[1]], "' not found.")

@@ -185,6 +185,11 @@ NOTES
   o  More info about distinguishing small numbers from 0.0 from v1.9.2+ here :
        http://stackoverflow.com/questions/22290544/grouping-very-small-numbers-e-g-1e-28-and-0-0-in-data-table-v1-8-10-vs-v1-9-2
 
+  o  ?dcast.data.table now explains how the names are generated for the columns that are being casted. Closes #5676.
+  
+  o  'dcast.data.table(dt, a ~ ... + b)' now generates the column names with values from 'b' coming last. Closes #5675.
+
+
         **********************************************
         **                                          **
         **   CHANGES IN DATA.TABLE VERSION 1.9.2    **

@@ -4372,6 +4372,12 @@ dt <- data.table(x=numeric(0), y=character(0), key="x")
 test(1285.1, duplicated(dt), duplicated.data.frame(dt))
 test(1285.2, unique(dt), dt)
 
+# FR #5675 and DOC #5676
+set.seed(1L)
+dt <- data.table(a=sample(10), b=2013:2014, variable=rep(c("c", "d"), each=10), value=runif(20))
+ans1 <- names(dcast.data.table(dt, a ~ ... + b, value.var="value"))
+test(1286, ans1, c("a", "c_2013", "c_2014", "d_2013", "d_2014"))
+
 ##########################
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.

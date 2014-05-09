@@ -36,6 +36,8 @@ When the combination of variables in \code{formula} doesn't identify a unique va
 
 If the formula's LHS contains the same column more than once, ex: \code{dcast.data.table(DT, x+x~ y)}, then the answer will have duplicate names. In those cases, the duplicate names are renamed using \code{make.unique} so that the key can be set without issues.
 
+Names for columns that are being cast are generated in the same order (separated by a \code{_}) from the (unique) values in each column mentioned in the formula RHS.
+
 The only feature that's not implemented from \code{reshape2:::dcast} *yet* is the argument \code{margins}. 
 }
 \value{
