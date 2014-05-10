@@ -68,7 +68,9 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
                 tmp = rep.int(NA_integer_, length(missingyidx))
                 yy <- cbind(yy, xkey[tmp, othercolsx, with = FALSE])
             }
-            dt = rbind(dt, yy, use.names=FALSE)
+            nm = copy(names(dt))
+            dt = rbind(dt, yy, use.names=FALSE) # FIXME: TODO: if first dt is empty, still names shouldn't be skipped (take care at C-end?)
+            setnames(dt, nm) # if dt (before rbind) is empty, names of dt gets lost, and assigned with yy - #5672
         }
     }
     

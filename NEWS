@@ -161,6 +161,9 @@ BUG FIXES
      This did not happen if the package "depends" on data.table. Closes bug #5519. Thanks to K Davis for the excellent 
      report. 
 
+  o  `merge(x, y, all=TRUE)` error when 'x' is empty data.table is now fixed. Closes #5672. Thanks to Garrett See for 
+     filing the report.
+
 NOTES
 
   o  Reminder: using rolltolast still works but since v1.9.2 now issues the following warning :

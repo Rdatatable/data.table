@@ -4378,6 +4378,12 @@ dt <- data.table(a=sample(10), b=2013:2014, variable=rep(c("c", "d"), each=10), 
 ans1 <- names(dcast.data.table(dt, a ~ ... + b, value.var="value"))
 test(1286, ans1, c("a", "c_2013", "c_2014", "d_2013", "d_2014"))
 
+# BUG #5672 fix
+a <- data.table(BOD, key="Time")
+b <- data.table(BOD, key="Time")[Time < 0] # zero row data.table
+ans <- merge(b, a, all=TRUE)
+test(1287, ans, data.table(Time=a$Time, demand.x=NA_real_, demand.y=a$demand, key="Time"))
+
 ##########################
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.
