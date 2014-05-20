@@ -1650,67 +1650,6 @@ tail.data.table = function(x, n=6, ...) {
     `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
 
-.rbind.data.table = function(..., use.names = TRUE, fill = FALSE) {
-    # See FAQ 2.23
-    # Called from base::rbind.data.frame
-    original.names = lapply(list(...), names)
-    allargs = lapply(list(...), as.data.table)
-    # To fix the issue of rbind(DT, NULL) to work - NULL data.tables should be removed even when fill=FALSE (like base:::rbind does)
-    # thanks to Garrett See for reporting - added as a new bug #5300 for future reference
-    allargs = allargs[sapply(allargs, length) > 0L]
-
-    n = length(allargs)
-    if (n == 0L) return(null.data.table())
-    if (n == 1L) return(allargs[[1L]])
-    ncols = sapply(allargs, length)
-    if (length(unique(ncols)) != 1L && !fill) {
-        f = which(ncols != ncols[1L])[1L]
-        stop("When fill=FALSE, all arguments to rbind must have the same number of columns. Item 1 has ",ncols[1L]," but item ",f," has ",ncols[f],"column(s).")
-    }
-    if (fill) {
-        if (!use.names)
-            warning("use.names=FALSE is ignored when fill is TRUE")
-
-        all.names = lapply(allargs, names)
-        unq.names = unique(unlist(all.names))
-        return(rbindlist(lapply(seq_along(allargs), function(x) {
-            tt = allargs[[x]]
-            alloc.col(tt)
-            cols = unq.names[!unq.names %chin% all.names[[x]]]
-            if (length(cols) != 0L)
-                tt[, c(cols) := NA]
-            setcolorder(tt, unq.names)
-        })))
-    } else if (!use.names) {
-        return(rbindlist(allargs))
-    } else { # use.names == TRUE && fill == FALSE
-        final.names = NULL    # find the first list item with names, these will be the final column names
-        for (i in seq_along(original.names)) {
-            if (!is.null(original.names[[i]])) {
-                final.names = original.names[[i]]
-                break
-            }
-        }
-        if (is.null(final.names)) stop("use.names is TRUE but no input has any column names")
-        match.names = make.names(final.names, unique=TRUE)  # make duplicate names unique, and convert NA colnames to "NA."
-        for (i in seq.int(1,n)) if (!is.null(original.names[[i]])) {
-            tmp = make.names(original.names[[i]], unique=TRUE)   # make.names for the NA in test #1006
-            if (!all(tmp %chin% match.names))
-                stop("Some colnames of argument ",i," (",paste(setdiff(names(allargs[[i]]),match.names),collapse=","),") are not present in colnames of item 1. If an argument has colnames they can be in a different order, but they must all be present. Alternatively, you can supply unnamed lists and they will then be joined by position. Or, set use.names=FALSE.")
-            if (!all(tmp == match.names))
-                if (missing(use.names)) warning("Argument ",i," has names in a different order. Columns will be bound by name for consistency with base. You can supply unnamed lists and the columns will then be joined by position, or set use.names=FALSE. Alternatively, explicitly setting use.names to TRUE will remove this warning.")
-        }
-        ret = rbindlist(lapply(seq_along(allargs), function(x) {
-            tt = allargs[[x]]
-            if (!is.null(original.names[[x]]))
-                setcolorder(tt, chmatch(match.names, make.names(original.names[[x]], unique=TRUE)))
-            tt
-        }))
-        setnames(ret, final.names)
-        return(ret)
-    }
-}
-
 as.data.table = function(x, keep.rownames=FALSE)
 {
     if (is.null(x))
@@ -2069,8 +2008,17 @@ chgroup = function(x) {
     if (length(o)) as.vector(o) else seq_along(x)  # as.vector removes the attributes
 }
 
-rbindlist = function(l) {
-    ans = .Call(Crbindlist,l)
+
+.rbind.data.table = function(..., use.names=TRUE, fill=FALSE) {
+    # See FAQ 2.23
+    # Called from base::rbind.data.frame
+    l = list(...)
+    # if (missing(use.names)) message("Columns will be bound by name for consistency with base. You can supply unnamed lists and the columns will then be joined by position, or set use.names=FALSE. Alternatively, explicitly setting use.names to TRUE will remove this message.")
+    rbindlist(l, use.names, fill)
+}
+
+rbindlist = function(l, use.names=FALSE, fill=FALSE) {
+    ans = .Call("Crbindlist", l, use.names, fill)
     if (!length(ans)) return(null.data.table())
     setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
     setattr(ans,"class",c("data.table","data.frame"))
@@ -2139,5 +2087,4 @@ gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gstart = function(o, f, l) .Call(Cgstart, o, f, l)
 gend = function() .Call(Cgend)
-
 

@@ -1340,12 +1340,12 @@ DT = data.table(a=1:3,b=4:6)
 test(441, rbind(DT,list(a=4L,b=7L)), data.table(a=1:4,b=4:7))
 test(442, rbind(DT,data.frame(a=4L,b=7L)), data.table(a=1:4,b=4:7))
 test(443, rbind(DT,data.table(a=4L,b=7L)), data.table(a=1:4,b=4:7))
-test(444, rbind(DT,list(b=7L,a=4L)), data.table(a=1:4,b=4:7), warning="Argument 2 has names in a different order.")
-test(445, rbind(DT,data.frame(b=7L,a=4L)), data.table(a=1:4,b=4:7), warning="Argument 2 has names in a different order.")
-test(446, rbind(DT,data.table(b=7L,a=4L)), data.table(a=1:4,b=4:7), warning="Argument 2 has names in a different order.")
-test(450, rbind(DT,list(c=4L,a=7L)), error="Some colnames of argument 2 (c) are not present in colnames of item 1")
-test(451, rbind(DT,data.frame(c=4L,a=7L)), error="Some colnames of argument 2 (c) are not present in colnames of item 1")
-test(452, rbind(DT,data.table(c=4L,a=7L)), error="Some colnames of argument 2 (c) are not present in colnames of item 1")
+test(444, rbind(DT,list(b=7L,a=4L)), data.table(a=1:4,b=4:7)) # rbind should by default check row names. Don't warn here. Add clear documentation instead.
+test(445, rbind(DT,data.frame(b=7L,a=4L)), data.table(a=1:4,b=4:7))
+test(446, rbind(DT,data.table(b=7L,a=4L)), data.table(a=1:4,b=4:7))
+test(450, rbind(DT,list(c=4L,a=7L)), error="This could be because the items in the list may not ")
+test(451, rbind(DT,data.frame(c=4L,a=7L)), error="This could be because the items in the list may not ")
+test(452, rbind(DT,data.table(c=4L,a=7L)), error="This could be because the items in the list may not ")
 test(453, rbind(DT,list(4L,7L)), data.table(a=1:4,b=4:7))
 
 # Test new use.names argument in 1.8.0
@@ -1827,9 +1827,11 @@ t = as.ITime(strptime(c("09:10:00","09:11:00","09:11:00","09:12:00"),"%H:%M:%S")
 test(626, unique(t), t[c(1,2,4)])
 test(627, class(unique(t)), "ITime")
 
-# Test recycling list() rbind
-test(628, rbind(data.table(a=1:3,b=5:7,c=list(1:2,1:3,1:4)), list(4L,8L,as.list(1:3))),
-          data.table(a=c(1:3,rep(4L,3L)),b=c(5:7,rep(8L,3L)),c=list(1:2,1:3,1:4,1L,2L,3L)))
+# Test recycling list() rbind - with recent C-level changes, this seems not possible (like rbindlist)
+# old test commented.
+# test(628, rbind(data.table(a=1:3,b=5:7,c=list(1:2,1:3,1:4)), list(4L,8L,as.list(1:3))),
+#           data.table(a=c(1:3,rep(4L,3L)),b=c(5:7,rep(8L,3L)),c=list(1:2,1:3,1:4,1L,2L,3L)))
+test(628, rbind(data.table(a=1:3,b=5:7,c=list(1:2,1:3,1:4)), list(4L,8L,as.list(1:3))), error = "inconsistent with first column of that item which is length")
 # Test switch in .rbind.data.table for factor columns
 test(628.5, rbind(data.table(a=1:3,b=factor(letters[1:3]),c=factor("foo")), list(4L,factor("d"),factor("bar"))),
           data.table(a=1:4,b=factor(letters[1:4]),c=factor(c(rep("foo",3),"bar"), levels = c("foo", "bar"))))
@@ -2433,8 +2435,13 @@ for (i in 1:2000) { x <- DT[1:5,]; rm(x) }
 gc(); after = gc()["Vcells","(Mb)"]
 test(863, after < before+0.5)
 
-# rbindlist should look for the first non-empty data.table
-test(864, rbindlist(list(data.table(foo=logical(0),bar=logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), DT)
+# rbindlist should look for the first non-empty data.table - New changes (from Arun). Explanation below:
+# Even if data.table is empty, as long as there are column names, they should be considered. 
+# Ex: What if all data.tables are empty? What'll be the column name then?
+# If there are no names, then the first non-empty set of names will be allocated. I think this is the way to do it.. TODO: Should write to Matt about it.
+test(864.1, rbindlist(list(data.table(foo=logical(0),bar=logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), setnames(DT, c("foo", "bar")))
+test(864.2, rbindlist(list(list(logical(0),logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), DT)
+test(864.3, rbindlist(list(data.table(logical(0),logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), setnames(DT, c("V1", "V2")))
 
 # Steve's find that setnames failed for numeric 'old' when pointing to duplicated names
 DT = data.table(a=1:3,b=1:3,v=1:6,w=1:6)
@@ -2472,8 +2479,9 @@ test(876, f(), output="   a b1: 3 32: 3 6.*[1] 9.*   a V11: 3  9")
 DT = data.table(a=1:3, b=4:6)
 test(877, setnames(DT, c(NA, NA)), error="Passed a vector of type 'logical'. Needs to be type 'character'")
 
-# test no warning when use.names explicitly set, #2385
-test(878, rbind(data.table(a=1:3,b=4:6), data.table(b=7:9,a=4:6)), data.table(a=1:6,b=4:9), warning="Argument 2 has names in a different order.*bound by name")
+# test no warning when use.names explicitly set, #2385 - changed 'warning' to 'message' as we just check if usenames is missing, due to C-level changes.
+# commented the message for now until confirmation with Matt.
+test(878, rbind(data.table(a=1:3,b=4:6), data.table(b=7:9,a=4:6)), data.table(a=1:6,b=4:9)) #, message="Columns will be bound by name for consistency with base")
 test(879, rbind(data.table(a=1:3,b=4:6), data.table(b=7:9,a=4:6), use.names=TRUE), data.table(a=1:6,b=4:9))
 
 # Test fread()
@@ -3665,8 +3673,8 @@ x <- as.data.table(BOD)
 y <- copy(x)
 test(1165, x[Time>100], rbindlist(list(x[Time > 100], y[Time > 200])))
 
-# Bug fix for the #5300 - rbind(DT, NULL) should not result in error
-x <- as.data.table(BOD) 
+# Bug fix for the #5300 - rbind(DT, NULL) should not result in error, but BOD has an attribute as well, which won't be preserved (due to C-impl). Changing test.
+setattr(x <- as.data.table(BOD), 'reference', NULL)
 test(1166, x, rbind(x, NULL))
 
 # fix for bug #5307 - ordering with multiple columns in which at least one of them is a logical column
@@ -4383,6 +4391,32 @@ a <- data.table(BOD, key="Time")
 b <- data.table(BOD, key="Time")[Time < 0] # zero row data.table
 ans <- merge(b, a, all=TRUE)
 test(1287, ans, data.table(Time=a$Time, demand.x=NA_real_, demand.y=a$demand, key="Time"))
+
+# more rbindlist tests - duplicate columns with "fill=TRUE"
+ll <- list(data.table(x=1, y=-1, x=-2), data.table(y=10, y=20, y=30, x=-10, a="a", b=Inf, c=factor(1)))
+test(1288.1, rbindlist(ll, use.names=TRUE, fill=FALSE), error = "Item 2 has 7 columns, inconsistent with item 1 which has 3 columns")
+test(1288.2, rbindlist(ll, use.names=TRUE, fill=TRUE), 
+    data.table(x=c(1,-10), x=c(-2, NA), y=c(-1,10), y=c(NA,20), y=c(NA,30), a=c(NA, "a"), b=c(NA, Inf), c=factor(c(NA, 1))))
+
+# check the name of output are consistent when binding two empty dts with one empy and other non-empty dt
+dt1 <- data.table(x=1:5, y=6:10)
+dt2 <- dt1[x > 5]
+setnames(dt3 <- copy(dt2), c("A", "B"))
+test(1288.3, names(rbindlist(list(dt2,dt3))), c("x", "y"))
+test(1288.4, names(rbindlist(list(dt3,dt2))), c("A", "B"))
+test(1288.5, names(rbindlist(list(dt1,dt3))), c("x", "y"))
+test(1288.6, names(rbindlist(list(dt3,dt1))), c("A", "B"))
+
+# check fix for bug #5612
+DT <- data.table(x=c(1,2,3))
+test(1288.7, rbind(DT, DT, data.table()), rbind(DT, data.table(), DT))
+
+# factor on fill=TRUE with NA column..
+DT1 = data.table(A=1:3,B=letters[1:3])
+DT2 = data.table(B=letters[4:5],C=factor(1:2))
+l = list(DT1,DT2)
+test(1288.8, rbindlist(l, use.names=TRUE, fill=TRUE), data.table(A=c(1:3,NA_integer_,NA_integer_), B=letters[1:5], C=factor(c(NA,NA,NA,1,2))))
+TO DO: TODO: think of and add more tests for rbindlist
 
 ##########################
 

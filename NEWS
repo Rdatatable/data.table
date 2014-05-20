@@ -91,6 +91,18 @@ NEW FEATURES (subject to discussion and change)
   o  'setDT' gains keep.rownames=TRUE/FALSE argument, which works only on data.frames. TRUE retains 
      the data.frame's row names as a new column named 'rn'.
 
+  o  'rbindlist' gains 'use.names' and 'fill' arguments and is now implemented entirely in C. 
+         -> use.names by default is FALSE for backwards compatibility (doesn't bind by names by default)
+         -> rbind(...) now just calls rbindlist() internally, except that 'use.names' is TRUE by default, 
+            for compatibility with base (and backwards compatibility).
+         -> fill by default is FALSE. If fill is TRUE, use.names has to be TRUE.
+         -> At least one item of the input list has to have non-null column names.
+         -> Duplicate columns are bound in the order of occurrence, like base.
+         -> Attributes that might exist in individual items would be lost in the bound result.
+         -> Columns are coerced to the highest SEXPTYPE, if they are different, if/when possible.
+         -> And incredibly fast ;).
+     Eddi's (excellent) work on finding factor levels, type coercion of columns etc. are all retained.
+
 BUG FIXES
 
   o  When joining to fewer columns than the key has, using one of the later key columns
