@@ -91,7 +91,7 @@ NEW FEATURES (subject to discussion and change)
   o  'setDT' gains keep.rownames=TRUE/FALSE argument, which works only on data.frames. TRUE retains 
      the data.frame's row names as a new column named 'rn'.
 
-  o  'rbindlist' gains 'use.names' and 'fill' arguments and is now implemented entirely in C. 
+  o  'rbindlist' gains 'use.names' and 'fill' arguments and is now implemented entirely in C. Closes #5249
          -> use.names by default is FALSE for backwards compatibility (doesn't bind by names by default)
          -> rbind(...) now just calls rbindlist() internally, except that 'use.names' is TRUE by default, 
             for compatibility with base (and backwards compatibility).
@@ -101,6 +101,7 @@ NEW FEATURES (subject to discussion and change)
          -> Attributes that might exist in individual items would be lost in the bound result.
          -> Columns are coerced to the highest SEXPTYPE, if they are different, if/when possible.
          -> And incredibly fast ;).
+         -> Documentation updated in much detail. Closes DR #5158.
      Eddi's (excellent) work on finding factor levels, type coercion of columns etc. are all retained.
 
 BUG FIXES
@@ -175,6 +176,9 @@ BUG FIXES
 
   o  `merge(x, y, all=TRUE)` error when 'x' is empty data.table is now fixed. Closes #5672. Thanks to Garrett See for 
      filing the report.
+
+  o  Implementing #5249 closes bug #5612, a case where rbind gave error when binding with empty data.tables as shown 
+     here: http://stackoverflow.com/q/23216033/559784. Thanks to Roger for reporting on SO.
 
 NOTES
 
