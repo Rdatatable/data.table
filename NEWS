@@ -180,6 +180,9 @@ BUG FIXES
   o  Implementing #5249 closes bug #5612, a case where rbind gave error when binding with empty data.tables as shown 
      here: http://stackoverflow.com/q/23216033/559784. Thanks to Roger for reporting on SO.
 
+  o  Fixed a (segfault) issue during grouping with assignment by refernece, ex: `DT[, LHS := RHS, by=.]`, where 
+     length(RHS) > group size (.N). Closes #5647. Thanks to Zachary Long for reporting on datatable mailing list.
+
 NOTES
 
   o  Reminder: using rolltolast still works but since v1.9.2 now issues the following warning :

@@ -4418,6 +4418,14 @@ l = list(DT1,DT2)
 test(1288.8, rbindlist(l, use.names=TRUE, fill=TRUE), data.table(A=c(1:3,NA_integer_,NA_integer_), B=letters[1:5], C=factor(c(NA,NA,NA,1,2))))
 # TO DO: TODO: think of and add more tests for rbindlist
 
+# fix for #5647
+dt <- data.table(x=1L, y=1:10)
+cp = copy(dt)
+test(1289.1, dt[,z := c(rep(NA, 5), y), by=x], cp[, z := c(rep(NA, 5), y[1:5])], warning="RHS 1 is length 15")
+dt<-data.table(x=c(1:2), y=1:10)
+cp = copy(dt)
+test(1289.2, dt[, z := c(rep(NA, 5),y), by=x], cp[, z := rep(NA_integer_, 10)], warning="RHS 1 is length 10")
+
 ##########################
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.

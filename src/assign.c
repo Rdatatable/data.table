@@ -609,7 +609,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
 {
     int r = 0, w;
     if (len<1) return;
-    int slen = length(source);
+    int slen = length(source) > len ? len : length(source); // fix for 5647. when length(source) > len, slen must be len.
     if (slen<1) return;
     if (TYPEOF(target) != TYPEOF(source)) error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s']", type2char(TYPEOF(target)),type2char(TYPEOF(source)));
     size_t size = SIZEOF(target);
