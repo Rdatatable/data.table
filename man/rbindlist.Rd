@@ -14,7 +14,7 @@ rbind(..., use.names=TRUE, fill=FALSE)
   \item{l}{ A list of \code{data.table}, \code{data.frame} or \code{list} objects. At least one of the inputs should have column names set.}
   \item{...}{\code{data.table}, \code{data.frame} or \code{list} objects supplied individually. At least one of the inputs should have column names set.}
   \item{use.names}{If \code{TRUE} items will be bound by matching column names. By default \code{FALSE} for \code{rbindlist} (for backwards compatibility) and \code{TRUE} for \code{rbind} (consistency with base). Duplicate columns are bound in the order of occurrence, similar to base.}
-  \item{fill}{If \code{TRUE} fills missing columns with NAs. By default \code{FALSE}. When \code{TRUE}, \code{usenames} has to be \code{TRUE}}
+  \item{fill}{If \code{TRUE} fills missing columns with NAs. By default \code{FALSE}. When \code{TRUE}, \code{use.names} has to be \code{TRUE}}
 }
 \details{
 Each item of \code{l} can be a \code{data.table}, \code{data.frame} or \code{list}, including \code{NULL} (skipped) or an empty object (0 rows). Be aware \code{l} should contain at least one \code{data.table} for \code{rbind(...)} to call the appropriate function, whereas this restriction does not apply to a direct call to \code{rbindlist(l)}.
