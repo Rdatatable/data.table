@@ -1309,8 +1309,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (byjoin) {
         groups = i
         grpcols = leftcols # 'leftcols' are the columns in i involved in the join (either head of key(i) or head along i)
-        jiscols = dupmatch(jisvars,names(i))  # integer() if there are no jisvars (usually there aren't, advanced feature)
-        xjiscols = dupmatch(xjisvars, names(x))
+        jiscols = chmatch(jisvars,names(i))  # integer() if there are no jisvars (usually there aren't, advanced feature)
+        xjiscols = chmatch(xjisvars, names(x))
         SDenv$.xSD = x[min(nrow(i), 1L), xjisvars, with=FALSE]
     } else {
         groups = byval
