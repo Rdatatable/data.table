@@ -740,28 +740,39 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill) {
     return(ans);
 }
 
-// A (relatively) fast (uses DT grouping) wrapper for matching two vectors, BUT:
-// it behaves like 'pmatch' but only the 'exact' matching part. That is, a value in 
-// 'x' is matched to 'table' only once. No index will be present more than once. 
-// This should make it even clearer:
-// chmatch2(c("a", "a"), c("a", "a")) # 1,2 - the second 'a' in 'x' has a 2nd match in 'table'
-// chmatch2(c("a", "a"), c("a", "b")) # 1,NA - the second one doesn't 'see' the first 'a'
-// chmatch2(c("a", "a"), c("a", "a.1")) # 1,NA - this is where it differs from pmatch - we don't need the partial match.
-SEXP chmatch2(SEXP x, SEXP table, SEXP nomatch) {
+/* 
+## The section below implements "chmatch2_old" and "chmatch2" (faster version of chmatch2_old).
+## It's basically 'pmatch' but without the partial matching part. These examples should 
+## make it clearer.
+## Examples:
+## chmatch2_old(c("a", "a"), c("a", "a"))     # 1,2  - the second 'a' in 'x' has a 2nd match in 'table'
+## chmatch2_old(c("a", "a"), c("a", "b"))     # 1,NA - the second one doesn't 'see' the first 'a'
+## chmatch2_old(c("a", "a"), c("a", "a.1"))   # 1,NA - differs from 'pmatch' output = 1,2
+##
+## The algorithm: given 'x' and 'y':
+## dt = data.table(val=c(x,y), grp1 = rep(1:2, c(length(x),length(y))), grp2=c(1:length(x), 1:length(y)))
+## dt[, grp1 := 0:(.N-1), by="val,grp1"]
+## dt[, grp2[2], by="val,grp1"]
+## 
+## NOTE: This is FAST, but not AS FAST AS it could be. See chmatch2 for a faster implementation (and bottom 
+## of this file for a benchmark). I've retained here for now. Ultimately, will've to discuss with Matt and 
+## probably export it??
+*/
+SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
     
     R_len_t i, j, k, nx, li, si, oi;
     SEXP dt, l, ans, order, start, lens, grpid, index;
-    if (TYPEOF(x) != STRSXP) error("'x' must be a character vector");
-    if (TYPEOF(table) != STRSXP) error("'table' must be a character vector");
     if (TYPEOF(nomatch) != INTSXP || length(nomatch) != 1) error("'nomatch' must be an integer of length 1");
-    if (!length(x)) return(allocVector(INTSXP, 0));
+    if (!length(x) || isNull(x)) return(allocVector(INTSXP, 0));
+    if (TYPEOF(x) != STRSXP) error("'x' must be a character vector");
     nx=length(x);
-    if (!length(table)) {
+    if (!length(table) || isNull(table)) {
         ans = PROTECT(allocVector(INTSXP, nx));
         for (i=0; i<nx; i++) INTEGER(ans)[i] = INTEGER(nomatch)[0];
         UNPROTECT(1);
         return(ans);
     }
+    if (TYPEOF(table) != STRSXP) error("'table' must be a character vector");
     // Done with special cases. On to the real deal.
     l = PROTECT(allocVector(VECSXP, 2));
     SET_VECTOR_ELT(l, 0, x);
@@ -774,7 +785,7 @@ SEXP chmatch2(SEXP x, SEXP table, SEXP nomatch) {
     order = PROTECT(fast_order(dt, 2));
     start = PROTECT(getAttrib(order, mkString("starts")));
     lens  = PROTECT(uniq_lengths(start, length(order))); // length(order) = nrow(dt)
-    grpid = VECTOR_ELT(dt, 1); // dt[2] is unused here.
+    grpid = VECTOR_ELT(dt, 1);
     index = VECTOR_ELT(dt, 2);
     
     // replace dt[1], we don't need it anymore
@@ -803,3 +814,105 @@ SEXP chmatch2(SEXP x, SEXP table, SEXP nomatch) {
     UNPROTECT(5); // order, start, lens, ans
     return(ans);
 }
+
+// utility function used from within chmatch2
+static SEXP listlist(SEXP x) {
+    
+    R_len_t i,j,k, nl;
+    SEXP lx, xo, xs, xl, tmp, ans, ans0, ans1;
+    
+    lx = PROTECT(allocVector(VECSXP, 1));
+    SET_VECTOR_ELT(lx, 0, x);
+    xo = PROTECT(fast_order(lx, 1));
+    xs = PROTECT(getAttrib(xo, mkString("starts")));
+    xl = PROTECT(uniq_lengths(xs, length(x)));
+    
+    ans0 = PROTECT(allocVector(STRSXP, length(xs)));
+    ans1 = PROTECT(allocVector(VECSXP, length(xs)));
+    k=0;
+    for (i=0; i<length(xs); i++) {
+        SET_STRING_ELT(ans0, i, STRING_ELT(x, INTEGER(xo)[INTEGER(xs)[i]-1]-1));
+        nl = INTEGER(xl)[i];
+        tmp = allocVector(INTSXP, nl);
+        SET_VECTOR_ELT(ans1, i, tmp);
+        for (j=0; j<nl; j++) {
+            INTEGER(tmp)[j] = INTEGER(xo)[k+j];
+        }
+        k += j;
+    }
+    ans = PROTECT(allocVector(VECSXP, 2));
+    SET_VECTOR_ELT(ans, 0, ans0);
+    SET_VECTOR_ELT(ans, 1, ans1);
+    UNPROTECT(7);
+    return(ans);
+}
+
+/*
+## While chmatch2_old works great, I find it inefficient in terms of both memory (stores 2 indices over the 
+## length of x+y) and speed (2 ordering and looping over unnecesssary amount of times). So, here's 
+## another stab at a faster version of 'chmatch2_old', leveraging the power of 'chmatch' and data.table's 
+## DT[ , list(list()), by=.] syntax.
+## 
+## The algorithm:
+## x.agg = data.table(x)[, list(list(rep(x, .N))), by=x]
+## y.agg = data.table(y)[, list(list(rep(y, .N))), by=y]
+## mtch  = chmatch(x.agg, y.agg, nomatch)                 ## here we look at only unique values!
+## Now, it's just a matter of filling corresponding matches from x.agg's indices with y.agg's indices.
+## BENCHMARKS ON THE BOTTOM OF THIS FILE
+*/
+extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
+SEXP chmatch2(SEXP x, SEXP y, SEXP nomatch) {
+
+    R_len_t i, j, k, nx, ix, iy;
+    SEXP xll, yll, xu, yu, ans, xl, yl, mx;
+    if (TYPEOF(nomatch) != INTSXP || length(nomatch) != 1) error("'nomatch' must be an integer of length 1");
+    if (!length(x) || isNull(x)) return(allocVector(INTSXP, 0));
+    if (TYPEOF(x) != STRSXP) error("'x' must be a character vector");
+    nx = length(x);
+    if (!length(y) || isNull(y)) {
+        ans = PROTECT(allocVector(INTSXP, nx));
+        for (i=0; i<nx; i++) INTEGER(ans)[i] = INTEGER(nomatch)[0];
+        UNPROTECT(1);
+        return(ans);
+    }
+    if (TYPEOF(y) != STRSXP) error("'table' must be a character vector");
+    // Done with special cases. On to the real deal.
+    xll = PROTECT(listlist(x));
+    yll = PROTECT(listlist(y));
+    
+    xu = VECTOR_ELT(xll, 0);
+    yu = VECTOR_ELT(yll, 0);
+    
+    mx  = PROTECT(chmatch(xu, yu, 0, FALSE));
+    ans = PROTECT(allocVector(INTSXP, nx));
+    k=0;
+    for (i=0; i<length(mx); i++) {
+        xl = VECTOR_ELT(VECTOR_ELT(xll, 1), i);
+        ix = length(xl); 
+        if (INTEGER(mx)[i] == 0) {
+            for (j=0; j<ix; j++) 
+                INTEGER(ans)[INTEGER(xl)[j]-1] = INTEGER(nomatch)[0];
+        } else {
+            yl = VECTOR_ELT(VECTOR_ELT(yll, 1), INTEGER(mx)[i]-1);
+            iy = length(yl);
+            for (j=0; j < (ix < iy ? ix : iy); j++)
+                INTEGER(ans)[INTEGER(xl)[j]-1] = INTEGER(yl)[j];
+            k += ix;
+        }
+    }
+    UNPROTECT(4);
+    return(ans);
+    
+}
+
+/*
+## Benchmark:
+set.seed(45L)
+x <- sample(letters, 1e6, TRUE)
+y <- sample(letters, 1e7, TRUE)
+system.time(ans1 <- .Call("Cchmatch2_old", x,y,0L)) # 2.405 seconds
+system.time(ans2 <- .Call("Cchmatch2", x,y,0L)) # 0.174 seconds
+identical(ans1, ans2) # [1] TRUE
+## Note: 'pmatch(x,y,0L)' dint finish still after about 5 minutes, so stopped.
+## Speed up of about ~14x!!! nice ;). (And this uses lesser memory as well).
+*/
