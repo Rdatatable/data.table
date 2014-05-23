@@ -739,3 +739,67 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill) {
     UNPROTECT(protecti);
     return(ans);
 }
+
+// A (relatively) fast (uses DT grouping) wrapper for matching two vectors, BUT:
+// it behaves like 'pmatch' but only the 'exact' matching part. That is, a value in 
+// 'x' is matched to 'table' only once. No index will be present more than once. 
+// This should make it even clearer:
+// chmatch2(c("a", "a"), c("a", "a")) # 1,2 - the second 'a' in 'x' has a 2nd match in 'table'
+// chmatch2(c("a", "a"), c("a", "b")) # 1,NA - the second one doesn't 'see' the first 'a'
+// chmatch2(c("a", "a"), c("a", "a.1")) # 1,NA - this is where it differs from pmatch - we don't need the partial match.
+SEXP chmatch2(SEXP x, SEXP table, SEXP nomatch) {
+    
+    R_len_t i, j, k, nx, li, si, oi;
+    SEXP dt, l, ans, order, start, lens, grpid, index;
+    if (TYPEOF(x) != STRSXP) error("'x' must be a character vector");
+    if (TYPEOF(table) != STRSXP) error("'table' must be a character vector");
+    if (TYPEOF(nomatch) != INTSXP || length(nomatch) != 1) error("'nomatch' must be an integer of length 1");
+    if (!length(x)) return(allocVector(INTSXP, 0));
+    nx=length(x);
+    if (!length(table)) {
+        ans = PROTECT(allocVector(INTSXP, nx));
+        for (i=0; i<nx; i++) INTEGER(ans)[i] = INTEGER(nomatch)[0];
+        UNPROTECT(1);
+        return(ans);
+    }
+    // Done with special cases. On to the real deal.
+    l = PROTECT(allocVector(VECSXP, 2));
+    SET_VECTOR_ELT(l, 0, x);
+    SET_VECTOR_ELT(l, 1, table);
+    
+    UNPROTECT(1); // l
+    dt = PROTECT(unlist2(l));
+
+    // order - first time
+    order = PROTECT(fast_order(dt, 2));
+    start = PROTECT(getAttrib(order, mkString("starts")));
+    lens  = PROTECT(uniq_lengths(start, length(order))); // length(order) = nrow(dt)
+    grpid = VECTOR_ELT(dt, 1); // dt[2] is unused here.
+    index = VECTOR_ELT(dt, 2);
+    
+    // replace dt[1], we don't need it anymore
+    k=0;
+    for (i=0; i<length(lens); i++) {
+        for (j=0; j<INTEGER(lens)[i]; j++) {
+            INTEGER(grpid)[INTEGER(order)[k+j]-1] = j;
+        }
+        k += j;
+    }
+    // order - again
+    UNPROTECT(3); // order, start, lens
+    order = PROTECT(fast_order(dt, 2)); 
+    start = PROTECT(getAttrib(order, mkString("starts")));
+    lens  = PROTECT(uniq_lengths(start, length(order)));
+    
+    ans = PROTECT(allocVector(INTSXP, nx));
+    k = 0;
+    for (i=0; i<length(lens); i++) {
+        li = INTEGER(lens)[i];
+        si = INTEGER(start)[i]-1;
+        oi = INTEGER(order)[si]-1;
+        if (oi > nx-1) continue;
+        INTEGER(ans)[oi] = (li == 2) ? INTEGER(index)[INTEGER(order)[si+1]-1]+1 : INTEGER(nomatch)[0];
+    }
+    UNPROTECT(5); // order, start, lens, ans
+    return(ans);
+}

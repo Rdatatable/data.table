@@ -45,6 +45,7 @@ SEXP pointWrapper();
 SEXP setNumericRounding();
 SEXP getNumericRounding();
 SEXP binary();
+SEXP chmatch2();
 
 // .Externals
 SEXP fastmean();
@@ -90,6 +91,7 @@ R_CallMethodDef callMethods[] = {
 {"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},
 {"CgetNumericRounding", (DL_FUNC) &getNumericRounding, -1},
 {"Cbinary", (DL_FUNC) &binary, -1},
+{"Cchmatch2", (DL_FUNC) &chmatch2, -1},
 {NULL, NULL, 0}
 };
 

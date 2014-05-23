@@ -312,6 +312,17 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     x
 }
 
+# A (relatively) fast (uses DT grouping) wrapper for matching two vectors, BUT:
+# it behaves like 'pmatch' but only the 'exact' matching part. That is, a value in 
+# 'x' is matched to 'table' only once. No index will be present more than once. 
+# This should make it even clearer:
+# chmatch2(c("a", "a"), c("a", "a")) # 1,2 - the second 'a' in 'x' has a 2nd match in 'table'
+# chmatch2(c("a", "a"), c("a", "b")) # 1,NA - the second one doesn't 'see' the first 'a'
+# chmatch2(c("a", "a"), c("a", "a.1")) # 1,NA - this is where it differs from pmatch - we don't need the partial match.
+chmatch2 <- function(x, table, nomatch=NA_integer_) {
+    .Call(Cchmatch2, x, table, as.integer(nomatch)) # this is in 'rbindlist.c' for now.
+}
+
 "[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, rolltolast=FALSE)
 {
     # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
@@ -371,7 +382,17 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
     notjoin = FALSE
     rightcols = leftcols = integer(0)
-
+    
+    # To take care of duplicate column names properly (see chmatch2 function above `[data.table`) for description
+    dupmatch <- function(x, y, ...) {
+        if (anyDuplicated(x))
+            pmax(chmatch(x,y, ...), chmatch2(x,y,0L))
+        else chmatch(x,y)
+    }
+    
+    # setdiff removes duplicate entries, which'll create issues with duplicated names. Use '%chin% instead.
+    dupdiff <- function(x, y) x[!x %chin% y]
+    
     if (!missing(i)) {
         isub = substitute(i)
         # Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires 
@@ -535,7 +556,6 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     byval = NULL
     xnrow = nrow(x)
     xcols = xcolsAns = icols = icolsAns = integer()
-    
     if (missing(j)) {
         # missing(by)==TRUE was already checked above before dealing with i
         if (!length(x)) return(null.data.table())
@@ -552,6 +572,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             icolsAns = c(rightcols, seq.int(ncol(x)+1L, length.out=ncol(i)-length(leftcols)))
             xcols = xcolsAns = seq_along(x)[-rightcols]
         }
+        ansvals = chmatch(ansvars, names(x))
     } else {
         jsub = substitute(j)
         # deconstruct and eval everything with just one argument, then reconstruct back to a call
@@ -585,16 +606,25 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                     if (any(is.na(w))) {
                         warning("column(s) not removed because not found: ",paste(j[is.na(w)],collapse=","))
                         w = w[!is.na(w)]
-                    } 
-                    ansvars = if (length(w)) names(x)[-w] else names(x)
+                    }
+                    # changed names(x)[-w] to use 'setdiff'. Here, all instances of the column must be removed.
+                    # Ex: DT <- data.table(x=1, y=2, x=3); DT[, !"x", with=FALSE] should just output 'y'.
+                    # But keep 'dup cols' beause it's basically DT[, !names(DT) %chin% "x", with=FALSE] which'll subset all cols not 'x'.
+                    ansvars = if (length(w)) dupdiff(names(x), names(x)[w]) else names(x)
+                    ansvals = dupmatch(ansvars, names(x))
                 } else {
+                    # once again, use 'setdiff'. Basically, unless indices are specified in `j`, we shouldn't care about duplicated columns.
                     ansvars = j   # x. and i. prefixes may be in here, and they'll be dealt with below 
+                    # dups = FALSE here.. even if DT[, c("x", "x"), with=FALSE], we subset only the first.. No way to tell which one the OP wants without index.
+                    ansvals = chmatch(ansvars, names(x))
                 }
             } else if (is.numeric(j)) {
                 if (any(abs(j) > ncol(x) | j==0L)) stop("j out of bounds")
                 if (any(j<0L) && any(j>0L)) stop("j mixes positive and negative")
                 if (any(j<0L)) j = seq_len(ncol(x))[j]
                 ansvars = names(x)[ if (notj) -j else j ]  # DT[,!"columntoexclude",with=FALSE], if a copy is needed, rather than :=NULL
+                # DT[, c(1,3), with=FALSE] should clearly provide both 'x' columns
+                ansvals = if (notj) setdiff(seq_along(x), as.integer(j)) else as.integer(j)
             }
             
         } else {   # with=TRUE and byjoin could be TRUE
@@ -742,11 +772,15 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
             av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
             if (".SD" %chin% av) {
                 if (missing(.SDcols)) {
-                    ansvars = setdiff(names(x),union(bynames,allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
+                    # here we need to use 'dupdiff' instead of 'setdiff'. Ex: setdiff(c("x", "x"), NULL) will give 'x'.
+                    ansvars = dupdiff(names(x),union(bynames,allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
                     # just using .SD in j triggers all non-by columns in the subset even if some of
                     # those columns are not used. It would be tricky to detect whether the j expression
                     # really does use all of the .SD columns or not, hence .SDcols for grouping
                     # over a subset of columns
+
+                    # all duplicate columns must be matched, because nothing is provided
+                    ansvals = dupmatch(ansvars, names(x))
                 } else {
                     # FR #4979 - negative numeric and character indices for SDcols
                     colsub = substitute(.SDcols)
@@ -755,14 +789,18 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                         colm = TRUE
                         .SDcols = eval(colsub[[2L]], parent.frame(), parent.frame())
                     } else colm = FALSE
+                    # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
                     if (is.numeric(.SDcols)) {
                         if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
                         if (any(is.na(.SDcols)) || any(abs(.SDcols)>ncol(x)) || any(abs(.SDcols)<1L)) stop(".SDcols is numeric but out of bounds (or NA)")
-                        if (colm) ansvars = setdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
+                        if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
+                        ansvals = if (colm) setdiff(seq_along(names(x)), c(as.integer(.SDcols), which(names(x) %chin% bynames))) else as.integer(.SDcols)
                     } else {
                         if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
                         if (any(is.na(.SDcols)) || any(!.SDcols %chin% names(x))) stop("Some items of .SDcols are not column names (or are NA)")
                         if (colm) ansvars = setdiff(setdiff(names(x), .SDcols), bynames) else ansvars = .SDcols
+                        # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
+                        ansvals = chmatch(ansvars, names(x))
                     }
                     # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
                 }
@@ -774,6 +812,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                 # Consider:   DT[,max(diff(date)),by=list(month=month(date))]
                 # and:        DT[,lapply(.SD,sum),by=month(date)]
                 # We don't want date in .SD in the latter, but we do in the former; hence the union() above.
+                ansvals = chmatch(ansvars, names(x))
             }
             # if (!length(ansvars)) Leave ansvars empty. Important for test 607.
             if ("get" %chin% av) {
@@ -783,6 +822,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
                     # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
                 }
                 ansvars = setdiff(c(names(x), if (is.data.table(i)) c(names(i), paste("i.", names(i), sep=""))),bynames) # fix for bug #5443
+                ansvals = chmatch(ansvars, names(x))
                 if (verbose) cat("New:",paste(ansvars,collapse=","),"\n")
             }
 
@@ -887,7 +927,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         }
         
         if (length(ansvars)) {
-            w = chmatch(ansvars, names(x))
+            w = ansvals
             if (length(rightcols) && missing(by)) w[ w %in% rightcols ] = NA
             if (!any(wna <- is.na(w))) {
                 xcols = w
@@ -1269,8 +1309,8 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     if (byjoin) {
         groups = i
         grpcols = leftcols # 'leftcols' are the columns in i involved in the join (either head of key(i) or head along i)
-        jiscols = chmatch(jisvars,names(i))  # integer() if there are no jisvars (usually there aren't, advanced feature)
-        xjiscols = chmatch(xjisvars, names(x))
+        jiscols = dupmatch(jisvars,names(i))  # integer() if there are no jisvars (usually there aren't, advanced feature)
+        xjiscols = dupmatch(xjisvars, names(x))
         SDenv$.xSD = x[min(nrow(i), 1L), xjisvars, with=FALSE]
     } else {
         groups = byval
@@ -2017,7 +2057,7 @@ chgroup = function(x) {
     rbindlist(l, use.names, fill)
 }
 
-rbindlist = function(l, use.names=FALSE, fill=FALSE) {
+rbindlist = function(l, use.names=fill, fill=FALSE) {
     ans = .Call("Crbindlist", l, use.names, fill)
     if (!length(ans)) return(null.data.table())
     setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))

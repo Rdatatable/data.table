@@ -183,6 +183,14 @@ BUG FIXES
   o  Fixed a (segfault) issue during grouping with assignment by refernece, ex: `DT[, LHS := RHS, by=.]`, where 
      length(RHS) > group size (.N). Closes #5647. Thanks to Zachary Long for reporting on datatable mailing list.
 
+  o  Consistent subset rules on datat.tables with duplicate columns. In short, if indices are directly provided, 'j', 
+     or in .SDcols, then just those columns are either returned (or deleted if you provide -.SDcols or !j). If 
+     instead, column names are given and there are more than one occurrence of that column, then it's hard to 
+     decide which to keep and which to remove on a subset. Therefore, to remove, all occurrences of that column are 
+     removed, and to keep, always the first column is returned each time. Also closes #5688 and #5008.
+     Note that using 'by' to aggregate on duplicate columns may not give intended result still, as it may not operate 
+     on the proper column.
+
 NOTES
 
   o  Reminder: using rolltolast still works but since v1.9.2 now issues the following warning :

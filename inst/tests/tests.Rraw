@@ -4426,6 +4426,91 @@ dt<-data.table(x=c(1:2), y=1:10)
 cp = copy(dt)
 test(1289.2, dt[, z := c(rep(NA, 5),y), by=x], cp[, z := rep(NA_integer_, 10)], warning="RHS 1 is length 10")
 
+########################################
+# Extensve testing for "duplicate" names
+########################################
+# Rules: Basically, if index is directly given in 'j', just those columns are touched/operated on. But if 'column' names are given and there are more than one 
+# occurrence of that column, then it's hard to decide which to keep and which to remove. So, to remove, all are removed, to keep, always the first is kept.
+# 1) when i,j,by are all absent (or) just 'i' is present then ALL duplicate columns are returned.
+# 2) When 'with=FALSE' and 'j' is a character and 'notj' is TRUE, all instances of the column to be removed will be removed.
+# 3) When 'with=FALSE' and 'j' is a character and 'notj' is FALSE, only the first column will be recognised in presence of duplicate columns.
+# 4) When 'with=FALSE' and 'j' is numeric and 'notj' is TRUE, just those indices will be removed.
+# 5) When 'with=FALSE' and 'j' is numeric and 'notj' is FALSE, all columns for indices given, if valid, are returned. (FIXES #5688)
+# 6) When .SD is in 'j', but '.SDcols'  is not present, ALL columns are subset'd - FIXES BUG #5008.
+# 7) When .SD and .SDcols are present and .SDcols is numeric, columns corresponding to the given indices are returned.
+# 8) When .SD and .SDcols are present and .SDcols is character, duplicate column names will only return the first column, each time.
+# 9) When .SD and .SDcols are present and .SDcols is numeric, and it's -SDcols, then just those columns are removed.
+# 10) When .SD and .SDcols are present and .SDcols is character and -SDcols, then all occurrences of that object is removed.
+# 11) When no .SD and no .SDcols and no with=FALSE, only duplicate column names will return only the first column each time.
+# 12) With 'get("col")', it's the same as with all character types.
+# 13) A logical expression in 'j'.
+# 14) Finally, no tests but.. using 'by' with duplicate columns and aggregating may not return the intended result, as it may operate on column names in some cases.
+
+# All points are tested with this example:
+DT  <- data.table(x=1:2, y=3:4, x=5:6, x=7:8, y=9:10, z=11:12)
+DT1 <- data.table(x=1L, y=3L, x=5L, x=7L, y=9L, z=11L)
+DT2 <- data.table(x=2L, y=4L, x=6L, x=8L, y=10L, z=12L)
+ll  <- list(x=1:2, y=3:4, x=5:6, x=7:8, y=9:10, z=11:12)
+
+# case (1)
+test(1290.1, DT[1], DT1)
+test(1290.2, DT[], DT)
+test(1290.3, DT[(TRUE)], DT)
+
+# case (2)
+test(1290.4, DT[, !"x", with=FALSE], as.data.table(ll[c(2,5,6)]))
+test(1290.5, DT[, !"y", with=FALSE], as.data.table(ll[c(1,3,4,6)]))
+test(1290.6, DT[, !c("x", "x"), with=FALSE], as.data.table(ll[c(2,5,6)]))
+test(1290.7, DT[, !c("y", "y"), with=FALSE], as.data.table(ll[c(1,3,4,6)]))
+
+# case (3)
+test(1290.9,  DT[, "x", with=FALSE], as.data.table(ll[1]))
+test(1290.10, DT[, "y", with=FALSE], as.data.table(ll[2]))
+test(1290.11, DT[, c("x", "x"), with=FALSE], as.data.table(ll[c(1,1)]))
+test(1290.12, DT[, c("y", "y"), with=FALSE], as.data.table(ll[c(2,2)]))
+
+# case (4)
+test(1290.13, DT[, !3, with=FALSE], as.data.table(ll[c(1,2,4,5,6)]))
+test(1290.14, DT[, !c(1,1,3,4), with=FALSE], as.data.table(ll[c(2,5,6)]))
+test(1290.15, DT[, !2, with=FALSE], as.data.table(ll[c(1,3,4,5,6)]))
+test(1290.16, DT[, !c(2,5,2), with=FALSE], as.data.table(ll[c(1,3,4,6)]))
+
+# case (5)
+test(1290.17, DT[, 3, with=FALSE], as.data.table(ll[3]))
+test(1290.18, DT[, c(1,1,3,4), with=FALSE], as.data.table(ll[c(1,1,3,4)]))
+test(1290.19, DT[, 2, with=FALSE], as.data.table(ll[2]))
+test(1290.20, DT[, c(2,5,2), with=FALSE], as.data.table(ll[c(2,5,2)]))
+
+# case (6)
+test(1290.21, DT[, .SD], as.data.table(ll))
+test(1290.22, DT[, .SD[1]], DT[1])
+test(1290.23, DT[, .SD[1, !3, with=FALSE]], as.data.table(DT[1, !3, with=FALSE]))
+
+# case (7)
+test(1290.24, DT[, .SD, .SDcols=c(1,1,3,4)], as.data.table(ll[c(1,1,3,4)]))
+
+# case (8)
+test(1290.25, DT[, .SD, .SDcols=c("x", "x", "y")], as.data.table(ll[c(1,1,2)]))
+
+# case (9)
+test(1290.26, DT[, .SD, .SDcols=-c(1,2)], as.data.table(ll[c(-(1:2))]))
+
+# case (10)
+test(1290.27, DT[, .SD, .SDcols=-c("x")], as.data.table(ll[c(2,6)]))
+
+# case (11)
+test(1290.28, DT[, x], ll[[1]])
+test(1290.29, DT[, list(x,x,y,y,y)], as.data.table(ll[c(1,1,2,2,2)]))
+test(1290.30, DT[, list(x,x,y)], as.data.table(ll[c(1,1,2)]))
+
+# cast (12)
+test(1290.31, DT[, get("x")], ll[[1]])
+test(1290.32, DT[, list(get("x"))], setnames(as.data.table(ll[1]), "V1"))
+test(1290.33, DT[, list(get("x"), get("y"))], setnames(as.data.table(ll[1:2]), c("V1", "V2")))
+
+# case (13)
+test(1290.34, DT[, names(DT) == "x", with=FALSE], as.data.table(ll[c(1,3,4)]))
+
 ##########################
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.
