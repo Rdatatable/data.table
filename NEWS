@@ -197,6 +197,9 @@ BUG FIXES
   o  Closes #5714. When `j` evaluates to integer(0)/character(0), DT[, j, with=FALSE] resulted in error. Fixed now. Thanks 
      indirectly to Malcolm Cook for #5372, through which this (recent) regression (from 1.9.3) was found.
 
+  o  print.data.table now respects 'digits' argument on list type columns. Closes #5435. Thanks to Frank for the discussion 
+     on the mailing list and to Matthew Beckers for filing the bug report.
+
 NOTES
 
   o  Reminder: using rolltolast still works but since v1.9.2 now issues the following warning :

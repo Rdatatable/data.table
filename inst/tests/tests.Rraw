@@ -4507,10 +4507,31 @@ test(1291.1, dt1[, c:=max(b), by='a'], ans1, warning="no non-missing arguments t
 test(1291.2, dt1[, d := integer(0), by=a], ans2)
 
 # Bug #5714
-test(1294.1, data.table(x=1:2, y=3:4)[, -(1:2), with=FALSE], null.data.table())
-test(1294.2, data.table(x=1:2)[, -1, with=FALSE], null.data.table())
-test(1294.3, data.table(x=1:2, y=3:4)[, !c("x","y"), with=FALSE], null.data.table())
-test(1294.4, data.table(x=1:2)[, !c("x"), with=FALSE], null.data.table())
+test(1292.1, data.table(x=1:2, y=3:4)[, -(1:2), with=FALSE], null.data.table())
+test(1292.2, data.table(x=1:2)[, -1, with=FALSE], null.data.table())
+test(1292.3, data.table(x=1:2, y=3:4)[, !c("x","y"), with=FALSE], null.data.table())
+test(1292.4, data.table(x=1:2)[, !c("x"), with=FALSE], null.data.table())
+
+# Bug #5435 - print.data.table and digits option:
+DT <- structure(list(fisyr = 1995:1996, er = list(c(1, 3), c(1, 3)),
+    eg = c(0.0197315833926059, 0.0197315833926059), esal = list(
+        c(2329.89763779528, 2423.6811023622), c(2263.07456978967,
+        2354.16826003824)), fr = list(c(4, 4), c(4, 4)), fg =
+c(0.039310363070415,
+    0.039310363070415), fsal = list(c(2520.85433070866, 2520.85433070866
+    ), c(2448.55449330784, 2448.55449330784)), mr = list(c(5,
+    30), c(5, 30)), mg = c(0.0197779376457164, 0.0197779376457164
+    ), msal = list(c(2571.70078740157, 4215.73622047244),
+c(2497.94263862333,
+    4094.82600382409))), .Names = c("fisyr", "er", "eg", "esal",
+"fr", "fg", "fsal", "mr", "mg", "msal"), class = c("data.table",
+"data.frame"), row.names = c(NA, -2L))
+
+ans1 = capture.output(print(DT, digits=4, row.names=FALSE))
+ans2 = c(" fisyr  er      eg      esal  fr      fg      fsal    mr      mg      msal", 
+         "  1995 1,3 0.01973 2330,2424 4,4 0.03931 2521,2521  5,30 0.01978 2572,4216", 
+         "  1996 1,3 0.01973 2263,2354 4,4 0.03931 2449,2449  5,30 0.01978 2498,4095")
+test(1293, ans1, ans2)
 
 ##########################
 
