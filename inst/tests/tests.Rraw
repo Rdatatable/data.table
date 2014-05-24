@@ -4499,12 +4499,18 @@ test(1290.33, DT[, list(get("x"), get("y"))], setnames(as.data.table(ll[1:2]), c
 # case (13)
 test(1290.34, DT[, names(DT) == "x", with=FALSE], as.data.table(ll[c(1,3,4)]))
 
-# Bug #5376..
+# Bug #5376.. DT[, bla ;= character(0), by=.] dint add new column when `DT is empty DT.
 dt1 = data.table(a=character(0),b=numeric(0))
 ans1 = data.table(a=character(0), b=numeric(0), c=numeric(0))
 ans2 = data.table(a=character(0), b=numeric(0), c=numeric(0), d=integer(0))
 test(1291.1, dt1[, c:=max(b), by='a'], ans1, warning="no non-missing arguments to max")
 test(1291.2, dt1[, d := integer(0), by=a], ans2)
+
+# Bug #5714
+test(1294.1, data.table(x=1:2, y=3:4)[, -(1:2), with=FALSE], null.data.table())
+test(1294.2, data.table(x=1:2)[, -1, with=FALSE], null.data.table())
+test(1294.3, data.table(x=1:2, y=3:4)[, !c("x","y"), with=FALSE], null.data.table())
+test(1294.4, data.table(x=1:2)[, !c("x"), with=FALSE], null.data.table())
 
 ##########################
 

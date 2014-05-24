@@ -626,7 +626,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # DT[, c(1,3), with=FALSE] should clearly provide both 'x' columns
                 ansvals = if (notj) setdiff(seq_along(x), as.integer(j)) else as.integer(j)
             }
-            
+            if (!length(ansvals)) return(null.data.table())
         } else {   # with=TRUE and byjoin could be TRUE
             bynames = NULL
             allbyvars = NULL

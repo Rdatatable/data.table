@@ -192,7 +192,10 @@ BUG FIXES
      on the proper column.
 
   o  Closes #5376. When DT is empty, DT[, newcol:=max(b), by=a] now properly adds the column. Thanks to Shubh bansal for 
-     filing the report..
+     filing the report.
+
+  o  Closes #5714. When `j` evaluates to integer(0)/character(0), DT[, j, with=FALSE] resulted in error. Fixed now. Thanks 
+     indirectly to Malcolm Cook for #5372, through which this (recent) regression (from 1.9.3) was found.
 
 NOTES
 
