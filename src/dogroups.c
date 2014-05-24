@@ -5,6 +5,8 @@
 //#include <sys/mman.h>
 #include <fcntl.h>
 #include <time.h>
+// #include <signal.h> // the debugging machinery + breakpoint aidee
+// raise(SIGINT);
 
 size_t sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
 SEXP SelfRefSymbol;
@@ -124,7 +126,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     
     ansloc = 0;
     for(i=0; i<ngrp; i++) {   // even for an empty i table, ngroup is length 1 (starts is value 0), for consistency of empty cases
-        if (INTEGER(starts)[i] == 0 && (i>0 || !isNull(lhs))) continue;
+        if (INTEGER(starts)[i] == 0 && i>0) continue; // replaced (i>0 || !isNull(lhs)) with i>0 to fix #5376
         if (!isNull(lhs) &&
                (INTEGER(starts)[i] == NA_INTEGER ||
                 (LENGTH(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)))

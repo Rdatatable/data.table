@@ -191,6 +191,9 @@ BUG FIXES
      Note that using 'by' to aggregate on duplicate columns may not give intended result still, as it may not operate 
      on the proper column.
 
+  o  Closes #5376. When DT is empty, DT[, newcol:=max(b), by=a] now properly adds the column. Thanks to Shubh bansal for 
+     filing the report..
+
 NOTES
 
   o  Reminder: using rolltolast still works but since v1.9.2 now issues the following warning :
