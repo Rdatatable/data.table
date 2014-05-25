@@ -296,6 +296,8 @@ test(59, TESTDT[J(c("g","d","d","d","e","d"),c("b","g","k","b","a","f")),v,roll=
 
 test(68, "TESTDT" %in% tables(silent=TRUE)[,NAME])  # NAME is returned as a column in which we look for the string
 test(69, "TESTDT" %in% tables(silent=TRUE)[,as.character(NAME)]) # an old test (from when NAME was factor) but no harm in keeping it
+test(69.1, names(tables(silent=TRUE)), c("NAME","NROW","NCOL","MB","COLS","KEY"))
+test(69.2, names(tables(silent=TRUE,mb=FALSE)), c("NAME","NROW","NCOL","COLS","KEY"))
 
 a = "d"
 # Variable Twister.  a in this scope has same name as a inside DT scope.

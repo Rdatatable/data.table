@@ -103,6 +103,8 @@ NEW FEATURES (subject to discussion and change)
          -> And incredibly fast ;).
          -> Documentation updated in much detail. Closes DR #5158.
      Eddi's (excellent) work on finding factor levels, type coercion of columns etc. are all retained.
+     
+  o  The output of tables() now includes NCOL. Thanks to @dnlbrky for the suggestion.
 
 BUG FIXES
 

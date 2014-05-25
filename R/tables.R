@@ -8,23 +8,27 @@ tables = function(mb=TRUE,order.col="NAME",width=80,env=parent.frame(),silent=FA
         return(invisible(data.table(NULL)))
     }
     tab = tt[ss]
-    info = data.table(
-        NAME=tab,
-        NROW=format(sprintf("%4s",prettyNum(as.character(sapply(tab, function(x) nrow(get(x,envir=env)))),big.mark=",")),justify="right")
-    )
-    if (mb) {
-        # mb is an option because object.size appears slow
-        s = sapply(tab, function(x) ceiling(object.size(get(x,envir=env))/1024^2))
-        info$MB = format(s,justify="right")
-        total = sum(s)
+    info = data.table(NAME=tab)
+    for (i in seq_along(tab)) {
+        DT = get(tab[i],envir=env)   # doesn't copy
+        set(info,i,"NROW",nrow(DT))
+        set(info,i,"NCOL",ncol(DT))
+        if (mb) set(info,i,"MB",ceiling(as.numeric(object.size(DT))/1024^2))  # mb is an option because object.size() appears to be slow. TO DO: revisit
+        set(info,i,"COLS",paste(colnames(DT),collapse=","))
+        set(info,i,"KEY",paste(key(DT),collapse=","))
     }
-    info$COLS = as.vector(sapply(tab, function(x) paste(colnames(get(x,envir=env)),collapse=",")))
-    info$KEY = as.vector(sapply(tab, function(x) paste(attr(get(x,envir=env),"sorted"),collapse=",")))
+    info[,NROW:=format(sprintf("%4s",prettyNum(NROW,big.mark=",")),justify="right")]   # %4s is for minimum width
+    info[,NCOL:=format(sprintf("%4s",prettyNum(NCOL,big.mark=",")),justify="right")]
+    if (mb) {
+        total = sum(info$MB)
+        info[, MB:=format(sprintf("%2s",prettyNum(MB,big.mark=",")),justify="right")]
+    }
     if (!order.col %in% names(info)) stop("order.col='",order.col,"' not a column name of info") 
     info = info[base::order(info[[order.col]])]  # base::order to maintain locale ordering of table names
     m = as.matrix(info)
     colnames(m)[2] = sprintf(paste("%",nchar(m[1,"NROW"]),"s",sep=""), "NROW")
-    if (mb) colnames(m)[3] = sprintf(paste("%",nchar(m[1,"MB"]),"s",sep=""), "MB")
+    colnames(m)[3] = sprintf(paste("%",nchar(m[1,"NCOL"]),"s",sep=""), "NCOL")
+    if (mb) colnames(m)[4] = sprintf(paste("%",nchar(m[1,"MB"]),"s",sep=""), "MB")
     m[,"COLS"] = substring(m[,"COLS"],1,width)
     m[,"KEY"] = substring(m[,"KEY"],1,width)
     if (!silent) {
