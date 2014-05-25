@@ -4571,6 +4571,10 @@ test(1294.29, dt[, e := list(list(1))]$e, rep("1", 3), warning="Coerced 'list' R
 test(1294.30, dt[, e := "bla"]$e, rep("bla", 3))
 test(1294.31, dt[, e := list("bla2")]$e, rep("bla2", 3))
 
+# FR #5357, when LHS evaluates to integer(0), provide warning and return dt, not an error.
+dt = data.table(a = 1:5, b1 = 1:5, b2 = 1:5)
+test(1295, dt[, grep("c", names(d)) := NULL], dt, warning="length(LHS) = 0, meaning no columns to delete or assign RHS to")
+
 ##########################
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.

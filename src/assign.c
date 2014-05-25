@@ -282,8 +282,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         }
         if (!anyToDo) return(dt);  // all items of rows either 0 or NA, nothing to do.  
     }
-    if (!length(cols))
-        error("Logical error in assign, no column positions passed to assign");
+    if (!length(cols)) {
+        warning("length(LHS) = 0, meaning no columns to delete or assign RHS to.");
+        return(dt);
+    }
     // FR #2077 - set able to add new cols by reference
     if (isString(cols)) {
         PROTECT(tmp = chmatch(cols, names, 0, FALSE));

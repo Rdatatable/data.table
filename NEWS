@@ -106,6 +106,10 @@ NEW FEATURES (subject to discussion and change)
      
   o  The output of tables() now includes NCOL. Thanks to @dnlbrky for the suggestion.
 
+  o  DT[, LHS := RHS] (or its equivalent in `set`) now provides a warning and returns DT as it was, instead 
+     of an error, when `length(LHS) = 0L`. Ex: DT[, grep("^b", names(DT)) := NULL] where no columns start 
+     with 'b'. Thanks to @eddi for filing the report. Closes #5357.
+
 BUG FIXES
 
   o  When joining to fewer columns than the key has, using one of the later key columns
