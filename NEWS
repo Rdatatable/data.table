@@ -202,6 +202,11 @@ BUG FIXES
   o  print.data.table now respects 'digits' argument on list type columns. Closes #5435. Thanks to Frank for the discussion 
      on the mailing list and to Matthew Beckers for filing the bug report.
 
+  o  FR #2551 implemented leniance in warning messages when columns are coerced with DT[, LHS := RHS], when length(RHS)=1.
+     But this was very lenient. For ex: DT[, a := "bla"], where 'a' is a logical column should get a warning. This is 
+     now fixed such that only very obvious cases coerces silently, ex: DT[, a := 1] where 'a' is 'integer'. Closes #5442. 
+     Thanks to Michele Carriero and John Laing for reporting.
+
 NOTES
 
   o  Reminder: using rolltolast still works but since v1.9.2 now issues the following warning :

@@ -947,9 +947,9 @@ test(299.7, DT[2,c:=42], data.table(a=1:3,c=42L))
 # also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
 test(299.4, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
 test(299.5, DT[2:3,c:=c(42,0)], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
-# FR #2551 - length(RHS) = 1 - no warning for type conversion
-test(299.8, DT[2,c:=42], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)))
-test(299.9, DT[2,c:=42L], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)))
+# FR #2551 is now changed to fit in / fix bug #5442. Stricter warnings are in place now. Check tests 1294.1-34 below.
+test(299.8, DT[2,c:=42], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match")
+test(299.9, DT[2,c:=42L], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'integer' RHS to 'logical' to match")
 test(299.6, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=FALSE), warning="Coerced 'integer' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
 
 
@@ -1048,7 +1048,7 @@ test(335, DT[,2:1]<-NULL, error="Attempt to assign to column")
 
 DT = data.table(a=1:2, b=1:6)
 test(336, DT[,z:=a/b], data.table(a=1:2,b=1:6,z=(1:2)/(1:6)))
-test(337, DT[3:4,z:=a*b], data.table(a=1:2,b=1:6,z=c(1,1,3,8,1/5,2/6)))
+test(337, DT[3:4,z:=a*b], data.table(a=1:2,b=1:6,z=c(1,1,3,8,1/5,2/6)), warning="Coerced 'integer' RHS to 'double' to match the colum")
 
 
 # test eval of LHS of := (using with=FALSE gives a warning here from v1.9.3)
@@ -4534,6 +4534,42 @@ ans2 = c(" fisyr  er      eg      esal  fr      fg      fsal    mr      mg      
          "  1995 1,3 0.01973 2330,2424 4,4 0.03931 2521,2521  5,30 0.01978 2572,4216", 
          "  1996 1,3 0.01973 2263,2354 4,4 0.03931 2449,2449  5,30 0.01978 2498,4095")
 test(1293, ans1, ans2)
+
+## Fixes bug #5442
+## Also improves upon bug fix #2551 to provide better warnings and at better places:
+dt <- data.table(a=1:3, b=c(7,8,9), c=c(TRUE, NA, FALSE), d=as.list(4:6), e=c("a", "b", "c"))
+
+test(1294.1,  dt[, a := 1]$a, rep(1L, 3L))
+test(1294.2,  dt[, a := 1.5]$a, rep(1L, 3L), warning="Coerced 'double' RHS to 'integer' to match the column's type")
+test(1294.3,  dt[, a := NA]$a, rep(NA_integer_, 3L))
+test(1294.4,  dt[, a := "a"]$a, rep(NA_integer_, 3L), warning="NAs introduced by coercion")
+test(1294.5,  dt[, a := list(list(1))]$a, rep(1L, 3L), warning="Coerced 'list' RHS to 'integer' to match the column's type")
+test(1294.6,  dt[, a := list(1L)]$a, rep(1L, 3L))
+test(1294.7,  dt[, a := list(1)]$a, rep(1L, 3L))
+test(1294.8,  dt[, a := TRUE]$a, rep(1L, 3L), warning="Coerced 'logical' RHS to 'integer' to match the column's type")
+test(1294.9,  dt[, b := 1L]$b, rep(1,3))
+test(1294.10, dt[, b := NA]$b, rep(NA_real_,3))
+test(1294.11, dt[, b := "bla"]$b, rep(NA_real_, 3), warning="NAs introduced by coercion")
+test(1294.12, dt[, b := list(list(1))]$b, rep(1,3), warning="Coerced 'list' RHS to 'double' to match the column's type")
+test(1294.13, dt[, b := TRUE]$b, rep(1,3), warning="Coerced 'logical' RHS to 'double' to match the column's type")
+test(1294.14, dt[, b := list(1)]$b, rep(1,3))
+test(1294.15, dt[, c := 1]$c, rep(TRUE, 3), warning="Coerced 'double' RHS to 'logical' to match the column's type")
+test(1294.16, dt[, c := 1L]$c, rep(TRUE, 3), warning="Coerced 'integer' RHS to 'logical' to match the column's type")
+test(1294.17, dt[, c := NA]$c, rep(NA, 3))
+test(1294.18, dt[, c := list(1)]$c, rep(TRUE, 3), warning="Coerced 'double' RHS to 'logical' to match the column's type")
+test(1294.19, dt[, c := list(list(1))]$c, rep(TRUE, 3), warning="Coerced 'list' RHS to 'logical' to match the column's type")
+test(1294.20, dt[, c := "bla"]$c, rep(NA, 3), warning="Coerced 'character' RHS to 'logical' to match the column's type")
+test(1294.21, dt[, d := 1]$d, rep(list(1), 3), warning="Coerced 'double' RHS to 'list' to match the column's type")
+test(1294.22, dt[, d := 1L]$d, rep(list(1L), 3), warning="Coerced 'integer' RHS to 'list' to match the column's type")
+test(1294.23, dt[, d := TRUE]$d, rep(list(TRUE), 3), warning="Coerced 'logical' RHS to 'list' to match the column's type")
+test(1294.24, dt[, d := "bla"]$d, rep(list("bla"), 3), warning="Coerced 'character' RHS to 'list' to match the column's type")
+test(1294.25, dt[, d := list(list(1))]$d, rep(list(1), 3))
+test(1294.26, dt[, e := 1]$e, rep("1", 3), warning="Coerced 'double' RHS to 'character' to match the column's type")
+test(1294.27, dt[, e := 1L]$e, rep("1", 3), warning="Coerced 'integer' RHS to 'character' to match the column's type")
+test(1294.28, dt[, e := TRUE]$e, rep("TRUE", 3), warning="Coerced 'logical' RHS to 'character' to match the column's type")
+test(1294.29, dt[, e := list(list(1))]$e, rep("1", 3), warning="Coerced 'list' RHS to 'character' to match the column's type")
+test(1294.30, dt[, e := "bla"]$e, rep("bla", 3))
+test(1294.31, dt[, e := list("bla2")]$e, rep("bla2", 3))
 
 ##########################
 

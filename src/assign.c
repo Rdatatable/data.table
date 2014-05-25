@@ -533,11 +533,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                         PROTECT(RHS = coerceVector(thisvalue,TYPEOF(targetcol)));
                         protecti++;
                         // FR #2551, added test for equality between RHS and thisvalue to not provide the warning when length(thisvalue) == 1
-                        if ( (isReal(thisvalue) && (TYPEOF(targetcol)==INTSXP && (length(thisvalue) > 1 || 
-                                   (length(thisvalue) == 1 && REAL(thisvalue)[0] != INTEGER(RHS)[0])))) || 
-                             (isReal(thisvalue) && isLogical(targetcol) && length(thisvalue) > 1) || 
-                             (TYPEOF(thisvalue)==INTSXP && isLogical(targetcol) && length(thisvalue) > 1) ||
-                             (isString(targetcol))) {
+                        if ( length(thisvalue) == 1 && TYPEOF(RHS) != VECSXP && TYPEOF(thisvalue) != VECSXP && (
+                             (isReal(thisvalue) && isInteger(targetcol) && REAL(thisvalue)[0] == INTEGER(RHS)[0]) || 
+                          (isLogical(thisvalue) && LOGICAL(thisvalue)[0] == NA_LOGICAL) || 
+                                   (isReal(RHS) && isInteger(thisvalue)) )) {
+                              ;
+                          } else {
                             s1 = (char *)type2char(TYPEOF(targetcol));
                             s2 = (char *)type2char(TYPEOF(thisvalue));
                             if (isReal(thisvalue)) s3="; may have truncated precision"; else s3="";
