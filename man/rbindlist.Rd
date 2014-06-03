@@ -8,16 +8,15 @@
 }
 \usage{
 rbindlist(l, use.names=fill, fill=FALSE)
-rbind(..., use.names=TRUE, fill=FALSE)
+# rbind(..., use.names=TRUE, fill=FALSE)
 }
 \arguments{
-  \item{l}{ A list of \code{data.table}, \code{data.frame} or \code{list} objects. At least one of the inputs should have column names set.}
-  \item{...}{\code{data.table}, \code{data.frame} or \code{list} objects supplied individually. At least one of the inputs should have column names set.}
+  \item{l}{ A list containing \code{data.table}, \code{data.frame} or \code{list} objects. At least one of the inputs should have column names set. \code{\dots} is the same but you pass the objects by name separately. }
   \item{use.names}{If \code{TRUE} items will be bound by matching column names. By default \code{FALSE} for \code{rbindlist} (for backwards compatibility) and \code{TRUE} for \code{rbind} (consistency with base). Duplicate columns are bound in the order of occurrence, similar to base.}
   \item{fill}{If \code{TRUE} fills missing columns with NAs. By default \code{FALSE}. When \code{TRUE}, \code{use.names} has to be \code{TRUE}}
 }
 \details{
-Each item of \code{l} can be a \code{data.table}, \code{data.frame} or \code{list}, including \code{NULL} (skipped) or an empty object (0 rows). Be aware \code{l} should contain at least one \code{data.table} for \code{rbind(...)} to call the appropriate function, whereas this restriction does not apply to a direct call to \code{rbindlist(l)}.
+Each item of \code{l} can be a \code{data.table}, \code{data.frame} or \code{list}, including \code{NULL} (skipped) or an empty object (0 rows). \code{rbindlist} is most useful when there are a variable number of (potentially many) objects to stack, such as returned by \code{lapply(fileNames, fread)}. \code{rbind} however is most useful to stack two or three objects which you know in advance. \code{\dots} should contain at least one \code{data.table} for \code{rbind(...)} to call the fast method and return a \code{data.table}, whereas \code{rbindlist(l)} always returns a \code{data.table} even when stacking a plain \code{list} with a \code{data.frame}, for example.
 
 In versions \code{<= v1.9.2}, each item for \code{rbindlist} should have the same number of columns as the first non empty item. \code{rbind.data.table} gained a \code{fill} argument to fill missing columns with \code{NA} in \code{v1.9.2}, which allowed for \code{rbind(...)} binding unequal number of columns.
 
