@@ -404,7 +404,7 @@ test(115, dt1, dt2)
 test(116, TESTDT[,a[1],by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d","d"), key="b"))
 test(117, TESTDT[,list(a[1],v[1]),by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d","d"), V2=INT(7,1,3,5), key="b"))
 
-# We no longer check i for out of bounds, for consistency with data.frame. NA rows should be returned for i>nrow
+# We no longer check i for out of bounds, for consistency with data.frame and e.g. cbind(DT[w],DT[w+1]). NA rows should be returned for i>nrow
 test(118, TESTDT[8], data.table(a=as.character(NA), b=as.character(NA), v=as.integer(NA), key="b"))
 test(119, TESTDT[6:9], data.table(a=c("d","d",NA,NA), b=c("i","i",NA,NA), v=c(5L,6L,NA,NA)))
 
@@ -2970,10 +2970,10 @@ test(1041, rbindlist(l), data.table(i1=factor(letters[1:5]),val=1:5))
 DT = data.table(x = c(1,2,3,4,5), group = c(1,1,2,2,3))
 test(1042, DT[-5, mean(x), by = group], data.table(group=1:2, V1=c(1.5, 3.5)))
 # Test when abs(negative index) > nrow(dt) - should warn
-test(1042.1, DT[-10], DT, warning="do not exist to be removed") 
-test(1042.2, DT[c(-5, -10), mean(x), by = group], data.table(group=1:2, V1=c(1.5, 3.5)), warning="do not exist to be removed") 
+test(1042.1, DT[-10], DT, warning="Item 1 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 1.")
+test(1042.2, DT[c(-5, -10), mean(x), by = group], data.table(group=c(1,2),V1=c(1.5,3.5)), warning="Item 2 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 2.") 
 #  Test #1043 TO DO - mixed negatives
-test(1043, DT[c(1, -5)], error="only 0's may be mixed with negative subscripts")
+test(1043, DT[c(1, -5)], error="Item 2 of i is -5 and item 1 is 1. Cannot mix positives and negatives.")
 
 # crash (floating point exception), when assigning null data.table() to multiple cols, #4731
 DT = data.table(x=1:5,y=6:10)
@@ -4574,6 +4574,27 @@ test(1294.31, dt[, e := list("bla2")]$e, rep("bla2", 3))
 # FR #5357, when LHS evaluates to integer(0), provide warning and return dt, not an error.
 dt = data.table(a = 1:5, b1 = 1:5, b2 = 1:5)
 test(1295, dt[, grep("c", names(d)) := NULL], dt, warning="length(LHS) = 0, meaning no columns to delete or assign RHS to")
+
+# Updating logical column in one-row DT (corruption of new R 3.1 internal globals for TRUE, FALSE and NA)
+DT = data.table(a=1:6, b=c(TRUE,FALSE))
+test(1296, DT[,list(b,sum(b)),by=a], data.table(a=1:6, b=c(TRUE,FALSE), V2=c(1L,0L)))  # was error "the ... list does not contain 2 elements"
+DT = DT[1L]
+set(DT,1L,"b",FALSE)  # passing 1L as i here is needed to avoid column plonk, so changes the logical singleton in place
+test(1297, as.integer(TRUE[1]), 1L)   # In R 3.1, TRUE[1] returns the global TRUE but TRUE doesn't yet (parses as new vector)
+test(1298, as.integer(TRUE), 1L)
+# orignal example, verbatim from James Sams :
+upc_table = data.table(upc=1:100000, upc_ver_uc=rep(c(1,2), times=50000), is_PL=rep(c(T, F, F, T), each=25000), product_module_code=rep(1:4, times=25000), ignore.column=2:100001)
+test(1299, upc_table[, .N, by=list(upc, upc_ver_uc)][,max(N)], 1L)  # all size 1 groups
+test(1300, upc_table[, list(is_PL, product_module_code), keyby=list(upc, upc_ver_uc)][,upc[1:3]], 1:3L)   # was warning "internal TRUE value has been modified"
+
+# Same test but for singleton small integers which r-devel also plan to globalise internally.
+DT = data.table(a=1:6, b=0:1)
+test(1301, DT[,list(b,sum(b)),by=a], data.table(a=1:6, b=c(0L,1L), V2=c(0L,1L)))
+DT = DT[1L]
+set(DT,1L,"b",3L)
+test(1302, 0L[1L], 3L-3L)
+test(1303, 0L, 3L-3L)
+
 
 ##########################
 

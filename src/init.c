@@ -46,6 +46,9 @@ SEXP setNumericRounding();
 SEXP getNumericRounding();
 SEXP binary();
 SEXP chmatch2();
+SEXP subsetDT();
+SEXP subsetVector();
+SEXP convertNegativeIdx();
 
 // .Externals
 SEXP fastmean();
@@ -92,6 +95,9 @@ R_CallMethodDef callMethods[] = {
 {"CgetNumericRounding", (DL_FUNC) &getNumericRounding, -1},
 {"Cbinary", (DL_FUNC) &binary, -1},
 {"Cchmatch2", (DL_FUNC) &chmatch2, -1},
+{"CsubsetDT", (DL_FUNC) &subsetDT, -1},
+{"CsubsetVector", (DL_FUNC) &subsetVector, -1},
+{"CconvertNegativeIdx", (DL_FUNC) &convertNegativeIdx, -1},
 {NULL, NULL, 0}
 };
 

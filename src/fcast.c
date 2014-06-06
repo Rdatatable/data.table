@@ -83,59 +83,160 @@ SEXP cross_join(SEXP s, SEXP env) {
     return(r);
 }
 
-SEXP max_val(SEXP x) {
-    
-    R_len_t i;
-    SEXP ans;
-    if (TYPEOF(x) != INTSXP || length(x) < 1) error("Argument 'x' to 'max_val' must be an integer vector of length > 0");
-    if (length(x) == 1) return(x);
-    ans = PROTECT(allocVector(INTSXP, 1));
-    INTEGER(ans)[0] = INTEGER(x)[0];
-    for (i=1; i<length(x); i++)
-        INTEGER(ans)[0] = INTEGER(ans)[0] > INTEGER(x)[i] ? INTEGER(ans)[0] : INTEGER(x)[i];
-    UNPROTECT(1); // ans
-    return(ans);
-}
-
-SEXP subset(SEXP x, SEXP idx) { // idx is 1-based
-    
-    SEXP ans;
-    R_len_t i;
-    if (TYPEOF(idx) != INTSXP || length(idx) < 1) error("Argument 'idx' to (data.table internals) 'subset' must be an integer vector of length >= 1");
-    if (INTEGER(max_val(idx))[0] > length(x)) error("'max(idx)' > length(x)");
-    ans = PROTECT(allocVector(TYPEOF(x), length(idx)));
+static SEXP subsetVectorRaw(SEXP x, SEXP idx, int n)
+// Only for use by subsetDT() or subsetVector() below, hence static
+// n is the count of non-zero (including NAs) in idx i.e. the length of the result
+// TO DO: if no 0 or NA detected up front in subsetDT() below, could switch to a faster subsetVectorRawNo0orNA()
+{
+    int i, this, ansi=0, max=length(x);
+    SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
     switch(TYPEOF(x)) {
-        case INTSXP :
-        for (i=0; i<length(idx); i++)
-            INTEGER(ans)[i] = INTEGER(x)[INTEGER(idx)[i]-1];
+    case INTSXP :
+        for (i=0; i<LENGTH(idx); i++) {
+            this = INTEGER(idx)[i];
+            if (this==0) continue;
+            INTEGER(ans)[ansi++] = (this==NA_INTEGER || this>max) ? NA_INTEGER : INTEGER(x)[this-1];
+        }
         break;
-        case REALSXP : 
-        for (i=0; i<length(idx); i++)
-            REAL(ans)[i] = REAL(x)[INTEGER(idx)[i]-1];
+    case REALSXP :
+        for (i=0; i<LENGTH(idx); i++) {
+            this = INTEGER(idx)[i];
+            if (this==0) continue;
+            REAL(ans)[ansi++] = (this==NA_INTEGER || this>max) ? NA_REAL : REAL(x)[this-1];
+        }
         break;
-        case LGLSXP :
-        for (i=0; i<length(idx); i++)
-            LOGICAL(ans)[i] = LOGICAL(x)[INTEGER(idx)[i]-1];
+    case LGLSXP :
+        for (i=0; i<LENGTH(idx); i++) {
+            this = INTEGER(idx)[i];
+            if (this==0) continue;
+            LOGICAL(ans)[ansi++] = (this==NA_INTEGER || this>max) ? NA_LOGICAL : LOGICAL(x)[this-1];
+        }
         break;
-        case STRSXP :
-        for (i=0; i<length(idx); i++)
-            SET_STRING_ELT(ans, i, STRING_ELT(x, INTEGER(idx)[i]-1));
+    case STRSXP :
+        for (i=0; i<LENGTH(idx); i++) {
+            this = INTEGER(idx)[i];
+            if (this==0) continue;
+            SET_STRING_ELT(ans, ansi++, (this==NA_INTEGER || this>max) ? NA_STRING : STRING_ELT(x, this-1));
+        }
         break;
-        case VECSXP :
-        for (i=0; i<length(idx); i++)
-            SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, INTEGER(idx)[i]-1));
+    case VECSXP :
+        for (i=0; i<LENGTH(idx); i++) {
+            this = INTEGER(idx)[i];
+            if (this==0) continue;
+            SET_VECTOR_ELT(ans, ansi++, (this==NA_INTEGER || this>max) ? R_NilValue : VECTOR_ELT(x, this-1));
+        }
         break;
-        default :
+    default :
         error("Unknown column type '%s'", type2char(TYPEOF(x)));
     }
-    if (isFactor(x)) {                                                // TODO: should we set attributes back for Date class and the like as well?
-        setAttrib(ans, R_ClassSymbol, getAttrib(x, R_ClassSymbol));
-        setAttrib(ans, R_LevelsSymbol, getAttrib(x, R_LevelsSymbol));
-    }
-    setAttrib(ans, R_ClassSymbol, getAttrib(x, R_ClassSymbol));
+    if (ansi != n) error("Internal error: ansi [%d] != n [%d] at the end of subsetVector", ansi, n);
+    copyMostAttrib(x, ans);
     UNPROTECT(1);
     return(ans);
 }
+
+static int check_idx(SEXP idx, int n)
+{
+    int i, this, ans=0;
+    if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx)));
+    for (i=0; i<LENGTH(idx); i++) {  // check idx once up front and count the non-0 so we know how long the answer will be
+        this = INTEGER(idx)[i];
+        if (this==0) continue;
+        if (this!=NA_INTEGER && this<0) error("Internal error: item %d of idx is %d. Negatives should have been dealt with earlier.", i+1, this);
+        // this>n is treated as NA for consistency with [.data.frame and things like cbind(DT[w],DT[w+1])
+        ans++;
+    }
+    return ans;
+}
+
+SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
+{
+    int this;
+    // + more precise and helpful error messages telling user exactly where the problem is (saving user debugging time)
+    // + a little more efficient than negativeSubscript in src/main/subscript.c (it's private to R so we can't call it anyway)
+    
+    if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx)));
+    if (!isInteger(maxArg) || length(maxArg)!=1) error("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg));
+    int max = INTEGER(maxArg)[0];
+    if (max<0) error("Internal error. max is %d, must be >= 0.", max);  // NA also an error which'll print as INT_MIN
+    int firstNegative = 0, firstPositive = 0, firstNA = 0, num0 = 0;
+    int i=0;
+    for (i=0; i<LENGTH(idx); i++) {
+        this = INTEGER(idx)[i];
+        if (this==NA_INTEGER) { if (firstNA==0) firstNA = i+1;  continue; }
+        if (this==0)          { num0++;  continue; }
+        if (this>0)           { if (firstPositive==0) firstPositive=i+1; continue; }
+        if (firstNegative==0) firstNegative=i+1;
+    }
+    if (firstNegative==0) return(idx);  // 0's and NA can be mixed with positives, there are no negatives present, so we're done
+    if (firstPositive) error("Item %d of i is %d and item %d is %d. Cannot mix positives and negatives.",
+                             firstNegative, INTEGER(idx)[firstNegative-1], firstPositive, INTEGER(idx)[firstPositive-1]);
+    if (firstNA)       error("Item %d of i is %d and item %d is NA. Cannot mix negatives and NA.",
+                             firstNegative, INTEGER(idx)[firstNegative-1], firstNA);
+    
+    // idx is all negative without any NA but perhaps 0 present (num0) ...
+    
+    char *tmp = Calloc(max, char);    // 4 times less memory that INTSXP in src/main/subscript.c
+    int firstDup = 0, numDup = 0, firstBeyond = 0, numBeyond = 0;
+    for (i=0; i<LENGTH(idx); i++) {
+        this = -INTEGER(idx)[i];
+        if (this==0) continue;
+        if (this>max) {
+            numBeyond++;
+            if (firstBeyond==0) firstBeyond=i+1;
+            continue;
+        }
+        if (tmp[this-1]==1) {
+            numDup++;
+            if (firstDup==0) firstDup=i+1;
+        } else tmp[this-1] = 1;
+    }
+    if (numBeyond)
+        warning("Item %d of i is %d but there are only %d rows. Ignoring this and %d more like it out of %d.", firstBeyond, INTEGER(idx)[firstBeyond-1], max, numBeyond-1, LENGTH(idx));
+    if (numDup)
+        warning("Item %d of i is %d which has occurred before. Ignoring this and %d other duplicates out of %d.", firstDup, INTEGER(idx)[firstDup-1], numDup-1, LENGTH(idx));
+    
+    SEXP ans = PROTECT(allocVector(INTSXP, max-LENGTH(idx)+num0+numDup+numBeyond));
+    int ansi = 0;
+    for (i=0; i<max; i++) {
+        if (tmp[i]==0) INTEGER(ans)[ansi++] = i+1;
+    }
+    Free(tmp);
+    UNPROTECT(1);
+    if (ansi != max-LENGTH(idx)+num0+numDup+numBeyond) error("Internal error: ansi[%d] != max[%d]-LENGTH(idx)[%d]+num0[%d]+numDup[%d]+numBeyond[%d] in convertNegativeIdx",ansi,max,LENGTH(idx),num0,numDup,numBeyond);
+    return(ans);
+}
+
+SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // rows and cols are 1-based passed from R level
+
+// Originally for subsetting vectors in fcast and now the beginnings of [.data.table ported to C
+// Immediate need is for R 3.1 as lglVec[1] now returns R's global TRUE and we don't want := to change that global [think 1 row data.tables]
+// Could do it other ways but may as well go to C now as we were going to do that anyway
+    
+    SEXP ans;
+    R_len_t i, ansn=0;
+    int this;
+    if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows)));
+    if (!length(x)) error("x is an empty list() of 0 columns");
+    ansn = check_idx(rows, length(VECTOR_ELT(x,0)));  // check once up front before looping calls to subsetVectorRaw below
+    if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols)));
+    for (i=0; i<LENGTH(cols); i++) {
+        this = INTEGER(cols)[i];
+        if (this<1 || this>LENGTH(x)) error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
+    }
+    ans = PROTECT(allocVector(VECSXP, LENGTH(cols)));
+    for (i=0; i<LENGTH(cols); i++) {
+        SET_VECTOR_ELT(ans, i, subsetVectorRaw(VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, ansn));
+    }
+    setAttrib(ans, R_NamesSymbol, subsetVectorRaw( getAttrib(x, R_NamesSymbol), cols, LENGTH(cols) ));
+    UNPROTECT(1);
+    return ans;
+}
+
+SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
+    return subsetVectorRaw(x, idx, check_idx(idx, length(x)));
+}
+
 
 SEXP diff_int(SEXP x, R_len_t n) {
     
@@ -274,8 +375,8 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
             } else {
                 dorder = PROTECT(cast_order(cpy, env));
                 ddup = PROTECT(uniqlist(cpy, dorder));
-                ddup = PROTECT(subset(dorder, ddup));
-                dtmp = PROTECT(subset(VECTOR_ELT(cpy, 0), ddup));
+                ddup = PROTECT(subsetVector(dorder, ddup));
+                dtmp = PROTECT(subsetVector(VECTOR_ELT(cpy, 0), ddup));
                 UNPROTECT(5); // dtmp, cpy, dorder, ddup
             }
             SET_VECTOR_ELT(lcj, i, dtmp);
@@ -288,8 +389,8 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
             SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(rdt, i));
             dorder = PROTECT(cast_order(cpy, env));
             ddup = PROTECT(uniqlist(cpy, dorder));
-            ddup = PROTECT(subset(dorder, ddup));
-            dtmp = PROTECT(subset(VECTOR_ELT(cpy, 0), ddup));
+            ddup = PROTECT(subsetVector(dorder, ddup));
+            dtmp = PROTECT(subsetVector(VECTOR_ELT(cpy, 0), ddup));
             UNPROTECT(5);
             SET_VECTOR_ELT(rcj, i, dtmp);
         }
@@ -336,11 +437,11 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
 
         llen__ = PROTECT(diff_int(ldup, nrows)); protecti++;
 
-        rdup = PROTECT(subset(ro, rdup)); protecti++;
+        rdup = PROTECT(subsetVector(ro, rdup)); protecti++;
         tmp = PROTECT(allocVector(VECSXP, mlen+1)); protecti++;
         for (i=0; i<mlen; i++) {
             cpy = PROTECT(VECTOR_ELT(rdt, i));
-            thiscol = PROTECT(subset(cpy, rdup));
+            thiscol = PROTECT(subsetVector(cpy, rdup));
             UNPROTECT(2); // cpy, thiscol
             SET_VECTOR_ELT(tmp, i, thiscol);
         }
@@ -350,7 +451,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
             SET_VECTOR_ELT(outnamevec, i, coerce_to_char(VECTOR_ELT(tmp, i), R_GlobalEnv));
         }
         ro = PROTECT(cast_order(rdup, env));
-        rdup = PROTECT(subset(rdup, ro));
+        rdup = PROTECT(subsetVector(rdup, ro));
         UNPROTECT(2); // ro, rdup
         SET_VECTOR_ELT(tmp, mlen, rdup);
 
@@ -374,7 +475,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
         xx = PROTECT(allocVector(VECSXP, 2)); protecti++;
         SET_VECTOR_ELT(xx, 0, intrep(ldup, llen__));
         rdup = PROTECT(VECTOR_ELT(tmp, mlen));
-        tmp = PROTECT(subset(rdup, f__));
+        tmp = PROTECT(subsetVector(rdup, f__));
         UNPROTECT(2); // rdup, tmp
         SET_VECTOR_ELT(xx, 1, tmp);
 
@@ -404,7 +505,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
     } else {
         for (i=0; i<ilen; i++) {
             cpy = PROTECT(VECTOR_ELT(lrdt, i));
-            tmp = PROTECT(subset(cpy, ldup));
+            tmp = PROTECT(subsetVector(cpy, ldup));
             UNPROTECT(2); // tmp, cpy
             SET_VECTOR_ELT(ans, i, tmp);
         }

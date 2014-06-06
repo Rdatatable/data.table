@@ -124,6 +124,11 @@ BUG FIXES
      reproducible examples.
        http://stackoverflow.com/questions/22186798/r-data-table-1-9-2-issue-on-setkey
 
+  o  The warning "internal TRUE value has been modified" with recently released R 3.1
+     when grouping a table containing a logical column and where all groups are just 1 row
+     is now fixed and tests added. Thanks to James Sams for the reproducible example.
+     The warning is issued by R and we have asked if it can be upgraded to error.
+
   o  data.table(list()), data.table(data.table()) and data.table(data.frame()) now return
      a null data.table (no columns) rather than one empty column, #5377. Test added. 
      Thanks to Shubh Bansal for reporting.

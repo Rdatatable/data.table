@@ -527,14 +527,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # it could also be DT[!TRUE, which=TRUE] (silly cases, yes). 
                 # replaced the "else if (!isTRUE(i))" to just "else". Fixes bug report #4930 
             } else {
-                irows = as.integer(i)  # e.g. DT[c(1,3)]
-                # fixes #2697. If irows is -ve, o__ is. When "by", "Cdogroups" uses -ve indexing. Line 154 (I think) doesn't compute correct "rownum" in Cdogroups.
-                if (all(is.finite(irows)) && all(irows < 0) && length(irows) > 0) {
-                    irows = abs(irows)
-                    irowsgt = which(irows > nrow(x))
-                    if (length(irowsgt) > 0) warning("row(s) ", paste(irows[irowsgt], collapse=","), " do not exist to be removed from subsetting.");
-                    irows = setdiff(seq_len(nrow(x)), irows)
-                }
+                irows = as.integer(i)  # e.g. DT[c(1,3)] and DT[c(-1,-3)] ok but not DT[c(1,-3)] (caught as error)
+                irows = .Call(CconvertNegativeIdx, irows, nrow(x)) # simplifies logic from here on (can assume positive subscripts)
+                                                                   # maintains Arun's fix for #2697 (test 1042)
+                                                                   # efficient in C with more detailed messages
+                                                                   # falls through quickly (no R level allocs) if no negatives
+                                                                   # minor TO DO: can we merge this with check_idx in fcast.c/subset ?
             }
         }
         if (notjoin) {
@@ -963,6 +961,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # No grouping: 'by' = missing | NULL | character() | "" | list()
         # Considered passing a one-group to dogroups but it doesn't do the recycling of i within group, that's done here
         if (length(ansvars)) {
+            # TO DO: port more of this to C
             ans = vector("list", length(ansvars))
             if (length(i) && length(icols)) {
                 if (allLen1 && (is.na(nomatch) || !any(f__==0L))) {   # nomatch=0 should drop rows in i that have no match
@@ -977,8 +976,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     for (s in seq_along(icols)) {
                         target = icolsAns[s]
                         source = icols[s]
-                        ans[[target]] = i[[source]][ii]
-                        copyattr(i[[source]], ans[[target]])
+                        ans[[target]] = .Call(CsubsetVector,i[[source]],ii)  # i.e. i[[source]][ii]
                     }
                 }
             }
@@ -993,8 +991,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 for (s in seq_along(xcols)) {
                     target = xcolsAns[s]
                     source = xcols[s]
-                    ans[[target]] = x[[source]][irows]
-                    copyattr(x[[source]], ans[[target]])
+                    ans[[target]] = .Call(CsubsetVector,x[[source]],irows)   # i.e. x[[source]][irows], but guaranteed new memory even for singleton logicals from R 3.1
                 }
             }
             # the address==address is a temp fix for R >= 3.1. TO DO: allow shallow copy here, then copy only when user uses :=
@@ -1140,9 +1137,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     alloc = if (length(len__)) seq_len(max(len__)) else 0L
     SDenv$.I = alloc
     if (length(xcols)) {
-        SDenv$.SD = x[alloc, xcols, with=FALSE]
-        # TO DO: **** Instead just for loop assigning vector(typeof(...)). Saves recursion overhead.
-        # Must not shallow copy xvars here. This is the allocation for the largest group. Since i is passed in here, it won't shallow copy, even in future. Only DT[,xvars,with=FALSE] might ever shallow copy automatically.
+        SDenv$.SD = setDT(.Call(CsubsetDT,x,alloc,xcols))    # i.e. x[alloc, xcols, with=FALSE] but without recursive overhead 
+        # Must not shallow copy here. This is the allocation for the largest group. Since i=alloc is passed in here, it won't shallow copy, even in future. Only DT[,xvars,with=FALSE] might ever shallow copy automatically.
     }
     if (nrow(SDenv$.SD)==0L) setattr(SDenv$.SD,"row.names",c(NA_integer_,0L))
     # .set_row_names() basically other than not integer() for 0 length, otherwise dogroups has no [1] to modify to -.N
