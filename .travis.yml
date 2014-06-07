@@ -1,0 +1,37 @@
+# Sample .travis.yml for R projects.
+#
+# See README.md for instructions, or for more configuration options,
+# see the wiki:
+#   https://github.com/craigcitro/r-travis/wiki
+
+language: c
+
+before_install:
+  - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
+  - chmod 755 ./travis-tool.sh
+  - ./travis-tool.sh bootstrap
+install:
+  - mkdir ~/.R
+  - ./travis-tool.sh r_binary_install reshape2
+  - ./travis-tool.sh r_binary_install reshape
+  - ./travis-tool.sh r_binary_install plyr
+  - ./travis-tool.sh r_binary_install ggplot2
+  - ./travis-tool.sh r_binary_install hexbin
+  - ./travis-tool.sh r_binary_install nlme
+  - ./travis-tool.sh r_binary_install xts
+  - ./travis-tool.sh r_binary_install bit64
+  - ./travis-tool.sh r_binary_install gdata
+  - ./travis-tool.sh install_deps
+  
+script: ./travis-tool.sh run_tests
+
+after_failure:
+  - ./travis-tool.sh dump_logs
+
+notifications:
+  email:
+    on_success: change
+    on_failure: change
+
+env:
+  - PKG_CFLAGS="-g -O3 -Wall -pedantic"
