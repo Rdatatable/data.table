@@ -11,15 +11,6 @@ before_install:
   - chmod 755 ./travis-tool.sh
   - ./travis-tool.sh bootstrap
 install:
-  - mkdir ~/.R
-  - ./travis-tool.sh r_binary_install reshape2
-  - ./travis-tool.sh r_binary_install reshape
-  - ./travis-tool.sh r_binary_install plyr
-  - ./travis-tool.sh r_binary_install ggplot2
-  - ./travis-tool.sh r_binary_install hexbin
-  - ./travis-tool.sh r_binary_install nlme
-  - ./travis-tool.sh r_binary_install xts
-  - ./travis-tool.sh r_binary_install gdata
   - ./travis-tool.sh install_deps
   
 script: ./travis-tool.sh run_tests
