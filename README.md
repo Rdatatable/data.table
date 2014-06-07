@@ -2,7 +2,9 @@
 
 [![Build Status](https://travis-ci.org/Rdatatable/datatable.svg?branch=master)](https://travis-ci.org/Rdatatable/datatable)
 
-An R package for fast subset, fast grouping, fast assign, fast ordered joins and list columns in a short and flexible syntax, for faster development.
+R package data.table extends data.frame
+
+Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by reference by group using no copies at all, cells can contain vectors, chained queries and a fast file reader (fread). Offers a natural and flexible syntax, for faster development.
 
 # Stable version
 
