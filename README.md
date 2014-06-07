@@ -2,9 +2,9 @@
 
 [![Build Status](https://travis-ci.org/Rdatatable/datatable.svg?branch=master)](https://travis-ci.org/Rdatatable/datatable)
 
-R package data.table extends data.frame
+R package `data.table` extends `data.frame`.
 
-Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by reference by group using no copies at all, cells can contain vectors, chained queries and a fast file reader (fread). Offers a natural and flexible syntax, for faster development.
+Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by reference by group using no copies at all, cells can contain vectors, chained queries and a fast file reader (`fread`). Offers a natural and flexible syntax, for faster development.
 
 # Stable version
 
