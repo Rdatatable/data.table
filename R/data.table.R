@@ -750,7 +750,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (is.name(jsub)) {
                 # j is a single unquoted column name
                 if (jsub!=".SD") {
-                    jvnames = gsub("^[.]N$","N",as.character(jsub))
+                    jvnames = gsub("^[.]([NI])$","\\1",as.character(jsub))
                     # jsub is list()ed after it's eval'd inside dogroups.
                 }
             } else if (is.call(jsub) && jsub[[1L]] == "list") {
@@ -760,7 +760,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     if (is.null(jvnames)) jvnames = rep.int("", length(jsubl)-1L)
                     for (jj in seq.int(2L,length(jsubl))) {
                         if (jvnames[jj-1L] == "" && mode(jsubl[[jj]])=="name")
-                            jvnames[jj-1L] = gsub("^[.]N$","N",deparse(jsubl[[jj]]))
+                            jvnames[jj-1L] = gsub("^[.]([NI])$","\\1",deparse(jsubl[[jj]]))
                         # TO DO: if call to a[1] for example, then call it 'a' too
                     }
                     setattr(jsubl, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.
@@ -1071,6 +1071,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     
     o__ = integer()
     if (".N" %chin% ansvars) stop("The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.")
+    if (".I" %chin% ansvars) stop("The column '.I' can't be grouped because it conflicts with the special .I variable. Try setnames(DT,'.I','I') first.")
     SDenv$.iSD = NULL  # null.data.table()
     SDenv$.xSD = NULL  # null.data.table() - introducing for FR #2693 and Gabor's post on fixing for FAQ 2.8
 
@@ -1150,7 +1151,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     lockBinding(".iSD",SDenv)
     
     GForce = FALSE
-    if (getOption("datatable.optimize")>=1 && is.call(jsub)) {  # Ability to turn off if problems or to benchmark the benefit
+    if ( getOption("datatable.optimize")>=1 && is.call(jsub) ) {  # Ability to turn off if problems or to benchmark the benefit
         # Optimization to reduce overhead of calling lapply over and over for each group
         oldjsub = jsub
         # convereted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
@@ -1218,8 +1219,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         is_valid=FALSE
                         break
                     } else if (is.name(this)) {
-                        if ((is.null(names(jsubl)) || names(jsubl)[i] == "") && this == ".N") jvnames = c(jvnames, "N")
-                        else jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i])
+                        if (is.null(names(jsubl)) || names(jsubl)[i] == "") {
+                            if (this == ".N" || this == ".I") jvnames = c(jvnames, gsub("^[.]([NI])$", "\\1", this)) 
+                        } else jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i])
                     } else if (is.call(this)) {
                         jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i])
                     } else { # just to be sure that any other case (I've overlooked) runs smoothly, without optimisation
@@ -1245,10 +1247,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             else
                 cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200),"'\n",sep="")
         }
+        dotN <- function(x) if (is.name(x) && x == ".N") TRUE else FALSE # For #5760
         if (getOption("datatable.optimize")>=2 && !byjoin && !length(irows) && length(f__) && length(ansvars) && !length(lhs)) {
             # Apply GForce
-            gfuns = c("sum","mean")
+            gfuns = c("sum","mean",".N") # added .N for #5760
             .ok = function(q) {
+                if (dotN(q)) return(TRUE) # For #5760
                 ans = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]]) && (length(q)==2 || identical("na",substring(names(q)[3L],1,2)))
                 if (is.na(ans)) ans=FALSE
                 ans
@@ -1260,6 +1264,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (GForce) {
                 if (jsub[[1L]]=="list")
                     for (ii in seq_along(jsub)[-1L]) { 
+                        if (dotN(jsub[[ii]])) next; # For #5760
                         jsub[[ii]][[1L]] = as.name(paste("g", jsub[[ii]][[1L]], sep=""))
                         if (length(jsub[[ii]])==3) jsub[[ii]][[3]] = eval(jsub[[ii]][[3]], parent.frame())  # tests 1187.2 & 1187.4
                     }
@@ -1276,6 +1281,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             oldjsub = jsub
             if (jsub[[1L]]=="list") {
                 for (ii in seq_along(jsub)[-1L])
+                    if (dotN(jsub[[ii]])) next; # For #5760
                     if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]]=="mean")
                         jsub[[ii]] = .optmean(jsub[[ii]])
             } else if (jsub[[1L]]=="mean") {
@@ -1331,6 +1337,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (GForce) {
         thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
         for (ii in ansvars) assign(ii, x[[ii]], thisEnv)
+        assign(".N", len__, thisEnv) # For #5760
         gstart(o__, f__, len__)
         ans = eval(jsub, thisEnv)
         if (is.atomic(ans)) ans=list(ans)  # won't copy named argument in new version of R, good
@@ -2066,6 +2073,16 @@ vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
 address = function(x) .Call(Caddress,x)
 
 ":=" = function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+
+setDF <- function(x) {
+    if (!is.data.table(x)) stop("setDF only accepts data.table as input")
+    # copied from as.data.frame.data.table
+    setattr(x, "row.names", .set_row_names(nrow(x)))
+    setattr(x, "class", "data.frame")
+    setattr(x, "sorted", NULL)
+    setattr(x, ".internal.selfref", NULL)
+    invisible(x)
+}
 
 setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
     giveNames <- as.logical(giveNames[1L])

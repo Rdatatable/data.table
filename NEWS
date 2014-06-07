@@ -110,6 +110,15 @@ NEW FEATURES (subject to discussion and change)
      of an error, when `length(LHS) = 0L`. Ex: DT[, grep("^b", names(DT)) := NULL] where no columns start 
      with 'b'. Thanks to @eddi for filing the report. Closes #5357.
 
+  o  GForce now is also optimised for j-expression with `.N`. Closes #5760.
+         DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.2 - doesn't know to use GForce - will be slower
+         DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
+
+  o  'setDF' is now implemented. It accepts a data.table and converts it to data.frame by reference. 
+     Closes #5528. Thanks to canneff for writing on data.table mailing list.
+
+  o  `.I` gets named as `I` (instead of `.I`) wherever possible, similar to `.N`. Closes #5290.
+
 BUG FIXES
 
   o  When joining to fewer columns than the key has, using one of the later key columns
