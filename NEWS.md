@@ -36,7 +36,7 @@ X[Y, head(.SD, i.top), by = .EACHI]
 
   * `setNumericRounding()` may be used to reduce to 1 byte or 0 byte rounding when joining to or grouping columns of type 'numeric', [#5369](https://r-forge.r-project.org/tracker/index.php?func=detail&aid=5369&group_id=240&atid=978) (git #342). See example in `?setNumericRounding` and NEWS item below for v1.9.2. `getNumericRounding()` returns the current setting.
      
-  * `X[Y]`` now names non-join columns from `i` that have the same name as a column in `x`, with an `i.` prefix for consistency with the `i.` prefix that has been available in `j` for some time. This is now documented.
+  * `X[Y]` now names non-join columns from `i` that have the same name as a column in `x`, with an `i.` prefix for consistency with the `i.` prefix that has been available in `j` for some time. This is now documented.
      
   * For a keyed table `X` where the key columns are not at the beginning in order, `X[Y]` now retains the original order of columns in X rather than moving the join columns to the beginning of the result.
 
@@ -49,9 +49,9 @@ DT[nrow(DT) + 1, colA := 1L]  # error (out-of-range) as before
 ```
   This is for convenience to avoid the need for a switch in user code that evals various i conditions in a loop passing in i as an integer vector which may containing 0 or NA.
 
-  * A new function `setorder` is now implemented which uses `data.table`'s *internal fast order* to reorder rows **by reference**. It returns the result invisibly (like `setkey`) that allows for compound statements, ex: `setorder(DT, a, -b)[, cumsum(c), by=list(a,b)]`. Check `?setorder` for more info.
+  * A new function `setorder` is now implemented which uses `data.table`'s internal fast order to reorder rows **by reference**. It returns the result invisibly (like `setkey`) that allows for compound statements, ex: `setorder(DT, a, -b)[, cumsum(c), by=list(a,b)]`. Check `?setorder` for more info.
 
-  * `DT[order(x, -y)]` is now by default optimised to use `data.table`'s *internal fast order* as `DT[forder(DT, x, -y)]`. It can be turned off by setting `datatable.optimize` to < 1L or just calling `base:::order` explicitly. It results in 20x speedup on data.table of 10 million rows with 2 integer columns, for example. To order character vectors in descending order it's sufficient to do `DT[order(x, -y)]` as opposed to `DT[order(x, -xtfrm(y))]` in base. This closes [#2405]() (git #).
+  * `DT[order(x, -y)]` is now by default optimised to use `data.table`'s internal fast order as `DT[forder(DT, x, -y)]`. It can be turned off by setting `datatable.optimize` to < 1L or just calling `base:::order` explicitly. It results in 20x speedup on data.table of 10 million rows with 2 integer columns, for example. To order character vectors in descending order it's sufficient to do `DT[order(x, -y)]` as opposed to `DT[order(x, -xtfrm(y))]` in base. This closes [#2405]() (git #).
      
   * `mult="all"` -vs- `mult="first"|"last"` now return consistent types and columns, [#5378]() (git #). Thanks to Michele Carriero for highlighting.
 
@@ -71,15 +71,33 @@ DT[, c(.SD, lapply(.SD, sum)), by=grp]
 ```
   This partially resolves [#2722]() (git #). Thanks to Sam Steingold for reporting.
 
-  * `setDT` gains `keep.rownames` = TRUE/FALSE argument, which works only on `data.frame`s. TRUE retains the data.frame's row names as a new column named `rn`.
+  * `setDT` gains `keep.rownames = TRUE/FALSE` argument, which works only on `data.frame`s. TRUE retains the data.frame's row names as a new column named `rn`.
 
   * `rbindlist` gains `use.names` and `fill` arguments and is now implemented **entirely in C**. Closes [#5249]() (git #):
-      * use.names by default is FALSE for backwards compatibility (doesn't bind by names by default)
-      * rbind(...) now just calls rbindlist() internally, except that 'use.names' is TRUE by default, for compatibility with base (and backwards compatibility).
-      * fill by default is FALSE. If fill is TRUE, use.names has to be TRUE. 
+      * `use.names` by default is `FALSE` for backwards compatibility (does **not** bind by names by default)
+      * `rbind(...)` now just calls `rbindlist()` internally, except that `use.names` is `TRUE` by default, for compatibility with base (and backwards compatibility).
+      * `fill=FALSE` by default. If `fill=TRUE`, `use.names` has to be TRUE. 
       * At least one item of the input list has to have non-null column names.
       * Duplicate columns are bound in the order of occurrence, like base.
       * Attributes that might exist in individual items would be lost in the bound result.
       * Columns are coerced to the highest SEXPTYPE, if they are different, if/when possible.
       * And incredibly fast ;).
-      * Documentation updated in much detail. Closes DR #5158.
+      * Documentation updated in much detail. Closes [#5158]() (git #).
+
+  * The output of `tables()` now includes `NCOL`. Thanks to @dnlbrky for the suggestion.
+
+  * `DT[, LHS := RHS]` (or its equivalent in `set`) now provides a warning and returns `DT` as it was, instead of an error, when `length(LHS) = 0L`. Thanks to @eddi for filing the report, [#5357]() (git #). For example:
+```S
+DT[, grep("^b", names(DT)) := NULL] # where no columns start with b
+# warns now and returns DT instead of error
+```
+
+  * GForce now is also optimised for j-expression with `.N`. Closes [#5760]() (git #).
+```S
+DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.2 - doesn't know to use GForce - will be slower
+DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
+```
+
+  * `setDF` is now implemented. It accepts a data.table and converts it to data.frame by reference, [#5528]() (git #). Thanks to canneff for the discussion [here]() on data.table mailing list.
+
+  * `.I` gets named as `I` (instead of `.I`) wherever possible, similar to `.N`, [#5290] (git #).
