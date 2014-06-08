@@ -27,7 +27,7 @@ All even numbered releases (ex: 1.9.0, 1.9.2 etc.) are stable versions available
 
 ## Stable version
 
-The current stable release is [v1.9.2 on CRAN](http://cran.r-project.org/web/packages/data.table/index.html), released 27 Feb 2014. To install, open an R session and type:
+The current stable release is [v1.9.2 on CRAN](http://cran.r-project.org/web/packages/data.table/index.html), released 27<sup>th</sup> Feb 2014. To install, open an R session and type:
 
 ```S
 install.packages("data.table")
