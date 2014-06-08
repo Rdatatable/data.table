@@ -49,17 +49,17 @@ DT[nrow(DT) + 1, colA := 1L]  # error (out-of-range) as before
 ```
   This is for convenience to avoid the need for a switch in user code that evals various i conditions in a loop passing in i as an integer vector which may containing 0 or NA.
 
-  * A new function `setorder` is now implemented which uses `data.table`'s internal fast order to reorder rows **by reference**. It returns the result invisibly (like `setkey`) that allows for compound statements, ex: `setorder(DT, a, -b)[, cumsum(c), by=list(a,b)]`. Check `?setorder` for more info.
+  * A new function `setorder` is now implemented which uses data.table's internal fast order to reorder rows **by reference**. It returns the result invisibly (like `setkey`) that allows for compound statements, ex: `setorder(DT, a, -b)[, cumsum(c), by=list(a,b)]`. Check `?setorder` for more info.
 
-  * `DT[order(x, -y)]` is now by default optimised to use `data.table`'s internal fast order as `DT[forder(DT, x, -y)]`. It can be turned off by setting `datatable.optimize` to < 1L or just calling `base:::order` explicitly. It results in 20x speedup on data.table of 10 million rows with 2 integer columns, for example. To order character vectors in descending order it's sufficient to do `DT[order(x, -y)]` as opposed to `DT[order(x, -xtfrm(y))]` in base. This closes [#2405]() (git #).
+  * `DT[order(x, -y)]` is now by default optimised to use data.table's internal fast order as `DT[forder(DT, x, -y)]`. It can be turned off by setting `datatable.optimize` to < 1L or just calling `base:::order` explicitly. It results in 20x speedup on data.table of 10 million rows with 2 integer columns, for example. To order character vectors in descending order it's sufficient to do `DT[order(x, -y)]` as opposed to `DT[order(x, -xtfrm(y))]` in base. This closes [#2405](https://r-forge.r-project.org/tracker/index.php?func=detail&aid=2405&group_id=240&atid=978) (git #603).
      
-  * `mult="all"` -vs- `mult="first"|"last"` now return consistent types and columns, [#5378]() (git #). Thanks to Michele Carriero for highlighting.
+  * `mult="all"` -vs- `mult="first"|"last"` now return consistent types and columns, [#5378](https://r-forge.r-project.org/tracker/index.php?func=detail&aid=5378&group_id=240&atid=978) (git #340). Thanks to Michele Carriero for highlighting.
 
-  * `duplicated.data.table` and `unique.data.table` gains `fromLast = TRUE/FALSE` argument, similar to base. Default value is FALSE. Closes [#5205]() (git #).
+  * `duplicated.data.table` and `unique.data.table` gains `fromLast = TRUE/FALSE` argument, similar to base. Default value is FALSE. Closes [#5205](https://r-forge.r-project.org/tracker/index.php?func=detail&aid=5205&group_id=240&atid=978) (git #347).
 
-  * `anyDuplicated.data.table` is now implemented. Closes [#5172]() (git #). Thanks to M C (bluemagister) for reporting.
+  * `anyDuplicated.data.table` is now implemented. Closes [#5172](https://r-forge.r-project.org/tracker/index.php?func=detail&aid=5172&group_id=240&atid=978) (git #350). Thanks to M C (bluemagister) for reporting.
 
-  * Complex j-expressions of the form `DT[, c(..., lapply(.SD, fun)), by=grp]`are now optimised as long as `.SD` is only present in the form `lapply(.SD, fun)`: 
+  * Complex j-expressions of the form `DT[, c(..., lapply(.SD, fun)), by=grp]`are now optimised as long as `.SD` is only present in the form `lapply(.SD, fun)`. This partially resolves [#2722](https://r-forge.r-project.org/tracker/index.php?func=detail&aid=2722&group_id=240&atid=978) (git #370). Thanks to Sam Steingold for reporting.
 ```S
 ## example:
 DT[, c(.I, lapply(.SD, sum), mean(x), lapply(.SD, log)), by=grp]
@@ -69,35 +69,36 @@ DT[, list(.I, x=sum(x), y=sum(y), ..., mean(x), log(x), log(y), ...), by=grp]
 DT[, c(.SD, lapply(.SD, sum)), by=grp] 
 ## is not, yet.
 ```
-  This partially resolves [#2722]() (git #). Thanks to Sam Steingold for reporting.
 
   * `setDT` gains `keep.rownames = TRUE/FALSE` argument, which works only on `data.frame`s. TRUE retains the data.frame's row names as a new column named `rn`.
 
-  * `rbindlist` gains `use.names` and `fill` arguments and is now implemented **entirely in C**. Closes [#5249]() (git #):
-      * `use.names` by default is `FALSE` for backwards compatibility (does **not** bind by names by default)
-      * `rbind(...)` now just calls `rbindlist()` internally, except that `use.names` is `TRUE` by default, for compatibility with base (and backwards compatibility).
+  * `rbindlist` gains `use.names` and `fill` arguments and is now implemented **entirely in C**. Closes [#5249](https://r-forge.r-project.org/tracker/index.php?func=detail&aid=5249&group_id=240&atid=978) (git #345):
+      * `use.names` by default is FALSE for backwards compatibility (does **not** bind by names by default)
+      * `rbind(...)` now just calls `rbindlist()` internally, except that `use.names` is TRUE by default, for compatibility with base (and backwards compatibility).
       * `fill=FALSE` by default. If `fill=TRUE`, `use.names` has to be TRUE. 
       * At least one item of the input list has to have non-null column names.
       * Duplicate columns are bound in the order of occurrence, like base.
       * Attributes that might exist in individual items would be lost in the bound result.
       * Columns are coerced to the highest SEXPTYPE, if they are different, if/when possible.
       * And incredibly fast ;).
-      * Documentation updated in much detail. Closes [#5158]() (git #).
+      * Documentation updated in much detail. Closes [#5158](https://r-forge.r-project.org/tracker/index.php?func=detail&aid=5158&group_id=240&atid=5356) (git #333).
 
   * The output of `tables()` now includes `NCOL`. Thanks to @dnlbrky for the suggestion.
 
-  * `DT[, LHS := RHS]` (or its equivalent in `set`) now provides a warning and returns `DT` as it was, instead of an error, when `length(LHS) = 0L`. Thanks to @eddi for filing the report, [#5357]() (git #). For example:
+  * `DT[, LHS := RHS]` (or its equivalent in `set`) now provides a warning and returns `DT` as it was, instead of an error, when `length(LHS) = 0L`, [#5357](https://r-forge.r-project.org/tracker/index.php?func=detail&aid=5357&group_id=240&atid=978) (git #343). For example:
 ```S
 DT[, grep("^b", names(DT)) := NULL] # where no columns start with b
 # warns now and returns DT instead of error
 ```
 
-  * GForce now is also optimised for j-expression with `.N`. Closes [#5760]() (git #).
+  * GForce now is also optimised for j-expression with `.N`. Closes [#5760](https://r-forge.r-project.org/tracker/index.php?func=detail&aid=5760&group_id=240&atid=978) (git #334).
 ```S
-DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.2 - doesn't know to use GForce - will be slower
+DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.2 - doesn't know to use GForce - will be (relatively) slower
 DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 ```
 
-  * `setDF` is now implemented. It accepts a data.table and converts it to data.frame by reference, [#5528]() (git #). Thanks to canneff for the discussion [here]() on data.table mailing list.
+  * `setDF` is now implemented. It accepts a data.table and converts it to data.frame by reference, [#5528](https://r-forge.r-project.org/tracker/index.php?func=detail&aid=5528&group_id=240&atid=978) (git #338). Thanks to canneff for the discussion [here]() on data.table mailing list.
 
-  * `.I` gets named as `I` (instead of `.I`) wherever possible, similar to `.N`, [#5290] (git #).
+  * `.I` gets named as `I` (instead of `.I`) wherever possible, similar to `.N`, [#5290](https://r-forge.r-project.org/tracker/index.php?func=detail&aid=5290&group_id=240&atid=978) (git #344).
+
+## BUG FIXES
