@@ -14,12 +14,13 @@ The main benefit of `data.table` is its syntax - ability to combine `where`, `se
 
 # Operations using data.table:
 
-    * DT[X]                          # fast join for large data, DT and X are data.tables.
-    * DT[, sum(b*c), by=a]           # fast aggregation, a, b and c are column names
-    * DT[i, b := 3.14]               # add new column (or modify existing column) by reference
-    * DT[, p := x/sum(x), by=grp]    # fast sub-assignment (to column b) by reference.
-    * fread('big.csv')               # is 3+ times faster than read.csv(, colClasses, nrow, etc).
-
+```S
+* DT[X]                          # fast join for large data, DT and X are data.tables.
+* DT[, sum(b*c), by=a]           # fast aggregation, a, b and c are column names
+* DT[i, b := 3.14]               # add new column (or modify existing column) by reference
+* DT[, p := x/sum(x), by=grp]    # fast sub-assignment (to column b) by reference.
+* fread('big.csv')               # is 3+ times faster than read.csv(, colClasses, nrow, etc).
+```
 # Installation
 
 All even numbered releases (ex: 1.9.0, 1.9.2 etc.) are stable versions available on CRAN. Similarly all odd numbered releases are development versions.
@@ -28,13 +29,17 @@ All even numbered releases (ex: 1.9.0, 1.9.2 etc.) are stable versions available
 
 The current stable release is [v1.9.2 on CRAN](http://cran.r-project.org/web/packages/data.table/index.html), released 27 Feb 2014. To install, open an R session and type:
 
-    install.packages("data.table")
+```S
+install.packages("data.table")
+```
 
 ## Development version
 
 The current development version is 1.9.3. If you're interested in staying up-to-date, you can do so by installing the latest commit using `devtools` as follows:
 
-    devtools:::install_github("datatable", "Rdatatable")
+```S
+devtools:::install_github("datatable", "Rdatatable")
+```
 
 # How to get started?
 
