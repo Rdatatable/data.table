@@ -6,7 +6,7 @@ R package `data.table` extends `data.frame`.
 
 Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by reference by group using no copies at all, cells can contain vectors, chained queries and a fast file reader (`fread`). Offers a natural and flexible syntax, for faster development.
 
-The main benefit of `data.table` is its syntax - ability to combine `where`, `select|update` and by into one query without having to string together a sequence of isolated function calls. Infact, speed is only secondary. 
+The main benefit of `data.table` is its syntax - ability to combine `where`, `select|update` and `by` into one query without having to string together a sequence of isolated function calls. Infact, speed is only secondary. 
 
 > ####  `data.table` builds on base-R functionality to reduce two types of time:
 > 1) Programming time (easier to write, read, debug and maintain).  
