@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="data.table, an R package for faster subset, grouping, assign, ordered joins and list columns in short and flexible syntax, for faster development.">
+        <meta name="keywords" content="R, data.table, dplyr, benchmark, big-data">
+        <meta name="author" content="Matt Dowle, Arun Srinivasan, other authors and contributors">
+
+        <title>data.table &middot; Homepage</title>
+
+        <!-- Bootstrap core CSS -->
+        <link href="css/bootstrap.css" rel="stylesheet" media="screen">
+
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <!-- Google analytics
+        <script>
+            var _gaq = _gaq || [];
+            _gaq.push(['_setAccount', 'UA-146052-10']);
+            _gaq.push(['_trackPageview']);
+            (function() {
+                var ga = document.createElement('script'); ga.async = true;
+                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+            })();
+        </script>
+        -->
+
+        <!--<style>
+            body {padding-top: 50px;}
+        </style>-->
+    </head>
+
+    <body>
+        <a class="sr-only" href="#content">Skip to main content</a>
+
+        <!-- data.table 1.9 is here! -->
+        <main class="bs-masthead" id="content" role="main">
+            <div class="container">
+                <h1> data.table</h1>
+                <p class="lead4"> An R package that extends data.frames</p>
+                <p class="lead">Now on Github</p>
+            </div>
+        </main>
+
+        <!-- Master nav -->
+        <header>
+            <div class="navbar-default">
+<!--                 <div class="navbar-header"> -->
+                    <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+<!--                 </div> -->
+                <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+                    <ul class="nav navbar-nav">
+                        <li><a href="./"><span class="glyphicon glyphicon-home"></span> data.table</a>
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs"><span class="glyphicon glyphicon-pencil"></span> Getting started <span class="caret"></span></a>
+                            <ul class="dropdown-menu" aria-labelledby="docs">
+                                <li><a href="./about/"><span class="glyphicon glyphicon-bookmark"></span> data.table project</a></li>
+                                <li><a href="./intro/"><span class="glyphicon glyphicon-file"></span> Quick Introduction</a></li>
+                                <li><a href="./faq/"><span class="glyphicon glyphicon-question-sign"></span> FAQs</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="./benchmarks/"><span class="glyphicon glyphicon-wrench"></span> Benchmarks</a></li>
+                        <li><a href="./grammar/"><span class="glyphicon glyphicon-book"></span> Grammar</a></li>
+                        <li><a href="./new/"><span class="glyphicon glyphicon-cog"></span> What's new</a></li>
+<!--
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs">Documentation <span class="caret"></span></a>
+                            <ul class="dropdown-menu" aria-labelledby="docs">
+                                <li><a href="./docs/intro.html">Quick Introduction</a></li>
+                                <li><a href="./docs/faq.html">FAQ</a></li>
+                            </ul>
+                        </li>
+-->
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li><a href="./notes/">Release Notes</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <a href="https://github.com/Rdatatable/datatable"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png"></a>
+
+        <div class="bs-featurette">
+            <div class="container">
+<!--
+                <h2 class="bs-featurette-title">short, flexible and intuitive syntax + <em>much</em> faster</h2>
+                <p class="lead"><span class="text-info">data.table 1.9.0</span> comes packed with <em>many</em> new <span class="text-success">features</span>, loads of internal enhancements for <span class="text-success">speed</span> and efficient <span class="text-success">memory-usage</span>, including <em>a lot</em> of <span class="text-success">bug-fixes</span>.</p>
+-->
+
+<!--             <hr class="half-rule"> -->
+<!--
+        <div class="alert alert-dismissable alert-warning">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            <p>Please note that this new data.table homepage is still under construction.</p>
+        </div>
+-->
+
+            <div class="row">
+                <div class="col-sm-4">
+                    <h3><span class="glyphicon glyphicon-wrench"></span> Benchmarks on large data</h3>
+                    <p>Comparison of <span class="text-success">speed</span> for different problems against <span class="text-info">dplyr 0.1.2</span> on large data.</p>
+                    <a href=./benchmarks/#introduction button type="button" class="btn btn-sm btn-primary" onclick="_gaq.push(['_trackEvent', 'Jumbotron actions', 'benchmarks']);">On to benchmarks &rarr;</a>
+                </div>
+                <div class="col-sm-4">
+                    <h3><span class="glyphicon glyphicon-book"></span> <em>"grammar"</em> focus</h3>
+                    <p>An overview of <span class="text-success">syntax</span> - ease with which tasks can be done in <span class="text-info">data.table</span>, vs <span class="text-info">dplyr</span>.</p>
+                    <a href=./grammar/#introduction button type="button" class="btn btn-sm btn-primary" onclick="_gaq.push(['_trackEvent', 'Jumbotron actions', 'grammar']);">On to grammar &rarr;</a>
+                </div>
+                <div class="col-sm-4">
+                    <h3><span class="glyphicon glyphicon-cog"></span> Features + Enhancements</h3>
+                        <p><em>Fast</em> <span class="text-success">melt</span> and <span class="text-success">dcast</span> methods, <em>faster</em> <span class='text-success'>grouping</span>, <span class="text-success">joins</span>, <span class="text-success">fread</span> enhancements and more...</p>
+                    <a href=./new/#introduction button type="button" class="btn btn-sm btn-primary" onclick="_gaq.push(['_trackEvent', 'Jumbotron actions', 'features']);">What's new &rarr;</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="bs-featurette">
+            <div class="container">
+                <p class="lead"><span class="text-info">data.table</span> is licensed under <span class="text-success">GPL >=2</span>, and we recently transitioned from R-Forge to Github.</p>
+                <a href="https://r-forge.r-project.org/projects/datatable/" class="btn btn-primary">Go to R-forge project homepage</a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bs-footer" role="contentinfo">
+            <div class="container">
+                <div class="footer-links">
+                    <p>Design by <a href="https://twitter.com/arun_sriniv">Arun Srinivasan</a> and <a href="https://twitter.com/MattDowle">Matt Dowle</a>.</p>
+                    <p>Designed using <a href="http://getbootstrap.com">Bootstrap</a> and styled with <a href="http://bootswatch.com/">Bootswatch</a> using <a href="http://bootswatch.com/cerulean">Cerulean</a> theme.</p>
+                </div>
+                <ul class="footer-links muted">
+                    <li>Version 1.9</li>
+                    <li>&middot;</li>
+                    <li><a href="http://datatable.r-forge.r-project.org">Homepage</a></li>
+                    <li>&middot;</li>
+                    <li><a href="./notes/">Release Notes</a></li>
+                    <li>&middot;</li>
+                    <li><a href="https://r-forge.r-project.org/tracker/?atid=975&group_id=240&func=browse">Issues</a></li>
+                    <li>&middot;</li>
+                    <li><a href="https://r-forge.r-project.org/tracker/?atid=978&group_id=240&func=browse">Feature Requests</a></li>
+                    <li>&middot;</li>
+                    <li><a href="https://r-forge.r-project.org/mail/?group_id=240">Mailing list</a></li>
+                    <li>&middot;</li>
+                    <li><a href="http://stackoverflow.com/questions/tagged/r+data.table">Stackoverflow tag</a></li>
+                </ul>
+                <span class="pull-right"><a href="#top">Back to top</a></span>
+            </div>
+        </footer>
+        
+        <script src="https://code.jquery.com/jquery.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+        <script src="js/docs.min.js"></script>
+
+        <!-- Start of StatCounter Code -->
+        <script type="text/javascript">
+            var sc_project=6237851;
+            var sc_invisible=1;
+            var sc_security="518c93ca";
+        </script>
+
+        <script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script>
+        <noscript>
+            <div class="statcounter">
+                <a title="tumblr stats" href="http://statcounter.com/tumblr/" >
+                <img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="tumblr stats" ></a>
+            </div>
+        </noscript>
+        <!-- End of StatCounter Code -->
+
+    </body>
+</html>
