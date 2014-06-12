@@ -37,6 +37,7 @@ Possibly the performance might be improved after implementing FR #691 and #692.
 }
 \author{ Jan Gorecki }
 \examples{
+\dontrun{
 # populate example data BEGIN
 product <- 
   data.table(prod_code = 1:16,
@@ -110,5 +111,6 @@ dt <- joinbyv(master = facts, join = list(product, customer, geography, time),
                                 expression(division_name == "West North Central"),
                                 NULL))
 print(dt)
+}
 }
 \keyword{ data }
