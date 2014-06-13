@@ -36,10 +36,8 @@
             body {padding-top: 50px;}
         </style>-->
     </head>
-
     <body>
         <a class="sr-only" href="#content">Skip to main content</a>
-
         <!-- data.table 1.9 is here! -->
         <main class="bs-masthead" id="content" role="main">
             <div class="container">
@@ -63,6 +61,9 @@
                 <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
                     <ul class="nav navbar-nav">
                         <li><a href="./"><span class="glyphicon glyphicon-home"></span> data.table</a>
+                        </li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-center">
                         <li class="dropdown">
                             <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs"><span class="glyphicon glyphicon-pencil"></span> Getting started <span class="caret"></span></a>
                             <ul class="dropdown-menu" aria-labelledby="docs">
@@ -74,15 +75,6 @@
                         <li><a href="./benchmarks/"><span class="glyphicon glyphicon-wrench"></span> Benchmarks</a></li>
                         <li><a href="./grammar/"><span class="glyphicon glyphicon-book"></span> Grammar</a></li>
                         <li><a href="./new/"><span class="glyphicon glyphicon-cog"></span> What's new</a></li>
-<!--
-                        <li class="dropdown">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs">Documentation <span class="caret"></span></a>
-                            <ul class="dropdown-menu" aria-labelledby="docs">
-                                <li><a href="./docs/intro.html">Quick Introduction</a></li>
-                                <li><a href="./docs/faq.html">FAQ</a></li>
-                            </ul>
-                        </li>
--->
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
                         <li><a href="./notes/">Release Notes</a></li>
@@ -100,7 +92,6 @@
                 <p class="lead"><span class="text-info">data.table 1.9.0</span> comes packed with <em>many</em> new <span class="text-success">features</span>, loads of internal enhancements for <span class="text-success">speed</span> and efficient <span class="text-success">memory-usage</span>, including <em>a lot</em> of <span class="text-success">bug-fixes</span>.</p>
 -->
 
-<!--             <hr class="half-rule"> -->
 <!--
         <div class="alert alert-dismissable alert-warning">
             <button type="button" class="close" data-dismiss="alert">&times;</button>
@@ -110,14 +101,14 @@
 
             <div class="row">
                 <div class="col-sm-4">
-                    <h3><span class="glyphicon glyphicon-wrench"></span> Benchmarks on large data</h3>
-                    <p>Comparison of <span class="text-success">speed</span> for different problems against <span class="text-info">dplyr 0.1.2</span> on large data.</p>
-                    <a href=./benchmarks/#introduction button type="button" class="btn btn-sm btn-primary" onclick="_gaq.push(['_trackEvent', 'Jumbotron actions', 'benchmarks']);">On to benchmarks &rarr;</a>
-                </div>
-                <div class="col-sm-4">
-                    <h3><span class="glyphicon glyphicon-book"></span> <em>"grammar"</em> focus</h3>
+                    <h3><span class="glyphicon glyphicon-pencil"></span>Get Started</h3>
                     <p>An overview of <span class="text-success">syntax</span> - ease with which tasks can be done in <span class="text-info">data.table</span>, vs <span class="text-info">dplyr</span>.</p>
                     <a href=./grammar/#introduction button type="button" class="btn btn-sm btn-primary" onclick="_gaq.push(['_trackEvent', 'Jumbotron actions', 'grammar']);">On to grammar &rarr;</a>
+                </div>
+                <div class="col-sm-4">
+                    <h3><span class="glyphicon glyphicon-wrench"></span> Benchmarks</h3>
+                    <p>Comparison of <span class="text-success">speed</span> for different problems against <span class="text-info">dplyr 0.1.2</span> on large data.</p>
+                    <a href=./benchmarks/#introduction button type="button" class="btn btn-sm btn-primary" onclick="_gaq.push(['_trackEvent', 'Jumbotron actions', 'benchmarks']);">On to benchmarks &rarr;</a>
                 </div>
                 <div class="col-sm-4">
                     <h3><span class="glyphicon glyphicon-cog"></span> Features + Enhancements</h3>
@@ -126,6 +117,8 @@
                 </div>
             </div>
         </div>
+
+            <hr class="half-rule">
 
         <div class="bs-featurette">
             <div class="container">
@@ -161,6 +154,7 @@
         </footer>
         
         <script src="https://code.jquery.com/jquery.js"></script>
+        <script src="js/waypoints.js"></script>
         <script src="js/bootstrap.min.js"></script>
         <script src="js/docs.min.js"></script>
 

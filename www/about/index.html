@@ -1,0 +1,327 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+  </style>
+  <link rel="stylesheet" href="../css/bootstrap.css" type="text/css" />
+</head>
+<body>
+<!-- DEFAULT HEADER- DO NOT TOUCH-->
+<!-- <html lang="en"> -->
+<!-- <head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="data.table, an R package for faster subset, grouping, assign, ordered joins and list columns in short and flexible syntax, for faster development.">
+<meta name="keywords" content="R, data.table, dplyr, benchmark, big-data">
+<meta name="author" content="Matt Dowle, Arun Srinivasan, other authors and contributors">
+<title>data.table &middot; Grammar</title>
+<link href="../css/bootstrap.css" rel="stylesheet" media="screen">
+<link href="../css/solarized_light.css" rel="stylesheet" media="screen">
+</head> -->
+<!-- <body> -->
+<!-- Master nav - DO NOT TOUCH-->
+<header>
+<div class="navbar-default">
+<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
+<span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span>
+</button>
+<nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+<ul class="nav navbar-nav">
+<li>
+<a href="../"><span class="glyphicon glyphicon-home"></span> data.table</a>
+</li>
+</ul>
+<ul class="nav navbar-nav navbar-center">
+<li class="dropdown">
+<a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs"><span class="glyphicon glyphicon-pencil"></span> Getting started <span class="caret"></span></a>
+<ul class="dropdown-menu" aria-labelledby="docs">
+<li>
+<a href="../about/"><span class="glyphicon glyphicon-bookmark"></span> data.table project</a>
+</li>
+<li>
+<a href="../intro/"><span class="glyphicon glyphicon-file"></span> Quick Introduction</a>
+</li>
+<li>
+<a href="../faq/"><span class="glyphicon glyphicon-question-sign"></span> FAQs</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="../benchmarks/"><span class="glyphicon glyphicon-wrench"></span> Benchmarks</a>
+</li>
+<li>
+<a href="../grammar/"><span class="glyphicon glyphicon-book"></span> Grammar</a>
+</li>
+<li>
+<a href="../new/"><span class="glyphicon glyphicon-cog"></span> What’s new</a>
+</li>
+</ul>
+<ul class="nav navbar-nav navbar-right">
+<li>
+<a href="../notes/">Release Notes</a>
+</li>
+</ul>
+</nav>
+</div>
+</header>
+<!-- About/index.html -->
+<!-- ACTUAL CONTENT STARTS HERE -->
+<div class='container bs-docs-container'>
+<div class='row'>
+<div class='col-md-9'>
+<p class='lead'> 
+This section provides general information about the <code>data.table</code> project.
+</p>
+<h1 id="welcome" class="page-header">data.table project</h1>
+<p class='lead'> 
+<code>data.table</code> is an R package that enables fast<span class="text-success"> subset</span>, fast<span class="text-success"> grouping</span>, fast<span class="text-success"> assign</span>, fast<span class="text-success"> ordered joins</span> and<span class="text-success"> list columns</span> all in a short flexible syntax, for faster development.
+</p>
+<!-- Operations using data.table -->
+<div class='bs-docs-section'>
+<h3 id="dt-operations">Operations using data.table</h3>
+<p > 
+Here’s a broad summary of the type of operations you can perform with <code>data.table</code>.
+</p>
+<pre class="sourceCode r"><code class="sourceCode r">DT[X]                           <span class="co"># fast join for large data, DT and X are data.tables</span>
+DT[, <span class="kw">sum</span>(b*c), by=a]            <span class="co"># fast aggregation, a, b and c are column names.</span>
+DT[i, b :<span class="er">=</span><span class="st"> </span><span class="fl">3.14</span>]                <span class="co"># add new column (or modify existing column) by reference</span>
+DT[, p :<span class="er">=</span><span class="st"> </span>x/<span class="kw">sum</span>(x), by=grp]     <span class="co"># fast sub-assignment (to column b) by reference.</span>
+<span class="kw">fread</span>(<span class="st">&quot;big.csv&quot;</span>)                <span class="co"># is 3+ times faster than read.csv(, colClasses, nrow, etc).</span></code></pre>
+<h3 id="vs-base">Comparison to base R</h3>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="dv">10</span>+<span class="st"> </span>times faster than tapply              <span class="co"># Fast grouping</span>
+<span class="dv">100</span>+<span class="st"> </span>times faster than ==<span class="st">                 </span><span class="co"># Fast binary search based subset</span>
+<span class="dv">500</span>+<span class="st"> </span>times faster than DF[i, j] &lt;-<span class="st"> </span>value  <span class="co"># Fast assignment by reference using := or set</span></code></pre>
+<p > 
+For detailed information about timings, checkout the <a href="">benchmarks</a> section.
+</p>
+</div>
+<!-- Installation -->
+<div class='bs-docs-section'>
+<h1 id="install" class="page-header">Installation</h1>
+<p class='lead'> 
+In <code>data.table</code>’s development cycle, all even numbered releases (<code>1.8.10</code>, <code>1.9.0</code> etc..) are stable versions available on CRAN. Similarly, all odd numbered releases are development versions.
+</p>
+<h3 id="stable">Stable version</h3>
+<p > 
+The current stable release is <a href="http://cran.r-project.org/web/packages/data.table/index.html">1.9.2 on CRAN</a>, released 27<sup>th</sup> Feb 2014. To install, open an R-session and type:
+</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install.packages</span>(<span class="st">&quot;data.table&quot;</span>)</code></pre>
+<h3 id="devel">Development version</h3>
+<p > 
+The current development version is <a href="https://github.com/Rdatatable/datatable">1.9.3 on Github</a>. You can stay up-to-date by following the <a href="https://github.com/Rdatatable/datatable/blob/master/NEWS">latest NEWS</a> as well as <a href="https://github.com/Rdatatable/datatable/issues?direction=desc&amp;sort=updated&amp;state=open">known bugs and feature requests</a>. If you’re interested in testing out the recent commits from the development version, you can install it easily.
+</p>
+<pre class="sourceCode r"><code class="sourceCode r">devtools:::<span class="kw">install_github</span>(<span class="st">&quot;datatable&quot;</span>, <span class="st">&quot;Rdatatable&quot;</span>)</code></pre>
+</div>
+<!-- How to get started? -->
+<div class='bs-docs-section'>
+<h1 id="get-started" class="page-header">How to get started?</h1>
+<p > 
+We suggest that you start by going through the <a href="">Beginners FAQ</a> first followed by the <a href="">10 minute quick introduction</a> guide. Once you finish those, you should be fairly familiar with the most essential<span class="text-info"> data.table</span> concepts. You can then dive right in to the <a href="">Learn by example</a> section and read rest of the <a href="">FAQs</a>, in whichever order you prefer.
+</p>
+</div>
+<!-- Getting help -->
+<div class='bs-docs-section'>
+<h1 id="getting-help" class="page-header">Getting help</h1>
+<h3 id="stackoverflow">Stackoverflow</h3>
+<p > 
+Stackoverflow’s <a href="http://stackoverflow.com/questions/tagged/r+data.table">data.table tag</a> is an excellent place to get started. You can search if your question has already been answered, and if not, you can post a question <a href="http://stackoverflow.com/questions/5963269/how-to-make-a-great-r-reproducible-example">with a nice reproducible example</a> there. At the time of writing, <strong>93.7%</strong> of the questions under the<span class="text-info"> data.table</span> tag have answers.
+</p>
+<h3 id="mailing-list">Mailing list</h3>
+<p > 
+Another place to ask questions is the <a href="https://r-forge.r-project.org/mail/?group_id=240">data.table mailing list</a>. It requires a <em>subscription</em>, which is fairly straightforward. Once you’ve subscribed to the mailing list, you can start posting by sending an email to <strong>datatable-help @ lists.r-forge.r-project.org</strong>.
+</p>
+<p > 
+You can browse the questions asked previously on the mailing list on <a href="http://r.789695.n4.nabble.com/datatable-help-f2315188.html">Nabble</a>, <a href="http://dir.gmane.org/gmane.comp.lang.r.datatable">Gmane</a>, <a href="http://lists.r-forge.r-project.org/pipermail/datatable-help">HTML archive</a> or <a href="http://rss.gmane.org/gmane.comp.lang.r.datatable">RSS feed</a>.
+</p>
+</div>
+<!-- contribute -->
+<div class='bs-docs-section'>
+<h1 id="contribute" class="page-header">How can I contribute?</h1>
+<p class='lead'> 
+There are several ways in which you can contribute to the<span class="text-info"> data.table</span> project.
+</p>
+<p > 
+If you come across an unexpected behaviour, and you’re quite sure of it, then you can <a href="">file a bug</a>. It is even more useful when the bug report consists of a self-contained (small) reproducible example, although we understand that this may not be possible in <em>all</em> cases.
+</p>
+<p > 
+If you’re unsure as to whether it’s a<span class="text-danger"> <strong>bug</strong></span> or not, then it might be better to verify it by posting it as a question either on stackoverflow or on the data.table mailing list. Check the <a href="#get-help">Getting help</a> section for more info on posting questions.
+</p>
+<p > 
+Likewise, if you’d like a particular<span class="text-danger"> <strong>feature</strong></span> implemented, then you can file a <a href="https://r-forge.r-project.org/tracker/?atid=978&group_id=240&func=browse">Feature Request (FR)</a>. We’re quite open to new ideas and suggestions from our users.
+</p>
+<p > 
+If you’d like to contribute to the <span class="text-info">data.table</span> project <strong>by involving in development</strong>, you’re most welcome! You can start by clicking the <code>Request to join</code> link on our <a href="https://r-forge.r-project.org/projects/datatable/">project page</a>
+</p>
+<p class='lead'> 
+And finally, by spreading the word!
+</p>
+</div>
+<!-- Talks/presentations -->
+<div class='bs-docs-section'>
+<h1 id="talks" class="page-header">Talks / Presentations</h1>
+<p class='lead'> 
+Here are the list of<span class="text-info"> data.table</span> talks you may find useful.
+</p>
+<div class='bs-example'>
+<div class='list-group'>
+<span class='list-group-item'> <a href="http://datatable.r-forge.r-project.org/CologneR_2013.pdf"><span class="lead list-group"> Introduction and news from 1.8.11, Koeln R user group</span> </a>
+<p list-group-item-text> 
+By<span class="text-muted"> Matt Dowle</span> and<span class="text-muted"> Arun Srinivasan</span>,<span class="text-success"> December 2013</span>
+</p>
+</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right hand side -->
+<div class='col-md-3'>
+<div class='bs-sidebar hidden-print' role='complementary'>
+<ul class='nav bs-sidenav'>
+<li> 
+<a href="#welcome">data.table project</a>
+<ul class='nav'>
+<li> 
+<a href="#dt-operations">Operations using data.table</a>
+</li>
+<li> 
+<a href="#vs-base">Comparison to base R</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#install">Installation</a>
+<ul class='nav'>
+<li> 
+<a href="#stable">Stable version</a>
+</li>
+<li> 
+<a href="#devel">Development version</a>
+</li>
+</ul>
+</li>
+<li> 
+<a href="#get-started">How to get started?</a>
+</li>
+<li> 
+<a href="#get-help">Getting help</a>
+<ul class='nav'>
+<li> 
+<a href="#stackoverflow">Stackoverflow</a>
+</li>
+<li> 
+<a href="#mailing-list">Mailing list</a>
+</li>
+</ul>
+</li>
+<li> 
+<a href="#contribute">How can I contribute?</a>
+</li>
+<li> 
+<a href="#talks">Talks</a>
+</li>
+<li> 
+<a href="#top">Back to top</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<!-- FOOTER - YOU WOULDNT HAVE TO MODIFY THIS PART -->
+<footer class="bs-footer" role="contentinfo">
+<div class="container">
+<div class="footer-links">
+<p>
+Design by <a href="https://twitter.com/arun_sriniv">Arun Srinivasan</a> and <a href="https://twitter.com/MattDowle">Matt Dowle</a>.
+</p>
+<p>
+Designed using <a href="http://getbootstrap.com">Bootstrap</a> and styled with <a href="http://bootswatch.com/">Bootswatch</a> using <a href="http://bootswatch.com/cerulean">Cerulean</a> theme.
+</p>
+</div>
+<ul class="footer-links muted">
+<li>
+Version 1.9
+</li>
+<li>
+·
+</li>
+<li>
+<a href="http://datatable.r-forge.r-project.org">Homepage</a>
+</li>
+<li>
+·
+</li>
+<li>
+<a href="../notes/">Release Notes</a>
+</li>
+<li>
+·
+</li>
+<li>
+<a href="https://r-forge.r-project.org/tracker/?atid=975&group_id=240&func=browse">Issues</a>
+</li>
+<li>
+·
+</li>
+<li>
+<a href="https://r-forge.r-project.org/tracker/?atid=978&group_id=240&func=browse">Feature Requests</a>
+</li>
+<li>
+·
+</li>
+<li>
+<a href="https://r-forge.r-project.org/mail/?group_id=240">Mailing list</a>
+</li>
+<li>
+·
+</li>
+<li>
+<a href="http://stackoverflow.com/questions/tagged/r+data.table">Stackoverflow tag</a>
+</li>
+</ul>
+<span class="pull-right"><a href="#top">Back to top</a></span>
+</div>
+</footer>
+<script src="https://code.jquery.com/jquery.js"></script>
+<script src="../js/bootstrap.min.js"></script>
+<script src="../js/docs.min.js"></script>
+<!-- STATCOUNTER -->
+<script type="text/javascript">
+var sc_project=6237851;
+var sc_invisible=1;
+var sc_security="518c93ca";
+</script>
+<script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script>
+<noscript>
+<div class="statcounter">
+<a title="tumblr stats" href="http://statcounter.com/tumblr/" > <img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="tumblr stats" ></a>
+</div>
+</noscript>
+<!-- End of StatCounter Code -->
+</body>
+</html>
+</body>
+</html>
