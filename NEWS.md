@@ -19,8 +19,7 @@ install.packages("data.table")
 ```
 
 
-### Changes in v1.9.3
-### In development on GitHub
+### Changes in v1.9.3  (in development on GitHub)
 
 #### NEW FEATURES
 
@@ -30,7 +29,7 @@ DT[.(c("id1", "id2")), sum(val)]                # single total across both id1 a
 DT[.(c("id1", "id2")), sum(val), by = .EACHI]   # sum(val) for each id
 DT[.(c("id1", "id2")), sum(val), by = key(DT)]  # same
 ```
-  In other words, `by-without-by` is now explicit, for clarity and consistency, **#2696** (git [#371](https://github.com/Rdatatable/datatable/issues/371)). NOTE : when `i` contains duplicates, `by=.EACHI` is different to `by=key(DT)`; e.g,
+  In other words, `by-without-by` is now explicit, for clarity and consistency, #371 (git [#371](https://github.com/Rdatatable/datatable/issues/371)). NOTE : when `i` contains duplicates, `by=.EACHI` is different to `by=key(DT)`; e.g,
 ```S
 setkey(DT, ID)
 ids = c("id1", "id2, "id1")
