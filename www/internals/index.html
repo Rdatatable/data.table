@@ -38,21 +38,24 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
 <ul class="nav navbar-nav">
 <li>
-<a href="../"><span class="glyphicon glyphicon-home"></span> data.table</a>
+<a href="../../"><span class="glyphicon glyphicon-home"></span> data.table</a>
 </li>
 </ul>
-<ul class="nav navbar-nav navbar-center">
+<ul class="nav navbar-nav navbar-left">
 <li class="dropdown">
-<a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs"><span class="glyphicon glyphicon-pencil"></span> Getting started <span class="caret"></span></a>
+<a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs"><span class="glyphicon glyphicon-pencil"></span> Get started <span class="caret"></span></a>
 <ul class="dropdown-menu" aria-labelledby="docs">
 <li>
-<a href="../about/"><span class="glyphicon glyphicon-bookmark"></span> data.table project</a>
+<a href="../about/">data.table project</a>
 </li>
 <li>
-<a href="../intro/"><span class="glyphicon glyphicon-file"></span> Quick Introduction</a>
+<a href="../intro/">Quick Introduction</a>
 </li>
 <li>
-<a href="../faq/"><span class="glyphicon glyphicon-question-sign"></span> FAQs</a>
+<a href="../learn-by-example/">Learn with example</a>
+</li>
+<li>
+<a href="../faq/">FAQs</a>
 </li>
 </ul>
 </li>
@@ -60,13 +63,21 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <a href="../benchmarks/"><span class="glyphicon glyphicon-wrench"></span> Benchmarks</a>
 </li>
 <li>
-<a href="../grammar/"><span class="glyphicon glyphicon-book"></span> Grammar</a>
+<a href="../gallery/"><span class="glyphicon glyphicon-book"></span> Gallery</a>
 </li>
 <li>
 <a href="../new/"><span class="glyphicon glyphicon-cog"></span> What’s new</a>
 </li>
 </ul>
 <ul class="nav navbar-nav navbar-right">
+<li class="dropdown">
+<a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs"><span class="glyphicon glyphicon-question-sign"></span> How to<span class="caret"></span></a>
+<ul class="dropdown-menu" aria-labelledby="docs">
+<li>
+<a href="../get-involved/">Get involved</a>
+</li>
+</ul>
+</li>
 <li>
 <a href="../notes/">Release Notes</a>
 </li>
@@ -106,7 +117,7 @@ This results in very nicely highlighed code as follows:
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">require</span>(data.table)
 dt &lt;-<span class="st"> </span><span class="kw">data.table</span>(<span class="dt">x=</span><span class="dv">1</span>:<span class="dv">5</span>, <span class="dt">y=</span><span class="dv">6</span>:<span class="dv">10</span>) <span class="co"># create a data.table</span></code></pre>
 <p > 
-How awesome is that? Now obviously we are not going to discuss every pandoc’s markdown syntax in this post. Please go through the website linked above to get familiar with it. Here’s the <a href="https://github.com/jgm/pandoc/wiki">wiki</a> if you wish to learn more.
+How awesome is that? Now obviously we are not going to discuss every syntax from pandoc’s markdown in this post. Please go through the website linked above to get familiar with it. Here’s the <a href="https://github.com/jgm/pandoc/wiki">wiki</a> if you wish to learn more.
 </p>
 </div>
 <div bs-docs-section>
@@ -120,7 +131,7 @@ To overcome this limitation, I have written a custom parser in R, allowing a lit
 </p>
 <div id='parser-will-evolve' class='bs-callout bs-callout-warning'>
 <p > 
-Note that my experience with <code>html</code> and <code>css</code> is very little. And therefore it is very much possible have overlooked some possible scenarios in the parser’s implementation. The parser is likely to evolve to overcome such issues as and when we come across it. This page will be updated to reflect such changes
+Note that my experience with <code>html</code> and <code>css</code> is very little. And therefore it is very much possible have overlooked some possible scenarios in the parser’s implementation. It is likely to evolve in order to overcome issues as and when we come across. This page will be updated to reflect such changes
 </p>
 </div>
 <p > 
@@ -289,9 +300,13 @@ And that is it for now. This page will be updated if/when changes are made to ex
 <!-- FOOTER - YOU WOULDNT HAVE TO MODIFY THIS PART -->
 <footer class="bs-footer" role="contentinfo">
 <div class="container">
+<iframe src="http://ghbtns.com/github-btn.html?user=Rdatatable&repo=datatable&type=watch&count=true"
+allowtransparency="true" frameborder="0" scrolling="0" width="110" height="20"></iframe>
+<iframe src="http://ghbtns.com/github-btn.html?user=Rdatatable&repo=datatable&type=fork&count=true"
+allowtransparency="true" frameborder="0" scrolling="0" width="95" height="20"></iframe>
 <div class="footer-links">
 <p>
-Design by <a href="https://twitter.com/arun_sriniv">Arun Srinivasan</a> and <a href="https://twitter.com/MattDowle">Matt Dowle</a>.
+Built and maintained by <a href="https://twitter.com/arun_sriniv">Arun Srinivasan</a> and <a href="https://twitter.com/MattDowle">Matt Dowle</a>.
 </p>
 <p>
 Designed using <a href="http://getbootstrap.com">Bootstrap</a> and styled with <a href="http://bootswatch.com/">Bootswatch</a> using <a href="http://bootswatch.com/cerulean">Cerulean</a> theme.
@@ -299,31 +314,31 @@ Designed using <a href="http://getbootstrap.com">Bootstrap</a> and styled with <
 </div>
 <ul class="footer-links muted">
 <li>
-Version 1.9
+Version 1.9.2
 </li>
 <li>
 ·
 </li>
 <li>
-<a href="http://datatable.r-forge.r-project.org">Homepage</a>
+<a href="https://github.com/Rdatatable/datatable">Homepage</a>
 </li>
 <li>
 ·
 </li>
 <li>
-<a href="../notes/">Release Notes</a>
+<a href="https://github.com/Rdatatable/datatable/graphs/contributors">Contributors</a>
 </li>
 <li>
 ·
 </li>
 <li>
-<a href="https://r-forge.r-project.org/tracker/?atid=975&group_id=240&func=browse">Issues</a>
+<a href="https://github.com/Rdatatable/datatable/issues?direction=desc&labels=bug&sort=updated&state=open">Issues</a>
 </li>
 <li>
 ·
 </li>
 <li>
-<a href="https://r-forge.r-project.org/tracker/?atid=978&group_id=240&func=browse">Feature Requests</a>
+<a href="https://github.com/Rdatatable/datatable/issues?direction=desc&labels=feature+request&page=1&sort=updated&state=open">Feature Requests</a>
 </li>
 <li>
 ·
@@ -342,9 +357,10 @@ Version 1.9
 </div>
 </footer>
 <script src="https://code.jquery.com/jquery.js"></script>
+<script src="../js/waypoints.js"></script>
 <script src="../js/bootstrap.min.js"></script>
 <script src="../js/docs.min.js"></script>
-<!-- STATCOUNTER -->
+<!-- Start of StatCounter Code -->
 <script type="text/javascript">
 var sc_project=6237851;
 var sc_invisible=1;
