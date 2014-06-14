@@ -225,9 +225,9 @@ can be also written as:
 <!-- FOOTER - YOU WOULDNT HAVE TO MODIFY THIS PART -->
 <footer class="bs-footer" role="contentinfo">
 <div class="container">
-<iframe src="http://ghbtns.com/github-btn.html?user=Rdatatable&repo=datatable&type=watch&count=true"
+<iframe src="http://ghbtns.com/github-btn.html?user=Rdatatable&repo=data.table&type=watch&count=true"
 allowtransparency="true" frameborder="0" scrolling="0" width="110" height="20"></iframe>
-<iframe src="http://ghbtns.com/github-btn.html?user=Rdatatable&repo=datatable&type=fork&count=true"
+<iframe src="http://ghbtns.com/github-btn.html?user=Rdatatable&repo=data.table&type=fork&count=true"
 allowtransparency="true" frameborder="0" scrolling="0" width="95" height="20"></iframe>
 <div class="footer-links">
 <p>Built and maintained by <a href="https://twitter.com/arun_sriniv">Arun Srinivasan</a>  and <a href="https://twitter.com/MattDowle">Matt Dowle</a>.</p>
