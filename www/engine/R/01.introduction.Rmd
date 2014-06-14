@@ -95,7 +95,7 @@ install.packages("data.table")
 ```
 ### Development version {#devel}
 
-<p > The current development version is [1.9.3 on Github](https://github.com/Rdatatable/datatable). You can stay up-to-date by following the [latest NEWS](https://github.com/Rdatatable/datatable/blob/master/NEWS) as well as [known bugs and feature requests](https://github.com/Rdatatable/datatable/issues?direction=desc&sort=updated&state=open). If you're interested in testing out the recent commits from the development version, you can install it easily. </p>
+<p > The current development version is [1.9.3 on Github](https://github.com/Rdatatable/data.table). You can stay up-to-date by following the [latest NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS) as well as [known bugs and feature requests](https://github.com/Rdatatable/data.table/issues?direction=desc&sort=updated&state=open). If you're interested in testing out the recent commits from the development version, you can install it easily. </p>
 ```{.r}
 devtools:::install_github("datatable", "Rdatatable")
 ```
@@ -123,7 +123,7 @@ devtools:::install_github("datatable", "Rdatatable")
 # How can I contribute? {.page-header #contribute}
 
 <p class='lead'> There are several ways in which you can contribute to the `data.table` project. </p>
-<p > If you come across an unexpected behaviour, and you're quite sure of it, then you can <a href="https://github.com/Rdatatable/datatable/issues?direction=desc&sort=updated&state=open">file a bug</a>. It is so much better if the report has a minimal reproducible example along with the output from `sessionInfo()`, although we understand that this may not be possible in *all* cases. </p>
+<p > If you come across an unexpected behaviour, and you're quite sure of it, then you can <a href="https://github.com/Rdatatable/data.table/issues?direction=desc&sort=updated&state=open">file a bug</a>. It is so much better if the report has a minimal reproducible example along with the output from `sessionInfo()`, although we understand that this may not be possible in *all* cases. </p>
 <p > If you're unsure as to whether it's a<span class='text-danger'> **bug**</span> or not, then it might be better to verify it by posting it as a question either on [stackoverflow](http://stackoverflow.com/questions/tagged/r+data.table) or on the [data.table mailing list](https://r-forge.r-project.org/mail/?group_id=240). Check the <a href="#get-help">Getting help</a> section for more info on posting questions. </p>
 <p > Likewise, if you'd like a particular<span class='text-danger'> **feature**</span> implemented, then you can file a <a href="https://r-forge.r-project.org/tracker/?atid=978&group_id=240&func=browse">Feature Request (FR)</a>. We're quite open to new ideas and suggestions from our users. </p>
 <p > You can also help us by fixing, suggesting and/or improving ambiguities in the documentation or the website, contributing code to the project in the form of bug fixes or implementing features, adding articles to [data.table gallery]() highlighting use cases of `data.table` etc. You can do all these things through a `pull request`. </p>
@@ -131,7 +131,7 @@ devtools:::install_github("datatable", "Rdatatable")
 #### Pull requests: {#pull-request-box}
 
 <p > You can issue a pull request by editing files from within github and pressing *propose file change*. The project members will be alerted for review and merge. </p>
-<p > Alternatively, you can also [fork](https://github.com/Rdatatable/datatable) the project, (locally) make your changes, and push commits in your fork and then initiate a `pull request` for project members to review and merge. The Github article ["Using pull requests"](https://help.github.com/articles/using-pull-requests) explains this very well in a step-by-step manner. </p>
+<p > Alternatively, you can also [fork](https://github.com/Rdatatable/data.table) the project, (locally) make your changes, and push commits in your fork and then initiate a `pull request` for project members to review and merge. The Github article ["Using pull requests"](https://help.github.com/articles/using-pull-requests) explains this very well in a step-by-step manner. </p>
 </div>
 <p class='lead'> And finally, by spreading the word! </p>
 </div>
@@ -236,13 +236,13 @@ allowtransparency="true" frameborder="0" scrolling="0" width="95" height="20"></
 <ul class="footer-links muted">
 <li>Version 1.9.2</li>
 <li>&middot;</li>
-<li><a href="https://github.com/Rdatatable/datatable">Homepage</a></li>
+<li><a href="https://github.com/Rdatatable/data.table">Homepage</a></li>
 <li>&middot;</li>
-<li><a href="https://github.com/Rdatatable/datatable/graphs/contributors">Contributors</a></li>
+<li><a href="https://github.com/Rdatatable/data.table/graphs/contributors">Contributors</a></li>
 <li>&middot;</li>
-<li><a href="https://github.com/Rdatatable/datatable/issues?direction=desc&labels=bug&sort=updated&state=open">Issues</a></li>
+<li><a href="https://github.com/Rdatatable/data.table/issues?direction=desc&labels=bug&sort=updated&state=open">Issues</a></li>
 <li>&middot;</li>
-<li><a href="https://github.com/Rdatatable/datatable/issues?direction=desc&labels=feature+request&page=1&sort=updated&state=open">Feature Requests</a></li>
+<li><a href="https://github.com/Rdatatable/data.table/issues?direction=desc&labels=feature+request&page=1&sort=updated&state=open">Feature Requests</a></li>
 <li>&middot;</li>
 <li><a href="https://r-forge.r-project.org/mail/?group_id=240">Mailing list</a></li>
 <li>&middot;</li>

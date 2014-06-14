@@ -236,13 +236,13 @@ allowtransparency="true" frameborder="0" scrolling="0" width="95" height="20"></
 <ul class="footer-links muted">
 <li>Version 1.9.2</li>
 <li>&middot;</li>
-<li><a href="https://github.com/Rdatatable/datatable">Homepage</a></li>
+<li><a href="https://github.com/Rdatatable/data.table">Homepage</a></li>
 <li>&middot;</li>
-<li><a href="https://github.com/Rdatatable/datatable/graphs/contributors">Contributors</a></li>
+<li><a href="https://github.com/Rdatatable/data.table/graphs/contributors">Contributors</a></li>
 <li>&middot;</li>
-<li><a href="https://github.com/Rdatatable/datatable/issues?direction=desc&labels=bug&sort=updated&state=open">Issues</a></li>
+<li><a href="https://github.com/Rdatatable/data.table/issues?direction=desc&labels=bug&sort=updated&state=open">Issues</a></li>
 <li>&middot;</li>
-<li><a href="https://github.com/Rdatatable/datatable/issues?direction=desc&labels=feature+request&page=1&sort=updated&state=open">Feature Requests</a></li>
+<li><a href="https://github.com/Rdatatable/data.table/issues?direction=desc&labels=feature+request&page=1&sort=updated&state=open">Feature Requests</a></li>
 <li>&middot;</li>
 <li><a href="https://r-forge.r-project.org/mail/?group_id=240">Mailing list</a></li>
 <li>&middot;</li>
