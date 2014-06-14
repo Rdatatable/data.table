@@ -1442,7 +1442,7 @@ USER VISIBLE CHANGES
             DT[, mean(foo), by=colA]     # worked before
             DT[, mean(foo), by="colA"]   # worked before
 
-### USER VISIBLE CHANGES
+#### USER VISIBLE CHANGES
 
     *   Incorrect syntax error message for := now includes advice to check that
         DT is a data.table rather than a data.frame. Thanks to a comment by
@@ -1476,7 +1476,7 @@ USER VISIBLE CHANGES
         The tail as well as the head of large tables is now printed.
 
 
-### THANKS TO BETA TESTING (i.e. bugs caught in 1.8.1 before release to CRAN) :
+#### THANKS TO BETA TESTING (i.e. bugs caught in 1.8.1 before release to CRAN) :
 
     *   Florian Oswald for #2094: DT[,newcol:=NA] now adds a new logical column ok.
         Test added.
@@ -1802,7 +1802,7 @@ USER VISIBLE CHANGES
    *    merge() now uses (manual) secondary keys, for speed.
 
 
-### USER VISIBLE CHANGES
+#### USER VISIBLE CHANGES
 
    *    The loc argument of setkey has been removed. This wasn't very
         useful and didn't warrant a period of deprecation.
@@ -2449,7 +2449,7 @@ USER VISIBLE CHANGES
         to Alexander Peterhansl for reporting.
 
 
-### USER-VISIBLE CHANGES
+#### USER-VISIBLE CHANGES
 
     *   ?data.table now documents that logical i is not quite
         the same as i in [.data.frame. NA are treated as FALSE,
