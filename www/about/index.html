@@ -118,8 +118,8 @@ Here’s a broad summary of the type of operations you can perform with <code>da
 </p>
 <pre class="sourceCode r"><code class="sourceCode r">DT[X]                           <span class="co"># fast join for large data, DT and X are data.tables</span>
 DT[, <span class="kw">sum</span>(b*c), by=a]            <span class="co"># fast aggregation, a, b and c are column names.</span>
-DT[i, b :<span class="er">=</span><span class="st"> </span><span class="fl">3.14</span>]                <span class="co"># add new column (or modify existing column) by reference</span>
-DT[, p :<span class="er">=</span><span class="st"> </span>x/<span class="kw">sum</span>(x), by=grp]     <span class="co"># fast sub-assignment (to column b) by reference.</span>
+DT[i, b :<span class="er">=</span><span class="st"> </span><span class="fl">3.14</span>]                <span class="co"># fast sub-assignment (to column b) by reference.</span>
+DT[, p :<span class="er">=</span><span class="st"> </span>x/<span class="kw">sum</span>(x), by=grp]     <span class="co"># add new column by reference by group</span>
 <span class="kw">fread</span>(<span class="st">&quot;big.csv&quot;</span>)                <span class="co"># is 3+ times faster than read.csv(, colClasses, nrow, etc).</span></code></pre>
 <h3 id="vs-base">Comparison to base R</h3>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="dv">10</span>+<span class="st"> </span>times faster than tapply              <span class="co"># Fast grouping</span>
@@ -144,13 +144,13 @@ The current stable release is <a href="http://cran.r-project.org/web/packages/da
 <p > 
 The current development version is <a href="https://github.com/Rdatatable/data.table">1.9.3 on Github</a>. You can stay up-to-date by following the <a href="https://github.com/Rdatatable/data.table/blob/master/NEWS">latest NEWS</a> as well as <a href="https://github.com/Rdatatable/data.table/issues?direction=desc&amp;sort=updated&amp;state=open">known bugs and feature requests</a>. If you’re interested in testing out the recent commits from the development version, you can install it easily.
 </p>
-<pre class="sourceCode r"><code class="sourceCode r">devtools:::<span class="kw">install_github</span>(<span class="st">&quot;datatable&quot;</span>, <span class="st">&quot;Rdatatable&quot;</span>)</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r">devtools:::<span class="kw">install_github</span>(<span class="st">&quot;data.table&quot;</span>, <span class="st">&quot;Rdatatable&quot;</span>)</code></pre>
 </div>
 <!-- How to get started? -->
 <div class='bs-docs-section'>
 <h1 id="get-started" class="page-header">How to get started?</h1>
 <p > 
-We suggest that you start by going through the <a href="">Beginners FAQ</a> first followed by the <a href="">10 minute quick introduction</a> guide. Once you finish those, you should be fairly familiar with the most essential<span class="text-info"> data.table</span> concepts. You can then dive right in to the <a href="">Learn by example</a> section and read rest of the <a href="">FAQs</a>, in whichever order you prefer.
+We suggest that you start with the <a href="">10 minute quick introduction guide</a> first, followed by the <a href="">Beginners FAQ</a>. Once you finish those, you should be fairly familiar with the most essential <code>data.table</code> concepts. You can then familiarise yourself using the <a href="">Learn by example</a> section which illustrates the most common data manipulation operations, after which you can read through the rest of the <a href="">FAQs</a>.
 </p>
 </div>
 <!-- Getting help -->
@@ -178,7 +178,7 @@ There are several ways in which you can contribute to the <code>data.table</code
 If you come across an unexpected behaviour, and you’re quite sure of it, then you can <a href="https://github.com/Rdatatable/data.table/issues?direction=desc&sort=updated&state=open">file a bug</a>. It is so much better if the report has a minimal reproducible example along with the output from <code>sessionInfo()</code>, although we understand that this may not be possible in <em>all</em> cases.
 </p>
 <p > 
-If you’re unsure as to whether it’s a<span class="text-danger"> <strong>bug</strong></span> or not, then it might be better to verify it by posting it as a question either on <a href="http://stackoverflow.com/questions/tagged/r+data.table">stackoverflow</a> or on the <a href="https://r-forge.r-project.org/mail/?group_id=240">data.table mailing list</a>. Check the <a href="#get-help">Getting help</a> section for more info on posting questions.
+If you’re unsure as to whether it’s a<span class="text-danger"> <strong>bug</strong></span> or not, then it might be better to verify it by posting it as a question either on stackoverflow or on the data.table mailing list. Check the <a href="#get-help">Getting help</a> section for more info on posting questions.
 </p>
 <p > 
 Likewise, if you’d like a particular<span class="text-danger"> <strong>feature</strong></span> implemented, then you can file a <a href="https://r-forge.r-project.org/tracker/?atid=978&group_id=240&func=browse">Feature Request (FR)</a>. We’re quite open to new ideas and suggestions from our users.
@@ -192,7 +192,7 @@ You can also help us by fixing, suggesting and/or improving ambiguities in the d
 You can issue a pull request by editing files from within github and pressing <em>propose file change</em>. The project members will be alerted for review and merge.
 </p>
 <p > 
-Alternatively, you can also <a href="https://github.com/Rdatatable/data.table">fork</a> the project, (locally) make your changes, and push commits in your fork and then initiate a <code>pull request</code> for project members to review and merge. The Github article <a href="https://help.github.com/articles/using-pull-requests">“Using pull requests”</a> explains this very well in a step-by-step manner.
+Alternatively, you can also fork the project, (locally) make your changes, and push commits in your fork and then initiate a <code>pull request</code> for project members to review and merge. The Github article <a href="https://help.github.com/articles/using-pull-requests">“Using pull requests”</a> explains this very well in a step-by-step manner.
 </p>
 </div>
 <p class='lead'> 
@@ -215,7 +215,11 @@ By<span class="text-muted"> Matt Dowle</span> and<span class="text-muted"> Arun 
 <p list-group-item-text> 
 By<span class="text-muted"> Matt Dowle</span>,<span class="text-success"> May 2013</span>
 </p>
-</span> <!-- <span class="list-group-item">
+</span>
+<p > 
+(to do)
+</p>
+<!-- <span class="list-group-item">
     <a href="http://datatable.r-forge.r-project.org/RFinance2013_Tutorial.pdf"><span class="lead list-group-item-heading">One hour advanced tutorial, R/Finance, Chicago</span></a>
     <p class="list-group-item-text">By <span class="text-muted">Matt Dowle</span>, <span class="text-success">May 2013</span></p>
 </span>

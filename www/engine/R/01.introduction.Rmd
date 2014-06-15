@@ -69,8 +69,8 @@
 ```{.r}
 DT[X]                           # fast join for large data, DT and X are data.tables
 DT[, sum(b*c), by=a]            # fast aggregation, a, b and c are column names.
-DT[i, b := 3.14]                # add new column (or modify existing column) by reference
-DT[, p := x/sum(x), by=grp]     # fast sub-assignment (to column b) by reference.
+DT[i, b := 3.14]                # fast sub-assignment (to column b) by reference.
+DT[, p := x/sum(x), by=grp]     # add new column by reference by group
 fread("big.csv")                # is 3+ times faster than read.csv(, colClasses, nrow, etc).
 ```
 ### Comparison to base R {#vs-base}
@@ -97,14 +97,14 @@ install.packages("data.table")
 
 <p > The current development version is [1.9.3 on Github](https://github.com/Rdatatable/data.table). You can stay up-to-date by following the [latest NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS) as well as [known bugs and feature requests](https://github.com/Rdatatable/data.table/issues?direction=desc&sort=updated&state=open). If you're interested in testing out the recent commits from the development version, you can install it easily. </p>
 ```{.r}
-devtools:::install_github("datatable", "Rdatatable")
+devtools:::install_github("data.table", "Rdatatable")
 ```
 </div>
 <!-- How to get started? -->
 <div class='bs-docs-section'>
 # How to get started? {.page-header #get-started}
 
-<p > We suggest that you start by going through the [Beginners FAQ]() first followed by the [10 minute quick introduction]() guide. Once you finish those, you should be fairly familiar with the most essential<span class='text-info'> data.table</span> concepts. You can then dive right in to the [Learn by example]() section and read rest of the [FAQs](), in whichever order you prefer. </p>
+<p > We suggest that you start with the [10 minute quick introduction guide]() first, followed by the [Beginners FAQ](). Once you finish those, you should be fairly familiar with the most essential `data.table` concepts. You can then familiarise yourself using the [Learn by example]() section which illustrates the most common data manipulation operations, after which you can read through the rest of the [FAQs](). </p>
 </div>
 <!-- Getting help -->
 <div class='bs-docs-section'>
@@ -124,14 +124,14 @@ devtools:::install_github("datatable", "Rdatatable")
 
 <p class='lead'> There are several ways in which you can contribute to the `data.table` project. </p>
 <p > If you come across an unexpected behaviour, and you're quite sure of it, then you can <a href="https://github.com/Rdatatable/data.table/issues?direction=desc&sort=updated&state=open">file a bug</a>. It is so much better if the report has a minimal reproducible example along with the output from `sessionInfo()`, although we understand that this may not be possible in *all* cases. </p>
-<p > If you're unsure as to whether it's a<span class='text-danger'> **bug**</span> or not, then it might be better to verify it by posting it as a question either on [stackoverflow](http://stackoverflow.com/questions/tagged/r+data.table) or on the [data.table mailing list](https://r-forge.r-project.org/mail/?group_id=240). Check the <a href="#get-help">Getting help</a> section for more info on posting questions. </p>
+<p > If you're unsure as to whether it's a<span class='text-danger'> **bug**</span> or not, then it might be better to verify it by posting it as a question either on stackoverflow or on the data.table mailing list. Check the <a href="#get-help">Getting help</a> section for more info on posting questions. </p>
 <p > Likewise, if you'd like a particular<span class='text-danger'> **feature**</span> implemented, then you can file a <a href="https://r-forge.r-project.org/tracker/?atid=978&group_id=240&func=browse">Feature Request (FR)</a>. We're quite open to new ideas and suggestions from our users. </p>
 <p > You can also help us by fixing, suggesting and/or improving ambiguities in the documentation or the website, contributing code to the project in the form of bug fixes or implementing features, adding articles to [data.table gallery]() highlighting use cases of `data.table` etc. You can do all these things through a `pull request`. </p>
 <div id='pull-request' class='bs-callout bs-callout-info'>
 #### Pull requests: {#pull-request-box}
 
 <p > You can issue a pull request by editing files from within github and pressing *propose file change*. The project members will be alerted for review and merge. </p>
-<p > Alternatively, you can also [fork](https://github.com/Rdatatable/data.table) the project, (locally) make your changes, and push commits in your fork and then initiate a `pull request` for project members to review and merge. The Github article ["Using pull requests"](https://help.github.com/articles/using-pull-requests) explains this very well in a step-by-step manner. </p>
+<p > Alternatively, you can also fork the project, (locally) make your changes, and push commits in your fork and then initiate a `pull request` for project members to review and merge. The Github article ["Using pull requests"](https://help.github.com/articles/using-pull-requests) explains this very well in a step-by-step manner. </p>
 </div>
 <p class='lead'> And finally, by spreading the word! </p>
 </div>
@@ -150,6 +150,7 @@ devtools:::install_github("datatable", "Rdatatable")
 [Lightning introduction, R/Finance, Chicago<span class='lead list-group'></span>](http://datatable.r-forge.r-project.org/RFinance2013_Lightning.pdf) 
 <p list-group-item-text> By<span class='text-muted'> Matt Dowle</span>,<span class='text-success'> May 2013</span> </p>
 </span>
+<p > (to do) </p>
 <!-- <span class="list-group-item">
     <a href="http://datatable.r-forge.r-project.org/RFinance2013_Tutorial.pdf"><span class="lead list-group-item-heading">One hour advanced tutorial, R/Finance, Chicago</span></a>
     <p class="list-group-item-text">By <span class="text-muted">Matt Dowle</span>, <span class="text-success">May 2013</span></p>

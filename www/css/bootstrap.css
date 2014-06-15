@@ -5057,7 +5057,7 @@ textarea.input-group-sm > .input-group-btn > .btn {
   background-color: #2fa4e7;
 /*   background-color: #35b937; */
   border-color: #1995dc;
-  margin-bottom: 30px;
+  margin-bottom: 10px;
   
 }
   
@@ -6298,11 +6298,8 @@ a.list-group-item.active:focus .list-group-item-text {
   min-height: 20px;
   padding: 19px;
   margin-bottom: 20px;
-/*   background-color: #333a48; */
-/*   background-color: #666; */
   border: 1px solid #eee;
   border-radius: 1px;
-/*   border-color: #333a48; */
    border-color: #2fa4e7;
   -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
           box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
@@ -7839,7 +7836,7 @@ td.visible-print {
 @media (min-width:768px) {
   .bs-masthead { 
     padding-top:30px;
-	padding-bottom:30px
+	padding-bottom:60px
   }
   
   .bs-masthead h1 {
@@ -8011,7 +8008,7 @@ td.visible-print {
 } 
 
 .bs-featurettebg2 {
-    padding-top:30px;
+    padding-top:10px;
     padding-bottom:20px;
     font-size:16px;
     line-height:1.5;
@@ -8041,8 +8038,8 @@ td.visible-print {
 
 /* featurette */
 .bs-featurette {
-    padding-top:40px;
-    padding-bottom:60px;
+    padding-top:30px;
+    padding-bottom:30px;
     font-size:16px;
     line-height:1.5;
     color:#555;
@@ -8121,7 +8118,7 @@ td.visible-print {
 @media (min-width:768px) {
     .bs-featurette {
         padding-top:30px;
-        padding-bottom:80px
+        padding-bottom:50px
     }
     .bs-featurette-title {
         font-size:40px
