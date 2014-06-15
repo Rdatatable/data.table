@@ -44,7 +44,7 @@
 <div class='container bs-docs-container'>
 <div class='row'>
 <div class='col-md-9'>
-<p class='lead'> This post explains writing content for `data.table` website in markdown format. We make use of the awesome [pandoc markdown format](http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html) to write in markdown and then convert it to `html` and style it with `css`. </p>
+<p class='leadtop'> This post explains writing content for `data.table` website in markdown format. We make use of the awesome [pandoc markdown format](http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html) to write in markdown and then convert it to `html` and style it with `css`. </p>
 <div bs-docs-section>
 # Pandoc markdown {#pandoc-markdown .page-header}
 

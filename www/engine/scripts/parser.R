@@ -35,7 +35,7 @@ stitch_div <- function(dt, elem) {
 }
 
 span_inline <- function(x) {
-    ix = grep("[^/]!![ ]*[{]", x$lines)
+    ix = grep("(?<![/]{2})!![ ]*[{]", x$lines, perl=TRUE)
     if (!length(ix)) return(invisible(x))
 
     xi = x[ix]
@@ -218,7 +218,7 @@ parser <- function(in_file, out_file) {
     div_start(dt)
     dt = dt[, list(lines = paste(lines, collapse="")), by=id]
     para(dt)
-    dt[grepl("^[#]", lines), lines := paste(lines, "\n", sep="")]
-    dt[, lines := gsub("[/]{2}([ ]*[.%!])", "\\1", lines)]
+    dt[grepl("^(?<![/]{2})[#]", lines, perl=TRUE), lines := paste(lines, "\n", sep="")]
+    dt[, lines := gsub("[/]{2}([ ]*[.%!#])", "\\1", lines)]
     writeLines(dt$lines, out_file, sep="\n")
 }

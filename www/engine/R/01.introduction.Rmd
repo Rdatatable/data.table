@@ -57,7 +57,7 @@
 <div class='container bs-docs-container'>
 <div class='row'>
 <div class='col-md-9'>
-<p class='lead'> This section provides general information about the `data.table` project. </p>
+<p class='leadtop'> This section provides general information about the `data.table` project. </p>
 # data.table project{.page-header #welcome}
 
 <p class='lead'> `data.table` is an R package that enables fast<span class='text-success'> subset</span>, fast<span class='text-success'> grouping</span>, fast<span class='text-success'> assign</span>, fast<span class='text-success'> ordered joins</span> and<span class='text-success'> list columns</span> all in a short flexible syntax, for faster development. </p>
