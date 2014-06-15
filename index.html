@@ -129,26 +129,26 @@
             </div>
         </div>
 
-        <div class="bs-featurettebg">
+        <div class="bs-featurettebg2">
             <div class="container">
                 <p class="lead0">data.table offers fast</p>
                 <div class="row">
                     <div class="col-md-4">
                         <div class="welldark well-sm">
                             <p>Aggregation</p>
-                            <code2>DT[, list(sx=sum(x)), by=z]</code2>
+                            <code3>DT[, list(sx=sum(x)), by=z]</code3>
                         </div>    
                     </div>
                     <div class="col-md-4">
                         <div class="welldark well-sm">
                             <p>Ordered joins</p>
-                            <code2>DT1[DT2, nomatch=, mult=]</code2>
+                            <code3>DT1[DT2, nomatch=, mult=]</code3>
                         </div>    
                     </div>
                     <div class="col-md-4">
                         <div class="welldark well-sm">
                             <p>Add/modify/del columns by reference</p>
-                            <code2>DT1[, `:=`(x=val, y=new_val, z=NULL)]</code2>
+                            <code3>DT1[, `:=`(x=val, y=new_val, z=NULL)]</code3>
                         </div>    
                     </div>
                 </div>
@@ -157,26 +157,29 @@
                     <div class="col-md-4">
                         <div class="welldark well-sm">
                             <p>File reading</p>
-                            <code2>fread("big_file.csv")</code2>
+                            <code3>fread("big_file.csv")</code3>
                         </div>    
                     </div>
                     <div class="col-md-4">
                         <div class="welldark well-sm">
                             <p>Rolling joins</p>
-                            <code2>DT1[DT2, nomatch=, mult=, roll=]</code2>
+                            <code3>DT1[DT2, nomatch=, mult=, roll=]</code3>
                         </div>    
                     </div>
                     <div class="col-md-4">
                         <div class="welldark well-sm">
                             <p>Chained queries</p>
-                            <code2>DT1[, cy := cumsum(y), by=x][DT2]</code2>
+                            <code3>DT1[, cy := cumsum(y), by=x][DT2]</code3>
                         </div>    
                     </div>
-                    <p class="lead0">and more, all in a natural syntax: <code2>DT[where, select|update, by]</code2></p>
+                    <p class="lead0">and more, all in a natural syntax: <code3>DT[where, select|update, by]</code3></p>
                 </div>
 
-                <hr class="half-rule2">
+            </div>
+        </div>
 
+        <div class="bs-featurettebg">
+            <div class="container">
                 <div class="row">
                     <div class="col-md-6">
                         <p class="lead0">Contribute</p>
@@ -190,8 +193,7 @@
                     </div>
                 </div>
             </div>
-        </div>
-        
+        </div>        
         <!-- Footer -->
         <footer class="bs-footer" role="contentinfo">
         
