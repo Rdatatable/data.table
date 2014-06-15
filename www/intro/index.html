@@ -1,0 +1,347 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+  </style>
+  <link rel="stylesheet" href="../css/bootstrap.css" type="text/css" />
+</head>
+<body>
+<!-- <body> -->
+<!-- Master nav - DO NOT TOUCH-->
+<header>
+<div class="navbar-default">
+<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
+<span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span>
+</button>
+<nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+<ul class="nav navbar-nav">
+<li>
+<a href="../../"><span class="glyphicon glyphicon-home"></span> data.table</a>
+</li>
+</ul>
+<ul class="nav navbar-nav navbar-left">
+<li class="dropdown">
+<a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs"><span class="glyphicon glyphicon-pencil"></span> Get started <span class="caret"></span></a>
+<ul class="dropdown-menu" aria-labelledby="docs">
+<li>
+<a href="./">data.table project</a>
+</li>
+<li>
+<a href="../intro/">Quick Introduction</a>
+</li>
+<li>
+<a href="../learn-by-example/">Learn with example</a>
+</li>
+<li>
+<a href="../faq/">FAQs</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="../benchmarks/"><span class="glyphicon glyphicon-wrench"></span> Benchmarks</a>
+</li>
+<li>
+<a href="../gallery/"><span class="glyphicon glyphicon-book"></span> Gallery</a>
+</li>
+<li>
+<a href="../new/"><span class="glyphicon glyphicon-cog"></span> What’s new</a>
+</li>
+</ul>
+<ul class="nav navbar-nav navbar-right">
+<li class="dropdown">
+<a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs"><span class="glyphicon glyphicon-question-sign"></span> How to<span class="caret"></span></a>
+<ul class="dropdown-menu" aria-labelledby="docs">
+<li>
+<a href="../get-involved/">Get involved</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="../notes/">Release Notes</a>
+</li>
+</ul>
+</nav>
+</div>
+</header>
+<!-- About/index.html -->
+<!-- ACTUAL CONTENT STARTS HERE -->
+<div class='container bs-docs-container'>
+<div class='row'>
+<div class='col-md-9'>
+<h1 id="introduction" class="page-header">Quick introduction</h1>
+<p class='lead'> 
+This section is aimed at those who are already familiar with R - in particular, creating and using objects of class <code>data.frame</code>.
+</p>
+<div class='panel panel-default'>
+<div class='panel-heading'> 
+Topics covered for 10 minute quick introuction
+</div>
+<div class='panel-body'>
+<ul>
+<li id='fast-grouping'> 
+Fast grouping
+</li>
+<li id='keys'> 
+Keys
+</li>
+<li id='joins'> 
+Fast time series joins
+</li>
+</ul>
+</div>
+</div>
+<div class='bs-docs-section'>
+<p > 
+<code>data.table</code> is <strong>not automatically better or faster</strong>. The user has to climb a short learning curve, experiment, and then use its features well. For example, this document explains the difference between a <strong>vector scan</strong> and a <strong>binary search</strong>. Although both extraction methods are available in <code>data.table</code>, if a user continues to use vector scans (as in a <code>data.frame</code>), it will <em>“work”</em>, but one will miss out on the benefits that <code>data.table</code> provides.
+</p>
+<h3 id="creation">Creation</h3>
+<p > 
+Recall that we create a <code>data.frame</code> using the function <code2>data.frame()</code2>:
+</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(1L)
+DF =<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="st">&quot;b&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;a&quot;</span>,<span class="st">&quot;a&quot;</span>), <span class="dt">v =</span> <span class="kw">rnorm</span>(<span class="dv">5</span>))
+DF
+<span class="co">#    x          v</span>
+<span class="co">#  1 b -0.6264538</span>
+<span class="co">#  2 b  0.1836433</span>
+<span class="co">#  3 b -0.8356286</span>
+<span class="co">#  4 a  1.5952808</span>
+<span class="co">#  5 a  0.3295078</span></code></pre>
+<p > 
+A <code>data.table</code> is created in exactly the same way:
+</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(1L)
+DT =<span class="st"> </span><span class="kw">data.table</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="st">&quot;b&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;a&quot;</span>,<span class="st">&quot;a&quot;</span>), <span class="dt">v =</span> <span class="kw">rnorm</span>(<span class="dv">5</span>))
+DT
+<span class="co">#    x          v</span>
+<span class="co"># 1: b -0.6264538</span>
+<span class="co"># 2: b  0.1836433</span>
+<span class="co"># 3: b -0.8356286</span>
+<span class="co"># 4: a  1.5952808</span>
+<span class="co"># 5: a  0.3295078</span></code></pre>
+<p > 
+Observe that <code>data.table</code> prints the row numbers <em>slightly differently</em>. There’s nothing significant about that. We can easily convert existing <code>data.frame</code> to <code>data.table</code> using the function <code2>data.table()</code2> or <code2>as.data.table()</code2>:
+</p>
+<pre class="sourceCode r"><code class="sourceCode r">CARS =<span class="st"> </span><span class="kw">data.table</span>(cars)
+<span class="kw">head</span>(CARS)
+<span class="co">#    speed dist</span>
+<span class="co"># 1:     4    2</span>
+<span class="co"># 2:     4   10</span>
+<span class="co"># 3:     7    4</span>
+<span class="co"># 4:     7   22</span>
+<span class="co"># 5:     8   16</span>
+<span class="co"># 6:     9   10</span></code></pre>
+<p > 
+We’ve just created two <code>data.tables</code>: <code2>DT</code2> and <code2>CARS</code2>. It is often useful to see a list of <strong>all</strong> <code>data.tables</code> in memory:
+</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">tables</span>()
+<span class="co">#      NAME NROW MB COLS       KEY</span>
+<span class="co"># [1,] CARS   50 1  speed,dist    </span>
+<span class="co"># [2,] DT      5 1  x,v           </span>
+<span class="co"># Total: 2MB</span></code></pre>
+<div id="qintro-box-00" class="bs-callout bs-callout-info">
+<p > 
+<span class="text-info"><span class="glyphicon glyphicon-info-sign"></span> </span> As from <code>v1.9.3</code>, <code2>tables()</code2> also includes a column <code2>NCOL</code2>.
+</p>
+</div>
+<p > 
+The <code2>MB</code2> column is useful to quickly assess memory use and to spot if any redundant tables can be removed to free up memory. Just like <code>data.frames</code>, <code>data.tables</code> must fit inside RAM.
+</p>
+<p > 
+Some users regularly work with 20 or more tables in memory, rather like a database. The result <code2>tables()</code2> is itself a <code>data.table</code>, returned silently, so that <code2>tables()</code2> can be used in programs. <code2>tables()</code2> is unrelated to the base function <code2>table()</code2>.
+</p>
+<p>To see the column types:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">sapply</span>(DT, class)
+<span class="co">#           x           v </span>
+<span class="co"># &quot;character&quot;   &quot;numeric&quot;</span></code></pre>
+<div id="qintro-box-01" class="bs-callout bs-callout-info">
+<p > 
+<span class="text-info"><span class="glyphicon glyphicon-info-sign"></span> </span> As from <code>v1.8.0</code>, <code>data.table</code> no longer converts <code2>character</code2> to <code2>factor</code2>.
+</p>
+</div>
+<p > 
+You may’ve noticed the empty column <code2>KEY</code2> in the result of <code2>tables()</code2> earlier above. This is discussed in the section <a href="#keys">Keys</a>.
+</p>
+</div>
+<!-- Introduction -->
+<!-- Grouping -->
+<h3>Fast grouping</h3>
+<p > 
+The second argument to <code2>[</code2> is <code2>j</code2>, which may consist of one or more expressions whose arguments are (unquoted) column names, as if the column names were variables.
+</p>
+                                    
+<pre class="sourceCode r"><code class="sourceCode r">DT[, <span class="kw">sum</span>(v)]
+<span class="co"># [1] 4999985</span></code></pre>
+<p > 
+When we supply a <code2>j</code2> expression and a <code2>by</code2> list of expressions, the <code2>j</code2> expression is repeated for each <code2>by</code2> group:
+</p>
+                                    
+<pre class="sourceCode r"><code class="sourceCode r">DT[, <span class="kw">sum</span>(v), by=x]
+<span class="co">#     x       V1</span>
+<span class="co"># 1:  A 192155.8</span>
+<span class="co"># 2:  B 192406.2</span>
+<span class="co"># 3:  C 192393.1</span>
+<span class="co"># 4:  D 192055.6</span>
+<span class="co"># 5:  E 192103.3</span>
+<span class="co"># 6:  F 192444.5</span>
+<span class="co"># 7:  G 192460.3</span>
+<span class="co"># 8:  H 192559.2</span>
+<span class="co"># 9:  I 192102.7</span>
+<span class="co"># 10: J 192029.5</span>
+<span class="co"># 11: K 192216.6</span>
+<span class="co"># 12: L 192249.2</span>
+<span class="co"># 13: M 192187.2</span>
+<span class="co"># 14: N 192020.0</span>
+<span class="co"># 15: O 192531.7</span>
+<span class="co"># 16: P 192633.2</span>
+<span class="co"># 17: Q 192195.5</span>
+<span class="co"># 18: R 192501.6</span>
+<span class="co"># 19: S 192542.7</span>
+<span class="co"># 20: T 192195.3</span>
+<span class="co"># 21: U 192023.2</span>
+<span class="co"># 22: V 192289.6</span>
+<span class="co"># 23: W 192351.1</span>
+<span class="co"># 24: X 192667.0</span>
+<span class="co"># 25: Y 192442.9</span>
+<span class="co"># 26: Z 192227.7</span>
+<span class="co">#     x       V1</span></code></pre>
+<p > 
+The <code2>by</code2> in <code>data.table</code> is fast. Let’s compare it to <code2>tapply()</code2>.
+</p>
+                                    
+<pre class="sourceCode r"><code class="sourceCode r">ttt =<span class="st"> </span><span class="kw">system.time</span>(tt &lt;-<span class="st"> </span><span class="kw">tapply</span>(DT$v,DT$x,sum)); ttt
+<span class="co">#   user  system elapsed</span>
+<span class="co"># 23.253   1.724  25.057</span>
+sss =<span class="st"> </span><span class="kw">system.time</span>(ss &lt;-<span class="st"> </span>DT[,<span class="kw">sum</span>(v),<span class="dt">by=</span>x]); sss
+<span class="co">#  user system elapsed</span>
+<span class="co"># 0.621  0.132   0.757</span></code></pre>
+<blockquote>
+head(tt) <span class="text-muted"> A B C D E F 192155.8 192406.2 192393.1 192055.6 192103.3 192444.5</span> head(ss) <span class="text-muted"> x V1 1: A 192155.8 2: B 192406.2 3: C 192393.1 4: D 192055.6 5: E 192103.3 6: F 192444.5</span> identical(as.vector(tt), ss<span class="math">$V1) &lt;span class=&quot;text-muted&quot;&gt;[1] TRUE&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;                         &lt;p&gt;At 0.757 sec, this was &lt;strong&gt;33 times faster&lt;/strong&gt; than 25.057 sec, and produced precisely the same result. Next, let's group by two columns:&lt;/p&gt;                         &lt;pre&gt;&lt;code&gt;&gt; ttt = system.time(tt &lt;- tapply(DT$</span>v, list(DT<span class="math"><em>x</em>, <em>D</em><em>T</em></span>y), sum)); ttt <span class="text-muted"> user system elapsed 26.225 2.488 28.795</span> sss = system.time(ss &lt;- DT[, sum(v), by = “x,y”]); sss <span class="text-muted"> user system elapsed 0.772 0.212 0.985</span> tt[1:5,1:5] <span class="text-muted"> a b c d e A 7399.718 7387.322 7396.215 7340.169 7395.343 B 7382.446 7385.050 7394.142 7422.724 7449.657 C 7339.325 7417.330 7382.845 7334.227 7367.312 D 7404.550 7350.818 7361.045 7438.276 7337.818 E 7392.724 7374.611 7364.660 7401.654 7415.766</span> head(ss) <span class="text-muted"> x y V1 1: A a 7399.718 2: A b 7387.322 3: A c 7396.215 4: A d 7340.169 5: A e 7395.343 6: A f 7444.851</span> identical(as.vector(t(tt)), ss$V1) <span class="text-muted">[1] TRUE</span></code>
+</pre>
+                        <p>
+This was <strong>29 times faster</strong>, and the syntax is a little simpler and easier to read.
+</p>
+<!--                    <div class="bs-callout bs-callout-info" id="cast_box"> -->
+                        <p>
+The following features are mentioned only briefly here; further examples are in <span class="text-info">?data.table</span> and the <a href="../faq/#beginner">FAQ vignette</a>.
+</p>
+                        <ul>
+                            <li>
+To return several expressions, pass a <code>list()</code> to <code>j</code>.
+</li>
+                            <li>
+Each item of the list is recycled to match the length of the longest item.
+</li>
+                            <li>
+You can pass a <code>list()</code> of expressions of column names to by e.g. <code>DT[, sum(v), by = list(month(dateCol), region)]</code> where calling <code>month()</code> on <code>dateCol</code> is what we mean by expressions of column names.
+</li>
+                            <li>
+Any <code>R</code> functions from any package can be used in <code>j</code> and <code>by</code>.
+</li>
+                        </ul>
+
+</blockquote>
+<!--                        </div> -->
+</div>
+</div>
+</div>
+</div>
+<!-- FOOTER - YOU WOULDNT HAVE TO MODIFY THIS PART -->
+<footer class="bs-footer" role="contentinfo">
+<div class="container">
+<iframe src="http://ghbtns.com/github-btn.html?user=Rdatatable&repo=data.table&type=watch&count=true"
+allowtransparency="true" frameborder="0" scrolling="0" width="110" height="20"></iframe>
+<iframe src="http://ghbtns.com/github-btn.html?user=Rdatatable&repo=data.table&type=fork&count=true"
+allowtransparency="true" frameborder="0" scrolling="0" width="95" height="20"></iframe>
+<div class="footer-links">
+<p>
+Designed using <a href="http://getbootstrap.com">Bootstrap</a> and styled with <a href="http://bootswatch.com/">Bootswatch</a> using <a href="http://bootswatch.com/cerulean">Cerulean</a> theme.
+</p>
+</div>
+<ul class="footer-links muted">
+<li>
+Version 1.9.2
+</li>
+<li>
+·
+</li>
+<li>
+<a href="https://github.com/Rdatatable/data.table">Homepage</a>
+</li>
+<li>
+·
+</li>
+<li>
+<a href="https://github.com/Rdatatable/data.table/graphs/contributors">Contributors</a>
+</li>
+<li>
+·
+</li>
+<li>
+<a href="https://github.com/Rdatatable/data.table/issues?direction=desc&labels=bug&sort=updated&state=open">Issues</a>
+</li>
+<li>
+·
+</li>
+<li>
+<a href="https://github.com/Rdatatable/data.table/issues?direction=desc&labels=feature+request&page=1&sort=updated&state=open">Feature Requests</a>
+</li>
+<li>
+·
+</li>
+<li>
+<a href="https://r-forge.r-project.org/mail/?group_id=240">Mailing list</a>
+</li>
+<li>
+·
+</li>
+<li>
+<a href="http://stackoverflow.com/questions/tagged/r+data.table">Stackoverflow tag</a>
+</li>
+</ul>
+<span class="pull-right"><a href="#top">Back to top</a></span>
+</div>
+</footer>
+<script src="https://code.jquery.com/jquery.js"></script>
+<script src="../js/waypoints.js"></script>
+<script src="../js/bootstrap.min.js"></script>
+<script src="../js/docs.min.js"></script>
+<!-- Start of StatCounter Code -->
+<script type="text/javascript">
+var sc_project=6237851;
+var sc_invisible=1;
+var sc_security="518c93ca";
+</script>
+<script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script>
+<noscript>
+<div class="statcounter">
+<a title="tumblr stats" href="http://statcounter.com/tumblr/" > <img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="tumblr stats" ></a>
+</div>
+</noscript>
+<!-- End of StatCounter Code -->
+</body>
+</html>
+</body>
+</html>

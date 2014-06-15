@@ -1,0 +1,278 @@
+<!-- <body> -->
+<!-- Master nav - DO NOT TOUCH-->
+<header>
+<div class="navbar-default">
+<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
+<span class="sr-only">Toggle navigation</span>
+<span class="icon-bar"></span>
+<span class="icon-bar"></span>
+<span class="icon-bar"></span>
+</button>
+<nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+<ul class="nav navbar-nav">
+<li><a href="../../"><span class="glyphicon glyphicon-home"></span> data.table</a>
+</li>
+</ul>
+<ul class="nav navbar-nav navbar-left">
+<li class="dropdown">
+<a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs"><span class="glyphicon glyphicon-pencil"></span> Get started <span class="caret"></span></a>
+<ul class="dropdown-menu" aria-labelledby="docs">
+<li><a href="./">data.table project</a></li>
+<li><a href="../intro/">Quick Introduction</a></li>
+<li><a href="../learn-by-example/">Learn with example</a></li>
+<li><a href="../faq/">FAQs</a></li>
+</ul>
+</li>
+<li><a href="../benchmarks/"><span class="glyphicon glyphicon-wrench"></span> Benchmarks</a></li>
+<li><a href="../gallery/"><span class="glyphicon glyphicon-book"></span> Gallery</a></li>
+<li><a href="../new/"><span class="glyphicon glyphicon-cog"></span> What's new</a></li>
+</ul>
+<ul class="nav navbar-nav navbar-right">
+<li class="dropdown">
+<a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs"><span class="glyphicon glyphicon-question-sign"></span> How to<span class="caret"></span></a>
+<ul class="dropdown-menu" aria-labelledby="docs">
+<li><a href="../get-involved/">Get involved</a></li>
+</ul>
+</li>
+<li><a href="../notes/">Release Notes</a></li>
+</ul>
+</nav>
+</div>
+</header>
+<!-- About/index.html -->
+<!-- ACTUAL CONTENT STARTS HERE -->
+<div class='container bs-docs-container'>
+<div class='row'>
+<div class='col-md-9'>
+# Quick introduction {.page-header #introduction}
+
+<p class='lead'> This section is aimed at those who are already familiar with R - in particular, creating and using objects of class `data.frame`. </p>
+<div class='panel panel-default'>
+<div class='panel-heading'> Topics covered for 10 minute quick introuction</div>
+<div class='panel-body'>
+<ul>
+<li id='fast-grouping'> Fast grouping</li>
+<li id='keys'> Keys</li>
+<li id='joins'> Fast time series joins</li>
+</ul>
+</div>
+</div>
+<div class='bs-docs-section'>
+<p > `data.table` is **not automatically better or faster**. The user has to climb a short learning curve, experiment, and then use its features well. For example, this document explains the difference between a **vector scan** and a **binary search**. Although both extraction methods are available in `data.table`, if a user continues to use vector scans (as in a `data.frame`), it will *"work"*, but one will miss out on the benefits that `data.table` provides. </p>
+### Creation {#creation}
+
+<p > Recall that we create a `data.frame` using the function <code2>data.frame()</code2>: </p>
+```{.r}
+set.seed(1L)
+DF = data.frame(x = c("b","b","b","a","a"), v = rnorm(5))
+DF
+#    x          v
+#  1 b -0.6264538
+#  2 b  0.1836433
+#  3 b -0.8356286
+#  4 a  1.5952808
+#  5 a  0.3295078
+```
+<p > A `data.table` is created in exactly the same way: </p>
+```{.r}
+set.seed(1L)
+DT = data.table(x = c("b","b","b","a","a"), v = rnorm(5))
+DT
+#    x          v
+# 1: b -0.6264538
+# 2: b  0.1836433
+# 3: b -0.8356286
+# 4: a  1.5952808
+# 5: a  0.3295078
+```
+<p > Observe that `data.table` prints the row numbers *slightly differently*. There's nothing significant about that. We can easily convert existing `data.frame` to `data.table` using the function <code2>data.table()</code2> or <code2>as.data.table()</code2>: </p>
+```{.r}
+CARS = data.table(cars)
+head(CARS)
+#    speed dist
+# 1:     4    2
+# 2:     4   10
+# 3:     7    4
+# 4:     7   22
+# 5:     8   16
+# 6:     9   10
+```
+<p > We've just created two `data.tables`: <code2>DT</code2> and <code2>CARS</code2>. It is often useful to see a list of **all** `data.tables` in memory: </p>
+```{.r}
+tables()
+#      NAME NROW MB COLS       KEY
+# [1,] CARS   50 1  speed,dist    
+# [2,] DT      5 1  x,v           
+# Total: 2MB
+```
+<div class='bs-callout bs-callout-info' id='qintro-box-00'>
+<p > <span class="text-info"><span class='glyphicon glyphicon-info-sign'></span> </span> As from <code>v1.9.3</code>, <code2>tables()</code2> also includes a column <code2>NCOL</code2>. </p>
+</div>
+<p > The <code2>MB</code2> column is useful to quickly assess memory use and to spot if any redundant tables can be removed to free up memory. Just like `data.frames`, `data.tables` must fit inside RAM. </p>
+<p > Some users regularly work with 20 or more tables in memory, rather like a database. The result <code2>tables()</code2> is itself a `data.table`, returned silently, so that <code2>tables()</code2> can be used in programs. <code2>tables()</code2> is unrelated to the base function <code2>table()</code2>. </p>
+To see the column types: 
+```{.r}
+sapply(DT, class)
+#           x           v 
+# "character"   "numeric"
+```
+<div class='bs-callout bs-callout-info' id='qintro-box-01'>
+<p > <span class="text-info"><span class='glyphicon glyphicon-info-sign'></span> </span> As from <code>v1.8.0</code>, `data.table` no longer converts <code2>character</code2> to <code2>factor</code2>. </p>
+</div>
+<p > You may've noticed the empty column <code2>KEY</code2> in the result of <code2>tables()</code2> earlier above. This is discussed in the section [Keys](#keys). </p>
+</div>
+<!-- Introduction -->
+<!-- Grouping -->
+### Fast grouping {#fast-grouping .page-header}
+
+<p > The second argument to <code2>[</code2> is <code2>j</code2>, which may consist of one or more expressions whose arguments are (unquoted) column names, as if the column names were variables. </p>
+                                    
+```{.r}
+DT[, sum(v)]
+# [1] 4999985
+```
+                                    
+<p > When we supply a <code2>j</code2> expression and a <code2>by</code2> list of expressions, the <code2>j</code2> expression is repeated for each <code2>by</code2> group: </p>
+                                    
+```{.r}
+DT[, sum(v), by=x]
+#     x       V1
+# 1:  A 192155.8
+# 2:  B 192406.2
+# 3:  C 192393.1
+# 4:  D 192055.6
+# 5:  E 192103.3
+# 6:  F 192444.5
+# 7:  G 192460.3
+# 8:  H 192559.2
+# 9:  I 192102.7
+# 10: J 192029.5
+# 11: K 192216.6
+# 12: L 192249.2
+# 13: M 192187.2
+# 14: N 192020.0
+# 15: O 192531.7
+# 16: P 192633.2
+# 17: Q 192195.5
+# 18: R 192501.6
+# 19: S 192542.7
+# 20: T 192195.3
+# 21: U 192023.2
+# 22: V 192289.6
+# 23: W 192351.1
+# 24: X 192667.0
+# 25: Y 192442.9
+# 26: Z 192227.7
+#     x       V1
+```
+<p > The <code2>by</code2> in `data.table` is fast. Let's compare it to <code2>tapply()</code2>. </p>
+                                    
+```{.r}
+ttt = system.time(tt <- tapply(DT$v,DT$x,sum)); ttt
+#   user  system elapsed
+# 23.253   1.724  25.057
+sss = system.time(ss <- DT[,sum(v),by=x]); sss
+#  user system elapsed
+# 0.621  0.132   0.757
+```
+> head(tt)
+<span class="text-muted">       A        B        C        D        E        F
+192155.8 192406.2 192393.1 192055.6 192103.3 192444.5</span>
+> head(ss)
+<span class="text-muted">   x       V1
+1: A 192155.8
+2: B 192406.2
+3: C 192393.1
+4: D 192055.6
+5: E 192103.3
+6: F 192444.5</span>
+> identical(as.vector(tt), ss$V1)
+<span class="text-muted">[1] TRUE</span></code></pre>
+                        <p>At 0.757 sec, this was <strong>33 times faster</strong> than 25.057 sec, and produced precisely the same result. Next, let's group by two columns:</p>
+                        <pre><code>> ttt = system.time(tt <- tapply(DT$v, list(DT$x, DT$y), sum)); ttt
+<span class="text-muted">  user system elapsed
+26.225  2.488  28.795</span>
+> sss = system.time(ss <- DT[, sum(v), by = "x,y"]); sss
+<span class="text-muted"> user system elapsed
+0.772  0.212   0.985</span>
+> tt[1:5,1:5]
+<span class="text-muted">         a        b        c        d        e
+A 7399.718 7387.322 7396.215 7340.169 7395.343
+B 7382.446 7385.050 7394.142 7422.724 7449.657
+C 7339.325 7417.330 7382.845 7334.227 7367.312
+D 7404.550 7350.818 7361.045 7438.276 7337.818
+E 7392.724 7374.611 7364.660 7401.654 7415.766</span>
+> head(ss)
+<span class="text-muted">   x y       V1
+1: A a 7399.718
+2: A b 7387.322
+3: A c 7396.215
+4: A d 7340.169
+5: A e 7395.343
+6: A f 7444.851</span>
+> identical(as.vector(t(tt)), ss$V1)
+<span class="text-muted">[1] TRUE</span></code></pre>
+                        <p>This was <strong>29 times faster</strong>, and the syntax is a little simpler and easier to read.</p>
+<!--                    <div class="bs-callout bs-callout-info" id="cast_box"> -->
+                        <p>The following features are mentioned only briefly here; further examples are in <span class="text-info">?data.table</span> and the <a href="../faq/#beginner">FAQ vignette</a>.</p>
+                        <ul>
+                            <li>To return several expressions, pass a <code>list()</code> to <code>j</code>.</li>
+                            <li>Each item of the list is recycled to match the length of the longest item.</li>
+                            <li>You can pass a <code>list()</code> of expressions of column names to by e.g.
+                            <code>DT[, sum(v), by = list(month(dateCol), region)]</code> where calling <code>month()</code> on <code>dateCol</code> is what we mean by expressions of column names.</li>
+                            <li>Any <code>R</code> functions from any package can be used in <code>j</code> and <code>by</code>.</li>
+                        </ul>
+                                
+<!--                        </div> -->
+</div>
+</div>
+</div>
+</div>
+<!-- FOOTER - YOU WOULDNT HAVE TO MODIFY THIS PART -->
+<footer class="bs-footer" role="contentinfo">
+<div class="container">
+<iframe src="http://ghbtns.com/github-btn.html?user=Rdatatable&repo=data.table&type=watch&count=true"
+allowtransparency="true" frameborder="0" scrolling="0" width="110" height="20"></iframe>
+<iframe src="http://ghbtns.com/github-btn.html?user=Rdatatable&repo=data.table&type=fork&count=true"
+allowtransparency="true" frameborder="0" scrolling="0" width="95" height="20"></iframe>
+<div class="footer-links">
+<p>Designed using <a href="http://getbootstrap.com">Bootstrap</a> and styled with <a href="http://bootswatch.com/">Bootswatch</a> using <a href="http://bootswatch.com/cerulean">Cerulean</a> theme.</p>
+</div>
+<ul class="footer-links muted">
+<li>Version 1.9.2</li>
+<li>&middot;</li>
+<li><a href="https://github.com/Rdatatable/data.table">Homepage</a></li>
+<li>&middot;</li>
+<li><a href="https://github.com/Rdatatable/data.table/graphs/contributors">Contributors</a></li>
+<li>&middot;</li>
+<li><a href="https://github.com/Rdatatable/data.table/issues?direction=desc&labels=bug&sort=updated&state=open">Issues</a></li>
+<li>&middot;</li>
+<li><a href="https://github.com/Rdatatable/data.table/issues?direction=desc&labels=feature+request&page=1&sort=updated&state=open">Feature Requests</a></li>
+<li>&middot;</li>
+<li><a href="https://r-forge.r-project.org/mail/?group_id=240">Mailing list</a></li>
+<li>&middot;</li>
+<li><a href="http://stackoverflow.com/questions/tagged/r+data.table">Stackoverflow tag</a></li>
+</ul>
+<span class="pull-right"><a href="#top">Back to top</a></span>
+</div>
+</footer>
+<script src="https://code.jquery.com/jquery.js"></script>
+<script src="../js/waypoints.js"></script>
+<script src="../js/bootstrap.min.js"></script>
+<script src="../js/docs.min.js"></script>
+<!-- Start of StatCounter Code -->
+<script type="text/javascript">
+var sc_project=6237851;
+var sc_invisible=1;
+var sc_security="518c93ca";
+</script>
+<script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script>
+<noscript>
+<div class="statcounter">
+<a title="tumblr stats" href="http://statcounter.com/tumblr/" >
+<img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="tumblr stats" ></a>
+</div>
+</noscript>
+<!-- End of StatCounter Code -->
+</body>
+</html>

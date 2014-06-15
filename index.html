@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="data.table, an R package for faster subset, grouping, assign, ordered joins and list columns in short and flexible syntax, for faster development.">
+        <meta name="keywords" content="R, data.table, dplyr, benchmark, big-data">
+        <meta name="author" content="Matt Dowle, Arun Srinivasan, other authors and contributors">
+
+        <title>data.table &middot; Homepage</title>
+
+        <!-- Bootstrap core CSS -->
+        <link href="www/css/bootstrap.css" rel="stylesheet" media="screen">
+        <!-- Extensive set of glyphicons (maybe we'll need later?) -->
+<!--         <link href="www/css/whhg.css" rel="stylesheet"> -->
+        
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <!-- Google analytics
+        <script>
+            var _gaq = _gaq || [];
+            _gaq.push(['_setAccount', 'UA-146052-10']);
+            _gaq.push(['_trackPageview']);
+            (function() {
+                var ga = document.createElement('script'); ga.async = true;
+                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+            })();
+        </script>
+        -->
+    </head>
+    <body>
+        <a class="sr-only" href="#content">Skip to main content</a>
+        <!-- banner -->
+        <main class="bs-masthead" id="content" role="main">
+            <div class="container">
+                <h1> data.table<span class="lead5"><sub>v1.9.2</sub></p></h1>
+                <p class="lead4"> An R package that extends data.frames</p>
+                <p class="lead">Now on Github</p>
+            </div>
+        </main>
+
+        <!-- Master nav -->
+        <header>
+            <div class="navbar-default">
+<!--                 <div class="navbar-header"> -->
+                    <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+<!--                 </div> -->
+                <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+                    <ul class="nav navbar-nav">
+                        <li><a href="./"><span class="glyphicon glyphicon-home"></span> data.table</a>
+                        </li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-left">
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs"><span class="glyphicon glyphicon-pencil"></span> Get started <span class="caret"></span></a>
+                            <ul class="dropdown-menu" aria-labelledby="docs">
+                                <li><a href="./www/about/">data.table project</a></li>
+                                <li><a href="./www/intro/">Quick Introduction</a></li>
+                                <li><a href="./www/learn-by-example/">Learn with example</a></li>
+                                <li><a href="./www/faq/">FAQs</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="./www/benchmarks/"><span class="glyphicon glyphicon-wrench"></span> Benchmarks</a></li>
+                        <li><a href="./www/gallery/"><span class="glyphicon glyphicon-book"></span> Gallery</a></li>
+                        <li><a href="./www/new/"><span class="glyphicon glyphicon-cog"></span> What's new</a></li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="docs"><span class="glyphicon glyphicon-question-sign"></span> How to<span class="caret"></span></a>
+                            <ul class="dropdown-menu" aria-labelledby="docs">
+                                <li><a href="./www/get-involved/">Get involved</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="./www/notes/">Release Notes</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <a href="https://github.com/Rdatatable/data.table"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png"></a>
+
+<!--
+                <h2 class="bs-featurette-title">short, flexible and intuitive syntax + <em>much</em> faster</h2>
+                <p class="lead"><span class="text-info">data.table 1.9.0</span> comes packed with <em>many</em> new <span class="text-success">features</span>, loads of internal enhancements for <span class="text-success">speed</span> and efficient <span class="text-success">memory-usage</span>, including <em>a lot</em> of <span class="text-success">bug-fixes</span>.</p>
+-->
+
+<!--
+        <div class="alert alert-dismissable alert-warning">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            <p>Please note that this new data.table homepage is still under construction.</p>
+        </div>
+-->
+
+        <div class="bs-featurette">
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-4">
+                        <h3><span class="glyphicon glyphicon-pencil"></span> Dive right in</h3>
+                        <p>Get quickly introduced, FAQs, learn with examples </p>
+                        <a href=./www/about/#get-started button type="button" class="btn btn-sm btn-success" onclick="_gaq.push(['_trackEvent', 'Jumbotron actions', 'get-started']);">Get started &rarr;</a>
+                    </div>
+                    <div class="col-sm-4">
+                        <h3><span class="glyphicon glyphicon-wrench"></span> Extensive benchmarks</h3>
+                        <p>Speed comparisons of <code>data.table</code> against <code>base</code> and other tools including <code>dplyr</code></p>
+                        <a href=./www/benchmarks/#introduction button type="button" class="btn btn-sm btn-success" onclick="_gaq.push(['_trackEvent', 'Jumbotron actions', 'benchmarks']);">On to benchmarks &rarr;</a>
+                    </div>
+                    <div class="col-sm-4">
+                        <h3><span class="glyphicon glyphicon-cog"></span> New features</h3>
+                        <p>Learn what's new in <code2>v1.9</code2>. Fast <code2>melt</code2>, <code2>cast</code2>, enhancements to <code2>fread</code2> + more</p>
+                    <a href=./www/new/#introduction button type="button" class="btn btn-sm btn-success" onclick="_gaq.push(['_trackEvent', 'Jumbotron actions', 'features']);">What's new &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bs-featurettebg2">
+            <div class="container">
+                <p class="lead0">data.table offers fast</p>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="welldark well-sm">
+                            <p>Aggregation</p>
+                            <code3>DT[, list(sx=sum(x)), by=z]</code3>
+                        </div>    
+                    </div>
+                    <div class="col-md-4">
+                        <div class="welldark well-sm">
+                            <p>Ordered joins</p>
+                            <code3>DT1[DT2, nomatch=, mult=]</code3>
+                        </div>    
+                    </div>
+                    <div class="col-md-4">
+                        <div class="welldark well-sm">
+                            <p>Add/modify/del columns by reference</p>
+                            <code3>DT1[, `:=`(x=val, y=new_val, z=NULL)]</code3>
+                        </div>    
+                    </div>
+                </div>
+                <p></p>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="welldark well-sm">
+                            <p>File reading</p>
+                            <code3>fread("big_file.csv")</code3>
+                        </div>    
+                    </div>
+                    <div class="col-md-4">
+                        <div class="welldark well-sm">
+                            <p>Rolling joins</p>
+                            <code3>DT1[DT2, nomatch=, mult=, roll=]</code3>
+                        </div>    
+                    </div>
+                    <div class="col-md-4">
+                        <div class="welldark well-sm">
+                            <p>Chained queries</p>
+                            <code3>DT1[, cy := cumsum(y), by=x][DT2]</code3>
+                        </div>    
+                    </div>
+                    <p class="lead0">and more, all in a natural syntax: <code3>DT[where, select|update, by]</code3></p>
+                </div>
+
+                <a href="./www/about/#welcome" class="btn btn-success">Read about the data.table project</a>
+
+            </div>
+        </div>
+
+        <div class="bs-featurettebg">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="lead0">Contribute</p>
+                        <p class="lead">Improve <code2>docs</code2>, report/fix <code2>bugs</code2> and implement <code2>features</code2>.</p>
+                        <a href=./www/get-involved/ button type="button" class="btn btn-sm btn-success" onclick="_gaq.push(['_trackEvent', 'Jumbotron actions', 'get-involved']);">How to contribute?</a>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="lead0">Gallery</p>
+                        <p class="lead">Examples highlighting features of  <code>data.table</code>.</p>
+                        <a href=./www/gallery/#welcome button type="button" class="btn btn-sm btn-success" onclick="_gaq.push(['_trackEvent', 'Jumbotron actions', 'code-examples']);">Code examples</a>
+                    </div>
+                </div>
+            </div>
+        </div>        
+        <!-- Footer -->
+        <footer class="bs-footer" role="contentinfo">
+        
+            <div class="container">
+
+                <iframe src="http://ghbtns.com/github-btn.html?user=Rdatatable&repo=data.table&type=watch&count=true"
+                allowtransparency="true" frameborder="0" scrolling="0" width="110" height="20"></iframe>
+
+                <iframe src="http://ghbtns.com/github-btn.html?user=Rdatatable&repo=data.table&type=fork&count=true"
+                allowtransparency="true" frameborder="0" scrolling="0" width="95" height="20"></iframe>
+
+
+                <div class="footer-links">
+                    <p>Designed using <a href="http://getbootstrap.com">Bootstrap</a> and styled with <a href="http://bootswatch.com/">Bootswatch</a> using <a href="http://bootswatch.com/cerulean">Cerulean</a> theme.</p>
+                </div>
+                <ul class="footer-links muted">
+                    <li>Version 1.9.2</li>
+                    <li>&middot;</li>
+                    <li><a href="https://github.com/Rdatatable/data.table">Homepage</a></li>
+                    <li>&middot;</li>
+                    <li><a href="https://github.com/Rdatatable/data.table/graphs/contributors">Contributors</a></li>
+                    <li>&middot;</li>
+                    <li><a href="https://github.com/Rdatatable/data.table/issues?direction=desc&labels=bug&sort=updated&state=open">Issues</a></li>
+                    <li>&middot;</li>
+                    <li><a href="https://github.com/Rdatatable/data.table/issues?direction=desc&labels=feature+request&page=1&sort=updated&state=open">Feature Requests</a></li>
+                    <li>&middot;</li>
+                    <li><a href="https://r-forge.r-project.org/mail/?group_id=240">Mailing list</a></li>
+                    <li>&middot;</li>
+                    <li><a href="http://stackoverflow.com/questions/tagged/r+data.table">Stackoverflow tag</a></li>
+                </ul>
+                <span class="pull-right"><a href="#top">Back to top</a></span>
+            </div>
+        </footer>
+
+        <script src="https://code.jquery.com/jquery.js"></script>
+        <script src="www/js/waypoints.js"></script>
+        <script src="www/js/bootstrap.min.js"></script>
+        <script src="www/js/docs.min.js"></script>
+
+        <!-- Start of StatCounter Code -->
+        <script type="text/javascript">
+            var sc_project=6237851;
+            var sc_invisible=1;
+            var sc_security="518c93ca";
+        </script>
+
+        <script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script>
+        <noscript>
+            <div class="statcounter">
+                <a title="tumblr stats" href="http://statcounter.com/tumblr/" >
+                <img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="tumblr stats" ></a>
+            </div>
+        </noscript>
+        <!-- End of StatCounter Code -->
+
+    </body>
+</html>
