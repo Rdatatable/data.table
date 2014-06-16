@@ -1,0 +1,3 @@
+
+SEXP isOrderedSubset(SEXP, SEXP);
+

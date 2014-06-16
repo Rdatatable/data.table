@@ -4615,6 +4615,20 @@ test(1304.2, ans1, ans2)
 DT <- data.table(x=1:5, y=6:10)
 test(1305, setDF(DT), data.frame(x=1:5, y=6:10))
 
+# .SD retains as much of head(key) as appropriate.
+#  by= always keeps data appearance order, so it's which columns are grouped and selected that drive how much of key is retained
+DT = data.table(a=1:3,b=1:6,c=1:6,key="a,b")
+test(1306, DT[1:2,key(.SD)], c("a","b"))
+test(1307, DT[2:1,key(.SD)], NULL)
+test(1308, DT[,key(.SD),by=a], data.table(a=integer()))
+test(1309, DT[,key(.SD),by=b], data.table(b=DT$b, V1="a"))
+test(1310, DT[,key(.SD),by=c%%2L], data.table(c=c(1L,1L,0L,0L), V1=c("a","b","a","b")))
+test(1311, DT[,list(list(key(.SD))),by=a,.SDcols=1:2], data.table(a=1:3, V1=list(c("a","b")),key="a"))  # .SDcols as Arun found
+
+# That setkey can't operate on locked tables. Such as .SD, reorder original data similar to := caught on .SD
+# test(1312, 
+
+
 ##########################
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.

@@ -4,6 +4,7 @@
 #include <Rdefines.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
+#include "data.table.h"
 
 extern size_t sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
@@ -83,13 +84,17 @@ SEXP cross_join(SEXP s, SEXP env) {
     return(r);
 }
 
-static SEXP subsetVectorRaw(SEXP x, SEXP idx, int n)
+static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
 // Only for use by subsetDT() or subsetVector() below, hence static
-// n is the count of non-zero (including NAs) in idx i.e. the length of the result
+// l is the count of non-zero (including NAs) in idx i.e. the length of the result
+// tl is the amount to be allocated,  tl>=l
 // TO DO: if no 0 or NA detected up front in subsetDT() below, could switch to a faster subsetVectorRawNo0orNA()
 {
     int i, this, ansi=0, max=length(x);
-    SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+    if (tl<l) error("Internal error: tl<n passed to subsetVectorRaw");
+    SEXP ans = PROTECT(allocVector(TYPEOF(x), tl));
+    SETLENGTH(ans, l);
+    SET_TRUELENGTH(ans, tl);
     switch(TYPEOF(x)) {
     case INTSXP :
         for (i=0; i<LENGTH(idx); i++) {
@@ -129,7 +134,7 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int n)
     default :
         error("Unknown column type '%s'", type2char(TYPEOF(x)));
     }
-    if (ansi != n) error("Internal error: ansi [%d] != n [%d] at the end of subsetVector", ansi, n);
+    if (ansi != l) error("Internal error: ansi [%d] != l [%d] at the end of subsetVector", ansi, l);
     copyMostAttrib(x, ans);
     UNPROTECT(1);
     return(ans);
@@ -213,8 +218,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // rows and cols are 1-based passe
 // Immediate need is for R 3.1 as lglVec[1] now returns R's global TRUE and we don't want := to change that global [think 1 row data.tables]
 // Could do it other ways but may as well go to C now as we were going to do that anyway
     
-    SEXP ans;
-    R_len_t i, ansn=0;
+    SEXP ans, tmp;
+    R_len_t i, j, ansn=0;
     int this;
     if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows)));
     if (!length(x)) error("x is an empty list() of 0 columns");
@@ -224,17 +229,40 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // rows and cols are 1-based passe
         this = INTEGER(cols)[i];
         if (this<1 || this>LENGTH(x)) error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
     }
-    ans = PROTECT(allocVector(VECSXP, LENGTH(cols)));
+    ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+64));  // just do alloc.col directly, eventually alloc.col can be deprecated.
+    copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol  
+                             // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
+    SET_TRUELENGTH(ans, LENGTH(ans));
+    SETLENGTH(ans, LENGTH(cols));
     for (i=0; i<LENGTH(cols); i++) {
-        SET_VECTOR_ELT(ans, i, subsetVectorRaw(VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, ansn));
+        SET_VECTOR_ELT(ans, i, subsetVectorRaw(VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, ansn, ansn));  // column vectors aren't over allocated yet
     }
-    setAttrib(ans, R_NamesSymbol, subsetVectorRaw( getAttrib(x, R_NamesSymbol), cols, LENGTH(cols) ));
+    setAttrib(ans, R_NamesSymbol, subsetVectorRaw( getAttrib(x, R_NamesSymbol), cols, LENGTH(cols), LENGTH(cols)+64 ));
+    setAttrib(ans, R_RowNamesSymbol, tmp=allocVector(INTSXP, 2));
+    INTEGER(tmp)[0] = NA_INTEGER;
+    INTEGER(tmp)[1] = -ansn;
+    // maintain key if ordered subset ...
+    SEXP key = getAttrib(x, install("sorted"));
+    if (length(key)) {
+        SEXP in = PROTECT(chmatch(key,getAttrib(ans,R_NamesSymbol), 0, TRUE)); // (nomatch ignored when in=TRUE)
+        i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
+        UNPROTECT(1);
+        // i is now the keylen that can be kept. 2 lines above much easier in C than R
+        if (i==0) {
+            setAttrib(ans, install("sorted"), R_NilValue);
+            // clear key that was copied over by copyMostAttrib() above
+        } else if (isOrderedSubset(rows, ScalarInteger(length(VECTOR_ELT(x,0))))) {
+            setAttrib(ans, install("sorted"), tmp=allocVector(STRSXP, i));
+            for (j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
+        }
+    }
     UNPROTECT(1);
     return ans;
 }
 
 SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
-    return subsetVectorRaw(x, idx, check_idx(idx, length(x)));
+    int n = check_idx(idx, length(x));
+    return subsetVectorRaw(x, idx, n, n);
 }
 
 
