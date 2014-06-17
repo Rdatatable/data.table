@@ -123,6 +123,10 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
   * `setDF` is now implemented. It accepts a data.table and converts it to data.frame by reference, **#5528** (git [#338](https://github.com/Rdatatable/data.table/issues/338)). Thanks to canneff for the discussion [here]() on data.table mailing list.
 
   * `.I` gets named as `I` (instead of `.I`) wherever possible, similar to `.N`, **#5290** (git [#344](https://github.com/Rdatatable/data.table/issues/344)).
+  
+  * `setkey` on `.SD` is now an error, rather than a warning for each group about rebuilding the key. The error is consistent with attempting to use `:=` in a `.SD` subquery. 
+  `.SD is locked. Using set*() functions on .SD is reserved for possible future use; a tortuously flexible way to modify the original data by group.`
+  Thanks to Ron Hylton for highlighting the issue on datatable-help [here](http://r.789695.n4.nabble.com/data-table-is-asking-for-help-tp4692080.html).
 
 #### BUG FIXES
 

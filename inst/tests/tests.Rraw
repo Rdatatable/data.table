@@ -4625,8 +4625,10 @@ test(1309, DT[,key(.SD),by=b], data.table(b=DT$b, V1="a"))
 test(1310, DT[,key(.SD),by=c%%2L], data.table(c=c(1L,1L,0L,0L), V1=c("a","b","a","b")))
 test(1311, DT[,list(list(key(.SD))),by=a,.SDcols=1:2], data.table(a=1:3, V1=list(c("a","b")),key="a"))  # .SDcols as Arun found
 
-# That setkey can't operate on locked tables. Such as .SD, reorder original data similar to := caught on .SD
-# test(1312, 
+# That setkey can't operate on locked tables such as .SD. Added in v1.9.3.
+DT = data.table(a=1:3,b=6:1)
+test(1312, DT[,setkey(.SD),by=a], error="SD is locked. Using set.*functions on [.]SD is reserved")
+# was warning "Already keyed by this key but had invalid row order" due to the key not being cleared after the previous group.  A solution could have been to put back the original key on populating .SD for each group.  But instead we reserve it for future use and push the user towards doing it a different more efficient way (see Arun's speedups in the datatable-help thread).
 
 
 ##########################

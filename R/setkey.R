@@ -15,6 +15,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
     }
     if (!is.data.table(x)) stop("x is not a data.table")
     if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setkey.")
+    if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using set*() functions on .SD is reserved for possible future use; a tortuously flexible way to modify the original data by group. If you need a quick fix try set*(copy(.SD)), but that will be slower and there's almost certainly a better way.")
     if (!length(cols)) {
         warning("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
         setattr(x,"sorted",NULL)
