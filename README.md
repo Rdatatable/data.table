@@ -28,7 +28,9 @@ The news below is updated as soon as new features or bug fixes are available in 
 
 _Stability_ refers to features and syntax, not how buggy it is. For example, if you install the latest version from GitHub and start using a new feature, you may sometimes find it is subsequently changed and your new code breaks. When we release to CRAN we are saying that we are happy with the changes and you can rely on them being there in future.  If you hit a problem that the development version fixes, then it is usually safe to simply upgrade to it.
 
+
 ### Changes in v1.9.3  (in development on GitHub)
+
 
 #### NEW FEATURES
 
@@ -124,7 +126,10 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 
   * `.I` gets named as `I` (instead of `.I`) wherever possible, similar to `.N`, **#5290** (git [#344](https://github.com/Rdatatable/data.table/issues/344)).
   
-  * `setkey` on `.SD` is now an error, rather than warnings for each group about rebuilding the key. The error is similar to when attempting to use `:=` in a `.SD` subquery: `".SD is locked. Using set*() functions on .SD is reserved for possible future use; a tortuously flexible way to modify the original data by group."`  Thanks to Ron Hylton for highlighting the issue on datatable-help [here](http://r.789695.n4.nabble.com/data-table-is-asking-for-help-tp4692080.html).
+  * `setkey` on `.SD` is now an error, rather than warnings for each group about rebuilding the key. The new error is similar to when attempting to use `:=` in a `.SD` subquery: `".SD is locked. Using set*() functions on .SD is reserved for possible future use; a tortuously flexible way to modify the original data by group."`  Thanks to Ron Hylton for highlighting the issue on datatable-help [here](http://r.789695.n4.nabble.com/data-table-is-asking-for-help-tp4692080.html).
+  
+  * Looping calls to unique() is now faster by avoiding internal overhead of calling [.data.table. Thanks again to Ron Hylton for highlighting in the same thread above. His example is reduced from 28 sec to 9 sec, with identical results.
+  
 
 #### BUG FIXES
 
@@ -199,6 +204,7 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
      But this was very lenient. For ex: `DT[, a := "bla"]`, where `a` is a logical column should get a warning. This is 
      now fixed such that only very obvious cases coerces silently, ex: `DT[, a := 1]` where `a` is `integer`. Closes # 5442. 
      Thanks to Michele Carriero and John Laing for reporting.
+
 
 #### NOTES
 

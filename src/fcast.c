@@ -222,7 +222,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // rows and cols are 1-based passe
     R_len_t i, j, ansn=0;
     int this;
     if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows)));
-    if (!length(x)) error("x is an empty list() of 0 columns");
+    if (!length(x)) return(x);  // return empty list
     ansn = check_idx(rows, length(VECTOR_ELT(x,0)));  // check once up front before looping calls to subsetVectorRaw below
     if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols)));
     for (i=0; i<LENGTH(cols); i++) {

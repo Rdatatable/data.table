@@ -28,7 +28,10 @@ duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key
 unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...) {
     if (!cedta()) return(NextMethod("unique"))
     dups <- duplicated.data.table(x, incomparables, fromLast, by, ...)
-    x[!dups]
+    .Call(CsubsetDT, x, which(!dups), seq_len(ncol(x)))
+    # i.e. x[!dups] but avoids [.data.table overhead when unique() is loop'd
+    # TO DO: allow logical to be passed through to C level, and allow cols=NULL to mean all, for further speed gain.
+    #        See news for v1.9.3 for link to benchmark use-case on datatable-help.
 }
 
 ## Specify the column names to be used in the uniqueness query, and if this
