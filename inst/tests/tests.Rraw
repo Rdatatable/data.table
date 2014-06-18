@@ -4668,7 +4668,7 @@ DT[c(1,6), y := NA]
 test(1313.19, DT[, list(y=min(y)), by=x], DT[c(1,6)])
 test(1313.20, DT[, list(y=max(y)), by=x], DT[c(1,6)])
 test(1313.21, DT[, list(y=min(y, na.rm=TRUE)), by=x], DT[c(2,7)])
-test(1313.22, DT[, list(y=max(y, na.rm=TRUE)), by=x], DT[c(5,1)])
+test(1313.22, DT[, list(y=max(y, na.rm=TRUE)), by=x], DT[c(5,10)])
 
 
 ##########################
