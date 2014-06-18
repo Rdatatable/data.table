@@ -165,10 +165,10 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
      http://stackoverflow.com/questions/22375404/unable-to-use-evalparse-in-data-table-function/22375557#22375557
 
   *  Using `by` columns with attributes (ex: factor, Date) in `j` did not retain the attributes, also in case of `:=`.
-     This was partially a regression from an earlier fix (#155) due to recent changes for R3.1.0. Now fixed and 
+     This was partially a regression from an earlier fix ([#155](https://github.com/Rdatatable/data.table/issues/155) due to recent changes for R3.1.0. Now fixed and 
      clearer tests added. Thanks to Christophe Dervieux for reporting and to Adam B for reporting here on SO:
      http://stackoverflow.com/questions/22536586/by-seems-to-not-retain-attribute-of-date-type-columns-in-data-table-possibl. 
-     Closes #36.
+     Closes [#36](https://github.com/Rdatatable/data.table/issues/36).
 
   *  `.BY` special variable did not retain names of the grouping columns which resulted in not being able to access `.BY$grpcol` in `j`. Ex: `DT[, .BY$x, by=x]`. This is now fixed. Closes # 5415. Thanks to Stephane Vernede for the bug report.
 
