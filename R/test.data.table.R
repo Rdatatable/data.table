@@ -1,13 +1,13 @@
 
-test.data.table = function(verbose=FALSE) {
+test.data.table = function(verbose=FALSE, pkg="pkg") {
     if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
         # package developer
         if ("package:data.table" %in% search()) stop("data.table package loaded")
         if (.Platform$OS.type == "unix" && Sys.info()['sysname'] != "Darwin")
             d = path.expand("~/R/gitdatatable/pkg/inst/tests")
         else {
-            if (!"pkg" %in% dir()) stop("'pkg' not in dir()") 
-            d = paste(getwd(),"/pkg/inst/tests",sep="")
+            if (!pkg %in% dir()) stop(paste(pkg, " not in dir()", sep=""))
+            d = paste(getwd(),"/", pkg, "/inst/tests",sep="")
         }
     } else {
         # user

@@ -59,12 +59,12 @@ SEXP gsum(SEXP x, SEXP narm)
         for (i=0; i<n; i++) {
             thisgrp = grp[i];
             if(INTEGER(x)[i] == NA_INTEGER) { 
-	            if (!LOGICAL(narm)[0]) s[thisgrp] = NA_REAL;  // Let NA_REAL propogate from here. R_NaReal is IEEE.
-	            continue;
-	        }
-	        s[thisgrp] += INTEGER(x)[i];  // no under/overflow here, s is long double (like base)
-	    }
-	    ans = PROTECT(allocVector(INTSXP, ngrp));
+                if (!LOGICAL(narm)[0]) s[thisgrp] = NA_REAL;  // Let NA_REAL propogate from here. R_NaReal is IEEE.
+                continue;
+            }
+            s[thisgrp] += INTEGER(x)[i];  // no under/overflow here, s is long double (like base)
+        }
+        ans = PROTECT(allocVector(INTSXP, ngrp));
         for (i=0; i<ngrp; i++) {
             if (s[i] > INT_MAX || s[i] < INT_MIN) {
                 warning("Group %d summed to more than type 'integer' can hold so the result has been coerced to 'numeric' automatically, for convenience.", i+1);
@@ -84,14 +84,14 @@ SEXP gsum(SEXP x, SEXP narm)
         for (i=0; i<n; i++) {
             thisgrp = grp[i];
             if(ISNAN(REAL(x)[i]) && LOGICAL(narm)[0]) continue;  // else let NA_REAL propogate from here
-	        s[thisgrp] += REAL(x)[i];  // done in long double, like base
-	    }
-	    for (i=0; i<ngrp; i++) {
-	        if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
+            s[thisgrp] += REAL(x)[i];  // done in long double, like base
+        }
+        for (i=0; i<ngrp; i++) {
+            if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
             else if (s[i] < -DBL_MAX) REAL(ans)[i] = R_NegInf;
             else REAL(ans)[i] = (double)s[i];
         }
-	    break;
+        break;
     default:
         free(s);
         error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
@@ -140,18 +140,18 @@ SEXP gmean(SEXP x, SEXP narm)
         for (i=0; i<n; i++) {
             thisgrp = grp[i];
             if(INTEGER(x)[i] == NA_INTEGER) continue;
-	        s[thisgrp] += INTEGER(x)[i];  // no under/overflow here, s is long double
-	        c[thisgrp]++;
-	    }
+            s[thisgrp] += INTEGER(x)[i];  // no under/overflow here, s is long double
+            c[thisgrp]++;
+        }
         break;
     case REALSXP:
         for (i=0; i<n; i++) {
             thisgrp = grp[i];
             if (ISNAN(REAL(x)[i])) continue;
-	        s[thisgrp] += REAL(x)[i];
-	        c[thisgrp]++;
-	    }
-	    break;
+            s[thisgrp] += REAL(x)[i];
+            c[thisgrp]++;
+        }
+        break;
     default:
         free(s); free(c);
         error("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
@@ -170,6 +170,200 @@ SEXP gmean(SEXP x, SEXP narm)
     return(ans);
 }
 
-// TO DO: gmin, gmax, gsd, gprod, gwhich.min, gwhich.max
+// TO DO: gsd, gprod, gwhich.min, gwhich.max
 
+// gmin
+SEXP gmin(SEXP x, SEXP narm)
+{
+    if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
+    if (!isVectorAtomic(x)) error("GForce sum can only be applied to columns, not .SD or similar. To find min of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lappy(.SD,min),by=,.SDcols=]'");
+    R_len_t i, thisgrp=0;
+    int n = LENGTH(x);
+    //clock_t start = clock();
+    SEXP ans;
+    if (grpn != length(x)) error("grpn [%d] != length(x) [%d] in gsum", grpn, length(x));
+    char *update = Calloc(ngrp, char);
+    if (update == NULL) error("Unable to allocate %d * %d bytes for gsum", ngrp, sizeof(char));
+    switch(TYPEOF(x)) {
+    case LGLSXP: case INTSXP:
+        ans = PROTECT(allocVector(INTSXP, ngrp));
+        for (i=0; i<ngrp; i++) INTEGER(ans)[i] = 0;
+        if (!LOGICAL(narm)[0]) {
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                if (INTEGER(x)[i] != NA_INTEGER && INTEGER(ans)[thisgrp] != NA_INTEGER) {
+                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] > INTEGER(x)[i] ) {
+                        INTEGER(ans)[thisgrp] = INTEGER(x)[i];
+                        if (update[thisgrp] != 1) update[thisgrp] = 1;
+                    }
+                } else INTEGER(ans)[thisgrp] = NA_INTEGER;
+            }
+        } else {
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                if (INTEGER(x)[i] != NA_INTEGER) {
+                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] > INTEGER(x)[i] ) {
+                        INTEGER(ans)[thisgrp] = INTEGER(x)[i];
+                        if (update[thisgrp] != 1) update[thisgrp] = 1;
+                    }
+                } else {
+                    if (update[thisgrp] != 1) {
+                        INTEGER(ans)[thisgrp] = NA_INTEGER;
+                    }
+                }
+            }
+            for (i=0; i<ngrp; i++) {
+                if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
+                    warning("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base");
+                    UNPROTECT(1);
+                    ans = PROTECT(coerceVector(ans, REALSXP));
+                    for (i=0; i<ngrp; i++) {
+                        if (update[i] != 1) REAL(ans)[i] = R_PosInf;
+                    }
+                }
+            }
+        }
+        break;
+    case REALSXP:
+        ans = PROTECT(allocVector(REALSXP, ngrp));
+        for (i=0; i<ngrp; i++) REAL(ans)[i] = 0;
+        if (!LOGICAL(narm)[0]) {
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                if ( !ISNA(REAL(x)[i]) && !ISNA(REAL(ans)[thisgrp]) ) {
+                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[i] ) {
+                        REAL(ans)[thisgrp] = REAL(x)[i];
+                        if (update[thisgrp] != 1) update[thisgrp] = 1;
+                    }
+                } else REAL(ans)[thisgrp] = NA_REAL;
+            }
+        } else {
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                if ( !ISNA(REAL(x)[i]) ) {
+                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[i] ) {
+                        REAL(ans)[thisgrp] = REAL(x)[i];
+                        if (update[thisgrp] != 1) update[thisgrp] = 1;
+                    }
+                } else {
+                    if (update[thisgrp] != 1) {
+                        REAL(ans)[thisgrp] = R_PosInf;
+                    }
+                }
+            }
+            // everything taken care of already. Just warn if all NA groups have occurred at least once
+            for (i=0; i<ngrp; i++) {
+                if (update[i] != 1)  {// equivalent of REAL(ans)[thisgrp] == R_PosInf
+                    warning("No non-missing values found in at least one group. Returning 'Inf' for such groups to be consistent with base");
+                    break;
+                }
+            }
+        }
+        break;
+    default:
+        error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    }
+    copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
+    UNPROTECT(1);
+    Free(update);
+    // Rprintf("this gsum took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+    return(ans);
+}
 
+// gmax
+SEXP gmax(SEXP x, SEXP narm)
+{
+    if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
+    if (!isVectorAtomic(x)) error("GForce sum can only be applied to columns, not .SD or similar. To find min of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lappy(.SD,min),by=,.SDcols=]'");
+    R_len_t i, thisgrp=0;
+    int n = LENGTH(x);
+    //clock_t start = clock();
+    SEXP ans;
+    if (grpn != length(x)) error("grpn [%d] != length(x) [%d] in gsum", grpn, length(x));
+    char *update = Calloc(ngrp, char);
+    if (update == NULL) error("Unable to allocate %d * %d bytes for gsum", ngrp, sizeof(char));
+    switch(TYPEOF(x)) {
+    case LGLSXP: case INTSXP:
+        ans = PROTECT(allocVector(INTSXP, ngrp));
+        for (i=0; i<ngrp; i++) INTEGER(ans)[i] = 0;
+        if (!LOGICAL(narm)[0]) { // simple case - deal in a straightforward manner first
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                if (INTEGER(x)[i] != NA_INTEGER && INTEGER(ans)[thisgrp] != NA_INTEGER) {
+                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] < INTEGER(x)[i] ) {
+                        INTEGER(ans)[thisgrp] = INTEGER(x)[i];
+                        if (update[thisgrp] != 1) update[thisgrp] = 1;
+                    }
+                } else  INTEGER(ans)[thisgrp] = NA_INTEGER;
+            }
+        } else {
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                if (INTEGER(x)[i] != NA_INTEGER) {
+                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] < INTEGER(x)[i] ) {
+                        INTEGER(ans)[thisgrp] = INTEGER(x)[i];
+                        if (update[thisgrp] != 1) update[thisgrp] = 1;
+                    }
+                } else {
+                    if (update[thisgrp] != 1) {
+                        INTEGER(ans)[thisgrp] = NA_INTEGER;
+                    }
+                }
+            }
+            for (i=0; i<ngrp; i++) {
+                if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
+                    warning("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base");
+                    UNPROTECT(1);
+                    ans = PROTECT(coerceVector(ans, REALSXP));
+                    for (i=0; i<ngrp; i++) {
+                        if (update[i] != 1) REAL(ans)[i] = -R_PosInf;
+                    }
+                }
+            }
+        }
+        break;
+    case REALSXP:
+        ans = PROTECT(allocVector(REALSXP, ngrp));
+        for (i=0; i<ngrp; i++) REAL(ans)[i] = 0;
+        if (!LOGICAL(narm)[0]) {
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                if ( !ISNA(REAL(x)[i]) && !ISNA(REAL(ans)[thisgrp]) ) {
+                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] < REAL(x)[i] ) {
+                        REAL(ans)[thisgrp] = REAL(x)[i];
+                        if (update[thisgrp] != 1) update[thisgrp] = 1;
+                    }
+                } else REAL(ans)[thisgrp] = NA_REAL;
+            }
+        } else {
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                if ( !ISNA(REAL(x)[i]) ) {
+                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] < REAL(x)[i] ) {
+                        REAL(ans)[thisgrp] = REAL(x)[i];
+                        if (update[thisgrp] != 1) update[thisgrp] = 1;
+                    }
+                } else {
+                    if (update[thisgrp] != 1) {
+                        REAL(ans)[thisgrp] = -R_PosInf;
+                    }
+                }
+            }
+            // everything taken care of already. Just warn if all NA groups have occurred at least once
+            for (i=0; i<ngrp; i++) {
+                if (update[i] != 1)  { // equivalent of REAL(ans)[thisgrp] == -R_PosInf
+                    warning("No non-missing values found in at least one group. Returning '-Inf' for such groups to be consistent with base");
+                    break;
+                }
+            }
+        }
+        break;
+    default:
+        error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    }
+    copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
+    UNPROTECT(1);
+    Free(update);
+    // Rprintf("this gsum took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+    return(ans);
+}

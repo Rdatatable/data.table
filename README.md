@@ -116,7 +116,7 @@ DT[, grep("^b", names(DT)) := NULL] # where no columns start with b
 # warns now and returns DT instead of error
 ```
 
-  * GForce now is also optimised for j-expression with `.N`. Closes **#5760** (git [#334](https://github.com/Rdatatable/data.table/issues/334)).
+  * GForce now is also optimised for j-expression with `.N`. Closes **#5760** (git [#334](https://github.com/Rdatatable/data.table/issues/334) and git [#523](https://github.com/Rdatatable/data.table/issues/523)).
 ```S
 DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.2 - doesn't know to use GForce - will be (relatively) slower
 DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
@@ -130,6 +130,8 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
   
   * Looping calls to `unique(DT)` such as in `DT[,unique(.SD),by=group]` is now faster by avoiding internal overhead of calling `[.data.table`. Thanks again to Ron Hylton for highlighting in the [same thread](http://r.789695.n4.nabble.com/data-table-is-asking-for-help-tp4692080.html). His example is reduced from 28 sec to 9 sec, with identical results.
   
+  * Following `gsum` and `gmean`, now `gmin` and `gmax` from GForce are also implemented. Closes part of #5754 (git [#523](https://github.com/Rdatatable/data.table/issues/523)). Benchmarks are also provided.
+        i.e., DT[, list(sum(x), min(y), max(z), .N), by=...] # runs by default using GForce
 
 #### BUG FIXES
 

@@ -40,6 +40,8 @@ SEXP gstart();
 SEXP gend();
 SEXP gsum();
 SEXP gmean();
+SEXP gmin();
+SEXP gmax();
 SEXP isOrderedSubset();
 SEXP pointWrapper();
 SEXP setNumericRounding();
@@ -89,6 +91,8 @@ R_CallMethodDef callMethods[] = {
 {"Cgend", (DL_FUNC) &gend, -1},
 {"Cgsum", (DL_FUNC) &gsum, -1},
 {"Cgmean", (DL_FUNC) &gmean, -1},
+{"Cgmin", (DL_FUNC) &gmin, -1},
+{"Cgmax", (DL_FUNC) &gmax, -1},
 {"CisOrderedSubset", (DL_FUNC) &isOrderedSubset, -1},
 {"CpointWrapper", (DL_FUNC) &pointWrapper, -1},
 {"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},

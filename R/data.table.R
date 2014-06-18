@@ -1250,7 +1250,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         dotN <- function(x) if (is.name(x) && x == ".N") TRUE else FALSE # For #5760
         if (getOption("datatable.optimize")>=2 && !byjoin && !length(irows) && length(f__) && length(ansvars) && !length(lhs)) {
             # Apply GForce
-            gfuns = c("sum","mean",".N") # added .N for #5760
+            gfuns = c("sum","mean",".N", "min", "max") # added .N for #5760
             .ok = function(q) {
                 if (dotN(q)) return(TRUE) # For #5760
                 ans = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]]) && (length(q)==2 || identical("na",substring(names(q)[3L],1,2)))
@@ -2138,6 +2138,7 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
 
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
+gmin = function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
+gmax = function(x, na.rm=FALSE) .Call(Cgmax, x, na.rm)
 gstart = function(o, f, l) .Call(Cgstart, o, f, l)
 gend = function() .Call(Cgend)
-
