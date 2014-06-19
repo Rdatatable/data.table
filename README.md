@@ -2,7 +2,7 @@
 **Getting started** : [data.table homepage](http://datatable.r-forge.r-project.org/)<br>
 **Support** : [data.table tag](http://stackoverflow.com/questions/tagged/r+data.table) (please read: [how best to ask](http://stackoverflow.com/questions/5963269/how-to-make-a-great-r-reproducible-example))<br>
 **Notices/discussion** : [Nabble](http://r.789695.n4.nabble.com/datatable-help-f2315188.html);  [Gmane](http://dir.gmane.org/gmane.comp.lang.r.datatable); 
-[HTML Archive](http://lists.r-forge.r-project.org/pipermail/datatable-help); 
+[HTML Archive](http://lists.r-forge.r-project.org/pipermail/#datatable-help); 
 [RSS](http://rss.gmane.org/gmane.comp.lang.r.datatable);
 [Subscribe to post](http://lists.r-forge.r-project.org/cgi-bin/mailman/listinfo/datatable-help)<br>
 **User reviews** : [Crantastic](http://crantastic.org/packages/data-table)<br>
@@ -116,13 +116,13 @@ DT[, grep("^b", names(DT)) := NULL] # where no columns start with b
 # warns now and returns DT instead of error
 ```
 
-  * GForce now is also optimised for j-expression with `.N`. Closes **#5760** (git [#334](https://github.com/Rdatatable/data.table/issues/334) and git [#523](https://github.com/Rdatatable/data.table/issues/523)).
+  * GForce now is also optimised for j-expression with `.N`. Closes **#5760** (git [#334](https://github.com/Rdatatable/data.table/issues/334) and part of #5754 git [#523](https://github.com/Rdatatable/data.table/issues/523)).
 ```S
 DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.2 - doesn't know to use GForce - will be (relatively) slower
 DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 ```
 
-  * `setDF` is now implemented. It accepts a data.table and converts it to data.frame by reference, **#5528** (git [#338](https://github.com/Rdatatable/data.table/issues/338)). Thanks to canneff for the discussion [here]() on data.table mailing list.
+  * `setDF` is now implemented. It accepts a data.table and converts it to data.frame by reference, **#5528** (git [#338](https://github.com/Rdatatable/data.table/issues/338)). Thanks to canneff for the discussion [here](http://r.789695.n4.nabble.com/Is-there-any-overhead-to-converting-back-and-forth-from-a-data-table-to-a-data-frame-td4688332.html) on data.table mailing list.
 
   * `.I` gets named as `I` (instead of `.I`) wherever possible, similar to `.N`, **#5290** (git [#344](https://github.com/Rdatatable/data.table/issues/344)).
   
@@ -140,25 +140,25 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
   DT = data.table(a=1:2, b=letters[1:6], key="a,b")    # keyed by a and b
   DT[.(1), list(b,...)]    # correct result again (joining just to a not b but using b)
   ```
-  *  `setkey` works again when a non-key column is type list (e.g. each cell can itself be a vector), # 5366. Test added. Thanks to James Sams, Michael Nelson and Musx for the reproducible examples.
+  *  `setkey` works again when a non-key column is type list (e.g. each cell can itself be a vector), # 5366 (git [#54](https://github.com/Rdatatable/data.table/issues/54)). Test added. Thanks to James Sams, Michael Nelson and Musx for the reproducible examples.
   http://stackoverflow.com/questions/22186798/r-data-table-1-9-2-issue-on-setkey
 
   *  The warning "internal TRUE value has been modified" with recently released R 3.1 when grouping a table containing a logical column *and* where all groups are just 1 row is now fixed and tests added. Thanks to James Sams for the reproducible example. The warning is issued by R and we have asked if it can be upgraded to error (UPDATE: change now made for R 3.1.1 thanks to Luke Tierney).
 
-  *  `data.table(list())`, `data.table(data.table())` and `data.table(data.frame())` now return a null data.table (no columns) rather than one empty column, # 5377. Test added. Thanks to Shubh Bansal for reporting.
+  *  `data.table(list())`, `data.table(data.table())` and `data.table(data.frame())` now return a null data.table (no columns) rather than one empty column, # 5377 (git [#48](https://github.com/Rdatatable/data.table/issues/48)). Test added. Thanks to Shubh Bansal for reporting.
 
-  *  `unique(<NULL data.table>)` now returns a null data.table, # 5405. Thanks to agstudy for reporting.
+  *  `unique(<NULL data.table>)` now returns a null data.table, # 5405 (git [#44](https://github.com/Rdatatable/data.table/issues/44)). Thanks to agstudy for reporting.
 
-  *  `data.table()` converted POSIXlt to POSIXct, consistent with `base:::data.frame()`, but now also provides a helpful warning instead of coercing silently, # 5321. Thanks to Brodie Gaslam, Patrick and Ragy Isaac for reporting.
+  *  `data.table()` converted POSIXlt to POSIXct, consistent with `base:::data.frame()`, but now also provides a helpful warning instead of coercing silently, # 5321 (git [#59](https://github.com/Rdatatable/data.table/issues/59)) Thanks to Brodie Gaslam, Patrick and Ragy Isaac for reporting.
       http://stackoverflow.com/questions/21487614/error-creating-r-data-table-with-date-time-posixlt
       http://stackoverflow.com/questions/21320215/converting-from-data-frame-to-data-table-i-get-an-error-with-head
 
-  *  If another class inherits from data.table; e.g. `class(DT) == c("UserClass","data.table","data.frame")` then `DT[...]` now retains `UserClass` in the result. Thanks to Daniel Krizian for reporting, # 5296. Test added.
+  *  If another class inherits from data.table; e.g. `class(DT) == c("UserClass","data.table","data.frame")` then `DT[...]` now retains `UserClass` in the result. Thanks to Daniel Krizian for reporting, # 5296 (git [#64](https://github.com/Rdatatable/data.table/issues/44)). Test added.
 
   *  An error `object '<name>' not found` could occur in some circumstances, particularly after a previous error. Reported with non-ASCII characters in a column name, a red herring we hope since non-ASCII characters are fully supported in data.table including in column names. Fix implemented and tests added.
      http://stackoverflow.com/questions/22128047/how-to-avoid-weird-umlaute-error-when-using-data-table
 
-  *  Column order was reversed in some cases by `as.data.table.table()`, # 5408. Test added. Thanks to Benjamin Barnes for reporting.
+  *  Column order was reversed in some cases by `as.data.table.table()`, # 5408 (git [#43](https://github.com/Rdatatable/data.table/issues/43)). Test added. Thanks to Benjamin Barnes for reporting.
      
   *  `DT[, !"missingcol", with=FALSE]` now returns `DT` (rather than a NULL data.table) with warning that "missingcol" is not present.
 
@@ -174,37 +174,37 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 
   *  `.BY` special variable did not retain names of the grouping columns which resulted in not being able to access `.BY$grpcol` in `j`. Ex: `DT[, .BY$x, by=x]`. This is now fixed. Closes # 5415. Thanks to Stephane Vernede for the bug report.
 
-  *  Fixed another issue with `eval(parse(...))` in `j` along with assignment by reference `:=`. Closes # 5527. Thanks to Michele Carriero for reporting. 
+  *  Fixed another issue with `eval(parse(...))` in `j` along with assignment by reference `:=`. Closes # 5527 (git [#30](https://github.com/Rdatatable/data.table/issues/30)). Thanks to Michele Carriero for reporting. 
 
   *  `get()` in `j` did not see `i`'s columns when `i` is a data.table which lead to errors while doing operations 
      like: `DT1[DT2, list(get('c'))]`. Now, use of `get` makes *all* x's and i's columns visible (fetches all columns). 
      Still, as the verbose message states, using `.SDcols` or `eval(macro)` would be able to select just the columns 
-     used, which is better for efficiency. Closes # 5443. Thanks to Eddi for reporting.
+     used, which is better for efficiency. Closes # 5443 (git [#34](https://github.com/Rdatatable/data.table/issues/34)). Thanks to Eddi for reporting.
 
-  *  Fixed an edge case with `unique` and `duplicated`, which on empty data.tables returned a 1-row data.table with all NAs. Closes # 5582. Thanks to Shubh Bansal for reporting.
+  *  Fixed an edge case with `unique` and `duplicated`, which on empty data.tables returned a 1-row data.table with all NAs. Closes # 5582 (git [#28](https://github.com/Rdatatable/data.table/issues/28)). Thanks to Shubh Bansal for reporting.
 
-  *  `dcast.data.table` resuled in error (because function `CJ()` was not visible) in packages that "import" data.table. This did not happen if the package "depends" on data.table. Closes bug # 5519. Thanks to K Davis for the excellent report. 
+  *  `dcast.data.table` resuled in error (because function `CJ()` was not visible) in packages that "import" data.table. This did not happen if the package "depends" on data.table. Closes bug # 5519 (git [#31](https://github.com/Rdatatable/data.table/issues/31)). Thanks to K Davis for the excellent report. 
 
-  *  `merge(x, y, all=TRUE)` error when `x` is empty data.table is now fixed. Closes # 5672. Thanks to Garrett See for filing the report.
+  *  `merge(x, y, all=TRUE)` error when `x` is empty data.table is now fixed. Closes # 5672 (git [#24](https://github.com/Rdatatable/data.table/issues/24)). Thanks to Garrett See for filing the report.
 
-  *  Implementing # 5249 closes bug # 5612, a case where rbind gave error when binding with empty data.tables. Thanks to Roger for reporting on SO :
+  *  Implementing # 5249 closes bug # 5612 (git [#26](https://github.com/Rdatatable/data.table/issues/26)), a case where rbind gave error when binding with empty data.tables. Thanks to Roger for reporting on SO :
   http://stackoverflow.com/q/23216033/559784
 
-  *  Fixed a segfault during grouping with assignment by reference, ex: `DT[, LHS := RHS, by=.]`, where length(RHS) > group size (.N). Closes # 5647. Thanks to Zachary Long for reporting on datatable-help mailing list.
+  *  Fixed a segfault during grouping with assignment by reference, ex: `DT[, LHS := RHS, by=.]`, where length(RHS) > group size (.N). Closes # 5647 (git [#25](https://github.com/Rdatatable/data.table/issues/25)). Thanks to Zachary Long for reporting on datatable-help mailing list.
 
-  *  Consistent subset rules on datat.tables with duplicate columns. In short, if indices are directly provided, 'j', or in .SDcols, then just those columns are either returned (or deleted if you provide -.SDcols or !j). If instead, column names are given and there are more than one occurrence of that column, then it's hard to decide which to keep and which to remove on a subset. Therefore, to remove, all occurrences of that column are removed, and to keep, always the first column is returned each time. Also closes # 5688 and # 5008.
+  *  Consistent subset rules on datat.tables with duplicate columns. In short, if indices are directly provided, 'j', or in .SDcols, then just those columns are either returned (or deleted if you provide -.SDcols or !j). If instead, column names are given and there are more than one occurrence of that column, then it's hard to decide which to keep and which to remove on a subset. Therefore, to remove, all occurrences of that column are removed, and to keep, always the first column is returned each time. Also closes # 5688 (git [#22](https://github.com/Rdatatable/data.table/issues/22)) and # 5008 (git [#86](https://github.com/Rdatatable/data.table/issues/86)).
      Note that using `by=` to aggregate on duplicate columns may not give intended result still, as it may not operate on the proper column.
 
-  *  When DT is empty, DT[, newcol:=max(b), by=a] now properly adds the column, # 5376. Thanks to Shubh bansal for filing the report.
+  *  When DT is empty, DT[, newcol:=max(b), by=a] now properly adds the column, # 5376 (git [#49](https://github.com/Rdatatable/data.table/issues/49)). Thanks to Shubh bansal for filing the report.
 
-  *  When `j` evaluates to integer(0)/character(0), `DT[, j, with=FALSE]` resulted in error, # 5714. Thanks indirectly to Malcolm Cook for # 5372, through which this (recent) regression (from 1.9.3) was found.
+  *  When `j` evaluates to integer(0)/character(0), `DT[, j, with=FALSE]` resulted in error, # 5714 (git [#21](https://github.com/Rdatatable/data.table/issues/21)). Thanks indirectly to Malcolm Cook for # 5372 (git [#52](https://github.com/Rdatatable/data.table/issues/52)), through which this (recent) regression (from 1.9.3) was found.
 
-  *  `print(DT)` now respects `digits` argument on list type columns, # 5435. Thanks to Frank for the discussion 
+  *  `print(DT)` now respects `digits` argument on list type columns, # 5435 (git [#37](https://github.com/Rdatatable/data.table/issues/37)). Thanks to Frank for the discussion 
      on the mailing list and to Matthew Beckers for filing the bug report.
 
   *  FR # 2551 implemented leniance in warning messages when columns are coerced with `DT[, LHS := RHS]`, when `length(RHS)==1`.
      But this was very lenient. For ex: `DT[, a := "bla"]`, where `a` is a logical column should get a warning. This is 
-     now fixed such that only very obvious cases coerces silently, ex: `DT[, a := 1]` where `a` is `integer`. Closes # 5442. 
+     now fixed such that only very obvious cases coerces silently, ex: `DT[, a := 1]` where `a` is `integer`. Closes # 5442 (git [#35](https://github.com/Rdatatable/data.table/issues/35)). 
      Thanks to Michele Carriero and John Laing for reporting.
 
 
@@ -229,7 +229,7 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 
   *  `?duplicated.data.table` explained that `by=NULL` or `by=FALSE` would use all columns, however `by=FALSE`
      resulted in error. `by=FALSE` is removed from help and `duplicated` returns an error when `by=TRUE/FALSE` now. 
-     Closes # 5424.
+     Closes # 5424 (git [#38](https://github.com/Rdatatable/data.table/issues/38)).
      
   *  More info about distinguishing small numbers from 0.0 in v1.9.2+ is here :
        http://stackoverflow.com/questions/22290544/grouping-very-small-numbers-e-g-1e-28-and-0-0-in-data-table-v1-8-10-vs-v1-9-2
