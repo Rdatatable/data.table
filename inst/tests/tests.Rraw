@@ -4678,6 +4678,17 @@ test(1314, dcast.data.table(dt, x ~ y, value.var="z", fun.aggregate=identity), e
 DT = data.table(id = c(1,1,2,2), ty = c("a","b","a","b"), da = as.Date("2014-06-20"))
 test(1315, dcast.data.table(DT, formula = id ~ ty, value.var="da"), data.table(id=c(1,2), a=as.Date("2014-06-20"), b=as.Date("2014-06-20"), key="id")) 
 
+# bug #699 - melt segfaults when vars are not in dt
+if ("package:reshape2" %in% search()) {
+    try(detach(package:reshape),silent=TRUE)
+
+    x = data.table(a=c(1,2),b=c(2,3),c=c(3,4))
+    test(1316.1, melt(x, id="d"), error="Column 'd' not found in 'data'")
+    test(1316.2, melt(x, measure="d"), error="Column 'd' not found in 'data'")
+    test(1316.3, melt(x, id="a", measure="d"), error="Column 'd' not found in 'data'")
+    test(1316.4, melt(x, id="d", measure="a"), error="Column 'd' not found in 'data'")
+}
+
 ##########################
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.

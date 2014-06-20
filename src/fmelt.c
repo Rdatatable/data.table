@@ -183,7 +183,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
         }
         PROTECT(booltmp = duplicated(tmp, FALSE)); protecti++;
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(id, i)));
+            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(measure, i)));
             else if (INTEGER(tmp)[i] > ncol) error("measure.var value exceeds ncol(data)");
             else if (!LOGICAL(booltmp)[i]) targetcols++;
             else continue;
@@ -206,7 +206,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
             default : error("Unknown 'id.var' type %s, must be character or integer vector", type2char(TYPEOF(id)));
         }
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' or not found in 'data'", CHAR(STRING_ELT(id, i)));
+            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(id, i)));
             else if (INTEGER(tmp)[i] > ncol) error("measure.var value exceeds ncol(data)");
         }
         PROTECT(idcols = allocVector(INTSXP, length(tmp))); protecti++;
@@ -218,7 +218,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
             default : error("Unknown 'measure.var' type %s, must be character or integer vector", type2char(TYPEOF(measure)));
         }
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(id, i)));
+            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(measure, i)));
             else if (INTEGER(tmp)[i] > ncol) error("measure.var value exceeds ncol(data)");
         }
         PROTECT(valuecols = allocVector(INTSXP, length(measure))); protecti++;
