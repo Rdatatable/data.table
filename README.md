@@ -217,6 +217,8 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 
   *  `melt` now returns friendly error when `meaure.vars` are not in data instead of segfault. Closes [#699](https://github.com/Rdatatable/data.table/issues/688). Thanks to vsalmendra for [this post on SO](http://stackoverflow.com/q/24326797/559784) and the subsequent bug report.
 
+  *  `DT[, list(m1 = eval(expr1), m2=eval(expr2)), by=val]` where `expr1` and `expr2` are constructed using `parse(text=.)` now works instead of resulting in error. Closes #5732 (git [#472](https://github.com/Rdatatable/data.table/issues/472)). Thanks to Benjamin Barnes for reporting with a nice reproducible example.
+
 #### NOTES
 
   *  Reminder: using `rolltolast` still works but since v1.9.2 now issues the following warning :

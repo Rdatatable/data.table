@@ -4689,6 +4689,16 @@ if ("package:reshape2" %in% search()) {
     test(1316.4, melt(x, id="d", measure="a"), error="Column 'd' not found in 'data'")
 }
 
+# bug fix for #472 : "parse" in j
+set.seed(100)
+nrow <- 100L
+DT <- data.table(aa = sample(letters[1:5], nrow, replace = TRUE), bb = rnorm(nrow))
+sumExpr <- parse(text = "sum(bb, na.rm = TRUE)")
+meanExpr <- parse(text = "mean(bb, na.rm = TRUE)")
+test(1318.1, DT[, eval(sumExpr), by = aa], DT[, sum(bb, na.rm=TRUE), by=aa])
+test(1318.2, DT[, eval(meanExpr), by = aa], DT[, mean(bb, na.rm=TRUE), by=aa])
+test(1318.3, DT[, list(mySum = eval(sumExpr), myMean = eval(meanExpr)), by = aa], DT[, list(mySum=sum(bb, na.rm=TRUE), myMean=mean(bb, na.rm=TRUE)), by=aa])
+
 ##########################
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.

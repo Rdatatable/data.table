@@ -20,17 +20,14 @@ deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.fr
         return(deconstruct_and_eval(eval(expr[[2L]], envir, enclos), envir, enclos))
     }
 
-    lapply(expr, function(m) {
+    ff <- function(m) {
         if (is.call(m)) {
             if (m[[1L]] == quote(eval)) 
-                if (is.call(m[[2L]]) && m[[2L]][[1L]] == quote(parse)) 
-                    deconstruct_and_eval(eval(m[[2L]], envir, enclos), envir, enclos) 
-                else eval(m[[2L]], envir, enclos)
+                deconstruct_and_eval(eval(m[[2L]], envir, enclos), envir, enclos) 
             else deconstruct_and_eval(m, envir, enclos)
-        } else {
-            m
-        }
-    })
+        } else m
+    }
+    lapply(expr, ff)
 }
 
 construct = function(l) {
