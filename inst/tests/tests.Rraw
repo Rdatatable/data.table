@@ -4689,6 +4689,17 @@ if ("package:reshape2" %in% search()) {
     test(1316.4, melt(x, id="d", measure="a"), error="Column 'd' not found in 'data'")
 }
 
+# bug 700 - bmerge, roll=TRUE and nomatch=0L when i's key group occurs more than once
+dt1 <- data.table(structure(list(x = c(7L, 33L), y = structure(c(15912, 15912), class = "Date"), z = c(626550.35284, 7766.385)), .Names =
+c("x", "y", "z"), class = "data.frame", row.names = c(NA, -2L)), key = "x,y")
+dt2 <- data.table(structure(list(x = c(7L, 7L, 33L, 33L, 33L, 33L), y = structure(c(15884, 15917, 15884, 15884, 15917, 15917), class = "Date"), w = c(-0.118303, 0.141225, -0.03137, -0.02533, 0.045967, 0.043694)), .Names = c("x", "y", "w"), class = "data.frame", row.names = c(NA, -6L)), key = "x,y")
+test(1317.1, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), z=c(dt1$z[1:2], dt1$z[2]), w=c(dt2$w[2], dt2$w[5:6]), key="x,y"))
+
+# also test where 'i' is not sorted.
+set.seed(1L)
+dt2 <- dt2[sample(nrow(dt2))] # key should be gone
+test(1317.2, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), z=c(dt1$z[1:2], dt1$z[2]), w=c(dt2$w[1], dt2$w[c(2,6)]), key="x,y"))
+
 ##########################
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.
