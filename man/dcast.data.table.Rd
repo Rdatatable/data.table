@@ -38,7 +38,7 @@ If the formula's LHS contains the same column more than once, ex: \code{dcast.da
 
 Names for columns that are being cast are generated in the same order (separated by a \code{_}) from the (unique) values in each column mentioned in the formula RHS.
 
-The only feature that's not implemented from \code{reshape2:::dcast} *yet* is the argument \code{margins}. 
+From \code{v1.9.3}, \code{dcast.data.table} tries to preserve attributes whereever possible, except when \code{value.var} is a factor (or ordered factor). For \code{factor} types, the resulting casted columns will be coerced to character type thereby losing \code{levels} attribute.
 }
 \value{
     A keyed \code{data.table} that has been cast. The key columns are equal to the variables in the \code{formula} LHS in the same order.

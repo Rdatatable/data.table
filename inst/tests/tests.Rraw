@@ -4674,6 +4674,10 @@ test(1313.22, DT[, list(y=max(y, na.rm=TRUE)), by=x], DT[c(5,10)])
 dt <- data.table(x=c(1,1), y=c(2,2), z = 3:4)
 test(1314, dcast.data.table(dt, x ~ y, value.var="z", fun.aggregate=identity), error="Aggregating function provided to argument 'fun.aggregate' should return a length 1")
 
+# bug #688 - preserving attributes
+DT = data.table(id = c(1,1,2,2), ty = c("a","b","a","b"), da = as.Date("2014-06-20"))
+test(1315, dcast.data.table(DT, formula = id ~ ty, value.var="da"), data.table(id=c(1,2), a=as.Date("2014-06-20"), b=as.Date("2014-06-20"), key="id")) 
+
 ##########################
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.

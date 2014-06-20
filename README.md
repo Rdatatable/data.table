@@ -213,6 +213,9 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 
   *  `dcast.data.table` provides better error message when `fun.aggregate` is specified but it returns length != 1. Closes git [#693](https://github.com/Rdatatable/data.table/issues/35). Thanks to Trevor Alexander for reporting [here on SO](http://stackoverflow.com/questions/24152733/undocumented-error-in-dcast-data-table).
 
+  *  `dcast.data.table` tries to preserve attributes whereever possible, except when `value.var` is a `factor` (or ordered factor). For `factor` types, the casted columns will be coerced to type `character` thereby losing the `levels` attribute. Closes git [#688](https://github.com/Rdatatable/data.table/issues/688). Thanks to juancentro for reporting.
+
+
 #### NOTES
 
   *  Reminder: using `rolltolast` still works but since v1.9.2 now issues the following warning :

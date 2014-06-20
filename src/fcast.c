@@ -584,6 +584,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
             break;
             default : error("Unknown 'value' column type '%s'", type2char(TYPEOF(tmp)));
         }
+        copyMostAttrib(vdt, tmp);
         UNPROTECT(1); // tmp
         SET_VECTOR_ELT(ans, i+ilen, tmp);
     }
