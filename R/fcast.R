@@ -94,6 +94,13 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         }
         else data = data[, eval(fun.aggregate), by=c(ff_)]
         setkeyv(data, ff_) # can't use 'oo' here, but should be faster as it's uncommon to have huge number of groups.
+        fun_agg_chk <- function(x) {
+            pos = uniqlist(as.list(x)[key(x)]) # as.list shallow copies, I believe
+            len = uniqlengths(pos, nrow(x))
+            any(len != 1L)
+        }
+        if (fun_agg_chk(data))
+            stop("Aggregating function provided to argument 'fun.aggregate' should return a length 1 vector for each group, but returns length != 1 for atleast one group. Please have a look at the DETAILS section of ?dcast.data.table ")
     } else {
         if (is.null(subset))
             data = data[, unique(c(ff_, value.var)), with=FALSE] # data is untouched so far. subset only required columns

@@ -4670,6 +4670,9 @@ test(1313.20, DT[, list(y=max(y)), by=x], DT[c(1,6)])
 test(1313.21, DT[, list(y=min(y, na.rm=TRUE)), by=x], DT[c(2,7)])
 test(1313.22, DT[, list(y=max(y, na.rm=TRUE)), by=x], DT[c(5,10)])
 
+# bug git #693 - dcast.data.table error message improvement:
+dt <- data.table(x=c(1,1), y=c(2,2), z = 3:4)
+test(1314, dcast.data.table(dt, x ~ y, value.var="z", fun.aggregate=identity), error="Aggregating function provided to argument 'fun.aggregate' should return a length 1")
 
 ##########################
 
