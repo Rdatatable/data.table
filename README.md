@@ -211,7 +211,7 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
      now fixed such that only very obvious cases coerces silently, ex: `DT[, a := 1]` where `a` is `integer`. Closes # 5442 (git [#35](https://github.com/Rdatatable/data.table/issues/35)). 
      Thanks to Michele Carriero and John Laing for reporting.
 
-  *  `dcast.data.table` provides better error message when `fun.aggregate` is specified but it returns length > 1. Closes git [#693](https://github.com/Rdatatable/data.table/issues/35). Thanks to Trevor Alexander for reporting [here on SO](http://stackoverflow.com/questions/24152733/undocumented-error-in-dcast-data-table).
+  *  `dcast.data.table` provides better error message when `fun.aggregate` is specified but it returns length != 1. Closes git [#693](https://github.com/Rdatatable/data.table/issues/35). Thanks to Trevor Alexander for reporting [here on SO](http://stackoverflow.com/questions/24152733/undocumented-error-in-dcast-data-table).
 
 #### NOTES
 
