@@ -173,8 +173,10 @@ forder = function(x, ..., na.last=TRUE, decreasing=FALSE)
                     ans <- point(ans, i, eval(v, x, parent.frame()), 1L)
                 }
             } else {
-                v = as.call(list(as.name("list"), v))
-                ans <- point(ans, i, eval(v, x, parent.frame()), 1L) # eval has to make a copy here (not due to list(.), but due to ex: "4-5*y"), unavoidable.
+                if (!is.object(eval(v, x, parent.frame()))) {
+                    v   = as.call(list(as.name("list"), v))
+                    ans = point(ans, i, eval(v, x, parent.frame()), 1L) # eval has to make a copy here (not due to list(.), but due to ex: "4-5*y"), unavoidable.
+                } else ans = point(ans, i, list(unlist(eval(v, x, parent.frame()))), 1L)
             } # else stop("Column arguments to order by in 'forder' should be of type name/symbol (ex: quote(x)) or call (ex: quote(-x), quote(x+5*y))")
         }
     }

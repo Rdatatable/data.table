@@ -221,6 +221,8 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 
   *  A join of the form `X[Y, roll=TRUE, nomatch=0L]` where some of Y's key columns occur more than once (duplicated keys) might at times return incorrect join. This was introduced only in 1.9.2 and is fixed now. Closes [#700](https://github.com/Rdatatable/data.table/issues/472). Thanks to Michael Smith for the very nice reproducible example and nice spotting of such a tricky case.
 
+  *  Fixed an edge case in `DT[order(.)]` internal optimisation to be consistent with base. Closes [#696](https://github.com/Rdatatable/data.table/issues/696). Thanks to Michael Smith for reporting.
+
 #### NOTES
 
   *  Reminder: using `rolltolast` still works but since v1.9.2 now issues the following warning :
@@ -251,6 +253,9 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
   
   *  `dcast.data.table(dt, a ~ ... + b)` now generates the column names with values from `b` coming last. Closes # 5675.
 
+  *  Added `x[order(.)]` internal optimisation, and how to go back to `base:::order(.)` if one wants to sort by session locale to 
+     `?setorder` (with alias `?order` and `?forder`). Closes #5613 ([#478](https://github.com/Rdatatable/data.table/issues/478)) and 
+     also [#703](https://github.com/Rdatatable/data.table/issues/703). Thanks to Christian Wolf for the report.
 
 ### Changes in v1.9.2 (on CRAN 27 Feb 2014)
 

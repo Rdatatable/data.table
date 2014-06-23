@@ -2,6 +2,10 @@
 \alias{setorder}
 \alias{setorderv}
 \alias{setcolorder}
+\alias{order}
+\alias{fastorder}
+\alias{forder}
+
 \title{Fast reordering of a data.table by reference}
 \description{
   Note that in \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column.. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
@@ -10,11 +14,15 @@
   
   \code{setorder()} sorts or rearranges the rows of a \code{data.table} \emph{by reference}, based on the columns provided. It can sort in both ascending and descending order. The functionality is identical to using \code{?order} on a \code{data.frame}, except that \code{setorder} is much faster, is very memory efficient and is much more user-friendly.
   
+  \code{x[order(.)]} is now optimised internally to use \code{data.table}'s fast order by default. \code{data.table} by default always sorts in C-locale. If instead, it is essential to sort by the session locale, one could always revert back to base's \code{order} by doing: \code{x[base:::order(.)]}.
 }
+
 \usage{
 setcolorder(x, neworder)
 setorder(x, ...)
 setorderv(x, cols, order=1L)
+# optimised to use data.table's internal fast order
+# x[order(.)]
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
