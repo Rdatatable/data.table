@@ -219,6 +219,8 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 
   *  `DT[, list(m1 = eval(expr1), m2=eval(expr2)), by=val]` where `expr1` and `expr2` are constructed using `parse(text=.)` now works instead of resulting in error. Closes #5732 (git [#472](https://github.com/Rdatatable/data.table/issues/472)). Thanks to Benjamin Barnes for reporting with a nice reproducible example.
 
+  *  A join of the form `X[Y, roll=TRUE, nomatch=0L]` where some of Y's key columns occur more than once (duplicated keys) might at times return incorrect join. This was introduced only in 1.9.2 and is fixed now. Closes [#700](https://github.com/Rdatatable/data.table/issues/472). Thanks to Michael Smith for the very nice reproducible example and nice spotting of such a tricky case.
+
 #### NOTES
 
   *  Reminder: using `rolltolast` still works but since v1.9.2 now issues the following warning :
