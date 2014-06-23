@@ -4770,6 +4770,30 @@ test(1328, fread(f), data.table(A=1L, B='Joe \\",Bloggs'))
 unlink(f)
 test(1329, fread(), error="Input is either empty or fully whitespace in the first 0 rows") # used to default to test.csv, oddly
 
+# FR #706 - setorder and setorderv now has 'na.last=TRUE/FALSE' argument. It can't have value NA though, like `DT[order(.)]` as it reorders by reference, doesn't subset. Simple tests.
+set.seed(45L)
+DT <- data.table(x=sample(c(-2:2, NA_integer_), 20, TRUE), y=sample(c(-1:1, NA, Inf, -Inf, NaN), 20, TRUE))
+test(1330.1, setorder(copy(DT),  x, na.last=TRUE ), DT[order( x, na.last=TRUE)])
+test(1330.2, setorder(copy(DT),  x, na.last=FALSE), DT[order( x, na.last=FALSE)])
+test(1330.3, setorder(copy(DT), -x, na.last=TRUE ), DT[order(-x, na.last=TRUE)])
+test(1330.4, setorder(copy(DT), -x, na.last=FALSE), DT[order(-x, na.last=FALSE)])
+test(1330.5, setorder(copy(DT),  y, na.last=TRUE ), DT[order( y, na.last=TRUE)])
+test(1330.6, setorder(copy(DT),  y, na.last=FALSE), DT[order( y, na.last=FALSE)])
+test(1330.7, setorder(copy(DT), -y, na.last=TRUE ), DT[order(-y, na.last=TRUE)])
+test(1330.8, setorder(copy(DT), -y, na.last=FALSE), DT[order(-y, na.last=FALSE)])
+
+test(1330.9,  setorderv(copy(DT), "x",  1L, na.last=TRUE ), DT[order( x, na.last=TRUE)])
+test(1330.10, setorderv(copy(DT), "x",  1L, na.last=FALSE), DT[order( x, na.last=FALSE)])
+test(1330.11, setorderv(copy(DT), "x", -1L, na.last=TRUE ), DT[order(-x, na.last=TRUE)])
+test(1330.12, setorderv(copy(DT), "x", -1L, na.last=FALSE), DT[order(-x, na.last=FALSE)])
+test(1330.13, setorderv(copy(DT), "y",  1L, na.last=TRUE ), DT[order( y, na.last=TRUE)])
+test(1330.14, setorderv(copy(DT), "y",  1L, na.last=FALSE), DT[order( y, na.last=FALSE)])
+test(1330.15, setorderv(copy(DT), "y", -1L, na.last=TRUE ), DT[order(-y, na.last=TRUE)])
+test(1330.16, setorderv(copy(DT), "y", -1L, na.last=FALSE), DT[order(-y, na.last=FALSE)])
+
+test(1330.17, setorder(copy(DT), x, na.last=NA), error="na.last must be logical TRUE/FALSE")
+test(1330.18, setorderv(copy(DT), "x", na.last=NA), error="na.last must be logical TRUE/FALSE")
+
 ##########################
 
 

@@ -142,6 +142,8 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
   * `fread()` now accepts line breaks inside quoted fields. Thanks to Clayton Stanley for highlighting :
   http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value
 
+  *  `setorder()` and `setorderv()` gains a `na.last = TRUE/FALSE` argument. Closes [#706](https://github.com/Rdatatable/data.table/issues/706).
+
 #### BUG FIXES
 
   *  When joining to fewer columns than the key has, using one of the later key columns explicitly in j repeated the first value. A problem introduced by v1.9.2 and not caught bythe 1,220 tests, or tests in 37 dependent packages. Test added. Many thanks to Michele Carriero for reporting.

@@ -190,7 +190,9 @@ forder = function(x, ..., na.last=TRUE, decreasing=FALSE)
     o
 }
 
-setorder = function(x, ...)
+setorder = function(x, ..., na.last=FALSE)
+# na.last=FALSE here, to be consistent with data.table's default
+# as opposed to DT[order(.)] where na.last=TRUE, to be consistent with base
 {
     if (!is.data.table(x)) stop("x must be a data.table.")
     cols = substitute(list(...))[-1]
@@ -212,13 +214,15 @@ setorder = function(x, ...)
         cols=colnames(x)
         order=rep(1L, length(cols))
     }
-    setorderv(x, cols, order)
+    setorderv(x, cols, order, na.last)
 }
 
-setorderv = function(x, cols, order=1L)
+setorderv = function(x, cols, order=1L, na.last=FALSE)
 {
     if (is.null(cols)) return(x)
     if (!is.data.table(x)) stop("x is not a data.table")
+    na.last = as.logical(na.last)
+    if (is.na(na.last) || !length(na.last)) stop('na.last must be logical TRUE/FALSE')
     if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setorder.")
     if (!length(cols)) {
         warning("cols is a character vector of zero length. Use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
@@ -240,7 +244,7 @@ setorderv = function(x, cols, order=1L)
     }
     if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey.")
 
-    o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order)
+    o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
     if (length(o)) {
         .Call(Creorder, x, o)
         setattr(x, 'sorted', NULL) # if 'forderv' is not 0-length, it means order has changed. So, set key to NULL, else retain key.

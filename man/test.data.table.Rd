@@ -9,7 +9,7 @@ test.data.table(verbose=FALSE, pkg="pkg")
 }
 \arguments{
 \item{verbose}{ If TRUE sets datatable.verbose to TRUE for the duration of the tests. }
-\item{pkg} {Root directory name under which all package content (ex: DESCRIPTION, src/, R/, inst/ etc..) resides.}
+\item{pkg}{Root directory name under which all package content (ex: DESCRIPTION, src/, R/, inst/ etc..) resides.}
 }
 \details{
    Runs a series of tests. These can be used to see features and examples of usage, too. Running test.data.table will tell you the full location of the test file(s) to open.
