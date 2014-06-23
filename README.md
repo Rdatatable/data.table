@@ -138,6 +138,9 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
         i.e., DT[, list(sum(x), min(y), max(z), .N), by=...] # runs by default using GForce
 
   *  `setorder()` and `DT[order(.)]` handles `integer64` type in descending order as well. Closes [#703](https://github.com/Rdatatable/data.table/issues/703).
+  
+  * `fread()` now accepts line breaks inside quoted fields. Thanks to Clayton Stanley for highlighting :
+  http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value
 
 #### BUG FIXES
 
@@ -173,7 +176,7 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
      http://stackoverflow.com/questions/22375404/unable-to-use-evalparse-in-data-table-function/22375557#22375557
 
   *  Using `by` columns with attributes (ex: factor, Date) in `j` did not retain the attributes, also in case of `:=`.
-     This was partially a regression from an earlier fix ([#155](https://github.com/Rdatatable/data.table/issues/155) due to recent changes for R3.1.0. Now fixed and 
+     This was partially a regression from an earlier fix ([#155](https://github.com/Rdatatable/data.table/issues/155)) due to recent changes for R3.1.0. Now fixed and 
      clearer tests added. Thanks to Christophe Dervieux for reporting and to Adam B for reporting here on SO:
      http://stackoverflow.com/questions/22536586/by-seems-to-not-retain-attribute-of-date-type-columns-in-data-table-possibl. 
      Closes [#36](https://github.com/Rdatatable/data.table/issues/36).

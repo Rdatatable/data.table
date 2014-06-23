@@ -2547,6 +2547,8 @@ for (eol in if (.Platform$OS.type=="unix") c("\n","\r\n") else "\n") {
     file.copy(f2,f3<-tempfile()); unlink(f2)
     cat(eol,file=f3,append=TRUE)   # extra \n should be ignored
     test(896+nr/100+nc/1000, fread(f3), headDT)
+    unlink(f)
+    unlink(f2)
     unlink(f3)
 }}}
 if ("package:bit64" %in% search()) {
@@ -2867,9 +2869,11 @@ test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(
 # an fread error shouldn't hold a lock on the file on Windows.
 f = tempfile()
 cat('A,B\n"aa",2\n"bb,2\n"cc",3\n', file=f)
-test(1010, fread(f), error="A field starting with quote.*doesn't end with a quote on this line.*bb,2")
-cat('"dd",3\n',file=f,append=TRUE)  # testing file lock after error
-test(1011, fread(f), error="A field starting with quote.*doesn't end with a quote on this line.*bb,2")
+test(1010.1, fread(f), data.table(A=c("aa","bb,2\n\"cc"), B=2:3))  # used be an error, but is now valid
+cat('"',file=f,append=TRUE)  # create an error.  Something that should always be an error of some sort.
+test(1010.2, fread(f), error="Expected sep (',') but new line, EOF (or other non printing character) ends field 1 on line 5 when detecting types")
+cat('dd",4\n',file=f,append=TRUE)   # tests file lock on Windows after error
+test(1011, fread(f), data.table(A=c("aa","bb,2\n\"cc","dd"), B=2:4))
 cat('A,B\n"aa",1\n"bb",2\n"cc",3\n', file=f)   # testing overwrite
 test(1012, fread(f), data.table(A=c("aa","bb","cc"),B=1:3))
 unlink(f)  # testing file can be removed after error
@@ -3194,6 +3198,7 @@ if (.Platform$OS.type == "unix") {
     #  Error: (converted from warning) running command 'sh.exe -c (more D:\temp\RtmpgB8D2P\file1ed828a511cd) > D:\temp\RtmpgB8D2P\file1ed84f9f44f8' had status 2
     # test(1105, x1, x2)
 }
+unlink(f)
 
 # test for "key" argument of [.data.table
 #x1 <- data.table(a = c(1:5), b = c(5:1))
@@ -4750,7 +4755,23 @@ if ("package:bit64" %in% search()) {
     test(1320.8, ans4, as.integer(c(3,6,5,4,2,7,1)))    
 }
 
+# fread newlines inside quoted fields
+test(1321, fread('A,B,C\n1,"foo\nbar",3\n4,baz,6'), data.table(A=c(1L,4L), B=c("foo\nbar","baz"), C=c(3L,6L)))
+test(1322, fread('A,B,C\n1,"foo
+bar",3\n4,baz,6'), data.table(A=c(1L,4L), B=c("foo\nbar","baz"), C=c(3L,6L)))
+# NB: don't remove the newline after foo in test 1320 above, that's what's being tested.
+test(1323, fread('col1,col2\n5,"4\n3"'), data.table(col1=5L, col2="4\n3"))
+test(1324, fread('A,B,C\n1,4,"foo"\n2,5,"bar'), error="Field 3 on line 3 is quoted but not finished: 2,5,")
+test(1325, fread('A,B,C\n1,4,"foo"\n2,5,"bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar')))
+test(1326, fread('A,B,C\n1,4,"foo"\n2,5,bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar"')))
+test(1327, fread('A,B,C\n1,4,"foo"\n2,5,""bar""'), data.table(A=1:2,B=4:5,C=c("foo",'"bar"')))
+cat('A,B\n1,"Joe \\",Bloggs"', file = f<-tempfile())
+test(1328, fread(f), data.table(A=1L, B='Joe \\",Bloggs'))
+unlink(f)
+test(1329, fread(), error="Input is either empty or fully whitespace in the first 0 rows") # used to default to test.csv, oddly
+
 ##########################
+
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.
 
