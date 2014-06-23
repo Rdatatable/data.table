@@ -255,7 +255,7 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 
   *  Added `x[order(.)]` internal optimisation, and how to go back to `base:::order(.)` if one wants to sort by session locale to 
      `?setorder` (with alias `?order` and `?forder`). Closes #5613 ([#478](https://github.com/Rdatatable/data.table/issues/478)) and 
-     also [#703](https://github.com/Rdatatable/data.table/issues/703). Thanks to Christian Wolf for the report.
+     also [#704](https://github.com/Rdatatable/data.table/issues/704). Thanks to Christian Wolf for the report.
 
 ### Changes in v1.9.2 (on CRAN 27 Feb 2014)
 
