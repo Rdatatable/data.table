@@ -4723,6 +4723,33 @@ test(1319.6, DT[order(list(DT$a))], DT[1])
 test(1319.7, DT[order(list(DT$a), list(DT$b))], DT[1])
 test(1319.8, DT[order(list(DT$a, DT$b))], error="Column '1' is type 'list' which is not")
 
+# FR #703. Not so extensive testing because test 1223 already tests for everything else extensively. Only integer64 here.
+# this'll be the test for both DT[order(.)] and setorder(.) as both internally uses forder/forderv
+if ("package:bit64" %in% search()) {
+    set.seed(45L)
+    DT <- data.table(x=as.integer64(c(-50, 0, 50, 1e18, 1e-18)), y=sample(5))
+    ans1 <- forder(DT, x, na.last=TRUE, decreasing=FALSE)
+    ans2 <- forder(DT, x, na.last=FALSE, decreasing=FALSE)
+    ans3 <- forder(DT, x, na.last=TRUE, decreasing=TRUE)
+    ans4 <- forder(DT, x, na.last=FALSE, decreasing=TRUE)
+    test(1320.1, ans1, as.integer(c(1,2,5,3,4)))
+    test(1320.2, ans2, as.integer(c(1,2,5,3,4)))
+    test(1320.3, ans3, as.integer(c(4,3,2,5,1)))
+    test(1320.4, ans4, as.integer(c(4,3,2,5,1)))
+
+    set.seed(45L)
+    DT <- data.table(x=as.integer64(c(-50, 0, NA, 50, 1e18, NA, 1e-18)), y=sample(7))
+    ans1 <- forder(DT, x, na.last=TRUE, decreasing=FALSE)
+    ans2 <- forder(DT, x, na.last=FALSE, decreasing=FALSE)
+    ans3 <- forder(DT, x, na.last=TRUE, decreasing=TRUE)
+    ans4 <- forder(DT, x, na.last=FALSE, decreasing=TRUE)
+
+    test(1320.5, ans1, as.integer(c(1,2,7,4,5,3,6)))
+    test(1320.6, ans2, as.integer(c(3,6,1,2,7,4,5)))
+    test(1320.7, ans3, as.integer(c(5,4,2,7,1,3,6)))
+    test(1320.8, ans4, as.integer(c(3,6,5,4,2,7,1)))    
+}
+
 ##########################
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.

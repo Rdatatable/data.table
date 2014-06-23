@@ -137,6 +137,8 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
   * Following `gsum` and `gmean`, now `gmin` and `gmax` from GForce are also implemented. Closes part of #5754 (git [#523](https://github.com/Rdatatable/data.table/issues/523)). Benchmarks are also provided.
         i.e., DT[, list(sum(x), min(y), max(z), .N), by=...] # runs by default using GForce
 
+  *  `setorder()` and `DT[order(.)]` handles `integer64` type in descending order as well. Closes [#703](https://github.com/Rdatatable/data.table/issues/703).
+
 #### BUG FIXES
 
   *  When joining to fewer columns than the key has, using one of the later key columns explicitly in j repeated the first value. A problem introduced by v1.9.2 and not caught bythe 1,220 tests, or tests in 37 dependent packages. Test added. Many thanks to Michele Carriero for reporting.

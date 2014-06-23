@@ -467,15 +467,24 @@ unsigned long long dtwiddle(void *p, int i, int order)
         return (nalast == 1 ? ~u.ull : u.ull);        
     }
     unsigned long long mask = (u.ull & 0x8000000000000000) ? 
-                     0xffffffffffffffff : 0x8000000000000000;   // always flip sign bit and if negative (sign bit was set) flip other bits too
+                     0xffffffffffffffff : 0x8000000000000000;       // always flip sign bit and if negative (sign bit was set) flip other bits too
     return( (u.ull ^ mask) & dmask2 );
 }
 
 unsigned long long i64twiddle(void *p, int i, int order)
-// Argument 'order' here is dummy as of now.
+// 'order' is in effect now - ascending and descending order implemented. Default 
+// case (setkey) will not be affected much because order == 1 and nalast != 1 
+// by default. They're the first two if-statement conditions - shortest checks possible.
+// TODO: TO DO: but maybe the condition can be shortened further? too tired to think.
 {
     u.d = ((double *)p)[i];
-    return u.ull ^ 0x8000000000000000;
+    u.ull ^= 0x8000000000000000;
+    if (order == 1) {// u.ull = 0 now means NA
+        if (nalast == 1 && u.ull == 0) u.ull ^= 0xFFFFFFFFFFFFFFFF;
+    } else {
+        if (!(nalast != 1 && u.ull == 0)) u.ull ^= 0xFFFFFFFFFFFFFFFF;
+    }
+    return u.ull;
 }
 
 /*
