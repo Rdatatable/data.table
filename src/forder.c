@@ -473,18 +473,34 @@ unsigned long long dtwiddle(void *p, int i, int order)
 
 unsigned long long i64twiddle(void *p, int i, int order)
 // 'order' is in effect now - ascending and descending order implemented. Default 
-// case (setkey) will not be affected much because order == 1 and nalast != 1 
-// by default. They're the first two if-statement conditions - shortest checks possible.
-// TODO: TO DO: but maybe the condition can be shortened further? too tired to think.
+// case (setkey) will not be affected much because nalast != 1 and order == 1 are 
+// defaults. 
 {
     u.d = ((double *)p)[i];
     u.ull ^= 0x8000000000000000;
-    if (order == 1) {// u.ull = 0 now means NA
-        if (nalast == 1 && u.ull == 0) u.ull ^= 0xFFFFFFFFFFFFFFFF;
+    if (nalast != 1) {
+        if (order != 1 && u.ull != 0) u.ull ^= 0xffffffffffffffff;
     } else {
-        if (!(nalast != 1 && u.ull == 0)) u.ull ^= 0xFFFFFFFFFFFFFFFF;
+        if ( (order == 1 && u.ull==0) || (order != 1) )
+            u.ull ^= 0xffffffffffffffff;
     }
+    // another way - equivalent as above.
+    // if (order == 1) {// u.ull = 0 now means NA
+    //     if (nalast == 1 && u.ull == 0) u.ull ^= 0xffffffffffffffff;
+    // } else {
+    //     if (!(nalast != 1 && u.ull == 0)) u.ull ^= 0xffffffffffffffff;
+    // }
     return u.ull;
+}
+
+Rboolean dnan(void *p, int i) {
+    u.d = ((double *)p)[i];
+    return (ISNAN(u.d));
+}
+
+Rboolean i64nan(void *p, int i) {
+    u.d = ((double *)p)[i];
+    return ((u.ull ^ 0x8000000000000000) == 0);
 }
 
 /*
@@ -498,6 +514,11 @@ unsigned long long i32twiddle(void *p, int i)
 */
 
 unsigned long long (*twiddle)(void *, int, int);
+// integer64 has NA = 0x8000000000000000. And it gives TRUE for all ISNAN(.) when '.' is -ve number.
+// So, ISNAN(.) would just provide wrong results. This was particularly an issue while implementing
+// DT[order(., na.last=NA)] where '.' is an integer64 column. Therefore, 'is_nan'. This is basically 
+// ISNAN(.) for double and (u.ull ^ 0x8000000000000000 == 0) for integer64.
+Rboolean (*is_nan)(void *, int);
 size_t colSize=8;  // the size of the column type (4 or 8). Just 8 currently until iradix is merged in.
 
 static void dradix_r(unsigned char *xsub, int *osub, int n, int radix);
@@ -524,7 +545,7 @@ static void dradix(unsigned char *x, int *o, int n, int order)
     radix = colSize-1;  // MSD
     while (radix>=0 && skip[radix]) radix--;
     if (radix==-1) {                                                    // All radix are skipped; i.e. one number repeated n times.
-        if (nalast == 0 && ISNAN(((double *)x)[0]))                     // all values are identical. return 0 if nalast=0 & all NA
+        if (nalast == 0 && is_nan(x, 0))                               // all values are identical. return 0 if nalast=0 & all NA
             for (i=0; i<n; i++) o[i] = 0;                               // because of 'return', have to take care of it here.
         else for (i=0; i<n; i++) o[i] = (i+1);
         push(n);
@@ -548,7 +569,7 @@ static void dradix(unsigned char *x, int *o, int n, int order)
         o[ --thiscounts[((unsigned char *)&thisx)[radix]] ] = i+1;
     }
     if (nalast == 0)                                                            // nalast = 1, -1 are both taken care already.
-        for (i=0; i<n; i++) o[i] = (ISNAN(((double *)x)[o[i]-1])) ? 0 : o[i];   // nalast = 0 is dealt with separately as it just sets o to 0 
+        for (i=0; i<n; i++) o[i] = is_nan(x, o[i]-1) ? 0 : o[i];              // nalast = 0 is dealt with separately as it just sets o to 0 
                                                                                 // at those indices where x is NA. x[o[i]-1] because x is not 
                                                                                 // modified by reference unlike iinsert or iradix_r
     if (radix_xsuballoc < maxgrpn) {                                            // TO DO: centralize this alloc
@@ -942,7 +963,7 @@ static int dsorted(double *x, int n, int order)             // order=1 is ascend
     int i=1,j=0;
     unsigned long long prev, this;
     if (nalast == 0) {                                      // when nalast = NA, 
-        for (int k=0; k<n; k++) if (!ISNAN(x[k])) j++;
+        for (int k=0; k<n; k++) if (!is_nan(x, k)) j++;
         if (j == 0) { push(n); return(-2); }                // all NAs ? return special value to replace all o's values with '0'
         if (j != n) return(0);                              // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
     }                                                       // no NAs  ? continue to check the rest of isorted - the same routine as usual
@@ -1032,7 +1053,7 @@ static void dsort(double *x, int *o, int n, int order)
 {
     if (n <= 2) {                                           // nalast = 0 and n == 2 (check bottom of this file for explanation)
         if (nalast == 0 && n == 2) {                        // don't have to twiddle here.. at least one will be NA and 'n' WILL BE 2.
-            for (int i=0; i<n; i++) if (ISNAN(x[i])) o[i] = 0;
+            for (int i=0; i<n; i++) if (is_nan(x, i)) o[i] = 0;
             push(1); push(1);
             return;
         } Error("Internal error: dsort received n=%d. dsorted should have dealt with this (e.g. as a reverse sorted vector) already",n);
@@ -1095,7 +1116,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         tmp = isorted(xd, n, order[0]); break;
     case REALSXP :
         class = getAttrib(x, R_ClassSymbol);
-        twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
+        if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
+            twiddle = &i64twiddle;
+            is_nan  = &i64nan; // see explanation under `is_nan` as to why we need this
+        } else {
+            twiddle = &dtwiddle;
+            is_nan  = &dnan;
+        }
         tmp = dsorted(xd, n, order[0]); break;
     case STRSXP :
         tmp = csorted(xd, n, order[0]); break;
@@ -1154,7 +1181,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             f = &isorted; g = &isort; break;
         case REALSXP :
             class = getAttrib(x, R_ClassSymbol);
-            twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
+            if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
+                twiddle = &i64twiddle;
+                is_nan  = &i64nan;
+            } else {
+                twiddle = &dtwiddle;
+                is_nan  = &dnan;
+            }
             f = &dsorted; g = &dsort; break;
         case STRSXP :
             f = &csorted;

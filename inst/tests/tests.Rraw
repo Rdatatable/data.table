@@ -4752,7 +4752,16 @@ if ("package:bit64" %in% search()) {
     test(1320.5, ans1, as.integer(c(1,2,7,4,5,3,6)))
     test(1320.6, ans2, as.integer(c(3,6,1,2,7,4,5)))
     test(1320.7, ans3, as.integer(c(5,4,2,7,1,3,6)))
-    test(1320.8, ans4, as.integer(c(3,6,5,4,2,7,1)))    
+    test(1320.8, ans4, as.integer(c(3,6,5,4,2,7,1)))
+    
+    # missed test - checking na.last=NA!
+    set.seed(45L)
+    DT <- data.table(x=as.integer64(c(-50, 0, NA, 50, 1e18, NA, 1e-18)), y=sample(7))
+    ans1 <- forder(DT, x, na.last=NA, decreasing=FALSE)
+    ans2 <- forder(DT, x, na.last=NA, decreasing=TRUE)
+
+    test(1320.9, ans1, as.integer(c(0,0,1,2,7,4,5)))
+    test(1320.10, ans2, as.integer(c(0,0,5,4,2,7,1)))
 }
 
 # fread newlines inside quoted fields
