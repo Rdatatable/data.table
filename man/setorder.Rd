@@ -10,9 +10,9 @@
 \description{
   Note that in \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column.. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
 
-  \code{setcolorder} rearranges the columns of data.table, \emph{by reference}, to the new order provided.
+  \code{setcolorder} reorders the columns of data.table, \emph{by reference}, to the new order provided.
   
-  \code{setorder()} (and \code{setorderv}) reorders the rows of a \code{data.table} \emph{by reference}, based on the columns provided. It can sort in both ascending and descending order. The functionality is identical to using \code{?order} on a \code{data.frame}, except that \code{setorder} is much faster, is very memory efficient and is much more user-friendly.
+  \code{setorder} (and \code{setorderv}) reorders the rows of a \code{data.table} \emph{by reference}, based on the columns provided. It can sort in both ascending and descending order. The functionality is identical to using \code{?order} on a \code{data.frame}, except much faster, very memory efficient and much more user-friendly.
   
   \code{x[order(.)]} is now optimised internally to use \code{data.table}'s fast order by default. \code{data.table} by default always sorts in C-locale. If instead, it is essential to sort by the session locale, one could always revert back to base's \code{order} by doing: \code{x[base:::order(.)]}.
   
@@ -37,7 +37,7 @@ setorderv(x, cols, order=1L, na.last=FALSE)
 \details{
   When it's required to reorder the columns of a \code{data.table}, the idiomatic way is to use \code{setcolorder(x, neworder)}, instead of doing \code{x <- x[, neworder, with=FALSE]}. This is because the latter makes an entire copy of the \code{data.table}, which maybe unnecessary in most situations. \code{setcolorder} also allows column numbers instead of column names for \code{neworder} argument, although it isn't good programming practice to use column numbers. We recommend using column names.
   
-  \code{data.table} internally implements extremely fast radix based ordering, which will soon be exported and available as \code{forder}. However, in versions <= 1.9.2, fast ordering was only capable of increasing order (ascending). In versions >1.9.2, \code{data.table}'s internal fast order is also capable of sorting in decreasing order. Note that \code{\link{setkey}} still requires and will only sort in ascending order, and is not related to \code{setorder}. 
+  \code{data.table} internally implements extremely fast radix based ordering. However, in versions <= 1.9.2, fast ordering was only capable of increasing order (ascending). In versions >1.9.2, the functionality has been extended to decreasing order (descending) as well. Note that \code{\link{setkey}} still requires and will only sort in ascending order, and is not related to \code{setorder}. 
   
   By implementing \code{forder} to handle decreasing order as well, we now don't have to rely on \code{base:::order} anymore. It is now possible to reorder the rows of a \code{data.table} based on columns by reference, ex: \code{setorder(x, a, -b, c)}. Note that, \code{-b} also works with columns of type \code{character}, unlike \code{base:::order} which requires \code{-xtfrm(y)} (and is slow) instead.
   
@@ -46,9 +46,9 @@ setorderv(x, cols, order=1L, na.last=FALSE)
   Note that if \code{setorder} results in reordering of the rows of a keyed \code{data.table}, then it's key will be set to \code{NULL}.
   }
 \value{
-    The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setorder(DT,a,-b)[, cumsum(c), by=list(a,b)]}. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). See \code{?copy}.
+    For all \code{set*} functions, the input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setorder(DT,a,-b)[, cumsum(c), by=list(a,b)]}. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
 }
-\seealso{ \code{\link{setkey}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}}, \code{\link{copy}}
+\seealso{ \code{\link{setkey}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{copy}}
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
