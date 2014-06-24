@@ -111,8 +111,8 @@ void EXIT() {
 }
 #endif
 
-#define skip_quoted() if (ch<eof && *ch=='\"') while(++ch<eof && (*ch!='\"' || *(ch-1)=='\\')) {}
-#define MsgLimit(a) ((int)(a)>200 ? 200 : (int)(a))
+#define skip_quoted() if (ch<eof && *ch=='\"') while(++ch<eof && (*ch!='\"' || (*(ch-1)=='\\' && *(ch-2)!='\\'))) {}
+#define MsgLimit(a) ((int)(a)>5000 ? 5000 : (int)(a))  // 5000 a large limit just to prevent runaways, still printable
 
 static int countfields(int err)
 {
@@ -125,7 +125,7 @@ static int countfields(int err)
     while (lch<eof && *lch!=eol) {
         if (*lch=='\"' && (lch==mmp || *(lch-1)==sep || *(lch-1)==eol2)) {
             numeol = 0;
-            while (++lch<eof && numeol<100 && (*lch!='\"' || *(lch-1)=='\\' || (lch+1<eof && *(lch+1)!=sep && *(lch+1)!=eol))) {
+            while (++lch<eof && numeol<100 && (*lch!='\"' || (*(lch-1)=='\\' && *(lch-2)!='\\') || (lch+1<eof && *(lch+1)!=sep && *(lch+1)!=eol))) {
                 numeol += (*lch==eol);   // limit to prevent runaways, since various separators are tested.
             };
             if (err && (lch==eof || numeol==100)) { sprintf(errormsg,"A field starting with quote (\") doesn't end with a \" immediately followed by separator or new line: %.*s\n", MsgLimit(lch-ch), ch); EXIT(); }
@@ -483,7 +483,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     ch = mmp;
     while (ch<eof && *ch!='\n' && *ch!='\r') {
-        if (*ch=='\"') while(++ch<eof && (*ch!='\"' || *(ch-1)=='\\'));  // allows protection of \n and \r inside column names
+        if (*ch=='\"') while(++ch<eof && (*ch!='\"' || (*(ch-1)=='\\' && *(ch-2)!='\\')));  // allows protection of \n and \r inside column names
         ch++;                                         // this 'if' needed in case opening protection is not closed before eof
     }
     if (ch>=eof) {
@@ -567,10 +567,13 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         ncol = countfields(0);           // ncol on autostart using this separator (sep is global which countfieds() uses)
         do {  ch-=eolLen;                // search up line by line until different number of fields, or (likely) hit the start of file
               while (ch>mmp)  {
-                  if (*ch=='\"' && *(ch-1)!='\\') {
-                      while(--ch>mmp && (*ch!='\"' || *(ch-1)=='\\')) {};
+                  if (*ch=='\"' && (*(ch-1)!='\\' || (ch-2>=mmp && *(ch-2)=='\\'))) {
+                      while(--ch>mmp && (*ch!='\"' || (*(ch-1)=='\\' && (ch-2<mmp || *(ch-2)!='\\')))) {};
                       // now on opening quote
-                      if (ch>mmp) ch--;
+                      if (ch>mmp) {
+                          if (*(ch-1)==eol2) break;
+                          ch--;
+                      }
                       continue;
                   }
                   if (*(ch-1)==eol2) break;
@@ -612,12 +615,14 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     protecti++;
     allchar=TRUE;
     for (i=0; i<ncol; i++) {
-        if (ch<eof && *ch=='\"') {while(++ch<eof && (*ch!='\"' || *(ch-1)=='\\')) {}; if (ch<eof && *ch++!='\"') {sprintf(errormsg, "Format error on line %d: '%.*s'", nline, MsgLimit(ch-pos+1), pos);EXIT();} }  
-        // Use this logic in count fields
-        else {                              // if field reads as double ok then it's INT/INT64/REAL; i.e., not character (and so not a column name)
+        if (ch<eof && *ch=='\"') {
+            while(++ch<eof && (*ch!='\"' || (*(ch-1)=='\\' && *(ch-2)!='\\') || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
+            if (ch<eof && *ch++!='\"') {sprintf(errormsg, "Internal error: quoted field ends before EOF but not with \"");}
+            // Format error on line %d: '%.*s'", nline, MsgLimit(ch-pos+1), pos);EXIT();} }
+        } else {                              // if field reads as double ok then it's INT/INT64/REAL; i.e., not character (and so not a column name)
             if (*ch!=sep && *ch!=eol && Strtod())  // blank column names (,,) considered character and will get default names
                 allchar=FALSE;                     // considered testing at least one isalpha, but we want 1E9 to be a value not a column name
-            else while(ch<eof && *ch!=eol && *ch!=sep) ch++;  // skip over character field
+            else while(ch<eof && *ch!=eol && *ch!=sep) ch++;  // skip over unquoted character field
         }
         if (i<ncol-1) {   // not the last column (doesn't have a separator after it)
             if (ch<eof && *ch!=sep) {sprintf(errormsg, "Unexpected character ending field %d of line %d: %.*s", i+1, nline, MsgLimit(ch-pos+5), pos); EXIT();}
@@ -640,7 +645,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         ch = pos;
         nline++;
         for (i=0; i<ncol; i++) {
-            if (ch<eof && *ch=='\"') {ch++; ch2=ch; while(ch2<eof && (*ch2!='\"' || *(ch-1)=='\\')) ch2++;}
+            if (ch<eof && *ch=='\"') {ch++; ch2=ch; while(ch2<eof && (*ch2!='\"' || (*(ch2-1)=='\\' && *(ch2-2)!='\\'))) ch2++;}
             else {ch2=ch; while(ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;}
             if (ch2>ch) {
                 SET_STRING_ELT(names, i, mkCharLen(ch, (int)(ch2-ch)));
@@ -667,7 +672,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         nrow=1;
         while (ch<eof) {
             if (*ch=='\"' && (ch==mmp || *(ch-1)==sep || *(ch-1)==eol2)) {
-                while (++ch<eof && (*ch!='\"' || *(ch-1)=='\\' || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol) )) { };
+                while (++ch<eof && (*ch!='\"' || (*(ch-1)=='\\' && *(ch-2)!='\\') || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol) )) { };
                 if (ch<eof) ch++;
             }
             else nrow+=(*ch++==eol);
@@ -717,7 +722,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             while (ch<eof && *ch!=eol) {
                 // TO DO :  how do we know if we've landed inside a quoted field containing a newline?!!
                 // Look for newline or sepquote before and quotesep after?  What if two newlines embedded!
-                if (*ch=='\"' && (*(ch-1)==sep || *(ch-1)==eol2)) while (++ch<eof && (*ch!='\"' || *(ch-1)=='\\')) {};
+                if (*ch=='\"' && (*(ch-1)==sep || *(ch-1)==eol2)) while (++ch<eof && (*ch!='\"' || (*(ch-1)=='\\' && *(ch-2)!='\\'))) {};
                 ch++;
             }
             if (ch<eof && *ch==eol) ch+=eolLen;
@@ -745,15 +750,15 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     type[i]++;
                 case SXP_STR:
                     if (*ch=='\"') { // protected, now look for the next [^\]"[sep|eol]
-                        while(++ch<eof && (*ch!='\"' || *(ch-1)=='\\' || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))); ch++;
+                        while(++ch<eof && (*ch!='\"' || (*(ch-1)=='\\' && *(ch-2)!='\\') || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))); ch++;
                     } else {           // unprotected, look for next next [sep|eol]
                         while(ch<eof && *ch!=sep && *ch!=eol) ch++;
                     }
                 }
                 if (ch<eof && *ch==sep && i<ncol-1) {ch++; continue;}  // done, next field
                 if (i<ncol-1) {
-                    if (*ch>31) sprintf(errormsg, "Expected sep ('%c') but '%c' ends field %d on line %d when detecting types: %.*s", sep, *ch, i+1, nline+flines-1, MsgLimit(ch-linestart+1), linestart);
-                    else sprintf(errormsg, "Expected sep ('%c') but new line, EOF (or other non printing character) ends field %d on line %d when detecting types: %.*s", sep, i+1, nline+flines-1, MsgLimit(ch-linestart+1), linestart);
+                    if (*ch>31) sprintf(errormsg, "Expected sep ('%c') but '%c' ends field %d on line %d when detecting types: %.*s", sep, *ch, i+1, nline+flines, MsgLimit(ch-linestart+1), linestart);
+                    else sprintf(errormsg, "Expected sep ('%c') but new line, EOF (or other non printing character) ends field %d on line %d when detecting types: %.*s", sep, i+1, nline+flines, MsgLimit(ch-linestart+1), linestart);
                     EXIT();
                 }
             }
@@ -964,8 +969,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 case SXP_STR: case SXP_NULL: case_SXP_STR:
                     ch2=ch;
                     if (*ch=='\"') { // protected, now look for the next [^\]"[sep|eol]
-                        while(++ch2<eof && (*ch2!='\"' || *(ch2-1)=='\\' || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) {};
-                        if (ch2==eof) { sprintf(errormsg, "Field %d on line %d is quoted but not finished: %.*s", j+1, i+nline, MsgLimit(ch-pos+1), pos); EXIT(); }
+                        while(++ch2<eof && (*ch2!='\"' || (*(ch2-1)=='\\' && *(ch2-2)!='\\') || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) {};  // ch2-2 ok here without >mmp check since " and \ must have occurred prior
+                        if (ch2==eof) { sprintf(errormsg, "Field %d on line %d starts with quote but doesn't finish with an unescaped quote immediately followed by sep, \\n or EOF: %.*s", j+1, i+nline, MsgLimit(ch-pos+1), pos); EXIT(); }
                         ch2++;
                         if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLen(ch+1, (int)(ch2-ch-2))); // else skip field
                     } else {           // unprotected, look for next next [sep|eol]
@@ -978,6 +983,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 if (j<ncol-1) {
                     if (*ch>31) sprintf(errormsg, "Expected sep ('%c') but '%c' ends field %d on line %d when reading data: %.*s", sep, *ch, j+1, i+nline, MsgLimit(ch-pos+1), pos);
                     else sprintf(errormsg, "Expected sep ('%c') but new line or EOF ends field %d on line %d when reading data: %.*s", sep, j+1, i+nline, MsgLimit(ch-pos+1), pos);
+                    // print whole line here because it's often something earlier in the line that messed up
                     EXIT();
                 }
             }
