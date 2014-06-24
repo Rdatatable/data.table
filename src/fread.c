@@ -19,6 +19,7 @@
 
 /*****    TO DO    *****
 Restore test 1339 (balanced embedded quotes, see ?fread already updated).
+Confirm: http://stackoverflow.com/questions/23833294/data-tablefread-doesnt-like-missing-values-in-first-column
 construct test and investigate skip for completeness here: http://stackoverflow.com/questions/22086780/data-table-fread-error
 http://stackoverflow.com/questions/22229109/r-data-table-fread-command-how-to-read-large-files-with-irregular-separators
 http://r.789695.n4.nabble.com/Odd-problem-using-fread-to-read-in-a-csv-file-no-data-just-headers-tp4686302.html
