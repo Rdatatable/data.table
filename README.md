@@ -232,7 +232,7 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 
   *  A join of the form `X[Y, roll=TRUE, nomatch=0L]` where some of Y's key columns occur more than once (duplicated keys) might at times return incorrect join. This was introduced only in 1.9.2 and is fixed now. Closes [#700](https://github.com/Rdatatable/data.table/issues/472). Thanks to Michael Smith for the very nice reproducible example and nice spotting of such a tricky case.
 
-  *  Fixed an edge case in `DT[order(.)]` internal optimisation to be consistent with base. Closes [#696](https://github.com/Rdatatable/data.table/issues/696). Thanks to Michael Smith for reporting.
+  *  Fixed an edge case in `DT[order(.)]` internal optimisation to be consistent with base. Closes [#696](https://github.com/Rdatatable/data.table/issues/696). Thanks to Michael Smith and Garrett See for reporting.
 
 #### NOTES
 
