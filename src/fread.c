@@ -18,9 +18,7 @@
 #endif
 
 /*****    TO DO    *****
-\n inside a protected field: http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value
-http://stackoverflow.com/questions/23858244/using-python-to-parse-a-12gb-csv
-
+Restore test 1339 (balanced embedded quotes, see ?fread already updated).
 construct test and investigate skip for completeness here: http://stackoverflow.com/questions/22086780/data-table-fread-error
 http://stackoverflow.com/questions/22229109/r-data-table-fread-command-how-to-read-large-files-with-irregular-separators
 http://r.789695.n4.nabble.com/Odd-problem-using-fread-to-read-in-a-csv-file-no-data-just-headers-tp4686302.html
