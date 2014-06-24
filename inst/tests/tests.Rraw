@@ -4768,22 +4768,22 @@ if ("package:bit64" %in% search()) {
 test(1321, fread('A,B,C\n1,"foo\nbar",3\n4,baz,6'), data.table(A=c(1L,4L), B=c("foo\nbar","baz"), C=c(3L,6L)))
 test(1322, fread('A,B,C\n1,"foo
 bar",3\n4,baz,6'), data.table(A=c(1L,4L), B=c("foo\nbar","baz"), C=c(3L,6L)))
-# NB: don't remove the newline after foo in test 1320 above, that's what's being tested.
+# NB: don't remove the newline after foo in test 1322 above, that's what's being tested.
 test(1323, fread('col1,col2\n5,"4\n3"'), data.table(col1=5L, col2="4\n3"))
 test(1324, fread('A,B,C\n1,4,"foo"\n2,5,"bar'), error="Field 3 on line 3 starts with quote but doesn't finish with.*2,5,")
 test(1325, fread('A,B,C\n1,4,"foo"\n2,5,"bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar')))
 test(1326, fread('A,B,C\n1,4,"foo"\n2,5,bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar"')))
 test(1327, fread('A,B,C\n1,4,"foo"\n2,5,""bar""'), data.table(A=1:2,B=4:5,C=c("foo",'"bar"')))
 cat('A,B\n1,"Joe \\",Bloggs"', file = f<-tempfile())
-test(1328, fread(f), data.table(A=1L, B='Joe \\",Bloggs'))
+test(1328, fread(f), data.table(V1=1L, V2='Joe \\', V3='Bloggs"'))
 unlink(f)
 test(1329, fread(), error="Input is either empty or fully whitespace in the first 0 rows") # used to default to test.csv, oddly
 # add test that that escaped escapes at the end of a quoted field
 test(1330, fread('A,B\nfoo,1\nAnalyst\\,2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3))
 test(1331, fread('A,B\nfoo,1\nAnalyst\\ ,2\nbar,3'), data.table(A=c('foo','Analyst\\ ','bar'), B=1:3))
-test(1332, fread('A,B\nfoo,1\n"Analyst\\",",2\nbar,3'), data.table(A=c('foo','Analyst\\",','bar'), B=1:3))
-     # double \\ in this file means one in the input, so the above " *is* escaped by a single '\'
-test(1333, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3'), error="Field 1 on line 3 starts with quote but doesn't finish")
+test(1332, fread('A,B\nfoo,1\n"Analyst\\",2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3))
+     # double \\ in this file means one in the input, so the above " is escaped by a single '\' but still read ok
+test(1333, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3'), error="A field starting with quote.* doesn't end with a")
 test(1334, fread('A,B\nfoo,1\n"Analyst\\" ,",2\nbar,3'), data.table(A=c('foo', 'Analyst\\" ,', 'bar'), B=1:3))
 test(1335, fread('A,B\nfoo,1\n"Analyst\\\\",2\nbar,3'), data.table(A=c('foo','Analyst\\\\','bar'), B=1:3))
 
@@ -4798,31 +4798,40 @@ unlink(f)
 
 # file names ending with \ (quite common)
 # http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash
-test(1337, fread('file,size\n"windows\\user\\",123'), data.table(file='windows\\user\\',123))
+cat('file,size\n"windows\\user\\",123\n', file = f<-tempfile())
+test(1337, fread(f), data.table(file='windows\\user\\',size=123L))
+test(1338, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
+unlink(f)
+
+# TO DO, by checking for balanced embedded quotes
+# cat('http,size\n"www.blah?x="one",y="two","three"",123\n', file = f<-tempfile())
+# read.csv(f) -- unusually, seems to be a case it doesn't handle
+# test(1339, fread(f), data.table(http='www.blah?x="one",y="two","three"',size=123L))
+# unlink(f)
 
 # FR #706 - setorder and setorderv now has 'na.last=TRUE/FALSE' argument. It can't have value NA though, like `DT[order(.)]` as it reorders by reference, doesn't subset. Simple tests.
 set.seed(45L)
 DT <- data.table(x=sample(c(-2:2, NA_integer_), 20, TRUE), y=sample(c(-1:1, NA, Inf, -Inf, NaN), 20, TRUE))
-test(1330.1, setorder(copy(DT),  x, na.last=TRUE ), DT[order( x, na.last=TRUE)])
-test(1330.2, setorder(copy(DT),  x, na.last=FALSE), DT[order( x, na.last=FALSE)])
-test(1330.3, setorder(copy(DT), -x, na.last=TRUE ), DT[order(-x, na.last=TRUE)])
-test(1330.4, setorder(copy(DT), -x, na.last=FALSE), DT[order(-x, na.last=FALSE)])
-test(1330.5, setorder(copy(DT),  y, na.last=TRUE ), DT[order( y, na.last=TRUE)])
-test(1330.6, setorder(copy(DT),  y, na.last=FALSE), DT[order( y, na.last=FALSE)])
-test(1330.7, setorder(copy(DT), -y, na.last=TRUE ), DT[order(-y, na.last=TRUE)])
-test(1330.8, setorder(copy(DT), -y, na.last=FALSE), DT[order(-y, na.last=FALSE)])
+test(1340.1, setorder(copy(DT),  x, na.last=TRUE ), DT[order( x, na.last=TRUE)])
+test(1340.2, setorder(copy(DT),  x, na.last=FALSE), DT[order( x, na.last=FALSE)])
+test(1340.3, setorder(copy(DT), -x, na.last=TRUE ), DT[order(-x, na.last=TRUE)])
+test(1340.4, setorder(copy(DT), -x, na.last=FALSE), DT[order(-x, na.last=FALSE)])
+test(1340.5, setorder(copy(DT),  y, na.last=TRUE ), DT[order( y, na.last=TRUE)])
+test(1340.6, setorder(copy(DT),  y, na.last=FALSE), DT[order( y, na.last=FALSE)])
+test(1340.7, setorder(copy(DT), -y, na.last=TRUE ), DT[order(-y, na.last=TRUE)])
+test(1340.8, setorder(copy(DT), -y, na.last=FALSE), DT[order(-y, na.last=FALSE)])
 
-test(1330.9,  setorderv(copy(DT), "x",  1L, na.last=TRUE ), DT[order( x, na.last=TRUE)])
-test(1330.10, setorderv(copy(DT), "x",  1L, na.last=FALSE), DT[order( x, na.last=FALSE)])
-test(1330.11, setorderv(copy(DT), "x", -1L, na.last=TRUE ), DT[order(-x, na.last=TRUE)])
-test(1330.12, setorderv(copy(DT), "x", -1L, na.last=FALSE), DT[order(-x, na.last=FALSE)])
-test(1330.13, setorderv(copy(DT), "y",  1L, na.last=TRUE ), DT[order( y, na.last=TRUE)])
-test(1330.14, setorderv(copy(DT), "y",  1L, na.last=FALSE), DT[order( y, na.last=FALSE)])
-test(1330.15, setorderv(copy(DT), "y", -1L, na.last=TRUE ), DT[order(-y, na.last=TRUE)])
-test(1330.16, setorderv(copy(DT), "y", -1L, na.last=FALSE), DT[order(-y, na.last=FALSE)])
+test(1340.9,  setorderv(copy(DT), "x",  1L, na.last=TRUE ), DT[order( x, na.last=TRUE)])
+test(1340.10, setorderv(copy(DT), "x",  1L, na.last=FALSE), DT[order( x, na.last=FALSE)])
+test(1340.11, setorderv(copy(DT), "x", -1L, na.last=TRUE ), DT[order(-x, na.last=TRUE)])
+test(1340.12, setorderv(copy(DT), "x", -1L, na.last=FALSE), DT[order(-x, na.last=FALSE)])
+test(1340.13, setorderv(copy(DT), "y",  1L, na.last=TRUE ), DT[order( y, na.last=TRUE)])
+test(1340.14, setorderv(copy(DT), "y",  1L, na.last=FALSE), DT[order( y, na.last=FALSE)])
+test(1340.15, setorderv(copy(DT), "y", -1L, na.last=TRUE ), DT[order(-y, na.last=TRUE)])
+test(1340.16, setorderv(copy(DT), "y", -1L, na.last=FALSE), DT[order(-y, na.last=FALSE)])
 
-test(1330.17, setorder(copy(DT), x, na.last=NA), error="na.last must be logical TRUE/FALSE")
-test(1330.18, setorderv(copy(DT), "x", na.last=NA), error="na.last must be logical TRUE/FALSE")
+test(1340.17, setorder(copy(DT), x, na.last=NA), error="na.last must be logical TRUE/FALSE")
+test(1340.18, setorderv(copy(DT), "x", na.last=NA), error="na.last must be logical TRUE/FALSE")
 
 ##########################
 
