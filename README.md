@@ -234,7 +234,7 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 
   *  Fixed an edge case in `DT[order(.)]` internal optimisation to be consistent with base. Closes [#696](https://github.com/Rdatatable/data.table/issues/696). Thanks to Michael Smith and Garrett See for reporting.
 
-  *  `DT[, list(list(.)), by=.]` returns correct results in R >=3.1.0 as well. The bug was due to recent (welcoming) changes in R v3.1.0 where `list(.)` does not result in a *copy*. Closes [#481](https://github.com/Rdatatable/data.table/issues/696). 
+  *  `DT[, list(list(.)), by=.]` returns correct results in R >=3.1.0 as well. The bug was due to recent (welcoming) changes in R v3.1.0 where `list(.)` does not result in a *copy*. Closes [#481](https://github.com/Rdatatable/data.table/issues/481). 
 
 #### NOTES
 
