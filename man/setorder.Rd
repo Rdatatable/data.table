@@ -12,9 +12,11 @@
 
   \code{setcolorder} rearranges the columns of data.table, \emph{by reference}, to the new order provided.
   
-  \code{setorder()} sorts or rearranges the rows of a \code{data.table} \emph{by reference}, based on the columns provided. It can sort in both ascending and descending order. The functionality is identical to using \code{?order} on a \code{data.frame}, except that \code{setorder} is much faster, is very memory efficient and is much more user-friendly.
+  \code{setorder()} (and \code{setorderv}) reorders the rows of a \code{data.table} \emph{by reference}, based on the columns provided. It can sort in both ascending and descending order. The functionality is identical to using \code{?order} on a \code{data.frame}, except that \code{setorder} is much faster, is very memory efficient and is much more user-friendly.
   
   \code{x[order(.)]} is now optimised internally to use \code{data.table}'s fast order by default. \code{data.table} by default always sorts in C-locale. If instead, it is essential to sort by the session locale, one could always revert back to base's \code{order} by doing: \code{x[base:::order(.)]}.
+  
+  \code{bit64:::integer64} type is also supported for reordering rows of a \code{data.table}.
 }
 
 \usage{
