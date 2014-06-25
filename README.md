@@ -1,4 +1,3 @@
-
 **Getting started** : [data.table homepage](http://datatable.r-forge.r-project.org/)<br>
 **Support** : [data.table tag](http://stackoverflow.com/questions/tagged/r+data.table) (please read: [how best to ask](http://stackoverflow.com/questions/5963269/how-to-make-a-great-r-reproducible-example))<br>
 **Notices/discussion** : [Nabble](http://r.789695.n4.nabble.com/datatable-help-f2315188.html);  [Gmane](http://dir.gmane.org/gmane.comp.lang.r.datatable); 
@@ -31,6 +30,9 @@ install.packages("data.table")
 The news below is updated as soon as new features or bug fixes are available in the latest (unstable) development version.
 
 _Stability_ refers to features and syntax, not how buggy it is. For example, if you install the latest version from GitHub and start using a new feature, you may sometimes find it is subsequently changed and your new code breaks. When we release to CRAN we are saying that we are happy with the changes and you can rely on them being there in future.  If you hit a problem that the development version fixes, then it is usually safe to simply upgrade to it.
+
+
+We moved from R-Forge to GitHub on 9 June 2014, including history.
 
 
 ### Changes in v1.9.3  (in development on GitHub)
