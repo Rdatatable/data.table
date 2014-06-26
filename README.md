@@ -18,7 +18,7 @@ update.packages()
 # try latest development version from GitHub
 # ( Windows users should first install Rtools
 #   http://cran.r-project.org/bin/windows/Rtools/ )
-devtools::install_github("data.table", "Rdatatable"
+devtools::install_github("data.table", "Rdatatable")
 
 # if you get pdflatex errors during installation, and want a 
 # quick way out and don't mind skipping building vignettes:
