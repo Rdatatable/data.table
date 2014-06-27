@@ -143,17 +143,19 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
 
   *  `setorder()` and `DT[order(.)]` handles `integer64` type in descending order as well. Closes [#703](https://github.com/Rdatatable/data.table/issues/703).
   
+  *  `setorder()` and `setorderv()` gain `na.last = TRUE/FALSE`. Closes [#706](https://github.com/Rdatatable/data.table/issues/706).
+
+#### BUG FIXES
+
   * `fread()` :
     * now accepts line breaks inside quoted fields. Thanks to Clayton Stanley for highlighting :
     http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value
     
     * now accepts trailing backslash in quoted fields. Thanks to user2970844 for highlighting :
     http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash
-
-  *  `setorder()` and `setorderv()` gain `na.last = TRUE/FALSE`. Closes [#706](https://github.com/Rdatatable/data.table/issues/706).
-
-#### BUG FIXES
-
+    
+    * Blank and `"NA"` values in logical columns (`T`,`True`,`TRUE`) no longer cause them to be read as character, [#567](https://github.com/Rdatatable/data.table/issues/567). Tests added.
+    
   *  When joining to fewer columns than the key has, using one of the later key columns explicitly in j repeated the first value. A problem introduced by v1.9.2 and not caught bythe 1,220 tests, or tests in 37 dependent packages. Test added. Many thanks to Michele Carriero for reporting.
   ```R
   DT = data.table(a=1:2, b=letters[1:6], key="a,b")    # keyed by a and b

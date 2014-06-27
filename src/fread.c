@@ -70,7 +70,7 @@ static clock_t tCoerce, tCoerceAlloc;
 #define SXP_NULL   5   // NILSXP i.e. skip column (last so that all types can be bumped up to it by user)
 static const char TypeName[6][10] = {"LGL","INT","INT64","REAL","STR","NULL"};  // for messages and errors
 static int TypeSxp[6] = {LGLSXP,INTSXP,REALSXP,REALSXP,STRSXP,NILSXP};
-static union {double d; long long l; Rboolean b;} u;
+static union {double d; long long l; int b;} u;   // b=boolean, can hold NA_LOGICAL
 #define NUT        8   // Number of User Types (just for colClasses where "numeric"/"double" are equivalent)
 static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "NULL", "double", "CLASS" };  // important that first 6 correspond to TypeName.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
 static int UserTypeNameMap[NUT] = { SXP_LGL, SXP_INT, SXP_INT64, SXP_REAL, SXP_STR, SXP_NULL, SXP_REAL, SXP_STR };
@@ -231,6 +231,11 @@ static inline Rboolean Strtob()
         ch = start+1;
         if (*ch=='a' && *++ch=='l' && *++ch=='s' && *++ch=='e' && (++ch==eof || *ch==sep || *ch==eol)) return(TRUE);
     }
+    else if (ch==eof || *ch==sep || *ch==eol ||
+             (ch<eof-1 && *ch=='N' && *++ch=='A' && (++ch==eof || *ch==sep || *ch==eol))) {
+        u.b = NA_LOGICAL;
+        return(TRUE);
+    }
     ch = start;
     return(FALSE);     // invalid boolean, need to bump type.
 }
@@ -279,9 +284,19 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     }
     setAttrib(newv, R_ClassSymbol, newtype==SXP_INT64 ? ScalarString(mkChar("integer64")) : R_NilValue);
     switch(newtype) {
+    case SXP_INT :
+        switch(oldtype) {
+        case SXP_LGL :
+            for (i=0; i<sofar; i++) INTEGER(newv)[i] = INTEGER(v)[i];
+            break;
+        default :
+            sprintf(errormsg, "Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
+            EXIT();
+        }
+        break;
     case SXP_INT64:
         switch(oldtype) {
-        case SXP_INT :
+        case SXP_LGL : case SXP_INT :
             for (i=0; i<sofar; i++) REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? NA_REAL : (u.l=(long long)INTEGER(v)[i],u.d));
             break;
         default :
@@ -291,7 +306,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
         break;
     case SXP_REAL:
         switch(oldtype) {
-        case SXP_INT :
+        case SXP_LGL : case SXP_INT :
             for (i=0; i<sofar; i++) REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? NA_REAL : (double)INTEGER(v)[i]);
             break;
         case SXP_INT64 :
@@ -303,10 +318,10 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
         }
         break;
     case SXP_STR:
-        warning("Bumped column %d to type character on data row %d, field contains '%.*s'. Coercing previously read values in this column from integer or numeric back to character which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too (if they occurred in this column before the bump). If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, sofar+1, MsgLimit(lch-ch), ch);
+        warning("Bumped column %d to type character on data row %d, field contains '%.*s'. Coercing previously read values in this column from logical, integer or numeric back to character which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too (if they occurred in this column before the bump). If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, sofar+1, MsgLimit(lch-ch), ch);
         static char buffer[129];  // 25 to hold [+-]2^63, with spare space to be safe and snprintf too
         switch(oldtype) {
-        case SXP_INT :
+        case SXP_LGL : case SXP_INT :
             // This for loop takes 0.000007 seconds if the bump occurs on line 179, for example, timing showed
             for (i=0; i<sofar; i++) {
                 if (INTEGER(v)[i] == NA_INTEGER)
@@ -422,7 +437,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (fstat(fd,&stat_buf) == -1) {close(fd); error("Opened file ok but couldn't obtain file size: %s", fnam);}
         filesize = stat_buf.st_size;
         if (filesize<=0) {close(fd); error("File is empty: %s", fnam);}
-        if (verbose) Rprintf("File opened, filesize is %.3f GB\n", 1.0*filesize/(1024*1024*1024));
+        if (verbose) Rprintf("File opened, filesize is %.3f GB.\nMemory mapping ... ", 1.0*filesize/(1024*1024*1024));
+        // Would be nice to print 'Memory mapping' when not verbose, but then it would also print for small files
+        // which would be annoying. If we could estimate if the mmap was likely to take more than 2 seconds (and thus
+        // the % meter to kick in) then that'd be ideal. A simple size check isn't enough because it might already
+        // be cached from a previous run. Perhaps spawn an event, which is cancelled if mmap returns within 2 secs.
 #ifdef MAP_POPULATE
         mmp = (const char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);    // TO DO?: MAP_HUGETLB
 #else
@@ -451,7 +470,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (filesize<=0) { CloseHandle(hFile); error("File is empty: %s", fnam); }
         hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL); // filesize+1 not allowed here, unlike mmap where +1 is zero'd
         if (hMap==NULL) { CloseHandle(hFile); error("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
-        if (verbose) Rprintf("File opened, filesize is %.3f GB\n", 1.0*filesize/(1024*1024*1024));
+        if (verbose) Rprintf("File opened, filesize is %.3f GB.\nMemory mapping ... ", 1.0*filesize/(1024*1024*1024));
         mmp = (const char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,filesize);
         if (mmp == NULL) {
             CloseHandle(hMap);
@@ -472,7 +491,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (EOF > -1) error("Internal error. EOF is not -1 or less\n");
         if (mmp[filesize-1] < 0) error("mmap'd region has EOF at the end");
         eof = mmp+filesize;  // byte after last byte of file.  Never dereference eof as it's not mapped.
-        if (verbose) Rprintf("File is opened and mapped ok\n");
+        if (verbose) Rprintf("ok\n");  // to end 'Memory mapping ... '
     }
     clock_t tMap = clock();
     // From now use EXIT() wrapper instead of error(), to close it on Windows so as not to lock the file after an error.

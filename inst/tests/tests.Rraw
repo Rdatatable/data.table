@@ -48,6 +48,8 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     .lasttest <<- num
     ntest <<- ntest + 1
     lastnum <<- num
+    xsub = substitute(x)
+    ysub = substitute(y)
     if (is.null(output)) err <<- try(x,TRUE)
     else out = gsub("NULL$","",paste(capture.output(print(err<<-try(x,TRUE))),collapse=""))
     if (!is.null(error) || !is.null(warning)) {
@@ -61,7 +63,7 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
                length(grep(patt,err)) &&
                type==observedtype)) {
             cat("Test",num,"didn't produce correct",type,":\n")
-            cat(">",deparse(substitute(x)),"\n")
+            cat(">",deparse(xsub),"\n")
             cat("Expected ",type,": '",txt,"'\n",sep="")
             if (!inherits(err,"try-error"))
                 cat("Observed: no error or warning\n")
@@ -90,7 +92,7 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
         output = gsub("[)]","[)]",output)
         if (!length(grep(output,out))) {
             cat("Test",num,"didn't produce correct output:\n")
-            cat(">",deparse(substitute(x)),"\n")
+            cat(">",deparse(xsub),"\n")
             cat("Expected: '",output,"'\n",sep="")
             cat("Observed: '",out,"'\n",sep="")
             nfail <<- nfail + 1
@@ -102,7 +104,7 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     if (missing(y)) {
         if (isTRUE(as.vector(x))) return()  # as.vector to drop names of a named vector such as returned by system.time
         cat("Test",num,"expected TRUE but observed:\n")
-        cat(">",deparse(substitute(x)),"\n")
+        cat(">",deparse(xsub),"\n")
         if (is.data.table(x)) compactprint(x) else print(x)
         nfail <<- nfail + 1
         whichfail <<- c(whichfail, num)
@@ -131,9 +133,9 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
         if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal(x,y))) return()   # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     }
     cat("Test",num,"ran without errors but failed check that x equals y:\n")
-    cat("> x =",deparse(substitute(x)),"\n")
+    cat("> x =",deparse(xsub),"\n")
     if (is.data.table(x)) compactprint(x) else if (length(x)>6) {cat("First 6 of", length(x),":");print(head(x))} else print(x)
-    cat("> y =",deparse(substitute(y)),"\n")
+    cat("> y =",deparse(ysub),"\n")
     if (is.data.table(y)) compactprint(y) else if (length(y)>6) {cat("First 6 of", length(y),":");print(head(y))} else print(y)
     nfail <<- nfail + 1
     whichfail <<- c(whichfail, num)
@@ -2593,7 +2595,7 @@ test(904, fread("A,B,C,D\n1,3,foo,5\n2,4,barbaz,6"), DT<-data.table(A=1:2,B=3:4,
 test(905, fread('A,B,C,D\n1,3,foo,5\n2,4,"barbaz",6'), DT)
 test(906, fread('A,B,C,D\n1,3,foo,5\n2,4,"ba,r,baz",6'), DT[2,C:="ba,r,baz"])
 test(907, fread('A,B,C,D\n1,3,foo,5\n2,4,"ba,\\"r,baz",6'), DT[2,C:='ba,\\"r,baz'])  # \" protected ok, but \ needs taking off too (TO DO)
-test(908, fread("A,B,C\n1,3,\n2,4,\n"), data.table(A=1:2,B=3:4,C=NA_integer_))
+test(908, fread("A,B,C\n1,3,\n2,4,\n"), data.table(A=1:2,B=3:4,C=NA)) # where NA is type logical
 
 test(909, fread("
 Date and Time,Open,High,Low,Close,Volume
@@ -4248,11 +4250,11 @@ test(1265, DT[,.N,by=id]$N, INT(1,1,1,1))
 test(1266, getNumericRounding(), 0L)
 setNumericRounding(2)
 
-# fread reading TRUE, #4766  TO DO
-DF = data.frame(I=1:3, L=c(T,F,NA))
+# fread reading NA in logical columns, #4766
+DF = data.frame(I=1:3, L=c(T,F,NA), R=3.14)
 write.csv(DF,f<-tempfile(),row.names=F)
-# read.csv(f)     
-# test(1267, fread(f)$L, c(TRUE, FALSE, NA))
+test(1267.1, fread(f)$L, c(TRUE, FALSE, NA))
+test(1267.2, fread(f), as.data.table(read.csv(f)))
 unlink(f)
 
 ### FR #2722 test begins here ###
@@ -4844,6 +4846,10 @@ test(1341.3, DT[, list(f(y)), by=x], data.table(x=unique(DT$x), V1=list(c(3,5,9)
 # test regression on over-allocation (selfref) on unique() which uses new subsetDT()
 bla <- data.table(x=c(1,1,2,2), y=c(1,1,1,1))
 test(1342, unique(bla)[, bla := 2L], data.table(x=c(1,2),y=1,bla=2L))
+
+# blank and NA fields in logical columns
+test(1343, fread("A,B\n1,TRUE\n2,\n3,F"), data.table(A=1:3, B=c(TRUE,NA,FALSE)))
+test(1344, fread("A,B\n1,T\n2,NA\n3,"), data.table(A=1:3, B=c(TRUE,NA,NA)))
 
 
 ##########################
