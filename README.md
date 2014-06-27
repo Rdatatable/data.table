@@ -1,5 +1,5 @@
 **Getting started** : [data.table homepage](http://datatable.r-forge.r-project.org/)<br>
-**Support** : [data.table tag](http://stackoverflow.com/questions/tagged/r+data.table) (please read: [how best to ask](http://stackoverflow.com/questions/5963269/how-to-make-a-great-r-reproducible-example))<br>
+**Support** : [data.table tag](http://stackoverflow.com/questions/tagged/r+data.table) (PLEASE read: [how to ask](http://stackoverflow.com/help/how-to-ask) and [how to make a great R reproducible example](http://stackoverflow.com/questions/5963269/how-to-make-a-great-r-reproducible-example))<br>
 **Notices/discussion** : [Nabble](http://r.789695.n4.nabble.com/datatable-help-f2315188.html);  [Gmane](http://dir.gmane.org/gmane.comp.lang.r.datatable); 
 [HTML Archive](http://lists.r-forge.r-project.org/pipermail/datatable-help); 
 [RSS](http://rss.gmane.org/gmane.comp.lang.r.datatable);
