@@ -154,7 +154,7 @@ DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
     * now accepts trailing backslash in quoted fields. Thanks to user2970844 for highlighting :
     http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash
     
-    * Blank and `"NA"` values in logical columns (`T`,`True`,`TRUE`) no longer cause them to be read as character, [#567](https://github.com/Rdatatable/data.table/issues/567). Tests added.
+    * Blank and `"NA"` values in logical columns (`T`,`True`,`TRUE`) no longer cause them to be read as character, [#567](https://github.com/Rdatatable/data.table/issues/567). Thanks to Adam November for reporting. Tests added.
     
   *  When joining to fewer columns than the key has, using one of the later key columns explicitly in j repeated the first value. A problem introduced by v1.9.2 and not caught bythe 1,220 tests, or tests in 37 dependent packages. Test added. Many thanks to Michele Carriero for reporting.
   ```R
