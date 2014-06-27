@@ -41,7 +41,7 @@ static void finalizer(SEXP p)
     return;
 }
 
-static void setselfref(SEXP x) {   
+void setselfref(SEXP x) {   
     SEXP p;
     // Store pointer to itself so we can detect if the object has been copied. See
     // ?copy for why copies are not just inefficient but cause a problem for over-allocated data.tables.

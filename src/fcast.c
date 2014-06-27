@@ -256,6 +256,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // rows and cols are 1-based passe
             for (j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
         }
     }
+    setselfref(ans);
     UNPROTECT(1);
     return ans;
 }

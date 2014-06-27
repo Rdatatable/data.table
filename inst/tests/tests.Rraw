@@ -4841,6 +4841,11 @@ test(1341.2, DT[, list(list(.I)), by=x], data.table(x=unique(DT$x), V1=list(c(1,
 f <- function(x) list(x)
 test(1341.3, DT[, list(f(y)), by=x], data.table(x=unique(DT$x), V1=list(c(3,5,9), c(2,6,4,1), c(10,7,8))))
 
+# test regression on over-allocation (selfref) on unique() which uses new subsetDT()
+bla <- data.table(x=c(1,1,2,2), y=c(1,1,1,1))
+test(1342, unique(bla)[, bla := 2L], data.table(x=c(1,2),y=1,bla=2L))
+
+
 ##########################
 
 

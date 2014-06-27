@@ -61,7 +61,7 @@ DT[ids, sum(val), by = .EACHI]   # 3 rows, in the order of ids (result 1 and 3 s
 ```S
 X[Y, head(.SD, i.top), by = .EACHI]
 ```
-  where 'top' is a non-join column in `Y`; i.e. join inherited column. Thanks to many, especially eddi, Sadao Milberg and Gabor Grothendieck for extended discussions.
+  where 'top' is a non-join column in `Y`; i.e. join inherited column. Thanks to many, especially eddi, Sadao Milberg and Gabor Grothendieck for extended discussions. Also closes [#538](https://github.com/Rdatatable/data.table/issues/538).
 
   * Accordingly, `X[Y, j]` now does what `X[Y][, j]` did. A "classic" option to restore the previous default behaviour is to be dicussed and confirmed. See [this](http://r.789695.n4.nabble.com/changing-data-table-by-without-by-syntax-to-require-a-quot-by-quot-td4664770.html), [this](http://stackoverflow.com/questions/16093289/data-table-join-and-j-expression-unexpected-behavior) and [this](http://stackoverflow.com/a/16222108/403310) post for discussions. 
 
