@@ -1,6 +1,4 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
 #include <ctype.h>
 #include <errno.h>
@@ -49,9 +47,6 @@ Add LaF comparison.
 as.read.table=TRUE/FALSE option.  Or fread.table and fread.csv (see http://r.789695.n4.nabble.com/New-function-fread-in-v1-8-7-tp4653745p4654194.html).
 
 *****/
-
-extern size_t sizes[100];
-extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
 
 static const char *ch, *eof; 
 static char sep, eol, eol2;  // sep2 TO DO

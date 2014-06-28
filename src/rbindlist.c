@@ -1,14 +1,9 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
 #include <Rversion.h>
 #include <stdint.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
-
-extern size_t sizes[100];
-#define SIZEOF(x) sizes[TYPEOF(x)]
 
 /* Eddi's hash setup for combining factor levels appropriately - untouched from previous state (except made combineFactorLevels static) */
 
@@ -20,8 +15,6 @@ extern size_t sizes[100];
 #else
   typedef R_len_t RLEN;
 #endif
-
-extern int StrCmp(SEXP x, SEXP y);    // in forder.c
 
 // a simple linked list, will use this when finding global order for ordered factors
 // will keep two ints
@@ -336,9 +329,6 @@ static SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * 
 
 
 /* Arun's addition and changes to incorporate 'usenames=T/F' and 'fill=T/F' arguments to rbindlist */
-
-extern SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
-extern SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 
 /*
     l               = input list of data.tables/lists/data.frames
@@ -860,7 +850,6 @@ static SEXP listlist(SEXP x) {
 ## Now, it's just a matter of filling corresponding matches from x.agg's indices with y.agg's indices.
 ## BENCHMARKS ON THE BOTTOM OF THIS FILE
 */
-extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
 SEXP chmatch2(SEXP x, SEXP y, SEXP nomatch) {
 
     R_len_t i, j, k, nx, ix, iy;

@@ -1,6 +1,4 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 //#include <time.h>
 
 static int *grp = NULL;      // the group of each x item, like a factor

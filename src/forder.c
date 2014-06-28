@@ -1,6 +1,4 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 
 // #define TIMING_ON
 
@@ -25,13 +23,9 @@ static int *newo = NULL;                                            // used by f
 static int nalast = -1;                                             // =1, 0, -1 for TRUE, NA, FALSE respectively. Value rewritten inside forder().
                                                                     // note that na.last=NA (0) removes NAs, not retains them.
 
-extern size_t sizes[];                                              // See dogroups.c for this shared variable
-#define SIZEOF(x) sizes[TYPEOF(x)]
-
 #define N_SMALL 200                                                 // replaced n < 200 with n < N_SMALL. Easier to change later
 #define N_RANGE 100000                                              // range limit for counting sort
 
-extern void savetl_init(), savetl(SEXP s), savetl_end();            // in assign.c currently but will move to chmatch.c
 #define Error(...) do {savetl_end(); error(__VA_ARGS__);} while(0)  // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 #undef warning
 #define warning(...) Do not use warning in this file                // since it can be turned to error via warn=2
@@ -447,7 +441,6 @@ static union {double d;
               unsigned long long ull;} u;
             //  int i;
             //  unsigned int ui;} u;
-extern SEXP char_integer64;
 
 unsigned long long dtwiddle(void *p, int i, int order)
 {

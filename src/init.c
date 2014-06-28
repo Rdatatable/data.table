@@ -1,6 +1,4 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
 #include <R_ext/Rdynload.h>
 #include <R_ext/Visibility.h>
@@ -111,9 +109,6 @@ R_ExternalMethodDef externalMethods[] = {
 {"Cfastmean", (DL_FUNC) &fastmean, -1},
 {NULL, NULL, 0}
 };
-
-void setSizes();
-SEXP char_integer64;
 
 void attribute_visible R_init_datatable(DllInfo *info)
 // relies on pkg/src/Makevars to mv data.table.so to datatable.so

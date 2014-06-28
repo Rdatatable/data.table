@@ -1,23 +1,7 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
-#include "data.table.h"
-
-extern size_t sizes[100];
-#define SIZEOF(x) sizes[TYPEOF(x)]
-
-extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
-extern SEXP uniqlist(SEXP l, SEXP order);
-extern SEXP allocNAVector(SEXPTYPE type, R_len_t n);
-extern SEXP seq_int(int n, int start);
-extern SEXP set_diff(SEXP x, int n);
-extern SEXP which(SEXP x);
-extern SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose);
-extern SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-extern SEXP bmerge(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP rollarg, SEXP rollends, SEXP nomatch, SEXP retFirst, SEXP retLength, SEXP allLen1);
 
 // Note: all these functions below are internal functions and are designed specific to fcast.
 SEXP zero_init(R_len_t n) {

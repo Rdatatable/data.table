@@ -1,18 +1,10 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
 //#include <sys/mman.h>
 #include <Rversion.h>
 #include <fcntl.h>
 #include <time.h>
 
-size_t sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
-SEXP SelfRefSymbol;
-
-SEXP keepattr(SEXP to, SEXP from);
-SEXP growVector(SEXP x, R_len_t newlen);
-SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 
 void setSizes() {
     // called by init.c
@@ -30,9 +22,6 @@ void setSizes() {
     }
     SelfRefSymbol = install(".internal.selfref");
 }
-#define SIZEOF(x) sizes[TYPEOF(x)]
-
-extern void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose)
 {

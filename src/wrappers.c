@@ -1,6 +1,4 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
 
 // Wrappers for R internal functions. We can't rely on calling

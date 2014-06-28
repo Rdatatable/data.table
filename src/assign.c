@@ -1,23 +1,10 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
 #include <Rmath.h> 
 #include <Rversion.h>
 
-// See dogroups.c for these shared variables.
-SEXP SelfRefSymbol; 
-extern size_t sizes[100];
-#define SIZEOF(x) sizes[TYPEOF(x)]
-//
-
-extern SEXP growVector(SEXP x, R_len_t newlen, Rboolean verbose);
-extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
-SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 static SEXP *saveds=NULL;
 static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
-SEXP allocNAVector(SEXPTYPE type, R_len_t n);
-void savetl_init(), savetl(SEXP s), savetl_end();
 
 static void finalizer(SEXP p)
 {
@@ -488,7 +475,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                                 PROTECT(addlevels = allocVector(STRSXP, 100));
                                 protecti++;
                             } else if (addi >= length(addlevels)) {
-                                PROTECT(addlevels = growVector(addlevels, length(addlevels)+1000, FALSE));
+                                PROTECT(addlevels = growVector(addlevels, length(addlevels)+1000));
                                 protecti++;
                             }
                             SET_STRING_ELT(addlevels,addi,thisv);
@@ -498,7 +485,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                     }
                     if (addi > 0) {
                         R_len_t oldlen = length(targetlevels);
-                        PROTECT(targetlevels = growVector(targetlevels, oldlen+addi, FALSE));
+                        PROTECT(targetlevels = growVector(targetlevels, oldlen+addi));
                         protecti++;
                         for (j=0; j<addi; j++)
                             SET_STRING_ELT(targetlevels, oldlen+j, STRING_ELT(addlevels, j));

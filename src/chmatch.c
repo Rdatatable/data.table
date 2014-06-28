@@ -1,9 +1,4 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
-
-// chmatch() uses truelength on CHARSXP, being careful to store and restore R's own usage of truelength of CHARSXP
-extern void savetl_init(), savetl(SEXP s), savetl_end();
+#include "data.table.h"
 
 #define ENC_KNOWN(x) (LEVELS(x) & 76)
 // LATIN1_MASK (1<<2) | UTF8_MASK (1<<3) | ASCII_MASK (1<<6)

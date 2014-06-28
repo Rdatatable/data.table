@@ -1,6 +1,4 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
 #include <Rmath.h> 
 
@@ -27,8 +25,6 @@ floating point, not all.equal. A stronger test. These
 tests run under R CMD check and run on all CRAN platforms daily to catch
 if we become out of line to base R (say if base R changed its mean).
 */
-
-SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 
 SEXP fastmean(SEXP args)
 {
