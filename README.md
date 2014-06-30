@@ -52,6 +52,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
     ```
     In other words, `by-without-by` is now explicit, for clarity and consistency, **#2696** (git [#371](https://github.com/Rdatatable/data.table/issues/371)).  
     > NOTE: when `i` contains duplicates, `by=.EACHI` is different to `by=key(DT)`; e.g,
+    
     ```R
     setkey(DT, ID)
     ids = c("id1", "id2, "id1")
