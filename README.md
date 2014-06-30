@@ -149,14 +149,13 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
 #### BUG FIXES
 
-  1. `fread()` :
-    * now accepts line breaks inside quoted fields. [Thanks to Clayton Stanley for highlighting](http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value).
-    
-    * now accepts trailing backslash in quoted fields. [Thanks to user2970844 for highlighting](http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash).
-    
+  1. `fread()`:
+    * now accepts line breaks inside quoted fields. Thanks to Clayton Stanley for highlighting [here on SO](http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value).    
+    * now accepts trailing backslash in quoted fields. Thanks to user2970844 for highlighting [here on SO](http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash).
     * Blank and `"NA"` values in logical columns (`T`,`True`,`TRUE`) no longer cause them to be read as character, [#567](https://github.com/Rdatatable/data.table/issues/567). Thanks to Adam November for reporting. Tests added.
     
   2.  When joining to fewer columns than the key has, using one of the later key columns explicitly in j repeated the first value. A problem introduced by v1.9.2 and not caught bythe 1,220 tests, or tests in 37 dependent packages. Test added. Many thanks to Michele Carriero for reporting.
+
     ```R
     DT = data.table(a=1:2, b=letters[1:6], key="a,b")    # keyed by a and b
     DT[.(1), list(b,...)]    # correct result again (joining just to a not b but using b)
@@ -227,9 +226,9 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
 #### NOTES
 
-  *  Reminder: using `rolltolast` still works but since v1.9.2 now issues the following warning :
-     `'rolltolast' has been marked 'deprecated' in ?data.table since v1.8.8 on CRAN 3 Mar 2013, see NEWS. Please
-      change to the more flexible 'rollends' instead. 'rolltolast' will be removed in the next version."`
+  *  Reminder: using `rolltolast` still works but since v1.9.2 now issues the following warning:  
+     > 'rolltolast' has been marked 'deprecated' in ?data.table since v1.8.8 on CRAN 3 Mar 2013, see NEWS. Please
+      change to the more flexible 'rollends' instead. 'rolltolast' will be removed in the next version."
 
   *  Using `with=FALSE` with `:=` is now deprecated in all cases, given that wrapping the LHS of
      `:=` with parentheses has been preferred for some time.
@@ -246,16 +245,16 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   *  `?duplicated.data.table` explained that `by=NULL` or `by=FALSE` would use all columns, however `by=FALSE`
      resulted in error. `by=FALSE` is removed from help and `duplicated` returns an error when `by=TRUE/FALSE` now. 
-     Closes # 5424 (git [#38](https://github.com/Rdatatable/data.table/issues/38)).
+     Closes **#5424** (git [#38](https://github.com/Rdatatable/data.table/issues/38)).
      
   *  More info about distinguishing small numbers from 0.0 in v1.9.2+ is [here](http://stackoverflow.com/questions/22290544/grouping-very-small-numbers-e-g-1e-28-and-0-0-in-data-table-v1-8-10-vs-v1-9-2).
 
-  *  `?dcast.data.table` now explains how the names are generated for the columns that are being casted. Closes # 5676.
+  *  `?dcast.data.table` now explains how the names are generated for the columns that are being casted. Closes **#5676**.
   
-  *  `dcast.data.table(dt, a ~ ... + b)` now generates the column names with values from `b` coming last. Closes # 5675.
+  *  `dcast.data.table(dt, a ~ ... + b)` now generates the column names with values from `b` coming last. Closes **#5675**.
 
   *  Added `x[order(.)]` internal optimisation, and how to go back to `base:::order(.)` if one wants to sort by session locale to 
-     `?setorder` (with alias `?order` and `?forder`). Closes #5613 ([#478](https://github.com/Rdatatable/data.table/issues/478)) and 
+     `?setorder` (with alias `?order` and `?forder`). Closes **#5613** ([#478](https://github.com/Rdatatable/data.table/issues/478)) and 
      also [#704](https://github.com/Rdatatable/data.table/issues/704). Thanks to Christian Wolf for the report.
 
 ### Changes in v1.9.2 (on CRAN 27 Feb 2014)
