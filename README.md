@@ -51,16 +51,16 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
     DT[.(c("id1", "id2")), sum(val), by = key(DT)]  # same
     ```
     In other words, `by-without-by` is now explicit, for clarity and consistency, **#2696** (git [#371](https://github.com/Rdatatable/data.table/issues/371)). **NOTE:** when `i` contains duplicates, `by=.EACHI` is different to `by=key(DT)`; e.g,
-      ```R
-      setkey(DT, ID)
-      ids = c("id1", "id2, "id1")
-      DT[ids, sum(val), by = ID]       # 2 rows returned
-      DT[ids, sum(val), by = .EACHI]   # 3 rows, in the order of ids (result 1 and 3 separate)
-      ```
+    ```R
+    setkey(DT, ID)
+    ids = c("id1", "id2, "id1")
+    DT[ids, sum(val), by = ID]       # 2 rows returned
+    DT[ids, sum(val), by = .EACHI]   # 3 rows, in the order of ids (result 1 and 3 separate)
+    ```
     `by=.EACHI` can be useful when `i` is event data, where you don't want the events aggregated by common join values but wish the output to be ordered with repeats, or simply just using join inherited columns as parameters; e.g.;
-      ```R
-      X[Y, head(.SD, i.top), by = .EACHI]
-      ```
+    ```R
+    X[Y, head(.SD, i.top), by = .EACHI]
+    ```
     where 'top' is a non-join column in `Y`; i.e. join inherited column. Thanks to many, especially eddi, Sadao Milberg and Gabor Grothendieck for extended discussions. Also closes **#5297** [#538](https://github.com/Rdatatable/data.table/issues/538).
 
   2. Accordingly, `X[Y, j]` now does what `X[Y][, j]` did. A *classic* option to restore the previous default behaviour is to be dicussed and confirmed. See [this](http://r.789695.n4.nabble.com/changing-data-table-by-without-by-syntax-to-require-a-quot-by-quot-td4664770.html), [this](http://stackoverflow.com/questions/16093289/data-table-join-and-j-expression-unexpected-behavior) and [this](http://stackoverflow.com/a/16222108/403310) post for discussions. 
@@ -74,12 +74,12 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
   6. For a keyed table `X` where the key columns are not at the beginning in order, `X[Y]` now retains the original order of columns in X rather than moving the join columns to the beginning of the result.
 
   7. It is no longer an error to assign to row 0 or row NA.
-      ```R
-      DT[0, colA := 1L]             # now does nothing, silently (was error)
-      DT[NA, colA := 1L]            # now does nothing, silently (was error)
-      DT[c(1, NA, 0, 2), colA:=1L]  # now ignores the NA and 0 silently (was error)
-      DT[nrow(DT) + 1, colA := 1L]  # error (out-of-range) as before
-      ```
+    ```R
+    DT[0, colA := 1L]             # now does nothing, silently (was error)
+    DT[NA, colA := 1L]            # now does nothing, silently (was error)
+    DT[c(1, NA, 0, 2), colA:=1L]  # now ignores the NA and 0 silently (was error)
+    DT[nrow(DT) + 1, colA := 1L]  # error (out-of-range) as before
+    ```
     This is for convenience to avoid the need for a switch in user code that evals various i conditions in a loop passing in i as an integer vector which may containing 0 or NA.
 
   8. A new function `setorder` is now implemented which uses data.table's internal fast order to reorder rows **by reference**. It returns the result invisibly (like `setkey`) that allows for compound statements, ex: `setorder(DT, a, -b)[, cumsum(c), by=list(a,b)]`. Check `?setorder` for more info.
@@ -93,15 +93,15 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
   12. `anyDuplicated.data.table` is now implemented. Closes **#5172** (git [#350](https://github.com/Rdatatable/data.table/issues/350)). Thanks to M C (bluemagister) for reporting.
 
   13. Complex j-expressions of the form `DT[, c(..., lapply(.SD, fun)), by=grp]`are now optimised as long as `.SD` is only present in the form `lapply(.SD, fun)`. This partially resolves **#2722** (git [#370](https://github.com/Rdatatable/data.table/issues/370)). Thanks to Sam Steingold for reporting.
-      ```R
-      ## example:
-      DT[, c(.I, lapply(.SD, sum), mean(x), lapply(.SD, log)), by=grp]
-      ## is optimised to
-      DT[, list(.I, x=sum(x), y=sum(y), ..., mean(x), log(x), log(y), ...), by=grp]
-      ## but
-      DT[, c(.SD, lapply(.SD, sum)), by=grp] 
-      ## is not, yet.
-      ```
+    ```R
+    ## example:
+    DT[, c(.I, lapply(.SD, sum), mean(x), lapply(.SD, log)), by=grp]
+    ## is optimised to
+    DT[, list(.I, x=sum(x), y=sum(y), ..., mean(x), log(x), log(y), ...), by=grp]
+    ## but
+    DT[, c(.SD, lapply(.SD, sum)), by=grp] 
+    ## is not, yet.
+    ```
 
   14. `setDT` gains `keep.rownames = TRUE/FALSE` argument, which works only on `data.frame`s. TRUE retains the data.frame's row names as a new column named `rn`.
 
@@ -119,16 +119,16 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
   16. The output of `tables()` now includes `NCOL`. Thanks to @dnlbrky for the suggestion.
 
   17. `DT[, LHS := RHS]` (or its equivalent in `set`) now provides a warning and returns `DT` as it was, instead of an error, when `length(LHS) = 0L`, **#5357** (git [#343](https://github.com/Rdatatable/data.table/issues/343)). For example:
-      ```R
-      DT[, grep("^b", names(DT)) := NULL] # where no columns start with b
-      # warns now and returns DT instead of error
-      ```
+    ```R
+    DT[, grep("^b", names(DT)) := NULL] # where no columns start with b
+    # warns now and returns DT instead of error
+    ```
 
   18. GForce now is also optimised for j-expression with `.N`. Closes **#5760** (git [#334](https://github.com/Rdatatable/data.table/issues/334) and part of #5754 git [#523](https://github.com/Rdatatable/data.table/issues/523)).
-      ```R
-      DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.2 - doesn't know to use GForce - will be (relatively) slower
-      DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
-      ```
+    ```R
+    DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.2 - doesn't know to use GForce - will be (relatively) slower
+    DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
+    ```
 
   19. `setDF` is now implemented. It accepts a data.table and converts it to data.frame by reference, **#5528** (git [#338](https://github.com/Rdatatable/data.table/issues/338)). Thanks to canneff for the discussion [here](http://r.789695.n4.nabble.com/Is-there-any-overhead-to-converting-back-and-forth-from-a-data-table-to-a-data-frame-td4688332.html) on data.table mailing list.
 
@@ -139,9 +139,9 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
   22. Looping calls to `unique(DT)` such as in `DT[,unique(.SD),by=group]` is now faster by avoiding internal overhead of calling `[.data.table`. Thanks again to Ron Hylton for highlighting in the [same thread](http://r.789695.n4.nabble.com/data-table-is-asking-for-help-tp4692080.html). His example is reduced from 28 sec to 9 sec, with identical results.
   
   23. Following `gsum` and `gmean`, now `gmin` and `gmax` from GForce are also implemented. Closes part of **#5754** (git [#523](https://github.com/Rdatatable/data.table/issues/523)). Benchmarks are also provided.
-      ```R
-      DT[, list(sum(x), min(y), max(z), .N), by=...] # runs by default using GForce
-      ```
+    ```R
+    DT[, list(sum(x), min(y), max(z), .N), by=...] # runs by default using GForce
+    ```
 
   24. `setorder()` and `DT[order(.)]` handles `integer64` type in descending order as well. Closes [#703](https://github.com/Rdatatable/data.table/issues/703).
   
@@ -157,10 +157,10 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
     * Blank and `"NA"` values in logical columns (`T`,`True`,`TRUE`) no longer cause them to be read as character, [#567](https://github.com/Rdatatable/data.table/issues/567). Thanks to Adam November for reporting. Tests added.
     
   2.  When joining to fewer columns than the key has, using one of the later key columns explicitly in j repeated the first value. A problem introduced by v1.9.2 and not caught bythe 1,220 tests, or tests in 37 dependent packages. Test added. Many thanks to Michele Carriero for reporting.
-      ```R
-      DT = data.table(a=1:2, b=letters[1:6], key="a,b")    # keyed by a and b
-      DT[.(1), list(b,...)]    # correct result again (joining just to a not b but using b)
-      ```
+    ```R
+    DT = data.table(a=1:2, b=letters[1:6], key="a,b")    # keyed by a and b
+    DT[.(1), list(b,...)]    # correct result again (joining just to a not b but using b)
+    ```
   3.  `setkey` works again when a non-key column is type list (e.g. each cell can itself be a vector), # 5366 (git [#54](https://github.com/Rdatatable/data.table/issues/54)). Test added. Thanks to James Sams, Michael Nelson and Musx [for the reproducible examples](http://stackoverflow.com/questions/22186798/r-data-table-1-9-2-issue-on-setkey).
 
   4.  The warning "internal TRUE value has been modified" with recently released R 3.1 when grouping a table containing a logical column *and* where all groups are just 1 row is now fixed and tests added. Thanks to James Sams for the reproducible example. The warning is issued by R and we have asked if it can be upgraded to error (UPDATE: change now made for R 3.1.1 thanks to Luke Tierney).
@@ -233,16 +233,16 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   *  Using `with=FALSE` with `:=` is now deprecated in all cases, given that wrapping the LHS of
      `:=` with parentheses has been preferred for some time.
-     ```R
-         colVar = "col1"
-         DT[, colVar:=1, with=FALSE]                   # deprecated, still works silently as before
-         DT[, (colVar):=1]                             # please change to this
-         DT[, c("col1","col2"):=1]                     # no change
-         DT[, 2:4 := 1]                                # no change
-         DT[, c("col1","col2"):=list(sum(a),mean(b)]   # no change
-         DT[, `:=`(...), by=...]                       # no change
-     ```
-     The next release will issue a warning when `with=FALSE` is used with `:=`.
+    ```R
+    colVar = "col1"
+    DT[, colVar:=1, with=FALSE]                   # deprecated, still works silently as before
+    DT[, (colVar):=1]                             # please change to this
+    DT[, c("col1","col2"):=1]                     # no change
+    DT[, 2:4 := 1]                                # no change
+    DT[, c("col1","col2"):=list(sum(a),mean(b)]   # no change
+    DT[, `:=`(...), by=...]                       # no change
+    ```
+    The next release will issue a warning when `with=FALSE` is used with `:=`.
 
   *  `?duplicated.data.table` explained that `by=NULL` or `by=FALSE` would use all columns, however `by=FALSE`
      resulted in error. `by=FALSE` is removed from help and `duplicated` returns an error when `by=TRUE/FALSE` now. 
