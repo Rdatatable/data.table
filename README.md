@@ -37,6 +37,7 @@ _Stability_ refers to features and syntax, not how buggy it is. For example, if 
 
 We moved from R-Forge to GitHub on 9 June 2014, including history.
 
+---
 
 ### Changes in v1.9.3  (in development on GitHub)
 
@@ -44,11 +45,11 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 #### NEW FEATURES
 
   1. `by=.EACHI` runs `j` for each group in `x` that each row of `i` joins to.
-      ```R
-      DT[.(c("id1", "id2")), sum(val)]                # single total across both id1 and id2
-      DT[.(c("id1", "id2")), sum(val), by = .EACHI]   # sum(val) for each id
-      DT[.(c("id1", "id2")), sum(val), by = key(DT)]  # same
-     ```
+    ```R
+    DT[.(c("id1", "id2")), sum(val)]                # single total across both id1 and id2
+    DT[.(c("id1", "id2")), sum(val), by = .EACHI]   # sum(val) for each id
+    DT[.(c("id1", "id2")), sum(val), by = key(DT)]  # same
+    ```
     In other words, `by-without-by` is now explicit, for clarity and consistency, **#2696** (git [#371](https://github.com/Rdatatable/data.table/issues/371)). **NOTE:** when `i` contains duplicates, `by=.EACHI` is different to `by=key(DT)`; e.g,
       ```R
       setkey(DT, ID)
