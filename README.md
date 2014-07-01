@@ -267,7 +267,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
      
       * `melt.data.table` is also capable of melting on columns of type `list`.
       * `melt.data.table` gains `variable.factor` and `value.factor` which by default are TRUE and FALSE respectively for compatibility with `reshape2`. This allows for directly controlling the output type of "variable" and "value" columns (as factors or not).
-      * vmelt.data.table`'s `na.rm = TRUE` parameter is optimised to remove NAs directly during melt and therefore avoids the overhead of subsetting using `!is.na` afterwards on the molten data. 
+      * `melt.data.table`'s `na.rm = TRUE` parameter is optimised to remove NAs directly during melt and therefore avoids the overhead of subsetting using `!is.na` afterwards on the molten data. 
       * except for `margins` argument from `reshape2:::dcast`, all features of dcast are intact. `dcast.data.table` can also accept `value.var` columns of type list.
     
     > Reminder of Cologne (Dec 2013) presentation **slide 32** : ["Why not submit a dcast pull request to reshape2?"](http://datatable.r-forge.r-project.org/CologneR_2013.pdf).
