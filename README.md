@@ -226,6 +226,8 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   33.  `DT[, list(list(.)), by=.]` returns correct results in R >=3.1.0 as well. The bug was due to recent (welcoming) changes in R v3.1.0 where `list(.)` does not result in a *copy*. Closes [#481](https://github.com/Rdatatable/data.table/issues/481). 
 
+  34.  `dcast.data.table` handles `fun.aggregate` argument properly when called from within a function that accepts `fun.aggregate` argument and passes to `dcast.data.table()`. Closes [#713](https://github.com/Rdatatable/data.table/issues/713). Thanks to mathematicalcoffee for reporting [here](http://stackoverflow.com/q/24542976/559784) on SO.
+
 #### NOTES
 
   1.  Reminder: using `rolltolast` still works but since v1.9.2 now issues the following warning:  

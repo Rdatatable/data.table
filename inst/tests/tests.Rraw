@@ -4852,6 +4852,21 @@ test(1343, fread("A,B\n1,TRUE\n2,\n3,F"), data.table(A=1:3, B=c(TRUE,NA,FALSE)))
 test(1344, fread("A,B\n1,T\n2,NA\n3,"), data.table(A=1:3, B=c(TRUE,NA,NA)))
 
 
+# issues/713 - dcast.data.table and fun.aggregate
+DT <- data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
+foo <- function (tbl, fun.aggregate) {
+    dcast.data.table(tbl, id ~ k, value.var='v', fun.aggregate=fun.aggregate)
+}
+test(1345, foo(DT, last), dcast.data.table(DT, id ~ k, value.var='v', fun.aggregate=last))
+
+# more minor changes to dcast.data.table (subset argument handling symbol - removing any surprises with data.table's typical scoping rules) - test for that.
+DT <- data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
+bla <- c(TRUE, rep(FALSE, 6L)) 
+# calling `subset=.(bla)` gives eval error when testing... not sure what's happeing! using values directly instead for now.
+test(1346.1, dcast.data.table(DT, id ~ k, value.var="v", subset=.(c(TRUE, rep(FALSE, 6L)))), dcast.data.table(DT[1L], id ~ k, value.var="v"))
+DT[, bla := !bla]
+test(1346.2, dcast.data.table(DT, id ~ k, value.var="v", subset=.(bla), fun.aggregate=length), dcast.data.table(DT[(bla)], id ~ k, value.var="v", fun.aggregate=length))
+
 ##########################
 
 
