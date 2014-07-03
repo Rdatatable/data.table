@@ -66,6 +66,8 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     fill.default <- NULL
     if (!is.null(fun.aggregate)) { # construct the 'call'
         fill.default = fun.aggregate(data[[value.var]][0], ...)
+        if (!length(fill.default) && (is.null(fill) || !length(fill)))
+            stop("Aggregating function provided to argument 'fun.aggregate' should always return a length 1 vector, but returns 0-length value for fun.aggregate(", typeof(data[[value.var]]), "(0)).", " This value will have to be used to fill missing combinations, if any, and therefore can not be of length 0. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
         args <- c("data", "formula", "margins", "subset", "fill", "value.var", "verbose", "drop")
         m <- m[setdiff(names(m), args)]
         .CASTfun = fun.aggregate # issues/713
@@ -107,7 +109,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
             attr(oo, 'maxgrpn') > 1L
         }
         if (!fun.null && fun_agg_chk(data))
-            stop("Aggregating function provided to argument 'fun.aggregate' should return a length 1 vector for each group, but returns length != 1 for atleast one group. Please have a look at the DETAILS section of ?dcast.data.table ")
+            stop("Aggregating function provided to argument 'fun.aggregate' should always return a length 1 vector for each group, but returns length != 1 for atleast one group. Please have a look at the DETAILS section of ?dcast.data.table ")
     } else {
         if (is.null(subset))
             data = data[, unique(c(ff_, value.var)), with=FALSE] # data is untouched so far. subset only required columns
