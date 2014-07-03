@@ -212,7 +212,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   26.  FR # 2551 implemented leniance in warning messages when columns are coerced with `DT[, LHS := RHS]`, when `length(RHS)==1`. But this was very lenient. For ex: `DT[, a := "bla"]`, where `a` is a logical column should get a warning. This is now fixed such that only very obvious cases coerces silently, ex: `DT[, a := 1]` where `a` is `integer`. Closes **#5442** (git [#35](https://github.com/Rdatatable/data.table/issues/35)). Thanks to Michele Carriero and John Laing for reporting.
 
-  27.  `dcast.data.table` provides better error message when `fun.aggregate` is specified but it returns length != 1. Closes git [#693](https://github.com/Rdatatable/data.table/issues/35). Thanks to Trevor Alexander for reporting [here on SO](http://stackoverflow.com/questions/24152733/undocumented-error-in-dcast-data-table).
+  27.  `dcast.data.table` provides better error message when `fun.aggregate` is specified but it returns length != 1. Closes git [#693](https://github.com/Rdatatable/data.table/issues/693). Thanks to Trevor Alexander for reporting [here on SO](http://stackoverflow.com/questions/24152733/undocumented-error-in-dcast-data-table).
 
   28.  `dcast.data.table` tries to preserve attributes whereever possible, except when `value.var` is a `factor` (or ordered factor). For `factor` types, the casted columns will be coerced to type `character` thereby losing the `levels` attribute. Closes git [#688](https://github.com/Rdatatable/data.table/issues/688). Thanks to juancentro for reporting.
 
