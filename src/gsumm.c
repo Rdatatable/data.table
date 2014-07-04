@@ -174,14 +174,14 @@ SEXP gmean(SEXP x, SEXP narm)
 SEXP gmin(SEXP x, SEXP narm)
 {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
-    if (!isVectorAtomic(x)) error("GForce sum can only be applied to columns, not .SD or similar. To find min of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lappy(.SD,min),by=,.SDcols=]'");
+    if (!isVectorAtomic(x)) error("GForce min can only be applied to columns, not .SD or similar. To find min of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lappy(.SD,min),by=,.SDcols=]'");
     R_len_t i, thisgrp=0;
     int n = LENGTH(x);
     //clock_t start = clock();
     SEXP ans;
-    if (grpn != length(x)) error("grpn [%d] != length(x) [%d] in gsum", grpn, length(x));
+    if (grpn != length(x)) error("grpn [%d] != length(x) [%d] in gmin", grpn, length(x));
     char *update = Calloc(ngrp, char);
-    if (update == NULL) error("Unable to allocate %d * %d bytes for gsum", ngrp, sizeof(char));
+    if (update == NULL) error("Unable to allocate %d * %d bytes for gmin", ngrp, sizeof(char));
     switch(TYPEOF(x)) {
     case LGLSXP: case INTSXP:
         ans = PROTECT(allocVector(INTSXP, ngrp));
@@ -259,12 +259,12 @@ SEXP gmin(SEXP x, SEXP narm)
         }
         break;
     default:
-        error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+        error("Type '%s' not supported by GForce min (gmin). Either add the prefix base::min(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
     }
     copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     UNPROTECT(1);
     Free(update);
-    // Rprintf("this gsum took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+    // Rprintf("this gmin took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
     return(ans);
 }
 
@@ -272,14 +272,14 @@ SEXP gmin(SEXP x, SEXP narm)
 SEXP gmax(SEXP x, SEXP narm)
 {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
-    if (!isVectorAtomic(x)) error("GForce sum can only be applied to columns, not .SD or similar. To find min of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lappy(.SD,min),by=,.SDcols=]'");
+    if (!isVectorAtomic(x)) error("GForce max can only be applied to columns, not .SD or similar. To find max of all items in a list such as .SD, either add the prefix base::max(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lappy(.SD,max),by=,.SDcols=]'");
     R_len_t i, thisgrp=0;
     int n = LENGTH(x);
     //clock_t start = clock();
     SEXP ans;
-    if (grpn != length(x)) error("grpn [%d] != length(x) [%d] in gsum", grpn, length(x));
+    if (grpn != length(x)) error("grpn [%d] != length(x) [%d] in gmax", grpn, length(x));
     char *update = Calloc(ngrp, char);
-    if (update == NULL) error("Unable to allocate %d * %d bytes for gsum", ngrp, sizeof(char));
+    if (update == NULL) error("Unable to allocate %d * %d bytes for gmax", ngrp, sizeof(char));
     switch(TYPEOF(x)) {
     case LGLSXP: case INTSXP:
         ans = PROTECT(allocVector(INTSXP, ngrp));
@@ -357,11 +357,11 @@ SEXP gmax(SEXP x, SEXP narm)
         }
         break;
     default:
-        error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+        error("Type '%s' not supported by GForce max (gmax). Either add the prefix base::max(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
     }
     copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     UNPROTECT(1);
     Free(update);
-    // Rprintf("this gsum took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+    // Rprintf("this gmax took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
     return(ans);
 }
