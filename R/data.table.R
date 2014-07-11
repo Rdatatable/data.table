@@ -394,6 +394,18 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         isub = substitute(i)
         # Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires 
         # the "eval" to be checked before `as.name("!")`. Therefore interchanged.
+        restore.N = remove.N = FALSE
+        if (exists(".N", envir=parent.frame(), inherits=FALSE)) {
+           old.N = get(".N", envir=parent.frame(), inherits=FALSE)
+           if (!bindingIsLocked(".N", parent.frame())) {
+               assign(".N", nrow(x), envir=parent.frame(), inherits=FALSE)
+               restore.N = TRUE
+           } # binding locked when .SD[.N] but that's ok as that's the .N we want anyway
+           # TO DO: change isub at C level s/.N/nrow(x); changing a symbol to a constant should be ok
+        } else {
+           assign(".N", nrow(x), envir=parent.frame(), inherits=FALSE)
+           remove.N = TRUE
+        }
         if (is.call(isub) && isub[[1L]]=="eval") {  # TO DO: or ..()
             isub = eval(.massagei(isub[[2L]]), parent.frame(), parent.frame())
             if (is.expression(isub)) isub=isub[[1L]]
@@ -416,7 +428,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             i = eval(isub, order_env, parent.frame())             # for optimisation of 'order' to 'forder'
             # that forder returns integer(0) is taken care of internally within forder
         } else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
-        else i = eval(isub, parent.frame(), parent.frame())
+          else i = eval(isub, parent.frame(), parent.frame())
+        if (restore.N) assign(".N", old.N, envir=parent.frame())
+        if (remove.N) rm(list=".N", envir=parent.frame())
         if (is.matrix(i)) stop("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please let datatable-help know if you'd like this, or add your comments to FR #1611.")
         if (is.logical(i)) {
             if (notjoin) {

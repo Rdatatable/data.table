@@ -4872,6 +4872,13 @@ DT <- data.table(id=rep(1:2, c(3,2)), k=c(letters[1:3], letters[1:2]), v=1:5)
 test(1347.1, dcast.data.table(DT, id ~ k, fun.aggregate=last, value.var="v"), error="Aggregating function provided to argument 'fun.aggregate' should always return a length 1 vector")
 test(1347.2, dcast.data.table(DT, id ~ k, fun.aggregate=last, value.var="v", fill=NA_integer_), data.table(id=1:2, a=c(1L, 4L), b=c(2L,5L), c=c(3L,NA_integer_), key="id"))
 
+# .N now available in i
+DT = data.table(a=1:3,b=1:6)
+test(1348, DT[.N], DT[6])
+test(1349, DT[.N-1:3], DT[5:3])
+test(1350, DT[.N+1], DT[NA])
+
+
 ##########################
 
 
