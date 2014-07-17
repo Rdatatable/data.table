@@ -263,6 +263,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
      `?setorder` (with alias `?order` and `?forder`). Closes **#5613** ([#478](https://github.com/Rdatatable/data.table/issues/478)) and 
      also [#704](https://github.com/Rdatatable/data.table/issues/704). Thanks to Christian Wolf for the report.
 
+  8.  Added tests (1351.1 and 1351.2) to catch any future regressions on particular case of binary search based subset reported [here](http://stackoverflow.com/q/24729001/559784) on SO. Thanks to Scott for the post. The regression was contained to v1.9.2 AFAICT. Closes #734.
 ---
 
 ### Changes in v1.9.2 (on CRAN 27 Feb 2014)

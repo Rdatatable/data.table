@@ -4879,6 +4879,11 @@ test(1348, DT[.N], DT[6])
 test(1349, DT[.N-1:3], DT[5:3])
 test(1350, DT[.N+1], DT[NA])
 
+# Adding test to catch any future regressions - #734
+dt = data.table(id = rep(c('a','b'), each=2), val = rep(c(1,2,3), times=c(1,2,1)))
+setkey(dt, id, val)
+test(1351.1, dt[J("a"), val], c(1,2))
+test(1351.2, dt[J('a'), range(val)], c(1,2))
 
 ##########################
 
