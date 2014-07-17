@@ -4404,8 +4404,9 @@ test(1287, ans, data.table(Time=a$Time, demand.x=NA_real_, demand.y=a$demand, ke
 # more rbindlist tests - duplicate columns with "fill=TRUE"
 ll <- list(data.table(x=1, y=-1, x=-2), data.table(y=10, y=20, y=30, x=-10, a="a", b=Inf, c=factor(1)))
 test(1288.1, rbindlist(ll, use.names=TRUE, fill=FALSE), error = "Item 2 has 7 columns, inconsistent with item 1 which has 3 columns")
+# modified after fixing #725 
 test(1288.2, rbindlist(ll, use.names=TRUE, fill=TRUE), 
-    data.table(x=c(1,-10), x=c(-2, NA), y=c(-1,10), y=c(NA,20), y=c(NA,30), a=c(NA, "a"), b=c(NA, Inf), c=factor(c(NA, 1))))
+    data.table(x=c(1,-10), y=c(-1,10), x=c(-2, NA), y=c(NA,20), y=c(NA,30), a=c(NA, "a"), b=c(NA, Inf), c=factor(c(NA, 1))))
 
 # check the name of output are consistent when binding two empty dts with one empy and other non-empty dt
 dt1 <- data.table(x=1:5, y=6:10)

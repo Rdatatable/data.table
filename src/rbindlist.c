@@ -389,26 +389,32 @@ static SEXP unlist2(SEXP v) {
     return(ans);
 }
 
-static SEXP fast_order(SEXP dt, R_len_t byArg) {
+// Don't use elsewhere. No checks are made on byArg and handleSorted
+// if handleSorted is 0, then it'll return integer(0) as such when 
+// input is already sorted, like forder. if not, seq_len(nrow(dt)).
+static SEXP fast_order(SEXP dt, R_len_t byArg, R_len_t handleSorted) {
 
     R_len_t i, protecti=0;
-    SEXP ans, by, retGrp, sortStr, order, na, starts;
+    SEXP ans, by=R_NilValue, retGrp, sortStr, order, na, starts;
 
-    by      = PROTECT(allocVector(INTSXP, byArg));
-    retGrp  = PROTECT(allocVector(LGLSXP, 1)); 
-    sortStr = PROTECT(allocVector(LGLSXP, 1)); 
-    order   = PROTECT(allocVector(INTSXP, byArg));
-    na      = PROTECT(allocVector(LGLSXP, 1));
+    retGrp  = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(retGrp)[0]  = TRUE;
+    sortStr = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(sortStr)[0] = FALSE;
+    na      = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(na)[0] = FALSE;
 
-    LOGICAL(retGrp)[0] = TRUE; LOGICAL(sortStr)[0] = FALSE; LOGICAL(na)[0] = FALSE;
-    for (i=0; i<byArg; i++) {
-        INTEGER(by)[i] = i+1;
-        INTEGER(order)[i] = 1;
-    }
-    UNPROTECT(5);
-
+    if (byArg) {
+        by    = PROTECT(allocVector(INTSXP, byArg));
+        order = PROTECT(allocVector(INTSXP, byArg));
+        for (i=0; i<byArg; i++) {
+            INTEGER(by)[i] = i+1;
+            INTEGER(order)[i] = 1;
+        }
+        UNPROTECT(5);
+    } else {
+        order = PROTECT(allocVector(INTSXP, 1)); INTEGER(order)[0] = 1;
+        UNPROTECT(4);
+    }    
     ans = PROTECT(forder(dt, by, retGrp, sortStr, order, na)); protecti++;
-    if (!length(ans)) {
+    if (!length(ans) && handleSorted != 0) {
         starts = PROTECT(getAttrib(ans, mkString("starts"))); protecti++;
         // if cols are already sorted, 'forder' gives integer(0), got to replace it with 1:.N
         ans = PROTECT(allocVector(INTSXP, length(VECTOR_ELT(dt, 0)))); protecti++;
@@ -434,9 +440,9 @@ static SEXP uniq_lengths(SEXP v, R_len_t n) {
 
 static SEXP match_names(SEXP v) {
     
-    R_len_t i, j, k, idx, ncols, protecti=0;
+    R_len_t i, j, idx, ncols, protecti=0;
     SEXP ans, dt, lnames, ti;
-    SEXP uorder, starts, ulens, index;
+    SEXP uorder, starts, ulens, index, firstofeachgroup, origorder;
     SEXP fnames, findices, runid, grpid;
     
     ans    = PROTECT(allocVector(VECSXP, 2));
@@ -445,38 +451,42 @@ static SEXP match_names(SEXP v) {
     grpid  = PROTECT(duplicate(VECTOR_ELT(dt, 1))); protecti++; // dt[1] will be reused, so backup
     runid  = VECTOR_ELT(dt, 2);
     
-    uorder = PROTECT(fast_order(dt, 2));  protecti++; // byArg alone is set, everything else is set inside fast_order
+    uorder = PROTECT(fast_order(dt, 2, 1));  protecti++; // byArg alone is set, everything else is set inside fast_order
     starts = PROTECT(getAttrib(uorder, mkString("starts"))); protecti++;
     ulens  = PROTECT(uniq_lengths(starts, length(lnames))); protecti++;
     
     // seq_len(.N) for each group
     index = PROTECT(VECTOR_ELT(dt, 1)); protecti++; // reuse dt[1] (in 0-index coordinate), value already backed up above.
-    k=0;
     for (i=0; i<length(ulens); i++) {
-        for (j=0; j<INTEGER(ulens)[i]; j++) {
-            INTEGER(index)[INTEGER(uorder)[k+j]-1] = j;
-        }
-        k += j;
+        for (j=0; j<INTEGER(ulens)[i]; j++)
+            INTEGER(index)[INTEGER(uorder)[INTEGER(starts)[i]-1+j]-1] = j;
     }
     // order again
-    uorder = PROTECT(fast_order(dt, 2));  protecti++; // byArg alone is set, everything else is set inside fast_order
+    uorder = PROTECT(fast_order(dt, 2, 1));  protecti++; // byArg alone is set, everything else is set inside fast_order
     starts = PROTECT(getAttrib(uorder, mkString("starts"))); protecti++;
     ulens  = PROTECT(uniq_lengths(starts, length(lnames))); protecti++;    
     ncols  = length(starts);
+    // check if order has to be changed (bysameorder = FALSE here by default - in `[.data.table` parlance)
+    firstofeachgroup = PROTECT(allocVector(INTSXP, length(starts)));
+    for (i=0; i<ncols; i++) INTEGER(firstofeachgroup)[i] = INTEGER(uorder)[INTEGER(starts)[i]-1];
+    origorder = PROTECT(fast_order(firstofeachgroup, 0, 0));
+    if (length(origorder)) {
+        reorder(starts, origorder);
+        reorder(ulens, origorder);
+    }
+    UNPROTECT(2);
     // get fnames and findices
     fnames   = PROTECT(allocVector(STRSXP, ncols)); protecti++;
     findices = PROTECT(allocVector(VECSXP, ncols)); protecti++;
-    k=0;
     for (i=0; i<ncols; i++) {
         idx = INTEGER(uorder)[INTEGER(starts)[i]-1]-1;
         SET_STRING_ELT(fnames, i, STRING_ELT(lnames, idx));
         ti = PROTECT(allocVector(INTSXP, length(v)));
         for (j=0;j<length(v);j++) INTEGER(ti)[j]=-1; // TODO: can we eliminate this?
         for (j=0; j<INTEGER(ulens)[i]; j++) {
-            idx = INTEGER(uorder)[k+j]-1;
+            idx = INTEGER(uorder)[INTEGER(starts)[i]-1+j]-1;
             INTEGER(ti)[INTEGER(grpid)[idx]-1] = INTEGER(runid)[idx];
         }
-        k+=j;
         UNPROTECT(1);
         SET_VECTOR_ELT(findices, i, ti);
     }
@@ -772,7 +782,7 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
     dt = PROTECT(unlist2(l));
 
     // order - first time
-    order = PROTECT(fast_order(dt, 2));
+    order = PROTECT(fast_order(dt, 2, 1));
     start = PROTECT(getAttrib(order, mkString("starts")));
     lens  = PROTECT(uniq_lengths(start, length(order))); // length(order) = nrow(dt)
     grpid = VECTOR_ELT(dt, 1);
@@ -788,7 +798,7 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
     }
     // order - again
     UNPROTECT(3); // order, start, lens
-    order = PROTECT(fast_order(dt, 2)); 
+    order = PROTECT(fast_order(dt, 2, 1)); 
     start = PROTECT(getAttrib(order, mkString("starts")));
     lens  = PROTECT(uniq_lengths(start, length(order)));
     
@@ -813,7 +823,7 @@ static SEXP listlist(SEXP x) {
     
     lx = PROTECT(allocVector(VECSXP, 1));
     SET_VECTOR_ELT(lx, 0, x);
-    xo = PROTECT(fast_order(lx, 1));
+    xo = PROTECT(fast_order(lx, 1, 1));
     xs = PROTECT(getAttrib(xo, mkString("starts")));
     xl = PROTECT(uniq_lengths(xs, length(x)));
     

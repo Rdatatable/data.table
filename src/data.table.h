@@ -27,6 +27,9 @@ unsigned long long i64twiddle(void *, int, int);
 unsigned long long (*twiddle)(void *, int, int);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 
+// reorder.c
+SEXP reorder(SEXP x, SEXP order);
+
 // fcast.c
 SEXP vec_init(R_len_t n, SEXP val);
 
