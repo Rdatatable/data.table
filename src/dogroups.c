@@ -287,7 +287,29 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 // fix for #4990 - `:=` did not issue recycling warning during "by" operation.
                 if (vlen<grpn && vlen>0 && grpn%vlen != 0) 
                     warning("Supplied %d items to be assigned to group %d of size %d in column '%s' (recycled leaving remainder of %d items).",vlen,i+1,grpn,CHAR(STRING_ELT(dtnames,INTEGER(lhs)[j]-1)),grpn%vlen);
+                // fix for issues/481 for := case
+                // missed it in commit: https://github.com/Rdatatable/data.table/commit/86276f48798491d328caa72f6ebcce4d51649440
+                // see that link (or scroll down for the non := version) for comments
+                #if defined(R_VERSION) && R_VERSION >= R_Version(3, 1, 0)
+                named=0;
+                if (isNewList(RHS) && NAMED(RHS) != 2) {
+                    dupcol = VECTOR_ELT(RHS, 0);
+                    named  = NAMED(dupcol);
+                    while(isNewList(dupcol)) {
+                        if (named == 2) break;
+                        else {
+                            dupcol = VECTOR_ELT(dupcol, 0);
+                            named = NAMED(dupcol);
+                        }
+                    }
+                    if (named == 2) RHS = PROTECT(duplicate(RHS));
+                }
                 memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);
+                if (named == 2) UNPROTECT(1);
+                #else
+                memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);
+                #endif
+                
                 // fixes bug #2531. Got to set the class back. See comment below for explanation. This is the new fix. Works great!
                 // Also fix for #5437 (bug due to regression in 1.9.2+)
                 copyMostAttrib(RHS, target);  // not names, otherwise test 778 would fail

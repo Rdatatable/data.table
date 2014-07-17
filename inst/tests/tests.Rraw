@@ -4838,11 +4838,15 @@ test(1340.18, setorderv(copy(DT), "x", na.last=NA), error="na.last must be logic
 
 # bug #481 - DT[, list(list(.)), by=.] on R v3.1.0
 set.seed(1L)
+f <- function(x) list(x)
 DT <- data.table(x=sample(3,10,TRUE), y=as.numeric(sample(10)))
 test(1341.1, DT[, list(list(y)), by=x], data.table(x=unique(DT$x), V1=list(c(3,5,9), c(2,6,4,1), c(10,7,8))))
 test(1341.2, DT[, list(list(.I)), by=x], data.table(x=unique(DT$x), V1=list(c(1,5,10), c(2,3,8,9), c(4,6,7))))
-f <- function(x) list(x)
 test(1341.3, DT[, list(f(y)), by=x], data.table(x=unique(DT$x), V1=list(c(3,5,9), c(2,6,4,1), c(10,7,8))))
+# test for list(list(.)) with :=
+test(1341.4, copy(DT)[, z := list(list(y)), by=x], copy(DT)[, z := list(list(copy(y))), by=x])
+test(1341.5, copy(DT)[, z := list(list(.I)), by=x], copy(DT)[, z := list(list(copy(.I))), by=x])
+test(1341.6, copy(DT)[, z := list(f(y)), by=x], copy(DT)[, z := list(f(copy(y))), by=x])
 
 # test regression on over-allocation (selfref) on unique() which uses new subsetDT()
 bla <- data.table(x=c(1,1,2,2), y=c(1,1,1,1))
