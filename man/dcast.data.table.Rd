@@ -51,13 +51,6 @@ From \code{v1.9.3}, \code{dcast.data.table} tries to preserve attributes whereev
 	\item The argument \code{margins} is yet to be implemented. 
 }
 
-\bold{New features and the ones likely to be added:}
-\enumerate{
-	\item Implemented: \code{dcast.data.table} allows \code{value.var} column to be of type \code{list}.
-	\item To do: The \code{fun.aggregate} could accept more than one function. It could take a list of functions, all of which satisfy the criteria that they take a vector as input and provide a single value as output. This is very useful for scenarios where one needs to calculate multiple summary statistics on a data set and cast simultaneously.
-
-}
-
 % \bold{Speedup using \code{fdcast}:}
 % Benchmarking on relatively big data set gives over 98% speedup as shown below.
 % 
