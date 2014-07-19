@@ -4889,12 +4889,17 @@ setkey(dt, id, val)
 test(1351.1, dt[J("a"), val], c(1,2))
 test(1351.2, dt[J('a'), range(val)], c(1,2))
 
-# New feature: .() in j
+# New feature: .() in j and .() in by
 DT = data.table(a=1:3, b=1:6, c=LETTERS[1:6])
 test(1352.1, DT[,.(b)], DT[,list(b)])
 test(1352.2, DT[,.(b,c)], DT[,c("b","c"),with=FALSE])
 test(1352.3, DT[,.(sum(b)),by=a], DT[,sum(b),by=a])
 test(1352.4, DT[,.(MySum=sum(b)), by=a], data.table(a=1:3, MySum=c(5L,7L,9L)))
+test(1352.5, DT[,sum(b),by=.(a)], DT[,sum(b),by=a])
+test(1352.6, DT[,sum(b),by=.(a%%2)], DT[,sum(b),by=a%%2])
+test(1352.7, DT[,sum(b),by=.(Grp=a%%2)], DT[,sum(b),by=list(Grp=a%%2)])
+test(1352.8, DT[,sum(b),by=.(a%%2,c)], DT[,sum(b),by=list(a%%2,c)])
+
 
 ##########################
 

@@ -667,11 +667,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     tt = eval(bysub, parent.frame(), parent.frame())
                     if (!is.character(tt)) stop("by=c(...), key(...) or names(...) must evaluate to 'character'")
                     bysub=tt
-                } else if (is.call(bysub) && !as.character(bysub[[1L]]) %chin% c("list", "as.list", "{")) {
+                } else if (is.call(bysub) && !as.character(bysub[[1L]]) %chin% c("list", "as.list", "{", ".")) {
                     # potential use of function, ex: by=month(date). catch it and wrap with "(", because we need to set "bysameorder" to FALSE as we don't know if the function will return ordered results just because "date" is ordered. Fixes #2670.
                     bysub = as.call(c(as.name('('), list(bysub)))
                     bysubl = as.list.default(bysub)
-                }
+                } else if (is.call(bysub) && bysub[[1L]] == ".") bysub[[1L]] = quote(list)
+                
                 if (mode(bysub) == "character") {
                     if (length(grep(",",bysub))) {
                         if (length(bysub)>1L) stop("'by' is a character vector length ",length(bysub)," but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.")
