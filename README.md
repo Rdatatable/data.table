@@ -159,6 +159,8 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
       DT[,.(colB,colC,colD)]          # same
   ```
   Similarly, `by=.()` is now a shortcut for `by=list()`, for consistency with `i` and `j`.
+  
+  28. `DT[where, someCol:=NULL]` is now an error that i is provided since it makes no sense to delete a column for only a subset of rows.
           
           
 

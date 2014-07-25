@@ -403,6 +403,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         else
             thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
         if (TYPEOF(thisvalue)==NILSXP) {
+            if (!isNull(rows)) error("When deleting columns, i should not be provided");
             anytodelete = TRUE;
             continue;   // delete column(s) afterwards, below this loop
         }

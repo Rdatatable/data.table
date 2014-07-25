@@ -4900,8 +4900,13 @@ test(1352.6, DT[,sum(b),by=.(a%%2)], DT[,sum(b),by=a%%2])
 test(1352.7, DT[,sum(b),by=.(Grp=a%%2)], DT[,sum(b),by=list(Grp=a%%2)])
 test(1352.8, DT[,sum(b),by=.(a%%2,c)], DT[,sum(b),by=list(a%%2,c)])
 
+# that :=NULL together with i is now an error
+DT = data.table(a=1:3, b=1:6)
+test(1353.1, DT[2, b:=NULL], error="When deleting columns, i should not be provided")
+test(1353.2, DT[2, c("a","b"):=list(42, NULL)], error="When deleting columns, i should not be provided")
 
 ##########################
+
 
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.
