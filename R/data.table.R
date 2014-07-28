@@ -2076,9 +2076,8 @@ chgroup = function(x) {
 rbindlist = function(l, use.names=fill, fill=FALSE) {
     ans = .Call("Crbindlist", l, use.names, fill)
     if (!length(ans)) return(null.data.table())
-    setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
-    setattr(ans,"class",c("data.table","data.frame"))
-    alloc.col(ans)
+    setDT(ans)
+    ans
 }
 
 vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
@@ -2130,7 +2129,7 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
             if (giveNames) setattr(x, "names", paste("V",seq_len(length(x)),sep=""))
             else setattr(x, "names", rep("", length(x)))
         } else {
-            idx = xn == ""
+            idx = xn %chin% "" # names can be NA - test 1006 caught that! 
             if (any(idx) && giveNames) {
                 xn[idx] = paste("V", seq_along(which(idx)), sep="")
                 setattr(x, "names", xn)

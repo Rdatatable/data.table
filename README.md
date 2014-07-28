@@ -111,10 +111,11 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
       * `use.names` by default is FALSE for backwards compatibility (does **not** bind by names by default)
       * `rbind(...)` now just calls `rbindlist()` internally, except that `use.names` is TRUE by default, for compatibility with base (and backwards compatibility).
       * `fill=FALSE` by default. If `fill=TRUE`, `use.names` has to be TRUE. 
-      * At least one item of the input list has to have non-null column names.
+      * When use.names=TRUE, at least one item of the input list has to have non-null column names.
+      * When fill=TRUE, all items of the input list has to have non-null column names.
       * Duplicate columns are bound in the order of occurrence, like base.
       * Attributes that might exist in individual items would be lost in the bound result.
-      * Columns are coerced to the highest SEXPTYPE, if they are different, if/when possible.
+      * Columns are coerced to the highest SEXPTYPE when they are different, if possible.
       * And incredibly fast ;).
       * Documentation updated in much detail. Closes **#5158** (git [#333](https://github.com/Rdatatable/data.table/issues/333)).
 

@@ -4426,6 +4426,26 @@ DT1 = data.table(A=1:3,B=letters[1:3])
 DT2 = data.table(B=letters[4:5],C=factor(1:2))
 l = list(DT1,DT2)
 test(1288.8, rbindlist(l, use.names=TRUE, fill=TRUE), data.table(A=c(1:3,NA_integer_,NA_integer_), B=letters[1:5], C=factor(c(NA,NA,NA,1,2))))
+
+# adding more tests after modifying for better backwards compatibility:
+# rbindlist and rbind both work fine even when certain elements of list are not named at all, as long as fill = FALSE, but use.names=TRUE errors when all names are NULL
+# when fill=TRUE NO element of the list must have NULL names.
+ll <- list(list(1:3, 4:6), list(5:7, 8:10))
+test(1288.9, rbindlist(ll), data.table(V1=c(1:3, 5:7), V2=c(4:6, 8:10)))
+test(1288.10, rbindlist(ll, use.names=TRUE), error="use.names=TRUE but no item of input list has any names.")
+ll <- list(list(a=1:3, b=4:6), list(5:7, 8:10))
+test(1288.11, rbindlist(ll, use.names=TRUE), data.table(a=c(1:3, 5:7), b=c(4:6, 8:10)))
+ll <- list(list(1:3, 4:6), list(a=5:7, b=8:10))
+test(1288.12, rbindlist(ll, use.names=TRUE), data.table(a=c(1:3, 5:7), b=c(4:6, 8:10)))
+ll <- list(list(a=1:3, 4:6), list(5:7, b=8:10))
+test(1288.13, rbindlist(ll, use.names=TRUE), error="Answer requires 3 columns whereas one or more item(s) in the input list has only 2 columns. This could be because the items in the list may not")
+ll <- list(list(a=1:3, 4:6), list(5:7, b=8:10))
+test(1288.14, rbindlist(ll, fill=TRUE), data.table(a=c(1:3, rep(NA_integer_,3L)), V1=c(4:6,5:7), b=c(rep(NA_integer_, 3L), 8:10)))
+ll <- list(list(1:3, 4:6), list(5:7, 8:10))
+test(1288.15, rbindlist(ll, fill=TRUE), error="fill=TRUE, but names of input list at position 1")
+ll <- list(list(1:3, 4:6), list(a=5:7, b=8:10))
+test(1288.16, rbindlist(ll, fill=TRUE), error="fill=TRUE, but names of input list at position 1")
+
 # TO DO: TODO: think of and add more tests for rbindlist
 
 # fix for #5647

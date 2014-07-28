@@ -360,6 +360,7 @@ struct preprocessData {
     int first;
     int lcount;
     int mincol;
+    int protecti;
 };
 
 static SEXP unlist2(SEXP v) {
@@ -503,7 +504,7 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
     SEXP li, lnames=R_NilValue, fnames, findices=R_NilValue, f_ind=R_NilValue, thiscol, col_name=R_NilValue;
     SEXPTYPE type;
     
-    data->first = -1; data->lcount = 0; data->n_rows = 0; data->n_cols = 0;
+    data->first = -1; data->lcount = 0; data->n_rows = 0; data->n_cols = 0; data->protecti = 0;
     data->max_type = NULL; data->is_factor = NULL; data->ans_ptr = R_NilValue; data->mincol=0;
     data->fn_rows = Calloc(length(l), int); data->colname = R_NilValue;
 
@@ -516,18 +517,18 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
         if (TYPEOF(li) != VECSXP) error("Item %d of list input is not a data.frame, data.table or list",i+1);
         if (!LENGTH(li)) continue;
         col_name = getAttrib(li, R_NamesSymbol);
-        if (!isNull(col_name)) {
-            data->colname = PROTECT(col_name);
-            break;
-        }
+        if (!isNull(col_name)) break;
     }
-    if (usenames) { lnames = PROTECT(allocVector(VECSXP, length(l)));}
+    if (!isNull(col_name)) { data->colname = PROTECT(col_name); data->protecti++; }
+    if (usenames) { lnames = PROTECT(allocVector(VECSXP, length(l))); data->protecti++;}
     for (i=0; i<length(l); i++) {
         li = VECTOR_ELT(l, i);
         if (isNull(li)) continue;
         if (TYPEOF(li) != VECSXP) error("Item %d of list input is not a data.frame, data.table or list",i+1);
         if (!LENGTH(li)) continue;
         col_name = getAttrib(li, R_NamesSymbol);
+        if (fill && isNull(col_name))
+            error("fill=TRUE, but names of input list at position %d is NULL. All items of input list must have names set when fill=TRUE.", i+1);
         data->lcount++;
         data->fn_rows[i] = length(VECTOR_ELT(li, 0));
         if (data->first == -1) {
@@ -535,7 +536,7 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
             data->n_cols = length(li);
             data->mincol = length(li);
             if (!usenames) {
-                data->ans_ptr = PROTECT(allocVector(VECSXP, 2));
+                data->ans_ptr = PROTECT(allocVector(VECSXP, 2)); data->protecti++;
                 if (isNull(col_name)) SET_VECTOR_ELT(data->ans_ptr, 0, data->colname);
                 else SET_VECTOR_ELT(data->ans_ptr, 0, col_name);
             } else {
@@ -556,15 +557,15 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
         }
     }
     if (usenames) {
-        data->ans_ptr = PROTECT(match_names(lnames));
+        data->ans_ptr = PROTECT(match_names(lnames)); data->protecti++;
         fnames = VECTOR_ELT(data->ans_ptr, 0);
         findices = VECTOR_ELT(data->ans_ptr, 1);
+        if (isNull(data->colname) && data->n_cols > 0)
+            error("use.names=TRUE but no item of input list has any names.\n");
         if (!fill && length(fnames) != data->mincol) {
             error("Answer requires %d columns whereas one or more item(s) in the input list has only %d columns. This could be because the items in the list may not all have identical column names or some of the items may have duplicate names. In either case, if you're aware of this and would like to fill those missing columns, set the argument 'fill=TRUE'.", length(fnames), data->mincol);
         } else data->n_cols = length(fnames);
     }
-    if (isNull(data->colname) && data->n_cols > 0)
-        error("At least one item in the input list must have all column names set.\n");
     
     // decide type of each column
     // initialize the max types - will possibly increment later
@@ -611,14 +612,14 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill) {
     fill = LOGICAL(sexp_fill)[0];
     if (fill && !usenames) { 
         // override default
-        warning("Resetting 'usenames' to TRUE. 'usenames' can not be FALSE when 'fill' is set to TRUE.\n");
+        warning("Resetting 'use.names' to TRUE. 'use.names' can not be FALSE when 'fill=TRUE'.\n");
         usenames=TRUE;
     }
     // check for factor, get max types, and when usenames=TRUE get the answer 'names' and column indices for proper reordering.
     preprocess(l, usenames, fill, &data);
     fnames   = VECTOR_ELT(data.ans_ptr, 0);
     findices = VECTOR_ELT(data.ans_ptr, 1);
-    protecti = (usenames) ? 3 : 2; // to take care of PROTECTs in 'preprocess'
+    protecti = data.protecti;
     if (data.n_rows == 0 && data.n_cols == 0) return(R_NilValue);
 
     factorLevels = PROTECT(allocVector(VECSXP, data.lcount));
