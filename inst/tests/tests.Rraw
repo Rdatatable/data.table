@@ -4928,6 +4928,13 @@ DT = data.table(a=1:3, b=1:6)
 test(1353.1, DT[2, b:=NULL], error="When deleting columns, i should not be provided")
 test(1353.2, DT[2, c("a","b"):=list(42, NULL)], error="When deleting columns, i should not be provided")
 
+# order optimisation caused trouble due to chaining because of 'substitute(x)' usage in [.data.table.
+set.seed(1L)
+X = data.table(id=1:10, val1=sample(3,10,TRUE))
+Y = data.table(val1=1:4, val2=8:5, key="val1")
+setkey(X, val1)
+test(1354, X[Y, val2 := i.val2, allow.cartesian=TRUE][, val1 := NULL][order(id)], data.table(id=1:10, val2=as.integer(c(8,7,7,6,8,6,6,7,7,8))))
+
 ##########################
 
 

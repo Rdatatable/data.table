@@ -419,12 +419,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (is.call(isub) && isub[[1L]] == as.name("order") && getOption("datatable.optimize") >= 1) { # optimize here so that we can switch it off if needed
             if (verbose) cat("order optimisation is on, i changed from 'order(...)' to 'forder(DT, ...)'.\n")
             isub = as.list(isub)
-            isub = as.call(c(list(as.name("forder"), substitute(x)), isub[-1L]))
+            isub = as.call(c(list(quote(forder), quote(x)), isub[-1L]))
         }
         if (is.null(isub)) return( null.data.table() )
-        if (is.call(isub) && isub[[1L]] == as.name("forder")) {
+        if (is.call(isub) && isub[[1L]] == quote(forder)) {
             order_env = new.env(parent=parent.frame())            # until 'forder' is exported
             assign("forder", forder, order_env)
+            assign("x", x, order_env)
             i = eval(isub, order_env, parent.frame())             # for optimisation of 'order' to 'forder'
             # that forder returns integer(0) is taken care of internally within forder
         } else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
