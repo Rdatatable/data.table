@@ -579,7 +579,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             jisvars = names(i)[-leftcols]
             tt = jisvars %chin% names(x)
             if (length(tt)) jisvars[tt] = paste("i.",jisvars[tt],sep="")
-            ansvars = c(names(x), jisvars)
+            ansvars = make.unique(c(names(x), jisvars))
             icols = c(leftcols, seq_along(i)[-leftcols])
             icolsAns = c(rightcols, seq.int(ncol(x)+1L, length.out=ncol(i)-length(leftcols)))
             xcols = xcolsAns = seq_along(x)[-rightcols]

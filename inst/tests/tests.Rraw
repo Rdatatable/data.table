@@ -4947,6 +4947,12 @@ test(1356, DT1[!DT2], data.table(x=2L, y=4:6, key="x"))
 m <- matrix(letters[1:4], ncol=2)
 test(1357, as.data.table(m), data.table(V1=letters[1:2], V2=letters[3:4]))
 
+# Fix for #471. A[A[A]] contains duplicate names in 1.9.3
+A <- data.table(foo = 1:2, bar = 3:4)
+setkey(A, foo)
+test(1358.1, names(A[A[A]]), c("foo", "bar", "i.bar", "i.bar.1"))
+test(1358.2, names(A[A[A[A]]]), c("foo", "bar", "i.bar", "i.bar.2", "i.bar.1"))
+
 ##########################
 
 
