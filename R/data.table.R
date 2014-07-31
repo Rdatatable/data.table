@@ -2087,12 +2087,14 @@ address = function(x) .Call(Caddress,x)
 ":=" = function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
 
 setDF <- function(x) {
-    if (!is.data.table(x)) stop("setDF only accepts data.table as input")
-    # copied from as.data.frame.data.table
-    setattr(x, "row.names", .set_row_names(nrow(x)))
-    setattr(x, "class", "data.frame")
-    setattr(x, "sorted", NULL)
-    setattr(x, ".internal.selfref", NULL)
+    if (!is.data.table(x) && !is.data.frame(x)) stop("setDF only accepts data.table or data.frame as input")
+    if (is.data.table(x)) {
+        # copied from as.data.frame.data.table
+        setattr(x, "row.names", .set_row_names(nrow(x)))
+        setattr(x, "class", "data.frame")
+        setattr(x, "sorted", NULL)
+        setattr(x, ".internal.selfref", NULL)
+    }
     invisible(x)
 }
 

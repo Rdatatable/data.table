@@ -4641,7 +4641,10 @@ test(1304.2, ans1, ans2)
 
 # FR #5528
 DT <- data.table(x=1:5, y=6:10)
-test(1305, setDF(DT), data.frame(x=1:5, y=6:10))
+test(1305.1, setDF(DT), data.frame(x=1:5, y=6:10))
+# setDF should return if input is data.frame, not error.
+df <- data.frame(x=1:5, y=6:10)
+test(1305.2, setDF(df), df) # setDF works on data.frame
 
 # .SD retains as much of head(key) as appropriate.
 #  by= always keeps data appearance order, so it's which columns are grouped and selected that drive how much of key is retained
