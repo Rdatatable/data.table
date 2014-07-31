@@ -4935,6 +4935,9 @@ Y = data.table(val1=1:4, val2=8:5, key="val1")
 setkey(X, val1)
 test(1354, X[Y, val2 := i.val2, allow.cartesian=TRUE][, val1 := NULL][order(id)], data.table(id=1:10, val2=as.integer(c(8,7,7,6,8,6,6,7,7,8))))
 
+# Fix for #475, setDT(CO2) should error, as it's trying to modify the object whose binding is locked.
+test(1355, setDT(CO2), error="Can not convert 'CO2' to data.table by reference because binding is locked.")
+
 ##########################
 
 

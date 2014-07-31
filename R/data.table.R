@@ -2104,6 +2104,19 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
     name = substitute(x)
     if (is.na(giveNames))
         stop("Argument 'giveNames' to 'setDT' must be logical TRUE/FALSE")
+    if (is.name(name)) {
+        home = function(x, env) {
+            if (identical(env, emptyenv()))
+                stop("Can not find symbol ", cname, call. = FALSE)
+            else if (exists(x, env, inherits=FALSE)) env
+            else home(x, parent.env(env))
+        }
+        cname = as.character(name)
+        envir = home(cname, parent.frame())
+        if (bindingIsLocked(cname, envir)) {
+            stop("Can not convert '", cname, "' to data.table by reference because binding is locked. It is very likely that '", cname, "' resides within a package (or an environment) that is locked to prevent modifying its variable bindings. Try copying the object to your current environment, ex: var <- copy(var) and then using setDT again.")
+        }
+    }
     if (is.data.table(x)) {
         return(invisible(x))
     } else if (is.data.frame(x)) {
