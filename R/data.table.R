@@ -522,7 +522,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             for (ii in resetifactor) set(i,j=ii,value=origi[[ii]])
             if (mult=="all") {
                 if (!byjoin) {
-                    irows = if (allLen1) f__ else vecseq(f__,len__,if(allow.cartesian)NULL else as.integer(max(nrow(x),nrow(i))))
+                    # fix for #698. When notjoin=TRUE, don't worry about allow.cartesian. It'll generate all indices but will be taken care of 
+                    # in the if-condition below for 'byjoin'. Number of rows after that will never be > nrow(x). So, we're safe. No need to impose here.
+                    irows = if (allLen1) f__ else vecseq(f__,len__,if(allow.cartesian || notjoin) NULL else as.integer(max(nrow(x),nrow(i))))
                 }
             } else {
                 irows = if (mult=="first") f__ else f__+len__-1L

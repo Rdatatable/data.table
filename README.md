@@ -250,6 +250,8 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   37.  `setDT` now provides a friendly error when attempted to change a variable to data.table by reference whose binding is locked (usually when the variable is within a package, ex: CO2). Closes [#475](https://github.com/Rdatatable/data.table/issues/475). Thanks to David Arenburg for filing the report [here](http://stackoverflow.com/questions/23361080/error-in-setdt-from-data-table-package) on SO.
 
+  38.  `X[!Y]` where `X` and `Y` are both data.tables ignores 'allow.cartesian' argument, and rightly so because a not-join (or anti-join) cannot exceed nrow(x). Thanks to @fedyakov for spotting this. Closes [#698](https://github.com/Rdatatable/data.table/issues/698).
+
 #### NOTES
 
   1.  Reminder: using `rolltolast` still works but since v1.9.2 now issues the following warning:  

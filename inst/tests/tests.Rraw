@@ -4938,6 +4938,11 @@ test(1354, X[Y, val2 := i.val2, allow.cartesian=TRUE][, val1 := NULL][order(id)]
 # Fix for #475, setDT(CO2) should error, as it's trying to modify the object whose binding is locked.
 test(1355, setDT(CO2), error="Can not convert 'CO2' to data.table by reference because binding is locked.")
 
+# Fix for #698. not join doesn't need to check for allow.cartesian=TRUE.
+DT1 <- data.table(x=rep(1:3, each=3L), y=1:9, key="x")
+DT2 <- data.table(x=rep(c(3L,1L), each=10), z=1L)
+test(1356, DT1[!DT2], data.table(x=2L, y=4:6, key="x"))
+
 ##########################
 
 
