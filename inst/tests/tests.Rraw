@@ -4943,6 +4943,10 @@ DT1 <- data.table(x=rep(1:3, each=3L), y=1:9, key="x")
 DT2 <- data.table(x=rep(c(3L,1L), each=10), z=1L)
 test(1356, DT1[!DT2], data.table(x=2L, y=4:6, key="x"))
 
+# Fix for #745. as.data.table.matrix shouldn't convert character to factor
+m <- matrix(letters[1:4], ncol=2)
+test(1357, as.data.table(m), data.table(V1=letters[1:2], V2=letters[3:4]))
+
 ##########################
 
 
