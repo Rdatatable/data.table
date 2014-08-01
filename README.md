@@ -160,10 +160,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
       DT[,.(colB,colC,colD)]          # same
   ```
   Similarly, `by=.()` is now a shortcut for `by=list()`, for consistency with `i` and `j`.
-  
-  28. `DT[where, someCol:=NULL]` is now an error that i is provided since it makes no sense to delete a column for only a subset of rows.
-          
-          
+
 
 #### BUG FIXES
 
@@ -255,6 +252,8 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
   39.  `as.data.table.matrix` does not convert strings to factors by default. `data.table` likes and prefers using character vectors to factors. Closes [#745](https://github.com/Rdatatable/data.table/issues/698). Thanks to @fpinter for reporting the issue on the github issue tracker and to vijay for reporting [here](http://stackoverflow.com/questions/17691050/data-table-still-converts-strings-to-factors) on SO.
 
   40.  Joins of the form x[y[z]] resulted in duplicate names when all x, y and z had the same column names as non-key columns. This is now fixed. Closes [#471](https://github.com/Rdatatable/data.table/issues/698). Thanks to Christian Sigg for the nice reproducible example.
+
+  41. `DT[where, someCol:=NULL]` is now an error that i is provided since it makes no sense to delete a column for only a subset of rows. Closes [#506](https://github.com/Rdatatable/data.table/issues/506).
 
 #### NOTES
 
