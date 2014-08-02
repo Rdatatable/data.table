@@ -446,7 +446,8 @@ unsigned long long dtwiddle(void *p, int i, int order)
 {
     u.d = order*((double *)p)[i];                               // take care of 'order' right at the beginning
     if (R_FINITE(u.d)) {
-        u.ull += (u.ull & dmask1) << 1;
+        u.ull = (u.d) ? u.ull + ((u.ull & dmask1) << 1) : 0;    // handle 0, -0 case. Fix for issues/743.
+                                                                // tested on vector length 100e6. was the fastest fix (see results at the bottom of page)
     } else if (ISNAN(u.d)) {
      /* 1. NA twiddled to all bits 0, sorts first.  R's value 1954 cleared.
         2. NaN twiddled to set just bit 13, sorts immediately after NA. 13th bit to be 
@@ -1449,4 +1450,39 @@ n>2   all NAs   done.
 n>2    any NA   done.
 n>2     no NA   done.
 
+*/
+
+/*
+Added 2nd August 2014 - Testing different fixes for #743
+When u.d = 0 or -0, we've to set it 0, so that the sign bit in -0 doesn't bite us later.
+
+# Vector to benchmark on:
+set.seed(45L)
+x = 1*sample(-1e5:1e5, 1e8, TRUE)
+require(data.table)
+
+# code to run the benchmark:
+system.time(data.table:::forderv(x))
+system.time(data.table:::forderv(x))
+system.time(data.table:::forderv(x))
+
+# A. Timing on code before fix:
+   user  system elapsed 
+ 11.992   1.063  13.113 
+ 11.968   1.095  13.154 
+ 11.943   1.106  13.141 
+
+# B. Timing on fix using: u.ull <<= (!u.d); after the first line where we get 'u.d = order*...'
+system.time(data.table:::forderv(x))
+ 12.640   1.095  13.814 
+ 12.629   1.129  13.836 
+ 12.634   1.135  13.836 
+
+# C. Timing on current solution:
+system.time(data.table:::forderv(x))
+ 12.208   1.134  13.426 
+ 12.233   1.148  13.445 
+ 12.223   1.154  13.548 
+
+B is ~.7 sec slower whereas C is ~.3-.4 seconds slower. This should be okay on 100 million rows, I think!
 */

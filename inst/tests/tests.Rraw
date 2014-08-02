@@ -4953,6 +4953,13 @@ setkey(A, foo)
 test(1358.1, names(A[A[A]]), c("foo", "bar", "i.bar", "i.bar.1"))
 test(1358.2, names(A[A[A[A]]]), c("foo", "bar", "i.bar", "i.bar.2", "i.bar.1"))
 
+# Fix for #743. 0 and -0 and the sign bit issue
+A <- data.table(x=c(0,0,-1,1,-1,0,-0,1,-1,1,0,1), y=1:12)
+test(1359.1, A[, .N, by=x], data.table(x=c(0,-1,1), N=c(5L,3L,4L)))
+dt1 <- data.table(x2 = 0L)
+dt2 <- data.table(x2 =-(11-11)/10)
+test(1359.2, as.integer(merge(dt2, dt1, by="x2")$x2), as.integer(merge(dt1, dt2, by="x2")$x2))
+
 ##########################
 
 

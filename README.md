@@ -255,6 +255,8 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   41. `DT[where, someCol:=NULL]` is now an error that i is provided since it makes no sense to delete a column for only a subset of rows. Closes [#506](https://github.com/Rdatatable/data.table/issues/506).
 
+  42. forder did not identify -0 as 0 for numeric types. This is fixed now. Thanks to @arcosdium for nice minimal example. Closes [#743](https://github.com/Rdatatable/data.table/issues/506).
+
 #### NOTES
 
   1.  Reminder: using `rolltolast` still works but since v1.9.2 now issues the following warning:  
