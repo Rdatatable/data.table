@@ -46,6 +46,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   1. `by=.EACHI` runs `j` for each group in `x` that each row of `i` joins to.
     ```R
+    setkey(DT, ID)
     DT[.(c("id1", "id2")), sum(val)]                # single total across both id1 and id2
     DT[.(c("id1", "id2")), sum(val), by = .EACHI]   # sum(val) for each id
     DT[.(c("id1", "id2")), sum(val), by = key(DT)]  # same
@@ -55,7 +56,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
     
     ```R
     setkey(DT, ID)
-    ids = c("id1", "id2, "id1")
+    ids = c("id1", "id2", "id1")
     DT[ids, sum(val), by = ID]       # 2 rows returned
     DT[ids, sum(val), by = .EACHI]   # 3 rows, in the order of ids (result 1 and 3 separate)
     ```
