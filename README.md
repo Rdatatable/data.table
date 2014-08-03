@@ -258,7 +258,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   42. forder did not identify -0 as 0 for numeric types. This is fixed now. Thanks to @arcosdium for nice minimal example. Closes [#743](https://github.com/Rdatatable/data.table/issues/743).
 
-  43. Segfault on joins of the form X[Y, c(..), by=.EACHI] is now fixed. Closes [#744](https://github.com/Rdatatable/data.table/issues/743). Thanks to @nigmastar (Michele Carriero) for the excellent minimal example. 
+  43. Segfault on joins of the form X[Y, c(..), by=.EACHI] is now fixed. Closes [#744](https://github.com/Rdatatable/data.table/issues/744). Thanks to @nigmastar (Michele Carriero) for the excellent minimal example. 
 
   44. Subset on data.table using `lapply` of the form `lapply(L, "[", Time == 3L)` works now without error due to "[.data.frame" redirection. Closes [#500](https://github.com/Rdatatable/data.table/issues/500). Thanks to Garrett See for reporting.
 
