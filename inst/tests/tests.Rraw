@@ -4960,6 +4960,12 @@ dt1 <- data.table(x2 = 0L)
 dt2 <- data.table(x2 =-(11-11)/10)
 test(1359.2, as.integer(merge(dt2, dt1, by="x2")$x2), as.integer(merge(dt1, dt2, by="x2")$x2))
 
+# Fix for #744: X[Y, c(...), by=.EACHI] segfaults because of using 'i' as variable in for-loop that masked the original 'i' from input.
+dt <- data.table(id = c("A", "A", "B", "B", "C"), val1=1:5, val2=6:10, key = "id")
+sample <- c("A", "B")
+test(1360.1, dt[sample, c(.N), by = .EACHI], dt[sample, list(V1=.N), by=.EACHI])
+test(1360.2, copy(dt)[sample, N := c(.N), by = .EACHI], copy(dt)[sample, N := .N, by = .EACHI])
+
 ##########################
 
 

@@ -1220,12 +1220,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             jsubl = as.list.default(jsub)
             oldjvnames = jvnames
             jvnames = NULL           # TODO: not let jvnames grow, maybe use (number of lapply(.SD, .))*lenght(ansvars) + other jvars ?? not straightforward.
-            for (i in 2:length(jsubl)) {
-                this = jsub[[i]]
+            # Fix for #744. Don't use 'i' in for-loops. It masks the 'i' from the input!!
+            for (i_ in 2:length(jsubl)) {
+                this = jsub[[i_]]
                 if (is.call(this) && this[[1L]]=="lapply" && this[[2L]]==".SD" && length(xcols)) {
                     any_SD = TRUE
                     deparse_ans = .massageSD(this)
-                    jsubl[[i]] = as.list(deparse_ans[[1L]][-1L]) # just keep the '.' from list(.)
+                    jsubl[[i_]] = as.list(deparse_ans[[1L]][-1L]) # just keep the '.' from list(.)
                     jvnames = c(jvnames, deparse_ans[[2L]])
                 } else {
                     if (any(all.vars(this) == ".SD")) {
@@ -1235,11 +1236,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         is_valid=FALSE
                         break
                     } else if (is.name(this)) {
-                        if (is.null(names(jsubl)) || names(jsubl)[i] == "") {
+                        if (is.null(names(jsubl)) || names(jsubl)[i_] == "") {
                             if (this == ".N" || this == ".I") jvnames = c(jvnames, gsub("^[.]([NI])$", "\\1", this)) 
-                        } else jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i])
+                        } else jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
                     } else if (is.call(this)) {
-                        jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i])
+                        jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
                     } else { # just to be sure that any other case (I've overlooked) runs smoothly, without optimisation
                         # TO DO, TODO: maybe a message/warning here so that we can catch the overlooked cases, if any?
                         is_valid=FALSE
