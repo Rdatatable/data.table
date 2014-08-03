@@ -4966,6 +4966,10 @@ sample <- c("A", "B")
 test(1360.1, dt[sample, c(.N), by = .EACHI], dt[sample, list(V1=.N), by=.EACHI])
 test(1360.2, copy(dt)[sample, N := c(.N), by = .EACHI], copy(dt)[sample, N := .N, by = .EACHI])
 
+# Fix for #500 - `lapply` call shouldn't redirect to `[.data.frame`.
+L <- list(data.table(BOD), data.table(BOD))
+test(1361, lapply(L, "[", Time==3L), list(L[[1L]][Time == 3L], L[[2L]][Time == 3L]))
+
 ##########################
 
 
