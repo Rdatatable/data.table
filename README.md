@@ -291,7 +291,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   8.  Added tests (1351.1 and 1351.2) to catch any future regressions on particular case of binary search based subset reported [here](http://stackoverflow.com/q/24729001/559784) on SO. Thanks to Scott for the post. The regression was contained to v1.9.2 AFAICT. Closes [#734](https://github.com/Rdatatable/data.table/issues/704).
 
-  9.  Added a .onUnload method to unload data.table's shared object properly. Since the name of the shared object is 'datatable.so' and not 'data.table.so', 'detach' fails to unload correctly. This was the reason for the issue reported [here](http://stackoverflow.com/questions/23498804/load-detach-re-load-anomaly) on SO. Closes #474. Thanks to Matthew Plourde for reporting.
+  9.  Added a .onUnload method to unload data.table's shared object properly. Since the name of the shared object is 'datatable.so' and not 'data.table.so', 'detach' fails to unload correctly. This was the reason for the issue reported [here](http://stackoverflow.com/questions/23498804/load-detach-re-load-anomaly) on SO. Closes [#474](https://github.com/Rdatatable/data.table/issues/474). Thanks to Matthew Plourde for reporting.
 
 ---
 
