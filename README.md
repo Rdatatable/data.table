@@ -295,6 +295,8 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   9.  Added a .onUnload method to unload data.table's shared object properly. Since the name of the shared object is 'datatable.so' and not 'data.table.so', 'detach' fails to unload correctly. This was the reason for the issue reported [here](http://stackoverflow.com/questions/23498804/load-detach-re-load-anomaly) on SO. Closes [#474](https://github.com/Rdatatable/data.table/issues/474). Thanks to Matthew Plourde for reporting.
 
+  10.  Updated `BugReports` link in DESCRIPTION. Thanks to @chrsigg for reporting. Closes [#754](https://github.com/Rdatatable/data.table/issues/754).
+
 ---
 
 ### Changes in v1.9.2 (on CRAN 27 Feb 2014)
