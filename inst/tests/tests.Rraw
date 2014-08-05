@@ -156,6 +156,7 @@ if (!.devtesting) {
     uniqlengths = data.table:::uniqlengths
     setrev = data.table:::setrev
     setreordervec = data.table:::setreordervec
+    selfrefok = data.table:::selfrefok
     setattr = data.table::setattr     # so as not to use bit::setattr
     .R.listCopiesNamed = data.table:::.R.listCopiesNamed
     .R.assignNamesCopiesAll = data.table:::.R.assignNamesCopiesAll
@@ -4969,6 +4970,14 @@ test(1360.2, copy(dt)[sample, N := c(.N), by = .EACHI], copy(dt)[sample, N := .N
 # Fix for #500 - `lapply` call shouldn't redirect to `[.data.frame`.
 L <- list(data.table(BOD), data.table(BOD))
 test(1361, lapply(L, "[", Time==3L), list(L[[1L]][Time == 3L], L[[2L]][Time == 3L]))
+
+# setDT(DT), when input is already a data.table checks if selfrefok and if not, does alloc.col again.
+DT = list(data.frame(x=1:5, y=6:10))
+invisible(lapply(DT, setDT))
+DT = DT[[1L]]
+test(1363.1, selfrefok(DT), 0L)
+setDT(DT)
+test(1363.2, selfrefok(DT), 1L)
 
 ##########################
 

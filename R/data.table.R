@@ -2122,7 +2122,7 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
         }
     }
     if (is.data.table(x)) {
-        return(invisible(x))
+        if (selfrefok(x) > 0) return(invisible(x)) else alloc.col(x)
     } else if (is.data.frame(x)) {
         rn = if (keep.rownames) rownames(x) else NULL
         setattr(x, "row.names", .set_row_names(nrow(x)))
