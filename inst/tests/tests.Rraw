@@ -162,6 +162,7 @@ if (!.devtesting) {
     .R.assignNamesCopiesAll = data.table:::.R.assignNamesCopiesAll
     .R.subassignCopiesOthers = data.table:::.R.subassignCopiesOthers
     .R.subassignCopiesVecsxp = data.table:::.R.subassignCopiesVecsxp
+    setdiff_ = data.table:::setdiff_
 }
 
 
