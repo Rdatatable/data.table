@@ -457,8 +457,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                             # Otherwise, types of i join columns are alyways promoted to match x's
                             # types (with warning or verbose)
             i = shallow(i)  # careful to only plonk syntax on i from now on (otherwise i would change)
-                            # TO DO: enforce via .internal.shallow attribute and expose shallow() to users
-                            # This is why shallow() is very importantly internal only, currently.
+                             # TO DO: enforce via .internal.shallow attribute and expose shallow() to users
+                             # This is why shallow() is very importantly internal only, currently.
             resetifactor = NULL  # Keep track of any factor to factor join cols (only time we keep orig)
             for (a in seq_along(leftcols)) {
                 # This loop is simply to support joining factor columns
@@ -509,6 +509,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     mode(newval) = "double"
                     set(i,j=lc,value=newval)
                 }
+            }
+            # Implementation for not-join along with by=.EACHI, #604
+            if (notjoin && byjoin) {
+                notjoin = FALSE
+                if (verbose) {last.started.at=proc.time()[3];cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff(x,i) ...");flush.console()}
+                i = setdiff_(x, i, rightcols, leftcols) # part of #547
+                if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+                setnames(i, names(origi)[leftcols])
+                setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
+                origi = i
             }
             f__ = integer(nrow(i))   # these could be returned as a list from bmerge?
             len__ = integer(nrow(i))

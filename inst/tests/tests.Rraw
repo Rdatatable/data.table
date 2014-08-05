@@ -5001,6 +5001,19 @@ test(1364.15, setdiff_(X, Y, "c", "a"), error="When x's column ('c') is characte
 test(1364.16, setdiff_(X, Y), error="setdiff(x,y) requires same number of columns for both x and y")
 test(1364.17, setdiff_(X[, list(a)], Y[, list(a)]), data.table(a=c(1,2)))
 
+# not join along with by=.EACHI, #604
+DT <- data.table(A=c(1,1,1,2,2,2,2,3,3,4,5,5))[, `:=`(B=as.integer(A), C=c("c", "e", "a", "d"), D=factor(c("c", "e", "a", "d")), E=1:12)]
+setkey(DT, A)
+test(1365.1, DT[!J(c(2,5)), sum(E), by=.EACHI], DT[J(c(1,3,4)), sum(E), by=.EACHI])
+setkey(DT, B)
+test(1365.2, DT[!J(c(4:5)), list(.N, sum(E)), by=.EACHI], DT[J(1:3), list(.N, sum(E)), by=.EACHI])
+setkey(DT, C)
+test(1365.3, copy(DT)[!"c", f := .N, by=.EACHI], copy(DT)[c("a", "d", "e"), f := .N, by=.EACHI])
+setkey(DT, D)
+test(1365.4, DT[!J(factor("c")), .N, by=.EACHI], DT[J(factor(c("a", "d", "e"))), .N, by=.EACHI])
+test(1365.5, DT[!"c", lapply(.SD, sum), by=.EACHI, .SDcols=c("B", "E")], DT[c("a", "d", "e"), lapply(.SD, sum), by=.EACHI, .SDcols=c("B", "E")])
+
+
 ##########################
 
 

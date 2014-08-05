@@ -154,15 +154,20 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
   26. `.N` is now available in `i`, [FR#724](https://github.com/Rdatatable/data.table/issues/724). Thanks to newbie indirectly [here](http://stackoverflow.com/a/24649115/403310) and Farrel directly [here](http://stackoverflow.com/questions/24685421/how-do-you-extract-a-few-random-rows-from-a-data-table-on-the-fly).
   
   27. `.()` can now be used in `j` and is identical to `list()`, for consistency with `i`.
-  ```R
-      DT[,list(MySum=sum(B)),by=...]
-      DT[,.(MySum=sum(B)),by=...]     # same
-      DT[,list(colB,colC,colD)]
-      DT[,.(colB,colC,colD)]          # same
-  ```
+    ```R
+    DT[,list(MySum=sum(B)),by=...]
+    DT[,.(MySum=sum(B)),by=...]     # same
+    DT[,list(colB,colC,colD)]
+    DT[,.(colB,colC,colD)]          # same
+    ```
   Similarly, `by=.()` is now a shortcut for `by=list()`, for consistency with `i` and `j`.
 
-
+  28. `by=.EACHI` is now implemented for *not-joins* as well. Closes [#604](https://github.com/Rdatatable/data.table/issues/604). Thanks to Garrett See for filing the FR. As an example:
+    ```R
+    DT = data.table(x=c(1,1,1,1,2,2,3,4,4,4), y=1:10, key="x")
+    DT[!J(c(1,4)), sum(y), by=.EACHI] # is equivalent to DT[J(c(2,3)), sum(y), by=.EACHI]
+    ```
+    
 #### BUG FIXES
 
   1. `fread()`:
