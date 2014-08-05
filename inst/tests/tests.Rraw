@@ -4979,6 +4979,27 @@ test(1363.1, selfrefok(DT), 0L)
 setDT(DT)
 test(1363.2, selfrefok(DT), 1L)
 
+# setdiff, parly #547. internal as of now, and named setdiff_ because the name "set" can be confused with the set* functions.
+# maybe provide a %diff% operator that internally calls setdiff_?? Usage x %diff% y?
+X = data.table(a=c(1,1,1,1,3,3,2,2,2))[, `:=`(b=factor(a), c=as.character(a), d = as.integer(a), e=1:9)]
+Y = data.table(a=c(3,4), b=factor(3:4), c=c("3","4"), d=3:4, e=c(TRUE, FALSE), f=c(5L,7L)) 
+test(1364.1, setdiff_(X, Y, "a", "a"), data.table(a=c(1,2)))
+test(1364.2, setdiff_(X, Y, c("a", "e"), c("a", "f")), X[!5, list(a,e)])
+test(1364.3, setdiff_(X, Y, "a", "e"), error="When x's column ('a') is integer or numeric, the corresponding column in y ('e')")
+test(1364.4, setdiff_(X, Y, "b", "b"), data.table(b=factor(c(1,2), levels=c(1,2,3))))
+test(1364.5, setdiff_(X, Y, c("b", "e"), c("b", "f")), X[!5, list(b,e)])
+test(1364.6, setdiff_(X, Y, "b", "c"), data.table(b=factor(c(1,2), levels=c(1,2,3))))
+test(1364.7, setdiff_(X, Y, "c", "c"), data.table(c=as.character(c(1,2))))
+test(1364.8, setdiff_(X, Y, c("c", "e"), c("c", "f")), X[!5, list(c,e)])
+test(1364.9, setdiff_(X, Y, "c", "b"), data.table(c=c("1", "2")))
+test(1364.11, setdiff_(X, Y, "d", "d"), data.table(d=1:2))
+test(1364.12, setdiff_(X, Y, c("d", "e"), c("d", "f")), X[!5, list(d,e)])
+test(1364.13, setdiff_(X, Y, "d", "e"), error="When x's column ('d') is integer or numeric, the corresponding column in y ('e')")
+test(1364.14, setdiff_(X, Y, "b", "a"), error="When x's column ('b') is factor, the corresponding column in y ('a')")
+test(1364.15, setdiff_(X, Y, "c", "a"), error="When x's column ('c') is character, the corresponding column in y ('a') ")
+test(1364.16, setdiff_(X, Y), error="setdiff(x,y) requires same number of columns for both x and y")
+test(1364.17, setdiff_(X[, list(a)], Y[, list(a)]), data.table(a=c(1,2)))
+
 ##########################
 
 
