@@ -1208,9 +1208,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # lapply replacement, or how to pass ... efficiently to it.
             # Plus we optimize lapply first, so that mean() can be optimized too as well, next.
         }
-        if (is.name(jsub) && jsub == ".SD") {
-            jsub = as.call(c(quote(list), lapply(ansvars, as.name)))
-            jvnames = ansvars
+        if (is.name(jsub)) {
+            if (jsub == ".SD") {
+                jsub = as.call(c(quote(list), lapply(ansvars, as.name)))
+                jvnames = ansvars
+            }
         } else if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols)) {
             deparse_ans = .massageSD(jsub)
             jsub = deparse_ans[[1L]]
