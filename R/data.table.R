@@ -1167,7 +1167,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     lockBinding(".iSD",SDenv)
     
     GForce = FALSE
-    if ( getOption("datatable.optimize")>=1 && is.call(jsub) ) {  # Ability to turn off if problems or to benchmark the benefit
+    if ( (getOption("datatable.optimize")>=1 && is.call(jsub)) || (is.name(jsub) && jsub == ".SD") ) {  # Ability to turn off if problems or to benchmark the benefit
         # Optimization to reduce overhead of calling lapply over and over for each group
         oldjsub = jsub
         # convereted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
@@ -1208,7 +1208,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # lapply replacement, or how to pass ... efficiently to it.
             # Plus we optimize lapply first, so that mean() can be optimized too as well, next.
         }
-        if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols)) {
+        if (is.name(jsub)) {
+            if (jsub == ".SD") {
+                jsub = as.call(c(quote(list), lapply(ansvars, as.name)))
+                jvnames = ansvars
+            }
+        } else if ( length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "head") && jsub[[2L]] == ".SD" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N") ) {
+            # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
+            jsub = as.call(c(quote(list), lapply(ansvars, function(x) { jsub[[2L]] = as.name(x); jsub })))
+            jvnames = ansvars
+        } else if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols)) {
             deparse_ans = .massageSD(jsub)
             jsub = deparse_ans[[1L]]
             jvnames = deparse_ans[[2L]]
@@ -1229,16 +1238,26 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     jsubl[[i_]] = as.list(deparse_ans[[1L]][-1L]) # just keep the '.' from list(.)
                     jvnames = c(jvnames, deparse_ans[[2L]])
                 } else {
-                    if (any(all.vars(this) == ".SD")) {
+                    if (is.name(this)) {
+                        if (this == ".SD") {
+                            # optimise '.SD' alone
+                            any_SD = TRUE
+                            jsubl[[i_]] = lapply(ansvars, as.name)
+                            jvnames = c(jvnames, ansvars)
+                        } else if (is.null(names(jsubl)) || names(jsubl)[i_] == "") {
+                            if (this == ".N" || this == ".I") jvnames = c(jvnames, gsub("^[.]([NI])$", "\\1", this)) 
+                        } else jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
+                    } else if ( length(this) == 3L && (this[[1L]] == "[" || this[[1L]] == "head") && this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || this[[3L]] == ".N") ) {
+                        # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
+                        any_SD = TRUE
+                        jsubl[[i_]] = lapply(ansvars, function(x) { this[[2L]] = as.name(x); this })
+                        jvnames = c(jvnames, ansvars)
+                    } else if (any(all.vars(this) == ".SD")) {
                         # TODO, TO DO: revisit complex cases (as illustrated below)
-                        # complex cases like DT[, c(.SD, .SD[x>1], .SD[J(.)], c(.SD), a + .SD, lapply(.SD, sum)), by=grp]
+                        # complex cases like DT[, c(.SD[x>1], .SD[J(.)], c(.SD), a + .SD, lapply(.SD, sum)), by=grp]
                         # hard to optimise such cases (+ difficulty in counting exact columns and therefore names). revert back to no optimisation.
                         is_valid=FALSE
                         break
-                    } else if (is.name(this)) {
-                        if (is.null(names(jsubl)) || names(jsubl)[i_] == "") {
-                            if (this == ".N" || this == ".I") jvnames = c(jvnames, gsub("^[.]([NI])$", "\\1", this)) 
-                        } else jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
                     } else if (is.call(this)) {
                         jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
                     } else { # just to be sure that any other case (I've overlooked) runs smoothly, without optimisation

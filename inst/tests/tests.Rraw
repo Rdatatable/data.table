@@ -4971,6 +4971,24 @@ test(1360.2, copy(dt)[sample, N := c(.N), by = .EACHI], copy(dt)[sample, N := .N
 L <- list(data.table(BOD), data.table(BOD))
 test(1361, lapply(L, "[", Time==3L), list(L[[1L]][Time == 3L], L[[2L]][Time == 3L]))
 
+# Feature #735, first two cases: 1) .SD, and 2) DT[, c(.SD, lapply(.SD, ...)), by=.] optimisation:
+options(datatable.verbose=TRUE)
+DT <- data.table(x=c(1,1,1,2,2), y=1:5, z=6:10)
+test(1362.1, capture.output(DT[, .SD, by=x])[2L], "lapply optimization changed j from '.SD' to 'list(y, z)'")
+test(1362.2, capture.output(DT[, c(.SD), by=x])[2L], "lapply optimization changed j from 'c(.SD)' to 'list(y, z)'")
+test(1362.3, capture.output(DT[, c(.SD, lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(.SD, lapply(.SD, sum))' to 'list(y, z, sum(y), sum(z))'")
+test(1362.4, capture.output(DT[, c(lapply(.SD, sum), .SD), by=x])[2L], "lapply optimization changed j from 'c(lapply(.SD, sum), .SD)' to 'list(sum(y), sum(z), y, z)'")
+test(1362.5, capture.output(DT[, c(list(y), .SD, lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(list(y), .SD, lapply(.SD, sum))' to 'list(list(y), y, z, sum(y), sum(z))'")
+# 3) .SD[1] and 4) .SD[1L]
+test(1362.6, capture.output(DT[, c(.SD[1L]), by=x])[2L], "lapply optimization changed j from 'c(.SD[1L])' to 'list(y[1L], z[1L])'")
+test(1362.7, capture.output(DT[, c(.SD[1L], lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(.SD[1L], lapply(.SD, sum))' to 'list(y[1L], z[1L], sum(y), sum(z))'")
+test(1362.8, capture.output(DT[, c(.SD[.N]), by=x])[2L], "lapply optimization changed j from 'c(.SD[.N])' to 'list(y[.N], z[.N])'")
+test(1362.9, capture.output(DT[, .SD[1], by=x])[2L], "lapply optimization changed j from '.SD[1]' to 'list(y[1], z[1])'")
+test(1362.11, capture.output(DT[, c(.SD[1]), by=x])[2L], "lapply optimization changed j from 'c(.SD[1])' to 'list(y[1], z[1])'")
+test(1362.12, capture.output(DT[, c(.SD[1], lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(.SD[1], lapply(.SD, sum))' to 'list(y[1], z[1], sum(y), sum(z))'")
+test(1362.13, capture.output(DT[, head(.SD, 1), by=x])[2L], "lapply optimization changed j from 'head(.SD, 1)' to 'list(head(y, 1), head(z, 1))'")
+options(datatable.verbose=FALSE)
+
 # setDT(DT), when input is already a data.table checks if selfrefok and if not, does alloc.col again.
 DT = list(data.frame(x=1:5, y=6:10))
 invisible(lapply(DT, setDT))
