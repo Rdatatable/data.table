@@ -1167,7 +1167,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     lockBinding(".iSD",SDenv)
     
     GForce = FALSE
-    if ( getOption("datatable.optimize")>=1 && is.call(jsub) ) {  # Ability to turn off if problems or to benchmark the benefit
+    if ( (getOption("datatable.optimize")>=1 && is.call(jsub)) || (is.name(jsub) && jsub == ".SD") ) {  # Ability to turn off if problems or to benchmark the benefit
         # Optimization to reduce overhead of calling lapply over and over for each group
         oldjsub = jsub
         # convereted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
@@ -1208,7 +1208,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # lapply replacement, or how to pass ... efficiently to it.
             # Plus we optimize lapply first, so that mean() can be optimized too as well, next.
         }
-        if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols)) {
+        if (is.name(jsub) && jsub == ".SD") {
+            jsub = as.call(c(quote(list), lapply(ansvars, as.name)))
+            jvnames = ansvars
+        } else if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols)) {
             deparse_ans = .massageSD(jsub)
             jsub = deparse_ans[[1L]]
             jvnames = deparse_ans[[2L]]
@@ -1229,9 +1232,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     jsubl[[i_]] = as.list(deparse_ans[[1L]][-1L]) # just keep the '.' from list(.)
                     jvnames = c(jvnames, deparse_ans[[2L]])
                 } else {
-                    if (any(all.vars(this) == ".SD")) {
+                    if (this == ".SD") {
+                        # optimise '.SD' alone
+                        any_SD = TRUE
+                        jsubl[[i_]] = lapply(ansvars, as.name)
+                        jvnames = c(jvnames, ansvars)
+                    } else if (any(all.vars(this) == ".SD")) {
                         # TODO, TO DO: revisit complex cases (as illustrated below)
-                        # complex cases like DT[, c(.SD, .SD[x>1], .SD[J(.)], c(.SD), a + .SD, lapply(.SD, sum)), by=grp]
+                        # complex cases like DT[, c(.SD[x>1], .SD[J(.)], c(.SD), a + .SD, lapply(.SD, sum)), by=grp]
                         # hard to optimise such cases (+ difficulty in counting exact columns and therefore names). revert back to no optimisation.
                         is_valid=FALSE
                         break
