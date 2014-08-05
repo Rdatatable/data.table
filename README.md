@@ -95,19 +95,25 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   12. `anyDuplicated.data.table` is now implemented. Closes **#5172** (git [#350](https://github.com/Rdatatable/data.table/issues/350)). Thanks to M C (bluemagister) for reporting.
 
-  13. Complex j-expressions of the form `DT[, c(..., lapply(.SD, fun)), by=grp]`are now optimised as long as `.SD` is only present in the form `lapply(.SD, fun)` or `.SD`. This resolves **#2722** (git [#370](https://github.com/Rdatatable/data.table/issues/370)). Thanks to Sam Steingold for reporting. 
+  13. Complex j-expressions of the form `DT[, c(..., lapply(.SD, fun)), by=grp]`are now optimised as long as `.SD` is of the form `lapply(.SD, fun)` or `.SD`, `.SD[1]` or `.SD[1L]`. This resolves **#2722** (git [#370](https://github.com/Rdatatable/data.table/issues/370)). Thanks to Sam Steingold for reporting. 
       This also completes the first two task lists in [#735](https://github.com/Rdatatable/data.table/issues/735).
     ```R
     ## example:
     DT[, c(.I, lapply(.SD, sum), mean(x), lapply(.SD, log)), by=grp]
     ## is optimised to
     DT[, list(.I, x=sum(x), y=sum(y), ..., mean(x), log(x), log(y), ...), by=grp]
-    ## and now...
-    DT[, c(.SD, lapply(.SD, sum)), by=grp] # is optimised
-    ## but 
-    DT[, c(.SD[1L], lapply(.SD, sum)), by=grp] # for example
-    ## is not, yet optimised.
+    ## and now... these variations are also optimised internally for speed
+    DT[, c(..., .SD, lapply(.SD, sum), ...), by=grp]
+    DT[, c(..., .SD[1], lapply(.SD, sum), ...), by=grp]
+    DT[, .SD, by=grp]
+    DT[, c(.SD), by=grp]
+    DT[, .SD[1], by=grp] # Note: but not yet DT[, .SD[1,], by=grp]
+    DT[, c(.SD[1]), by=grp]
+    DT[, head(.SD, 1), by=grp] # Note: but not yet DT[, head(.SD, -1), by=grp]
+    # but not yet optimised
+    DT[, c(.SD[a], .SD[x>1], lapply(.SD, sum)), by=grp] # where 'a' is, say, a numeric or a data.table, and also for expressions like x>1
     ```
+    The underlying message is that `.SD` is being slowly optimised internally whereever possible, for speed, without compromising in the nice readable syntax it provides.
 
   14. `setDT` gains `keep.rownames = TRUE/FALSE` argument, which works only on `data.frame`s. TRUE retains the data.frame's row names as a new column named `rn`.
 

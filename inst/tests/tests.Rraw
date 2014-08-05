@@ -4978,6 +4978,14 @@ test(1362.2, capture.output(DT[, c(.SD), by=x])[2L], "lapply optimization change
 test(1362.3, capture.output(DT[, c(.SD, lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(.SD, lapply(.SD, sum))' to 'list(y, z, sum(y), sum(z))'")
 test(1362.4, capture.output(DT[, c(lapply(.SD, sum), .SD), by=x])[2L], "lapply optimization changed j from 'c(lapply(.SD, sum), .SD)' to 'list(sum(y), sum(z), y, z)'")
 test(1362.5, capture.output(DT[, c(list(y), .SD, lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(list(y), .SD, lapply(.SD, sum))' to 'list(list(y), y, z, sum(y), sum(z))'")
+# 3) .SD[1] and 4) .SD[1L]
+test(1362.6, capture.output(DT[, c(.SD[1L]), by=x])[2L], "lapply optimization changed j from 'c(.SD[1L])' to 'list(y[1L], z[1L])'")
+test(1362.7, capture.output(DT[, c(.SD[1L], lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(.SD[1L], lapply(.SD, sum))' to 'list(y[1L], z[1L], sum(y), sum(z))'")
+test(1362.8, capture.output(DT[, c(.SD[.N]), by=x])[2L], "lapply optimization changed j from 'c(.SD[.N])' to 'list(y[.N], z[.N])'")
+test(1362.9, capture.output(DT[, .SD[1], by=x])[2L], "lapply optimization changed j from '.SD[1]' to 'list(y[1], z[1])'")
+test(1362.11, capture.output(DT[, c(.SD[1]), by=x])[2L], "lapply optimization changed j from 'c(.SD[1])' to 'list(y[1], z[1])'")
+test(1362.12, capture.output(DT[, c(.SD[1], lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(.SD[1], lapply(.SD, sum))' to 'list(y[1], z[1], sum(y), sum(z))'")
+test(1362.13, capture.output(DT[, head(.SD, 1), by=x])[2L], "lapply optimization changed j from 'head(.SD, 1)' to 'list(head(y, 1), head(z, 1))'")
 options(datatable.verbose=FALSE)
 
 ##########################
