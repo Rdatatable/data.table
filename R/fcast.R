@@ -70,12 +70,11 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
             stop("Aggregating function provided to argument 'fun.aggregate' should always return a length 1 vector, but returns 0-length value for fun.aggregate(", typeof(data[[value.var]]), "(0)).", " This value will have to be used to fill missing combinations, if any, and therefore can not be of length 0. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
         args <- c("data", "formula", "margins", "subset", "fill", "value.var", "verbose", "drop")
         m <- m[setdiff(names(m), args)]
-        .CASTfun = fun.aggregate # issues/713
-        fun.aggregate <- as.call(c(quote(.CASTfun), as.name(value.var), m[-1]))
-        fun.aggregate <- as.call(c(as.name("list"), setattr(list(fun.aggregate), 'names', value.var)))
+        .CASTcall = as.call(c(m[1], as.name(value.var), m[-1])) # issues/713
+        .CASTcall = as.call(c(as.name("list"), setattr(list(.CASTcall), 'names', value.var)))
         # workaround until #5191 (issues/497) is fixed
         if (length(intersect(value.var, ff_))) 
-            fun.aggregate = as.call(list(as.name("{"), as.name(".SD"), fun.aggregate))
+            .CASTcall = as.call(list(as.name("{"), as.name(".SD"), .CASTcall))
     }
     # special case
     if (length(ff$rr) == 0) {
@@ -83,8 +82,8 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
             ans = data[, c(ff$ll, value.var), with=FALSE]
         else {
             # workaround until #5191 (issues/497) is fixed
-            if (length(intersect(value.var, ff_))) ans = data[, eval(fun.aggregate), by=c(ff$ll), .SDcols=value.var]
-            else ans = data[, eval(fun.aggregate), by=c(ff$ll)]
+            if (length(intersect(value.var, ff_))) ans = data[, eval(.CASTcall), by=c(ff$ll), .SDcols=value.var]
+            else ans = data[, eval(.CASTcall), by=c(ff$ll)]
         }
         if (anyDuplicated(names(ans))) {
             message("Duplicate column names found in cast data.table. Setting unique names using 'make.unique'")   
@@ -96,11 +95,11 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     # aggregation moved to R now that 'adhoc-by' is crazy fast!
     if (!is.null(fun.aggregate)) {
         if (length(intersect(value.var, ff_))) {
-            data = data[, eval(fun.aggregate), by=c(ff_), .SDcols=value.var]
+            data = data[, eval(.CASTcall), by=c(ff_), .SDcols=value.var]
             value.var = tail(make.unique(names(data)), 1L)
             setnames(data, ncol(data), value.var)
         }
-        else data = data[, eval(fun.aggregate), by=c(ff_)]
+        else data = data[, eval(.CASTcall), by=c(ff_)]
         setkeyv(data, ff_)
         # issues/693
         fun_agg_chk <- function(x) {
