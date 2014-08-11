@@ -1,11 +1,4 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
-
-extern unsigned long long dtwiddle(void *, int, int);  // in forder.c
-extern unsigned long long i64twiddle(void *, int, int);
-unsigned long long (*twiddle)(void *, int, int);
-extern SEXP char_integer64;
+#include "data.table.h"
 
 // DONE: return 'uniqlist' as a vector (same as duplist) and write a separate function to get group sizes
 // Also improvements for numeric type with a hack of checking unsigned int (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)

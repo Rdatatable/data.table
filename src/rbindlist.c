@@ -1,14 +1,9 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
 #include <Rversion.h>
 #include <stdint.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
-
-extern size_t sizes[100];
-#define SIZEOF(x) sizes[TYPEOF(x)]
 
 /* Eddi's hash setup for combining factor levels appropriately - untouched from previous state (except made combineFactorLevels static) */
 
@@ -20,8 +15,6 @@ extern size_t sizes[100];
 #else
   typedef R_len_t RLEN;
 #endif
-
-extern int StrCmp(SEXP x, SEXP y);    // in forder.c
 
 // a simple linked list, will use this when finding global order for ordered factors
 // will keep two ints
@@ -337,9 +330,6 @@ static SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * 
 
 /* Arun's addition and changes to incorporate 'usenames=T/F' and 'fill=T/F' arguments to rbindlist */
 
-extern SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
-extern SEXP allocNAVector(SEXPTYPE type, R_len_t n);
-
 /*
     l               = input list of data.tables/lists/data.frames
     n               = length(l)
@@ -370,6 +360,7 @@ struct preprocessData {
     int first;
     int lcount;
     int mincol;
+    int protecti;
 };
 
 static SEXP unlist2(SEXP v) {
@@ -399,26 +390,32 @@ static SEXP unlist2(SEXP v) {
     return(ans);
 }
 
-static SEXP fast_order(SEXP dt, R_len_t byArg) {
+// Don't use elsewhere. No checks are made on byArg and handleSorted
+// if handleSorted is 0, then it'll return integer(0) as such when 
+// input is already sorted, like forder. if not, seq_len(nrow(dt)).
+static SEXP fast_order(SEXP dt, R_len_t byArg, R_len_t handleSorted) {
 
     R_len_t i, protecti=0;
-    SEXP ans, by, retGrp, sortStr, order, na, starts;
+    SEXP ans, by=R_NilValue, retGrp, sortStr, order, na, starts;
 
-    by      = PROTECT(allocVector(INTSXP, byArg));
-    retGrp  = PROTECT(allocVector(LGLSXP, 1)); 
-    sortStr = PROTECT(allocVector(LGLSXP, 1)); 
-    order   = PROTECT(allocVector(INTSXP, byArg));
-    na      = PROTECT(allocVector(LGLSXP, 1));
+    retGrp  = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(retGrp)[0]  = TRUE;
+    sortStr = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(sortStr)[0] = FALSE;
+    na      = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(na)[0] = FALSE;
 
-    LOGICAL(retGrp)[0] = TRUE; LOGICAL(sortStr)[0] = FALSE; LOGICAL(na)[0] = FALSE;
-    for (i=0; i<byArg; i++) {
-        INTEGER(by)[i] = i+1;
-        INTEGER(order)[i] = 1;
-    }
-    UNPROTECT(5);
-
+    if (byArg) {
+        by    = PROTECT(allocVector(INTSXP, byArg));
+        order = PROTECT(allocVector(INTSXP, byArg));
+        for (i=0; i<byArg; i++) {
+            INTEGER(by)[i] = i+1;
+            INTEGER(order)[i] = 1;
+        }
+        UNPROTECT(5);
+    } else {
+        order = PROTECT(allocVector(INTSXP, 1)); INTEGER(order)[0] = 1;
+        UNPROTECT(4);
+    }    
     ans = PROTECT(forder(dt, by, retGrp, sortStr, order, na)); protecti++;
-    if (!length(ans)) {
+    if (!length(ans) && handleSorted != 0) {
         starts = PROTECT(getAttrib(ans, mkString("starts"))); protecti++;
         // if cols are already sorted, 'forder' gives integer(0), got to replace it with 1:.N
         ans = PROTECT(allocVector(INTSXP, length(VECTOR_ELT(dt, 0)))); protecti++;
@@ -444,9 +441,9 @@ static SEXP uniq_lengths(SEXP v, R_len_t n) {
 
 static SEXP match_names(SEXP v) {
     
-    R_len_t i, j, k, idx, ncols, protecti=0;
+    R_len_t i, j, idx, ncols, protecti=0;
     SEXP ans, dt, lnames, ti;
-    SEXP uorder, starts, ulens, index;
+    SEXP uorder, starts, ulens, index, firstofeachgroup, origorder;
     SEXP fnames, findices, runid, grpid;
     
     ans    = PROTECT(allocVector(VECSXP, 2));
@@ -455,38 +452,42 @@ static SEXP match_names(SEXP v) {
     grpid  = PROTECT(duplicate(VECTOR_ELT(dt, 1))); protecti++; // dt[1] will be reused, so backup
     runid  = VECTOR_ELT(dt, 2);
     
-    uorder = PROTECT(fast_order(dt, 2));  protecti++; // byArg alone is set, everything else is set inside fast_order
+    uorder = PROTECT(fast_order(dt, 2, 1));  protecti++; // byArg alone is set, everything else is set inside fast_order
     starts = PROTECT(getAttrib(uorder, mkString("starts"))); protecti++;
     ulens  = PROTECT(uniq_lengths(starts, length(lnames))); protecti++;
     
     // seq_len(.N) for each group
     index = PROTECT(VECTOR_ELT(dt, 1)); protecti++; // reuse dt[1] (in 0-index coordinate), value already backed up above.
-    k=0;
     for (i=0; i<length(ulens); i++) {
-        for (j=0; j<INTEGER(ulens)[i]; j++) {
-            INTEGER(index)[INTEGER(uorder)[k+j]-1] = j;
-        }
-        k += j;
+        for (j=0; j<INTEGER(ulens)[i]; j++)
+            INTEGER(index)[INTEGER(uorder)[INTEGER(starts)[i]-1+j]-1] = j;
     }
     // order again
-    uorder = PROTECT(fast_order(dt, 2));  protecti++; // byArg alone is set, everything else is set inside fast_order
+    uorder = PROTECT(fast_order(dt, 2, 1));  protecti++; // byArg alone is set, everything else is set inside fast_order
     starts = PROTECT(getAttrib(uorder, mkString("starts"))); protecti++;
     ulens  = PROTECT(uniq_lengths(starts, length(lnames))); protecti++;    
     ncols  = length(starts);
+    // check if order has to be changed (bysameorder = FALSE here by default - in `[.data.table` parlance)
+    firstofeachgroup = PROTECT(allocVector(INTSXP, length(starts)));
+    for (i=0; i<ncols; i++) INTEGER(firstofeachgroup)[i] = INTEGER(uorder)[INTEGER(starts)[i]-1];
+    origorder = PROTECT(fast_order(firstofeachgroup, 0, 0));
+    if (length(origorder)) {
+        reorder(starts, origorder);
+        reorder(ulens, origorder);
+    }
+    UNPROTECT(2);
     // get fnames and findices
     fnames   = PROTECT(allocVector(STRSXP, ncols)); protecti++;
     findices = PROTECT(allocVector(VECSXP, ncols)); protecti++;
-    k=0;
     for (i=0; i<ncols; i++) {
         idx = INTEGER(uorder)[INTEGER(starts)[i]-1]-1;
         SET_STRING_ELT(fnames, i, STRING_ELT(lnames, idx));
         ti = PROTECT(allocVector(INTSXP, length(v)));
         for (j=0;j<length(v);j++) INTEGER(ti)[j]=-1; // TODO: can we eliminate this?
         for (j=0; j<INTEGER(ulens)[i]; j++) {
-            idx = INTEGER(uorder)[k+j]-1;
+            idx = INTEGER(uorder)[INTEGER(starts)[i]-1+j]-1;
             INTEGER(ti)[INTEGER(grpid)[idx]-1] = INTEGER(runid)[idx];
         }
-        k+=j;
         UNPROTECT(1);
         SET_VECTOR_ELT(findices, i, ti);
     }
@@ -503,7 +504,7 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
     SEXP li, lnames=R_NilValue, fnames, findices=R_NilValue, f_ind=R_NilValue, thiscol, col_name=R_NilValue;
     SEXPTYPE type;
     
-    data->first = -1; data->lcount = 0; data->n_rows = 0; data->n_cols = 0;
+    data->first = -1; data->lcount = 0; data->n_rows = 0; data->n_cols = 0; data->protecti = 0;
     data->max_type = NULL; data->is_factor = NULL; data->ans_ptr = R_NilValue; data->mincol=0;
     data->fn_rows = Calloc(length(l), int); data->colname = R_NilValue;
 
@@ -516,18 +517,18 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
         if (TYPEOF(li) != VECSXP) error("Item %d of list input is not a data.frame, data.table or list",i+1);
         if (!LENGTH(li)) continue;
         col_name = getAttrib(li, R_NamesSymbol);
-        if (!isNull(col_name)) {
-            data->colname = PROTECT(col_name);
-            break;
-        }
+        if (!isNull(col_name)) break;
     }
-    if (usenames) { lnames = PROTECT(allocVector(VECSXP, length(l)));}
+    if (!isNull(col_name)) { data->colname = PROTECT(col_name); data->protecti++; }
+    if (usenames) { lnames = PROTECT(allocVector(VECSXP, length(l))); data->protecti++;}
     for (i=0; i<length(l); i++) {
         li = VECTOR_ELT(l, i);
         if (isNull(li)) continue;
         if (TYPEOF(li) != VECSXP) error("Item %d of list input is not a data.frame, data.table or list",i+1);
         if (!LENGTH(li)) continue;
         col_name = getAttrib(li, R_NamesSymbol);
+        if (fill && isNull(col_name))
+            error("fill=TRUE, but names of input list at position %d is NULL. All items of input list must have names set when fill=TRUE.", i+1);
         data->lcount++;
         data->fn_rows[i] = length(VECTOR_ELT(li, 0));
         if (data->first == -1) {
@@ -535,7 +536,7 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
             data->n_cols = length(li);
             data->mincol = length(li);
             if (!usenames) {
-                data->ans_ptr = PROTECT(allocVector(VECSXP, 2));
+                data->ans_ptr = PROTECT(allocVector(VECSXP, 2)); data->protecti++;
                 if (isNull(col_name)) SET_VECTOR_ELT(data->ans_ptr, 0, data->colname);
                 else SET_VECTOR_ELT(data->ans_ptr, 0, col_name);
             } else {
@@ -556,15 +557,15 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
         }
     }
     if (usenames) {
-        data->ans_ptr = PROTECT(match_names(lnames));
+        data->ans_ptr = PROTECT(match_names(lnames)); data->protecti++;
         fnames = VECTOR_ELT(data->ans_ptr, 0);
         findices = VECTOR_ELT(data->ans_ptr, 1);
+        if (isNull(data->colname) && data->n_cols > 0)
+            error("use.names=TRUE but no item of input list has any names.\n");
         if (!fill && length(fnames) != data->mincol) {
             error("Answer requires %d columns whereas one or more item(s) in the input list has only %d columns. This could be because the items in the list may not all have identical column names or some of the items may have duplicate names. In either case, if you're aware of this and would like to fill those missing columns, set the argument 'fill=TRUE'.", length(fnames), data->mincol);
         } else data->n_cols = length(fnames);
     }
-    if (isNull(data->colname) && data->n_cols > 0)
-        error("At least one item in the input list must have all column names set.\n");
     
     // decide type of each column
     // initialize the max types - will possibly increment later
@@ -611,14 +612,14 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill) {
     fill = LOGICAL(sexp_fill)[0];
     if (fill && !usenames) { 
         // override default
-        warning("Resetting 'usenames' to TRUE. 'usenames' can not be FALSE when 'fill' is set to TRUE.\n");
+        warning("Resetting 'use.names' to TRUE. 'use.names' can not be FALSE when 'fill=TRUE'.\n");
         usenames=TRUE;
     }
     // check for factor, get max types, and when usenames=TRUE get the answer 'names' and column indices for proper reordering.
     preprocess(l, usenames, fill, &data);
     fnames   = VECTOR_ELT(data.ans_ptr, 0);
     findices = VECTOR_ELT(data.ans_ptr, 1);
-    protecti = (usenames) ? 3 : 2; // to take care of PROTECTs in 'preprocess'
+    protecti = data.protecti;
     if (data.n_rows == 0 && data.n_cols == 0) return(R_NilValue);
 
     factorLevels = PROTECT(allocVector(VECSXP, data.lcount));
@@ -782,7 +783,7 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
     dt = PROTECT(unlist2(l));
 
     // order - first time
-    order = PROTECT(fast_order(dt, 2));
+    order = PROTECT(fast_order(dt, 2, 1));
     start = PROTECT(getAttrib(order, mkString("starts")));
     lens  = PROTECT(uniq_lengths(start, length(order))); // length(order) = nrow(dt)
     grpid = VECTOR_ELT(dt, 1);
@@ -798,7 +799,7 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
     }
     // order - again
     UNPROTECT(3); // order, start, lens
-    order = PROTECT(fast_order(dt, 2)); 
+    order = PROTECT(fast_order(dt, 2, 1)); 
     start = PROTECT(getAttrib(order, mkString("starts")));
     lens  = PROTECT(uniq_lengths(start, length(order)));
     
@@ -823,7 +824,7 @@ static SEXP listlist(SEXP x) {
     
     lx = PROTECT(allocVector(VECSXP, 1));
     SET_VECTOR_ELT(lx, 0, x);
-    xo = PROTECT(fast_order(lx, 1));
+    xo = PROTECT(fast_order(lx, 1, 1));
     xs = PROTECT(getAttrib(xo, mkString("starts")));
     xl = PROTECT(uniq_lengths(xs, length(x)));
     
@@ -860,7 +861,6 @@ static SEXP listlist(SEXP x) {
 ## Now, it's just a matter of filling corresponding matches from x.agg's indices with y.agg's indices.
 ## BENCHMARKS ON THE BOTTOM OF THIS FILE
 */
-extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
 SEXP chmatch2(SEXP x, SEXP y, SEXP nomatch) {
 
     R_len_t i, j, k, nx, ix, iy;

@@ -1,6 +1,4 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
 #include <R_ext/Rdynload.h>
 #include <R_ext/Visibility.h>
@@ -40,6 +38,8 @@ SEXP gstart();
 SEXP gend();
 SEXP gsum();
 SEXP gmean();
+SEXP gmin();
+SEXP gmax();
 SEXP isOrderedSubset();
 SEXP pointWrapper();
 SEXP setNumericRounding();
@@ -89,6 +89,8 @@ R_CallMethodDef callMethods[] = {
 {"Cgend", (DL_FUNC) &gend, -1},
 {"Cgsum", (DL_FUNC) &gsum, -1},
 {"Cgmean", (DL_FUNC) &gmean, -1},
+{"Cgmin", (DL_FUNC) &gmin, -1},
+{"Cgmax", (DL_FUNC) &gmax, -1},
 {"CisOrderedSubset", (DL_FUNC) &isOrderedSubset, -1},
 {"CpointWrapper", (DL_FUNC) &pointWrapper, -1},
 {"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},
@@ -107,9 +109,6 @@ R_ExternalMethodDef externalMethods[] = {
 {"Cfastmean", (DL_FUNC) &fastmean, -1},
 {NULL, NULL, 0}
 };
-
-void setSizes();
-SEXP char_integer64;
 
 void attribute_visible R_init_datatable(DllInfo *info)
 // relies on pkg/src/Makevars to mv data.table.so to datatable.so

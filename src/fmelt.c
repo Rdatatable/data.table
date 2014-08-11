@@ -1,16 +1,7 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
-
-extern size_t sizes[100];
-#define SIZEOF(x) sizes[TYPEOF(x)]
-
-extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
-extern SEXP allocNAVector(SEXPTYPE type, R_len_t n);
-extern SEXP coerce_to_char(SEXP s, SEXP env);
 
 // generate from 1 to n (a simple fun for melt, vecseq is convenient from R due to SEXP inputs)
 SEXP seq_int(int n, int start) {
@@ -183,7 +174,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
         }
         PROTECT(booltmp = duplicated(tmp, FALSE)); protecti++;
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(id, i)));
+            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(measure, i)));
             else if (INTEGER(tmp)[i] > ncol) error("measure.var value exceeds ncol(data)");
             else if (!LOGICAL(booltmp)[i]) targetcols++;
             else continue;
@@ -206,7 +197,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
             default : error("Unknown 'id.var' type %s, must be character or integer vector", type2char(TYPEOF(id)));
         }
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' or not found in 'data'", CHAR(STRING_ELT(id, i)));
+            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(id, i)));
             else if (INTEGER(tmp)[i] > ncol) error("measure.var value exceeds ncol(data)");
         }
         PROTECT(idcols = allocVector(INTSXP, length(tmp))); protecti++;
@@ -218,7 +209,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
             default : error("Unknown 'measure.var' type %s, must be character or integer vector", type2char(TYPEOF(measure)));
         }
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(id, i)));
+            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(measure, i)));
             else if (INTEGER(tmp)[i] > ncol) error("measure.var value exceeds ncol(data)");
         }
         PROTECT(valuecols = allocVector(INTSXP, length(measure))); protecti++;

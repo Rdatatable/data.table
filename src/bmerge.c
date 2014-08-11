@@ -1,6 +1,5 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
+
 /*
 Implements binary search (a.k.a. divide and conquer).
 http://en.wikipedia.org/wiki/Binary_search
@@ -20,19 +19,10 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 #define ENC_KNOWN(x) (LEVELS(x) & 12)
 // 12 = LATIN1_MASK (1<<2) | UTF8_MASK (1<<3)  // Would use these definitions from Defn.h, but that appears to be private to R. Hence 12.
 
-// from forder.c ...
-extern SEXP forder();
-extern int StrCmp(SEXP x, SEXP y);
-extern SEXP vec_init(R_len_t n, SEXP val);
-extern unsigned long long dtwiddle(void *, int, int);
-extern unsigned long long i64twiddle(void *, int, int);
-extern SEXP char_integer64;
-
 static SEXP i, x;
 static int ncol, *icols, *xcols, *o, *retFirst, *retLength, *allLen1, *rollends;
 static double roll, rollabs;
 static Rboolean nearest=FALSE, enc_warn=TRUE;
-static unsigned long long (*twiddle)(void *, int, int);
 
 void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int lowmax, int uppmax);
 
@@ -313,7 +303,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
             for (j=ilow+1; j<iupp; j++) {                 // will rewrite retFirst[ir] to itself, but that's ok
                 if (o) k=o[j]-1; else k=j;
                 retFirst[k] = retFirst[ir];
-                retLength[k]= 1; 
+                retLength[k]= retLength[ir]; 
             }
         }
     }

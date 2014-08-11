@@ -1,12 +1,5 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
-
-// See dogroups.c for these shared variables.
-extern size_t sizes[];
-#define SIZEOF(x) sizes[TYPEOF(x)]
-//
 
 // reverse a vector - equivalent of rev(x) in base, but implemented in C and about 12x faster (on 1e8)
 SEXP setrev(SEXP x) {

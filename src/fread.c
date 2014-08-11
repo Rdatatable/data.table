@@ -1,6 +1,4 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 #include <Rdefines.h>
 #include <ctype.h>
 #include <errno.h>
@@ -18,6 +16,8 @@
 #endif
 
 /*****    TO DO    *****
+Restore test 1339 (balanced embedded quotes, see ?fread already updated).
+Confirm: http://stackoverflow.com/questions/23833294/data-tablefread-doesnt-like-missing-values-in-first-column
 construct test and investigate skip for completeness here: http://stackoverflow.com/questions/22086780/data-table-fread-error
 http://stackoverflow.com/questions/22229109/r-data-table-fread-command-how-to-read-large-files-with-irregular-separators
 http://r.789695.n4.nabble.com/Odd-problem-using-fread-to-read-in-a-csv-file-no-data-just-headers-tp4686302.html
@@ -29,7 +29,6 @@ Allow to increase to top 500, middle 500 and bottom 500.
 madvise is too eager when reading just the top 10 rows.
 Add as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
 Allow comment char to ignore. Important in format detection. But require valid line data before comment character in the read loop? See http://stackoverflow.com/a/18922269/403310
-\n inside a protected field: http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value
 Jim Holtman requested column names be stipped of whitespace.  On datatable-help 22 Jan 2014.
 Deal with row.names e.g. http://stackoverflow.com/questions/15448732/reading-csv-with-row-names-by-fread
 Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
@@ -49,9 +48,6 @@ as.read.table=TRUE/FALSE option.  Or fread.table and fread.csv (see http://r.789
 
 *****/
 
-extern size_t sizes[100];
-extern SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
-
 static const char *ch, *eof; 
 static char sep, eol, eol2;  // sep2 TO DO
 static int eolLen;
@@ -69,7 +65,7 @@ static clock_t tCoerce, tCoerceAlloc;
 #define SXP_NULL   5   // NILSXP i.e. skip column (last so that all types can be bumped up to it by user)
 static const char TypeName[6][10] = {"LGL","INT","INT64","REAL","STR","NULL"};  // for messages and errors
 static int TypeSxp[6] = {LGLSXP,INTSXP,REALSXP,REALSXP,STRSXP,NILSXP};
-static union {double d; long long l; Rboolean b;} u;
+static union {double d; long long l; int b;} u;   // b=boolean, can hold NA_LOGICAL
 #define NUT        8   // Number of User Types (just for colClasses where "numeric"/"double" are equivalent)
 static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "NULL", "double", "CLASS" };  // important that first 6 correspond to TypeName.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
 static int UserTypeNameMap[NUT] = { SXP_LGL, SXP_INT, SXP_INT64, SXP_REAL, SXP_STR, SXP_NULL, SXP_REAL, SXP_STR };
@@ -109,31 +105,31 @@ void EXIT() {
 }
 #endif
 
+#define skip_quoted() if (ch<eof && *ch=='\"') while(++ch<eof && *ch!='\"') {}
+#define MsgLimit(a) ((int)(a)>5000 ? 5000 : (int)(a))  // 5000 a large limit just to prevent runaways, still printable
+
 static int countfields(int err)
 {
-    int ncol=0;
+    int ncol=0, numeol;
     const char *lch;  // lch = local ch
-    Rboolean protected;
     lch = ch;
     if (sep=='\"') {sprintf(errormsg, "Internal error: sep is \", not an allowed separator"); EXIT();}
     if (lch==eof || *lch==eol) return 0;
     ncol=1;                  // only empty lines (first char eol) have 0 fields. Even one space is classed as one field.
-    protected = *lch=='\"';  // if beginning of line starts with " then the first field is protected
-    lch++;                   // lch might be start of file (mmp), careful not to check lch-1 for '\' before that (not mapped). So ++ first.
     while (lch<eof && *lch!=eol) {
-        if (!protected) {
-            ncol += (*lch==sep);
-            if (*lch=='\"' && *(lch-1)==sep) protected = TRUE;
-        } else {
-            if (*lch==sep && *(lch-1)=='\"') { protected = FALSE; lch--; }
+        if (*lch=='\"' && (lch==mmp || *(lch-1)==sep || *(lch-1)==eol2)) {
+            numeol = 0;
+            while (++lch<eof && numeol<100 && (*lch!='\"' || (lch+1<eof && *(lch+1)!=sep && *(lch+1)!=eol))) {
+                numeol += (*lch==eol);   // limit to prevent runaways, since various separators are tested.
+            };
+            if (err && (lch==eof || numeol==100)) { sprintf(errormsg,"A field starting with quote (\") doesn't end with a \" immediately followed by separator or new line: %.*s\n", MsgLimit(lch-ch), ch); EXIT(); }
+            lch++;
+            continue;  // continue in case lch==eof
         }
-        lch++;
+        ncol += (*lch++==sep);
     }
-    if (err) {
-        // countfields is used for varying separators, so we only want the error in one of the calls, see calling usage below.
-        if (protected && *(lch-1)=='\"') protected = FALSE;   // The line or file ends with a quote to end the last field's protection
-        if (protected) {sprintf(errormsg, "A field starting with quote (\") doesn't end with a quote on this line: %.*s\n", (int)(lch-ch), ch); EXIT();}
-    }
+    // A quoted field with missing endquote will (likely) run to the next quote available in this line or next, or if no more
+    // quotes in the file at all then eof.  The caller will return a nice error.
     return(ncol);
 }
 
@@ -195,7 +191,7 @@ static inline Rboolean Strtod()
         if (errno==0 && lch>start && (lch==eof || *lch==sep || *lch==eol)) {
             ch = lch;
             if (ERANGEwarning) {
-                warning("C function strtod() returned ERANGE for one or more fields. The first was string input '%.*s'. It was read using (double)strtold() as numeric value %.16E (displayed here using %%.16E); loss of accuracy likely occurred. This message is designed to tell you exactly what has been done by fread's C code, so you can search yourself online for many references about double precision accuracy and these specific C functions. You may wish to use colClasses to read the column as character instead and then coerce that column using the Rmpfr package for greater accuracy.", (int)(lch-start), start, u.d);
+                warning("C function strtod() returned ERANGE for one or more fields. The first was string input '%.*s'. It was read using (double)strtold() as numeric value %.16E (displayed here using %%.16E); loss of accuracy likely occurred. This message is designed to tell you exactly what has been done by fread's C code, so you can search yourself online for many references about double precision accuracy and these specific C functions. You may wish to use colClasses to read the column as character instead and then coerce that column using the Rmpfr package for greater accuracy.", MsgLimit(lch-start), start, u.d);
                 ERANGEwarning = FALSE;   // once only. Set to TRUE just before read data loop. FALSE initially when detecting types.
                 // This is carefully worded as an ERANGE warning because that's precisely what it is.  Calling it a 'precision' warning
                 // might lead the user to think they'll get a precision warning on "1.23456789123456789123456789123456789" too, but they won't
@@ -230,6 +226,11 @@ static inline Rboolean Strtob()
         ch = start+1;
         if (*ch=='a' && *++ch=='l' && *++ch=='s' && *++ch=='e' && (++ch==eof || *ch==sep || *ch==eol)) return(TRUE);
     }
+    else if (ch==eof || *ch==sep || *ch==eol ||
+             (ch<eof-1 && *ch=='N' && *++ch=='A' && (++ch==eof || *ch==sep || *ch==eol))) {
+        u.b = NA_LOGICAL;
+        return(TRUE);
+    }
     ch = start;
     return(FALSE);     // invalid boolean, need to bump type.
 }
@@ -262,7 +263,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     const char *lch=ch;
     while (lch!=eof && *lch!=sep && *lch!=eol) lch++;  // lch now marks the end of field, used in verbose messages and errors
     if (verbose) Rprintf("Bumping column %d from %s to %s on data row %d, field contains '%.*s'\n",
-                         col+1, TypeName[oldtype], TypeName[newtype], sofar+1, lch-ch, ch);
+                         col+1, TypeName[oldtype], TypeName[newtype], sofar+1, MsgLimit(lch-ch), ch);
     if (sizes[TypeSxp[oldtype]]<4) {sprintf(errormsg,"Internal error: SIZEOF oldtype %d < 4", oldtype); EXIT();}
     if (sizes[TypeSxp[newtype]]<4) {sprintf(errormsg,"Internal error: SIZEOF newtype %d < 4", newtype); EXIT();}
     if (sizes[TypeSxp[oldtype]] == sizes[TypeSxp[newtype]]) {
@@ -278,9 +279,19 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     }
     setAttrib(newv, R_ClassSymbol, newtype==SXP_INT64 ? ScalarString(mkChar("integer64")) : R_NilValue);
     switch(newtype) {
+    case SXP_INT :
+        switch(oldtype) {
+        case SXP_LGL :
+            for (i=0; i<sofar; i++) INTEGER(newv)[i] = INTEGER(v)[i];
+            break;
+        default :
+            sprintf(errormsg, "Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
+            EXIT();
+        }
+        break;
     case SXP_INT64:
         switch(oldtype) {
-        case SXP_INT :
+        case SXP_LGL : case SXP_INT :
             for (i=0; i<sofar; i++) REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? NA_REAL : (u.l=(long long)INTEGER(v)[i],u.d));
             break;
         default :
@@ -290,7 +301,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
         break;
     case SXP_REAL:
         switch(oldtype) {
-        case SXP_INT :
+        case SXP_LGL : case SXP_INT :
             for (i=0; i<sofar; i++) REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? NA_REAL : (double)INTEGER(v)[i]);
             break;
         case SXP_INT64 :
@@ -302,10 +313,10 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
         }
         break;
     case SXP_STR:
-        warning("Bumped column %d to type character on data row %d, field contains '%.*s'. Coercing previously read values in this column from integer or numeric back to character which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too (if they occurred in this column before the bump). If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, sofar+1, lch-ch, ch);
+        warning("Bumped column %d to type character on data row %d, field contains '%.*s'. Coercing previously read values in this column from logical, integer or numeric back to character which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too (if they occurred in this column before the bump). If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, sofar+1, MsgLimit(lch-ch), ch);
         static char buffer[129];  // 25 to hold [+-]2^63, with spare space to be safe and snprintf too
         switch(oldtype) {
-        case SXP_INT :
+        case SXP_LGL : case SXP_INT :
             // This for loop takes 0.000007 seconds if the bump occurs on line 179, for example, timing showed
             for (i=0; i<sofar; i++) {
                 if (INTEGER(v)[i] == NA_INTEGER)
@@ -421,7 +432,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (fstat(fd,&stat_buf) == -1) {close(fd); error("Opened file ok but couldn't obtain file size: %s", fnam);}
         filesize = stat_buf.st_size;
         if (filesize<=0) {close(fd); error("File is empty: %s", fnam);}
-        if (verbose) Rprintf("File opened, filesize is %.3f GB\n", 1.0*filesize/(1024*1024*1024));
+        if (verbose) Rprintf("File opened, filesize is %.3f GB.\nMemory mapping ... ", 1.0*filesize/(1024*1024*1024));
+        // Would be nice to print 'Memory mapping' when not verbose, but then it would also print for small files
+        // which would be annoying. If we could estimate if the mmap was likely to take more than 2 seconds (and thus
+        // the % meter to kick in) then that'd be ideal. A simple size check isn't enough because it might already
+        // be cached from a previous run. Perhaps spawn an event, which is cancelled if mmap returns within 2 secs.
 #ifdef MAP_POPULATE
         mmp = (const char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);    // TO DO?: MAP_HUGETLB
 #else
@@ -450,7 +465,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (filesize<=0) { CloseHandle(hFile); error("File is empty: %s", fnam); }
         hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL); // filesize+1 not allowed here, unlike mmap where +1 is zero'd
         if (hMap==NULL) { CloseHandle(hFile); error("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
-        if (verbose) Rprintf("File opened, filesize is %.3f GB\n", 1.0*filesize/(1024*1024*1024));
+        if (verbose) Rprintf("File opened, filesize is %.3f GB.\nMemory mapping ... ", 1.0*filesize/(1024*1024*1024));
         mmp = (const char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,filesize);
         if (mmp == NULL) {
             CloseHandle(hMap);
@@ -471,7 +486,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (EOF > -1) error("Internal error. EOF is not -1 or less\n");
         if (mmp[filesize-1] < 0) error("mmap'd region has EOF at the end");
         eof = mmp+filesize;  // byte after last byte of file.  Never dereference eof as it's not mapped.
-        if (verbose) Rprintf("File is opened and mapped ok\n");
+        if (verbose) Rprintf("ok\n");  // to end 'Memory mapping ... '
     }
     clock_t tMap = clock();
     // From now use EXIT() wrapper instead of error(), to close it on Windows so as not to lock the file after an error.
@@ -481,8 +496,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     ch = mmp;
     while (ch<eof && *ch!='\n' && *ch!='\r') {
-        if (*ch=='\"') while(++ch<eof && *ch!='\"');  // allow protection of \n and \r inside column names.  TO DO: ignore escaped \"
-        ch++;                                         // this 'if' needed in case opening protection is not closed before eof
+        if (*ch=='\"') while(++ch<eof && *ch!='\"') {};  // allows protection of \n and \r inside column names
+        ch++;                                            // this 'if' needed in case opening protection is not closed before eof
     }
     if (ch>=eof) {
         if (ch>eof) { sprintf(errormsg, "Internal error: ch>eof when detecting eol"); EXIT(); }
@@ -512,7 +527,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         skipon = TRUE;
         ch = strstr(mmp, CHAR(STRING_ELT(skip,0)));
         if (!ch) { sprintf(errormsg, "skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)", CHAR(STRING_ELT(skip,0))); EXIT(); }
-        while (ch>mmp && *(ch-1)!=eol2) ch--;
+        while (ch>mmp && *(ch-1)!=eol2) ch--;   // TO DO: protected newlines here
         pos = ch;
         nline = -1;
         if (verbose) Rprintf("Found skip string '%s'. Using this line as column names row. nline=-1 now refers to this line as it would need more time to count the \\n before this point.\n", CHAR(STRING_ELT(skip,0)));
@@ -523,7 +538,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         while (nline<(skipon ? INTEGER(skip)[0]+1 : INTEGER(autostart)[0]) && ch<eof) {
             int lasti = i; i = 0;
             pos1 = ch;
-            while (ch<eof && *ch!=eol) i += !isspace(*ch++);
+            while (ch<eof && *ch!=eol) { skip_quoted();  i += !isspace(*ch++); }
             nline++;
             if (ch<eof && *ch==eol) ch+=eolLen;
             if (i && (!lastnonblank || lasti)) pos=pos1, lastnonblank=nline;  // last non blank as long as there's a non blank above that too (to avoid one line footers in short files)
@@ -553,7 +568,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         ch=pos; sep=0;                             // starting from autostart for each sep
         while (ch<eof && *ch!=eol) {               // ch<eof is for one row input with no eol
             if (*ch==seps[i]) { sep=*ch; break; }  // this sep exists on this line
-            ch++;
+            ch++;                                  // TO DO: account for protected fields in this loop
         }
         if (sep==0) {                              // this sep wasn't found
             if (i==nseps-1 && topsep==0) sep=eol;  // last sep && none found => single column input. Now search up for last nonblank line.
@@ -562,9 +577,21 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (topsep==0) topsep=sep;       // First sep found is the top so far. Important for single row input.
         ch = pos; j = 0; thistop = pos;  // back to start of autostart, again
         if (ch==mmp || skipon) continue; // one line input (no lines above to test for consistency) or 'skip' override is set
-        ncol = countfields(0);            // ncol on autostart using this separator (sep is global which countfieds() uses)
+        ncol = countfields(0);           // ncol on autostart using this separator (sep is global which countfieds() uses)
         do {  ch-=eolLen;                // search up line by line until different number of fields, or (likely) hit the start of file
-              while (ch>mmp && *(ch-1)!=eol2) ch--;
+              while (ch>mmp)  {
+                  if (*ch=='\"' && (*(ch+1)==sep || *(ch+1)==eol)) {
+                      while(--ch>mmp && (*ch!='\"' || (*(ch-1)!=sep && *(ch-1)!=eol2))) {};
+                      // now on opening quote
+                      if (ch>mmp) {
+                          if (*(ch-1)==eol2) break;
+                          ch--;
+                      }
+                      continue;
+                  }
+                  if (*(ch-1)==eol2) break;
+                  ch--;
+              }
         } while (countfields(0)==ncol && (thistop=ch) && ++j && ch>mmp);   // relies on short circuit of first &&
         if (thistop<top) { top=thistop; topsep=sep; topnline=nline-j; }
         // often the header row itself resolves (one sep will get up to and including the header, the other only to the top data row)
@@ -601,14 +628,16 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     protecti++;
     allchar=TRUE;
     for (i=0; i<ncol; i++) {
-        if (ch<eof && *ch=='\"') {while(++ch<eof && *ch!=eol && !(*ch=='\"' && *(ch-1)!='\\')) {}; if (ch<eof && *ch++!='\"') {sprintf(errormsg, "Format error on line %d: '%.*s'", nline, (int)(ch-pos+1), pos);EXIT();} }
-        else {                              // if field reads as double ok then it's INT/INT64/REAL; i.e., not character (and so not a column name)
+        if (ch<eof && *ch=='\"') {
+            while(++ch<eof && (*ch!='\"' || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
+            if (ch<eof && *ch++!='\"') {sprintf(errormsg, "Internal error: quoted field ends before EOF but not with \"sep");}
+        } else {                              // if field reads as double ok then it's INT/INT64/REAL; i.e., not character (and so not a column name)
             if (*ch!=sep && *ch!=eol && Strtod())  // blank column names (,,) considered character and will get default names
                 allchar=FALSE;                     // considered testing at least one isalpha, but we want 1E9 to be a value not a column name
-            else while(ch<eof && *ch!=eol && *ch!=sep) ch++;  // skip over character field
+            else while(ch<eof && *ch!=eol && *ch!=sep) ch++;  // skip over unquoted character field
         }
         if (i<ncol-1) {   // not the last column (doesn't have a separator after it)
-            if (ch<eof && *ch!=sep) {sprintf(errormsg, "Unexpected character (%.5s) ending field %d of line %d", ch, i+1, nline);EXIT();}
+            if (ch<eof && *ch!=sep) {sprintf(errormsg, "Unexpected character ending field %d of line %d: %.*s", i+1, nline, MsgLimit(ch-pos+5), pos); EXIT();}
             else if (ch<eof) ch++;
         } 
     }
@@ -628,7 +657,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         ch = pos;
         nline++;
         for (i=0; i<ncol; i++) {
-            if (ch<eof && *ch=='\"') {ch++; ch2=ch; while(ch2<eof && *ch2!='\"' && *ch2!=eol) ch2++;}
+            if (ch<eof && *ch=='\"') {ch++; ch2=ch; while(ch2<eof && (*ch2!='\"' || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) ch2++;}
             else {ch2=ch; while(ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;}
             if (ch2>ch) {
                 SET_STRING_ELT(names, i, mkCharLen(ch, (int)(ch2-ch)));
@@ -652,10 +681,18 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         nrow=0;
         if (verbose) Rprintf("Byte after header row is eof or eol, 0 data rows present.\n");
     } else {
-        nrow=1; while (ch<eof) nrow+=(*ch++==eol);
+        nrow=1;
+        while (ch<eof) {
+            if (*ch=='\"' && (ch==mmp || *(ch-1)==sep || *(ch-1)==eol2)) {
+                while (++ch<eof && (*ch!='\"' || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) { };
+                if (ch<eof) ch++;
+            }
+            else nrow+=(*ch++==eol);
+        }
         if (verbose) Rprintf("Count of eol after first data row: %d\n",nrow);
-        // Advantages of exact count: i) no need to slightly over allocate (by 5%, say) and no need to clear up on heap during gc(),
+        // Advantages of exact count: i) no need to slightly over allocate (by 5%, say) so no need to clear up on heap during gc(),
         // and ii) no need to implement realloc if estimate doesn't turn out to be large enough (e.g. if sample rows are wider than file average).
+        // TO DO: goes away if we over-allocate rows. Good to drop now that counting has an extra 'if' for protected newlines.
         // The old estimate method based on size of first 10 rows :
         // estn = (R_len_t)ceil(1.05 * 10 * (filesize-(pos-mmp)) / (pos2-pos1)) +5;  // +5 for small files
         // if (verbose) Rprintf("Estimated nrows: %d ( 1.05*%d*(%ld-(%ld-%ld))/(%ld-%ld) )\n",estn,10,filesize,pos,mmp,pos2,pos1);
@@ -683,7 +720,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     int type[ncol]; for (i=0; i<ncol; i++) type[i]=0;   // default type is lowest.
     const char *end=pos, *str;
     for (i = 0; i<5; i++) {   // ch is on eol before last line, search back another 5 rows
-        while (ch>pos && *--ch!=eol2);
+        while (ch>pos && *--ch!=eol2);  // will go back too few rows if protected newlines occur at end,  but that's ok (this is only type detection, so using less rows at the end is ok in that rare case)
         ch -= eolLen-1;
     }
     end = ch + eolLen;
@@ -694,7 +731,13 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         case 2: ch = end;                str="+   last";  break;
         }
         if (j) {  // find start of next line
-            while (ch<eof && *ch!=eol) ch++;
+            while (ch<eof && *ch!=eol) {
+                // TO DO :  how do we know if we've not landed inside a quoted field containing a newline?!!
+                //          Look for newline or sepquote before and quotesep after?  What if two newlines embedded!
+                if (*ch=='\"' && (*(ch-1)==sep || *(ch-1)==eol2))
+                    while (++ch<eof && (*ch!='\"' || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
+                ch++;
+            }
             if (ch<eof && *ch==eol) ch+=eolLen;
         }
         flines = 0;
@@ -719,13 +762,18 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     if (Strtod()) break;
                     type[i]++;
                 case SXP_STR:
-                    if (*ch=='\"') // protected, now look for the next [^\]"[,|eol]
-                        while(++ch<eof && *ch!=eol && !(*ch==sep && *(ch-1)=='\"' && (ch<mmp+2 || *(ch-2)!='\\')));
-                    else           // unprotected, look for next next [,|eol]
+                    if (*ch=='\"') { // protected, now look for the next "[sep|eol]
+                        while(++ch<eof && (*ch!='\"' || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {}; ch++;
+                    } else {           // unprotected, look for next next [sep|eol]
                         while(ch<eof && *ch!=sep && *ch!=eol) ch++;
+                    }
                 }
                 if (ch<eof && *ch==sep && i<ncol-1) {ch++; continue;}  // done, next field
-                if (i<ncol-1) {sprintf(errormsg,"Expected sep ('%c') but '%c' ends field %d on line %d when detecting types: %.*s", sep, *ch, i+1, nline+flines-2, (int)(ch-linestart+1), linestart);EXIT();}
+                if (i<ncol-1) {
+                    if (*ch>31) sprintf(errormsg, "Expected sep ('%c') but '%c' ends field %d on line %d when detecting types: %.*s", sep, *ch, i+1, nline+flines, MsgLimit(ch-linestart+1), linestart);
+                    else sprintf(errormsg, "Expected sep ('%c') but new line, EOF (or other non printing character) ends field %d on line %d when detecting types: %.*s", sep, i+1, nline+flines, MsgLimit(ch-linestart+1), linestart);
+                    EXIT();
+                }
             }
             while (ch<eof && *ch!=eol) ch++;
             if (ch<eof && *ch==eol) ch+=eolLen;
@@ -894,11 +942,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 while (ch<eof && isspace(*ch)) ch++;
                 if (ch<eof) {
                     ch2 = ch;
-                    while (ch2<eof && *ch2!=eol) ch2++;
+                    while (ch2<eof && *ch2!=eol) ch2++;   //  protected newline here?
                     if (isString(skip))
-                        warning("Stopped reading at empty line, %d lines after the 'skip' string was found, but text exists afterwards (discarded): %.*s", i, ch2-ch+1, ch);
+                        warning("Stopped reading at empty line, %d lines after the 'skip' string was found, but text exists afterwards (discarded): %.*s", i, MsgLimit(ch2-ch+1), ch);
                     else 
-                        warning("Stopped reading at empty line %d of file, but text exists afterwards (discarded): %.*s", nline+i, ch2-ch+1, ch);
+                        warning("Stopped reading at empty line %d of file, but text exists afterwards (discarded): %.*s", nline+i, MsgLimit(ch2-ch+1), ch);
                 }
                 whileBreak = TRUE;  // break the enclosing while too, without changing i
                 break;              // break this for
@@ -933,17 +981,24 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
                 case SXP_STR: case SXP_NULL: case_SXP_STR:
                     ch2=ch;
-                    if (*ch=='\"') { // protected, now look for the next [^\]"[,|eol]
-                        while(++ch2<eof && *ch2!=eol && !(*ch2==sep && *(ch2-1)=='\"' && (ch2<mmp+2 || *(ch2-2)!='\\')));
+                    if (*ch=='\"') { // protected, now look for the next [^\]"[sep|eol]
+                        while(++ch2<eof && (*ch2!='\"' || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) {};  // ch2-2 ok here without >mmp check since " and \ must have occurred prior
+                        if (ch2==eof) { sprintf(errormsg, "Field %d on line %d starts with quote but doesn't finish with an unescaped quote immediately followed by sep, \\n or EOF: %.*s", j+1, i+nline, MsgLimit(ch-pos+1), pos); EXIT(); }
+                        ch2++;
                         if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLen(ch+1, (int)(ch2-ch-2))); // else skip field
-                    } else {           // unprotected, look for next next [,|eol]
+                    } else {           // unprotected, look for next next [sep|eol]
                         while(ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;
                         if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLen(ch, (int)(ch2-ch)));
                     }
                     ch = ch2;
                 }
                 if (ch<eof && *ch==sep && j<ncol-1) {ch++; continue;}  // done, next field
-                if (j<ncol-1) {sprintf(errormsg, "Expected sep ('%c') but '%c' ends field %d on line %d when reading data: %.*s", sep, *ch, j+1, i+nline, (int)(ch-pos+1), pos);EXIT();}
+                if (j<ncol-1) {
+                    if (*ch>31) sprintf(errormsg, "Expected sep ('%c') but '%c' ends field %d on line %d when reading data: %.*s", sep, *ch, j+1, i+nline, MsgLimit(ch-pos+1), pos);
+                    else sprintf(errormsg, "Expected sep ('%c') but new line or EOF ends field %d on line %d when reading data: %.*s", sep, j+1, i+nline, MsgLimit(ch-pos+1), pos);
+                    // print whole line here because it's often something earlier in the line that messed up
+                    EXIT();
+                }
             }
             //Rprintf("At end of line with i=%d and ch='%.10s'\n", i, ch);
             while (ch<eof && *ch!=eol) ch++; // discard after end of line, but before \n. TO DO: warn about uncommented text here

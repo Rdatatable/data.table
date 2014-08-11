@@ -1,6 +1,4 @@
-#include <R.h>
-#define USE_RINTERNALS
-#include <Rinternals.h>
+#include "data.table.h"
 
 SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
 {
@@ -40,5 +38,4 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
     UNPROTECT(1);
     return(ans);
 }
-
 

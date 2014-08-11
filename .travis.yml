@@ -3,12 +3,16 @@
 # See README.md for instructions, or for more configuration options,
 # see the wiki:
 #   https://github.com/craigcitro/r-travis/wiki
-
+# 
+# Hack for 'error on warning' except when the warning is about vignette pdfs/html
 language: c
 
 before_install:
   - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
   - chmod 755 ./travis-tool.sh
+  - sed "s/grep -q WARNING/grep WARNING \| grep -v inst\/doc \| grep -v 'WARNING:.*There was'/" travis-tool.sh > ./tmp.sh
+  - mv tmp.sh travis-tool.sh
+  - chmod 755 ./travis-tool.sh  
   - ./travis-tool.sh bootstrap
 install:
   - ./travis-tool.sh install_deps
@@ -24,4 +28,6 @@ notifications:
     on_failure: change
 
 env:
-  - PKG_CFLAGS="-g -O3 -Wall -pedantic"
+  global:
+    - PKG_CFLAGS="-g -O3 -Wall -pedantic"
+    - WARNINGS_ARE_ERRORS=1

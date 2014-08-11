@@ -18,7 +18,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     if (is.character(formula)) {
         ff <- strsplit(strip(formula), "~", fixed=TRUE)[[1]]
         if (length(ff) > 2)
-            stop("Cast formula of length > 2 detected. Data.table has at most two output dimensions.")
+            stop("Cast formula length is > 2, must be = 2.")
         ff <- strsplit(ff, "+", fixed=TRUE)
         setattr(ff, 'names', c("ll", "rr"))
         ff <- lapply(ff, function(x) x[x != "."])
@@ -43,17 +43,20 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     drop <- as.logical(drop[1])
     if (is.na(drop)) stop("'drop' must be TRUE/FALSE")
 
-    # deal with 'subset' first
+    # subset
     m <- as.list(match.call()[-1])
     subset <- m$subset[[2]]
-    if (!is.null(subset)) data = data[eval(subset), unique(c(ff_, value.var)), with=FALSE] # TODO: revisit. Maybe too costly on large data
-
-    # if original or subset'd data.table has 0 rows or cols, error.
+    if (!is.null(subset)) {
+        if (is.name(subset)) subset = as.call(list(quote(`(`), subset))
+        data = data[eval(subset, data, parent.frame()), unique(c(ff_, value.var)), with=FALSE]
+    }
     if (nrow(data) == 0L || ncol(data) == 0L) stop("Can't 'cast' on an empty data.table")
 
-    # next, check and set 'fun.aggregate = length' it's null but at least one group size is > 1.
+    # set 'fun.aggregate = length' if max group size > 1
+    fun.null=FALSE
     if (is.null(fun.aggregate)) {
-        oo = forderv(data, by=ff_, retGrp=TRUE) # to check if the maximum group size is > 1 and is TRUE set fun.aggregate to length if it's NULL
+        fun.null=TRUE
+        oo = forderv(data, by=ff_, retGrp=TRUE)
         if (attr(oo, 'maxgrpn') > 1L) {
             message("Aggregate function missing, defaulting to 'length'")
             fun.aggregate <- length
@@ -63,37 +66,49 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     fill.default <- NULL
     if (!is.null(fun.aggregate)) { # construct the 'call'
         fill.default = fun.aggregate(data[[value.var]][0], ...)
+        if (!length(fill.default) && (is.null(fill) || !length(fill)))
+            stop("Aggregating function provided to argument 'fun.aggregate' should always return a length 1 vector, but returns 0-length value for fun.aggregate(", typeof(data[[value.var]]), "(0)).", " This value will have to be used to fill missing combinations, if any, and therefore can not be of length 0. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
         args <- c("data", "formula", "margins", "subset", "fill", "value.var", "verbose", "drop")
         m <- m[setdiff(names(m), args)]
-        fun.aggregate <- as.call(c(m[1], as.name(value.var), m[-1]))
-        fun.aggregate <- as.call(c(as.name("list"), setattr(list(fun.aggregate), 'names', value.var)))
-        # checking for #5191 (until fixed, this is a workaround
-        if (length(intersect(value.var, ff_))) fun.aggregate = as.call(list(as.name("{"), as.name(".SD"), fun.aggregate))
+        .CASTcall = as.call(c(m[1], as.name(value.var), m[-1])) # issues/713
+        .CASTcall = as.call(c(as.name("list"), setattr(list(.CASTcall), 'names', value.var)))
+        # workaround until #5191 (issues/497) is fixed
+        if (length(intersect(value.var, ff_))) 
+            .CASTcall = as.call(list(as.name("{"), as.name(".SD"), .CASTcall))
     }
-    if (length(ff$rr) == 0) { # take care of special case
-        if (is.null(fun.aggregate)) 
+    # special case
+    if (length(ff$rr) == 0) {
+        if (is.null(fun.aggregate))
             ans = data[, c(ff$ll, value.var), with=FALSE]
         else {
-            # checking for #5191 (until fixed, this is a workaround
-            if (length(intersect(value.var, ff_))) ans = data[, eval(fun.aggregate), by=c(ff$ll), .SDcols=value.var]
-            else ans = data[, eval(fun.aggregate), by=c(ff$ll)]
+            # workaround until #5191 (issues/497) is fixed
+            if (length(intersect(value.var, ff_))) ans = data[, eval(.CASTcall), by=c(ff$ll), .SDcols=value.var]
+            else ans = data[, eval(.CASTcall), by=c(ff$ll)]
         }
-        if (any(duplicated(names(ans)))) {
-            message("Duplicate column names found in cast data.table. Setting unique names using 'make.names'")   
+        if (anyDuplicated(names(ans))) {
+            message("Duplicate column names found in cast data.table. Setting unique names using 'make.unique'")   
             setnames(ans, make.unique(names(ans)))
         }
         if (!identical(key(ans), ff$ll)) setkeyv(ans, names(ans)[seq_along(ff$ll)])
         return(ans)
     }
-    # if fun.aggregate exists, then aggregate in R-side (now that 'adhoc-by' is extremely fast!)
+    # aggregation moved to R now that 'adhoc-by' is crazy fast!
     if (!is.null(fun.aggregate)) {
         if (length(intersect(value.var, ff_))) {
-            data = data[, eval(fun.aggregate), by=c(ff_), .SDcols=value.var]
+            data = data[, eval(.CASTcall), by=c(ff_), .SDcols=value.var]
             value.var = tail(make.unique(names(data)), 1L)
             setnames(data, ncol(data), value.var)
         }
-        else data = data[, eval(fun.aggregate), by=c(ff_)]
-        setkeyv(data, ff_) # can't use 'oo' here, but should be faster as it's uncommon to have huge number of groups.
+        else data = data[, eval(.CASTcall), by=c(ff_)]
+        setkeyv(data, ff_)
+        # issues/693
+        fun_agg_chk <- function(x) {
+            # sorted now, 'forderv' should be as fast as uniqlist+uniqlengths
+            oo = forderv(data, by=key(data), retGrp=TRUE)
+            attr(oo, 'maxgrpn') > 1L
+        }
+        if (!fun.null && fun_agg_chk(data))
+            stop("Aggregating function provided to argument 'fun.aggregate' should always return a length 1 vector for each group, but returns length != 1 for atleast one group. Please have a look at the DETAILS section of ?dcast.data.table ")
     } else {
         if (is.null(subset))
             data = data[, unique(c(ff_, value.var)), with=FALSE] # data is untouched so far. subset only required columns
@@ -105,8 +120,8 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
     assign("CJ", CJ, .CASTenv)
     ans <- .Call("Cfcast", data, ff$ll, ff$rr, value.var, fill, fill.default, is.null(fun.aggregate), .CASTenv, drop)
     setDT(ans)
-    if (any(duplicated(names(ans)))) {
-        message("Duplicate column names found in cast data.table. Setting unique names using 'make.names'")   
+    if (anyDuplicated(names(ans))) {
+        message("Duplicate column names found in cast data.table. Setting unique names using 'make.unique'")
         setnames(ans, make.unique(names(ans)))
     }
     setattr(ans, 'sorted', names(ans)[seq_along(ff$ll)])
