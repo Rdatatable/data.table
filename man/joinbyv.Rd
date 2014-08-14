@@ -8,9 +8,9 @@
 joinbyv(master, join,
         by = lapply(join, key), 
         col.subset = lapply(join, names), 
-        row.subset = as.list(rep(TRUE,length(join))),
-        nomatch = lapply(row.subset, function(x) if(is.expression(x)) 0 else getOption("datatable.nomatch")),
-        allow.cartesian = as.list(rep(getOption("datatable.allow.cartesian"),length(join))))
+        row.subset = NULL,
+        nomatch = NULL,
+        allow.cartesian = NULL)
 }
 \arguments{
   \item{master}{ \code{DT}, eventually also \code{list(DT)}. }
@@ -28,7 +28,7 @@ Function do not allow cross tables \code{row.subset} filtering expressions. User
 
 Arguments \code{nomatch}, \code{allow.cartesian} by default will be setup according to \code{data.table} options. An exception case described in \code{row.subset} argument will by default override the \code{nomatch} argument to value \code{0} to perform inner join.
 
-This is yet experimental function. Please report any issues to \code{\url{https://github.com/Rdatatable/data.table/issues}}.
+This is yet experimental function. Please report any issues to \url{https://github.com/Rdatatable/data.table/issues}.
 
 Possibly the performance might be improved after implementing FR #691 and #692.
 }
