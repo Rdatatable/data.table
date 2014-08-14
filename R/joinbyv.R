@@ -15,18 +15,18 @@ joinbyv <- function(master, join,
   valid_key <- mapply(join = join, by = by, 
                       FUN = function(join, by) if(is.null(by) & is.null(key(join))) FALSE else TRUE,
                       SIMPLIFY = FALSE)
-  if(any(!(unlist(valid_key)))) stop(paste0("Missing key on 'join' data.table AND corresponding setkey vector in 'by' argument for join DT#: ",paste(which(!(unlist(valid_key))),collapse=", "),". Read: ?joinbyv.")) # raise error cause it is mandatory
+  if(any(!(unlist(valid_key)))) stop(paste0("Missing key on 'join' data.table AND corresponding setkeyv vector in 'by' argument for join DT#: ",paste(which(!(unlist(valid_key))),collapse=", "),". Read: ?joinbyv."),call.=FALSE) # raise error cause it is mandatory
   # col.subset names match
   valid_col <- mapply(join = join, col.subset = col.subset, 
                       FUN = function(join, col.subset) if(!all(col.subset %in% names(join))) FALSE else TRUE,
                       SIMPLIFY = FALSE)
-  if(any(!(unlist(valid_col)))) stop(paste0("Column names provided in 'col.subset' does not exists in corresponding 'join' objects. Read: ?joinbyv"))
+  if(any(!(unlist(valid_col)))) stop(paste0("Column names provided in 'col.subset' does not exists in corresponding 'join' object. Read: ?joinbyv"),call.=FALSE)
   # equal length for args
   stopifnot(length(unique(c(length(join),length(by),length(col.subset),length(row.subset),length(nomatch),length(allow.cartesian))))==1)
   
   # fill provided NULL with default value for each arg
-  by <- mapply(join = join, by = by, FUN = function(join, by) if(is.null(by)) key(join) else by, SIMPLIFY=F)
-  col.subset <- mapply(join = join, col.subset = col.subset, FUN = function(join, col.subset) if(is.null(col.subset)) names(join) else col.subset, SIMPLIFY=F)
+  by <- mapply(join = join, by = by, FUN = function(join, by) if(is.null(by)) key(join) else by, SIMPLIFY=FALSE)
+  col.subset <- mapply(join = join, col.subset = col.subset, FUN = function(join, col.subset) if(is.null(col.subset)) names(join) else col.subset, SIMPLIFY=FALSE)
   row.subset <- lapply(row.subset, FUN = function(row.subset) if(is.null(row.subset)) TRUE else row.subset)
   nomatch <- mapply(row.subset = row.subset, nomatch = nomatch, 
                     FUN = function(row.subset, nomatch){
@@ -40,29 +40,33 @@ joinbyv <- function(master, join,
                             })
   
   # setkey on join tables
-  invisible(mapply(join = join, by = by,
-                   FUN = function(join, by){
+  invisible(mapply(join = join, by = by, i = seq_along(join),
+                   FUN = function(join, by, i){
                      if(is.null(key(join))) setkeyv(join,by) else{
                        if(!identical(key(join),by)){
                          setkeyv(join,by)
-                         warning("key(join) overwritten by key defined in 'by' argument")
+                         warning(paste("Origin key of join element overwritten by key defined in 'by' argument for DT#:",i), call.=FALSE)
                        } else NULL
                      }
                    }, SIMPLIFY = FALSE))
   
-  # check col.subset column names should not overlap
+  # check col.subset column names overlap handling
   lookup.cols <- unlist(col.subset)[!(unlist(col.subset) %in% unlist(lapply(join, key)))]
-  if(length(unique(lookup.cols))!=length(lookup.cols)) stop(paste0("Column names overlap in col.subset. Overlap column names allowed only for key(join) columns. Check uniqueness of names(join) and/or the 'col.subset' argument. Read: ?joinbyv"))
+  if(length(unique(lookup.cols))!=length(lookup.cols)){
+    non_unq <- unique(lookup.cols[lookup.cols %in% names(which(table(lookup.cols)>1))])
+    warning(paste0("Column names overlaps in 'col.subset': ",paste(non_unq,collapse=", "),". Columns will be removed from the result. Check the uniqueness of 'col.subset' elements, specify unique column names to be kept, alternatively rename columns on input. Read: ?joinbyv"), call.=FALSE)
+    col.subset <- lapply(col.subset, function(col.subset) col.subset[!(col.subset %in% non_unq)])
+  }
   
   # joinby fun
   joinby <- function(master, join, by, col.subset, row.subset, nomatch, allow.cartesian){
     # loop level check: key(join) %in% names(master) - check case placed here to handle also dimension hierarchy in Snowflake schema where columns used for next joins are taken from previous joins, not from the initial master table.
-    if(!all(key(join) %in% names(master))) stop(paste0("Missing columns ",paste(key(join)[!(key(join) %in% names(master))],collapse=", ")," in master table, cannot perform join."))
+    if(!all(key(join) %in% names(master))) stop(paste0("Missing columns ",paste(key(join)[!(key(join) %in% names(master))],collapse=", ")," in master table, cannot perform join."),call.=FALSE)
     # setkey on master
     if(!identical(key(master),key(join))) setkeyv(master,key(join)) # resorting issue to each join, possible improvement after FR: #691, #692.
     # join
     join[tryCatch(expr = eval(row.subset), # row.subset eval expression error handling
-                  error = function(e) stop(paste0("Provided 'row.subset' expression results error: ",paste(as.character(c(e$call,e$message)),collapse=": ")))), 
+                  error = function(e) stop(paste0("Provided 'row.subset' expression results error: ",paste(as.character(c(e$call,e$message)),collapse=" : ")),call.=FALSE)),
          .SD, # col.subset
          .SDcols = unique(c(key(join),col.subset))
          ][master, # join master 
@@ -70,7 +74,7 @@ joinbyv <- function(master, join,
            allow.cartesian = allow.cartesian # cartesian product allowed?
            ][, 
              .SD, # col.subset post-join, keep only columns asked in joinbyv function call
-             .SDcols = unique(c(col.subset,names(master)[!(names(master) %in% key(join))]))
+             .SDcols = unique(c(col.subset,names(master)))
              ]
   }
   # exec main loop

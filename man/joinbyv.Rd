@@ -24,11 +24,11 @@ joinbyv(master, join,
 \details{
 Any \code{NULL} elements inside the list of arguments \code{by, col.subset, row.subset, nomatch, allow.cartesian} will be replaced by the default value for the argument. Therefore it is possible to pass partially filled lists, \code{length} of each must match to the \code{length(join)}, example \code{col.subset=list(NULL,c("join2_col1","join2_col2"),NULL,c("join4_col1"))}.
 
-Function do not allow cross tables \code{row.subset} filtering expressions. User should apply such filter after \code{joinbyv} as post process: \code{joinbyv(master, join)[join1_colA == join2_colA]}.
+Function do not allow cross tables \code{row.subset} filtering expressions. User should apply such filter after \code{joinbyv} as post process: \code{joinbyv(master, join)[join1_colA > join2_colA * 2]}.
 
-Arguments \code{nomatch}, \code{allow.cartesian} by default will be setup according to \code{data.table} options. An exception case described in \code{row.subset} argument will override the \code{nomatch} argument to value \code{0} to perform inner join.
+Arguments \code{nomatch}, \code{allow.cartesian} by default will be setup according to \code{data.table} options. An exception case described in \code{row.subset} argument will by default override the \code{nomatch} argument to value \code{0} to perform inner join.
 
-This is yet experimental function. Please report any issues to \code{\url{https://github.com/Rdatatable/datatable/issues}}.
+This is yet experimental function. Please report any issues to \code{\url{https://github.com/Rdatatable/data.table/issues}}.
 
 Possibly the performance might be improved after implementing FR #691 and #692.
 }
@@ -67,7 +67,7 @@ time[,`:=`(month_code = month(date_code),
            month_name = months(date_code),
            quarter_code = as.POSIXlt(date_code)$mon \%/\% 3L + 1L,
            year_code = year(date_code))]
-facts <- 
+sales <- 
   data.table(prod_code = sample(product[,prod_code], 1000, TRUE),
              cust_code = sample(customer[,cust_code], 1000, TRUE),
              state_code = sample(geography[,state_code], 1000, TRUE),
@@ -79,7 +79,7 @@ facts <-
 # usage of joinbyv
 
 # 1. setkey adhoc in 'by' arg
-dt <- joinbyv(master = facts, 
+dt <- joinbyv(master = sales, 
               join = list(product, customer, geography, time),
               by = list("prod_code","cust_code","state_code","date_code"))
 print(dt)
@@ -89,11 +89,11 @@ setkeyv(product, "prod_code")
 setkeyv(customer, "cust_code")
 setkeyv(geography, "state_code")
 setkeyv(time, "date_code")
-dt <- joinbyv(master = facts, join = list(product, customer, geography, time))
+dt <- joinbyv(master = sales, join = list(product, customer, geography, time))
 print(dt)
 
 # 3. col.subset - NULL col.subset will results names(join)
-dt <- joinbyv(master = facts, join = list(product, customer, geography, time),
+dt <- joinbyv(master = sales, join = list(product, customer, geography, time),
               col.subset = list(c("prod_group_name","prod_family_name"),
                                 c("cust_name","cust_mail","cust_hq_code"),
                                 NULL,
@@ -101,7 +101,7 @@ dt <- joinbyv(master = facts, join = list(product, customer, geography, time),
 print(dt)
 
 # 4. row.subset - will automatically adjust 'nomatch' for inner join on corresponding 'join' DT
-dt <- joinbyv(master = facts, join = list(product, customer, geography, time),
+dt <- joinbyv(master = sales, join = list(product, customer, geography, time),
               col.subset = list(c("prod_group_name","prod_family_name"),
                                 c("cust_name","cust_mail","cust_hq_code"),
                                 NULL,
