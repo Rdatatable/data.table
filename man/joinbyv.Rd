@@ -5,12 +5,14 @@
    Perform batch join of multiple tables to one \emph{master} table.
 }
 \usage{
-joinbyv(master, join,
-        by = lapply(join, key), 
-        col.subset = lapply(join, names), 
-        row.subset = NULL,
-        nomatch = NULL,
-        allow.cartesian = NULL)
+joinbyv(
+  master, join,
+  by = lapply(join, key), 
+  col.subset = lapply(join, names), 
+  row.subset = as.list(rep(TRUE,length(join))),
+  nomatch = lapply(row.subset, function(x) if(is.expression(x)) 0 else getOption("datatable.nomatch")),
+  allow.cartesian = as.list(rep(getOption("datatable.allow.cartesian"),length(join)))
+)
 }
 \arguments{
   \item{master}{ \code{DT}, eventually also \code{list(DT)}. }
