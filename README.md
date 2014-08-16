@@ -21,7 +21,7 @@ update.packages()
 require(devtools)
 install_github("data.table", "Rdatatable")
 
-# if you get pdflatex errors during installation, and want a 
+# if you get pdflatex or texi2dvi errors during installation, want a 
 # quick way out and don't mind skipping building vignettes:
 install_github("data.table", "Rdatatable", build_vignettes=FALSE)
 

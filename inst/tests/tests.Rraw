@@ -5031,6 +5031,8 @@ setkey(DT, D)
 test(1365.4, DT[!J(factor("c")), .N, by=.EACHI], DT[J(factor(c("a", "d", "e"))), .N, by=.EACHI])
 test(1365.5, DT[!"c", lapply(.SD, sum), by=.EACHI, .SDcols=c("B", "E")], DT[c("a", "d", "e"), lapply(.SD, sum), by=.EACHI, .SDcols=c("B", "E")])
 
+# uniqlengths doesn't error on 0-length input
+test(1366, uniqlengths(integer(0), 0L), integer(0))
 
 ##########################
 
