@@ -69,8 +69,8 @@ SEXP uniqlist(SEXP l, SEXP order)
 SEXP uniqlengths(SEXP x, SEXP n) {
     SEXP ans;
     R_len_t i, len;
-    if (TYPEOF(x) != INTSXP || length(x) <= 0) error("Input argument 'x' to 'uniqlengths' must be of type integer of length >= 1");
-    if (TYPEOF(n) != INTSXP || length(n) != 1) error("Input argument 'n' to 'uniqlengths' must be of type integer of length == 1");
+    if (TYPEOF(x) != INTSXP || length(x) < 0) error("Input argument 'x' to 'uniqlengths' must be an integer vector of length >= 0");
+    if (TYPEOF(n) != INTSXP || length(n) != 1) error("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1");
     PROTECT(ans = allocVector(INTSXP, length(x)));
     len = length(x);
     for (i=1; i<len; i++) {
