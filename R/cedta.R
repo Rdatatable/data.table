@@ -1,5 +1,5 @@
 
-cedta.override = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdown")
+cedta.override = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdown","knitr")
 # These packages tend to be ones that run user code in their own environment and thus do not
 # themselves Depend or Import data.table.
 # If a new package needs to be added to this vector, a user may add to it using :
