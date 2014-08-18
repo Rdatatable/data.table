@@ -163,6 +163,7 @@ if (!.devtesting) {
     .R.subassignCopiesOthers = data.table:::.R.subassignCopiesOthers
     .R.subassignCopiesVecsxp = data.table:::.R.subassignCopiesVecsxp
     setdiff_ = data.table:::setdiff_
+    frankv = data.table:::frankv
 }
 
 
@@ -5045,6 +5046,49 @@ x = c(-2147483647L, NA_integer_, 2L)
 test(1368.1, forderv(x), c(2L, 1L, 3L))
 x = c(2147483647L, NA_integer_, -2L)
 test(1368.2, forderv(x), c(2L, 3L, 1L))
+
+# tests for frankv. testing on vectors alone so that we can compare with base::rank
+# One difference is that NAs belong to the same group, unlike base::rank. So are NaNs. 
+# So, they can't be compared to base::rank, won't be identical except for ties="first", and (ties="random", na.last=NA) - should document this.
+
+# no seed set on purpose
+dt = data.table(AA=sample(c(-2:2), 50, TRUE), 
+                BB=sample(c(-2,-1,0,1,2,Inf,-Inf), 50, TRUE), 
+                CC=sample(c(letters[1:5]), 50, TRUE),
+                DD=sample(c(-2:2), 50, TRUE),
+                EE=sample(as.logical(c(-2:2)), 50, TRUE))
+if ("package:bit64" %in% search()) dt[, DD := as.integer64(DD)]
+
+test_no = 1369.0
+for (i in seq_along(dt)) {
+    col = dt[[i]]
+    for (j in c(TRUE, FALSE, NA)) {
+        for (k in c("average", "min", "max", "first")) {
+            if (k == "random") set.seed(45L)
+            if (class(col) == "integer64") r1 = rank(as.integer(col), ties.method=k, na.last=j)
+            else r1 = rank(col, ties.method=k, na.last=j)
+            if (k == "random") set.seed(45L)
+            r2 = frankv(col, ties.method=k, na.last=j)
+        
+            test_no = signif(test_no+.01, 7)
+            test(test_no, r1, r2)
+            
+            # decreasing order
+            if (k == "random") set.seed(45L)
+            if (class(col) == "integer64") r1 = rank(-as.integer(col), ties.method=k, na.last=j)
+            else if (class(col) == "character") r1 = rank(-xtfrm(col), ties.method=k, na.last=j)
+            else r1 = rank(-col, ties.method=k, na.last=j)
+
+            if (k == "random") set.seed(45L)
+            r2 = frankv(col, order=-1L, ties.method=k, na.last=j)
+        
+            test_no = signif(test_no+.01, 7)
+            test(test_no, r1, r2)
+            
+        }
+    }
+}
+# maybe add tests on smaller examples with NAs, even though can't compare to base::rank.
 
 ##########################
 
