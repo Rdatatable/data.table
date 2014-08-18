@@ -311,6 +311,8 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   10.  Updated `BugReports` link in DESCRIPTION. Thanks to @chrsigg for reporting. Closes [#754](https://github.com/Rdatatable/data.table/issues/754).
 
+  11. Added `shiny`, `rmarkdown` and `knitr` to the data.table whitelist. Packages which take user code as input and run it in their own environment (so do not `Depend` or `Import` data.table themselves) either need to be added here, or they can define a variable `.datatable.aware <- TRUE` in their namepace, so that data.table can work correctly in those packages. Users can also add to data.table's whitelist themselves using `assignInNamespace()` but these additions upstream remove the need to do that.
+
 ---
 
 ### Changes in v1.9.2 (on CRAN 27 Feb 2014)
