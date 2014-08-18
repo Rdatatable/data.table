@@ -5040,6 +5040,12 @@ test(1367.1, forderv(x, na.last=NA), c(0L,1L,3L))
 x = c(NA, Inf, 0, 1, -1, -Inf, NaN)
 test(1367.2, forderv(x, na.last=NA), c(0L, 0L, 6L, 5L, 3L, 4L, 2L))
 
+# Fix for integer overflow segfault in setRange
+x = c(-2147483647L, NA_integer_, 2L)
+test(1368.1, forderv(x), c(2L, 1L, 3L))
+x = c(2147483647L, NA_integer_, -2L)
+test(1368.2, forderv(x), c(2L, 3L, 1L))
+
 ##########################
 
 
