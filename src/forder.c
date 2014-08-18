@@ -322,10 +322,6 @@ static void iradix(int *x, int *o, int n, int order)
         thisx = ((unsigned int)(icheck(order*x[i])) - INT_MIN) >> shift & 0xFF;
         o[--thiscounts[thisx]] = i+1;
     }
-    if (nalast == 0)                                                        // nalast = 1, -1 are both taken care already.
-        for (i=0; i<n; i++) o[i] = (x[o[i]-1] == NA_INTEGER) ? 0 : o[i];    // nalast = 0 is dealt with separately as it just sets o to 0
-                                                                            // at those indices where x is NA. x[o[i]-1] because x is not 
-                                                                            // modified by reference unlike iinsert or iradix_r
     
     if (radix_xsuballoc < maxgrpn) {
         // The largest group according to the first non-skipped radix, so could be big (if radix is needed on first column)
@@ -356,7 +352,11 @@ static void iradix(int *x, int *o, int n, int order)
         }
         itmp = thiscounts[i];
         thiscounts[i] = 0;
-    }    
+    }
+    if (nalast == 0)                                                        // nalast = 1, -1 are both taken care already.
+        for (i=0; i<n; i++) o[i] = (x[o[i]-1] == NA_INTEGER) ? 0 : o[i];    // nalast = 0 is dealt with separately as it just sets o to 0
+                                                                            // at those indices where x is NA. x[o[i]-1] because x is not 
+                                                                            // modified by reference unlike iinsert or iradix_r
 }
 
 static void iradix_r(int *xsub, int *osub, int n, int radix)
@@ -562,10 +562,7 @@ static void dradix(unsigned char *x, int *o, int n, int order)
         thisx = twiddle(x,i,order);
         o[ --thiscounts[((unsigned char *)&thisx)[radix]] ] = i+1;
     }
-    if (nalast == 0)                                                            // nalast = 1, -1 are both taken care already.
-        for (i=0; i<n; i++) o[i] = is_nan(x, o[i]-1) ? 0 : o[i];              // nalast = 0 is dealt with separately as it just sets o to 0 
-                                                                                // at those indices where x is NA. x[o[i]-1] because x is not 
-                                                                                // modified by reference unlike iinsert or iradix_r
+
     if (radix_xsuballoc < maxgrpn) {                                            // TO DO: centralize this alloc
         // The largest group according to the first non-skipped radix, so could be big (if radix is needed on first column)
         // TO DO: could include extra bits to divide the first radix up more. Often the MSD has groups in just 0-4 out of 256.
@@ -598,6 +595,11 @@ static void dradix(unsigned char *x, int *o, int n, int order)
         itmp = thiscounts[i];
         thiscounts[i] = 0;
     }
+    if (nalast == 0)                                                          // nalast = 1, -1 are both taken care already.
+        for (i=0; i<n; i++) o[i] = is_nan(x, o[i]-1) ? 0 : o[i];              // nalast = 0 is dealt with separately as it just sets o to 0 
+                                                                              // at those indices where x is NA. x[o[i]-1] because x is not 
+                                                                              // modified by reference unlike iinsert or iradix_r
+
 }
 
 static void dinsert(unsigned long long *x, int *o, int n)
