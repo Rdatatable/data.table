@@ -5034,6 +5034,18 @@ test(1365.5, DT[!"c", lapply(.SD, sum), by=.EACHI, .SDcols=c("B", "E")], DT[c("a
 # uniqlengths doesn't error on 0-length input
 test(1366, uniqlengths(integer(0), 0L), integer(0))
 
+# na.last=NA gets 0's for NAs not at the beginning when there are values so close to NA_integer_ for integers and -Inf for example for numerics. Moved logic to the end in forder.c so that we replace NAs with 0's after the ordering have been taken care of completely.
+x = c(-2147483000L, NA_integer_, 1L)
+test(1367.1, forderv(x, na.last=NA), c(0L,1L,3L))
+x = c(NA, Inf, 0, 1, -1, -Inf, NaN)
+test(1367.2, forderv(x, na.last=NA), c(0L, 0L, 6L, 5L, 3L, 4L, 2L))
+
+# Fix for integer overflow segfault in setRange
+x = c(-2147483647L, NA_integer_, 2L)
+test(1368.1, forderv(x), c(2L, 1L, 3L))
+x = c(2147483647L, NA_integer_, -2L)
+test(1368.2, forderv(x), c(2L, 3L, 1L))
+
 ##########################
 
 
