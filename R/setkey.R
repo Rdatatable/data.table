@@ -307,7 +307,78 @@ CJ = function(..., sorted = TRUE)
     l
 }
 
-
+frankv = function(x, na.last=TRUE, order=1L, ties.method=c("average", "first", "random", "max", "min")) {
+    ties.method = match.arg(ties.method)
+    na.last = as.logical(na.last)
+    if (!length(na.last)) stop('length(na.last) = 0')
+    if (length(na.last) != 1L) {
+        warning("length(na.last) > 1, only the first element will be used")
+        na.last = na.last[1L]
+    }
+    as_list <- function(x) {
+        xx = vector("list", 1L)
+        .Call("Csetlistelt", xx, 1L, x)
+        xx
+    }
+    if (is.atomic(x)) x = as_list(x)
+    else {
+        n = vapply(x, length, 0L)
+        if (any(n<max(n))) stop("All elements in input list x must be of same length")
+    }
+    is_na <- function(x) {
+        xseq = seq_along(x[[1L]])
+        .Call("Cdt_na", x, xseq, xseq)
+    }
+    shallow_list <- function(x) {
+        lx = length(x); sx = seq_len(lx)
+        xx = vector("list", lx)
+        point(xx, sx, x, sx)
+    }
+    remove_na <- function(x) {
+        na = is_na(x)
+        xx = shallow_list(x)
+        setDT(xx)
+        .Call("CsubsetDT", xx, which(!na), seq_along(xx))
+    }
+    ties_random <- function(x) {
+        lx = length(x); sx = seq_len(lx)
+        xx = vector("list", lx+1L)
+        point(xx, sx, x, sx)
+        .Call("Csetlistelt", xx, lx+1L, stats::runif(length(x[[1L]])))
+        xx
+    }
+    if (ties.method == "random") {
+        # seems inefficient to subset, but have to do to get same results as base
+        # is okay because it's just for the case where na.last=NA *and* ties="random"
+        if (is.na(na.last)) x = remove_na(x)
+        x = ties_random(x)
+    }
+    xorder  = forderv(x, sort=TRUE, retGrp=TRUE, order=order, na.last=na.last)
+    xstart  = attr(xorder, 'starts')
+    xsorted = FALSE
+    if (!length(xorder)) {
+        xsorted = TRUE
+        xorder  = seq_along(x[[1L]])
+    }
+    ans = switch(ties.method, 
+           average = , min = , max = {
+               rank = .Call("Cfrank", xorder, xstart, uniqlengths(xstart, length(xorder)), ties.method)
+               if (is.na(na.last) && xorder[1L] == 0L) {
+                   idx = which(rank != 0L)
+                   rank = .Call("CsubsetVector", rank, idx) # xorder[idx], but faster
+               }
+               rank
+           },
+           first = , random = {
+               if (is.na(na.last) && xorder[1L] == 0L) {
+                   idx = which(xorder != 0L)
+                   xorder = .Call("CsubsetVector", xorder, idx)
+               }
+               if (xsorted) xorder else forderv(xorder)
+           }
+         )
+    ans
+}
 
 #########################################################################################
 # Deprecated ...
