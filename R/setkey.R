@@ -317,7 +317,7 @@ frankv = function(x, na.last=TRUE, order=1L, ties.method=c("average", "first", "
     }
     as_list <- function(x) {
         xx = vector("list", 1L)
-        .Call("Csetlistelt", xx, 1L, x)
+        .Call(Csetlistelt, xx, 1L, x)
         xx
     }
     if (is.atomic(x)) x = as_list(x)
@@ -327,7 +327,7 @@ frankv = function(x, na.last=TRUE, order=1L, ties.method=c("average", "first", "
     }
     is_na <- function(x) {
         xseq = seq_along(x[[1L]])
-        .Call("Cdt_na", x, xseq, xseq)
+        .Call(Cdt_na, x, xseq, xseq)
     }
     shallow_list <- function(x) {
         lx = length(x); sx = seq_len(lx)
@@ -338,13 +338,13 @@ frankv = function(x, na.last=TRUE, order=1L, ties.method=c("average", "first", "
         na = is_na(x)
         xx = shallow_list(x)
         setDT(xx)
-        .Call("CsubsetDT", xx, which(!na), seq_along(xx))
+        .Call(CsubsetDT, xx, which(!na), seq_along(xx))
     }
     ties_random <- function(x) {
         lx = length(x); sx = seq_len(lx)
         xx = vector("list", lx+1L)
         point(xx, sx, x, sx)
-        .Call("Csetlistelt", xx, lx+1L, stats::runif(length(x[[1L]])))
+        .Call(Csetlistelt, xx, lx+1L, stats::runif(length(x[[1L]])))
         xx
     }
     if (ties.method == "random") {
@@ -362,17 +362,17 @@ frankv = function(x, na.last=TRUE, order=1L, ties.method=c("average", "first", "
     }
     ans = switch(ties.method, 
            average = , min = , max = {
-               rank = .Call("Cfrank", xorder, xstart, uniqlengths(xstart, length(xorder)), ties.method)
+               rank = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), ties.method)
                if (is.na(na.last) && xorder[1L] == 0L) {
                    idx = which(rank != 0L)
-                   rank = .Call("CsubsetVector", rank, idx) # xorder[idx], but faster
+                   rank = .Call(CsubsetVector, rank, idx) # xorder[idx], but faster
                }
                rank
            },
            first = , random = {
                if (is.na(na.last) && xorder[1L] == 0L) {
                    idx = which(xorder != 0L)
-                   xorder = .Call("CsubsetVector", xorder, idx)
+                   xorder = .Call(CsubsetVector, xorder, idx)
                }
                if (xsorted) xorder else forderv(xorder)
            }
