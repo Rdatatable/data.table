@@ -365,7 +365,7 @@ frankv = function(x, na.last=TRUE, order=1L, ties.method=c("average", "first", "
                rank = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), ties.method)
                if (is.na(na.last) && xorder[1L] == 0L) {
                    idx = which(rank != 0L)
-                   rank = .Call(CsubsetVector, rank, idx) # xorder[idx], but faster
+                   rank = .Call(CsubsetVector, rank, idx) # rank[idx], but faster
                }
                rank
            },
