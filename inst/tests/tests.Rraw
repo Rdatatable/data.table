@@ -5090,6 +5090,25 @@ for (i in seq_along(dt)) {
 }
 # maybe add tests on smaller examples with NAs, even though can't compare to base::rank.
 
+# tests for is_na, which is equivalent of rowSums(is.na(dt)) > 0L
+# not exported yet, but we could!
+dt = list(AA=sample(c(NA,-2:2), 50, TRUE), 
+                BB=sample(c(NA,-2,-1,0,NaN,1,2,Inf,-Inf), 50, TRUE), 
+                CC=sample(c(NA,letters[1:5]), 50, TRUE),
+                DD=sample(c(NA,-2:2), 50, TRUE),
+                EE=sample(as.logical(c(NA,-2:2)), 50, TRUE))
+if ("package:bit64" %in% search()) dt[["DD"]] = as.integer64(dt[["DD"]])
+test_no = 1370.0
+for (i in seq_along(dt)) {
+    combn(names(dt), i, function(cols) {
+        test_no = signif(test_no+.01, 7)
+        ans1 = is_na(dt[cols])
+        ans2 = rowSums(is.na(as.data.table(dt[cols]))) > 0L
+        test(test_no, ans1, ans2)
+        TRUE
+    }) 
+}
+
 ##########################
 
 

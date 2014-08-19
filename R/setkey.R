@@ -325,7 +325,6 @@ frankv = function(x, na.last=TRUE, order=1L, ties.method=c("average", "first", "
         n = vapply(x, length, 0L)
         if (any(n<max(n))) stop("All elements in input list x must be of same length")
     }
-    is_na <- function(x) .Call(Cdt_na, x)
     shallow_list <- function(x) {
         lx = length(x); sx = seq_len(lx)
         xx = vector("list", lx)
