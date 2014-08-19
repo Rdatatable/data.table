@@ -1908,6 +1908,10 @@ na.omit.data.table <- function (object, ...)
     # compare the above to stats:::na.omit.data.frame
 }
 
+# Equivalent of 'rowSums(is.na(dt) > 0L)' but much faster and memory efficient
+# TODO: export this?
+is_na <- function(x) .Call(Cdt_na, x)
+
 is.na.data.table <- function (x) {
     if (!cedta()) return(`is.na.data.frame`(x))
     do.call("cbind", lapply(x, "is.na"))
