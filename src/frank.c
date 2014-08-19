@@ -10,49 +10,39 @@ static union {
     unsigned long long ull;
 } u;
 
-SEXP dt_na(SEXP x, SEXP xorderArg, SEXP xstartArg) {
-    int i, j, k, n = length(xstartArg), *xstart = INTEGER(xstartArg), *xorder = INTEGER(xorderArg);
-    SEXP v, ans, class;
+SEXP dt_na(SEXP x) {
+    int i, j, n;
     double *dv;
+    SEXP v, ans, class;
     
     if (!isNewList(x)) error("Internal error: 'x' should be a list. Please report to datatable-help");
+    n = length(VECTOR_ELT(x, 0));
     ans = PROTECT(allocVector(LGLSXP, n));
     for (i=0; i<n; i++) LOGICAL(ans)[i]=0;
     for (i=0; i<length(x); i++) {
         v = VECTOR_ELT(x, i);
+        if (n != length(v))
+            error("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d.", i+1,length(v),n);
         switch (TYPEOF(v)) {
         case LGLSXP:
-            for (j=0; j<n; j++) {
-                k = xorder[xstart[j]-1]-1;
-                LOGICAL(ans)[j] |= (LOGICAL(v)[k] == NA_LOGICAL);
-            }
+            for (j=0; j<n; j++) LOGICAL(ans)[j] |= (LOGICAL(v)[j] == NA_LOGICAL);
             break;
         case INTSXP:
-            for (j=0; j<n; j++) {
-                k = xorder[xstart[j]-1]-1;
-                LOGICAL(ans)[j] |= (INTEGER(v)[k] == NA_INTEGER);
-            }
+            for (j=0; j<n; j++) LOGICAL(ans)[j] |= (INTEGER(v)[j] == NA_INTEGER);
             break;
         case STRSXP:
-            for (j=0; j<n; j++) {
-                k = xorder[xstart[j]-1]-1;
-                LOGICAL(ans)[j] |= (STRING_ELT(v, k) == NA_STRING);
-            }
+            for (j=0; j<n; j++) LOGICAL(ans)[j] |= (STRING_ELT(v, j) == NA_STRING);
             break;
         case REALSXP:
             class = getAttrib(v, R_ClassSymbol);        
             if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
                 dv = (double *)REAL(v);
                 for (j=0; j<n; j++) {
-                    k = xorder[xstart[j]-1]-1;
-                    u.d = dv[k];
+                    u.d = dv[j];
                     LOGICAL(ans)[j] |= ((u.ull ^ 0x8000000000000000) == 0);
                 }
             } else {
-                for (j=0; j<n; j++) {
-                    k = xorder[xstart[j]-1]-1;
-                    LOGICAL(ans)[j] |= ISNAN(REAL(v)[k]);
-                }
+                for (j=0; j<n; j++) LOGICAL(ans)[j] |= ISNAN(REAL(v)[j]);
             }
             break;
         default:
