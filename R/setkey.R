@@ -372,7 +372,7 @@ frankv = function(x, na.last=TRUE, order=1L, ties.method=c("average", "first", "
            first = , random = {
                if (is.na(na.last) && xorder[1L] == 0L) {
                    idx = which(xorder != 0L)
-                   xorder = .Call(CsubsetVector, xorder, idx)
+                   xorder = xorder[idx] # .Call("CsubsetVector", xorder, idx) retains attributes. TODO: fix this
                }
                if (xsorted) xorder else forderv(xorder)
            }
