@@ -164,6 +164,7 @@ if (!.devtesting) {
     .R.subassignCopiesVecsxp = data.table:::.R.subassignCopiesVecsxp
     setdiff_ = data.table:::setdiff_
     frankv = data.table:::frankv
+    is_na = data.table:::is_na
 }
 
 
