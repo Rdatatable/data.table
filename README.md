@@ -276,7 +276,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   44. Subset on data.table using `lapply` of the form `lapply(L, "[", Time == 3L)` works now without error due to "[.data.frame" redirection. Closes [#500](https://github.com/Rdatatable/data.table/issues/500). Thanks to Garrett See for reporting.
 
-  45. `id.vars` and `measure.vars` default value of `NULL` was removed to be consistent in behaviour with `reshape2:::melt.data.frame`. Closes [#780](https://github.com/Rdatatable/data.table/issues/500). Thanks to @dardesta for reporting.
+  45. `id.vars` and `measure.vars` default value of `NULL` was removed to be consistent in behaviour with `reshape2:::melt.data.frame`. Closes [#780](https://github.com/Rdatatable/data.table/issues/780). Thanks to @dardesta for reporting.
 
 #### NOTES
 
