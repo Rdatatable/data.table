@@ -15,8 +15,8 @@ before_install:
   - chmod 755 ./travis-tool.sh  
   - ./travis-tool.sh bootstrap
 install:
-  - ./travis-tool.sh bioc_install IRanges
-  - ./travis-tool.sh bioc_install GenomicRanges
+#  - ./travis-tool.sh bioc_install IRanges
+#  - ./travis-tool.sh bioc_install GenomicRanges
   - ./travis-tool.sh install_deps
   
 script: ./travis-tool.sh run_tests
