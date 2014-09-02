@@ -59,11 +59,13 @@ y = data.table(start=c(10, 20, 30), end=c(15, 35, 45), val1 = 1:3)
 foverlaps(x, y, by.x=c("start", "end"), type="any", which=TRUE) ## return overlap indices
 foverlaps(x, y, by.x=c("start", "end"), type="any") ## return overlap join
 foverlaps(x, y, by.x=c("start", "end"), type="any", mult="first") ## returns only first match
-foverlaps(x, y, by.x=c("start", "end"), type="within") ## matches iff 'x' is fully contained in 'y'
+foverlaps(x, y, by.x=c("start", "end"), type="within") ## matches iff 'x' is within 'y'
 
 ## with extra identifiers, a Genomics example
-x = data.table(chr=c("Chr1", "Chr1", "Chr2", "Chr2", "Chr2"), start=c(5,10, 1, 25, 50), end=c(11,20,4,52,60))
-y = data.table(chr=c("Chr1", "Chr1", "Chr2"), start=c(1, 15,1), end=c(4, 18, 55), val=1:3)
+x = data.table(chr=c("Chr1", "Chr1", "Chr2", "Chr2", "Chr2"), 
+               start=c(5,10, 1, 25, 50), end=c(11,20,4,52,60))
+y = data.table(chr=c("Chr1", "Chr1", "Chr2"), start=c(1, 15,1), 
+               end=c(4, 18, 55), val=1:3)
 foverlaps(x, y, by.x=1:3, type="any", which=TRUE)
 foverlaps(x, y, by.x=1:3, type="any")
 foverlaps(x, y, by.x=1:3, type="any", nomatch=0L)
