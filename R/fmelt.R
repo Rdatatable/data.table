@@ -1,13 +1,15 @@
-melt.data.table <- function(data, id.vars = NULL, measure.vars = NULL, variable.name = "variable", 
+melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variable", 
            value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE, 
            verbose = getOption("datatable.verbose")) {
     drop.levels <- FALSE # maybe a future FR
     if (!inherits(data, "data.table")) stop("'data' must be a data.table")
-        ans <- .Call("Cfmelt", data, id.vars, measure.vars, 
-                as.logical(variable.factor), as.logical(value.factor), 
-                variable.name, value.name, 
-                as.logical(na.rm), as.logical(drop.levels), 
-                as.logical(verbose));
+    if (missing(id.vars)) id.vars=NULL
+    if (missing(measure.vars)) measure.vars = NULL
+    ans <- .Call("Cfmelt", data, id.vars, measure.vars, 
+            as.logical(variable.factor), as.logical(value.factor), 
+            variable.name, value.name, 
+            as.logical(na.rm), as.logical(drop.levels), 
+            as.logical(verbose));
     setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
     setattr(ans, "class", c("data.table", "data.frame"))
     alloc.col(ans)

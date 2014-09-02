@@ -5110,6 +5110,17 @@ for (i in seq_along(dt)) {
     }) 
 }
 
+# fix for #780.
+if ("package:reshape2" %in% search()) {
+    try(detach(package:reshape),silent=TRUE)
+    DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9)
+    foo = function(input, by, var) {
+        melt(input, id.vars = by, measure.vars=var)
+    }
+    test(1371.1, foo(DT, by="x"), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)), warning="All 'measure.vars are NOT of the SAME type.")
+    test(1371.2, foo(DT), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)), warning="To be consistent with reshape2's melt, id.vars and")
+}
+
 ##########################
 
 

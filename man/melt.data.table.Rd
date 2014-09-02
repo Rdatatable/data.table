@@ -7,7 +7,7 @@
 }
 \usage{
 ## fast melt a data.table
-\method{melt}{data.table}(data, id.vars = NULL, measure.vars = NULL, 
+\method{melt}{data.table}(data, id.vars, measure.vars, 
 	variable.name = "variable", value.name = "value", 
 	..., na.rm = FALSE, variable.factor = TRUE, 
 	value.factor = FALSE, 
@@ -15,8 +15,8 @@
 }
 \arguments{
   \item{data}{ A \code{data.table} object to melt.}
-  \item{id.vars}{vector of id variables. Can be integer (corresponding id column numbers) or character (id column names) vector. If \code{NULL}, all non-measure columns will be assigned to it.}
-  \item{measure.vars}{vector of measure variables. Can be integer (corresponding measue column numbers) or character (measure column names) vector. If \code{NULL}, all non-id columns will be assigned to it.}
+  \item{id.vars}{vector of id variables. Can be integer (corresponding id column numbers) or character (id column names) vector. If missing, all non-measure columns will be assigned to it.}
+  \item{measure.vars}{vector of measure variables. Can be integer (corresponding measue column numbers) or character (measure column names) vector. If missing, all non-id columns will be assigned to it.}
   \item{variable.name}{name for the measured variable names column. The default name is 'variable'.}
   \item{value.name}{name for the molten data values column. The default name is 'value'.}
   \item{na.rm}{If \code{TRUE}, \code{NA} values will be removed from the molten data.}
@@ -26,7 +26,7 @@
   \item{...}{any other arguments to be passed to/from other methods}
 }
 \details{
-If \code{id.vars} and \code{measure.vars} are both \code{NULL}, all non-\code{numeric/integer/logical} columns are assigned as id variables and the rest of the columns are assigned as measure variables. If only one of \code{id.vars} or \code{measure.vars} is supplied, the rest of the columns will be assigned to the other. Both \code{id.vars} and \code{measure.vars} can have the same column more than once and same column can be as id and measure variables. 
+If \code{id.vars} and \code{measure.vars} are both missing, all non-\code{numeric/integer/logical} columns are assigned as id variables and the rest of the columns are assigned as measure variables. If only one of \code{id.vars} or \code{measure.vars} is supplied, the rest of the columns will be assigned to the other. Both \code{id.vars} and \code{measure.vars} can have the same column more than once and same column can be as id and measure variables. 
 
 \code{melt.data.table} also accepts \code{list} columns for both id and measure variables. When all \code{measure.vars} are not of the same type, they'll be coerced according to the hierarchy \code{list} > \code{character} > \code{numeric > integer > logical}. For example, any of the measure variables is a \code{list}, then entire value column will be coerced to a list. Note that, if the type of \code{value} column is a list, \code{na.rm = TRUE} will have no effect.
 
