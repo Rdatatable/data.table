@@ -15,6 +15,7 @@ export(setNumericRounding, getNumericRounding)
 export(chmatch, "%chin%", chorder, chgroup)
 export(rbindlist)
 export(fread)
+export(foverlaps)
 export(address)
 export(.SD,.N,.I,.GRP,.BY)
 
