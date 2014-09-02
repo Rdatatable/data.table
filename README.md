@@ -177,6 +177,8 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
     DT[!J(c(1,4)), sum(y), by=.EACHI] # is equivalent to DT[J(c(2,3)), sum(y), by=.EACHI]
     ```
 
+  29. `Overlap joins` ([#528](https://github.com/Rdatatable/data.table/issues/528)) is now here, finally!! Except for `type="equal"` and `maxgap` and `minoverlap` arguments, everything else is implemented. Check out `?foverlaps` and the examples there on its usage. This is a major feature addition to `data.table`.
+
 #### BUG FIXES
 
   1. `fread()`:
