@@ -5146,7 +5146,7 @@ if ("package:GenomicRanges" %in% search()) {
     }
     test(1372.3, setorder(ans1), fo(gr(x), gr(y[, c(1,3,4), with=FALSE]), type="any", select="all"))
 
-    runs = 30L # repeat 30 times..
+    runs = 3L # repeat 3 times..
     types=c("any", "within", "start", "end")
     mults=c("all", "first", "last")
     maxgap=0L; minoverlap=1L
