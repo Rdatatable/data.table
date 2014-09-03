@@ -141,31 +141,31 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
     Free(idx);
     // generate type_lookup
     if (type != WITHIN) {
-    switch (mult) {
-        case FIRST :
-        for (i=0; i<uxrows; i++) {
-            if (!len1[i]) continue;
-            vv = VECTOR_ELT(lookup, i);
-            tt = VECTOR_ELT(type_lookup, i);
-            INTEGER(tt)[0] = INTEGER(vv)[0];
-        }
-        break;
+        switch (mult) {
+            case FIRST :
+            for (i=0; i<uxrows; i++) {
+                if (!len1[i]) continue;
+                vv = VECTOR_ELT(lookup, i);
+                tt = VECTOR_ELT(type_lookup, i);
+                INTEGER(tt)[0] = INTEGER(vv)[0];
+            }
+            break;
 
-        case LAST :
-        for (i=0; i<uxrows; i++) {
-            if (!len1[i]) continue;
-            vv = VECTOR_ELT(lookup, i);
-            tt = VECTOR_ELT(type_lookup, i);
-            INTEGER(tt)[0] = INTEGER(vv)[len1[i]-1];
-        }
+            case LAST :
+            for (i=0; i<uxrows; i++) {
+                if (!len1[i]) continue;
+                vv = VECTOR_ELT(lookup, i);
+                tt = VECTOR_ELT(type_lookup, i);
+                INTEGER(tt)[0] = INTEGER(vv)[len1[i]-1];
+            }
         
-        case ALL :
+            case ALL :
             switch (type) {
                 case START: case END: case EQUAL:
                 for (i=0; i<uxrows; i++)
                     SET_VECTOR_ELT(type_lookup, i, VECTOR_ELT(lookup, i));
                 break;
-                
+            
                 case ANY :
                 for (i=0; i<uxrows-1; i++) {
                     vv = VECTOR_ELT(lookup, i);
@@ -175,18 +175,18 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
                         INTEGER(tt)[k++] = INTEGER(vv)[j];
                 }
                 break;
-                
+            
                 case WITHIN :
-                for (i=0; i<uxrows-1; i++) {
-                    vv = VECTOR_ELT(lookup, i);
-                    tt = VECTOR_ELT(type_lookup, i);
-                    for (j=0; j<len2[i]; j++)
-                        INTEGER(tt)[j] = INTEGER(vv)[j];
-                }
+                // for (i=0; i<uxrows-1; i++) {
+                //     vv = VECTOR_ELT(lookup, i);
+                //     tt = VECTOR_ELT(type_lookup, i);
+                //     for (j=0; j<len2[i]; j++)
+                //         INTEGER(tt)[j] = INTEGER(vv)[j];
+                // }
                 break;
             }
         break;
-    }
+        }
     }
     pass3 = clock() - start;
     if (LOGICAL(verbose)[0])
