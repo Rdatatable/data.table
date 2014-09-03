@@ -18,6 +18,7 @@ export(fread)
 export(foverlaps)
 export(address)
 export(.SD,.N,.I,.GRP,.BY)
+export(joinbyv)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
