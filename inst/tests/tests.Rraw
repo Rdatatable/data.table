@@ -5148,7 +5148,7 @@ if ("package:GenomicRanges" %in% search()) {
 
     runs = 3L # repeat 3 times..
     types=c("any", "within", "start", "end")
-    mults=c("all", "first", "last")
+    mults=c("all", "first") # "last"
     maxgap=0L; minoverlap=1L
     verbose=FALSE; which=TRUE
     test_no <- 1372.4
