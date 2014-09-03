@@ -5128,9 +5128,11 @@ if ("package:reshape2" %in% search()) {
 x = data.table(chr=c("Chr1", "Chr1", "Chr2", "Chr2", "Chr2"), start=c(5,10, 1, 25, 50), end=c(11,20,4,52,60))
 y = data.table(chr=c("Chr1", "Chr1", "Chr2"), start=c(1, 15,1), end=c(4, 18, 55), val=1:3)
 # no by.x and by.y error
-test(1372.1, foverlaps(x, y, type="any"), error="'by.x' and 'by.y' should contain at least two column names")
+test(1372.1, foverlaps(x, y, type="any"), error="'y' must be keyed (i.e., sorted, and, marked as sorted).")
+setkey(y, chr, end, start)
+test(1372.2, foverlaps(x, y, by.y=1:3, type="any"), error="The first 3 columns of y's key is not identical to the columns specified in by.y.")
+setkey(y, chr, start, end)
 setnames(y, c("chr", "pos1", "pos2", "val"))
-test(1372.2, foverlaps(x, y, type="any", by.x=c("chr", "start", "end")), error="Elements listed in 'by.y' must be valid names in data.table 'y'")
 if ("package:GenomicRanges" %in% search()) {
     setcolorder(y, c("chr", "val", "pos1", "pos2"))
     ans1 = foverlaps(x, y, type="any", by.x=c("chr", "start", "end"), by.y=c("chr", "pos1", "pos2"), which=TRUE, nomatch=0L)
@@ -5175,7 +5177,7 @@ if ("package:GenomicRanges" %in% search()) {
             for (mult in mults) {
                 # data.table overlap join
                 nomatch = ifelse(mult == "all", 0L, NA_integer_)
-                ans1 = foverlaps(i, x, by.x=1:3, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
+                ans1 = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
                 ans2 = fo(gr(i), gr(x), type=type, select=mult)
                 test_no = signif(test_no+.01, 7)
                 # cat("test =", test_no, ", i = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")

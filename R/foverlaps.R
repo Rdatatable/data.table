@@ -1,4 +1,4 @@
-foverlaps <- function(x, y, by.x = NULL, by.y = by.x, maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=getOption("datatable.nomatch"), which = FALSE,  verbose=getOption("datatable.verbose")) {
+foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.y = key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=getOption("datatable.nomatch"), which = FALSE,  verbose=getOption("datatable.verbose")) {
 
     if (!is.data.table(y) || !is.data.table(x)) stop("y and x must both be data.tables. Use `setDT()` to convert list/data.frames to data.tables by reference or as.data.table() to convert to data.tables by copying.")
     maxgap = as.integer(maxgap); minoverlap = as.integer(minoverlap); 
@@ -17,6 +17,8 @@ foverlaps <- function(x, y, by.x = NULL, by.y = by.x, maxgap=0L, minoverlap=1L, 
         stop("type = 'equal' is not implemented yet. But note that this is just the same as a normal data.table join y[x, ...], unless you are also interested in setting 'minoverlap / maxgap' arguments. But those arguments are not implemented yet as well.")
     if (maxgap > 0L || minoverlap > 1L)
         stop("maxgap and minoverlap arguments are not yet implemented.")
+    if (is.null(by.y))
+        stop("'y' must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) first, see ?setkey. Also check the examples in ?foverlaps.")
     if (length(by.x) < 2L || length(by.y) < 2L)
         stop("'by.x' and 'by.y' should contain at least two column names (or numbers) each - corresponding to 'start' and 'end' points of intervals. Please see ?foverlaps and examples for more info.")
     if (is.numeric(by.x)) {
@@ -33,6 +35,8 @@ foverlaps <- function(x, y, by.x = NULL, by.y = by.x, maxgap=0L, minoverlap=1L, 
         stop("A non-empty vector of column names is required for by.x")
     if (!length(by.y) || !is.character(by.y))
         stop("A non-empty vector of column names is required for by.y")
+    if (!identical(by.y, key(y)[seq_along(by.y)]))
+        stop("The first ", length(by.y), " columns of y's key is not identical to the columns specified in by.y.")
     if (any(is.na(chmatch(by.x, names(x)))))
         stop("Elements listed in 'by.x' must be valid names in data.table 'x'")
     if (any(is.na(chmatch(by.y, names(y)))))
@@ -62,8 +66,7 @@ foverlaps <- function(x, y, by.x = NULL, by.y = by.x, maxgap=0L, minoverlap=1L, 
     origy = y; y = shallow(y, by.y)
     if (identical(by.x, key(origx)[seq_along(by.x)]))
         setattr(x, 'sorted', by.x)
-    if (identical(by.y, key(origy)[seq_along(by.y)]))
-        setattr(y, 'sorted', by.y)
+    setattr(y, 'sorted', by.y) ## is definitely sorted on by.y
     roll = switch(type, start=, end=, equal= FALSE, 
                     any=, within= TRUE)
     make_call = function(names, fun=NULL) {
