@@ -145,7 +145,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
             setnames(ans, names(ans)[idx], paste("i.", names(ans)[idx], sep=""))
         xcols1 = head(by.x, -2L)
         xcols2 = setdiff(names(ans), xcols1)
-        ans = cbind(ans, origy[olaps$yid, ycols, with=FALSE]) ## TODO: use := or set here?
+        ans[, (ycols) := origy[olaps$yid, ycols, with=FALSE]]
         setcolorder(ans, c(xcols1, ycols, xcols2))
         return (ans)
     }
