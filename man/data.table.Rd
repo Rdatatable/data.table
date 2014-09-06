@@ -103,7 +103,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \item{keyby}{ An \emph{ad hoc by} just as \code{by} but with an additional \code{setkey()} on the \code{by} columns of the result, for convenience. Not to be confused with a \emph{keyed by} as defined above.
   
 }
-  \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}. The column names can be used as variables. When \code{with=FALSE}, \code{j} is a vector of names or positions to select.
+  \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. When \code{with=FALSE}, \code{j} is a vector of names or positions to select, similar to a \code{data.frame}. \code{with=FALSE} is often useful in \code{data.table} to select columns dynamically.
 
 }
   \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}'s key, \code{nomatch=NA} (default) means \code{NA} is returned for \code{x}'s non-join columns for that row of \code{i}. \code{0} means no rows will be returned for that row of \code{i}. The default value (used when \code{nomatch} is not supplied) can be changed from \code{NA} to \code{0} using \code{options(datatable.nomatch=0)}.
