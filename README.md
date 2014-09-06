@@ -19,16 +19,16 @@ update.packages()
 # ( Windows users should first install Rtools
 #   http://cran.r-project.org/bin/windows/Rtools/ )
 require(devtools)
-install_github("data.table", "Rdatatable")
+install_github("Rdatatable/data.table")
 
 # If you come across Error in `[.data.table`() : object 'CsubsetVector' not found
 # remove the package first and reinstall with:
 remove.packages("data.table")
-install_github("data.table", "Rdatatable")
+install_github("Rdatatable/data.table")
 
 # if you get pdflatex or texi2dvi errors during installation, want a 
 # quick way out and don't mind skipping building vignettes:
-install_github("data.table", "Rdatatable", build_vignettes=FALSE)
+install_github("Rdatatable/data.table", build_vignettes=FALSE)
 
 # revert to latest version on CRAN
 remove.packages("data.table")
