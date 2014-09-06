@@ -91,7 +91,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   
   \code{.N} is an integer, length 1, containing the number of rows in the group. This may be useful when the column names are not known in advance and for convenience generally. When grouping by \code{i}, \code{.N} is the number of rows in \code{x} matched to, for each row of \code{i}, regardless of whether \code{nomatch} is \code{NA} or \code{0}. It is renamed to \code{N} (no dot) in the result (otherwise a column called \code{".N"} could conflict with the \code{.N} variable, see FAQ 4.6 for more details and example), unless it is explicity named; e.g., \code{DT[,list(total=.N),by=a]}.
   
-  \code{.I} is an integer vector length \code{.N} holding the row locations in \code{x} for this group. This is useful to subset in j; e.g. DT[,.I[which.max(somecol)],by=grp].
+  \code{.I} is an integer vector equal to \code{seq_len(nrow(x))}. While grouping, it holds for each item in the group, it's row location in \code{x}. This is useful to subset in \code{j}; e.g. \code{DT[, .I[which.max(somecol)], by=grp]}.
   
   \code{.GRP} is an integer, length 1, containing a simple group counter. 1 for the 1st group, 2 for the 2nd, etc.
   
