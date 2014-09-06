@@ -4,7 +4,6 @@
 \alias{key}
 \alias{key<-}
 \alias{haskey}
-\alias{copy}
 \title{ Create key on a data table }
 \description{
   In \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column.. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
@@ -14,15 +13,13 @@
   \code{key()} returns the \code{data.table}'s key if it exists, and \code{NULL} if none exist.
   
   \code{haskey()} returns a logical \code{TRUE}/\code{FALSE} depending on whether the \code{data.table} has a key (or not).
-  
-  \code{copy()} copies an entire object.
+
 }
 \usage{
 setkey(x, ..., verbose=getOption("datatable.verbose"))
 setkeyv(x, cols, verbose=getOption("datatable.verbose"))
 key(x)
 haskey(x)
-copy(x)
 key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 }
 \arguments{
