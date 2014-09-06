@@ -24,19 +24,19 @@ A \code{copy()} may be required when doing \code{dt_names = names(DT)}. Due to R
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
-    # Type 'example(copy)' to run these at prompt and browse output
-        
-    DT = data.table(A=5:1,B=letters[5:1])
-    DT2 = copy(DT)        # explicit copy() needed to copy a data.table
-    setkey(DT2,B)         # now just changes DT2
-    identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
+# Type 'example(copy)' to run these at prompt and browse output
     
-    DT = data.table(A=5:1, B=letters[5:1])
-    nm1 = names(DT)
-    nm2 = copy(names(DT))
-    DT[, C := 1L]
-    identical(nm1, names(DT)) # TRUE, nm1 is also changed by reference
-    identical(nm2, names(DT)) # FALSE, nm2 is a copy, different from names(DT)
+DT = data.table(A=5:1,B=letters[5:1])
+DT2 = copy(DT)        # explicit copy() needed to copy a data.table
+setkey(DT2,B)         # now just changes DT2
+identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
+
+DT = data.table(A=5:1, B=letters[5:1])
+nm1 = names(DT)
+nm2 = copy(names(DT))
+DT[, C := 1L]
+identical(nm1, names(DT)) # TRUE, nm1 is also changed by reference
+identical(nm2, names(DT)) # FALSE, nm2 is a copy, different from names(DT)
 }
 \keyword{ data }
 
