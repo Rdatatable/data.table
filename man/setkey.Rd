@@ -30,14 +30,12 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
   \item{verbose}{ Output status and information. }
 }
 \details{
-  In \code{data.table} versions \code{<= 1.8.10}, for columns of type \code{integer}, the sort is attempted with the very fast \code{"radix"} method in \code{\link[base]{sort.list}}. If that fails, the sort reverts to the default method in \code{\link[base]{order}}. For character vectors, \code{data.table} takes advantage of R's internal global string cache and implements a very efficient order, also exported as \code{\link{chorder}}.
-  
-  From \code{data.table} version \code{1.9}, for \code{integer} columns, a modified version of base's counting sort is implemented, which allows negative values as well. It is extremely fast, but is limited by the range of integer values being <= 1e5. If it fails, a 4-pass radix sort for integers, newly implemented based on Pierre Terdiman's and Michael Herf's code (see links below) is used. Similarly, a very fast 6-pass radix order for columns of type \code{double} is implemented (also adapted from Terdiman's and Herf's work). This gives a speed-up of about 5-8x compared to \code{1.8.10} on \code{setkey} and all internal \code{order}/\code{sort} operations. 
+  \code{setkey} reorders (or sorts) the rows of a data.table by the columns provided. In versions \code{1.9+}, for \code{integer} columns, a modified version of base's counting sort is implemented, which allows negative values as well. It is extremely fast, but is limited by the range of integer values being <= 1e5. If that fails, it falls back to a (fast) 4-pass radix sort for integers, implemented based on Pierre Terdiman's and Michael Herf's code (see links below). Similarly, a very fast 6-pass radix order for columns of type \code{double} is also implemented. This gives a speed-up of about 5-8x compared to \code{1.8.10} on \code{setkey} and all internal \code{order}/\code{sort} operations. Fast radix sorting is also implemented for \code{character} and \code{bit64::integer64} types.
 
-  Moreover, \code{data.table 1.9} also implements a better memory efficent way of ordering multiple columns, without compromising in speed.
-  
   The sort is \emph{stable}; i.e., the order of ties (if any) is preserved, in both versions - \code{<=1.8.10} and \code{>= 1.9.0}.
-  
+
+  In \code{data.table} versions \code{<= 1.8.10}, for columns of type \code{integer}, the sort is attempted with the very fast \code{"radix"} method in \code{\link[base]{sort.list}}. If that fails, the sort reverts to the default method in \code{\link[base]{order}}. For character vectors, \code{data.table} takes advantage of R's internal global string cache and implements a very efficient order, also exported as \code{\link{chorder}}.
+
   In v1.7.8, the \code{key<-} syntax was deprecated. The \code{<-} method copies the whole table and we know of no way to avoid that copy without a change in \R itself. Please use the \code{set}* functions instead, which make no copy at all. \code{setkey} accepts unquoted column names for convenience, whilst \code{setkeyv} accepts one vector of column names.
   
   The problem (for \code{data.table}) with the copy by \code{key<-} (other than being slower) is that \R doesn't maintain the over allocated truelength, but it looks as though it has. Adding a column by reference using \code{:=} after a \code{key<-} was therefore a memory overwrite and eventually a segfault; the over allocated memory wasn't really there after \code{key<-}'s copy. \code{data.table}s now have an attribute \code{.internal.selfref} to catch and warn about such copies. This attribute has been implemented in a way that is friendly with \code{identical()} and \code{object.size()}. 
@@ -61,26 +59,26 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
-    # Type 'example(setkey)' to run these at prompt and browse output
-    
-    DT = data.table(A=5:1,B=letters[5:1])
-    DT # before
-    setkey(DT,B)          # re-orders table and marks it sorted.
-    DT # after
-    tables()              # KEY column reports the key'd columns
-    key(DT)
-    keycols = c("A","B")
-    setkeyv(DT,keycols)   # rather than key(DT)<-keycols (which copies entire table)
-    
-    DT = data.table(A=5:1,B=letters[5:1])
-    DT2 = DT              # does not copy
-    setkey(DT2,B)         # does not copy-on-write to DT2
-    identical(DT,DT2)     # TRUE. DT and DT2 are two names for the same keyed table
-    
-    DT = data.table(A=5:1,B=letters[5:1])
-    DT2 = copy(DT)        # explicit copy() needed to copy a data.table
-    setkey(DT2,B)         # now just changes DT2
-    identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
+# Type 'example(setkey)' to run these at prompt and browse output
+
+DT = data.table(A=5:1,B=letters[5:1])
+DT # before
+setkey(DT,B)          # re-orders table and marks it sorted.
+DT # after
+tables()              # KEY column reports the key'd columns
+key(DT)
+keycols = c("A","B")
+setkeyv(DT,keycols)   # rather than key(DT)<-keycols (which copies entire table)
+
+DT = data.table(A=5:1,B=letters[5:1])
+DT2 = DT              # does not copy
+setkey(DT2,B)         # does not copy-on-write to DT2
+identical(DT,DT2)     # TRUE. DT and DT2 are two names for the same keyed table
+
+DT = data.table(A=5:1,B=letters[5:1])
+DT2 = copy(DT)        # explicit copy() needed to copy a data.table
+setkey(DT2,B)         # now just changes DT2
+identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
 }
 \keyword{ data }
 
