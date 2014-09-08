@@ -2,6 +2,8 @@
 \alias{setDF}
 \title{Convert a data.table to data.frame by reference}
 \description{
+  In \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column.. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
+
   A helper function to convert a \code{data.table} to \code{data.frame} by reference. It does not handle lists or lists of data.tables.  
 }
 \usage{

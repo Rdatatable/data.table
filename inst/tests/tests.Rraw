@@ -5136,6 +5136,7 @@ setnames(y, c("chr", "pos1", "pos2", "val"))
 if ("package:GenomicRanges" %in% search()) {
     setcolorder(y, c("chr", "val", "pos1", "pos2"))
     ans1 = foverlaps(x, y, type="any", by.x=c("chr", "start", "end"), by.y=c("chr", "pos1", "pos2"), which=TRUE, nomatch=0L)
+    test(1372.3, foverlaps(x,y,by.x=1:3, nomatch=0L), data.table(chr=x$chr[2:5], y[c(2,3,3,3), -1, with=FALSE], x[2:5, 2:3, with=FALSE]))
     gr <- function(x) {
         GRanges(Rle(x[[1]]), IRanges(start=x[[2]], end=x[[3]]))
     }
@@ -5146,7 +5147,7 @@ if ("package:GenomicRanges" %in% search()) {
         setorder(ans)
         ans
     }
-    test(1372.3, setorder(ans1), fo(gr(x), gr(y[, c(1,3,4), with=FALSE]), type="any", select="all"))
+    test(1372.4, setorder(ans1), fo(gr(x), gr(y[, c(1,3,4), with=FALSE]), type="any", select="all"))
 
     runs = 3L # repeat 3 times..
     types=c("any", "within", "start", "end")

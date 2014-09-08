@@ -138,10 +138,15 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     } else {
         if (!is.na(nomatch))
             olaps = olaps[yid > 0L]
-        tmp = origy[olaps$yid, !c(by.y), with=FALSE]
-        if (!identical(tmp, null.data.table()))
-            ans = cbind(origx[olaps$xid], tmp)
-        else ans = origx[olaps$xid]
+        ycols = setdiff(names(origy), head(by.y, -2L))
+        idx = chmatch(ycols, names(origx), nomatch=0L)
+        ans = origx[olaps$xid]
+        if (any(idx>0L))
+            setnames(ans, names(ans)[idx], paste("i.", names(ans)[idx], sep=""))
+        xcols1 = head(by.x, -2L)
+        xcols2 = setdiff(names(ans), xcols1)
+        ans[, (ycols) := origy[olaps$yid, ycols, with=FALSE]]
+        setcolorder(ans, c(xcols1, ycols, xcols2))
         return (ans)
     }
 }

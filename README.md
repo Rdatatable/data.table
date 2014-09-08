@@ -19,11 +19,16 @@ update.packages()
 # ( Windows users should first install Rtools
 #   http://cran.r-project.org/bin/windows/Rtools/ )
 require(devtools)
-install_github("data.table", "Rdatatable")
+install_github("Rdatatable/data.table")
+
+# If you come across Error in `[.data.table`() : object 'CsubsetVector' not found
+# remove the package first and reinstall with:
+remove.packages("data.table")
+install_github("Rdatatable/data.table")
 
 # if you get pdflatex or texi2dvi errors during installation, want a 
 # quick way out and don't mind skipping building vignettes:
-install_github("data.table", "Rdatatable", build_vignettes=FALSE)
+install_github("Rdatatable/data.table", build_vignettes=FALSE)
 
 # revert to latest version on CRAN
 remove.packages("data.table")
@@ -317,6 +322,11 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   11. Added `shiny`, `rmarkdown` and `knitr` to the data.table whitelist. Packages which take user code as input and run it in their own environment (so do not `Depend` or `Import` data.table themselves) either need to be added here, or they can define a variable `.datatable.aware <- TRUE` in their namepace, so that data.table can work correctly in those packages. Users can also add to data.table's whitelist themselves using `assignInNamespace()` but these additions upstream remove the need to do that.
 
+  12. Clarified `with=FALSE` as suggested in [#513](https://github.com/Rdatatable/data.table/issues/513).
+
+  13. Clarified `.I` in `?data.table`. Closes [#510](https://github.com/Rdatatable/data.table/issues/510). Thanks to Gabor for reporting.
+
+  14. Moved `?copy` to it's own help page, and documented that `dt_names <- copy(names(DT))` is necessary for `dt_names` to be not modified by reference as a result of updating `DT` by reference (ex: adding a new column by reference). Closes [#512](https://github.com/Rdatatable/data.table/issues/512). Thanks to Zach for [this SO question](http://stackoverflow.com/q/15913417/559784) and user1971988 for [this SO question](http://stackoverflow.com/q/18662715/559784).
 ---
 
 ### Changes in v1.9.2 (on CRAN 27 Feb 2014)
