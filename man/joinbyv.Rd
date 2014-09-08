@@ -69,13 +69,15 @@ time[,`:=`(month_code = month(date_code),
            month_name = months(date_code),
            quarter_code = as.POSIXlt(date_code)$mon \%/\% 3L + 1L,
            year_code = year(date_code))]
+n <- 1e3
+set.seed(38)
 sales <- 
-  data.table(prod_code = sample(product[,prod_code], 1000, TRUE),
-             cust_code = sample(customer[,cust_code], 1000, TRUE),
-             state_code = sample(geography[,state_code], 1000, TRUE),
-             date_code = sample(time[,date_code], 1000, TRUE),
-             quantity = rnorm(1000, 500, 200),
-             value = rnorm(1000, 10000,2000))
+  data.table(prod_code = sample(product[,prod_code], n, TRUE),
+             cust_code = sample(customer[,cust_code], n, TRUE),
+             state_code = sample(geography[,state_code], n, TRUE),
+             date_code = sample(time[,date_code], n, TRUE),
+             quantity = rnorm(n, 500, 200),
+             value = rnorm(n, 10000,2000))
 # populate example data END
 
 # usage of joinbyv
