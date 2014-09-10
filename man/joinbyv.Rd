@@ -40,6 +40,9 @@ Possibly the performance might be improved after implementing FR #691 and #692.
 \author{ Jan Gorecki }
 \examples{
 \dontrun{
+# import funs (to do not modify NAMESPACE file in master branch)
+joinbyv <- getFromNamespace("joinbyv", "data.table")
+
 # populate example data BEGIN
 product <- 
   data.table(prod_code = 1:16,
