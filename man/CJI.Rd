@@ -33,9 +33,9 @@ CJI <- getFromNamespace("CJI", "data.table")
 N=5e5; K=100
 set.seed(1)
 DT <- data.table(
-  id1 = sample(sprintf("id\%03d",1:K), N, TRUE),     # large groups (char)
-  id2 = sample(sprintf("id\%03d",1:K), N, TRUE),     # large groups (char)
-  id3 = sample(sprintf("id\%010d",1:(N/K)), N, TRUE),# small groups (char)
+  id1 = sample(sprintf("id\%03d",1:K), N, TRUE),      # large groups (char)
+  id2 = sample(sprintf("id\%03d",1:K), N, TRUE),      # large groups (char)
+  id3 = sample(sprintf("id\%010d",1:(N/K)), N, TRUE), # small groups (char)
   id4 = sample(K, N, TRUE),                          # large groups (int)
   id5 = sample(K, N, TRUE),                          # large groups (int)
   id6 = sample(N/K, N, TRUE),                        # small groups (int)

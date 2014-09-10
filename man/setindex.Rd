@@ -22,7 +22,7 @@ Returns list of indices combinations, each element of the list is a data.table.
 Experimental version. It do not scale for memory in case when using more keys to index on. There is a open discussion related to possible improvements, see reference.
 }
 \section{Side effect}{
-None at the moment, might change in future for kind of \code{setattr(DT,"index",index)} if it will optimized enough.
+None at the moment, might change in future for kind of \code{setattr(DT,"index",IDX)} if it will optimized enough.
 }
 \examples{
 \dontrun{
