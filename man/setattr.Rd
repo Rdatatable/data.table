@@ -29,7 +29,7 @@ setnames(x,old,new)
 
     Note that \code{setattr} is also in package \code{bit}. Both packages merely expose R's internal \code{setAttrib} function at C level, but differ in return value. \code{bit::setattr} returns \code{NULL} (invisibly) to remind you the function is used for its side effect. \code{data.table::setattr} returns the changed object (invisibly), for use in compound statements.
 }
-\seealso{ \code{\link{data.table}}, \code{\link{setkey}}, \code{\link{setorder}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{copy}}
+\seealso{ \code{\link{data.table}}, \code{\link{setkey}}, \code{\link{setorder}}, \code{\link{setencoding}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{copy}}
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
