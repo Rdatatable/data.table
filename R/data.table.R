@@ -822,13 +822,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     } else {
                         if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
                         
-                        if (any(is.na(.SDcols)) || any(!.SDcols %chin% names(x)))){
-                            #swich to wildcard 
-                            .SDcols_vector <- unlist(str_split(.SDcols,pattern=" "))
+                        if (any(is.na(.SDcols)) || any(!.SDcols %chin% names(x))){
+                            #try wildcard 
+                            .SDcols_vector <- strsplit(.SDcols, "\\s+")[[1]]
                             .SDcols=NULL
                              for (c in .SDcols_vector){
-                                temp <- grep(glob2rx(c),names(DT),value=TRUE)
-                                if (!length(temp)) stop("Some items of .SDcols are not column names (or are NA)")
+                                temp <- grep(glob2rx(c),names(x),value=TRUE)
+                                if (!length(temp)) stop("Some items of .SDcols are not column names (or are NA) ahah")
                                 .SDcols <- c(.SDcols,temp)
                             }
                         }
