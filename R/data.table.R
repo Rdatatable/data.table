@@ -824,11 +824,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         
                         if (any(is.na(.SDcols)) || any(!.SDcols %chin% names(x))){
                             #try wildcard 
+                            if (length(.SDcols) !=1L) stop("Some items of .SDcols are not column names (or are NA)")
                             .SDcols_vector <- strsplit(.SDcols, "\\s+")[[1]]
                             .SDcols=NULL
                              for (c in .SDcols_vector){
                                 temp <- grep(glob2rx(c),names(x),value=TRUE)
-                                if (!length(temp)) stop("Some items of .SDcols are not column names (or are NA) ahah")
+                                if (!length(temp)) stop("Some items of .SDcols are not column names (or are NA)")
                                 .SDcols <- c(.SDcols,temp)
                             }
                         }
