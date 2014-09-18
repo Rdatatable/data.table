@@ -822,14 +822,15 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     } else {
                         if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
                         
-                        if (any(is.na(.SDcols)) || any(!.SDcols %chin% names(x))){
+                        if (any(is.na(.SDcols))) stop("Some items of .SDcols are not column names (or are NA)"
+                        if (any(!.SDcols %chin% names(x))){
                             #try wildcard 
-                            if (length(.SDcols) !=1L) stop("Some items of .SDcols are not column names (or are NA)")
+                            if (length(.SDcols) !=1L) stop("Some items of .SDcols are not column names")
                             .SDcols_vector <- strsplit(.SDcols, "\\s+")[[1]]
                             .SDcols=NULL
                              for (c in .SDcols_vector){
                                 temp <- grep(glob2rx(c),names(x),value=TRUE)
-                                if (!length(temp)) stop("Some items of .SDcols are not column names (or are NA)")
+                                if (!length(temp)) stop("Some items of .SDcols are not column names")
                                 .SDcols <- c(.SDcols,temp)
                             }
                         }
