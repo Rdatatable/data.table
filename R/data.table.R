@@ -822,7 +822,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     } else {
                         if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
                         
-                        if (any(is.na(.SDcols))) stop("Some items of .SDcols are not column names (or are NA)"
+                        if (any(is.na(.SDcols))) stop("Some items of .SDcols are NA)")
                         if (any(!.SDcols %chin% names(x))){
                             #try wildcard 
                             if (length(.SDcols) !=1L) stop("Some items of .SDcols are not column names")
