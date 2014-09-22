@@ -2120,7 +2120,8 @@ rbindlist = function(l, use.names=fill, fill=FALSE) {
 
 vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
 
-address = function(x) .Call(Caddress,x)
+# .Call(Caddress, x) increments NAM() when x is vector with NAM(1). Referring object within non-primitive function is enough to increment reference.
+address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
 ":=" = function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
 

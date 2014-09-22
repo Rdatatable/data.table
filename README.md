@@ -327,6 +327,9 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
   13. Clarified `.I` in `?data.table`. Closes [#510](https://github.com/Rdatatable/data.table/issues/510). Thanks to Gabor for reporting.
 
   14. Moved `?copy` to it's own help page, and documented that `dt_names <- copy(names(DT))` is necessary for `dt_names` to be not modified by reference as a result of updating `DT` by reference (ex: adding a new column by reference). Closes [#512](https://github.com/Rdatatable/data.table/issues/512). Thanks to Zach for [this SO question](http://stackoverflow.com/q/15913417/559784) and user1971988 for [this SO question](http://stackoverflow.com/q/18662715/559784).
+  
+  15. address(x) doesn't increment NAM() value when x is a vector. Using the object as argument to a non-primitive function is sufficient to increment it's reference! Closes #824. Thanks to @tarakc02 for the [question on twitter](https://twitter.com/tarakc02/status/513796515026837504) and hint from Hadley.
+  
 ---
 
 ### Changes in v1.9.2 (on CRAN 27 Feb 2014)

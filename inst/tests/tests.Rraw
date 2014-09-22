@@ -5188,6 +5188,12 @@ if ("package:GenomicRanges" %in% search()) {
     }
 }
 
+# fix for bug in address - #824
+x = 1:10
+address(x) ## shouldn't increment NAM field
+out = capture.output(.Internal(inspect(x)))
+test(1373, grepl("NAM\\(1\\)", out), TRUE)
+
 ##########################
 
 
