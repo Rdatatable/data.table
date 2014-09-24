@@ -1,13 +1,16 @@
-setkey = function(x, ..., verbose=getOption("datatable.verbose"))
+setkey = function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE)
 {
     if (is.character(x)) stop("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
     cols = as.character(substitute(list(...))[-1])
     if (!length(cols)) cols=colnames(x)
     else if (identical(cols,"NULL")) cols=NULL
-    setkeyv(x,cols,verbose=verbose)
+    setkeyv(x, cols, verbose=verbose, physical=physical)
 }
 
-setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
+set2key = function(...) setkey(..., physical=FALSE)
+set2keyv = function(...) setkeyv(..., physical=FALSE)
+
+setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
 {
     if (is.null(cols)) {   # this is done on a data.frame when !cedta at top of [.data.table
         setattr(x,"sorted",NULL)
@@ -15,7 +18,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
     }
     if (!is.data.table(x)) stop("x is not a data.table")
     if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setkey.")
-    if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using set*() functions on .SD is reserved for possible future use; a tortuously flexible way to modify the original data by group. If you need a quick fix try set*(copy(.SD)), but that will be slower and there's almost certainly a better way.")
+    if (physical && identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Setting a physical key on .SD is reserved for possible future use; a tortuously flexible way to modify the original data by group. Try set2key instead. Or, set*(copy(.SD)) as a last resort since that will be much slower.")
     if (!length(cols)) {
         warning("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
         setattr(x,"sorted",NULL)
@@ -26,13 +29,13 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
     if (!length(cols)) {
         cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
     } else {
-        # remove backticks form cols 
+        # remove backticks from cols 
         cols <- gsub("`", "", cols)
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
     alreadykeyedbythiskey = identical(key(x),cols)
-    if (".xi" %in% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
+    if (".xi" %chin% names(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
     for (i in cols) {
         .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
         if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
@@ -43,6 +46,11 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
         cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
     } else {
         o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
+    }
+    if (!physical) {
+        if (is.null(attr(x,"index"))) setattr(x, "index", integer())
+        setattr(attr(x,"index"), paste(cols,collapse="__"), o)
+        return(invisible(x))
     }
     if (length(o)) {
         if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
