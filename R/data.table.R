@@ -700,7 +700,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 
                 orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause)
                 # orderedirows = is.sorted(f__)
-                bysameorder = orderedirows && haskey(x) && all(sapply(bysubl,is.name)) && identical(allbyvars,head(key(x),length(allbyvars)))
+                bysameorder = orderedirows && haskey(x) && all(sapply(bysubl,is.name)) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
                 if (is.null(irows))
                     byval = eval(bysub, x, parent.frame())
                 else {

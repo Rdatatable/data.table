@@ -5194,6 +5194,13 @@ address(x) ## shouldn't increment NAM field
 out = capture.output(.Internal(inspect(x)))
 test(1373, grepl("NAM\\(1\\)", out), TRUE)
 
+# fix for bug #762 - key'd data.table with a non-existing column in 'by' is not handled properly.
+DT <- data.table(x=1:5, z=5:1, key="z")
+y <- c(1,3,2,3,2)
+test(1374.1, DT[, list(x=sum(x)), by=y], data.table(y=c(1,3,2), x=c(5L, 6L, 4L)))
+y <- c(1,2,2,3,3)
+test(1374.2, DT[, list(x=sum(x)), by=y], data.table(y=c(1,2,3), x=c(5L, 7L, 3L), key="y"))
+
 ##########################
 
 

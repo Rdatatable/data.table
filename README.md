@@ -285,6 +285,8 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   45. `id.vars` and `measure.vars` default value of `NULL` was removed to be consistent in behaviour with `reshape2:::melt.data.frame`. Closes [#780](https://github.com/Rdatatable/data.table/issues/780). Thanks to @dardesta for reporting.
 
+  46. Grouping using external variables on keyed data.tables did not return correct results at times. Thanks to @colinfang for reporting. Closes [#762](https://github.com/Rdatatable/data.table/issues/762).
+
 #### NOTES
 
   1.  Reminder: using `rolltolast` still works but since v1.9.2 now issues the following warning:  
