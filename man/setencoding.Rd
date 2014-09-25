@@ -33,8 +33,8 @@ setencodingv to pass them as character vector.
 }
 \examples{
 DT<-data.table(col1=c("ä","a"),col2=c("ß","b"))
-setencoding(DT,col1,col2)
-setencoding(DT,col1,enc="UTF-8")
+setencoding(DT,col1,col2,enc="UTF-8",src.enc="latin1")
+setencoding(DT,enc="latin1")
 }
 \author{Stefan Fritsch \email{fritsch@stat-up.com}}
 \seealso{
