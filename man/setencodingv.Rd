@@ -35,8 +35,8 @@ value. This takes a character vector of columns, use
 setencoding to pass them as objects.
 }
 \examples{
-DT<-data.table(col1=c("ä","a"),col2=c("ß","b"))
-setencodingv(DT,c("col1","col2"),enc="UTF-8",src.enc="latin1")
+DT<-data.table(col1=c("Ã¤","a"),col2=c("ÃŸ","b"))
+setencodingv(DT,c("col1","col2"),enc="latin1",src.enc="UTF-8")
 }
 \seealso{
 \code{\link{setencoding}}
