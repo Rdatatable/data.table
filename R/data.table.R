@@ -2209,7 +2209,7 @@ gmax = function(x, na.rm=FALSE) .Call(Cgmax, x, na.rm)
 gstart = function(o, f, l) .Call(Cgstart, o, f, l)
 gend = function() .Call(Cgend)
 
-setencodingv<-function(DT,cols=NULL,enc=localeToCharset(),src.enc=localeToCharset()) 
+setencodingv<-function(DT,cols=NULL,enc=localeToCharset()[1],src.enc=localeToCharset()[1]) 
 { 
   stopifnot(is.data.table(DT),
             length(cols)==0 | is.character(cols))
@@ -2233,7 +2233,7 @@ setencodingv<-function(DT,cols=NULL,enc=localeToCharset(),src.enc=localeToCharse
   invisible(DT) 
 }
 
-setencoding<-function(DT,...,enc=localeToCharset(),src.enc=localeToCharset())
+setencoding<-function(DT,...,enc=localeToCharset()[1],src.enc=localeToCharset()[1])
 {
   setencodingv(DT,
                as.character(substitute(list(...))[-1]),
