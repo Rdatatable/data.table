@@ -36,8 +36,8 @@ setencoding to pass them as objects.
 }
 \examples{
 DT<-data.table(col1=c("ä","a"),col2=c("ß","b"))
-setencodingv(DT,"col1","latin1")
-setencodingv(DT,enc="UTF-8")
+setencoding(DT,col1,col2,src.enc="latin1")
+setencoding(DT,enc="UTF-8")
 }
 \seealso{
 \code{\link{setencoding}}
