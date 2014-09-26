@@ -184,7 +184,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   29. `Overlap joins` ([#528](https://github.com/Rdatatable/data.table/issues/528)) is now here, finally!! Except for `type="equal"` and `maxgap` and `minoverlap` arguments, everything else is implemented. Check out `?foverlaps` and the examples there on its usage. This is a major feature addition to `data.table`.
 
-  30. `DT[column==values]` is now optimized to use `DT`'s key when `key(DT)[1]=="column"`, otherwise a secondary key (a.k.a. _index_) is automatically added so the next `DT[column==values]` is much faster. `DT[column %in% values]` is equivalent; i.e., both `==` and `%in%` accept vector `values`. No code changes are needed; existing code should automatically benefit. Secondary keys can be added manually using `set2key()` and existence checked using `key2()`. These optimizations are experimental and may be turned off with `options(datatable.auto.index=FALSE)`.
+  30. `DT[column==values]` is now optimized to use `DT`'s key when `key(DT)[1]=="column"`, otherwise a secondary key (a.k.a. _index_) is automatically added so the next `DT[column==values]` is much faster. `DT[column %in% values]` is equivalent; i.e., both `==` and `%in%` accept vector `values`. No code changes are needed; existing code should automatically benefit. Secondary keys can be added manually using `set2key()` and existence checked using `key2()`. These optimizations and function names/arguments are experimental and may be turned off with `options(datatable.auto.index=FALSE)`.
   
 
 
