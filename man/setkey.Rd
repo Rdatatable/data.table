@@ -4,6 +4,9 @@
 \alias{key}
 \alias{key<-}
 \alias{haskey}
+\alias{set2key}
+\alias{set2keyv}
+\alias{key2}
 \title{ Create key on a data table }
 \description{
   In \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column.. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
@@ -16,9 +19,12 @@
 
 }
 \usage{
-setkey(x, ..., verbose=getOption("datatable.verbose"))
-setkeyv(x, cols, verbose=getOption("datatable.verbose"))
+setkey(x, ..., verbose=getOption("datatable.verbose"), physical = TRUE)
+setkeyv(x, cols, verbose=getOption("datatable.verbose"), physical = TRUE)
+set2key(...)
+set2keyv(...)
 key(x)
+key2(x)
 haskey(x)
 key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 }
@@ -28,6 +34,7 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
   \item{cols}{ A character vector (only) of column names. }
   \item{value}{ In (deprecated) \code{key<-}, a character vector (only) of column names.}
   \item{verbose}{ Output status and information. }
+  \item{physical}{ TRUE changes the order of the data in RAM. FALSE adds a secondary key a.k.a. index. }
 }
 \details{
   \code{setkey} reorders (or sorts) the rows of a data.table by the columns provided. In versions \code{1.9+}, for \code{integer} columns, a modified version of base's counting sort is implemented, which allows negative values as well. It is extremely fast, but is limited by the range of integer values being <= 1e5. If that fails, it falls back to a (fast) 4-pass radix sort for integers, implemented based on Pierre Terdiman's and Michael Herf's code (see links below). Similarly, a very fast 6-pass radix order for columns of type \code{double} is also implemented. This gives a speed-up of about 5-8x compared to \code{1.8.10} on \code{setkey} and all internal \code{order}/\code{sort} operations. Fast radix sorting is also implemented for \code{character} and \code{bit64::integer64} types.

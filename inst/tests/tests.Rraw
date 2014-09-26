@@ -23,8 +23,8 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
 }
 options(warn=2)
 
-# nfail = ntest = lastnum = 0
-# whichfail = NULL
+nfail = ntest = lastnum = 0
+whichfail = NULL
 
 .timingtests = FALSE
 started.at = Sys.time()

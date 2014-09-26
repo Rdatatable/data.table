@@ -6,6 +6,7 @@ exportClasses(data.table, IDate, ITime)
 ##
 
 export(data.table, tables, setkey, setkeyv, key, "key<-", haskey, CJ, SJ, copy)
+export(set2key, set2keyv, key2)
 export(as.data.table,is.data.table,test.data.table,last,like,"%like%",between,"%between%")
 export(timetaken)
 export(truelength, alloc.col, ":=")

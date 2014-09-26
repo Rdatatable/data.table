@@ -38,12 +38,12 @@ test.data.table = function(verbose=FALSE, pkg="pkg") {
     invisible()
 }
 
-# Define test() and its globals here for use in dev
+# Define test() and its globals here, for use in dev
 # But primarily called by test.data.table() calling inst/tests/tests.Rraw
-
-nfail = ntest = lastnum = 0
-whichfail = NULL
-.devtesting = TRUE
+# Initialized at the top of tests.Raw ...
+# nfail = ntest = lastnum = 0
+# whichfail = NULL
+# .devtesting = TRUE
 
 compactprint = function(DT, topn=2) {
     cn = paste(" [Key=",paste(key(DT),collapse=",")," Types=",paste(substring(gsub("integer64","i64",sapply(DT,class)),1,3),collapse=","),"]",sep="")
@@ -65,13 +65,13 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
     #    from all.equal and different to identical related to row.names and unused factor levels
     # 3) each test has a unique id which we refer to in commit messages, emails etc.
-    if (.devtesting) cat("\rRunning test id", num,"     ")
+    if (exists(".devtesting",parent.frame()) && get(".devtesting", parent.frame())) cat("\rRunning test id", num,"     ")
     # TO DO: every line that could possibly fail should be inside test() so we don't have to show the numbers.
-    .lasttest <<- num
-    ntest <<- get("ntest",parent.frame(),inherits=TRUE) + 1   # bump number of tests run
-    nfail = get("nfail",parent.frame(),inherits=TRUE)   # to cater for both test.data.table() and stepping through tests in dev
-    whichfail = get("whichfail",parent.frame(),inherits=TRUE)
-    lastnum <<- num
+    assign("ntest", get("ntest", parent.frame()) + 1, parent.frame(), inherits=TRUE)   # bump number of tests run
+    assign("lastnum", num, parent.frame(), inherits=TRUE)
+    nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
+    whichfail = get("whichfail", parent.frame())
+    
     xsub = substitute(x)
     ysub = substitute(y)
     if (is.null(output)) err <<- try(x,TRUE)
@@ -93,8 +93,8 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
                 cat("Observed: no error or warning\n")
             else
                 cat("Observed ",observedtype,": '",gsub("^[(]converted from warning[)] ","",gsub("\n$","",gsub("^Error.* : \n  ","",as.character(err)))),"'\n",sep="")
-            nfail <<- nfail + 1
-            whichfail <<- c(whichfail, num)
+            "nfail" <<- nfail + 1
+            "whichfail" <<- c(whichfail, num)
             return()
         }
         if (type=="warning")
@@ -103,8 +103,8 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     }
     if (inherits(err,"try-error") || (!missing(y) && inherits(err<-try(y,TRUE),"try-error"))) {
         cat("Test",num,err)
-        nfail <<- nfail + 1
-        whichfail <<- c(whichfail, num)
+        "nfail" <<- nfail + 1
+        "whichfail" <<- c(whichfail, num)
         return()
     }
     if (!is.null(output)) {
@@ -119,8 +119,8 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
             cat(">",deparse(xsub),"\n")
             cat("Expected: '",output,"'\n",sep="")
             cat("Observed: '",out,"'\n",sep="")
-            nfail <<- nfail + 1
-            whichfail <<- c(whichfail, num)
+            "nfail" <<- nfail + 1
+            "whichfail" <<- c(whichfail, num)
             return()
         }
         if (missing(y)) return()
@@ -130,8 +130,8 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
         cat("Test",num,"expected TRUE but observed:\n")
         cat(">",deparse(xsub),"\n")
         if (is.data.table(x)) compactprint(x) else print(x)
-        nfail <<- nfail + 1
-        whichfail <<- c(whichfail, num)
+        "nfail" <<- nfail + 1
+        "whichfail" <<- c(whichfail, num)
         return()
     } else {
         if (identical(x,y)) return()
@@ -163,8 +163,8 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     if (is.data.table(x)) compactprint(x) else if (length(x)>6) {cat("First 6 of", length(x),":");print(head(x))} else print(x)
     cat("> y =",deparse(ysub),"\n")
     if (is.data.table(y)) compactprint(y) else if (length(y)>6) {cat("First 6 of", length(y),":");print(head(y))} else print(y)
-    nfail <<- nfail + 1
-    whichfail <<- c(whichfail, num)
+    "nfail" <<- nfail + 1
+    "whichfail" <<- c(whichfail, num)
 }
 
 

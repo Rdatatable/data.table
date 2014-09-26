@@ -128,6 +128,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     }
     setDT(olaps)
     setnames(olaps, c("xid", "yid"))
+    yid = NULL  # for 'no visible binding for global variable' from R CMD check on i clauses below
     # if (type == "any") setorder(olaps) # at times the combine operation may not result in sorted order
     if (which) {
         if (mult %chin% c("first", "last"))
