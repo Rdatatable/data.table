@@ -5115,6 +5115,14 @@ test(1376.11, list(DT[a==2L], key2(DT)), list(DT[9L],NULL))
 options(datatable.auto.index = TRUE)
 test(1376.12, list(DT[a==2L], key2(DT)), list(DT[9L],"a"))
 
+# When i is FALSE, it shouldn't matter if .SDcols is wrong. Package vardpoor relies on this in example(vardchanges).
+DT = data.table(a=1:3, b=4:6)
+test(1377.1, DT[FALSE, foo:=7], DT)
+test(1377.2, DT[0, foo:=7], DT)
+test(1377.3, DT[, foo := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","b")], data.table(a=1:3, b=4:6, foo=c("1__4","2__5","3__6")))
+test(1377.4, DT[, bar := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","zz")], error="Some items of .SDcols are not column names")
+test(1377.5, DT[FALSE, bar := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","zz")], DT)
+
 ##########################
 
 

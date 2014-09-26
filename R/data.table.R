@@ -590,15 +590,19 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             jsub = construct(deconstruct_and_eval(jsub, parent.frame(), parent.frame()))
         if (is.null(jsub)) return(NULL)
 
-        if (!with && is.call(jsub) && jsub[[1L]]==as.name(":=")) {
-            if (is.null(names(jsub)) && is.name(jsub[[2L]])) {
-                # TO DO: uncomment these warnings in next release. Later, make both errors.
-                ## warning("with=FALSE is deprecated when using :=. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples.")
-                jsub[[2L]] = eval(jsub[[2L]], parent.frame(), parent.frame()) 
-            } else {
-                ## warning("with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples.")
+        if (is.call(jsub) && jsub[[1L]]==as.name(":=")) {
+            if (identical(irows, integer()))  # short circuit do-nothing, don't do further checks on .SDcols for example
+                return(invisible(x))          # irows=NULL means all rows at this stage
+            if (!with) {
+                if (is.null(names(jsub)) && is.name(jsub[[2L]])) {
+                    # TO DO: uncomment these warnings in next release. Later, make both errors.
+                    ## warning("with=FALSE is deprecated when using :=. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples.")
+                    jsub[[2L]] = eval(jsub[[2L]], parent.frame(), parent.frame()) 
+                } else {
+                    ## warning("with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples.")
+                }
+                with = TRUE
             }
-            with = TRUE
         }
         if (!with) {
             # missing(by)==TRUE was already checked above before dealing with i
