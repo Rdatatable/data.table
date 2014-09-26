@@ -22,130 +22,16 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     .devtesting=TRUE
 }
 options(warn=2)
-nfail = ntest = lastnum = 0
-whichfail = NULL
-compactprint = function(DT, topn=2) {
-    cn = paste(" [Key=",paste(key(DT),collapse=",")," Types=",paste(substring(gsub("integer64","i64",sapply(DT,class)),1,3),collapse=","),"]",sep="")
-    print(copy(DT)[,(cn):=""], topn=topn)
-    invisible()
-}
-test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
-    # Usage:
-    # i) tests that x equals y when both x and y are supplied, the most common usage
-    # ii) tests that x is TRUE when y isn't supplied
-    # iii) if error is supplied, y should be missing and x is tested to result in an error message matching the pattern
-    # iv) if warning is supplied, y (if supplied) is checked to equal x, and x should result in a warning message matching the pattern
-    # v) if output is supplied, x is evaluated and printed and the output is checked to match the pattern
-    # At most one of error, warning or output may be supplied, all single character strings (passed to grep)
-    # num just needs to be numeric and unique. We normally increment integers at the end, but inserts can be made using decimals e.g. 10,11,11.1,11.2,12,13,...
-    # Motivations:
-    # 1) we'd like to know all tests that fail not just stop at the first. This often helps by revealing a common feature across a set of
-    #    failing tests
-    # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
-    #    from all.equal and different to identical related to row.names and unused factor levels
-    # 3) each test has a unique id which we refer to in commit messages, emails etc.
-    if (.devtesting) cat("\rRunning test id", num,"     ")
-    # TO DO: every line that could possibly fail should be inside test() so we don't have to show the numbers.
-    .lasttest <<- num
-    ntest <<- ntest + 1
-    lastnum <<- num
-    xsub = substitute(x)
-    ysub = substitute(y)
-    if (is.null(output)) err <<- try(x,TRUE)
-    else out = gsub("NULL$","",paste(capture.output(print(err<<-try(x,TRUE))),collapse=""))
-    if (!is.null(error) || !is.null(warning)) {
-        type = ifelse(!is.null(error),"error","warning")
-        patt = txt = ifelse(!is.null(error),error,warning)
-        patt = gsub("[(]","[(]",patt)
-        patt = gsub("[)]","[)]",patt)
-        patt = gsub("\\^","\\\\^", patt)  # for test 923 containing 2^31 in error message
-        observedtype = ifelse(length(grep("converted from warning",err)), "warning", "error")
-        if (! (inherits(err,"try-error") &&
-               length(grep(patt,err)) &&
-               type==observedtype)) {
-            cat("Test",num,"didn't produce correct",type,":\n")
-            cat(">",deparse(xsub),"\n")
-            cat("Expected ",type,": '",txt,"'\n",sep="")
-            if (!inherits(err,"try-error"))
-                cat("Observed: no error or warning\n")
-            else
-                cat("Observed ",observedtype,": '",gsub("^[(]converted from warning[)] ","",gsub("\n$","",gsub("^Error.* : \n  ","",as.character(err)))),"'\n",sep="")
-            nfail <<- nfail + 1
-            whichfail <<- c(whichfail, num)
-            return()
-        }
-        if (type=="warning")
-            err <- if (is.null(output)) x<-try(suppressWarnings(x),TRUE) else out<-paste(capture.output(x<-try(suppressWarnings(x),TRUE)),collapse="")
-        else return()
-    }
-    if (inherits(err,"try-error") || (!missing(y) && inherits(err<-try(y,TRUE),"try-error"))) {
-        cat("Test",num,err)
-        nfail <<- nfail + 1
-        whichfail <<- c(whichfail, num)
-        return()
-    }
-    if (!is.null(output)) {
-        output = gsub("[[]","<LBRACKET>",output)
-        output = gsub("[]]","<RBRACKET>",output)
-        output = gsub("<LBRACKET>","[[]",output)
-        output = gsub("<RBRACKET>","[]]",output)
-        output = gsub("[(]","[(]",output)
-        output = gsub("[)]","[)]",output)
-        if (!length(grep(output,out))) {
-            cat("Test",num,"didn't produce correct output:\n")
-            cat(">",deparse(xsub),"\n")
-            cat("Expected: '",output,"'\n",sep="")
-            cat("Observed: '",out,"'\n",sep="")
-            nfail <<- nfail + 1
-            whichfail <<- c(whichfail, num)
-            return()
-        }
-        if (missing(y)) return()
-    }
-    if (missing(y)) {
-        if (isTRUE(as.vector(x))) return()  # as.vector to drop names of a named vector such as returned by system.time
-        cat("Test",num,"expected TRUE but observed:\n")
-        cat(">",deparse(xsub),"\n")
-        if (is.data.table(x)) compactprint(x) else print(x)
-        nfail <<- nfail + 1
-        whichfail <<- c(whichfail, num)
-        return()
-    } else {
-        if (identical(x,y)) return()
-        if (is.data.table(x) && is.data.table(y)) {
-            # TO DO:  test 166 doesn't pass with these :
-            # if (!selfrefok(x)) stop("x selfref not ok")
-            # if (!selfrefok(y)) stop("y selfref not ok")
-            xc=copy(x)
-            yc=copy(y)  # so we don't affect the original data which may be used in the next test
-            # drop unused levels in factors
-            if (length(x)) for (i in which(sapply(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
-            if (length(y)) for (i in which(sapply(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
-            if (length(attr(x,"row.names"))) setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
-            if (length(attr(y,"row.names"))) setattr(yc,"row.names",NULL)
-            if (identical(xc,yc) && identical(key(x),key(y))) return()  # check key too because := might have cleared it
-            if (isTRUE(all.equal(xc,yc)) && identical(key(x),key(y))) return()
-        }
-        if (is.factor(x) && is.factor(y)) {
-            x = factor(x)
-            y = factor(y)
-            if (identical(x,y)) return()
-        }
-        if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal(x,y))) return()   # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
-    }
-    cat("Test",num,"ran without errors but failed check that x equals y:\n")
-    cat("> x =",deparse(xsub),"\n")
-    if (is.data.table(x)) compactprint(x) else if (length(x)>6) {cat("First 6 of", length(x),":");print(head(x))} else print(x)
-    cat("> y =",deparse(ysub),"\n")
-    if (is.data.table(y)) compactprint(y) else if (length(y)>6) {cat("First 6 of", length(y),":");print(head(y))} else print(y)
-    nfail <<- nfail + 1
-    whichfail <<- c(whichfail, num)
-}
+
+# nfail = ntest = lastnum = 0
+# whichfail = NULL
 
 .timingtests = FALSE
 started.at = Sys.time()
 
 if (!.devtesting) {
+    test = data.table:::test
+    compactprint = data.table:::compactprint
     is.sorted = data.table:::is.sorted
     forderv = data.table:::forderv
     forder = data.table:::forder
@@ -4663,7 +4549,7 @@ test(1311, DT[,list(list(key(.SD))),by=a,.SDcols=1:2], data.table(a=1:3, V1=list
 
 # That setkey can't operate on locked tables such as .SD. Added in v1.9.3.
 DT = data.table(a=1:3,b=6:1)
-test(1312, DT[,setkey(.SD),by=a], error="SD is locked. Using set.*functions on [.]SD is reserved")
+test(1312, DT[,setkey(.SD),by=a], error="Setting a physical key on .SD is reserved for possible future use")
 # was warning "Already keyed by this key but had invalid row order" due to the key not being cleared after the previous group.  A solution could have been to put back the original key on populating .SD for each group.  But instead we reserve it for future use and push the user towards doing it a different more efficient way (see Arun's speedups in the datatable-help thread).
 
 # gmin and gmax extensive testing (because there are tricky cases)
@@ -5201,8 +5087,35 @@ test(1374.1, DT[, list(x=sum(x)), by=y], data.table(y=c(1,3,2), x=c(5L, 6L, 4L))
 y <- c(1,2,2,3,3)
 test(1374.2, DT[, list(x=sum(x)), by=y], data.table(y=c(1,2,3), x=c(5L, 7L, 3L), key="y"))
 
-##########################
+# order in i combined with := in j, updates those rows in that order
+# order in i without := in j, returns new object in that order, which is then updated
+# Similarly, subset in i with := in j, updates that subset
+DT = as.data.table(iris)
+DT[,Species:=as.character(Species)]
+test(1375.1, DT[,mean(Petal.Width),by=Species][order(-V1),Species:=toupper(Species)]$Species, c("SETOSA","VERSICOLOR","VIRGINICA"))
+test(1375.2, DT[,mean(Petal.Width),by=Species][order(-V1)][,Species:=toupper(Species)]$Species, c("VIRGINICA","VERSICOLOR","SETOSA"))
+test(1375.3, DT[,mean(Petal.Width),by=Species][V1>1,Species:=toupper(Species)]$Species, c("setosa","VERSICOLOR","VIRGINICA"))
 
+# Secondary keys a.k.a indexes ...
+DT = data.table(a=1:10,b=10:1)
+test(1376.1, key2(DT), NULL)
+test(1376.2, DT[b==7L,verbose=TRUE], DT[4L], output="creating new index 'b'")
+test(1376.3, key2(DT), "b")
+test(1376.4, DT[b==8L,verbose=TRUE], DT[3L], output="using existing index 'b'")
+test(1376.5, DT[a==7L,verbose=TRUE], DT[7L], output="creating new index")  # add 2nd secondary key
+test(1376.6, key2(DT), c("b","a"))  # 2 secondary keys of single columns
+test(1376.7, DT[a==7L,verbose=TRUE], DT[7L], output="using existing index 'a'")
+setkey(DT,b)
+test(1376.8, key2(DT), NULL)
+test(1376.9, list(DT[a==2L], key2(DT)), list(DT[9L],"a"))  # create key2 for next test
+set2key(DT,NULL)
+test(1376.10, list(key(DT), key2(DT)), list("b", NULL))
+options(datatable.auto.index = FALSE)
+test(1376.11, list(DT[a==2L], key2(DT)), list(DT[9L],NULL))
+options(datatable.auto.index = TRUE)
+test(1376.12, list(DT[a==2L], key2(DT)), list(DT[9L],"a"))
+
+##########################
 
 
 # TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.
@@ -5232,6 +5145,7 @@ test(1374.2, DT[, list(x=sum(x)), by=y], data.table(y=c(1,2,3), x=c(5L, 7L, 3L),
 options(warn=0)
 if (nfail > 0) {
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
+    cat("\r")
     stop(nfail," error",s1," out of ",ntest, " in inst/tests/tests.Rraw on ",date(),". Search tests.Rraw for test number",s2,paste(whichfail,collapse=", "),". The test() function is defined at the top of tests.Rraw and contains usage info.")
     # important to stop() here, so that 'R CMD check' fails
 }

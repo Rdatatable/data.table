@@ -421,7 +421,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
         rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
         allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
         roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        bmerge(ldt, lcj, PROTECT(seq_int(ilen, 1)), PROTECT(seq_int(ilen, 1)), haskey, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
+        bmerge(ldt, lcj, PROTECT(seq_int(ilen, 1)), PROTECT(seq_int(ilen, 1)), haskey, R_NilValue, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
         UNPROTECT(9);
         SET_VECTOR_ELT(xx, 0, f__);
         
@@ -432,7 +432,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
         rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
         allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
         roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        bmerge(rdt, rcj, PROTECT(seq_int(mlen, 1)), PROTECT(seq_int(mlen, 1)), haskey, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
+        bmerge(rdt, rcj, PROTECT(seq_int(mlen, 1)), PROTECT(seq_int(mlen, 1)), haskey, R_NilValue, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
         UNPROTECT(9);
         SET_VECTOR_ELT(xx, 1, f__);
                 
@@ -482,7 +482,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
         rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
         allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
         roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        bmerge(rdt, tmp, PROTECT(seq_int(length(rdt), 1)), PROTECT(seq_int(length(rdt),1)), haskey, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
+        bmerge(rdt, tmp, PROTECT(seq_int(length(rdt), 1)), PROTECT(seq_int(length(rdt),1)), haskey, R_NilValue, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
         UNPROTECT(8); // len__, haskey, rollends, allLen1, roll (except f__)
 
         xx = PROTECT(allocVector(VECSXP, 2)); protecti++;
@@ -506,7 +506,7 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
     rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
     allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
     roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-    bmerge(cj, xx, PROTECT(seq_int(2, 1)), PROTECT(seq_int(2,1)), haskey, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
+    bmerge(cj, xx, PROTECT(seq_int(2, 1)), PROTECT(seq_int(2,1)), haskey, R_NilValue, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
     UNPROTECT(8); // len__, haskey, rollends, allLen1, roll (except f__)
     
     ranscols = !LOGICAL(drop)[0] ? length(VECTOR_ELT(rcj, 0)) : length(rdup);

@@ -38,6 +38,135 @@ test.data.table = function(verbose=FALSE, pkg="pkg") {
     invisible()
 }
 
+# Define test() and its globals here for use in dev
+# But primarily called by test.data.table() calling inst/tests/tests.Rraw
+
+nfail = ntest = lastnum = 0
+whichfail = NULL
+.devtesting = TRUE
+
+compactprint = function(DT, topn=2) {
+    cn = paste(" [Key=",paste(key(DT),collapse=",")," Types=",paste(substring(gsub("integer64","i64",sapply(DT,class)),1,3),collapse=","),"]",sep="")
+    print(copy(DT)[,(cn):=""], topn=topn)
+    invisible()
+}
+test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
+    # Usage:
+    # i) tests that x equals y when both x and y are supplied, the most common usage
+    # ii) tests that x is TRUE when y isn't supplied
+    # iii) if error is supplied, y should be missing and x is tested to result in an error message matching the pattern
+    # iv) if warning is supplied, y (if supplied) is checked to equal x, and x should result in a warning message matching the pattern
+    # v) if output is supplied, x is evaluated and printed and the output is checked to match the pattern
+    # At most one of error, warning or output may be supplied, all single character strings (passed to grep)
+    # num just needs to be numeric and unique. We normally increment integers at the end, but inserts can be made using decimals e.g. 10,11,11.1,11.2,12,13,...
+    # Motivations:
+    # 1) we'd like to know all tests that fail not just stop at the first. This often helps by revealing a common feature across a set of
+    #    failing tests
+    # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
+    #    from all.equal and different to identical related to row.names and unused factor levels
+    # 3) each test has a unique id which we refer to in commit messages, emails etc.
+    if (.devtesting) cat("\rRunning test id", num,"     ")
+    # TO DO: every line that could possibly fail should be inside test() so we don't have to show the numbers.
+    .lasttest <<- num
+    ntest <<- get("ntest",parent.frame(),inherits=TRUE) + 1   # bump number of tests run
+    nfail = get("nfail",parent.frame(),inherits=TRUE)   # to cater for both test.data.table() and stepping through tests in dev
+    whichfail = get("whichfail",parent.frame(),inherits=TRUE)
+    lastnum <<- num
+    xsub = substitute(x)
+    ysub = substitute(y)
+    if (is.null(output)) err <<- try(x,TRUE)
+    else out = gsub("NULL$","",paste(capture.output(print(err<<-try(x,TRUE))),collapse=""))
+    if (!is.null(error) || !is.null(warning)) {
+        type = ifelse(!is.null(error),"error","warning")
+        patt = txt = ifelse(!is.null(error),error,warning)
+        patt = gsub("[(]","[(]",patt)
+        patt = gsub("[)]","[)]",patt)
+        patt = gsub("\\^","\\\\^", patt)  # for test 923 containing 2^31 in error message
+        observedtype = ifelse(length(grep("converted from warning",err)), "warning", "error")
+        if (! (inherits(err,"try-error") &&
+               length(grep(patt,err)) &&
+               type==observedtype)) {
+            cat("Test",num,"didn't produce correct",type,":\n")
+            cat(">",deparse(xsub),"\n")
+            cat("Expected ",type,": '",txt,"'\n",sep="")
+            if (!inherits(err,"try-error"))
+                cat("Observed: no error or warning\n")
+            else
+                cat("Observed ",observedtype,": '",gsub("^[(]converted from warning[)] ","",gsub("\n$","",gsub("^Error.* : \n  ","",as.character(err)))),"'\n",sep="")
+            nfail <<- nfail + 1
+            whichfail <<- c(whichfail, num)
+            return()
+        }
+        if (type=="warning")
+            err <- if (is.null(output)) x<-try(suppressWarnings(x),TRUE) else out<-paste(capture.output(x<-try(suppressWarnings(x),TRUE)),collapse="")
+        else return()
+    }
+    if (inherits(err,"try-error") || (!missing(y) && inherits(err<-try(y,TRUE),"try-error"))) {
+        cat("Test",num,err)
+        nfail <<- nfail + 1
+        whichfail <<- c(whichfail, num)
+        return()
+    }
+    if (!is.null(output)) {
+        output = gsub("[[]","<LBRACKET>",output)
+        output = gsub("[]]","<RBRACKET>",output)
+        output = gsub("<LBRACKET>","[[]",output)
+        output = gsub("<RBRACKET>","[]]",output)
+        output = gsub("[(]","[(]",output)
+        output = gsub("[)]","[)]",output)
+        if (!length(grep(output,out))) {
+            cat("Test",num,"didn't produce correct output:\n")
+            cat(">",deparse(xsub),"\n")
+            cat("Expected: '",output,"'\n",sep="")
+            cat("Observed: '",out,"'\n",sep="")
+            nfail <<- nfail + 1
+            whichfail <<- c(whichfail, num)
+            return()
+        }
+        if (missing(y)) return()
+    }
+    if (missing(y)) {
+        if (isTRUE(as.vector(x))) return()  # as.vector to drop names of a named vector such as returned by system.time
+        cat("Test",num,"expected TRUE but observed:\n")
+        cat(">",deparse(xsub),"\n")
+        if (is.data.table(x)) compactprint(x) else print(x)
+        nfail <<- nfail + 1
+        whichfail <<- c(whichfail, num)
+        return()
+    } else {
+        if (identical(x,y)) return()
+        if (is.data.table(x) && is.data.table(y)) {
+            # TO DO:  test 166 doesn't pass with these :
+            # if (!selfrefok(x)) stop("x selfref not ok")
+            # if (!selfrefok(y)) stop("y selfref not ok")
+            xc=copy(x)
+            yc=copy(y)  # so we don't affect the original data which may be used in the next test
+            # drop unused levels in factors
+            if (length(x)) for (i in which(sapply(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
+            if (length(y)) for (i in which(sapply(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
+            setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
+            setattr(yc,"row.names",NULL)
+            setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
+            setattr(yc,"index",NULL)
+            if (identical(xc,yc) && identical(key(x),key(y))) return()  # check key on original x and y because := above might have cleared it on xc or yc
+            if (isTRUE(all.equal(xc,yc)) && identical(key(x),key(y))) return()
+        }
+        if (is.factor(x) && is.factor(y)) {
+            x = factor(x)
+            y = factor(y)
+            if (identical(x,y)) return()
+        }
+        if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal(x,y))) return()   # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
+    }
+    cat("Test",num,"ran without errors but failed check that x equals y:\n")
+    cat("> x =",deparse(xsub),"\n")
+    if (is.data.table(x)) compactprint(x) else if (length(x)>6) {cat("First 6 of", length(x),":");print(head(x))} else print(x)
+    cat("> y =",deparse(ysub),"\n")
+    if (is.data.table(y)) compactprint(y) else if (length(y)>6) {cat("First 6 of", length(y),":");print(head(y))} else print(y)
+    nfail <<- nfail + 1
+    whichfail <<- c(whichfail, num)
+}
+
 
 ## Tests that two data.tables (`target` and `current`) are equivalent.
 ## This method is used primarily to make life easy with a testing harness

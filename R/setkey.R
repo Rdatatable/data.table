@@ -13,16 +13,17 @@ set2keyv = function(...) setkeyv(..., physical=FALSE)
 setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
 {
     if (is.null(cols)) {   # this is done on a data.frame when !cedta at top of [.data.table
-        setattr(x,"sorted",NULL)
-        return(x)
+        if (physical) setattr(x,"sorted",NULL)
+        setattr(x,"index",NULL)  # setkey(DT,NULL) also clears secondary keys. set2key(DT,NULL) just clears secondary keys.
+        return(invisible(x))
     }
     if (!is.data.table(x)) stop("x is not a data.table")
     if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setkey.")
-    if (physical && identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Setting a physical key on .SD is reserved for possible future use; a tortuously flexible way to modify the original data by group. Try set2key instead. Or, set*(copy(.SD)) as a last resort since that will be much slower.")
+    if (physical && identical(attr(x,".data.table.locked"),TRUE)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try set2key instead. Or, set*(copy(.SD)) as a (slow) last resort.")
     if (!length(cols)) {
         warning("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
         setattr(x,"sorted",NULL)
-        return(x)
+        return(invisible(x))
     }
     if (identical(cols,"")) stop("cols is the empty string. Use NULL to remove the key.")
     if (any(nchar(cols)==0)) stop("cols contains some blanks.")
@@ -52,6 +53,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
         setattr(attr(x,"index"), paste(cols,collapse="__"), o)
         return(invisible(x))
     }
+    setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
     if (length(o)) {
         if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
         if (verbose) {
@@ -68,6 +70,8 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
 }
 
 key = function(x) attr(x,"sorted")
+
+key2 = function(x) names(attributes(attr(x,"index")))
 
 "key<-" = function(x,value) {
     warning("The key(x)<-value form of setkey can copy the whole table. This is due to <- in R itself. Please change to setkeyv(x,value) or setkey(x,...) which do not copy and are faster. See help('setkey'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your key<- calls.")
@@ -196,6 +200,12 @@ forder = function(x, ..., na.last=TRUE, decreasing=FALSE)
     o = forderv(ans, cols, sort=TRUE, retGrp=FALSE, order= if (decreasing) -order else order, na.last)
     if (!length(o)) o = seq_along(ans[[1L]]) else o
     o
+}
+
+fsort = function(x, decreasing = FALSE, na.last = FALSE, ...)
+{
+    o = forderv(x, order=!decreasing, na.last=na.last)
+    return( if (length(o)) x[o] else x )   # TO DO: document the nice efficiency here
 }
 
 setorder = function(x, ..., na.last=FALSE)
