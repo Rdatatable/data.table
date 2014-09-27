@@ -65,7 +65,9 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
     #    from all.equal and different to identical related to row.names and unused factor levels
     # 3) each test has a unique id which we refer to in commit messages, emails etc.
-    if (exists(".devtesting",parent.frame()) && get(".devtesting", parent.frame())) cat("\rRunning test id", num,"     ")
+    if ((v<-getOption("datatable.verbose")) || (exists(".devtesting",parent.frame()) && get(".devtesting", parent.frame()))) {
+        cat(if (v) "\n\n" else "\r", "Running test id ", num,"     ",sep="")
+    }
     # TO DO: every line that could possibly fail should be inside test() so we don't have to show the numbers.
     assign("ntest", get("ntest", parent.frame()) + 1, parent.frame(), inherits=TRUE)   # bump number of tests run
     assign("lastnum", num, parent.frame(), inherits=TRUE)
