@@ -23,8 +23,8 @@ void savetl_init(), savetl(SEXP s), savetl_end();
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
-unsigned long long dtwiddle(void *, int, int);
-unsigned long long i64twiddle(void *, int, int);
+unsigned long long dtwiddle(void *p, int i, int order);
+unsigned long long i64twiddle(void *p, int i, int order);
 unsigned long long (*twiddle)(void *, int, int);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 
