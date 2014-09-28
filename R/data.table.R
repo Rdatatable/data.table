@@ -1616,6 +1616,13 @@ as.data.table.list = function(x, keep.rownames=FALSE, bind.using=c("cbind", "rbi
 
     ## Implementing #833
     dims <- vapply(x, function(xi) length(dim(xi)), 0)
+
+    ## Check for nested lists. 
+    ## Throw warning to notify of lack of compatibility with as.data.frame
+    vapply(x, is.list, NA) & (!dims)
+        warning("as.data.table(x) and as.data.frame(X) differ in how they handle nested lists.\nNamely, as.data.table will allow for a list to be a single element in a column.\nIf you would like to force compatibility please use:\n   as.data.table(as.data.frame(x))")
+
+
     ## If any element has dim, then convert to data.table using rbind/cbind 
     ## For consistency with as.data.frame, as.data.table should 
     ##   fail if inconsisent dimensions. 
