@@ -185,7 +185,8 @@ static void icount(int *x, int *o, int n)
 }
 
 static int icheck(int x) {
-    return ((nalast != 1) ? x : ((x == NA_INTEGER) ? INT_MAX : x-1));       // if nalast==1, NAs must go last.
+    // return ((nalast != 1) ? x : ((x == NA_INTEGER) ? INT_MAX : x-1));       // if nalast==1, NAs must go last.
+    return ((nalast != 1) ? ((x != NA_INTEGER) ? x*order : x) : ((x != NA_INTEGER) ? (x*order)-1 : INT_MAX)); // if nalast==1, NAs must go last.
 }
 
 static void iinsert(int *x, int *o, int n)
@@ -282,7 +283,7 @@ static void iradix(int *x, int *o, int n)
     for (i=0;i<n;i++) {
         /* parallel histogramming pass; i.e. count occurrences of 
         0:255 in each byte.  Sequential so almost negligible. */
-        thisx = (unsigned int)(icheck(order*x[i])) - INT_MIN;               // relies on overflow behaviour. And shouldn't -INT_MIN be up in iradix?
+        thisx = (unsigned int)(icheck(x[i])) - INT_MIN;                     // relies on overflow behaviour. And shouldn't -INT_MIN be up in iradix?
         radixcounts[0][thisx & 0xFF]++;                                     // unrolled since inside n-loop
         radixcounts[1][thisx >> 8 & 0xFF]++;
         radixcounts[2][thisx >> 16 & 0xFF]++;
@@ -324,7 +325,7 @@ static void iradix(int *x, int *o, int n)
         }
     }
     for (i=n-1; i>=0; i--) {
-        thisx = ((unsigned int)(icheck(order*x[i])) - INT_MIN) >> shift & 0xFF;
+        thisx = ((unsigned int)(icheck(x[i])) - INT_MIN) >> shift & 0xFF;
         o[--thiscounts[thisx]] = i+1;
     }
     
@@ -352,7 +353,7 @@ static void iradix(int *x, int *o, int n)
             push(thisgrpn);
         } else {
             for (j=0; j<thisgrpn; j++)
-                ((int *)radix_xsub)[j] = icheck(order*x[o[itmp+j]-1]);      // this is why this xsub here can't be the same memory as xsub in forder.
+                ((int *)radix_xsub)[j] = icheck(x[o[itmp+j]-1]);            // this is why this xsub here can't be the same memory as xsub in forder.
             iradix_r(radix_xsub, o+itmp, thisgrpn, nextradix);              // changes xsub and o by reference recursively.
         }
         itmp = thiscounts[i];
@@ -862,7 +863,7 @@ static void csort(SEXP *x, int *o, int n)
     }
     if (n < N_SMALL && nalast != 0) {                                    // TO DO: calibrate() N_SMALL=200
         if (o[0] == -1) for (i=0; i<n; i++) o[i] = i+1;    // else use o from caller directly (not 1st column)
-        for (int i=0; i<n; i++) csort_otmp[i] = icheck(order*csort_otmp[i]);
+        for (int i=0; i<n; i++) csort_otmp[i] = icheck(csort_otmp[i]);
         iinsert(csort_otmp, o, n);
     } else {
         setRange(csort_otmp, n);
@@ -942,9 +943,9 @@ static int isorted(int *x, int n)                           // order = 1 is asce
         if (j != n) return(0);                              // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
     }                                                       // no NAs  ? continue to check the rest of isorted - the same routine as usual
     if (n<=1) { push(n); return(1); }
-    if (icheck(order*x[1]) < icheck(order*x[0])) {
+    if (icheck(x[1]) < icheck(x[0])) {
         i = 2;
-        while (i<n && icheck(order*x[i]) < icheck(order*x[i-1])) i++;
+        while (i<n && icheck(x[i]) < icheck(x[i-1])) i++;
         if (i==n) { mpush(1,n); return(-1);}                // strictly opposite to expected 'order', no ties; 
                                                             // e.g. no more than one NA at the beginning/end (for order=-1/1)
         else return(0);
@@ -952,7 +953,7 @@ static int isorted(int *x, int n)                           // order = 1 is asce
     int old = gsngrp[flip];
     int tt = 1;
     for (i=1; i<n; i++) {
-        if (icheck(order*x[i]) < icheck(order*x[i-1])) { gsngrp[flip] = old; return(0); }
+        if (icheck(x[i]) < icheck(x[i-1])) { gsngrp[flip] = old; return(0); }
         if (x[i]==x[i-1]) tt++; else { push(tt); tt=1; }
     }
     push(tt);
@@ -1033,7 +1034,7 @@ static void isort(int *x, int *o, int n)
         /* pushes inside too. Changes x and o by reference, so not suitable  in first column when o hasn't been populated yet 
            and x is the actual column in DT (hence check on o[0]). */
         if (order != 1 || nalast != -1)                     // so that default case, i.e., order=1, nalast=FALSE will not be affected (ex: `setkey`)
-            for (int i=0; i<n; i++) x[i] = icheck(order*x[i]);
+            for (int i=0; i<n; i++) x[i] = icheck(x[i]);
         iinsert(x, o, n);
     } else {
         /* Tighter range (e.g. copes better with a few abormally large values in some groups), but also, when setRange was once at 
