@@ -1566,6 +1566,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
     alloc.col(value)
 }
 
+
 as.data.table.array = function(x, keep.rownames=FALSE)
 {
 
@@ -1583,7 +1584,17 @@ as.data.table.array = function(x, keep.rownames=FALSE)
     ## Convert to matrix
     d <- dim(x)
     setattr(x, "dim", c(d[1L], prod(d[-1L])))
-    return(as.data.table.matrix(x, keep.rownames=keep.rownames))
+    ret <- as.data.table.matrix(x, keep.rownames=keep.rownames)
+
+    # --- TODO
+    # --- this would be consistent with as.data.frame, but it causes print(ret) to complain 
+    # ------------
+    # ## single-dim arrays are handled differently by as.data.frame. Namely, dim is preserved
+    # if (length(dim) == 1) {
+    #     setattr(ret[[1+keep.rownames]], "dim", d)
+    # }
+    
+    return(ret)
 }
 
 as.data.table.data.frame = function(x, keep.rownames=FALSE)
@@ -1614,6 +1625,13 @@ as.data.table.list = function(x, keep.rownames=FALSE, bind.using=c("cbind", "rbi
         bind.using <- match.arg(bind.using)
         bind.func <- match.fun(bind.using)
 
+        ## should be all of the same class for rbind
+        if (bind.using == "rbind") {
+            classes <- lapply(x, function(xi) sapply(xi, class))
+            if (!all(duplicated(unlist(classes, use.names=FALSE))[-1L]))
+                warning ("bind.using=\"rbind\" in as.data.table is an experimental feature intended for list of matricies. It appears that the elements of 'x' are of mixed classes and coercian is likely.")
+        }
+
         x <- copy(x)
 
         ## Before checking nrows/ncols, Arrays must be converted to matrices
@@ -1643,7 +1661,8 @@ as.data.table.list = function(x, keep.rownames=FALSE, bind.using=c("cbind", "rbi
         if (any(range(L) != mean(L)))
           stop(sprintf("arguments imply differing number of %s: %s\n\nMore Info: 'x', the list provided to as.data.table(), has at least one element that is two-dimensional. For consistency with as.data.frame, there is no recycling when the number of %1$s / length of each element of x are not all the same.\nYou may want to consider:    do.call(cbind, x)", ifelse(bind.using == "cbind", "rows", "cols"), paste(L, collapse=", ")))
 
-        return(as.data.table(do.call(bind.func, x)))
+        # return(as.data.table(do.call(bind.func, x)))
+        return(do.call(bind.func, lapply(x, as.data.table)))
     } else {
     ## Proceed as "normal" (prior to Implementing #833)
         n = vapply(x, length, 0L)
