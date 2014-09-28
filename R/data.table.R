@@ -1661,8 +1661,9 @@ as.data.table.list = function(x, keep.rownames=FALSE, bind.using=c("cbind", "rbi
         if (any(range(L) != mean(L)))
           stop(sprintf("arguments imply differing number of %s: %s\n\nMore Info: 'x', the list provided to as.data.table(), has at least one element that is two-dimensional. For consistency with as.data.frame, there is no recycling when the number of %1$s / length of each element of x are not all the same.\nYou may want to consider:    do.call(cbind, x)", ifelse(bind.using == "cbind", "rows", "cols"), paste(L, collapse=", ")))
 
-        # return(as.data.table(do.call(bind.func, x)))
-        return(do.call(bind.func, lapply(x, as.data.table)))
+        # We cannot simply c/rbind since this will force coercian. 
+        # The first element in the list must be a data.table 
+        return(do.call(bind.func, c(list(as.data.table(x[[1L]])), x[-1L])))
     } else {
     ## Proceed as "normal" (prior to Implementing #833)
         n = vapply(x, length, 0L)
