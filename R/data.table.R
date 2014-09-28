@@ -1566,6 +1566,26 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
     alloc.col(value)
 }
 
+as.data.table.array = function(x, keep.rownames=FALSE)
+{
+
+    if (keep.rownames) {
+        ## matricies and arrays may not have rownames attribute
+        if (is.null(rownames(x))) {
+            warning("keep.rownames has been set to TRUE but rownames(x) is NULL. rn column will be NA_character_")
+            return(data.table(rn=rep(NA_character_, nrow(x)), x, keep.rownames=FALSE))
+        } else 
+            return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
+    }
+
+    ## deep copy, since we will modify original
+    x <- copy(x)
+    ## Convert to matrix
+    d <- dim(x)
+    setattr(x, "dim", c(d[1L], prod(d[-1L])))
+    return(as.data.table.matrix(x, keep.rownames=keep.rownames))
+}
+
 as.data.table.data.frame = function(x, keep.rownames=FALSE)
 {
     if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
