@@ -1,13 +1,10 @@
 #include "data.table.h"
-
 // #define TIMING_ON
 
-/* Only forder() is meant for use by other C code in data.table, hence all functions here other than forder are static.
-They make use of global variables, so access must be via forder only.
-The coding techniques deployed here are for efficiency.*/
-
-/* Notes regarding the addition of 'nalast' argument:
-
+/* 
+    - Only forder() and *twiddle() functions are meant for use by other C code in data.table, hence all other functions here except forder and *twiddle are static.
+    - The static functions here make use of global variables, whose scope is limited to the same translation unit; therefore access from outside this file must be via forder and/or *twiddle only. 
+    - The coding techniques deployed here are for efficiency; e.g. i) the static functions are recursive or called repetitively and we wish to minimise stack overhead, or ii) reach outside themselves to place results in the end result directly rather than returning small bits of memory.
 */
 
 static int *gs[2] = {NULL};                                         // gs = groupsizes e.g. 23,12,87,2,1,34,...
@@ -184,8 +181,9 @@ static void icount(int *x, int *o, int n)
     return;
 }
 
-static int icheck(int x) {
-    // return ((nalast != 1) ? x : ((x == NA_INTEGER) ? INT_MAX : x-1));       // if nalast==1, NAs must go last.
+// When x=NA and order=-1 x*order results in integer overflow on some compilers. The commented code below returned in segfault. Fixed by adding additional check.
+static inline int icheck(int x) {
+    // return ((nalast != 1) ? x : ((x == NA_INTEGER) ? INT_MAX : x-1));    // if nalast==1, NAs must go last.
     return ((nalast != 1) ? ((x != NA_INTEGER) ? x*order : x) : ((x != NA_INTEGER) ? (x*order)-1 : INT_MAX)); // if nalast==1, NAs must go last.
 }
 
