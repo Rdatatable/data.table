@@ -1532,7 +1532,14 @@ as.matrix.data.table = function(x,...)
 
 as.data.table.matrix = function(x, keep.rownames=FALSE)
 {
-    if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
+    if (keep.rownames) {
+        ## matricies and arrays may not have rownames attribute
+        if (is.null(rownames(x))) {
+            warning("keep.rownames has been set to TRUE but rownames(x) is NULL. rn column will be NA_character_")
+            return(data.table(rn=rep(NA_character_, nrow(x)), x, keep.rownames=FALSE))
+        } else 
+            return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
+    }
     d <- dim(x)
     nrows <- d[1L]
     ir <- seq_len(nrows)
