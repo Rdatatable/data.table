@@ -4157,47 +4157,32 @@ dt <- data.table(a=sample(2,10,TRUE), b=sample(3,10,TRUE), c=sample(4,10,TRUE), 
 options(datatable.optimize=1L)
 ans2 <- dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a]
 options(datatable.optimize=Inf)
-options(datatable.verbose=TRUE)
-out1 <- capture.output(ans1 <- dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a])
-test(1268.1, ans1, ans2)
-test(1268.2, out1[3L], "GForce optimized j to 'list(gmean(b), gmean(c), gmean(d), gsum(b), gsum(c), gsum(d))'")
-options(datatable.verbose=FALSE)
+test(1268.1, dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], ans2,
+             output="GForce optimized j to 'list(gmean(b), gmean(c), gmean(d), gsum(b), gsum(c), gsum(d))'")
 
 options(datatable.optimize=1L)
 ans2 <- dt[, c(lapply(.SD, mean), .N), by=a]
 options(datatable.optimize=Inf)
-options(datatable.verbose=TRUE)
-out1 <- capture.output(ans1 <- dt[, c(lapply(.SD, mean), .N), by=a])
-test(1268.3, ans1, ans2)
-test(1268.4, out1[2L], "lapply optimization changed j from 'c(lapply(.SD, mean), .N)' to 'list(mean(b), mean(c), mean(d), .N)'")
-options(datatable.verbose=FALSE)
+test(1268.2, dt[, c(lapply(.SD, mean), .N), by=a, verbose=TRUE], ans2,
+                  output = "lapply optimization changed j from 'c(lapply(.SD, mean), .N)' to 'list(mean(b), mean(c), mean(d), .N)'")
 
 options(datatable.optimize=1L)
 ans2 <- dt[, c(list(c), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
-options(datatable.verbose=TRUE)
-out1 <- capture.output(ans1 <- dt[, c(list(c), lapply(.SD, mean)), by=a])
-test(1268.5, ans1, ans2)
-test(1268.6, out1[2L], "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(list(c), mean(b), mean(c), mean(d))'")
-options(datatable.verbose=FALSE)
+test(1268.3, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
+             output = "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(list(c), mean(b), mean(c), mean(d))'")
 
 options(datatable.optimize=1L)
 ans2 <- dt[, c(as.list(c), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
-options(datatable.verbose=TRUE)
-out1 <- capture.output(ans1 <- dt[, c(as.list(c), lapply(.SD, mean)), by=a])
-test(1268.7, ans1, ans2)
-test(1268.8, out1[2L], "lapply optimization changed j from 'c(as.list(c), lapply(.SD, mean))' to 'list(as.list(c), mean(b), mean(c), mean(d))'")
-options(datatable.verbose=FALSE)
+test(1268.4, dt[, c(as.list(c), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
+             output = "lapply optimization changed j from 'c(as.list(c), lapply(.SD, mean))' to 'list(as.list(c), mean(b), mean(c), mean(d))'")
 
 options(datatable.optimize=1L)
 ans2 <- dt[, c(sum(d), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
-options(datatable.verbose=TRUE)
-out1 <- capture.output(ans1 <- dt[, c(sum(d), lapply(.SD, mean)), by=a])
-test(1268.9, ans1, ans2)
-test(1268.10, out1[3L], "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
-options(datatable.verbose=FALSE)
+test(1268.5, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
+             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
 ### FR #2722 tests end here ###
 
 # Wide range numeric and integer64, to test all bits
@@ -4862,22 +4847,22 @@ L <- list(data.table(BOD), data.table(BOD))
 test(1361, lapply(L, "[", Time==3L), list(L[[1L]][Time == 3L], L[[2L]][Time == 3L]))
 
 # Feature #735, first two cases: 1) .SD, and 2) DT[, c(.SD, lapply(.SD, ...)), by=.] optimisation:
-options(datatable.verbose=TRUE)
+oldv = options(datatable.verbose=TRUE)  # save because R CMD check runs twice: once with verbose=FALSE then with TRUE
 DT <- data.table(x=c(1,1,1,2,2), y=1:5, z=6:10)
-test(1362.1, capture.output(DT[, .SD, by=x])[2L], "lapply optimization changed j from '.SD' to 'list(y, z)'")
-test(1362.2, capture.output(DT[, c(.SD), by=x])[2L], "lapply optimization changed j from 'c(.SD)' to 'list(y, z)'")
-test(1362.3, capture.output(DT[, c(.SD, lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(.SD, lapply(.SD, sum))' to 'list(y, z, sum(y), sum(z))'")
-test(1362.4, capture.output(DT[, c(lapply(.SD, sum), .SD), by=x])[2L], "lapply optimization changed j from 'c(lapply(.SD, sum), .SD)' to 'list(sum(y), sum(z), y, z)'")
-test(1362.5, capture.output(DT[, c(list(y), .SD, lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(list(y), .SD, lapply(.SD, sum))' to 'list(list(y), y, z, sum(y), sum(z))'")
+test(1362.1, DT[, .SD, by=x], output="lapply optimization changed j from '.SD' to 'list(y, z)'")
+test(1362.2, DT[, c(.SD), by=x], output="lapply optimization changed j from 'c(.SD)' to 'list(y, z)'")
+test(1362.3, DT[, c(.SD, lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(.SD, lapply(.SD, sum))' to 'list(y, z, sum(y), sum(z))'")
+test(1362.4, DT[, c(lapply(.SD, sum), .SD), by=x], output="lapply optimization changed j from 'c(lapply(.SD, sum), .SD)' to 'list(sum(y), sum(z), y, z)'")
+test(1362.5, DT[, c(list(y), .SD, lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(list(y), .SD, lapply(.SD, sum))' to 'list(list(y), y, z, sum(y), sum(z))'")
 # 3) .SD[1] and 4) .SD[1L]
-test(1362.6, capture.output(DT[, c(.SD[1L]), by=x])[2L], "lapply optimization changed j from 'c(.SD[1L])' to 'list(y[1L], z[1L])'")
-test(1362.7, capture.output(DT[, c(.SD[1L], lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(.SD[1L], lapply(.SD, sum))' to 'list(y[1L], z[1L], sum(y), sum(z))'")
-test(1362.8, capture.output(DT[, c(.SD[.N]), by=x])[2L], "lapply optimization changed j from 'c(.SD[.N])' to 'list(y[.N], z[.N])'")
-test(1362.9, capture.output(DT[, .SD[1], by=x])[2L], "lapply optimization changed j from '.SD[1]' to 'list(y[1], z[1])'")
-test(1362.11, capture.output(DT[, c(.SD[1]), by=x])[2L], "lapply optimization changed j from 'c(.SD[1])' to 'list(y[1], z[1])'")
-test(1362.12, capture.output(DT[, c(.SD[1], lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(.SD[1], lapply(.SD, sum))' to 'list(y[1], z[1], sum(y), sum(z))'")
-test(1362.13, capture.output(DT[, head(.SD, 1), by=x])[2L], "lapply optimization changed j from 'head(.SD, 1)' to 'list(head(y, 1), head(z, 1))'")
-options(datatable.verbose=FALSE)
+test(1362.6, DT[, c(.SD[1L]), by=x], output="lapply optimization changed j from 'c(.SD[1L])' to 'list(y[1L], z[1L])'")
+test(1362.7, DT[, c(.SD[1L], lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(.SD[1L], lapply(.SD, sum))' to 'list(y[1L], z[1L], sum(y), sum(z))'")
+test(1362.8, DT[, c(.SD[.N]), by=x], output="lapply optimization changed j from 'c(.SD[.N])' to 'list(y[.N], z[.N])'")
+test(1362.9, DT[, .SD[1], by=x], output="lapply optimization changed j from '.SD[1]' to 'list(y[1], z[1])'")
+test(1362.11, DT[, c(.SD[1]), by=x], output="lapply optimization changed j from 'c(.SD[1])' to 'list(y[1], z[1])'")
+test(1362.12, DT[, c(.SD[1], lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(.SD[1], lapply(.SD, sum))' to 'list(y[1], z[1], sum(y), sum(z))'")
+test(1362.13, DT[, head(.SD, 1), by=x], output="lapply optimization changed j from 'head(.SD, 1)' to 'list(head(y, 1), head(z, 1))'")
+options(oldv)
 
 # setDT(DT), when input is already a data.table checks if selfrefok and if not, does alloc.col again.
 DT = list(data.frame(x=1:5, y=6:10))
