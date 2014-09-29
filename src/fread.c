@@ -266,7 +266,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
                          col+1, TypeName[oldtype], TypeName[newtype], sofar+1, MsgLimit(lch-ch), ch);
     if (sizes[TypeSxp[oldtype]]<4) {sprintf(errormsg,"Internal error: SIZEOF oldtype %d < 4", oldtype); EXIT();}
     if (sizes[TypeSxp[newtype]]<4) {sprintf(errormsg,"Internal error: SIZEOF newtype %d < 4", newtype); EXIT();}
-    if (sizes[TypeSxp[oldtype]] == sizes[TypeSxp[newtype]] && newtype != SXP_STR) {
+    if (sizes[TypeSxp[oldtype]] == sizes[TypeSxp[newtype]] && newtype != SXP_STR) {   // after && is quick fix. TO DO: revisit
         TYPEOF(v) = TypeSxp[newtype];
         newv=v;
     } else {

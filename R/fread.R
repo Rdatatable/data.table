@@ -1,5 +1,5 @@
 
-fread = function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=FALSE,autostart=30L,skip=-1L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),showProgress=getOption("datatable.showProgress")) {
+fread = function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=30L,skip=-1L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),showProgress=getOption("datatable.showProgress")) {
     if (!is.character(input) || length(input)!=1) {
         stop("'input' must be a single character string containing a file name, a command, full path to a file, a URL starting 'http://' or 'file://', or the input data itself")
     } else if (substring(input,1,7) %chin% c("http://","https:/","file://")) {
