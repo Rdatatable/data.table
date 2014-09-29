@@ -112,19 +112,20 @@ static void setRange(int *x, int n)
         else if (tmp < xmin) xmin = tmp;
     }
     if(xmin == NA_INTEGER) {range = NA_INTEGER; return;}                    // all NAs, nothing to do    
-
-    if (order == -1) {                                                      // instead of multiplying each time with "order" in the above for-loop, 
-        tmp  = order*xmin;                                                  // get 'xmin' and 'xmax' first and change them if order == -1
-        xmin = order*xmax;
-        xmax = tmp;
-    }
     
     overflow = (double)xmax - (double)xmin + 1;                             // ex: x=c(-2147483647L, NA_integer_, 1L) results in overflowing int range.
     if (overflow > INT_MAX) {range = INT_MAX; return;}                      // detect and force iradix here, since icount is out of the picture
     range = xmax-xmin+1;
-    off = -xmin+off;                                                        // changed from -xmin+1 to -xmin+off to take care of 'na.last' argument
+    off = order==1 ? -xmin+off : xmax+off;                                  // so that  off+order*x[i]  (below in icount)
+                                                                            // => (x[i]-xmin)+0|1  or  (xmax-x[i])+0|1
     return;
 }
+
+// x*order results in integer overflow when -1*NA, so careful to avoid that here :
+static inline int icheck(int x) {
+    return ((nalast != 1) ? ((x != NA_INTEGER) ? x*order : x) : ((x != NA_INTEGER) ? (x*order)-1 : INT_MAX)); // if nalast==1, NAs must go last.
+}
+
 
 static void icount(int *x, int *o, int n)
 /* Counting sort:
@@ -142,7 +143,7 @@ static void icount(int *x, int *o, int n)
     if (range > N_RANGE) Error("Internal error: range = %d; isorted can't handle range > %d", range, N_RANGE);
     for(i=0; i<n; i++) {
         if (x[i] == NA_INTEGER) counts[napos]++;                            // For nalast=NA case, we won't remove/skip NAs, rather set 'o' indices
-        else counts[off+ order*x[i]]++;                                     // to 0. subset will skip them. We can't know how many NAs to skip 
+        else counts[off + order*x[i]]++;                                     // to 0. subset will skip them. We can't know how many NAs to skip 
     }                                                                       // beforehand - i.e. while allocating "ans" vector
     // TO DO: at this point if the last count==n then it's all the same number and we can stop now.
     // Idea from Terdiman, then improved on that by not needing to loop through counts.
@@ -158,8 +159,7 @@ static void icount(int *x, int *o, int n)
         }
     }
     for(i=n-1; i>=0; i--) {
-        tmp = order*x[i];                                                   // take care of na.last=NA after this loop separately.
-        o[--counts[(tmp == NA_INTEGER) ? napos : off+tmp]] = (int)(i+1);    // This way na.last=TRUE/FALSE cases will have just a single if-check overhead.
+        o[--counts[(x[i] == NA_INTEGER) ? napos : off+order*x[i]]] = (int)(i+1);    // This way na.last=TRUE/FALSE cases will have just a single if-check overhead.
     }
     if (nalast == 0)                                                        // nalast = 1, -1 are both taken care already.
         for (i=0; i<n; i++) o[i] = (x[o[i]-1] == NA_INTEGER) ? 0 : o[i];    // nalast = 0 is dealt with separately as it just sets o to 0
@@ -172,19 +172,12 @@ static void icount(int *x, int *o, int n)
         doesn't matter if we set to 0 several times on any repeats */
         counts[napos]=0;
         for (i=0; i<n; i++) {
-            tmp = order*x[i];
-            if (tmp!=NA_INTEGER) counts[off+tmp]=0;
+            if (x[i]!=NA_INTEGER) counts[off + order*x[i]]=0;
         }
     } else {
         memset(counts, 0, (range+1)*sizeof(int));                           // *** BLOCK 6 ***
     }
     return;
-}
-
-// When x=NA and order=-1 x*order results in integer overflow on some compilers. The commented code below returned in segfault. Fixed by adding additional check.
-static inline int icheck(int x) {
-    // return ((nalast != 1) ? x : ((x == NA_INTEGER) ? INT_MAX : x-1));    // if nalast==1, NAs must go last.
-    return ((nalast != 1) ? ((x != NA_INTEGER) ? x*order : x) : ((x != NA_INTEGER) ? (x*order)-1 : INT_MAX)); // if nalast==1, NAs must go last.
 }
 
 static void iinsert(int *x, int *o, int n)
