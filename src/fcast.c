@@ -222,9 +222,10 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // rows and cols are 1-based passe
         SET_VECTOR_ELT(ans, i, subsetVectorRaw(VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, ansn, ansn));  // column vectors aren't over allocated yet
     }
     setAttrib(ans, R_NamesSymbol, subsetVectorRaw( getAttrib(x, R_NamesSymbol), cols, LENGTH(cols), LENGTH(cols)+64 ));
-    setAttrib(ans, R_RowNamesSymbol, tmp=allocVector(INTSXP, 2));
+    tmp = PROTECT(allocVector(INTSXP, 2));
     INTEGER(tmp)[0] = NA_INTEGER;
     INTEGER(tmp)[1] = -ansn;
+    setAttrib(ans, R_RowNamesSymbol, tmp);  // The contents of tmp must be set before being passed to setAttrib(). setAttrib looks at tmp value and copies it in the case of R_RowNamesSymbol. Caused hard to track bug around 28 Sep 2014.
     // maintain key if ordered subset ...
     SEXP key = getAttrib(x, install("sorted"));
     if (length(key)) {
@@ -241,7 +242,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // rows and cols are 1-based passe
         }
     }
     setselfref(ans);
-    UNPROTECT(1);
+    UNPROTECT(2);
     return ans;
 }
 
