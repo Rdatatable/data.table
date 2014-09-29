@@ -4879,7 +4879,7 @@ test(1362.8, capture.output(DT[, c(.SD[.N]), by=x])[2L], "lapply optimization ch
 test(1362.9, capture.output(DT[, .SD[1], by=x])[2L], "lapply optimization changed j from '.SD[1]' to 'list(y[1], z[1])'")
 test(1362.11, capture.output(DT[, c(.SD[1]), by=x])[2L], "lapply optimization changed j from 'c(.SD[1])' to 'list(y[1], z[1])'")
 test(1362.12, capture.output(DT[, c(.SD[1], lapply(.SD, sum)), by=x])[2L], "lapply optimization changed j from 'c(.SD[1], lapply(.SD, sum))' to 'list(y[1], z[1], sum(y), sum(z))'")
-# tmp comment out ... test(1362.13, capture.output(DT[, head(.SD, 1), by=x])[2L], "lapply optimization changed j from 'head(.SD, 1)' to 'list(head(y, 1), head(z, 1))'")
+test(1362.13, capture.output(DT[, head(.SD, 1), by=x])[2L], "lapply optimization changed j from 'head(.SD, 1)' to 'list(head(y, 1), head(z, 1))'")
 options(datatable.verbose=FALSE)
 
 # setDT(DT), when input is already a data.table checks if selfrefok and if not, does alloc.col again.
