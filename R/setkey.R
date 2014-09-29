@@ -352,7 +352,8 @@ frankv = function(x, na.last=TRUE, order=1L, ties.method=c("average", "first", "
         na = is_na(x)
         xx = shallow_list(x)
         setDT(xx)
-        .Call(CsubsetDT, xx, which(!na), seq_along(xx))
+        xx[!na]
+        # .Call(CsubsetDT, xx, which(!na), seq_along(xx))
     }
     ties_random <- function(x) {
         lx = length(x); sx = seq_len(lx)
