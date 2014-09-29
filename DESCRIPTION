@@ -8,7 +8,7 @@ Imports: methods, reshape2
 Suggests: chron, ggplot2 (>= 0.9.0), plyr, reshape, testthat (>= 0.4), hexbin, fastmatch, nlme, xts, bit64
 Description: Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns and a fast file reader (fread). Offers a natural and flexible syntax, for faster development.
 License: GPL (>= 2)
-URL: http://datatable.r-forge.r-project.org/,  http://stackoverflow.com/questions/tagged/data.table
+URL: https://github.com/Rdatatable/data.table/wiki
 BugReports: https://github.com/Rdatatable/data.table/issues
 MailingList: datatable-help@lists.r-forge.r-project.org
 ByteCompile: TRUE
