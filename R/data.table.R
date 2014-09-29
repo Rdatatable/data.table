@@ -1156,8 +1156,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     alloc = if (length(len__)) seq_len(max(len__)) else 0L
     SDenv$.I = alloc
     if (length(xcols)) {
-        # SDenv$.SD = .Call(CsubsetDT,x,alloc,xcols)    # i.e. x[alloc, xcols, with=FALSE] but without recursive overhead
-        SDenv$.SD = x[alloc, xcols, with=FALSE]
+        SDenv$.SD = .Call(CsubsetDT,x,alloc,xcols)    # i.e. x[alloc, xcols, with=FALSE] but without recursive overhead
         # Must not shallow copy here. This is the allocation for the largest group. Since i=alloc is passed in here, it won't shallow copy, even in future. Only DT[,xvars,with=FALSE] might ever shallow copy automatically.
     }
     if (nrow(SDenv$.SD)==0L) setattr(SDenv$.SD,"row.names",c(NA_integer_,0L))

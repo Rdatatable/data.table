@@ -33,6 +33,5 @@ setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y)) {
     # actual setdiff starts here...
     ux = unique(ux); uy = unique(uy)
     idx  = duplicated(rbind(unique(uy), unique(ux), use.names=TRUE, fill=FALSE))[-seq_len(nrow(uy))]
-    ux[!idx]
-    # .Call("CsubsetDT", ux, which(!idx), seq_along(ux))
+    .Call("CsubsetDT", ux, which(!idx), seq_along(ux))
 }
