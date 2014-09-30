@@ -1,11 +1,11 @@
 
 **Current stable release** (always even) : [v1.9.2 on CRAN](http://cran.r-project.org/web/packages/data.table/index.html), released 27<sup>th</sup> Feb 2014.<br>
-**Development version** (always odd): [v1.9.3 on GitHub](https://github.com/Rdatatable/data.table/) [![Build Status](https://travis-ci.org/Rdatatable/data.table.svg?branch=master)](https://travis-ci.org/Rdatatable/data.table)
-<!--- Note this file is displayed on the CRAN page, as well as on GitHub. So the the link to GitHub is not to itself when viewed on CRAN page. --->
+**Development version** (always odd): [v1.9.3 on GitHub](https://github.com/Rdatatable/data.table/) [![Build Status](https://travis-ci.org/Rdatatable/data.table.svg?branch=master)](https://travis-ci.org/Rdatatable/data.table) [How to install](https://github.com/Rdatatable/data.table/wiki/Installation)
+<!--- Note this file is displayed on the CRAN page, as well as on GitHub. So the the link to GitHub is not to itself when viewed on the CRAN page. --->
 
 **Introduction, benchmarks etc**: [HOMEPAGE](https://github.com/Rdatatable/data.table/wiki)
 
-If you install the latest version from GitHub and start using a new feature, you may sometimes find it is subsequently changed and your new code breaks. When we release to CRAN we are saying that we are happy with the changes and you can rely on them being there in future.  However, if you hit a problem that the development version fixes, then it is usually safe to simply upgrade to it.<br>[How to install](https://github.com/Rdatatable/data.table/wiki/Installation).
+If you install the latest version from GitHub and start using a new feature, you may sometimes find it is subsequently changed and your new code breaks. When we release to CRAN we are saying that we are happy with the changes and you can rely on them being there in future.  However, if you hit a problem that the development version fixes, then it is usually safe to simply upgrade to it.
 
 ---
 
