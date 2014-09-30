@@ -5,7 +5,7 @@
 
 **Introduction, benchmarks etc**: [HOMEPAGE](https://github.com/Rdatatable/data.table/wiki)
 
-If you install the latest version from GitHub and start using a new feature, you may sometimes find it is subsequently changed and your new code breaks. When we release to CRAN we are saying that we are happy with the changes and you can rely on them being there in future.  However, if you hit a problem that the development version fixes, then it is usually safe to simply upgrade to it.
+If you install the latest version from GitHub and start using a new feature, you may sometimes find it is subsequently changed and your new code breaks. When we release to CRAN we are saying that we are happy with the changes and you can rely on them being there in future.  However, if you hit a problem that the development version fixes, then it is usually safe to simply upgrade to it. It is trivial to revert back to the CRAN version.
 
 ---
 
