@@ -1,6 +1,7 @@
 
 **Current stable release** (always even) : [v1.9.2 on CRAN](http://cran.r-project.org/web/packages/data.table/index.html), released 27<sup>th</sup> Feb 2014.<br>
 **Development version** (always odd): [v1.9.3 on GitHub](https://github.com/Rdatatable/data.table/) [![Build Status](https://travis-ci.org/Rdatatable/data.table.svg?branch=master)](https://travis-ci.org/Rdatatable/data.table)
+<!--- Note this file is displayed on the CRAN page, as well as on GitHub. So the the link to GitHub is not to itself when viewed on CRAN page. --->
 
 **Introduction, benchmarks etc**: [HOMEPAGE](https://github.com/Rdatatable/data.table/wiki)
 
