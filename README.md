@@ -5,8 +5,6 @@
 
 **Introduction, benchmarks etc**: [HOMEPAGE](https://github.com/Rdatatable/data.table/wiki)
 
-If you install the latest version from GitHub and start using a new feature, you may sometimes find it is subsequently changed and your new code breaks. When we release to CRAN we are saying that we are happy with the changes and you can rely on them being there in future.  However, if you hit a problem that the development version fixes, then it is usually safe to simply upgrade to it. It is trivial to revert back to the CRAN version.
-
 ---
 
 ### Changes in v1.9.3  (in development on GitHub)
@@ -56,15 +54,27 @@ If you install the latest version from GitHub and start using a new feature, you
     ```
     Similarly, `by=.()` is now a shortcut for `by=list()`, for consistency with `i` and `j`.
     
-  7. `bit64::integer64` now works in grouping and joins, [#342](https://github.com/Rdatatable/data.table/issues/342). Thanks to James Sams for highlighting UPCs and Clayton Stanley for [this SO post](http://stackoverflow.com/questions/22273321/large-integers-in-data-table-grouping-results-different-in-1-9-2-compared-to-1). `fread()` has been detecting and reading `integer64` for a while.
+  7. `rbindlist` gains `use.names` and `fill` arguments and is now implemented **entirely in C**. Closes [#345](https://github.com/Rdatatable/data.table/issues/345):
+      * `use.names` by default is FALSE for backwards compatibility (does **not** bind by names by default)
+      * `rbind(...)` now just calls `rbindlist()` internally, except that `use.names` is TRUE by default, for compatibility with base (and backwards compatibility).
+      * `fill=FALSE` by default. If `fill=TRUE`, `use.names` has to be TRUE. 
+      * When use.names=TRUE, at least one item of the input list has to have non-null column names.
+      * When fill=TRUE, all items of the input list has to have non-null column names.
+      * Duplicate columns are bound in the order of occurrence, like base.
+      * Attributes that might exist in individual items would be lost in the bound result.
+      * Columns are coerced to the highest SEXPTYPE when they are different, if possible.
+      * And incredibly fast ;).
+      * Documentation updated in much detail. Closes [#333](https://github.com/Rdatatable/data.table/issues/333).
+    
+  8. `bit64::integer64` now works in grouping and joins, [#342](https://github.com/Rdatatable/data.table/issues/342). Thanks to James Sams for highlighting UPCs and Clayton Stanley for [this SO post](http://stackoverflow.com/questions/22273321/large-integers-in-data-table-grouping-results-different-in-1-9-2-compared-to-1). `fread()` has been detecting and reading `integer64` for a while.
 
-  8. `setNumericRounding()` may be used to reduce to 1 byte or 0 byte rounding when joining to or grouping columns of type 'numeric', [#342](https://github.com/Rdatatable/data.table/issues/342). See example in `?setNumericRounding` and NEWS item below for v1.9.2. `getNumericRounding()` returns the current setting.
+  9. `setNumericRounding()` may be used to reduce to 1 byte or 0 byte rounding when joining to or grouping columns of type 'numeric', [#342](https://github.com/Rdatatable/data.table/issues/342). See example in `?setNumericRounding` and NEWS item below for v1.9.2. `getNumericRounding()` returns the current setting.
 
-  9. `X[Y]` now names non-join columns from `i` that have the same name as a column in `x`, with an `i.` prefix for consistency with the `i.` prefix that has been available in `j` for some time. This is now documented.
+  10. `X[Y]` now names non-join columns from `i` that have the same name as a column in `x`, with an `i.` prefix for consistency with the `i.` prefix that has been available in `j` for some time. This is now documented.
 
-  10. For a keyed table `X` where the key columns are not at the beginning in order, `X[Y]` now retains the original order of columns in X rather than moving the join columns to the beginning of the result.
+  11. For a keyed table `X` where the key columns are not at the beginning in order, `X[Y]` now retains the original order of columns in X rather than moving the join columns to the beginning of the result.
 
-  11. It is no longer an error to assign to row 0 or row NA.
+  12. It is no longer an error to assign to row 0 or row NA.
     ```R
     DT[0, colA := 1L]             # now does nothing, silently (was error)
     DT[NA, colA := 1L]            # now does nothing, silently (was error)
@@ -73,17 +83,17 @@ If you install the latest version from GitHub and start using a new feature, you
     ```
     This is for convenience to avoid the need for a switch in user code that evals various `i` conditions in a loop passing in `i` as an integer vector which may containing `0` or `NA`.
 
-  12. A new function `setorder` is now implemented which uses data.table's internal fast order to reorder rows *by reference*. It returns the result invisibly (like `setkey`) that allows for compound statements; e.g., `setorder(DT, a, -b)[, cumsum(c), by=list(a,b)]`. Check `?setorder` for more info.
+  13. A new function `setorder` is now implemented which uses data.table's internal fast order to reorder rows *by reference*. It returns the result invisibly (like `setkey`) that allows for compound statements; e.g., `setorder(DT, a, -b)[, cumsum(c), by=list(a,b)]`. Check `?setorder` for more info.
 
-  13. `DT[order(x, -y)]` is now by default optimised to use data.table's internal fast order as `DT[forder(DT, x, -y)]`. It can be turned off by setting `datatable.optimize` to < 1L or just calling `base:::order` explicitly. It results in 20x speedup on data.table of 10 million rows with 2 integer columns, for example. To order character vectors in descending order it's sufficient to do `DT[order(x, -y)]` as opposed to `DT[order(x, -xtfrm(y))]` in base. This closes [#603](https://github.com/Rdatatable/data.table/issues/603).
+  14. `DT[order(x, -y)]` is now by default optimised to use data.table's internal fast order as `DT[forder(DT, x, -y)]`. It can be turned off by setting `datatable.optimize` to < 1L or just calling `base:::order` explicitly. It results in 20x speedup on data.table of 10 million rows with 2 integer columns, for example. To order character vectors in descending order it's sufficient to do `DT[order(x, -y)]` as opposed to `DT[order(x, -xtfrm(y))]` in base. This closes [#603](https://github.com/Rdatatable/data.table/issues/603).
      
-  14. `mult="all"` -vs- `mult="first"|"last"` now return consistent types and columns, [#340](https://github.com/Rdatatable/data.table/issues/340). Thanks to Michele Carriero for highlighting.
+  15. `mult="all"` -vs- `mult="first"|"last"` now return consistent types and columns, [#340](https://github.com/Rdatatable/data.table/issues/340). Thanks to Michele Carriero for highlighting.
 
-  15. `duplicated.data.table` and `unique.data.table` gains `fromLast = TRUE/FALSE` argument, similar to base. Default value is FALSE. Closes **#5205** (git [#347](https://github.com/Rdatatable/data.table/issues/347)).
+  16. `duplicated.data.table` and `unique.data.table` gains `fromLast = TRUE/FALSE` argument, similar to base. Default value is FALSE. Closes **#5205** (git [#347](https://github.com/Rdatatable/data.table/issues/347)).
 
-  16. `anyDuplicated.data.table` is now implemented. Closes [#350](https://github.com/Rdatatable/data.table/issues/350). Thanks to M C (bluemagister) for reporting.
+  17. `anyDuplicated.data.table` is now implemented. Closes [#350](https://github.com/Rdatatable/data.table/issues/350). Thanks to M C (bluemagister) for reporting.
 
-  17. Complex j-expressions of the form `DT[, c(..., lapply(.SD, fun)), by=grp]`are now optimised as long as `.SD` is of the form `lapply(.SD, fun)` or `.SD`, `.SD[1]` or `.SD[1L]`. This resolves [#370](https://github.com/Rdatatable/data.table/issues/370). Thanks to Sam Steingold for reporting. 
+  18. Complex j-expressions of the form `DT[, c(..., lapply(.SD, fun)), by=grp]`are now optimised as long as `.SD` is of the form `lapply(.SD, fun)` or `.SD`, `.SD[1]` or `.SD[1L]`. This resolves [#370](https://github.com/Rdatatable/data.table/issues/370). Thanks to Sam Steingold for reporting. 
       This also completes the first two task lists in [#735](https://github.com/Rdatatable/data.table/issues/735).
     ```R
     ## example:
@@ -103,19 +113,7 @@ If you install the latest version from GitHub and start using a new feature, you
     ```
     The underlying message is that `.SD` is being slowly optimised internally wherever possible, for speed, without compromising in the nice readable syntax it provides.
 
-  18. `setDT` gains `keep.rownames = TRUE/FALSE` argument, which works only on `data.frame`s. TRUE retains the data.frame's row names as a new column named `rn`.
-
-  19. `rbindlist` gains `use.names` and `fill` arguments and is now implemented **entirely in C**. Closes [#345](https://github.com/Rdatatable/data.table/issues/345):
-      * `use.names` by default is FALSE for backwards compatibility (does **not** bind by names by default)
-      * `rbind(...)` now just calls `rbindlist()` internally, except that `use.names` is TRUE by default, for compatibility with base (and backwards compatibility).
-      * `fill=FALSE` by default. If `fill=TRUE`, `use.names` has to be TRUE. 
-      * When use.names=TRUE, at least one item of the input list has to have non-null column names.
-      * When fill=TRUE, all items of the input list has to have non-null column names.
-      * Duplicate columns are bound in the order of occurrence, like base.
-      * Attributes that might exist in individual items would be lost in the bound result.
-      * Columns are coerced to the highest SEXPTYPE when they are different, if possible.
-      * And incredibly fast ;).
-      * Documentation updated in much detail. Closes [#333](https://github.com/Rdatatable/data.table/issues/333).
+  19. `setDT` gains `keep.rownames = TRUE/FALSE` argument, which works only on `data.frame`s. TRUE retains the data.frame's row names as a new column named `rn`.
 
   20. The output of `tables()` now includes `NCOL`. Thanks to @dnlbrky for the suggestion.
 
