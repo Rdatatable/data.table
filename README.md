@@ -54,8 +54,8 @@
     ```
     Similarly, `by=.()` is now a shortcut for `by=list()`, for consistency with `i` and `j`.
     
-  7. `rbindlist` gains `use.names` and `fill` arguments and is now implemented **entirely in C**. Closes [#345](https://github.com/Rdatatable/data.table/issues/345):
-      * `use.names` by default is FALSE for backwards compatibility (does **not** bind by names by default)
+  7. `rbindlist` gains `use.names` and `fill` arguments and is now implemented entirely in C. Closes [#345](https://github.com/Rdatatable/data.table/issues/345):
+      * `use.names` by default is FALSE for backwards compatibility (does not bind by names by default)
       * `rbind(...)` now just calls `rbindlist()` internally, except that `use.names` is TRUE by default, for compatibility with base (and backwards compatibility).
       * `fill=FALSE` by default. If `fill=TRUE`, `use.names` has to be TRUE. 
       * When use.names=TRUE, at least one item of the input list has to have non-null column names.
@@ -89,7 +89,7 @@
      
   15. `mult="all"` -vs- `mult="first"|"last"` now return consistent types and columns, [#340](https://github.com/Rdatatable/data.table/issues/340). Thanks to Michele Carriero for highlighting.
 
-  16. `duplicated.data.table` and `unique.data.table` gains `fromLast = TRUE/FALSE` argument, similar to base. Default value is FALSE. Closes **#5205** (git [#347](https://github.com/Rdatatable/data.table/issues/347)).
+  16. `duplicated.data.table` and `unique.data.table` gains `fromLast = TRUE/FALSE` argument, similar to base. Default value is FALSE. Closes [#347](https://github.com/Rdatatable/data.table/issues/347).
 
   17. `anyDuplicated.data.table` is now implemented. Closes [#350](https://github.com/Rdatatable/data.table/issues/350). Thanks to M C (bluemagister) for reporting.
 
@@ -305,7 +305,7 @@
 
 #### NEW FEATURES
 
-  1.  Fast methods of **reshape2**'s `melt` and `dcast` have been implemented for `data.table`, **FR #2627**. Most settings are identical to **reshape2**, see `?melt.data.table.`
+  1.  Fast methods of `reshape2`'s `melt` and `dcast` have been implemented for `data.table`, **FR #2627**. Most settings are identical to `reshape2`, see `?melt.data.table.`
     > `melt`: 10 million rows and 5 columns, 61.3 seconds reduced to 1.2 seconds.  
     > `dcast`: 1 million rows and 4 columns, 192 seconds reduced to 3.6 seconds.  
      
@@ -375,7 +375,7 @@
 
   24.  `rbind/rbindlist` will preserve ordered factors if it's possible to do so; i.e., if a compatible global order exists, #4856 & #5019. Otherwise the result will be a `factor` and a *warning*.
 
-  25.  `rbind` now has a **fill** argument, #4790. When `fill=TRUE` it will behave in a manner similar to plyr's `rbind.fill`. This option is incompatible with `use.names=FALSE`. Thanks to Arunkumar Srinivasan for the base code.
+  25.  `rbind` now has a `fill` argument, #4790. When `fill=TRUE` it will behave in a manner similar to plyr's `rbind.fill`. This option is incompatible with `use.names=FALSE`. Thanks to Arunkumar Srinivasan for the base code.
 
   26.  `rbind` now relies exclusively on `rbindlist` to bind `data.tables` together. This makes rbind'ing factors faster, #2115.
 
@@ -417,7 +417,7 @@
 
   36.  `X[Y, col:=value]` when no match exists in the join is now caught early and X is simply returned. Also a message when `datatable.verbose` is TRUE is provided. In addition, if `col` is an existing column, since no update actually takes place, the key is now retained. Thanks to Frank Erickson for suggesting, #4996.
 
-  37.  New function `setDT()` takes a `list` (named and/or unnamed) or `data.frame` and changes its type by reference to `data.table`, **without any copy**. It also has a logical argument `giveNames` which is used for a list inputs. See `?setDT` examples for more. Based on [this FR on SO](http://stackoverflow.com/questions/20345022/convert-a-data-frame-to-a-data-table-without-copy/20346697#20346697).
+  37.  New function `setDT()` takes a `list` (named and/or unnamed) or `data.frame` and changes its type by reference to `data.table`, *without any copy*. It also has a logical argument `giveNames` which is used for a list inputs. See `?setDT` examples for more. Based on [this FR on SO](http://stackoverflow.com/questions/20345022/convert-a-data-frame-to-a-data-table-without-copy/20346697#20346697).
      
   38.  `setnames(DT,"oldname","newname")` no longer complains about any duplicated column names in `DT` so long as oldname is unique and unambiguous. Thanks to Wet Feet for highlighting [here on SO](http://stackoverflow.com/questions/20942905/ignore-safety-check-when-using-setnames).
 
