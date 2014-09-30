@@ -12,7 +12,7 @@ desc.data.frame <- function(x, ...) {
   desc.data.table(x.DT)
 }
 
-desc.data.table <- function(x, tight.output=FALSE, sort.column=TRUE, quietly=FALSE, ...) { 
+desc.data.table <- function(x, tight.output=FALSE, sort.column=TRUE, quietly=FALSE) { 
 ## NOTE: depends on  as.data.table.matrix which returns strings instead of factors for character matrices
 ##
 ## TODO:  Add 'details=TRUE' argument, such as min, max, etc, depending on class
@@ -42,7 +42,7 @@ desc.data.table <- function(x, tight.output=FALSE, sort.column=TRUE, quietly=FAL
   setclass(ans, "desc", append=TRUE)
 
   ## Avoid printing the output twice, if user executes print(desc(DT))
-  if (missing(quietly) && grepl("^print\\(|\\.", tail(sys.calls(), 3)[1:2]))
+  if (missing(quietly) && grepl("^print(\\(|\\.)", tail(sys.calls(), 3)[1:2]))
     quietly <- TRUE
 
   ## This last portion, as well as the template definition of quietly is to allow 
@@ -60,7 +60,7 @@ print.desc <- function(x, tight.output=FALSE, sort.column=TRUE, ...) {
   ## error check. The dots are included to avoid crashes when print(x, some.arg) is called
   ##  However, notify user, as it might be sign of unexpected method deployment 
   if (length(dots <- list(...)))
-    warning("print.desc(x) does not use argument(s) ", paste(names(dtos), collapse=", "))
+    warning("print.desc(x) does not use argument(s) ", paste("'", names(dots), "'", collapse=", "))
 
   ## Output will be sorted according to this manual ordering
   classOrder <- c("idcol", "character", "factor", "logical", "integer", "numeric"
@@ -87,7 +87,8 @@ print.desc <- function(x, tight.output=FALSE, sort.column=TRUE, ...) {
   ## chop each line between 30~60 characters
   repl <- sprintf(space.class, "", "", "", "") ## thhe spae at the left of a new line for the same class
   repl <- paste0("\\1,\n", repl)
-  ans[, columns.out := gsub("(.{30}.{0,30}?), ", repl, columns.out)]
+  ## TODO:  Take into account max(nchar(x$class) for the regex pattern
+  ans[, columns.out := gsub("(.{35}.{0,30}?), ", repl, columns.out)]
 
 
   out <- ans[, sprintf(fmt=space.class, ifelse(tight.output, "", "\n"), class.factor, ":", columns.out)]
@@ -99,7 +100,24 @@ print.desc <- function(x, tight.output=FALSE, sort.column=TRUE, ...) {
 
 if (FALSE)
 {
+  L <- 1:5
+  DT <- data.table(ID = LETTERS[1L]
+               ,   date = seq(Sys.Date(), length=max(L), by="day")
+               ,   last.occurance = seq(Sys.Date(), length=max(L), by="-2 month")
+               ,   value = rnorm(L)
+               ,   distance = runif(L, 100, 1e5)
+               ,   group = factor(letters[L])
+               ,   days = as.integer(sample(30, L))
+               ,   user = c("tammy", "tommmy", "billie", "zoe", "chloe")
+               ,   storeid = paste0("store", L)
+               ,   mileage = {set.seed(1); rnorm(L, 100, 1e5)}
+               ,   mileage.scaled = scale({set.seed(1); rnorm(L, 100, 1e5)})
+  )
+
   desc(DT)
+  desc.data.table(DT, tight.output=TRUE)
+
+
   desc(DT, sort=FALSE)
   desc(DT, tight=TRUE)
   desc(DT, tight=TRUE, sort=FALSE)
@@ -115,5 +133,6 @@ if (FALSE)
   print(desc(DT))
   identity(print(desc(DT)))
   identity(print(desc(identity(DT))))
+
 }
 
