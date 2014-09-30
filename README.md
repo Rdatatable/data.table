@@ -186,6 +186,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   30. `DT[column==values]` is now optimized to use `DT`'s key when `key(DT)[1]=="column"`, otherwise a secondary key (a.k.a. _index_) is automatically added so the next `DT[column==values]` is much faster. `DT[column %in% values]` is equivalent; i.e., both `==` and `%in%` accept vector `values`. No code changes are needed; existing code should automatically benefit. Secondary keys can be added manually using `set2key()` and existence checked using `key2()`. These optimizations and function names/arguments are experimental and may be turned off with `options(datatable.auto.index=FALSE)`.
   
+  31. `fread(...,data.table=FALSE)` returns a `data.frame` instead of a `data.table`. This can be set globally: `options(datatable.fread.datatable=FALSE)`.
 
 
 #### BUG FIXES

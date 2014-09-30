@@ -38,7 +38,8 @@
              "datatable.alloccol"="quote(max(100L,ncol(DT)+64L))",# argument 'n' of alloc.col. Allocate at least 64 spare slots by default. Needs to be 100L floor to save small object reallocs.
              "datatable.integer64"="'integer64'",    # datatable.<argument name>    integer64|double|character
              "datatable.showProgress"="1L",          # in fread
-             "datatable.auto.index"="TRUE"           # DT[col=="val"] to auto add index so 2nd time faster
+             "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
+             "datatable.fread.datatable"="TRUE"
              )
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))

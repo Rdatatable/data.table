@@ -5130,6 +5130,13 @@ f = paste("file://",getwd(),"/russellCRCRLF.csv",sep="")
 test(1378.3, fread(f), error="Line ending is .*r.*r.*n. R's download.file() appears to add the extra .*r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.")
 #====================================
 
+oldv = options(datatable.fread.datatable = FALSE)
+test(1379.1, fread("A,B\n1,3\n2,4\n"), data.frame(A=1:2,B=3:4))
+test(1379.2, fread("A,B\n1,3\n2,4\n",data.table=TRUE), data.table(A=1:2,B=3:4))
+options(datatable.fread.datatable = TRUE)
+test(1379.3, fread("A,B\n1,3\n2,4\n",data.table=FALSE), data.frame(A=1:2,B=3:4))
+options(oldv)
+
 
 ##########################
 

@@ -13,7 +13,8 @@ fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA",
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=30L,
 skip=-1L, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
-showProgress=getOption("datatable.showProgress")    # default: TRUE
+showProgress=getOption("datatable.showProgress"),   # default: TRUE
+data.table=getOption("datatable.fread.datatable")   # default: TRUE
 )
 }
 \arguments{
@@ -32,6 +33,7 @@ showProgress=getOption("datatable.showProgress")    # default: TRUE
   \item{colClasses}{ A character vector of classes (named or unnamed), as read.csv. Or a named list of vectors of column names or numbers, see examples. colClasses in fread is intended for rare overrides, not for routine use. fread will only promote a column to a higher type if colClasses requests it. It won't downgrade a column to a lower type since NAs would result. You have to coerce such columns afterwards yourself, if you really require data loss. }
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{base::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
   \item{showProgress}{ TRUE displays progress on the console using \code{\\r}. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
+  \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. }
 }
 \details{
 
@@ -51,7 +53,7 @@ If an empty line is encountered then reading stops there, with warning if any te
 
 }
 \value{
-    A \code{data.table}.
+    A \code{data.table} by default. A \code{data.frame} when \code{data.table=FALSE}; e.g. \code{options(datatable.fread.datatable=FALSE)}.
 }
 \references{
 Background :\cr

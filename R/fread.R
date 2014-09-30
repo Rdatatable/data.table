@@ -1,5 +1,5 @@
 
-fread = function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=30L,skip=-1L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),showProgress=getOption("datatable.showProgress")) {
+fread = function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=30L,skip=-1L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable")) {
     if (!is.character(input) || length(input)!=1) {
         stop("'input' must be a single character string containing a file name, a command, full path to a file, a URL starting 'http://' or 'file://', or the input data itself")
     } else if (substring(input,1,7) %chin% c("http://","https:/","file://")) {
@@ -27,11 +27,16 @@ fread = function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.stri
     if (is.atomic(colClasses) && !is.null(names(colClasses))) colClasses = tapply(names(colClasses),colClasses,c,simplify=FALSE)
     ans = .Call(Creadfile,input,sep,as.integer(nrows),header,na.strings,verbose,as.integer(autostart),skip,select,drop,colClasses,integer64,as.integer(showProgress))
     nr = length(ans[[1]])
-    setattr(ans,"row.names",.set_row_names(nr))
-    setattr(ans,"class",c("data.table","data.frame"))
     if ( integer64=="integer64" && !exists("print.integer64") && any(sapply(ans,inherits,"integer64")) )
         warning("Some columns have been read as type 'integer64' but package bit64 isn't loaded. Those columns will display as strange looking floating point data. There is no need to reload the data. Just require(bit64) to obtain the integer64 print method and print the data again.")
-    alloc.col(ans)
+    setattr(ans,"row.names",.set_row_names(nr))
+    if (isTRUE(data.table)) {
+        setattr(ans,"class",c("data.table","data.frame"))
+        return(alloc.col(ans))
+    } else {
+        setattr(ans,"class","data.frame")
+        return(ans)
+    }
 }
 
 
