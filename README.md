@@ -56,9 +56,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
     DT[.(c("id1", "id2")), sum(val), by = .EACHI]   # sum(val) for each id
     DT[.(c("id1", "id2")), sum(val), by = key(DT)]  # same
     ```
-    In other words, `by-without-by` is now explicit, for clarity and consistency, **#2696** (git [#371](https://github.com/Rdatatable/data.table/issues/371)).  
-    > NOTE: when `i` contains duplicates, `by=.EACHI` is different to `by=key(DT)`; e.g,
-    
+    In other words, `by-without-by` is now explicit, for clarity and consistency, [#371](https://github.com/Rdatatable/data.table/issues/371). When `i` contains duplicates, `by=.EACHI` is different to `by=key(DT)`; e.g.,
     ```R
     setkey(DT, ID)
     ids = c("id1", "id2", "id1")
@@ -69,16 +67,16 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
     ```R
     X[Y, head(.SD, i.top), by = .EACHI]
     ```
-    where 'top' is a non-join column in `Y`; i.e. join inherited column. Thanks to many, especially eddi, Sadao Milberg and Gabor Grothendieck for extended discussions. Also closes **#5297** [#538](https://github.com/Rdatatable/data.table/issues/538).
+    where `top` is a non-join column in `Y`; i.e. join inherited column. Thanks to many, especially eddi, Sadao Milberg and Gabor Grothendieck for extended discussions. Closes [#538](https://github.com/Rdatatable/data.table/issues/538).
 
-  2. Accordingly, `X[Y, j]` now does what `X[Y][, j]` did. A *classic* option to restore the previous default behaviour is to be dicussed and confirmed. See [this](http://r.789695.n4.nabble.com/changing-data-table-by-without-by-syntax-to-require-a-quot-by-quot-td4664770.html), [this](http://stackoverflow.com/questions/16093289/data-table-join-and-j-expression-unexpected-behavior) and [this](http://stackoverflow.com/a/16222108/403310) post for discussions. 
+  2. Accordingly, `X[Y, j]` now does what `X[Y][, j]` did. To return the old behaviour: `options(datatable.old.bywithoutby=TRUE)`. This is a temporary option to aid migration and will be removed in future. See [this](http://r.789695.n4.nabble.com/changing-data-table-by-without-by-syntax-to-require-a-quot-by-quot-td4664770.html), [this](http://stackoverflow.com/questions/16093289/data-table-join-and-j-expression-unexpected-behavior) and [this](http://stackoverflow.com/a/16222108/403310) post for discussions.
 
-  3. `bit64::integer64` now works in grouping and joins, **#5369** (git [#342](https://github.com/Rdatatable/data.table/issues/342)). Thanks to James Sams for highlighting UPCs and Clayton Stanley for [this SO post](http://stackoverflow.com/questions/22273321/large-integers-in-data-table-grouping-results-different-in-1-9-2-compared-to-1). **Reminder:** `fread()` has been able to detect and read `integer64` for a while. 
+  3. `bit64::integer64` now works in grouping and joins, [#342](https://github.com/Rdatatable/data.table/issues/342). Thanks to James Sams for highlighting UPCs and Clayton Stanley for [this SO post](http://stackoverflow.com/questions/22273321/large-integers-in-data-table-grouping-results-different-in-1-9-2-compared-to-1). **Reminder:** `fread()` has been able to detect and read `integer64` for a while.
 
-  4. `setNumericRounding()` may be used to reduce to 1 byte or 0 byte rounding when joining to or grouping columns of type 'numeric', **#5369** (git [#342](https://github.com/Rdatatable/data.table/issues/342)). See example in `?setNumericRounding` and NEWS item below for v1.9.2. `getNumericRounding()` returns the current setting.
-     
+  4. `setNumericRounding()` may be used to reduce to 1 byte or 0 byte rounding when joining to or grouping columns of type 'numeric', [#342](https://github.com/Rdatatable/data.table/issues/342). See example in `?setNumericRounding` and NEWS item below for v1.9.2. `getNumericRounding()` returns the current setting.
+
   5. `X[Y]` now names non-join columns from `i` that have the same name as a column in `x`, with an `i.` prefix for consistency with the `i.` prefix that has been available in `j` for some time. This is now documented.
-     
+
   6. For a keyed table `X` where the key columns are not at the beginning in order, `X[Y]` now retains the original order of columns in X rather than moving the join columns to the beginning of the result.
 
   7. It is no longer an error to assign to row 0 or row NA.
@@ -92,15 +90,15 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   8. A new function `setorder` is now implemented which uses data.table's internal fast order to reorder rows **by reference**. It returns the result invisibly (like `setkey`) that allows for compound statements, ex: `setorder(DT, a, -b)[, cumsum(c), by=list(a,b)]`. Check `?setorder` for more info.
 
-  9. `DT[order(x, -y)]` is now by default optimised to use data.table's internal fast order as `DT[forder(DT, x, -y)]`. It can be turned off by setting `datatable.optimize` to < 1L or just calling `base:::order` explicitly. It results in 20x speedup on data.table of 10 million rows with 2 integer columns, for example. To order character vectors in descending order it's sufficient to do `DT[order(x, -y)]` as opposed to `DT[order(x, -xtfrm(y))]` in base. This closes **#2405** (git [#603](https://github.com/Rdatatable/data.table/issues/603)).
+  9. `DT[order(x, -y)]` is now by default optimised to use data.table's internal fast order as `DT[forder(DT, x, -y)]`. It can be turned off by setting `datatable.optimize` to < 1L or just calling `base:::order` explicitly. It results in 20x speedup on data.table of 10 million rows with 2 integer columns, for example. To order character vectors in descending order it's sufficient to do `DT[order(x, -y)]` as opposed to `DT[order(x, -xtfrm(y))]` in base. This closes [#603](https://github.com/Rdatatable/data.table/issues/603).
      
-  10. `mult="all"` -vs- `mult="first"|"last"` now return consistent types and columns, **#5378** (git [#340](https://github.com/Rdatatable/data.table/issues/340)). Thanks to Michele Carriero for highlighting.
+  10. `mult="all"` -vs- `mult="first"|"last"` now return consistent types and columns, [#340](https://github.com/Rdatatable/data.table/issues/340). Thanks to Michele Carriero for highlighting.
 
   11. `duplicated.data.table` and `unique.data.table` gains `fromLast = TRUE/FALSE` argument, similar to base. Default value is FALSE. Closes **#5205** (git [#347](https://github.com/Rdatatable/data.table/issues/347)).
 
-  12. `anyDuplicated.data.table` is now implemented. Closes **#5172** (git [#350](https://github.com/Rdatatable/data.table/issues/350)). Thanks to M C (bluemagister) for reporting.
+  12. `anyDuplicated.data.table` is now implemented. Closes [#350](https://github.com/Rdatatable/data.table/issues/350). Thanks to M C (bluemagister) for reporting.
 
-  13. Complex j-expressions of the form `DT[, c(..., lapply(.SD, fun)), by=grp]`are now optimised as long as `.SD` is of the form `lapply(.SD, fun)` or `.SD`, `.SD[1]` or `.SD[1L]`. This resolves **#2722** (git [#370](https://github.com/Rdatatable/data.table/issues/370)). Thanks to Sam Steingold for reporting. 
+  13. Complex j-expressions of the form `DT[, c(..., lapply(.SD, fun)), by=grp]`are now optimised as long as `.SD` is of the form `lapply(.SD, fun)` or `.SD`, `.SD[1]` or `.SD[1L]`. This resolves [#370](https://github.com/Rdatatable/data.table/issues/370). Thanks to Sam Steingold for reporting. 
       This also completes the first two task lists in [#735](https://github.com/Rdatatable/data.table/issues/735).
     ```R
     ## example:
@@ -122,7 +120,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 
   14. `setDT` gains `keep.rownames = TRUE/FALSE` argument, which works only on `data.frame`s. TRUE retains the data.frame's row names as a new column named `rn`.
 
-  15. `rbindlist` gains `use.names` and `fill` arguments and is now implemented **entirely in C**. Closes **#5249** (git [#345](https://github.com/Rdatatable/data.table/issues/345)):
+  15. `rbindlist` gains `use.names` and `fill` arguments and is now implemented **entirely in C**. Closes [#345](https://github.com/Rdatatable/data.table/issues/345):
       * `use.names` by default is FALSE for backwards compatibility (does **not** bind by names by default)
       * `rbind(...)` now just calls `rbindlist()` internally, except that `use.names` is TRUE by default, for compatibility with base (and backwards compatibility).
       * `fill=FALSE` by default. If `fill=TRUE`, `use.names` has to be TRUE. 
@@ -132,31 +130,31 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
       * Attributes that might exist in individual items would be lost in the bound result.
       * Columns are coerced to the highest SEXPTYPE when they are different, if possible.
       * And incredibly fast ;).
-      * Documentation updated in much detail. Closes **#5158** (git [#333](https://github.com/Rdatatable/data.table/issues/333)).
+      * Documentation updated in much detail. Closes [#333](https://github.com/Rdatatable/data.table/issues/333).
 
   16. The output of `tables()` now includes `NCOL`. Thanks to @dnlbrky for the suggestion.
 
-  17. `DT[, LHS := RHS]` (or its equivalent in `set`) now provides a warning and returns `DT` as it was, instead of an error, when `length(LHS) = 0L`, **#5357** (git [#343](https://github.com/Rdatatable/data.table/issues/343)). For example:
+  17. `DT[, LHS := RHS]` (or its equivalent in `set`) now provides a warning and returns `DT` as it was, instead of an error, when `length(LHS) = 0L`, [#343](https://github.com/Rdatatable/data.table/issues/343). For example:
     ```R
     DT[, grep("^b", names(DT)) := NULL] # where no columns start with b
     # warns now and returns DT instead of error
     ```
 
-  18. GForce now is also optimised for j-expression with `.N`. Closes **#5760** (git [#334](https://github.com/Rdatatable/data.table/issues/334) and part of #5754 git [#523](https://github.com/Rdatatable/data.table/issues/523)).
+  18. GForce now is also optimised for j-expression with `.N`. Closes [#334](https://github.com/Rdatatable/data.table/issues/334) and part of [#523](https://github.com/Rdatatable/data.table/issues/523).
     ```R
     DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.2 - doesn't know to use GForce - will be (relatively) slower
     DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
     ```
 
-  19. `setDF` is now implemented. It accepts a data.table and converts it to data.frame by reference, **#5528** (git [#338](https://github.com/Rdatatable/data.table/issues/338)). Thanks to canneff for the discussion [here](http://r.789695.n4.nabble.com/Is-there-any-overhead-to-converting-back-and-forth-from-a-data-table-to-a-data-frame-td4688332.html) on data.table mailing list.
+  19. `setDF` is now implemented. It accepts a data.table and converts it to data.frame by reference, [#338](https://github.com/Rdatatable/data.table/issues/338). Thanks to canneff for the discussion [here](http://r.789695.n4.nabble.com/Is-there-any-overhead-to-converting-back-and-forth-from-a-data-table-to-a-data-frame-td4688332.html) on data.table mailing list.
 
-  20. `.I` gets named as `I` (instead of `.I`) wherever possible, similar to `.N`, **#5290** (git [#344](https://github.com/Rdatatable/data.table/issues/344)).
+  20. `.I` gets named as `I` (instead of `.I`) wherever possible, similar to `.N`, [#344](https://github.com/Rdatatable/data.table/issues/344).
   
   21. `setkey` on `.SD` is now an error, rather than warnings for each group about rebuilding the key. The new error is similar to when attempting to use `:=` in a `.SD` subquery: `".SD is locked. Using set*() functions on .SD is reserved for possible future use; a tortuously flexible way to modify the original data by group."`  Thanks to Ron Hylton for highlighting the issue on datatable-help [here](http://r.789695.n4.nabble.com/data-table-is-asking-for-help-tp4692080.html).
   
   22. Looping calls to `unique(DT)` such as in `DT[,unique(.SD),by=group]` is now faster by avoiding internal overhead of calling `[.data.table`. Thanks again to Ron Hylton for highlighting in the [same thread](http://r.789695.n4.nabble.com/data-table-is-asking-for-help-tp4692080.html). His example is reduced from 28 sec to 9 sec, with identical results.
   
-  23. Following `gsum` and `gmean`, now `gmin` and `gmax` from GForce are also implemented. Closes part of **#5754** (git [#523](https://github.com/Rdatatable/data.table/issues/523)). Benchmarks are also provided.
+  23. Following `gsum` and `gmean`, now `gmin` and `gmax` from GForce are also implemented. Closes part of [#523](https://github.com/Rdatatable/data.table/issues/523). Benchmarks are also provided.
     ```R
     DT[, list(sum(x), min(y), max(z), .N), by=...] # runs by default using GForce
     ```
@@ -192,7 +190,7 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 #### BUG FIXES
 
   1. `fread()`:
-      * accepts line breaks inside quoted fields. Thanks to Clayton Stanley for highlighting [here](http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value).    
+      * accepts line breaks inside quoted fields. Thanks to Clayton Stanley for highlighting [here](http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value).
       * accepts trailing backslash in quoted fields. Thanks to user2970844 for highlighting [here](http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash).
       * Blank and `"NA"` values in logical columns (`T`,`True`,`TRUE`) no longer cause them to be read as character, [#567](https://github.com/Rdatatable/data.table/issues/567). Thanks to Adam November for reporting. Tests added.
       * URLs now work on Windows. R's download.file() converts \r\n to \r\r\n on Windows. Now avoided by downloading in binary mode. Thanks to Steve Miller and Dean MacGregor for reporting, [#492](https://github.com/Rdatatable/data.table/issues/492). Tests added.
