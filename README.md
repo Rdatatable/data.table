@@ -191,10 +191,11 @@ We moved from R-Forge to GitHub on 9 June 2014, including history.
 #### BUG FIXES
 
   1. `fread()`:
-      * accepts line breaks inside quoted fields. Thanks to Clayton Stanley for highlighting [here on SO](http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value).    
-      * accepts trailing backslash in quoted fields. Thanks to user2970844 for highlighting [here on SO](http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash).
+      * accepts line breaks inside quoted fields. Thanks to Clayton Stanley for highlighting [here](http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value).    
+      * accepts trailing backslash in quoted fields. Thanks to user2970844 for highlighting [here](http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash).
       * Blank and `"NA"` values in logical columns (`T`,`True`,`TRUE`) no longer cause them to be read as character, [#567](https://github.com/Rdatatable/data.table/issues/567). Thanks to Adam November for reporting. Tests added.
-      * URLs now work on Windows. R's download.file() converts \r\n to \r\r\n on Windows. Now avoided by downloading in binary mode. Thanks to Steve Miller and Dean MacGregor for reporting, [#492](https://github.com/Rdatatable/data.table/issues/492).
+      * URLs now work on Windows. R's download.file() converts \r\n to \r\r\n on Windows. Now avoided by downloading in binary mode. Thanks to Steve Miller and Dean MacGregor for reporting, [#492](https://github.com/Rdatatable/data.table/issues/492). Tests added.
+      * Fixed seg fault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796). Thanks to Adam Kennedy for the detailed reproducible report.
     
   2.  When joining to fewer columns than the key has, using one of the later key columns explicitly in j repeated the first value. A problem introduced by v1.9.2 and not caught bythe 1,220 tests, or tests in 37 dependent packages. Test added. Many thanks to Michele Carriero for reporting.
 
