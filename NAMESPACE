@@ -75,6 +75,7 @@ S3method(na.omit, data.table)
 export(as.IDate,as.ITime,IDateTime)
 export(hour,yday,wday,mday,week,month,quarter,year)
 
+importFrom(chron, chron, as.chron)
 export(as.chron.IDate,as.chron.ITime)
 
 S3method("[", ITime)
