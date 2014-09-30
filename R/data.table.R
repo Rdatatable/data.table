@@ -491,6 +491,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     seq_len(min(length(i),length(rightcols)))
                 rightcols = head(rightcols,length(leftcols))
                 xo = integer()  ## signifies 1:.N
+                if (missing(by) && with && isTRUE(getOption("datatable.old.bywithoutby"))) {
+                    # To revert to <=v1.9.2 behaviour.  TO DO: remove option after Sep 2015
+                    by=bysub=as.symbol(".EACHI")
+                    byjoin=TRUE
+                    txtav = c(names(x)[-rightcols], names(i)[-leftcols])
+                    if (missing(j)) j = jsub = as.call(parse(text=paste(".(",paste(txtav, collapse=","),")",sep="")))[[1]]
+                }
             }
             # Implementation for not-join along with by=.EACHI, #604
             if (notjoin && byjoin) {
