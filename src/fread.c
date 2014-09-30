@@ -432,7 +432,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (fstat(fd,&stat_buf) == -1) {close(fd); error("Opened file ok but couldn't obtain file size: %s", fnam);}
         filesize = stat_buf.st_size;
         if (filesize<=0) {close(fd); error("File is empty: %s", fnam);}
-        if (verbose) Rprintf("File opened, filesize is %.3f GB.\nMemory mapping ... ", 1.0*filesize/(1024*1024*1024));
+        if (verbose) Rprintf("File opened, filesize is %.6f GB.\nMemory mapping ... ", 1.0*filesize/(1024*1024*1024));
         // Would be nice to print 'Memory mapping' when not verbose, but then it would also print for small files
         // which would be annoying. If we could estimate if the mmap was likely to take more than 2 seconds (and thus
         // the % meter to kick in) then that'd be ideal. A simple size check isn't enough because it might already
@@ -465,7 +465,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (filesize<=0) { CloseHandle(hFile); error("File is empty: %s", fnam); }
         hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL); // filesize+1 not allowed here, unlike mmap where +1 is zero'd
         if (hMap==NULL) { CloseHandle(hFile); error("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
-        if (verbose) Rprintf("File opened, filesize is %.3f GB.\nMemory mapping ... ", 1.0*filesize/(1024*1024*1024));
+        if (verbose) Rprintf("File opened, filesize is %.6f GB.\nMemory mapping ... ", 1.0*filesize/(1024*1024*1024));
         mmp = (const char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,filesize);
         if (mmp == NULL) {
             CloseHandle(hMap);
@@ -509,7 +509,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (ch+1<eof && *(ch+1)=='\n') {
                 if (verbose) Rprintf("Detected eol as \\r\\n (CRLF) in that order, the Windows standard.\n");
                 eol2='\n'; eolLen=2;
-            } else if (verbose) Rprintf("Detected eol as \\r only (no \\n afterwards). An old Mac 9 standard, discontinued in 2002 according to Wikipedia.\n");
+            } else {
+                if (ch+1<eof && *(ch+1)=='\r')
+                    error("Line ending is \\r\\r\\n. R's download.file() appears to add the extra \\r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.");
+                    // NB: on Windows, download.file from file: seems to condense \r\r too. So 
+                if (verbose) Rprintf("Detected eol as \\r only (no \\n or \\r afterwards). An old Mac 9 standard, discontinued in 2002 according to Wikipedia.\n");
+            }
         } else if (eol=='\n') {
             if (ch+1<eof && *(ch+1)=='\r') {
                 warning("Detected eol as \\n\\r, a highly unusual line ending. According to Wikipedia the Acorn BBC used this. If it is intended that the first column on the next row is a character column where the first character of the field value is \\r (why?) then the first column should start with a quote (i.e. 'protected'). Proceeding with attempt to read the file.\n");

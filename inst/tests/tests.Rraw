@@ -54,7 +54,6 @@ if (!.devtesting) {
     is_na = data.table:::is_na
 }
 
-
 TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
 setkey(TESTDT,a,b)
 # i.e.       a b v
@@ -2610,6 +2609,7 @@ test(957, fread(input, colClasses=list(character=1:3)), data.table(A=c("01","002
 test(958, fread(input, colClasses="character"), data.table(A=c("01","002"),B=c("foo","bar"),C=c("3.140","6.28000")))
 test(959, fread(input, colClasses=c("character","double","numeric"), verbose=TRUE),
           warning = "Column 2 ('B') has been detected as type 'character'. Ignoring request from colClasses to read as 'numeric' (a lower type) since NAs (or loss of precision) may result",
+          output = "Found 3 columns",  # including output= just so that verbose output is captured, just the warning will be checked.
           data.table(A=c("01","002"),B=c("foo","bar"),C=c(3.14,6.28)))
 
 test(960, fread(input, colClasses=c("character","double")), error="colClasses is unnamed and length 2 but there are 3 columns. See")
@@ -2763,12 +2763,13 @@ test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(
 
 # an fread error shouldn't hold a lock on the file on Windows.
 f = tempfile()
-cat('A,B\n"aa",2\n"bb,2\n"cc",3\n', file=f)
-test(1010.1, fread(f), data.table(A=c("aa","bb,2\n\"cc"), B=2:3))  # used be an error, but is now valid
+cat('A,B\n"aa",2\n"bb,2\n"cc",3\n', file=f)  # NB: deliberate missing quote after bb.
+eol = if (.Platform$OS.type == "windows") "\r\n" else "\n"
+test(1010.1, fread(f), data.table(A=c("aa",paste("bb,2",eol,"\"cc",sep="")), B=2:3))  # used be an error, but is now valid
 cat('"',file=f,append=TRUE)  # create an error.  Something that should always be an error of some sort.
 test(1010.2, fread(f), error="Expected sep (',') but new line, EOF (or other non printing character) ends field 1 on line 5 when detecting types")
 cat('dd",4\n',file=f,append=TRUE)   # tests file lock on Windows after error
-test(1011, fread(f), data.table(A=c("aa","bb,2\n\"cc","dd"), B=2:4))
+test(1011, fread(f), data.table(A=c("aa",paste("bb,2",eol,"\"cc",sep=""),"dd"), B=2:4))
 cat('A,B\n"aa",1\n"bb",2\n"cc",3\n', file=f)   # testing overwrite
 test(1012, fread(f), data.table(A=c("aa","bb","cc"),B=1:3))
 unlink(f)  # testing file can be removed after error
@@ -5110,6 +5111,26 @@ test(1377.3, DT[, foo := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=
 test(1377.4, DT[, bar := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","zz")], error="Some items of .SDcols are not column names")
 test(1377.5, DT[FALSE, bar := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","zz")], DT)
 
+#====================================
+# fread issue with http download on Windows, thanks to Steve Miller for highlighting.
+# any file would do but this one is http://www.russell.com/common/indexes/csvs/russellmicrocapvalueindex_hist.csv
+# it happens to have a \r embedded in the first (quoted) column as well but that's not the issue
+# can't pass in the http: address directly because this runs on CRAN and any http: site might be unavailable
+# therefore, this doesn't actually test mode="wb" but close as we can get
+
+test(1378.1, dim(fread("russellCRLF.csv")), c(19,4))
+
+f = paste("file://",getwd(),"/russellCRLF.csv",sep="")
+# simulates a http:// request as far as file.download() and unlink() goes, without internet
+# download.file() in fread() changes the input data from \r\n to \n, on Windows.
+test(1378.2, dim(fread(f)), c(19,4))
+
+f = paste("file://",getwd(),"/russellCRCRLF.csv",sep="")
+# actually has 3 \r in the file, download.file() from file:// changes that to \r\r\n, so we can simulate download.file from http: in text mode.
+test(1378.3, fread(f), error="Line ending is .*r.*r.*n. R's download.file() appears to add the extra .*r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.")
+#====================================
+
+
 ##########################
 
 
@@ -5141,7 +5162,7 @@ options(warn=0)
 if (nfail > 0) {
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
     cat("\r")
-    stop(nfail," error",s1," out of ",ntest, " in inst/tests/tests.Rraw on ",date(),". Search tests.Rraw for test number",s2,paste(whichfail,collapse=", "),". The test() function is defined at the top of tests.Rraw and contains usage info.")
+    stop(nfail," error",s1," out of ",ntest, " (lastID=",lastnum,") in inst/tests/tests.Rraw on ",date(),". Search tests.Rraw for test number",s2,paste(whichfail,collapse=", "),".")
     # important to stop() here, so that 'R CMD check' fails
 }
 cat("\rAll ",ntest," tests (lastID=",lastnum, ") in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
