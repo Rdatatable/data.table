@@ -5250,6 +5250,10 @@ options(datatable.fread.datatable = TRUE)
 test(1379.3, fread("A,B\n1,3\n2,4\n",data.table=FALSE), data.frame(A=1:2,B=3:4))
 options(oldv)
 
+# That that RHS of == is coerced to x's type before bmerge in auto index. Package vardpoor does this in example(linqsr)
+DT = data.table(a=c(0,0,1,1,0,0), b=1:6)  # 'a' type double here, as it is in vardpoor
+test(1380, DT[a==TRUE], DT[3:4])
+
 
 ##########################
 

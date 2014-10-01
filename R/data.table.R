@@ -439,12 +439,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # TO DO: print method could print physical and secondary keys at end.
             # TO DO: move down to if (is.data.table) clause below, later ...
             
-            # convert RHS to list to join to key (either physical or secondary)
-            i = as.data.table(eval(isub[[3L]], parent.frame()))   # To do: wrap isub[[3L]] with as.data.table() first before eval to save copy
-            leftcols = 1L
             if (haskey(x) && isub2 == key(x)[1L]) {
                 xo <- integer()
-                leftcols = 1L
                 rightcols = chmatch(key(x)[1],names(x))
                 # join to key(x)[1L]
             } else {
@@ -458,6 +454,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 }
                 rightcols = chmatch(isub2, names(x))
             }
+            # convert RHS to list to join to key (either physical or secondary)
+            i = as.data.table( as(eval(isub[[3L]], parent.frame()), typeof(x[[rightcols]])) )
+            # To do: wrap isub[[3L]] with as.data.table() first before eval to save copy
+            leftcols = 1L
             ans = bmerge(i, x, leftcols, rightcols, io<-FALSE, xo, roll=0.0, rollends=c(FALSE,FALSE), nomatch=0L, verbose=verbose)
             # No need to shallow copy i before passing to bmerge; we just created i above ourselves
             i = if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
