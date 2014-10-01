@@ -20,18 +20,16 @@ options(width=70)  # so lines wrap round
 
 \begin{document}
 \title{FAQs about the \pkg{data.table} package in \proglang{R}}
-\author{Matthew Dowle}
-\date{Revised: \today\\(A later revision may be available on the \href{http://datatable.r-forge.r-project.org/}{homepage})}
+\date{Revised: \today\\(A later revision may be available on the \href{https://github.com/Rdatatable/data.table/wiki}{homepage})}
 \maketitle
 
-The first section, Beginner FAQs, is intended to be read in order, from start to finish. It may
-be read before reading the \href{http://datatable.r-forge.r-project.org/datatable-intro.pdf}{10 minute introduction to data.table} vignette.
+The first section, Beginner FAQs, is intended to be read in order, from start to finish.
 
 \tableofcontents
 \section{Beginner FAQs}
 
 \subsection{Why does \code{DT[,5]} return \code{5}?}
-Because, by default, unlike a \code{data.frame}, the 2nd argument is an \emph{expression}
+Because by default, unlike a \code{data.frame}, the 2nd argument is an \emph{expression}
 which is evaluated within the scope of \code{DT}. 5 evaluates to 5. It is generally bad practice to refer
 to columns by number rather than name. If someone else comes along and reads your code later, they
 may have to hunt around to find out which column is number 5. Furthermore, if you or someone else
@@ -42,11 +40,11 @@ Say column 5 is called ''region'', just do \code{DT[,region]} instead. Notice th
 the column name. This is what we mean by j being evaluated within the scope of the \code{data.table}. That
 scope consists of an environment where the column names are variables.
 
-You can write \emph{any} \proglang{R} expression in the \code{j}; e.g., \code{DT[,colA*colB/2]}. Further, \code{j} may be a \code{list()} of many \proglang{R} expressions, including calls to any \proglang{R} package; e.g., \code{DT[,fitdistr(d1-d1,"normal")]}.
+You can place \emph{any} \proglang{R} expression in \code{j}; e.g., \code{DT[,colA*colB/2]}. Further, \code{j} may be a set of \proglang{R} expressions (including calls to any \proglang{R} package) wrapped with \code{list()}, \code{.()} or an anonymous code block wrapped with braces \code{{}}. A simple example is \code{DT[,fitdistr(d1-d1,"normal")]}.
 
 Having said this, there are some circumstances where referring to a column by number is ok, such as
 a sequence of columns. In these situations just do \code{DT[,5:10,with=FALSE]} or \newline \code{DT[,c(1,4,10),with=FALSE]}.
-See \code{?data.table} for an explanation of the \code{with} argument.
+See \code{?data.table} for an explanation of the \code{with} argument. It lets you use \code{data.table} the same way as \code{data.frame}, when you need to.
 
 Note that \code{with()} has been a base function for a long time.  That's one reason we say \code{data.table} builds
 upon base functionality. There is little new here really, \code{data.table} is just making use of \code{with()}
@@ -57,14 +55,14 @@ See answer to 1.1 above. Try \code{DT[,region]} instead. Or \code{DT[,"region",w
 
 
 \subsection{Why does \code{DT[,region]} return a vector?  I'd like a 1-column \code{data.table}. There is no \code{drop} argument like I'm used to in \code{data.frame}.}
-Try \code{DT[,list(region)]} instead.
+Try \code{DT[,.(region)]} instead. \code{.()} is an alias for \code{list()} and ensures a \code{data.table} is returned.
 
 \subsection{Why does \code{DT[,x,y,z]} not work? I wanted the 3 columns \code{x},\code{y} and \code{z}.}
-The \code{j} expression is the 2nd argument. The correct way to do this is \code{DT[,list(x,y,z)]}.
+The \code{j} expression is the 2nd argument. The correct way to do this is \code{DT[,.(x,y,z)]}.
 
 \subsection{I assigned a variable \code{mycol="x"} but then \code{DT[,mycol]} returns \code{"x"}. How do I get it to look up the column name contained in the \code{mycol} variable?}
 This is what we mean when we say the \code{j} expression 'sees' objects in the calling scope. The variable \code{mycol} does not exist as a column name of
-\code{DT} so \proglang{R} then looked in the calling scope and found \code{mycol} there, and returned its value \code{"x"}. This is correct behaviour. Had \code{mycol} been a column name,
+\code{DT} so \proglang{R} then looked in the calling scope and found \code{mycol} there and returned its value \code{"x"}. This is correct behaviour. Had \code{mycol} been a column name,
 then that column's data would have been returned. What you probably meant was \code{DT[,mycol,with=FALSE]}, which will return the \code{x} column's 
 data as you wanted. Alternatively, since a \code{data.table} \emph{is} a \code{list}, too, you can write \code{DT[["x"]]} or \code{DT[[mycol]]}.
 
@@ -104,34 +102,32 @@ myfunction = function(dt, expr) {
 myfunction(DT,sum(Sepal.Width))
 @        
 
-\subsection{This is really hard. What's the point?}
+\subsection{What are the benefits of being able to use column names as if they are variables inside \code{DT[...]}?}
 \code{j} doesn't have to be just column names. You can write any \proglang{R} \emph{expression} of column names directly as the \code{j}; e.g., 
 \code{DT[,mean(x*y/z)]}.  The same applies
 to \code{i}; e.g., \code{DT[x>1000, sum(y*z)]}.
-This runs the \code{j} expression on the set of rows where the \code{i} expression is true. You don't even need to return data; e.g., \code{DT[x>1000, plot(y,z)]}. 
-When we get to compound table joins we will see how \code{i} and \code{j} can themselves be other \code{data.table} queries. 
-We are going to stretch \code{i} and \code{j} much further than this, but to get there we need you on board first with FAQs 1.1-1.6.
+This runs the \code{j} expression on the set of rows where the \code{i} expression is true. You don't even need to return data; e.g., \code{DT[x>1000, plot(y,z)]}. Finally, you can do \code{j} by group by adding \code{by=}; e.g., \code{DT[x>1000, sum(y*z), by=w]}. This runs \code{j} for each group in column \code{w} but just over the rows where \code{x>1000}. By placing the 3 parts of the query (where, select and group by) inside the square brackets, \code{data.table} sees this query as a whole before any part of it is evaluated. Thus it can optimize the query for performance. 
 
 \subsection{OK, I'm starting to see what \code{data.table} is about, but why didn't you enhance \code{data.frame} in \proglang{R}? Why does it have to be a new package?}
-As FAQ 1.1 highlights, \code{j} in \code{[.data.table} is fundamentally different from \code{j} in \code{[.data.frame}. Even something as simple as \code{DF[,1]} would break existing code in many packages and user code.  This is by design, and we want it to work this way for more complicated syntax to work. There are other differences, too (see FAQ \ref{faq:SmallerDiffs}).
+As FAQ 1.1 highlights, \code{j} in \code{[.data.table} is fundamentally different from \code{j} in \code{[.data.frame}. Even something as simple as \code{DF[,1]} would break existing code in many packages and user code.  This is by design. We want it to work this way for more complicated syntax to work. There are other differences, too (see FAQ \ref{faq:SmallerDiffs}).
 
 Furthermore, \code{data.table} \emph{inherits} from \code{data.frame}. It \emph{is} a \code{data.frame}, too. A \code{data.table} can be passed to any package that only accepts \code{data.frame} and that package can use \code{[.data.frame} syntax on the \code{data.table}. 
 
 We \emph{have} proposed enhancements to \proglang{R} wherever possible, too. One of these was accepted as a new feature in \proglang{R} 2.12.0 :
 \begin{quotation}unique() and match() are now faster on character vectors where
       all elements are in the global CHARSXP cache and have unmarked
-      encoding (ASCII).  Thanks to Matthew Dowle for suggesting
+      encoding (ASCII).  Thanks to Matt Dowle for suggesting
       improvements to the way the hash code is generated in unique.c.\end{quotation}
 
 A second proposal was to use memcpy in duplicate.c, which is much faster than a for loop in C. This would improve the \emph{way} that \proglang{R} copies data internally (on some measures by 13 times). The thread on r-devel is here : \url{http://tolstoy.newcastle.edu.au/R/e10/devel/10/04/0148.html}.
 
 \subsection{Why are the defaults the way they are? Why does it work the way it does?}
-The simple answer is because the author designed it for his own use, and he wanted it that way. He finds it a more natural, faster way to
+The simple answer is because the main author originally designed it for his own use. He wanted it that way. He finds it a more natural, faster way to
 write code, which also executes more quickly.
 
 \subsection{Isn't this already done by \code{with()} and \code{subset()} in base?}
 Some of the features discussed so far are, yes. The package builds upon base functionality. It does the same sorts of things but with
-less code required, and executes many times faster if used correctly.
+less code required and executes many times faster if used correctly.
 
 \subsection{Why does \code{X[Y]} return all the columns from \code{Y} too? Shouldn't it return a subset of \code{X}?}
 This was changed in v1.5.3. \code{X[Y]} now includes \code{Y}'s non-join columns. We refer to this feature as \emph{join inherited scope} because not only are \code{X} columns available to the j expression, so are \code{Y} columns. The downside is that \code{X[Y]} is less efficient since every item of \code{Y}'s non-join columns are duplicated to match the (likely large) number of rows in \code{X} that match. We therefore strongly encourage \code{X[Y,j]} instead of \code{X[Y]}. See next FAQ.
@@ -141,10 +137,10 @@ This was changed in v1.5.3. \code{X[Y]} now includes \code{Y}'s non-join columns
 \code{Y[X]} is a join, looking up \code{Y}'s rows using \code{X} (or \code{X}'s key if it has one) as an index.\newline
 \code{merge(X,Y)}\footnote{Here we mean either the \code{merge} \emph{method} for \code{data.table} or the \code{merge} method for \code{data.frame} since both methods work in the same way in this respect. See \code{?merge.data.table} and FAQ 2.24 for more information about method dispatch.} does both ways at the same time. The number of rows of \code{X[Y]} and \code{Y[X]} usually differ; whereas the number of rows returned by \code{merge(X,Y)} and \code{merge(Y,X)} is the same.
 
-\emph{BUT} that misses the main point. Most tasks require something to be done on the data after a join or merge. Why merge all the columns of data, only to use a small subset of them afterwards? You may suggest \code{merge(X[,ColsNeeded1],Y[,ColsNeeded2])}, but that takes copies of the subsets of data, and it requires the programmer to work out which columns are needed. \code{X[Y,j]} in data.table does all that in one step for you. When you write \code{X[Y,sum(foo*bar)]}, \code{data.table} automatically inspects the \code{j} expression to see which columns it uses.  It will only subset those columns only; the others are ignored. Memory is only created for the columns the \code{j} uses, and \code{Y} columns enjoy standard \proglang{R} recycling rules within the context of each group. Let's say \code{foo} is in \code{X}, and \code{bar} is in \code{Y} (along with 20 other columns in \code{Y}). Isn't \code{X[Y,sum(foo*bar)]} quicker to program and quicker to run than a \code{merge} followed by a \code{subset}?
+\emph{BUT} that misses the main point. Most tasks require something to be done on the data after a join or merge. Why merge all the columns of data, only to use a small subset of them afterwards? You may suggest \code{merge(X[,ColsNeeded1],Y[,ColsNeeded2])}, but that takes copies of the subsets of data and it requires the programmer to work out which columns are needed. \code{X[Y,j]} in data.table does all that in one step for you. When you write \code{X[Y,sum(foo*bar)]}, \code{data.table} automatically inspects the \code{j} expression to see which columns it uses.  It will only subset those columns only; the others are ignored. Memory is only created for the columns the \code{j} uses and \code{Y} columns enjoy standard \proglang{R} recycling rules within the context of each group. Let's say \code{foo} is in \code{X} and \code{bar} is in \code{Y} (along with 20 other columns in \code{Y}). Isn't \code{X[Y,sum(foo*bar)]} quicker to program and quicker to run than a \code{merge} followed by a \code{subset}?
 
 \subsection{Anything else about \code{X[Y,sum(foo*bar)]}?}
-Remember that \code{j} (in this example \code{sum(foo*bar)}) is run for each \emph{group} of \code{X} that each row of \code{Y} matches to. This feature is \emph{grouping by i} or \emph{by without by}.
+This behaviour changed in v1.9.4 (Sep 2014). It now does the \code{X[Y]} join and then runs \code{sum(foo*bar)} over all the rows; i.e., \code{X[Y][,sum(foo*bar)]}. It used to run \code{j} for each \emph{group} of \code{X} that each row of \code{Y} matches to. That can still be done as it's very useful but you now need to be explicit and specify \code{by=.EACHI}; i.e., \code{X[Y,sum(foo*bar),by=.EACHI]}. We call this \emph{grouping by each i}.
 For example, and making it complicated by using \emph{join inherited scope}, too :
 <<>>=
 X = data.table(grp=c("a","a","b","b","b","c","c"), foo=1:7)
@@ -153,23 +149,28 @@ Y = data.table(c("b","c"), bar=c(4,2))
 X
 Y
 X[Y,sum(foo*bar)]
+X[Y,sum(foo*bar),by=.EACHI]
 @
 
-\subsection{That's nice but what if I really do want to evaluate \code{j} for all rows once, not by group?}
-If you really want \code{j} to run once for the whole subset of \code{X} then try \code{X[Y][,sum(foo*bar)]}. If that needs to be efficient (recall that \code{X[Y]} joins all columns) then you will have to work a little harder since this is outside the common use-case: \code{X[Y,list(foo,bar)][,sum(foo*bar)]}.
+\subsection{That's nice. How did you manage to change it?}
+The request to change came from users. The feeling was that if a query is doing grouping then an explicit `by=` should be present for code readability reasons. An option is provided to return the old behaviour: \code{options(datatable.old.bywithoutby)}, by default FALSE. This enables upgrading to test the other new features / bug fixes in v1.9.4, with later migration of any by-without-by queries when ready (by adding \code{by=.EACHI} to them). We retained 47 pre-change tests and added them back as new tests, tested under \code{options(datatable.old.bywithoutby=TRUE)}. After a year we'll remove this option.
+
+Of the 66 packages on CRAN or Bioconductor that depend or import data.table at the time of releasing v1.9.4, only one was affected by the change. That could be because many packages don't have comprehensive tests, or just that grouping by each row in i wasn't being used much by downstream packages. We always test the new version with all dependent packages before release and coordinate any changes with those maintainers. So this release was quite straightforward in that regard.
+
+Another compelling reason to make the change was that previously, there was no efficient way to achieve what \code{X[Y,sum(foo*bar)]} does now. You had to write \code{X[Y][,sum(foo*bar)]}. That was suboptimal because \code{X[Y]} joined all the columns and passed them all to the second compound query without knowing that only foo and bar are needed. To solve that efficiency problem, extra programming effort was required: \code{X[Y,list(foo,bar)][,sum(foo*bar)]}.  The change to \code{by=.EACHI} has simplified this by allowing both queries to be expressed inside a single \code{DT[...]} query for efficieny.
 
 \section{General syntax}
 
 \subsection{How can I avoid writing a really long \code{j} expression? You've said I should use the column \emph{names}, but I've got a lot of columns.}
-When grouping, the \code{j} expression can use column names as variables, as you know, but it can also use a reserved symbol \code{.SD} which refers to the {\bf S}ubset of the \code{{\bf D}ata.table} for each group (excluding the grouping columns). So to sum up all your columns it's just \code{DT[,lapply(.SD,sum),by=grp]}. It might seem tricky, but it's fast to write and fast to run. Notice you don't have to create an anonymous \code{function}. See the timing vignette and wiki for comparison to other methods. The \code{.SD} object is efficiently implemented internally and more efficient than passing an argument to a function. But if the \code{.SD} symbol appears in \code{j} then \code{data.table} has to populate \code{.SD} fully for each group even if \code{j} doesn't use all of it.
-So please don't do this, for example, \code{DT[,sum(.SD[["sales"]]),by=grp]}. That works but is inefficient and inelegant. This is what was intended: \code{DT[,sum(sales),by=grp]} and could be 100's of times faster. If you do use all the data in \code{.SD} for each group (such as in \code{DT[,lapply(.SD,sum),by=grp]}) then that's very good usage of \code{.SD}. Also see \code{?data.table} for the \code{.SDcols} argument.
+When grouping, the \code{j} expression can use column names as variables, as you know, but it can also use a reserved symbol \code{.SD} which refers to the {\bf S}ubset of the \code{{\bf D}ata.table} for each group (excluding the grouping columns). So to sum up all your columns it's just \code{DT[,lapply(.SD,sum),by=grp]}. It might seem tricky, but it's fast to write and fast to run. Notice you don't have to create an anonymous \code{function}. The \code{.SD} object is efficiently implemented internally and more efficient than passing an argument to a function. But if the \code{.SD} symbol appears in \code{j} then \code{data.table} has to populate \code{.SD} fully for each group even if \code{j} doesn't use all of it.
+So please don't do this, for example, \code{DT[,sum(.SD[["sales"]]),by=grp]}. That works but is inefficient and inelegant. This is what was intended: \code{DT[,sum(sales),by=grp]} and could be 100's of times faster. If you do use all the data in \code{.SD} for each group (such as in \code{DT[,lapply(.SD,sum),by=grp]}) then that's very good usage of \code{.SD}. Also see \code{?data.table} for the \code{.SDcols} argument which allows you to specify a subset of columns for \code{.SD}.
 
 \subsection{Why is the default for \code{mult} now \code{"all"}?}
 In v1.5.3 the default was changed to \code{"all"}. When \code{i} (or \code{i}'s key if it has one) has fewer columns than \code{x}'s key, \code{mult} was already set to \code{"all"} automatically. Changing the default makes this clearer and easier for users as it came up quite often.
 
 In versions up to v1.3, \code{"all"} was slower. Internally, \code{"all"} was implemented by joining using \code{"first"}, then again from scratch using \code{"last"}, after which a diff between them was performed to work out the span of the matches in \code{x} for each row in \code{i}. Most often we join to single rows, though, where \code{"first"},\code{"last"} and \code{"all"} return the same result. We preferred maximum performance for the majority of situations so the default chosen was \code{"first"}. When working with a non-unique key (generally a single column containing a grouping variable), \code{DT["A"]} returned the first row of that group so \code{DT["A",mult="all"]} was needed to return all the rows in that group.
 
-In v1.4 the binary search in C was changed to branch at the deepest level to find first and last. That branch will likely occur within the same final pages of RAM so there should no longer be a speed disadvantage in defaulting \code{mult} to \code{"all"}. We warned that the default might change, and made the change in v1.5.3.
+In v1.4 the binary search in C was changed to branch at the deepest level to find first and last. That branch will likely occur within the same final pages of RAM so there should no longer be a speed disadvantage in defaulting \code{mult} to \code{"all"}. We warned that the default might change and made the change in v1.5.3.
 
 A future version of \code{data.table} may allow a distinction between a key and a \emph{unique key}. Internally \code{mult="all"} would perform more like \code{mult="first"} when all \code{x}'s key columns were joined to and \code{x}'s key was a unique key. \code{data.table} would need checks on insert and update to make sure a unique key is maintained. An advantage of specifying a unique key would be that \code{data.table} would ensure no duplicates could be inserted, in addition to performance.
 
@@ -186,9 +187,9 @@ which returns the two columns. In \code{data.table} you know you can use the col
 DT = data.table(DF)
 DT[,c(y,z)]
 @
-but this returns one vector.  Remember that the \code{j} expression is evaluated within the environment of \code{DT}, and \code{c()} returns a vector.  If 2 or more columns are required, use list() instead:
+but this returns one vector.  Remember that the \code{j} expression is evaluated within the environment of \code{DT} and \code{c()} returns a vector.  If 2 or more columns are required, use \code{list()} or \code{.()} instead:
 <<>>=
-DT[,list(y,z)]
+DT[,.(y,z)]
 @
 \code{c()} can be useful in a \code{data.table} too, but its behaviour is different from that in \code{[.data.frame}.
 
@@ -215,7 +216,7 @@ sapply(DT[0],class)
 
 \subsection{Why has the \code{DT()} alias been removed?}\label{faq:DTremove1}
 \code{DT} was introduced originally as a wrapper for a list of \code{j} expressions. Since \code{DT} was an alias for \code{data.table}, this was a convenient way to take care of silent recycling in cases where each item of the \code{j} list evaluated to different lengths. The alias was one reason grouping was slow, though.
-As of v1.3, \code{list()} should be passed instead to the \code{j} argument. \code{list()} is a primitive and is much faster, especially when there are many groups. Internally, this was a nontrivial change. Vector recycling is now done internally, along with several other speed enhancements for grouping.
+As of v1.3, \code{list()} or \code{.()} should be passed instead to the \code{j} argument. These are much faster, especially when there are many groups. Internally, this was a nontrivial change. Vector recycling is now done internally, along with several other speed enhancements for grouping.
 
 \subsection{But my code uses \code{j=DT(...)} and it works. The previous FAQ says that \code{DT()} has been removed.}\label{faq:DTremove2}
 Then you are using a version prior to 1.5.3. Prior to 1.5.3 \code{[.data.table} detected use of \code{DT()} in the \code{j} and automatically replaced it with a call to \code{list()}. This was to help the transition for existing users.
@@ -249,25 +250,24 @@ DT[,{
 },by=x]
 @
 
-\subsection{Inside each group, why is the group variable a long vector containing the same value repeated?}
-Please upgrade to v1.6.1, or later; this is no longer true. In the previous FAQ, \code{x} is a grouping variable
-and now has length 1 for efficiency and convenience. Prior to v1.6.1, \code{x} repeated the group value to match
-the number of rows in that group. There is no longer any difference between the following two statements.
+\subsection{Inside each group, why are the group variables length 1?}
+In the previous FAQ, \code{x} is a grouping variable
+and (as from v1.6.1) has length 1 (if inspected or used in \code{j}). It's for efficiency and convenience. Therefore, there is no difference between the following two statements:
 <<>>=
-DT[,list(g=1,h=2,i=3,j=4,repeatgroupname=x,sum(y)),by=x]     
-DT[,list(g=1,h=2,i=3,j=4,repeatgroupname=x[1],sum(y)),by=x]
+DT[,.(g=1,h=2,i=3,j=4,repeatgroupname=x,sum(y)),by=x]
+DT[,.(g=1,h=2,i=3,j=4,repeatgroupname=x[1],sum(y)),by=x]
 @
-Code written prior to v1.6.1 that uses \code{[1]} will still work, but the \code{[1]} is no longer necessary.
+If you need the size of the current group, use \code{.N} rather than calling \code{length()} on any column.
 
 \subsection{Only the first 10 rows are printed, how do I print more?}
-There are two things happening here. First, if the number of rows in a \code{data.table} are large (\code{> 100} by default), then a summary of the \code{data.table} is printed to the console by default. Second, the summary of a large \code{data.table} is printed by takingthe top and bottm \code{n} rows of the \code{data.table} and only printing those. Both of these parametes (when to trigger a summary, and how much of a table to use as a summary) are configurable by \proglang{R}'s \code{options} mechanism, or by calling the \code{print} function directly.
+There are two things happening here. First, if the number of rows in a \code{data.table} are large (\code{> 100} by default), then a summary of the \code{data.table} is printed to the console by default. Second, the summary of a large \code{data.table} is printed by takingthe top and bottom \code{n} rows of the \code{data.table} and only printing those. Both of these parameters (when to trigger a summary and how much of a table to use as a summary) are configurable by \proglang{R}'s \code{options} mechanism, or by calling the \code{print} function directly.
 
 For instance, to enforce the summary of a \code{data.table} to only happen when a \code{data.table} is greater than 50 rows, you could \code{options(datatable.print.nrows=50)}. To disable the summary-by-default completely, you could \code{options(datatable.print.nrows=Inf)}. You could also call \code{print} directly, as in \code{print(your.data.table, nrows=Inf)}.
 
 If you want to show more than just the top (and bottom) 10 rows of a \code{data.table} summary (say you like 20), set \code{options(datatable.print.topn=20)}, for example. Again, you could also just call \code{print} directly, as in \code{print(your.data.table, topn=20)}
 
 \subsection{With an \code{X[Y]} join, what if \code{X} contains a column called \code{"Y"}?}
-When \code{i} is a single name such as \code{Y} it is evaluated in the calling frame. In all other cases such as calls to \code{J()} or other expressions, \code{i} is evaluated within the scope of \code{X}. This facilitates easy \emph{self joins} such as \code{X[J(unique(colA)),mult="first"]}.
+When \code{i} is a single name such as \code{Y} it is evaluated in the calling frame. In all other cases such as calls to \code{.()} or other expressions, \code{i} is evaluated within the scope of \code{X}. This facilitates easy \emph{self joins} such as \code{X[J(unique(colA)),mult="first"]}.
 
 \subsection{\code{X[Z[Y]]} is failing because \code{X} contains a column \code{"Y"}. I'd like it to use the table \code{Y} in calling scope.}
 The \code{Z[Y]} part is not a single name so that is evaluated within the frame of \code{X} and the problem occurs. Try \code{tmp=Z[Y];X[tmp]}. This is robust to \code{X} containing a column \code{"tmp"} because \code{tmp} is a single name. If you often encounter conflics of this type, one simple solution may be to name all tables in uppercase and all column names in lowercase, or some similar scheme.
@@ -336,10 +336,9 @@ Yes :
 \item{\code{roll=TRUE}  <==>  N/A because SQL is inherently unordered}
 \end{itemize}
 The general form is : \newline
-\code{\hspace*{2cm}DT[where,select|update,group by][having][order by][ ]...[ ]}
+\code{\hspace*{2cm}DT[where,select|update,group by][order by][...] ... [...]}
 \newline\newline
-A key advantage of column vectors in \proglang{R} is that they are \emph{ordered}, unlike SQL\footnote{It may be a surprise to learn that \code{select top 10 * from ...} does \emph{not} reliably return the same rows over time in SQL. You do need to include an \code{order by} clause, or use a clustered index to guarantee row order; i.e., SQL is inherently unordered.}. We can use ordered functions in \code{data.table} queries, such as \code{diff()}, and we can use \emph{any} \proglang{R} function from any package, not just the functions that are defined in SQL. A disadvantage is that \proglang{R} objects must fit in memory, but with several \proglang{R} packages such as ff, bigmemory, mmap and indexing, this is changing.
-
+A key advantage of column vectors in \proglang{R} is that they are \emph{ordered}, unlike SQL\footnote{It may be a surprise to learn that \code{select top 10 * from ...} does \emph{not} reliably return the same rows over time in SQL. You do need to include an \code{order by} clause, or use a clustered index to guarantee row order; i.e., SQL is inherently unordered.}. We can use ordered functions in \code{data.table} queries such as \code{diff()} and we can use \emph{any} \proglang{R} function from any package, not just the functions that are defined in SQL. A disadvantage is that \proglang{R} objects must fit in memory, but with several \proglang{R} packages such as ff, bigmemory, mmap and indexing, this is changing.
 
 
 \subsection{What are the smaller syntax differences between \code{data.frame} and \code{data.table}?}\label{faq:SmallerDiffs}
@@ -354,7 +353,7 @@ A key advantage of column vectors in \proglang{R} is that they are \emph{ordered
 \item{\code{DT[,colA]} == \code{DF[,"colA"]}}
 \item{\code{DT[,list(colA)]} == \code{DF[,"colA",drop=FALSE]}}
 \item{\code{DT[NA]} returns 1 row of \code{NA}, but \code{DF[NA]} returns a copy of \code{DF} containing
-  \code{NA} throughout. The symbol \code{NA} is type logical in \proglang{R}, and
+  \code{NA} throughout. The symbol \code{NA} is type logical in \proglang{R} and
   is therefore recycled by \code{[.data.frame}. Intention was probably \code{DF[NA\_integer\_]}.
   \code{[.data.table} does this automatically for convenience.}
 \item{\code{DT[c(TRUE,NA,FALSE)]} treats the \code{NA} as \code{FALSE}, but \code{DF[c(TRUE,NA,FALSE)]} returns
@@ -377,7 +376,7 @@ So that \code{data.table} can inherit from \code{data.frame} without using \code
 
 The \code{drop} argument is never used by \code{[.data.table}. It is a placeholder for non \code{data.table} aware packages when they use the \code{[.data.frame} syntax directly on a \code{data.table}.
 
-\subsection{Rolling joins are cool, and very fast! Was that hard to program?}
+\subsection{Rolling joins are cool and very fast! Was that hard to program?}
 The prevailing row on or before the \code{i} row is the final row the binary search tests anyway. So \code{roll=TRUE} is essentially just a switch in the binary search C code to return that row.
 
 \subsection{Why does \code{DT[i,col:=value]} return the whole of \code{DT}? I expected either no visible value (consistent with \code{<-}), or a message or return value containing how many rows were updated. It isn't obvious that the data has indeed been updated by reference.}
@@ -412,10 +411,10 @@ rm("cbind.data.frame")
 \end{itemize}
 If you know of a better solution, that still solves all the issues above, then please let us know and we'll gladly change it.
 
-\subsection{I've read about method dispatch (e.g. \code{merge} may or may not dispatch to \code{merge.data.table}) but \emph{how} does R know how to dispatch? Are dots significant or special? How on earth does R know which function to dispatch, and when?}
+\subsection{I've read about method dispatch (e.g. \code{merge} may or may not dispatch to \code{merge.data.table}) but \emph{how} does R know how to dispatch? Are dots significant or special? How on earth does R know which function to dispatch and when?}
 This comes up quite a lot, but it's really earth shatteringly simple. A function such as \code{merge} is \emph{generic} if it consists of a call to \code{UseMethod}. When you see people talking about whether or not functions are \emph{generic} functions they are merely typing the function, without \code{()} afterwards, looking at the program code inside it and if they see a call to \code{UseMethod} then it is \emph{generic}.  What does \code{UseMethod} do? It literally slaps the function name together with the class of the first argument, separated by period (\code{.}) and then calls that function, passing along the same arguments. It's that simple. For example, \code{merge(X,Y)} contains a \code{UseMethod} call which means it then \emph{dispatches} (i.e. calls) \code{paste("merge",class(X),sep=".")}. Functions with dots in may or may not be methods. The dot is irrelevant really. Other than dot being the separator that \code{UseMethod} uses. Knowing this background should now highlight why, for example, it is obvious to R folk that \code{as.data.table.data.frame}  is the \code{data.frame} method for the \code{as.data.table} generic function. Further, it may help to elucidate that, yes you are correct, it is not obvious from its name alone that \code{ls.fit} is not the fit method of the \code{ls} generic function. You only know that by typing \code{ls} (not \code{ls()}) and observing it isn't a single call to \code{UseMethod}.
 
-You might now ask: where is this documented in R? Answer: it's quite clear, but, you need to first know to look in \code{?UseMethod}, and \emph{that} help file contains : 
+You might now ask: where is this documented in R? Answer: it's quite clear, but, you need to first know to look in \code{?UseMethod} and \emph{that} help file contains : 
 
  "When a function calling UseMethod('fun') is applied to an object with class attribute c('first', 'second'), the system searches for a function called fun.first and, if it finds it, applies it to the object. If no such function is found a function called fun.second is tried. If no class name produces a suitable function, the function fun.default is used, if it exists, or an error results."
 
@@ -434,15 +433,14 @@ Several reasons:
 \end{itemize}
 
 \subsection{I don't have a key on a large table, but grouping is still really quick. Why is that?}
-\code{data.table} uses radix sorting. This is significantly faster than other sort algorithms.
-Radix is specifically for integers only, see \code{?base::sort.list(x,method="radix")}.
+\code{data.table} uses radix sorting. This is significantly faster than other sort algorithms. See our presentations on our homepage for more information.
 
 This is also one reason why \code{setkey()} is quick.
 
 When no key is set, or we group in a different order from that of the key, we call it an \emph{ad hoc by}.
 
 \subsection{Why is grouping by columns in the key faster than an ad hoc by?}
-Because each group is contiguous in RAM, thereby minimising page fetches, and memory can be
+Because each group is contiguous in RAM, thereby minimising page fetches and memory can be
 copied in bulk (memcpy in C) rather than looping in C.
 
 \section{Error messages}
@@ -450,7 +448,7 @@ copied in bulk (memcpy in C) rather than looping in C.
 See FAQ \ref{faq:DTremove1} and FAQ \ref{faq:DTremove2}.
 
 \subsection{\code{unused argument(s) (MySum = sum(v))}}
-This error is generated by \code{DT[,MySum=sum(v)]}. \code{DT[,list(MySum=sum(v))]} was intended, or \code{DT[,j=list(MySum=sum(v))]}.
+This error is generated by \code{DT[,MySum=sum(v)]}. \code{DT[,.(MySum=sum(v))]} was intended, or \code{DT[,j=.(MySum=sum(v))]}.
 
 \subsection{\code{'translateCharUTF8' must be called on a CHARSXP}}
 This error (and similar; e.g., \code{'getCharCE' must be called on a CHARSXP}) may be nothing do with character data or locale. Instead, this can be a symptom of an earlier memory corruption. To date these have been reproducible and fixed (quickly). Please report it to datatable-help.
@@ -485,6 +483,9 @@ The more natural syntax now works :
 <<>>=
 if (packageVersion("data.table") >= "1.8.1") {
     DT[,.N,by=list(a,b)][,unique(N),by=a]
+}
+if (packageVersion("data.table") >= "1.9.3") {
+    DT[,.N,by=.(a,b)][,unique(N),by=a]   # same
 }
 @
 
@@ -529,15 +530,15 @@ Not currently.
 \end{itemize}
 
 \subsection{Is it available for Linux, Mac and Windows?}
-Yes, for both 32-bit and 64-bit on all platforms. Thanks to CRAN and R-Forge. There are no special or OS-specific libraries used.
+Yes, for both 32-bit and 64-bit on all platforms. Thanks to CRAN. There are no special or OS-specific libraries used.
 
 \subsection{I think it's great. What can I do?}
-Please send suggestions, bug reports and enhancement requests to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help}. 
-This helps make the package better. The list is public and archived.
+Please file suggestions, bug reports and enhancement requests on \href{https://github.com/Rdatatable/data.table/issues}{GitHub}. 
+This helps make the package better.
 
-Please do vote for the package on \href{http://crantastic.org/packages/data-table}{Crantastic}. This helps encourage the developers, and helps other \proglang{R} users find the package. If you have time to write a comment too, that can help others in the community. Just simply clicking that you use the package, though, is much appreciated.
+Please do vote for the package on \href{http://crantastic.org/packages/data-table}{Crantastic}. This helps encourage the developers and helps other \proglang{R} users find the package. If you have time to write a comment too, that can help others in the community. Just simply clicking that you use the package, though, is much appreciated.
 
-You can join the project and change the code and/or documentation yourself.
+You can submit pull requests to change the code and/or documentation yourself.
 
 \subsection{I think it's not great. How do I warn others about my experience?}
 Please put your vote and comments on \href{http://crantastic.org/packages/data-table}{Crantastic}. Please make it constructive so we have a chance to improve.
@@ -546,7 +547,7 @@ Please put your vote and comments on \href{http://crantastic.org/packages/data-t
 Yes, there are two options. You can post to \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help}. It's like r-help, but just for this package. Or the \href{http://stackoverflow.com/questions/tagged/data.table}{\code{data.table} tag on Stack Overflow}. Feel free to answer questions in those places, too.
 
 \subsection{Where are the datatable-help archives?}
-The \href{http://datatable.r-forge.r-project.org/}{homepage} contains links to the archives in several formats.
+The \href{https://github.com/Rdatatable/data.table/wiki}{homepage} contains links to the archives in several formats.
 
 \subsection{I'd prefer not to contact datatable-help, can I mail just one or two people privately?}
 Sure. You're more likely to get a faster answer from datatable-help or Stack Overflow, though. Asking publicly in those places helps build the knowledge base.
@@ -554,19 +555,17 @@ Sure. You're more likely to get a faster answer from datatable-help or Stack Ove
 \subsection{I have created a package that depends on \code{data.table}. How do I ensure my package is \code{data.table}-aware so that inheritance from \code{data.frame} works?}
 Either i) include \code{data.table} in the \code{Depends:} field of your DESCRIPTION file, or ii) include \code{data.table} in the \code{Imports:} field of your DESCRIPTION file AND \code{import(data.table)} in your NAMESPACE file.
 
-\subsection{Why is this FAQ in pdf format? Can it moved to a website?}
-This FAQ (and the intro and timing documents) are \emph{vignettes} written using Sweave. The benefits of Sweave include the following:
+\subsection{Why is this FAQ in pdf format? Can it moved to HTML?}
+Yes we'd like to move it to a HTML vignette. Just haven't got to that yet. 
+The benefits of vignettes (rather than a wiki) including the following:
 \begin{itemize}
 \item We include \proglang{R} code in the vignettes. This code is \emph{actually run} when the file is created, not copy and pasted.
 \item This document is \emph{reproducible}. Grab the .Rnw and you can run it yourself.
 \item CRAN checks the package (including running vignettes) every night on Linux, Mac and Windows, both 32bit and 64bit. Results are posted to \url{http://cran.r-project.org/web/checks/check_results_data.table.html}. Included there are results from r-devel; i.e., not yet released R. That serves as a very useful early warning system for any potential future issues as \proglang{R} itself develops.
-\item This file is bound into each version of the package. The package is not accepted on CRAN unless this file passes checks. Each version of the package will have its own FAQ file which will be relevant for that version.  Contrast this to a single website, which can be ambiguous if the answer depends on the version.
+\item This file is bound into each version of the package. The package is not accepted on CRAN unless this file passes checks. Each version of the package will have its own FAQ file which will be relevant for that version. Contrast this to a single website, which can be ambiguous if the answer depends on the version.
 \item You can open it offline at your \proglang{R} prompt using \code{vignette()}.
-\item You can extract the code from the document and play with it using\newline \code{edit(vignette("datatable-faq"))} or \code{edit(vignette("datatable-timings"))}.
-\item It prints out easily.
-\item It's quicker and easier for us to write and maintain the FAQ in .Rnw form.
+\item You can extract the code from the document and play with it using\newline \code{edit(vignette("datatable-faq"))}.
 \end{itemize}
-Having said all that, a wiki format may be quicker and easier for users to contribute documentation and examples. Therefore a wiki has now been created; see link on the \href{http://datatable.r-forge.r-project.org/}{homepage}.
 
 \end{document}
 
