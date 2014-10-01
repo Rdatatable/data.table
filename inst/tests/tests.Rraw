@@ -1,4 +1,7 @@
 
+# This file should be clean of non-ASCII characters; e.g. CRAN Solaris
+# Use:  grep --color='auto' -P -n "[\x80-\xFF]" tests.Rraw
+
 if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
     suppressWarnings({
@@ -3008,9 +3011,9 @@ DT[,`:=`(last.x=tail(x,1L),last.x1=tail(x1,1L)),by=y]
 test(1086, class(DT$last.x), c("POSIXct", "POSIXt"))
 test(1087, class(DT$last.x1), "ITime")
 
-# chmatch on 'unknown' encoding (e.g. as.character(as.symbol("ä")) )falling back to match, #2538 and #4818
-x1 <- c("alä", "ala", "äallc", "coep")
-x2 <- c("ala", "alä")
+# chmatch on 'unknown' encoding (e.g. as.character(as.symbol("\u00E4")) )falling back to match, #2538 and #4818
+x1 <- c("al\u00E4", "ala", "\u00E4allc", "coep")
+x2 <- c("ala", "al\u00E4")
 test(1088.1, chmatch(x1, x2), match(x1, x2)) # should not fallback to "match"
 test(1088.2, x1 %chin% x2, x1 %in% x2)
 # change x1 to symbol to character
@@ -3026,9 +3029,9 @@ test(1091.1, chmatch(x3, x4), match(x3, x4)) # should fallback to "match" in "x"
 test(1091.2, x3 %chin% x4, x3 %in% x4)
 # for completness, include test from #2528 of non ascii LHS of := (it could feasibly fail in future due to something other than chmatch)
 DT = data.table(pas = c(1:5, NA, 6:10), good = c(1:10, NA))
-setnames(DT, "pas", "päs")
-test(1092, DT[is.na(päs), päs := 99L], data.table("päs" = c(1:5, 99L, 6:10), good = c(1:10,NA)))
-test(1093, DT[, päs := 34L], data.table(päs = 34L, good=c(1:10,NA)))
+setnames(DT, "pas", "p\u00E4s")
+test(1092, eval(parse(text="DT[is.na(p\u00E4s), p\u00E4s := 99L]")), data.table("p\u00E4s" = c(1:5, 99L, 6:10), good = c(1:10,NA)))
+test(1093, eval(parse(text="DT[, p\u00E4s := 34L]")), data.table("p\u00E4s" = 34L, good=c(1:10,NA)))
 
 # print of unnamed DT with >20 <= 100 rows, #4934
 DT <- data.table(x=1:25, y=letters[1:25])
@@ -3059,7 +3062,7 @@ if ("package:reshape2" %in% search()) {
     DT <- melt(as.data.table(ChickWeight), id=2:4) # calls melt.data.table
 
     # no S3 method yet, have to use "dcast.data.table"
-    # tmp comment out ... test(1101, as.data.frame(dcast.data.table(DT, time ~ variable, fun=mean)), dcast(DT, time~variable, fun=mean))
+    # tmp comment out (relies on extended-precision) ... test(1101, as.data.frame(dcast.data.table(DT, time ~ variable, fun=mean)), dcast(DT, time~variable, fun=mean))
     test(1102, as.data.frame(dcast.data.table(DT, diet ~ variable, fun=sum)), dcast(DT, diet~variable, fun=sum))
     x1 <- as.data.frame(dcast.data.table(DT, diet+chick ~ time, drop=FALSE)) 
     x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
@@ -3365,7 +3368,7 @@ test(1147.1, base::order(x), dradixorder(x, tol=numeric(0))) # base::order doesn
 test(1147.2, ordernumtol(x), dradixorder(x))
 tol = .Machine$double.eps^0.5
 x <- c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.18909, NaN, 5.18909-1.2*tol, 5.18909-0.04*tol)
-# tmp comment out ... test(1147.3, dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
+# tmp comment out (relies on extended-precision) ... test(1147.3, dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
 
 if ("package:reshape2" %in% search()) {
     try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
@@ -3568,7 +3571,7 @@ x <- character(0)
 test(1163, last(x), character(0))
 
 # Bug fix for #5159 - chmatch and character encoding (for some reason this seems to pass the test on a mac as well)
-a<-c("a","ä","ß","z")
+a<-c("a","\u00E4","\u00DF","z")
 au<-iconv(a,"UTF8","latin1")
 test(1164.1, chmatch(a, au), match(a, au))
 
@@ -3748,8 +3751,8 @@ for (i in 1:2) {
     test(1208+i*0.1, DT[.(c(Inf,NA_real_)),B], INT(4,8,12))
     test(1209+i*0.1, DT[.(c(NaN,NA_real_)),B], INT(7,10,8,12))
     test(1210+i*0.1, DT[.(c(NA_real_,NaN)),B], INT(8,12,7,10))
-    # tmp comment out ... test(1211+i*0.1, DT[,sum(B),by=A]$V1, INT(20,17,3,6,1,2,11,5,9,4)) 
-    # tmp comment out ... test(1212+i*0.1, DT[,sum(B),by=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,Inf,1,2,3),V1=INT(20,17,7,7,13,14)))
+    # tmp comment out (relies on extended-precision)... test(1211+i*0.1, DT[,sum(B),by=A]$V1, INT(20,17,3,6,1,2,11,5,9,4)) 
+    # tmp comment out (relies on extended-precision) ... test(1212+i*0.1, DT[,sum(B),by=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,Inf,1,2,3),V1=INT(20,17,7,7,13,14)))
     test(1213+i*0.1, DT[,sum(B),keyby=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,1,2,3,Inf),V1=INT(20,17,7,13,14,7),key="g"))
     # test(1214+i*0.1, DT[.(-200.0),roll=TRUE]$B, 3L)  # TO DO: roll to -Inf.  Also remove -Inf and test rolling to NaN and NA
 }
@@ -3879,15 +3882,15 @@ test(1229.2, setkey(DT), data.table(x=1:5, y=10:6, key="x,y"))
 # umlaut in column names (red herring I think, but testing anyway)
 sentEx = data.table(abend = c(1, 1, 0, 0, 2),
                     aber = c(0, 1, 0, 0, 0), 
-                    über = c(1, 0, 0, 0, 0),
-                    überall = c(0, 0, 0, 0, 0),
-                    überlegt = c(0, 0, 0, 0, 0),
+                    "\u00FCber" = c(1, 0, 0, 0, 0),
+                    "\u00FCberall" = c(0, 0, 0, 0, 0),
+                    "\u00FCberlegt" = c(0, 0, 0, 0, 0),
                     ID = structure(c(1L, 1L, 2L, 2L, 2L), .Label = c("0019", "0021"), class = "factor"),
                     abgeandert = c(1, 1, 1, 0, 0),
                     abgebildet = c(0, 0, 1, 1, 0),
                     abgelegt = c(0, 0, 0, 0, 3))
-test(1229.3, sentEx[, lapply(.SD, sum), by=ID], data.table(ID=factor(c("0019","0021")), abend=c(2,2), aber=c(1,0), über=c(1,0),
-             überall=c(0,0), überlegt = c(0,0), abgeandert=c(2,1), abgebildet = c(0,2), abgelegt=c(0,3)))
+test(1229.3, sentEx[, lapply(.SD, sum), by=ID], data.table(ID=factor(c("0019","0021")), abend=c(2,2), aber=c(1,0), "\u00FCber"=c(1,0),
+             "\u00FCberall"=c(0,0), "\u00FCberlegt" = c(0,0), abgeandert=c(2,1), abgebildet = c(0,2), abgelegt=c(0,3)))
 
 # Test that ad hoc by detects if ordered and dogroups switches to memcpy if contiguous, #1050
 DT = data.table(a=1:3,b=1:6,key="a")
@@ -4136,7 +4139,7 @@ test(1259, DT[,.N,by=upc], data.table(upc=c(360734147771, 360734147770), N=3L))
 test(1260, DT[,.N,by=upc][order(upc)], data.table(upc=c(360734147770, 360734147771), N=3L))
 test(1261, getNumericRounding(), 1L)
 # the limit of double precision (16 s.f.) ...
-test(1262, length(unique(c(1.2345678901234560, 1.2345678901234561, 1.2345678901234562, 1.2345678901234563))), 2L)  # 2 not 4 is double precision limit, unrelated to data.table and R
+# tmp comment out (relies on extended-precision) ... test(1262, length(unique(c(1.2345678901234560, 1.2345678901234561, 1.2345678901234562, 1.2345678901234563))), 2L)  # 2 not 4 is double precision limit, unrelated to data.table and R
 DT = data.table(id=c(1.234567890123450, 1.234567890123451, 1.234567890123452, 1.234567890123453))  # one less digit is limit
 test(1263, length(unique(DT$id)), 4L)
 test(1264, DT[,.N,by=id]$N, 4L)  # 1 byte rounding isn't enough
