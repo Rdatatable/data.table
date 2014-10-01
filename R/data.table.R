@@ -1550,7 +1550,14 @@ as.matrix.data.table = function(x,...)
 
 as.data.table.matrix = function(x, keep.rownames=FALSE)
 {
-    if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
+    if (keep.rownames) {
+        ## matricies and arrays may not have rownames attribute
+        if (is.null(rownames(x))) {
+            warning("keep.rownames has been set to TRUE but rownames(x) is NULL. rn column will be NA_character_")
+            return(data.table(rn=rep(NA_character_, nrow(x)), x, keep.rownames=FALSE))
+        } else 
+            return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
+    }
     d <- dim(x)
     nrows <- d[1L]
     ir <- seq_len(nrows)
@@ -1577,6 +1584,37 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
     alloc.col(value)
 }
 
+
+as.data.table.array = function(x, keep.rownames=FALSE)
+{
+
+    if (keep.rownames) {
+        ## matricies and arrays may not have rownames attribute
+        if (is.null(rownames(x))) {
+            warning("keep.rownames has been set to TRUE but rownames(x) is NULL. rn column will be NA_character_")
+            return(data.table(rn=rep(NA_character_, nrow(x)), x, keep.rownames=FALSE))
+        } else 
+            return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
+    }
+
+    ## deep copy, since we will modify original
+    x <- copy(x)
+    ## Convert to matrix
+    d <- dim(x)
+    setattr(x, "dim", c(d[1L], prod(d[-1L])))
+    ret <- as.data.table.matrix(x, keep.rownames=keep.rownames)
+
+    # --- TODO
+    # --- this would be consistent with as.data.frame, but it causes print(ret) to complain 
+    # ------------
+    # ## single-dim arrays are handled differently by as.data.frame. Namely, dim is preserved
+    # if (length(dim) == 1) {
+    #     setattr(ret[[1+keep.rownames]], "dim", d)
+    # }
+    
+    return(ret)
+}
+
 as.data.table.data.frame = function(x, keep.rownames=FALSE)
 {
     if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
@@ -1591,24 +1629,88 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE)
     alloc.col(ans)
 }
 
-as.data.table.list = function(x, keep.rownames=FALSE) {
+as.data.table.list = function(x, keep.rownames=FALSE, bind.using=c("cbind", "rbind")) {
     if (!length(x)) return( null.data.table() )
-    n = vapply(x, length, 0L)
-    mn = max(n)
-    x = copy(x)
-    if (any(n<mn)) 
-    for (i in which(n<mn)) {
-        if (!is.null(x[[i]])) {# avoids warning when a list element is NULL
-            # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
-            if (mn %% n[i] != 0) 
-                warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
-            x[[i]] = rep(x[[i]], length.out=mn)
+
+    ## Implementing #833
+    dims <- vapply(x, function(xi) length(dim(xi)), 0)
+
+    ## Check for nested lists. 
+    ## Throw warning to notify of lack of compatibility with as.data.frame
+    vapply(x, is.list, NA) & (!dims)
+        warning("as.data.table(x) and as.data.frame(X) differ in how they handle nested lists.\nNamely, as.data.table will allow for a list to be a single element in a column.\nIf you would like to force compatibility please use:\n   as.data.table(as.data.frame(x))")
+
+
+    ## If any element has dim, then convert to data.table using rbind/cbind 
+    ## For consistency with as.data.frame, as.data.table should 
+    ##   fail if inconsisent dimensions. 
+    ## There is no recycling allowed in this situation
+    ## (Note that as.data.frame fails where cbind/rbind only issues warning)
+    if (any(dims != 0)) {
+        bind.using <- match.arg(bind.using)
+        bind.func <- match.fun(bind.using)
+
+        ## should be all of the same class for rbind
+        if (bind.using == "rbind") {
+            classes <- lapply(x, function(xi) sapply(xi, class))
+            if (!all(duplicated(unlist(classes, use.names=FALSE))[-1L]))
+                warning ("bind.using=\"rbind\" in as.data.table is an experimental feature intended for list of matricies. It appears that the elements of 'x' are of mixed classes and coercian is likely.")
         }
+
+        x <- copy(x)
+
+        ## Before checking nrows/ncols, Arrays must be converted to matrices
+        ## Accomplished by modifying the 'dim' attribute
+        if (any(dims > 2)) {
+          inds.arrays <- which(dims > 2)
+          ## If cbind'ing, then the "number of rows" is the product of all dimensions other than columns
+          ## If rbind'ing, then the "number of cols" is the product of all dimensions other than rows
+          ## 'd' is the dim being "preserved" (ie, either rows or cols)
+          d <- if (bind.using == "cbind") 1 else 2
+          for (i in inds.arrays) {
+            dim.i <- attr(x[[i]], "dim")
+            setattr( x[[i]], "dim", c(dim.i[d], prod(dim.i[-d])) )
+          }
+        }
+
+        ## check for consisent length/rows/cols
+        ## 'L' will store the "size" (either length, rows or cols
+        ##      depending on the element of x and the function in bind.func)
+        hasdim <- dims != 0
+        L <- vector("integer", length=length(x))
+        L[!hasdim] <- vapply(x[!hasdim], length, 0L)
+        ## use either nrow() or ncol() depending on bind.func
+        n_row_or_col <- if (bind.using == "cbind") nrow else ncol
+        L[hasdim] <- vapply(x[hasdim], n_row_or_col, 0L)
+        ## Test that L are all equal (ie min, max, mean are all the same)
+        if (any(range(L) != mean(L)))
+          stop(sprintf("arguments imply differing number of %s: %s\n\nMore Info: 'x', the list provided to as.data.table(), has at least one element that is two-dimensional. For consistency with as.data.frame, there is no recycling when the number of %1$s / length of each element of x are not all the same.\nYou may want to consider:    do.call(cbind, x)", ifelse(bind.using == "cbind", "rows", "cols"), paste(L, collapse=", ")))
+
+        # We cannot simply c/rbind since this will force coercian. 
+        # The first element in the list must be a data.table 
+        return(do.call(bind.func, c(list(as.data.table(x[[1L]])), x[-1L])))
+    } else {
+    ## Proceed as "normal" (prior to Implementing #833)
+        n = vapply(x, length, 0L)
+        mn = max(n)
+        x = copy(x)
+
+        if (any(n<mn)) 
+        for (i in which(n<mn)) {
+            if (!is.null(x[[i]])) {# avoids warning when a list element is NULL
+                # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
+                if (mn %% n[i] != 0) 
+                    warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
+                x[[i]] = rep(x[[i]], length.out=mn)
+            }
+        }      
+    
+        if (is.null(names(x)))
+            setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
+        setattr(x,"row.names",.set_row_names(max(n)))
+        setattr(x,"class",c("data.table","data.frame"))
+        alloc.col(x)
     }
-    if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
-    setattr(x,"row.names",.set_row_names(max(n)))
-    setattr(x,"class",c("data.table","data.frame"))
-    alloc.col(x)
 }
 
 as.data.table.data.table = function(x, keep.rownames=FALSE) return(x)
