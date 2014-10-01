@@ -7,8 +7,8 @@ setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y)) {
     if (is.character(by.x)) by.x = chmatch(by.x, names(x))
     if (is.character(by.y)) by.y = chmatch(by.y, names(y))
     by.x = as.integer(by.x); by.y = as.integer(by.y)
-    if (anyNA(by.x)) stop("Some column(s) specified in by.x are not present in x")
-    if (anyNA(by.y)) stop("Some column(s) specified in by.y are not present in y")
+    if (any(is.na(by.x))) stop("Some column(s) specified in by.x are not present in x")
+    if (any(is.na(by.y))) stop("Some column(s) specified in by.y are not present in y")
     # factor in x should've factor/character in y, and viceversa
     for (a in seq_along(by.x)) {
         lc = by.y[a]

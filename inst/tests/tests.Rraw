@@ -3959,7 +3959,7 @@ seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
 set.seed(seed)
 DT <- data.table(w=sample(-5:5, 100, TRUE), 
 x=as.numeric(sample(-5:5, 100, TRUE)), 
-y=sample(paste0("id", 1:10), 100, TRUE), 
+y=sample(paste("id", 1:10, sep=""), 100, TRUE), 
 z=sample(c(TRUE, FALSE), 100, TRUE))
 
 colorder=sample(ncol(DT))
@@ -3983,7 +3983,7 @@ if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
 # with NA
 DT <- data.table(w=sample(c(-5:5,NA_integer_), 100, TRUE), 
 x=as.numeric(sample(c(-5:5, NA), 100, TRUE)), 
-y=sample(c(NA, paste0("id", 1:10)), 100, TRUE), 
+y=sample(c(NA, paste("id", 1:10, sep="")), 100, TRUE), 
 z=sample(c(NA, TRUE, FALSE), 100, TRUE))
 
 colorder=sample(ncol(DT))
@@ -4018,8 +4018,8 @@ test(1248.1, DT[, y := y * eval(parse(text="1*2"))], data.table(x=seq(1,10,1), y
 DT <- data.table(id=1:5, var=letters[1:5])
 ans <- copy(DT)
 id <- "va"
-test(1248.2, DT[, eval(parse(text=paste0(id,"r")))], letters[1:5])
-test(1248.3, DT[, id2:=eval(parse(text=paste0(id,"r")))], ans[, id2 := var])
+test(1248.2, DT[, eval(parse(text=paste(id,"r",sep="")))], letters[1:5])
+test(1248.3, DT[, id2:=eval(parse(text=paste(id,"r",sep="")))], ans[, id2 := var])
 
 # test to make sure DT[order(...)] works fine when it's already sorted (forgot the case where forder returns integer(0) before)
 DT <- data.table(x=rep(1:4, each=5), y=1:20)
