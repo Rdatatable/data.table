@@ -1080,7 +1080,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 
             # Fix for #813 and #758. Ex: DT[c(FALSE, FALSE), list(integer(0), y)] 
             # where DT = data.table(x=1:2, y=3:4) should return an empty data.table!!
-            if (!is.null(irows) && (irows == 0L) || identical(irows, integer(0)))
+            if (!is.null(irows) && (identical(irows, integer(0)) || all(irows %in% 0L))) ## TODO: any way to not check all 'irows' values?
                 if (is.atomic(jval)) jval = jval[0L] else jval = lapply(jval, `[`, 0L)
             if (is.atomic(jval)) {
                 setattr(jval,"names",NULL)

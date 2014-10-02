@@ -5269,6 +5269,8 @@ test(1382.1, DT[c(FALSE, FALSE), list(x, 3:4)], data.table(x=integer(0), V2=inte
 DT <- data.table(id = c("a", "a", "b", "b"), var = c(1.1, 2.5, 6.3, 4.5), key="id")
 test(1382.2, DT["c", list(id, check = any(var > 3)), nomatch=0L], data.table(id=character(0), check=logical(0), key="id"))
 test(1382.3, DT[c(FALSE), id], character(0))
+DT <- DT[1:3]; setkey(DT, id)
+test(1382.4, DT[c("c", "b"), list(id, check = any(var > 3)), nomatch=0L], data.table(id="b", check=TRUE, key="id"))
 
 ##########################
 
