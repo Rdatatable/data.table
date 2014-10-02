@@ -5262,6 +5262,14 @@ x <- data.table(a=character(0), b=character(0), c=numeric(0))
 setkey(x, a, b)
 test(1381, x[J("foo", character(0)), nomatch=0L], x, warning="Item 2 is of size 0 but maximum size is 1,")
 
+# Fix for #813 and #758
+options(oldbwb) ### we need the new version of join here.. no bywithout by!
+DT = data.table(x = 1:2)
+test(1382.1, DT[c(FALSE, FALSE), list(x, 3:4)], data.table(x=integer(0), V2=integer(0)))
+DT <- data.table(id = c("a", "a", "b", "b"), var = c(1.1, 2.5, 6.3, 4.5), key="id")
+test(1382.2, DT["c", list(id, check = any(var > 3)), nomatch=0L], data.table(id=character(0), check=logical(0), key="id"))
+test(1382.3, DT[c(FALSE), id], character(0))
+
 ##########################
 
 
