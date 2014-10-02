@@ -1077,6 +1077,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if ((is.call(jsub) && is.list(jval) && !is.object(jval)) || !missing(by)) {
             # is.call: selecting from a list column should return list
             # is.object: for test 168 and 168.1 (S4 object result from ggplot2::qplot). Just plain list results should result in data.table
+
+            # Fix for #813 and #758. Ex: DT[c(FALSE, FALSE), list(integer(0), y)] 
+            # where DT = data.table(x=1:2, y=3:4) should return an empty data.table!!
+            if (!is.null(irows) && (identical(irows, integer(0)) || all(irows %in% 0L))) ## TODO: any way to not check all 'irows' values?
+                if (is.atomic(jval)) jval = jval[0L] else jval = lapply(jval, `[`, 0L)
             if (is.atomic(jval)) {
                 setattr(jval,"names",NULL)
                 jval = data.table(jval)
@@ -1600,7 +1605,9 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
     for (i in which(n<mn)) {
         if (!is.null(x[[i]])) {# avoids warning when a list element is NULL
             # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
-            if (mn %% n[i] != 0) 
+            if (!n[i] && mn)
+                warning("Item ", i, " is of size 0 but maximum size is ", mn, ", therefore recycled with 'NA'")
+            else if (n[i] && mn %% n[i] != 0)
                 warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
             x[[i]] = rep(x[[i]], length.out=mn)
         }

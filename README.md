@@ -1,7 +1,7 @@
 
 **Current stable release** (always even) : [v1.9.4 on CRAN](http://cran.r-project.org/web/packages/data.table/index.html), released 2<sup>nd</sup> Oct 2014.<br>
 **Development version** (always odd): [v1.9.5 on GitHub](https://github.com/Rdatatable/data.table/) [![Build Status](https://travis-ci.org/Rdatatable/data.table.svg?branch=master)](https://travis-ci.org/Rdatatable/data.table) [How to install](https://github.com/Rdatatable/data.table/wiki/Installation)
-<!--- Note this file is displayed on the CRAN page, as well as on GitHub. So the the link to GitHub is not to itself when viewed on the CRAN page. --->
+<!-- Note this file is displayed on the CRAN page, as well as on GitHub. So the the link to GitHub is not to itself when viewed on the CRAN page. -->
 
 **Introduction, benchmarks etc**: [HOMEPAGE](https://github.com/Rdatatable/data.table/wiki)
 
@@ -9,7 +9,16 @@
 
 ### Changes in v1.9.5  (in development on GitHub)
 
-None yet.
+#### NEW FEATURES
+
+#### BUG FIXES
+
+  1. Fixed a regression from `v1.9.2` in `as.data.table.list` with list input having 0-length items - Ex: `x = list(a=integer(0), b=3:4)`. `as.data.table(x)` recycles item `a` with `NA`s to fit the length of the longer column `b` (length=2), as before now, but with an additional warning message that the item has been recycled with `NA`. Closes [#847](https://github.com/Rdatatable/data.table/issues/847). Thanks to @tvinodr for the report.
+  
+  2. In `DT[i, j]` when `i` returns all `FALSE`, some edge cases where `j` contained length-0 values (ex: `integer(0)`) did not return an empty data.table, as it should. Closes [#758](https://github.com/Rdatatable/data.table/issues/758) and [#813](https://github.com/Rdatatable/data.table/issues/813). Thanks to @tunaaa and @nigmastar for the nice reproducible reports. 
+
+#### NOTES
+
 
 ### Changes in v1.9.4  (on CRAN 2 Oct 2014)
 
