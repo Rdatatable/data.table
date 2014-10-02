@@ -1077,6 +1077,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if ((is.call(jsub) && is.list(jval) && !is.object(jval)) || !missing(by)) {
             # is.call: selecting from a list column should return list
             # is.object: for test 168 and 168.1 (S4 object result from ggplot2::qplot). Just plain list results should result in data.table
+
+            # Fix for #813 and #758. Ex: DT[c(FALSE, FALSE), list(integer(0), y)] 
+            # where DT = data.table(x=1:2, y=3:4) should return an empty data.table!!
+            if (!is.null(irows) && (irows == 0L) || identical(irows, integer(0)))
+                if (is.atomic(jval)) jval = jval[0L] else jval = lapply(jval, `[`, 0L)
             if (is.atomic(jval)) {
                 setattr(jval,"names",NULL)
                 jval = data.table(jval)
