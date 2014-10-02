@@ -1600,7 +1600,9 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
     for (i in which(n<mn)) {
         if (!is.null(x[[i]])) {# avoids warning when a list element is NULL
             # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
-            if (mn %% n[i] != 0) 
+            if (!n[i] && mn)
+                warning("Item ", i, " is of size 0 but maximum size is ", mn, ", therefore recycled with 'NA'")
+            else if (n[i] && mn %% n[i] != 0)
                 warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
             x[[i]] = rep(x[[i]], length.out=mn)
         }

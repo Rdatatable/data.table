@@ -1,13 +1,25 @@
 
 **Current stable release** (always even) : [v1.9.2 on CRAN](http://cran.r-project.org/web/packages/data.table/index.html), released 27<sup>th</sup> Feb 2014.<br>
 **Development version** (always odd): [v1.9.3 on GitHub](https://github.com/Rdatatable/data.table/) [![Build Status](https://travis-ci.org/Rdatatable/data.table.svg?branch=master)](https://travis-ci.org/Rdatatable/data.table) [How to install](https://github.com/Rdatatable/data.table/wiki/Installation)
-<!--- Note this file is displayed on the CRAN page, as well as on GitHub. So the the link to GitHub is not to itself when viewed on the CRAN page. --->
+<!-- Note this file is displayed on the CRAN page, as well as on GitHub. So the the link to GitHub is not to itself when viewed on the CRAN page. -->
 
 **Introduction, benchmarks etc**: [HOMEPAGE](https://github.com/Rdatatable/data.table/wiki)
 
 ---
 
-### Changes in v1.9.3  (in development on GitHub)
+### Changes in v1.9.5  (in development on GitHub)
+
+#### NEW FEATURES
+
+#### BUG FIXES
+
+  1. Fixed a regression from `v1.9.2` in `as.data.table.list` with list input having 0-length items - Ex: `x = list(a=integer(0), b=3:4)`. `as.data.table(x)` recycles item `a` with `NA`s to fit the length of the longer column `b` (length=2), as before now, but with an additional warning message that the item has been recycled with `NA`. Closes [#847](https://github.com/Rdatatable/data.table/issues/847). Thanks to @tvinodr for the report.
+  
+
+#### NOTES
+
+
+### Changes in v1.9.4  (in development on GitHub)
 
 #### NEW FEATURES
 

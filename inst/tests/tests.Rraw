@@ -5257,6 +5257,10 @@ options(oldv)
 DT = data.table(a=c(0,0,1,1,0,0), b=1:6)  # 'a' type double here, as it is in vardpoor
 test(1380, DT[a==TRUE], DT[3:4])
 
+# Fix #847, as.data.table.list and character(0) issue
+x <- data.table(a=character(0), b=character(0), c=numeric(0))
+setkey(x, a, b)
+test(1381, x[J("foo", character(0)), nomatch=0L], x, warning="Item 2 is of size 0 but maximum size is 1,")
 
 ##########################
 
