@@ -4575,7 +4575,7 @@ test(1313.15, DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c(-1,4,4,4,-I
 test(1313.16, DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c(4,10,10,10,-Inf,-Inf)), warning="No non-missing")
 
 # for date (attribute check.. especially after issues/689 !!!)
-DT <- data.table(x = rep(letters[1:2], each=5), y = as.POSIXct('2010-01-01', tz="gmt") + seq(0, 86400*9, 86400))
+DT <- data.table(x = rep(letters[1:2], each=5), y = as.POSIXct('2010-01-01', tz="UTC") + seq(0, 86400*9, 86400))
 test(1313.17, DT[, list(y=min(y)), by=x], DT[c(1,6)])
 test(1313.18, DT[, list(y=max(y)), by=x], DT[c(5,10)])
 DT[c(1,6), y := NA]
