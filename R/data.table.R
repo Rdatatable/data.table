@@ -533,9 +533,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             }
             if (mult=="all") {
                 if (!byjoin) {
-                    # fix for #698. When notjoin=TRUE, don't worry about allow.cartesian. It'll generate all indices but will be taken care of 
-                    # in the if-condition below for 'byjoin'. Number of rows after that will never be > nrow(x). So, we're safe. No need to impose here.
-                    irows = if (allLen1) f__ else vecseq(f__,len__,if(allow.cartesian || notjoin) NULL else as.integer(max(nrow(x),nrow(i))))
+                    # Really, `anyDuplicated` in base is AWESOME!
+                    irows = if (allLen1) f__ else vecseq(f__,len__,
+                                        if(allow.cartesian || 
+                                         notjoin || # #698 fix. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
+                                         !anyDuplicated(f__, incomparables = c(0L, NA_integer_))) # #742 fix. If 'i' has no duplicates, ignore as well.
+                                           NULL 
+                                        else as.integer(max(nrow(x),nrow(i))))
                 } else {
                     if (length(xo)) stop("Cannot by=.EACHI when joining to a secondary key, yet")
                     # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.

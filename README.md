@@ -17,6 +17,8 @@
   
   2. In `DT[i, j]` when `i` returns all `FALSE`, some edge cases where `j` contained length-0 values (ex: `integer(0)`) did not return an empty data.table, as it should. Closes [#758](https://github.com/Rdatatable/data.table/issues/758) and [#813](https://github.com/Rdatatable/data.table/issues/813). Thanks to @tunaaa and @nigmastar for the nice reproducible reports. 
 
+  3. `allow.cartesian` is ignored during joins when `i` has no duplicates and `mult="all"`. Closes [#742](https://github.com/Rdatatable/data.table/issues/742). Thanks to @nigmastar for the report.
+
 #### NOTES
 
 
