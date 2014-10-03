@@ -364,6 +364,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         return(x)
     }
     if (!with && missing(j)) stop("j must be provided when with=FALSE")
+    if (!missing(j)) {
+        jsub = substitute(j) # Ignore allow.cartesian when `jsub` has `:=`. Search for #800 to see where we need this.
+        # deconstruct and eval everything with just one argument, then reconstruct back to a call
+        if (is.call(jsub)) jsub = construct(deconstruct_and_eval(jsub, parent.frame(), parent.frame()))
+    }
     bysub=NULL
     if (!missing(by)) bysub=substitute(by)
     if (!missing(keyby)) {
@@ -534,10 +539,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (mult=="all") {
                 if (!byjoin) {
                     # Really, `anyDuplicated` in base is AWESOME!
+                    # allow.cartesian shouldn't error if a) not-join, b) 'i' has no duplicates or c) jsub has `:=`.
                     irows = if (allLen1) f__ else vecseq(f__,len__,
                                         if(allow.cartesian || 
                                          notjoin || # #698 fix. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
-                                         !anyDuplicated(f__, incomparables = c(0L, NA_integer_))) # #742 fix. If 'i' has no duplicates, ignore as well.
+                                         !anyDuplicated(f__, incomparables = c(0L, NA_integer_)) || # #742 fix. If 'i' has no duplicates, ignore as well.
+                                         (!missing(j) && all.vars(jsub, TRUE)[1L] == ":=")) # #800 fix. if jsub[1L] == ":=" ignore allow.cartesian.
+                                                                                            # TODO: warn on `:=` when `i` has duplicates? 
                                            NULL 
                                         else as.integer(max(nrow(x),nrow(i))))
                 } else {
@@ -606,10 +614,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         }
         ansvals = chmatch(ansvars, names(x))
     } else {
-        jsub = substitute(j)
-        # deconstruct and eval everything with just one argument, then reconstruct back to a call
-        if (is.call(jsub))
-            jsub = construct(deconstruct_and_eval(jsub, parent.frame(), parent.frame()))
+        # jsub = substitute(j)
+        # # deconstruct and eval everything with just one argument, then reconstruct back to a call
+        # if (is.call(jsub))
+        #     jsub = construct(deconstruct_and_eval(jsub, parent.frame(), parent.frame()))
         if (is.null(jsub)) return(NULL)
 
         if (is.call(jsub) && jsub[[1L]]==as.name(":=")) {
