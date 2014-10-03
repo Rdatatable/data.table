@@ -15,6 +15,7 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
         require(bit64)
         require(gdata)
         require(GenomicRanges)
+        require(caret)
     })
     # The suppression is for users running test.data.table(). If they don't have ggplot2 installed we don't
     # want to warn about it not being installed. 'R CMD check' is a stricter test that will warn if the
@@ -5278,6 +5279,24 @@ test(1383.1, DT[letters[1:3], list(var)], DT[1:5, list(var)])
 # Fix for #800 - allow.cartesian should be ignored if jsub[1L] has `:=`. TODO: maybe still warn if `i` has duplicates?
 DT=data.table(id=c(1,1), date=c(1992,1991), value=c(4.1,4.5), key="id")
 test(1383.2, copy(DT)[DT, a:=1], DT[, a := 1])
+
+# Fix for #476 and #825
+if ("package:reshape" %in% search()) {
+    DT <- data.table(ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L), DATUM = structure(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209), class = "Date"), N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
+    ans = cast(DT, ID ~ rank, value = "DATUM")
+    test(1383.1, names(DT), c("ID", "DATUM", "N", "rank"))
+} else {
+    cat("Tests 1383.1 not run. If required call library(reshape) first.\n")
+}
+
+if ("package:caret" %in% search()) {
+    DT <- data.table(x = rnorm(10), y = rnorm(10))
+    cv.ctrl <- trainControl(method = 'repeatedcv', number = 5, repeats = 1)
+    fit <- train(y ~ x, data = DT, 'lm', trControl = cv.ctrl)
+    test(1383.2, names(DT), c("x", "y"))
+} else {
+    cat("Tests 1383.2 not run. If required call library(caret) first.\n")
+}
 
 ##########################
 
