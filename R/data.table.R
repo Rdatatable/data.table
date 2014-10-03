@@ -78,6 +78,8 @@ print.data.table = function(x,
     nrows=getOption("datatable.print.nrows"), # (100) under this the whole (small) table is printed, unless topn is provided
     row.names = TRUE, ...)
 {
+    if (class(unclass(x)) != 'list')
+        stop('Not a suitable data.table')
     if (!.global$print) {
         #  := in [.data.table sets print=FALSE, when appropriate, to suppress := autoprinting at the console
         .global$print = TRUE
