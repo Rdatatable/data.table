@@ -614,6 +614,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         }
         ansvals = chmatch(ansvars, names(x))
     } else {
+        # These commented lines are moved to the top for #800.
         # jsub = substitute(j)
         # # deconstruct and eval everything with just one argument, then reconstruct back to a call
         # if (is.call(jsub))
