@@ -1830,6 +1830,7 @@ dimnames.data.table = function(x) {
     caller = as.character(sys.call(-2L))[1L]
     if ( ((tt<-identical(caller,"colnames<-")) && cedta(3)) ||
          cedta() ) warning("The ",if(tt)"col","names(x)<-value syntax copies the whole table. This is due to <- in R itself. Please change to setnames(x,old,new) which does not copy and is faster. See help('setnames'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your ",if(tt)"col","names<- calls.")
+    else x = shallow(x) ## Fix for #476 and #825. Needed for R v3.1.0+
     if (is.null(value))
         setattr(x,"names",NULL)   # e.g. plyr::melt() calls base::unname()
     else
