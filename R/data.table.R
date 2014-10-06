@@ -2124,8 +2124,8 @@ setcolorder = function(x,old, new)
     o <- rep(NA,length(x))
     o[new] <- i
     o[is.na(o)] <- setdiff(1:length(x),i)
-    print(o)
     .Call(Csetcolorder, x, o)
+    invisible(x)
 }
 
 set = function(x,i=NULL,j,value)  # low overhead, loopable
