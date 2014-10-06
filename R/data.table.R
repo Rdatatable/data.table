@@ -2072,7 +2072,7 @@ setnames = function(x,old,new) {
         if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
     }
     if (!is.character(new)) stop("'new' is not a character vector")
-    if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))
+    if (length(names(x)) != length(x)) stop("x is length ",length(dt)," but its names are length ",length(names(x)))
 
     # update the key too if the column name being change is in the key
     m = chmatch(names(x)[i], key(x))
@@ -2083,23 +2083,49 @@ setnames = function(x,old,new) {
     invisible(x)
 }
 
-setcolorder = function(x,neworder)
-{
+
+setcolorder = function(x,old, new)
+{   
     if (!is.data.table(x)) stop("x is not a data.table")
-    if (length(neworder)!=length(x)) stop("neworder is length ",length(neworder)," but x has ",length(x)," columns.")
-    if (is.character(neworder)) {
-        if (any(duplicated(neworder))) stop("neworder contains duplicate column names")
-        if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
-        o = as.integer(chmatch(neworder,names(x)))
-        if (any(is.na(o))) stop("Names in neworder not found in x: ",paste(neworder[is.na(o)],collapse=","))
-    } else {
-        if (!is.numeric(neworder)) stop("neworder is not a character or numeric vector")
-        o = as.integer(neworder)
-        m = !(o %in% seq_len(length(x)))
-        if (any(m)) stop("Column numbers in neworder out of bounds: ",paste(o[m],collapse=","))
+    if (missing(new)) {
+        if (length(old)!=length(x)) stop("old is length ",length(old)," but x has ",length(x)," columns.")
+        if (is.character(old)) {
+            if (any(duplicated(old))) stop("old contains duplicate column names")
+            if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
+            o = as.integer(chmatch(old,names(x)))
+            if (any(is.na(o))) stop("Names in old not found in x: ",paste(old[is.na(o)],collapse=","))
+        } else {
+            if (!is.numeric(old)) stop("old is not a character or numeric vector")
+            o = as.integer(old)
+            m = !(o %in% seq_len(length(x)))
+            if (any(m)) stop("Column numbers in old out of bounds: ",paste(o[m],collapse=","))
+        }
+        .Call(Csetcolorder,x,o)
+        return(invisible(x))
+    } else{      
+        if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
+        if (length(new)!=length(old)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
     }
-    .Call(Csetcolorder,x,o)
-    invisible(x)
+    if (is.numeric(old)) {
+            tt = old<1L | old>length(x) | is.na(old)
+            if (any(tt)) stop("Items of 'old' either NA or outside range [1,",length(x),"]: ",paste(old[tt],collapse=","))
+            i = as.integer(old)
+            if (any(duplicated(i))) stop("Some duplicates exist in 'old': ",paste(i[duplicated(i)],collapse=","))
+    } else {
+        if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
+        if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste(old[duplicated(old)],collapse=","))
+        i = chmatch(old,names(x))
+        if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
+        if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
+    }
+    if (!is.numeric(new)) stop("'new' is not a numeric vector")
+    if (length(names(x)) != length(x)) stop("x is length ",length(dt)," but its names are length ",length(names(x)))
+
+    o <- rep(NA,length(x))
+    o[new] <- i
+    o[is.na(o)] <- setdiff(1:length(x),i)
+    print(o)
+    .Call(Csetcolorder, x, o)
 }
 
 set = function(x,i=NULL,j,value)  # low overhead, loopable
