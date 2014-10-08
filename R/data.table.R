@@ -452,11 +452,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 rightcols = chmatch(key(x)[1],names(x))
                 # join to key(x)[1L]
             } else {
-                xo = attr(attr(x,"index"),isub2)  # TO DO: or any index with that col as first one
+                xo = get2key(x,isub2)  # TO DO: or any index with that col as first one
                 if (is.null(xo)) {   # integer() would be valid and signifies o=1:.N
                     if (verbose) {cat("creating new index '",isub2,"'\n",sep="");flush.console()}
                     set2keyv(x,isub2)
-                    xo = attr(attr(x,"index"),isub2)
+                    xo = get2key(x,isub2)
                 } else {
                     if (verbose) {cat("using existing index '",isub2,"'\n",sep="");flush.console()}
                 }

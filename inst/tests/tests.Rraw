@@ -5307,6 +5307,10 @@ id.sub = c("id1", "id2", "id3", "id3", "id4")   # deliberate dup
 test(1385.1, DT[id %in% id.sub], DT[1:4])
 test(1385.2, DT[id == id.sub], DT[1:4])
 
+# reserved class attributes conflict with auto index names, #
+DT = data.table(class=c('a','b'), x=c(1,2))
+test(1386, DT[class=='a'], DT[1])
+
 
 ##########################
 
