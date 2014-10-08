@@ -28,6 +28,8 @@
   4. `names<-.data.table` works as intended on data.table unaware packages with Rv3.1.0+. Closes [#476](https://github.com/Rdatatable/data.table/issues/476) and [#825](https://github.com/Rdatatable/data.table/issues/825). Thanks to ezbentley for reporting [here](http://stackoverflow.com/q/23256177/559784) on SO and to @narrenfrei.
   
   5. `.EACHI` is now an exported symbol (just like `.SD`,`.N`,`.I`,`.GRP` and `.BY` already were) so that packages using `data.table` and `.EACHI` pass `R CMD check` with no NOTE that this symbol is undefined. Thanks to Matt Bannert for highlighting.
+  
+  6. `DT[colA == max(colA)]` now works again without needing `options(datatable.auto.index=FALSE)`. Thanks to Jan Gorecki and kaybenleroll, [#858](https://github.com/Rdatatable/data.table/issues/858). Test added.
 
 
 #### NOTES

@@ -5242,7 +5242,7 @@ test(off-725, DT[c("a","b","d"),v][,list(v)], DT[J(c("a","b","d")),"v",with=FALS
 DT = data.table(a=1:3,b=1:6,key="a")
 test(off-869, DT[J(2,42,84),print(.SD)], output="   b1: 22: 5.*Empty data.table (0 rows) of 3 cols: a,V2,V3")
 
-options(datatable.old.bywithoutby=TRUE)
+options(datatable.old.bywithoutby=FALSE)
 # End (test reverting to old bywithoutby behaviour)  TO DO: delete these tests after Sep 2015
 #====================================
 
@@ -5264,7 +5264,6 @@ setkey(x, a, b)
 test(1381, x[J("foo", character(0)), nomatch=0L], x, warning="Item 2 is of size 0 but maximum size is 1,")
 
 # Fix for #813 and #758
-options(oldbwb) ### we need the new version of join here.. no bywithout by!
 DT = data.table(x = 1:2)
 test(1382.1, DT[c(FALSE, FALSE), list(x, 3:4)], data.table(x=integer(0), V2=integer(0)))
 DT <- data.table(id = c("a", "a", "b", "b"), var = c(1.1, 2.5, 6.3, 4.5), key="id")
@@ -5297,6 +5296,11 @@ if ("package:caret" %in% search()) {
 } else {
     cat("Tests 1383.2 not run. If required call library(caret) first.\n")
 }
+
+# Somehow DT[col==max(col)] was never tested, broken by auto-indexing new in v1.9.4, #858
+DT = data.table(a = c(1,1,1,2,2,2,3,3,3), b = rnorm(9))
+test(1384, DT[a == max(a)], DT[7:9])
+
 
 ##########################
 

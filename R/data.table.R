@@ -437,9 +437,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             i = eval(isub, order_env, parent.frame())             # for optimisation of 'order' to 'forder'
             # that forder returns integer(0) is taken care of internally within forder
         } else if (is.call(isub) && getOption("datatable.auto.index") &&
-                   as.character(isub[[1L]]) %chin% c("==","%in%") && 
-                   (isub2<-as.character(isub[[2L]])) %chin% names(x) &&
-                   !(isub3<-as.character(isub[[3L]])) %chin% names(x)) {
+                   as.character(isub[[1L]]) %chin% c("==","%in%") &&
+                   is.name(isub[[2L]]) &&
+                   (isub2<-as.character(isub[[2L]])) %chin% names(x) &&    # LHS is a column name symbol 
+                   !(is.name(isub[[3]]) && as.character(isub[[3L]]) %chin% names(x))) {   # RHS isn't a column name symbol
             # simplest case for now (single ==).  Later, top level may be &,|,< or >
             # == and %in% are equivalent i.e. for convenience can also supply a vector on the RHS of ==
             # DT[colA == colB] should be regular scan, so excluded since colB is in names(x) 
@@ -462,7 +463,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 rightcols = chmatch(isub2, names(x))
             }
             
-            RHS = eval(isub[[3L]], parent.frame())
+            RHS = eval(isub[[3L]], x, parent.frame())
             if (!identical(class(RHS), class(x[[rightcols]])) || is.factor(x[[rightcols]])) {
                 # Fall back to no auto indexing.  TO DO: move coercing inside bmerge() and simplify R level
                 rightcols = leftcols = integer(0)
