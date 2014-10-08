@@ -5301,6 +5301,12 @@ if ("package:caret" %in% search()) {
 DT = data.table(a = c(1,1,1,2,2,2,3,3,3), b = rnorm(9))
 test(1384, DT[a == max(a)], DT[7:9])
 
+# Dups on RHS of == or %in%
+DT = data.table(id = paste0("id", 1:5))
+id.sub = c("id1", "id2", "id3", "id3", "id4")   # deliberate dup
+test(1385.1, DT[id %in% id.sub], DT[1:4])
+test(1385.2, DT[id == id.sub], DT[1:4])
+
 
 ##########################
 

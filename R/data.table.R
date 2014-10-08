@@ -473,7 +473,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 else i = eval(isub, parent.frame(), parent.frame())
             } else {            
                 # convert RHS to list to join to key (either physical or secondary)
-                i = as.data.table( RHS )
+                i = as.data.table( unique(RHS) )
                 # To do: wrap isub[[3L]] with as.data.table() first before eval to save copy
                 leftcols = 1L
                 ans = bmerge(i, x, leftcols, rightcols, io<-FALSE, xo, roll=0.0, rollends=c(FALSE,FALSE), nomatch=0L, verbose=verbose)
