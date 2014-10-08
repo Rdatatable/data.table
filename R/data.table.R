@@ -59,12 +59,12 @@ dim.data.table <- function(x) {
 setPackageName("data.table",.global)
 .global$print = ""
 
-.SD = .N = .I = .GRP = .BY = NULL
+.SD = .N = .I = .GRP = .BY = .EACHI = NULL
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
 # But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.
 # And NULL makes it clear (to the R's mask check on loading) that they're variables not functions.
 # utils::globalVariables(c(".SD",".N")) was tried as well, but exporting seems better.
-# So even though, .BY doesn't appear in this file, it should still be NULL here and exported because it's
+# So even though .BY doesn't appear in this file, it should still be NULL here and exported because it's
 # defined in SDenv and can be used by users.
 
 print.data.table = function(x,
@@ -74,11 +74,15 @@ print.data.table = function(x,
 {
     if (.global$print != "" &&
         length(SYS<-last(sys.calls()))>=2 &&
-        typeof(SYS[[2]]) == "list" &&   # auto-printing; e.g. not explicit print.  When explicit print, this is symbol or language
+        typeof(SYS[[2]]) == "list" &&   # auto-printing; e.g. not explicit print.  When explicit print this is not list; e.g. symbol or language
         address(x) == .global$print ) {
-        #  := in [.data.table sets print=address(x), when appropriate, to suppress next autoprint at the console. See FAQ 2.22
+        #  := in [.data.table sets print=address(x) to suppress next autoprint at the console. See FAQ 2.22 and README item in v1.9.5
+        # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
+        #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
+        # The issue is distinguishing "> DT" (after a previous := in a function) from "> DT[,foo:=1]". To print.data.table() there is no difference.
         .global$print = ""
         return(invisible())
+        
     }
     .global$print = ""
     if (!is.numeric(nrows)) nrows = 100L

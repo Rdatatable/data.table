@@ -11,7 +11,7 @@
 
 #### NEW FEATURES
 
-  1. `if (TRUE) DT[,LHS:=RHS]` now doesn't print (thanks to Jureiss, [#869](https://github.com/Rdatatable/data.table/issues/869)) and `:=` should not longer print in knitr. To get this to work we've had to live with one downside: if a `:=` is used inside a function with no `DT[]` before the end of the function, then the next time `DT` is typed at the prompt, nothing will be printed. A repeated `DT` will print. To avoid this: include a `DT[]` after the last `:=` in your function. If that is not possible (e.g., it's not a function you can change) then `print(DT)` and `DT[]` at the prompt are guaranteed to print. As before, adding an extra `[]` on the end of `:=` query is a recommended idiom to update and then print; e.g. `> DT[,foo:=3L][]`
+  1. `if (TRUE) DT[,LHS:=RHS]` now doesn't print (thanks to Jureiss, [#869](https://github.com/Rdatatable/data.table/issues/869)) and `:=` should no longer print in knitr. To get this to work we've had to live with one downside: if a `:=` is used inside a function with no `DT[]` before the end of the function, then the next time `DT` is typed at the prompt, nothing will be printed. A repeated `DT` will print. To avoid this: include a `DT[]` after the last `:=` in your function. If that is not possible (e.g., it's not a function you can change) then `print(DT)` and `DT[]` at the prompt are guaranteed to print. As before, adding an extra `[]` on the end of `:=` query is a recommended idiom to update and then print; e.g. `> DT[,foo:=3L][]`
 
 #### BUG FIXES
 
@@ -26,6 +26,9 @@
   In both these cases (and during a `not-join` which was already fixed in [1.9.4](https://github.com/Rdatatable/data.table/blob/master/README.md#bug-fixes-1)), `allow.cartesian` can be safely ignored.
 
   4. `names<-.data.table` works as intended on data.table unaware packages with Rv3.1.0+. Closes [#476](https://github.com/Rdatatable/data.table/issues/476) and [#825](https://github.com/Rdatatable/data.table/issues/825). Thanks to ezbentley for reporting [here](http://stackoverflow.com/q/23256177/559784) on SO and to @narrenfrei.
+  
+  5. `.EACHI` is now an exported symbol (as are `.SD`,`.N`,`.I`,`.GRP` and `.BY`) so that packages using `data.table` and `.EACHI` pass `R CMD check` with no NOTE that this symbol is undefined. Thanks to Matt Bannert for highlighting.
+
 
 #### NOTES
 
