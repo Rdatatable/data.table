@@ -11,11 +11,13 @@
 
 #### NEW FEATURES
 
+  1. `if (TRUE) DT[,LHS:=RHS]` now doesn't print (thanks to Jureiss, [#869](https://github.com/Rdatatable/data.table/issues/869) and `:=` should not longer print in knitr. To get this to work we've had to live with one downside: if a `:=` is used inside a function with no `DT[]` before the end of the function, then the next time `DT` is typed at the prompt, nothing will be printed. A repeated `DT` will print. To avoid this: include a `DT[]` after the last `:=` in your function. If that is not possible (e.g., it's not a function you can change) then `print(DT)` and `DT[]` at the prompt are guaranteed to print. As before, adding an extra `[]` on the end of `:=` query is a recommended idiom to update and then print; e.g. `> DT[,foo:=3L][]`
+
 #### BUG FIXES
 
   1. `as.data.table.list` with list input having 0-length items, e.g. `x = list(a=integer(0), b=3:4)`. `as.data.table(x)` recycles item `a` with `NA`s to fit the length of the longer column `b` (length=2), as before now, but with an additional warning message that the item has been recycled with `NA`. Closes [#847](https://github.com/Rdatatable/data.table/issues/847). Thanks to @tvinodr for the report. This was a regression from 1.9.2.
   
-  2. In `DT[i, j]` when `i` returns all `FALSE`, some edge cases where `j` contained length-0 values (ex: `integer(0)`) did not return an empty data.table, as it should. Closes [#758](https://github.com/Rdatatable/data.table/issues/758) and [#813](https://github.com/Rdatatable/data.table/issues/813). Thanks to @tunaaa and @nigmastar for the nice reproducible reports. 
+  2. `DT[i, j]` when `i` returns all `FALSE` and `j` contains some length-0 values (ex: `integer(0)`) now returns an empty data.table as it should. Closes [#758](https://github.com/Rdatatable/data.table/issues/758) and [#813](https://github.com/Rdatatable/data.table/issues/813). Thanks to @tunaaa and @nigmastar for the nice reproducible reports. 
 
   3. `allow.cartesian` is ignored during joins when:  
       * `i` has no duplicates and `mult="all"`. Closes [#742](https://github.com/Rdatatable/data.table/issues/742). Thanks to @nigmastar for the report.  

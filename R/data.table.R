@@ -57,13 +57,7 @@ dim.data.table <- function(x) {
 
 .global = new.env()  # thanks to: http://stackoverflow.com/a/12605694/403310
 setPackageName("data.table",.global)
-.global$print = TRUE
-.global$depthtrigger =
-    if (exists(".global",.GlobalEnv)) {
-        9L # this is development
-    } else {
-        3L # normal value when package is loaded in 2.14+ (where functions are compiled in namespace). data.table depends on R >= 2.14.0
-    }
+.global$print = ""
 
 .SD = .N = .I = .GRP = .BY = NULL
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
@@ -78,11 +72,15 @@ print.data.table = function(x,
     nrows=getOption("datatable.print.nrows"), # (100) under this the whole (small) table is printed, unless topn is provided
     row.names = TRUE, ...)
 {
-    if (!.global$print) {
-        #  := in [.data.table sets print=FALSE, when appropriate, to suppress := autoprinting at the console
-        .global$print = TRUE
+    if (.global$print != "" &&
+        length(SYS<-last(sys.calls()))>=2 &&
+        typeof(SYS[[2]]) == "list" &&   # auto-printing; e.g. not explicit print.  When explicit print, this is symbol or language
+        address(x) == .global$print ) {
+        #  := in [.data.table sets print=address(x), when appropriate, to suppress next autoprint at the console. See FAQ 2.22
+        .global$print = ""
         return(invisible())
     }
+    .global$print = ""
     if (!is.numeric(nrows)) nrows = 100L
     if (!is.infinite(nrows)) nrows = as.integer(nrows)
     if (nrows <= 0L) return(invisible())   # ability to turn off printing
@@ -357,10 +355,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!is.logical(which) || length(which)>1) stop("'which' must be a logical vector length 1. Either FALSE, TRUE or NA.")
     if ((isTRUE(which)||is.na(which)) && !missing(j)) stop("'which' is ",which," (meaning return row numbers) but 'j' is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
     if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
+    .global$print=""
     if (missing(i) && missing(j)) {
         # ...[] == oops at console, forgot print(...)
         # or some kind of dynamic construction that has edge case of no contents inside [...]
-        .global$print=TRUE
         return(x)
     }
     if (!with && missing(j)) stop("j must be provided when with=FALSE")
@@ -878,11 +876,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             suppPrint = identity
             if (length(av) && av[1L] == ":=") {
                 if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
-                if (Cstack_info()[["eval_depth"]] <= .global$depthtrigger) {
-                    suppPrint = function(x) { .global$print=FALSE; x }
-                    # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
-                    # All appropriate returns following this point are wrapped i.e. return(suppPrint(x)).
-                }
+                suppPrint = function(x) { .global$print=address(x); x }
+                # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
+                # All appropriate returns following this point are wrapped; i.e. return(suppPrint(x)).
+                
                 # FR #4996 - verbose message and return when a join matches nothing with `:=` in j
                 if (byjoin & !notjoin) {
                     # Note: !notjoin is here only until the notjoin is implemented as a "proper" byjoin

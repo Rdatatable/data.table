@@ -8,22 +8,35 @@ DT[2,a:=3L]                           # no
 DT                                    # yes
 print(DT[2,a:=4L])                    # yes
 print(DT)                             # yes
-(function(){DT[2,a:=5L];NULL})()      # no
-DT                                    # yes
+if (TRUE) DT[2,a:=5L]                 # no. used to print before v1.9.5
+if (TRUE) if (TRUE) DT[2,a:=6L]       # no. used to print before v1.9.5
+(function(){DT[2,a:=5L];NULL})()      # print NULL
+DT                                    # no (from v1.9.5+). := suppresses next auto print (can't distinguish just "DT" symbol alone at the prompt)
+DT                                    # yes. 2nd time needed, or solutions below
+(function(){DT[2,a:=5L];NULL})()      # print NULL
+DT[]                                  # yes. guaranteed print
+(function(){DT[2,a:=5L];NULL})()      # print NULL
+print(DT)                             # yes. guaranteed print
+(function(){DT[2,a:=5L][];NULL})()    # print NULL
+DT                                    # yes. i) function needs to add [] after last one, so that "DT" alone is guaranteed anyway
+(function(){DT[2,a:=5L];DT[];NULL})() # print NULL
+DT                                    # yes. ii) or as a separate DT[] after the last := inside the function
+DT2 = data.table(b=3:4)               # no
+(function(){DT[2,a:=6L];DT2[1,b:=7L];NULL})()
+DT                                    # yes. last := was on DT2 not DT
 {DT[2,a:=6L];invisible()}             # no
 print(DT)                             # yes
 (function(){print(DT[2,a:=7L]);print(DT);invisible()})()    # yes*2
 {print(DT[2,a:=8L]);print(DT);invisible()}                  # yes*2
 DT[1][,a:=9L]      # no (was too tricky to detect that DT[1] is a new object). Simple rule is that := always doesn't print
-DT[2,a:=10L][1]    # yes (because eval depth is above trigger in the := here via nested `[.data.table` calls, iiuc).
+DT[2,a:=10L][1]                       # yes
 DT[1,a:=10L][1,a:=10L]                # no
 DT[,a:=as.integer(a)]                 # no
 DT[1,a:=as.integer(a)]                # no
 DT[1,a:=10L][]                        # yes. ...[] == oops, forgot print(...)
 
 # Test that error in := doesn't suppress next valid print, bug #2376
-assign("depthtrigger", 20L, data.table:::.global)   # try() adds 10 levels of depth. But we need try() otherwise this script would stop.
 try(DT[,foo:=ColumnNameTypo])         # error: not found.
-DT                                    # yes  (if we didn't change depthtrigger above this would print for depth reason and not test it)
+DT                                    # yes
 DT                                    # yes
 
