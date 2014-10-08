@@ -2236,3 +2236,35 @@ gmin = function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
 gmax = function(x, na.rm=FALSE) .Call(Cgmax, x, na.rm)
 gstart = function(o, f, l) .Call(Cgstart, o, f, l)
 gend = function() .Call(Cgend)
+
+setencodingv<-function(DT,cols=NULL,enc=localeToCharset()[1],src.enc=localeToCharset()[1]) 
+{ 
+  stopifnot(is.data.table(DT),
+            length(cols)==0 | is.character(cols))
+  
+  if(length(cols)==0)
+    cols<-names(DT)[lapply(DT,typeof)=="character"]
+  
+  for (col in cols)
+  {
+    DT[,(col):=iconv(get(col),
+                     if (ind=="unknown")
+                     {
+                       src.enc
+                     } else {
+                       ind
+                     },
+                     enc),
+       list(ind=Encoding(get(col)))]
+  }
+  
+  invisible(DT) 
+}
+
+setencoding<-function(DT,...,enc=localeToCharset()[1],src.enc=localeToCharset()[1])
+{
+  setencodingv(DT,
+               as.character(substitute(list(...))[-1]),
+               enc,
+               src.enc)
+}
