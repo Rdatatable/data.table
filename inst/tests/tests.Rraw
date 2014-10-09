@@ -4891,6 +4891,10 @@ test(1362.11, DT[, c(.SD[1]), by=x], output="lapply optimization changed j from 
 test(1362.12, DT[, c(.SD[1], lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(.SD[1], lapply(.SD, sum))' to 'list(y[1], z[1], sum(y), sum(z))'")
 test(1362.13, DT[, head(.SD, 1), by=x], output="lapply optimization changed j from 'head(.SD, 1)' to 'list(head(y, 1), head(z, 1))'")
 options(oldv)
+# make sure .I is named as I when no name is given
+test(1362.14, names(DT[, c(list(.I, mean(y)), lapply(.SD, sum)), by=x]), c("x", "I", "V2", "y", "z"))
+# and if a name is given, it's retained
+test(1362.15, names(DT[, c(list(bla=.I, mean(y)), lapply(.SD, sum)), by=x]), c("x", "bla", "V2", "y", "z"))
 
 # setDT(DT), when input is already a data.table checks if selfrefok and if not, does alloc.col again.
 DT = list(data.frame(x=1:5, y=6:10))
