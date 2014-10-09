@@ -1,13 +1,10 @@
 #include "data.table.h"
-
 // #define TIMING_ON
 
-/* Only forder() is meant for use by other C code in data.table, hence all functions here other than forder are static.
-They make use of global variables, so access must be via forder only.
-The coding techniques deployed here are for efficiency.*/
-
-/* Notes regarding the addition of 'nalast' argument:
-
+/* 
+    - Only forder() and *twiddle() functions are meant for use by other C code in data.table, hence all other functions here except forder and *twiddle are static.
+    - The static functions here make use of global variables, whose scope is limited to the same translation unit; therefore access from outside this file must be via forder and/or *twiddle only. 
+    - The coding techniques deployed here are for efficiency; e.g. i) the static functions are recursive or called repetitively and we wish to minimise stack overhead, or ii) reach outside themselves to place results in the end result directly rather than returning small bits of memory.
 */
 
 static int *gs[2] = {NULL};                                         // gs = groupsizes e.g. 23,12,87,2,1,34,...
@@ -22,9 +19,10 @@ static int *newo = NULL;                                            // used by f
 
 static int nalast = -1;                                             // =1, 0, -1 for TRUE, NA, FALSE respectively. Value rewritten inside forder().
                                                                     // note that na.last=NA (0) removes NAs, not retains them.
+static int order = 1;                                               // =1, -1 for ascending and descending order respectively
 
 #define N_SMALL 200                                                 // replaced n < 200 with n < N_SMALL. Easier to change later
-#define N_RANGE 100000                                              // range limit for counting sort
+#define N_RANGE 100000                                              // range limit for counting sort. UPDATE: should be less than INT_MAX (see setRange for details)
 
 #define Error(...) do {savetl_end(); error(__VA_ARGS__);} while(0)  // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 #undef warning
@@ -96,10 +94,11 @@ static void gsfree() {
 */
 
 static int range, off;                                                      // used by both icount and forder
-static void setRange(int *x, int n, int order)
+static void setRange(int *x, int n)
 {
     int i, tmp;
     int xmin = NA_INTEGER, xmax = NA_INTEGER;
+    double overflow;
     
     off = (nalast == 1) ? 0 : 1;   // nalast^decreasing ? 0 : 1;            // off=0 will store values starting from index 0. NAs will go last.
                                                                             // off=1 will store values starting from index 1. NAs will be at 0th index.
@@ -113,18 +112,22 @@ static void setRange(int *x, int n, int order)
         else if (tmp < xmin) xmin = tmp;
     }
     if(xmin == NA_INTEGER) {range = NA_INTEGER; return;}                    // all NAs, nothing to do    
-
-    if (order == -1) {                                                      // instead of multiplying each time with "order" in the above for-loop, 
-        tmp  = order*xmin;                                                  // get 'xmin' and 'xmax' first and change them if order == -1
-        xmin = order*xmax;
-        xmax = tmp;
-    }
+    
+    overflow = (double)xmax - (double)xmin + 1;                             // ex: x=c(-2147483647L, NA_integer_, 1L) results in overflowing int range.
+    if (overflow > INT_MAX) {range = INT_MAX; return;}                      // detect and force iradix here, since icount is out of the picture
     range = xmax-xmin+1;
-    off = -xmin+off;                                                        // changed from -xmin+1 to -xmin+off to take care of 'na.last' argument
+    off = order==1 ? -xmin+off : xmax+off;                                  // so that  off+order*x[i]  (below in icount)
+                                                                            // => (x[i]-xmin)+0|1  or  (xmax-x[i])+0|1
     return;
 }
 
-static void icount(int *x, int *o, int n, int order)
+// x*order results in integer overflow when -1*NA, so careful to avoid that here :
+static inline int icheck(int x) {
+    return ((nalast != 1) ? ((x != NA_INTEGER) ? x*order : x) : ((x != NA_INTEGER) ? (x*order)-1 : INT_MAX)); // if nalast==1, NAs must go last.
+}
+
+
+static void icount(int *x, int *o, int n)
 /* Counting sort:
     1. Places the ordering into o directly, overwriting whatever was there
     2. Doesn't change x
@@ -140,7 +143,7 @@ static void icount(int *x, int *o, int n, int order)
     if (range > N_RANGE) Error("Internal error: range = %d; isorted can't handle range > %d", range, N_RANGE);
     for(i=0; i<n; i++) {
         if (x[i] == NA_INTEGER) counts[napos]++;                            // For nalast=NA case, we won't remove/skip NAs, rather set 'o' indices
-        else counts[off+ order*x[i]]++;                                     // to 0. subset will skip them. We can't know how many NAs to skip 
+        else counts[off + order*x[i]]++;                                     // to 0. subset will skip them. We can't know how many NAs to skip 
     }                                                                       // beforehand - i.e. while allocating "ans" vector
     // TO DO: at this point if the last count==n then it's all the same number and we can stop now.
     // Idea from Terdiman, then improved on that by not needing to loop through counts.
@@ -156,8 +159,7 @@ static void icount(int *x, int *o, int n, int order)
         }
     }
     for(i=n-1; i>=0; i--) {
-        tmp = order*x[i];                                                   // take care of na.last=NA after this loop separately.
-        o[--counts[(tmp == NA_INTEGER) ? napos : off+tmp]] = (int)(i+1);    // This way na.last=TRUE/FALSE cases will have just a single if-check overhead.
+        o[--counts[(x[i] == NA_INTEGER) ? napos : off+order*x[i]]] = (int)(i+1);    // This way na.last=TRUE/FALSE cases will have just a single if-check overhead.
     }
     if (nalast == 0)                                                        // nalast = 1, -1 are both taken care already.
         for (i=0; i<n; i++) o[i] = (x[o[i]-1] == NA_INTEGER) ? 0 : o[i];    // nalast = 0 is dealt with separately as it just sets o to 0
@@ -170,17 +172,12 @@ static void icount(int *x, int *o, int n, int order)
         doesn't matter if we set to 0 several times on any repeats */
         counts[napos]=0;
         for (i=0; i<n; i++) {
-            tmp = order*x[i];
-            if (tmp!=NA_INTEGER) counts[off+tmp]=0;
+            if (x[i]!=NA_INTEGER) counts[off + order*x[i]]=0;
         }
     } else {
         memset(counts, 0, (range+1)*sizeof(int));                           // *** BLOCK 6 ***
     }
     return;
-}
-
-static int icheck(int x) {
-    return ((nalast != 1) ? x : ((x == NA_INTEGER) ? INT_MAX : x-1));       // if nalast==1, NAs must go last.
 }
 
 static void iinsert(int *x, int *o, int n)
@@ -265,7 +262,7 @@ static void alloc_xtmp(int n) {                                             // T
 
 static void iradix_r(int *xsub, int *osub, int n, int radix);
 
-static void iradix(int *x, int *o, int n, int order)
+static void iradix(int *x, int *o, int n)
    /* As icount :
        Places the ordering into o directly, overwriting whatever was there
        Doesn't change x
@@ -277,7 +274,7 @@ static void iradix(int *x, int *o, int n, int order)
     for (i=0;i<n;i++) {
         /* parallel histogramming pass; i.e. count occurrences of 
         0:255 in each byte.  Sequential so almost negligible. */
-        thisx = (unsigned int)(icheck(order*x[i])) - INT_MIN;               // relies on overflow behaviour. And shouldn't -INT_MIN be up in iradix?
+        thisx = (unsigned int)(icheck(x[i])) - INT_MIN;                     // relies on overflow behaviour. And shouldn't -INT_MIN be up in iradix?
         radixcounts[0][thisx & 0xFF]++;                                     // unrolled since inside n-loop
         radixcounts[1][thisx >> 8 & 0xFF]++;
         radixcounts[2][thisx >> 16 & 0xFF]++;
@@ -319,13 +316,9 @@ static void iradix(int *x, int *o, int n, int order)
         }
     }
     for (i=n-1; i>=0; i--) {
-        thisx = ((unsigned int)(icheck(order*x[i])) - INT_MIN) >> shift & 0xFF;
+        thisx = ((unsigned int)(icheck(x[i])) - INT_MIN) >> shift & 0xFF;
         o[--thiscounts[thisx]] = i+1;
     }
-    if (nalast == 0)                                                        // nalast = 1, -1 are both taken care already.
-        for (i=0; i<n; i++) o[i] = (x[o[i]-1] == NA_INTEGER) ? 0 : o[i];    // nalast = 0 is dealt with separately as it just sets o to 0
-                                                                            // at those indices where x is NA. x[o[i]-1] because x is not 
-                                                                            // modified by reference unlike iinsert or iradix_r
     
     if (radix_xsuballoc < maxgrpn) {
         // The largest group according to the first non-skipped radix, so could be big (if radix is needed on first column)
@@ -351,12 +344,16 @@ static void iradix(int *x, int *o, int n, int order)
             push(thisgrpn);
         } else {
             for (j=0; j<thisgrpn; j++)
-                ((int *)radix_xsub)[j] = icheck(order*x[o[itmp+j]-1]);      // this is why this xsub here can't be the same memory as xsub in forder.
+                ((int *)radix_xsub)[j] = icheck(x[o[itmp+j]-1]);            // this is why this xsub here can't be the same memory as xsub in forder.
             iradix_r(radix_xsub, o+itmp, thisgrpn, nextradix);              // changes xsub and o by reference recursively.
         }
         itmp = thiscounts[i];
         thiscounts[i] = 0;
-    }    
+    }
+    if (nalast == 0)                                                        // nalast = 1, -1 are both taken care already.
+        for (i=0; i<n; i++) o[i] = (x[o[i]-1] == NA_INTEGER) ? 0 : o[i];    // nalast = 0 is dealt with separately as it just sets o to 0
+                                                                            // at those indices where x is NA. x[o[i]-1] because x is not 
+                                                                            // modified by reference unlike iinsert or iradix_r
 }
 
 static void iradix_r(int *xsub, int *osub, int n, int radix)
@@ -517,7 +514,7 @@ size_t colSize=8;  // the size of the column type (4 or 8). Just 8 currently unt
 
 static void dradix_r(unsigned char *xsub, int *osub, int n, int radix);
 
-static void dradix(unsigned char *x, int *o, int n, int order)
+static void dradix(unsigned char *x, int *o, int n)
 {
     int i, j, radix, nextradix, itmp, thisgrpn, maxgrpn;
     unsigned int *thiscounts;
@@ -562,10 +559,7 @@ static void dradix(unsigned char *x, int *o, int n, int order)
         thisx = twiddle(x,i,order);
         o[ --thiscounts[((unsigned char *)&thisx)[radix]] ] = i+1;
     }
-    if (nalast == 0)                                                            // nalast = 1, -1 are both taken care already.
-        for (i=0; i<n; i++) o[i] = is_nan(x, o[i]-1) ? 0 : o[i];              // nalast = 0 is dealt with separately as it just sets o to 0 
-                                                                                // at those indices where x is NA. x[o[i]-1] because x is not 
-                                                                                // modified by reference unlike iinsert or iradix_r
+
     if (radix_xsuballoc < maxgrpn) {                                            // TO DO: centralize this alloc
         // The largest group according to the first non-skipped radix, so could be big (if radix is needed on first column)
         // TO DO: could include extra bits to divide the first radix up more. Often the MSD has groups in just 0-4 out of 256.
@@ -598,6 +592,11 @@ static void dradix(unsigned char *x, int *o, int n, int order)
         itmp = thiscounts[i];
         thiscounts[i] = 0;
     }
+    if (nalast == 0)                                                          // nalast = 1, -1 are both taken care already.
+        for (i=0; i<n; i++) o[i] = is_nan(x, o[i]-1) ? 0 : o[i];              // nalast = 0 is dealt with separately as it just sets o to 0 
+                                                                              // at those indices where x is NA. x[o[i]-1] because x is not 
+                                                                              // modified by reference unlike iinsert or iradix_r
+
 }
 
 static void dinsert(unsigned long long *x, int *o, int n)
@@ -695,7 +694,7 @@ static int maxlen = 1;
 static SEXP *cradix_xtmp = NULL;
 static int cradix_xtmp_alloc = 0;
 
-int StrCmp2(SEXP x, SEXP y, int order) {    // same as StrCmp but also takes into account 'na.last' argument.
+int StrCmp2(SEXP x, SEXP y) {    // same as StrCmp but also takes into account 'na.last' argument.
     if (x == y) return 0;                   // same cached pointer (including NA_STRING==NA_STRING)
     if (x == NA_STRING) return nalast;      // if x=NA, nalast=1 ? then x > y else x < y (Note: nalast == 0 is already taken care of in 'csorted', won't be 0 here)
     if (y == NA_STRING) return -nalast;     // if y=NA, nalast=1 ? then y > x
@@ -777,7 +776,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 static SEXP *ustr = NULL;
 static int ustr_alloc = 0, ustr_n = 0;
 
-static void cgroup(SEXP *x, int *o, int n, int order)
+static void cgroup(SEXP *x, int *o, int n)
 // As icount :
 //   Places the ordering into o directly, overwriting whatever was there
 //   Doesn't change x
@@ -833,7 +832,7 @@ static void alloc_csort_otmp(int n) {
     csort_otmp_alloc = n;
 }
 
-static void csort(SEXP *x, int *o, int n, int order)
+static void csort(SEXP *x, int *o, int n)
 /* 
    As icount :
     Places the ordering into o directly, overwriting whatever was there
@@ -855,15 +854,15 @@ static void csort(SEXP *x, int *o, int n, int order)
     }
     if (n < N_SMALL && nalast != 0) {                                    // TO DO: calibrate() N_SMALL=200
         if (o[0] == -1) for (i=0; i<n; i++) o[i] = i+1;    // else use o from caller directly (not 1st column)
-        for (int i=0; i<n; i++) csort_otmp[i] = icheck(order*csort_otmp[i]);
+        for (int i=0; i<n; i++) csort_otmp[i] = icheck(csort_otmp[i]);
         iinsert(csort_otmp, o, n);
     } else {
-        setRange(csort_otmp, n, order);
+        setRange(csort_otmp, n);
         if (range == NA_INTEGER) Error("Internal error. csort's otmp contains all-NA");
         int *target = (o[0] != -1) ? newo : o; 
         if (range <= N_RANGE) // && range<n)            // TO DO: calibrate(). radix was faster (9.2s "range<=10000" instead of 11.6s 
-            icount(csort_otmp, target, n, order);       // "range<=N_RANGE && range<n") for run(7) where range=N_RANGE n=10000000
-        else iradix(csort_otmp, target, n, order);
+            icount(csort_otmp, target, n);       // "range<=N_RANGE && range<n") for run(7) where range=N_RANGE n=10000000
+        else iradix(csort_otmp, target, n);
     }
     // all i* push onto stack. Using their counts may be faster here than thrashing SEXP fetches over several passes as cgroup does
     // (but cgroup needs that to keep orginal order, and cgroup saves the sort in csort_pre).
@@ -925,7 +924,7 @@ static void csort_pre(SEXP *x, int n)
 // TO DO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
 // These are all sequential access to x, so very quick and cache efficient.
 
-static int isorted(int *x, int n, int order)                // order = 1 is ascending and order=-1 is descending
+static int isorted(int *x, int n)                           // order = 1 is ascending and order=-1 is descending
 {                                                           // also takes care of na.last argument with check through 'icheck'
                                                             // Relies on NA_INTEGER==INT_MIN, checked in init.c
     int i=1,j=0;
@@ -935,9 +934,9 @@ static int isorted(int *x, int n, int order)                // order = 1 is asce
         if (j != n) return(0);                              // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
     }                                                       // no NAs  ? continue to check the rest of isorted - the same routine as usual
     if (n<=1) { push(n); return(1); }
-    if (icheck(order*x[1]) < icheck(order*x[0])) {
+    if (icheck(x[1]) < icheck(x[0])) {
         i = 2;
-        while (i<n && icheck(order*x[i]) < icheck(order*x[i-1])) i++;
+        while (i<n && icheck(x[i]) < icheck(x[i-1])) i++;
         if (i==n) { mpush(1,n); return(-1);}                // strictly opposite to expected 'order', no ties; 
                                                             // e.g. no more than one NA at the beginning/end (for order=-1/1)
         else return(0);
@@ -945,14 +944,14 @@ static int isorted(int *x, int n, int order)                // order = 1 is asce
     int old = gsngrp[flip];
     int tt = 1;
     for (i=1; i<n; i++) {
-        if (icheck(order*x[i]) < icheck(order*x[i-1])) { gsngrp[flip] = old; return(0); }
+        if (icheck(x[i]) < icheck(x[i-1])) { gsngrp[flip] = old; return(0); }
         if (x[i]==x[i-1]) tt++; else { push(tt); tt=1; }
     }
     push(tt);
     return(1);                                              // same as 'order', NAs at the beginning for order=1, at end for order=-1, possibly with ties
 }
 
-static int dsorted(double *x, int n, int order)             // order=1 is ascending and -1 is descending
+static int dsorted(double *x, int n)                        // order=1 is ascending and -1 is descending
 {                                                           // also accounts for nalast=0 (=NA), =1 (TRUE), -1 (FALSE) (in twiddle)
     int i=1,j=0;
     unsigned long long prev, this;
@@ -985,7 +984,7 @@ static int dsorted(double *x, int n, int order)             // order=1 is ascend
     return(1);                                              // exactly as expected in 'order' (1=increasing, -1=decreasing), possibly with ties
 }
 
-static int csorted(SEXP *x, int n, int order)               // order=1 is ascending and -1 is descending
+static int csorted(SEXP *x, int n)                          // order=1 is ascending and -1 is descending
 {                                                           // also accounts for nalast=0 (=NA), =1 (TRUE), -1 (FALSE)
     int i=1, j=0, tmp;
     if (nalast == 0) {                                      // when nalast = NA, 
@@ -994,9 +993,9 @@ static int csorted(SEXP *x, int n, int order)               // order=1 is ascend
         if (j != n) return(0);                              // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
     }                                                       // no NAs  ? continue to check the rest of isorted - the same routine as usual
     if (n<=1) { push(n); return(1); }
-    if (StrCmp2(x[1],x[0],order)<0) {
+    if (StrCmp2(x[1],x[0])<0) {
         i = 2;
-        while (i<n && StrCmp2(x[i],x[i-1],order)<0) i++;
+        while (i<n && StrCmp2(x[i],x[i-1])<0) i++;
         if (i==n) { mpush(1,n); return(-1);}                // strictly opposite of expected 'order', no ties; 
                                                             // e.g. no more than one NA at the beginning/end (for order=-1/1)
         else return(0);
@@ -1004,7 +1003,7 @@ static int csorted(SEXP *x, int n, int order)               // order=1 is ascend
     int old = gsngrp[flip];
     int tt = 1;
     for (i=1; i<n; i++) {
-        tmp = StrCmp2(x[i],x[i-1], order);
+        tmp = StrCmp2(x[i],x[i-1]);
         if (tmp < 0) { gsngrp[flip] = old; return(0); }
         if (tmp == 0) tt++; else { push(tt); tt=1; }
     }
@@ -1012,7 +1011,7 @@ static int csorted(SEXP *x, int n, int order)               // order=1 is ascend
     return(1);                                              // exactly as expected in 'order', possibly with ties 
 }
 
-static void isort(int *x, int *o, int n, int order)
+static void isort(int *x, int *o, int n)
 {
     if (n<=2) {
         if (nalast == 0 && n == 2) {                        // nalast = 0 and n == 2 (check bottom of this file for explanation)
@@ -1026,24 +1025,24 @@ static void isort(int *x, int *o, int n, int order)
         /* pushes inside too. Changes x and o by reference, so not suitable  in first column when o hasn't been populated yet 
            and x is the actual column in DT (hence check on o[0]). */
         if (order != 1 || nalast != -1)                     // so that default case, i.e., order=1, nalast=FALSE will not be affected (ex: `setkey`)
-            for (int i=0; i<n; i++) x[i] = icheck(order*x[i]);
+            for (int i=0; i<n; i++) x[i] = icheck(x[i]);
         iinsert(x, o, n);
     } else {
         /* Tighter range (e.g. copes better with a few abormally large values in some groups), but also, when setRange was once at 
            colum level that caused an extra scan of (long) x first. 10,000 calls to setRange takes just 0.04s i.e. negligible. */
-        setRange(x, n, order);
+        setRange(x, n);
         if (range==NA_INTEGER) Error("Internal error: isort passed all-NA. isorted should have caught this before this point");
         int *target = (o[0] != -1) ? newo : o;
         if (range<=N_RANGE && range<=n) {                   // was range<10000 for subgroups, but 1e5 for the first column, 
-            icount(x, target, n, order);                    // tried to generalise here.  1e4 rather than 1e5 here because iterated
+            icount(x, target, n);                           // tried to generalise here.  1e4 rather than 1e5 here because iterated
         } else {                                            // was (thisgrpn < 200 || range > 20000) then radix
-            iradix(x, target, n, order);                    // a short vector with large range can bite icount when iterated (BLOCK 4 and 6)
+            iradix(x, target, n);                           // a short vector with large range can bite icount when iterated (BLOCK 4 and 6)
         }
     }
     // TO DO: add calibrate() to init.c
 }
 
-static void dsort(double *x, int *o, int n, int order)
+static void dsort(double *x, int *o, int n)
 {
     if (n <= 2) {                                           // nalast = 0 and n == 2 (check bottom of this file for explanation)
         if (nalast == 0 && n == 2) {                        // don't have to twiddle here.. at least one will be NA and 'n' WILL BE 2.
@@ -1056,7 +1055,7 @@ static void dsort(double *x, int *o, int n, int order)
         for (int i=0; i<n; i++) ((unsigned long long *)x)[i] = twiddle(x,i,order);   // have to twiddle here anyways, can't speed up default case like in isort
         dinsert((unsigned long long *)x, o, n);
     } else {
-        dradix((unsigned char *)x, (o[0] != -1) ? newo : o, n, order);
+        dradix((unsigned char *)x, (o[0] != -1) ? newo : o, n);
     }
 }
 
@@ -1094,7 +1093,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     gsmaxalloc = n;  // upper limit for stack size (all size 1 groups). We'll detect and avoid that limit, but if just one non-1 group (say 2), that can't be avoided.
     
     // TODO: check for 'orderArg'
-    int *order = (int *)INTEGER(orderArg);      // multiplication factor for each column 1=ascending, -1=descending.
     
     SEXP ans = PROTECT(allocVector(INTSXP, n)); // once for the result, needs to be length n.
     int *o = INTEGER(ans);                      // TO DO: save allocation if NULL is returned (isSorted==TRUE)
@@ -1105,9 +1103,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
     savetl_init();   // from now on use Error not error.
 
+    order = INTEGER(orderArg)[0];
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :
-        tmp = isorted(xd, n, order[0]); break;
+        tmp = isorted(xd, n); break;
     case REALSXP :
         class = getAttrib(x, R_ClassSymbol);
         if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
@@ -1117,9 +1116,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             twiddle = &dtwiddle;
             is_nan  = &dnan;
         }
-        tmp = dsorted(xd, n, order[0]); break;
+        tmp = dsorted(xd, n); break;
     case STRSXP :
-        tmp = csorted(xd, n, order[0]); break;
+        tmp = csorted(xd, n); break;
     default :
         Error("First column being ordered is type '%s', not yet supported", type2char(TYPEOF(x)));
     }
@@ -1138,12 +1137,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         isSorted = FALSE;
         switch(TYPEOF(x)) {
         case INTSXP : case LGLSXP :
-            isort(xd, o, n, order[0]); break;
+            isort(xd, o, n); break;
         case REALSXP :
-            dsort(xd, o, n, order[0]); break;
+            dsort(xd, o, n); break;
         case STRSXP :
-            if (sortStr) { csort_pre(xd, n); alloc_csort_otmp(n); csort(xd, o, n, order[0]); }
-            else cgroup(xd, o, n, order[0]);    // no increasing/decreasing order required if sortStr = FALSE, order[0] here is just a dummy argument
+            if (sortStr) { csort_pre(xd, n); alloc_csort_otmp(n); csort(xd, o, n); }
+            else cgroup(xd, o, n);
             break;
         default :
             Error("Internal error: previous default should have caught unsupported type");
@@ -1170,6 +1169,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         if (ngrp == n && nalast != 0) break;
         flipflop();
         stackgrps = col!=LENGTH(by) || LOGICAL(retGrp)[0];
+        order = INTEGER(orderArg)[col-1];
         switch(TYPEOF(x)) {
         case INTSXP : case LGLSXP :
             f = &isorted; g = &isort; break;
@@ -1225,7 +1225,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             TEND(2)
             
             // continue;  // BASELINE short circuit timing point. Up to here is the cost of creating xsub.
-            tmp = (*f)(xsub, thisgrpn, order[col-1]);     // [i|d|c]sorted(); very low cost, sequential
+            tmp = (*f)(xsub, thisgrpn);     // [i|d|c]sorted(); very low cost, sequential
             TEND(3)
             
             if (tmp) {
@@ -1246,8 +1246,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             }
             isSorted = FALSE;
             newo[0] = -1;                               // nalast=NA will result in newo[0] = 0. So had to change to -1.
-            (*g)(xsub, osub, thisgrpn, order[col-1]);   // may update osub directly, or if not will put the result in global newo
-                                                        // order[col-1] is a dummy argument for 'cgroup'.
+            (*g)(xsub, osub, thisgrpn);                 // may update osub directly, or if not will put the result in global newo
+                                                        
             TEND(5)
             
             if (newo[0] != -1) {
@@ -1318,13 +1318,14 @@ SEXP fsorted(SEXP x)
     if (!isVectorAtomic(x)) Error("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level");
     xd = DATAPTR(x);
     stackgrps = FALSE;
+    order = 1;
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :
-        tmp = isorted(xd, n, 1); break;
+        tmp = isorted(xd, n); break;
     case REALSXP :
-        tmp = dsorted(xd, n, 1); break;
+        tmp = dsorted(xd, n); break;
     case STRSXP :
-        tmp = csorted(xd, n, 1); break;
+        tmp = csorted(xd, n); break;
     default :
         Error("type '%s' is not yet supported", type2char(TYPEOF(x)));
     }

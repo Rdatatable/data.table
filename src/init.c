@@ -49,6 +49,10 @@ SEXP chmatch2();
 SEXP subsetDT();
 SEXP subsetVector();
 SEXP convertNegativeIdx();
+SEXP frank();
+SEXP dt_na();
+SEXP lookup();
+SEXP overlaps();
 
 // .Externals
 SEXP fastmean();
@@ -100,6 +104,10 @@ R_CallMethodDef callMethods[] = {
 {"CsubsetDT", (DL_FUNC) &subsetDT, -1},
 {"CsubsetVector", (DL_FUNC) &subsetVector, -1},
 {"CconvertNegativeIdx", (DL_FUNC) &convertNegativeIdx, -1},
+{"Cfrank", (DL_FUNC) &frank, -1},
+{"Cdt_na", (DL_FUNC) &dt_na, -1},
+{"Clookup", (DL_FUNC) &lookup, -1},
+{"Coverlaps", (DL_FUNC) &overlaps, -1},
 {NULL, NULL, 0}
 };
 

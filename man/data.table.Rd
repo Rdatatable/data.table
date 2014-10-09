@@ -79,11 +79,11 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 
   The \code{list()} of expressions is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{j=list(...)} may be omitted when there is just one expression, for convenience, typically a single expression such as \code{sum(colB)}; e.g., \code{DT[,sum(colB),by=colA]}.
 
-  When \code{by} contains the first \code{n} columns of \code{x}'s key, we call this a \emph{keyed by}. In a keyed by the groups appear contiguously in RAM and memory is copied in bulk internally, for extra speed. Otherwise, we call it an \emph{ad hoc by}. Ad hoc by is still many times faster than \code{tapply}, for example, but just not as fast as keyed by when datasets are very large, in particular when the size of \emph{each group} is large.
+  When \code{by} contains the first \code{n} columns of \code{x}'s key, we call this a \emph{keyed by}. In a keyed by the groups appear contiguously in RAM and memory is copied in bulk internally, for extra speed. Otherwise, we call it an \emph{ad hoc by}. Ad hoc by is still many times faster than \code{tapply}, for example, but just not as fast as keyed by when datasets are very large, in particular when the size of \emph{each group} is large. Not to be confused with \code{keyby=} defined below.
 
-  Advanced: Aggregation for a subset of known groups is particularly efficient when passing those groups in \code{i}. When \code{i} is a \code{data.table}, \code{DT[i,j]} evaluates \code{j} for each row of \code{i}. We call this \emph{by without by} or \emph{grouping by i}. Hence, the self join \code{DT[data.table(unique(colA)),j]} is identical to \code{DT[,j,by=colA]}.
+  Advanced: Aggregation for a subset of known groups is particularly efficient when passing those groups in \code{i} and setting \code{by=.EACHI}. When \code{i} is a \code{data.table}, \code{DT[i,j,by=.EACHI]} evaluates \code{j} for the groups of `DT` that each row in \code{i} joins to. We call this \emph{grouping by each i}.
 
-  Advanced: When grouping by \code{by} or by \code{i}, symbols \code{.SD}, \code{.BY}, \code{.N}, \code{.I} and \code{.GRP} may be used in the \code{j} expression, defined as follows.
+  Advanced: When grouping, symbols \code{.SD}, \code{.BY}, \code{.N}, \code{.I} and \code{.GRP} may be used in the \code{j} expression, defined as follows.
   
   \code{.SD} is a \code{data.table} containing the \bold{S}ubset of \code{x}'s \bold{D}ata for each group, excluding any columns used in \code{by} (or \code{keyby}).
   
@@ -91,7 +91,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   
   \code{.N} is an integer, length 1, containing the number of rows in the group. This may be useful when the column names are not known in advance and for convenience generally. When grouping by \code{i}, \code{.N} is the number of rows in \code{x} matched to, for each row of \code{i}, regardless of whether \code{nomatch} is \code{NA} or \code{0}. It is renamed to \code{N} (no dot) in the result (otherwise a column called \code{".N"} could conflict with the \code{.N} variable, see FAQ 4.6 for more details and example), unless it is explicity named; e.g., \code{DT[,list(total=.N),by=a]}.
   
-  \code{.I} is an integer vector length \code{.N} holding the row locations in \code{x} for this group. This is useful to subset in j; e.g. DT[,.I[which.max(somecol)],by=grp].
+  \code{.I} is an integer vector equal to \code{seq_len(nrow(x))}. While grouping, it holds for each item in the group, it's row location in \code{x}. This is useful to subset in \code{j}; e.g. \code{DT[, .I[which.max(somecol)], by=grp]}.
   
   \code{.GRP} is an integer, length 1, containing a simple group counter. 1 for the 1st group, 2 for the 2nd, etc.
   
@@ -100,10 +100,10 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.
 
 }
-  \item{keyby}{ An \emph{ad hoc by} just as \code{by} but with an additional \code{setkey()} on the \code{by} columns of the result, for convenience. Not to be confused with a \emph{keyed by} as defined above.
+  \item{keyby}{ An \emph{ad-hoc-by} or \emph{keyed-by} (just as \code{by=} defined above) but with an additional \code{setkey()} run on the \code{by} columns of the result afterwards, for convenience. It is common practice to use `keyby=` routinely when you wish the result to be sorted. Out loud we read \code{keyby=} as \emph{by= then setkey}. Otherwise, `by=` can be relied on to return the groups in the order they appear in the data.
   
 }
-  \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}. The column names can be used as variables. When \code{with=FALSE}, \code{j} is a vector of names or positions to select.
+  \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. When \code{with=FALSE}, \code{j} is a vector of names or positions to select, similar to a \code{data.frame}. \code{with=FALSE} is often useful in \code{data.table} to select columns dynamically.
 
 }
   \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}'s key, \code{nomatch=NA} (default) means \code{NA} is returned for \code{x}'s non-join columns for that row of \code{i}. \code{0} means no rows will be returned for that row of \code{i}. The default value (used when \code{nomatch} is not supplied) can be changed from \code{NA} to \code{0} using \code{options(datatable.nomatch=0)}.
@@ -227,38 +227,36 @@ setkeyv(DT,v)              # same
 # key(DT)<-"x"             # copies whole table, please use set* functions instead
 
 DT["a"]                    # binary search (fast)
-DT[x=="a"]                 # vector scan (slow)
+DT[x=="a"]                 # same; i.e. binary search (fast)
 
 DT[,sum(v),by=x]           # keyed by
 DT[,sum(v),by=key(DT)]     # same
 DT[,sum(v),by=y]           # ad hoc by
 
-DT["a",sum(v)]             # j for one group
-DT[c("a","b"),sum(v)]      # j for two groups
+DT["a",sum(v)]                    # j for one group
+DT[c("a","b"),sum(v),by=.EACHI]   # j for two groups
 
 X = data.table(c("b","c"),foo=c(4,2))
 X
 
 DT[X]                      # join
-DT[X,sum(v)]               # join and eval j for each row in i
+DT[X,sum(v),by=.EACHI]     # join and eval j for each row in i
 DT[X,mult="first"]         # first row of each group
 DT[X,mult="last"]          # last row of each group
-DT[X,sum(v)*foo]           # join inherited scope
+DT[X,sum(v)*foo,by=.EACHI] # join inherited scope
 
 setkey(DT,x,y)             # 2-column key
 setkeyv(DT,c("x","y"))     # same
 
 DT["a"]                    # join to 1st column of key
-DT[J("a")]                 # same. J() stands for Join, an alias for list()
+DT[.("a")]                 # same, .() is an alias for list()
 DT[list("a")]              # same
-DT[.("a")]                 # same. In the style of package plyr.
-DT[J("a",3)]               # join to 2 columns
-DT[.("a",3)]               # same
-DT[J("a",3:6)]             # join 4 rows (2 missing)
-DT[J("a",3:6),nomatch=0]   # remove missing
-DT[J("a",3:6),roll=TRUE]   # rolling join (locf)
+DT[.("a",3)]               # join to 2 columns
+DT[.("a",3:6)]             # join 4 rows (2 missing)
+DT[.("a",3:6),nomatch=0]   # remove missing
+DT[.("a",3:6),roll=TRUE]   # rolling join (locf)
 
-DT[,sum(v),by=list(y\%\%2)]  # by expression
+DT[,sum(v),by=.(y\%\%2)]   # by expression
 DT[,.SD[2],by=x]           # 2nd row of each group
 DT[,tail(.SD,2),by=x]      # last 2 rows of each group
 DT[,lapply(.SD,sum),by=x]  # apply through columns by group
@@ -266,7 +264,7 @@ DT[,lapply(.SD,sum),by=x]  # apply through columns by group
 DT[,list(MySum=sum(v),
          MyMin=min(v),
          MyMax=max(v)),
-    by=list(x,y\%\%2)]       # by 2 expressions
+    by=.(x,y\%\%2)]        # by 2 expressions
 
 DT[,sum(v),x][V1<20]       # compound query
 DT[,sum(v),x][order(-V1)]  # ordering results
@@ -281,24 +279,23 @@ DT[,m:=mean(v),by=x][]     # add new column by reference by group
 
 DT[,.SD[which.min(v)],by=x][]  # nested query by group
 
-DT[!J("a")]                # not join
+DT[!.("a")]                # not join
 DT[!"a"]                   # same
 DT[!2:4]                   # all rows other than 2:4
-DT[x!="b" | y!=3]          # multiple vector scanning approach, slow
-DT[!J("b",3)]              # same result but much faster
+DT[x!="b" | y!=3]          # not yet optimized, currently vector scans
+DT[!.("b",3)]              # same result but much faster
 
 
 # Follow r-help posting guide, support is here (*not* r-help) :
-# datatable-help@lists.r-forge.r-project.org
-# or
 # http://stackoverflow.com/questions/tagged/data.table
+# or
+# datatable-help@lists.r-forge.r-project.org
 
 \dontrun{
 vignette("datatable-intro")
 vignette("datatable-faq")
-vignette("datatable-timings")
 
-test.data.table()          # over 1,200 low level tests
+test.data.table()          # over 1,300 low level tests
 
 update.packages()          # keep up to date
 }}

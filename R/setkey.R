@@ -1,38 +1,42 @@
-setkey = function(x, ..., verbose=getOption("datatable.verbose"))
+setkey = function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE)
 {
     if (is.character(x)) stop("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
     cols = as.character(substitute(list(...))[-1])
     if (!length(cols)) cols=colnames(x)
     else if (identical(cols,"NULL")) cols=NULL
-    setkeyv(x,cols,verbose=verbose)
+    setkeyv(x, cols, verbose=verbose, physical=physical)
 }
 
-setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
+set2key = function(...) setkey(..., physical=FALSE)
+set2keyv = function(...) setkeyv(..., physical=FALSE)
+
+setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
 {
     if (is.null(cols)) {   # this is done on a data.frame when !cedta at top of [.data.table
-        setattr(x,"sorted",NULL)
-        return(x)
+        if (physical) setattr(x,"sorted",NULL)
+        setattr(x,"index",NULL)  # setkey(DT,NULL) also clears secondary keys. set2key(DT,NULL) just clears secondary keys.
+        return(invisible(x))
     }
     if (!is.data.table(x)) stop("x is not a data.table")
     if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setkey.")
-    if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using set*() functions on .SD is reserved for possible future use; a tortuously flexible way to modify the original data by group. If you need a quick fix try set*(copy(.SD)), but that will be slower and there's almost certainly a better way.")
+    if (physical && identical(attr(x,".data.table.locked"),TRUE)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try set2key instead. Or, set*(copy(.SD)) as a (slow) last resort.")
     if (!length(cols)) {
         warning("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
         setattr(x,"sorted",NULL)
-        return(x)
+        return(invisible(x))
     }
     if (identical(cols,"")) stop("cols is the empty string. Use NULL to remove the key.")
     if (any(nchar(cols)==0)) stop("cols contains some blanks.")
     if (!length(cols)) {
         cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
     } else {
-        # remove backticks form cols 
+        # remove backticks from cols 
         cols <- gsub("`", "", cols)
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
     alreadykeyedbythiskey = identical(key(x),cols)
-    if (".xi" %in% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
+    if (".xi" %chin% names(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
     for (i in cols) {
         .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
         if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
@@ -44,6 +48,12 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
     } else {
         o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
     }
+    if (!physical) {
+        if (is.null(attr(x,"index"))) setattr(x, "index", integer())
+        setattr(attr(x,"index"), paste("__",paste(cols,collapse="__"),sep=""), o)
+        return(invisible(x))
+    }
+    setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
     if (length(o)) {
         if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
         if (verbose) {
@@ -60,6 +70,12 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"))
 }
 
 key = function(x) attr(x,"sorted")
+key2 = function(x) {
+    ans = names(attributes(attr(x,"index")))
+    if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
+    gsub("^__","",ans)
+}
+get2key = function(x, col) attr(attr(x,"index"),paste("__",col,sep=""))   # work in progress, not yet exported
 
 "key<-" = function(x,value) {
     warning("The key(x)<-value form of setkey can copy the whole table. This is due to <- in R itself. Please change to setkeyv(x,value) or setkey(x,...) which do not copy and are faster. See help('setkey'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your key<- calls.")
@@ -190,6 +206,12 @@ forder = function(x, ..., na.last=TRUE, decreasing=FALSE)
     o
 }
 
+fsort = function(x, decreasing = FALSE, na.last = FALSE, ...)
+{
+    o = forderv(x, order=!decreasing, na.last=na.last)
+    return( if (length(o)) x[o] else x )   # TO DO: document the nice efficiency here
+}
+
 setorder = function(x, ..., na.last=FALSE)
 # na.last=FALSE here, to be consistent with data.table's default
 # as opposed to DT[order(.)] where na.last=TRUE, to be consistent with base
@@ -307,7 +329,74 @@ CJ = function(..., sorted = TRUE)
     l
 }
 
-
+frankv = function(x, na.last=TRUE, order=1L, ties.method=c("average", "first", "random", "max", "min")) {
+    ties.method = match.arg(ties.method)
+    na.last = as.logical(na.last)
+    if (!length(na.last)) stop('length(na.last) = 0')
+    if (length(na.last) != 1L) {
+        warning("length(na.last) > 1, only the first element will be used")
+        na.last = na.last[1L]
+    }
+    as_list <- function(x) {
+        xx = vector("list", 1L)
+        .Call(Csetlistelt, xx, 1L, x)
+        xx
+    }
+    if (is.atomic(x)) x = as_list(x)
+    else {
+        n = vapply(x, length, 0L)
+        if (any(n<max(n))) stop("All elements in input list x must be of same length")
+    }
+    shallow_list <- function(x) {
+        lx = length(x); sx = seq_len(lx)
+        xx = vector("list", lx)
+        point(xx, sx, x, sx)
+    }
+    remove_na <- function(x) {
+        na = is_na(x)
+        xx = shallow_list(x)
+        setDT(xx)
+        .Call(CsubsetDT, xx, which(!na), seq_along(xx))
+    }
+    ties_random <- function(x) {
+        lx = length(x); sx = seq_len(lx)
+        xx = vector("list", lx+1L)
+        point(xx, sx, x, sx)
+        .Call(Csetlistelt, xx, lx+1L, stats::runif(length(x[[1L]])))
+        xx
+    }
+    if (ties.method == "random") {
+        # seems inefficient to subset, but have to do to get same results as base
+        # is okay because it's just for the case where na.last=NA *and* ties="random"
+        if (is.na(na.last)) x = remove_na(x)
+        x = ties_random(x)
+    }
+    xorder  = forderv(x, sort=TRUE, retGrp=TRUE, order=order, na.last=na.last)
+    xstart  = attr(xorder, 'starts')
+    xsorted = FALSE
+    if (!length(xorder)) {
+        xsorted = TRUE
+        xorder  = seq_along(x[[1L]])
+    }
+    ans = switch(ties.method, 
+           average = , min = , max = {
+               rank = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), ties.method)
+               if (is.na(na.last) && xorder[1L] == 0L) {
+                   idx = which(rank != 0L)
+                   rank = .Call(CsubsetVector, rank, idx) # rank[idx], but faster
+               }
+               rank
+           },
+           first = , random = {
+               if (is.na(na.last) && xorder[1L] == 0L) {
+                   idx = which(xorder != 0L)
+                   xorder = xorder[idx] # .Call("CsubsetVector", xorder, idx) retains attributes. TODO: fix this
+               }
+               if (xsorted) xorder else forderv(xorder)
+           }
+         )
+    ans
+}
 
 #########################################################################################
 # Deprecated ...
