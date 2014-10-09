@@ -4179,19 +4179,39 @@ options(datatable.optimize=1L)
 ans2 <- dt[, c(list(c), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
 test(1268.3, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(list(c), mean(b), mean(c), mean(d))'")
+             output = "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(c, mean(b), mean(c), mean(d))")
 
-options(datatable.optimize=1L)
-ans2 <- dt[, c(as.list(c), lapply(.SD, mean)), by=a]
-options(datatable.optimize=Inf)
-test(1268.4, dt[, c(as.list(c), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "lapply optimization changed j from 'c(as.list(c), lapply(.SD, mean))' to 'list(as.list(c), mean(b), mean(c), mean(d))'")
+test(1268.4, dt[, c(as.list(c), lapply(.SD, mean)), by=a], 
+             error = "j doesn't evaluate to the same number of columns for each group")
 
 options(datatable.optimize=1L)
 ans2 <- dt[, c(sum(d), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
 test(1268.5, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
              output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
+
+options(datatable.optimize=1L)
+ans2 <- dt[, c(list(sum(d)), lapply(.SD, mean)), by=a]
+options(datatable.optimize=Inf)
+test(1268.6, dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
+             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
+
+# newly added tests for #861
+# optimise, but no GForce
+options(datatable.optimize=1L)
+ans2 <- dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a]
+options(datatable.optimize=Inf)
+test(1268.7, dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
+             output = "lapply optimization changed j from 'c(list(sum(d), .I), lapply(.SD, mean))' to 'list(sum(d), .I, mean(b), mean(c), mean(d))'")
+
+# don't optimise .I in c(...)
+options(datatable.optimize=1L)
+dt = data.table(x=c(1,1,1,2,2,2), y=1:6)
+ans2 <- dt[, c(.I, lapply(.SD, mean)), by=x]
+options(datatable.optimize=Inf)
+test(1268.8, dt[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], ans2,
+             output = "lapply optimization is on, j unchanged as 'c(.I, lapply(.SD, mean))'")
+
 ### FR #2722 tests end here ###
 
 # Wide range numeric and integer64, to test all bits
@@ -4883,6 +4903,10 @@ test(1362.12, DT[, c(.SD[1], lapply(.SD, sum)), by=x, verbose=TRUE],
   output="lapply optimization changed j from 'c(.SD[1], lapply(.SD, sum))' to 'list(y[1], z[1], sum(y), sum(z))'")
 test(1362.13, DT[, head(.SD, 1), by=x, verbose=TRUE],
   output="lapply optimization changed j from 'head(.SD, 1)' to 'list(head(y, 1), head(z, 1))'")
+# make sure .I is named as I when no name is given
+test(1362.14, names(DT[, c(list(.I, mean(y)), lapply(.SD, sum)), by=x]), c("x", "I", "V2", "y", "z"))
+# and if a name is given, it's retained
+test(1362.15, names(DT[, c(list(bla=.I, mean(y)), lapply(.SD, sum)), by=x]), c("x", "bla", "V2", "y", "z"))
 
 # setDT(DT), when input is already a data.table checks if selfrefok and if not, does alloc.col again.
 DT = list(data.frame(x=1:5, y=6:10))
