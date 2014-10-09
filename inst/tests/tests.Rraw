@@ -1984,17 +1984,18 @@ test(725, DT[c("a","b","d"),list(v)], DT[J(c("a","b","d")),"v",with=FALSE])  # u
 test(726, DT[c("a", "b", "d"), sum(v), by=y, nomatch=0], data.table(y=INT(1,3,6),V1=INT(5,7,9)))
 test(727, DT[c("a", "b", "d"), sum(v), by=y], data.table(y=INT(1,3,6,NA),V1=INT(5,7,9,NA)))
 test(728, DT[c("a", "b", "d"), sum(v), by=y], DT[J(c("a", "b", "d"))][, sum(v), by=y])
-oldv = options(datatable.verbose=FALSE)
-test(729, capture.output(DT[c("a", "b", "d"), print(.SD), by=.EACHI]),
-          capture.output(suppressWarnings(DT[c("a", "b", "d"), print(.SD), by=x])))
-test(729.1, capture.output(DT[c("a", "b"), print(.SD), by=y]),   # TO DO: why doesn't last group have x=d, maybe groups=i in dogroups
-            capture.output(DT[c("a", "b")][, print(.SD), by=y]))
-options(oldv)
-test(729.2, DT[c("b","d"),.SD,by=.EACHI], data.table(x=c("b","b","b","d"),y=INT(1,3,6,NA),v=INT(4,5,6,NA)))   # no debate here
-test(729.3, DT[c("b","d"),.SD, by=y], DT[c("b","d")][,.SD, by=y][4L,x:=NA_character_])   # the i groups when no match don't get carried through (would be hard to implement this and very unlikely to be useful. Just break into compound query, if needed to be used in j, to get them to carry through. TO DO: add to FAQ.
+
+# explicit verbose=FALSE needed here because tests are run a second time with verbose=TRUE
+test(729.1, capture.output(DT[c("a", "b", "d"), print(.SD), by=.EACHI, verbose=FALSE]),
+          capture.output(suppressWarnings(DT[c("a", "b", "d"), print(.SD), by=x, verbose=FALSE])))
+test(729.2, capture.output(DT[c("a", "b"), print(.SD), by=y, verbose=FALSE]),   # TO DO: why doesn't last group have x=d, maybe groups=i in dogroups
+            capture.output(DT[c("a", "b"),verbose=FALSE][, print(.SD), by=y, verbose=FALSE]))
+
+test(729.3, DT[c("b","d"),.SD,by=.EACHI], data.table(x=c("b","b","b","d"),y=INT(1,3,6,NA),v=INT(4,5,6,NA)))   # no debate here
+test(729.4, DT[c("b","d"),.SD, by=y], DT[c("b","d")][,.SD, by=y][4L,x:=NA_character_])   # the i groups when no match don't get carried through (would be hard to implement this and very unlikely to be useful. Just break into compound query, if needed to be used in j, to get them to carry through. TO DO: add to FAQ.
 
 # That unnamed i gets x's join column names when j is .SD (or any named list, which verbose warns is inefficient), #2281
-test(729.4, DT[c("a","b"),.SD], data.table(x=rep(c("a","b"),each=3),y=INT(1,3,6),v=1:6,key="x"))
+test(729.5, DT[c("a","b"),.SD], data.table(x=rep(c("a","b"),each=3),y=INT(1,3,6),v=1:6,key="x"))
 
 # check := when combining join with missing groups and then group by
 test(730, DT[c("b","a"),w:=sum(v),by=y]$w, INT(5,7,9,5,7,9,NA,NA,NA))  # by over a different column than was joined to
@@ -4854,23 +4855,34 @@ test(1360.2, copy(dt)[sample, N := c(.N), by = .EACHI], copy(dt)[sample, N := .N
 L <- list(data.table(BOD), data.table(BOD))
 test(1361, lapply(L, "[", Time==3L), list(L[[1L]][Time == 3L], L[[2L]][Time == 3L]))
 
-# Feature #735, first two cases: 1) .SD, and 2) DT[, c(.SD, lapply(.SD, ...)), by=.] optimisation:
-oldv = options(datatable.verbose=TRUE)  # save because R CMD check runs twice: once with verbose=FALSE then with TRUE
+# Feature #735, first two cases: 1) .SD, and 2) DT[, c(.SD, lapply(.SD, ...)), by=...] optimisation:
+# Don't set options(datatable.verbose=TRUE) here because the "running test 1362.1 ..." messages cause output to scroll away errors on CRAN checks last 13 lines
 DT <- data.table(x=c(1,1,1,2,2), y=1:5, z=6:10)
-test(1362.1, DT[, .SD, by=x], output="lapply optimization changed j from '.SD' to 'list(y, z)'")
-test(1362.2, DT[, c(.SD), by=x], output="lapply optimization changed j from 'c(.SD)' to 'list(y, z)'")
-test(1362.3, DT[, c(.SD, lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(.SD, lapply(.SD, sum))' to 'list(y, z, sum(y), sum(z))'")
-test(1362.4, DT[, c(lapply(.SD, sum), .SD), by=x], output="lapply optimization changed j from 'c(lapply(.SD, sum), .SD)' to 'list(sum(y), sum(z), y, z)'")
-test(1362.5, DT[, c(list(y), .SD, lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(list(y), .SD, lapply(.SD, sum))' to 'list(list(y), y, z, sum(y), sum(z))'")
+test(1362.1, DT[, .SD, by=x, verbose=TRUE],
+  output="lapply optimization changed j from '.SD' to 'list(y, z)'")
+test(1362.2, DT[, c(.SD), by=x, verbose=TRUE],
+  output="lapply optimization changed j from 'c(.SD)' to 'list(y, z)'")
+test(1362.3, DT[, c(.SD, lapply(.SD, sum)), by=x, verbose=TRUE],
+  output="lapply optimization changed j from 'c(.SD, lapply(.SD, sum))' to 'list(y, z, sum(y), sum(z))'")
+test(1362.4, DT[, c(lapply(.SD, sum), .SD), by=x, verbose=TRUE],
+  output="lapply optimization changed j from 'c(lapply(.SD, sum), .SD)' to 'list(sum(y), sum(z), y, z)'")
+test(1362.5, DT[, c(list(y), .SD, lapply(.SD, sum)), by=x, verbose=TRUE],
+  output="lapply optimization changed j from 'c(list(y), .SD, lapply(.SD, sum))' to 'list(list(y), y, z, sum(y), sum(z))'")
 # 3) .SD[1] and 4) .SD[1L]
-test(1362.6, DT[, c(.SD[1L]), by=x], output="lapply optimization changed j from 'c(.SD[1L])' to 'list(y[1L], z[1L])'")
-test(1362.7, DT[, c(.SD[1L], lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(.SD[1L], lapply(.SD, sum))' to 'list(y[1L], z[1L], sum(y), sum(z))'")
-test(1362.8, DT[, c(.SD[.N]), by=x], output="lapply optimization changed j from 'c(.SD[.N])' to 'list(y[.N], z[.N])'")
-test(1362.9, DT[, .SD[1], by=x], output="lapply optimization changed j from '.SD[1]' to 'list(y[1], z[1])'")
-test(1362.11, DT[, c(.SD[1]), by=x], output="lapply optimization changed j from 'c(.SD[1])' to 'list(y[1], z[1])'")
-test(1362.12, DT[, c(.SD[1], lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(.SD[1], lapply(.SD, sum))' to 'list(y[1], z[1], sum(y), sum(z))'")
-test(1362.13, DT[, head(.SD, 1), by=x], output="lapply optimization changed j from 'head(.SD, 1)' to 'list(head(y, 1), head(z, 1))'")
-options(oldv)
+test(1362.6, DT[, c(.SD[1L]), by=x, verbose=TRUE],
+  output="lapply optimization changed j from 'c(.SD[1L])' to 'list(y[1L], z[1L])'")
+test(1362.7, DT[, c(.SD[1L], lapply(.SD, sum)), by=x, verbose=TRUE],
+  output="lapply optimization changed j from 'c(.SD[1L], lapply(.SD, sum))' to 'list(y[1L], z[1L], sum(y), sum(z))'")
+test(1362.8, DT[, c(.SD[.N]), by=x, verbose=TRUE],
+  output="lapply optimization changed j from 'c(.SD[.N])' to 'list(y[.N], z[.N])'")
+test(1362.9, DT[, .SD[1], by=x, verbose=TRUE],
+  output="lapply optimization changed j from '.SD[1]' to 'list(y[1], z[1])'")
+test(1362.11, DT[, c(.SD[1]), by=x, verbose=TRUE],
+  output="lapply optimization changed j from 'c(.SD[1])' to 'list(y[1], z[1])'")
+test(1362.12, DT[, c(.SD[1], lapply(.SD, sum)), by=x, verbose=TRUE],
+  output="lapply optimization changed j from 'c(.SD[1], lapply(.SD, sum))' to 'list(y[1], z[1], sum(y), sum(z))'")
+test(1362.13, DT[, head(.SD, 1), by=x, verbose=TRUE],
+  output="lapply optimization changed j from 'head(.SD, 1)' to 'list(head(y, 1), head(z, 1))'")
 
 # setDT(DT), when input is already a data.table checks if selfrefok and if not, does alloc.col again.
 DT = list(data.frame(x=1:5, y=6:10))
