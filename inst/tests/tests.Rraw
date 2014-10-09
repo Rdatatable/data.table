@@ -4178,13 +4178,10 @@ options(datatable.optimize=1L)
 ans2 <- dt[, c(list(c), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
 test(1268.3, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(list(c), mean(b), mean(c), mean(d))'")
+             output = "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(c, mean(b), mean(c), mean(d))")
 
-options(datatable.optimize=1L)
-ans2 <- dt[, c(as.list(c), lapply(.SD, mean)), by=a]
-options(datatable.optimize=Inf)
-test(1268.4, dt[, c(as.list(c), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "lapply optimization changed j from 'c(as.list(c), lapply(.SD, mean))' to 'list(as.list(c), mean(b), mean(c), mean(d))'")
+test(1268.4, dt[, c(as.list(c), lapply(.SD, mean)), by=a], 
+             error = "j doesn't evaluate to the same number of columns for each group")
 
 options(datatable.optimize=1L)
 ans2 <- dt[, c(sum(d), lapply(.SD, mean)), by=a]
@@ -4192,15 +4189,27 @@ options(datatable.optimize=Inf)
 test(1268.5, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
              output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
 
+options(datatable.optimize=1L)
+ans2 <- dt[, c(list(sum(d)), lapply(.SD, mean)), by=a]
+options(datatable.optimize=Inf)
+test(1268.6, dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
+             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
+
 # newly added tests for #861
+# optimise, but no GForce
+options(datatable.optimize=1L)
+ans2 <- dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a]
+options(datatable.optimize=Inf)
+test(1268.7, dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
+             output = "lapply optimization changed j from 'c(list(sum(d), .I), lapply(.SD, mean))' to 'list(sum(d), .I, mean(b), mean(c), mean(d))'")
+
 # don't optimise .I in c(...)
 options(datatable.optimize=1L)
 dt = data.table(x=c(1,1,1,2,2,2), y=1:6)
 ans2 <- dt[, c(.I, lapply(.SD, mean)), by=x]
 options(datatable.optimize=Inf)
-test(1268.6, dt[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], ans2,
+test(1268.8, dt[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], ans2,
              output = "lapply optimization is on, j unchanged as 'c(.I, lapply(.SD, mean))'")
-
 
 ### FR #2722 tests end here ###
 
@@ -4872,7 +4881,7 @@ test(1362.1, DT[, .SD, by=x], output="lapply optimization changed j from '.SD' t
 test(1362.2, DT[, c(.SD), by=x], output="lapply optimization changed j from 'c(.SD)' to 'list(y, z)'")
 test(1362.3, DT[, c(.SD, lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(.SD, lapply(.SD, sum))' to 'list(y, z, sum(y), sum(z))'")
 test(1362.4, DT[, c(lapply(.SD, sum), .SD), by=x], output="lapply optimization changed j from 'c(lapply(.SD, sum), .SD)' to 'list(sum(y), sum(z), y, z)'")
-test(1362.5, DT[, c(list(y), .SD, lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(list(y), .SD, lapply(.SD, sum))' to 'list(list(y), y, z, sum(y), sum(z))'")
+test(1362.5, DT[, c(list(y), .SD, lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(list(y), .SD, lapply(.SD, sum))' to 'list(y, y, z, sum(y), sum(z))'")
 # 3) .SD[1] and 4) .SD[1L]
 test(1362.6, DT[, c(.SD[1L]), by=x], output="lapply optimization changed j from 'c(.SD[1L])' to 'list(y[1L], z[1L])'")
 test(1362.7, DT[, c(.SD[1L], lapply(.SD, sum)), by=x], output="lapply optimization changed j from 'c(.SD[1L], lapply(.SD, sum))' to 'list(y[1L], z[1L], sum(y), sum(z))'")
