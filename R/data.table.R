@@ -1383,10 +1383,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
             oldjsub = jsub
             if (jsub[[1L]]=="list") {
-                for (ii in seq_along(jsub)[-1L])
+                for (ii in seq_along(jsub)[-1L]) {
                     if (dotN(jsub[[ii]])) next; # For #5760
                     if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]]=="mean")
                         jsub[[ii]] = .optmean(jsub[[ii]])
+                }
             } else if (jsub[[1L]]=="mean") {
                 jsub = .optmean(jsub)
             }
