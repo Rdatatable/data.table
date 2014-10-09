@@ -1284,9 +1284,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                             any_SD = TRUE
                             jsubl[[i_]] = lapply(ansvars, as.name)
                             jvnames = c(jvnames, ansvars)
-                        } else if (is.null(names(jsubl)) || names(jsubl)[i_] == "") {
-                            if (this == ".N" || this == ".I") jvnames = c(jvnames, gsub("^[.]([NI])$", "\\1", this)) 
-                        } else jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
+                        } else if (this == ".N") {
+                            # don't optimise .I in c(.SD, .I), it's length can be > 1 - only c(.SD, list(.I)) should be optimised!! .N is always length 1.
+                            jvnames = c(jvnames, gsub("^[.]([N])$", "\\1", this))   
+                        } else {
+                            # jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
+                            is_valid=FALSE
+                            break
+                        }
                     } else if ( length(this) == 3L && (this[[1L]] == "[" || this[[1L]] == "head") && this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || this[[3L]] == ".N") ) {
                         # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
                         any_SD = TRUE

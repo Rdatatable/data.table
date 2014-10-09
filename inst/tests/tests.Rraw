@@ -4191,6 +4191,17 @@ ans2 <- dt[, c(sum(d), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
 test(1268.5, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
              output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
+
+# newly added tests for #861
+# don't optimise .I in c(...)
+options(datatable.optimize=1L)
+dt = data.table(x=c(1,1,1,2,2,2), y=1:6)
+ans2 <- dt[, c(.I, lapply(.SD, mean)), by=x]
+options(datatable.optimize=Inf)
+test(1268.6, dt[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], ans2,
+             output = "lapply optimization is on, j unchanged as 'c(.I, lapply(.SD, mean))'")
+
+
 ### FR #2722 tests end here ###
 
 # Wide range numeric and integer64, to test all bits
