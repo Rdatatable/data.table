@@ -5356,6 +5356,11 @@ ll = list(foo = function() 1L)
 test(1387.1, copy(DT)[, z := ll$foo()], copy(DT)[, z:=1L])
 test(1387.2, copy(DT)[, z := ll[[1L]]()], copy(DT)[, z:=1L])
 
+# Fix for #811 - ITime and negative integers formats wrong result.
+x = c(1L, -1L, -3700L)
+class(x) = "ITime"
+test(1388, as.character(x), c("00:00:01", "-00:00:01", "-01:01:40"))
+
 ##########################
 
 
