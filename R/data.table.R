@@ -1,6 +1,5 @@
 deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.frame()) {
     if (!mode(expr) %in% c("call", "expression", "(")) return(expr)
-
     # Fix for #774.
     # the only place where a call is of length 1, that I can think of is 
     # a function call with empty arguments: e.g., a[[1L]]() or a$b() or b()
@@ -12,20 +11,18 @@ deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.fr
         # else if (is.call(expr[[1L]])) return (list(deconstruct_and_eval(expr[[1L]])))
         else return(expr)
     }
-    
-    # Fix for #2496. the `{` in `DT[, {var := bla}, by=x]` is caught and removed from `j`.
+    # Fix for #2496. The `{` in `DT[, {var := bla}, by=x]` is caught and removed from `j`.
     if (expr[[1L]] == "{" & is.call(expr[[2L]])) {
         if (identical(expr[[2L]][[1L]], quote(`:=`))) {
-            warning('Caught and removed `{` wrapped around := in j. := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+            warning('Caught and removed `{` wrapped around := in j. := and `:=`(...) are 
+                defined for use in j, once only and in particular ways. See help(":=").')
             return(deconstruct_and_eval(expr[[2L]], envir, enclos))
         }
     }
-
     # don't evaluate eval's if the environment is specified
     if (expr[[1L]] == quote(eval) && length(expr) < 3L) {
         return(deconstruct_and_eval(eval(expr[[2L]], envir, enclos), envir, enclos))
     }
-
     ff <- function(m) {
         if (is.call(m)) {
             if (m[[1L]] == quote(eval)) 
