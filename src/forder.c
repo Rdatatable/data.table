@@ -514,6 +514,12 @@ size_t colSize=8;  // the size of the column type (4 or 8). Just 8 currently unt
 
 static void dradix_r(unsigned char *xsub, int *osub, int n, int radix);
 
+#ifdef WORDS_BIGENDIAN
+#define RADIX_BYTE colSize-radix
+#else
+#define RADIX_BYTE radix
+#endif
+
 static void dradix(unsigned char *x, int *o, int n)
 {
     int i, j, radix, nextradix, itmp, thisgrpn, maxgrpn;
@@ -523,13 +529,13 @@ static void dradix(unsigned char *x, int *o, int n)
     for (i=0;i<n;i++) {
         thisx = twiddle(x,i,order);
         for (radix=0; radix<colSize; radix++)
-            radixcounts[radix][((unsigned char *)&thisx)[radix]]++;
+            radixcounts[radix][((unsigned char *)&thisx)[RADIX_BYTE]]++;
         // if dround==2 then radix 0 and 1 will be all 0 here and skipped.
         /* on little endian, 0 is the least significant bits (the right) 
         / and 7 is the most including sign (the left); i.e. reversed. */
     }
     for (radix=0; radix<colSize; radix++) {
-        i = ((unsigned char *)&thisx)[radix];                           // thisx is the last x after loop above
+        i = ((unsigned char *)&thisx)[RADIX_BYTE];                           // thisx is the last x after loop above
         skip[radix] = radixcounts[radix][i] == n;
         if (skip[radix]) radixcounts[radix][i] = 0;                     // clear it now, the other counts must be 0 already
     }
@@ -557,7 +563,7 @@ static void dradix(unsigned char *x, int *o, int n)
     }
     for (i=n-1; i>=0; i--) {
         thisx = twiddle(x,i,order);
-        o[ --thiscounts[((unsigned char *)&thisx)[radix]] ] = i+1;
+        o[ --thiscounts[((unsigned char *)&thisx)[RADIX_BYTE]] ] = i+1;
     }
 
     if (radix_xsuballoc < maxgrpn) {                                            // TO DO: centralize this alloc
@@ -592,10 +598,10 @@ static void dradix(unsigned char *x, int *o, int n)
         itmp = thiscounts[i];
         thiscounts[i] = 0;
     }
-    if (nalast == 0)                                                          // nalast = 1, -1 are both taken care already.
-        for (i=0; i<n; i++) o[i] = is_nan(x, o[i]-1) ? 0 : o[i];              // nalast = 0 is dealt with separately as it just sets o to 0 
-                                                                              // at those indices where x is NA. x[o[i]-1] because x is not 
-                                                                              // modified by reference unlike iinsert or iradix_r
+    if (nalast == 0)                                                 // nalast = 1, -1 are both taken care already.
+        for (i=0; i<n; i++) o[i] = is_nan(x, o[i]-1) ? 0 : o[i];     // nalast = 0 is dealt with separately as it just sets o to 0 
+                                                                     // at those indices where x is NA. x[o[i]-1] because x is not 
+                                                                     // modified by reference unlike iinsert or iradix_r
 
 }
 
