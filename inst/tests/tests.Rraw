@@ -5350,6 +5350,11 @@ test(1385.2, DT[id == id.sub], DT[1:4])
 DT = data.table(class=c('a','b'), x=c(1,2))
 test(1386, DT[class=='a'], DT[1])
 
+# Fix for #774 - parsing a$b() in 'j'
+DT = data.table(x=1:5, y=6:10)
+ll = list(foo = function() 1L)
+test(1387.1, copy(DT)[, z := ll$foo()], copy(DT)[, z:=1L])
+test(1387.2, copy(DT)[, z := ll[[1L]]()], copy(DT)[, z:=1L])
 
 ##########################
 

@@ -1,9 +1,15 @@
 deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.frame()) {
     if (!mode(expr) %in% c("call", "expression", "(")) return(expr)
 
+    # Fix for #774.
+    # the only place where a call is of length 1, that I can think of is 
+    # a function call with empty arguments: e.g., a[[1L]]() or a$b() or b()
+    # and in all these cases, we *don't* want to deconstruct and eval
+    # hence the "else if" statement is commented below. No existing tests 
+    # are broken in doing so. If there are other reports, will revisit.
     if (length(expr) == 1L) {
         if (is.expression(expr)) return (deconstruct_and_eval(expr[[1L]]))
-        else if (is.call(expr[[1L]])) return (list(deconstruct_and_eval(expr[[1L]])))
+        # else if (is.call(expr[[1L]])) return (list(deconstruct_and_eval(expr[[1L]])))
         else return(expr)
     }
     
