@@ -515,7 +515,7 @@ size_t colSize=8;  // the size of the column type (4 or 8). Just 8 currently unt
 static void dradix_r(unsigned char *xsub, int *osub, int n, int radix);
 
 #ifdef WORDS_BIGENDIAN
-#define RADIX_BYTE colSize-radix
+#define RADIX_BYTE colSize-radix-1
 #else
 #define RADIX_BYTE radix
 #endif
