@@ -23,8 +23,8 @@ void savetl_init(), savetl(SEXP s), savetl_end();
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
-unsigned long long dtwiddle(void *, int, int);
-unsigned long long i64twiddle(void *, int, int);
+unsigned long long dtwiddle(void *p, int i, int order);
+unsigned long long i64twiddle(void *p, int i, int order);
 unsigned long long (*twiddle)(void *, int, int);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 
@@ -59,7 +59,7 @@ void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose);
 
 // bmerge.c
-SEXP bmerge(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP rollarg, SEXP rollends, SEXP nomatch, SEXP retFirst, SEXP retLength, SEXP allLen1);
+SEXP bmerge(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollends, SEXP nomatch, SEXP retFirst, SEXP retLength, SEXP allLen1);
 
 // fcast.c
 SEXP coerce_to_char(SEXP s, SEXP env);

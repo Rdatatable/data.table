@@ -5,6 +5,7 @@
 #   https://github.com/craigcitro/r-travis/wiki
 # 
 # Hack for 'error on warning' except when the warning is about vignette pdfs/html
+# Thanks to csgillespie for https://github.com/csgillespie/travis-examples/tree/master/bioconductor
 language: c
 
 before_install:
@@ -15,6 +16,9 @@ before_install:
   - chmod 755 ./travis-tool.sh  
   - ./travis-tool.sh bootstrap
 install:
+  - ./travis-tool.sh bioc_install IRanges
+  - ./travis-tool.sh bioc_install GenomicRanges
+  - ./travis-tool.sh r_binary_install caret
   - ./travis-tool.sh install_deps
   
 script: ./travis-tool.sh run_tests

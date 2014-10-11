@@ -72,13 +72,17 @@ as.ITime.POSIXlt <- function(x, ...) {
 
 as.character.ITime <- format.ITime <- function(x, ...) {
     # adapted from chron's format.times
-    x <- unclass(x)
-    hh <- x %/% 3600
-    mm <- (x - hh * 3600) %/% 60
-    ss <- trunc(x - hh * 3600 - 60 * mm)
-    paste(substring(paste("0", hh, sep = ""), nchar(paste(hh))), 
-          substring(paste("0", mm, sep = ""), nchar(paste(mm))), 
-          substring(paste("0", ss, sep = ""), nchar(paste(ss))), sep = ":")
+    # Fix for #811. Thanks to @StefanFritsch for the code snippet
+    neg <- x < 0L
+    x  <- abs(unclass(x))
+    hh <- x %/% 3600L
+    mm <- (x - hh * 3600L) %/% 60L
+    ss <- trunc(x - hh * 3600L - 60L * mm)
+    res = paste(substring(paste("0", hh, sep = ""), nchar(paste(hh))), 
+              substring(paste("0", mm, sep = ""), nchar(paste(mm))), 
+              substring(paste("0", ss, sep = ""), nchar(paste(ss))), sep = ":")
+    if (any(neg)) res[neg] = paste("-", res[neg], sep="")
+    res
 }
 
 as.data.frame.ITime = function(x, ...) {
@@ -197,62 +201,3 @@ quarter <- function(x) as.POSIXlt(x)$mon %/% 3L + 1L
 year    <- function(x) as.POSIXlt(x)$year + 1900L
 
 
-
-###################################################################
-# Examples
-###################################################################
-
-examples.IDateTime <- function() {
-
-    # create ITime:
-    (t <- as.ITime("10:45"))
-
-    is.integer(t)
-
-    (t <- as.ITime("10:45:04"))
-
-    (t <- as.ITime("10:45:04", format = "%H:%M:%S"))
-    
-    if (!identical(as.POSIXct("2001-01-01") + as.ITime("10:45"),
-                   as.POSIXct("2001-01-01 10:45") + 0)) print("test failed")
-
-    # create IDate:
-    (d <- as.IDate("2001-01-01"))
-
-    is.integer(d)
-
-    datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "5 hour")    
-    (a <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,idate,itime"))
-
-    a[, mean(a), by = "itime"]
-    a[, mean(a), by = "idate"]
-    
-    datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "6 hour")
-    (af <- data.table(IDateTime(datetime), a = rep(1:3, 3), key = "a,idate,itime"))
-    af[, mean(a), by = "itime"] 
-    af[, mean(a), by = "wday = factor(weekdays(idate))"] 
-    af[, mean(a), by = "wday = wday(idate)"] 
-    
-    as.POSIXct(af$idate) 
-    as.POSIXct(af$idate, time = af$itime) 
-    as.POSIXct(af$idate, af$itime) 
-    as.POSIXct(af$idate, time = af$itime, tz = "GMT") 
-                   
-    as.POSIXct(af$itime, af$idate)
-    as.POSIXct(af$itime) # uses today's date
-
-    (seqdates <- seq(as.IDate("2001-01-01"), as.IDate("2001-08-03"), by = "3 weeks"))
-    round(seqdates, "months")
-
-    paste(as.IDate("2010-10-01"),as.ITime("10:45")[1]) # works on latest version on windows but not on linux
-    
-    if (require(chron)) {
-        as.chron(as.IDate("2000-01-01"))
-        as.chron(as.ITime("10:45"))
-        as.chron(as.IDate("2000-01-01"), as.ITime("10:45"))
-        as.chron(as.ITime("10:45"), as.IDate("2000-01-01"))
-        as.ITime(chron(times. = "11:01:01"))
-        IDateTime(chron("12/31/98","10:45:00"))
-    }
-    
-}

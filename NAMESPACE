@@ -6,6 +6,7 @@ exportClasses(data.table, IDate, ITime)
 ##
 
 export(data.table, tables, setkey, setkeyv, key, "key<-", haskey, CJ, SJ, copy)
+export(set2key, set2keyv, key2)
 export(as.data.table,is.data.table,test.data.table,last,like,"%like%",between,"%between%")
 export(timetaken)
 export(truelength, alloc.col, ":=")
@@ -17,7 +18,7 @@ export(rbindlist)
 export(fread)
 export(foverlaps)
 export(address)
-export(.SD,.N,.I,.GRP,.BY)
+export(.SD,.N,.I,.GRP,.BY,.EACHI)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
@@ -74,6 +75,7 @@ S3method(na.omit, data.table)
 export(as.IDate,as.ITime,IDateTime)
 export(hour,yday,wday,mday,week,month,quarter,year)
 
+importFrom(chron, chron, as.chron)
 export(as.chron.IDate,as.chron.ITime)
 
 S3method("[", ITime)
