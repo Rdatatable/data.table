@@ -105,7 +105,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
                 within =, equal = yintervals)
     call = construct(head(ynames, -2L), uycols, type)
     if (verbose) {last.started.at=proc.time()[3];cat("unique() + setkey() operations done in ...");flush.console()}
-    uy = unique(y[, eval(call)]) ## we need 64-bit resolution here.
+    uy = unique(y[, eval(call)])
     setkey(uy)[, `:=`(lookup = list(list(integer(0))), type_lookup = list(list(integer(0))), count=0L, type_count=0L)]
     if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
     matches <- function(ii, xx, del, ...) {
