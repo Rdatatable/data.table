@@ -144,23 +144,24 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     setnames(olaps, c("xid", "yid"))
     yid = NULL  # for 'no visible binding for global variable' from R CMD check on i clauses below
     # if (type == "any") setorder(olaps) # at times the combine operation may not result in sorted order
+    # CsubsetDT bug has been fixed by Matt. So back to using it! Should improve subset substantially.
     if (which) {
         if (mult %chin% c("first", "last"))
             return (olaps$yid)
         else if (!is.na(nomatch))
-            return (olaps[yid > 0L])
+            return (.Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps)))
         else return (olaps)
     } else {
         if (!is.na(nomatch))
-            olaps = olaps[yid > 0L]
+            olaps = .Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps))
         ycols = setdiff(names(origy), head(by.y, -2L))
         idx = chmatch(ycols, names(origx), nomatch=0L)
-        ans = origx[olaps$xid]
+        ans = .Call(CsubsetDT, origx, olaps$xid, seq_along(origx))
         if (any(idx>0L))
             setnames(ans, names(ans)[idx], paste("i.", names(ans)[idx], sep=""))
         xcols1 = head(by.x, -2L)
         xcols2 = setdiff(names(ans), xcols1)
-        ans[, (ycols) := origy[olaps$yid, ycols, with=FALSE]]
+        ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, seq_along(ycols))]
         setcolorder(ans, c(xcols1, ycols, xcols2))
         return (ans)
     }
