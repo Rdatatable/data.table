@@ -2794,10 +2794,14 @@ test(1017, fread(f,integer64="character"), DT, warning="Bumped column.*to type c
 unlink(f)
 
 # ERANGE warning, #4879
-# NB: on PowerPC QEMU emulation there is no warning but on all CRAN machines (including SPARC) there is.
 tt = try(fread("1.46761e-313\n"), silent=TRUE)   # options(warn=2) while this test file runs
-test(1018, fread("1.46761e-313\n"), data.table(V1=as.numeric("1.46761e-313")),
-    warning = if (inherits(tt,"try-error")) "strtod() returned ERANGE" else NULL)
+if (inherits(tt,"try-error")) {
+    # All CRAN machines including SPARC
+    test(1018, fread("1.46761e-313\n"), data.table(V1=as.numeric("1.46761e-313")), warning="strtod() returned ERANGE")
+} else {
+    # on PowerPC only via QEMU emulation :
+    test(1018, fread("1.46761e-313\n"), data.table("1.46761e-313"=logical()))
+}
 test(1019, fread("1.23456789123456789123456789\n"), data.table(V1=as.numeric("1.23456789123456789123456789"))) # no warning, as standard
 
 # crash assigning to row 0, #2754
