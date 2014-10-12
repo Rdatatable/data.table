@@ -38,7 +38,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
             }
         }
         if (type != WITHIN) {
-            for (i=0; i<uxrows-1; i++)                      // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
+            for (i=0; i<uxrows; i++)                      // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
                 if (len1[i]) len2[i] = 1;
         }
         break;
@@ -60,7 +60,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
                 }
             }
             if (type != WITHIN) {
-                for (i=0; i<uxrows-1; i++)              // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
+                for (i=0; i<uxrows; i++)              // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
                     if (len1[i]) len2[i] = 1;                    
             }
             break;
@@ -167,7 +167,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
                 break;
             
                 case ANY :
-                for (i=0; i<uxrows-1; i++) {
+                for (i=0; i<uxrows; i++) {
                     vv = VECTOR_ELT(lookup, i);
                     tt = VECTOR_ELT(type_lookup, i);
                     k=0;
@@ -177,7 +177,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
                 break;
             
                 case WITHIN :
-                // for (i=0; i<uxrows-1; i++) {
+                // for (i=0; i<uxrows; i++) {
                 //     vv = VECTOR_ELT(lookup, i);
                 //     tt = VECTOR_ELT(type_lookup, i);
                 //     for (j=0; j<len2[i]; j++)

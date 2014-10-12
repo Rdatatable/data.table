@@ -5366,6 +5366,32 @@ DT <- as.data.table(iris)
 DT[, foo := "Species"]
 test(1389, copy(DT)[,bar := eval(parse(text=foo[1]), envir=.SD)], copy(DT)[, bar := Species])
 
+# Fix for foverlaps() floating point interval (double) types. Should increment them by machine tolerance, not by 1L
+DT1 = data.table(start=c(0.88), end=c(0.88))
+DT2 = data.table(start=c(0.26, 0.5, 0.55, 0.7), end=c(0.61, 0.88, 0.88-.Machine$double.eps^0.5, 0.89))
+setkey(DT2)
+test(1390.1, foverlaps(DT1, DT2, which=TRUE), data.table(xid=1L, yid=c(2L, 4L)))
+DT1 = data.table(start=c(0.3,0.5), end=c(0.3,0.5))
+DT2 = data.table(start=c(0.4), end=c(0.4))
+setkey(DT2)
+test(1390.2, foverlaps(DT1, DT2, which=TRUE), data.table(xid=1:2, yid=as.integer(c(NA, NA))))
+tt = c( as.POSIXct('2011-10-11 07:49:36'), as.POSIXct('2011-10-11 07:49:37'))
+DT1 = data.table(start=tt, end=tt)
+DT2 = data.table(start=tt[1], end=tt[1])
+setkey(DT2)
+test(1390.3, foverlaps(DT1, DT2, which=TRUE), data.table(xid=1:2, yid=as.integer(c(1L, NA))))
+tt = c( as.POSIXct('2011-10-11 07:49:36.3'), as.POSIXct('2011-10-11 07:49:37.4'), as.POSIXct('2011-10-11 07:49:37.5'))
+DT1 = data.table(start=tt, end=tt)
+DT2 = data.table(start=tt[2], end=tt[2])
+setkey(DT2)
+test(1390.4, foverlaps(DT1, DT2, which=TRUE), data.table(xid=1:3, yid=as.integer(c(NA, 1L, NA))))
+tt = c( as.POSIXct('2011-10-11 07:49:36.0003'), as.POSIXct('2011-10-11 07:49:36.0199'), as.POSIXct('2011-10-11 07:49:36.0399'))
+DT1 = data.table(start=tt, end=tt)
+DT2 = data.table(start=tt[2], end=tt[2])
+setkey(DT2)
+test(1390.5, foverlaps(DT1, DT2, which=TRUE), data.table(xid=1:3, yid=as.integer(c(NA, 1, NA))))
+
+
 ##########################
 
 

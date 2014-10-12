@@ -56,6 +56,19 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
         stop("The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table 'y' and must be integer/numeric type.") 
     if ( any(y[[yintervals[2L]]] - y[[yintervals[1L]]] < 0L) )
         stop("All entries in column ", yintervals[1L], " should be <= corresponding entries in column ", yintervals[2L], " in data.table 'y'")
+    ## see NOTES below:
+    yclass = c(class(y[[yintervals[1L]]]), class(y[[yintervals[2L]]]))
+    isdouble = FALSE; isposix = FALSE
+    if ( any(c("numeric", "POSIXct") %chin% yclass) ) {
+        # next representive double > x under the given precision (48,56 or 64-bit in data.table) = x*incr
+        dt_eps <- function() {
+            bits = floor(log2(.Machine$double.eps))
+            2 ^ (bits + (getNumericRounding() * 8L))
+        }
+        incr = 1 + dt_eps()
+        isdouble = TRUE
+        isposix = "POSIXct" %chin% yclass
+    } else incr = 1L # integer or Date class for example
 
     ## hopefully all checks are over. Now onto the actual task at hand.
     shallow <- function(x, cols) {
@@ -80,8 +93,10 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
         setattr(icall, 'names', icols)
         mcall = make_call(mcols, quote(c))
         if (type %chin% c("within", "any")) {
-            mcall[[3L]] = substitute(val+1L, 
-                list(val = mcall[[3L]]))
+            mcall[[3L]] = substitute(
+                if (isposix) unclass(val)*incr
+                else if (isdouble) val*incr else val+incr, 
+                list(val = mcall[[3L]], incr = incr))
         }
         make_call(c(icall, pos=mcall), quote(list))
     }
@@ -90,7 +105,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
                 within =, equal = yintervals)
     call = construct(head(ynames, -2L), uycols, type)
     if (verbose) {last.started.at=proc.time()[3];cat("unique() + setkey() operations done in ...");flush.console()}
-    uy = unique(y[, eval(call)])
+    uy = unique(y[, eval(call)]) ## we need 64-bit resolution here.
     setkey(uy)[, `:=`(lookup = list(list(integer(0))), type_lookup = list(list(integer(0))), count=0L, type_count=0L)]
     if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
     matches <- function(ii, xx, del, ...) {
@@ -104,8 +119,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
         } else if (type == "end") {
             eidx = sidx = matches(x, y, intervals[1L], ...) ## TODO: sidx can be set to integer(0)
         } else {
-            rollends = ifelse(type == "any", TRUE, FALSE)
-            sidx = matches(x, y, intervals[2L], rollends=rollends, ...)
+            sidx = matches(x, y, intervals[2L], rollends=(type == "any"), ...)
             eidx = matches(x, y, intervals[1L], ...)
         }
         list(sidx, eidx)
@@ -130,24 +144,74 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     setnames(olaps, c("xid", "yid"))
     yid = NULL  # for 'no visible binding for global variable' from R CMD check on i clauses below
     # if (type == "any") setorder(olaps) # at times the combine operation may not result in sorted order
+    # CsubsetDT bug has been fixed by Matt. So back to using it! Should improve subset substantially.
     if (which) {
         if (mult %chin% c("first", "last"))
             return (olaps$yid)
         else if (!is.na(nomatch))
-            return (olaps[yid > 0L])
+            return (.Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps)))
         else return (olaps)
     } else {
         if (!is.na(nomatch))
-            olaps = olaps[yid > 0L]
+            olaps = .Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps))
         ycols = setdiff(names(origy), head(by.y, -2L))
         idx = chmatch(ycols, names(origx), nomatch=0L)
-        ans = origx[olaps$xid]
+        ans = .Call(CsubsetDT, origx, olaps$xid, seq_along(origx))
         if (any(idx>0L))
             setnames(ans, names(ans)[idx], paste("i.", names(ans)[idx], sep=""))
         xcols1 = head(by.x, -2L)
         xcols2 = setdiff(names(ans), xcols1)
-        ans[, (ycols) := origy[olaps$yid, ycols, with=FALSE]]
+        ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, seq_along(ycols))]
         setcolorder(ans, c(xcols1, ycols, xcols2))
         return (ans)
     }
 }
+
+## Notes: (If there's a better way than the solution I propose here, I'd be glad to apply it.)
+# Side note: This post is a great read on floating points: http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+
+# We add 1L to the end coordinate in case of integers to generate lookup to identify interval overlaps properly. And that is great!
+# However for double precision, there are two issues we need to take into consideration:
+
+# ---
+# Firstly, assuming 64-bit precision, we can't simply add 1L. For e.g., consider:
+    # x = data.table(start=0.88, end=0.88)
+    # y = data.table(start=0.26, end=0.61, key=c("start", "end"))
+# and we'd like to do:
+    # foverlaps(x, y, type="any")
+# Adding 1 to 0.61 will result in 1.61, and will make sure 0.88 falls between 0.26 and 1.61, and that's wrong!
+
+# POSIXct objects are internally numeric as well. 
+
+# So how do we determine the "increment" (1L for integers) for numeric type?
+# To get there, we need to understand that the "increment" is a great idea. Just the value isn't correct in case of numerics. Let's consider 
+# just ordinary "numeric" objects (non-POSIXct). The idea behind increment is to ensure that the "end" coordinate gets incremented to the *next 
+# distinguishable representative number*!!! In case of integers, the next integer after 5L is 6L. Simple. Increment is 1L (assuming no integer 
+# overflows). In case of "numeric" that "increment" is (1 + .Machine$double.eps), and this gets *multiplied* (not added) to "end" coordinate.
+# Simple again. It fixes the problem, for now (read on).
+
+# NOTE THAT simply doing ("end" + .Machine$double.eps ^ 0.5) is insufficient because this doesn't work as the numbers grow bigger. For e.g., try:
+     # identical(3e8, 3e8+.Machine$double.eps^0.5)
+     # identical(3e8, 3e8*(1+.Machine$double.eps))
+
+# The important point is that we **need to be ABSOLUTELY sure** that "end coordinate" gets incremented to it's *next representative number*. Why? Consider a 'subject' interval [4,4]. When we collapse this to get the 1D-form and take `unique`, if the "end" coordinate is not distinguishable from the start coordinate, `unique` will return just one value. And this brings us back to square-one (the reason why we needed to add one in the first place!!). For example, consider query = c(5,5) and subject = c(4,4). Now, after collapsing and taking unique, if we end up with just one 4, then performing the join later will result in [5,5] actually matching 4 whose lookup will have valid indices and not NULL resulting in an incorrect overlap. We absolutely need the second 4, and we want it to be greater than the start 4, but just the smallest separation between them possible (so that we don't miss any other numbers that fall in that range).
+
+# For POSIXct objects, we could still do the same. But a) multiplication is not supported for POSIXt objects, so we'll have to unclass it, multiply and convert back.. which is not ideal - timezone, time spent on conversion etc.. and b) all.equal in base considers a tolerance of 0.001 for POSIXt objects, I'm guessing this is for "millisecond" resolution? The problem with (b) is that more than millisecond resolution will return incorrect results again.
+
+    # # More than millisecond resolution. Results are not stable.
+    # tt = c( as.POSIXct('2011-10-11 07:49:36.0003'), as.POSIXct('2011-10-11 07:49:36.0199'), as.POSIXct('2011-10-11 07:49:36.0399'))
+    # DT1 = data.table(start=tt, end=tt)
+    # DT2 = data.table(start=tt[2], end=tt[2])
+    # setkey(DT2)
+    # foverlaps(DT1, DT2, which=TRUE)
+
+# So, to put an end to this problem, we'll unclass it, multiply and convert back. In any case, the join does not depend on the timezone, as the internal numeric equivalent seems to be identical irrespective of the time zones.. So that's good news!
+# ---
+# Secondly, we've 48,56 and 64-bit precision in data.table (through get and setNumericRounding). And default right now is 48-bit. So, we've to make sure that the "end" interval should be multiplied accordingly depending on the current precision. This is taken care of by dt_eps(). Quite simple to follow, really.
+# ---
+
+# I believe this is the most correct way of doing it (probably convoluted way, and there are simpler ways... but I've not come across it).
+
+# Tests are added to ensure we cover these aspects (to my knowledge) to ensure that any undesirable changes in the future breaks those tests.
+
+# Conclusion: floating point manipulations are hell!
