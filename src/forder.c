@@ -643,7 +643,7 @@ static void dradix_r(unsigned char *xsub, int *osub, int n, int radix)
         return;
     }
     thiscounts = radixcounts[radix];
-    p = xsub + radix;
+    p = xsub + RADIX_BYTE;
     for (i=0; i<n; i++) {
         thiscounts[*p]++;
         p += colSize;
@@ -655,14 +655,14 @@ static void dradix_r(unsigned char *xsub, int *osub, int n, int radix)
     if (colSize == 4) {
         error("Not yet used, still using iradix instead");
         for (i=n-1; i>=0; i--) {
-            j = --thiscounts[ *(p+radix) ];
+            j = --thiscounts[*(p+RADIX_BYTE)];
             otmp[j] = osub[i];
             ((int *)xtmp)[j] = *(int *)p;
             p -= colSize;
         }
     } else { 
         for (i=n-1; i>=0; i--) {
-            j = --thiscounts[ *(p+radix) ];
+            j = --thiscounts[*(p+RADIX_BYTE)];
             otmp[j] = osub[i];
             ((unsigned long long *)xtmp)[j] = *(unsigned long long *)p;
             p -= colSize;
