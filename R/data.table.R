@@ -25,8 +25,11 @@ deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.fr
     }
     ff <- function(m) {
         if (is.call(m)) {
-            if (m[[1L]] == quote(eval)) 
-                deconstruct_and_eval(eval(m[[2L]], envir, enclos), envir, enclos) 
+            if (m[[1L]] == quote(eval))
+                # fix for #880. Hopefully this resolve the eval(parse(.)) issue for good.
+                if (is.call(m[[2L]]) && m[[2L]][[1L]] == quote(parse)) 
+                    deconstruct_and_eval(m, envir, enclos)
+                else deconstruct_and_eval(eval(m[[2L]], envir, enclos), envir, enclos)
             else deconstruct_and_eval(m, envir, enclos)
         } else m
     }

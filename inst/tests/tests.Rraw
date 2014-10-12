@@ -5361,6 +5361,11 @@ x = c(1L, -1L, -3700L)
 class(x) = "ITime"
 test(1388, as.character(x), c("00:00:01", "-00:00:01", "-01:01:40"))
 
+# Fix for #880. Another eval(parse(.)) issue.
+DT <- as.data.table(iris)
+DT[, foo := "Species"]
+test(1389, copy(DT)[,bar := eval(parse(text=foo[1]), envir=.SD)], copy(DT)[, bar := Species])
+
 ##########################
 
 
