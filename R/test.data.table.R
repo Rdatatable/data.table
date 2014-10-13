@@ -70,9 +70,9 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     assign("ntest", get("ntest", parent.frame()) + 1, parent.frame(), inherits=TRUE)   # bump number of tests run
     assign("lastnum", num, parent.frame(), inherits=TRUE)
     v = getOption("datatable.verbose")
-    d = exists(".devtesting",parent.frame()) && get(".devtesting", parent.frame())
-    if (v || d) {
-        cat(if (v && !d && !interactive()) "\n\n" else "\r", "Running test id ", num, "     ",sep="")
+    i = interactive()   # exists(".devtesting",parent.frame()) && get(".devtesting", parent.frame())
+    if (v || i) {
+        cat(if (i) "\r" else "\n\n", "Running test id ", num, "     ",sep="")
     }
     # TO DO: every line that could possibly fail should ideally be inside test()
     xsub = substitute(x)
