@@ -5,8 +5,6 @@
 if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
     options(warn=0)  # use require() so it warns but doesn't halt if not available
-    require(reshape2)     
-    require(reshape)
     require(plyr)
     require(ggplot2)
     require(hexbin)
@@ -16,9 +14,22 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(gdata)
     require(GenomicRanges)
     require(caret)
+    # reshape2 ahead of reshape ...
+    try(detach(package:reshape2),silent=TRUE)
+    try(detach(package:reshape),silent=TRUE)
+    library(reshape2, pos="package:base", logical.return=TRUE)
+    library(reshape, pos="package:base", logical.return=TRUE)
     .devtesting=FALSE
 } else {
     # Matt has suppressMessages(require(bit64)) in .Rprofile
+    if ("package:reshape2" %in% search()) {
+      detach(package:reshape2)
+      library(reshape2, pos="package:base", logical.return=TRUE)
+    }
+    if ("package:reshape" %in% search()) {
+      detach(package:reshape)
+      library(reshape, pos="package:base", logical.return=TRUE)
+    }
     .devtesting=TRUE
 }
 options(warn=2)
@@ -2837,8 +2848,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
 
 # melt.data.table
 if ("package:reshape2" %in% search()) {
-    try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
-                                               # try() in case reshape isn't loaded (detach gives not found error in that case)
+
     set.seed(45)
     DT <- data.table(
           i1 = c(1:5, NA), 
@@ -3060,8 +3070,6 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
 
 # dcast.data.table
 if ("package:reshape2" %in% search()) {
-    try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
-                                               # try() in case reshape isn't loaded (detach gives not found error in that case)
 
     names(ChickWeight) <- tolower(names(ChickWeight))
     DT <- melt(as.data.table(ChickWeight), id=2:4) # calls melt.data.table
@@ -3077,17 +3085,16 @@ if ("package:reshape2" %in% search()) {
     x1 <- as.data.frame(dcast.data.table(DT, diet+chick ~ time, drop=FALSE, fill=0)) 
     x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
     x2 <- dcast(DT, diet+chick~time, drop=FALSE, fill=0)
-    test(1104, x1,x2)
+    test(1104.1, x1,x2)
 
-    if ("package:reshape2" %in% search()) {
-        # add test for 'subset' in dcast.data.table
-        x1 <- dcast(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20))
-        x2 <- as.data.frame(dcast.data.table(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20)))
-        test(1104.1, x1, x2)
-    }
+    # add test for 'subset' in dcast.data.table
+    x1 <- dcast(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20))
+    x2 <- as.data.frame(dcast.data.table(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20)))
+    test(1104.2, x1, x2)
+
     # testing without aggregation
     x <- data.table(a=5:1, b=runif(5))
-    test(1104.2, as.data.frame(dcast.data.table(x, a ~ b, value.var="b")), dcast(x, a ~ b, value.var="b"))
+    test(1104.3, as.data.frame(dcast.data.table(x, a ~ b, value.var="b")), dcast(x, a ~ b, value.var="b"))
 }
 
 # test for freading commands
@@ -3377,26 +3384,23 @@ x <- c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.189
 test(1147.3, dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
 
 if ("package:reshape2" %in% search()) {
-    try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
-                                               # try() in case reshape isn't loaded (detach gives not found error in that case)
-
-        # Fix for case 2 in bug report #5149 - dcast.data.table dint aggregate properly when formula RHS has "."
-        set.seed(45)
-        DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
-        ans = setDT(dcast(DT, x ~ ., mean, value.var="y"))
-        setnames(ans, c("x", "y"))
-        setkey(ans, x)
-        test(1148.1, dcast.data.table(DT, x ~ ., mean, value.var="y"), ans)
-        # also quashed another bug with `.` in formula (when there's no aggregate function):
-        DT <- data.table(a=sample(5), b=runif(5), c=5:1)
-        ans1 = setDT(dcast(DT, a ~ ., value.var="c"))
-        ans2 = setDT(dcast(DT, b+a ~ ., value.var="c"))
-        setnames(ans1, c("a", "c"))
-        setnames(ans2, c("b", "a", "c"))
-        setkey(ans1, "a")
-        setkey(ans2, "b", "a")
-        test(1148.2, dcast.data.table(DT, a ~ ., value.var="c"), ans1)
-        test(1148.3, dcast.data.table(DT, b+a~., value.var="c"), ans2)
+    # Fix for case 2 in bug report #5149 - dcast.data.table dint aggregate properly when formula RHS has "."
+    set.seed(45)
+    DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
+    ans = setDT(dcast(DT, x ~ ., mean, value.var="y"))
+    setnames(ans, c("x", "y"))
+    setkey(ans, x)
+    test(1148.1, dcast.data.table(DT, x ~ ., mean, value.var="y"), ans)
+    # also quashed another bug with `.` in formula (when there's no aggregate function):
+    DT <- data.table(a=sample(5), b=runif(5), c=5:1)
+    ans1 = setDT(dcast(DT, a ~ ., value.var="c"))
+    ans2 = setDT(dcast(DT, b+a ~ ., value.var="c"))
+    setnames(ans1, c("a", "c"))
+    setnames(ans2, c("b", "a", "c"))
+    setkey(ans1, "a")
+    setkey(ans2, "b", "a")
+    test(1148.2, dcast.data.table(DT, a ~ ., value.var="c"), ans1)
+    test(1148.3, dcast.data.table(DT, b+a~., value.var="c"), ans2)
 }
 
 # test for `iradixorder` when input is integer(0) and numeric(0)
@@ -3707,8 +3711,6 @@ test(1197, DT[.(x),.N], 2)
 
 # fix for #5379 - issue when factor columns on formula LHS along with `drop=FALSE`
 if ("package:reshape2" %in% search()) {
-    try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
-                                               # try() in case reshape isn't loaded (detach gives not found error in that case)
     set.seed(1L)
     df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]),
                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
@@ -3791,8 +3793,6 @@ test(1221, DT[.(1),b], c("a","c","e"))
 
 # test to ensure attributes on non-factor id-columns are preserved after melt
 if ("package:reshape2" %in% search()) {
-    try(detach(package:reshape),silent=TRUE)   # otherwise when reshape is loaded, can't access melt.data.table from reshape2.
-                                               # try() in case reshape isn't loaded (detach gives not found error in that case)
     DT <- data.table(x=1:3, y=letters[1:3], z1=8:10, z2=11:13)
     setattr(DT$x, 'foo', 'bla1')
     setattr(DT$y, 'bar', 1:4)
@@ -4623,8 +4623,6 @@ test(1315, dcast.data.table(DT, formula = id ~ ty, value.var="da"), data.table(i
 
 # bug #699 - melt segfaults when vars are not in dt
 if ("package:reshape2" %in% search()) {
-    try(detach(package:reshape),silent=TRUE)
-
     x = data.table(a=c(1,2),b=c(2,3),c=c(3,4))
     test(1316.1, melt(x, id="d"), error="Column 'd' not found in 'data'")
     test(1316.2, melt(x, measure="d"), error="Column 'd' not found in 'data'")
@@ -5038,7 +5036,6 @@ for (i in seq_along(dt)) {
 
 # fix for #780.
 if ("package:reshape2" %in% search()) {
-    try(detach(package:reshape),silent=TRUE)
     DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9)
     foo = function(input, by, var) {
         melt(input, id.vars = by, measure.vars=var)
