@@ -4,14 +4,18 @@
 
 if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
-    
-    for (pkg in c("reshape2","reshape","plyr","ggplot2","hexbin","nlme",
-                  "xts","bit64","gdata","GenomicRanges","caret"))
-        library(pkg, character.only=TRUE, logical.return=interactive())
-    # R CMD check is not interactive and will strictly require packages to be loaded and tested (e.g., CRAN and Travis)
-    # Just at the prompt (e.g., users running test.data.table()) if the package isn't installed
-    # those tests will be skipped (with warning that package isn't available)
-    
+    options(warn=0)  # use require() so it warns but doesn't halt if not available
+    require(reshape2)     
+    require(reshape)
+    require(plyr)
+    require(ggplot2)
+    require(hexbin)
+    require(nlme)
+    require(xts)
+    require(bit64)
+    require(gdata)
+    require(GenomicRanges)
+    require(caret)
     .devtesting=FALSE
 } else {
     # Matt has suppressMessages(require(bit64)) in .Rprofile
