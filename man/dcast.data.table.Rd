@@ -3,17 +3,17 @@
 \alias{dcast}
 \title{Fast dcast for data.table}
 \description{
-  A \code{dcast.data.table} is a \emph{much} faster version of \code{reshape2::dcast}, but for data.table. More importantly, it's capable of handling very large data quite efficiently in terms of memory usage as well, in comparison to \code{reshape2::dcast}. This is still under development, meaning it's stable, but not all features are complete yet. Once complete, we plan to make it an S3 generic by making changes to \code{reshape2::dcast}. Then by loading both \code{data.table} and \code{reshape2}, one could use \code{dcast} on \code{data.table} as one would on a \code{data.frame}.
+  \code{dcast.data.table} is a much faster version of \code{reshape2::dcast}, but for \code{data.table}s. More importantly, it's capable of handling very large data quite efficiently in terms of memory usage in comparison to \code{reshape2}. 
   
-  If you think of a particular feature that might be useful, then file a feature request (FR) at the datatable projects page (link at the bottom). 
+  This is still under development, meaning it's stable, but not all features are complete yet. We also plan to make it an S3 generic by making changes to \code{reshape2::dcast} which will allow the same syntax \code{dcast(...)} seamlessly on both \code{data.table}s and \code{data.frame}s.
 }
 % \method{dcast}{data.table}
 \usage{
 ## fast dcast a data.table (not an S3 method yet)
 dcast.data.table(data, formula, fun.aggregate = NULL, 
-	..., margins = NULL, subset = NULL, fill = NULL, 
-	drop = TRUE, value.var = guess(data),
-	verbose = getOption("datatable.verbose"))
+    ..., margins = NULL, subset = NULL, fill = NULL, 
+    drop = TRUE, value.var = guess(data),
+    verbose = getOption("datatable.verbose"))
 }
 \arguments{
   \item{data}{ A molten \code{data.table} object, see \code{\link{melt.data.table}}}
@@ -38,7 +38,7 @@ If the formula's LHS contains the same column more than once, ex: \code{dcast.da
 
 Names for columns that are being cast are generated in the same order (separated by a \code{_}) from the (unique) values in each column mentioned in the formula RHS.
 
-From \code{v1.9.3}, \code{dcast.data.table} tries to preserve attributes whereever possible, except when \code{value.var} is a factor (or ordered factor). For \code{factor} types, the resulting casted columns will be coerced to character type thereby losing \code{levels} attribute.
+From \code{v1.9.4}, \code{dcast.data.table} tries to preserve attributes whereever possible, except when \code{value.var} is a factor (or ordered factor). For \code{factor} types, the resulting casted columns will be coerced to character type thereby losing \code{levels} attribute.
 }
 \value{
     A keyed \code{data.table} that has been cast. The key columns are equal to the variables in the \code{formula} LHS in the same order.
@@ -47,35 +47,10 @@ From \code{v1.9.3}, \code{dcast.data.table} tries to preserve attributes whereev
 \note{
 \bold{Currently unimplemented features from \code{reshape2::dcast}:}
 \enumerate{
-	\item At the moment, only formula interface is supported. That the argument \code{formula} can accept a list of quoted expressions is yet to be implemented. 
-	\item The argument \code{margins} is yet to be implemented. 
+    \item At the moment, only formula interface is supported. That the argument \code{formula} can accept a list of quoted expressions is yet to be implemented. 
+    \item The argument \code{margins} is yet to be implemented. 
+    }
 }
-
-% \bold{Speedup using \code{fdcast}:}
-% Benchmarking on relatively big data set gives over 98% speedup as shown below.
-% 
-%     \preformatted{
-%     n <- 1E7
-%     DF <- data.frame( stringsAsFactors=FALSE,
-%       x=sample(letters, n, TRUE),
-%       y=sample(LETTERS, n, TRUE),
-%       za=rnorm(n),
-%       zb=rnorm(n),
-%       zc=rnorm(n)
-%     )
-%     DT <- as.data.table(DF)
-%     system.time(fdcast(DT, id=1:2)) # fdcast
-%     #  user  system elapsed 
-%     # 0.693   0.525   1.295
-% 	system.time(dcast(DF, id=1:2))  # dcast from reshape2
-%     #   user  system elapsed 
-%     # 74.985   6.825  91.904
-% 	}
-}
-
-% dcast(DT, id=c("i1", "f1"), measure=c("d1", "i2")) # i2 coerced to date
-% dcast(DT, id=c("i1", "f1"), measure=c("i2", "d1")) # date is coerced to i2
-
 \examples{
 require(data.table)
 names(ChickWeight) <- tolower(names(ChickWeight))

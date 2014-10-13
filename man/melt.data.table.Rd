@@ -3,15 +3,15 @@
 \alias{melt}
 \title{Fast melt for data.table}
 \description{
-  A \code{melt.data.table} S3 method extending \code{reshape2:::melt}, for melting a \code{data.table}. \code{reshape2} also has to be loaded for using \code{melt.data.table}. A lot similar to \code{reshape2:::melt.data.frame} , but much faster and with some additional features.
+  An S3 method for melting \code{data.table}s written entirely in C, for speed. It also avoids any unnecessary copies by handling all arguments internally in a memory efficient manner.
 }
 \usage{
 ## fast melt a data.table
 \method{melt}{data.table}(data, id.vars, measure.vars, 
-	variable.name = "variable", value.name = "value", 
-	..., na.rm = FALSE, variable.factor = TRUE, 
-	value.factor = FALSE, 
-	verbose = getOption("datatable.verbose"))
+    variable.name = "variable", value.name = "value", 
+    ..., na.rm = FALSE, variable.factor = TRUE, 
+    value.factor = FALSE, 
+    verbose = getOption("datatable.verbose"))
 }
 \arguments{
   \item{data}{ A \code{data.table} object to melt.}
@@ -39,35 +39,10 @@ All class attributes on \code{value} column (example: \code{Date}) are dropped s
 \note{
 \bold{Differences between \code{melt.data.table} and \code{reshape2:::melt.data.frame}:}
 \enumerate{
-	\item There are two other arguments \code{variable.factor} and \code{value.factor} which for backwards compatibility with \code{reshape2:::melt.data.frame} is set to \code{TRUE} and \code{FALSE} respectively.
-	\item \code{melt.data.table} can handle list columns in both \code{id} and \code{measure} vairables. The molten data retains list columns as such. As long as at least one \code{measure.vars} is a \code{list}, the \code{value} column of molten data will be a \code{list}.
-	\item \code{melt(data, id=integer(0), measure=integer(0))} gives a data.table with 0 rows and 2 columns - \code{variable} and \code{value} (default names), as opposed to \code{reshape2:::melt.data.frame} which gives a \code{0} columns and \code{nrow(data)} rows.
+    \item There are two other arguments \code{variable.factor} and \code{value.factor} which for backwards compatibility with \code{reshape2:::melt.data.frame} is set to \code{TRUE} and \code{FALSE} respectively.
+    \item \code{melt(data, id=integer(0), measure=integer(0))} gives a data.table with 0 rows and 2 columns - \code{variable} and \code{value} (default names), as opposed to \code{reshape2:::melt.data.frame} which gives a \code{0} columns and \code{nrow(data)} rows.
+    }
 }
-% \bold{Speedup using \code{fmelt}:}
-% Benchmarking on relatively big data set gives over 98% speedup as shown below.
-% 
-%     \preformatted{
-%     n <- 1E7
-%     DF <- data.frame( stringsAsFactors=FALSE,
-%       x=sample(letters, n, TRUE),
-%       y=sample(LETTERS, n, TRUE),
-%       za=rnorm(n),
-%       zb=rnorm(n),
-%       zc=rnorm(n)
-%     )
-%     DT <- as.data.table(DF)
-%     system.time(fmelt(DT, id=1:2)) # fmelt
-%     #  user  system elapsed 
-%     # 0.693   0.525   1.295
-% 	system.time(melt(DF, id=1:2))  # melt from reshape2
-%     #   user  system elapsed 
-%     # 74.985   6.825  91.904
-% 	}
-}
-
-% melt(DT, id=c("i1", "f1"), measure=c("d1", "i2")) # i2 coerced to date
-% melt(DT, id=c("i1", "f1"), measure=c("i2", "d1")) # date is coerced to i2
-
 \examples{
 set.seed(45)
 require(data.table)
@@ -101,7 +76,7 @@ melt(DT, id=1, measure=c("c1", "i2")) # i2 coerced to char
 melt(DT, id=1, measure=c("c1", "i2"), na.rm=TRUE) # remove NA
 }
 \seealso{
-  \code{\link{dcast.data.table}}, \url{https://r-forge.r-project.org/projects/datatable/}
+  \code{\link{dcast.data.table}}, \url{https://github.com/Rdatatable/data.table}
 }
 \keyword{ data }
 
