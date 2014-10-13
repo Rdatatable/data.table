@@ -85,7 +85,7 @@ foverlaps(x, y, by.x=c("seq", "start", "end"),
             type="any", which=TRUE)
 }
 \seealso{
-  \code{\link{data.table}}, \url{https://r-forge.r-project.org/projects/datatable/} \url{http://www.bioconductor.org/packages/release/bioc/html/IRanges.html}
+  \code{\link{data.table}}, \url{http://www.bioconductor.org/packages/release/bioc/html/IRanges.html}
 }
 \keyword{ data }
 

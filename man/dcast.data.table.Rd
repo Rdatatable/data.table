@@ -78,7 +78,7 @@ system.time(dcast.data.table(DT, aa + bb ~ cc, fun=sum)) # 2.7 seconds
 }
 }
 \seealso{
-  \code{\link{melt.data.table}}, \url{https://github.com/Rdatatable/data.table}
+  \code{\link{melt.data.table}}
 }
 \keyword{data}
 
