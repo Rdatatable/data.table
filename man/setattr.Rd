@@ -33,33 +33,33 @@ setnames(x,old,new)
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
-    
-    DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies, as of R 2.15.1
-    try(tracemem(DF))                  # try() for R sessions opted out of memory profiling
-    colnames(DF)[1] <- "A"             # 4 copies of entire object
-    names(DF)[1] <- "A"                # 3 copies of entire object
-    names(DF) <- c("A", "b")           # 1 copy of entire object
-    `names<-`(DF,c("A","b"))           # 1 copy of entire object
-    
-    # What if DF is large, say 10GB in RAM. Copy 10GB, even once, just to change a column name?
 
-    DT = data.table(a=1:2,b=3:4,c=5:6)
-    try(tracemem(DT))
-    setnames(DT,"b","B")               # by name; no match() needed
-    setnames(DT,3,"C")                 # by position
-    setnames(DT,2:3,c("D","E"))        # multiple
-    setnames(DT,c("a","E"),c("A","F")) # multiple by name
-    setnames(DT,c("X","Y","Z"))        # replace all
-    
-    # And, no copy of DT was made by 'setnames()' at all.
-    
-    # set attributes - ex: names to a list.
-    set.seed(1L)
-    ll <- lapply(1:4, function(x) sample(10))
-    try(tracemem(DT))
-    setattr(ll, 'names', letters[1:4])
-    
-    # once again, no copy of 'll' was made by 'setattr()' at all.
+DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies, as of R 2.15.1
+try(tracemem(DF))                  # try() for R sessions opted out of memory profiling
+colnames(DF)[1] <- "A"             # 4 copies of entire object
+names(DF)[1] <- "A"                # 3 copies of entire object
+names(DF) <- c("A", "b")           # 1 copy of entire object
+`names<-`(DF,c("A","b"))           # 1 copy of entire object
+
+# What if DF is large, say 10GB in RAM. Copy 10GB, even once, just to change a column name?
+
+DT = data.table(a=1:2,b=3:4,c=5:6)
+try(tracemem(DT))
+setnames(DT,"b","B")               # by name; no match() needed
+setnames(DT,3,"C")                 # by position
+setnames(DT,2:3,c("D","E"))        # multiple
+setnames(DT,c("a","E"),c("A","F")) # multiple by name
+setnames(DT,c("X","Y","Z"))        # replace all
+
+# And, no copy of DT was made by 'setnames()' at all.
+
+# set attributes - ex: names to a list.
+set.seed(1L)
+ll <- lapply(1:4, function(x) sample(10))
+try(tracemem(DT))
+setattr(ll, 'names', letters[1:4])
+
+# once again, no copy of 'll' was made by 'setattr()' at all.
 }
 \keyword{ data }
 

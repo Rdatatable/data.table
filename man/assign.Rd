@@ -65,36 +65,36 @@ Since \code{[.data.table} incurs overhead to check the existence and type of arg
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
-    DT = data.table(a=LETTERS[c(1,1:3)],b=4:7,key="a")
-    DT[,c:=8]        # add a numeric column, 8 for all rows
-    DT[,d:=9L]       # add an integer column, 9L for all rows
-    DT[,c:=NULL]     # remove column c
-    DT[2,d:=10L]     # subassign by reference to column d
-    DT               # DT changed by reference
-    
-    DT[b>4,b:=d*2L]  # subassign to b using d, where b>4
-    DT["A",b:=0L]    # binary search for group "A" and set column b
-    
-    DT[,e:=mean(d),by=a]  # add new column by group by reference
-    DT["B",f:=mean(d)]    # subassign to new column, NA initialized
+DT = data.table(a=LETTERS[c(1,1:3)],b=4:7,key="a")
+DT[,c:=8]        # add a numeric column, 8 for all rows
+DT[,d:=9L]       # add an integer column, 9L for all rows
+DT[,c:=NULL]     # remove column c
+DT[2,d:=10L]     # subassign by reference to column d
+DT               # DT changed by reference
+
+DT[b>4,b:=d*2L]  # subassign to b using d, where b>4
+DT["A",b:=0L]    # binary search for group "A" and set column b
+
+DT[,e:=mean(d),by=a]  # add new column by group by reference
+DT["B",f:=mean(d)]    # subassign to new column, NA initialized
 
 \dontrun{
-    # Speed example ...
-        
-    m = matrix(1,nrow=100000,ncol=100)
-    DF = as.data.frame(m)
-    DT = as.data.table(m)    
-
-    system.time(for (i in 1:1000) DF[i,1] <- i)
-    # 591 seconds      
-    system.time(for (i in 1:1000) DT[i,V1:=i])
-    # 2.4 seconds  ( 246 times faster, 2.4 is overhead in [.data.table )
-    system.time(for (i in 1:1000) set(DT,i,1L,i))
-    # 0.03 seconds  ( 19700 times faster, overhead of [.data.table is avoided )
+# Speed example ...
     
-    # However, normally, we call [.data.table *once* on *large* data, not many times on small data.
-    # The above is to demonstrate overhead, not to recommend looping in this way. But the option
-    # of set() is there if you need it.
+m = matrix(1,nrow=100000,ncol=100)
+DF = as.data.frame(m)
+DT = as.data.table(m)    
+
+system.time(for (i in 1:1000) DF[i,1] <- i)
+# 591 seconds      
+system.time(for (i in 1:1000) DT[i,V1:=i])
+# 2.4 seconds  ( 246 times faster, 2.4 is overhead in [.data.table )
+system.time(for (i in 1:1000) set(DT,i,1L,i))
+# 0.03 seconds  ( 19700 times faster, overhead of [.data.table is avoided )
+
+# However, normally, we call [.data.table *once* on *large* data, not many times on small data.
+# The above is to demonstrate overhead, not to recommend looping in this way. But the option
+# of set() is there if you need it.
 }
     
 }

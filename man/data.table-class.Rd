@@ -21,12 +21,12 @@
 }  
 
 \examples{
-  ## Used in inheritence.
-  setClass('SuperDataTable', contains='data.table')
-  
-  ## Used in a slot
-  setClass('Something', representation(x='character', dt='data.table'))
-  x <- new("Something", x='check', dt=data.table(a=1:10, b=11:20))
+## Used in inheritence.
+setClass('SuperDataTable', contains='data.table')
+
+## Used in a slot
+setClass('Something', representation(x='character', dt='data.table'))
+x <- new("Something", x='check', dt=data.table(a=1:10, b=11:20))
 }
 
 \keyword{classes}

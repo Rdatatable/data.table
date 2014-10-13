@@ -23,7 +23,7 @@ x %between% c(lower,upper)
 \note{ Current implementation does not make use of ordered keys. }
 \seealso{ \code{\link{data.table}}, \code{\link{like}} }
 \examples{
-    DT = data.table(a=1:5, b=6:10)
-    DT[b \%between\% c(7,9)]
+DT = data.table(a=1:5, b=6:10)
+DT[b \%between\% c(7,9)]
 }
 \keyword{ data }

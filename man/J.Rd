@@ -27,16 +27,16 @@ CJ(..., sorted = TRUE)  # DT[CJ(...)]
 }
 \seealso{ \code{\link{data.table}}, \code{\link{test.data.table}} }
 \examples{
-    DT = data.table(A=5:1,B=letters[5:1])
-    setkey(DT,B)    # re-orders table and marks it sorted.
-    DT[J("b")]      # returns the 2nd row
-    DT[.("b")]      # same. Style of package plyr.
-    DT[list("b")]   # same
-    
-    # CJ usage examples
-    CJ(c(5,NA,1), c(1,3,2)) # sorted and keyed data.table
-    do.call(CJ, list(c(5,NA,1), c(1,3,2))) # same as above
-    CJ(c(5,NA,1), c(1,3,2), sorted=FALSE) # same order as input, unkeyed 
+DT = data.table(A=5:1,B=letters[5:1])
+setkey(DT,B)    # re-orders table and marks it sorted.
+DT[J("b")]      # returns the 2nd row
+DT[.("b")]      # same. Style of package plyr.
+DT[list("b")]   # same
+
+# CJ usage examples
+CJ(c(5,NA,1), c(1,3,2)) # sorted and keyed data.table
+do.call(CJ, list(c(5,NA,1), c(1,3,2))) # same as above
+CJ(c(5,NA,1), c(1,3,2), sorted=FALSE) # same order as input, unkeyed 
 }
 \keyword{ data }
 

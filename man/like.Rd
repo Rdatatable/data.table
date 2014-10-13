@@ -21,8 +21,8 @@ vector %like% pattern
 \note{ Current implementation does not make use of sorted keys. }
 \seealso{ \code{\link{data.table}}, \code{\link{grepl}} }
 \examples{
-    DT = data.table(Name=c("Mary","George","Martha"), Salary=c(2,3,4))
-    DT[Name \%like\% "^Mar"]
+DT = data.table(Name=c("Mary","George","Martha"), Salary=c(2,3,4))
+DT[Name \%like\% "^Mar"]
 }
 \keyword{ data }
 

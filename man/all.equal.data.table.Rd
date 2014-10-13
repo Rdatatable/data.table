@@ -42,9 +42,9 @@
 }
 
 \examples{
-  dt1 <- data.table(A = letters[1:10], X = 1:10, key = "A")
-  dt2 <- data.table(A = letters[5:14], Y = 1:10, key = "A")
-  identical(all.equal(dt1, dt1), TRUE)
-  is.character(all.equal(dt1, dt2))
+dt1 <- data.table(A = letters[1:10], X = 1:10, key = "A")
+dt2 <- data.table(A = letters[5:14], Y = 1:10, key = "A")
+identical(all.equal(dt1, dt1), TRUE)
+is.character(all.equal(dt1, dt2))
 }
 

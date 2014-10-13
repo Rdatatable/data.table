@@ -31,14 +31,14 @@ alloc.col(DT,
 }
 \seealso{ \code{\link{copy}} }
 \examples{
-    DT = data.table(a=1:3,b=4:6)
-    length(DT)                 # 2 column pointer slots used
-    truelength(DT)             # 100 column pointer slots allocated
-    alloc.col(DT,200)
-    length(DT)                 # 2 used
-    truelength(DT)             # 200 allocated, 198 free
-    DT[,c:=7L]                 # add new column by assigning to spare slot
-    truelength(DT)-length(DT)  # 197 slots spare
+DT = data.table(a=1:3,b=4:6)
+length(DT)                 # 2 column pointer slots used
+truelength(DT)             # 100 column pointer slots allocated
+alloc.col(DT,200)
+length(DT)                 # 2 used
+truelength(DT)             # 200 allocated, 198 free
+DT[,c:=7L]                 # add new column by assigning to spare slot
+truelength(DT)-length(DT)  # 197 slots spare
 }
 \keyword{ data }
 

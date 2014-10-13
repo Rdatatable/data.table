@@ -172,51 +172,51 @@ round to weeks, months, quarters, and years.
 
 \examples{
 
-    # create IDate:
-    (d <- as.IDate("2001-01-01"))
-    
-    # S4 coercion also works
-    identical(as.IDate("2001-01-01"), as("2001-01-01", "IDate"))
-     
-    # create ITime:
-    (t <- as.ITime("10:45"))
+# create IDate:
+(d <- as.IDate("2001-01-01"))
 
-    # S4 coercion also works
-    identical(as.ITime("10:45"), as("10:45", "ITime"))
+# S4 coercion also works
+identical(as.IDate("2001-01-01"), as("2001-01-01", "IDate"))
+ 
+# create ITime:
+(t <- as.ITime("10:45"))
 
-    (t <- as.ITime("10:45:04"))
+# S4 coercion also works
+identical(as.ITime("10:45"), as("10:45", "ITime"))
 
-    (t <- as.ITime("10:45:04", format = "\%H:\%M:\%S"))
-    
-    as.POSIXct("2001-01-01") + as.ITime("10:45")
+(t <- as.ITime("10:45:04"))
 
-    datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "5 hour")    
-    (af <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,idate,itime"))
+(t <- as.ITime("10:45:04", format = "\%H:\%M:\%S"))
 
-    af[, mean(a), by = "itime"]
-    af[, mean(a), by = list(hour = hour(itime))]
-    af[, mean(a), by = list(wday = factor(weekdays(idate)))] 
-    af[, mean(a), by = list(wday = wday(idate))] 
+as.POSIXct("2001-01-01") + as.ITime("10:45")
 
-    as.POSIXct(af$idate) 
-    as.POSIXct(af$idate, time = af$itime) 
-    as.POSIXct(af$idate, af$itime) 
-    as.POSIXct(af$idate, time = af$itime, tz = "GMT") 
-    
-    as.POSIXct(af$itime, af$idate)
-    as.POSIXct(af$itime) # uses today's date
+datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "5 hour")    
+(af <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,idate,itime"))
 
-    (seqdates <- seq(as.IDate("2001-01-01"), as.IDate("2001-08-03"), by = "3 weeks"))
-    round(seqdates, "months")
-    
-    if (require(chron)) {
-        as.chron(as.IDate("2000-01-01"))
-        as.chron(as.ITime("10:45"))
-        as.chron(as.IDate("2000-01-01"), as.ITime("10:45"))
-        as.chron(as.ITime("10:45"), as.IDate("2000-01-01"))
-        as.ITime(chron(times = "11:01:01"))
-        IDateTime(chron("12/31/98","10:45:00"))
-    }  
+af[, mean(a), by = "itime"]
+af[, mean(a), by = list(hour = hour(itime))]
+af[, mean(a), by = list(wday = factor(weekdays(idate)))] 
+af[, mean(a), by = list(wday = wday(idate))] 
+
+as.POSIXct(af$idate) 
+as.POSIXct(af$idate, time = af$itime) 
+as.POSIXct(af$idate, af$itime) 
+as.POSIXct(af$idate, time = af$itime, tz = "GMT") 
+
+as.POSIXct(af$itime, af$idate)
+as.POSIXct(af$itime) # uses today's date
+
+(seqdates <- seq(as.IDate("2001-01-01"), as.IDate("2001-08-03"), by = "3 weeks"))
+round(seqdates, "months")
+
+if (require(chron)) {
+    as.chron(as.IDate("2000-01-01"))
+    as.chron(as.ITime("10:45"))
+    as.chron(as.IDate("2000-01-01"), as.ITime("10:45"))
+    as.chron(as.ITime("10:45"), as.IDate("2000-01-01"))
+    as.ITime(chron(times = "11:01:01"))
+    IDateTime(chron("12/31/98","10:45:00"))
+}  
 
 }
 \keyword{utilities}
