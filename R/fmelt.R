@@ -1,3 +1,8 @@
+# Add melt generic, don't import reshape2, it requires R >= 3.0.0.
+melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
+  UseMethod("melt", data)
+}
+
 melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variable", 
            value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE, 
            verbose = getOption("datatable.verbose")) {

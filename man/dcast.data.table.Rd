@@ -78,7 +78,6 @@ From \code{v1.9.3}, \code{dcast.data.table} tries to preserve attributes whereev
 
 \examples{
 require(data.table)
-require(reshape2)
 names(ChickWeight) <- tolower(names(ChickWeight))
 DT <- melt(as.data.table(ChickWeight), id=2:4) # calls melt.data.table
 

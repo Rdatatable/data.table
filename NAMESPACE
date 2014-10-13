@@ -61,7 +61,8 @@ S3method(all.equal, data.table)
 
 S3method(anyDuplicated, data.table)
 
-importFrom(reshape2, melt)
+export(melt)
+export(melt.data.table)
 S3method(melt, data.table)
 export(dcast.data.table)
 

@@ -70,7 +70,6 @@ All class attributes on \code{value} column (example: \code{Date}) are dropped s
 
 \examples{
 set.seed(45)
-require(reshape2)
 require(data.table)
 DT <- data.table(
       i1 = c(1:5, NA), 
