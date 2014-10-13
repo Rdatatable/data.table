@@ -16,7 +16,7 @@ dcast.data.table(data, formula, fun.aggregate = NULL,
     verbose = getOption("datatable.verbose"))
 }
 \arguments{
-  \item{data}{ A molten \code{data.table} object, see \code{\link{melt.data.table}}}
+  \item{data}{ A molten \code{data.table} object, see \code{\link{melt.data.table}}.}
   \item{formula}{A formula of the form LHS ~ RHS to cast, see details.}
   \item{fun.aggregate}{Should the data be aggregated before casting? If the formula doesn't identify single observation for each cell, then aggregation defaults to \code{length} with a message.}
   \item{...}{Any other arguments that maybe passed to the aggregating function.}
@@ -32,9 +32,9 @@ The cast formula takes the form \code{LHS ~ RHS}	, ex: \code{var1 + var2 ~ var3}
 
 \code{dcast.data.table} also allows \code{value.var} columns of type \code{list}.
 
-When the combination of variables in \code{formula} doesn't identify a unique value in a cell, \code{fun.aggregate} will have to be used. The aggregating function should take a vector as input and return a single value (or a list of length one) as output. In cases where \code{value.var} is a list, the function should be able to handle a list input and provide a single value or list of length one as output.
+When variable combinations in \code{formula} doesn't identify a unique value in a cell, \code{fun.aggregate} will have to be specified, which defaults to \code{length} if unspecified. The aggregating function should take a vector as input and return a single value (or a list of length one) as output. In cases where \code{value.var} is a list, the function should be able to handle a list input and provide a single value or list of length one as output.
 
-If the formula's LHS contains the same column more than once, ex: \code{dcast.data.table(DT, x+x~ y)}, then the answer will have duplicate names. In those cases, the duplicate names are renamed using \code{make.unique} so that the key can be set without issues.
+If the formula's LHS contains the same column more than once, ex: \code{dcast.data.table(DT, x+x~ y)}, then the answer will have duplicate names. In those cases, the duplicate names are renamed using \code{make.unique} so that key can be set without issues.
 
 Names for columns that are being cast are generated in the same order (separated by a \code{_}) from the (unique) values in each column mentioned in the formula RHS.
 
@@ -79,6 +79,7 @@ system.time(dcast.data.table(DT, aa + bb ~ cc, fun=sum)) # 2.7 seconds
 }
 \seealso{
   \code{\link{melt.data.table}}
+  \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \keyword{data}
 

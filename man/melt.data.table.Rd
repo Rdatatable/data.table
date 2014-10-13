@@ -3,7 +3,7 @@
 \alias{melt}
 \title{Fast melt for data.table}
 \description{
-  An S3 method for melting \code{data.table}s written entirely in C, for speed. It also avoids any unnecessary copies by handling all arguments internally in a memory efficient manner.
+  An S3 method for melting \code{data.table}s written entirely in C for speed. It also avoids any unnecessary copies by handling all arguments internally in a memory efficient manner.
 }
 \usage{
 ## fast melt a data.table
@@ -23,12 +23,14 @@
   \item{variable.factor}{If \code{TRUE}, the \code{variable} column will be converted to \code{factor}, else it will be a \code{character} column.}
   \item{value.factor}{If \code{TRUE}, the \code{value} column will be converted to \code{factor}, else the molten value type is left unchanged.}
   \item{verbose}{\code{TRUE} turns on status and information messages to the console. Turn this on by default using \code{options(datatable.verbose=TRUE)}. The quantity and types of verbosity may be expanded in future.}
-  \item{...}{any other arguments to be passed to/from other methods}
+  \item{...}{any other arguments to be passed to/from other methods.}
 }
 \details{
-If \code{id.vars} and \code{measure.vars} are both missing, all non-\code{numeric/integer/logical} columns are assigned as id variables and the rest of the columns are assigned as measure variables. If only one of \code{id.vars} or \code{measure.vars} is supplied, the rest of the columns will be assigned to the other. Both \code{id.vars} and \code{measure.vars} can have the same column more than once and same column can be as id and measure variables. 
+If \code{id.vars} and \code{measure.vars} are both missing, all non-\code{numeric/integer/logical} columns are assigned as id variables and the rest as measure variables. If only one of \code{id.vars} or \code{measure.vars} is supplied, the rest of the columns will be assigned to the other. Both \code{id.vars} and \code{measure.vars} can have the same column more than once and the same column can be both as id and measure variables. 
 
-\code{melt.data.table} also accepts \code{list} columns for both id and measure variables. When all \code{measure.vars} are not of the same type, they'll be coerced according to the hierarchy \code{list} > \code{character} > \code{numeric > integer > logical}. For example, any of the measure variables is a \code{list}, then entire value column will be coerced to a list. Note that, if the type of \code{value} column is a list, \code{na.rm = TRUE} will have no effect.
+\code{melt.data.table} also accepts \code{list} columns for both id and measure variables. 
+
+When all \code{measure.vars} are not of the same type, they'll be coerced according to the hierarchy \code{list} > \code{character} > \code{numeric > integer > logical}. For example, if any of the measure variables is a \code{list}, then entire value column will be coerced to a list. Note that, if the type of \code{value} column is a list, \code{na.rm = TRUE} will have no effect.
 
 All class attributes on \code{value} column (example: \code{Date}) are dropped silently.
 }
@@ -72,11 +74,12 @@ melt(DT, id=1, measure=c("c1", "l1")) # c1 coerced to list
 melt(DT, id=1, measure=c("c1", "f1")) # value is char
 melt(DT, id=1, measure=c("c1", "i2")) # i2 coerced to char
 
-# on na.rm=TRUE
+# on na.rm=TRUE. NAs are removed efficiently - while melting.
 melt(DT, id=1, measure=c("c1", "i2"), na.rm=TRUE) # remove NA
 }
 \seealso{
   \code{\link{dcast.data.table}}
+  \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \keyword{ data }
 
