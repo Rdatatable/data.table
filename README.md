@@ -47,6 +47,7 @@
 
 #### NOTES
 
+  1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
 
 ### Changes in v1.9.4  (on CRAN 2 Oct 2014)
 

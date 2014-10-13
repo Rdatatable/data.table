@@ -7,10 +7,10 @@
 \alias{anyDuplicated.data.table}
 \title{ Determine Duplicate Rows }
 \description{
-     \code{duplicated} returns a logical vector indicating which rows of a \code{data.table}
-     have duplicate rows (by key).
+     \code{duplicated} returns a logical vector indicating which rows of a \code{data.table} (by 
+     key columns or when no key all columns) are duplicates of a row with smaller subscripts.
 
-     \code{unique} returns a data table with duplicated rows (by key) removed, or
+     \code{unique} returns a \code{data.table} with duplicated rows (by key) removed, or
      (when no key) duplicated rows by all columns removed.
 
      \code{anyDuplicated} returns the \emph{index} \code{i} of the first duplicated entry if there is one, and 0 otherwise. 
@@ -65,38 +65,37 @@
 }
 \seealso{ \code{\link{data.table}}, \code{\link{duplicated}}, \code{\link{unique}}, \code{\link{all.equal}}}
 \examples{
-    DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B")
-    duplicated(DT)
-    unique(DT)
+DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B")
+duplicated(DT)
+unique(DT)
 
-    duplicated(DT, by="B")
-    unique(DT, by="B")
+duplicated(DT, by="B")
+unique(DT, by="B")
 
-    duplicated(DT, by=c("A", "C"))
-    unique(DT, by=c("A", "C"))
+duplicated(DT, by=c("A", "C"))
+unique(DT, by=c("A", "C"))
 
-    DT = data.table(a=c(2L,1L,2L), b=c(1L,2L,1L))   # no key
-    unique(DT)                   # rows 1 and 2 (row 3 is a duplicate of row 1)
+DT = data.table(a=c(2L,1L,2L), b=c(1L,2L,1L))   # no key
+unique(DT)                   # rows 1 and 2 (row 3 is a duplicate of row 1)
 
-    DT = data.table(a=c(3.142, 4.2, 4.2, 3.142, 1.223, 1.223), b=rep(1,6))
-    unique(DT)                   # rows 1,2 and 5
+DT = data.table(a=c(3.142, 4.2, 4.2, 3.142, 1.223, 1.223), b=rep(1,6))
+unique(DT)                   # rows 1,2 and 5
 
-    DT = data.table(a=tan(pi*(1/4 + 1:10)), b=rep(1,10))   # example from ?all.equal
-    length(unique(DT$a))         # 10 strictly unique floating point values
-    all.equal(DT$a,rep(1,10))    # TRUE, all within tolerance of 1.0
-    DT[,which.min(a)]            # row 10, the strictly smallest floating point value
-    identical(unique(DT),DT[1])  # TRUE, stable within tolerance
-    identical(unique(DT),DT[10]) # FALSE
+DT = data.table(a=tan(pi*(1/4 + 1:10)), b=rep(1,10))   # example from ?all.equal
+length(unique(DT$a))         # 10 strictly unique floating point values
+all.equal(DT$a,rep(1,10))    # TRUE, all within tolerance of 1.0
+DT[,which.min(a)]            # row 10, the strictly smallest floating point value
+identical(unique(DT),DT[1])  # TRUE, stable within tolerance
+identical(unique(DT),DT[10]) # FALSE
 
-    # fromLast=TRUE
-    DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B")
-    duplicated(DT, by="B", fromLast=TRUE)
-    unique(DT, by="B", fromLast=TRUE)
+# fromLast=TRUE
+DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B")
+duplicated(DT, by="B", fromLast=TRUE)
+unique(DT, by="B", fromLast=TRUE)
 
-    # anyDuplicated
-    anyDuplicated(DT, by=c("A", "B"))    # 3L
-    any(duplicated(DT, by=c("A", "B")))  # TRUE
+# anyDuplicated
+anyDuplicated(DT, by=c("A", "B"))    # 3L
+any(duplicated(DT, by=c("A", "B")))  # TRUE
 }
 \keyword{ data }
-
 
