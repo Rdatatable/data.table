@@ -4,22 +4,20 @@
 
 if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
-    suppressWarnings({
-        require(reshape2)
-        require(reshape)
-        require(plyr)
-        require(ggplot2)      # the 2 ggplot tests take so long they get in the way in dev
-        require(hexbin)
-        require(nlme)
-        require(xts)
-        require(bit64)
-        require(gdata)
-        require(GenomicRanges)
-        require(caret)
-    })
-    # The suppression is for users running test.data.table(). If they don't have ggplot2 installed we don't
-    # want to warn about it not being installed. 'R CMD check' is a stricter test that will warn if the
-    # packages above are not installed, via DESCRIPTION:Suggests.
+    LIB = if (interactive()) require else library
+        # require() warns if not not installed (useful for users running test.table()) but library()
+        # errors if not installed (stricter for R CMD check) - add to DESCRIPTION Suggests.
+    LIB(reshape2)
+    LIB(reshape)
+    LIB(plyr)
+    LIB(ggplot2)      # the 2 ggplot tests take so long they get in the way in dev
+    LIB(hexbin)
+    LIB(nlme)
+    LIB(xts)
+    LIB(bit64)
+    LIB(gdata)
+    LIB(GenomicRanges)
+    LIB(caret)
     .devtesting=FALSE
 } else {
     # Matt has suppressMessages(require(bit64)) in .Rprofile
@@ -4230,7 +4228,8 @@ test(1270, forderv(x), base::order(x))
 if ("package:bit64" %in% search()) {
     x = as.integer64(2)^(0:62)
     x = sample(c(x,-x,0))
-    test(1271, forderv(x), bit64::order(x)) # because GenomicRanges replaces this order!!
+    if (!inherits(try(bit64::order(x),silent=TRUE), "try-error"))  # if for old version of bit64
+        test(1271, forderv(x), bit64::order(x)) # because GenomicRanges replaces this order
     DT = data.table( a=as.integer64(2)^45 + 1:3, b=1:6 )
     test(1272, DT[,sum(b),by=a], data.table(a=DT$a[1:3], V1=INT(5,7,9)))
     test(1273, unique(DT, by="a"), DT[1:3])
