@@ -1944,8 +1944,8 @@ subset.data.table <- function (x, subset, select, ...)
         nl <- as.list(seq_len(ncol(x)))
         setattr(nl,"names",names(x))
         vars <- eval(substitute(select), nl, parent.frame())  # e.g.  select=colF:colP
-        if (is.numeric(vars)) vars=names(x)[vars]
-        key.cols <- intersect(key.cols, vars) ## Only keep key.columns found in the select clause
+        # #891 fix - don't convert numeric vars to column names - will break when there are duplicate columns
+        key.cols <- intersect(key.cols, names(x)[vars]) ## Only keep key.columns found in the select clause
     }
 
     ans <- x[r, vars, with = FALSE]

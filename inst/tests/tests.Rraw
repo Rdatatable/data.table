@@ -5397,6 +5397,12 @@ DT2 = data.table(start=tt[2], end=tt[2])
 setkey(DT2)
 test(1390.5, foverlaps(DT1, DT2, which=TRUE), data.table(xid=1:3, yid=as.integer(c(NA, 1, NA))))
 
+# Fix for #891. 'subset' and duplicate names.
+# duplicate column names rule - if column numbers, extract the right column. If names, extract always the first column
+DT = data.table(V1=1:5, V2=6:10, V3=11:15)
+setnames(DT, c("V1", "V2", "V1"))
+test(1391.1, subset(DT, select=c(3L,2L)), DT[, c(3L, 2L), with=FALSE])
+test(1391.2, subset(DT, select=c("V2", "V1")), DT[, c("V2", "V1"), with=FALSE])
 
 ##########################
 

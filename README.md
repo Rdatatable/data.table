@@ -45,6 +45,8 @@
 
   13. `DT[, LHS := RHS]` with RHS is of the form `eval(parse(text = foo[1]))` referring to columns in `DT` is now handled properly. Closes [#880](https://github.com/Rdatatable/data.table/issues/880). Thanks to tyner.
 
+  14. `subset` handles extracting duplicate columns in consistency with data.table's rule - if a column name is duplicated, then accessing that column using column number should return that column, whereas accessing by column name (due to ambiguity) will always extract the first column. Closes [#891](https://github.com/Rdatatable/data.table/issues/891). Thanks to @jjzz.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
