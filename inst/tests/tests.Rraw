@@ -5404,6 +5404,10 @@ setnames(DT, c("V1", "V2", "V1"))
 test(1391.1, subset(DT, select=c(3L,2L)), DT[, c(3L, 2L), with=FALSE])
 test(1391.2, subset(DT, select=c("V2", "V1")), DT[, c("V2", "V1"), with=FALSE])
 
+# Test faster version of na.omit() using is_na.
+DT = data.table(x=sample(c(1:2, NA), 30, TRUE), y=sample(c(1:5, NA, NaN), 30, TRUE))
+test(1392, na.omit(DT), DT[!is.na(x) & !is.na(y)])
+
 ##########################
 
 
