@@ -15,7 +15,7 @@
    
    The 10 minute quick start guide to \code{data.table} may be a good place to start: \href{../doc/datatable-intro.pdf}{\code{vignette("datatable-intro")}}. Or, the first section of FAQs is intended to be read from start to finish and is considered core documentation: \href{../doc/datatable-faq.pdf}{\code{vignette("datatable-faq")}}. If you have read and searched these documents and the help page below, please feel free to ask questions on \href{http://r.789695.n4.nabble.com/datatable-help-f2315188.html}{datatable-help} or the Stack Overflow \href{http://stackoverflow.com/questions/tagged/data.table}{data.table tag}. To report a bug please type: \code{bug.report(package="data.table")}.
    
-   Please check the \href{http://datatable.r-forge.r-project.org/}{homepage} for up to the minute \href{http://r-forge.r-project.org/scm/viewvc.php/pkg/NEWS?view=markup&root=datatable}{news}.
+   Please check the \href{http://datatable.r-forge.r-project.org/}{homepage} for up to the minute \href{https://github.com/Rdatatable/data.table/blob/master/README.md}{news}.
    
    Tip: one of the quickest ways to learn the features is to type \code{example(data.table)} and study the output at the prompt.
 }
