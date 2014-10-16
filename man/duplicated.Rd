@@ -37,22 +37,13 @@
   }
 }
 \details{
-  Because data.tables are usually sorted by key, tests for duplication are
-  especially quick when only the keyed columns are considred.
-  Unlike \code{\link[base]{unique.data.frame}}, \code{paste} is not
-  used to ensure equality of floating point data. This is done directly (for speed)
-  whilst still respecting tolerance in the same spirit as \code{\link{all.equal}}.
+  Because data.tables are usually sorted by key, tests for duplication are   especially quick when only the keyed columns are considered. Unlike \code{\link[base]{unique.data.frame}}, \code{paste} is not used to ensure equality of floating point data. It is instead accomplished directly (for speed) whilst avoiding unexpected behaviour due to floating point representation by rounding the last two bytes off the significand (default) as explained in \code{\link{setNumericRounding}}.
+
+  \code{v1.9.4} introduces \code{anyDuplicated} method for data.tables and is similar to base in functionality. It also implements the logical argument \code{fromLast} for all three functions, with default value \code{FALSE}. 
 
   Any combination of columns can be used to test for uniqueness (not just the
   key columns) and are specified via the \code{by} parameter. To get
-  the analagous \code{data.frame} functionality for \code{unique} and
-  \code{duplicated}, set \code{by} to \code{NULL}.
-  
-  From \code{v1.9.4}, both \code{duplicated} and \code{unique} methods also gain the logical argument \code{fromLast}, as in base, and by default is \code{FALSE}. 
-  
-  Conceptually \code{duplicated(x, by=cols, fromLast=TRUE)} is equivalent to \code{rev(duplicated(rev(x), by=cols))}, but is much faster. \code{rev(x)} is used just to illustrate the concept, as it clearly applies only to vectors. In the context of \code{data.table}, \code{rev(x)} would mean rearranging the rows of all columns in reverse order.
-  
-  \code{v1.9.4} also implements \code{anyDuplicated} method for \code{data.table}. It calculates the duplicate entries and returns the first duplicated index, if one exists, and 0 otherwise. It's very similar to \code{any(duplicated(DT))} except that this returns \code{TRUE} or \code{FALSE}.
+  the analagous \code{data.frame} functionality, set \code{by} to \code{NULL}.
 }
 \value{
      \code{duplicated} returns a logical vector of length \code{nrow(x)}
