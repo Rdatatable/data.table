@@ -16,8 +16,8 @@ getNumericRounding()
   Computers cannot represent some floating point numbers (such as 0.6) precisely, using base 2. This leads to unexpected behaviour when
   joining or grouping columns of type 'numeric'; i.e. 'double', see example below.  To deal with this automatically for convenience, 
   when joining or grouping, data.table rounds such data to apx 11 s.f. which is plenty of digits for many cases. This is achieved by
-  rounding the last 2 bytes of the significand.  Where this is not enough, \code{setNumericRounding} can be used to reduce to 1 byte
-  rounding, or no rounding (0 bytes rounded) for full precision available.
+  rounding the last 2 bytes off the significand.  Where this is not enough, \code{setNumericRounding} can be used to reduce to 1 byte
+  rounding, or no rounding (0 bytes rounded) for full precision.
   
   It's bytes rather than bits because it's tied in with the radix sort algorithm for sorting numerics which sorts byte by byte. With the
   default rounding of 2 bytes, at most 6 passes are needed. With no rounding, at most 8 passes are needed and hence may be slower. The
@@ -37,7 +37,7 @@ DT = data.table(a=seq(0,1,by=0.2),b=1:2, key="a")
 DT
 setNumericRounding(0)   # turn off rounding
 DT[.(0.4)]   # works
-DT[.(0.6)]   # no match, confusing since 0.6 is clearing there in DT
+DT[.(0.6)]   # no match, confusing since 0.6 is clearly there in DT
 
 setNumericRounding(2)   # restore default
 DT[.(0.6)]   # works as expected
