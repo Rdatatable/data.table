@@ -21,7 +21,7 @@ setDT(x, giveNames=TRUE, keep.rownames=FALSE)
 }
 
 \value{
-    The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setDT(X)[, sum(b), by=a]}.
+    The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setDT(X)[, sum(B), by=A]}. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
 }
 
 \seealso{ \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}}, \code{\link{copy}}, \code{\link{setDF}}
