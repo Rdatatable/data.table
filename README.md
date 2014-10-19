@@ -47,6 +47,8 @@
 
   14. `subset` handles extracting duplicate columns in consistency with data.table's rule - if a column name is duplicated, then accessing that column using column number should return that column, whereas accessing by column name (due to ambiguity) will always extract the first column. Closes [#891](https://github.com/Rdatatable/data.table/issues/891). Thanks to @jjzz.
 
+  15. `rbindlist` handles combining levels of data.tables with both ordered and unordered factor columns properly. Closes [#899](https://github.com/Rdatatable/data.table/issues/899). Thanks to @ChristK.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

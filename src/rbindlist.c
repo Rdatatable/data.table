@@ -277,6 +277,9 @@ static SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * 
                 while (h[idx] != NULL) {
                     pl = h[idx];
                     if (data.equal(VECTOR_ELT(factorLevels, pl->i), pl->j, elem, j)) {
+                        // Fixes #899. "rest" can have identical levels in 
+                        // more than 1 data.table.
+                        if (!(pl->i == i && pl->j == j)) break;
                         record = TRUE;
                         do {
                             // if this element was in an ordered list, it's been recorded already
