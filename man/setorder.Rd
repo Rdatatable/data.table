@@ -41,7 +41,7 @@ setorderv(x, cols, order=1L, na.last=FALSE)
   If \code{setorder} results in reordering of the rows of a keyed \code{data.table}, then it's key will be set to \code{NULL}.
   }
 \value{
-    For all \code{set*} functions, the input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setorder(DT,a,-b)[, cumsum(c), by=list(a,b)]}. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
+    The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setorder(DT,a,-b)[, cumsum(c), by=list(a,b)]}. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
 }
 \seealso{ \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{getNumericRounding}}, \code{\link{setNumericRounding}}
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
