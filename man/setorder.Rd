@@ -1,16 +1,13 @@
 \name{setorder}
 \alias{setorder}
 \alias{setorderv}
-\alias{setcolorder}
 \alias{order}
 \alias{fastorder}
 \alias{forder}
 
-\title{Fast reordering of a data.table by reference}
+\title{Fast row reordering of a data.table by reference}
 \description{
   In \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column.. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
-
-  \code{setcolorder} reorders the columns of data.table, \emph{by reference}, to the new order provided.
   
   \code{setorder} (and \code{setorderv}) reorders the rows of a \code{data.table} based on the columns (and column order) provided. It reorders the table \emph{by reference} and is therefore very memory efficient.
   
@@ -20,7 +17,6 @@
 }
 
 \usage{
-setcolorder(x, neworder)
 setorder(x, ..., na.last=FALSE)
 setorderv(x, cols, order=1L, na.last=FALSE)
 # optimised to use data.table's internal fast order
@@ -28,15 +24,12 @@ setorderv(x, cols, order=1L, na.last=FALSE)
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
-  \item{neworder}{ Character vector of the new column name ordering. May also be column numbers. }
   \item{...}{ The columns to sort by. Do not quote column names. If \code{...} is missing (ex: \code{setorder(x)}), \code{x} is rearranged based on all columns in ascending order by default. To sort by a column in descending order prefix a \code{"-"}, i.e., \code{setorder(x, a, -b, c)}. The \code{-b} works when \code{b} is of type \code{character} as well. }
   \item{cols}{ A character vector of column names of \code{x}, to which to order by. Do not add \code{"-"} here. Use \code{order} argument instead.}
   \item{order}{ An integer vector with only possible values of \code{1} and \code{-1}, corresponding to ascending and descending order. The length of \code{order} must be either \code{1} or equal to that of \code{cols}. If \code{length(order) == 1}, it's recycled to \code{length(cols)}. }
   \item{na.last}{logical. If \code{TRUE}, missing values in the data are placed last; if \code{FALSE}, they are placed first; if \code{NA} they are removed. \code{na.last=NA} is valid only for \code{x[order(., na.last)]} and it's default is \code{TRUE}. \code{setorder} and \code{setorderv} only accept TRUE/FALSE with default \code{FALSE}.}
 }
 \details{
-  To reorder \code{data.table} columns, the idiomatic way is to use \code{setcolorder(x, neworder)}, instead of doing \code{x <- x[, neworder, with=FALSE]}. This is because the latter makes an entire copy of the \code{data.table}, which maybe unnecessary in most situations. \code{setcolorder} also allows column numbers instead of names for \code{neworder} argument, although we recommend using names as a good programming practice. 
-
   \code{data.table} implements fast radix based ordering. In versions <= 1.9.2, it was only capable of increasing order (ascending). From 1.9.4 on, the functionality has been extended to decreasing order (descending) as well. Columns of \code{numeric} types (i.e., \code{double}) have their last two bytes rounded off while computing order, by defalult, to avoid any unexpected behaviour due to limitations in representing floating point numbers precisely. Have a look at \code{\link{setNumericRounding}} to learn more.
 
   \code{setorder} accepts unquoted column names (with names preceded with a \code{-} sign for descending order) and reorders data.table rows \emph{by reference}, for e.g., \code{setorder(x, a, -b, c)}. Note that \code{-b} also works with columns of type \code{character} unlike \code{base::order}, which requires \code{-xtfrm(y)} instead (which is slow). \code{setorderv} in turn accepts a  character vector of column names and an integer vector of column order separately.
@@ -45,12 +38,12 @@ setorderv(x, cols, order=1L, na.last=FALSE)
   
   \code{na.last} argument, by default, is \code{FALSE} for \code{setorder} and \code{setorderv} to be consistent with \code{data.table}'s \code{setkey} and is \code{TRUE} for \code{x[order(.)]} to be consistent with \code{base::order}. Only \code{x[order(.)]} can have \code{na.last = NA} as it's a subset operation as opposed to \code{setorder} or \code{setorderv} which reorders the data.table by reference.
   
-  Note that if \code{setorder} results in reordering of the rows of a keyed \code{data.table}, then it's key will be set to \code{NULL}.
+  If \code{setorder} results in reordering of the rows of a keyed \code{data.table}, then it's key will be set to \code{NULL}.
   }
 \value{
     For all \code{set*} functions, the input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setorder(DT,a,-b)[, cumsum(c), by=list(a,b)]}. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
 }
-\seealso{ \code{\link{setkey}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{getNumericRounding}}, \code{\link{setNumericRounding}}
+\seealso{ \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{getNumericRounding}}, \code{\link{setNumericRounding}}
 \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
@@ -61,11 +54,9 @@ DT = data.table(A=sample(3, 10, TRUE),
 
 # setorder
 setorder(DT, A, -B)
-# setorderv
-setorderv(DT, c("A", "B"), c(-1,1))
 
-# setcolorder
-setcolorder(DT, c("C", "A", "B"))
+# same as above, but using setorderv
+setorderv(DT, c("A", "B"), c(1, -1))
 }
 \keyword{ data }
 

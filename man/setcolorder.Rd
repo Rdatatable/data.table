@@ -1,0 +1,36 @@
+\name{setcolorder}
+\alias{setcolorder}
+
+\title{Fast column reordering of a data.table by reference}
+\description{
+  In \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column.. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
+
+  \code{setcolorder} reorders the columns of data.table, \emph{by reference}, to the new order provided.
+}
+
+\usage{
+setcolorder(x, neworder)
+}
+\arguments{
+  \item{x}{ A \code{data.table}. }
+  \item{neworder}{ Character vector of the new column name ordering. May also be column numbers. }
+}
+\details{
+  To reorder \code{data.table} columns, the idiomatic way is to use \code{setcolorder(x, neworder)}, instead of doing \code{x <- x[, neworder, with=FALSE]}. This is because the latter makes an entire copy of the \code{data.table}, which maybe unnecessary in most situations. \code{setcolorder} also allows column numbers instead of names for \code{neworder} argument, although we recommend using names as a good programming practice. 
+}
+\value{
+    For all \code{set*} functions, the input is modified by reference, and returned (invisibly) so it can be used in compound statements. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
+}
+\seealso{ \code{\link{setkey}}, \code{\link{setorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{getNumericRounding}}, \code{\link{setNumericRounding}}
+\if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
+}
+\examples{
+
+set.seed(45L)
+DT = data.table(A=sample(3, 10, TRUE), 
+         B=sample(letters[1:3], 10, TRUE), C=sample(10))
+
+setcolorder(DT, c("C", "A", "B"))
+}
+\keyword{ data }
+
