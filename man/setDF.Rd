@@ -18,7 +18,7 @@ setDF(x)
 }
 
 \value{
-    The input \code{data.table} is modified by reference to a \code{data.frame}.
+    The input \code{data.table} is modified by reference to a \code{data.frame} and returned (invisibly) so it can be used in compound statements; e.g., \code{setDF(DT)[, c("a", "b")]}. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}..
 }
 
 \seealso{ \code{\link{setkey}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}}, \code{\link{copy}}, \code{\link{setDT}}
