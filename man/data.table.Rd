@@ -5,9 +5,7 @@
 \alias{as.data.table}
 \alias{is.data.table}
 \alias{Ops.data.table}
-\alias{na.omit.data.table}
 \alias{is.na.data.table}
-\alias{na.omit.data.table}
 \alias{[.data.table}
 \title{ Enhanced data.frame }
 \description{

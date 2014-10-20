@@ -1,6 +1,6 @@
-\name{na.omit}
-\alias{na.omit}
+\name{na.omit.data.table}
 \alias{na.omit.data.table}
+\alias{na.omit}
 \title{ Remove rows with missing values on columns specified }
 \description{
     This is a \code{data.table} method for the S3 generic \code{stats::na.omit}. The internals are written in C for speed. See examples for benchmark timings.
@@ -9,7 +9,7 @@
 }
 
 \usage{
-na.omit(object, by=seq_along(object), ...)
+\method{na.omit}{data.table}(object, by=seq_along(object), ...)
 }
 \arguments{
   \item{object}{ A \code{data.table}. }
@@ -25,6 +25,7 @@ It does not add the attribute \code{na.action} as \code{stats::na.omit} does.
 A data.table with just the rows where the specified columns have no missing value in any of them.
 }
 \seealso{
+\code{\link{data.table}}
 }
 \examples{
 DT = data.table(x=c(1,NaN,NA,3), y=c(NA_integer_, 1:3), z=c("a", NA_character_, "b", "c"))
