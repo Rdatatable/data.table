@@ -33,7 +33,6 @@ chgroup(x)
     As \code{match} and \code{\%in\%}. \code{chorder} and \code{chgroup} return an integer index vector.
 }
 \seealso{ \code{\link[base]{match}}, \code{\link{\%in\%}}, \code{\link[fastmatch]{fmatch}}
-\if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \note{ The name \code{charmatch} was taken by \code{\link[base]{charmatch}}, hence \code{chmatch}.
 }

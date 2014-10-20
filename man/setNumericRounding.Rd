@@ -30,7 +30,6 @@ getNumericRounding()
 \url{http://en.wikipedia.org/wiki/Double-precision_floating-point_format}\cr
 \url{http://en.wikipedia.org/wiki/Floating_point}\cr
 \url{http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html}
-\if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
 DT = data.table(a=seq(0,1,by=0.2),b=1:2, key="a")

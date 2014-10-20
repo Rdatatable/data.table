@@ -62,7 +62,6 @@ Since \code{[.data.table} incurs overhead to check the existence and type of arg
     \code{DT} is modified by reference and the new value is returned. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). Recall that this package is for large data (of mixed column types, with multi-column keys) where updates by reference can be many orders of magnitude faster than copying the entire table.   
 }
 \seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{set}}
-\if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \examples{
 DT = data.table(a=LETTERS[c(1,1:3)],b=4:7,key="a")

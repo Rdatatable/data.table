@@ -86,7 +86,6 @@ foverlaps(x, y, by.x=c("seq", "start", "end"),
 }
 \seealso{
   \code{\link{data.table}}, \url{http://www.bioconductor.org/packages/release/bioc/html/IRanges.html}
-  \if{html}{\out{<script type="text/javascript">var sc_project=6237851;var sc_invisible=1;var sc_security="518c93ca";</script><script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="web statistics" href="http://statcounter.com/free-web-stats/" target="_blank"><img class="statcounter" src="http://c.statcounter.com/6237851/0/518c93ca/1/" alt="web statistics"></a></div></noscript>}}
 }
 \keyword{ data }
 
