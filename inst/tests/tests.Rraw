@@ -5435,6 +5435,7 @@ for (i in seq_along(DT)) {
         test(test_no, ans1, ans2)
         0L
     })
+}
 
 # That data.table-unaware code in packages like knitr still work
 if ("package:knitr" %in% search()) {
