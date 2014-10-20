@@ -14,6 +14,7 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(gdata)
     require(GenomicRanges)
     require(caret)
+    require(knitr)
     # reshape2 ahead of reshape ...
     try(detach(package:reshape2),silent=TRUE)
     try(detach(package:reshape),silent=TRUE)
@@ -5434,6 +5435,13 @@ for (i in seq_along(DT)) {
         test(test_no, ans1, ans2)
         0L
     })
+
+# That data.table-unaware code in packages like knitr still work
+if ("package:knitr" %in% search()) {
+    DT = data.table(x=1, y=2)
+    test(1395, kable(DT), output="x.*y.*1.*2")  # kable in knitr v1.6 calls DF[...] syntax
+} else {
+    cat("Test 1395 not run. If required call library(knitr) first.\n")
 }
 
 ##########################
@@ -5465,14 +5473,14 @@ for (i in seq_along(DT)) {
 ##########################
 options(warn=0)
 options(oldbwb) # set at top of this file
-plat = paste(", endian=",.Platform$endian,", ","sizeof(long double)==",.Machine$sizeof.longdouble,sep="")
+plat = paste("endian=",.Platform$endian,", sizeof(long double)==",.Machine$sizeof.longdouble,sep="")
 if (nfail > 0) {
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
     cat("\r")
-    stop(nfail," error",s1," out of ",ntest, " (lastID=",lastnum, plat, ") in inst/tests/tests.Rraw on ",date(),". Search tests.Rraw for test number",s2,paste(whichfail,collapse=", "),".")
+    stop(nfail," error",s1," out of ",ntest, " (lastID=",lastnum,", ",plat, ") in inst/tests/tests.Rraw on ",date(),". Search tests.Rraw for test number",s2,paste(whichfail,collapse=", "),".")
     # important to stop() here, so that 'R CMD check' fails
 }
-cat("\rAll ",ntest," tests (lastID=",lastnum, plat, ") in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
+cat("\rAll ",ntest," tests (lastID=",lastnum,") in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date()," (",plat,")\n",sep="")
 # Reporting lastnum rather than ntest makes it easier to check user has the latest version, assuming
 # each release or patch has extra tests.
 # date() is included so we can tell when CRAN checks were run (in particular if they have been rerun since

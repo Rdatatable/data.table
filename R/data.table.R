@@ -80,12 +80,13 @@ print.data.table = function(x,
 {
     if (.global$print != "" &&
         length(SYS<-last(sys.calls()))>=2 &&
-        typeof(SYS[[2]]) == "list" &&   # auto-printing; e.g. not explicit print.  When explicit print this is not list; e.g. symbol or language
+        typeof(SYS[[2]]) %chin% c("list","promise") &&  # auto-printing; e.g. not explicit print. "promise" to future proof
         address(x) == .global$print ) {
         #  := in [.data.table sets print=address(x) to suppress next autoprint at the console. See FAQ 2.22 and README item in v1.9.5
         # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
         #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
-        # The issue is distinguishing "> DT" (after a previous := in a function) from "> DT[,foo:=1]". To print.data.table() there is no difference.
+        # The issue is distinguishing "> DT" (after a previous := in a function) from "> DT[,foo:=1]". To print.data.table() there
+        # is no difference.
         .global$print = ""
         return(invisible())
         
