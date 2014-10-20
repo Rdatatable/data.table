@@ -16,7 +16,6 @@ SEXP dt_na(SEXP x, SEXP cols) {
     SEXP v, ans, class;
     
     if (!isNewList(x)) error("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'", type2char(TYPEOF(x)));
-    if (!length(x)) return(x);  // return empty list
     if (!isInteger(cols)) error("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'", type2char(TYPEOF(cols)));
     for (i=0; i<LENGTH(cols); i++) {
         this = INTEGER(cols)[i];
