@@ -1967,14 +1967,22 @@ subset.data.table <- function (x, subset, select, ...)
 }
 
 # Equivalent of 'rowSums(is.na(dt) > 0L)' but much faster and memory efficient.
+# Also called "complete.cases" in base. Unfortunately it's not a S3 generic.
 # Also handles bit64::integer64. TODO: export this?
-is_na <- function(x) .Call(Cdt_na, x)
+# For internal use only. 'by' requires integer input. No argument checks here yet.
+is_na <- function(x, by=seq_along(x)) .Call(Cdt_na, x, by)
 
-na.omit.data.table <- function (object, ...)
-{
+na.omit.data.table <- function (object, by = seq_along(object), ...) {
     if (!cedta()) return(NextMethod())
-    if (!length(object)) return(object)
-    .Call(CsubsetDT, object, which(!is_na(object)), seq_along(object))
+    if (is.character(by)) {
+        old = by
+        by = chmatch(by, names(object), nomatch=0L)
+        if (any(by==0L))
+            stop("Columns ", paste(old[by==0L], collapse=","), 
+              " doesn't exist in the input data.table")
+    }
+    by = as.integer(by)
+    .Call(CsubsetDT, object, which(!.Call(Cdt_na, object, by)), seq_along(object))
     # compare the above to stats:::na.omit.data.frame
 }
 
