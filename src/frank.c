@@ -10,17 +10,24 @@ static union {
     unsigned long long ull;
 } u;
 
-SEXP dt_na(SEXP x) {
-    int i, j, n;
+SEXP dt_na(SEXP x, SEXP cols) {
+    int i, j, n, this;
     double *dv;
     SEXP v, ans, class;
     
-    if (!isNewList(x)) error("Internal error: 'x' should be a list. Please report to datatable-help");
+    if (!isNewList(x)) error("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'", type2char(TYPEOF(x)));
+    if (!length(x)) return(x);  // return empty list
+    if (!isInteger(cols)) error("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'", type2char(TYPEOF(cols)));
+    for (i=0; i<LENGTH(cols); i++) {
+        this = INTEGER(cols)[i];
+        if (this<1 || this>LENGTH(x)) 
+            error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
+    }
     n = length(VECTOR_ELT(x, 0));
     ans = PROTECT(allocVector(LGLSXP, n));
     for (i=0; i<n; i++) LOGICAL(ans)[i]=0;
-    for (i=0; i<length(x); i++) {
-        v = VECTOR_ELT(x, i);
+    for (i=0; i<LENGTH(cols); i++) {
+        v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
         if (n != length(v))
             error("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d.", i+1,length(v),n);
         switch (TYPEOF(v)) {
