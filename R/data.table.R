@@ -78,18 +78,20 @@ print.data.table = function(x,
     nrows=getOption("datatable.print.nrows"), # (100) under this the whole (small) table is printed, unless topn is provided
     row.names = TRUE, ...)
 {
-    if (.global$print != "" &&
-        length(SYS<-last(sys.calls()))>=2 &&
-        typeof(SYS[[2]]) %chin% c("list","promise") &&  # auto-printing; e.g. not explicit print. "promise" to future proof
-        address(x) == .global$print ) {
+    if (.global$print!="" && address(x)==.global$print) {   # The !="" is to save address() calls and R's global cache of address strings 
+        SYS <- sys.calls()
+        if ( (length(last(SYS))>=2L &&                                  # R prompt auto-printing (not explicit print).
+              typeof(last(SYS)[[2L]]) %chin% c("list","promise")) ||    # "promise" to future proof
+             (length(SYS)>3L &&
+              SYS[[length(SYS)-3L]][[1L]] == "knit_print.default") ) {  # knitr auto print to mimic the prompt
         #  := in [.data.table sets print=address(x) to suppress next autoprint at the console. See FAQ 2.22 and README item in v1.9.5
         # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
         #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
         # The issue is distinguishing "> DT" (after a previous := in a function) from "> DT[,foo:=1]". To print.data.table() there
         # is no difference.
-        .global$print = ""
-        return(invisible())
-        
+            .global$print = ""
+            return(invisible())
+        }
     }
     .global$print = ""
     if (!is.numeric(nrows)) nrows = 100L
