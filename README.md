@@ -11,7 +11,7 @@
 
 #### NEW FEATURES
 
-  1. `fread` now passes `showProgress=FALSE` through to `download.file()` as well (as `quiet=TRUE`). Thanks to a pull request from Karl Broman and Richard Scriven for filing the issue, [#741](https://github.com/Rdatatable/data.table/issues/741).
+  1. `fread` now passes `showProgress=FALSE` through to `download.file()` (as `quiet=TRUE`). Thanks to a pull request from Karl Broman and Richard Scriven for filing the issue, [#741](https://github.com/Rdatatable/data.table/issues/741).
 
 #### BUG FIXES
 
