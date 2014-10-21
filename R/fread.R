@@ -5,7 +5,8 @@ fread = function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.stri
     } else if (substring(input,1,7) %chin% c("http://","https:/","file://")) {
         tt = tempfile()
         on.exit(unlink(tt), add=TRUE)
-        download.file(input, tt, mode="wb", quiet=!showProgress)  # In text mode R doubles up \r to make \r\r\n line endings. Binary mode avoids that. See ?connections:"CRLF"
+        download.file(input, tt, mode="wb", quiet=!showProgress)
+        # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
         input = tt
     } else if (input == "" || length(grep('\\n|\\r', input)) > 0) {
         # if text input
