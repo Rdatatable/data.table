@@ -634,8 +634,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (is.null(jsub)) return(NULL)
 
         if (is.call(jsub) && jsub[[1L]]==as.name(":=")) {
-            if (identical(irows, integer()))  # short circuit do-nothing, don't do further checks on .SDcols for example
+            if (identical(irows, integer())) {  # short circuit do-nothing, don't do further checks on .SDcols for example
+                .global$print = address(x)
                 return(invisible(x))          # irows=NULL means all rows at this stage
+            }
             if (!with) {
                 if (is.null(names(jsub)) && is.name(jsub[[2L]])) {
                     # TO DO: uncomment these warnings in next release. Later, make both errors.

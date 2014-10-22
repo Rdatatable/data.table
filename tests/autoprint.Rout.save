@@ -32,6 +32,13 @@ Loading required package: data.table
    a
 1: 1
 2: 3
+> DT[FALSE,a:=3L]                       # no
+> DT[a==4L,a:=5L]                       # no
+> DT[a %in% 4:8, a:=5L]                 # no
+> DT                                    # yes
+   a
+1: 1
+2: 3
 > print(DT[2,a:=4L])                    # yes
    a
 1: 1

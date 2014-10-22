@@ -6,6 +6,10 @@ DT                                    # yes
 DT[1]                                 # yes
 DT[2,a:=3L]                           # no
 DT                                    # yes
+DT[FALSE,a:=3L]                       # no
+DT[a==4L,a:=5L]                       # no
+DT[a %in% 4:8, a:=5L]                 # no
+DT                                    # yes
 print(DT[2,a:=4L])                    # yes
 print(DT)                             # yes
 if (TRUE) DT[2,a:=5L]                 # no. used to print before v1.9.5
