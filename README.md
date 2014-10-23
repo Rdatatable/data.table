@@ -43,7 +43,7 @@
   
   12. If `DT` contains a column `class` (happens to be a reserved attribute name in R) then `DT[class=='a']` now works again without needing `options(datatable.auto.index=FALSE)`. Thanks to sunnyghkm for reporting, [#871](https://github.com/Rdatatable/data.table/issues/871).
   
-  13. `:=` and `set*` now drop secondary keys (new in v1.9.4) so that `DT[x==y]` works again after a `:=` or `set*` without needing `options(datatable.auto.index=FALSE)`. Only `setkey()` was dropping secondary keys correctly. Thanks to user36312 for reporting, [#885](https://github.com/Rdatatable/data.table/issues/885).
+  13. `:=` and `set*` now drop secondary keys (new in v1.9.4) so that `DT[x==y]` works again after a `:=` or `set*` without needing `options(datatable.auto.index=FALSE)`. Only `setkey()` was dropping secondary keys correctly. 23 tests added. Thanks to user36312 for reporting, [#885](https://github.com/Rdatatable/data.table/issues/885).
 
   14. Some optimisations of `.SD` in `j` was done in 1.9.4, refer to [#735](https://github.com/Rdatatable/data.table/issues/735). Due to an oversight, j-expressions of the form c(lapply(.SD, ...), list(...)) were optimised improperly. This is now fixed. Thanks to @mmeierer for filing [#861](https://github.com/Rdatatable/data.table/issues/861).
 
