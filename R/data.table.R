@@ -697,7 +697,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     bysub = eval(bysubl[[2]], parent.frame(), parent.frame())
                     if (is.expression(bysub)) bysub=bysub[[1L]]
                     bysubl = as.list.default(bysub)
-                } else if (is.call(bysub) && as.character(bysub[[1L]]) %chin% c("c","key","names", "intersect", "setdiff")) {
+                } else if (is.call(bysub) && as.character(bysub[[1L]]) %chin% c("c","key","names", "intersect", "setdiff", "(")) {
                     # catch common cases, so we don't have to copy x[irows] for all columns
                     # *** TO DO ***: try() this eval first (as long as not list() or .()) and see if it evaluates to column names
                     # to avoid the explicit c,key,names which already misses paste("V",1:10) for example
