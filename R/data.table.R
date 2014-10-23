@@ -855,6 +855,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                                 .SDcols <- c(.SDcols,grep(glob2rx(colsub[[i]]),names(x),value=TRUE))
                             }
                         }
+                        # the output of r() or w() has unique name, always
+                        .SDcols <- unique(.SDcols)
                         # no matching should be character(0)
                         if (is.null(.SDcols))  .SDcols <- character(0)
                     } else{
