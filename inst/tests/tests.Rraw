@@ -5481,7 +5481,21 @@ test(1418, DT[2,c("foo","bar"):=10L,verbose=TRUE], output="Dropping index.* due 
 set2key(DT,bar,baz)
 test(1419, DT[2,c("foo","baz"):=10L,verbose=TRUE], output="Dropping index.* due to update on 'baz'")     # test 2nd to 2nd
 
-
+# setnames updates secondary key
+DT = data.table(a=1:5,b=10:6)
+set2key(DT,b)
+test(1420, key2(DT), "b")
+setnames(DT,"b","foo")
+test(1421, key2(DT), "foo")
+test(1422, DT[foo==9, verbose=TRUE], DT[2], output="Using existing index 'foo'")
+set2key(DT,a,foo)
+test(1423, key2(DT), c("foo","a__foo"))   # tests as well that order of attributes is retained although we don't use that property currently.
+test(1424, key2(setnames(DT,"foo","bar")), c("bar","a__bar"))
+test(1425, key2(setnames(DT,"a","baz")), c("bar","baz__bar"))
+test(1426, DT[baz==4L, verbose=TRUE], output="Creating new index 'baz'")
+test(1427, key2(DT), c("bar","baz__bar","baz"))
+test(1428, DT[bar==9L, verbose=TRUE], output="Using existing index 'bar'")
+test(1429, key2(setnames(DT,"bar","a")), c("baz", "a", "baz__a"))
 
 
 ##########################

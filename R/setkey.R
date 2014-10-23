@@ -49,8 +49,8 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
         o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
     }
     if (!physical) {
-        if (is.null(attr(x,"index"))) setattr(x, "index", integer())
-        setattr(attr(x,"index"), paste("__",paste(cols,collapse="__"),sep=""), o)
+        if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
+        setattr(attr(x,"index",exact=TRUE), paste("__",paste(cols,collapse="__"),sep=""), o)
         return(invisible(x))
     }
     setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
@@ -69,13 +69,13 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     invisible(x)
 }
 
-key = function(x) attr(x,"sorted")
+key = function(x) attr(x,"sorted",exact=TRUE)
 key2 = function(x) {
-    ans = names(attributes(attr(x,"index")))
+    ans = names(attributes(attr(x,"index",exact=TRUE)))
     if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
     gsub("^__","",ans)
 }
-get2key = function(x, col) attr(attr(x,"index"),paste("__",col,sep=""))   # work in progress, not yet exported
+get2key = function(x, col) attr(attr(x,"index",exact=TRUE),paste("__",col,sep=""),exact=TRUE)   # work in progress, not yet exported
 
 "key<-" = function(x,value) {
     warning("The key(x)<-value form of setkey can copy the whole table. This is due to <- in R itself. Please change to setkeyv(x,value) or setkey(x,...) which do not copy and are faster. See help('setkey'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your key<- calls.")
@@ -373,7 +373,7 @@ frankv = function(x, na.last=TRUE, order=1L, ties.method=c("average", "first", "
         x = ties_random(x)
     }
     xorder  = forderv(x, sort=TRUE, retGrp=TRUE, order=order, na.last=na.last)
-    xstart  = attr(xorder, 'starts')
+    xstart  = attr(xorder, 'starts', exact=TRUE)
     xsorted = FALSE
     if (!length(xorder)) {
         xsorted = TRUE

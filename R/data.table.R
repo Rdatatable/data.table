@@ -461,7 +461,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 rightcols = chmatch(key(x)[1],names(x))
                 # join to key(x)[1L]
             } else {
-                xo = get2key(x,isub2)  # TO DO: or any index with that col as first one
+                xo = get2key(x,isub2)  # Can't be any index with that col as the first one because those indexes will reorder within each group
                 if (is.null(xo)) {   # integer() would be valid and signifies o=1:.N
                     if (verbose) {cat("Creating new index '",isub2,"'\n",sep="");flush.console()}
                     set2keyv(x,isub2)
@@ -2093,41 +2093,54 @@ setnames = function(x,old,new) {
     # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
     if (!is.data.frame(x)) stop("x is not a data.table or data.frame")
     if (!length(attr(x,"names"))) stop("x has no column names")  # because setnames is for user user. Internally, use setattr(x,"names",...)
+    if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))
     if (missing(new)) {
         # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
         if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
         if (length(old) != ncol(x)) stop("Can't assign ",length(old)," names to a ",ncol(x)," column data.table")
-        m = chmatch(key(x), names(x))
-        if (length(m) && any(is.na(m))) stop("Internal error: attr(x,'sorted') not all in names(x)")
-        .Call(Csetcharvec, names(x), seq_along(names(x)), old)
-        # setcharvec (rather than setattr) so as not to affect selfref.
-        if (length(m)) .Call(Csetcharvec, attr(x,"sorted"), seq_along(key(x)), old[m])
-        return(invisible(x))
+        # note that duplicate names are permitted to be created in this usage only
+        w = which(names(x) != old)
+        if (!length(w)) return(invisible(x))  # no changes
+        new = old[w]
+        i = w
     } else {
         if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
+        if (!is.character(new)) stop("'new' is not a character vector")
         if (length(new)!=length(old)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
+        if (is.numeric(old)) {
+            tt = old<1L | old>length(x) | is.na(old)
+            if (any(tt)) stop("Items of 'old' either NA or outside range [1,",length(x),"]: ",paste(old[tt],collapse=","))
+            i = as.integer(old)
+            if (any(duplicated(i))) stop("Some duplicates exist in 'old': ",paste(i[duplicated(i)],collapse=","))
+        } else {
+            if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
+            if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste(old[duplicated(old)],collapse=","))
+            i = chmatch(old,names(x))
+            if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
+            if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
+        }
     }
-    if (is.numeric(old)) {
-        tt = old<1L | old>length(x) | is.na(old)
-        if (any(tt)) stop("Items of 'old' either NA or outside range [1,",length(x),"]: ",paste(old[tt],collapse=","))
-        i = as.integer(old)
-        if (any(duplicated(i))) stop("Some duplicates exist in 'old': ",paste(i[duplicated(i)],collapse=","))
-    } else {
-        if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
-        if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste(old[duplicated(old)],collapse=","))
-        i = chmatch(old,names(x))
-        if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
-        if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
-    }
-    if (!is.character(new)) stop("'new' is not a character vector")
-    if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))
-
-    # update the key too if the column name being change is in the key
+    # update the key if the column name being change is in the key
     m = chmatch(names(x)[i], key(x))
     w = which(!is.na(m))
-    .Call(Csetcharvec, attr(x,"names"), as.integer(i), new)
     if (length(w))
-        .Call(Csetcharvec, attr(x,"sorted"), as.integer(m[w]), new[w])
+        .Call(Csetcharvec, attr(x,"sorted"), m[w], new[w])
+    
+    # update secondary keys
+    idx = attr(x,"index")
+    for (k in names(attributes(idx))) {
+        tt = strsplit(k,split="__")[[1]][-1]
+        m = chmatch(names(x)[i], tt)
+        w = which(!is.na(m))
+        if (length(w)) {
+            tt[m[w]] = new[w]
+            newk = paste("__",paste(tt,collapse="__"),sep="")
+            setattr(idx, newk, attr(idx, k))
+            setattr(idx, k, NULL)
+        }   
+    }
+
+    .Call(Csetcharvec, attr(x,"names"), as.integer(i), new)
     invisible(x)
 }
 
