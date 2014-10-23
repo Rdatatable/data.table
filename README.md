@@ -94,7 +94,7 @@
   
   3. `Overlap joins` ([#528](https://github.com/Rdatatable/data.table/issues/528)) is now here, finally!! Except for `type="equal"` and `maxgap` and `minoverlap` arguments, everything else is implemented. Check out `?foverlaps` and the examples there on its usage. This is a major feature addition to `data.table`.
 
-  4. `DT[column==value]` and `DT[column %in% values]` is now optimized to use `DT`'s key when `key(DT)[1]=="column"`, otherwise a secondary key (a.k.a. _index_) is automatically added so the next `DT[column==value]` is much faster. No code changes are needed; existing code should automatically benefit. Secondary keys can be added manually using `set2key()` and existence checked using `key2()`. These optimizations and function names/arguments are experimental and may be turned off with `options(datatable.auto.index=FALSE)`.
+  4. `DT[column==value]` and `DT[column %in% values]` are now optimized to use `DT`'s key when `key(DT)[1]=="column"`, otherwise a secondary key (a.k.a. _index_) is automatically added so the next `DT[column==value]` is much faster. No code changes are needed; existing code should automatically benefit. Secondary keys can be added manually using `set2key()` and existence checked using `key2()`. These optimizations and function names/arguments are experimental and may be turned off with `options(datatable.auto.index=FALSE)`.
 
   5. `fread()`:
       * accepts line breaks inside quoted fields. Thanks to Clayton Stanley for highlighting [here](http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value).
