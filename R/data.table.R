@@ -448,39 +448,30 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         } else if (is.call(isub) && getOption("datatable.auto.index") &&
                    as.character(isub[[1L]]) %chin% c("==","%in%") &&
                    is.name(isub[[2L]]) &&
-                   (isub2<-as.character(isub[[2L]])) %chin% names(x) &&    # LHS is a column name symbol 
-                   !(is.name(isub[[3]]) && as.character(isub[[3L]]) %chin% names(x))) {   # RHS isn't a column name symbol
+                   (isub2<-as.character(isub[[2L]])) %chin% names(x)) {  # LHS is a column name symbol
             # simplest case for now (single ==).  Later, top level may be &,|,< or >
-            # == and %in% are equivalent i.e. for convenience can also supply a vector on the RHS of ==
-            # DT[colA == colB] should be regular scan, so excluded since colB is in names(x) 
             # TO DO: print method could print physical and secondary keys at end.
             # TO DO: move down to if (is.data.table) clause below, later ...
-            
-            if (haskey(x) && isub2 == key(x)[1L]) {
-                xo <- integer()
-                rightcols = chmatch(key(x)[1],names(x))
-                # join to key(x)[1L]
-            } else {
-                xo = get2key(x,isub2)  # Can't be any index with that col as the first one because those indexes will reorder within each group
-                if (is.null(xo)) {   # integer() would be valid and signifies o=1:.N
-                    if (verbose) {cat("Creating new index '",isub2,"'\n",sep="");flush.console()}
-                    set2keyv(x,isub2)
-                    xo = get2key(x,isub2)
-                } else {
-                    if (verbose) {cat("Using existing index '",isub2,"'\n",sep="");flush.console()}
-                }
-                rightcols = chmatch(isub2, names(x))
-            }
-            
             RHS = eval(isub[[3L]], x, parent.frame())
-            if (!identical(class(RHS), class(x[[rightcols]])) || is.factor(x[[rightcols]])) {
-                # Fall back to no auto indexing.  TO DO: move coercing inside bmerge() and simplify R level
-                rightcols = leftcols = integer(0)
-                xo = NULL
-                # have to repeat the 'else's below here. TO DO: revisit
-                if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
-                else i = eval(isub, parent.frame(), parent.frame())
-            } else {            
+            if (isub[[1L]] == "==" && length(RHS)>1) {
+                if (length(RHS)!=nrow(x)) stop("RHS of == is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
+                i = x[[isub2]] == RHS    # DT[colA == colB] regular element-wise vector scan
+            } else {
+                if (haskey(x) && isub2 == key(x)[1L]) {
+                    # join to key(x)[1L]
+                    xo <- integer()
+                    rightcols = chmatch(key(x)[1],names(x))
+                } else {
+                    xo = get2key(x,isub2)  # Can't be any index with that col as the first one because those indexes will reorder within each group
+                    if (is.null(xo)) {   # integer() would be valid and signifies o=1:.N
+                        if (verbose) {cat("Creating new index '",isub2,"'\n",sep="");flush.console()}
+                        set2keyv(x,isub2)
+                        xo = get2key(x,isub2)
+                    } else {
+                        if (verbose) {cat("Using existing index '",isub2,"'\n",sep="");flush.console()}
+                    }
+                    rightcols = chmatch(isub2, names(x))
+                }
                 # convert RHS to list to join to key (either physical or secondary)
                 i = as.data.table( unique(RHS) )
                 # To do: wrap isub[[3L]] with as.data.table() first before eval to save copy
@@ -489,8 +480,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # No need to shallow copy i before passing to bmerge; we just created i above ourselves
                 i = if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
                 if (length(xo)) i = fsort(xo[i])
-                leftcols = rightcols = NULL  # these are used later to know whether a join was done, affects column order of result.
-                                             # TO DO: revisit. Have been requests to not put join columns first. Optionally makes sense.
+                leftcols = rightcols = NULL  # these are used later to know whether a join was done, affects column order of result. So reset.
             }
         } else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
           else i = eval(isub, parent.frame(), parent.frame())

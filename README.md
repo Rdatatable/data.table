@@ -12,6 +12,9 @@
 #### NEW FEATURES
 
   1. `fread` now passes `showProgress=FALSE` through to `download.file()` (as `quiet=TRUE`). Thanks to a pull request from Karl Broman and Richard Scriven for filing the issue, [#741](https://github.com/Rdatatable/data.table/issues/741).
+  
+  2. `DT[column == value]` no longer recycles `value` except in the length 1 case (when it still uses DT's key or an automatic secondary key, as introduced in v1.9.4). If `length(value)==length(column)` then it works element-wise as standard in R. Otherwise, a length error is issued to avoid common errors. `DT[column %in% values]` still uses DT's key (or an an automatic secondary key) as before.  Automatic indexing (i.e., optimization of `==` and `%in%`) may still be turned off with `options(datatable.auto.index=FALSE)`.
+
 
 #### BUG FIXES
 
@@ -91,7 +94,7 @@
   
   3. `Overlap joins` ([#528](https://github.com/Rdatatable/data.table/issues/528)) is now here, finally!! Except for `type="equal"` and `maxgap` and `minoverlap` arguments, everything else is implemented. Check out `?foverlaps` and the examples there on its usage. This is a major feature addition to `data.table`.
 
-  4. `DT[column==values]` is now optimized to use `DT`'s key when `key(DT)[1]=="column"`, otherwise a secondary key (a.k.a. _index_) is automatically added so the next `DT[column==values]` is much faster. `DT[column %in% values]` is equivalent; i.e., both `==` and `%in%` accept vector `values`. No code changes are needed; existing code should automatically benefit. Secondary keys can be added manually using `set2key()` and existence checked using `key2()`. These optimizations and function names/arguments are experimental and may be turned off with `options(datatable.auto.index=FALSE)`.
+  4. `DT[column==value]` and `DT[column %in% values]` is now optimized to use `DT`'s key when `key(DT)[1]=="column"`, otherwise a secondary key (a.k.a. _index_) is automatically added so the next `DT[column==value]` is much faster. No code changes are needed; existing code should automatically benefit. Secondary keys can be added manually using `set2key()` and existence checked using `key2()`. These optimizations and function names/arguments are experimental and may be turned off with `options(datatable.auto.index=FALSE)`.
 
   5. `fread()`:
       * accepts line breaks inside quoted fields. Thanks to Clayton Stanley for highlighting [here](http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value).

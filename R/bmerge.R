@@ -57,13 +57,13 @@ bmerge = function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, ve
         if (is.integer(x[[rc]]) && is.double(i[[lc]])) {
             # TO DO: add warning if reallyreal about loss of precision
             # or could coerce in binary search on the fly, at cost
-            if (verbose) cat("Coercing 'double' column i.'",icnam,"' to 'integer' to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
+            if (verbose) cat("Coercing double column i.'",icnam,"' to integer to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
             newval = i[[lc]]
             mode(newval) = "integer"  # retains column attributes (such as IDateTime class)
             set(i,j=lc,value=newval)
         }
-        if (is.double(x[[rc]]) && is.integer(i[[lc]])) {
-            if (verbose) cat("Coercing 'integer' column i.'",icnam,"' to 'double' to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
+        if (is.double(x[[rc]]) && (is.integer(i[[lc]]) || is.logical(i[[lc]]))) {
+            if (verbose) cat("Coercing ",typeof(i[[lc]])," column i.'",icnam,"' to double to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
             newval = i[[lc]]
             mode(newval) = "double"
             set(i,j=lc,value=newval)
