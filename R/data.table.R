@@ -543,13 +543,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     # Really, `anyDuplicated` in base is AWESOME!
                     # allow.cartesian shouldn't error if a) not-join, b) 'i' has no duplicates or c) jsub has `:=`.
                     irows = if (allLen1) f__ else vecseq(f__,len__,
-                                        if(allow.cartesian || 
-                                         notjoin || # #698 fix. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
-                                         !anyDuplicated(f__, incomparables = c(0L, NA_integer_)) || # #742 fix. If 'i' has no duplicates, ignore as well.
-                                         (!missing(j) && all.vars(jsub, TRUE)[1L] == ":=")) # #800 fix. if jsub[1L] == ":=" ignore allow.cartesian.
-                                                                                            # TODO: warn on `:=` when `i` has duplicates? 
-                                           NULL 
-                                        else as.integer(max(nrow(x),nrow(i))))
+                        if( allow.cartesian || 
+                            notjoin || # #698 fix. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
+                            !anyDuplicated(f__, incomparables = c(0L, NA_integer_)) || # #742 fix. If 'i' has no duplicates, ignore as well.
+                            (!missing(j) && all.vars(jsub, TRUE)[1L] == ":=")) # #800 fix. if jsub[1L] == ":=" ignore allow.cartesian.
+                                                                            # TODO: warn on `:=` when `i` has duplicates? 
+                           NULL 
+                        else as.double(nrow(x)+nrow(i))) # rows in i might not match to x so old max(nrow(x),nrow(i)) wasn't enough. But this limit now only applies when there are duplicates present so the reason now for nrow(x)+nrow(i) is just to nail it down and be bigger than max(nrow(x),nrow(i)).
                 } else {
                     if (length(xo)) stop("Cannot by=.EACHI when joining to a secondary key, yet")
                     # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.

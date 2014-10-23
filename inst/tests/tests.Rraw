@@ -2551,7 +2551,9 @@ test(922, setnames(DT,c("A","B","C")), data.table(A=1:2,B=3:4,C=5:6,key="B"))
 DT = data.table(x=rep(1L,50000),key="x")
 test(923, DT[DT], error="Join results in more than 2^31 rows (internal vecseq reached physical limit). Very likely misspecified join.")
 X = data.table(x=1:2,y=1:6,key="x")
-test(924, X[J(c(1,1,1))], error="Join results in 9 rows; more than 6 = max(nrow(x),nrow(i)). Check for duplicate key values in i, each of")
+test(924.1, X[J(c(1,1,1))], X[rep(1:3,3)])
+test(924.2, X[J(c(1,1,1,1))], error="Join results in 12 rows; more than 10 = nrow(x)[+]nrow(i). Check for duplicate key values in i each of")
+
 
 # sorting of 'double' columns not correct for ties (tolerance nuance in C code), #2484
 DT = data.table(X=as.POSIXct( c(rep("15DEC2008:00:00:00",10),"15DEC2008:00:00:00",rep("17DEC2008:00:00:00",2)),format="%d%b%Y:%H:%M:%S"),Y=c(1534,61,74,518,519,1519,1520,1524,3127,29250,30609,43,7853))
