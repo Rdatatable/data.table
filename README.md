@@ -42,20 +42,22 @@
   11. `DT[colA %in% c("id1","id2","id2","id3")]` now ignores the RHS duplicates (as before, consistent with base R) without needing `options(datatable.auto.index=FALSE)`. Thanks to Dayne Filer for reporting.
   
   12. If `DT` contains a column `class` (happens to be a reserved attribute name in R) then `DT[class=='a']` now works again without needing `options(datatable.auto.index=FALSE)`. Thanks to sunnyghkm for reporting, [#871](https://github.com/Rdatatable/data.table/issues/871).
-
-  13. Some optimisations of `.SD` in `j` was done in 1.9.4, refer to [#735](https://github.com/Rdatatable/data.table/issues/735). Due to an oversight, j-expressions of the form c(lapply(.SD, ...), list(...)) were optimised improperly. This is now fixed. Thanks to @mmeierer for filing [#861](https://github.com/Rdatatable/data.table/issues/861).
-
-  14. `j`-expressions in `DT[, col := x$y()]` (or) `DT[, col := x[[1]]()]` are now (re)constructed properly. Thanks to @ihaddad-md for reporting. Closes [#774](https://github.com/Rdatatable/data.table/issues/774).
-
-  15. `format.ITime` now handles negative values properly. Closes [#811](https://github.com/Rdatatable/data.table/issues/811). Thanks to @StefanFritsch for the report along with the fix!
   
-  16. Compatibility with big endian machines (e.g., SPARC and PowerPC) is restored. Most Windows, Linux and Mac systems are little endian; type `.Platform$endian` to confirm. Thanks to Gerhard Nachtmann for reporting and the [QEMU project](http://qemu.org/) for their PowerPC emulator.
+  13. `:=` and `set*` now drop secondary keys (new in v1.9.4) so that `DT[x==y]` works again after a `:=` or `set*` without needing `options(datatable.auto.index=FALSE)`. Only `setkey()` was dropping secondary keys correctly. Thanks to user36312 for reporting, [#885](https://github.com/Rdatatable/data.table/issues/885).
 
-  17. `DT[, LHS := RHS]` with RHS is of the form `eval(parse(text = foo[1]))` referring to columns in `DT` is now handled properly. Closes [#880](https://github.com/Rdatatable/data.table/issues/880). Thanks to tyner.
+  14. Some optimisations of `.SD` in `j` was done in 1.9.4, refer to [#735](https://github.com/Rdatatable/data.table/issues/735). Due to an oversight, j-expressions of the form c(lapply(.SD, ...), list(...)) were optimised improperly. This is now fixed. Thanks to @mmeierer for filing [#861](https://github.com/Rdatatable/data.table/issues/861).
+
+  15. `j`-expressions in `DT[, col := x$y()]` (or) `DT[, col := x[[1]]()]` are now (re)constructed properly. Thanks to @ihaddad-md for reporting. Closes [#774](https://github.com/Rdatatable/data.table/issues/774).
+
+  16. `format.ITime` now handles negative values properly. Closes [#811](https://github.com/Rdatatable/data.table/issues/811). Thanks to @StefanFritsch for the report along with the fix!
   
-  18. `subset` handles extracting duplicate columns in consistency with data.table's rule - if a column name is duplicated, then accessing that column using column number should return that column, whereas accessing by column name (due to ambiguity) will always extract the first column. Closes [#891](https://github.com/Rdatatable/data.table/issues/891). Thanks to @jjzz.
+  17. Compatibility with big endian machines (e.g., SPARC and PowerPC) is restored. Most Windows, Linux and Mac systems are little endian; type `.Platform$endian` to confirm. Thanks to Gerhard Nachtmann for reporting and the [QEMU project](http://qemu.org/) for their PowerPC emulator.
 
-  19. `rbindlist` handles combining levels of data.tables with both ordered and unordered factor columns properly. Closes [#899](https://github.com/Rdatatable/data.table/issues/899). Thanks to @ChristK.
+  18. `DT[, LHS := RHS]` with RHS is of the form `eval(parse(text = foo[1]))` referring to columns in `DT` is now handled properly. Closes [#880](https://github.com/Rdatatable/data.table/issues/880). Thanks to tyner.
+  
+  19. `subset` handles extracting duplicate columns in consistency with data.table's rule - if a column name is duplicated, then accessing that column using column number should return that column, whereas accessing by column name (due to ambiguity) will always extract the first column. Closes [#891](https://github.com/Rdatatable/data.table/issues/891). Thanks to @jjzz.
+
+  20. `rbindlist` handles combining levels of data.tables with both ordered and unordered factor columns properly. Closes [#899](https://github.com/Rdatatable/data.table/issues/899). Thanks to @ChristK.
 
 #### NOTES
 

@@ -463,11 +463,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             } else {
                 xo = get2key(x,isub2)  # TO DO: or any index with that col as first one
                 if (is.null(xo)) {   # integer() would be valid and signifies o=1:.N
-                    if (verbose) {cat("creating new index '",isub2,"'\n",sep="");flush.console()}
+                    if (verbose) {cat("Creating new index '",isub2,"'\n",sep="");flush.console()}
                     set2keyv(x,isub2)
                     xo = get2key(x,isub2)
                 } else {
-                    if (verbose) {cat("using existing index '",isub2,"'\n",sep="");flush.console()}
+                    if (verbose) {cat("Using existing index '",isub2,"'\n",sep="");flush.console()}
                 }
                 rightcols = chmatch(isub2, names(x))
             }

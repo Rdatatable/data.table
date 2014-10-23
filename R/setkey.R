@@ -270,6 +270,7 @@ setorderv = function(x, cols, order=1L, na.last=FALSE)
     if (length(o)) {
         .Call(Creorder, x, o)
         setattr(x, 'sorted', NULL) # if 'forderv' is not 0-length, it means order has changed. So, set key to NULL, else retain key.
+        setattr(x, 'index', NULL)  # remove secondary keys too. These could be reordered and retained, but simpler and faster to remove
     }
     invisible(x)
 }

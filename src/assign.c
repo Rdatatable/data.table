@@ -215,9 +215,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     // cols : column names or numbers corresponding to the values to set
     // rows : row numbers to assign
     R_len_t i, j, nrow, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum;
-    SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key;
-    Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, clearkey=FALSE, isDataTable=FALSE;
+    SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key, index, a;
+    Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, isDataTable=FALSE;
     char *s1, *s2, *s3;
+    const char *c1, *c2, *tc1, *tc2;
     int *buf, k=0;
     size_t size; // must be size_t otherwise overflow later in memcpy
     if (isNull(dt)) error("assign has been passed a NULL dt");
@@ -361,17 +362,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             else if (vlen>0 && targetlen%vlen != 0)
                 warning("Supplied %d items to be assigned to %d items of column '%s' (recycled leaving remainder of %d items).",vlen,targetlen,CHAR(colnam),targetlen%vlen);
         }
-    }
-    key = getAttrib(dt,install("sorted"));
-    if (length(key)) {
-        // if assigning to any key column, then drop the key. any() and subsetVector() don't seem to be
-        // exposed by R API at C level, so this is done here long hand.
-        PROTECT(tmp = allocVector(STRSXP, LENGTH(cols)));
-        protecti++;
-        for (i=0;i<LENGTH(cols);i++) SET_STRING_ELT(tmp,i,STRING_ELT(names,INTEGER(cols)[i]-1));
-        PROTECT(tmp = chmatch(tmp, key, 0, TRUE));
-        protecti++;
-        for (i=0;i<LENGTH(tmp);i++) if (LOGICAL(tmp)[i]) {clearkey=TRUE; break;}
     }
     // having now checked the inputs, from this point there should be no errors,
     // so we can now proceed to modify DT by reference.
@@ -540,6 +530,54 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         }
         memrecycle(targetcol, rows, 0, length(rows) ? LENGTH(rows) : LENGTH(targetcol), RHS);  // also called from dogroups
     }
+    key = getAttrib(dt,install("sorted"));
+    if (length(key)) {
+        // if assigning to any key column, then drop the key. any() and subsetVector() don't seem to be
+        // exposed by R API at C level, so this is done here long hand.
+        PROTECT(tmp = allocVector(STRSXP, LENGTH(cols)));
+        protecti++;
+        for (i=0;i<LENGTH(cols);i++) SET_STRING_ELT(tmp,i,STRING_ELT(names,INTEGER(cols)[i]-1));
+        if (length(key)) {
+            PROTECT(tmp = chmatch(tmp, key, 0, TRUE));
+            protecti++;
+            for (i=0;i<LENGTH(tmp);i++) if (LOGICAL(tmp)[i]) {
+                // If a key column is being assigned to, clear the key, since it may change the row ordering.
+                // More likely that users will assign to non-key columns, though, most of the time.
+                setAttrib(dt, install("sorted"), R_NilValue);
+                break;
+            }
+        }
+    }
+    index = getAttrib(dt,install("index"));
+    if (index != R_NilValue) {
+        s = ATTRIB(index);
+        while(s != R_NilValue) {
+            a = TAG(s);
+            tc1 = c1 = CHAR(PRINTNAME(a));  // the index name; e.g. "__col1__col2"
+            s = CDR(s);
+            for (i=0; i<LENGTH(cols); i++) {
+                tc2 = c2 = CHAR(STRING_ELT(names, INTEGER(cols)[i]-1));  // the column name being updated; e.g. "col1"
+                while (*tc1) {
+                    if (*tc1!='_' || *(tc1+1)!='_') error("Internal error: __ not found in index name");
+                    tc1 += 2;
+                    if (*tc1=='\0') error("Internal error: index name ends with trailing __");
+                    while (*tc1 && *tc2 && *tc1 == *tc2) { tc1++; tc2++; }
+                    if (*tc2=='\0' && (*tc1=='\0' || (*tc1=='_' && *(tc1+1)=='_'))) {
+                        if (verbose) {
+                            thisvalue = (TYPEOF(values)==VECSXP && LENGTH(values)>0) ? VECTOR_ELT(values,i%LENGTH(values)) : values;
+                            Rprintf("Dropping index '%s' due to %s '%s' (column %d)\n", c1+2, isNull(thisvalue) ? "delete of" : "update on", c2, INTEGER(cols)[i]);
+                        }
+                        setAttrib(index, a, R_NilValue);
+                        i = LENGTH(cols);  // skip remaining cols, have already deleted this index
+                        break;  // next index
+                    }
+                    tc2 = c2;   // back to start of column name being updated
+                    while (*tc1 && (*tc1!='_' || *(tc1+1)!='_')) tc1++;  // advance to next column in index name
+                }
+                tc1 = c1;
+            }
+        }
+    }
     if (anytodelete) {
         // Delete any columns assigned NULL (there was a 'continue' earlier in loop above)
         // In reverse order to make repeated memmove easy. Otherwise cols would need to be updated as well after each delete.
@@ -583,11 +621,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                 }
             }
         }
-    }
-    if (clearkey) {
-        // If a key column is being assigned to, clear the key, since it may change the row ordering.
-        // More likely that users will assign to non-key columns, though, most of the time.
-        setAttrib(dt, install("sorted"), R_NilValue);
     }
     UNPROTECT(protecti);
     return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
