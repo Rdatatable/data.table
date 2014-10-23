@@ -1,7 +1,10 @@
 require(data.table)
-options(warn=2)
 test.data.table()
-test.data.table(verbose=TRUE)
-# calling it again can reveal some memory bugs, verbose to check the verbose messages run ok
+
+# Turn off verbose repeat to save time (particularly Travis, but also CRAN)
+# test.data.table(verbose=TRUE)
+# Calling it again in the past revealed some memory bugs but also verbose mode checks the verbose messages run ok
+# TO DO: check we test each verbose message at least once, instead of a full repeat of all tests
+
 
 
