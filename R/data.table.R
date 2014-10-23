@@ -834,12 +834,33 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     ansvals = dupmatch(ansvars, names(x))
                 } else {
                     # FR #4979 - negative numeric and character indices for SDcols
+                    # Starts NSE
                     colsub = substitute(.SDcols)
-                    # fix for #5190. colsub[[1L]] gave error when it's a symbol.
+                    # Starts with -. If present, set colm to False and drop it
                     if (is.call(colsub) && colsub[[1L]] == "-") {
                         colm = TRUE
-                        .SDcols = eval(colsub[[2L]], parent.frame(), parent.frame())
+                        colsub = colsub[[2L]]
                     } else colm = FALSE
+                    # Then try r or w
+                    if (is.call(colsub) && (colsub[[1L]] == "r" | colsub[[1L]] == "w")){
+                        .SDcols <- eval(colsub[[2]], parent.frame())
+                        if (!is.character(.SDcols)) stop("When r() or w() is specified, .SDcols should be a character vector")
+                        .SDcols <- NULL
+                        if (colsub[[1L]] == "r"){ # regex
+                            for (i in 2:length(colsub)){
+                            .SDcols <- c(.SDcols,grep(colsub[[i]],names(x),value=TRUE))
+                            }
+                        } else{ # wildcard
+                            for (i in 2:length(colsub)){
+                                .SDcols <- c(.SDcols,grep(glob2rx(colsub[[i]]),names(x),value=TRUE))
+                            }
+                        }
+                        # no matching should be character(0)
+                        if (is.null(.SDcols))  .SDcols <- character(0)
+                    } else{
+                        # in all other cases, evaluate (this handles things with - but not r/w)
+                        .SDcols = eval(colsub, parent.frame())
+                    }
                     # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
                     if (is.numeric(.SDcols)) {
                         if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
@@ -847,7 +868,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
                         ansvals = if (colm) setdiff(seq_along(names(x)), c(as.integer(.SDcols), which(names(x) %chin% bynames))) else as.integer(.SDcols)
                     } else {
-                        if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
+                        if (!is.character(.SDcols)) stop(".SDcols should be column numbers, names, or names enclosed in r() or w()")
                         if (any(is.na(.SDcols)) || any(!.SDcols %chin% names(x))) stop("Some items of .SDcols are not column names (or are NA)")
                         if (colm) ansvars = setdiff(setdiff(names(x), .SDcols), bynames) else ansvars = .SDcols
                         # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
