@@ -1383,9 +1383,9 @@ if ("package:reshape" %in% search()) {
 
 # Test warnings for names<- and colnames<-,  but only warnings when caller is data.table aware.
 DT = data.table(a=1:3,b=4:6)
-test(489, names(DT)[1]<-"A", "A", warning="names(x)<-value syntax.*Please change to setnames")
+test(489, names(DT)[1]<-"A", "A", warning=if (base::getRversion()>="3.1.0") NULL else "Please upgrade")
 test(490, names(DT), c("A","b"))
-test(491, colnames(DT)[2]<-"B", "B", warning="colnames(x)<-value syntax.*Please change to setnames")
+test(491, colnames(DT)[2]<-"B", "B", warning=if (base::getRversion()>="3.1.0") NULL else "Please upgrade")
 test(492, names(DT), c("A","B"))
 
 # Check setnames out of bounds errors

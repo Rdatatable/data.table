@@ -180,10 +180,10 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     # as.data.table which is faster; speed could be better.  Revisit how many copies are taken in for example data.table(DT1,DT2) which
     # cbind directs to.  And the nested loops for recycling lend themselves to being C level.
     
-    x <- list(...)   # doesn't copy named inputs as from R >= 3.1 (a very welcome change)
+    x <- list(...)   # doesn't copy named inputs as from R >= 3.1.0 (a very welcome change)
     if (!.R.listCopiesNamed) .Call(CcopyNamedInList,x)   # to maintain the old behaviour going forwards, for now. See test 548.2.
     # **TO DO** Something strange with NAMED on components of `...`. To investigate. Or just port data.table() to C. This is why
-    # it's switched, because extra copies would be introduced in R <= 3.1, iiuc.
+    # it's switched, because extra copies would be introduced in R <= 3.1.0, iiuc.
     
     # fix for #5377 - data.table(null list, data.frame and data.table) should return null data.table. Simple fix: check all scenarios here at the top.
     if (identical(x, list(NULL)) || identical(x, list(list())) || 
@@ -1043,10 +1043,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 for (s in seq_along(xcols)) {
                     target = xcolsAns[s]
                     source = xcols[s]
-                    ans[[target]] = .Call(CsubsetVector,x[[source]],irows)   # i.e. x[[source]][irows], but guaranteed new memory even for singleton logicals from R 3.1
+                    ans[[target]] = .Call(CsubsetVector,x[[source]],irows)   # i.e. x[[source]][irows], but guaranteed new memory even for singleton logicals from R 3.1.0
                 }
             }
-            # the address==address is a temp fix for R >= 3.1. TO DO: allow shallow copy here, then copy only when user uses :=
+            # the address==address is a temp fix for R >= 3.1.0. TO DO: allow shallow copy here, then copy only when user uses :=
             # or set* on the result by using NAMED/REFCNT on columns, with warning if they copy. Since then, even foo = DT$b
             # would cause the next set or := to copy that column (so the warning is needed). To tackle that, we could have our
             # own DT.NAMED attribute, perhaps.
@@ -1776,7 +1776,7 @@ tail.data.table = function(x, n=6, ...) {
         # search for one other .Call to assign in [.data.table to see how it differs
     }
     verbose=getOption("datatable.verbose")
-    if (!.R.subassignCopiesOthers) {   # From 3.1, DF[2,"b"] = 7 no longer copies DF$a, but the VECSXP is copied (i.e. a shallow copy).
+    if (!.R.subassignCopiesOthers) {   # From 3.1.0, DF[2,"b"] = 7 no longer copies DF$a, but the VECSXP is copied (i.e. a shallow copy).
         x = .Call(Cassign,copy(x),i,cols,newnames,value,verbose)
     } else {
         .Call(Cassign,x,i,cols,newnames,value,verbose)
@@ -1846,12 +1846,12 @@ dimnames.data.table = function(x) {
 "dimnames<-.data.table" = function (x, value)   # so that can do  colnames(dt)=<..>  as well as names(dt)=<..>
 {
     if (!cedta()) return(`dimnames<-.data.frame`(x,value))  # won't maintain key column (if any). Revisit if ever causes a compatibility problem but don't think it's likely that packages change column names using dimnames<-. See names<-.data.table below.
-    warning("The dimnames(x)<-value syntax copies the whole table. This is due to <- in R itself. Please change to setnames() which doesn't copy and is faster. See help('setnames'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your dimnames<- calls.")
+    if (.R.assignNamesCopiesAll) warning("This is R<3.1.0 where dimnames(x)<-value syntax deep copies the entire table. Please upgrade to R>=3.1.0 and see ?setnames which allows you to change names by name with built-in checks and warnings.")
     if (!is.list(value) || length(value) != 2) stop("attempting to assign invalid object to dimnames of a data.table")
     if (!is.null(value[[1L]])) stop("data.tables do not have rownames")
     if (ncol(x) != length(value[[2]])) stop("can't assign",length(value[[2]]),"colnames to a",ncol(x),"column data.table")
     setnames(x,as.character(value[[2]]))
-    x  # it's this returned value that is copied via *tmp* and we cannot avoid that when using <- currently in R
+    x  # this returned value is now shallow copied by R 3.1.0 via *tmp*. A very welcome change. 
 }
 
 "names<-.data.table" = function(x,value)
@@ -1859,14 +1859,15 @@ dimnames.data.table = function(x) {
     # When non data.table aware packages change names, we'd like to maintain the key, too.
     # If call is names(DT)[2]="newname", R will call this names<-.data.table function (notice no i) with 'value' already prepared to be same length as ncol
     caller = as.character(sys.call(-2L))[1L]
-    if ( ((tt<-identical(caller,"colnames<-")) && cedta(3)) ||
-         cedta() ) warning("The ",if(tt)"col","names(x)<-value syntax copies the whole table. This is due to <- in R itself. Please change to setnames(x,old,new) which does not copy and is faster. See help('setnames'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your ",if(tt)"col","names<- calls.")
-    else x = shallow(x) ## Fix for #476 and #825. Needed for R v3.1.0+
+    if ( ((tt<-identical(caller,"colnames<-")) && cedta(3)) || cedta() ) {
+        if (.R.assignNamesCopiesAll)
+            warning("This is R<3.1.0 where ",if(tt)"col","names(x)<-value deep copies the entire table (several times). Please upgrade to R>=3.1.0 and see ?setnames which allows you to change names by name with built-in checks and warnings.")
+    } else x = shallow(x) ## Fix for #476 and #825. Needed for R v3.1.0+.  TO DO: revisit
     if (is.null(value))
         setattr(x,"names",NULL)   # e.g. plyr::melt() calls base::unname()
     else
         setnames(x,value)
-    x   # it's this returned value that is copied via *tmp* and we cannot avoid that when using <- currently in R
+    x   # this returned value is now shallow copied by R 3.1.0 via *tmp*. A very welcome change. 
 }
 
 within.data.table <- function (data, expr, ...)
@@ -2158,7 +2159,7 @@ set = function(x,i=NULL,j,value)  # low overhead, loopable
     if (is.atomic(value)) {
         # protect NAMED of atomic value from .Call's NAMED=2 by wrapping with list()
         l = vector("list",1)
-        .Call(Csetlistelt,l,1L,value)  # to avoid the copy by list() in R < 3.1
+        .Call(Csetlistelt,l,1L,value)  # to avoid the copy by list() in R < 3.1.0
         value = l
     }
     .Call(Cassign,x,i,j,NULL,value,FALSE)   #  verbose=FALSE for speed to avoid getOption()  TO DO: somehow read getOption("datatable.verbose") from C level
