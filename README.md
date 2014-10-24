@@ -13,7 +13,7 @@
 
   1. `fread` now passes `showProgress=FALSE` through to `download.file()` (as `quiet=TRUE`). Thanks to a pull request from Karl Broman and Richard Scriven for filing the issue, [#741](https://github.com/Rdatatable/data.table/issues/741).
   
-  2. `fread` now accepts `dec=","` (and other non-"." decimal separators), [#917](https://github.com/Rdatatable/data.table/issues/917). A new paragraph has been added to `?fread`. If you are located in a country that uses `dec=","` then it should just work. If not, you will need to read the paragraph for an extra step. In case it somehow breaks `dec='.'`, this new feature can be turned off with `options(datatable.fread.dec.experiment=FALSE)`.
+  2. `fread` now accepts `dec=','` (and other non-'.' decimal separators), [#917](https://github.com/Rdatatable/data.table/issues/917). A new paragraph has been added to `?fread`. If you are located in a country that uses `dec=','` then it should just work. If not, you will need to read the paragraph for an extra step. In case it somehow breaks `dec='.'`, this new feature can be turned off with `options(datatable.fread.dec.experiment=FALSE)`.
   
   3. `DT[column == value]` no longer recycles `value` except in the length 1 case (when it still uses DT's key or an automatic secondary key, as introduced in v1.9.4). If `length(value)==length(column)` then it works element-wise as standard in R. Otherwise, a length error is issued to avoid common user errors. `DT[column %in% values]` still uses DT's key (or an an automatic secondary key) as before.  Automatic indexing (i.e., optimization of `==` and `%in%`) may still be turned off with `options(datatable.auto.index=FALSE)`.
 
@@ -107,7 +107,7 @@
       * accepts trailing backslash in quoted fields. Thanks to user2970844 for highlighting [here](http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash).
       * Blank and `"NA"` values in logical columns (`T`,`True`,`TRUE`) no longer cause them to be read as character, [#567](https://github.com/Rdatatable/data.table/issues/567). Thanks to Adam November for reporting.
       * URLs now work on Windows. R's `download.file()` converts `\r\n` to `\r\r\n` on Windows. Now avoided by downloading in binary mode. Thanks to Steve Miller and Dean MacGregor for reporting, [#492](https://github.com/Rdatatable/data.table/issues/492).
-      * Fixed seg fault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796). Thanks to Adam Kennedy for the detailed reproducible report.
+      * Fixed seg fault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796) and [#722](https://github.com/Rdatatable/data.table/issues/722). Thanks to Adam Kennedy and Richard Cotton for the detailed reproducible reports.
       * New argument `fread(...,data.table=FALSE)` returns a `data.frame` instead of a `data.table`. This can be set globally: `options(datatable.fread.datatable=FALSE)`.
 
   6. `.()` can now be used in `j` and is identical to `list()`, for consistency with `i`.
