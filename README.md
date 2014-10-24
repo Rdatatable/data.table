@@ -13,7 +13,9 @@
 
   1. `fread` now passes `showProgress=FALSE` through to `download.file()` (as `quiet=TRUE`). Thanks to a pull request from Karl Broman and Richard Scriven for filing the issue, [#741](https://github.com/Rdatatable/data.table/issues/741).
   
-  2. `DT[column == value]` no longer recycles `value` except in the length 1 case (when it still uses DT's key or an automatic secondary key, as introduced in v1.9.4). If `length(value)==length(column)` then it works element-wise as standard in R. Otherwise, a length error is issued to avoid common errors. `DT[column %in% values]` still uses DT's key (or an an automatic secondary key) as before.  Automatic indexing (i.e., optimization of `==` and `%in%`) may still be turned off with `options(datatable.auto.index=FALSE)`.
+  2. `fread` now accepts `dec=","` (and other non-"." decimal separators), [#917](https://github.com/Rdatatable/data.table/issues/917). A new paragraph has been added to `?fread`. If you are located in a country that uses `dec=","` then it should just work. If not, you will need to read the paragraph for an extra step. In case it somehow breaks `dec='.'`, this new feature can be turned off with `options(datatable.fread.dec.experiment=FALSE)`.
+  
+  3. `DT[column == value]` no longer recycles `value` except in the length 1 case (when it still uses DT's key or an automatic secondary key, as introduced in v1.9.4). If `length(value)==length(column)` then it works element-wise as standard in R. Otherwise, a length error is issued to avoid common user errors. `DT[column %in% values]` still uses DT's key (or an an automatic secondary key) as before.  Automatic indexing (i.e., optimization of `==` and `%in%`) may still be turned off with `options(datatable.auto.index=FALSE)`.
 
 
 #### BUG FIXES

@@ -4472,6 +4472,7 @@ c(2497.94263862333,
 "fr", "fg", "fsal", "mr", "mg", "msal"), class = c("data.table",
 "data.frame"), row.names = c(NA, -2L))
 
+if (options()$width<80) options(width=80)
 ans1 = capture.output(print(DT, digits=4, row.names=FALSE))
 ans2 = c(" fisyr  er      eg      esal  fr      fg      fsal    mr      mg      msal", 
          "  1995 1,3 0.01973 2330,2424 4,4 0.03931 2521,2521  5,30 0.01978 2572,4216", 
@@ -5510,6 +5511,22 @@ test(1435, DT[b==max(a)], DT[3])
 test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.'V1' to integer")
 DT[,a:=factor(letters[a])]
 test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index 'a'")
+
+# fread dec=',' e.g. France
+test(1438, fread("A;B\n1;2,34\n", dec="12"), error="dec must be a single character")
+test(1439, fread("A;B\n1;2,34\n", dec="1"), error="Unable to change to a locale which provides the desired dec")  # this test runs on many machines so chose a dec for this test which is sure not to be valid in any locale
+test(1440, fread("A;B\n1;2,34\n", sep="."), error="The two arguments to fread 'dec' and 'sep' are equal ('.')")
+if (.Platform=="unix" &&
+    !inherits(tt <- try(system("locale -a", intern=TRUE)), "try-error") &&
+    "fr_FR.utf8" %in% tt ) {
+    # e.g. on Matt's machine where I've installed fr_FR.utf8 which has dec=","
+    options(datatable.fread.dec.locale="fr_FR.utf8")
+    oldlocale = Sys.getlocale("LC_NUMERIC")
+    test(1441, fread("A;B\n1;2,34\n", dec=",", verbose=TRUE), data.table(A=1L, B=2.34), output="Changing to system locale.*Trying 'fr_FR.utf8'.*success!")
+    test(1442, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after success
+    test(1443, fread("A;B\n1;2,34\n", dec=",", sep=",", verbose=TRUE), error="'dec' and 'sep' are equal", output="'fr_FR.utf8'.*success!")
+    test(1444, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after error. [ouput check in 1443 ensures it was changed]
+}
 
 
 ##########################

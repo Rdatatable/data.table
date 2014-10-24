@@ -79,6 +79,23 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     ysub = substitute(y)
     if (is.null(output)) err <<- try(x,TRUE)
     else out = gsub("NULL$","",paste(capture.output(print(err<<-try(x,TRUE))),collapse=""))
+    if (!is.null(output)) {
+        output = gsub("[[]","<LBRACKET>",output)
+        output = gsub("[]]","<RBRACKET>",output)
+        output = gsub("<LBRACKET>","[[]",output)
+        output = gsub("<RBRACKET>","[]]",output)
+        output = gsub("[(]","[(]",output)
+        output = gsub("[)]","[)]",output)
+        if (!length(grep(output,out))) {
+            cat("Test",num,"didn't produce correct output:\n")
+            cat(">",deparse(xsub),"\n")
+            cat("Expected: '",output,"'\n",sep="")
+            cat("Observed: '",out,"'\n",sep="")
+            assign("nfail", nfail+1, parent.frame(), inherits=TRUE)
+            assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
+            return()
+        }
+    }
     if (!is.null(error) || !is.null(warning)) {
         type = ifelse(!is.null(error),"error","warning")
         patt = txt = ifelse(!is.null(error),error,warning)
@@ -110,25 +127,8 @@ test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
         assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
         return()
     }
-    if (!is.null(output)) {
-        output = gsub("[[]","<LBRACKET>",output)
-        output = gsub("[]]","<RBRACKET>",output)
-        output = gsub("<LBRACKET>","[[]",output)
-        output = gsub("<RBRACKET>","[]]",output)
-        output = gsub("[(]","[(]",output)
-        output = gsub("[)]","[)]",output)
-        if (!length(grep(output,out))) {
-            cat("Test",num,"didn't produce correct output:\n")
-            cat(">",deparse(xsub),"\n")
-            cat("Expected: '",output,"'\n",sep="")
-            cat("Observed: '",out,"'\n",sep="")
-            assign("nfail", nfail+1, parent.frame(), inherits=TRUE)
-            assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
-            return()
-        }
-        if (missing(y)) return()
-    }
     if (missing(y)) {
+        if (!is.null(output)) return()
         if (isTRUE(as.vector(x))) return()  # as.vector to drop names of a named vector such as returned by system.time
         cat("Test",num,"expected TRUE but observed:\n")
         cat(">",deparse(xsub),"\n")

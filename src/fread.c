@@ -368,7 +368,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     return(newv);
 }
 
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP showProgressArg)
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP showProgressArg)
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP thiscol, ans, thisstr;
@@ -382,6 +382,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (!isInteger(showProgressArg) || LENGTH(showProgressArg)!=1 || (INTEGER(showProgressArg)[0]!=0 && INTEGER(showProgressArg)[0]!=1))
         error("showProgress must be 0 or 1, currently");
     int showProgress = INTEGER(showProgressArg)[0];
+    if (!isString(dec) || LENGTH(dec)!=1 || strlen(CHAR(STRING_ELT(dec,0))) != 1)
+        error("dec must be a single character");
+    const char decChar = *CHAR(STRING_ELT(dec,0));
     
     errormsg[0] = '\0';  // reset globals.  I know, I know, see comments above where EXIT() is defined. Better ideas?
     fnam = NULL;
@@ -402,7 +405,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (isNumeric(skip)) { skip = PROTECT(coerceVector(skip, INTSXP)); protecti++; }
     if (!( (isInteger(skip) && LENGTH(skip)==1 && INTEGER(skip)[0]>=-1)  // NA_INTEGER is covered by >=-1
          ||(isString(skip) && LENGTH(skip)==1))) error("'skip' must be a length 1 vector of type numeric or integer >=-1, or single character search string");  
-    if (!isNull(separg) && (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1)) error("'sep' must be 'auto' or a single character");
+    if (!isNull(separg)) {
+        if (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1) error("'sep' must be 'auto' or a single character");
+        if (*CHAR(STRING_ELT(separg,0)) == decChar) error("The two arguments to fread 'dec' and 'sep' are equal ('%c')", decChar);
+    }
     if (!isString(integer64) || LENGTH(integer64)!=1) error("'integer64' must be a single character string");
     if (strcmp(CHAR(STRING_ELT(integer64,0)), "integer64")!=0 &&
         strcmp(CHAR(STRING_ELT(integer64,0)), "double")!=0 &&
@@ -570,6 +576,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     char topsep=0;               // topsep stores the highest so far
     int topnline=nline;          // the top's corresponding line number
     for (i=0; i<nseps; i++) {
+        if (seps[i] == decChar) continue;
         ch=pos; sep=0;                             // starting from autostart for each sep
         while (ch<eof && *ch!=eol) {               // ch<eof is for one row input with no eol
             if (*ch==seps[i]) { sep=*ch; break; }  // this sep exists on this line

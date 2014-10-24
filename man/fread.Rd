@@ -13,6 +13,7 @@ fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA",
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=30L,
 skip=-1L, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
+dec='.',
 showProgress=getOption("datatable.showProgress"),   # default: TRUE
 data.table=getOption("datatable.fread.datatable")   # default: TRUE
 )
@@ -32,6 +33,7 @@ data.table=getOption("datatable.fread.datatable")   # default: TRUE
   \item{drop}{ Vector of column names or numbers to drop, keep the rest. }
   \item{colClasses}{ A character vector of classes (named or unnamed), as read.csv. Or a named list of vectors of column names or numbers, see examples. colClasses in fread is intended for rare overrides, not for routine use. fread will only promote a column to a higher type if colClasses requests it. It won't downgrade a column to a lower type since NAs would result. You have to coerce such columns afterwards yourself, if you really require data loss. }
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{base::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
+  \item{dec}{ The decimal separator as in \code{base::read.csv}. If not "." (default) then usually ",". See details. }
   \item{showProgress}{ TRUE displays progress on the console using \code{\\r}. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. }
 }
@@ -50,6 +52,8 @@ The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \c
 All known line endings are detected automatically: \code{\\n} (*NIX including Mac), \code{\\r\\n} (Windows CRLF), \code{\\r} (old Mac) and \code{\\n\\r} (just in case). There is no need to convert input files first. \code{fread} running on any architecture will read a file from any architecture. Both \code{\\r} and \code{\\n} may be embedded in character strings (including column names) provided the field is quoted.
 
 If an empty line is encountered then reading stops there, with warning if any text exists after the empty line such as a footer. The first line of any text discarded is included in the warning message.
+
+\code{fread} uses C function \code{strtod} to read numeric data; e.g., 1.23 or 1,23. \code{strtod} retrieves the decimal separator from the locale of the R session (rather than as an argument passed to it) which for LC_NUMERIC is usually set to the "C" locale. The "C" locale's dec is "." regardless of your location or machine default. So for \code{dec=","} to work, fread changes this (and only this) R session's locale temporarily to a locale which provides the desired decimal separator. It is very careful to set it back again afterwards even if the function fails with an error. First your machine's locale is tried. If you are in France for example, that is likely to be a French locale and it should work.  However, if you are in the U.S. you will need to use (and perhaps install) a French locale. Since locale names differ between Linux, Mac and Windows, you need to provide fread with any locale name installed on your machine that specifies \code{dec=","}, like this: \code{options(datatable.fread.dec.locale="fr_FR.utf8")}. This may be a \emph{vector} of locale names and if so they will be tried in turn until the desired \code{dec} is provided (thus allowing more than two different decimal separators to be selected). Typically you would provide the locale names once in your \code{.Rprofile} and not need to worry about it again. This is a new feature in v1.9.6 and is experimental. In case of problems, turn it off with \code{options(datatable.fread.dec.experiment=FALSE)}.
 
 }
 \value{
@@ -73,7 +77,7 @@ Background :\cr
 
 finagler = "to get or achieve by guile or manipulation" \url{http://dictionary.reference.com/browse/finagler}
 }
-\seealso{ \code{\link[utils]{read.csv}}, \code{\link[base]{url}}
+\seealso{ \code{\link[utils]{read.csv}}, \code{\link[base]{url}}, \code{\link[base]{Sys.setlocale}}
 }
 \examples{
 \dontrun{
