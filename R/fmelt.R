@@ -25,3 +25,27 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
     ans
 }
 
+# Redirect to reshape2's melt
+melt.data.frame <- function(...) {
+    reshape2:::melt.data.frame(...)
+}
+
+melt.array <- function(...) {
+    reshape2:::melt.array(...)
+}
+
+melt.list <- function(...) {
+    reshape2:::melt.list(...)
+}
+
+melt.table <- function(...) {
+    reshape2:::melt.table(...)
+}
+
+melt.matrix <- function(...) {
+    reshape2:::melt.matrix(...)
+}
+
+melt.default <- function(...) {
+    reshape2:::melt.default(...)
+}

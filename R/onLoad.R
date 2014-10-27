@@ -47,6 +47,9 @@
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))
     }
+    # reshape2 
+    if (!"package:reshape2" %in% search())
+        try(require(reshape2, pos="package:base", quietly=TRUE, warn.conflicts=FALSE), silent=TRUE)
     
     # Test R behaviour ...
     
