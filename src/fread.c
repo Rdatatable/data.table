@@ -106,7 +106,8 @@ void EXIT() {
 #endif
 
 #define skip_quoted() if (ch<eof && *ch=='\"') while(++ch<eof && *ch!='\"') {}
-#define MsgLimit(a) ((int)(a)>5000 ? 5000 : (int)(a))  // 5000 a large limit just to prevent runaways, still printable
+#define MsgLimit(a) ((int)(a)>5000 ? 5000 : (int)(a))
+// 5000 a large limit just to prevent runaways. If the message is passed to error() then R's much lower error length limit applies.
 
 static int countfields(int err)
 {
@@ -993,9 +994,33 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
                 case SXP_STR: case SXP_NULL: case_SXP_STR:
                     ch2=ch;
-                    if (*ch=='\"') { // protected, now look for the next [^\]"[sep|eol]
-                        while(++ch2<eof && (*ch2!='\"' || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) {};  // ch2-2 ok here without >mmp check since " and \ must have occurred prior
-                        if (ch2==eof) { sprintf(errormsg, "Field %d on line %d starts with quote but doesn't finish with an unescaped quote immediately followed by sep, \\n or EOF: %.*s", j+1, i+nline, MsgLimit(ch-pos+1), pos); EXIT(); }
+                    if (*ch=='\"') { // protected, now look for the next [^"\]"[sep|eol]
+                        int eolCount=0;  // just >0 is used currently but may as well count
+                        Rboolean noEmbeddedEOL=FALSE, quoteProblem=FALSE;
+                        while(++ch2<eof) {
+                            if (*ch2!='\"') {
+                                if (noEmbeddedEOL && *ch2==eol) { quoteProblem=TRUE; break; }
+                                eolCount+=(*ch2==eol);
+                                continue;  // fast return in most cases of characters
+                            }
+                            
+                            if (ch2+1==eof || *(ch2+1)==sep || *(ch2+1)==eol) break;
+                            // " followed by sep|eol|eof dominates a field ending with \" (for support of Windows style paths)
+                            
+                            if (*(ch2-1)!='\\') {
+                                if (ch2+1<eof && *(ch2+1)=='\"') { ch2++; continue; }  // skip doubled-quote
+                                // unescaped subregion
+                                if (eolCount) {quoteProblem=TRUE; break;}
+                                while (++ch2<eof && (*ch2!='\"' || *(ch2-1)=='\\') && *ch2!=eol);
+                                if (ch2==eof || *ch2==eol) {quoteProblem=TRUE; break;}
+                                noEmbeddedEOL = 1;
+                            }
+                        }
+                        if (quoteProblem || ch2==eof) {
+                            if (ch==eof || *ch==eol) ch--;  // if ended on \n then don't end message with blank line (test 1011 doesn't)
+                            sprintf(errormsg, "Field %d on line %d starts with quote (\") but then has a problem. It can contain balanced unescaped quoted subregions but if it does it can't contain embedded \\n as well. Check for unbalanced unescaped quotes: %.*s", j+1, i+nline, MsgLimit(ch2-ch+1), ch);
+                            EXIT();
+                        }
                         ch2++;
                         if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLen(ch+1, (int)(ch2-ch-2))); // else skip field
                     } else {           // unprotected, look for next next [sep|eol]
