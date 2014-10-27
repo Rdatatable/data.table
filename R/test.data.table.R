@@ -1,5 +1,5 @@
 
-test.data.table = function(verbose=FALSE, pkg="pkg") {
+test.data.table <- function(verbose=FALSE, pkg="pkg") {
     if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
         # package developer
         if ("package:data.table" %in% search()) stop("data.table package loaded")
@@ -45,12 +45,12 @@ test.data.table = function(verbose=FALSE, pkg="pkg") {
 # whichfail = NULL
 # .devtesting = TRUE
 
-compactprint = function(DT, topn=2) {
+compactprint <- function(DT, topn=2) {
     cn = paste(" [Key=",paste(key(DT),collapse=",")," Types=",paste(substring(gsub("integer64","i64",sapply(DT,class)),1,3),collapse=","),"]",sep="")
     print(copy(DT)[,(cn):=""], topn=topn)
     invisible()
 }
-test = function(num,x,y,error=NULL,warning=NULL,output=NULL) {
+test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # Usage:
     # i) tests that x equals y when both x and y are supplied, the most common usage
     # ii) tests that x is TRUE when y isn't supplied

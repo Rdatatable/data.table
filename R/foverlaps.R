@@ -82,13 +82,13 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     setattr(y, 'sorted', by.y) ## is definitely sorted on by.y
     roll = switch(type, start=, end=, equal= FALSE, 
                     any=, within= TRUE)
-    make_call = function(names, fun=NULL) {
+    make_call <- function(names, fun=NULL) {
         if (is.character(names))
             names = lapply(names, as.name)
         call = c(substitute(fun, list(fun=fun)), names)
         if (!is.null(fun)) as.call(call) else call
     }
-    construct = function(icols, mcols, type=type) {
+    construct <- function(icols, mcols, type=type) {
         icall = make_call(icols)
         setattr(icall, 'names', icols)
         mcall = make_call(mcols, quote(c))
@@ -113,7 +113,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
         xx = shallow(xx, cols)
         ii[xx, which=TRUE, ...]
     }
-    indices = function(x, y, intervals, ...) {
+    indices <- function(x, y, intervals, ...) {
         if (type == "start") {
             sidx = eidx = matches(x, y, intervals[2L], ...) ## TODO: eidx can be set to integer(0)
         } else if (type == "end") {

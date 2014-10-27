@@ -1,4 +1,4 @@
-deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.frame()) {
+deconstruct_and_eval <- function(expr, envir = parent.frame(), enclos = parent.frame()) {
     if (!mode(expr) %in% c("call", "expression", "(")) return(expr)
     # Fix for #774.
     # the only place where a call is of length 1, that I can think of is 
@@ -36,7 +36,7 @@ deconstruct_and_eval = function(expr, envir = parent.frame(), enclos = parent.fr
     lapply(expr, ff)
 }
 
-construct = function(l) {
+construct <- function(l) {
     if (length(l) == 0L) return(NULL)
     if (is.name(l)) return(l) # fix for error in cases as reported in Bug #5007: DT[, (cols) := lapply(.SD, function(x) MyValueIsTen), by=ID]
                               # construct(l[[3L]] would give an error when l[[3L]] is MyValueIsTen if not for this line)
@@ -61,7 +61,7 @@ dim.data.table <- function(x) {
     # TO DO: consider placing "dim" as an attibute updated on inserts. Saves this 'if'.
 }
 
-.global = new.env()  # thanks to: http://stackoverflow.com/a/12605694/403310
+.global <- new.env()  # thanks to: http://stackoverflow.com/a/12605694/403310
 setPackageName("data.table",.global)
 .global$print = ""
 
@@ -73,7 +73,7 @@ setPackageName("data.table",.global)
 # So even though .BY doesn't appear in this file, it should still be NULL here and exported because it's
 # defined in SDenv and can be used by users.
 
-print.data.table = function(x,
+print.data.table <- function(x,
     topn=getOption("datatable.print.topn"),   # (5) print the top topn and bottom topn rows with '---' inbetween
     nrows=getOption("datatable.print.nrows"), # (100) under this the whole (small) table is printed, unless topn is provided
     row.names = TRUE, ...)
@@ -137,7 +137,7 @@ print.data.table = function(x,
 is.formula <- function(x) class(x) == "formula"
 
 format.data.table <- function (x, ..., justify="none") {
-    format.item = function(x) {
+    format.item <- function(x) {
         if (is.atomic(x) || is.formula(x)) # FR #2591 - format.data.table issue with columns of class "formula"
             paste(c(format(head(x,6), justify=justify, ...), if(length(x)>6)""),collapse=",")  # fix for #5435 - format has to be added here...
         else
@@ -151,29 +151,29 @@ format.data.table <- function (x, ..., justify="none") {
     },...))
 }
 
-is.data.table = function(x) inherits(x, "data.table")
-is.ff = function(x) inherits(x, "ff")  # define this in data.table so that we don't have to require(ff), but if user is using ff we'd like it to work
+is.data.table <- function(x) inherits(x, "data.table")
+is.ff <- function(x) inherits(x, "ff")  # define this in data.table so that we don't have to require(ff), but if user is using ff we'd like it to work
 
-#NCOL = function(x) {
+#NCOL <- function(x) {
 #    # copied from base, but additionally covers data.table via is.list()
 #    # because NCOL in base explicity tests using is.data.frame()
 #    if (is.list(x) && !is.ff(x)) return(length(x))
 #    if (is.array(x) && length(dim(x)) > 1L) ncol(x) else as.integer(1L)
 #}
-#NROW = function(x) {
+#NROW <- function(x) {
 #    if (is.data.frame(x) || is.data.table(x)) return(nrow(x))
 #    if (is.list(x) && !is.ff(x)) stop("List is not a data.frame or data.table. Convert first before using NROW")   # list may have different length elements, which data.table and data.frame's resolve.
 #    if (is.array(x)) nrow(x) else length(x)
 #}
 
-null.data.table = function() {
+null.data.table <-function() {
     ans = list()
     setattr(ans,"class",c("data.table","data.frame"))
     setattr(ans,"row.names",.set_row_names(0L))
     alloc.col(ans)
 }
 
-data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
+data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 {
     # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then setattr(l,"class",c("data.table","data.frame")) at the expense of checking.
     # TO DO: rewrite data.table(), one of the oldest functions here. Many people use data.table() to convert data.frame rather than
@@ -314,7 +314,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     alloc.col(value)  # returns a NAMED==0 object, unlike data.frame()
 }
 
-.massagei = function(x) {
+.massagei <- function(x) {
     if (is.call(x) && as.character(x[[1L]]) %chin% c("J","."))
         x[[1L]] = quote(list)
     x
@@ -331,7 +331,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     .Call(Cchmatch2, x, table, as.integer(nomatch)) # this is in 'rbindlist.c' for now.
 }
 
-"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, rolltolast=FALSE)
+"[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, rolltolast=FALSE)
 {
     # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
     # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -882,7 +882,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             suppPrint = identity
             if (length(av) && av[1L] == ":=") {
                 if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
-                suppPrint = function(x) { .global$print=address(x); x }
+                suppPrint <- function(x) { .global$print=address(x); x }
                 # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
                 # All appropriate returns following this point are wrapped; i.e. return(suppPrint(x)).
                 
@@ -1355,7 +1355,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (getOption("datatable.optimize")>=2 && !byjoin && !length(irows) && length(f__) && length(ansvars) && !length(lhs)) {
             # Apply GForce
             gfuns = c("sum","mean",".N", "min", "max") # added .N for #5760
-            .ok = function(q) {
+            .ok <- function(q) {
                 if (dotN(q)) return(TRUE) # For #5760
                 ans = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]]) && (length(q)==2 || identical("na",substring(names(q)[3L],1,2)))
                 if (is.na(ans)) ans=FALSE
@@ -1499,7 +1499,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     alloc.col(ans)   # TO DO: overallocate in dogroups in the first place and remove this line
 }
 
-.optmean = function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
+.optmean <- function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
     if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE
         return(call(".External",quote(Cfastmean),expr[[2L]], FALSE))
         # return(call(".Internal",expr))  # slightly faster than .External, but R now blocks .Internal in coerce.c from apx Sep 2012
@@ -1516,14 +1516,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 #  .C("do_subset2") or better. Tests 604-608 test
 #  that this doesn't regress.
 
-#"[[.data.table" = function(x,...) {
+#"[[.data.table" <- function(x,...) {
 #    if (!cedta()) return(`[[.data.frame`(x,...))
 #    .subset2(x,...)
 #    #class(x)=NULL  # awful, copy
 #    #x[[...]]
 #}
 
-#"[[<-.data.table" = function(x,i,j,value) {
+#"[[<-.data.table" <- function(x,i,j,value) {
 #    if (!cedta()) return(`[[<-.data.frame`(x,i,j,value))
 #    if (!missing(j)) stop("[[i,j]] assignment not available in data.table, put assignment(s) in [i,{...}] instead, more powerful")
 #    cl = oldClass(x)  # [[<-.data.frame uses oldClass rather than class, don't know why but we'll follow suit
@@ -1534,7 +1534,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 #}
 
 
-as.matrix.data.table = function(x,...)
+as.matrix.data.table <- function(x,...)
 {
     dm <- dim(x)
     cn <- names(x)
@@ -1597,7 +1597,7 @@ as.matrix.data.table = function(x,...)
     X
 }
 
-as.data.table.matrix = function(x, keep.rownames=FALSE)
+as.data.table.matrix <- function(x, keep.rownames=FALSE)
 {
     if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
     d <- dim(x)
@@ -1626,7 +1626,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE)
     alloc.col(value)
 }
 
-as.data.table.data.frame = function(x, keep.rownames=FALSE)
+as.data.table.data.frame <- function(x, keep.rownames=FALSE)
 {
     if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
     ans = copy(x)  # TO DO: change this deep copy to be shallow.
@@ -1640,7 +1640,7 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE)
     alloc.col(ans)
 }
 
-as.data.table.list = function(x, keep.rownames=FALSE) {
+as.data.table.list <- function(x, keep.rownames=FALSE) {
     if (!length(x)) return( null.data.table() )
     n = vapply(x, length, 0L)
     mn = max(n)
@@ -1662,7 +1662,7 @@ as.data.table.list = function(x, keep.rownames=FALSE) {
     alloc.col(x)
 }
 
-as.data.table.data.table = function(x, keep.rownames=FALSE) return(x)
+as.data.table.data.table <- function(x, keep.rownames=FALSE) return(x)
 
 # takes care of logical, character, numeric, integer
 as.data.table.factor <- as.data.table.ordered <- 
@@ -1680,7 +1680,7 @@ as.data.table.Date <- function(x, keep.rownames=FALSE) {
     as.data.table.list(x, keep.rownames)
 }
 
-R300_provideDimnames = function (x, sep = "", base = list(LETTERS))   # backported from R3.0.0 so data.table can depend on R 2.14.0 
+R300_provideDimnames <- function (x, sep = "", base = list(LETTERS))   # backported from R3.0.0 so data.table can depend on R 2.14.0 
 {
     dx <- dim(x)
     dnx <- dimnames(x)
@@ -1710,13 +1710,13 @@ as.data.table.table <- function(x, keep.rownames=FALSE) {
 }
 
 # bug #2375. fixed. same as head.data.frame and tail.data.frame to deal with negative indices
-head.data.table = function(x, n=6, ...) {
+head.data.table <- function(x, n=6, ...) {
     if (!cedta()) return(NextMethod())
     stopifnot(length(n) == 1L)  
     i = seq_len(if (n<0L) max(nrow(x)+n, 0L) else min(n,nrow(x)))
     x[i]
 }
-tail.data.table = function(x, n=6, ...) {
+tail.data.table <- function(x, n=6, ...) {
     if (!cedta()) return(NextMethod())
     stopifnot(length(n) == 1L)  
     n <- if (n<0L) max(nrow(x) + n, 0L) else min(n, nrow(x))
@@ -1724,7 +1724,7 @@ tail.data.table = function(x, n=6, ...) {
     x[i]
 }
 
-"[<-.data.table" = function (x, i, j, value) {
+"[<-.data.table" <- function (x, i, j, value) {
     # [<- is provided for consistency, but := is preferred as it allows by group and by reference to subsets of columns
     # with no copy of the (very large, say 10GB) columns at all. := is like an UPDATE in SQL and we like and want two symbols to change.
     if (!cedta()) {
@@ -1792,7 +1792,7 @@ tail.data.table = function(x, n=6, ...) {
     # := allows subassign to a column with no copy of the column at all,  and by group, etc.
 }
 
-"$<-.data.table" = function(x, name, value) {
+"$<-.data.table" <- function(x, name, value) {
     if (!cedta()) {
         ans = `$<-.data.frame`(x, name, value)
         return(alloc.col(ans))           # over-allocate (again)
@@ -1801,14 +1801,14 @@ tail.data.table = function(x, n=6, ...) {
     `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
 
-as.data.table = function(x, keep.rownames=FALSE)
+as.data.table <-function(x, keep.rownames=FALSE)
 {
     if (is.null(x))
         return(null.data.table())
     UseMethod("as.data.table")
 }
 
-as.data.frame.data.table = function(x, ...)
+as.data.frame.data.table <- function(x, ...)
 {
     ans = copy(x)
     setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
@@ -1819,7 +1819,7 @@ as.data.frame.data.table = function(x, ...)
     ans
 }
 
-as.list.data.table = function(x, ...) {
+as.list.data.table <- function(x, ...) {
     # Similar to as.list.data.frame in base. Although a data.table/frame is a list, too, it may be
     # being coerced to raw list type (by calling code) so that "[" and "[[" work in their raw list form,
     # such as lapply does for data.frame. So we do have to remove the class attributes (and thus shallow
@@ -1835,7 +1835,7 @@ as.list.data.table = function(x, ...) {
 }
 
 
-dimnames.data.table = function(x) {
+dimnames.data.table <- function(x) {
     if (!cedta()) {
         if (!identical(class(x),c("data.table","data.frame"))) stop("data.table inherits from data.frame (from v1.5) but this data.table does not. Has it been created manually (e.g. by using 'structure' rather than 'data.table') or saved to disk using a prior version of data.table? The correct class is c('data.table','data.frame').")
         return(`dimnames.data.frame`(x))
@@ -1854,7 +1854,7 @@ dimnames.data.table = function(x) {
     x  # this returned value is now shallow copied by R 3.1.0 via *tmp*. A very welcome change. 
 }
 
-"names<-.data.table" = function(x,value)
+"names<-.data.table" <- function(x,value)
 {
     # When non data.table aware packages change names, we'd like to maintain the key, too.
     # If call is names(DT)[2]="newname", R will call this names<-.data.table function (notice no i) with 'value' already prepared to be same length as ncol
@@ -2001,7 +2001,7 @@ Ops.data.table <- function(e1, e2 = NULL)
 }
 
 
-split.data.table = function(...) {
+split.data.table <- function(...) {
     if (cedta() && getOption("datatable.dfdispatchwarn"))  # or user can use suppressWarnings
         warning("split is inefficient. It copies memory. Please use [,j,by=list(...)] syntax. See data.table FAQ.")
     NextMethod()  # allow user to do it though, split object will be data.table's with 'NA' repeated in row.names silently
@@ -2009,7 +2009,7 @@ split.data.table = function(...) {
 
 # TO DO, add more warnings e.g. for by.data.table(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
 
-copy = function(x) {
+copy <- function(x) {
     newx = .Call(Ccopy,x)  # copies at length but R's duplicate() also copies truelength over.
                            # TO DO: inside Ccopy it could reset tl to 0 or length, but no matter as selfrefok detects it
                            # TO DO: revisit duplicate.c in R 3.0.3 and see where it's at
@@ -2018,20 +2018,20 @@ copy = function(x) {
     alloc.col(newx)
 }
 
-copyattr = function(from, to) {
+copyattr <- function(from, to) {
     .Call(Ccopyattr, from, to)
 }
 
-point = function(to, to_idx, from, from_idx) {
+point <- function(to, to_idx, from, from_idx) {
     .Call(CpointWrapper, to, to_idx, from, from_idx)
 }
 
-shallow = function(x) {
+shallow <- function(x) {
     if (!is.data.table(x)) stop("x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table")
     .Call(Cshallowwrapper,x)  # copies VECSXP only
 }
 
-alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("datatable.verbose"))
+alloc.col <- function(DT, n=getOption("datatable.alloccol"), verbose=getOption("datatable.verbose"))
 {
     name = substitute(DT)
     if (identical(name,quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")
@@ -2049,16 +2049,16 @@ alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("d
     .Call(Csetnamed,ans,0L)
 }
 
-selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
+selfrefok <- function(DT,verbose=getOption("datatable.verbose")) {
     .Call(Cselfrefokwrapper,DT,verbose)
 }
 
-truelength = function(x) .Call(Ctruelength,x)
+truelength <- function(x) .Call(Ctruelength,x)
 # deliberately no "truelength<-" method.  alloc.col is the mechanism for that.
 # settruelength() no longer need (and so removed) now that data.table depends on R 2.14.0
 # which initializes tl to zero rather than leaving uninitialized.
 
-setattr = function(x,name,value) {
+setattr <- function(x,name,value) {
     # Wrapper for setAttrib internal R function
     # Sets attribute by reference (no copy)
     # Named setattr (rather than setattrib) at R level to more closely resemble attr<-
@@ -2078,7 +2078,7 @@ setattr = function(x,name,value) {
     invisible(x)
 }
 
-setnames = function(x,old,new) {
+setnames <- function(x,old,new) {
     # Sets by reference, maintains truelength, no copy of table at all.
     # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
     # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
@@ -2135,7 +2135,7 @@ setnames = function(x,old,new) {
     invisible(x)
 }
 
-setcolorder = function(x,neworder)
+setcolorder <- function(x,neworder)
 {
     if (!is.data.table(x)) stop("x is not a data.table")
     if (length(neworder)!=length(x)) stop("neworder is length ",length(neworder)," but x has ",length(x)," columns.")
@@ -2154,7 +2154,7 @@ setcolorder = function(x,neworder)
     invisible(x)
 }
 
-set = function(x,i=NULL,j,value)  # low overhead, loopable
+set <- function(x,i=NULL,j,value)  # low overhead, loopable
 {
     if (is.atomic(value)) {
         # protect NAMED of atomic value from .Call's NAMED=2 by wrapping with list()
@@ -2166,27 +2166,27 @@ set = function(x,i=NULL,j,value)  # low overhead, loopable
     invisible(x)
 }
 
-chmatch = function(x,table,nomatch=NA_integer_)
+chmatch <- function(x,table,nomatch=NA_integer_)
     .Call(Cchmatchwrapper,x,table,as.integer(nomatch),FALSE)
 
-"%chin%" = function(x,table) {
+"%chin%" <- function(x,table) {
     # TO DO  if table has 'ul' then match to that
     .Call(Cchmatchwrapper,x,table,NA_integer_,TRUE)
 }
 
-chorder = function(x) {
+chorder <- function(x) {
     o = forderv(x, sort=TRUE, retGrp=FALSE)
     if (length(o)) o else seq_along(x)
 }
 
-chgroup = function(x) {
+chgroup <- function(x) {
     # TO DO: deprecate and remove this. It's exported but doubt anyone uses it. Think the plan was to use it internally, but forderv superceded.
     o = forderv(x, sort=FALSE, retGrp=TRUE)
     if (length(o)) as.vector(o) else seq_along(x)  # as.vector removes the attributes
 }
 
 
-.rbind.data.table = function(..., use.names=TRUE, fill=FALSE) {
+.rbind.data.table <- function(..., use.names=TRUE, fill=FALSE) {
     # See FAQ 2.23
     # Called from base::rbind.data.frame
     l = list(...)
@@ -2194,19 +2194,19 @@ chgroup = function(x) {
     rbindlist(l, use.names, fill)
 }
 
-rbindlist = function(l, use.names=fill, fill=FALSE) {
+rbindlist <- function(l, use.names=fill, fill=FALSE) {
     ans = .Call("Crbindlist", l, use.names, fill)
     if (!length(ans)) return(null.data.table())
     setDT(ans)
     ans
 }
 
-vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
+vecseq <- function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
 
 # .Call(Caddress, x) increments NAM() when x is vector with NAM(1). Referring object within non-primitive function is enough to increment reference.
-address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
+address <- function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
-":=" = function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+":=" <- function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
 
 setDF <- function(x) {
     if (!is.data.table(x) && !is.data.frame(x)) stop("setDF only accepts data.table or data.frame as input")
@@ -2226,7 +2226,7 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
     if (is.na(giveNames))
         stop("Argument 'giveNames' to 'setDT' must be logical TRUE/FALSE")
     if (is.name(name)) {
-        home = function(x, env) {
+        home <- function(x, env) {
             if (identical(env, emptyenv()))
                 stop("Can not find symbol ", cname, call. = FALSE)
             else if (exists(x, env, inherits=FALSE)) env
@@ -2285,9 +2285,9 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
     invisible(x)
 }
 
-gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
-gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
-gmin = function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
-gmax = function(x, na.rm=FALSE) .Call(Cgmax, x, na.rm)
-gstart = function(o, f, l) .Call(Cgstart, o, f, l)
-gend = function() .Call(Cgend)
+gsum <- function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
+gmean <- function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
+gmin <- function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
+gmax <- function(x, na.rm=FALSE) .Call(Cgmax, x, na.rm)
+gstart <- function(o, f, l) .Call(Cgstart, o, f, l)
+gend <- function() .Call(Cgend)

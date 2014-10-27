@@ -81,7 +81,7 @@
 .R.subassignCopiesOthers = TRUE
 .R.subassignCopiesVecsxp = TRUE
 
-getRversion = function(...) stop("Reminder to data.table developers: don't use getRversion() internally. Add a behaviour test to .onLoad instead.")
+getRversion <- function(...) stop("Reminder to data.table developers: don't use getRversion() internally. Add a behaviour test to .onLoad instead.")
 # 1) using getRversion() wasted time when R3.0.3beta was released without the changes we expected in getRversion()>"3.0.2".
 # 2) R-devel and ourselves may wish to tinker with R-devel, turning on and off features in the same version number. So it's better if data.table doesn't hard code expectations into the version number.
 # 3) The discipline of adding a feaure test here helps fully understand the change.

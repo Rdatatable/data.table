@@ -1,7 +1,7 @@
 
 MB = NCOL = NROW = NULL   # globals to pass NOTE from R CMD check
 
-tables = function(mb=TRUE,order.col="NAME",width=80,env=parent.frame(),silent=FALSE)
+tables <- function(mb=TRUE,order.col="NAME",width=80,env=parent.frame(),silent=FALSE)
 {
     # Prints name, size and colnames of all data.tables in the calling environment by default
     tt = objects(envir=env, all.names=TRUE)

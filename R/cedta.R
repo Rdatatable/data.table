@@ -19,7 +19,7 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 # which makes them data.table-aware optionally and possibly variably.
 # http://stackoverflow.com/a/13131555/403310
 
-cedta = function(n=2L) {
+cedta <- function(n=2L) {
     # Calling Environment Data Table Aware
     te = topenv(parent.frame(n))
     if (!isNamespace(te)) {
