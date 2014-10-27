@@ -2780,12 +2780,9 @@ test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(
 # an fread error shouldn't hold a lock on the file on Windows.
 f = tempfile()
 cat('A,B\n"aa",2\n"bb,2\n"cc",3\n', file=f)  # NB: deliberate missing quote after bb.
-eol = if (.Platform$OS.type == "windows") "\r\n" else "\n"
-test(1010.1, fread(f), data.table(A=c("aa",paste("bb,2",eol,"\"cc",sep="")), B=2:3))  # used be an error, but is now valid
-cat('"',file=f,append=TRUE)  # create an error.  Something that should always be an error of some sort.
-test(1010.2, fread(f), error="Expected sep (',') but new line, EOF (or other non printing character) ends field 1 on line 5 when detecting types")
+test(1010, fread(f), error="Field 1 on line 3.*Check for unbalanced unescaped quotes: \"bb,2")
 cat('dd",4\n',file=f,append=TRUE)   # tests file lock on Windows after error
-test(1011, fread(f), data.table(A=c("aa",paste("bb,2",eol,"\"cc",sep=""),"dd"), B=2:4))
+test(1011, fread(f), error="Field 1 on line 3.*Check for unbalanced unescaped quotes: \"bb,2")
 cat('A,B\n"aa",1\n"bb",2\n"cc",3\n', file=f)   # testing overwrite
 test(1012, fread(f), data.table(A=c("aa","bb","cc"),B=1:3))
 unlink(f)  # testing file can be removed after error
@@ -3768,13 +3765,15 @@ for (i in 1:2) {
     # test(1214+i*0.1, DT[.(-200.0),roll=TRUE]$B, 3L)  # TO DO: roll to -Inf.  Also remove -Inf and test rolling to NaN and NA
 }
 
-# that fread reads quotes in the middle of fields ok, #2694
+# that fread reads unescaped (but balanced) quotes in the middle of fields ok, #2694
 test(1215,
    fread('N_ID VISIT_DATE REQ_URL REQType\n175931 2013-03-08T23:40:30 http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU 1'),
    data.table(N_ID=175931L, VISIT_DATE="2013-03-08T23:40:30", REQ_URL='http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU', REQType=1L)
 )
-test(1216, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n'),
-           data.table(A=c('1.2','fo"o'), B=c('Foo"Bar','bar'),C=c('a"b"c"d','b,az"')))
+test(1216.1, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n'), error="Field 3 on line 2.*Check for unbalanced unescaped quotes: \"a\"b\"c\"d\"")
+test(1216.2, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,az""\n'), error="Field 3 on line 3.*Check for unbalanced unescaped quotes: \"b,az\"\"")
+test(1216.3, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,"az""\n'), 
+           data.table(A=c('1.2','fo"o'), B=c('Foo"Bar','bar'),C=c('a"b"c"d"','b,"az"')))
 test(1217, fread('"One,Two","Three",Four\n12,3,4\n56,7,8\n'),  # quoted column names including the separator
            data.table("One,Two"=c(12L,56L),Three=c(3L,7L),Four=c(4L,8L)))
 
@@ -4710,7 +4709,7 @@ test(1322, fread('A,B,C\n1,"foo
 bar",3\n4,baz,6'), data.table(A=c(1L,4L), B=c("foo\nbar","baz"), C=c(3L,6L)))
 # NB: don't remove the newline after foo in test 1322 above, that's what's being tested.
 test(1323, fread('col1,col2\n5,"4\n3"'), data.table(col1=5L, col2="4\n3"))
-test(1324, fread('A,B,C\n1,4,"foo"\n2,5,"bar'), error="Field 3 on line 3 starts with quote but doesn't finish with.*2,5,")
+test(1324, fread('A,B,C\n1,4,"foo"\n2,5,"bar'), error="Field 3 on line 3 starts with quote.*Check for unbalanced unescaped quotes: \"bar")
 test(1325, fread('A,B,C\n1,4,"foo"\n2,5,"bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar')))
 test(1326, fread('A,B,C\n1,4,"foo"\n2,5,bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar"')))
 test(1327, fread('A,B,C\n1,4,"foo"\n2,5,""bar""'), data.table(A=1:2,B=4:5,C=c("foo",'"bar"')))
@@ -4728,12 +4727,19 @@ test(1334, fread('A,B\nfoo,1\n"Analyst\\" ,",2\nbar,3'), data.table(A=c('foo', '
 test(1335, fread('A,B\nfoo,1\n"Analyst\\\\",2\nbar,3'), data.table(A=c('foo','Analyst\\\\','bar'), B=1:3))
 
 # data from 12GB file in comments on http://stackoverflow.com/a/23858323/403310 ...
+# note that read.csv gets this wrong and puts jacoleman high school into the previous field, then fills the rest of the line silently.
 cat('A,B,C,D,E,F
 "12",0,"teacher private nfp\\\\\\\\"",""jacoleman high school","",""
 "TX",77406,"business analyst\\\\\\\\\\\\\\","the boeing co","",""
 "CA",94116,"na\\none","retired","",""
 ', file = f<-tempfile())   # aside: notice the \\ before n of none as well
-test(1336, fread(f), data.table(A=c("12","TX","CA"), B=c(0L,77406L,94116L),C=c('teacher private nfp\\\\\\\\"','business analyst\\\\\\\\\\\\\\','na\\none'), D=c('"jacoleman high school','the boeing co','retired'),E="",F=""))
+test(1336.1, fread(f), error="Field 4 on line 2.*Check for unbalanced unescaped quotes: \"\"jacoleman high school\",\"\",\"\"")
+cat('A,B,C,D,E,F
+"12",0,"teacher private nfp\\\\\\\\"","jacoleman high school","",""
+"TX",77406,"business analyst\\\\\\\\\\\\\\","the boeing co","",""
+"CA",94116,"na\\none","retired","",""
+', file = f)
+test(1336.2, fread(f), data.table(A=c("12","TX","CA"), B=c(0L,77406L,94116L),C=c('teacher private nfp\\\\\\\\"','business analyst\\\\\\\\\\\\\\','na\\none'), D=c('jacoleman high school','the boeing co','retired'),E="",F=""))
 unlink(f)
 
 # file names ending with \ (quite common)
@@ -5527,6 +5533,17 @@ if (.Platform=="unix" &&
     test(1443, fread("A;B\n1;2,34\n", dec=",", sep=",", verbose=TRUE), error="'dec' and 'sep' are equal", output="'fr_FR.utf8'.*success!")
     test(1444, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after error. [ouput check in 1443 ensures it was changed]
 }
+
+# doubled quote inside a quoted field followed by an embedded newline
+# This file is 36 rows to move that line outside the top, middle and bottom 5 test rows
+test(1445, fread("doublequote_newline.csv")[7:10], data.table(A=c(1L,1L,2L,1L), B=c("a","embedded \"\"field\"\"\nwith some embedded new\nlines as well","not this one","a")))
+# the example from #489 directly :
+test(1446, fread('A,B,C\n233,"AN ""EMBEDDED"" QUOTE FIELD",morechars\n'), data.table(A=233L, B='AN ""EMBEDDED"" QUOTE FIELD', C='morechars'))
+
+# when detecting types ...
+# fread('A,B\n1,"embedded""\nquote"\n2,should be ok\n')
+# fread("~/R/gitdatatable/pkg/inst/tests/quoted_multiline.csv")
+
 
 
 ##########################
