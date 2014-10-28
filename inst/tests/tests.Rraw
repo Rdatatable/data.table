@@ -5540,6 +5540,11 @@ test(1445, fread("doublequote_newline.csv")[7:10], data.table(A=c(1L,1L,2L,1L), 
 # the example from #489 directly :
 test(1446, fread('A,B,C\n233,"AN ""EMBEDDED"" QUOTE FIELD",morechars\n'), data.table(A=233L, B='AN ""EMBEDDED"" QUOTE FIELD', C='morechars'))
 
+# unescaped quoted subregion followed by newline
+test(1446, fread('A,B,C\n233,"an unescaped "embedded"
+region followed by newline",morechars\n'), error='Field 2 on line 2.*can contain balanced unescaped quoted subregions but.*can\'t contain embedded.*n as well.*: "an unescaped "embedded"')
+
+
 # when detecting types ...
 # fread('A,B\n1,"embedded""\nquote"\n2,should be ok\n')
 # fread("~/R/gitdatatable/pkg/inst/tests/quoted_multiline.csv")
