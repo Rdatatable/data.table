@@ -163,7 +163,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
         xcols2 = setdiff(names(ans), xcols1)
         ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, chmatch(ycols, names(origy)))]
         setcolorder(ans, c(xcols1, ycols, xcols2))
-        return (ans)
+        return (ans[])
     }
 }
 
