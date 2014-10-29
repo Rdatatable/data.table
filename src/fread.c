@@ -1017,7 +1017,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                             }
                         }
                         if (quoteProblem || ch2==eof) {
-                            if (ch==eof || *ch==eol) ch--;  // if ended on \n then don't end message with blank line (test 1011 doesn't)
+                            if (ch2==eof || *ch2==eol) ch2--; // don't include the eof or eol at end of error message
                             sprintf(errormsg, "Field %d on line %d starts with quote (\") but then has a problem. It can contain balanced unescaped quoted subregions but if it does it can't contain embedded \\n as well. Check for unbalanced unescaped quotes: %.*s", j+1, i+nline, MsgLimit(ch2-ch+1), ch);
                             EXIT();
                         }
