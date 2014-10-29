@@ -5419,7 +5419,9 @@ test(1391.2, subset(DT, select=c("V2", "V1")), DT[, c("V2", "V1"), with=FALSE])
 
 # Test faster version of na.omit() using is_na.
 DT = data.table(x=sample(c(1:2, NA), 30, TRUE), y=sample(c(1:5, NA, NaN), 30, TRUE))
-test(1392, na.omit(DT), DT[!is.na(x) & !is.na(y)])
+test(1392.1, na.omit(DT), DT[!is.na(x) & !is.na(y)])
+# added 'invert = ', a logical argument which when TRUE returns rows that has any NAs instead.
+test(1392.2, na.omit(DT, invert=TRUE), DT[is.na(x) | is.na(y)])
 
 # Fix for #899. Mix of ordered and normal factors where normal factors in more than 1 data.table has identical levels.
 DT1 = data.table(A = factor(INT(7,8,7,8,7)), B = factor(6:10), C = 0)
