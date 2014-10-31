@@ -68,6 +68,8 @@
 
   21. `rbindlist` handles combining levels of data.tables with both ordered and unordered factor columns properly. Closes [#899](https://github.com/Rdatatable/data.table/issues/899). Thanks to @ChristK.
 
+  22. Updating `.SD` by reference using `set` also errors appropriately now; similar to `:=`. Closes [#927](https://github.com/Rdatatable/data.table/issues/899). Thanks to @jrowen for the minimal example.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

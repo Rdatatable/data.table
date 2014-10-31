@@ -216,6 +216,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     // rows : row numbers to assign
     R_len_t i, j, nrow, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum;
     SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key, index, a;
+    SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
     Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, isDataTable=FALSE;
     char *s1, *s2, *s3;
     const char *c1, *c2, *tc1, *tc2;
@@ -223,6 +224,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     size_t size; // must be size_t otherwise overflow later in memcpy
     if (isNull(dt)) error("assign has been passed a NULL dt");
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
+    if (length(bindingIsLocked) && LOGICAL(bindingIsLocked)[0])
+        error(".SD is locked. Updating .SD by reference using := or set are reserved for future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, until shallow() is exported.");
     
     class = getAttrib(dt, R_ClassSymbol);
     if (isNull(class)) error("Input passed to assign has no class attribute. Must be a data.table or data.frame.");

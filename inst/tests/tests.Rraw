@@ -5552,6 +5552,9 @@ region followed by newline",morechars\n'), error='Field 2 on line 2.*can contain
 # fread("~/R/gitdatatable/pkg/inst/tests/quoted_multiline.csv")
 
 
+# Fix for #927
+DT = data.table(x=1L, y=2L)
+test(1447, DT[, set(.SD, j="x", value=10L)], error=".SD is locked. Updating .SD by reference using := or set")
 
 ##########################
 
