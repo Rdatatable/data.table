@@ -1,14 +1,31 @@
+# For internal use only (input symbol requirement is not checked)
+#   cols [symbol] - columns provided to function argument
+#   dt   [symbol] - a data.table
+# Iff all of 'cols' is present in 'x' return col indices
+validate <- function(cols, dt) {
+    argcols = deparse(substitute(cols))
+    argdt = deparse(substitute(dt))
+    if (!length(cols))
+        stop(argcols, " must be a character/integer vector of length > 0")
+    if (!is.data.table(dt))
+        stop(argdt, " must be a data.table. Internal error in validate(). Please report to datatable-help")
+    origcols = cols
+    if (is.character(cols)) cols = chmatch(cols, names(dt))
+    cols = as.integer(cols)
+    isna = which(!cols %in% seq_along(dt))
+    if (length(isna))
+        stop(argcols, " value(s) [", paste(origcols[isna], collapse=", "), "] not present (or out of range) in ", argdt)
+    cols
+}
+
 # setdiff for data.tables, internal at the moment #547
-setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y)) {
-    if (!is.data.table(x) || !is.data.table(y)) stop("x and y must be both data.tables")
-    if (is.null(y) || ncol(y) == 0L) return(unique(x))
-    if (length(by.x) != length(by.y)) stop("setdiff(x,y) requires same number of columns for both x and y. However, length(by.x) != length(by.y)") 
-    if (length(by.x) == 0L) stop("by.x and by.y must be character or integer vectors of length >= 1")
-    if (is.character(by.x)) by.x = chmatch(by.x, names(x))
-    if (is.character(by.y)) by.y = chmatch(by.y, names(y))
-    by.x = as.integer(by.x); by.y = as.integer(by.y)
-    if (any(is.na(by.x))) stop("Some column(s) specified in by.x are not present in x")
-    if (any(is.na(by.y))) stop("Some column(s) specified in by.y are not present in y")
+setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE) {
+    if (!is.data.table(x) || !is.data.table(y)) stop("x and y must both be data.tables")
+    if (is.null(x) || !length(x)) return(x)
+    by.x = validate(by.x, x)
+    if (is.null(y) || !length(y)) return(unique(x, by=by.x))
+    by.y = validate(by.y, y)    
+    if (length(by.x) != length(by.y)) stop("length(by.x) != length(by.y)") 
     # factor in x should've factor/character in y, and viceversa
     for (a in seq_along(by.x)) {
         lc = by.y[a]
@@ -23,15 +40,13 @@ setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y)) {
             stop("When x's column ('",xcnam,"') is integer or numeric, the corresponding column in y ('",icnam,"') can not be character or logical types, but found incompatible type '",typeof(y[[lc]]),"'.")
         }
     }
-    ux = vector("list", length(by.x))
-    uy = vector("list", length(by.y))
-    point(ux, seq_along(by.x), x, by.x)
-    point(uy, seq_along(by.y), y, by.y)
-    setDT(ux); setDT(uy)
-    setnames(ux, names(x)[by.x])
-    setnames(uy, names(x)[by.x])
-    # actual setdiff starts here...
-    ux = unique(ux); uy = unique(uy)
-    idx  = duplicated(rbind(unique(uy), unique(ux), use.names=TRUE, fill=FALSE))[-seq_len(nrow(uy))]
-    .Call("CsubsetDT", ux, which(!idx), seq_along(ux))
+    # temporary function until 'shallow' gains a 'by/cols' arg
+    shallow <- function(x, cols) {
+        xx = as.list(x)[cols]
+        setDT(xx)
+    }
+    ux = unique(shallow(x, by.x))
+    uy = unique(shallow(y, by.y))
+    ix = duplicated(rbind(uy, ux, use.names=use.names, fill=FALSE))[-seq_len(nrow(uy))]
+    .Call("CsubsetDT", ux, which(!ix), seq_along(ux))
 }

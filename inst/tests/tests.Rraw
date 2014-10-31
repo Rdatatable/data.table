@@ -4952,7 +4952,7 @@ test(1364.12, setdiff_(X, Y, c("d", "e"), c("d", "f")), X[!5, list(d,e)])
 test(1364.13, setdiff_(X, Y, "d", "e"), error="When x's column ('d') is integer or numeric, the corresponding column in y ('e')")
 test(1364.14, setdiff_(X, Y, "b", "a"), error="When x's column ('b') is factor, the corresponding column in y ('a')")
 test(1364.15, setdiff_(X, Y, "c", "a"), error="When x's column ('c') is character, the corresponding column in y ('a') ")
-test(1364.16, setdiff_(X, Y), error="setdiff(x,y) requires same number of columns for both x and y")
+test(1364.16, setdiff_(X, Y), error="length(by.x) != length(by.y)")
 test(1364.17, setdiff_(X[, list(a)], Y[, list(a)]), data.table(a=c(1,2)))
 
 # not join along with by=.EACHI, #604
