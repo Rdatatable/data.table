@@ -566,7 +566,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
             if (is.logical(i)) {
-                if (length(i)==nrow(x)) irows=which(i)   # e.g. DT[colA>3,which=TRUE]
+                if (length(i)==nrow(x)) irows = i = which(i)   # e.g. DT[colA>3,which=TRUE]
+                                                               # also replacing 'i' here - to save memory, #926.
                 else irows=seq_len(nrow(x))[i]  # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness 
                 # it could also be DT[!TRUE, which=TRUE] (silly cases, yes). 
                 # replaced the "else if (!isTRUE(i))" to just "else". Fixes bug report #4930 
