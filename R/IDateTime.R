@@ -46,7 +46,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
 ###################################################################
 # IMonth --   Stored as elapsed months 
 ###################################################################
-as.monthly <- function(x) {
+as.IMonth <- function(x) {
   UseMethod("as.IMonth")
 }
 as.IMonth.default <- function(x, ...) as.IMonth(as.POSIXlt(x, ...))
@@ -95,7 +95,7 @@ unique.IMonth <- function(x, ...) {as.IMonth(NextMethod())}
 # IQuarter --   Stored as elapsed quarters
 ###################################################################
 
-as.quarterly <- function(x) {
+as.IQuarter <- function(x) {
   UseMethod("as.IQuarter")
 }
 as.IQuarter.default <- function(x, ...) as.IQuarter(as.POSIXlt(x, ...))
