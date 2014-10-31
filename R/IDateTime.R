@@ -44,6 +44,99 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
 }
 
 ###################################################################
+# IMonth --   Stored as elapsed months 
+###################################################################
+as.monthly <- function(x) {
+  UseMethod("as.IMonth")
+}
+as.IMonth.default <- function(x, ...) as.IMonth(as.POSIXlt(x, ...))
+as.IMonth.POSIXlt <- function(x, ...) {
+  structure(12L*(x$year-70L) + x$mon, class=c("IMonth"))
+}      
+as.IMonth.numeric <- function(x,...){
+  class(x) <- "IMonth"
+  x
+}
+#' @rdname elapsed 
+is.IMonth <- function(x){
+  is(x, "IMonth")
+}
+as.Date.IMonth <- function(x, ...){
+  attributes(x) <- NULL
+  date_origin <- as.Date("1970-01-01")
+  x <- date_origin + months(x)
+  as.Date(x, ...)
+}
+as.POSIXct.IMonth <- function(x, ...){as.POSIXct(as.Date(x,...))}
+as.POSIXlt.IMonth <- function(x, ...){as.POSIXlt(as.Date(x,...))}
+as.character.IMonth <- function(x, ...){
+  paste0(year(x),"m", month(x))
+}
+format.IMonth <- function(x, ...){
+  format(as.character(x),...)
+}
+print.IMonth <- function(x, ...){
+  print(format(x),...)
+}
+as.data.frame.IMonth <- function(...){
+  as.data.frame.vector(...)
+}
+mean.IMonth <- function(x, ...) {as.IMonth(NextMethod())}
+cut.IMonth <- function(x, ...) {as.IMonth(NextMethod())}
+seq.IMonth <- function(x, ...) {as.IMonth(NextMethod())}
+c.IMonth <- function(x, ...) {as.IMonth(NextMethod())}
+rep.IMonth <- function(x, ...) {as.IMonth(NextMethod())}
+split.IMonth <- function(x, ...) {as.IMonth(NextMethod())}
+as.list.IMonth <- function(x, ...) {as.IMonth(NextMethod())}
+unique.IMonth <- function(x, ...) {as.IMonth(NextMethod())}
+`[.IMonth` <- function(x, ...) {as.IMonth(NextMethod())}
+
+###################################################################
+# IQuarter --   Stored as elapsed quarters
+###################################################################
+
+as.quarterly <- function(x) {
+  UseMethod("as.IQuarter")
+}
+as.IQuarter.default <- function(x, ...) as.IQuarter(as.POSIXlt(x, ...))
+as.IQuarter.POSIXlt <- function(x, ...) {
+    structure(4L*(x$year-70L) + x$mon %/% 3, class=c("IQuarter"))
+}  
+as.IQuarter.numeric <- function(x,...){
+  class(x) <- "IQuarter"
+  x
+}
+as.Date.IQuarter <- function(x, ...){
+  attributes(x) <- NULL
+  date_origin <- as.Date("1970-01-01")
+  x <- date_origin+ 3L*months(x)
+  as.Date(x, ...)
+}
+as.POSIXct.IQuarter <- function(x, ...){as.POSIXct(as.Date(x,...))}
+as.POSIXlt.IQuarter <- function(x, ...){as.POSIXlt(as.Date(x,...))}
+as.character.IQuarter <- function(x, ...){
+  paste0(year(x),"q", quarter(x))
+}
+format.IQuarter <- function(x, ...){
+  format(as.character(x),...)
+}
+print.IQuarter <- function(x, ...){
+  print(format(x),...)
+}
+as.data.frame.IQuarter <- function(...){
+  as.data.frame.vector(...)
+}
+mean.IQuarter <- function(x, ...) {as.IQuarter(NextMethod())}
+cut.IQuarter <- function(x, ...) {as.IQuarter(NextMethod())}
+seq.IQuarter <- function(x, ...) {as.IQuarter(NextMethod())}
+c.IQuarter <- function(x, ...) {as.IQuarter(NextMethod())}
+rep.IQuarter <- function(x, ...) {as.IQuarter(NextMethod())}
+split.IQuarter <- function(x, ...) {as.IQuarter(NextMethod())}
+as.list.IQuarter <- function(x, ...) {as.IQuarter(NextMethod())}
+unique.IQuarter <- function(x, ...) {as.IQuarter(NextMethod())}
+`[.IQuarter` <- function(x, ...) {as.IQuarter(NextMethod())}
+
+###################################################################
 # ITime -- Integer time-of-day class
 #          Stored as seconds in the day
 ###################################################################
