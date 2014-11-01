@@ -71,10 +71,6 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     } else incr = 1L # integer or Date class for example
 
     ## hopefully all checks are over. Now onto the actual task at hand.
-    shallow <- function(x, cols) {
-        xx = as.list(x)[cols]
-        setDT(xx)
-    }
     origx = x; x = shallow(x, by.x)
     origy = y; y = shallow(y, by.y)
     if (identical(by.x, key(origx)[seq_along(by.x)]))

@@ -37,11 +37,6 @@ setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE
             stop("When x's column ('",xcnam,"') is integer or numeric, the corresponding column in y ('",icnam,"') can not be character or logical types, but found incompatible type '",typeof(y[[lc]]),"'.")
         }
     }
-    # temporary function until 'shallow' gains a 'by/cols' arg
-    shallow <- function(x, cols) {
-        xx = as.list(x)[cols]
-        setDT(xx)
-    }
     ux = unique(shallow(x, by.x))
     uy = unique(shallow(y, by.y))
     ix = duplicated(rbind(uy, ux, use.names=use.names, fill=FALSE))[-seq_len(nrow(uy))]
