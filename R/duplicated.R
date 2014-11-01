@@ -13,7 +13,7 @@ duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key
     res <- rep.int(TRUE, nrow(x))
     
     if (query$use.keyprefix) {
-        f = uniqlist(x[, query$by, with=FALSE])
+        f = uniqlist(shallow(x, query$by))
         if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
     } else {
         o = forderv(x, by=query$by, sort=FALSE, retGrp=TRUE)
