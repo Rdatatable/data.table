@@ -2031,9 +2031,19 @@ point <- function(to, to_idx, from, from_idx) {
     .Call(CpointWrapper, to, to_idx, from, from_idx)
 }
 
-shallow <- function(x) {
-    if (!is.data.table(x)) stop("x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table")
-    .Call(Cshallowwrapper,x)  # copies VECSXP only
+shallow <- function(x, cols=NULL) {
+    if (!is.data.table(x)) 
+        stop("x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table")
+    if (!is.null(cols)) cols = validate(cols, x) # NULL is default = all columns
+    ans = .Call(Cshallowwrapper, x, cols)  # copies VECSXP only
+    if (!is.null(cols)) {
+        cols = names(x)[cols]
+        if (identical(cols, key(x)[seq_along(cols)])) 
+            setattr(ans, 'sorted', cols)
+        else setattr(ans, 'sorted', NULL)
+    }
+    ans
+    # TODO: check/remove attributes for secondary keys?
 }
 
 alloc.col <- function(DT, n=getOption("datatable.alloccol"), verbose=getOption("datatable.verbose"))

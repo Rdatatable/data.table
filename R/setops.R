@@ -2,13 +2,10 @@
 #   cols [symbol] - columns provided to function argument
 #   dt   [symbol] - a data.table
 # Iff all of 'cols' is present in 'x' return col indices
+# is.data.table(dt) check should be performed in the calling function
 validate <- function(cols, dt) {
     argcols = deparse(substitute(cols))
     argdt = deparse(substitute(dt))
-    if (!length(cols))
-        stop(argcols, " must be a character/integer vector of length > 0")
-    if (!is.data.table(dt))
-        stop(argdt, " must be a data.table. Internal error in validate(). Please report to datatable-help")
     origcols = cols
     if (is.character(cols)) cols = chmatch(cols, names(dt))
     cols = as.integer(cols)

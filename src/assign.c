@@ -106,8 +106,9 @@ static Rboolean selfrefnamesok(SEXP x, Rboolean verbose) {
     return(_selfrefok(x, TRUE, verbose)==1);
 }
 
-static SEXP shallow(SEXP dt, R_len_t n)
+static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
 {
+    // NEW: cols argument to specify the columns to shallow copy on. If NULL, all columns.
     // called from alloccol where n is checked carefully, or from shallow() at R level
     // where n is set to truelength (i.e. a shallow copy only with no size change)
     SEXP newdt, names, newnames;
@@ -122,17 +123,26 @@ static SEXP shallow(SEXP dt, R_len_t n)
     //        so that the next change knows to duplicate.
     //        Does copyMostAttrib duplicate each attrib or does it point? It seems to point, hence DUPLICATE_ATTRIB
     //        for now otherwise example(merge.data.table) fails (since attr(d4,"sorted") gets written by setnames).
-    l = LENGTH(dt);
-    for (i=0; i<l; i++)
-        SET_VECTOR_ELT(newdt,i,VECTOR_ELT(dt,i));
-    names = getAttrib(dt,R_NamesSymbol); 
+    names = getAttrib(dt, R_NamesSymbol); 
     PROTECT(newnames = allocVector(STRSXP, n));
     protecti++;
-    if (length(names)) {
-        if (length(names) < l) error("Internal error: length(names)>0 but <length(dt)");
-        for (i=0; i<l; i++)
-            SET_STRING_ELT(newnames,i,STRING_ELT(names,i));
-    } // else an unnamed data.table is valid e.g. unname(DT) done by ggplot2, and .SD may have its names cleared in dogroups, but shallow will always create names for data.table(NULL) which has 100 slots all empty so you can add to an empty data.table by reference ok.
+    if (isNull(cols)) {
+        l = LENGTH(dt);
+        for (i=0; i<l; i++) SET_VECTOR_ELT(newdt, i, VECTOR_ELT(dt,i));
+        if (length(names)) {
+            if (length(names) < l) error("Internal error: length(names)>0 but <length(dt)");
+            for (i=0; i<l; i++) SET_STRING_ELT(newnames, i, STRING_ELT(names,i));
+        } 
+        // else an unnamed data.table is valid e.g. unname(DT) done by ggplot2, and .SD may have its names cleared in dogroups, but shallow will always create names for data.table(NULL) which has 100 slots all empty so you can add to an empty data.table by reference ok.
+    } else {
+        l = length(cols);
+        for (i=0; i<l; i++) SET_VECTOR_ELT(newdt, i, VECTOR_ELT(dt,INTEGER(cols)[i]-1));
+        if (length(names)) {
+            // no need to check length(names) < l here. R-level checks if all value 
+            // in 'cols' are valid - in the range of 1:length(names(x))            
+            for (i=0; i<l; i++) SET_STRING_ELT( newnames, i, STRING_ELT(names,INTEGER(cols)[i]-1) );
+        } 
+    }
     setAttrib(newdt, R_NamesSymbol, newnames);
     // setAttrib appears to change length and truelength, so need to do that first _then_ SET next,
     // otherwise (if the SET were were first) the 100 tl is assigned to length.
@@ -145,7 +155,6 @@ static SEXP shallow(SEXP dt, R_len_t n)
     UNPROTECT(protecti);
     return(newdt);
 }
-        
 
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
@@ -161,7 +170,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
     // So, careful to use length() on names, not LENGTH(). 
     if (length(names)!=l) error("Internal error: length of names (%d) is not length of dt (%d)",length(names),l);
     if (!selfrefok(dt,verbose))
-        return shallow(dt,n);  // e.g. test 848 and 851 in R > 3.0.2  
+        return shallow(dt,R_NilValue,n);  // e.g. test 848 and 851 in R > 3.0.2  
     // TO DO:  test realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
     // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
     //    error("Internal error: tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol)));
@@ -170,7 +179,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
     if (tl<0) error("Internal error, tl of class is marked but tl<0.");  // R <= 2.13.2 and we didn't catch uninitialized tl somehow
     if (tl>0 && tl<l) error("Internal error, please report (including result of sessionInfo()) to datatable-help: tl (%d) < l (%d) but tl of class is marked.", tl, l);
     if (tl>l+1000) warning("tl (%d) is greater than 1000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report this to datatable-help including the result of sessionInfo().",tl,l);
-    if (n>tl) return(shallow(dt,n)); // usual case (increasing alloc)
+    if (n>tl) return(shallow(dt,R_NilValue,n)); // usual case (increasing alloc)
     if (n<tl) warning("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy.",tl,n);
               // otherwise the finalizer can't clear up the Large Vector heap
     return(dt);
@@ -182,11 +191,12 @@ SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP verbose) {
     return(alloccol(dt, INTEGER(newncol)[0], LOGICAL(verbose)[0]));
 }
 
-SEXP shallowwrapper(SEXP dt) {
-    if (!selfrefok(dt,FALSE))
-        return(shallow(dt, length(dt)));  // a manually created data.table via dput() and structure(), for example
-    else 
-        return(shallow(dt, TRUELENGTH(dt)));
+SEXP shallowwrapper(SEXP dt, SEXP cols) {
+    // selfref will be FALSE on manually created data.table, e.g., via dput() or structure()
+    if (!selfrefok(dt, FALSE)) {
+        int n = isNull(cols) ? length(dt) : length(cols);
+        return(shallow(dt, cols, n));
+    } else return(shallow(dt, cols, TRUELENGTH(dt)));
 }
 
 SEXP truelength(SEXP x) {
