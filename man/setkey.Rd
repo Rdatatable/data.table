@@ -62,7 +62,7 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 }
 \note{ Despite its name, \code{base::sort.list(x,method="radix")} actually invokes a \emph{counting sort} in R, not a radix sort. See do_radixsort in src/main/sort.c. A counting sort, however, is particularly suitable for sorting integers and factors, and we like it. In fact we like it so much that \code{data.table} contains a counting sort algorithm for character vectors using R's internal global string cache. This is particularly fast for character vectors containing many duplicates, such as grouped data in a key column. This means that character is often preferred to factor. Factors are still fully supported, in particular ordered factors (where the levels are not in alphabetic order).
 }
-\seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}}, \code{\link[base]{sort.list}}, \code{\link{copy}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{set}} \code{\link{:=}}, \code{\link{setorder}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{chorder}}, \code{\link{getNumericRounding}}, \code{\link{setNumericRounding}}
+\seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}}, \code{\link[base]{sort.list}}, \code{\link{copy}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{set}} \code{\link{:=}}, \code{\link{setorder}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{chorder}}, \code{\link{setNumericRounding}}
 }
 \examples{
 # Type 'example(setkey)' to run these at prompt and browse output

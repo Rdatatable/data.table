@@ -65,6 +65,7 @@ if (!.devtesting) {
     setdiff_ = data.table:::setdiff_
     frankv = data.table:::frankv
     is_na = data.table:::is_na
+    shallow = data.table:::shallow # until exported
 }
 
 TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
@@ -1383,9 +1384,9 @@ if ("package:reshape" %in% search()) {
 
 # Test warnings for names<- and colnames<-,  but only warnings when caller is data.table aware.
 DT = data.table(a=1:3,b=4:6)
-test(489, names(DT)[1]<-"A", "A", warning="names(x)<-value syntax.*Please change to setnames")
+test(489, names(DT)[1]<-"A", "A", warning=if (base::getRversion()>="3.1.0") NULL else "Please upgrade")
 test(490, names(DT), c("A","b"))
-test(491, colnames(DT)[2]<-"B", "B", warning="colnames(x)<-value syntax.*Please change to setnames")
+test(491, colnames(DT)[2]<-"B", "B", warning=if (base::getRversion()>="3.1.0") NULL else "Please upgrade")
 test(492, names(DT), c("A","B"))
 
 # Check setnames out of bounds errors
@@ -2551,7 +2552,9 @@ test(922, setnames(DT,c("A","B","C")), data.table(A=1:2,B=3:4,C=5:6,key="B"))
 DT = data.table(x=rep(1L,50000),key="x")
 test(923, DT[DT], error="Join results in more than 2^31 rows (internal vecseq reached physical limit). Very likely misspecified join.")
 X = data.table(x=1:2,y=1:6,key="x")
-test(924, X[J(c(1,1,1))], error="Join results in 9 rows; more than 6 = max(nrow(x),nrow(i)). Check for duplicate key values in i, each of")
+test(924.1, X[J(c(1,1,1))], X[rep(1:3,3)])
+test(924.2, X[J(c(1,1,1,1))], error="Join results in 12 rows; more than 10 = nrow(x)[+]nrow(i). Check for duplicate key values in i each of")
+
 
 # sorting of 'double' columns not correct for ties (tolerance nuance in C code), #2484
 DT = data.table(X=as.POSIXct( c(rep("15DEC2008:00:00:00",10),"15DEC2008:00:00:00",rep("17DEC2008:00:00:00",2)),format="%d%b%Y:%H:%M:%S"),Y=c(1534,61,74,518,519,1519,1520,1524,3127,29250,30609,43,7853))
@@ -2778,12 +2781,9 @@ test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(
 # an fread error shouldn't hold a lock on the file on Windows.
 f = tempfile()
 cat('A,B\n"aa",2\n"bb,2\n"cc",3\n', file=f)  # NB: deliberate missing quote after bb.
-eol = if (.Platform$OS.type == "windows") "\r\n" else "\n"
-test(1010.1, fread(f), data.table(A=c("aa",paste("bb,2",eol,"\"cc",sep="")), B=2:3))  # used be an error, but is now valid
-cat('"',file=f,append=TRUE)  # create an error.  Something that should always be an error of some sort.
-test(1010.2, fread(f), error="Expected sep (',') but new line, EOF (or other non printing character) ends field 1 on line 5 when detecting types")
+test(1010, fread(f), error="Field 1 on line 3.*Check for unbalanced unescaped quotes: \"bb,2")
 cat('dd",4\n',file=f,append=TRUE)   # tests file lock on Windows after error
-test(1011, fread(f), data.table(A=c("aa",paste("bb,2",eol,"\"cc",sep=""),"dd"), B=2:4))
+test(1011, fread(f), error="Field 1 on line 3.*Check for unbalanced unescaped quotes: \"bb,2")
 cat('A,B\n"aa",1\n"bb",2\n"cc",3\n', file=f)   # testing overwrite
 test(1012, fread(f), data.table(A=c("aa","bb","cc"),B=1:3))
 unlink(f)  # testing file can be removed after error
@@ -3766,13 +3766,15 @@ for (i in 1:2) {
     # test(1214+i*0.1, DT[.(-200.0),roll=TRUE]$B, 3L)  # TO DO: roll to -Inf.  Also remove -Inf and test rolling to NaN and NA
 }
 
-# that fread reads quotes in the middle of fields ok, #2694
+# that fread reads unescaped (but balanced) quotes in the middle of fields ok, #2694
 test(1215,
    fread('N_ID VISIT_DATE REQ_URL REQType\n175931 2013-03-08T23:40:30 http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU 1'),
    data.table(N_ID=175931L, VISIT_DATE="2013-03-08T23:40:30", REQ_URL='http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU', REQType=1L)
 )
-test(1216, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n'),
-           data.table(A=c('1.2','fo"o'), B=c('Foo"Bar','bar'),C=c('a"b"c"d','b,az"')))
+test(1216.1, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n'), error="Field 3 on line 2.*Check for unbalanced unescaped quotes: \"a\"b\"c\"d\"")
+test(1216.2, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,az""\n'), error="Field 3 on line 3.*Check for unbalanced unescaped quotes: \"b,az\"\"")
+test(1216.3, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,"az""\n'), 
+           data.table(A=c('1.2','fo"o'), B=c('Foo"Bar','bar'),C=c('a"b"c"d"','b,"az"')))
 test(1217, fread('"One,Two","Three",Four\n12,3,4\n56,7,8\n'),  # quoted column names including the separator
            data.table("One,Two"=c(12L,56L),Three=c(3L,7L),Four=c(4L,8L)))
 
@@ -4470,6 +4472,7 @@ c(2497.94263862333,
 "fr", "fg", "fsal", "mr", "mg", "msal"), class = c("data.table",
 "data.frame"), row.names = c(NA, -2L))
 
+if (options()$width<80) options(width=80)
 ans1 = capture.output(print(DT, digits=4, row.names=FALSE))
 ans2 = c(" fisyr  er      eg      esal  fr      fg      fsal    mr      mg      msal", 
          "  1995 1,3 0.01973 2330,2424 4,4 0.03931 2521,2521  5,30 0.01978 2572,4216", 
@@ -4707,7 +4710,7 @@ test(1322, fread('A,B,C\n1,"foo
 bar",3\n4,baz,6'), data.table(A=c(1L,4L), B=c("foo\nbar","baz"), C=c(3L,6L)))
 # NB: don't remove the newline after foo in test 1322 above, that's what's being tested.
 test(1323, fread('col1,col2\n5,"4\n3"'), data.table(col1=5L, col2="4\n3"))
-test(1324, fread('A,B,C\n1,4,"foo"\n2,5,"bar'), error="Field 3 on line 3 starts with quote but doesn't finish with.*2,5,")
+test(1324, fread('A,B,C\n1,4,"foo"\n2,5,"bar'), error="Field 3 on line 3 starts with quote.*Check for unbalanced unescaped quotes: \"bar")
 test(1325, fread('A,B,C\n1,4,"foo"\n2,5,"bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar')))
 test(1326, fread('A,B,C\n1,4,"foo"\n2,5,bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar"')))
 test(1327, fread('A,B,C\n1,4,"foo"\n2,5,""bar""'), data.table(A=1:2,B=4:5,C=c("foo",'"bar"')))
@@ -4725,12 +4728,19 @@ test(1334, fread('A,B\nfoo,1\n"Analyst\\" ,",2\nbar,3'), data.table(A=c('foo', '
 test(1335, fread('A,B\nfoo,1\n"Analyst\\\\",2\nbar,3'), data.table(A=c('foo','Analyst\\\\','bar'), B=1:3))
 
 # data from 12GB file in comments on http://stackoverflow.com/a/23858323/403310 ...
+# note that read.csv gets this wrong and puts jacoleman high school into the previous field, then fills the rest of the line silently.
 cat('A,B,C,D,E,F
 "12",0,"teacher private nfp\\\\\\\\"",""jacoleman high school","",""
 "TX",77406,"business analyst\\\\\\\\\\\\\\","the boeing co","",""
 "CA",94116,"na\\none","retired","",""
 ', file = f<-tempfile())   # aside: notice the \\ before n of none as well
-test(1336, fread(f), data.table(A=c("12","TX","CA"), B=c(0L,77406L,94116L),C=c('teacher private nfp\\\\\\\\"','business analyst\\\\\\\\\\\\\\','na\\none'), D=c('"jacoleman high school','the boeing co','retired'),E="",F=""))
+test(1336.1, fread(f), error="Field 4 on line 2.*Check for unbalanced unescaped quotes: \"\"jacoleman high school\",\"\",\"\"")
+cat('A,B,C,D,E,F
+"12",0,"teacher private nfp\\\\\\\\"","jacoleman high school","",""
+"TX",77406,"business analyst\\\\\\\\\\\\\\","the boeing co","",""
+"CA",94116,"na\\none","retired","",""
+', file = f)
+test(1336.2, fread(f), data.table(A=c("12","TX","CA"), B=c(0L,77406L,94116L),C=c('teacher private nfp\\\\\\\\"','business analyst\\\\\\\\\\\\\\','na\\none'), D=c('jacoleman high school','the boeing co','retired'),E="",F=""))
 unlink(f)
 
 # file names ending with \ (quite common)
@@ -4943,7 +4953,7 @@ test(1364.12, setdiff_(X, Y, c("d", "e"), c("d", "f")), X[!5, list(d,e)])
 test(1364.13, setdiff_(X, Y, "d", "e"), error="When x's column ('d') is integer or numeric, the corresponding column in y ('e')")
 test(1364.14, setdiff_(X, Y, "b", "a"), error="When x's column ('b') is factor, the corresponding column in y ('a')")
 test(1364.15, setdiff_(X, Y, "c", "a"), error="When x's column ('c') is character, the corresponding column in y ('a') ")
-test(1364.16, setdiff_(X, Y), error="setdiff(x,y) requires same number of columns for both x and y")
+test(1364.16, setdiff_(X, Y), error="length(by.x) != length(by.y)")
 test(1364.17, setdiff_(X[, list(a)], Y[, list(a)]), data.table(a=c(1,2)))
 
 # not join along with by=.EACHI, #604
@@ -5410,7 +5420,9 @@ test(1391.2, subset(DT, select=c("V2", "V1")), DT[, c("V2", "V1"), with=FALSE])
 
 # Test faster version of na.omit() using is_na.
 DT = data.table(x=sample(c(1:2, NA), 30, TRUE), y=sample(c(1:5, NA, NaN), 30, TRUE))
-test(1392, na.omit(DT), DT[!is.na(x) & !is.na(y)])
+test(1392.1, na.omit(DT), DT[!is.na(x) & !is.na(y)])
+# added 'invert = ', a logical argument which when TRUE returns rows that has any NAs instead.
+test(1392.2, na.omit(DT, invert=TRUE), DT[is.na(x) | is.na(y)])
 
 # Fix for #899. Mix of ordered and normal factors where normal factors in more than 1 data.table has identical levels.
 DT1 = data.table(A = factor(INT(7,8,7,8,7)), B = factor(6:10), C = 0)
@@ -5509,6 +5521,54 @@ test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.'
 DT[,a:=factor(letters[a])]
 test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index 'a'")
 
+# fread dec=',' e.g. France
+test(1438, fread("A;B\n1;2,34\n", dec="12"), error="dec must be a single character")
+test(1439, fread("A;B\n1;2,34\n", dec="1"), error="Unable to change to a locale which provides the desired dec")  # this test runs on many machines so chose a dec for this test which is sure not to be valid in any locale
+test(1440, fread("A;B\n1;2,34\n", sep="."), error="The two arguments to fread 'dec' and 'sep' are equal ('.')")
+if (.Platform=="unix" &&
+    !inherits(tt <- try(system("locale -a", intern=TRUE)), "try-error") &&
+    "fr_FR.utf8" %in% tt ) {
+    # e.g. on Matt's machine where I've installed fr_FR.utf8 which has dec=","
+    options(datatable.fread.dec.locale="fr_FR.utf8")
+    oldlocale = Sys.getlocale("LC_NUMERIC")
+    test(1441, fread("A;B\n1;2,34\n", dec=",", verbose=TRUE), data.table(A=1L, B=2.34), output="Changing to system locale.*Trying 'fr_FR.utf8'.*success!")
+    test(1442, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after success
+    test(1443, fread("A;B\n1;2,34\n", dec=",", sep=",", verbose=TRUE), error="'dec' and 'sep' are equal", output="'fr_FR.utf8'.*success!")
+    test(1444, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after error. [ouput check in 1443 ensures it was changed]
+}
+
+# doubled quote inside a quoted field followed by an embedded newline
+# This file is 36 rows to move that line outside the top, middle and bottom 5 test rows
+test(1445, fread("doublequote_newline.csv")[7:10], data.table(A=c(1L,1L,2L,1L), B=c("a","embedded \"\"field\"\"\nwith some embedded new\nlines as well","not this one","a")))
+# the example from #489 directly :
+test(1446, fread('A,B,C\n233,"AN ""EMBEDDED"" QUOTE FIELD",morechars\n'), data.table(A=233L, B='AN ""EMBEDDED"" QUOTE FIELD', C='morechars'))
+
+# unescaped quoted subregion followed by newline
+test(1446, fread('A,B,C\n233,"an unescaped "embedded"
+region followed by newline",morechars\n'), error='Field 2 on line 2.*can contain balanced unescaped quoted subregions but.*can\'t contain embedded.*n as well.*: "an unescaped "embedded"')
+
+
+# when detecting types ...
+# fread('A,B\n1,"embedded""\nquote"\n2,should be ok\n')
+# fread("~/R/gitdatatable/pkg/inst/tests/quoted_multiline.csv")
+
+
+# Fix for #927
+DT = data.table(x=1L, y=2L)
+test(1447, DT[, set(.SD, j="x", value=10L)], error=".SD is locked. Updating .SD by reference using := or set")
+
+# Tests for shallow copy taking cols argument - not exported yet.
+DT = setDT(lapply(1:5, sample, 10, TRUE))
+ans1 = sapply(DT, address)
+fans2 = function(DT, cols=NULL) sapply(shallow(DT, cols), address)
+test(1448.1, ans1, fans2(DT))                               # make sure default/old functionality is intact
+test(1448.2, ans1[3:4], fans2(DT, 3:4))                     # using integer column numbers
+test(1448.3, ans1[c(5,2)], fans2(DT, c(5,2)))               # using numeric column numbers
+test(1448.4, ans1[c(4,2,4)], fans2(DT,c(4,2,4)))            # using duplicate column numbers
+test(1448.5, ans1[3:2], fans2(DT, c("V3", "V2")))           # using column names
+test(1448.6, ans1[c(3,3)], fans2(DT, c("V3", "V3")))        # using duplicate column names
+test(1448.7, shallow(DT, integer(0)), null.data.table())    # length-0 input work as intended as well.
+test(1448.8, shallow(DT, character(0)), null.data.table())  # length-0 input work as intended as well.
 
 ##########################
 

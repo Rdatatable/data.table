@@ -85,7 +85,7 @@ as.character.ITime <- format.ITime <- function(x, ...) {
     res
 }
 
-as.data.frame.ITime = function(x, ...) {
+as.data.frame.ITime <- function(x, ...) {
     # This method is just for ggplot2, #1713
     # Avoids the error "cannot coerce class '"ITime"' into a data.frame", but for some reason
     # ggplot2 doesn't seem to call the print method to get axis labels, so still prints integers.

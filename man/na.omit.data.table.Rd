@@ -9,11 +9,12 @@
 }
 
 \usage{
-\method{na.omit}{data.table}(object, by=seq_along(object), ...)
+\method{na.omit}{data.table}(object, by=seq_along(object), invert=FALSE, ...)
 }
 \arguments{
   \item{object}{ A \code{data.table}. }
   \item{by}{ A vector of column names (or numbers) on which to check for missing values. Default is all the columns. }
+  \item{invert}{ logical. If \code{FALSE} omits all rows with any missing values (default). \code{TRUE} returns just those rows with missing values instead. }
   \item{\dots}{ Further arguments special methods could require. }
 }
 \details{

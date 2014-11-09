@@ -106,7 +106,8 @@ void EXIT() {
 #endif
 
 #define skip_quoted() if (ch<eof && *ch=='\"') while(++ch<eof && *ch!='\"') {}
-#define MsgLimit(a) ((int)(a)>5000 ? 5000 : (int)(a))  // 5000 a large limit just to prevent runaways, still printable
+#define MsgLimit(a) ((int)(a)>5000 ? 5000 : (int)(a))
+// 5000 a large limit just to prevent runaways. If the message is passed to error() then R's much lower error length limit applies.
 
 static int countfields(int err)
 {
@@ -368,7 +369,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     return(newv);
 }
 
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP showProgressArg)
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP showProgressArg)
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP thiscol, ans, thisstr;
@@ -382,6 +383,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (!isInteger(showProgressArg) || LENGTH(showProgressArg)!=1 || (INTEGER(showProgressArg)[0]!=0 && INTEGER(showProgressArg)[0]!=1))
         error("showProgress must be 0 or 1, currently");
     int showProgress = INTEGER(showProgressArg)[0];
+    if (!isString(dec) || LENGTH(dec)!=1 || strlen(CHAR(STRING_ELT(dec,0))) != 1)
+        error("dec must be a single character");
+    const char decChar = *CHAR(STRING_ELT(dec,0));
     
     errormsg[0] = '\0';  // reset globals.  I know, I know, see comments above where EXIT() is defined. Better ideas?
     fnam = NULL;
@@ -402,7 +406,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (isNumeric(skip)) { skip = PROTECT(coerceVector(skip, INTSXP)); protecti++; }
     if (!( (isInteger(skip) && LENGTH(skip)==1 && INTEGER(skip)[0]>=-1)  // NA_INTEGER is covered by >=-1
          ||(isString(skip) && LENGTH(skip)==1))) error("'skip' must be a length 1 vector of type numeric or integer >=-1, or single character search string");  
-    if (!isNull(separg) && (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1)) error("'sep' must be 'auto' or a single character");
+    if (!isNull(separg)) {
+        if (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1) error("'sep' must be 'auto' or a single character");
+        if (*CHAR(STRING_ELT(separg,0)) == decChar) error("The two arguments to fread 'dec' and 'sep' are equal ('%c')", decChar);
+    }
     if (!isString(integer64) || LENGTH(integer64)!=1) error("'integer64' must be a single character string");
     if (strcmp(CHAR(STRING_ELT(integer64,0)), "integer64")!=0 &&
         strcmp(CHAR(STRING_ELT(integer64,0)), "double")!=0 &&
@@ -570,6 +577,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     char topsep=0;               // topsep stores the highest so far
     int topnline=nline;          // the top's corresponding line number
     for (i=0; i<nseps; i++) {
+        if (seps[i] == decChar) continue;
         ch=pos; sep=0;                             // starting from autostart for each sep
         while (ch<eof && *ch!=eol) {               // ch<eof is for one row input with no eol
             if (*ch==seps[i]) { sep=*ch; break; }  // this sep exists on this line
@@ -986,9 +994,33 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
                 case SXP_STR: case SXP_NULL: case_SXP_STR:
                     ch2=ch;
-                    if (*ch=='\"') { // protected, now look for the next [^\]"[sep|eol]
-                        while(++ch2<eof && (*ch2!='\"' || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) {};  // ch2-2 ok here without >mmp check since " and \ must have occurred prior
-                        if (ch2==eof) { sprintf(errormsg, "Field %d on line %d starts with quote but doesn't finish with an unescaped quote immediately followed by sep, \\n or EOF: %.*s", j+1, i+nline, MsgLimit(ch-pos+1), pos); EXIT(); }
+                    if (*ch=='\"') { // protected, now look for the next [^"\]"[sep|eol]
+                        int eolCount=0;  // just >0 is used currently but may as well count
+                        Rboolean noEmbeddedEOL=FALSE, quoteProblem=FALSE;
+                        while(++ch2<eof) {
+                            if (*ch2!='\"') {
+                                if (noEmbeddedEOL && *ch2==eol) { quoteProblem=TRUE; break; }
+                                eolCount+=(*ch2==eol);
+                                continue;  // fast return in most cases of characters
+                            }
+                            
+                            if (ch2+1==eof || *(ch2+1)==sep || *(ch2+1)==eol) break;
+                            // " followed by sep|eol|eof dominates a field ending with \" (for support of Windows style paths)
+                            
+                            if (*(ch2-1)!='\\') {
+                                if (ch2+1<eof && *(ch2+1)=='\"') { ch2++; continue; }  // skip doubled-quote
+                                // unescaped subregion
+                                if (eolCount) {quoteProblem=TRUE; break;}
+                                while (++ch2<eof && (*ch2!='\"' || *(ch2-1)=='\\') && *ch2!=eol);
+                                if (ch2==eof || *ch2==eol) {quoteProblem=TRUE; break;}
+                                noEmbeddedEOL = 1;
+                            }
+                        }
+                        if (quoteProblem || ch2==eof) {
+                            if (ch2==eof || *ch2==eol) ch2--; // don't include the eof or eol at end of error message
+                            sprintf(errormsg, "Field %d on line %d starts with quote (\") but then has a problem. It can contain balanced unescaped quoted subregions but if it does it can't contain embedded \\n as well. Check for unbalanced unescaped quotes: %.*s", j+1, i+nline, MsgLimit(ch2-ch+1), ch);
+                            EXIT();
+                        }
                         ch2++;
                         if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLen(ch+1, (int)(ch2-ch-2))); // else skip field
                     } else {           // unprotected, look for next next [sep|eol]

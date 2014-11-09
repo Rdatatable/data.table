@@ -13,8 +13,11 @@
 
   1. `fread` now passes `showProgress=FALSE` through to `download.file()` (as `quiet=TRUE`). Thanks to a pull request from Karl Broman and Richard Scriven for filing the issue, [#741](https://github.com/Rdatatable/data.table/issues/741).
   
-  2. `DT[column == value]` no longer recycles `value` except in the length 1 case (when it still uses DT's key or an automatic secondary key, as introduced in v1.9.4). If `length(value)==length(column)` then it works element-wise as standard in R. Otherwise, a length error is issued to avoid common errors. `DT[column %in% values]` still uses DT's key (or an an automatic secondary key) as before.  Automatic indexing (i.e., optimization of `==` and `%in%`) may still be turned off with `options(datatable.auto.index=FALSE)`.
+  2. `fread` now accepts `dec=','` (and other non-'.' decimal separators), [#917](https://github.com/Rdatatable/data.table/issues/917). A new paragraph has been added to `?fread`. If you are located in a country that uses `dec=','` then it should just work. If not, you will need to read the paragraph for an extra step. In case it somehow breaks `dec='.'`, this new feature can be turned off with `options(datatable.fread.dec.experiment=FALSE)`.
+  
+  3. `DT[column == value]` no longer recycles `value` except in the length 1 case (when it still uses DT's key or an automatic secondary key, as introduced in v1.9.4). If `length(value)==length(column)` then it works element-wise as standard in R. Otherwise, a length error is issued to avoid common user errors. `DT[column %in% values]` still uses DT's key (or an an automatic secondary key) as before.  Automatic indexing (i.e., optimization of `==` and `%in%`) may still be turned off with `options(datatable.auto.index=FALSE)`.
 
+  4. `na.omit` method for data.table is rewritten in C, for speed. It's ~11x faster on bigger data; see examples under `?na.omit`. It also gains two additional arguments a) `by` accepts column names (or numbers) on which to check for missing values. 2) `invert` when `TRUE` returns the rows with any missing values instead.
 
 #### BUG FIXES
 
@@ -25,46 +28,57 @@
   3. `:=` no longer prints in knitr for consistency with behaviour at the prompt, [#505](https://github.com/Rdatatable/data.table/issues/505). Output of a test `knit("knitr.Rmd")` is now in data.table's unit tests. Thanks to Corone for the illustrated report.
   
   4. `knitr::kable()` works again without needing to upgrade from knitr v1.6 to v1.7, [#809](https://github.com/Rdatatable/data.table/issues/809). Packages which evaluate user code and don't wish to import data.table need to be added to `data.table:::cedta.pkgEvalsUserCode` and now only the `eval` part is made data.table-aware (the rest of such package's code is left data.table-unaware). `data.table:::cedta.override` is now empty and will be deprecated if no need for it arises. Thanks to badbye and Stephanie Locke for reporting.
-
-  5. `as.data.table.list` with list input having 0-length items, e.g. `x = list(a=integer(0), b=3:4)`. `as.data.table(x)` recycles item `a` with `NA`s to fit the length of the longer column `b` (length=2), as before now, but with an additional warning message that the item has been recycled with `NA`. Closes [#847](https://github.com/Rdatatable/data.table/issues/847). Thanks to @tvinodr for the report. This was a regression from 1.9.2.
   
-  6. `DT[i, j]` when `i` returns all `FALSE` and `j` contains some length-0 values (ex: `integer(0)`) now returns an empty data.table as it should. Closes [#758](https://github.com/Rdatatable/data.table/issues/758) and [#813](https://github.com/Rdatatable/data.table/issues/813). Thanks to @tunaaa and @nigmastar for the nice reproducible reports. 
+  5. `fread()`:
+      * doubled quotes ("") inside quoted fields made more robust including if immediately followed by an embedded newline, ([#489](https://github.com/Rdatatable/data.table/issues/489). Thanks to James Sams for reporting.
+   
+  6. `as.data.table.list` with list input having 0-length items, e.g. `x = list(a=integer(0), b=3:4)`. `as.data.table(x)` recycles item `a` with `NA`s to fit the length of the longer column `b` (length=2), as before now, but with an additional warning message that the item has been recycled with `NA`. Closes [#847](https://github.com/Rdatatable/data.table/issues/847). Thanks to @tvinodr for the report. This was a regression from 1.9.2.
+  
+  7. `DT[i, j]` when `i` returns all `FALSE` and `j` contains some length-0 values (ex: `integer(0)`) now returns an empty data.table as it should. Closes [#758](https://github.com/Rdatatable/data.table/issues/758) and [#813](https://github.com/Rdatatable/data.table/issues/813). Thanks to @tunaaa and @nigmastar for the nice reproducible reports. 
 
-  7. `allow.cartesian` is ignored during joins when:  
+  8. `allow.cartesian` is ignored during joins when:  
       * `i` has no duplicates and `mult="all"`. Closes [#742](https://github.com/Rdatatable/data.table/issues/742). Thanks to @nigmastar for the report.  
       * assigning by reference, i.e., `j` has `:=`. Closes [#800](https://github.com/Rdatatable/data.table/issues/800). Thanks to @matthieugomez for the report.
 
   In both these cases (and during a `not-join` which was already fixed in [1.9.4](https://github.com/Rdatatable/data.table/blob/master/README.md#bug-fixes-1)), `allow.cartesian` can be safely ignored.
 
-  8. `names<-.data.table` works as intended on data.table unaware packages with Rv3.1.0+. Closes [#476](https://github.com/Rdatatable/data.table/issues/476) and [#825](https://github.com/Rdatatable/data.table/issues/825). Thanks to ezbentley for reporting [here](http://stackoverflow.com/q/23256177/559784) on SO and to @narrenfrei.
+  9. `names<-.data.table` works as intended on data.table unaware packages with Rv3.1.0+. Closes [#476](https://github.com/Rdatatable/data.table/issues/476) and [#825](https://github.com/Rdatatable/data.table/issues/825). Thanks to ezbentley for reporting [here](http://stackoverflow.com/q/23256177/559784) on SO and to @narrenfrei.
   
-  9. `.EACHI` is now an exported symbol (just like `.SD`,`.N`,`.I`,`.GRP` and `.BY` already were) so that packages using `data.table` and `.EACHI` pass `R CMD check` with no NOTE that this symbol is undefined. Thanks to Matt Bannert for highlighting.
+  10. `.EACHI` is now an exported symbol (just like `.SD`,`.N`,`.I`,`.GRP` and `.BY` already were) so that packages using `data.table` and `.EACHI` pass `R CMD check` with no NOTE that this symbol is undefined. Thanks to Matt Bannert for highlighting.
   
-  10. `DT[colA == max(colA)]` now works again without needing `options(datatable.auto.index=FALSE)`. Thanks to Jan Gorecki and kaybenleroll, [#858](https://github.com/Rdatatable/data.table/issues/858). Test added.
+  11. `DT[colA == max(colA)]` now works again without needing `options(datatable.auto.index=FALSE)`. Thanks to Jan Gorecki and kaybenleroll, [#858](https://github.com/Rdatatable/data.table/issues/858). Test added.
   
-  11. `DT[colA %in% c("id1","id2","id2","id3")]` now ignores the RHS duplicates (as before, consistent with base R) without needing `options(datatable.auto.index=FALSE)`. Thanks to Dayne Filer for reporting.
+  12. `DT[colA %in% c("id1","id2","id2","id3")]` now ignores the RHS duplicates (as before, consistent with base R) without needing `options(datatable.auto.index=FALSE)`. Thanks to Dayne Filer for reporting.
   
-  12. If `DT` contains a column `class` (happens to be a reserved attribute name in R) then `DT[class=='a']` now works again without needing `options(datatable.auto.index=FALSE)`. Thanks to sunnyghkm for reporting, [#871](https://github.com/Rdatatable/data.table/issues/871).
+  13. If `DT` contains a column `class` (happens to be a reserved attribute name in R) then `DT[class=='a']` now works again without needing `options(datatable.auto.index=FALSE)`. Thanks to sunnyghkm for reporting, [#871](https://github.com/Rdatatable/data.table/issues/871).
   
-  13. `:=` and `set*` now drop secondary keys (new in v1.9.4) so that `DT[x==y]` works again after a `:=` or `set*` without needing `options(datatable.auto.index=FALSE)`. Only `setkey()` was dropping secondary keys correctly. 23 tests added. Thanks to user36312 for reporting, [#885](https://github.com/Rdatatable/data.table/issues/885).
+  14. `:=` and `set*` now drop secondary keys (new in v1.9.4) so that `DT[x==y]` works again after a `:=` or `set*` without needing `options(datatable.auto.index=FALSE)`. Only `setkey()` was dropping secondary keys correctly. 23 tests added. Thanks to user36312 for reporting, [#885](https://github.com/Rdatatable/data.table/issues/885).
 
-  14. Some optimisations of `.SD` in `j` was done in 1.9.4, refer to [#735](https://github.com/Rdatatable/data.table/issues/735). Due to an oversight, j-expressions of the form c(lapply(.SD, ...), list(...)) were optimised improperly. This is now fixed. Thanks to @mmeierer for filing [#861](https://github.com/Rdatatable/data.table/issues/861).
+  15. Some optimisations of `.SD` in `j` was done in 1.9.4, refer to [#735](https://github.com/Rdatatable/data.table/issues/735). Due to an oversight, j-expressions of the form c(lapply(.SD, ...), list(...)) were optimised improperly. This is now fixed. Thanks to @mmeierer for filing [#861](https://github.com/Rdatatable/data.table/issues/861).
 
-  15. `j`-expressions in `DT[, col := x$y()]` (or) `DT[, col := x[[1]]()]` are now (re)constructed properly. Thanks to @ihaddad-md for reporting. Closes [#774](https://github.com/Rdatatable/data.table/issues/774).
+  16. `j`-expressions in `DT[, col := x$y()]` (or) `DT[, col := x[[1]]()]` are now (re)constructed properly. Thanks to @ihaddad-md for reporting. Closes [#774](https://github.com/Rdatatable/data.table/issues/774).
 
-  16. `format.ITime` now handles negative values properly. Closes [#811](https://github.com/Rdatatable/data.table/issues/811). Thanks to @StefanFritsch for the report along with the fix!
+  17. `format.ITime` now handles negative values properly. Closes [#811](https://github.com/Rdatatable/data.table/issues/811). Thanks to @StefanFritsch for the report along with the fix!
   
-  17. Compatibility with big endian machines (e.g., SPARC and PowerPC) is restored. Most Windows, Linux and Mac systems are little endian; type `.Platform$endian` to confirm. Thanks to Gerhard Nachtmann for reporting and the [QEMU project](http://qemu.org/) for their PowerPC emulator.
+  18. Compatibility with big endian machines (e.g., SPARC and PowerPC) is restored. Most Windows, Linux and Mac systems are little endian; type `.Platform$endian` to confirm. Thanks to Gerhard Nachtmann for reporting and the [QEMU project](http://qemu.org/) for their PowerPC emulator.
 
-  18. `DT[, LHS := RHS]` with RHS is of the form `eval(parse(text = foo[1]))` referring to columns in `DT` is now handled properly. Closes [#880](https://github.com/Rdatatable/data.table/issues/880). Thanks to tyner.
+  19. `DT[, LHS := RHS]` with RHS is of the form `eval(parse(text = foo[1]))` referring to columns in `DT` is now handled properly. Closes [#880](https://github.com/Rdatatable/data.table/issues/880). Thanks to tyner.
   
-  19. `subset` handles extracting duplicate columns in consistency with data.table's rule - if a column name is duplicated, then accessing that column using column number should return that column, whereas accessing by column name (due to ambiguity) will always extract the first column. Closes [#891](https://github.com/Rdatatable/data.table/issues/891). Thanks to @jjzz.
+  20. `subset` handles extracting duplicate columns in consistency with data.table's rule - if a column name is duplicated, then accessing that column using column number should return that column, whereas accessing by column name (due to ambiguity) will always extract the first column. Closes [#891](https://github.com/Rdatatable/data.table/issues/891). Thanks to @jjzz.
 
-  20. `rbindlist` handles combining levels of data.tables with both ordered and unordered factor columns properly. Closes [#899](https://github.com/Rdatatable/data.table/issues/899). Thanks to @ChristK.
+  21. `rbindlist` handles combining levels of data.tables with both ordered and unordered factor columns properly. Closes [#899](https://github.com/Rdatatable/data.table/issues/899). Thanks to @ChristK.
+
+  22. Updating `.SD` by reference using `set` also errors appropriately now; similar to `:=`. Closes [#927](https://github.com/Rdatatable/data.table/issues/927). Thanks to @jrowen for the minimal example.
 
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
+  
+  2. `?setnames` has been updated now that `names<-` and `colnames<-` shallow (rather than deep) copy from R >= 3.1.0, [#853](https://github.com/Rdatatable/data.table/issues/872).
+  
+  3. [FAQ 1.6](https://github.com/Rdatatable/data.table/wiki/vignettes/datatable-faq.pdf) has been embellished, [#517](https://github.com/Rdatatable/data.table/issues/517). Thanks to a discussion with Vivi and Josh O'Brien.
+  
+  4. `data.table` redefines `melt` generic and *suggests* `reshape2` instead of *import*. As a result we don't have to load `reshape2` package to use `melt.data.table` anymore. The reason for this change is that `data.table` requires R >=2.14, whereas `reshape2` R v3.0.0+. Reshape2's melt methods can be used without any issues by loading the package normally.
 
 ### Changes in v1.9.4  (on CRAN 2 Oct 2014)
 
@@ -101,7 +115,7 @@
       * accepts trailing backslash in quoted fields. Thanks to user2970844 for highlighting [here](http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash).
       * Blank and `"NA"` values in logical columns (`T`,`True`,`TRUE`) no longer cause them to be read as character, [#567](https://github.com/Rdatatable/data.table/issues/567). Thanks to Adam November for reporting.
       * URLs now work on Windows. R's `download.file()` converts `\r\n` to `\r\r\n` on Windows. Now avoided by downloading in binary mode. Thanks to Steve Miller and Dean MacGregor for reporting, [#492](https://github.com/Rdatatable/data.table/issues/492).
-      * Fixed seg fault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796). Thanks to Adam Kennedy for the detailed reproducible report.
+      * Fixed seg fault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796) and [#722](https://github.com/Rdatatable/data.table/issues/722). Thanks to Adam Kennedy and Richard Cotton for the detailed reproducible reports.
       * New argument `fread(...,data.table=FALSE)` returns a `data.frame` instead of a `data.table`. This can be set globally: `options(datatable.fread.datatable=FALSE)`.
 
   6. `.()` can now be used in `j` and is identical to `list()`, for consistency with `i`.

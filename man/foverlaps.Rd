@@ -39,9 +39,7 @@ Overlap joins takes advantage of the fact that \code{y} is sorted to speed-up fi
 
 The \code{lookup} generation step could be quite time consuming if the number of unique values in \code{y} are too large (ex: in the order of tens of millions). There might be improvements possible by constructing lookup using RLE, which is a pending feature request. However most scenarios will not have too many unique values for \code{y}.
 
-Note that, a \code{range join} is a special case of \code{overlap join} (or interval join) where the \code{start} and \code{end} intervals for \code{data.table x} are exactly the same. 
-
-NB: \code{type="equal"} is not yet implemented, but it's just a normal join as long as \code{maxgap} and \code{minoverlap} arguments are not changed from their default values. Also not implemented yet are \code{maxgap} and \code{minoverlap} arguments. We hope to implement these by the next major release. 
+Columns of \code{numeric} types (i.e., \code{double}) have their last two bytes rounded off while computing overlap joins, by defalult, to avoid any unexpected behaviour due to limitations in representing floating point numbers precisely. Have a look at \code{\link{setNumericRounding}} to learn more.
 }
 \value{
     A new \code{data.table} by joining over the interval columns (along with other additional identifier columns) specified in \code{by.x} and \code{by.y}. 
@@ -85,7 +83,7 @@ foverlaps(x, y, by.x=c("seq", "start", "end"),
             type="any", which=TRUE)
 }
 \seealso{
-  \code{\link{data.table}}, \url{http://www.bioconductor.org/packages/release/bioc/html/IRanges.html}
+  \code{\link{data.table}}, \url{http://www.bioconductor.org/packages/release/bioc/html/IRanges.html}, \code{\link{setNumericRounding}}
 }
 \keyword{ data }
 

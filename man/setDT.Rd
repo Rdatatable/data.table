@@ -33,8 +33,9 @@ X = data.frame(A=sample(3, 10, TRUE),
          B=sample(letters[1:3], 10, TRUE), 
          C=sample(10), stringsAsFactors=FALSE)
 
+# Convert X to data.table by reference and 
 # get the frequency of each "A,B" combination
-setDT(X)[, .N, by="A,B"][]
+setDT(X)[, .N, by=.(A,B)]
 
 # convert list to data.table 
 # autofill names

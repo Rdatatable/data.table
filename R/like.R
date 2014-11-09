@@ -1,4 +1,4 @@
-like = function(vector, pattern)
+like <- function(vector, pattern)
 {
     # Intended for use with a data.table 'where' 
     # Don't use * or % like SQL's like.  Uses regexpr syntax - more powerful.

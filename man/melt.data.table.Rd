@@ -78,7 +78,7 @@ melt(DT, id=1, measure=c("c1", "i2")) # i2 coerced to char
 melt(DT, id=1, measure=c("c1", "i2"), na.rm=TRUE) # remove NA
 }
 \seealso{
-  \code{\link{dcast.data.table}}
+  \code{\link{dcast.data.table}}, \url{http://had.co.nz/reshape/}
 }
 \keyword{ data }
 

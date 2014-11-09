@@ -1,5 +1,5 @@
 
-bmerge = function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, verbose)
+bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, verbose)
 {
     # TO DO: rename leftcols to icols, rightcols to xcols
     # NB: io is currently just TRUE or FALSE for whether i is keyed

@@ -2,7 +2,7 @@
 # c.factor was intended to be deprecated but we need it for rbind. No longer used by 'by'.
 # In dogroups, we now drop factor levels in .SD, work with integers, and add levels back afterwards.
 
-c.factor = function(...)
+c.factor <- function(...)
 {
     args <- list(...)
     for (i in seq_along(args)) if (!is.factor(args[[i]])) args[[i]] = as.factor(args[[i]])
@@ -18,7 +18,7 @@ c.factor = function(...)
     structure(ans, levels = newlevels, names = nm, class = "factor")
 }
 
-#"[.factor" = function(x, ...)
+#"[.factor" <- function(x, ...)
 #{
 #    # change default action of factors to drop unused levels. This saves memory space and copying. It also makes tapply() work as you expect since the levels contain the unique values only, otherwise you get many NAs for the unused factor levels.
 #    # The base::"[.factor" first creates the integer subset, with a pointer to the original levels, then 'if(drop)' calls factor() to then remove the unused levels.

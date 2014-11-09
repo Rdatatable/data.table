@@ -71,10 +71,6 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     } else incr = 1L # integer or Date class for example
 
     ## hopefully all checks are over. Now onto the actual task at hand.
-    shallow <- function(x, cols) {
-        xx = as.list(x)[cols]
-        setDT(xx)
-    }
     origx = x; x = shallow(x, by.x)
     origy = y; y = shallow(y, by.y)
     if (identical(by.x, key(origx)[seq_along(by.x)]))
@@ -82,13 +78,13 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     setattr(y, 'sorted', by.y) ## is definitely sorted on by.y
     roll = switch(type, start=, end=, equal= FALSE, 
                     any=, within= TRUE)
-    make_call = function(names, fun=NULL) {
+    make_call <- function(names, fun=NULL) {
         if (is.character(names))
             names = lapply(names, as.name)
         call = c(substitute(fun, list(fun=fun)), names)
         if (!is.null(fun)) as.call(call) else call
     }
-    construct = function(icols, mcols, type=type) {
+    construct <- function(icols, mcols, type=type) {
         icall = make_call(icols)
         setattr(icall, 'names', icols)
         mcall = make_call(mcols, quote(c))
@@ -113,7 +109,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
         xx = shallow(xx, cols)
         ii[xx, which=TRUE, ...]
     }
-    indices = function(x, y, intervals, ...) {
+    indices <- function(x, y, intervals, ...) {
         if (type == "start") {
             sidx = eidx = matches(x, y, intervals[2L], ...) ## TODO: eidx can be set to integer(0)
         } else if (type == "end") {
@@ -163,7 +159,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
         xcols2 = setdiff(names(ans), xcols1)
         ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, chmatch(ycols, names(origy)))]
         setcolorder(ans, c(xcols1, ycols, xcols2))
-        return (ans)
+        return (ans[])
     }
 }
 

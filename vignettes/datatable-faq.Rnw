@@ -100,7 +100,20 @@ myfunction = function(dt, expr) {
     dt[,eval(e),by=Species]
 }
 myfunction(DT,sum(Sepal.Width))
-@        
+@
+
+\code{quote()} and \code{eval()} are like macros in other languages. Instead of \code{j=myfunction()} (which won't work without laboriously passing in all the arguments) it's \code{j=eval(mymacro)}. This can be more efficient than a function call, and convenient. When data.table sees \code{j=eval(mymacro)} it knows to find \code{mymacro} in calling scope so as not to be tripped up if a column name happens to be called \code{mymacro}, too. 
+
+For example, let's make sure that exactly the same \code{j} is run for a set of different grouping criteria :
+
+<<>>=
+DT = as.data.table(iris)
+whatToRun = quote( .(AvgWidth = mean(Sepal.Width),
+                     MaxLength = max(Sepal.Length)) )
+DT[, eval(whatToRun), by=Species]
+DT[, eval(whatToRun), by=.(FirstLetter=substring(Species,1,1))]
+DT[, eval(whatToRun), by=.(Petal.Width=round(Petal.Width,0))]
+@
 
 \subsection{What are the benefits of being able to use column names as if they are variables inside \code{DT[...]}?}
 \code{j} doesn't have to be just column names. You can write any \proglang{R} \emph{expression} of column names directly as the \code{j}; e.g., 

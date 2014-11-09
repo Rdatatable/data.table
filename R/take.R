@@ -1,4 +1,4 @@
-take = function(x, n=1)
+take <- function(x, n=1)
 {
     # returns the head of head, without the last n observations
     # convenient when inlining expressions

@@ -1,4 +1,4 @@
-which.last = function(x)
+which.last <- function(x)
 {
     if (!is.logical(x)) {
         stop("x not boolean")

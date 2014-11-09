@@ -54,7 +54,7 @@
      \code{anyDuplicated} returns a integer value with the index of first duplicate. If none exists, 0L is returned.
 
 }
-\seealso{ \code{\link{data.table}}, \code{\link{duplicated}}, \code{\link{unique}}, \code{\link{all.equal}}, \code{\link{getNumericRounding}}, \code{\link{setNumericRounding}}}
+\seealso{ \code{\link{setNumericRounding}}, \code{\link{data.table}}, \code{\link{duplicated}}, \code{\link{unique}}, \code{\link{all.equal}} }
 \examples{
 DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B")
 duplicated(DT)
