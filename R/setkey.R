@@ -367,7 +367,7 @@ frankv = function(x, by=seq_along(x), ties.method=c("average", "first", "random"
         xorder  = seq_along(x[[1L]])
     }
     ans = switch(ties.method, 
-           average = , min = , max = {
+           average = , min = , max =, dense =, runlength = {
                rank = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), ties.method)
                if (is.na(na.last) && xorder[1L] == 0L) {
                    idx = which(rank != 0L)
