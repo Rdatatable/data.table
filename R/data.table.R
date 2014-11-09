@@ -1993,6 +1993,7 @@ subset.data.table <- function (x, subset, select, ...)
 is_na <- function(x, by=seq_along(x)) .Call(Cdt_na, x, by)
 
 
+
 na.omit.data.table <- function (object, by = seq_along(object), invert = FALSE, ...) {
     if (!cedta()) return(NextMethod())
     if ( !missing(invert) && is.na(as.logical(invert)) )
