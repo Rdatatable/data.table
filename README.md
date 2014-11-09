@@ -19,7 +19,20 @@
   
   3. `DT[column == value]` no longer recycles `value` except in the length 1 case (when it still uses DT's key or an automatic secondary key, as introduced in v1.9.4). If `length(value)==length(column)` then it works element-wise as standard in R. Otherwise, a length error is issued to avoid common user errors. `DT[column %in% values]` still uses DT's key (or an an automatic secondary key) as before.  Automatic indexing (i.e., optimization of `==` and `%in%`) may still be turned off with `options(datatable.auto.index=FALSE)`.
 
-  4. `na.omit` method for data.table is rewritten in C, for speed. It's ~11x faster on bigger data; see examples under `?na.omit`. It also gains two additional arguments a) `by` accepts column names (or numbers) on which to check for missing values. 2) `invert` when `TRUE` returns the rows with any missing values instead.
+  4. `na.omit` method for data.table is rewritten in C, for speed. It's ~11x faster on bigger data; see examples under `?na.omit`. It also gains two additional arguments a) `cols` accepts column names (or numbers) on which to check for missing values. 2) `invert` when `TRUE` returns the rows with any missing values instead.
+
+  5. `IMonth` and `IQuarter` classes allow to represent monthly and quarterly dates as integers. 
+
+  6. `setcolorder` syntax is now similar to `setnames`. When only one argument is given, setcolorder behaves as usual. However, this argument is renamed from "neworder" to "old" to be consistent with `setnames`. A second argument (a numeric vector) can now be specified, allowing to so `setcolorder(DT, "v1", 1)`.
+
+  7. Wrapping `by` with parentheses makes sure that the expression is not captured, similarly to the LHS of `:=`
+
+  ```R
+  col2 <- "col1"
+  DT[,., by = col2] # groups by col2 if col2 is a column in  DT
+  DT[,., by = (col2)] # groups by col1
+  ```
+
 
 #### BUG FIXES
 
