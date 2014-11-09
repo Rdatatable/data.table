@@ -307,7 +307,7 @@ CJ = function(..., sorted = TRUE)
     l
 }
 
-frankv = function(x, by=seq_along(x), ties.method=c("average", "first", "random", "max", "min"), order=1L, na.last=TRUE) {
+frankv = function(x, by=seq_along(x), ties.method=c("average", "first", "random", "max", "min", "dense"), order=1L, na.last=TRUE) {
     ties.method = match.arg(ties.method)
     na.last = as.logical(na.last)
     if (!length(na.last)) stop('length(na.last) = 0')
