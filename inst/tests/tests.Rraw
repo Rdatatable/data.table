@@ -5024,7 +5024,6 @@ for (i in seq_along(dt)) {
         }
     }
 }
-# maybe add tests on smaller examples with NAs, even though can't compare to base::rank.
 
 # tests for is_na, which is equivalent of rowSums(is.na(dt)) > 0L
 # not exported yet, but we could!
@@ -5594,6 +5593,7 @@ test(1448.8, shallow(DT, character(0)), null.data.table())  # length-0 input wor
 # TO DO: Add to warning about a previous copy that class<-, levels<- can also copy whole vector.  *Any* fun<- form basically.
 # TO DO: use looped := vs set test in example(":=") or example(setnames) to test overhead in [.data.table is tested to stay low in future.
 
+# TO DO: add tests on smaller examples with NAs for 'frankv', even though can't compare to base::rank.
 ## See test-* for more tests
 
 ##########################
