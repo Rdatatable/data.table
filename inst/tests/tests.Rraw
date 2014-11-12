@@ -2495,7 +2495,8 @@ test(901, DT<-fread(f), as.data.table(read.table(f,sep="\t",header=TRUE,colClass
 f = "2008head.csv"
 test(902, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)), warning="Bumped column 23 to type character.*may not be lossless")
 
-test(903, fread("A,B\n1,3,foo,5\n2,4,barbaz,6"), data.table(1:2,3:4,c("foo","barbaz"),5:6))  # invalid header (too short) ignored
+test(903, fread("A,B\n1,3,foo,5\n2,4,barbaz,6"), data.table(1:2,3:4,c("foo","barbaz"),5:6),
+          warning="Starting data input on line 2 and discarded previous non-empty line: A,B")  # invalid colnames (too short)
 test(904, fread("A,B,C,D\n1,3,foo,5\n2,4,barbaz,6"), DT<-data.table(A=1:2,B=3:4,C=c("foo","barbaz"),D=5:6))  # ok
 test(905, fread('A,B,C,D\n1,3,foo,5\n2,4,"barbaz",6'), DT)
 test(906, fread('A,B,C,D\n1,3,foo,5\n2,4,"ba,r,baz",6'), DT[2,C:="ba,r,baz"])
@@ -2524,7 +2525,7 @@ test(911, fread("02-FEB-2009,09:55:04:962,26022009,2500,PE,36,500,44,200,11850,1
 txt = "A;B;C|D,E\n1;3;4|5,6\n2;4;6|8,10\n"
 test(912, names(fread(txt)), c("A;B;C|D","E"))
 test(913, fread(txt,sep=";"), data.table(A=1:2,B=3:4,"C|D,E"=c("4|5,6","6|8,10")))
-test(914, fread(txt,sep="*"), error="The supplied 'sep' was not found on line 3")
+test(914, fread(txt,sep="*"), error="The supplied sep='[*]' was not found")
 test(915, fread(txt,sep="\n"), data.table("A;B;C|D,E"=c("1;3;4|5,6","2;4;6|8,10"))) # like a fast readLines
 
 # Crash bug when RHS is 0 length and := by group, fixed in 1.8.7
@@ -2626,7 +2627,7 @@ test(957, fread(input, colClasses=list(character=1:3)), data.table(A=c("01","002
 test(958, fread(input, colClasses="character"), data.table(A=c("01","002"),B=c("foo","bar"),C=c("3.140","6.28000")))
 test(959, fread(input, colClasses=c("character","double","numeric"), verbose=TRUE),
           warning = "Column 2 ('B') has been detected as type 'character'. Ignoring request from colClasses to read as 'numeric' (a lower type) since NAs (or loss of precision) may result",
-          output = "Found 3 columns",  # including output= just so that verbose output is captured, just the warning will be checked.
+          output = "Detected 3 columns",  # including output= just so that verbose output is captured, just the warning will be checked.
           data.table(A=c("01","002"),B=c("foo","bar"),C=c(3.14,6.28)))
 
 test(960, fread(input, colClasses=c("character","double")), error="colClasses is unnamed and length 2 but there are 3 columns. See")
@@ -2653,9 +2654,9 @@ test(973, fread(input, skip=2), data.table(V1=1:2,V2=3:4,V3=5:6))
 test(974, fread(input, skip=2, header=TRUE), data.table("1"=2L,"3"=4L,"5"=6L))
 test(975, fread(input, skip="B"), data.table(A=1:2,B=3:4,C=5:6))
 input = "\n\nA,B\n1,3\n2,4\n\nC,D\n5,7\n6,8\n\nE,F\n9,11\n10,12\n"   # 3 tables in one file
-test(976, fread(input), data.table(E=9:10,F=11:12))   # autostart 30 finds the last one
-test(977, fread(input, autostart=8), data.table(C=5:6,D=7:8), warning="Stopped reading at empty line 10.*but text exists afterwards")
-test(978, fread(input, skip="D"), data.table(C=5:6,D=7:8), warning="Stopped reading at empty line, 2 lines after.*but text exists afterward")
+test(976, fread(input), data.table(A=1:2,B=3:4), warning="Stopped reading at empty line 6.*discarded.*C,D")
+test(977, fread(input, autostart=8), data.table(C=5:6,D=7:8), warning="Stopped reading at empty line 10.*discarded.*E,F")
+test(978, fread(input, skip="D"), data.table(C=5:6,D=7:8), warning="Stopped reading at empty line 10.*discarded.*E,F")
 
 # mixed add and update in same `:=` bug/crash, #2528 and #2778
 DT = data.table(x=rep(1:2, c(3,2)), y=6:10)
@@ -4715,15 +4716,15 @@ test(1325, fread('A,B,C\n1,4,"foo"\n2,5,"bar"'), data.table(A=1:2,B=4:5,C=c("foo
 test(1326, fread('A,B,C\n1,4,"foo"\n2,5,bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar"')))
 test(1327, fread('A,B,C\n1,4,"foo"\n2,5,""bar""'), data.table(A=1:2,B=4:5,C=c("foo",'"bar"')))
 cat('A,B\n1,"Joe \\",Bloggs"', file = f<-tempfile())
-test(1328, fread(f), data.table(V1=1L, V2='Joe \\', V3='Bloggs"'))
+test(1328, fread(f), data.table(V1=1L, V2='Joe \\', V3='Bloggs"'), warning="Starting data input on line 2 and discarded previous non-empty line: A,B")
 unlink(f)
-test(1329, fread(), error="Input is either empty or fully whitespace in the first 0 rows") # used to default to test.csv, oddly
+test(1329, fread(), error="Input is either empty or fully whitespace after the skip or autostart")
 # add test that that escaped escapes at the end of a quoted field
 test(1330, fread('A,B\nfoo,1\nAnalyst\\,2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3))
 test(1331, fread('A,B\nfoo,1\nAnalyst\\ ,2\nbar,3'), data.table(A=c('foo','Analyst\\ ','bar'), B=1:3))
 test(1332, fread('A,B\nfoo,1\n"Analyst\\",2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3))
      # double \\ in this file means one in the input, so the above " is escaped by a single '\' but still read ok
-test(1333, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3'), error="A field starting with quote.* doesn't end with a")
+test(1333, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3'), error="Field 1 on line 3 starts with quote.*but then has a problem.*Analyst.* ,2")
 test(1334, fread('A,B\nfoo,1\n"Analyst\\" ,",2\nbar,3'), data.table(A=c('foo', 'Analyst\\" ,', 'bar'), B=1:3))
 test(1335, fread('A,B\nfoo,1\n"Analyst\\\\",2\nbar,3'), data.table(A=c('foo','Analyst\\\\','bar'), B=1:3))
 
@@ -5530,31 +5531,46 @@ test(1445, fread("doublequote_newline.csv")[7:10], data.table(A=c(1L,1L,2L,1L), 
 test(1446, fread('A,B,C\n233,"AN ""EMBEDDED"" QUOTE FIELD",morechars\n'), data.table(A=233L, B='AN ""EMBEDDED"" QUOTE FIELD', C='morechars'))
 
 # unescaped quoted subregion followed by newline
-test(1446, fread('A,B,C\n233,"an unescaped "embedded"
+test(1447, fread('A,B,C\n233,"an unescaped "embedded"
 region followed by newline",morechars\n'), error='Field 2 on line 2.*can contain balanced unescaped quoted subregions but.*can\'t contain embedded.*n as well.*: "an unescaped "embedded"')
 
-
 # when detecting types ...
-# fread('A,B\n1,"embedded""\nquote"\n2,should be ok\n')
-# fread("~/R/gitdatatable/pkg/inst/tests/quoted_multiline.csv")
+test(1448.1, fread('A,B\n1,"embedded""\nquote"\n2,should be ok\n'),
+           data.table(A=1:2,B=c('embedded""\nquote','should be ok')))
+test(1448.2, fread('A,B\n1,"embedded""
+quote"\n2,should be ok\n'),
+           data.table(A=1:2,B=c('embedded""
+quote','should be ok')))
 
+# quoted multiline (scrambled data thanks to #810)
+test(1449, fread("quoted_multiline.csv")[c(1,43:44),c(1,22:24),with=FALSE],
+           data.table(GPMLHTLN=as.integer64(c("3308386085360","3440245203140","1305220146734")),
+                      BLYBZ = c(0L,4L,6L),
+                      ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE","",""),
+                      JKCRUUBAVQ = c("",".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ","")))
 
 # Fix for #927
 DT = data.table(x=1L, y=2L)
-test(1447, DT[, set(.SD, j="x", value=10L)], error=".SD is locked. Updating .SD by reference using := or set")
+test(1450, DT[, set(.SD, j="x", value=10L)], error=".SD is locked. Updating .SD by reference using := or set")
 
 # Tests for shallow copy taking cols argument - not exported yet.
 DT = setDT(lapply(1:5, sample, 10, TRUE))
 ans1 = sapply(DT, address)
 fans2 = function(DT, cols=NULL) sapply(shallow(DT, cols), address)
-test(1448.1, ans1, fans2(DT))                               # make sure default/old functionality is intact
-test(1448.2, ans1[3:4], fans2(DT, 3:4))                     # using integer column numbers
-test(1448.3, ans1[c(5,2)], fans2(DT, c(5,2)))               # using numeric column numbers
-test(1448.4, ans1[c(4,2,4)], fans2(DT,c(4,2,4)))            # using duplicate column numbers
-test(1448.5, ans1[3:2], fans2(DT, c("V3", "V2")))           # using column names
-test(1448.6, ans1[c(3,3)], fans2(DT, c("V3", "V3")))        # using duplicate column names
-test(1448.7, shallow(DT, integer(0)), null.data.table())    # length-0 input work as intended as well.
-test(1448.8, shallow(DT, character(0)), null.data.table())  # length-0 input work as intended as well.
+test(1451.1, ans1, fans2(DT))                               # make sure default/old functionality is intact
+test(1451.2, ans1[3:4], fans2(DT, 3:4))                     # using integer column numbers
+test(1451.3, ans1[c(5,2)], fans2(DT, c(5,2)))               # using numeric column numbers
+test(1451.4, ans1[c(4,2,4)], fans2(DT,c(4,2,4)))            # using duplicate column numbers
+test(1451.5, ans1[3:2], fans2(DT, c("V3", "V2")))           # using column names
+test(1451.6, ans1[c(3,3)], fans2(DT, c("V3", "V3")))        # using duplicate column names
+test(1451.7, shallow(DT, integer(0)), null.data.table())    # length-0 input work as intended as well.
+test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input work as intended as well.
+
+
+# > fread("notexist.csv")
+# sh: 1: nonfile.csv: not found
+# Error in fread("nonfile.csv") : File is empty: /dev/shm/file54e46ccdb63 
+
 
 ##########################
 

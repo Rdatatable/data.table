@@ -32,7 +32,9 @@
   4. `knitr::kable()` works again without needing to upgrade from knitr v1.6 to v1.7, [#809](https://github.com/Rdatatable/data.table/issues/809). Packages which evaluate user code and don't wish to import data.table need to be added to `data.table:::cedta.pkgEvalsUserCode` and now only the `eval` part is made data.table-aware (the rest of such package's code is left data.table-unaware). `data.table:::cedta.override` is now empty and will be deprecated if no need for it arises. Thanks to badbye and Stephanie Locke for reporting.
   
   5. `fread()`:
-      * doubled quotes ("") inside quoted fields made more robust including if immediately followed by an embedded newline, ([#489](https://github.com/Rdatatable/data.table/issues/489). Thanks to James Sams for reporting.
+      * doubled quotes ("") inside quoted fields including if immediately followed by an embedded newline. Thanks to James Sams for reporting, [#489](https://github.com/Rdatatable/data.table/issues/489). 
+      * quoted fields with embedded newlines in the lines used to detect types, [#810](https://github.com/Rdatatable/data.table/issues/810). Thanks to Vladimir Sitnikov for the scrambled data file which is now included in the test suite.
+      * when detecting types in the middle and end of the file, if the jump lands inside a quoted field with an embedded newline, this is now detected.
    
   6. `as.data.table.list` with list input having 0-length items, e.g. `x = list(a=integer(0), b=3:4)`. `as.data.table(x)` recycles item `a` with `NA`s to fit the length of the longer column `b` (length=2), as before now, but with an additional warning message that the item has been recycled with `NA`. Closes [#847](https://github.com/Rdatatable/data.table/issues/847). Thanks to @tvinodr for the report. This was a regression from 1.9.2.
   

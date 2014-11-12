@@ -6,6 +6,10 @@
 // raise(SIGINT);
 
 #define SIZEOF(x) sizes[TYPEOF(x)]
+#ifdef MIN
+#undef MIN
+#endif
+#define MIN(a,b) (((a)<(b))?(a):(b))
 
 // init.c
 void setSizes();
