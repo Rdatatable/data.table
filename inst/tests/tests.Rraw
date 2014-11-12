@@ -5008,19 +5008,6 @@ for (i in seq_along(dt)) {
         
             test_no = signif(test_no+.01, 7)
             test(test_no, r1, r2)
-            
-            # decreasing order
-            if (k == "random") set.seed(45L)
-            if (class(col) == "integer64") r1 = rank(-as.integer(col), ties.method=k, na.last=j)
-            else if (class(col) == "character") r1 = rank(-xtfrm(col), ties.method=k, na.last=j)
-            else r1 = rank(-col, ties.method=k, na.last=j)
-
-            if (k == "random") set.seed(45L)
-            r2 = frankv(col, order=-1L, ties.method=k, na.last=j)
-        
-            test_no = signif(test_no+.01, 7)
-            test(test_no, r1, r2)
-            
         }
     }
 }

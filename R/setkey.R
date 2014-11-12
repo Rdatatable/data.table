@@ -330,7 +330,7 @@ CJ <- function(..., sorted = TRUE)
     l
 }
 
-frankv = function(x, by=seq_along(x), ties.method=c("average", "first", "random", "max", "min", "dense"), order=1L, na.last=TRUE) {
+frankv = function(x, by=seq_along(x), ties.method=c("average", "first", "random", "max", "min", "dense"), na.last=TRUE) {
     ties.method = match.arg(ties.method)
     na.last = as.logical(na.last)
     if (!length(na.last)) stop('length(na.last) = 0')
@@ -345,8 +345,6 @@ frankv = function(x, by=seq_along(x), ties.method=c("average", "first", "random"
     }
     if (is.atomic(x)) {
         if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
-        if ( !missing(order) && (length(order) != 1L || !(order %in% c(1L, -1L))) )
-            stop("x is a single vector, length(order) must be =1 and it's value should be 1 (ascending) or -1 (descending).")
         by = 1L
         x = as_list(x)
     } else {
@@ -354,9 +352,6 @@ frankv = function(x, by=seq_along(x), ties.method=c("average", "first", "random"
         if (any(n<max(n))) stop("All elements in input list x must be of same length")
         if (is.character(by)) by = chmatch(by, names(x))
         by = as.integer(by)
-        if ( !(length(order) %in% c(1L, length(by))) || any(!order %in% c(1L, -1L)) )
-            stop("x is a list, length(order) must be either =1 or =length(by) and each value should be 1 or -1 for each column in 'by', corresponding to ascending or descending order, respectively. If length(order) == 1, it will be recycled to length(by).")
-        if (length(order) == 1L) order = rep.int(order, length(by))
     }
     shallow_list <- function(x) {
         lx = length(x); sx = seq_len(lx)
@@ -382,7 +377,7 @@ frankv = function(x, by=seq_along(x), ties.method=c("average", "first", "random"
         if (is.na(na.last)) x = remove_na(x)
         x = ties_random(x)
     }
-    xorder  = forderv(x, by=by, sort=TRUE, retGrp=TRUE, order=order, na.last=na.last)
+    xorder  = forderv(x, by=by, sort=TRUE, retGrp=TRUE, na.last=na.last)
     xstart  = attr(xorder, 'starts')
     xsorted = FALSE
     if (!length(xorder)) {
