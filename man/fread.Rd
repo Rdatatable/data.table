@@ -11,7 +11,7 @@
 \usage{
 fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA",
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=1L,
-skip=-1L, select=NULL, drop=NULL, colClasses=NULL,
+skip=0L, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
 dec='.',
 showProgress=getOption("datatable.showProgress"),   # default: TRUE
