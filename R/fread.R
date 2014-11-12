@@ -34,7 +34,8 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
             }
         }
         if (Sys.localeconv()["decimal_point"] != dec)
-            stop(if(verbose)'' else 'Run again with verbose=TRUE to inspect... ','Unable to change to a locale which provides the desired dec. You will need to add a valid locale name to getOption("datatable.fread.dec.locale"). See ?fread and ?Sys.setlocale.')
+            (if (sep==".") warning else stop)(if(verbose)'' else 'Run again with verbose=TRUE to inspect... ','Unable to change to a locale which provides the desired dec. You will need to add a valid locale name to getOption("datatable.fread.dec.locale"). See the long paragraph in ?fread.')
+            # the warning/stop switch is for #502
         if (verbose) cat("This R session's locale is now '",tt,"' which provides the desired decimal point for reading numerics in the file - success! The locale will be restored to what it was ('",oldlocale,") even if the function fails for other reasons.\n")
     }
     if (!is.character(input) || length(input)!=1) {

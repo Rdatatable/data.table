@@ -5568,6 +5568,14 @@ test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input wor
 
 test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist. Include one or more spaces to consider the input a system command.")
 
+# sep=".", issue #502
+input = paste( paste("192.168.1.", 1:10, sep=""), collapse="\n")
+test(1453.1, fread(input, sep="."), error="The two arguments to fread 'dec' and 'sep' are equal")
+test(1453.2, fread(input, sep=".", dec="*"), ans<-data.table(V1=192L,V2=168L,V3=1L,V4=1:10), warning="Unable to change to a locale which provides the desired dec")
+test(1453.3, fread(paste(paste("192. 168. 1. ", 1:10, sep = ""), collapse="\n"), sep=".", dec="*"), ans, warning="Unable")
+test(1453.4, fread(paste(paste("Hz.BB.GHG.", 1:10, sep = ""), collapse="\n"), sep=".", dec="*"), data.table(V1="Hz",V2="BB",V3="GHG",V4=1:10), warning="Unable")
+
+
 
 ##########################
 
