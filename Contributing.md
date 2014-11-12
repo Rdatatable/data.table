@@ -4,7 +4,7 @@ Filing issues
 Please read these points carefully and follow them while filing issues so that both of us can save time.
 
 - **One issue for one purpose**. Don't add more than one *bug*, *feature request*, *documentation request*, *question*, etc.. on to the same issue. 
-- If you've found a *bug*, thanks for reporting. But please read and follow the instructions at **[How to file a bug report]()**. It makes things easier for both of us, and avoids unnecessary and prolonged exchanges on the same set of questions over and over.
+- If you've found a *bug*, thanks for reporting. But please read and follow the instructions at **[How to file a bug report](https://github.com/Rdatatable/data.table/wiki/How-to-file-a-bug-report)**. It makes things easier for both of us, and avoids unnecessary and prolonged exchanges on the same set of questions over and over.
 - If you've a *request* of some kind, e.g., *feature request* or *documentation request*, it'd be much appreciated if you could add **[Request]** at the beginning of the title. This helps us to prioritise easily without having to go through the entire issue. 
 - If you need *support*, e.g., installation issues or upgrade issues, please add **[Support]** at the beginning of the title. This helps us to easily identify the most common support issues, and provide solutions in a separate page.
 - If you have a general *question*, add **[Question]** at the beginning of the title. But note that you're likely to get help faster on the [Mailinglist](https://lists.r-forge.r-project.org/mailman/listinfo/datatable-help) or on [Stackoverflow data.table tag](http://stackoverflow.com/questions/tagged/r+data.table).
@@ -23,8 +23,8 @@ Pull Requests
 6. All bug fixes and feature requests should also have **tests** added, to help catch any regressions while fixing another issue some time later. Tests should be added to `inst/tests/tests.Rraw` file. 
 7. The `README.md` file also has to be updated while fixing or implementing an issue. It should mention the issue number (along with the link) and what the issue is being closed. And also add a "Thanks to @<your_name> for the PR".
 
-**Reference:** If you are not sure how to issue a PR, but would like to contribute, these links should help get you started:
+**References:** If you are not sure how to issue a PR, but would like to contribute, these links should help get you started:
 
 1. **[How to Github: Fork, Branch, Track, Squash and Pull request](https://gun.io/blog/how-to-github-fork-branch-and-pull-request/)**.
 2. **[Squashing Github pull requests into a single commit](http://eli.thegreenplace.net/2014/02/19/squashing-github-pull-requests-into-a-single-commit)**.
-3. **[Github help](https://help.github.com/articles/using-pull-requests/) - you'll need the *fork and pull* model.
+3. **[Github help](https://help.github.com/articles/using-pull-requests/)** - you'll need the *fork and pull* model.
