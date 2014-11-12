@@ -21,7 +21,7 @@ Pull Requests
 4. Unless there's a strong reason against, please squash all your commits together before issuing a PR, since you would be working on one issue. 
 5. In your pull request's description, please state clearly as to what your PR does, i.e., what FR or bug your PR addresses, along with the issue number. For e.g, "Closes #717, rbindlist segfault on factor columns fixed and added tests."
 6. All bug fixes and feature requests should also have **tests** added, to help catch any regressions while fixing another issue some time later. Tests should be added to `inst/tests/tests.Rraw` file. 
-7. The `README.md` file also has to be updated while fixing or implementing an issue. It should mention the issue number (along with the link) and what the issue is being closed. And also add a "Thanks to @<your_name> for the PR".
+7. The `README.md` file also has to be updated while fixing or implementing an issue. It should mention the issue number (along with the link) and what the issue is being closed. And also add a "Thanks to @your_name for the PR".
 
 **References:** If you are not sure how to issue a PR, but would like to contribute, these links should help get you started:
 
