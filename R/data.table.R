@@ -1969,19 +1969,19 @@ subset.data.table <- function (x, subset, select, ...)
 # For internal use only. 'by' requires integer input. No argument checks here yet.
 is_na <- function(x, by=seq_along(x)) .Call(Cdt_na, x, by)
 
-na.omit.data.table <- function (object, by = seq_along(object), invert = FALSE, ...) {
+na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE, ...) {
     if (!cedta()) return(NextMethod())
     if ( !missing(invert) && is.na(as.logical(invert)) )
         stop("Argument 'invert' must be logical TRUE/FALSE")
-    if (is.character(by)) {
-        old = by
-        by = chmatch(by, names(object), nomatch=0L)
-        if (any(by==0L))
-            stop("Columns ", paste(old[by==0L], collapse=","), 
+    if (is.character(cols)) {
+        old = cols
+        cols = chmatch(cols, names(object), nomatch=0L)
+        if (any(cols==0L))
+            stop("Columns ", paste(old[cols==0L], collapse=","), 
               " doesn't exist in the input data.table")
     }
-    by = as.integer(by)
-    ix = .Call(Cdt_na, object, by)
+    cols = as.integer(cols)
+    ix = .Call(Cdt_na, object, cols)
     if (!invert) ix = !ix
     .Call(CsubsetDT, object, which(ix), seq_along(object))
     # compare the above to stats:::na.omit.data.frame
