@@ -47,9 +47,15 @@
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))
     }
-    # reshape2 
-    if (!"package:reshape2" %in% search())
-        try(require(reshape2, pos="package:base", quietly=TRUE, warn.conflicts=FALSE), silent=TRUE)
+    # reshape2
+    # Tried this :
+    # if (!"package:reshape2" %in% search()) {
+    #   # temporary until reshape2 pull request to make generic is on CRAN ...
+    #   try(library(reshape2, pos="package:base", quietly=TRUE, warn.conflicts=FALSE), silent=TRUE)
+    # }
+    # which works. But then when melt in data.table is loaded, _that's_ what generates the mask message.
+    # There's also a NOTE: Package startup functions should not change the search path.
+    # Therefore, removed. Users will need to make sure reshape2 isn't loaded, or loaded behind data.table on search()
     
     # Test R behaviour ...
     
