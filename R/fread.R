@@ -46,8 +46,9 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
         input = tt
     } else if (input == "" || length(grep('\\n|\\r', input)) > 0) {
-        # if text input
+        # text input
     } else if (!file.exists(input)) {
+        if (length(grep(' ', input)) == 0) stop("File '",input,"' does not exist. Include one or more spaces to consider the input a system command.")
         tt = tempfile()
         on.exit(unlink(tt), add = TRUE)
         if (.Platform$OS.type == "unix") {

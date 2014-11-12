@@ -5566,10 +5566,7 @@ test(1451.6, ans1[c(3,3)], fans2(DT, c("V3", "V3")))        # using duplicate co
 test(1451.7, shallow(DT, integer(0)), null.data.table())    # length-0 input work as intended as well.
 test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input work as intended as well.
 
-
-# > fread("notexist.csv")
-# sh: 1: nonfile.csv: not found
-# Error in fread("nonfile.csv") : File is empty: /dev/shm/file54e46ccdb63 
+test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist. Include one or more spaces to consider the input a system command.")
 
 
 ##########################
