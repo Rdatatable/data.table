@@ -9,14 +9,15 @@
 }
 
 \usage{
-setcolorder(x, neworder)
+setcolorder(x, old, new)
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
-  \item{neworder}{ Character vector of the new column name ordering. May also be column numbers. }
+  \item{old}{When new is provided, character names or numeric positions of columns to reorder. When new is not provided, the new order, which must be the same length as the number of columns. See examples}
+  \item{new}{Integer vector specifying the new position of columns in \code{old}. Other columns are shifed to the right}
 }
 \details{
-  To reorder \code{data.table} columns, the idiomatic way is to use \code{setcolorder(x, neworder)}, instead of doing \code{x <- x[, neworder, with=FALSE]}. This is because the latter makes an entire copy of the \code{data.table}, which maybe unnecessary in most situations. \code{setcolorder} also allows column numbers instead of names for \code{neworder} argument, although we recommend using names as a good programming practice. 
+  To reorder \code{data.table} columns, the idiomatic way is to use \code{setcolorder(x, old)}, instead of doing \code{x <- x[, old, with=FALSE]}. This is because the latter makes an entire copy of the \code{data.table}, which maybe unnecessary in most situations. \code{setcolorder} also allows column numbers instead of names for \code{old} argument, although we recommend using names as a good programming practice. 
 }
 \value{
     The input is modified by reference, and returned (invisibly) so it can be used in compound statements. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
@@ -30,6 +31,9 @@ DT = data.table(A=sample(3, 10, TRUE),
          B=sample(letters[1:3], 10, TRUE), C=sample(10))
 
 setcolorder(DT, c("C", "A", "B"))
+setcolorder(DT, "B", 2)
+setcolorder(DT, c("A", "B"), 1:2)
+setcolorder(DT, 3, 1)
 }
 \keyword{ data }
 

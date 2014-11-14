@@ -10,6 +10,53 @@
 \alias{as.Date.IDate}
 \alias{as.IDate.Date}
 \alias{as.IDate.default}
+\alias{IQuarter}
+\alias{IQuarter-class}
+\alias{as.IQuarter}
+\alias{as.IQuarter.default}
+\alias{as.IQuarter.POSIXlt}
+\alias{as.IQuarter.numeric}
+\alias{as.Date.IQuarter}
+\alias{as.POSIXct.IQuarter}
+\alias{as.POSIXlt.IQuarter}
+\alias{as.chron.IQuarter}
+\alias{as.character.IQuarter}
+\alias{round.IQuarter}
+\alias{print.IQuarter}
+\alias{format.IQuarter}
+\alias{as.data.frame.IQuarter}
+\alias{c.IQuarter}
+\alias{cut.IQuarter}
+\alias{mean.IQuarter}
+\alias{rep.IQuarter}
+\alias{seq.IQuarter}
+\alias{split.IQuarter}
+\alias{as.list.IQuarter}
+\alias{unique.IQuarter}
+\alias{IMonth}
+\alias{IMonth-class}
+\alias{as.IMonth}
+\alias{as.IMonth.default}
+\alias{as.IMonth.POSIXlt}
+\alias{as.IMonth.numeric}
+\alias{is.IMonthly}
+\alias{as.Date.IMonth}
+\alias{as.POSIXct.IMonth}
+\alias{as.POSIXlt.IMonth}
+\alias{as.chron.IMonth}
+\alias{as.character.IMonth}
+\alias{round.IMonth}
+\alias{print.IMonth}
+\alias{format.IMonth}
+\alias{as.data.frame.IMonth}
+\alias{c.IMonth}
+\alias{cut.IMonth}
+\alias{mean.IMonth}
+\alias{rep.IMonth}
+\alias{seq.IMonth}
+\alias{split.IMonth}
+\alias{as.list.IMonth}
+\alias{unique.IMonth}
 \alias{as.ITime.character}
 \alias{as.ITime.default}
 \alias{as.ITime.POSIXlt}
@@ -54,6 +101,22 @@ as.IDate(x, ...)
 \method{as.chron}{IDate}(x, time = NULL, \dots)
 \method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), \ldots)
 
+as.IMonth(x)
+\method{as.IMonth}{default}(x)
+\method{as.Date}{IMonth}(x, \dots)
+\method{as.POSIXct}{IMonth}(x, \dots)
+\method{as.character}{IMonth}(x, \dots)
+\method{as.chron}{IMonth}(x, time = NULL, \dots)
+\method{round}{IMonth}(x, digits = c("quarters","years"), \ldots)
+
+as.IQuarter(x)
+\method{as.IQuarter}{default}(x)
+\method{as.Date}{IQuarter}(x, \dots)
+\method{as.POSIXct}{IQuarter}(x, \dots)
+\method{as.character}{IQuarter}(x, \dots)
+\method{as.chron}{IQuarter}(x, time = NULL, \dots)
+\method{round}{IQuarter}(x, digits = c("years"), \ldots)
+
 as.ITime(x, ...)
 \method{as.ITime}{default}(x, \dots)
 \method{as.POSIXct}{ITime}(x, tz = "UTC", date = as.Date(Sys.time()), \dots)
@@ -95,6 +158,9 @@ Functions that use \code{Date} objects generally work for
 \code{IDate} objects. This package provides specific methods for
 \code{IDate} objects for \code{mean}, \code{cut}, \code{seq}, \code{c},
 \code{rep}, and \code{split} to return an \code{IDate} object.
+
+\code{IMonth} and \code{IQuarter} are stored as the integer number of 
+elapsed months and quarters since January 1970.
 
 \code{ITime} is a time-of-day class stored as the integer number of
 seconds in the day. \code{as.ITime} does not allow days longer than 24

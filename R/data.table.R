@@ -698,7 +698,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     bysub = eval(bysubl[[2]], parent.frame(), parent.frame())
                     if (is.expression(bysub)) bysub=bysub[[1L]]
                     bysubl = as.list.default(bysub)
-                } else if (is.call(bysub) && as.character(bysub[[1L]]) %chin% c("c","key","names", "intersect", "setdiff")) {
+                } else if (is.call(bysub) && as.character(bysub[[1L]]) %chin% c("c","key","names", "intersect", "setdiff", "(")) {
                     # catch common cases, so we don't have to copy x[irows] for all columns
                     # *** TO DO ***: try() this eval first (as long as not list() or .()) and see if it evaluates to column names
                     # to avoid the explicit c,key,names which already misses paste("V",1:10) for example
@@ -823,39 +823,62 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             } # else maybe a call to transform or something which returns a list.
             av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
             if (".SD" %chin% av) {
-                if (missing(.SDcols)) {
-                    # here we need to use 'dupdiff' instead of 'setdiff'. Ex: setdiff(c("x", "x"), NULL) will give 'x'.
-                    ansvars = dupdiff(names(x),union(bynames,allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
-                    # just using .SD in j triggers all non-by columns in the subset even if some of
-                    # those columns are not used. It would be tricky to detect whether the j expression
-                    # really does use all of the .SD columns or not, hence .SDcols for grouping
-                    # over a subset of columns
+             if (missing(.SDcols)) {
+                # here we need to use 'dupdiff' instead of 'setdiff'. Ex: setdiff(c("x", "x"), NULL) will give 'x'.
+                ansvars = dupdiff(names(x),union(bynames,allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
+                # just using .SD in j triggers all non-by columns in the subset even if some of
+                # those columns are not used. It would be tricky to detect whether the j expression
+                # really does use all of the .SD columns or not, hence .SDcols for grouping
+                # over a subset of columns
 
-                    # all duplicate columns must be matched, because nothing is provided
-                    ansvals = dupmatch(ansvars, names(x))
-                } else {
-                    # FR #4979 - negative numeric and character indices for SDcols
-                    colsub = substitute(.SDcols)
-                    # fix for #5190. colsub[[1L]] gave error when it's a symbol.
-                    if (is.call(colsub) && colsub[[1L]] == "-") {
-                        colm = TRUE
-                        .SDcols = eval(colsub[[2L]], parent.frame(), parent.frame())
-                    } else colm = FALSE
-                    # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
-                    if (is.numeric(.SDcols)) {
-                        if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
-                        if (any(is.na(.SDcols)) || any(abs(.SDcols)>ncol(x)) || any(abs(.SDcols)<1L)) stop(".SDcols is numeric but out of bounds (or NA)")
-                        if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
-                        ansvals = if (colm) setdiff(seq_along(names(x)), c(as.integer(.SDcols), which(names(x) %chin% bynames))) else as.integer(.SDcols)
-                    } else {
-                        if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
-                        if (any(is.na(.SDcols)) || any(!.SDcols %chin% names(x))) stop("Some items of .SDcols are not column names (or are NA)")
-                        if (colm) ansvars = setdiff(setdiff(names(x), .SDcols), bynames) else ansvars = .SDcols
-                        # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
-                        ansvals = chmatch(ansvars, names(x))
+                # all duplicate columns must be matched, because nothing is provided
+                ansvals = dupmatch(ansvars, names(x))
+            } else {
+                # FR #4979 - negative numeric and character indices for SDcols
+                # Starts NSE
+                colsub = substitute(.SDcols)
+                # Starts with -. If present, set colm to False and drop it
+                if (is.call(colsub) && colsub[[1L]] == "-") {
+                    colm = TRUE
+                    colsub = colsub[[2L]]
+                } else colm = FALSE
+                # Then try r or w
+                if (is.call(colsub) && (colsub[[1L]] == "r" | colsub[[1L]] == "w")){
+                    .SDcols <- eval(colsub[[2]], parent.frame())
+                    if (!is.character(.SDcols)) stop("When r() or w() is specified, .SDcols should be a character vector")
+                    .SDcols <- NULL
+                    if (colsub[[1L]] == "r"){ # regex
+                        for (i in 2:length(colsub)){
+                        .SDcols <- c(.SDcols,grep(colsub[[i]],names(x),value=TRUE))
+                        }
+                    } else{ # wildcard
+                        for (i in 2:length(colsub)){
+                            .SDcols <- c(.SDcols,grep(glob2rx(colsub[[i]]),names(x),value=TRUE))
+                        }
                     }
-                    # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
+                    # the output of r() or w() has unique name, always
+                    .SDcols <- unique(.SDcols)
+                    # no matching should be character(0)
+                    if (is.null(.SDcols))  .SDcols <- character(0)
+                } else{
+                    # in all other cases, evaluate (this handles things with - but not r/w)
+                    .SDcols = eval(colsub, parent.frame())
                 }
+                # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
+                if (is.numeric(.SDcols)) {
+                    if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
+                    if (any(is.na(.SDcols)) || any(abs(.SDcols)>ncol(x)) || any(abs(.SDcols)<1L)) stop(".SDcols is numeric but out of bounds (or NA)")
+                    if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
+                    ansvals = if (colm) setdiff(seq_along(names(x)), c(as.integer(.SDcols), which(names(x) %chin% bynames))) else as.integer(.SDcols)
+                } else {
+                    if (!is.character(.SDcols)) stop(".SDcols should be column numbers, names, or names enclosed in r() or w()")
+                    if (any(is.na(.SDcols)) || any(!.SDcols %chin% names(x))) stop("Some items of .SDcols are not column names (or are NA)")
+                    if (colm) ansvars = setdiff(setdiff(names(x), .SDcols), bynames) else ansvars = .SDcols
+                    # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
+                    ansvals = chmatch(ansvars, names(x))
+                }
+                # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
+            }
             } else {
                 if (!missing(.SDcols)) warning("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
                 ansvars = setdiff(intersect(av,c(names(x),names(i),paste("i.",names(i),sep=""))), bynames)
@@ -1969,19 +1992,19 @@ subset.data.table <- function (x, subset, select, ...)
 # For internal use only. 'by' requires integer input. No argument checks here yet.
 is_na <- function(x, by=seq_along(x)) .Call(Cdt_na, x, by)
 
-na.omit.data.table <- function (object, by = seq_along(object), invert = FALSE, ...) {
+na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE, ...) {
     if (!cedta()) return(NextMethod())
     if ( !missing(invert) && is.na(as.logical(invert)) )
         stop("Argument 'invert' must be logical TRUE/FALSE")
-    if (is.character(by)) {
-        old = by
-        by = chmatch(by, names(object), nomatch=0L)
-        if (any(by==0L))
-            stop("Columns ", paste(old[by==0L], collapse=","), 
+    if (is.character(cols)) {
+        old = cols
+        cols = chmatch(cols, names(object), nomatch=0L)
+        if (any(cols==0L))
+            stop("Columns ", paste(old[cols==0L], collapse=","), 
               " doesn't exist in the input data.table")
     }
-    by = as.integer(by)
-    ix = .Call(Cdt_na, object, by)
+    cols = as.integer(cols)
+    ix = .Call(Cdt_na, object, cols)
     if (!invert) ix = !ix
     .Call(CsubsetDT, object, which(ix), seq_along(object))
     # compare the above to stats:::na.omit.data.frame
@@ -2150,22 +2173,47 @@ setnames <- function(x,old,new) {
     invisible(x)
 }
 
-setcolorder <- function(x,neworder)
-{
+
+setcolorder <- function(x, old, new){   
     if (!is.data.table(x)) stop("x is not a data.table")
-    if (length(neworder)!=length(x)) stop("neworder is length ",length(neworder)," but x has ",length(x)," columns.")
-    if (is.character(neworder)) {
-        if (any(duplicated(neworder))) stop("neworder contains duplicate column names")
-        if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
-        o = as.integer(chmatch(neworder,names(x)))
-        if (any(is.na(o))) stop("Names in neworder not found in x: ",paste(neworder[is.na(o)],collapse=","))
-    } else {
-        if (!is.numeric(neworder)) stop("neworder is not a character or numeric vector")
-        o = as.integer(neworder)
-        m = !(o %in% seq_len(length(x)))
-        if (any(m)) stop("Column numbers in neworder out of bounds: ",paste(o[m],collapse=","))
+    if (missing(new)) {
+        if (length(old)!=length(x)) stop("Can't reorder ",length(old)," columns in a ",length(x)," column data.table")
+        if (is.character(old)) {
+            if (any(duplicated(old))) stop("old contains duplicate column names")
+            if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
+            o = as.integer(chmatch(old,names(x)))
+            if (any(is.na(o))) stop("Names in old not found in x: ",paste(old[is.na(o)],collapse=","))
+        } else {
+            if (!is.numeric(old)) stop("old is not a character or numeric vector")
+            o = as.integer(old)
+            m = !(o %in% seq_len(length(x)))
+            if (any(m)) stop("Column numbers in old out of bounds: ",paste(o[m],collapse=","))
+        }
+        .Call(Csetcolorder,x,o)
+        return(invisible(x))
+    } else{      
+        if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
+        if (length(new)!=length(old)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
     }
-    .Call(Csetcolorder,x,o)
+    if (is.numeric(old)) {
+            tt = old<1L | old>length(x) | is.na(old)
+            if (any(tt)) stop("Items of 'old' either NA or outside range [1,",length(x),"]: ",paste(old[tt],collapse=","))
+            i = as.integer(old)
+            if (any(duplicated(i))) stop("Some duplicates exist in 'old': ",paste(i[duplicated(i)],collapse=","))
+    } else {
+        if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
+        if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste(old[duplicated(old)],collapse=","))
+        i = chmatch(old,names(x))
+        if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
+        if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
+    }
+    if (!is.numeric(new)) stop("'new' is not a numeric vector")
+    if (length(names(x)) != length(x)) stop("x is length ",length(dt)," but its names are length ",length(names(x)))
+
+    o <- rep(NA,length(x))
+    o[new] <- i
+    o[is.na(o)] <- setdiff(1:length(x),i)
+    .Call(Csetcolorder, x, o)
     invisible(x)
 }
 
