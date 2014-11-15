@@ -330,7 +330,7 @@ CJ <- function(..., sorted = TRUE)
     l
 }
 
-frankv = function(x, by=seq_along(x), ties.method=c("average", "first", "random", "max", "min", "dense"), na.last=TRUE) {
+frankv <- function(x, by=seq_along(x), ties.method=c("average", "first", "random", "max", "min", "dense"), na.last=TRUE) {
     ties.method = match.arg(ties.method)
     na.last = as.logical(na.last)
     if (!length(na.last)) stop('length(na.last) = 0')
@@ -353,10 +353,9 @@ frankv = function(x, by=seq_along(x), ties.method=c("average", "first", "random"
     }
     x = .Call(Cshallowwrapper, x, seq_along(x)) # shallow copy even if list..
     setDT(x)
+    if (is.na(na.last)) 
+        x = na.omit(x, by) # TODO: take care of na.last internally without having to subset data.table
     if (ties.method == "random") {
-        # seems inefficient to subset, but have to do to get same results as base
-        # is okay because it's just for the case where na.last=NA *and* ties="random"
-        if (is.na(na.last)) x = na.omit(x, by)
         set(x, j="..stats_runif..", value = stats::runif(nrow(x)))
         by = c(by, ncol(x))
     }
@@ -370,17 +369,8 @@ frankv = function(x, by=seq_along(x), ties.method=c("average", "first", "random"
     ans = switch(ties.method, 
            average = , min = , max =, dense =, runlength = {
                rank = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), ties.method)
-               if (is.na(na.last) && xorder[1L] == 0L) {
-                   idx = which(rank != 0L)
-                   rank = .Call(CsubsetVector, rank, idx) # rank[idx], but faster
-               }
-               rank
            },
            first = , random = {
-               if (is.na(na.last) && xorder[1L] == 0L) {
-                   idx = which(xorder != 0L)
-                   xorder = xorder[idx] # .Call("CsubsetVector", xorder, idx) retains attributes. TODO: fix this
-               }
                if (xsorted) xorder else forderv(xorder)
            }
          )

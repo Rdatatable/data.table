@@ -4995,11 +4995,10 @@ dt = data.table(AA=sample(c(-2:2), 50, TRUE),
                 DD=sample(c(-2:2), 50, TRUE),
                 EE=sample(as.logical(c(-2:2)), 50, TRUE))
 if ("package:bit64" %in% search()) dt[, DD := as.integer64(DD)]
-
 test_no = 1369.0
 for (i in seq_along(dt)) {
     col = dt[[i]]
-    for (j in c(TRUE, FALSE, NA)) {
+    for (j in c(TRUE, FALSE)) {
         for (k in c("average", "min", "max", "first")) {
             if (k == "random") set.seed(45L)
             if (class(col) == "integer64") r1 = rank(as.integer(col), ties.method=k, na.last=j)
@@ -5012,7 +5011,29 @@ for (i in seq_along(dt)) {
         }
     }
 }
+# test na.last=NA here separately.
+dt = data.table(AA=sample(c(-2:2, NA), 50, TRUE), 
+                BB=sample(c(-2,-1,0,1,2,Inf,-Inf, NA, NaN), 50, TRUE), 
+                CC=sample(c(letters[1:5], NA), 50, TRUE),
+                DD=sample(c(-2:2, NA), 50, TRUE),
+                EE=sample(as.logical(c(-2:2, NA)), 50, TRUE))
+if ("package:bit64" %in% search()) dt[, DD := as.integer64(DD)]
 
+for (i in seq_along(dt)) {
+    col = dt[[i]]
+    for (k in c("average", "min", "max", "first")) {
+        if (k == "random") set.seed(45L)
+        if (class(col) == "integer64") r1 = rank(as.integer(col), ties.method=k, na.last=NA)
+        else r1 = rank(col, ties.method=k, na.last=NA)
+        if (k == "random") set.seed(45L)
+        r2 = frankv(col, ties.method=k, na.last=NA)
+    
+        test_no = signif(test_no+.01, 7)
+        test(test_no, r1, r2)
+    }
+}
+
+ 
 # tests for is_na, which is equivalent of rowSums(is.na(dt)) > 0L
 # not exported yet, but we could!
 dt = list(AA=sample(c(NA,-2:2), 50, TRUE), 
