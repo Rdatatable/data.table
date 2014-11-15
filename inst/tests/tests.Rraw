@@ -2525,7 +2525,7 @@ test(911, fread("02-FEB-2009,09:55:04:962,26022009,2500,PE,36,500,44,200,11850,1
 txt = "A;B;C|D,E\n1;3;4|5,6\n2;4;6|8,10\n"
 test(912, names(fread(txt)), c("A;B;C|D","E"))
 test(913, fread(txt,sep=";"), data.table(A=1:2,B=3:4,"C|D,E"=c("4|5,6","6|8,10")))
-test(914, fread(txt,sep="*"), error="The supplied sep='[*]' was not found")
+test(914, fread(txt,sep="*"), data.table("A;B;C|D,E"=c("1;3;4|5,6","2;4;6|8,10")))
 test(915, fread(txt,sep="\n"), data.table("A;B;C|D,E"=c("1;3;4|5,6","2;4;6|8,10"))) # like a fast readLines
 
 # Crash bug when RHS is 0 length and := by group, fixed in 1.8.7
@@ -5592,14 +5592,17 @@ test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist. Inc
 # sep=".", issue #502
 input = paste( paste("192.168.1.", 1:10, sep=""), collapse="\n")
 test(1453.1, fread(input, sep="."), error="The two arguments to fread 'dec' and 'sep' are equal")
-# test(1453.2, fread(input, sep=".", dec="*"), ans<-data.table(V1=192L,V2=168L,V3=1L,V4=1:10), warning="Unable to change to a locale which provides the desired dec")
-# test(1453.3, fread(paste(paste("192. 168. 1. ", 1:10, sep = ""), collapse="\n"), sep=".", dec="*"), ans, warning="Unable")
+test(1453.2, fread(input, sep=".", dec="*"), ans<-data.table(V1=192L,V2=168L,V3=1L,V4=1:10), warning="Unable to change to a locale which provides the desired dec")
+test(1453.3, fread(paste(paste("192. 168. 1. ", 1:10, sep = ""), collapse="\n"), sep=".", dec="*"), ans, warning="Unable")
 test(1453.4, fread(paste(paste("Hz.BB.GHG.", 1:10, sep = ""), collapse="\n"), sep=".", dec="*"), data.table(V1="Hz",V2="BB",V3="GHG",V4=1:10), warning="Unable")
 
 # Test for #802
-# test(1454, fread("fread_line_error.csv"), error="Field 25 on line 9 starts with quote.*but then has a problem.*Check for unbalanced unescaped quotes")
+test(1454, fread("fread_line_error.csv"), error="Field 25 on line 9 starts with quote.*but then has a problem.*Check for unbalanced unescaped quotes")
 
-# Commented tests 1453.2, 1453.3 and 1454 for now.
+# no-sep-found => sep="\n", use case for this in #738
+test(1455.1, fread('"Foo"`"Bar"\n1`2\n',sep="`"), data.table(Foo=1L,Bar=2L))
+test(1455.2, fread('"Foo"\n1\n',sep="`"), data.table(Foo=1L))
+
 
 ##########################
 

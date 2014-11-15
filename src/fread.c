@@ -71,43 +71,37 @@ static int fieldLen;
 static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "NULL", "double", "CLASS" };  // important that first 6 correspond to TypeName.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
 static int UserTypeNameMap[NUT] = { SXP_LGL, SXP_INT, SXP_INT64, SXP_REAL, SXP_STR, SXP_NULL, SXP_REAL, SXP_STR };
 
-// Each error() needs to close the file first (on Windows). 
-// http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
-// Tried to use 'goto exit:' but that gave 'jump into scope of identifier with variably modified type' due to
-// the (nice and want to keep) C99 "int type[ncol]" further down.  But error() is called from functions above anyway, so
-// goto wouldn't work for those (can't goto out of a function's scope).
-// A functional wrapper around error() would be nice, but then passing on va_list issues bite, since errors are constructed. And each call's
-// arguments would need to be switched depending on Windows/non-Windows.
-// Globals and a macro almost worked but some error messages include mmap'd data (e.g. the field contents), so the file
-// close has to be after that. Precluding error() directly.
-// Hence globals, errormsg and a function EXIT() ...
 const char *fnam=NULL, *mmp;
-char errormsg[1024] = "";
 size_t filesize;
 #ifdef WIN32
 HANDLE hFile=0;
 HANDLE hMap=0;
-void EXIT() {
+void closeFile() {
     if (fnam!=NULL) {
         UnmapViewOfFile(mmp);
         CloseHandle(hMap);
         CloseHandle(hFile);
     }
-    if (errormsg[0] != '\0') error(errormsg);
 }
 #else
 int fd=-1;
-void EXIT() {
+void closeFile() {    
     if (fnam!=NULL) {
         munmap((char *)mmp, filesize);
         close(fd);
     }
-    if (errormsg[0] != '\0') error(errormsg);
 }
 #endif
-
-#define MsgLimit(a) ((int)(a)>5000 ? 5000 : (int)(a))
-// 5000 a large limit just to prevent runaways. If the message is passed to error() then R's much lower error length limit applies.
+// To solve: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
+void STOP(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    char msg[2000];
+    vsnprintf(msg, 2000, format, args);
+    va_end(args);
+    closeFile();  // some errors point to data in the file, hence via msg buffer first
+    error(msg);
+}
 
 static inline void Field(int err)
 {
@@ -139,8 +133,7 @@ static inline void Field(int err)
                 fieldLen = -1; // so that countfields/separator testing knows line is invalid
                 return;
             }
-            sprintf(errormsg, "Field %d on line %d starts with quote (\") but then has a problem. It can contain balanced unescaped quoted subregions but if it does it can't contain embedded \\n as well. Check for unbalanced unescaped quotes: %.*s", field+1, line, MsgLimit(ch-fieldStart+1), fieldStart-1);
-            EXIT();
+            STOP("Field %d on line %d starts with quote (\") but then has a problem. It can contain balanced unescaped quoted subregions but if it does it can't contain embedded \\n as well. Check for unbalanced unescaped quotes: %.*s", field+1, line, ch-fieldStart+1, fieldStart-1);
         }
         fieldLen = (int)(ch-fieldStart);
         ch++; // from closing quote to rest on sep|eol|eof
@@ -178,7 +171,7 @@ static int countfields()
             if (ch<eof) ch+=eolLen;          // move ch to the start of the next line
             return ncol;
         }
-        if (*ch!=sep) { sprintf(errormsg,"Internal error: Field() has ended with '%c' not sep='%c'", *ch, sep); EXIT(); }
+        if (*ch!=sep) STOP("Internal error: Field() has ended with '%c' not sep='%c'", *ch, sep);
         ch++;
     }
 }
@@ -241,7 +234,7 @@ static inline Rboolean Strtod()
         if (errno==0 && lch>start && (lch==eof || *lch==sep || *lch==eol)) {
             ch = lch;
             if (ERANGEwarning) {
-                warning("C function strtod() returned ERANGE for one or more fields. The first was string input '%.*s'. It was read using (double)strtold() as numeric value %.16E (displayed here using %%.16E); loss of accuracy likely occurred. This message is designed to tell you exactly what has been done by fread's C code, so you can search yourself online for many references about double precision accuracy and these specific C functions. You may wish to use colClasses to read the column as character instead and then coerce that column using the Rmpfr package for greater accuracy.", MsgLimit(lch-start), start, u.d);
+                warning("C function strtod() returned ERANGE for one or more fields. The first was string input '%.*s'. It was read using (double)strtold() as numeric value %.16E (displayed here using %%.16E); loss of accuracy likely occurred. This message is designed to tell you exactly what has been done by fread's C code, so you can search yourself online for many references about double precision accuracy and these specific C functions. You may wish to use colClasses to read the column as character instead and then coerce that column using the Rmpfr package for greater accuracy.", lch-start, start, u.d);
                 ERANGEwarning = FALSE;   // once only. Set to TRUE just before read data loop. FALSE initially when detecting types.
                 // This is carefully worded as an ERANGE warning because that's precisely what it is.  Calling it a 'precision' warning
                 // might lead the user to think they'll get a precision warning on "1.23456789123456789123456789123456789" too, but they won't
@@ -314,9 +307,9 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     const char *lch=ch;
     while (lch!=eof && *lch!=sep && *lch!=eol) lch++;  // lch now marks the end of field, used in verbose messages and errors
     if (verbose) Rprintf("Bumping column %d from %s to %s on data row %d, field contains '%.*s'\n",
-                         col+1, TypeName[oldtype], TypeName[newtype], sofar+1, MsgLimit(lch-ch), ch);
-    if (sizes[TypeSxp[oldtype]]<4) {sprintf(errormsg,"Internal error: SIZEOF oldtype %d < 4", oldtype); EXIT();}
-    if (sizes[TypeSxp[newtype]]<4) {sprintf(errormsg,"Internal error: SIZEOF newtype %d < 4", newtype); EXIT();}
+                         col+1, TypeName[oldtype], TypeName[newtype], sofar+1, lch-ch, ch);
+    if (sizes[TypeSxp[oldtype]]<4) STOP("Internal error: SIZEOF oldtype %d < 4", oldtype);
+    if (sizes[TypeSxp[newtype]]<4) STOP("Internal error: SIZEOF newtype %d < 4", newtype);
     if (sizes[TypeSxp[oldtype]] == sizes[TypeSxp[newtype]] && newtype != SXP_STR) {   // after && is quick fix. TO DO: revisit
         TYPEOF(v) = TypeSxp[newtype];
         newv=v;
@@ -336,8 +329,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
             for (i=0; i<sofar; i++) INTEGER(newv)[i] = INTEGER(v)[i];
             break;
         default :
-            sprintf(errormsg, "Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
-            EXIT();
+            STOP("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
         }
         break;
     case SXP_INT64:
@@ -346,8 +338,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
             for (i=0; i<sofar; i++) REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? NA_REAL : (u.l=(long long)INTEGER(v)[i],u.d));
             break;
         default :
-            sprintf(errormsg, "Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
-            EXIT();
+            STOP("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
         }
         break;
     case SXP_REAL:
@@ -359,12 +350,11 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
             for (i=0; i<sofar; i++) REAL(newv)[i] = (ISNA(REAL(v)[i]) ? NA_REAL : (double)(*(long long *)&REAL(v)[i]));
             break;
         default :
-            sprintf(errormsg, "Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
-            EXIT();
+            STOP("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
         }
         break;
     case SXP_STR:
-        warning("Bumped column %d to type character on data row %d, field contains '%.*s'. Coercing previously read values in this column from logical, integer or numeric back to character which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too (if they occurred in this column before the bump). If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, sofar+1, MsgLimit(lch-ch), ch);
+        warning("Bumped column %d to type character on data row %d, field contains '%.*s'. Coercing previously read values in this column from logical, integer or numeric back to character which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too (if they occurred in this column before the bump). If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, sofar+1, lch-ch, ch);
         static char buffer[129];  // 25 to hold [+-]2^63, with spare space to be safe and snprintf too
         switch(oldtype) {
         case SXP_LGL : case SXP_INT :
@@ -406,13 +396,11 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
             }
             break;
         default :
-            sprintf(errormsg, "Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
-            EXIT();
+            STOP("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
         }
         break;
     default :
-        sprintf(errormsg, "Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
-        EXIT();
+        STOP("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
     }
     UNPROTECT(protecti);
     tCoerce += clock()-tCoerce0;
@@ -437,8 +425,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         error("dec must be a single character");
     const char decChar = *CHAR(STRING_ELT(dec,0));
     
-    errormsg[0] = '\0';  // reset globals.  I know, I know, see comments above where EXIT() is defined. Better ideas?
-    fnam = NULL;
+    fnam = NULL;  // reset global, so STOP() can call closeFile() which sees fnam
 
     if (NA_INTEGER != INT_MIN) error("Internal error: NA_INTEGER (%d) != INT_MIN (%d).", NA_INTEGER, INT_MIN);  // relied on by Stroll
     if (sizeof(double) != 8) error("Internal error: sizeof(double) is %d bytes, not 8.", sizeof(double));
@@ -547,7 +534,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (verbose) Rprintf("ok\n");  // to end 'Memory mapping ... '
     }
     clock_t tMap = clock();
-    // From now use EXIT() wrapper instead of error(), to close it on Windows so as not to lock the file after an error.
+    // From now use STOP() wrapper instead of error(), for Windows to close file so as not to lock the file after an error.
     
     // ********************************************************************************************
     //   Auto detect eol, first eol where there are two (i.e. CRLF)
@@ -558,7 +545,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         ch++;                                            // this 'if' needed in case opening protection is not closed before eof
     }
     if (ch>=eof) {
-        if (ch>eof) { sprintf(errormsg, "Internal error: ch>eof when detecting eol"); EXIT(); }
+        if (ch>eof) STOP("Internal error: ch>eof when detecting eol");
         if (verbose) Rprintf("Input ends before any \\r or \\n observed. Input will be treated as a single data row.\n");
         eol=eol2='\n'; eolLen=1;
     } else {
@@ -569,7 +556,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 eol2='\n'; eolLen=2;
             } else {
                 if (ch+1<eof && *(ch+1)=='\r')
-                    error("Line ending is \\r\\r\\n. R's download.file() appears to add the extra \\r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.");
+                    STOP("Line ending is \\r\\r\\n. R's download.file() appears to add the extra \\r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.");
                     // NB: on Windows, download.file from file: seems to condense \r\r too. So 
                 if (verbose) Rprintf("Detected eol as \\r only (no \\n or \\r afterwards). An old Mac 9 standard, discontinued in 2002 according to Wikipedia.\n");
             }
@@ -579,7 +566,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 eol2='\r'; eolLen=2;
             } else if (verbose) Rprintf("Detected eol as \\n only (no \\r afterwards), the UNIX and Mac standard.\n");
         } else
-            { sprintf(errormsg, "Internal error: if no \\r or \\n found then ch should be eof"); EXIT(); }
+            STOP("Internal error: if no \\r or \\n found then ch should be eof");
     }
 
     // ********************************************************************************************
@@ -589,7 +576,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // line is for error and warning messages so considers embedded \n, just like wc -l, head -n and tail -n
     if (isString(skip)) {
         ch = strstr(mmp, CHAR(STRING_ELT(skip,0)));
-        if (!ch) { sprintf(errormsg, "skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)", CHAR(STRING_ELT(skip,0))); EXIT(); }
+        if (!ch) STOP("skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)", CHAR(STRING_ELT(skip,0)));
         while (ch>mmp && *(ch-1)!=eol2) ch--;  // move to beginning of line
         pos = ch;
         ch = mmp;
@@ -620,7 +607,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 if (ch<eof && *ch==eol) { line++; ch+=eolLen; pos=ch; }
                 else break;
             }
-            if (ch==eof) { sprintf(errormsg, "Input is either empty or fully whitespace after the skip or autostart. Run again with verbose=TRUE."); EXIT(); }
+            if (ch==eof) STOP("Input is either empty or fully whitespace after the skip or autostart. Run again with verbose=TRUE.");
             if (verbose) Rprintf("line %d\n", line);
         } else {
             if (verbose) Rprintf("This line is the autostart and not blank so searching up for the last non-blank ... ");
@@ -639,7 +626,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (verbose) Rprintf("line %d\n", line);
         }
     }
-    if (pos>mmp && *(pos-1)!=eol2) { sprintf(errormsg, "Internal error. No eol2 immediately before line %d, '%.1s' instead", line, pos-1); EXIT(); }
+    if (pos>mmp && *(pos-1)!=eol2) STOP("Internal error. No eol2 immediately before line %d, '%.1s' instead", line, pos-1);
     
 
     // ********************************************************************************************
@@ -691,10 +678,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
     }
     if (topNcol<2) {
-        if (!isNull(separg) && seps[0]!='\n') {sprintf(errormsg,"The supplied sep='%s' was not found. To read the file as a single character column set sep='\\n'.", seps[0]=='\t'?"\\t":seps);EXIT();}
-        else if (verbose) Rprintf("Deducing this is a single column input. Otherwise, please specify 'sep' manually.\n");
+        if (verbose) Rprintf("Deducing this is a single column input.\n");
         sep=eol;
         ch=pos;
+        line=1;
         ncol=1;
     } else {
         sep=topSep;
@@ -712,17 +699,17 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         Rprintf("Starting data input on line %d (either column names or first row of data). First 10 characters: %.*s\n", line, (int)(ch2-ch), ch);
     }
     if (ch>mmp) {
-        if (*(ch-1)!=eol2) { sprintf(errormsg, "Internal error. No eol2 immediately before line %d after sep detection.", line); EXIT(); }
+        if (*(ch-1)!=eol2) STOP("Internal error. No eol2 immediately before line %d after sep detection.", line);
         // warn if previous line is not blank, unless skip was provided ...
         if (isInteger(skip) && INTEGER(skip)[0]==0) {
             ch2 = ch-eolLen-1;
             i = 0;
             while (ch2>=mmp && *ch2!=eol2) { i+=!isspace(*ch2); ch2--; }
             ch2++;
-            if (i>0) warning("Starting data input on line %d and discarded previous non-empty line: %.*s", line, MsgLimit(ch-eolLen-ch2), ch2);
+            if (i>0) warning("Starting data input on line %d and discarded previous non-empty line: %.*s", line, ch-ch2-eolLen, ch2);
         }
     }
-    if (ch!=pos) { sprintf(errormsg, "Internal error. ch!=pos after sep detection"); EXIT(); }
+    if (ch!=pos) STOP("Internal error. ch!=pos after sep detection");
     
     // ********************************************************************************************
     //   Detect and assign column names (if present)
@@ -733,19 +720,19 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     for (i=0; i<ncol; i++) {
         if (ch<eof && *ch=='\"') {
             while(++ch<eof && (*ch!='\"' || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
-            if (ch<eof && *ch++!='\"') {sprintf(errormsg, "Internal error: quoted field ends before EOF but not with \"sep");}
+            if (ch<eof && *ch++!='\"') STOP("Internal error: quoted field ends before EOF but not with \"sep");
         } else {                              // if field reads as double ok then it's INT/INT64/REAL; i.e., not character (and so not a column name)
             if (*ch!=sep && *ch!=eol && Strtod())  // blank column names (,,) considered character and will get default names
                 allchar=FALSE;                     // considered testing at least one isalpha, but we want 1E9 to be a value not a column name
             else while(ch<eof && *ch!=eol && *ch!=sep) ch++;  // skip over unquoted character field
         }
         if (i<ncol-1) {   // not the last column (doesn't have a separator after it)
-            if (ch<eof && *ch!=sep) {sprintf(errormsg, "Unexpected character ending field %d of line %d: %.*s", i+1, line, MsgLimit(ch-pos+5), pos); EXIT();}
+            if (ch<eof && *ch!=sep) STOP("Unexpected character ending field %d of line %d: %.*s", i+1, line, ch-pos+5, pos);
             else if (ch<eof) ch++;
         } 
     }
     // *** TO DO discard any whitespace after last column name on first row before the eol ***
-    if (ch<eof && *ch!=eol) {sprintf(errormsg,"Not positioned correctly after testing format of header row. ch='%c'",*ch);EXIT();}
+    if (ch<eof && *ch!=eol) STOP("Not positioned correctly after testing format of header row. ch='%c'",*ch);
     if (verbose && header!=NA_LOGICAL) Rprintf("'header' changed by user from 'auto' to %s\n", header?"TRUE":"FALSE");
     char buff[10]; // to construct default column names
     if (header==FALSE || (header==NA_LOGICAL && !allchar)) {
@@ -795,7 +782,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             neol+=(*ch==eol);
             nsep+=(*ch++==sep);
         }
-        if (ch!=eof) {sprintf(errormsg,"Internal error: ch!=eof after counting sep and eol");EXIT();}
+        if (ch!=eof) STOP("Internal error: ch!=eof after counting sep and eol");
         i=0; int nblank=0;
         while (i==0 && ch>pos) {   
             // count blank lines at the end
@@ -811,7 +798,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             Rprintf("Count of sep: %lld\n",nsep);
             if (ncol==1) Rprintf("ncol==1 so sep count ignored\n");
             else Rprintf("nrow = MIN( nsep [%lld] / ncol [%d] -1, neol [%lld] - nblank [%d] ) = %lld\n", nsep, ncol, neol, nblank, tmp);
-            if (tmp > INT_MAX) {sprintf(errormsg,"nrow larger than current 2^31 limit");EXIT();}
+            if (tmp > INT_MAX) STOP("nrow larger than current 2^31 limit");
         }
         nrow = tmp;
         // Advantages of exact count: i) no need to slightly over allocate (by 5%, say) so no need to clear up on heap during gc(),
@@ -883,9 +870,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 if (fieldLen==-1) { i=5; break; } // stop this j early
                 if (ch<eof && *ch==sep && field<ncol-1) {ch++; continue;}  // done, next field
                 if (field<ncol-1) {
-                    if (*ch>31) sprintf(errormsg, "Expected sep ('%c') but '%c' ends field %d when detecting types (%s): %.*s", sep, *ch, field, str, MsgLimit(ch-lineStart+1), lineStart);
-                    else sprintf(errormsg, "Expected sep ('%c') but new line, EOF (or other non printing character) ends field %d when detecting types (%s): %.*s", sep, field, str, MsgLimit(ch-lineStart+1), lineStart);
-                    EXIT();
+                    if (*ch>31) STOP("Expected sep ('%c') but '%c' ends field %d when detecting types (%s): %.*s", sep, *ch, field, str, ch-lineStart+1, lineStart);
+                    else STOP("Expected sep ('%c') but new line, EOF (or other non printing character) ends field %d when detecting types (%s): %.*s", sep, field, str, ch-lineStart+1, lineStart);
                 }
             }
             while (ch<eof && *ch!=eol) ch++;
@@ -908,8 +894,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         for (i=0; i<NUT; i++) SET_STRING_ELT(UserTypeNameSxp, i, mkChar(UserTypeName[i]));
         if (isString(colClasses)) {
             // this branch unusual for fread: column types for all columns in one long unamed character vector
-            if (length(getAttrib(colClasses, R_NamesSymbol))) {sprintf(errormsg,"Internal error: colClasses has names, but these should have been converted to list format at R level");EXIT();}
-            if (LENGTH(colClasses)!=1 && LENGTH(colClasses)!=ncol) {sprintf(errormsg, "colClasses is unnamed and length %d but there are %d columns. See ?data.table for colClasses usage.", LENGTH(colClasses), ncol);EXIT();}
+            if (length(getAttrib(colClasses, R_NamesSymbol))) STOP("Internal error: colClasses has names, but these should have been converted to list format at R level");
+            if (LENGTH(colClasses)!=1 && LENGTH(colClasses)!=ncol) STOP("colClasses is unnamed and length %d but there are %d columns. See ?data.table for colClasses usage.", LENGTH(colClasses), ncol);
             colTypeIndex = PROTECT(chmatch(colClasses, UserTypeNameSxp, NUT, FALSE));  // if type not found then read as character then as. at R level
             protecti++;
             for (k=0; k<ncol; k++) {
@@ -921,15 +907,15 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 } else if (verbose && type[k]>thisType) warning("Column %d ('%s') has been detected as type '%s'. Ignoring request from colClasses to read as '%s' (a lower type) since NAs (or loss of precision) may result.\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType]);
             }
         } else {  // normal branch here
-            if (!isNewList(colClasses)) {sprintf(errormsg,"colClasses is not type list or character vector");EXIT();}
-            if (!length(getAttrib(colClasses, R_NamesSymbol))) {sprintf(errormsg,"colClasses is type list but has no names");EXIT();}
+            if (!isNewList(colClasses)) STOP("colClasses is not type list or character vector");
+            if (!length(getAttrib(colClasses, R_NamesSymbol))) STOP("colClasses is type list but has no names");
             colTypeIndex = PROTECT(chmatch(getAttrib(colClasses, R_NamesSymbol), UserTypeNameSxp, NUT, FALSE));
             protecti++;
             for (i=0; i<LENGTH(colClasses); i++) {
                 thisType = UserTypeNameMap[INTEGER(colTypeIndex)[i]-1];
                 items = VECTOR_ELT(colClasses,i);
                 if (thisType == SXP_NULL) {
-                    if (!isNull(drop) || !isNull(select)) {sprintf(errormsg,"Can't use NULL in colClasses when select or drop is used as well."); EXIT();}
+                    if (!isNull(drop) || !isNull(select)) STOP("Can't use NULL in colClasses when select or drop is used as well.");
                     drop = items;
                     continue;
                 }
@@ -939,13 +925,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 for (j=0; j<LENGTH(items); j++) {
                     k = INTEGER(itemsInt)[j];
                     if (k==NA_INTEGER) {
-                        if (isString(items)) sprintf(errormsg,"Column name '%s' in colClasses[[%d]] not found", CHAR(STRING_ELT(items, j)),i+1);
-                        else sprintf(errormsg,"colClasses[[%d]][%d] is NA", i+1, j+1);
-                        EXIT();
+                        if (isString(items)) STOP("Column name '%s' in colClasses[[%d]] not found", CHAR(STRING_ELT(items, j)),i+1);
+                        else STOP("colClasses[[%d]][%d] is NA", i+1, j+1);
                     } else {
-                        if (k<1 || k>ncol) {sprintf(errormsg,"Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]",k,i+1,j+1,ncol);EXIT();}
+                        if (k<1 || k>ncol) STOP("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]",k,i+1,j+1,ncol);
                         k--;
-                        if (tmp[k]++) {sprintf(errormsg,"Column '%s' appears more than once in colClasses", CHAR(STRING_ELT(names,k))); EXIT();}
+                        if (tmp[k]++) STOP("Column '%s' appears more than once in colClasses", CHAR(STRING_ELT(names,k)));
                         if (type[k]<thisType) {
                             if (verbose) Rprintf("Column %d ('%s') was detected as type '%s' but bumped to '%s' as requested by colClasses[[%d]]\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType], i+1 );
                             type[k]=thisType;
@@ -969,7 +954,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     if (verbose) { Rprintf("Type codes: "); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf(" (after applying colClasses and integer64)\n"); }
     if (length(drop)) {
-        if (any_duplicated(drop,FALSE)) {sprintf(errormsg,"Duplicates detected in drop"); EXIT();}
+        if (any_duplicated(drop,FALSE)) STOP("Duplicates detected in drop");
         if (isString(drop)) itemsInt = PROTECT(chmatch(drop, names, NA_INTEGER, FALSE));
         else itemsInt = PROTECT(coerceVector(drop, INTSXP));
         protecti++;
@@ -985,7 +970,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
     }
     if (length(select)) {
-        if (any_duplicated(select,FALSE)) {sprintf(errormsg,"Duplicates detected in select"); EXIT();}
+        if (any_duplicated(select,FALSE)) STOP("Duplicates detected in select");
         if (isString(select)) {
             itemsInt = PROTECT(chmatch(names, select, NA_INTEGER, FALSE)); protecti++;
             for (i=0; i<ncol; i++) if (INTEGER(itemsInt)[i]==NA_INTEGER) { type[i]=SXP_NULL; numNULL++; }
@@ -994,7 +979,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             for (i=0; i<ncol; i++) tmp[i]=SXP_NULL;
             for (i=0; i<LENGTH(itemsInt); i++) {
                 k = INTEGER(itemsInt)[i];
-                if (k<1 || k>ncol) {sprintf(errormsg,"Column number %d (select[%d]) is out of range [1,ncol=%d]",k,i+1,ncol);EXIT();}
+                if (k<1 || k>ncol) STOP("Column number %d (select[%d]) is out of range [1,ncol=%d]",k,i+1,ncol);
                 tmp[k-1] = type[k-1];
             }
             for (i=0; i<ncol; i++) type[i] = tmp[i];
@@ -1090,10 +1075,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 }
                 if (ch<eof && *ch==sep && j<ncol-1) {ch++; continue;}  // done, next field
                 if (j<ncol-1) {
-                    if (*ch>31) sprintf(errormsg, "Expected sep ('%c') but '%c' ends field %d on line %d when reading data: %.*s", sep, *ch, j+1, line, MsgLimit(ch-pos+1), pos);
-                    else sprintf(errormsg, "Expected sep ('%c') but new line or EOF ends field %d on line %d when reading data: %.*s", sep, j+1, line, MsgLimit(ch-pos+1), pos);
+                    if (*ch>31) STOP("Expected sep ('%c') but '%c' ends field %d on line %d when reading data: %.*s", sep, *ch, j+1, line, ch-pos+1, pos);
+                    else STOP("Expected sep ('%c') but new line or EOF ends field %d on line %d when reading data: %.*s", sep, j+1, line, ch-pos+1, pos);
                     // print whole line here because it's often something earlier in the line that messed up
-                    EXIT();
                 }
             }
             //Rprintf("At end of line with i=%d and ch='%.10s'\n", i, ch);
@@ -1116,7 +1100,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (ch<eof) {
         ch2 = ch;
         while (ch2<eof && *ch2!=eol) ch2++;
-        warning("Stopped reading at empty line %d but text exists afterwards (discarded): %.*s", line, MsgLimit(ch2-ch), ch);
+        warning("Stopped reading at empty line %d but text exists afterwards (discarded): %.*s", line, ch2-ch, ch);
     }
     if (i<nrow) {
         if (nrow-i > 100 && (double)i/nrow < 0.95)
@@ -1125,7 +1109,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             Rprintf("Read slightly fewer rows (%d) than were allocated (%d).\n", i, nrow);
         nrow = i;
     } else {
-        if (i!=nrow) {sprintf(errormsg,"Internal error: i [%d] > nrow [%d]", i, nrow); EXIT();}
+        if (i!=nrow) STOP("Internal error: i [%d] > nrow [%d]", i, nrow);
         if (verbose) Rprintf("Read %d rows. Exactly what was estimated and allocated up front\n", i);
     }
     for (j=0; j<ncol-numNULL; j++) SETLENGTH(VECTOR_ELT(ans,j), nrow);
@@ -1158,11 +1142,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         Rprintf("%8.3fs        Total\n", 1.0*tot/CLOCKS_PER_SEC);
     }
     UNPROTECT(protecti);
-    if (errormsg[0] != '\0') {
-        warning("Internal error, please report to datatable-help. Data error with no EXIT(): %s", errormsg);
-        errormsg[0] = '\0';
-    }
-    EXIT();  // just close the file (if fnam!=NULL)
+    closeFile();
     return(ans);
 }
 
