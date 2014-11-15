@@ -9,16 +9,16 @@
 }
 
 \usage{
-\method{na.omit}{data.table}(object, by=seq_along(object), invert=FALSE, ...)
+\method{na.omit}{data.table}(object, cols=seq_along(object), invert=FALSE, ...)
 }
 \arguments{
   \item{object}{ A \code{data.table}. }
-  \item{by}{ A vector of column names (or numbers) on which to check for missing values. Default is all the columns. }
+  \item{cols}{ A vector of column names (or numbers) on which to check for missing values. Default is all the columns. }
   \item{invert}{ logical. If \code{FALSE} omits all rows with any missing values (default). \code{TRUE} returns just those rows with missing values instead. }
   \item{\dots}{ Further arguments special methods could require. }
 }
 \details{
-The \code{data.table} method consists of an additional argument \code{by}, which when specified looks for missing values in just those columns specified. The default value for \code{by} is all the columns, to be consistent with the default behaviour of \code{stats::na.omit}. 
+The \code{data.table} method consists of an additional argument \code{cols}, which when specified looks for missing values in just those columns specified. The default value for \code{cols} is all the columns, to be consistent with the default behaviour of \code{stats::na.omit}. 
 
 It does not add the attribute \code{na.action} as \code{stats::na.omit} does.
 }
@@ -33,9 +33,9 @@ DT = data.table(x=c(1,NaN,NA,3), y=c(NA_integer_, 1:3), z=c("a", NA_character_, 
 # default behaviour
 na.omit(DT)
 # omit rows where 'x' has a missing value
-na.omit(DT, by="x")
+na.omit(DT, cols="x")
 # omit rows where either 'x' or 'y' have missing values
-na.omit(DT, by=c("x", "y"))
+na.omit(DT, cols=c("x", "y"))
 
 \dontrun{
 # Timings on relatively large data
