@@ -23,7 +23,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
                 cmd = paste("Sys.setlocale('LC_NUMERIC','",i,"')",sep="")
                 if (is.null(tt)) stop(cmd," returned NULL (locale information is unavailable). See ?Sys.setlocale.")
                 if (tt=="") {
-                    warning(cmd, ' returned ""; i.e., this locale name is not valid on your system. It was provided by you in getOption("datatable.fread.dec.locale"). See ?Sys.setlocale and ?fread.')
+                    if (verbose) cat(cmd, ' returned ""; i.e., this locale name is not valid on your system. It was provided by you in getOption("datatable.fread.dec.locale"). See ?Sys.setlocale and ?fread.')
                     next
                 }
                 if (toupper(tt)!=toupper(i)) {
