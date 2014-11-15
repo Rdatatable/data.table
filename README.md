@@ -38,8 +38,9 @@
       * if the file doesn't exist the error message is clearer ([#486](https://github.com/Rdatatable/data.table/issues/486))
       * system commands are now checked to contain at least one space
       * sep="." now works (when dec!="."), [#502](https://github.com/Rdatatable/data.table/issues/502). Thanks to Ananda Mahto for reporting.
-      * better error message if quoted field is missing an end quote, [#802](https://github.com/Rdatatable/data.table/issues/486). Thanks to Vladimir Sitnikov for the sample file which is now included in the test suite.
-      * Providing sep which is not present in the file now reads as if sep="\n" rather than 'sep not found', #738. Thanks to Adam Kennedy for explaining the use-case.
+      * better error message if quoted field is missing an end quote, [#802](https://github.com/Rdatatable/data.table/issues/802). Thanks to Vladimir Sitnikov for the sample file which is now included in the test suite.
+      * providing sep which is not present in the file now reads as if sep="\n" rather than 'sep not found', #738. Thanks to Adam Kennedy for explaining the use-case.
+      * seg fault with error messages over 1,000 characters (when long lines are included) is fixed, [#802](https://github.com/Rdatatable/data.table/issues/802). Thanks again to Vladimir Sitnikov.
    
   6. `as.data.table.list` with list input having 0-length items, e.g. `x = list(a=integer(0), b=3:4)`. `as.data.table(x)` recycles item `a` with `NA`s to fit the length of the longer column `b` (length=2), as before now, but with an additional warning message that the item has been recycled with `NA`. Closes [#847](https://github.com/Rdatatable/data.table/issues/847). Thanks to @tvinodr for the report. This was a regression from 1.9.2.
   
