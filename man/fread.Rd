@@ -13,7 +13,7 @@ fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA",
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=1L,
 skip=0L, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
-dec='.',
+dec=if (sep!=".") "." else ",",
 showProgress=getOption("datatable.showProgress"),   # default: TRUE
 data.table=getOption("datatable.fread.datatable")   # default: TRUE
 )
@@ -53,7 +53,7 @@ All known line endings are detected automatically: \code{\\n} (*NIX including Ma
 
 If an empty line is encountered then reading stops there, with warning if any text exists after the empty line such as a footer. The first line of any text discarded is included in the warning message.
 
-\code{fread} uses C function \code{strtod} to read numeric data; e.g., 1.23 or 1,23. \code{strtod} retrieves the decimal separator from the locale of the R session (rather than as an argument passed to it) which for LC_NUMERIC is usually set to the "C" locale. The "C" locale's dec is "." regardless of your location or machine default. So for \code{dec=","} to work, fread changes this (and only this) R session's locale temporarily to a locale which provides the desired decimal separator. It is very careful to set it back again afterwards even if the function fails with an error. First your machine's locale is tried. If you are in France for example, that is likely to be a French locale and it should work.  However, if you are in the U.S. you will need to use (and perhaps install) a French locale. Since locale names differ between Linux, Mac and Windows, you need to provide fread with any locale name installed on your machine that specifies \code{dec=","}, like this: \code{options(datatable.fread.dec.locale="fr_FR.utf8")}. This may be a \emph{vector} of locale names and if so they will be tried in turn until the desired \code{dec} is provided (thus allowing more than two different decimal separators to be selected). Typically you would provide the locale names once in your \code{.Rprofile} and not need to worry about it again. This is a new feature in v1.9.6 and is experimental. In case of problems, turn it off with \code{options(datatable.fread.dec.experiment=FALSE)}.
+On Windows, \code{fread(...,dec=",")} should just work. \code{fread} uses C function \code{strtod} to read numeric data; e.g., \code{1.23} or \code{1,23}. \code{strtod} retrieves the decimal separator (\code{.} or \code{,} usually) from the locale of the R session rather than as an argument passed to the \code{strtod} function. So for \code{fread(...,dec=",")} to work, \code{fread} changes this (and only this) R session's locale temporarily to a locale which provides the desired decimal separator. On Windows, "French_France.1252" is tried which should be available as standard (any locale with comma decimal separator would suffice) and on unix "fr_FR.utf8" (you may need to install this locale on unix). \code{fread()} is very careful to set the locale back again afterwards, even if the function fails with an error. The choice of locale is determined by \code{options()$datatable.fread.dec.locale}. This may be a \emph{vector} of locale names and if so they will be tried in turn until the desired \code{dec} is obtained; thus allowing more than two different decimal separators to be selected. This is a new feature in v1.9.6 and is experimental. In case of problems, turn it off with \code{options(datatable.fread.dec.experiment=FALSE)}.
 
 }
 \value{

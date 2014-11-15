@@ -42,7 +42,7 @@
              "datatable.fread.datatable"="TRUE",
              "datatable.old.bywithoutby"="FALSE",    # temp rollback method for code migration, will be removed in future
              "datatable.fread.dec.experiment"="TRUE", # temp.  will remove once stable
-             "datatable.fread.dec.locale"="''"
+             "datatable.fread.dec.locale"=if (.Platform$OS.type=="unix") "'fr_FR.utf8'" else "'French_France.1252'"
              )
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))

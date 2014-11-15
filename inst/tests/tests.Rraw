@@ -5532,17 +5532,27 @@ test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new ind
 # fread dec=',' e.g. France
 test(1438, fread("A;B\n1;2,34\n", dec="12"), error="dec must be a single character")
 test(1439, fread("A;B\n1;2,34\n", dec="1"), error="Unable to change to a locale which provides the desired dec")  # this test runs on many machines so chose a dec for this test which is sure not to be valid in any locale
-test(1440, fread("A;B\n1;2,34\n", sep="."), error="The two arguments to fread 'dec' and 'sep' are equal ('.')")
-if (.Platform=="unix" &&
-    !inherits(tt <- try(system("locale -a", intern=TRUE)), "try-error") &&
-    "fr_FR.utf8" %in% tt ) {
+test(1440, fread("A;B\n1;2,34\n", sep=".", dec="."), error="The two arguments to fread 'dec' and 'sep' are equal ('.')")
+if (.Platform$OS.type=="windows" ||
+    (!inherits(tt <- try(system("locale -a", intern=TRUE)), "try-error") && "fr_FR.utf8" %in% tt )) {
     # e.g. on Matt's machine where I've installed fr_FR.utf8 which has dec=","
-    options(datatable.fread.dec.locale="fr_FR.utf8")
+    old = options(datatable.fread.dec.locale=if (.Platform$OS.type=="unix") "fr_FR.utf8" else "French_France.1252")
     oldlocale = Sys.getlocale("LC_NUMERIC")
     test(1441, fread("A;B\n1;2,34\n", dec=",", verbose=TRUE), data.table(A=1L, B=2.34), output="Changing to system locale.*Trying 'fr_FR.utf8'.*success!")
     test(1442, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after success
-    test(1443, fread("A;B\n1;2,34\n", dec=",", sep=",", verbose=TRUE), error="'dec' and 'sep' are equal", output="'fr_FR.utf8'.*success!")
-    test(1444, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after error. [ouput check in 1443 ensures it was changed]
+    test(1443.1, fread("A;B\n1;2,34\n", dec=",", sep=",", verbose=TRUE), error="'dec' and 'sep' are equal", output="'fr_FR.utf8'.*success!")
+    test(1443.2, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after error. [ouput check in 1443.1 ensures it was changed]
+    
+    # sep=".", issue #502
+    input = paste( paste("192.168.1.", 1:10, sep=""), collapse="\n")
+    test(1444.1, fread(input, sep=".", dec="*"), error="Unable to change to a locale which provides the desired dec")
+    test(1444.2, fread(input, sep="."), ans<-data.table(V1=192L,V2=168L,V3=1L,V4=1:10))   # by default, dec="," when sep="."
+    test(1444.3, fread(paste(paste("192. 168. 1. ", 1:10, sep = ""), collapse="\n"), sep="."), ans)
+    test(1444.4, fread(paste(paste("Hz.BB.GHG.", 1:10, sep = ""), collapse="\n"), sep="."), data.table(V1="Hz",V2="BB",V3="GHG",V4=1:10))
+
+    options(old)  # return to default set it .onLoad
+} else {
+    cat("Tests 1441-1444 not run. If required install the 'fr_FR.utf8' locale.\n")
 }
 
 # doubled quote inside a quoted field followed by an embedded newline
@@ -5589,19 +5599,12 @@ test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input wor
 
 test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist. Include one or more spaces to consider the input a system command.")
 
-# sep=".", issue #502
-input = paste( paste("192.168.1.", 1:10, sep=""), collapse="\n")
-test(1453.1, fread(input, sep="."), error="The two arguments to fread 'dec' and 'sep' are equal")
-#test(1453.2, fread(input, sep=".", dec="*"), ans<-data.table(V1=192L,V2=168L,V3=1L,V4=1:10), warning="Unable to change to a locale which provides the desired dec")
-#test(1453.3, fread(paste(paste("192. 168. 1. ", 1:10, sep = ""), collapse="\n"), sep=".", dec="*"), ans, warning="Unable")
-test(1453.4, fread(paste(paste("Hz.BB.GHG.", 1:10, sep = ""), collapse="\n"), sep=".", dec="*"), data.table(V1="Hz",V2="BB",V3="GHG",V4=1:10), warning="Unable")
-
 # Test for #802
-test(1454, fread("fread_line_error.csv"), error="Field 25 on line 9 starts with quote.*but then has a problem.*Check for unbalanced unescaped quotes")
+test(1453, fread("fread_line_error.csv"), error="Field 25 on line 9 starts with quote.*but then has a problem.*Check for unbalanced unescaped quotes")
 
 # no-sep-found => sep="\n", use case for this in #738
-test(1455.1, fread('"Foo"`"Bar"\n1`2\n',sep="`"), data.table(Foo=1L,Bar=2L))
-test(1455.2, fread('"Foo"\n1\n',sep="`"), data.table(Foo=1L))
+test(1454.1, fread('"Foo"`"Bar"\n1`2\n',sep="`"), data.table(Foo=1L,Bar=2L))
+test(1454.2, fread('"Foo"\n1\n',sep="`"), data.table(Foo=1L))
 
 
 ##########################

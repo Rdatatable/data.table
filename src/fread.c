@@ -216,7 +216,13 @@ static inline Rboolean Strtoll()
 
 static inline Rboolean Strtod()
 {
-    // Specialized strtod for same reasons as Strtoll (leading \t dealt with), but still uses strtod (hard to do better, unlike strtoll).
+    // Specialized strtod for same reasons as Strtoll (leading \t dealt with), but still uses stdlib:strtod (hard to do better, unlike strtoll).
+    // R's R_Strtod5 uses strlen() on input, so we can't use that here unless we copy field to a buffer (slow)
+    // Could fork glibc's strtod and change it to pass in dec rather than via locale but see :
+    //    http://www.exploringbinary.com/how-glibc-strtod-works/
+    // i.e. feel more comfortable relying on glibc for speed and robustness (and more eyes have been on it)
+    // Since French_France.1252 is always available on Windows, should not be an issue there: fread() automates the locale change and revert.
+    // On unix, fr_FR.utf8 may need to be installed.
     const char *lch=ch;
     while (lch<eof && isspace(*lch) && *lch!=sep && *lch!=eol) lch++;
     if (lch==eof || *lch==sep || *lch==eol) {u.d=NA_REAL; ch=lch; return(TRUE); }  // e.g. ',,' or '\t\t'
