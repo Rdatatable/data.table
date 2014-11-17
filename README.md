@@ -90,6 +90,10 @@
   
   4. `data.table` redefines `melt` generic and *suggests* `reshape2` instead of *import*. As a result we don't have to load `reshape2` package to use `melt.data.table` anymore. The reason for this change is that `data.table` requires R >=2.14, whereas `reshape2` R v3.0.0+. Reshape2's melt methods can be used without any issues by loading the package normally.
 
+#### NOTES
+
+  1. `DT[, j, ]` at times made an additional (unnecessary) copy. This is now fixed. This fix also avoids allocating `.I` when `j` doesn't use it. As a result `:=` and other subset operations should be faster (and use less memory). Thanks to @szilard for the nice report. Closes [#921](https://github.com/Rdatatable/data.table/issues/921).
+
 ### Changes in v1.9.4  (on CRAN 2 Oct 2014)
 
 #### NEW FEATURES
