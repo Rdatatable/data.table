@@ -1038,7 +1038,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     target = xcolsAns[s]
                     source = xcols[s]
                     ans[[target]] = x[[source]]
-                    if (address(ans[[target]]) == address(x[[source]])) ans[[target]] = copy(ans[[target]])
+                    # Temp fix for #921 - skip COPY until after evaluating 'jval' (scroll down).
+                    # Unless 'with=FALSE' - can not be expressions but just column names.
+                    if (!with && address(ans[[target]]) == address(x[[source]])) 
+                        ans[[target]] = copy(ans[[target]])
+                    else ans[[target]] = ans[[target]]
                 }
             } else {
                 for (s in seq_along(xcols)) {
@@ -1073,7 +1077,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             SDenv$.SD = null.data.table()   # no columns used by j so .SD can be empty. Only needs to exist so that we can rely on it being there when locking it below for example. If .SD were used by j, of course then xvars would be the columns and we wouldn't be in this leaf.
             SDenv$.N = if (is.null(irows)) nrow(x) else sum(!is.na(irows) & irows>0L)
         }
-        SDenv$.I = seq_len(SDenv$.N)
+        # Temp fix for #921. Allocate `.I` only if j-expression uses it.
+        SDenv$.I = if (!missing(j) && ".I" %chin% av) seq_len(SDenv$.N) else 0L
         SDenv$.GRP = 1L
         setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
         lockBinding(".SD",SDenv)
@@ -1084,7 +1089,17 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # Since .SD is inside SDenv, alongside its columns as variables, R finds .SD symbol more quickly, if used.
         # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
 
+        # Temp fix for #921 - check address and copy *after* evaluating 'jval'
         jval = eval(jsub, SDenv, parent.frame())
+        # copy 'jval' when required
+        if (is.atomic(jval)) {
+            jcpy = address(jval) %in% sapply(SDenv$.SD, address) # %chin% errors when RHS is list()
+            if (jcpy) jval = copy(jval)
+        } else if (address(jval) == address(SDenv$.SD)) {
+            jval = copy(jval)
+        } else if ( length(jcpy <- which(sapply(jval, address) %in% sapply(SDenv, address))) ) {
+            for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
+        }
 
         if (!is.null(lhs)) {   # *** TO DO ***: use set() here now that it can add new column(s) and remove newnames and alloc logic above
             if (verbose) cat("Assigning to ",if (is.null(irows)) "all " else paste(length(irows),"row subset of "), nrow(x)," rows\n",sep="")
@@ -1113,7 +1128,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         }
 
         # fix for bug #5114 from GSee's - .data.table.locked=TRUE.   # TO DO: more efficient way e.g. address==address (identical will do that but then proceed to deep compare if !=, wheras we want just to stop?)
-        if (identical(jval, SDenv$.SD)) return(copy(jval))
+        # Commented as it's taken care of above, along with #921 fix. Kept here for the bug fix info and TO DO.
+        # if (identical(jval, SDenv$.SD)) return(copy(jval))
         
         if (is.data.table(jval)) {
             setattr(jval, 'class', class(x)) # fix for #5296
