@@ -5609,6 +5609,9 @@ test(1453, fread("fread_line_error.csv"), error="Field 25 on line 9 starts with 
 test(1454.1, fread('"Foo"`"Bar"\n1`2\n',sep="`"), data.table(Foo=1L,Bar=2L))
 test(1454.2, fread('"Foo"\n1\n',sep="`"), data.table(Foo=1L))
 
+# Fix for #958 - Don't create secondary keys on .SD
+DT <- data.table(a=c(1, 1, 1, 0, 0), b=c("A", "B", "A1", "A", "B"))
+test(1455, DT[, nrow(.SD[b == 'B']), by=.(a)], data.table(a=c(1,0), V1=1L))
 
 ##########################
 

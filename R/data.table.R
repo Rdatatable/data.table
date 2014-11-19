@@ -445,10 +445,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             assign("x", x, order_env)
             i = eval(isub, order_env, parent.frame())             # for optimisation of 'order' to 'forder'
             # that forder returns integer(0) is taken care of internally within forder
-        } else if (is.call(isub) && getOption("datatable.auto.index") &&
+          } else if (is.call(isub) && getOption("datatable.auto.index") &&
                    as.character(isub[[1L]]) %chin% c("==","%in%") &&
                    is.name(isub[[2L]]) &&
-                   (isub2<-as.character(isub[[2L]])) %chin% names(x)) {  # LHS is a column name symbol
+                   (isub2<-as.character(isub[[2L]])) %chin% names(x) && 
+                   is.null(attr(x, '.data.table.locked'))) {  # fix for #958, don't create auto index on '.SD'.
+            # LHS is a column name symbol
             # simplest case for now (single ==).  Later, top level may be &,|,< or >
             # TO DO: print method could print physical and secondary keys at end.
             # TO DO: move down to if (is.data.table) clause below, later ...
