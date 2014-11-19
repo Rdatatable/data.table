@@ -80,6 +80,8 @@
 
   22. Updating `.SD` by reference using `set` also errors appropriately now; similar to `:=`. Closes [#927](https://github.com/Rdatatable/data.table/issues/927). Thanks to @jrowen for the minimal example.
 
+  23. `X[Y, .N]` returned the same result as `X[Y, .N, nomatch=0L]`) when `Y` contained rows that has no matches in `X`. Fixed now. Closes [#963](https://github.com/Rdatatable/data.table/issues/963). Thanks to [this SO post](http://stackoverflow.com/q/27004002/559784) from @Alex which helped discover the bug.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

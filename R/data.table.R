@@ -1075,7 +1075,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 
         } else {
             SDenv$.SD = null.data.table()   # no columns used by j so .SD can be empty. Only needs to exist so that we can rely on it being there when locking it below for example. If .SD were used by j, of course then xvars would be the columns and we wouldn't be in this leaf.
-            SDenv$.N = if (is.null(irows)) nrow(x) else sum(!is.na(irows) & irows>0L)
+            SDenv$.N = if (is.null(irows)) nrow(x) else length(irows) * !(all(irows == 0L) %in% TRUE)
+            # Fix for #958.
+            # When irows is integer(0), length(irows) = 0 will result in 0 (as expected).
+            # When irows is 0 or all-0s all(irows == 0L) is TRUE and ! will give FALSE (as expected).
+            # When any NA or all NA all(..) will give NA, NA %in% TRUE is FALSE, and ! will give TRUE (as expected).
+            # Case where some irows = 0L won't occur.
         }
         # Temp fix for #921. Allocate `.I` only if j-expression uses it.
         SDenv$.I = if (!missing(j) && ".I" %chin% av) seq_len(SDenv$.N) else 0L
