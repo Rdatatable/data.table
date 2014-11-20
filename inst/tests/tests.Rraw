@@ -66,6 +66,7 @@ if (!.devtesting) {
     frankv = data.table:::frankv
     is_na = data.table:::is_na
     shallow = data.table:::shallow # until exported
+    chmatch2 = data.table:::chmatch2
 }
 
 TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
@@ -5612,6 +5613,15 @@ test(1454.2, fread('"Foo"\n1\n',sep="`"), data.table(Foo=1L))
 # Fix for #958 - Don't create secondary keys on .SD
 DT <- data.table(a=c(1, 1, 1, 0, 0), b=c("A", "B", "A1", "A", "B"))
 test(1455, DT[, nrow(.SD[b == 'B']), by=.(a)], data.table(a=c(1,0), V1=1L))
+
+# Test for chmatch2 bug fix
+x1 = c("b", "a", "d", "a", "c", "a")
+x2 = c("a", "a", "a")
+x3 = c("d", "a", "a", "d", "a")
+table = rep(letters[1:3], each=2)
+test(1456.1, chmatch2(x1, table), as.integer(c(3,1,NA,2,5,NA)))
+test(1456.2, chmatch2(x2, table), as.integer(c(1,2,NA)))
+test(1456.3, chmatch2(x3, table), as.integer(c(NA,1,2,NA,NA)))
 
 ##########################
 

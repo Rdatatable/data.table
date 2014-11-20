@@ -898,8 +898,8 @@ SEXP chmatch2(SEXP x, SEXP y, SEXP nomatch) {
         } else {
             yl = VECTOR_ELT(VECTOR_ELT(yll, 1), INTEGER(mx)[i]-1);
             iy = length(yl);
-            for (j=0; j < (ix < iy ? ix : iy); j++)
-                INTEGER(ans)[INTEGER(xl)[j]-1] = INTEGER(yl)[j];
+            for (j=0; j < ix; j++)
+                INTEGER(ans)[INTEGER(xl)[j]-1] = (j < iy) ? INTEGER(yl)[j] : INTEGER(nomatch)[0];
             k += ix;
         }
     }
