@@ -2057,9 +2057,10 @@ point <- function(to, to_idx, from, from_idx) {
 shallow <- function(x, cols=NULL) {
     if (!is.data.table(x)) 
         stop("x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table")
-    if (!is.null(cols)) cols = validate(cols, x) # NULL is default = all columns
+    isnull = is.null(cols)
+    if (!isnull) cols = validate(cols, x)  # NULL is default = all columns
     ans = .Call(Cshallowwrapper, x, cols)  # copies VECSXP only
-    if (!is.null(cols)) {
+    if (!isnull) {
         cols = names(x)[cols]
         if (identical(cols, key(x)[seq_along(cols)])) 
             setattr(ans, 'sorted', cols)
