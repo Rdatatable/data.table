@@ -1099,13 +1099,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # Temp fix for #921 - check address and copy *after* evaluating 'jval'
         jval = eval(jsub, SDenv, parent.frame())
         # copy 'jval' when required
-        if (is.atomic(jval)) {
-            jcpy = address(jval) %in% sapply(SDenv$.SD, address) # %chin% errors when RHS is list()
-            if (jcpy) jval = copy(jval)
-        } else if (address(jval) == address(SDenv$.SD)) {
-            jval = copy(jval)
-        } else if ( length(jcpy <- which(sapply(jval, address) %in% sapply(SDenv, address))) ) {
-            for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
+        # More speedup - only check + copy if irows is NULL
+        if (is.null(irows)) {
+            if (is.atomic(jval)) {
+                jcpy = address(jval) %in% sapply(SDenv$.SD, address) # %chin% errors when RHS is list()
+                if (jcpy) jval = copy(jval)
+            } else if (address(jval) == address(SDenv$.SD)) {
+                jval = copy(jval)
+            } else if ( length(jcpy <- which(sapply(jval, address) %in% sapply(SDenv, address))) ) {
+                for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
+            }
         }
 
         if (!is.null(lhs)) {   # *** TO DO ***: use set() here now that it can add new column(s) and remove newnames and alloc logic above
@@ -1123,10 +1126,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 if (is.atomic(jval)) jval = jval[0L] else jval = lapply(jval, `[`, 0L)
             if (is.atomic(jval)) {
                 setattr(jval,"names",NULL)
-                jval = data.table(jval)
+                jval = data.table(jval) # TO DO: should this be setDT(list(jval)) instead?
             } else {
                 if (is.null(jvnames)) jvnames=names(jval)
-                jval = as.data.table.list(jval)   # does the vector expansion to create equal length vectors
+                # avoid copy if all vectors are already of same lengths, use setDT
+                lenjval = vapply(jval, length, 0L)
+                if (any(lenjval != lenjval[1L]))
+                    jval = as.data.table.list(jval)   # does the vector expansion to create equal length vectors
+                else setDT(jval)
             }
             if (is.null(jvnames)) jvnames = character(length(jval)-length(bynames))
             ww = which(jvnames=="")
