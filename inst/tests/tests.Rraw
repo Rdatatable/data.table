@@ -5542,9 +5542,9 @@ if (.Platform$OS.type=="windows" ||
     # e.g. on Matt's machine where I've installed fr_FR.utf8 which has dec=","
     old = options(datatable.fread.dec.locale=if (.Platform$OS.type=="unix") "fr_FR.utf8" else "French_France.1252")
     oldlocale = Sys.getlocale("LC_NUMERIC")
-    test(1441, fread("A;B\n1;2,34\n", dec=",", verbose=TRUE), data.table(A=1L, B=2.34), output="Changing to system locale.*Trying 'fr_FR.utf8'.*success!")
+    test(1441, fread("A;B\n1;2,34\n", dec=",", verbose=TRUE), data.table(A=1L, B=2.34), output="success!")
     test(1442, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after success
-    test(1443.1, fread("A;B\n1;2,34\n", dec=",", sep=",", verbose=TRUE), error="'dec' and 'sep' are equal", output="'fr_FR.utf8'.*success!")
+    test(1443.1, fread("A;B\n1;2,34\n", dec=",", sep=",", verbose=TRUE), error="'dec' and 'sep' are equal", output="success!")
     test(1443.2, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after error. [ouput check in 1443.1 ensures it was changed]
     
     # sep=".", issue #502
