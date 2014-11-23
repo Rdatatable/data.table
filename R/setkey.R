@@ -145,7 +145,7 @@ forderv <- function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.la
         if ( !missing(order) && (length(order) != 1L || !(order %in% c(1L, -1L))) )
             stop("x is a single vector, length(order) must be =1 and it's value should be 1 (ascending) or -1 (descending).")
     } else {
-        if (!length(x)) return(integer(0)) # to be consistent with base:::order. this'll make sure forderv(NULL) will result in error 
+        if (!length(x)) return(integer(0)) # to be consistent with base::order. this'll make sure forderv(NULL) will result in error 
                                            # (as base does) but forderv(data.table(NULL)) and forderv(list()) will return integer(0))
         if (is.character(by)) by=chmatch(by, names(x))
         by = as.integer(by)
@@ -163,7 +163,7 @@ forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
     if (ncol(x) == 0) stop("Attempting to order a 0-column data.table.")
     if (is.na(decreasing) || !is.logical(decreasing)) stop("'decreasing' must be logical TRUE or FALSE")
     cols = substitute(list(...))[-1]
-    if (identical(as.character(cols),"NULL") || !length(cols)) return(NULL) # to provide the same output as base:::order
+    if (identical(as.character(cols),"NULL") || !length(cols)) return(NULL) # to provide the same output as base::order
     ans = x
     order = rep(1L, length(cols))
     if (length(cols)) {

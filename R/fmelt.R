@@ -1,6 +1,9 @@
-# Add melt generic, don't import reshape2, it requires R >= 3.0.0.
+# Add melt generic, don't import reshape2 as it requires R >= 3.0.0.
 melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
-  UseMethod("melt", data)
+  if (is.data.table(data)) 
+      UseMethod("melt", data)
+  else
+      reshape2::melt(data, ..., na.rm=na.rm, value.name=value.name)
 }
 
 melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variable", 
@@ -25,27 +28,4 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
     ans
 }
 
-# Redirect to reshape2's melt
-melt.data.frame <- function(...) {
-    reshape2:::melt.data.frame(...)
-}
 
-melt.array <- function(...) {
-    reshape2:::melt.array(...)
-}
-
-melt.list <- function(...) {
-    reshape2:::melt.list(...)
-}
-
-melt.table <- function(...) {
-    reshape2:::melt.table(...)
-}
-
-melt.matrix <- function(...) {
-    reshape2:::melt.matrix(...)
-}
-
-melt.default <- function(...) {
-    reshape2:::melt.default(...)
-}
