@@ -5,7 +5,7 @@
 
 **Introduction, installation, documentation, benchmarks etc:** [HOMEPAGE](https://github.com/Rdatatable/data.table/wiki)
 
-**Contributing:** Please see the project's [Contribution Guidelines](https://github.com/Rdatatable/data.table/blob/master/Contributing.md).
+**Guidelines for filing issues / pull requests:** Please see the project's [Contribution Guidelines](https://github.com/Rdatatable/data.table/blob/master/Contributing.md).
 
 ---
 
