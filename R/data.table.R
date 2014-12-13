@@ -565,6 +565,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             }
             if (length(xo) && length(irows)) irows = xo[irows]   # TO DO: fsort here?
         } else {
+            # TO DO: TODO: Incorporate which_ here on DT[!i] where i is logical. Should avoid i = !i (above) - inefficient.
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
             if (is.logical(i)) {
