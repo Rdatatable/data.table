@@ -5641,7 +5641,7 @@ test(1458.1, which(x > 0), which_(x > 0)) # default is TRUE
 test(1458.2, which(x > 0), which_(x > 0, TRUE)) # test explicitly
 test(1458.3, which(!x > 0), which_(x > 0, FALSE))
 
-# Testing subsetDT on complex/raw vectors, and added tests for other types.
+# Fix for #982. Testing subsetDT on complex/raw vectors, and added tests for other types.
 DT = data.table(a=c(1:3,NA_integer_), b=c(1,2,3,NA), c=as.complex(c(1:3,NA)), d=as.raw(1:4), 
           e=as.list(1:4), f=c(FALSE,FALSE,TRUE,NA), g=c("a", "b", "c", NA_character_))
 test(1459.1, .Call("CsubsetDT", DT, which(DT$a > 2), seq_along(DT)), setDT(as.data.frame(DT)[3, , drop=FALSE]))
@@ -5656,6 +5656,14 @@ test(1459.9, .Call("CsubsetDT", DT, which(Re(DT$c) > 2 | is.na(DT$c)), seq_along
 test(1459.10, .Call("CsubsetDT", DT, which(DT$f | is.na(DT$f)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
 test(1459.11, .Call("CsubsetDT", DT, which(DT$g == "c" | is.na(DT$g)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
 test(1459.12, .Call("CsubsetDT", DT, 5L, seq_along(DT)), setDT(as.data.frame(DT)[5,]))
+
+# Test for na.omit with list, raw and complex types
+DT = data.table(x=c(1L,1L,NA), y=c(NA, NA, 1), z=as.raw(1:3), w=list(1,NA,2), v=c(1+5i, NA, NA))
+test(1460.1, na.omit(DT, cols="w"), DT)
+test(1460.2, na.omit(DT, cols="v"), DT[1])
+test(1460.3, na.omit(DT, cols=c("v", "y")), DT[0])
+test(1460.4, na.omit(DT, cols=c("z", "v")), DT[1])
+test(1460.5, na.omit(DT, cols=c("w", "v")), DT[1])
 
 ##########################
 

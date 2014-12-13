@@ -27,7 +27,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
     for (i=0; i<n; i++) LOGICAL(ans)[i]=0;
     for (i=0; i<LENGTH(cols); i++) {
         v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
-        if (!length(v)) continue;
+        if (!length(v) || isNewList(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip list/pairlist columns
         if (n != length(v))
             error("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d.", i+1,length(v),n);
         switch (TYPEOF(v)) {
@@ -51,6 +51,14 @@ SEXP dt_na(SEXP x, SEXP cols) {
             } else {
                 for (j=0; j<n; j++) LOGICAL(ans)[j] |= ISNAN(REAL(v)[j]);
             }
+            break;
+        case RAWSXP: 
+            // no such thing as a raw NA
+            // vector already initialised to all 0's
+            break;
+        case CPLXSXP:
+            // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
+            for (j=0; j<n; j++) LOGICAL(ans)[j] |= (ISNAN(COMPLEX(v)[j].r) || ISNAN(COMPLEX(v)[j].i));
             break;
         default:
             error("Unknown column type '%s'", type2char(TYPEOF(v)));
