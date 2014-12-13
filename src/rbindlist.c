@@ -157,7 +157,7 @@ static void CleanHashTable(HashData *d)
 
 // factorType is 1 for factor and 2 for ordered
 // will simply unique normal factors and attempt to find global order for ordered ones
-static SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOrdered) {
+SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOrdered) {
     // find total length
     RLEN size = 0;
     R_len_t len = LENGTH(factorLevels), n, i, j;
