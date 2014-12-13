@@ -5630,7 +5630,7 @@ if ("package:reshape2" %in% search()) {
         y = factor("b", levels = c("a", "b")),
         z = 1
     )
-    test(1449.1, dcast(dt, y ~ x, drop = FALSE, value.var="z"), 
+    test(1457, dcast(dt, y ~ x, drop = FALSE, value.var="z"), 
                  data.table(dcast(as.data.frame(dt), y ~ x, drop = FALSE, value.var="z"), key="y"))
 }
 
