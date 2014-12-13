@@ -3074,33 +3074,33 @@ test(1098, dt1[dt2,roll=-Inf,rollends=TRUE]$ind, INT(1,1,1,2,2,2,2,2,2,2))  # ok
 test(1099, dt1[dt2,roll=-Inf,rollends=c(TRUE,FALSE)]$ind, INT(1,1,1,2,2,2,2,NA,NA,NA))  # ok before
 test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,2,2))  # now ok
 
-# dcast.data.table
+# dcast
 if ("package:reshape2" %in% search()) {
 
     names(ChickWeight) <- tolower(names(ChickWeight))
     DT <- melt(as.data.table(ChickWeight), id=2:4) # calls melt.data.table
 
-    # no S3 method yet, have to use "dcast.data.table"
+    # no S3 method yet, have to use "dcast"
     if (.Machine$sizeof.longdouble==16)
-        test(1101, as.data.frame(dcast.data.table(DT, time ~ variable, fun=mean)), dcast(as.data.frame(DT), time~variable, fun=mean))
-    test(1102, as.data.frame(dcast.data.table(DT, diet ~ variable, fun=sum)), dcast(as.data.frame(DT), diet~variable, fun=sum))
-    x1 <- as.data.frame(dcast.data.table(DT, diet+chick ~ time, drop=FALSE)) 
+        test(1101, as.data.frame(dcast(DT, time ~ variable, fun=mean)), dcast(as.data.frame(DT), time~variable, fun=mean))
+    test(1102, as.data.frame(dcast(DT, diet ~ variable, fun=sum)), dcast(as.data.frame(DT), diet~variable, fun=sum))
+    x1 <- as.data.frame(dcast(DT, diet+chick ~ time, drop=FALSE)) 
     x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
     x2 <- dcast(as.data.frame(DT), diet+chick~time, drop=FALSE)
     test(1103, x1,x2)
-    x1 <- as.data.frame(dcast.data.table(DT, diet+chick ~ time, drop=FALSE, fill=0)) 
+    x1 <- as.data.frame(dcast(DT, diet+chick ~ time, drop=FALSE, fill=0)) 
     x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
     x2 <- dcast(as.data.frame(DT), diet+chick~time, drop=FALSE, fill=0)
     test(1104.1, x1,x2)
 
-    # add test for 'subset' in dcast.data.table
+    # add test for 'subset' in dcast
     x1 <- dcast(as.data.frame(DT), time + chick ~ variable+diet, fun=sum, subset=.(time> 20))
-    x2 <- as.data.frame(dcast.data.table(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20)))
+    x2 <- as.data.frame(dcast(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20)))
     test(1104.2, x1, x2)
 
     # testing without aggregation
     x <- data.table(a=5:1, b=runif(5))
-    test(1104.3, as.data.frame(dcast.data.table(x, a ~ b, value.var="b")), dcast(as.data.frame(x), a ~ b, value.var="b"))
+    test(1104.3, as.data.frame(dcast(x, a ~ b, value.var="b")), dcast(as.data.frame(x), a ~ b, value.var="b"))
 }
 
 # test for freading commands
@@ -3390,13 +3390,13 @@ x <- c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.189
 test(1147.3, dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
 
 if ("package:reshape2" %in% search()) {
-    # Fix for case 2 in bug report #5149 - dcast.data.table dint aggregate properly when formula RHS has "."
+    # Fix for case 2 in bug report #5149 - dcast dint aggregate properly when formula RHS has "."
     set.seed(45)
     DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
     ans = setDT(dcast(as.data.frame(DT), x ~ ., mean, value.var="y"))
     setnames(ans, c("x", "y"))
     setkey(ans, x)
-    test(1148.1, dcast.data.table(DT, x ~ ., mean, value.var="y"), ans)
+    test(1148.1, dcast(DT, x ~ ., mean, value.var="y"), ans)
     # also quashed another bug with `.` in formula (when there's no aggregate function):
     DT <- data.table(a=sample(5), b=runif(5), c=5:1)
     ans1 = setDT(dcast(as.data.frame(DT), a ~ ., value.var="c"))
@@ -3405,21 +3405,21 @@ if ("package:reshape2" %in% search()) {
     setnames(ans2, c("b", "a", "c"))
     setkey(ans1, "a")
     setkey(ans2, "b", "a")
-    test(1148.2, dcast.data.table(DT, a ~ ., value.var="c"), ans1)
-    test(1148.3, dcast.data.table(DT, b+a~., value.var="c"), ans2)
+    test(1148.2, dcast(DT, a ~ ., value.var="c"), ans1)
+    test(1148.3, dcast(DT, b+a~., value.var="c"), ans2)
 }
 
 # test for `iradixorder` when input is integer(0) and numeric(0)
 test(1149.1, iradixorder(integer(0)), integer(0)) 
 test(1149.2, iradixorder(numeric(0)), error="iradixorder is only for integer") 
 
-# more tests for `dcast.data.table` with formula being character and errors when formula is a hybrid
+# more tests for `dcast` with formula being character and errors when formula is a hybrid
 set.seed(1)
 x <- data.table(a=rep(1:5, each=5), b=runif(25))
-### adding all extra arguments for no verbose during "test.data.table()" to all dcast.data.table tests
-test(1150.1, dcast.data.table(x, " a~ . ", value.var="b", fun=length), data.table(a=1:5, b=5L, key="a"))
-test(1150.2, dcast.data.table(x, "a ~  c ", value.var="b"), error="Column 'c' not found")
-test(1150.3, dcast.data.table(x, a ~  a, value.var="c"), error="'value.var' column 'c' not found")
+### adding all extra arguments for no verbose during "test.data.table()" to all dcast tests
+test(1150.1, dcast(x, " a~ . ", value.var="b", fun=length), data.table(a=1:5, b=5L, key="a"))
+test(1150.2, dcast(x, "a ~  c ", value.var="b"), error="Column 'c' not found")
+test(1150.3, dcast(x, a ~  a, value.var="c"), error="'value.var' column 'c' not found")
 
 # test uniqlengths
 set.seed(45)
@@ -3721,14 +3721,14 @@ if ("package:reshape2" %in% search()) {
     df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]),
                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
     dt <- as.data.table(df)
-    test(1198.1, setkey(setDT(dcast(as.data.frame(df), a~b, drop=FALSE, value.var="b", fun=length)), a), dcast.data.table(dt, a~b, drop=FALSE, fun=length, value.var="b"))
+    test(1198.1, setkey(setDT(dcast(as.data.frame(df), a~b, drop=FALSE, value.var="b", fun=length)), a), dcast(dt, a~b, drop=FALSE, fun=length, value.var="b"))
     
     # reverse the levels
     set.seed(1L)
     df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[5:1]),
                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
     dt <- as.data.table(df)
-    test(1198.2, setkey(setDT(dcast(as.data.frame(df), a~b, drop=FALSE, value.var="b", fun=length)), a), dcast.data.table(dt, a~b, drop=FALSE, value.var="b", fun=length))
+    test(1198.2, setkey(setDT(dcast(as.data.frame(df), a~b, drop=FALSE, value.var="b", fun=length)), a), dcast(dt, a~b, drop=FALSE, value.var="b", fun=length))
     
     # more factor cols
     set.seed(1L)
@@ -3737,7 +3737,7 @@ if ("package:reshape2" %in% search()) {
                  a3=sample(letters[1:3], 10, TRUE), # no factor
                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
     dt <- as.data.table(df)
-    test(1198.3, setkey(setDT(dcast(as.data.frame(df), a1+a2+a3~b, drop=FALSE, value.var="b")), a1,a2,a3), dcast.data.table(dt, a1+a2+a3~b, drop=FALSE, value.var="b"))
+    test(1198.3, setkey(setDT(dcast(as.data.frame(df), a1+a2+a3~b, drop=FALSE, value.var="b")), a1,a2,a3), dcast(dt, a1+a2+a3~b, drop=FALSE, value.var="b"))
 }
 
 DT = data.table(id=1:2, val1=6:1, val2=6:1)   # 5380
@@ -4131,9 +4131,9 @@ if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
 
 ###############
 
-# dcast.data.table bug fix for 'subset' argument (it doesn't get key set before to run C-fcast):
+# dcast bug fix for 'subset' argument (it doesn't get key set before to run C-fcast):
 dt <- data.table(x=c(1,1,1,2,2,2,1,1), y=c(1,2,3,1,2,1,1,2), z=c(1,2,3,NA,4,5,NA,NA))
-test(1252, dcast.data.table(dt, x~y, value.var="z", subset=.(!is.na(z))), data.table(x=c(1,2), `1`=c(1,5), `2`=c(2,4), `3`=c(3,NA), key="x"))
+test(1252, dcast(dt, x~y, value.var="z", subset=.(!is.na(z))), data.table(x=c(1,2), `1`=c(1,5), `2`=c(2,4), `3`=c(3,NA), key="x"))
 
 # turning off tolerance for UPCs (> 11 s.f. stored in numeric), #5369
 DT <- data.table(upc = c(301426027592, 301426027593, 314775802939, 314775802940, 314775803490, 314775803491, 314775815510, 314775815511, 314933000171, 314933000172),
@@ -4312,7 +4312,7 @@ test(1285.2, unique(dt), dt)
 # FR #5675 and DOC #5676
 set.seed(1L)
 dt <- data.table(a=sample(10), b=2013:2014, variable=rep(c("c", "d"), each=10), value=runif(20))
-ans1 <- names(dcast.data.table(dt, a ~ ... + b, value.var="value"))
+ans1 <- names(dcast(dt, a ~ ... + b, value.var="value"))
 test(1286, ans1, c("a", "c_2013", "c_2014", "d_2013", "d_2014"))
 
 # BUG #5672 fix
@@ -4622,13 +4622,13 @@ test(1313.20, DT[, list(y=max(y)), by=x], DT[c(1,6)])
 test(1313.21, DT[, list(y=min(y, na.rm=TRUE)), by=x], DT[c(2,7)])
 test(1313.22, DT[, list(y=max(y, na.rm=TRUE)), by=x], DT[c(5,10)])
 
-# bug git #693 - dcast.data.table error message improvement:
+# bug git #693 - dcast error message improvement:
 dt <- data.table(x=c(1,1), y=c(2,2), z = 3:4)
-test(1314, dcast.data.table(dt, x ~ y, value.var="z", fun.aggregate=identity), error="Aggregating function provided to argument 'fun.aggregate' should always return a length 1 vector")
+test(1314, dcast(dt, x ~ y, value.var="z", fun.aggregate=identity), error="Aggregating function provided to argument 'fun.aggregate' should always return a length 1 vector")
 
 # bug #688 - preserving attributes
 DT = data.table(id = c(1,1,2,2), ty = c("a","b","a","b"), da = as.Date("2014-06-20"))
-test(1315, dcast.data.table(DT, formula = id ~ ty, value.var="da"), data.table(id=c(1,2), a=as.Date("2014-06-20"), b=as.Date("2014-06-20"), key="id")) 
+test(1315, dcast(DT, formula = id ~ ty, value.var="da"), data.table(id=c(1,2), a=as.Date("2014-06-20"), b=as.Date("2014-06-20"), key="id")) 
 
 # bug #699 - melt segfaults when vars are not in dt
 if ("package:reshape2" %in% search()) {
@@ -4806,25 +4806,25 @@ test(1343, fread("A,B\n1,TRUE\n2,\n3,F"), data.table(A=1:3, B=c(TRUE,NA,FALSE)))
 test(1344, fread("A,B\n1,T\n2,NA\n3,"), data.table(A=1:3, B=c(TRUE,NA,NA)))
 
 
-# issues/713 - dcast.data.table and fun.aggregate
+# issues/713 - dcast and fun.aggregate
 DT <- data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
 foo <- function (tbl, fun.aggregate) {
-    dcast.data.table(tbl, id ~ k, value.var='v', fun.aggregate=fun.aggregate, fill=NA_integer_)
+    dcast(tbl, id ~ k, value.var='v', fun.aggregate=fun.aggregate, fill=NA_integer_)
 }
-test(1345, foo(DT, last), dcast.data.table(DT, id ~ k, value.var='v', fun.aggregate=last, fill=NA_integer_))
+test(1345, foo(DT, last), dcast(DT, id ~ k, value.var='v', fun.aggregate=last, fill=NA_integer_))
 
-# more minor changes to dcast.data.table (subset argument handling symbol - removing any surprises with data.table's typical scoping rules) - test for that.
+# more minor changes to dcast (subset argument handling symbol - removing any surprises with data.table's typical scoping rules) - test for that.
 DT <- data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
 bla <- c(TRUE, rep(FALSE, 6L)) 
 # calling `subset=.(bla)` gives eval error when testing... not sure what's happeing! using values directly instead for now.
-test(1346.1, dcast.data.table(DT, id ~ k, value.var="v", subset=.(c(TRUE, rep(FALSE, 6L)))), dcast.data.table(DT[1L], id ~ k, value.var="v"))
+test(1346.1, dcast(DT, id ~ k, value.var="v", subset=.(c(TRUE, rep(FALSE, 6L)))), dcast(DT[1L], id ~ k, value.var="v"))
 DT[, bla := !bla]
-test(1346.2, dcast.data.table(DT, id ~ k, value.var="v", subset=.(bla), fun.aggregate=length), dcast.data.table(DT[(bla)], id ~ k, value.var="v", fun.aggregate=length))
+test(1346.2, dcast(DT, id ~ k, value.var="v", subset=.(bla), fun.aggregate=length), dcast(DT[(bla)], id ~ k, value.var="v", fun.aggregate=length))
 
 # issues/715
 DT <- data.table(id=rep(1:2, c(3,2)), k=c(letters[1:3], letters[1:2]), v=1:5)
-test(1347.1, dcast.data.table(DT, id ~ k, fun.aggregate=last, value.var="v"), error="Aggregating function provided to argument 'fun.aggregate' should always return a length 1 vector")
-test(1347.2, dcast.data.table(DT, id ~ k, fun.aggregate=last, value.var="v", fill=NA_integer_), data.table(id=1:2, a=c(1L, 4L), b=c(2L,5L), c=c(3L,NA_integer_), key="id"))
+test(1347.1, dcast(DT, id ~ k, fun.aggregate=last, value.var="v"), error="Aggregating function provided to argument 'fun.aggregate' should always return a length 1 vector")
+test(1347.2, dcast(DT, id ~ k, fun.aggregate=last, value.var="v", fill=NA_integer_), data.table(id=1:2, a=c(1L, 4L), b=c(2L,5L), c=c(3L,NA_integer_), key="id"))
 
 # .N now available in i
 DT = data.table(a=1:3,b=1:6)
@@ -5626,7 +5626,7 @@ test(1456.3, chmatch2(x3, table), as.integer(c(NA,1,2,NA,NA)))
 ##########################
 
 
-# TO DO: Add test for fixed bug #5519 - dcast.data.table returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.
+# TO DO: Add test for fixed bug #5519 - dcast returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)
 # TO DO: tests of freading classes like Date and the verbose messages there.

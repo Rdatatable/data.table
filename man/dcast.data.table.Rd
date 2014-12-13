@@ -31,15 +31,15 @@
 \details{
 The cast formula takes the form \code{LHS ~ RHS}	, ex: \code{var1 + var2 ~ var3}. The order of entries in the formula is essential. There are two special variables: \code{.} and \code{...}. Their functionality is identical to that of \code{reshape2:::dcast}. 
 
-\code{dcast.data.table} also allows \code{value.var} columns of type \code{list}.
+\code{dcast} also allows \code{value.var} columns of type \code{list}.
 
 When variable combinations in \code{formula} doesn't identify a unique value in a cell, \code{fun.aggregate} will have to be specified, which defaults to \code{length} if unspecified. The aggregating function should take a vector as input and return a single value (or a list of length one) as output. In cases where \code{value.var} is a list, the function should be able to handle a list input and provide a single value or list of length one as output.
 
-If the formula's LHS contains the same column more than once, ex: \code{dcast.data.table(DT, x+x~ y)}, then the answer will have duplicate names. In those cases, the duplicate names are renamed using \code{make.unique} so that key can be set without issues.
+If the formula's LHS contains the same column more than once, ex: \code{dcast(DT, x+x~ y)}, then the answer will have duplicate names. In those cases, the duplicate names are renamed using \code{make.unique} so that key can be set without issues.
 
 Names for columns that are being cast are generated in the same order (separated by a \code{_}) from the (unique) values in each column mentioned in the formula RHS.
 
-From \code{v1.9.4}, \code{dcast.data.table} tries to preserve attributes whereever possible, except when \code{value.var} is a factor (or ordered factor). For \code{factor} types, the resulting casted columns will be coerced to character type thereby losing \code{levels} attribute.
+From \code{v1.9.4}, \code{dcast} tries to preserve attributes whereever possible, except when \code{value.var} is a factor (or ordered factor). For \code{factor} types, the resulting casted columns will be coerced to character type thereby losing \code{levels} attribute.
 }
 \value{
     A keyed \code{data.table} that has been cast. The key columns are equal to the variables in the \code{formula} LHS in the same order.
@@ -57,25 +57,25 @@ require(data.table)
 names(ChickWeight) <- tolower(names(ChickWeight))
 DT <- melt(as.data.table(ChickWeight), id=2:4) # calls melt.data.table
 
-# no S3 method yet, have to use "dcast.data.table"
-dcast.data.table(DT, time ~ variable, fun=mean)
-dcast.data.table(DT, diet ~ variable, fun=mean)
-dcast.data.table(DT, diet+chick ~ time, drop=FALSE)
-dcast.data.table(DT, diet+chick ~ time, drop=FALSE, fill=0)
+# dcast is a S3 method in data.table from v1.9.6
+dcast(DT, time ~ variable, fun=mean)
+dcast(DT, diet ~ variable, fun=mean)
+dcast(DT, diet+chick ~ time, drop=FALSE)
+dcast(DT, diet+chick ~ time, drop=FALSE, fill=0)
 
 # using subset
-dcast.data.table(DT, chick ~ time, fun=mean, subset=.(time < 10 & chick < 20))
+dcast(DT, chick ~ time, fun=mean, subset=.(time < 10 & chick < 20))
 
 \dontrun{
-# on big data
+# benchmark against reshape2's dcast
 set.seed(45)
 DT <- data.table(aa=sample(1e4, 1e6, TRUE), 
       bb=sample(1e3, 1e6, TRUE), 
       cc = sample(letters, 1e6, TRUE), dd=runif(1e6))
-system.time(dcast.data.table(DT, aa ~ cc, fun=sum)) # 0.28 seconds
-system.time(dcast.data.table(DT, bb ~ cc, fun=mean)) # 0.08 seconds
+system.time(dcast(DT, aa ~ cc, fun=sum)) # 0.28 seconds
+system.time(dcast(DT, bb ~ cc, fun=mean)) # 0.08 seconds
 # reshape2::dcast takes 99 seconds
-system.time(dcast.data.table(DT, aa + bb ~ cc, fun=sum)) # 2.7 seconds
+system.time(dcast(DT, aa + bb ~ cc, fun=sum)) # 2.7 seconds
 }
 }
 \seealso{
