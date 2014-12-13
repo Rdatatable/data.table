@@ -54,7 +54,7 @@ void setselfref(SEXP);
 // fmelt.c
 SEXP seq_int(int n, int start);
 SEXP set_diff(SEXP x, int n);
-SEXP which(SEXP x);
+SEXP which(SEXP x, Rboolean bool);
 
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
