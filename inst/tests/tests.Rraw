@@ -5623,6 +5623,17 @@ test(1456.1, chmatch2(x1, table), as.integer(c(3,1,NA,2,5,NA)))
 test(1456.2, chmatch2(x2, table), as.integer(c(1,2,NA)))
 test(1456.3, chmatch2(x3, table), as.integer(c(NA,1,2,NA,NA)))
 
+# Fix for #893
+if ("package:reshape2" %in% search()) {
+    dt <- data.table(
+        x = factor("a", levels = c("a", "b")),
+        y = factor("b", levels = c("a", "b")),
+        z = 1
+    )
+    test(1449.1, dcast(dt, y ~ x, drop = FALSE, value.var="z"), 
+                 data.table(dcast(as.data.frame(dt), y ~ x, drop = FALSE, value.var="z"), key="y"))
+}
+
 ##########################
 
 

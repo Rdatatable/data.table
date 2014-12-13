@@ -401,11 +401,19 @@ SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_
         for (i=0; i<mlen; i++) {
             cpy = PROTECT(allocVector(VECSXP, 1));
             SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(rdt, i));
-            dorder = PROTECT(cast_order(cpy, env));
-            ddup = PROTECT(uniqlist(cpy, dorder));
-            ddup = PROTECT(subsetVector(dorder, ddup));
-            dtmp = PROTECT(subsetVector(VECTOR_ELT(cpy, 0), ddup));
-            UNPROTECT(5);
+            if (isFactor(VECTOR_ELT(rdt, i))) {
+                lvls = PROTECT(getAttrib(VECTOR_ELT(rdt, i), R_LevelsSymbol));
+                dtmp = PROTECT(seq_int(length(lvls), 1));
+                setAttrib(dtmp, R_ClassSymbol, mkString("factor"));
+                setAttrib(dtmp, R_LevelsSymbol, lvls);
+                UNPROTECT(3);
+            } else {
+                dorder = PROTECT(cast_order(cpy, env));
+                ddup = PROTECT(uniqlist(cpy, dorder));
+                ddup = PROTECT(subsetVector(dorder, ddup));
+                dtmp = PROTECT(subsetVector(VECTOR_ELT(cpy, 0), ddup));
+                UNPROTECT(5);
+            }
             SET_VECTOR_ELT(rcj, i, dtmp);
         }
         rcj = PROTECT(cross_join(rcj, env)); protecti++;

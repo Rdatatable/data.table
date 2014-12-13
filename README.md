@@ -84,6 +84,8 @@
 
   24. `X[Y, .N]` returned the same result as `X[Y, .N, nomatch=0L]`) when `Y` contained rows that has no matches in `X`. Fixed now. Closes [#963](https://github.com/Rdatatable/data.table/issues/963). Thanks to [this SO post](http://stackoverflow.com/q/27004002/559784) from @Alex which helped discover the bug.
 
+  25. `data.table::dcast` handles levels in factor columns properly when `drop = FALSE`. Closes [#893](https://github.com/Rdatatable/data.table/issues/893). Thanks to @matthieugomez for the great minimal example.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
