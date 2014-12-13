@@ -8,6 +8,15 @@ guess <- function(x) {
     return(var)
 }
 
+dcast <- function(data, formula, fun.aggregate = NULL, ..., margins = NULL, 
+            subset = NULL, fill = NULL, value.var = guess(data)) {
+    if (is.data.table(data)) 
+        UseMethod("dcast", data)
+    else 
+        reshape2::dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins, 
+            subset = subset, fill = fill, value.var = value.var)
+}
+
 dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins = NULL, 
     subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
     if (!is.data.table(data)) stop("'data' must be a data.table.")

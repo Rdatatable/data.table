@@ -4,6 +4,8 @@
 \title{Fast melt for data.table}
 \description{
   An S3 method for melting \code{data.table}s written entirely in C for speed. It also avoids any unnecessary copies by handling all arguments internally in a memory efficient manner.
+
+  From 1.9.6, to melt or cast data.tables, it is not necessary to load \code{reshape2} anymore. If you have to, then load \code{reshape2} package before loading \code{data.table}. 
 }
 \usage{
 ## fast melt a data.table

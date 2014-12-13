@@ -3,14 +3,15 @@
 \alias{dcast}
 \title{Fast dcast for data.table}
 \description{
-  \code{dcast.data.table} is a much faster version of \code{reshape2::dcast}, but for \code{data.table}s. More importantly, it's capable of handling very large data quite efficiently in terms of memory usage in comparison to \code{reshape2}. 
-  
-  This is still under development, meaning it's stable, but not all features are complete yet. We also plan to make it an S3 generic by making changes to \code{reshape2::dcast} which will allow the same syntax \code{dcast(...)} seamlessly on both \code{data.table}s and \code{data.frame}s.
+  \code{dcast.data.table} is a much faster version of \code{reshape2::dcast}, but for \code{data.table}s. More importantly, it's capable of handling very large data quite efficiently in terms of memory usage in comparison to \code{reshape2::dcast}. 
+
+  From 1.9.6, \code{dcast} is a implemented as a S3 generic in \code{data.table}. To melt or cast data.tables, it is not necessary to load \code{reshape2} anymore. If you have to, then load \code{reshape2} package before loading \code{data.table}. 
 }
+
 % \method{dcast}{data.table}
 \usage{
 ## fast dcast a data.table (not an S3 method yet)
-dcast.data.table(data, formula, fun.aggregate = NULL, 
+\method{dcast}{data.table}(data, formula, fun.aggregate = NULL, 
     ..., margins = NULL, subset = NULL, fill = NULL, 
     drop = TRUE, value.var = guess(data),
     verbose = getOption("datatable.verbose"))

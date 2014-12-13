@@ -3082,25 +3082,25 @@ if ("package:reshape2" %in% search()) {
 
     # no S3 method yet, have to use "dcast.data.table"
     if (.Machine$sizeof.longdouble==16)
-        test(1101, as.data.frame(dcast.data.table(DT, time ~ variable, fun=mean)), dcast(DT, time~variable, fun=mean))
-    test(1102, as.data.frame(dcast.data.table(DT, diet ~ variable, fun=sum)), dcast(DT, diet~variable, fun=sum))
+        test(1101, as.data.frame(dcast.data.table(DT, time ~ variable, fun=mean)), dcast(as.data.frame(DT), time~variable, fun=mean))
+    test(1102, as.data.frame(dcast.data.table(DT, diet ~ variable, fun=sum)), dcast(as.data.frame(DT), diet~variable, fun=sum))
     x1 <- as.data.frame(dcast.data.table(DT, diet+chick ~ time, drop=FALSE)) 
     x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
-    x2 <- dcast(DT, diet+chick~time, drop=FALSE)
+    x2 <- dcast(as.data.frame(DT), diet+chick~time, drop=FALSE)
     test(1103, x1,x2)
     x1 <- as.data.frame(dcast.data.table(DT, diet+chick ~ time, drop=FALSE, fill=0)) 
     x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
-    x2 <- dcast(DT, diet+chick~time, drop=FALSE, fill=0)
+    x2 <- dcast(as.data.frame(DT), diet+chick~time, drop=FALSE, fill=0)
     test(1104.1, x1,x2)
 
     # add test for 'subset' in dcast.data.table
-    x1 <- dcast(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20))
+    x1 <- dcast(as.data.frame(DT), time + chick ~ variable+diet, fun=sum, subset=.(time> 20))
     x2 <- as.data.frame(dcast.data.table(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20)))
     test(1104.2, x1, x2)
 
     # testing without aggregation
     x <- data.table(a=5:1, b=runif(5))
-    test(1104.3, as.data.frame(dcast.data.table(x, a ~ b, value.var="b")), dcast(x, a ~ b, value.var="b"))
+    test(1104.3, as.data.frame(dcast.data.table(x, a ~ b, value.var="b")), dcast(as.data.frame(x), a ~ b, value.var="b"))
 }
 
 # test for freading commands
@@ -3393,14 +3393,14 @@ if ("package:reshape2" %in% search()) {
     # Fix for case 2 in bug report #5149 - dcast.data.table dint aggregate properly when formula RHS has "."
     set.seed(45)
     DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
-    ans = setDT(dcast(DT, x ~ ., mean, value.var="y"))
+    ans = setDT(dcast(as.data.frame(DT), x ~ ., mean, value.var="y"))
     setnames(ans, c("x", "y"))
     setkey(ans, x)
     test(1148.1, dcast.data.table(DT, x ~ ., mean, value.var="y"), ans)
     # also quashed another bug with `.` in formula (when there's no aggregate function):
     DT <- data.table(a=sample(5), b=runif(5), c=5:1)
-    ans1 = setDT(dcast(DT, a ~ ., value.var="c"))
-    ans2 = setDT(dcast(DT, b+a ~ ., value.var="c"))
+    ans1 = setDT(dcast(as.data.frame(DT), a ~ ., value.var="c"))
+    ans2 = setDT(dcast(as.data.frame(DT), b+a ~ ., value.var="c"))
     setnames(ans1, c("a", "c"))
     setnames(ans2, c("b", "a", "c"))
     setkey(ans1, "a")
@@ -3721,14 +3721,14 @@ if ("package:reshape2" %in% search()) {
     df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]),
                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
     dt <- as.data.table(df)
-    test(1198.1, setkey(setDT(dcast(df, a~b, drop=FALSE, value.var="b", fun=length)), a), dcast.data.table(dt, a~b, drop=FALSE, fun=length, value.var="b"))
+    test(1198.1, setkey(setDT(dcast(as.data.frame(df), a~b, drop=FALSE, value.var="b", fun=length)), a), dcast.data.table(dt, a~b, drop=FALSE, fun=length, value.var="b"))
     
     # reverse the levels
     set.seed(1L)
     df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[5:1]),
                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
     dt <- as.data.table(df)
-    test(1198.2, setkey(setDT(dcast(df, a~b, drop=FALSE, value.var="b", fun=length)), a), dcast.data.table(dt, a~b, drop=FALSE, value.var="b", fun=length))
+    test(1198.2, setkey(setDT(dcast(as.data.frame(df), a~b, drop=FALSE, value.var="b", fun=length)), a), dcast.data.table(dt, a~b, drop=FALSE, value.var="b", fun=length))
     
     # more factor cols
     set.seed(1L)
@@ -3737,7 +3737,7 @@ if ("package:reshape2" %in% search()) {
                  a3=sample(letters[1:3], 10, TRUE), # no factor
                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
     dt <- as.data.table(df)
-    test(1198.3, setkey(setDT(dcast(df, a1+a2+a3~b, drop=FALSE, value.var="b")), a1,a2,a3), dcast.data.table(dt, a1+a2+a3~b, drop=FALSE, value.var="b"))
+    test(1198.3, setkey(setDT(dcast(as.data.frame(df), a1+a2+a3~b, drop=FALSE, value.var="b")), a1,a2,a3), dcast.data.table(dt, a1+a2+a3~b, drop=FALSE, value.var="b"))
 }
 
 DT = data.table(id=1:2, val1=6:1, val2=6:1)   # 5380

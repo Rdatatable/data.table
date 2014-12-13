@@ -94,9 +94,13 @@
   
   4. `data.table` redefines `melt` generic and *suggests* `reshape2` instead of *import*. As a result we don't have to load `reshape2` package to use `melt.data.table` anymore. The reason for this change is that `data.table` requires R >=2.14, whereas `reshape2` R v3.0.0+. Reshape2's melt methods can be used without any issues by loading the package normally.
 
-#### NOTES
+  5. `DT[, j, ]` at times made an additional (unnecessary) copy. This is now fixed. This fix also avoids allocating `.I` when `j` doesn't use it. As a result `:=` and other subset operations should be faster (and use less memory). Thanks to @szilard for the nice report. Closes [#921](https://github.com/Rdatatable/data.table/issues/921).
 
-  1. `DT[, j, ]` at times made an additional (unnecessary) copy. This is now fixed. This fix also avoids allocating `.I` when `j` doesn't use it. As a result `:=` and other subset operations should be faster (and use less memory). Thanks to @szilard for the nice report. Closes [#921](https://github.com/Rdatatable/data.table/issues/921).
+  6. Because `reshape2` requires R >3.0.0, and `data.table` works with R >= 2.14.0, we can not import `reshape2` anymore. Therefore we define a `melt` generic and `melt.data.table` method for data.tables and redirect to `reshape2`'s `melt` for other objects. This is to ensure that existing code works fine. 
+
+  7. `dcast` is also a generic now in data.table. So we can use `dcast(...)` directly, and don't have to spell it out as `dcast.data.table(...)` like before. The `dcast` generic in data.table redirects to `reshape2::dcast` if the input object is not a data.table. But for that you have to load `reshape2` before loading `data.table`. If not,  reshape2's `dcast` overwrites data.table's `dcast` generic, in which case you will need the `::` operator - ex: `data.table::dcast(...)`. 
+
+  NB: Ideal situation would be for `dcast` to be a generic in reshape2 as well, but it is not. We have issued a [pull request](https://github.com/hadley/reshape/pull/62) to make `dcast` in reshape2 a generic, but that has not yet been accepted. 
 
 ### Changes in v1.9.4  (on CRAN 2 Oct 2014)
 
