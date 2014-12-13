@@ -115,6 +115,26 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
             SET_VECTOR_ELT(ans, ansi++, (this==NA_INTEGER || this>max) ? R_NilValue : VECTOR_ELT(x, this-1));
         }
         break;
+    // Fix for #982
+    // source: https://github.com/wch/r-source/blob/fbf5cdf29d923395b537a9893f46af1aa75e38f3/src/main/subset.c    
+    case CPLXSXP :
+        for (i=0; i<LENGTH(idx); i++) {
+            this = INTEGER(idx)[i];
+            if (this == 0) continue;
+            if (this == NA_INTEGER || this>max) {
+                COMPLEX(ans)[ansi].r = NA_REAL;
+                COMPLEX(ans)[ansi].i = NA_REAL;
+            } else COMPLEX(ans)[ansi] = COMPLEX(x)[this-1];
+            ansi++;
+        }
+        break;
+    case RAWSXP :
+        for (i=0; i<LENGTH(idx); i++) {
+            this = INTEGER(idx)[i];
+            if (this == 0) continue;
+            RAW(ans)[ansi++] = (this == NA_INTEGER || this>max) ? (Rbyte) 0 : RAW(x)[this-1];
+        }
+        break;
     default :
         error("Unknown column type '%s'", type2char(TYPEOF(x)));
     }
