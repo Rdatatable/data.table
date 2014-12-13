@@ -11,7 +11,7 @@ static union {
 } u;
 
 SEXP dt_na(SEXP x, SEXP cols) {
-    int i, j, n, this;
+    int i, j, n=0, this;
     double *dv;
     SEXP v, ans, class;
     
@@ -21,12 +21,13 @@ SEXP dt_na(SEXP x, SEXP cols) {
         this = INTEGER(cols)[i];
         if (this<1 || this>LENGTH(x)) 
             error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
+        if (!n) n = length(VECTOR_ELT(x, this-1));
     }
-    n = length(VECTOR_ELT(x, 0));
     ans = PROTECT(allocVector(LGLSXP, n));
     for (i=0; i<n; i++) LOGICAL(ans)[i]=0;
     for (i=0; i<LENGTH(cols); i++) {
         v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
+        if (!length(v)) continue;
         if (n != length(v))
             error("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d.", i+1,length(v),n);
         switch (TYPEOF(v)) {
@@ -54,7 +55,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
         default:
             error("Unknown column type '%s'", type2char(TYPEOF(v)));
         }
-    }        
+    }
     UNPROTECT(1);
     return(ans);
 }
