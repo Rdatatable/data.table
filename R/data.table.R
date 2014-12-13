@@ -2017,7 +2017,7 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
     # compare the above to stats:::na.omit.data.frame
 }
 
-which_ <- function(x, bool) {
+which_ <- function(x, bool = TRUE) {
     .Call("Cwhichwrapper", x, bool)
 }
 
