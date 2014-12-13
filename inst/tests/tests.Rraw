@@ -5655,6 +5655,7 @@ test(1459.8, .Call("CsubsetDT", DT, which(DT$b > 2 | is.na(DT$b)), seq_along(DT)
 test(1459.9, .Call("CsubsetDT", DT, which(Re(DT$c) > 2 | is.na(DT$c)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
 test(1459.10, .Call("CsubsetDT", DT, which(DT$f | is.na(DT$f)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
 test(1459.11, .Call("CsubsetDT", DT, which(DT$g == "c" | is.na(DT$g)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
+test(1459.12, .Call("CsubsetDT", DT, 5L, seq_along(DT)), setDT(as.data.frame(DT)[5,]))
 
 ##########################
 
