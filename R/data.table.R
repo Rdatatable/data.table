@@ -2013,8 +2013,7 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
     }
     cols = as.integer(cols)
     ix = .Call(Cdt_na, object, cols)
-    if (!invert) ix = !ix
-    .Call(CsubsetDT, object, which(ix), seq_along(object))
+    .Call(CsubsetDT, object, which_(ix, bool = invert), seq_along(object))
     # compare the above to stats:::na.omit.data.frame
 }
 
