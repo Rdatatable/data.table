@@ -223,12 +223,12 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     return(ans);
 }
 
-SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP var_name, SEXP val_name, SEXP na_rm, SEXP drop_levels, SEXP print_out) {
+SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP var_name, SEXP val_name, SEXP na_rm, SEXP print_out) {
     
     int i, j, k, nrow, ncol, protecti=0, lids=-1, lvalues=-1, totlen=0, counter=0, thislen=0;
     SEXP thiscol, ans, dtnames, ansnames, idcols, valuecols, levels, factorLangSxp;
     SEXP vars, target, idxkeep = R_NilValue, thisidx = R_NilValue;
-    Rboolean isfactor=FALSE, isidentical=TRUE, narm = FALSE, droplevels=FALSE, verbose=FALSE;
+    Rboolean isfactor=FALSE, isidentical=TRUE, narm = FALSE, verbose=FALSE;
     SEXPTYPE valtype=NILSXP;
     size_t size;
 
@@ -242,11 +242,6 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     // check for var and val names
     if (TYPEOF(var_name) != STRSXP || length(var_name) != 1) error("Argument 'variable.name' must be a character vector of length 1");
     if (TYPEOF(val_name) != STRSXP || length(val_name) != 1) error("Argument 'value.name' must be a character vector of length 1");
-
-    // droplevels future feature request, maybe... should ask on data.table-help
-    // if (!isLogical(drop_levels)) error("Argument 'drop.levels' should be logical TRUE/FALSE");
-    // if (LOGICAL(drop_levels)[0] == TRUE) droplevels = TRUE;
-    // if (droplevels && !narm) warning("Ignoring argument 'drop.levels'. 'drop.levels' should be set to remove any unused levels as a result of setting 'na.rm=TRUE'. Here there is nothing to do because 'na.rm=FALSE'");
     
     ncol = LENGTH(DT);
     nrow = length(VECTOR_ELT(DT, 0));
@@ -404,14 +399,14 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
             for (k=0; k<thislen; k++)
                 INTEGER(target)[counter + k] = i+1;
             counter += thislen;
-            if (thislen > 0 || !droplevels) i++;
+            if (thislen > 0) i++;
         } else {
             for (k=0; k<nrow; k++)
                 INTEGER(target)[nrow*j + k] = j+1;
         }
     }
     setAttrib(target, R_ClassSymbol, mkString("factor"));
-    if (narm && droplevels) {
+    if (narm) {
         counter = 0;
         for (j=0; j<lvalues; j++) {
             if (length(VECTOR_ELT(idxkeep, j)) > 0) counter++;
@@ -420,7 +415,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     levels = PROTECT(allocVector(STRSXP, counter));
     i = 0;
     for (j=0; j<lvalues; j++) {
-        if (narm && droplevels) {
+        if (narm) {
             if (length(VECTOR_ELT(idxkeep, j)) > 0)
                 SET_STRING_ELT(levels, i++, STRING_ELT(dtnames, INTEGER(valuecols)[j]-1));
         } else 

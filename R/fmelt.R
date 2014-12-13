@@ -9,14 +9,12 @@ melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
 melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variable", 
            value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE, 
            verbose = getOption("datatable.verbose")) {
-    drop.levels <- FALSE # maybe a future FR
     if (!is.data.table(data)) stop("'data' must be a data.table")
     if (missing(id.vars)) id.vars=NULL
     if (missing(measure.vars)) measure.vars = NULL
     ans <- .Call("Cfmelt", data, id.vars, measure.vars, 
             as.logical(variable.factor), as.logical(value.factor), 
-            variable.name, value.name, 
-            as.logical(na.rm), as.logical(drop.levels), 
+            variable.name, value.name, as.logical(na.rm), 
             as.logical(verbose))
     setDT(ans)
     if (any(duplicated(names(ans)))) {
