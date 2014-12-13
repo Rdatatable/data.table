@@ -86,6 +86,8 @@
 
   25. `data.table::dcast` handles levels in factor columns properly when `drop = FALSE`. Closes [#893](https://github.com/Rdatatable/data.table/issues/893). Thanks to @matthieugomez for the great minimal example.
 
+  26. `[.data.table` subsets complex and raw type objects again. Thanks to @richierocks for the nice minimal example. Closes [#982](https://github.com/Rdatatable/data.table/issues/982).
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
