@@ -10,7 +10,7 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
            value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE, 
            verbose = getOption("datatable.verbose")) {
     drop.levels <- FALSE # maybe a future FR
-    if (!inherits(data, "data.table")) stop("'data' must be a data.table")
+    if (!is.data.table(data)) stop("'data' must be a data.table")
     if (missing(id.vars)) id.vars=NULL
     if (missing(measure.vars)) measure.vars = NULL
     ans <- .Call("Cfmelt", data, id.vars, measure.vars, 
