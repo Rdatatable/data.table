@@ -1243,6 +1243,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if ( (getOption("datatable.optimize")>=1 && is.call(jsub)) || (is.name(jsub) && jsub == ".SD") ) {  # Ability to turn off if problems or to benchmark the benefit
         # Optimization to reduce overhead of calling lapply over and over for each group
         oldjsub = jsub
+        funi = 1L # Fix for #985
         # convereted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
         .massageSD <- function(jsub) {
             txt = as.list(jsub)[-1L]
@@ -1253,9 +1254,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
                 # adding this does not compromise in speed (that is, not any lesser than without SDenv$.SD)
                 # replaced SDenv$.SD to SDenv to deal with Bug #5007 reported by Ricardo (Nice catch!)
-                assign("..FUN",eval(fun, SDenv, SDenv), SDenv)  # to avoid creating function() for each column of .SD
-                lockBinding("..FUN",SDenv)
-                txt[[1L]] = as.name("..FUN")
+                thisfun = paste("..FUN", funi, sep="") # Fix for #985
+                assign(thisfun,eval(fun, SDenv, SDenv), SDenv)  # to avoid creating function() for each column of .SD
+                lockBinding(thisfun,SDenv)
+                txt[[1L]] = as.name(thisfun)
             } else {
                 if (is.character(fun)) fun = as.name(fun)
                 txt[[1L]] = fun
@@ -1331,6 +1333,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     if (this[[1L]] == "lapply" && this[[2L]] == ".SD" && length(xcols)) {
                         any_SD = TRUE
                         deparse_ans = .massageSD(this)
+                        funi = funi + 1L # Fix for #985
                         jsubl[[i_]] = as.list(deparse_ans[[1L]][-1L]) # just keep the '.' from list(.)
                         jvnames = c(jvnames, deparse_ans[[2L]])
                     } else if (this[[1]] == "list") {

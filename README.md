@@ -88,6 +88,8 @@
 
   26. `[.data.table` subsets complex and raw type objects again. Thanks to @richierocks for the nice minimal example. Closes [#982](https://github.com/Rdatatable/data.table/issues/982).
 
+  27. Fixed a bug in the internal optimisation of `j-expression` with more than one `lapply(.SD, function(..) ..)` as illustrated [here on SO](http://stackoverflow.com/a/27495844/559784). Closes #985. Thanks to @jadaliha for the report and to @BrodieG for the debugging on SO.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

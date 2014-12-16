@@ -5665,6 +5665,11 @@ test(1460.3, na.omit(DT, cols=c("v", "y")), DT[0])
 test(1460.4, na.omit(DT, cols=c("z", "v")), DT[1])
 test(1460.5, na.omit(DT, cols=c("w", "v")), DT[1])
 
+# Fix for #985
+DT = data.table(x=c("a", "a", "b", "b"), v1=sample(4), v2=sample(4))
+test(1461.1, DT[, c(lapply(.SD, mean), lapply(.SD, sd)), by=x], 
+             DT[, c(lapply(.SD, function(x) mean(x)), lapply(.SD, function(x) sd(x))), by = x])
+
 ##########################
 
 
