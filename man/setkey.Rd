@@ -39,6 +39,8 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 \details{
   \code{setkey} reorders (or sorts) the rows of a data.table by the columns provided. In versions \code{1.9+}, for \code{integer} columns, a modified version of base's counting sort is implemented, which allows negative values as well. It is extremely fast, but is limited by the range of integer values being <= 1e5. If that fails, it falls back to a (fast) 4-pass radix sort for integers, implemented based on Pierre Terdiman's and Michael Herf's code (see links below). Similarly, a very fast 6-pass radix order for columns of type \code{double} is also implemented. This gives a speed-up of about 5-8x compared to \code{1.8.10} on \code{setkey} and all internal \code{order}/\code{sort} operations. Fast radix sorting is also implemented for \code{character} and \code{bit64::integer64} types.
 
+  Note that columns of \code{numeric} types (i.e., \code{double}) have their last two bytes rounded off while computing order, by defalult, to avoid any unexpected behaviour due to limitations in representing floating point numbers precisely. Have a look at \code{\link{setNumericRounding}} to learn more.
+
   The sort is \emph{stable}; i.e., the order of ties (if any) is preserved, in both versions - \code{<=1.8.10} and \code{>= 1.9.0}.
 
   In \code{data.table} versions \code{<= 1.8.10}, for columns of type \code{integer}, the sort is attempted with the very fast \code{"radix"} method in \code{\link[base]{sort.list}}. If that fails, the sort reverts to the default method in \code{\link[base]{order}}. For character vectors, \code{data.table} takes advantage of R's internal global string cache and implements a very efficient order, also exported as \code{\link{chorder}}.
