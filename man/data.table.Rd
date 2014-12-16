@@ -79,7 +79,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 
   When \code{by} contains the first \code{n} columns of \code{x}'s key, we call this a \emph{keyed by}. In a keyed by the groups appear contiguously in RAM and memory is copied in bulk internally, for extra speed. Otherwise, we call it an \emph{ad hoc by}. Ad hoc by is still many times faster than \code{tapply}, for example, but just not as fast as keyed by when datasets are very large, in particular when the size of \emph{each group} is large. Not to be confused with \code{keyby=} defined below.
 
-  Advanced: Aggregation for a subset of known groups is particularly efficient when passing those groups in \code{i} and setting \code{by=.EACHI}. When \code{i} is a \code{data.table}, \code{DT[i,j,by=.EACHI]} evaluates \code{j} for the groups of `DT` that each row in \code{i} joins to. We call this \emph{grouping by each i}.
+  Advanced: When \code{i} is a \code{data.table}, \code{DT[i,j,by=.EACHI]} evaluates \code{j} for the groups in `DT` that each row in \code{i} joins to. That is, you can join (in \code{i}) and aggregate (in \code{j}) simultaneously. We call this \emph{grouping by each i}. It is particularly memory efficient as you don't have to materialise the join result only to aggregate later. Please refer to \href{http://stackoverflow.com/a/27004566/559784}{this Stackoverflow answer} for a more detailed explanation until we \href{https://github.com/Rdatatable/data.table/issues/944}{roll out vignettes}.
 
   Advanced: When grouping, symbols \code{.SD}, \code{.BY}, \code{.N}, \code{.I} and \code{.GRP} may be used in the \code{j} expression, defined as follows.
   
