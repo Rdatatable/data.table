@@ -90,6 +90,8 @@
 
   27. Fixed a bug in the internal optimisation of `j-expression` with more than one `lapply(.SD, function(..) ..)` as illustrated [here on SO](http://stackoverflow.com/a/27495844/559784). Closes #985. Thanks to @jadaliha for the report and to @BrodieG for the debugging on SO.
 
+  28. `mget` fetches columns from the default environment `.SD` when called from within the frame of `DT`. That is, `DT[, mget(cols)]`, `DT[, lapply(mget(cols), sum), by=.]` etc.. work as intended. Thanks to @Roland for filing this issue. Closes [#994](https://github.com/Rdatatable/data.table/issues/994).
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

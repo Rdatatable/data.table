@@ -5670,6 +5670,13 @@ DT = data.table(x=c("a", "a", "b", "b"), v1=sample(4), v2=sample(4))
 test(1461.1, DT[, c(lapply(.SD, mean), lapply(.SD, sd)), by=x], 
              DT[, c(lapply(.SD, function(x) mean(x)), lapply(.SD, function(x) sd(x))), by = x])
 
+# Tests for #994
+DT = data.table(x=c("a", "a", "b", "b"), v1=sample(4), v2=sample(4))
+cols = c("v1", "v2")
+test(1462.1, DT[, mget(cols)], DT[, cols, with=FALSE])
+test(1462.2, DT[, mget(cols[1])], DT[, cols[1], with=FALSE])
+test(1462.3, DT[, sum(unlist(mget(cols))), by=x], DT[, sum(unlist(.SD)), by=x, .SDcol=cols])
+
 ##########################
 
 

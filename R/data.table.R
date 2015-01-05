@@ -870,9 +870,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 ansvals = chmatch(ansvars, names(x))
             }
             # if (!length(ansvars)) Leave ansvars empty. Important for test 607.
-            if ("get" %chin% av) {
+            # added 'mget' - fix for #994
+            if (any(c("get", "mget") %chin% av)) {
                 if (verbose) {
-                    cat("'get' found in j. ansvars being set to all columns. Use .SDcols or eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld:", paste(ansvars,collapse=","),"\n")
+                    cat("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld:", paste(ansvars,collapse=","),"\n")
                     # get('varname') is too difficult to detect which columns are used in general
                     # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
                 }
@@ -1182,7 +1183,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         ##  'av' correct here ??  *** TO DO ***
         xjisvars = intersect(av, names(x)[rightcols])  # no "x." for xvars.
         # if 'get' is in 'av' use all cols in 'i', fix for bug #5443
-        jisvars = if ("get" %chin% av) names(i) else intersect(gsub("^i[.]","", setdiff(av, xjisvars)), names(i))
+        # added 'mget' - fix for #994
+        jisvars = if (any(c("get", "mget") %chin% av)) names(i) else intersect(gsub("^i[.]","", setdiff(av, xjisvars)), names(i))
         # JIS (non join cols) but includes join columns too (as there are named in i)
         if (length(jisvars)) {
             tt = min(nrow(i),1L)
