@@ -10,6 +10,7 @@
 #undef MIN
 #endif
 #define MIN(a,b) (((a)<(b))?(a):(b))
+#define NAINT64 LLONG_MIN
 
 // init.c
 void setSizes();
@@ -24,6 +25,7 @@ SEXP SelfRefSymbol;
 // assign.c
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 void savetl_init(), savetl(SEXP s), savetl_end();
+Rboolean isDatatable(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
