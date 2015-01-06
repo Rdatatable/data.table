@@ -74,6 +74,8 @@ S3method(head, data.table)
 import(stats)
 S3method(na.omit, data.table)
 
+export(shift)
+
 # IDateTime support:
 export(as.IDate,as.ITime,IDateTime)
 export(hour,yday,wday,mday,week,month,quarter,year)

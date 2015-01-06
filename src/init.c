@@ -54,6 +54,7 @@ SEXP dt_na();
 SEXP lookup();
 SEXP overlaps();
 SEXP whichwrapper();
+SEXP shift();
 
 // .Externals
 SEXP fastmean();
@@ -110,6 +111,7 @@ R_CallMethodDef callMethods[] = {
 {"Clookup", (DL_FUNC) &lookup, -1},
 {"Coverlaps", (DL_FUNC) &overlaps, -1},
 {"Cwhichwrapper", (DL_FUNC) &whichwrapper, -1},
+{"Cshift", (DL_FUNC) &shift, -1},
 {NULL, NULL, 0}
 };
 
