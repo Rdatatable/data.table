@@ -2345,6 +2345,31 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
     invisible(x)
 }
 
+# FR #686
+rleid <- function(x, cols=seq_along(x)) {
+    as_list <- function(x) {
+        xx = vector("list", 1L)
+        .Call(Csetlistelt, xx, 1L, x)
+        xx
+    }
+    if (is.atomic(x)) {
+        if (!missing(cols) && !is.null(cols)) 
+            stop("x is a single vector, non-NULL 'cols' doesn't make sense")
+        cols = 1L
+        x = as_list(x)
+    } else {
+        if (!length(cols))
+            stop("x is a list, 'cols' can not be 0-length")
+        if (is.character(cols)) 
+            cols = chmatch(cols, names(x))
+        cols = as.integer(cols)
+    }
+    x = .shallow(x, cols) # shallow copy even if list..
+    setDT(x)
+    ulist = uniqlist(x)
+    rep.int(seq_along(ulist), uniqlengths(ulist, nrow(x)))
+}
+
 gsum <- function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean <- function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gmin <- function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
