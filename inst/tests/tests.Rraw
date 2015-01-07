@@ -5004,7 +5004,7 @@ if ("package:bit64" %in% search()) dt[, DD := as.integer64(DD)]
 test_no = 1369.0
 for (i in seq_along(dt)) {
     col = dt[[i]]
-    for (j in c(TRUE, FALSE)) {
+    for (j in list(TRUE, FALSE, "keep")) {
         for (k in c("average", "min", "max", "first")) {
             if (k == "random") set.seed(45L)
             if (class(col) == "integer64") r1 = rank(as.integer(col), ties.method=k, na.last=j)

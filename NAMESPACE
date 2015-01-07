@@ -17,6 +17,9 @@ export(chmatch, "%chin%", chorder, chgroup)
 export(rbindlist)
 export(fread)
 export(foverlaps)
+export(shift)
+export(frank)
+export(frankv)
 export(address)
 export(.SD,.N,.I,.GRP,.BY,.EACHI)
 
@@ -73,8 +76,6 @@ S3method(tail, data.table)
 S3method(head, data.table)
 import(stats)
 S3method(na.omit, data.table)
-
-export(shift)
 
 # IDateTime support:
 export(as.IDate,as.ITime,IDateTime)

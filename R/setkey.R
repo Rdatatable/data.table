@@ -330,36 +330,47 @@ CJ <- function(..., sorted = TRUE)
     l
 }
 
-frankv <- function(x, by=seq_along(x), ties.method=c("average", "first", "random", "max", "min", "dense"), na.last=TRUE) {
+frankv <- function(x, cols=seq_along(x), na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
     ties.method = match.arg(ties.method)
-    na.last = as.logical(na.last)
     if (!length(na.last)) stop('length(na.last) = 0')
     if (length(na.last) != 1L) {
         warning("length(na.last) > 1, only the first element will be used")
         na.last = na.last[1L]
     }
+    keep = (na.last == "keep")
+    na.last = as.logical(na.last)
     as_list <- function(x) {
         xx = vector("list", 1L)
         .Call(Csetlistelt, xx, 1L, x)
         xx
     }
     if (is.atomic(x)) {
-        if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
-        by = 1L
+        if (!missing(cols) && !is.null(cols)) 
+            stop("x is a single vector, non-NULL 'cols' doesn't make sense")
+        cols = 1L
         x = as_list(x)
     } else {
-        if (is.character(by)) by = chmatch(by, names(x))
-        by = as.integer(by)
+        if (!length(cols))
+            stop("x is a list, 'cols' can not be 0-length")
+        if (is.character(cols)) 
+            cols = chmatch(cols, names(x))
+        cols = as.integer(cols)
     }
     x = .Call(Cshallowwrapper, x, seq_along(x)) # shallow copy even if list..
     setDT(x)
-    if (is.na(na.last)) 
-        x = na.omit(x, by) # TODO: take care of na.last internally without having to subset data.table
-    if (ties.method == "random") {
-        set(x, j="..stats_runif..", value = stats::runif(nrow(x)))
-        by = c(by, ncol(x))
+    if (is.na(na.last)) {
+        set(x, j = "..na_prefix..", value = is_na(x, cols))
+        cols = c(ncol(x), cols)
+        nas  = x[[ncol(x)]]
     }
-    xorder  = forderv(x, by=by, sort=TRUE, retGrp=TRUE, na.last=na.last)
+    if (ties.method == "random") {
+        set(x, i = if (is.na(na.last)) which_(nas, FALSE) else NULL, 
+               j = "..stats_runif..", 
+               value = stats::runif(nrow(x)))
+        cols = c(cols, ncol(x))
+    }
+    xorder  = forderv(x, by=cols, sort=TRUE, retGrp=TRUE, 
+                na.last=if (identical(na.last, FALSE)) na.last else TRUE)
     xstart  = attr(xorder, 'starts')
     xsorted = FALSE
     if (!length(xorder)) {
@@ -367,14 +378,40 @@ frankv <- function(x, by=seq_along(x), ties.method=c("average", "first", "random
         xorder  = seq_along(x[[1L]])
     }
     ans = switch(ties.method, 
-           average = , min = , max =, dense =, runlength = {
+           average = , min = , max =, dense = {
                rank = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), ties.method)
            },
            first = , random = {
                if (xsorted) xorder else forderv(xorder)
            }
          )
+    # take care of na.last="keep"
+    V1 = NULL # for R CMD CHECK warning
+    if (isTRUE(keep)) {
+        ans = (setDT(as_list(ans))[which_(nas, TRUE), V1 := NA])[[1L]]
+    } else if (is.na(na.last)) {
+        ans = ans[which_(nas, FALSE)]
+    }
     ans
+}
+
+frank <- function(x, ..., na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
+    cols = substitute(list(...))[-1]
+    if (length(cols)) {
+        cols=as.list(cols)
+        for (i in seq_along(cols)) {
+            v=as.list(cols[[i]])
+            if (length(v) > 1 && v[[1L]] == "+") v=v[[-1L]]
+            else if (length(v) > 1 && v[[1L]] == "-") {
+                v=v[[-1L]]
+            }
+            cols[[i]]=as.character(v)
+        }
+        cols=unlist(cols, use.names=FALSE)
+    } else {
+        cols=colnames(x)
+    }
+    frankv(x, cols=cols, na.last=na.last, ties.method=ties.method)
 }
 
 #########################################################################################
