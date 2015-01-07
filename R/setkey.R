@@ -356,7 +356,7 @@ frankv <- function(x, cols=seq_along(x), na.last=TRUE, ties.method=c("average", 
             cols = chmatch(cols, names(x))
         cols = as.integer(cols)
     }
-    x = .Call(Cshallowwrapper, x, seq_along(x)) # shallow copy even if list..
+    x = .shallow(x, cols) # shallow copy even if list..
     setDT(x)
     if (is.na(na.last)) {
         set(x, j = "..na_prefix..", value = is_na(x, cols))
