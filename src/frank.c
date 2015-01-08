@@ -46,7 +46,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
                 dv = (double *)REAL(v);
                 for (j=0; j<n; j++) {
                     u.d = dv[j];
-                    LOGICAL(ans)[j] |= ((u.ull ^ 0x8000000000000000) == 0);
+                    LOGICAL(ans)[j] |= (u.ull == NAINT64);
                 }
             } else {
                 for (j=0; j<n; j++) LOGICAL(ans)[j] |= ISNAN(REAL(v)[j]);
