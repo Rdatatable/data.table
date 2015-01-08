@@ -396,21 +396,9 @@ frankv <- function(x, cols=seq_along(x), na.last=TRUE, ties.method=c("average", 
 }
 
 frank <- function(x, ..., na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
-    cols = substitute(list(...))[-1]
-    if (length(cols)) {
-        cols=as.list(cols)
-        for (i in seq_along(cols)) {
-            v=as.list(cols[[i]])
-            if (length(v) > 1 && v[[1L]] == "+") v=v[[-1L]]
-            else if (length(v) > 1 && v[[1L]] == "-") {
-                v=v[[-1L]]
-            }
-            cols[[i]]=as.character(v)
-        }
-        cols=unlist(cols, use.names=FALSE)
-    } else {
-        cols=colnames(x)
-    }
+    cols = as.character(substitute(list(...))[-1])
+    if (!length(cols)) cols=colnames(x)
+    else if (identical(cols,"NULL")) cols=NULL
     frankv(x, cols=cols, na.last=na.last, ties.method=ties.method)
 }
 
