@@ -1000,6 +1000,7 @@ test(350.2, DT[J(4),.N], 1L)
 test(350.3, DT[J(4),.N,nomatch=0L], 0L)
 test(350.4, DT[J(4:5),.N,nomatch=0L], 0L)
 test(350.5, DT[J(0:4),.N,by=.EACHI]$N, c(0L,3L,3L,0L,0L))
+test(350.6, DT[c(0,0,0), .N], 0L)
 
 # Test recycling list() on RHS of :=
 DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12)
