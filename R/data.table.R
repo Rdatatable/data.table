@@ -1632,7 +1632,7 @@ as.matrix.data.table <- function(x,...)
     X
 }
 
-as.data.table.matrix <- function(x, keep.rownames=FALSE)
+as.data.table.matrix <- function(x, keep.rownames=FALSE, ...)
 {
     if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
     d <- dim(x)
@@ -1661,7 +1661,7 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE)
     alloc.col(value)
 }
 
-as.data.table.data.frame <- function(x, keep.rownames=FALSE)
+as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...)
 {
     if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
     ans = copy(x)  # TO DO: change this deep copy to be shallow.
@@ -1675,7 +1675,7 @@ as.data.table.data.frame <- function(x, keep.rownames=FALSE)
     alloc.col(ans)
 }
 
-as.data.table.list <- function(x, keep.rownames=FALSE) {
+as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
     if (!length(x)) return( null.data.table() )
     n = vapply(x, length, 0L)
     mn = max(n)
@@ -1697,13 +1697,13 @@ as.data.table.list <- function(x, keep.rownames=FALSE) {
     alloc.col(x)
 }
 
-as.data.table.data.table <- function(x, keep.rownames=FALSE) return(x)
+as.data.table.data.table <- function(x, keep.rownames=FALSE, ...) return(x)
 
 # takes care of logical, character, numeric, integer
 as.data.table.factor <- as.data.table.ordered <- 
 as.data.table.integer <- as.data.table.numeric <- 
 as.data.table.logical <- as.data.table.character <- 
-as.data.table.Date <- function(x, keep.rownames=FALSE) {
+as.data.table.Date <- function(x, keep.rownames=FALSE, ...) {
     tt = deparse(substitute(x))[1]
     nm = names(x)
     # FR #2356 - transfer names of named vector as "rn" column if required
@@ -1734,7 +1734,7 @@ R300_provideDimnames <- function (x, sep = "", base = list(LETTERS))   # backpor
 }
 
 # as.data.table.table - FR #4848
-as.data.table.table <- function(x, keep.rownames=FALSE) {
+as.data.table.table <- function(x, keep.rownames=FALSE, ...) {
     # Fix for bug #5408 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
     val = rev(dimnames(R300_provideDimnames(x)))
     if (is.null(names(val)) || all(nchar(names(val)) == 0L)) 
@@ -1836,7 +1836,7 @@ tail.data.table <- function(x, n=6, ...) {
     `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
 
-as.data.table <-function(x, keep.rownames=FALSE)
+as.data.table <-function(x, keep.rownames=FALSE, ...)
 {
     if (is.null(x))
         return(null.data.table())
