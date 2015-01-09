@@ -5722,6 +5722,25 @@ DT = data.table(grp=rep(c("A", "B", "C", "A", "B"),
           c(2,2,3,1,2)), value=1:10)
 test(1464, rleid(DT, "grp"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 
+# data.table-xts conversion #882
+
+if ("package:xts" %in% search()) {
+    # Date index
+    dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = rep(c(1:5),10),value = rep(c(1:10)*100,5))
+    xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
+    dt_xt = as.data.table(xt)
+    xt_dt = as.xts.data.table(dt)
+    test(1465.1, all.equal(dt, dt_xt, check.attributes = FALSE))
+    test(1465.2, xt, xt_dt)
+    # POSIXct index
+    dt <- data.table(index = as.POSIXct(as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),origin="1970-01-01"),quantity = rep(c(1:5),10),value = rep(c(1:10)*100,5))
+    xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
+    dt_xt = as.data.table(xt)
+    xt_dt = as.xts.data.table(dt)
+    test(1465.3, all.equal(dt, dt_xt, check.attributes = FALSE))
+    test(1465.4, xt, xt_dt)
+}
+
 ##########################
 
 
