@@ -5741,6 +5741,12 @@ if ("package:xts" %in% search()) {
     test(1465.4, xt, xt_dt)
 }
 
+# as.data.table.default #969
+ar <- array(NA, dim=c(10,4),dimnames = list(NULL,paste0("col",1:4)))
+test(1466.1, as.data.table(as.data.frame(ar)), as.data.table(ar)) # array type
+x <- rep(Sys.time(),3)
+test(1466.2, as.data.table(as.data.frame(x)), as.data.table(x)) # posix type
+
 ##########################
 
 

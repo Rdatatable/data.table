@@ -1843,6 +1843,10 @@ as.data.table <-function(x, keep.rownames=FALSE)
     UseMethod("as.data.table")
 }
 
+as.data.table.default <- function(x, ...){
+  setDT(as.data.frame(x, ...))[]
+}
+
 as.data.frame.data.table <- function(x, ...)
 {
     ans = copy(x)
