@@ -5,12 +5,14 @@
   Efficient conversion xts to data.table.
 }
 \usage{
-\method{as.data.table}{xts}(x, keep.rownames = TRUE)
+\method{as.data.table}{xts}(x, keep.rownames = TRUE, ...)
 }
 \arguments{
 \item{x}{xts to convert to data.table}
 
 \item{keep.rownames}{keep xts index as \emph{index} column in result data.table}
+
+\item{\dots}{ignored, just for consistency with \code{as.data.table}}
 }
 \seealso{ \code{\link{as.xts.data.table}} }
 \examples{

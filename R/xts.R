@@ -1,4 +1,4 @@
-as.data.table.xts <- function(x, keep.rownames = TRUE){
+as.data.table.xts <- function(x, keep.rownames = TRUE, ...){
   stopifnot(requireNamespace("xts"), !missing(x), xts::is.xts(x))
   if(!keep.rownames) return(setDT(as.data.frame(x, row.names=FALSE))[])
   if("index" %in% names(x)) stop("Input xts object should not have 'index' column because it would result in duplicate column names. Rename 'index' column in xts or use `keep.rownames=FALSE` and add index manually as another column.")
