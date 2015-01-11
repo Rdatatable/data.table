@@ -5717,6 +5717,13 @@ test(1463.24, shift(x,1L, 0L, type="lead"), list(as.character(c(2:5, 0L))))
 
 # add tests for date and factor?
 
+# test for 'give.names=TRUE' on vectors
+x = 1:10
+nm = c("V1_lag_1", "V1_lag_2")
+ans = list(as.integer(c(NA, 1:9)), as.integer(c(NA, NA, 1:8)))
+setattr(ans, 'names', nm)
+test(1463.25, shift(x, 1:2, give.names=TRUE), ans)
+
 # FR #686
 DT = data.table(grp=rep(c("A", "B", "C", "A", "B"), 
           c(2,2,3,1,2)), value=1:10)
