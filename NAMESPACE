@@ -23,6 +23,7 @@ export(frankv)
 export(address)
 export(.SD,.N,.I,.GRP,.BY,.EACHI)
 export(rleid)
+export(rleidv)
 export(as.xts.data.table)
 
 S3method("[", data.table)
