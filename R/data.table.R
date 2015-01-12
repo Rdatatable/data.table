@@ -2347,13 +2347,18 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
     invisible(x)
 }
 
+as_list <- function(x) {
+    lx = vector("list", 1L)
+    .Call(Csetlistelt, lx, 1L, x)
+    lx
+}
+
 # FR #686
-rleid <- function(x, cols=seq_along(x)) {
-    as_list <- function(x) {
-        xx = vector("list", 1L)
-        .Call(Csetlistelt, xx, 1L, x)
-        xx
-    }
+rleid <- function(...) {
+    rleidv(list(...))
+}
+
+rleidv <- function(x, cols=seq_along(x)) {
     if (is.atomic(x)) {
         if (!missing(cols) && !is.null(cols)) 
             stop("x is a single vector, non-NULL 'cols' doesn't make sense")

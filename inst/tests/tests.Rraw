@@ -5727,7 +5727,8 @@ test(1463.25, shift(x, 1:2, give.names=TRUE), ans)
 # FR #686
 DT = data.table(grp=rep(c("A", "B", "C", "A", "B"), 
           c(2,2,3,1,2)), value=1:10)
-test(1464, rleid(DT, "grp"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
+test(1464.1, rleidv(DT, "grp"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
+test(1464.2, rleid(DT$grp), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 
 # data.table-xts conversion #882
 
