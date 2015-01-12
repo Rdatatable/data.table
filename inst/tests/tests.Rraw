@@ -5754,6 +5754,13 @@ test(1466.1, as.data.table(as.data.frame(ar)), as.data.table(ar)) # array type
 x <- rep(Sys.time(),3)
 test(1466.2, as.data.table(as.data.frame(x)), as.data.table(x)) # posix type
 
+# (Temporary?) fix for #1001
+options(datatable.auto.index=TRUE)
+DT <- data.table(a=1:2)
+test(1467.1, DT[a==3, b:=d+1], DT)
+# restore
+options(datatable.auto.index=FALSE)
+
 ##########################
 
 
