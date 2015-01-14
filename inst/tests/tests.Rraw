@@ -5755,12 +5755,21 @@ test(1466.1, as.data.table(as.data.frame(ar)), as.data.table(ar)) # array type
 x <- rep(Sys.time(),3)
 test(1466.2, as.data.table(as.data.frame(x)), as.data.table(x)) # posix type
 
-# (Temporary?) fix for #1001
+# fix for #1001
 options(datatable.auto.index=TRUE)
 DT <- data.table(a=1:2)
 test(1467.1, DT[a==3, b:=d+1], DT)
 # restore
 options(datatable.auto.index=FALSE)
+
+# fix for first bug reported in #1006 on 'foverlaps()'
+x <- c(-0.1, 0, 0.1)
+n <- length(x)
+dt.ref <- data.table(start=x[-n], end=x[-1], key=c("start", "end"))
+dt.query <- data.table(q1=c(-0.2, -0.05, 0.05, 0.15), q2=c(-0.2, -0.05, 0.05, 0.15), key=c("q1", "q2"))
+ans=cbind(dt.ref[, .(start,end)], dt.query[2:3, .(q1,q2)])
+setkey(ans, q1,q2)
+test(1468, foverlaps(dt.query, dt.ref, nomatch=0L), ans)
 
 ##########################
 

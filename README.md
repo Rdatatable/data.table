@@ -99,6 +99,8 @@
 
   24. `mget` fetches columns from the default environment `.SD` when called from within the frame of `DT`. That is, `DT[, mget(cols)]`, `DT[, lapply(mget(cols), sum), by=.]` etc.. work as intended. Thanks to @Roland for filing this issue. Closes [#994](https://github.com/Rdatatable/data.table/issues/994).
 
+  25. `foverlaps()` did not find overlapping intervals correctly *on numeric ranges* in a special case where both `start` and `end` intervals had *0.0*. This is now fixed. Thanks to @tdhock for the reproducible example. Closes [#1006](https://github.com/Rdatatable/data.table/issues/1006) partly.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
