@@ -101,6 +101,8 @@
 
   25. `foverlaps()` did not find overlapping intervals correctly *on numeric ranges* in a special case where both `start` and `end` intervals had *0.0*. This is now fixed. Thanks to @tdhock for the reproducible example. Closes [#1006](https://github.com/Rdatatable/data.table/issues/1006) partly.
 
+  26. When performing rolling joins, keys are set only when we can be absolutely sure. Closes [#1010](https://github.com/Rdatatable/data.table/issues/1010), which explains cases where keys should not be retained.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

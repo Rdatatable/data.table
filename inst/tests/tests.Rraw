@@ -387,7 +387,7 @@ test(147, DT[,MySum=sum(v)], error="unused argument")  # user meant DT[,list(MyS
 
 dt = data.table(a=c(1L,4L,5L), b=1:3, key="a")
 test(148, dt[CJ(2:3),roll=TRUE], data.table(a=c(2L,3L),b=c(1L,1L),key="a"))
-test(149, dt[J(2:3),roll=TRUE], data.table(a=c(2L,3L),b=c(1L,1L),key="a"))  # in future this will detect the subset is ordered and retain the key
+test(149, dt[J(2:3),roll=TRUE], data.table(a=c(2L,3L),b=c(1L,1L)))  # in future this will detect the subset is ordered and retain the key
 
 # 150:158 test out of order factor levels in key columns (now allowed from v1.8.0)
 dt = data.table(x=factor(c("c","b","a"),levels=c("b","a","c")),y=1:3)
@@ -4651,7 +4651,7 @@ test(1317.1, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.D
 # also test where 'i' is not sorted.
 set.seed(1L)
 dt2 <- dt2[sample(nrow(dt2))] # key should be gone
-test(1317.2, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), z=c(dt1$z[1:2], dt1$z[2]), w=c(dt2$w[1], dt2$w[c(2,6)]), key="x,y"))
+test(1317.2, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), z=c(dt1$z[1:2], dt1$z[2]), w=c(dt2$w[1], dt2$w[c(2,6)])))
 
 # bug fix for #472 : "parse" in j
 set.seed(100)
@@ -5770,6 +5770,15 @@ dt.query <- data.table(q1=c(-0.2, -0.05, 0.05, 0.15), q2=c(-0.2, -0.05, 0.05, 0.
 ans=cbind(dt.ref[, .(start,end)], dt.query[2:3, .(q1,q2)])
 setkey(ans, q1,q2)
 test(1468, foverlaps(dt.query, dt.ref, nomatch=0L), ans)
+
+# Fix for #1010 (discovered while fixing #1007). Don't retain key if i had no key, but irows is sorted, and roll != FALSE... See example in #1010.
+require(data.table) ## 1.9.5
+DT = data.table(x=c(-5,5), y=1:2, key="x")
+test(1469.1, key(DT[J(c(2,0)), roll=TRUE]), NULL)
+test(1469.2, key(DT[J(c(2,0)), .(x,y), roll=TRUE]), NULL)
+test(1469.3, key(DT[J(c(2,0)), y, roll=TRUE, by=.EACHI]), NULL)
+test(1469.4, key(DT[J(c(2,0))]), NULL)
+test(1469.5, key(DT[SJ(c(2,0)), roll=TRUE]), "x")
 
 ##########################
 
