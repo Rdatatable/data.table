@@ -5786,6 +5786,14 @@ test(1470.1, DT[J(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(2,-Inf,5,Inf), y=c
 test(1470.2, DT[J(c(2,-Inf,5,Inf)), roll=10], data.table(x=c(2,-Inf,5,Inf), y=INT(c(NA, 1, 2, 3))))
 test(1470.3, DT[SJ(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf,2,5,Inf), y=c(1, 1, 2, 3), key="x"))
 
+# 1006, second bug with -Inf, now that #1007 is fixed.
+x <- c(-Inf, -0.1, 0, 0.1, Inf)
+n <- length(x)
+dt.ref <- data.table(start=x[-n], end=x[-1], key=c("start", "end"))
+dt.query <- data.table(q1=c(-0.2, -0.05, 0.05, 0.15), q2=c(-0.2, -0.05, 0.05, 0.15), key=c("q1", "q2"))
+test(1471, foverlaps(dt.query, dt.ref), data.table(dt.ref, dt.query, key=c("q1", "q2")))
+
+
 ##########################
 
 

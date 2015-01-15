@@ -105,6 +105,8 @@
 
   27. Rolling joins with `-Inf` and `Inf` are handled properly. Closes [#1007](https://github.com/Rdatatable/data.table/issues/1007). Thanks to @tdhock for filing [#1006](https://github.com/Rdatatable/data.table/issues/1006) which lead to the discovery of this issue.
 
+  28. Overlapping range joins with `-Inf` and `Inf` and 0.0 in them are handled properly now. Closes [#1006](https://github.com/Rdatatable/data.table/issues/1006). Thanks to @tdhock for filing the issue with a nice reproducible example.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
