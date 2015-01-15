@@ -5780,6 +5780,12 @@ test(1469.3, key(DT[J(c(2,0)), y, roll=TRUE, by=.EACHI]), NULL)
 test(1469.4, key(DT[J(c(2,0))]), NULL)
 test(1469.5, key(DT[SJ(c(2,0)), roll=TRUE]), "x")
 
+# 1007 fix, dealing with Inf and -Inf correctly in rolling joins.
+DT = data.table(x=c(-Inf, 3, Inf), y=1:3, key="x")
+test(1470.1, DT[J(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(2,-Inf,5,Inf), y=c(1, 1, 2, 3)))
+test(1470.2, DT[J(c(2,-Inf,5,Inf)), roll=10], data.table(x=c(2,-Inf,5,Inf), y=INT(c(NA, 1, 2, 3))))
+test(1470.3, DT[SJ(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf,2,5,Inf), y=c(1, 1, 2, 3), key="x"))
+
 ##########################
 
 

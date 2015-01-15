@@ -103,6 +103,8 @@
 
   26. When performing rolling joins, keys are set only when we can be absolutely sure. Closes [#1010](https://github.com/Rdatatable/data.table/issues/1010), which explains cases where keys should not be retained.
 
+  27. Rolling joins with `-Inf` and `Inf` are handled properly. Closes [#1007](https://github.com/Rdatatable/data.table/issues/1007). Thanks to @tdhock for filing [#1006](https://github.com/Rdatatable/data.table/issues/1006) which lead to the discovery of this issue.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
