@@ -107,6 +107,8 @@
 
   28. Overlapping range joins with `-Inf` and `Inf` and 0.0 in them are handled properly now. Closes [#1006](https://github.com/Rdatatable/data.table/issues/1006). Thanks to @tdhock for filing the issue with a nice reproducible example.
 
+  29. Fixed a segfault in `shift()` when number of rows in `x` is lesser than value for `n`. Closes [#1009](https://github.com/Rdatatable/data.table/issues/1009). Thanks to @jangorecki for the reproducible report.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

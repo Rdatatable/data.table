@@ -5715,6 +5715,11 @@ test(1463.22, shift(x,1L, type="lead"),     list(as.character(c(2:5, NA))))
 test(1463.23, shift(x,1:2, type="lead"),    list(as.character(c(2:5, NA)), as.character(c(3:5, NA, NA))))
 test(1463.24, shift(x,1L, 0L, type="lead"), list(as.character(c(2:5, 0L))))
 
+# Fix for #1009 segfault in shift
+val = runif(1)
+test(1463.25, shift(val, 2L), list(NA_real_))
+test(1463.25, shift(val, 2L, type="lead"), list(NA_real_))
+
 # add tests for date and factor?
 
 # test for 'give.names=TRUE' on vectors
