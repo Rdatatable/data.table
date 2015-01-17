@@ -51,7 +51,8 @@ options(width=100)
 ```
 
 ```{r}
-flights <- fread("https://raw.githubusercontent.com/wiki/arunsrinivasan/flights/NYCflights14/flights14.csv")
+# flights <- fread("https://raw.githubusercontent.com/wiki/arunsrinivasan/flights/NYCflights14/flights14.csv")
+flights = fread("/Users/dragonfly/Dropbox/Public/github/flights.wiki/NYCflights14/flights14.csv")
 flights
 dim(flights)
 ```
@@ -101,8 +102,8 @@ In contrast to a *data.frame*, you can do *a lot more* than just subsetting rows
 ```{r eval = FALSE}
 DT[i, j, by]
 
-#   R:      i                 j        by
-# SQL:  where   select | update  group by
+##   R:      i                 j        by
+## SQL:  where   select | update  group by
 ```
 
 Users who have a SQL background might perhaps immediately relate to this syntax.
@@ -186,8 +187,8 @@ As long as `j-expression` returns a *list*, each element of the list will be con
 ans <- flights[, .(arr_delay, dep_delay)]
 head(ans)
 
-# alternatively
-# flights[, list(arr_delay, dep_delay)]
+## alternatively
+# ans <- flights[, list(arr_delay, dep_delay)]
 ```
 
 #### {.bs-callout .bs-callout-info}
@@ -199,7 +200,8 @@ head(ans)
 #### -- How many trips have had total delay < 0?
 
 ```{r}
-flights[, sum((arr_delay + dep_delay) < 0)]
+ans <- flights[, sum((arr_delay + dep_delay) < 0)]
+ans
 ```
 
 #### What's happening here? {.bs-callout .bs-callout-info}
@@ -227,7 +229,8 @@ Because the three main components of the query (`i`, `j` and `by`) are *together
 #### -- How many trips have been made in 2014 from "JFK" airport in the month of June?
 
 ```{r}
-flights[origin == "JFK" & month == 6L, length(dest)]
+ans <- flights[origin == "JFK" & month == 6L, length(dest)]
+ans
 ```
 
 The function `length()` requires an input argument. We just needed to compute the number of rows in the subset. We could have used any other column as input argument to `length()` really. 
@@ -242,7 +245,8 @@ This type of operation occurs quite frequently, especially while grouping as we 
 So we can now accomplish the same task by using `.N` as follows:
 
 ```{r}
-flights[origin == "JFK" & month == 6L, .N]
+ans <- flights[origin == "JFK" & month == 6L, .N]
+ans
 ```
 
 #### {.bs-callout .bs-callout-info}
@@ -295,65 +299,70 @@ We've already seen `i` and `j` from *data.table*'s general form in the previous 
 #### -- How can we get the number of trips corresponding to each origin airport?
 
 ```{r}
-flights[, .(.N), by=.(origin)]
+ans <- flights[, .(.N), by=.(origin)]
+ans
 
-# or equivalently as a character vector
-# flights[, .(.N), by="origin"] # useful in programming
+## or equivalently using a character vector in 'by'
+# ans <- flights[, .(.N), by="origin"]
 ```
 
 #### {.bs-callout .bs-callout-info}
 
-* We know `.N` [is a special variable](#special-N) that holds the number of rows in the current group. Grouping by `origin` evaluates `.N` for each group and therefore returns the desired result.
+* We know `.N` [is a special variable](#special-N) that holds the number of rows in the current group. Grouping by `origin` obtains the number of rows, `.N`, for each group.
 
 * By doing `head(flights)` you can see that the origin airports occur in the order *"JFK"*, *"LGA"* and *"EWR"*. The original order of grouping variables is preserved in the result.
 
 * Since we did not provide a name for the column returned in `j`, it was named `N`automatically by recognising the special symbol `.N`.
 
+* `by` also accepts character vector of column names. It is particularly useful to program with, for e.g., designing a function with the columns to be group by as a function argument.
+
 * When there's only one column or expression to refer to in `j` and `by`, we can drop the `.()` notation. This is purely for convenience. We could instead do:
 
     ```{r}
-    flights[, .N, by=origin]
+    ans <- flights[, .N, by=origin]
+    ans
     ```
 
     We'll use this convenient form wherever applicable hereafter.
 
 # 
 
-**But wait**. This does not take into account the trips that were cancelled.
+#### -- How can we calculate the number of trips for each origin airport for carrier code *"AA"*? {#origin-.N}
 
-#### -- Now how can we calculate the number of non-cancelled trips for each origin airport? {#origin-.N}
-
-We already have a binary column `cancelled`, which when `1` indicates that the trip was cancelled.
+The unique carrier code *"AA"* corresponds to *American Airlines Inc.*
 
 ```{r}
-flights[cancelled == 0L, .N, by=origin]
+ans <- flights[carrier == "AA", .N, by=origin]
+ans
 ```
 
 #### {.bs-callout .bs-callout-info}
 
-* We first obtain the row indices for those flights that were *not* cancelled in `i`.
+* We first obtain the row indices for the expression `carrier == "AA"` from `i`.
 
-* *On that subset*, we compute the number of observations, but grouped by `origin`. Once again no columns are actually materialised here, because the `j-expression` does not require any columns to be actually subsetted and is therefore fast and memory efficient.
+* Using those *row indices*, we obtain the number of rows while grouped by `origin`. Once again no columns are actually materialised here, because the `j-expression` does not require any columns to be actually subsetted and is therefore fast and memory efficient.
 
-#### -- How can we get the total number of non-cancelled trips for each `origin, dest` pair? {#origin-dest-.N}
+#### -- How can we get the total number of trips for each `origin, dest` pair for carrier code *"AA"*? {#origin-dest-.N}
 
 ```{r}
-flights[cancelled == 0L, .N, by=.(origin,dest)]
+ans <- flights[carrier == "AA", .N, by=.(origin,dest)]
+head(ans)
 
-# or equivalently as a character vector
-# flights[cancelled == 0, .N, by=c("origin", "dest")] # useful in programming
+## or equivalently using a character vector in 'by'
+# ans <- flights[carrier == "AA", .N, by=c("origin", "dest")]
 ```
 
 #### {.bs-callout .bs-callout-info}
 
-* `by` can take multiple columns. We just provide all the columns by which to group by.
+* `by` accepts multiple columns. We just provide all the columns by which to group by.
 
-#### -- How can we get the average arrival and departure delay for all non-cancelled flights for each `orig,dest` pair for each month? {#origin-dest-month}
+#### -- How can we get the average arrival and departure delay for each `orig,dest` pair for each month for carrier code *"AA"*? {#origin-dest-month}
 
 ```{r}
-flights[cancelled == 0L, 
+ans <- flights[carrier == "AA", 
         .(mean(arr_delay), mean(dep_delay)), 
         by=.(origin, dest, month)]
+ans
 ```
 
 #### {.bs-callout .bs-callout-info}
@@ -373,9 +382,10 @@ Now what if we would like to order the result by those grouping columns `origin`
 #### -- So how can we directly order by all the grouping variables?
 
 ```{r}
-flights[cancelled == 0L, 
+ans <- flights[carrier == "AA", 
         .(mean(arr_delay), mean(dep_delay)), 
         keyby=.(origin, dest, month)]
+ans
 ```
 
 #### {.bs-callout .bs-callout-info}
@@ -388,10 +398,10 @@ For now, all you've to know is you can use `keyby` to automatically order by the
 
 ### c) Chaining
 
-Let's reconsider the task of [getting the total number of non-cancelled trips for each `origin, dest` pair](#origin-dest-.N).
+Let's reconsider the task of [getting the total number of trips for each `origin, dest` pair for carrier *"AA"*](#origin-dest-.N).
 
 ```{r}
-ans <- flights[cancelled == 0L, .N, by = .(origin, dest)]
+ans <- flights[carrier == "AA", .N, by = .(origin, dest)]
 ```
 
 #### -- How can we order `ans` using the columns `origin` in ascending order, and `dest` in descending order?
@@ -414,8 +424,8 @@ head(ans)
 But this requires having to assign the intermediate result and then overwriting that result. We can do one better and avoid this intermediate assignment on to a variable altogther by `chaining` expressions.
 
 ```{r}
-ans <- flights[cancelled == 0L, .N, by=.(origin, dest)][order(origin, -dest)]
-ans
+ans <- flights[carrier == "AA", .N, by=.(origin, dest)][order(origin, -dest)]
+head(ans, 10)
 ```
 
 #### {.bs-callout .bs-callout-info}
@@ -438,7 +448,8 @@ ans
 Yes it does. As an example, if we would like to find out how many flights started late but arrived early (or on time), started and arrived late etc...
 
 ```{r}
-flights[, .N, .(dep_delay>0, arr_delay>0)]
+ans <- flights[, .N, .(dep_delay>0, arr_delay>0)]
+ans
 ```
 
 #### {.bs-callout .bs-callout-info}
@@ -457,17 +468,19 @@ It is of course not practical to have to type `mean(myCol)` for every column one
 
 How can we do this efficiently? To get there, refresh on [this tip](#tip-1) - *"As long as j-expression returns a list, each element of the list will be converted to a column in the resulting data.table"*. Suppose we can refer to the *data subset for each group* as a variable *while grouping*, then we can loop through all the columns of that variable using the already familiar base function `lapply()`. We don't have to learn any new function. 
 
-#### Special variable `.SD`: {.bs-callout .bs-callout-warning #special-SD}
+#### Special symbol `.SD`: {.bs-callout .bs-callout-warning #special-SD}
 
-*data.table* provides a *special* variable, called `.SD`. It stands for **S**ubset of **D**ata. It by itself is a *data.table* that holds the data for *that group*. 
+*data.table* provides a *special* symbol, called `.SD`. It stands for **S**ubset of **D**ata. It by itself is a *data.table* that holds the data for *that group*. 
 
 Recall that a *data.table* is internally a list as well with all it's columns of equal length.
 
 # 
 
-Let's use the *data.table* `DT` from the very beginning to get a glimpse of what `.SD` looks like.
+Let's use the [*data.table* `DT` from before](#what-is-datatable-1a) to get a glimpse of what `.SD` looks like.
 
 ```{r}
+DT
+
 DT[, print(.SD), by=ID]
 ```
 
@@ -487,11 +500,11 @@ DT[, lapply(.SD, mean), by=ID]
 
 #### {.bs-callout .bs-callout-info}
 
-* `.SD` has columns *a*, *b* and *c* for each group. We compute the `mean()` on each of these columns using the already familiar base function `lapply()`. 
+* `.SD` holds the rows corresponding to columns *a*, *b* and *c* for that group. We compute the `mean()` on each of these columns using the already familiar base function `lapply()`. 
 
 * Each group returns a list of three elements containing the mean value which will become the columns of the resulting `data.table`.
 
-* Since `lapply()` returns a *list* (if necessary, refer to [this tip](#tip-1)), there is no need to wrap it with an additional `.()`.
+* Since `lapply()` returns a *list*, there is no need to wrap it with an additional `.()` (if necessary, refer to [this tip](#tip-1)).
 
 # 
 
@@ -503,14 +516,13 @@ We are almost there. There is one little thing left to address. In our `flights`
 
 Using the argument `.SDcols`. It accepts either column names or column indices. For example, `.SDcols = c("arr_delay", "dep_delay")` ensures that `.SD` contains only these two columns for each group. 
 
-# 
 You can also provide the columns to remove instead of columns to keep using `-` sign.
 
 # 
 Now let us try to use `.SD` along with `.SDcols` to get the `mean()` of `arr_delay` and `dep_delay` columns grouped by `origin`, `dest` and `month`.
 
 ```{r}
-flights[cancelled == 0L,                     ## On all non-cancelled flights
+flights[carrier == "AA",                     ## Only on trips with carrier "AA"
         lapply(.SD, mean),                   ## compute the mean
         by=.(origin, dest, month),           ## for every 'origin,dest,month'
         .SDcols=c("arr_delay", "dep_delay")] ## for just those specified in .SDcols
@@ -530,6 +542,21 @@ head(ans)
 * `.SD` is a *data.table* that holds all the rows for *that group*. We simply subset the first two rows as we have seen [here](#subset-rows-integer) already.
 
 * For each group, `head(.SD, 2)` returns the first two rows as a *data.table* which is also a list. So we do not have to wrap it with `.()`.
+
+#### -- Get the top five hours where maximum number of trips were made, along with the number of trips.
+
+```{r}
+ans <- flights[, .N, by=hour][order(-N), head(.SD, 5)]
+ans
+```
+
+#### {.bs-callout .bs-callout-info}
+
+* First we calculate the total number of trips for each hour. Note that we did not name the column in `j` and therefore it will be automatically named `N`.
+
+* We then *chain* that result ogether to order by the number of trips in *descending* order in `i`. The first five *row indices* would now correspond to the top five trips. Then we simply pick the columns corresponding to those row indices using `.SD` and base R function `head()`.
+
+* Now, how would you do the same, but for top five minimum trips?
 
 ### g) Why keep `j` so flexible?
 
@@ -563,10 +590,10 @@ Once you start internalising usage in `j`, you will realise how powerful the syn
 For example:
 
 ```{r}
-# (1) look at the difference between
+## (1) look at the difference between
 DT[, print(c(a,b)), by=ID]
 
-# (2) and
+## (2) and
 DT[, print(list(c(a,b))), by=ID]
 ```
 
