@@ -542,21 +542,6 @@ head(ans)
 
 * For each group, `head(.SD, 2)` returns the first two rows as a *data.table* which is also a list. So we do not have to wrap it with `.()`.
 
-#### -- Get the top five hours where maximum number of trips were made, along with the number of trips.
-
-```{r}
-ans <- flights[, .N, by=hour][order(-N), head(.SD, 5)]
-ans
-```
-
-#### {.bs-callout .bs-callout-info}
-
-* First we calculate the total number of trips for each hour. Note that we did not name the column in `j` and therefore it will be automatically named `N`.
-
-* We then *chain* that result ogether to order by the number of trips in *descending* order in `i`. The first five *row indices* would now correspond to the top five trips. Then we simply pick the columns corresponding to those row indices using `.SD` and base R function `head()`.
-
-* Now, how would you do the same, but for top five minimum trips?
-
 ### g) Why keep `j` so flexible?
 
 So that we have a consistent syntax and keep using already existing (and familiar) base functions instead of learning new functions. To illustrate, let us use the *data.table* `DT` we created at the very beginning under [What is a data.table?](#what-is-datatable-1a) section.
