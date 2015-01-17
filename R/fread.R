@@ -49,7 +49,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     } else if (substring(input,1,7) %in% "https:/") {
         if (!require(RCurl))
             stop("Input is a URL requiring a https:// connection, for which fread() requires 'RCurl' package, but cannot be found.")
-        input = getURL(input)
+        input = RCurl::getURL(input)
     } else if (input == "" || length(grep('\\n|\\r', input)) > 0) {
         # text input
     } else if (!file.exists(input)) {
