@@ -1,0 +1,118 @@
+code,
+kbd,
+pre,
+samp {
+  font-family: Source Code Pro, Inconsolata, Monaco, Consolas, Menlo, Courier New, monospace;
+}
+
+code {
+  padding: 0px 2px;
+  font-size: 90%;
+  color: #c7254e;
+  white-space: nowrap;
+  background-color: #f9f2f4;
+  border-radius: 3px;
+  border: 0px;
+}
+
+pre {
+  display: block;
+  padding: 9.5px;
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.428571429;
+  color: #c7254e;
+  background-color: #f9f2f4
+  word-break: break-all;
+  word-wrap: break-word;
+  border: 0px ;
+  border-radius: 3px;
+  /*background-color: #FDF6E3;*/
+  /*background-color: #f5f5f5; */
+  /*border: 1px solid #FDF6E3;*/
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  white-space: pre-wrap;
+  background-color: transparent;
+  border-radius: 0;
+}
+
+.bs-callout {
+    margin:20px 0;
+    padding:20px;
+    border-left:3px solid #eee
+}
+
+.bs-callout h4 { 
+    margin-top:0;
+    margin-bottom:5px
+} 
+
+.bs-callout p:last-child { 
+    margin-bottom:0
+}
+
+.bs-callout code {
+    background-color:#fff;
+    border-radius:3px
+}
+
+.bs-callout pre code {
+    background-color:transparent;
+    border-radius:3px
+}
+
+.bs-callout-danger { 
+    background-color:#fdf7f7;
+    border-color:#d9534f
+}
+
+.bs-callout-danger h4 {
+    color:#d9534f
+}
+
+.bs-callout-warning {
+    background-color:#fcf8f2;
+    border-color:#f0ad4e
+}
+
+.bs-callout-warning h4 { 
+    color:#f0ad4e
+}
+
+.bs-callout-info {
+    background-color:#f4f8fa;
+    border-color:#5bc0de
+}
+
+.bs-callout-info h4 {
+    color:#5bc0de
+}
+
+// KeyWordTok
+.sourceCode .kw { color: #268BD2; }
+// DataTypeTok
+.sourceCode .dt { color: #268BD2; }
+
+// DecValTok (decimal value), BaseNTok, FloatTok
+.sourceCode .dv, .sourceCode .bn, .sourceCode .fl { color: #D33682; }
+// CharTok
+.sourceCode .ch { color: #DC322F; }
+// StringTok
+.sourceCode .st { color: #2AA198; }
+// CommentTok
+.sourceCode .co { color: #93A1A1; }
+// OtherTok
+.sourceCode .ot { color: #A57800; }
+// AlertTok
+.sourceCode .al { color: #CB4B16; font-weight: bold; }
+// FunctionTok
+.sourceCode .fu { color: #268BD2; }
+// RegionMarkerTok
+.sourceCode .re { }
+// ErrorTok
+.sourceCode .er { color: #D30102; font-weight: bold; }
