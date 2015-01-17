@@ -6,7 +6,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
 
     size_t size;
 	R_len_t i=0, j, m, nx, nk, xrows, thisk;
-	SEXP x, tmp, this, ans, thisfill, class;
+	SEXP x, tmp=R_NilValue, this, ans, thisfill, class;
     unsigned long long *dthisfill;
     enum {LAG, LEAD} stype = LAG;
     if (!length(obj)) return(obj); // NULL, list()
