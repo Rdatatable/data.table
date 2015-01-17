@@ -40,12 +40,16 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     }
     if (!is.character(input) || length(input)!=1) {
         stop("'input' must be a single character string containing a file name, a command, full path to a file, a URL starting 'http://' or 'file://', or the input data itself")
-    } else if (substring(input,1,7) %chin% c("http://","https:/","file://")) {
+    } else if (substring(input,1,7) %chin% c("http://", "file://")) {
         tt = tempfile()
         on.exit(unlink(tt), add=TRUE)
         download.file(input, tt, mode="wb", quiet=!showProgress)
         # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
         input = tt
+    } else if (substring(input,1,7) %in% "https:/") {
+        if (!require(RCurl))
+            stop("Input is a URL requiring a https:// connection, for which fread() requires 'RCurl' package, but cannot be found.")
+        input = getURL(input)
     } else if (input == "" || length(grep('\\n|\\r', input)) > 0) {
         # text input
     } else if (!file.exists(input)) {
