@@ -142,6 +142,36 @@ ans
 
 * In this case, there is no condition. The row indices are already provided in `i`. We therefore return a *data.table* with all columns from `flight` for those *row indices*.
 
+#### -- Sort `flights` first by column `origin` in *ascending* order, and then by `dest` in *descending* order:
+
+We can use the base R function `order()` to accomplish this.
+
+```{r}
+ans <- flights[order(origin, -dest)]
+head(ans)
+```
+#### `order()` is internally optimised {.bs-callout .bs-callout-info}
+
+* We can use "-" on a *character* columns within the frame of a *data.table* to sort in decreasing order.
+
+* In addition, `order(...)` within the frame of a *data.table* uses *data.table*'s internal fast radix order `forder()`, which is much faster than `base::order`. Here's a small example to highlight the difference.
+
+    ```{r}
+    odt = data.table(col=sample(1e7))
+    (t1 <- system.time(ans1 <- odt[base::order(col)]))  ## uses order from base R
+    (t2 <- system.time(ans2 <- odt[order(col)]))        ## uses data.table's forder
+    (identical(ans1, ans2))
+    ````
+
+The speedup here is **~`r round(t1[3]/t2[3])`x**. We will discuss *data.table*'s fast order in more detail in the *data.table internals* vignette.
+
+* This is so that you can improve performance tremendously while using already familiar functions.
+
+#
+```{r echo = FALSE}
+rm(odt); rm(ans1); rm(ans2); rm(t1); rm(t2)
+```
+
 ### d) Select column(s) in `j` {#select-j-1d}
 
 #### -- Select `arr_delay` column, but return it as a *vector*.
@@ -414,9 +444,9 @@ head(ans)
 
 #### {.bs-callout .bs-callout-info}
 
-* Note that we can use `-` on a *character* column in `order()` within the frame of a *data.table*. This is possible to due *data.table*'s internal query optimisation.
+* Recall that we can use "-" on a *character* column in `order()` within the frame of a *data.table*. This is possible to due *data.table*'s internal query optimisation.
 
-* In addition, `order(...)` with the frame of a *data.table* is *automatically optimised* to use *data.table*'s internal fast radix order `forder()` for speed. So you can keep using the already *familiar* base R functions without compromising in speed or memory efficiency that *data.table* offers. We will cover this in more detail in the *data.table internals* vignette.
+* Also recall that `order(...)` with the frame of a *data.table* is *automatically optimised* to use *data.table*'s internal fast radix order `forder()` for speed. So you can keep using the already *familiar* base R functions without compromising in speed or memory efficiency that *data.table* offers. We will cover this in more detail in the *data.table internals* vignette.
 
 #
 
@@ -469,7 +499,7 @@ How can we do this efficiently? To get there, refresh on [this tip](#tip-1) - *"
 
 #### Special symbol `.SD`: {.bs-callout .bs-callout-warning #special-SD}
 
-*data.table* provides a *special* symbol, called `.SD`. It stands for **S**ubset of **D**ata. It by itself is a *data.table* that holds the data for *that group*. 
+*data.table* provides a *special* symbol, called `.SD`. It stands for **S**ubset of **D**ata. It by itself is a *data.table* that holds the data for *the current group* defined using `by`. 
 
 Recall that a *data.table* is internally a list as well with all it's columns of equal length.
 
@@ -596,6 +626,10 @@ We have seen so far that,
 #### Using `i`: {.bs-callout .bs-callout-info}
 
 * We can subset rows similar to a *data.frame* - except you don't have to use `DT$` repetitively since columns within the frame of a *data.table* are seen as if they are *variables*.
+
+* We can also sort a *data.table* using `order()`, which internally uses *data.table*'s fast order for performance.
+
+We can do much more in `i` by keying a *data.table*, which allows blazing fast subsets and joins. We will see this in the *"Keys and fast binary search based subsets"* and *"Joins and rolling joins"* vignette.
 
 #### Using `j`: {.bs-callout .bs-callout-info}
 
