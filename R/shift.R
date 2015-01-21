@@ -1,6 +1,6 @@
 shift <- function(x, n=1L, fill=NA, type=c("lag", "lead"), give.names=FALSE) {
     type = match.arg(type)
-    ans = .Call("Cshift", x, as.integer(n), fill, type)
+    ans = .Call(Cshift, x, as.integer(n), fill, type)
     if (give.names) {
         if (is.null(names(x))) 
             nx = paste("V", if (is.atomic(x)) 1L else seq_along(x), sep="")
