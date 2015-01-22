@@ -92,7 +92,7 @@ You can also convert existing objects to a *data.table* using `as.data.table()`.
     getOption("datatable.print.nrows")
     ```
 
-* *data.table* doesn't set or use *row names*, ever. We will see as to why in the next vignette.
+* *data.table* doesn't set or use *row names*, ever. We will see as to why in *"Keys and fast binary search based subset"* vignette.
 
 ### b) General form - in what way is a data.table *enhanced*? {#enhanced-1b}
 
@@ -501,7 +501,7 @@ How can we do this efficiently? To get there, refresh on [this tip](#tip-1) - *"
 
 *data.table* provides a *special* symbol, called `.SD`. It stands for **S**ubset of **D**ata. It by itself is a *data.table* that holds the data for *the current group* defined using `by`. 
 
-Recall that a *data.table* is internally a list as well with all it's columns of equal length.
+Recall that a *data.table* is internally a list as well with all its columns of equal length.
 
 # 
 
