@@ -90,8 +90,13 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
         mcall = make_call(mcols, quote(c))
         if (type %chin% c("within", "any")) {
             mcall[[3L]] = substitute(
-                if (isposix) unclass(val)*incr
-                else if (isdouble) (val+dt_eps())*incr # fix for #1006 - 0.0 occurs in both start and end
+                if (isposix) unclass(val)*incr # incr is okay since this won't be negative
+                else if (isdouble) {
+                    # fix for #1006 - 0.0 occurs in both start and end
+                    # better fix for 0.0, and other -ves. can't use 'incr'
+                    # hopefully this doesn't open another can of worms
+                    (val+dt_eps())*(1 + sign(val)*dt_eps()) 
+                }
                 else val+incr, 
                 list(val = mcall[[3L]], incr = incr))
         }

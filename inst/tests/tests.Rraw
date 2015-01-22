@@ -5774,7 +5774,20 @@ dt.ref <- data.table(start=x[-n], end=x[-1], key=c("start", "end"))
 dt.query <- data.table(q1=c(-0.2, -0.05, 0.05, 0.15), q2=c(-0.2, -0.05, 0.05, 0.15), key=c("q1", "q2"))
 ans=cbind(dt.ref[, .(start,end)], dt.query[2:3, .(q1,q2)])
 setkey(ans, q1,q2)
-test(1468, foverlaps(dt.query, dt.ref, nomatch=0L), ans)
+test(1468.1, foverlaps(dt.query, dt.ref, nomatch=0L), ans)
+# fix and additional tests for #1006 following OP's follow-up.
+dt1 = data.table(x=c(-6.36917800737546, -2.19964384651646),
+                 y=c(-2.19964384651646, 4.07116428752538))
+dt2 = data.table(x= 2.91816502571793, y=2.91816502571793)
+setkey(dt1)
+setkey(dt2)
+test(1468.2, foverlaps(dt2, dt1, which=TRUE), data.table(xid=1L, yid=2L))
+dt1 = data.table(x=c(-6,-3), y=c(-3,4))
+dt2 = data.table(x=3,y=3)
+setkey(dt1)
+setkey(dt2)
+test(1468.3, foverlaps(dt2, dt1, which=TRUE), data.table(xid=1L, yid=2L))
+
 
 # Fix for #1010 (discovered while fixing #1007). Don't retain key if i had no key, but irows is sorted, and roll != FALSE... See example in #1010.
 require(data.table) ## 1.9.5
