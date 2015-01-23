@@ -5101,7 +5101,7 @@ if ("package:GenomicRanges" %in% search()) {
     test(1372.4, setorder(ans1), fo(gr(x), gr(y[, c(1,3,4), with=FALSE]), type="any", select="all"))
 
     runs = 3L # repeat 3 times..
-    types=c("any", "within", "start", "end")
+    types=c("any", "within", "equal", "start", "end")
     mults=c("all", "first") # "last"
     maxgap=0L; minoverlap=1L
     verbose=FALSE; which=TRUE
@@ -5813,6 +5813,14 @@ test(1471, foverlaps(dt.query, dt.ref), data.table(dt.ref, dt.query, key=c("q1",
 
 # #1014 (segfault) fix
 test(1472, shift(1, 1:2, NA, 'lag'), list(NA_real_, NA_real_))
+
+# #528, type=equal simple test
+dt1 = data.table(x=1:5, y=6:10)
+dt2 = data.table(x=3:7, y=8:12)
+setkey(dt1)
+setkey(dt2)
+test(1473, foverlaps(dt1,dt2, which=TRUE, nomatch=0L, type="equal"),
+           data.table(xid=3:5, yid=1:3))
 
 ##########################
 
