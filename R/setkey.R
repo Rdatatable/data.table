@@ -330,7 +330,7 @@ CJ <- function(..., sorted = TRUE)
     l
 }
 
-frankv <- function(x, cols=seq_along(x), na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
+frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
     ties.method = match.arg(ties.method)
     if (!length(na.last)) stop('length(na.last) = 0')
     if (length(na.last) != 1L) {
@@ -360,6 +360,7 @@ frankv <- function(x, cols=seq_along(x), na.last=TRUE, ties.method=c("average", 
     setDT(x)
     if (is.na(na.last)) {
         set(x, j = "..na_prefix..", value = is_na(x, cols))
+        order = if (length(order) == 1L) c(1L, rep(order, length(cols))) else c(1L, order)
         cols = c(ncol(x), cols)
         nas  = x[[ncol(x)]]
     }
@@ -367,9 +368,10 @@ frankv <- function(x, cols=seq_along(x), na.last=TRUE, ties.method=c("average", 
         set(x, i = if (is.na(na.last)) which_(nas, FALSE) else NULL, 
                j = "..stats_runif..", 
                value = stats::runif(nrow(x)))
+        order = if (length(order) == 1L) c(rep(order, length(cols)), 1L) else c(order, 1L)
         cols = c(cols, ncol(x))
     }
-    xorder  = forderv(x, by=cols, sort=TRUE, retGrp=TRUE, 
+    xorder  = forderv(x, by=cols, order=order, sort=TRUE, retGrp=TRUE, 
                 na.last=if (identical(na.last, FALSE)) na.last else TRUE)
     xstart  = attr(xorder, 'starts')
     xsorted = FALSE
@@ -396,10 +398,29 @@ frankv <- function(x, cols=seq_along(x), na.last=TRUE, ties.method=c("average", 
 }
 
 frank <- function(x, ..., na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
-    cols = as.character(substitute(list(...))[-1])
-    if (!length(cols)) cols=colnames(x)
-    else if (identical(cols,"NULL")) cols=NULL
-    frankv(x, cols=cols, na.last=na.last, ties.method=ties.method)
+    cols = substitute(list(...))[-1]
+    if (identical(cols,"NULL")) {
+        cols  = NULL
+        order = 1L
+    } else if (length(cols)) {
+        cols=as.list(cols)
+        order=rep(1L, length(cols))
+        for (i in seq_along(cols)) {
+            v=as.list(cols[[i]])
+            if (length(v) > 1 && v[[1L]] == "+") v=v[[-1L]]
+            else if (length(v) > 1 && v[[1L]] == "-") {
+                v=v[[-1L]]
+                order[i] = -1L
+            }
+            cols[[i]]=as.character(v)
+        }
+        cols=unlist(cols, use.names=FALSE)
+    } else {
+        cols=colnames(x)
+        order=rep(1L, length(cols))
+    }
+    frankv(x, cols=cols, order=order, na.last=na.last, ties.method=ties.method)
+
 }
 
 #########################################################################################

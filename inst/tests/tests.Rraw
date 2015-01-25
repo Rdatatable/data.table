@@ -5008,13 +5008,22 @@ for (i in seq_along(dt)) {
     for (j in list(TRUE, FALSE, "keep")) {
         for (k in c("average", "min", "max", "first")) {
             if (k == "random") set.seed(45L)
-            if (class(col) == "integer64") r1 = rank(as.integer(col), ties.method=k, na.last=j)
-            else r1 = rank(col, ties.method=k, na.last=j)
+            if (class(col) == "integer64") {
+                r1 = rank(as.integer(col), ties.method=k, na.last=j)
+                r2 = rank(-xtfrm(as.integer(col)), ties.method=k, na.last=j)
+            }
+            else {
+                r1 = rank(col, ties.method=k, na.last=j)
+                r2 = rank(-xtfrm(col), ties.method=k, na.last=j)
+            }
             if (k == "random") set.seed(45L)
-            r2 = frankv(col, ties.method=k, na.last=j)
+            r3 = frankv(col, ties.method=k, na.last=j)
+            r4 = frankv(col, order=-1L, ties.method=k, na.last=j)
         
             test_no = signif(test_no+.01, 7)
-            test(test_no, r1, r2)
+            test(test_no, r1, r3)
+            test_no = signif(test_no+.01, 7)
+            test(test_no, r2, r4)
         }
     }
 }
@@ -5030,13 +5039,22 @@ for (i in seq_along(dt)) {
     col = dt[[i]]
     for (k in c("average", "min", "max", "first")) {
         if (k == "random") set.seed(45L)
-        if (class(col) == "integer64") r1 = rank(as.integer(col), ties.method=k, na.last=NA)
-        else r1 = rank(col, ties.method=k, na.last=NA)
+        if (class(col) == "integer64") {
+            r1 = rank(as.integer(col), ties.method=k, na.last=NA)
+            r2 = rank(-xtfrm(as.integer(col)), ties.method=k, na.last=NA)
+        }
+        else {
+            r1 = rank(col, ties.method=k, na.last=NA)
+            r2 = rank(-xtfrm(col), ties.method=k, na.last=NA)
+        }
         if (k == "random") set.seed(45L)
-        r2 = frankv(col, ties.method=k, na.last=NA)
+        r3 = frankv(col, ties.method=k, na.last=NA)
+        r4 = frankv(col, order=-1L, ties.method=k, na.last=NA)
     
         test_no = signif(test_no+.01, 7)
-        test(test_no, r1, r2)
+        test(test_no, r1, r3)
+        test_no = signif(test_no+.01, 7)
+        test(test_no, r2, r4)
     }
 }
 
