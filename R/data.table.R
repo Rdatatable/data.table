@@ -2270,7 +2270,7 @@ rbindlist <- function(l, use.names=fill, fill=FALSE, idcol=NULL) {
         len = vapply(l, NROW, 0L)
         idx = which(len > 0L)
         len = len[idx]
-        if (is.null(nm)) nm = paste("V", seq_along(len), sep="")
+        if (is.null(nm)) nm = as.character(seq_along(len))
         else nm = nm[idx]
         ansnames = c(idcol, names(ans))
         set(ans, j=idcol, value=rep.int(nm, len))
