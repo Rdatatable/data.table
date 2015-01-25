@@ -25,6 +25,7 @@ export(.SD,.N,.I,.GRP,.BY,.EACHI)
 export(rleid)
 export(rleidv)
 export(as.xts.data.table)
+export(uniqueN)
 
 S3method("[", data.table)
 S3method("[<-", data.table)

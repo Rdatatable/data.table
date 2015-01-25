@@ -85,3 +85,13 @@ anyDuplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=
     if (!length(idx)) idx=0L
     idx
 }
+
+
+# simple straightforward helper function to get the number 
+# of groups in a vector or data.table. Here by data.table, 
+# we really mean `.SD` - used in a grouping operation
+uniqueN <- function(x) {
+    if (!is.atomic(x) && !is.data.frame(x))
+        stop("x must be an atomic vector or data.frames/data.tables")
+    length(attr(forderv(x, retGrp=TRUE), 'starts'))
+}

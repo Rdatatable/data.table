@@ -5,6 +5,7 @@
 \alias{unique.data.table}
 \alias{anyDuplicated}
 \alias{anyDuplicated.data.table}
+\alias{uniqueN}
 \title{ Determine Duplicate Rows }
 \description{
      \code{duplicated} returns a logical vector indicating which rows of a \code{data.table} (by 
@@ -14,6 +15,9 @@
      (when no key) duplicated rows by all columns removed.
 
      \code{anyDuplicated} returns the \emph{index} \code{i} of the first duplicated entry if there is one, and 0 otherwise. 
+
+     \code{uniqueN} is equivalent to \code{length(unique(x))} but much faster. It accepts \code{atomic vectors}, \code{data.frames} and \code{data.tables}. The number of unique rows are computed directly without materialising the intermediate unique data.table and is therefore memory efficient as well.
+
 }
 \usage{
 \method{duplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...)
@@ -22,9 +26,10 @@
 
 \method{anyDuplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...)
 
+uniqueN(x)
 }
 \arguments{
-  \item{x}{ A data.table. }
+  \item{x}{ A data.table. \code{uniqueN} accepts atomic vectors and data.frames as well.}
   \item{\dots}{ Not used at this time. }
   \item{incomparables}{ Not used. Here for S3 method consistency. }
   \item{fromLast}{ logical indicating if duplication should be considered from the reverse side, i.e., the last (or rightmost) of identical elements would correspond to \code{duplicated = FALSE}.}
@@ -87,6 +92,11 @@ unique(DT, by="B", fromLast=TRUE)
 # anyDuplicated
 anyDuplicated(DT, by=c("A", "B"))    # 3L
 any(duplicated(DT, by=c("A", "B")))  # TRUE
+
+# uniqueN, total unique rows
+uniqueN(DT)
+# uniqueN while grouped by "A"
+DT[, .(uN=uniqueN(.SD)), by=A]
 }
 \keyword{ data }
 
