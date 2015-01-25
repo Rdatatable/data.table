@@ -7,13 +7,14 @@
   Same as \code{do.call("rbind", l)} on \code{data.frame}s, but much faster. See \code{DETAILS} for more.
 }
 \usage{
-rbindlist(l, use.names=fill, fill=FALSE)
-# rbind(..., use.names=TRUE, fill=FALSE)
+rbindlist(l, use.names=fill, fill=FALSE, idcol=NULL)
+# rbind(..., use.names=TRUE, fill=FALSE, idcol=NULL)
 }
 \arguments{
   \item{l}{ A list containing \code{data.table}, \code{data.frame} or \code{list} objects. At least one of the inputs should have column names set. \code{\dots} is the same but you pass the objects by name separately. }
   \item{use.names}{If \code{TRUE} items will be bound by matching column names. By default \code{FALSE} for \code{rbindlist} (for backwards compatibility) and \code{TRUE} for \code{rbind} (consistency with base). Columns with duplicate names are bound in the order of occurrence, similar to base. When TRUE, at least one item of the input list has to have non-null column names.}
   \item{fill}{If \code{TRUE} fills missing columns with NAs. By default \code{FALSE}. When \code{TRUE}, \code{use.names} has to be \code{TRUE}, and all items of the input list has to have non-null column names. }
+  \item{idcol}{Should an index column be generated? Default (\code{NULL}) is not to. \code{TRUE} auto names the column to \code{.id}. Alternatively it also accepts a character vector of length-1 for the index column name. See \code{examples}.}
 }
 \details{
 Each item of \code{l} can be a \code{data.table}, \code{data.frame} or \code{list}, including \code{NULL} (skipped) or an empty object (0 rows). \code{rbindlist} is most useful when there are a variable number of (potentially many) objects to stack, such as returned by \code{lapply(fileNames, fread)}. \code{rbind} however is most useful to stack two or three objects which you know in advance. \code{\dots} should contain at least one \code{data.table} for \code{rbind(...)} to call the fast method and return a \code{data.table}, whereas \code{rbindlist(l)} always returns a \code{data.table} even when stacking a plain \code{list} with a \code{data.frame}, for example.
@@ -50,6 +51,13 @@ DT1 = data.table(A=1:3,B=letters[1:3])
 DT2 = data.table(B=letters[4:5],C=factor(1:2))
 l = list(DT1,DT2)
 rbindlist(l, use.names=TRUE, fill=TRUE)
+
+# generate index column, auto generates indices
+rbindlist(l, use.names=TRUE, fill=TRUE, idcol=TRUE)
+# let's name the list
+setattr(l, 'names', c("a", "b"))
+rbindlist(l, use.names=TRUE, fill=TRUE, idcol="ID")
+
 }
 \keyword{ data }
 

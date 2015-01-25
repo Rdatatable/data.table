@@ -2248,18 +2248,34 @@ chgroup <- function(x) {
 }
 
 
-.rbind.data.table <- function(..., use.names=TRUE, fill=FALSE) {
+.rbind.data.table <- function(..., use.names=TRUE, fill=FALSE, idcol=NULL) {
     # See FAQ 2.23
     # Called from base::rbind.data.frame
     l = list(...)
     # if (missing(use.names)) message("Columns will be bound by name for consistency with base. You can supply unnamed lists and the columns will then be joined by position, or set use.names=FALSE. Alternatively, explicitly setting use.names to TRUE will remove this message.")
-    rbindlist(l, use.names, fill)
+    rbindlist(l, use.names, fill, idcol)
 }
 
-rbindlist <- function(l, use.names=fill, fill=FALSE) {
+rbindlist <- function(l, use.names=fill, fill=FALSE, idcol=NULL) {
     ans = .Call("Crbindlist", l, use.names, fill)
     if (!length(ans)) return(null.data.table())
     setDT(ans)
+    if (!is.null(idcol)) {
+        if (isTRUE(idcol)) idcol = ".id"
+        if (!is.character(idcol))
+            stop("idcol must be a logical or character vector of length 1. If logical and 'TRUE' the id column will automatically named '.id'. Else the column will be named with the character value provided in 'idcol'.")
+        if (idcol %in% names(ans))
+            stop(idcol, " is already a column name in the result. Please provide another name for 'idcol'.")
+        nm  = names(l)
+        len = vapply(l, NROW, 0L)
+        idx = which(len > 0L)
+        len = len[idx]
+        if (is.null(nm)) nm = paste("V", seq_along(len), sep="")
+        else nm = nm[idx]
+        ansnames = c(idcol, names(ans))
+        set(ans, j=idcol, value=rep.int(nm, len))
+        setcolorder(ans, ansnames)
+    }
     ans
 }
 
