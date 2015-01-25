@@ -358,6 +358,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
     }
     x = .shallow(x, cols) # shallow copy even if list..
     setDT(x)
+    cols = seq_along(cols)
     if (is.na(na.last)) {
         set(x, j = "..na_prefix..", value = is_na(x, cols))
         order = if (length(order) == 1L) c(1L, rep(order, length(cols))) else c(1L, order)
@@ -399,7 +400,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
 
 frank <- function(x, ..., na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
     cols = substitute(list(...))[-1]
-    if (identical(cols,"NULL")) {
+    if (identical(as.character(cols), "NULL")) {
         cols  = NULL
         order = 1L
     } else if (length(cols)) {
@@ -417,7 +418,7 @@ frank <- function(x, ..., na.last=TRUE, ties.method=c("average", "first", "rando
         cols=unlist(cols, use.names=FALSE)
     } else {
         cols=colnames(x)
-        order=rep(1L, length(cols))
+        order=if (is.null(cols)) 1L else rep(1L, length(cols))
     }
     frankv(x, cols=cols, order=order, na.last=na.last, ties.method=ties.method)
 

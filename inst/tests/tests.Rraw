@@ -5844,6 +5844,13 @@ setkey(dt2)
 test(1473, foverlaps(dt1,dt2, which=TRUE, nomatch=0L, type="equal"),
            data.table(xid=3:5, yid=1:3))
 
+# More tests for `frankv`, #760
+DT = data.table(x=c(4, 1, 4, NA, 1, NA, 4), y=c(1, 1, 1, 0, NA, 0, 2))
+test(1474.1, frankv(DT, "y", ties.method="dense"), frankv(DT$y, ties.method="dense"))
+test(1474.2, frank(DT, y, ties.method="dense"), frank(DT$y, ties.method="dense"))
+test(1474.3, frankv(DT, "y", order=-1L, ties.method="dense"), frankv(-DT$y, ties.method="dense"))
+test(1474.4, frank(DT, -y, ties.method="dense"), frank(-DT$y, ties.method="dense"))
+
 ##########################
 
 
