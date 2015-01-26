@@ -4625,6 +4625,19 @@ test(1313.20, DT[, list(y=max(y)), by=x], DT[c(1,6)])
 test(1313.21, DT[, list(y=min(y, na.rm=TRUE)), by=x], DT[c(2,7)])
 test(1313.22, DT[, list(y=max(y, na.rm=TRUE)), by=x], DT[c(5,10)])
 
+# for character
+set.seed(1L)
+DT <- data.table(x=rep(1:6, each=3), y=sample(c("", letters[1:3], NA), 18, TRUE))
+test(1313.23, DT[, min(y), by=x], DT[, base:::min(y), by=x])
+test(1313.24, DT[, max(y), by=x], DT[, base:::max(y), by=x])
+test(1313.25, DT[, min(y, na.rm=TRUE), by=x], DT[, base:::min(y, na.rm=TRUE), by=x])
+test(1313.26, DT[, max(y, na.rm=TRUE), by=x], DT[, base:::max(y, na.rm=TRUE), by=x])
+DT[x==6, y := NA_character_]
+test(1313.27, DT[, min(y), by=x], DT[, base:::min(y), by=x])
+test(1313.28, DT[, max(y), by=x], DT[, base:::max(y), by=x])
+test(1313.29, DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c("a","a","c","","a",NA)), warning="No non-missing")
+test(1313.30, DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c("b","a","c","a","c",NA)), warning="No non-missing")
+
 # bug git #693 - dcast error message improvement:
 dt <- data.table(x=c(1,1), y=c(2,2), z = 3:4)
 test(1314, dcast(dt, x ~ y, value.var="z", fun.aggregate=identity), error="Aggregating function provided to argument 'fun.aggregate' should always return a length 1 vector")

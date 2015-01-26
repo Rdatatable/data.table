@@ -218,6 +218,42 @@ SEXP gmin(SEXP x, SEXP narm)
                     for (i=0; i<ngrp; i++) {
                         if (update[i] != 1) REAL(ans)[i] = R_PosInf;
                     }
+                    break;
+                }
+            }
+        }
+        break;
+    case STRSXP:
+        ans = PROTECT(allocVector(STRSXP, ngrp));
+        for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, mkChar(""));
+        if (!LOGICAL(narm)[0]) {
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                if (STRING_ELT(x, i) != NA_STRING && STRING_ELT(ans, thisgrp) != NA_STRING) {
+                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, i))) > 0 ) {
+                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, i));
+                        if (update[thisgrp] != 1) update[thisgrp] = 1;
+                    }
+                } else SET_STRING_ELT(ans, thisgrp, NA_STRING);
+            }
+        } else {
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                if (STRING_ELT(x, i) != NA_STRING) {
+                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, i))) > 0 ) {
+                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, i));
+                        if (update[thisgrp] != 1) update[thisgrp] = 1;
+                    }
+                } else {
+                    if (update[thisgrp] != 1) {
+                        SET_STRING_ELT(ans, thisgrp, NA_STRING);
+                    }
+                }
+            }
+            for (i=0; i<ngrp; i++) {
+                if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
+                    warning("No non-missing values found in at least one group. Returning 'NA' for such groups to be consistent with base");
+                    break;
                 }
             }
         }
@@ -316,9 +352,45 @@ SEXP gmax(SEXP x, SEXP narm)
                     for (i=0; i<ngrp; i++) {
                         if (update[i] != 1) REAL(ans)[i] = -R_PosInf;
                     }
+                    break;
                 }
             }
         }
+        break;
+    case STRSXP:
+        ans = PROTECT(allocVector(STRSXP, ngrp));
+        for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, mkChar(""));
+        if (!LOGICAL(narm)[0]) { // simple case - deal in a straightforward manner first
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                if (STRING_ELT(x,i) != NA_STRING && STRING_ELT(ans, thisgrp) != NA_STRING) {
+                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x,i))) < 0 ) {
+                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, i));
+                        if (update[thisgrp] != 1) update[thisgrp] = 1;
+                    }
+                } else  SET_STRING_ELT(ans, thisgrp, NA_STRING);
+            }
+        } else {
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                if (STRING_ELT(x, i) != NA_STRING) {
+                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, i))) < 0 ) {
+                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, i));
+                        if (update[thisgrp] != 1) update[thisgrp] = 1;
+                    }
+                } else {
+                    if (update[thisgrp] != 1) {
+                        SET_STRING_ELT(ans, thisgrp, NA_STRING);
+                    }
+                }
+            }
+            for (i=0; i<ngrp; i++) {
+                if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
+                    warning("No non-missing values found in at least one group. Returning 'NA' for such groups to be consistent with base");
+                    break;
+                }
+            }
+        }    
         break;
     case REALSXP:
         ans = PROTECT(allocVector(REALSXP, ngrp));
