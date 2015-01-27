@@ -13,6 +13,8 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
         stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
     type = match.arg(type)
     mult = match.arg(mult)
+    if (type == "equal")
+        stop("type = 'equal' is not implemented yet. But note that this is just the same as a normal data.table join y[x, ...], unless you are also interested in setting 'minoverlap / maxgap' arguments. But those arguments are not implemented yet as well.")
     if (maxgap > 0L || minoverlap > 1L)
         stop("maxgap and minoverlap arguments are not yet implemented.")
     if (is.null(by.y))
