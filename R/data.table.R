@@ -1066,7 +1066,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 keylen = which.first(!key(x) %chin% ansvars)-1L
                 if (is.na(keylen)) keylen = length(key(x))
                 if (keylen > length(rightcols) && !.Call(CisOrderedSubset, irows, nrow(x))) keylen = length(rightcols)
-                if (keylen && ((is.data.table(i) && haskey(i)) || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && (!roll || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
+                if (keylen && ((is.data.table(i) && haskey(i)) || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
                     setattr(ans,"sorted",head(key(x),keylen))
             }
             setattr(ans, "class", class(x)) # fix for #5296
@@ -1177,7 +1177,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         byval = i
         bynames = head(key(x),length(leftcols))
         allbyvars = NULL
-        bysameorder = haskey(i) || (is.sorted(f__) && (!roll || length(f__) == 1L)) # Fix for #1010
+        bysameorder = haskey(i) || (is.sorted(f__) && ((roll == FALSE) || length(f__) == 1L)) # Fix for #1010
         ##  'av' correct here ??  *** TO DO ***
         xjisvars = intersect(av, names(x)[rightcols])  # no "x." for xvars.
         # if 'get' is in 'av' use all cols in 'i', fix for bug #5443
