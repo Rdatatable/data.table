@@ -95,6 +95,7 @@ SEXP gsum(SEXP x, SEXP narm)
         error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
     }
     free(s);
+    copyMostAttrib(x, ans);
     UNPROTECT(1);
     // Rprintf("this gsum took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
     return(ans);
@@ -163,6 +164,7 @@ SEXP gmean(SEXP x, SEXP narm)
         else REAL(ans)[i] = (double)s[i];
     }
     free(s); free(c);
+    copyMostAttrib(x, ans);
     UNPROTECT(1);
     // Rprintf("this gmean na.rm=TRUE took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
     return(ans);

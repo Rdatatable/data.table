@@ -32,7 +32,7 @@
 
   9. `rbindlist` gains `idcol` argument which can be used to generate an index column. If `idcol=TRUE`, the column is automatically named `.id`. Instead you can also provide a column name directly. If the input list has no names, indices are automatically generated. Closes [#591](https://github.com/Rdatatable/data.table/issues/591). Also thanks to @KevinUshey for filing [#356](https://github.com/Rdatatable/data.table/issues/356).
 
-  10. A new helper function `uniqueN` is now implemented. It is equivalent to `length(unique(x))` but much faster. It accepts `atomic vectors`, `data.frames` and `data.tables` as input and returns the number of unique rows. For example, DT[, .(uN = uniqueN(.SD)), by=x]` returns the number of unique rows within each group of `x`.
+  10. A new helper function `uniqueN` is now implemented. It is equivalent to `length(unique(x))` but much faster. It accepts `atomic vectors`, `data.frames` and `data.tables` as input and returns the number of unique rows. For example, DT[, .(uN = uniqueN(.SD)), by=x]` returns the number of unique rows within each group of `x`. Thanks to @DavidArenburg as well for the FR.
 
 #### BUG FIXES
 
@@ -112,6 +112,8 @@
   28. Overlapping range joins with `-Inf` and `Inf` and 0.0 in them are handled properly now. Closes [#1006](https://github.com/Rdatatable/data.table/issues/1006). Thanks to @tdhock for filing the issue with a nice reproducible example.
 
   29. Fixed two segfaults in `shift()` when number of rows in `x` is lesser than value for `n`. Closes [#1009](https://github.com/Rdatatable/data.table/issues/1009) and [#1014](https://github.com/Rdatatable/data.table/issues/1014). Thanks to @jangorecki and @ashinm for the reproducible reports.
+
+  30. Attributes are preserved for `sum()` and `mean()` when fast internal (GForce) implementations are used. Closes [#1023](https://github.com/Rdatatable/data.table/issues/1023). Thanks to @DavidArenburg for the nice reproducible example.
 
 #### NOTES
 
