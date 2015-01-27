@@ -5887,7 +5887,9 @@ test(1477.1, ans1, ans2)
 # class is preserved?
 dt = data.table(x=1:5, y=6:10)
 test(1477.2, transpose(dt), as.data.table(t(as.matrix(dt))))
-
+# factor column coerce to character
+ll = list(factor(letters[1:5]), factor(letters[6:8]))
+test(1477.3, transpose(ll), list(c("a", "f"), c("b", "g"), c("c", "h"), c("d", NA), c("e", NA)))
 # test for `tstrsplit`
 ll = sapply(ll, paste, collapse=",")
 test(1477.3, transpose(strsplit(ll, ",", fixed=TRUE)), tstrsplit(ll, ",", fixed=TRUE))

@@ -20,6 +20,8 @@ transpose(l, fill=NA, ignore.empty=FALSE)
 
   This is particularly useful in tasks that require splitting a character column and assigning each part to a separate column. This operation is quite common enough that a function \code{\link{tstrsplit}} is exported.
 
+  \code{factor} columns are converted to \code{character} type. Attributes are not preserved at the moment. This may change in the future.
+
 }
 \value{
   A transposed \code{list}, \code{data.frame} or \code{data.table}.

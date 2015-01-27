@@ -55,7 +55,8 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
         li = VECTOR_ELT(l, i);
         if (TYPEOF(li) != maxtype) {
             coerce = TRUE;
-            li = PROTECT(coerceVector(li, maxtype));
+            if (!isFactor(li)) li = PROTECT(coerceVector(li, maxtype));
+            else li = PROTECT(asCharacterFactor(li));
         }
         switch (maxtype) {
             case INTSXP :
