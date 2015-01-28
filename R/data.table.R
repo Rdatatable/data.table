@@ -2364,18 +2364,21 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
     if (is.name(name)) {
         name = as.character(name)
         assign(name, x, parent.frame(), inherits=TRUE)
-    } else if (is.call(name) && name[[1L]]=="[[" && is.name(name[[2L]])) {
+    } else if (is.call(name) && (name[[1L]] == "$" || name[[1L]] == "[[") && is.name(name[[2L]])) {
         # common case is call from 'lapply()'
-        xx = eval(name[[2L]], parent.frame(), parent.frame())
-        jj = eval(name[[3L]], parent.frame(), parent.frame())
-        origjj = jj
-        if (length(jj) == 1L) {
-            if (is.character(jj)) {
-                jj = match(jj, names(xx))
-                if (is.na(jj))
-                    stop("Item '", origjj, "' not found in names of input list")
+        k = eval(name[[2L]], parent.frame(), parent.frame())
+        if (is.list(k)) {
+            origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
+            if (length(j) == 1L) {
+                if (is.character(j)) {
+                    j = match(j, names(k))
+                    if (is.na(j))
+                        stop("Item '", origjj, "' not found in names of input list")
+                }
             }
-            .Call(Csetlistelt, xx, as.integer(jj), x)
+            .Call(Csetlistelt,k,as.integer(j), x)
+        } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
+            assign(as.character(name[[3L]]), x, k, inherits=FALSE)
         }
     }
     invisible(x)
