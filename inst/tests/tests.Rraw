@@ -5894,9 +5894,11 @@ test(1477.2, transpose(dt), as.data.table(t(as.matrix(dt))))
 # factor column coerce to character
 ll = list(factor(letters[1:5]), factor(letters[6:8]))
 test(1477.3, transpose(ll), list(c("a", "f"), c("b", "g"), c("c", "h"), c("d", NA), c("e", NA)))
+# for data.frames
+test(1477.4, transpose(data.frame(x=1:2, y=3:4)), data.frame(V1=c(1L,3L), V2=c(2L,4L)))
 # test for `tstrsplit`
 ll = sapply(ll, paste, collapse=",")
-test(1477.3, transpose(strsplit(ll, ",", fixed=TRUE)), tstrsplit(ll, ",", fixed=TRUE))
+test(1477.5, transpose(strsplit(ll, ",", fixed=TRUE)), tstrsplit(ll, ",", fixed=TRUE))
 
 # #480 `setDT` and 'lapply'
 ll = list(data.frame(a=1), data.frame(x=1, y=2), NULL, list())
