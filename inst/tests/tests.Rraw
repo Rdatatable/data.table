@@ -5908,6 +5908,10 @@ test(1478.2, sapply(ll, length), INT(1,2,0,0))
 test(1479, rbindlist(replicate(4,rbindlist(replicate(47, NULL), 
       use.names=TRUE, fill=TRUE)), use.names=TRUE, fill=TRUE), null.data.table())
 
+# #936, assigning list column to a factor column by reference
+DT <- data.table(x = factor(c("a", "b c", "d e f")))
+test(1480, DT[, x := strsplit(as.character(x), " ")], data.table(x=list("a", letters[2:3], letters[4:6])))
+
 ##########################
 
 

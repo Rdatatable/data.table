@@ -377,7 +377,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         if (isMatrix(thisvalue) && (j=INTEGER(getAttrib(thisvalue, R_DimSymbol))[1]) > 1)  // matrix passes above (considered atomic vector)
             warning("%d column matrix RHS of := will be treated as one vector", j);
         if ((coln+1)<=oldncol && isFactor(VECTOR_ELT(dt,coln)) &&
-            !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && !isReal(thisvalue))  // !=INTSXP includes factor
+            !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && !isReal(thisvalue) && !isNewList(thisvalue))  // !=INTSXP includes factor
             error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
         if (nrow>0) {
             if (vlen>targetlen)

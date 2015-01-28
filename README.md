@@ -121,6 +121,8 @@
 
   32. `rbindlist` stack imbalance on all `NULL` list elements is now fixed. Closes [#980](https://github.com/Rdatatable/data.table/issues/980). Thanks to @ttuggle.
 
+  33. List columns can be assigned to columns of `factor` type by reference. Closes [#936](https://github.com/Rdatatable/data.table/issues/936). Thanks to @richierocks for the minimal example.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
