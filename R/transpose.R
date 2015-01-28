@@ -1,7 +1,7 @@
 transpose <- function(l, fill=NA, ignore.empty=FALSE) {
 	ans = .Call(Ctranspose, l, fill, ignore.empty)
-	if (is.data.table(l)) setDT(ans)
-	else if (is.data.frame(l)) setDF(ans)
+	if (is.data.frame(l)) setDT(ans)
+	if (!is.data.table(l)) setDF(ans)
 	ans[]
 }
 
