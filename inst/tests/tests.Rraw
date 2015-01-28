@@ -4952,9 +4952,13 @@ test(1362.16, DT[, c(list(.I, mean(y)), lapply(.SD, mean)), by=x, verbose=TRUE],
 DT = list(data.frame(x=1:5, y=6:10))
 invisible(lapply(DT, setDT))
 DT = DT[[1L]]
-test(1363.1, selfrefok(DT), 0L)
-setDT(DT)
-test(1363.2, selfrefok(DT), 1L)
+test(1363.1, selfrefok(DT), 1L)
+foo <- function(x) setDT(x)
+df = data.frame(x=1, y=2)
+foo(df)
+test(1363.2, selfrefok(df), 0L)
+setDT(df)
+test(1363.3, selfrefok(df), 1L)
 
 # setdiff, parly #547. internal as of now, and named setdiff_ because the name "set" can be confused with the set* functions.
 # maybe provide a %diff% operator that internally calls setdiff_?? Usage x %diff% y?
@@ -5893,6 +5897,12 @@ test(1477.3, transpose(ll), list(c("a", "f"), c("b", "g"), c("c", "h"), c("d", N
 # test for `tstrsplit`
 ll = sapply(ll, paste, collapse=",")
 test(1477.3, transpose(strsplit(ll, ",", fixed=TRUE)), tstrsplit(ll, ",", fixed=TRUE))
+
+# #480 `setDT` and 'lapply'
+ll = list(data.frame(a=1), data.frame(x=1, y=2), NULL, list())
+ll <- lapply(ll, setDT)
+test(1478.1, sapply(ll, truelength), rep(100L, 4L))
+test(1478.2, sapply(ll, length), INT(1,2,0,0))
 
 ##########################
 

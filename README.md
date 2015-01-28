@@ -117,6 +117,8 @@
 
   30. Attributes are preserved for `sum()` and `mean()` when fast internal (GForce) implementations are used. Closes [#1023](https://github.com/Rdatatable/data.table/issues/1023). Thanks to @DavidArenburg for the nice reproducible example.
 
+  31. `lapply(l, setDT)` is handled properly now; over-allocation isn't lost. Similarly, `for (i in 1:k) setDT(l[[i]])` is handled properly as well. Closes [#480](https://github.com/Rdatatable/data.table/issues/480). 
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

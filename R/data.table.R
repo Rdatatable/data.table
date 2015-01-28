@@ -2332,9 +2332,10 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
             x[, rn := rn]
             setcolorder(x, c("rn", nm))
         }
+    } else if (is.null(x) || (is.list(x) && !length(x))) {
+        x = null.data.table()
     } else if (is.list(x)) {
         # copied from as.data.table.list - except removed the copy
-        if (!length(x)) return( null.data.table() )
         n = vapply(x, length, 0L)
         mn = max(n)
         if (any(n<mn))
@@ -2359,6 +2360,19 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
     if (is.name(name)) {
         name = as.character(name)
         assign(name, x, parent.frame(), inherits=TRUE)
+    } else if (is.call(name) && name[[1L]]=="[[" && is.name(name[[2L]])) {
+        # common case is call from 'lapply()'
+        xx = eval(name[[2L]], parent.frame(), parent.frame())
+        jj = eval(name[[3L]], parent.frame(), parent.frame())
+        origjj = jj
+        if (length(jj) == 1L) {
+            if (is.character(jj)) {
+                jj = match(jj, names(xx))
+                if (is.na(jj))
+                    stop("Item '", origjj, "' not found in names of input list")
+            }
+            .Call(Csetlistelt, xx, as.integer(jj), x)
+        }
     }
     invisible(x)
 }
