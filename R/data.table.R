@@ -966,15 +966,19 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         alloc.col(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
                         if (is.name(name)) {
                             assign(as.character(name),x,parent.frame(),inherits=TRUE)
-                        } else if (is.call(name) && name[[1L]]=="[[" && is.name(name[[2L]])) {
+                        } else if (is.call(name) && (name[[1L]] == "$" || name[[1L]] == "[[") && is.name(name[[2L]])) {
                             k = eval(name[[2L]], parent.frame(), parent.frame())
-                            origj = j = eval(name[[3L]], parent.frame(), parent.frame())
-                            if (is.character(j)) {
-                                if (length(j)!=1L) stop("L[[i]][,:=] syntax only valid when i is length 1, but it's length %d",length(j))
-                                j = match(j, names(k))
-                                if (is.na(j)) stop("Item '",origj,"' not found in names of list")
+                            if (is.list(k)) {
+                                origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
+                                if (is.character(j)) {
+                                    if (length(j)!=1L) stop("L[[i]][,:=] syntax only valid when i is length 1, but it's length %d",length(j))
+                                    j = match(j, names(k))
+                                    if (is.na(j)) stop("Item '",origj,"' not found in names of list")
+                                }
+                                .Call(Csetlistelt,k,as.integer(j), x)
+                            } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
+                                assign(as.character(name[[3L]]), x, k, inherits=FALSE)
                             }
-                            .Call(Csetlistelt,k,as.integer(j), x)
                         } # TO DO: else if env$<- or list$<-
                     }
                 }

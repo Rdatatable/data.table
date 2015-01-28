@@ -125,6 +125,8 @@
 
   34. After setting the `datatable.alloccol` option, creating a data.table with more than the set `truelength` resulted in error or segfault. This is now fixed. Closes [#970](https://github.com/Rdatatable/data.table/issues/970). Thanks to @caneff for the nice minimal example.
 
+  35. Update by reference using `:=` after loading from disk where the `data.table` exists within a local environment now works as intended. Closes [#479](https://github.com/Rdatatable/data.table/issues/479). Thanks to @ChongWang for the minimal reproducible example.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
