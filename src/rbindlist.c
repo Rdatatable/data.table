@@ -616,7 +616,10 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill) {
     fnames   = VECTOR_ELT(data.ans_ptr, 0);
     findices = VECTOR_ELT(data.ans_ptr, 1);
     protecti = data.protecti;
-    if (data.n_rows == 0 && data.n_cols == 0) return(R_NilValue);
+    if (data.n_rows == 0 && data.n_cols == 0) {
+        UNPROTECT(protecti);
+        return(R_NilValue);
+    }
 
     factorLevels = PROTECT(allocVector(VECSXP, data.lcount));
     isRowOrdered = Calloc(data.lcount, Rboolean);

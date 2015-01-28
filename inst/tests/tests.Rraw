@@ -5904,6 +5904,10 @@ ll <- lapply(ll, setDT)
 test(1478.1, sapply(ll, truelength), rep(100L, 4L))
 test(1478.2, sapply(ll, length), INT(1,2,0,0))
 
+# rbindlist stack imbalance issue, #980.
+test(1479, rbindlist(replicate(4,rbindlist(replicate(47, NULL), 
+      use.names=TRUE, fill=TRUE)), use.names=TRUE, fill=TRUE), null.data.table())
+
 ##########################
 
 

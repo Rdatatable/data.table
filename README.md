@@ -119,6 +119,8 @@
 
   31. `lapply(l, setDT)` is handled properly now; over-allocation isn't lost. Similarly, `for (i in 1:k) setDT(l[[i]])` is handled properly as well. Closes [#480](https://github.com/Rdatatable/data.table/issues/480). 
 
+  32. `rbindlist` stack imbalance on all `NULL` list elements is now fixed. Closes [#980](https://github.com/Rdatatable/data.table/issues/980). Thanks to @ttuggle.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
