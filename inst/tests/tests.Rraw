@@ -5912,6 +5912,14 @@ test(1479, rbindlist(replicate(4,rbindlist(replicate(47, NULL),
 DT <- data.table(x = factor(c("a", "b c", "d e f")))
 test(1480, DT[, x := strsplit(as.character(x), " ")], data.table(x=list("a", letters[2:3], letters[4:6])))
 
+# #970, over-allocation issue
+a=data.frame(matrix(1,ncol=101))
+options(datatable.alloccol=100)
+ans1 = data.table(a)
+options(datatable.alloccol=101)
+ans2 = data.table(a)
+test(1481, ans1, ans2)
+
 ##########################
 
 

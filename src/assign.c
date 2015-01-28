@@ -170,7 +170,8 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
     // So, careful to use length() on names, not LENGTH(). 
     if (length(names)!=l) error("Internal error: length of names (%d) is not length of dt (%d)",length(names),l);
     if (!selfrefok(dt,verbose))
-        return shallow(dt,R_NilValue,n);  // e.g. test 848 and 851 in R > 3.0.2  
+        return shallow(dt,R_NilValue,(n>l) ? n : l);  // e.g. test 848 and 851 in R > 3.0.2 
+        // added (n>l) ? ... for #970, see test 1481.
     // TO DO:  test realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
     // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
     //    error("Internal error: tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol)));

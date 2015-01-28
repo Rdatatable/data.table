@@ -123,6 +123,8 @@
 
   33. List columns can be assigned to columns of `factor` type by reference. Closes [#936](https://github.com/Rdatatable/data.table/issues/936). Thanks to @richierocks for the minimal example.
 
+  34. After setting the `datatable.alloccol` option, creating a data.table with more than the set `truelength` resulted in error or segfault. This is now fixed. Closes [#970](https://github.com/Rdatatable/data.table/issues/970). Thanks to @caneff for the nice minimal example.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
