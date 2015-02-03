@@ -32,7 +32,7 @@
 
   9. `rbindlist` gains `idcol` argument which can be used to generate an index column. If `idcol=TRUE`, the column is automatically named `.id`. Instead you can also provide a column name directly. If the input list has no names, indices are automatically generated. Closes [#591](https://github.com/Rdatatable/data.table/issues/591). Also thanks to @KevinUshey for filing [#356](https://github.com/Rdatatable/data.table/issues/356).
 
-  10. A new helper function `uniqueN` is now implemented. It is equivalent to `length(unique(x))` but much faster. It accepts `atomic vectors`, `data.frames` and `data.tables` as input and returns the number of unique rows. For example, DT[, .(uN = uniqueN(.SD)), by=x]` returns the number of unique rows within each group of `x`. Thanks to @DavidArenburg as well for the FR.
+  10. A new helper function `uniqueN` is now implemented. It is equivalent to `length(unique(x))` but much faster. It accepts `atomic vectors`, `data.frames` and `data.tables` as input and returns the number of unique rows. For example, `DT[, .(uN = uniqueN(.SD)), by=x]` returns the number of unique rows within each group of `x`. Thanks to @DavidArenburg as well for the FR.
 
   11. Implemented `transpose()` to transpose a list and `tstrsplit` which is a wrapper for `transpose(strsplit(...))`. This is particularly useful in scenarios where a column has to be split and the resulting list has to be assigned to multiple columns. See `?transpose` and `?tstrsplit`, [#1025](https://github.com/Rdatatable/data.table/issues/1025) and [#1026](https://github.com/Rdatatable/data.table/issues/1026) for usage scenarios. Closes both #1025 and #1026 issues.
 
