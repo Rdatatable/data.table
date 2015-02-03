@@ -3744,7 +3744,7 @@ if ("package:reshape2" %in% search()) {
 }
 
 DT = data.table(id=1:2, val1=6:1, val2=6:1)   # 5380
-test(1199, DT[, sum(.SD), by=id], error="GForce sum can only be applied to columns, not .SD or similar.*looking for.*lappy(.SD")
+test(1199, DT[, sum(.SD), by=id], error="GForce sum can only be applied to columns, not .SD or similar.*looking for.*lapply(.SD")
 
 # Selection of columns, copy column to maintain the same as R <= 3.0.2, in Rdevel, for now
 # Otherwise e.g. setkey changes the original columns too.  TO DO: could allow shallow copy, perhaps.
