@@ -5964,6 +5964,10 @@ SomeFunction <- function(x, setnull=1L) {
 DT <- data.table(ID=1:3, key="ID")
 test(1484, DT[, SomeFunction(ID, setnull=1L)], DT[, SomeFunction(ID, setnull=2L)])
 
+# Fix for #868
+vals = c("setosa", "versicolor", "virginica")
+test(1485, as.data.table(combn(unique(iris$Species),2)), data.table(vals[1:2], vals[c(1,3)], vals[2:3]))
+
 ##########################
 
 

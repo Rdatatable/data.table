@@ -1718,6 +1718,9 @@ as.data.table.factor <- as.data.table.ordered <-
 as.data.table.integer <- as.data.table.numeric <- 
 as.data.table.logical <- as.data.table.character <- 
 as.data.table.Date <- function(x, keep.rownames=FALSE, ...) {
+    if (is.matrix(x)) {
+        return(as.data.table.matrix(x, ...))
+    }
     tt = deparse(substitute(x))[1]
     nm = names(x)
     # FR #2356 - transfer names of named vector as "rn" column if required

@@ -131,6 +131,8 @@
 
   37. `as.data.table(ll)` returned a `data.table` with 0-rows when the first element of the list has 0-length, for e.g., `ll = list(NULL, 1:2, 3:4)`. This is now fixed by removing those 0-length elements. Closes [#842](https://github.com/Rdatatable/data.table/issues/842). Thanks to @Rick for the nice minimal example.
 
+  38. `as.datat.able.factor` redirects to `as.data.table.matrix` when input is a `matrix`, but also of type `factor`. Closes [#868](https://github.com/Rdatatable/data.table/issues/868). Thanks to @mgahan for the example.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
