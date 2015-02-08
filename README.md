@@ -127,7 +127,7 @@
 
   35. Update by reference using `:=` after loading from disk where the `data.table` exists within a local environment now works as intended. Closes [#479](https://github.com/Rdatatable/data.table/issues/479). Thanks to @ChongWang for the minimal reproducible example.
 
-  36. Issues on merges involving factor columns with `NA` and merging factor with character type with non-identical levels are both fixed. Closes [#499](https://github.com/Rdatatable/data.table/issues/499) and [#945](https://github.com/Rdatatable/data.table/issues/945). Thanks to @AbielReinhart and @stewbasic for the minimal examples.
+  36. Issues on merges involving `factor` columns with `NA` and merging `factor` with `character` type with non-identical levels are both fixed. Closes [#499](https://github.com/Rdatatable/data.table/issues/499) and [#945](https://github.com/Rdatatable/data.table/issues/945). Thanks to @AbielReinhart and @stewbasic for the minimal examples.
 
 #### NOTES
 
