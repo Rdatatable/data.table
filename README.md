@@ -64,6 +64,7 @@
       * `:=` and `set*` now drop secondary keys (new in v1.9.4) so that `DT[x==y]` works again after a `:=` or `set*` without needing `options(datatable.auto.index=FALSE)`. Only `setkey()` was dropping secondary keys correctly. 23 tests added. Thanks to user36312 for reporting, [#885](https://github.com/Rdatatable/data.table/issues/885).
       * Automatic indices are not created on `.SD` so that `dt[, .SD[b == "B"], by=a]` works correctly. Fixes [#958](https://github.com/Rdatatable/data.table/issues/958). Thanks to @azag0 for the nice reproducible example.
       * `i`-operations resulting in 0-length rows ignore `j` on subsets using auto indexing. Closes [#1001](https://github.com/Rdatatable/data.table/issues/1001). Thanks to @Gsee.
+      * `POSIXct` type columns work as expected with auto indexing. Closes [#955](https://github.com/Rdatatable/data.table/issues/955). Thanks to @GSee for the minimal report.
 
   7. `as.data.table.list` with list input having 0-length items, e.g. `x = list(a=integer(0), b=3:4)`. `as.data.table(x)` recycles item `a` with `NA`s to fit the length of the longer column `b` (length=2), as before now, but with an additional warning message that the item has been recycled with `NA`. Closes [#847](https://github.com/Rdatatable/data.table/issues/847). Thanks to @tvinodr for the report. This was a regression from 1.9.2.
 

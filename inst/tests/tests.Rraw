@@ -5968,6 +5968,17 @@ test(1484, DT[, SomeFunction(ID, setnull=1L)], DT[, SomeFunction(ID, setnull=2L)
 vals = c("setosa", "versicolor", "virginica")
 test(1485, as.data.table(combn(unique(iris$Species),2)), data.table(vals[1:2], vals[c(1,3)], vals[2:3]))
 
+# Fix for #955
+DT <- data.table(Time=.POSIXct(0, tz="UTC")+0:1, Value=1:2)
+options(datatable.auto.index=FALSE)  # Have to turn off to avoid error.
+ans1.1 = DT[Time==Time[1]]
+ans2.1 = DT[Time==.POSIXct(0, tz="UTC")]
+options(datatable.auto.index=TRUE)
+ans1.2 = DT[Time==Time[1]]
+ans2.2 = DT[Time==.POSIXct(0, tz="UTC")]
+test(1486.1, as.data.frame(ans1.1), as.data.frame(ans1.2))
+test(1486.2, as.data.frame(ans2.1), as.data.frame(ans2.1))
+
 ##########################
 
 
