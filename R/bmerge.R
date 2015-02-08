@@ -15,10 +15,10 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, v
     # TO DO: enforce via .internal.shallow attribute and expose shallow() to users
     # This is why shallow() is very importantly internal only, currently.
 
-    origi = shallow(i)      # Only needed for factor to factor joins, to recover the original levels
-                            # Otherwise, types of i join columns are alyways promoted to match x's
+    origi = shallow(i)      # Needed for factor to factor/character joins, to recover the original levels
+                            # Otherwise, types of i join columns are anyways promoted to match x's
                             # types (with warning or verbose)
-    resetifactor = NULL  # Keep track of any factor to factor join cols (only time we keep orig)
+    resetifactor = NULL     # Keep track of any factor to factor/character join cols (only time we keep orig)
     for (a in seq_along(leftcols)) {
         # This loop is simply to support joining factor columns
         # Note that if i is keyed, if this coerces, i's key gets dropped and the key may not be retained
@@ -38,20 +38,28 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, v
         if (is.factor(x[[rc]])) {
             if (is.character(i[[lc]])) {
                 if (verbose) cat("Coercing character column i.'",icnam,"' to factor to match type of x.'",xcnam,"'. If possible please change x.'",xcnam,"' to character. Character columns are now preferred in joins.\n",sep="")
-                set(i,j=lc,value=factor(i[[lc]]))
+                set(origi, j=lc, value=factor(origi[[lc]])) # note the use of 'origi' here - see #499 and #945
+                # TO DO: we need a way to avoid copying 'value' for internal purposes
+                # that would allow setting: set(i, j=lc, value=origi[[lc]]) without resulting in a copy.
+                # until then using 'val <- origi[[lc]]' below to avoid another copy.
             } else {
                 if (!is.factor(i[[lc]]))
                     stop("x.'",xcnam,"' is a factor column being joined to i.'",icnam,"' which is type '",typeof(i[[lc]]),"'. Factor columns must join to factor or character columns.")
-                resetifactor = c(resetifactor,lc)
-                # Retain original levels of i's factor columns in factor to factor joins (important when NAs,
-                # see tests 687 and 688).
             }
-            if (roll!=0.0 && a==length(leftcols)) stop("Attempting roll join on factor column x.",names(x)[rc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns NA for missing chars in x (rather than some integer greater than existing). Note roll!=0.0 is ok in this 0 special floating point case e.g. as.double(FALSE)==0.0 is ok, and "nearest"!=0.0 is also true.
-            newfactor = chmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA_integer_)[i[[lc]]]
-            levels(newfactor) = levels(x[[rc]])
+            # Retain original levels of i's factor columns in factor to factor joins (important when NAs,
+            # see tests 687 and 688).
+            # Moved it outside of 'else' to fix #499 and #945. 
+            resetifactor = c(resetifactor,lc)
+            if (roll!=0.0 && a==length(leftcols)) stop("Attempting roll join on factor column x.",names(x)[rc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns <strike>NA</strike> <new>0</new> for missing chars in x (rather than some integer greater than existing). Note roll!=0.0 is ok in this 0 special floating point case e.g. as.double(FALSE)==0.0 is ok, and "nearest"!=0.0 is also true.
+            val = origi[[lc]] # note: using 'origi' here because set(..., value = .) always copies '.', we need a way to avoid it in internal cases.
+            lx = levels(x[[rc]])
+            li = levels(val)
+            newfactor = chmatch(li, lx, nomatch=0L)[val] # fix for #945, a hacky solution for now.
+            levels(newfactor) = lx
             class(newfactor) = "factor"
-            set(i,j=lc,value=newfactor)
-            # NAs can be produced by this level match, in which case the C code (it knows integer value NA)
+            set(i, j=lc, value=newfactor)
+            # COMMENT BELOW IS NOT TRUE ANYMORE... had to change nomatch to 0L to take care of case where 'NA' occurs as a separate value... See #945.
+            # <OUTDATED> NAs can be produced by this level match, in which case the C code (it knows integer value NA)
             # can skip over the lookup. It's therefore important we pass NA rather than 0 to the C code.
         }
         if (is.integer(x[[rc]]) && is.double(i[[lc]])) {

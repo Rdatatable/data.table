@@ -5942,6 +5942,19 @@ test(1482.1, truelength(ee$DT), 0L) # make sure that the simulated environment i
 test(1482.2, ee$DT[, z := 3:1], data.table(x=1L, y=1:3, z=3:1), warning="Invalid .internal.selfref detected and")
 test(1482.3, truelength(ee$DT) >= 100L, TRUE) # truelength restored?
 
+# Fix for #499 and #945
+require(data.table)
+x <- data.table(k=as.factor(c(NA,1,2)),v=c(0,1,2), key="k")
+y <- data.table(k=as.factor(c(NA,1,3)),v=c(0,1,3), key="k")
+test(1483.1, x[y], data.table(k=factor(c(NA,1,3)), v=c(0,1,NA), i.v=c(0,1,3)))
+test(1483.2, merge(x,y,all=TRUE), data.table(k=factor(c(NA,1,2,3)), v.x=c(0,1,2,NA), v.y=c(0,1,NA,3), key="k"))
+
+x <- data.table(country="US")
+y <- data.table(country=factor("USA"))
+test(1483.3, merge(x,y,by="country",all=T), data.table(country=factor(c("US", "USA")), key="country"))
+setkey(y)
+test(1483.4, y[x], data.table(country=factor("US"), key="country"))
+
 ##########################
 
 
