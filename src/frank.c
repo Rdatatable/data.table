@@ -122,3 +122,72 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
     UNPROTECT(1);
     return(ans);
 }
+
+// internal version of anyNA for data.tables
+SEXP anyNA(SEXP x, SEXP cols) {
+    int i, j, n=0, this;
+    double *dv;
+    SEXP v, ans, class;
+    
+    if (!isNewList(x)) error("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'", type2char(TYPEOF(x)));
+    if (!isInteger(cols)) error("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'", type2char(TYPEOF(cols)));
+    for (i=0; i<LENGTH(cols); i++) {
+        this = INTEGER(cols)[i];
+        if (this<1 || this>LENGTH(x)) 
+            error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
+        if (!n) n = length(VECTOR_ELT(x, this-1));
+    }
+    ans = PROTECT(allocVector(LGLSXP, 1));
+    LOGICAL(ans)[0]=0;
+    for (i=0; i<LENGTH(cols); i++) {
+        v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
+        if (!length(v) || isNewList(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip list/pairlist columns
+        if (n != length(v))
+            error("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d.", i+1,length(v),n);
+        j=0;
+        switch (TYPEOF(v)) {
+        case LGLSXP:
+            while(j < n && LOGICAL(v)[j] != NA_LOGICAL) j++;
+            if (j < n) LOGICAL(ans)[0] = 1;
+            break;
+        case INTSXP:
+            while(j < n && INTEGER(v)[j] != NA_INTEGER) j++;
+            if (j < n) LOGICAL(ans)[0] = 1;
+            break;
+        case STRSXP:
+            while (j < n && STRING_ELT(v, j) != NA_STRING) j++;
+            if (j < n) LOGICAL(ans)[0] = 1;
+            break;
+        case REALSXP:
+            class = getAttrib(v, R_ClassSymbol);        
+            if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
+                dv = (double *)REAL(v);
+                for (j=0; j<n; j++) {
+                    u.d = dv[j];
+                    if (u.ull == NAINT64) {
+                        LOGICAL(ans)[0] = 1;
+                        break;
+                    }
+                }
+            } else {
+                while(j < n && !ISNAN(REAL(v)[j])) j++;
+                if (j < n) LOGICAL(ans)[0] = 1;
+            }
+            break;
+        case RAWSXP: 
+            // no such thing as a raw NA
+            // vector already initialised to all 0's
+            break;
+        case CPLXSXP:
+            // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
+            while (j < n && !ISNAN(COMPLEX(v)[j].r) && !ISNAN(COMPLEX(v)[j].i)) j++;
+            if (j < n) LOGICAL(ans)[0] = 1;
+            break;
+        default:
+            error("Unknown column type '%s'", type2char(TYPEOF(v)));
+        }
+        if (LOGICAL(ans)[0]) break;
+    }
+    UNPROTECT(1);
+    return(ans);
+}

@@ -56,6 +56,7 @@ SEXP overlaps();
 SEXP whichwrapper();
 SEXP shift();
 SEXP transpose();
+SEXP anyNA();
 
 // .Externals
 SEXP fastmean();
@@ -114,6 +115,7 @@ R_CallMethodDef callMethods[] = {
 {"Cwhichwrapper", (DL_FUNC) &whichwrapper, -1},
 {"Cshift", (DL_FUNC) &shift, -1},
 {"Ctranspose", (DL_FUNC) &transpose, -1},
+{"CanyNA", (DL_FUNC) &anyNA, -1},
 {NULL, NULL, 0}
 };
 

@@ -2010,6 +2010,7 @@ subset.data.table <- function (x, subset, select, ...)
 # Also handles bit64::integer64. TODO: export this?
 # For internal use only. 'by' requires integer input. No argument checks here yet.
 is_na <- function(x, by=seq_along(x)) .Call(Cdt_na, x, by)
+any_na <- function(x, by=seq_along(x)) .Call(CanyNA, x, by)
 
 na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE, ...) {
     if (!cedta()) return(NextMethod())
