@@ -5955,6 +5955,15 @@ test(1483.3, merge(x,y,by="country",all=T), data.table(country=factor(c("US", "U
 setkey(y)
 test(1483.4, y[x], data.table(country=factor("US"), key="country"))
 
+# Fix for #842
+SomeFunction <- function(x, setnull=1L) {
+  ans <- replicate(length(x), list("bla1", "bla2"), simplify=FALSE)
+  ans[setnull] <- list(NULL)
+  return(ans)
+}
+DT <- data.table(ID=1:3, key="ID")
+test(1484, DT[, SomeFunction(ID, setnull=1L)], DT[, SomeFunction(ID, setnull=2L)])
+
 ##########################
 
 

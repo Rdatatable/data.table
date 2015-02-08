@@ -129,6 +129,8 @@
 
   36. Issues on merges involving `factor` columns with `NA` and merging `factor` with `character` type with non-identical levels are both fixed. Closes [#499](https://github.com/Rdatatable/data.table/issues/499) and [#945](https://github.com/Rdatatable/data.table/issues/945). Thanks to @AbielReinhart and @stewbasic for the minimal examples.
 
+  37. `as.data.table(ll)` returned a `data.table` with 0-rows when the first element of the list has 0-length, for e.g., `ll = list(NULL, 1:2, 3:4)`. This is now fixed by removing those 0-length elements. Closes [#842](https://github.com/Rdatatable/data.table/issues/842). Thanks to @Rick for the nice minimal example.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

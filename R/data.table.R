@@ -1684,16 +1684,26 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
     n = vapply(x, length, 0L)
     mn = max(n)
     x = copy(x)
-    if (any(n<mn)) 
-    for (i in which(n<mn)) {
-        if (!is.null(x[[i]])) {# avoids warning when a list element is NULL
-            # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
-            if (!n[i] && mn)
-                warning("Item ", i, " is of size 0 but maximum size is ", mn, ", therefore recycled with 'NA'")
-            else if (n[i] && mn %% n[i] != 0)
-                warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
-            x[[i]] = rep(x[[i]], length.out=mn)
+    idx = which(n < mn)
+    if (length(idx)) {
+        for (i in idx) {
+            if (!is.null(x[[i]])) {# avoids warning when a list element is NULL
+                # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
+                if (!n[i] && mn)
+                    warning("Item ", i, " is of size 0 but maximum size is ", mn, ", therefore recycled with 'NA'")
+                else if (n[i] && mn %% n[i] != 0)
+                    warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
+                x[[i]] = rep(x[[i]], length.out=mn)
+            }
         }
+    }
+    # fix for #842
+    if (mn > 0L) {
+        nz = which(n > 0L)
+        xx = point(vector("list", length(nz)), seq_along(nz), x, nz)
+        if (!is.null(names(x)))
+            setattr(xx, 'names', names(x)[nz])
+        x = xx
     }
     if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
     setattr(x,"row.names",.set_row_names(max(n)))
