@@ -5979,6 +5979,11 @@ ans2.2 = DT[Time==.POSIXct(0, tz="UTC")]
 test(1486.1, as.data.frame(ans1.1), as.data.frame(ans1.2))
 test(1486.2, as.data.frame(ans2.1), as.data.frame(ans2.1))
 
+# Fix for #832
+x <- matrix(1:9, ncol=3)
+setattr(x, "names", paste("V", seq_len(length(x)), sep = ""))
+test(1486.3, setattr(x, "class", c("data.table", "data.frame")), error="Internal structure doesn't seem to be a list")
+
 ##########################
 
 

@@ -9,6 +9,11 @@
 SEXP setattrib(SEXP x, SEXP name, SEXP value)
 {
     if (TYPEOF(name) != STRSXP) error("Attribute name must be of type character");
+    if ( !isNewList(x) && 
+         strcmp(CHAR(STRING_ELT(name, 0)), "class") == 0 && 
+         isString(value) && (strcmp(CHAR(STRING_ELT(value, 0)), "data.table") == 0 || 
+         strcmp(CHAR(STRING_ELT(value, 0)), "data.frame") == 0) )
+        error("Internal structure doesn't seem to be a list. Can't set class to be 'data.table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods instead.");
     setAttrib(x, name,
         NAMED(value) ? duplicate(value) : value);
         // duplicate is temp fix to restore R behaviour prior to R-devel change on 10 Jan 2014 (r64724).

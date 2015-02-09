@@ -134,6 +134,8 @@
 
   38. `as.datat.able.factor` redirects to `as.data.table.matrix` when input is a `matrix`, but also of type `factor`. Closes [#868](https://github.com/Rdatatable/data.table/issues/868). Thanks to @mgahan for the example.
 
+  39. `setattr` now returns an error when trying to set `data.table` and/or `data.frame` as class to a *non-list* type object (ex: `matrix`). Closes [#832](https://github.com/Rdatatable/data.table/issues/832). Thanks to @Rick for the minimal example.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
