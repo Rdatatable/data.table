@@ -5982,7 +5982,11 @@ test(1486.2, as.data.frame(ans2.1), as.data.frame(ans2.1))
 # Fix for #832
 x <- matrix(1:9, ncol=3)
 setattr(x, "names", paste("V", seq_len(length(x)), sep = ""))
-test(1486.3, setattr(x, "class", c("data.table", "data.frame")), error="Internal structure doesn't seem to be a list")
+test(1487.1, setattr(x, "class", c("data.table", "data.frame")), error="Internal structure doesn't seem to be a list")
+x <- matrix(1:9, ncol=3)
+class(x) = c("data.table", "data.frame")
+# not sure how to test this one, so using `tryCatch`
+test(1487.2, tryCatch(print(x), error=function(k) "bla"), "bla")
 
 ##########################
 

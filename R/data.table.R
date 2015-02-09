@@ -137,7 +137,10 @@ print.data.table <- function(x,
 is.formula <- function(x) class(x) == "formula"
 
 format.data.table <- function (x, ..., justify="none") {
-    format.item <- function(x) {
+    if (is.atomic(x) && !is.null(x)) {
+        stop("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
+    }
+     format.item <- function(x) {
         if (is.atomic(x) || is.formula(x)) # FR #2591 - format.data.table issue with columns of class "formula"
             paste(c(format(head(x,6), justify=justify, ...), if(length(x)>6)""),collapse=",")  # fix for #5435 - format has to be added here...
         else
