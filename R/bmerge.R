@@ -62,10 +62,10 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, v
             # <OUTDATED> NAs can be produced by this level match, in which case the C code (it knows integer value NA)
             # can skip over the lookup. It's therefore important we pass NA rather than 0 to the C code.
         }
-        if (is.integer(x[[rc]]) && is.double(i[[lc]])) {
+        if (is.integer(x[[rc]]) && (is.double(i[[lc]]) || is.logical(i[[lc]]))) {
             # TO DO: add warning if reallyreal about loss of precision
             # or could coerce in binary search on the fly, at cost
-            if (verbose) cat("Coercing double column i.'",icnam,"' to integer to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
+            if (verbose) cat("Coercing ", typeof(i[[lc]])," column i.'",icnam,"' to integer to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
             newval = i[[lc]]
             mode(newval) = "integer"  # retains column attributes (such as IDateTime class)
             set(i,j=lc,value=newval)
