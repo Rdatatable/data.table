@@ -136,6 +136,8 @@
 
   39. `setattr` now returns an error when trying to set `data.table` and/or `data.frame` as class to a *non-list* type object (ex: `matrix`). Closes [#832](https://github.com/Rdatatable/data.table/issues/832). Thanks to @Rick for the minimal example.
 
+  40. data.table(<table>) works as expected. Closes [#1043](https://github.com/Rdatatable/data.table/issues/1043). Thanks to @rnso for the [SO post](http://stackoverflow.com/q/28499359/559784).
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

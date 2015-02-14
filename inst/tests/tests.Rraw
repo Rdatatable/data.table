@@ -2842,7 +2842,8 @@ test(1025, as.data.table(table(DF$x)), tab1)
 test(1026, as.data.table(table(DF$x, DF$y)), tab2)
 test(1027, as.data.table(table(DF$x, DF$y, DF$z)), tab3)
 # catch printing of data.table(table()), #4847 (as.data.table should be used instead)
-test(1027.1, print(data.table(table(1:99))), output="99:  1")
+# new, updated 14th Feb, 2015. data.table(table) now redirects to as.data.table
+test(1027.1, data.table(table(1:99)), as.data.table(table(1:99)))
 # data.table() and rbindlist() in v1.8.11 now catch and removes the dim attribute. For it on to test print catches it :
 test(1027.2, {DT<-data.table(table(1:99));setattr(DT[[1]],"dim",99L);print(DT)}, error="Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
 
@@ -5988,6 +5989,13 @@ class(x) = c("data.table", "data.frame")
 # not sure how to test this one, so using `tryCatch`
 test(1487.2, tryCatch(print(x), error=function(k) "bla"), "bla")
 
+# Fix for #1043
+DT = data.table(grp=LETTERS[1:2], categ=rep(c("X","Y"), each=2L), condition=rep(c("P","Q"), each=4L), value=sample(8))
+tbl = with(DT, table(grp, categ, condition))
+ans1 = setnames(setDF(data.table(tbl)), "N", "Freq")
+ans2 = data.frame(tbl)
+ans2[1:3] = lapply(ans2[1:3], as.character)
+test(1488, ans1, ans2)
 ##########################
 
 

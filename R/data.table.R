@@ -222,10 +222,12 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
         if ("POSIXlt" %chin% class(xi)) {
             warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
             x[[i]] = as.POSIXct(xi)
-        }
-        if (is.matrix(xi) || is.data.frame(xi)) {  # including data.table (a data.frame, too)
+        } else if (is.matrix(xi) || is.data.frame(xi)) {  # including data.table (a data.frame, too)
             xi = as.data.table(xi, keep.rownames=keep.rownames)       # TO DO: allow a matrix to be a column of a data.table. This could allow a key'd lookup to a matrix, not just by a single rowname vector, but by a combination of several columns. A matrix column could be stored either by row or by column contiguous in memory.
             x[[i]] = xi
+            numcols[i] = length(xi)
+        } else if (is.table(xi)) {
+            x[[i]] = xi = as.data.table.table(xi, keep.rownames=keep.rownames)
             numcols[i] = length(xi)
         }
         nrows[i] <- NROW(xi)    # for a vector (including list() columns) returns the length
