@@ -437,6 +437,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (!missingnomatch) stop("not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch.");
             nomatch = 0L
             isub = isub[[2L]]
+            # #932 related so that !(v1 == 1) becomes v1 == 1 instead of (v1 == 1) after removing "!"
+            if (is.call(isub) && isub[[1L]] == "(" && !is.name(isub[[2L]]))
+                isub = isub[[2L]]
         }
         if (is.call(isub) && isub[[1L]] == as.name("order") && getOption("datatable.optimize") >= 1) { # optimize here so that we can switch it off if needed
             if (verbose) cat("order optimisation is on, i changed from 'order(...)' to 'forder(DT, ...)'.\n")
@@ -460,10 +463,27 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # TO DO: print method could print physical and secondary keys at end.
             # TO DO: move down to if (is.data.table) clause below, later ...
             RHS = eval(isub[[3L]], x, parent.frame())
+            # fix for #961
+            if (is.list(RHS)) RHS = as.character(RHS)
             if (isub[[1L]] == "==" && length(RHS)>1) {
                 if (length(RHS)!=nrow(x)) stop("RHS of == is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
                 i = x[[isub2]] == RHS    # DT[colA == colB] regular element-wise vector scan
+            } else if ( mode(x[[isub2]]) != mode(RHS) && !(class(x[[isub2]]) %in% c("character", "factor") && 
+                         class(RHS) %in% c("character", "factor")) ) {
+                    # re-direct all non-matching mode cases to base R, as data.table's binary 
+                    # search based join is strict in types. #957 and #961.
+                    i = if (isub[[1L]] == "==") x[[isub2]] == RHS else x[[isub2]] %in% RHS
             } else {
+                # fix for #932 (notjoin) and also when RHS is NA (and notjoin is also TRUE)
+                if (isub[[1L]] == "==") {
+                    # RHS is of length=1 or n
+                    if (any_na(as_list(RHS))) {
+                        notjoin = FALSE
+                        RHS = RHS[0L]
+                    } else if (notjoin) {
+                        RHS = c(RHS, if (is.double(RHS)) c(NA, NaN) else NA)
+                    }
+                }
                 if (haskey(x) && isub2 == key(x)[1L]) {
                     # join to key(x)[1L]
                     xo <- integer()
