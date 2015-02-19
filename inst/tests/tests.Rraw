@@ -70,6 +70,7 @@ if (!.devtesting) {
     which_ = data.table:::which_
     shift = data.table:::shift
     any_na = data.table:::any_na
+    replace_dot = data.table:::replace_dot
 }
 
 TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
@@ -6049,6 +6050,20 @@ ans1 = DT[speed %in% list(1, 4)]
 options(datatable.auto.index=TRUE)
 ans2 = DT[speed %in% list(1, 4)]
 test(1490.24, ans1, ans2)
+
+# replace "." with "list" in 'j'
+ee1 = quote(.(val = lm(x ~ .)))
+ee2 = quote(.(v1=.(.SD), v2=.(min(y)), v3=.(.(x)), v4=.(x)))
+ee3 = quote(.(v1=.(.SD), v2=.(lm(. ~ xx)), v3=.(.(x)), v4=.(x^2)))
+ee4 = quote(c("a", "b") := .(.SD))
+ee5 = quote(c("a", "b") := .(v1=x^2, v2 = .(.SD[[1L]])))
+ee6 = quote(.(v1=.(.SD), v2=.(lm(. ~ xx)), v3=list(.(x)), v4=.(x^2)))
+test(1491.1, replace_dot(ee1), quote(list(val = lm(x ~ .))))
+test(1491.2, replace_dot(ee2), quote(list(v1=list(.SD), v2=list(min(y)), v3=list(list(x)), v4=list(x))))
+test(1491.3, replace_dot(ee3), quote(list(v1=list(.SD), v2=list(lm(. ~ xx)), v3=list(list(x)), v4=list(x^2))))
+test(1491.4, replace_dot(ee4), quote(c("a", "b") := list(.SD)))
+test(1491.5, replace_dot(ee5), quote(c("a", "b") := list(v1=x^2, v2 = list(.SD[[1L]]))))
+test(1491.6, replace_dot(ee6), quote(list(v1=list(.SD), v2=list(lm(. ~ xx)), v3=list(list(x)), v4=list(x^2))))
 
 ##########################
 

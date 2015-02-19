@@ -55,6 +55,23 @@ construct <- function(l) {
     }), names(l)))
 }
 
+replace_dot <- function(e) {
+    if (is.call(e)) {
+        if (e[[1L]] == ".")
+            e[[1L]] = quote(list)
+        le = as.list(e)
+        for (i in seq_along(le)) {
+            if (is.call(le[[i]])) {
+                if (le[[i]][[1L]] == ".") 
+                    le[[i]][[1L]] = quote(list)
+                le[[i]] = as.call(replace_dot(le[[i]]))
+            }
+        }
+        e = as.call(le)
+    }
+    e
+}
+
 dim.data.table <- function(x) {
     if (length(x)) c(length(x[[1L]]), length(x))
     else c(0L,0L)
@@ -383,7 +400,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!missing(j)) {
         jsub = substitute(j) # Ignore allow.cartesian when `jsub` has `:=`. Search for #800 to see where we need this.
         # deconstruct and eval everything with just one argument, then reconstruct back to a call
-        if (is.call(jsub)) jsub = construct(deconstruct_and_eval(jsub, parent.frame(), parent.frame()))
+        if (is.call(jsub)) jsub = construct(deconstruct_and_eval(replace_dot(jsub), parent.frame(), parent.frame()))
     }
     bysub=NULL
     if (!missing(by)) bysub=substitute(by)
