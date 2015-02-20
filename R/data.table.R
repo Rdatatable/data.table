@@ -485,8 +485,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (isub[[1L]] == "==" && length(RHS)>1) {
                 if (length(RHS)!=nrow(x)) stop("RHS of == is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
                 i = x[[isub2]] == RHS    # DT[colA == colB] regular element-wise vector scan
-            } else if ( mode(x[[isub2]]) != mode(RHS) && !(class(x[[isub2]]) %in% c("character", "factor") && 
-                         class(RHS) %in% c("character", "factor")) ) {
+            } else if ( (is.integer(x[[isub2]]) && is.double(RHS) && isReallyReal(RHS)) || (mode(x[[isub2]]) != mode(RHS) && !(class(x[[isub2]]) %in% c("character", "factor") && 
+                         class(RHS) %in% c("character", "factor"))) ) {
                     # re-direct all non-matching mode cases to base R, as data.table's binary 
                     # search based join is strict in types. #957 and #961.
                     i = if (isub[[1L]] == "==") x[[isub2]] == RHS else x[[isub2]] %in% RHS
@@ -1808,7 +1808,7 @@ head.data.table <- function(x, n=6, ...) {
     if (!cedta()) return(NextMethod())
     stopifnot(length(n) == 1L)  
     i = seq_len(if (n<0L) max(nrow(x)+n, 0L) else min(n,nrow(x)))
-    x[i]
+    x[i, , ]
 }
 tail.data.table <- function(x, n=6, ...) {
     if (!cedta()) return(NextMethod())
@@ -2476,3 +2476,7 @@ gmin <- function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
 gmax <- function(x, na.rm=FALSE) .Call(Cgmax, x, na.rm)
 gstart <- function(o, f, l) .Call(Cgstart, o, f, l)
 gend <- function() .Call(Cgend)
+
+isReallyReal <- function(x) {
+    .Call(CisReallyReal, x)
+}
