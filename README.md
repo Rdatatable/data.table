@@ -69,6 +69,7 @@
       * While fixing `#932`, issues on subsetting `NA` were also spotted and fixed, for e.g., `DT[x==NA]` or `DT[!x==NA]`. 
       * Works fine when RHS is of `list` type - quite unusual operation but could happen. Closes [#961](https://github.com/Rdatatable/data.table/issues/961). Thanks to @Gsee for the minimal report.
       * Auto indexing errored in some cases when LHS and RHS were not of same type. This is fixed now. Closes [#957](https://github.com/Rdatatable/data.table/issues/957). Thanks to @GSee for the minimal report.
+      * `DT[x == 2.5]` where `x` is integer type resulted in `val` being coerced to integer (for binary search) and therefore returned incorrect result. This is now identified using the function `isReallyReal()` and if so, auto indexing is turned off. Closes [#1050](https://github.com/Rdatatable/data.table/issues/1050).
 
   7. `as.data.table.list` with list input having 0-length items, e.g. `x = list(a=integer(0), b=3:4)`. `as.data.table(x)` recycles item `a` with `NA`s to fit the length of the longer column `b` (length=2), as before now, but with an additional warning message that the item has been recycled with `NA`. Closes [#847](https://github.com/Rdatatable/data.table/issues/847). Thanks to @tvinodr for the report. This was a regression from 1.9.2.
 

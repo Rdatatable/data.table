@@ -6065,6 +6065,14 @@ test(1491.4, replace_dot(ee4), quote(c("a", "b") := list(.SD)))
 test(1491.5, replace_dot(ee5), quote(c("a", "b") := list(v1=x^2, v2 = list(.SD[[1L]]))))
 test(1491.6, replace_dot(ee6), quote(list(v1=list(.SD), v2=list(lm(. ~ xx)), v3=list(list(x)), v4=list(x^2))))
 
+# Fix for #1050
+dt = data.table(x=1:5, y=6:10)
+options(datatable.auto.index=FALSE)
+ans1 <- dt[x == 2.5]
+options(datatable.auto.index=TRUE)
+ans2 <- dt[x == 2.5]
+test(1492, ans1, ans2)
+
 ##########################
 
 

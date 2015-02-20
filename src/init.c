@@ -57,6 +57,7 @@ SEXP whichwrapper();
 SEXP shift();
 SEXP transpose();
 SEXP anyNA();
+SEXP isReallyReal();
 
 // .Externals
 SEXP fastmean();
@@ -116,6 +117,7 @@ R_CallMethodDef callMethods[] = {
 {"Cshift", (DL_FUNC) &shift, -1},
 {"Ctranspose", (DL_FUNC) &transpose, -1},
 {"CanyNA", (DL_FUNC) &anyNA, -1},
+{"CisReallyReal", (DL_FUNC) &isReallyReal, -1},
 {NULL, NULL, 0}
 };
 

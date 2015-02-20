@@ -1392,6 +1392,21 @@ SEXP isOrderedSubset(SEXP x, SEXP nrow)
 }
 */
 
+SEXP isReallyReal(SEXP x) {
+    int n, i=0;
+    SEXP ans;
+    if (!isReal(x))
+        error("x must be of type double.");
+    n = length(x);
+    ans = PROTECT(allocVector(LGLSXP, 1));
+    INTEGER(ans)[0] = FALSE;
+    while (i < n && REAL(x)[i] == abs(REAL(x)[i]))
+        i++;
+    if (i != n) LOGICAL(ans)[0] = TRUE;
+    UNPROTECT(1);
+    return(ans);
+}
+
 void pbin(unsigned long long n)
 // trace utility for dev to be used in gdb, since couldn't get stdlib::atoi() to link
 {
