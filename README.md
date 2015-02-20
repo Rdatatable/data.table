@@ -143,7 +143,7 @@
 
   40. data.table(table) works as expected. Closes [#1043](https://github.com/Rdatatable/data.table/issues/1043). Thanks to @rnso for the [SO post](http://stackoverflow.com/q/28499359/559784).
 
-  41. Joins and binary search based subsets of the form `x[i]` where `x`'s key column is integer and `i` being a logical column threw an error before. This is now fixed by converting the logical column to integer type and then performing the join, so that it works as expected. 
+  41. Joins and binary search based subsets of the form `x[i]` where `x`'s key column is integer and `i` a logical column threw an error before. This is now fixed by converting the logical column to integer type and then performing the join, so that it works as expected. 
 
 #### NOTES
 
