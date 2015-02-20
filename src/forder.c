@@ -1400,7 +1400,7 @@ SEXP isReallyReal(SEXP x) {
     n = length(x);
     ans = PROTECT(allocVector(LGLSXP, 1));
     INTEGER(ans)[0] = FALSE;
-    while (i < n && REAL(x)[i] == abs(REAL(x)[i]))
+    while (i < n && REAL(x)[i] == (int)(REAL(x)[i]))
         i++;
     if (i != n) LOGICAL(ans)[0] = TRUE;
     UNPROTECT(1);
