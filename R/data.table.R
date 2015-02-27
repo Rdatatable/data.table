@@ -833,10 +833,18 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                             # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
                             byvars = all.vars(bysubl[[jj+1L]], functions = TRUE)
                             if (length(byvars) == 1) tt = byvars
-                            else tt = grep("^eval|^[^[:alpha:]. ]",byvars,invert=TRUE,value=TRUE)[1L]
-
-                            if (!length(tt)) tt = all.vars(bysubl[[jj+1L]])[1L]
-                            bynames[jj] = tt
+                            else {
+                                tt = grep("^eval|^[^[:alpha:]. ]",byvars,invert=TRUE,value=TRUE)[1L]
+                                if (!length(tt)) tt = all.vars(bysubl[[jj+1L]])[1L]
+                            }
+                            # fix for #497
+                            if (length(byvars) > 1L && tt %in% all.vars(jsub, FALSE)) {
+                                bynames[jj] = deparse(bysubl[[jj+1L]])
+                                if (verbose)
+                                    cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt, "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
+                                
+                            }
+                            else bynames[jj] = tt
                             # if user doesn't like this inferred name, user has to use by=list() to name the column
                         }
                     }

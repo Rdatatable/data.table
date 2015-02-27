@@ -6090,6 +6090,10 @@ options(datatable.auto.index=TRUE)
 ans2 <- dt[x == 2.5]
 test(1492, ans1, ans2)
 
+# Fix for #497
+dt = data.table(x=1:10, y=11:20)
+test(1493, dt[, .(x=sum(x)),by= x %% 2, verbose=TRUE], data.table(`x%%2`=c(1,0), x=c(25L,30L)), output="by-expression 'x%%2' is not named")
+
 ##########################
 
 

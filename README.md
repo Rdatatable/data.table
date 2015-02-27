@@ -147,6 +147,8 @@
 
   41. Joins and binary search based subsets of the form `x[i]` where `x`'s key column is integer and `i` a logical column threw an error before. This is now fixed by converting the logical column to integer type and then performing the join, so that it works as expected. 
 
+  42. When `by` expression is, for example, `by = x %% 2`, `data.table` tries to automatically extracts meaningful column names from the expression. In this case it would be `x`. However, if the `j-expression` also contains `x`, for example, `DT[, last(x), by= x %% 2]`, the original `x` got masked by the expression in `by`. This is now fixed; by-expressions are not simplified in column names for these cases. Closes [#497](https://github.com/Rdatatable/data.table/issues/497). Thanks to @GSee for the report.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
