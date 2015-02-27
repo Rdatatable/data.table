@@ -6,6 +6,9 @@
   An S3 method for melting \code{data.table}s written entirely in C for speed. It also avoids any unnecessary copies by handling all arguments internally in a memory efficient manner.
 
   From 1.9.6, to melt or cast data.tables, it is not necessary to load \code{reshape2} anymore. If you have to, then load \code{reshape2} package before loading \code{data.table}. 
+
+  \bold{NEW}: \code{melt.data.table} now allows melting into multiple columns simultaneously. See the \code{details} and \code{examples} section.
+
 }
 \usage{
 ## fast melt a data.table
@@ -18,7 +21,9 @@
 \arguments{
   \item{data}{ A \code{data.table} object to melt.}
   \item{id.vars}{vector of id variables. Can be integer (corresponding id column numbers) or character (id column names) vector. If missing, all non-measure columns will be assigned to it.}
-  \item{measure.vars}{vector of measure variables. Can be integer (corresponding measue column numbers) or character (measure column names) vector. If missing, all non-id columns will be assigned to it.}
+  \item{measure.vars}{vector of measure variables. Can be integer (corresponding measue column numbers) or character (measure column names) vector. If missing, all non-id columns will be assigned to it.
+
+  \bold{NEW:} \code{measure.vars} also now accepts a list of character/integer vectors to melt into multiple columns - i.e., melt into more than one \code{value} columns simultaneously. See the examples section. }
   \item{variable.name}{name for the measured variable names column. The default name is 'variable'.}
   \item{value.name}{name for the molten data values column. The default name is 'value'.}
   \item{na.rm}{If \code{TRUE}, \code{NA} values will be removed from the molten data.}
@@ -34,19 +39,14 @@ If \code{id.vars} and \code{measure.vars} are both missing, all non-\code{numeri
 
 When all \code{measure.vars} are not of the same type, they'll be coerced according to the hierarchy \code{list} > \code{character} > \code{numeric > integer > logical}. For example, if any of the measure variables is a \code{list}, then entire value column will be coerced to a list. Note that, if the type of \code{value} column is a list, \code{na.rm = TRUE} will have no effect.
 
-All class attributes on \code{value} column (example: \code{Date}) are dropped silently.
+From version \code{1.9.6}, \code{melt} gains a feature with \code{measure.vars} accepting a list of \code{character} or \code{integer} vectors as well to melt into multiple columns in a single function call efficiently. See the \code{examples} section for the usage.
+
+Attributes are preserved if all \code{value} columns are of the same type. By default, if any of the columns to be melted are of type \code{factor}, it'll be coerced to \code{character} type. This is to be compatible with \code{reshape2}'s \code{melt.data.frame}. To get a \code{factor} column, set \code{value.factor = TRUE}. \code{melt.data.table} also preserves \code{ordered} factors.
 }
 \value{
     An unkeyed \code{data.table} containing the molten data.
 }
 
-\note{
-\bold{Differences between \code{melt.data.table} and \code{reshape2:::melt.data.frame}:}
-\enumerate{
-    \item There are two other arguments \code{variable.factor} and \code{value.factor} which for backwards compatibility with \code{reshape2:::melt.data.frame} is set to \code{TRUE} and \code{FALSE} respectively.
-    \item \code{melt(data, id=integer(0), measure=integer(0))} gives a data.table with 0 rows and 2 columns - \code{variable} and \code{value} (default names), as opposed to \code{reshape2:::melt.data.frame} which gives a \code{0} columns and \code{nrow(data)} rows.
-    }
-}
 \examples{
 set.seed(45)
 require(data.table)
@@ -54,19 +54,23 @@ DT <- data.table(
       i1 = c(1:5, NA), 
       i2 = c(NA,6,7,8,9,10), 
       f1 = factor(sample(c(letters[1:3], NA), 6, TRUE)), 
+      f2 = factor(c("z", "a", "x", "c", "x", "x"), ordered=TRUE), 
       c1 = sample(c(letters[1:3], NA), 6, TRUE), 
       d1 = as.Date(c(1:3,NA,4:5), origin="2013-09-01"), 
       d2 = as.Date(6:1, origin="2012-01-01"))
-DT[, l1 := DT[, list(c=list(rep(i1, sample(5,1)))), by = i1]$c] # list cols
+# add a couple of list cols
+DT[, l1 := DT[, list(c=list(rep(i1, sample(5,1)))), by = i1]$c]
 DT[, l2 := DT[, list(c=list(rep(c1, sample(5,1)))), by = i1]$c]
 
-# basic examples
-melt(DT, id=1:2, measure=3) 
-melt(DT, id=c("i1", "i2"), measure="f1", value.factor=TRUE) # same as above, but value is factor
+# id, measure as character/integer/numeric vectors
+melt(DT, id=1:2, measure="f1")
+melt(DT, id=c("i1", "i2"), measure=3) # same as above
+melt(DT, id=1:2, measure=3, value.factor=TRUE) # same, but 'value' is factor
+melt(DT, id=1:2, measure=3:4, value.factor=TRUE) # 'value' is *ordered* factor
 
-# on Date
-melt(DT, id=c("i1", "f1"), measure=c("d1", "d2")) # date class attribute lost
-melt(DT, id=c("i1", "f1"), measure=c("c1", "d1")) # value is char, date attribute lost
+# preserves attribute when types are identical, ex: Date
+melt(DT, id=3:4, measure=c("d1", "d2"))
+melt(DT, id=3:4, measure=c("i1", "d1")) # attribute not preserved
 
 # on list
 melt(DT, id=1, measure=c("l1", "l2")) # value is a list
@@ -76,11 +80,20 @@ melt(DT, id=1, measure=c("c1", "l1")) # c1 coerced to list
 melt(DT, id=1, measure=c("c1", "f1")) # value is char
 melt(DT, id=1, measure=c("c1", "i2")) # i2 coerced to char
 
-# on na.rm=TRUE. NAs are removed efficiently - while melting.
+# on na.rm=TRUE. NAs are removed efficiently, from within C
 melt(DT, id=1, measure=c("c1", "i2"), na.rm=TRUE) # remove NA
+
+# NEW FEATURE: measure.vars can be a list
+# melt "f1,f2" and "d1,d2" simultaneously, retain 'factor' attribute
+melt(DT, id=1:2, measure=list(3:4, c("d1", "d2")), value.factor=TRUE)
+# na.rm=TRUE removes rows with NAs in any 'value' columns
+melt(DT, id=1:2, measure=list(3:4, c("d1", "d2")), value.factor=TRUE, na.rm=TRUE)
+# return 'NA' for missing columns, 'na.rm=TRUE' ignored due to list column
+melt(DT, id=1:2, measure=list(8:9, 5), na.rm=TRUE)
+
 }
 \seealso{
-  \code{\link{dcast.data.table}}, \url{http://had.co.nz/reshape/}
+  \code{\link{dcast}}, \url{http://had.co.nz/reshape/}
 }
 \keyword{ data }
 

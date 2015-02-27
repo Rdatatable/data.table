@@ -58,9 +58,13 @@ SEXP seq_int(int n, int start);
 SEXP set_diff(SEXP x, int n);
 SEXP which(SEXP x, Rboolean bool);
 
+// frank.c
+SEXP dt_na(SEXP x, SEXP cols);
+
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
+SEXP shallowwrapper(SEXP dt, SEXP cols);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose);
 
@@ -69,3 +73,6 @@ SEXP bmerge(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, 
 
 // fcast.c
 SEXP coerce_to_char(SEXP s, SEXP env);
+
+// rbindlist.c
+SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOrdered);
