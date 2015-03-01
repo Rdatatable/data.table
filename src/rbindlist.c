@@ -497,7 +497,7 @@ static SEXP match_names(SEXP v) {
 static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preprocessData *data) {
     
     R_len_t i, j, idx;
-    SEXP li, lnames=R_NilValue, fnames, findices=R_NilValue, f_ind=R_NilValue, thiscol, col_name=R_NilValue;
+    SEXP li, lnames=R_NilValue, fnames, findices=R_NilValue, f_ind=R_NilValue, thiscol, col_name=R_NilValue, thisClass = R_NilValue;
     SEXPTYPE type;
     
     data->first = -1; data->lcount = 0; data->n_rows = 0; data->n_cols = 0; data->protecti = 0;
@@ -568,6 +568,7 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
     data->max_type  = Calloc(data->n_cols, SEXPTYPE);
     data->is_factor = Calloc(data->n_cols, int);
     for (i = 0; i< data->n_cols; i++) {
+        thisClass = R_NilValue;
         if (usenames) f_ind = VECTOR_ELT(findices, i);
         for (j=data->first; j<LENGTH(l); j++) {
             if (data->is_factor[i] == 2) break;
@@ -575,10 +576,18 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
             li = VECTOR_ELT(l, j);
             if (isNull(li) || !LENGTH(li) || idx < 0) continue;
             thiscol = VECTOR_ELT(li, idx);
+            // Fix for #705, check attributes
+            if (j == data->first)
+                thisClass = getAttrib(thiscol, R_ClassSymbol);
             if (isFactor(thiscol)) {
                 data->is_factor[i] = (isOrdered(thiscol)) ? 2 : 1;
                 data->max_type[i]  = STRSXP;
             } else {
+                // Fix for #705, check attributes and error if non-factor class and not identical
+                if (!data->is_factor[i] && 
+                    !R_compute_identical(thisClass, getAttrib(thiscol, R_ClassSymbol), 0)) {
+                    error("Class attributes at column %d of input list at position %d does not match with column %d of input list at position %d. Coercion of objects of class 'factor' alone is handled internally by rbind/rbindlist at the moment.", i+1, j+1, i+1, data->first+1);
+                }
                 type = TYPEOF(thiscol);
                 if (type > data->max_type[i]) data->max_type[i] = type;
             }

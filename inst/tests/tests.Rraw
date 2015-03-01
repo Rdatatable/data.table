@@ -6094,6 +6094,12 @@ test(1492, ans1, ans2)
 dt = data.table(x=1:10, y=11:20)
 test(1493, dt[, .(x=sum(x)),by= x %% 2, verbose=TRUE], data.table(`x%%2`=c(1,0), x=c(25L,30L)), output="by-expression 'x%%2' is not named")
 
+# Fix for #705
+DT1 = data.table(date=as.POSIXct("2014-06-22", format="%Y-%m-%d", tz="GMT"))
+DT2 = data.table(date=as.Date("2014-06-23"))
+test(1494.1, rbind(DT1, DT2), error="Class attributes at column")
+test(1494.2, rbind(DT2, DT1), error="Class attributes at column")
+
 ##########################
 
 
