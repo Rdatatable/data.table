@@ -2926,6 +2926,10 @@ if ("package:reshape2" %in% search()) {
     }
     test(1371.1, foo(DT, by="x"), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)), warning="are not all of the same type. By order of hierarchy, the molten data value column will be of type 'double'")
     test(1371.2, foo(DT), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)), warning="To be consistent with reshape2's melt, id.vars and")
+    # Fix for #1055
+    DT <- data.table(A = 1:2, B = 3:4, D = 5:6, D = 7:8)
+    test(1495, melt(DT, id=1:2), data.table(A=1:2, B=3:4, 
+        variable=factor(rep(1L, 4L), labels="D"), value=5:8))
 
 }
 
@@ -6099,6 +6103,8 @@ DT1 = data.table(date=as.POSIXct("2014-06-22", format="%Y-%m-%d", tz="GMT"))
 DT2 = data.table(date=as.Date("2014-06-23"))
 test(1494.1, rbind(DT1, DT2), error="Class attributes at column")
 test(1494.2, rbind(DT2, DT1), error="Class attributes at column")
+
+# test 1495 has been added to melt's test section (fix for #1055)
 
 ##########################
 

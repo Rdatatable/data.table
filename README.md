@@ -153,6 +153,8 @@
 
   43. `rbindlist` now errors when columns have non-identical class attributes and are not `factor`s, e.g., binding column of class `Date` with `POSIXct`. Previously this returned incorrect results. Closes [#705](https://github.com/Rdatatable/data.table/issues/705). Thanks to @ecoRoland for the minimal report.
 
+  44. Fixed a segfault in `melt.data.table` when `measure.vars` have duplicate names. Closes [#1055](https://github.com/Rdatatable/data.table/issues/1055). Thanks to @ChristK for the minimal report.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
