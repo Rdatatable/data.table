@@ -5792,16 +5792,16 @@ test(1463.24, shift(x,1L, 0L, type="lead"), list(as.character(c(2:5, 0L))))
 # Fix for #1009 segfault in shift
 val = runif(1)
 test(1463.25, shift(val, 2L), list(NA_real_))
-test(1463.25, shift(val, 2L, type="lead"), list(NA_real_))
+test(1463.26, shift(val, 2L, type="lead"), list(NA_real_))
 
 # add tests for date and factor?
 
 # test for 'give.names=TRUE' on vectors
 x = 1:10
-nm = c("V1_lag_1", "V1_lag_2")
+nm = c("x_lag_1", "x_lag_2")
 ans = list(as.integer(c(NA, 1:9)), as.integer(c(NA, NA, 1:8)))
 setattr(ans, 'names', nm)
-test(1463.25, shift(x, 1:2, give.names=TRUE), ans)
+test(1463.27, shift(x, 1:2, give.names=TRUE), ans)
 
 # FR #686
 DT = data.table(grp=rep(c("A", "B", "C", "A", "B"), 
@@ -6105,6 +6105,10 @@ test(1494.1, rbind(DT1, DT2), error="Class attributes at column")
 test(1494.2, rbind(DT2, DT1), error="Class attributes at column")
 
 # test 1495 has been added to melt's test section (fix for #1055)
+
+# Fix for #1056
+DT = data.table(year=2010:2014, v1=runif(5), v2=1:5, v3=letters[1:5])
+test(1496, DT[, shift(v1, 1:2, NA, "lead", TRUE)], DT[, shift(.SD, 1:2, NA, "lead", TRUE), .SDcols=2L])
 
 ##########################
 
