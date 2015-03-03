@@ -347,8 +347,8 @@ void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valnames, Rb
 
 SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean narm, Rboolean valfactor, Rboolean verbose, struct processData *data) {
     
-    int i, j, k, protecti=0, counter=0, thislen;
-    SEXP tmp, seqcols, thiscol, thisvaluecols, target, ansvals, thisidx, flevels, clevels;
+    int i, j, k, protecti=0, counter=0, thislen=0;
+    SEXP tmp, seqcols, thiscol, thisvaluecols, target, ansvals, thisidx=R_NilValue, flevels, clevels;
     Rboolean coerced=FALSE, thisfac=FALSE, *isordered, copyattr = FALSE, thisvalfactor;
     size_t size;
     data->narm = narm;
@@ -634,7 +634,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
 
 SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP varnames, SEXP valnames, SEXP narmArg, SEXP verboseArg) {
     
-    int i, nrow, ncol, protecti=0;
+    int i, ncol, protecti=0;
     SEXP dtnames, ansvals, ansvars, ansids, ansnames, ans;
     Rboolean narm=FALSE, verbose=FALSE;
     struct processData data;
@@ -646,7 +646,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     if (!isString(varnames)) error("Argument 'variable.name' must be a character vector");
     if (!isString(valnames)) error("Argument 'value.name' must be a character vector");
     if (!isLogical(verboseArg)) error("Argument 'verbose' should be logical TRUE/FALSE");
-    ncol = LENGTH(DT); nrow = length(VECTOR_ELT(DT, 0));
+    ncol = LENGTH(DT);
     if (!ncol) {
         if (verbose) Rprintf("ncol(data) is 0. Nothing to melt. Returning original data.table.");
         return(DT);
@@ -687,8 +687,9 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
         }
         setAttrib(ans, R_NamesSymbol, ansnames);
     }
-    Free(data.isfactor);
-    Free(data.maxtype);
+    // should be 'free', not 'Free'. Fixes #1059
+    free(data.isfactor);
+    free(data.maxtype);
     UNPROTECT(protecti);
     return(ans);
 }

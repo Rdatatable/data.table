@@ -155,6 +155,8 @@
 
   44. Fixed a segfault in `melt.data.table` when `measure.vars` have duplicate names. Closes [#1055](https://github.com/Rdatatable/data.table/issues/1055). Thanks to @ChristK for the minimal report.
 
+  45. Fixed another segfault in `melt.data.table` issue that was caught due to issue in Windows. Closes [#1059](https://github.com/Rdatatable/data.table/issues/1059). Thanks again to @ChristK for the minimal report.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
