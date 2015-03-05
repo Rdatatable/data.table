@@ -6114,6 +6114,11 @@ test(1496, DT[, shift(v1, 1:2, NA, "lead", TRUE)], DT[, shift(.SD, 1:2, NA, "lea
 DT = data.table(x=1, y=2, z=3, a=4, b=5, c=6)
 test(1497, DT[, .SD, .SDcols = !c("a", "c")], DT[, !c("a", "c"), with=FALSE])
 
+# Fix for #1060
+DT = data.table(x=1, y=2, z=3, a=4, b=5, c=6)
+test(1498.1, DT[, .SD, .SDcols=c(T,F)], DT[, c("x", "z", "b"), with=FALSE])
+test(1498.2, DT[, .SD, .SDcols=!c(T,F)], DT[, !c("x", "z", "b"), with=FALSE])
+
 ##########################
 
 

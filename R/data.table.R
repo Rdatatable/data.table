@@ -894,8 +894,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         colm = TRUE
                         .SDcols = eval(colsub[[2L]], parent.frame(), parent.frame())
                     } else colm = FALSE
-                    # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
-                    if (is.numeric(.SDcols)) {
+                    if (is.logical(.SDcols)) {
+                        ansvals = which_(rep(.SDcols, length.out=length(x)), !colm)
+                        ansvars = names(x)[ansvals]
+                    } else if (is.numeric(.SDcols)) {
+                        # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
                         if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
                         if (any(is.na(.SDcols)) || any(abs(.SDcols)>ncol(x)) || any(abs(.SDcols)<1L)) stop(".SDcols is numeric but out of bounds (or NA)")
                         if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
