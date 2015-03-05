@@ -6110,6 +6110,10 @@ test(1494.2, rbind(DT2, DT1), error="Class attributes at column")
 DT = data.table(year=2010:2014, v1=runif(5), v2=1:5, v3=letters[1:5])
 test(1496, DT[, shift(v1, 1:2, NA, "lead", TRUE)], DT[, shift(.SD, 1:2, NA, "lead", TRUE), .SDcols=2L])
 
+# Fix for #1066
+DT = data.table(x=1, y=2, z=3, a=4, b=5, c=6)
+test(1497, DT[, .SD, .SDcols = !c("a", "c")], DT[, !c("a", "c"), with=FALSE])
+
 ##########################
 
 

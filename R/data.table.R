@@ -890,7 +890,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     # FR #4979 - negative numeric and character indices for SDcols
                     colsub = substitute(.SDcols)
                     # fix for #5190. colsub[[1L]] gave error when it's a symbol.
-                    if (is.call(colsub) && colsub[[1L]] == "-") {
+                    if (is.call(colsub) && deparse(colsub[[1L]], 500L) %in% c("!", "-")) {
                         colm = TRUE
                         .SDcols = eval(colsub[[2L]], parent.frame(), parent.frame())
                     } else colm = FALSE
