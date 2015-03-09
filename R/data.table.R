@@ -522,7 +522,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 leftcols = 1L
                 ans = bmerge(i, x, leftcols, rightcols, io<-FALSE, xo, roll=0.0, rollends=c(FALSE,FALSE), nomatch=0L, verbose=verbose)
                 # No need to shallow copy i before passing to bmerge; we just created i above ourselves
-                i = if (ans$allLen1 && !identical(suppressWarnings(max(ans$starts)), 0L)) ans$starts else vecseq(ans$starts, ans$lens, NULL)
+                i = if (ans$allLen1 && !identical(suppressWarnings(min(ans$starts)), 0L)) ans$starts else vecseq(ans$starts, ans$lens, NULL)
                 if (length(xo)) i = fsort(xo[i])
                 leftcols = rightcols = NULL  # these are used later to know whether a join was done, affects column order of result. So reset.
             }
