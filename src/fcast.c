@@ -325,296 +325,94 @@ SEXP coerce_to_char(SEXP s, SEXP env)
 // SEXP margins(...) {
 // }
 
-// TO DO: for sorted case - when forder is integer(0), just "duplicate" instead of using "subset" - will gain speed (as that'll use memcpy)
-// TO DO: can we just move "subsetting" to R-side? Will simplify things a lot here and I'm not sure if there's any advantage of having it here
-// TO DO: Remove "sorted" and implement that as well with "setkey" just on c(ff_, value.var) at R side?
-SEXP fcast(SEXP DT, SEXP inames, SEXP mnames, SEXP vnames, SEXP fill, SEXP fill_d, SEXP is_agg, SEXP env, SEXP drop) {
+// TO DO: margins
+SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg) {
     
-    int protecti = 0;
-    R_len_t i, j, nrows, ncols, ilen = length(inames), mlen = length(mnames), lanscols, ranscols;
-    SEXP dtnames, lrnames, ldt, rdt, vdt, lrdt, lidx, ridx, vidx, lo, ro, lro, lrdup, ldup=R_NilValue, rdup=R_NilValue;
-    SEXP tmp, cpy, thiscol, colnames, llen__, haskey, rollends, f__, len__, allLen1, roll;
-    SEXP xx, cj, cjtmp, ans, outnamevec, ansnames, dtmp, lcj=R_NilValue, rcj=R_NilValue, ddup, dorder;
-    SEXP lvls; // to get levels for drop=FALSE in case of factor column - #5379
-    Rboolean isfill = TRUE;
-    char buffer[128], uscore[] = "_";
+    int nrows=INTEGER(nrowArg)[0], ncols=INTEGER(ncolArg)[0];
+    int i,j,k, nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg), thisidx;;
+    SEXP thiscol, target, ans, thisfill;
+    Rboolean isfill = TRUE, count;
 
-    // check for arguments - some of these are not necessary as the intention is NOT to call directly, but thro' fcast.R (dcast), but alright
-    if (TYPEOF(DT) != VECSXP) error("'data' should be a data.table or data.frame");
-    if (TYPEOF(inames) != STRSXP) error("LHS of parsed formula did not result in character vector, possibly invalid formula");
-    if (TYPEOF(mnames) != STRSXP) error("RHS of parsed formula did not result in character vector, possibly invalid formula");
-    if (TYPEOF(vnames) != STRSXP || length(vnames) != 1) error("'value.var' must be a character vector of length 1");
-    if (!isEnvironment(env)) error("'.CASTenv' must be an environment");
-    if (!isLogical(drop) || length(drop) != 1) error("'drop' must be a logical vector of length 1");
-    
-    nrows = length(VECTOR_ELT(DT, 0));
-    if (nrows < 1) error("nrow(data) is 0, cannot 'cast' an empty data.table"); // TODO: should this be a warning instead + return DT?
-    ncols = length(DT);
-    if (ncols < 1) error("ncol(data) is 0, cannot 'cast' an empty data.table"); // TODO: should this be a warning instead + return DT?
-
-    dtnames = getAttrib(DT, R_NamesSymbol);
-    if (isNull(dtnames)) error("'names(data)' is NULL. Possible internal error. Please report to data.table-help");
-    
-    // names passed from R-level - no checks
-    lidx = PROTECT(chmatch(inames, dtnames, 0, FALSE)); protecti++;
-    ridx = PROTECT(chmatch(mnames, dtnames, 0, FALSE)); protecti++;
-    vidx = PROTECT(chmatch(vnames, dtnames, 0, FALSE)); protecti++;
-
-    // get lrdt and value
-    lrdt = PROTECT(allocVector(VECSXP, ilen+mlen)); protecti++;
-    for (i=0; i<ilen; i++) SET_VECTOR_ELT(lrdt, i, VECTOR_ELT(DT, INTEGER(lidx)[i]-1));
-    for (i=0; i<mlen; i++) SET_VECTOR_ELT(lrdt, i+ilen, VECTOR_ELT(DT, INTEGER(ridx)[i]-1));
-    // value column
-    vdt = isFactor(VECTOR_ELT(DT, INTEGER(vidx)[0]-1)) ? PROTECT(asCharacterFactor(VECTOR_ELT(DT, INTEGER(vidx)[0]-1))) : PROTECT(VECTOR_ELT(DT, INTEGER(vidx)[0]-1));
-    protecti++;
-    
-    // get names
-    lrnames = PROTECT(allocVector(STRSXP, ilen+mlen)); protecti++;
-    for (i=0; i<ilen; i++) SET_STRING_ELT(lrnames, i, STRING_ELT(inames, i));
-    for (i=0; i<mlen; i++) SET_STRING_ELT(lrnames, i+ilen, STRING_ELT(mnames, i));
-    setAttrib(lrdt, R_NamesSymbol, lrnames);
-
-    lro = PROTECT(seq_int(1, -1)); protecti++;
-    lrdup = PROTECT(uniqlist(lrdt, lro)); protecti++;
-    
-    if (isNull(fill)) {
-        isfill = FALSE;
-        fill = LOGICAL(is_agg)[0] == TRUE ? PROTECT(allocNAVector(TYPEOF(vdt), 1)) : PROTECT(fill_d);
-        protecti++;
+    ans = PROTECT(allocVector(VECSXP, nlhs + (nval * ncols)));
+    // set lhs cols
+    for (i=0; i < nlhs; i++) {
+        SET_VECTOR_ELT(ans, i, VECTOR_ELT(lhs, i));
     }
-    if (isfill && ((isNull(fill_d) && TYPEOF(fill) != TYPEOF(vdt)) || (!isNull(fill_d) && TYPEOF(fill) != TYPEOF(fill_d)))) {
-        Rprintf("class(fill) != class(%s), coercing 'fill' to %s\n", CHAR(STRING_ELT(vnames, 0)), type2char(TYPEOF(vdt)));
-        fill = PROTECT(coerceVector(fill, TYPEOF(vdt))); protecti++;
-    }
-
-    // get ldt and rdt
-    ldt = PROTECT(allocVector(VECSXP, ilen)); protecti++;
-    rdt = PROTECT(allocVector(VECSXP, mlen)); protecti++;
-    for (i=0; i<ilen; i++) SET_VECTOR_ELT(ldt, i, VECTOR_ELT(lrdt, i));
-    for (i=0; i<mlen; i++) SET_VECTOR_ELT(rdt, i, VECTOR_ELT(lrdt, i+ilen));
-    setAttrib(ldt, R_NamesSymbol, inames);
-    setAttrib(rdt, R_NamesSymbol, mnames);
-    
-    if (!LOGICAL(drop)[0]) { // have to take care of drop=FALSE!
-        lcj = PROTECT(allocVector(VECSXP, ilen)); protecti++;
-        for (i=0; i<ilen; i++) {
-            cpy = PROTECT(allocVector(VECSXP, 1));
-            SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(ldt, i));
-            if (isFactor(VECTOR_ELT(ldt, i))) {
-                lvls = PROTECT(getAttrib(VECTOR_ELT(ldt, i), R_LevelsSymbol));
-                dtmp = PROTECT(seq_int(length(lvls), 1));
-                setAttrib(dtmp, R_ClassSymbol, mkString("factor"));
-                setAttrib(dtmp, R_LevelsSymbol, lvls);
-                UNPROTECT(3);
-            } else {
-                dorder = PROTECT(cast_order(cpy, env));
-                ddup = PROTECT(uniqlist(cpy, dorder));
-                ddup = PROTECT(subsetVector(dorder, ddup));
-                dtmp = PROTECT(subsetVector(VECTOR_ELT(cpy, 0), ddup));
-                UNPROTECT(5); // dtmp, cpy, dorder, ddup
-            }
-            SET_VECTOR_ELT(lcj, i, dtmp);
+    // get val cols
+    for (i=0; i<nval; i++) {
+        thiscol = VECTOR_ELT(val, i);
+        thisfill = fill;
+        count = FALSE;
+        if (isNull(fill)) {
+            isfill = FALSE;
+            if (LOGICAL(is_agg)[0]) {
+                thisfill = PROTECT(allocNAVector(TYPEOF(thiscol), 1));
+                count = TRUE;
+            } else thisfill = VECTOR_ELT(fill_d, i);
         }
-        lcj = PROTECT(cross_join(lcj, env)); protecti++;
-        
-        rcj = PROTECT(allocVector(VECSXP, mlen)); protecti++;
-        for (i=0; i<mlen; i++) {
-            cpy = PROTECT(allocVector(VECSXP, 1));
-            SET_VECTOR_ELT(cpy, 0, VECTOR_ELT(rdt, i));
-            if (isFactor(VECTOR_ELT(rdt, i))) {
-                lvls = PROTECT(getAttrib(VECTOR_ELT(rdt, i), R_LevelsSymbol));
-                dtmp = PROTECT(seq_int(length(lvls), 1));
-                setAttrib(dtmp, R_ClassSymbol, mkString("factor"));
-                setAttrib(dtmp, R_LevelsSymbol, lvls);
-                UNPROTECT(3);
-            } else {
-                dorder = PROTECT(cast_order(cpy, env));
-                ddup = PROTECT(uniqlist(cpy, dorder));
-                ddup = PROTECT(subsetVector(dorder, ddup));
-                dtmp = PROTECT(subsetVector(VECTOR_ELT(cpy, 0), ddup));
-                UNPROTECT(5);
-            }
-            SET_VECTOR_ELT(rcj, i, dtmp);
+        if (isfill && TYPEOF(fill) != TYPEOF(thiscol)) {
+            thisfill = PROTECT(coerceVector(fill, TYPEOF(thiscol)));
+            count = TRUE;
         }
-        rcj = PROTECT(cross_join(rcj, env)); protecti++;
-        
-        outnamevec = PROTECT(allocVector(VECSXP, length(rcj))); protecti++;
-        for (i=0; i<length(outnamevec); i++)
-            SET_VECTOR_ELT(outnamevec, i, coerce_to_char(VECTOR_ELT(rcj, i), R_GlobalEnv));
-
-        xx = PROTECT(allocVector(VECSXP, 2)); protecti++;
-        // lcj[ldt]
-        f__ = PROTECT(zero_init(length(VECTOR_ELT(ldt, 0))));
-        len__ = PROTECT(zero_init(length(f__)));
-        haskey = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(haskey)[0] = 1;
-        rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
-        allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
-        roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        bmerge(ldt, lcj, PROTECT(seq_int(ilen, 1)), PROTECT(seq_int(ilen, 1)), haskey, R_NilValue, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
-        UNPROTECT(9);
-        SET_VECTOR_ELT(xx, 0, f__);
-        
-        // rcj[rdt]
-        f__ = PROTECT(zero_init(length(VECTOR_ELT(rdt, 0))));
-        len__ = PROTECT(zero_init(length(f__)));
-        haskey = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(haskey)[0] = 0; // unsorted
-        rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
-        allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
-        roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        bmerge(rdt, rcj, PROTECT(seq_int(mlen, 1)), PROTECT(seq_int(mlen, 1)), haskey, R_NilValue, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
-        UNPROTECT(9);
-        SET_VECTOR_ELT(xx, 1, f__);
-                
-        cjtmp = PROTECT(allocVector(VECSXP, 2));
-        SET_VECTOR_ELT(cjtmp, 0, PROTECT(seq_int(length(VECTOR_ELT(lcj, 0)), 1)));
-        SET_VECTOR_ELT(cjtmp, 1, PROTECT(seq_int(length(VECTOR_ELT(rcj, 0)), 1)));
-        UNPROTECT(3); // cjtmp
-        cj = PROTECT(cross_join(cjtmp, env)); protecti++;
-    } else {
-        // we could do a bit faster
-        lo = PROTECT(seq_int(nrows, 1)); protecti++; // no need for cast_order of "lo", already sorted
-        ro = PROTECT(cast_order(rdt, env)); protecti++;
-        ldup = PROTECT(uniqlist(ldt, lo)); protecti++;
-        rdup = PROTECT(uniqlist(rdt, ro)); protecti++; 
-
-        llen__ = PROTECT(diff_int(ldup, nrows)); protecti++;
-
-        rdup = PROTECT(subsetVector(ro, rdup)); protecti++;
-        tmp = PROTECT(allocVector(VECSXP, mlen+1)); protecti++;
-        for (i=0; i<mlen; i++) {
-            cpy = PROTECT(VECTOR_ELT(rdt, i));
-            thiscol = PROTECT(subsetVector(cpy, rdup));
-            UNPROTECT(2); // cpy, thiscol
-            SET_VECTOR_ELT(tmp, i, thiscol);
-        }
-        // names for final output
-        outnamevec = PROTECT(allocVector(VECSXP, length(tmp)-1)); protecti++;
-        for (i=0; i<length(outnamevec); i++) {
-            SET_VECTOR_ELT(outnamevec, i, coerce_to_char(VECTOR_ELT(tmp, i), R_GlobalEnv));
-        }
-        ro = PROTECT(cast_order(rdup, env));
-        rdup = PROTECT(subsetVector(rdup, ro));
-        UNPROTECT(2); // ro, rdup
-        SET_VECTOR_ELT(tmp, mlen, rdup);
-
-        colnames = PROTECT(allocVector(STRSXP, length(tmp)));
-        for (i=0; i<length(tmp)-1; i++) 
-            SET_STRING_ELT(colnames, i, STRING_ELT(mnames, i));
-        SET_STRING_ELT(colnames, length(tmp)-1, mkChar("id"));
-        UNPROTECT(1); //colnames
-        setAttrib(tmp, R_NamesSymbol, colnames);
-
-        // tmp[rdt] - binary search
-        f__ = PROTECT(zero_init(length(lrdup))); protecti++;
-        len__ = PROTECT(zero_init(length(f__)));
-        haskey = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(haskey)[0] = 0;
-        rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
-        allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
-        roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-        bmerge(rdt, tmp, PROTECT(seq_int(length(rdt), 1)), PROTECT(seq_int(length(rdt),1)), haskey, R_NilValue, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
-        UNPROTECT(8); // len__, haskey, rollends, allLen1, roll (except f__)
-
-        xx = PROTECT(allocVector(VECSXP, 2)); protecti++;
-        SET_VECTOR_ELT(xx, 0, intrep(ldup, llen__));
-        rdup = PROTECT(VECTOR_ELT(tmp, mlen));
-        tmp = PROTECT(subsetVector(rdup, f__));
-        UNPROTECT(2); // rdup, tmp
-        SET_VECTOR_ELT(xx, 1, tmp);
-
-        cjtmp = PROTECT(allocVector(VECSXP, 2));
-        SET_VECTOR_ELT(cjtmp, 0, ldup);
-        SET_VECTOR_ELT(cjtmp, 1, rdup);
-        UNPROTECT(1); // cjtmp;
-        cj = PROTECT(cross_join(cjtmp, env)); protecti++;
-    }
-    // to do: if we can check whether there are any missing combinations, we can skip this binary search and it should be faster (especially on bigger data).
-    // xx[cj] binary search to get missing values
-    f__ = PROTECT(zero_init(length(VECTOR_ELT(cj, 0)))); protecti++;
-    len__ = PROTECT(zero_init(length(f__)));
-    haskey = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(haskey)[0] = 1;
-    rollends = PROTECT(allocVector(LGLSXP, 2)); LOGICAL(rollends)[0] = 0; LOGICAL(rollends)[1] = 1;
-    allLen1 = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(allLen1)[0] = 1;
-    roll = PROTECT(allocVector(REALSXP, 1)); REAL(roll)[0] = 0.0;
-    bmerge(cj, xx, PROTECT(seq_int(2, 1)), PROTECT(seq_int(2,1)), haskey, R_NilValue, roll, rollends, PROTECT(zero_init(1)), f__, len__, allLen1);
-    UNPROTECT(8); // len__, haskey, rollends, allLen1, roll (except f__)
-    
-    ranscols = !LOGICAL(drop)[0] ? length(VECTOR_ELT(rcj, 0)) : length(rdup);
-    ans = PROTECT(allocVector(VECSXP, ranscols+ilen)); protecti++;
-    if (!LOGICAL(drop)[0]) {
-        for (i=0; i<ilen; i++)
-            SET_VECTOR_ELT(ans, i, VECTOR_ELT(lcj, i));
-        lanscols = length(VECTOR_ELT(lcj, 0));
-    } else {
-        for (i=0; i<ilen; i++) {
-            cpy = PROTECT(VECTOR_ELT(lrdt, i));
-            tmp = PROTECT(subsetVector(cpy, ldup));
-            UNPROTECT(2); // tmp, cpy
-            SET_VECTOR_ELT(ans, i, tmp);
-        }
-        lanscols = length(ldup);
-    }
-    for (i=0; i<ranscols; i++) {
-        tmp = PROTECT(allocVector(TYPEOF(vdt), lanscols));
-        switch(TYPEOF(tmp)) {
-            case INTSXP :
-            for (j=0; j<lanscols; j++) {
-                if (INTEGER(f__)[i + j*ranscols] != 0)
-                    INTEGER(tmp)[j] = INTEGER(vdt)[INTEGER(f__)[i + j*ranscols]-1];
-                else 
-                    INTEGER(tmp)[j] = INTEGER(fill)[0];
-            }
+        switch (TYPEOF(thiscol)) {
+            case INTSXP:
+                for (j=0; j<ncols; j++) {
+                    target = allocVector(TYPEOF(thiscol), nrows);
+                    SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target);
+                    copyMostAttrib(thiscol, target);
+                    for (k=0; k<nrows; k++) {
+                        thisidx = idx[k*ncols + j];
+                        INTEGER(target)[k] = (thisidx == NA_INTEGER) ? INTEGER(thisfill)[0] : INTEGER(thiscol)[thisidx-1];
+                    }
+                }
             break;
-            case REALSXP :
-            for (j=0; j<lanscols; j++) {
-                if (INTEGER(f__)[i + j*ranscols] != 0)
-                    REAL(tmp)[j] = REAL(vdt)[INTEGER(f__)[i + j*ranscols]-1];
-                else 
-                    REAL(tmp)[j] = REAL(fill)[0];
-            }
+            case REALSXP:
+                for (j=0; j<ncols; j++) {
+                    target = allocVector(TYPEOF(thiscol), nrows);
+                    SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target);
+                    copyMostAttrib(thiscol, target);
+                    for (k=0; k<nrows; k++) {
+                        thisidx = idx[k*ncols + j];
+                        REAL(target)[k] = (thisidx == NA_INTEGER) ? REAL(thisfill)[0] : REAL(thiscol)[thisidx-1];
+                    }
+                }
             break;
-            case LGLSXP :
-            for (j=0; j<lanscols; j++) {
-                if (INTEGER(f__)[i + j*ranscols] != 0)
-                    LOGICAL(tmp)[j] = LOGICAL(vdt)[INTEGER(f__)[i + j*ranscols]-1];
-                else 
-                    LOGICAL(tmp)[j] = LOGICAL(fill)[0];
-            }
+            case LGLSXP:
+                for (j=0; j<ncols; j++) {
+                    target = allocVector(TYPEOF(thiscol), nrows);
+                    SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target);
+                    copyMostAttrib(thiscol, target);
+                    for (k=0; k<nrows; k++) {
+                        thisidx = idx[k*ncols + j];
+                        LOGICAL(target)[k] = (thisidx == NA_INTEGER) ? LOGICAL(thisfill)[0] : LOGICAL(thiscol)[thisidx-1];
+                    }
+                }
             break;
-            case STRSXP :
-            for (j=0; j<lanscols; j++) {
-                if (INTEGER(f__)[i + j*ranscols] != 0)
-                    SET_STRING_ELT(tmp, j, STRING_ELT(vdt, INTEGER(f__)[i + j*ranscols]-1));
-                else 
-                    SET_STRING_ELT(tmp, j, STRING_ELT(fill, 0));
-            }
+            case STRSXP:
+                for (j=0; j<ncols; j++) {
+                    target = allocVector(TYPEOF(thiscol), nrows);
+                    SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target);
+                    copyMostAttrib(thiscol, target);
+                    for (k=0; k<nrows; k++) {
+                        thisidx = idx[k*ncols + j];
+                        SET_STRING_ELT(target, k, (thisidx == NA_INTEGER) ? STRING_ELT(thisfill, 0) : STRING_ELT(thiscol, thisidx-1));
+                    }
+                }
             break;
-            case VECSXP :
-            for (j=0; j<lanscols; j++) {
-                if (INTEGER(f__)[i + j*ranscols] != 0)
-                    SET_VECTOR_ELT(tmp, j, VECTOR_ELT(vdt, INTEGER(f__)[i + j*ranscols]-1));
-                else 
-                    SET_VECTOR_ELT(tmp, j, VECTOR_ELT(fill, 0));
-            }
+            case VECSXP:
+                for (j=0; j<ncols; j++) {
+                    target = allocVector(TYPEOF(thiscol), nrows);
+                    SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target);
+                    copyMostAttrib(thiscol, target);
+                    for (k=0; k<nrows; k++) {
+                        thisidx = idx[k*ncols + j];
+                        SET_VECTOR_ELT(target, k, (thisidx == NA_INTEGER) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(thiscol, thisidx-1));
+                    }
+                }
             break;
-            default : error("Unknown 'value' column type '%s'", type2char(TYPEOF(tmp)));
         }
-        copyMostAttrib(vdt, tmp);
-        UNPROTECT(1); // tmp
-        SET_VECTOR_ELT(ans, i+ilen, tmp);
+        if (count) UNPROTECT(1);
     }
-    ansnames = PROTECT(allocVector(STRSXP, length(ans))); protecti++;
-    for (i=0; i<ilen; i++)
-        SET_STRING_ELT(ansnames, i, STRING_ELT(inames, i));
-    for (i=0; i<length(VECTOR_ELT(outnamevec, 0)); i++) {
-        sprintf(buffer, "%s", CHAR(STRING_ELT(VECTOR_ELT(outnamevec, 0), i)));
-        for (j=1; j<length(outnamevec); j++) {
-            strcat(buffer, uscore);
-            strcat(buffer, translateChar(STRING_ELT(VECTOR_ELT(outnamevec, j), i))); // requires const char*
-        }
-        SET_STRING_ELT(ansnames, i+ilen, mkChar(buffer));
-    }
-    setAttrib(ans, R_NamesSymbol, ansnames);
-    UNPROTECT(protecti);
+    UNPROTECT(1);
     return(ans);
 }
-

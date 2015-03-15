@@ -44,6 +44,12 @@
 
   15. `.SDcols` accepts logical vectors as well. If length is smaller than number of columns, the vector is recycled. Closes [#1060](https://github.com/Rdatatable/data.table/issues/1060). Thanks to @StefanFritsch.
 
+  16. `dcast` can now:
+      * cast multiple `value.var` columns simultaneously. Closes [#739](https://github.com/Rdatatable/data.table/issues/739).
+      * accept multiple functions under `fun.aggregate`. Closes [#716](https://github.com/Rdatatable/data.table/issues/716).
+      * supports optional column prefixes as mentioned under [this SO post](http://stackoverflow.com/q/26225206/559784). Closes [#862](https://github.com/Rdatatable/data.table/issues/862). Thanks to @JohnAndrews.
+      * works with undefined variables directly in formula. Closes [#1037](https://github.com/Rdatatable/data.table/issues/1037). Thanks to @DavidArenburg.
+
 #### BUG FIXES
 
   1. `if (TRUE) DT[,LHS:=RHS]` no longer prints, [#869](https://github.com/Rdatatable/data.table/issues/869). Tests added. To get this to work we've had to live with one downside: if a `:=` is used inside a function with no `DT[]` before the end of the function, then the next time `DT` is typed at the prompt, nothing will be printed. A repeated `DT` will print. To avoid this: include a `DT[]` after the last `:=` in your function. If that is not possible (e.g., it's not a function you can change) then `print(DT)` and `DT[]` at the prompt are guaranteed to print. As before, adding an extra `[]` on the end of `:=` query is a recommended idiom to update and then print; e.g. `> DT[,foo:=3L][]`. Thanks to Jureiss for reporting.
