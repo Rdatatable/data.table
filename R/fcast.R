@@ -59,7 +59,7 @@ aggregate_funs <- function(funs, vals, ...) {
         funs = eval(funs[[2L]], parent.frame(2L), parent.frame(2L))
     if (is.call(funs) && as.character(funs[[1L]]) %in% c("c", "list")) 
         funs = lapply(as.list(funs)[-1L], function(x) {
-            if (is.call(x)) as.list(x)[-1L] else x
+            if (is.call(x) && as.character(x[[1L]]) %in% c("c", "list")) as.list(x)[-1L] else x
         })
     else funs = list(funs)
     if (length(funs) != length(vals)) {
@@ -69,7 +69,7 @@ aggregate_funs <- function(funs, vals, ...) {
     }
     dots = list(...)
     construct_funs <- function(fun, val) {
-        if (is.name(fun)) fun = list(fun)
+        if (!is.list(fun)) fun = list(fun)
         ans = vector("list", length(fun)*length(val))
         nms = vector("character", length(ans))
         k = 1L

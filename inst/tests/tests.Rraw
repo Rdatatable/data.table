@@ -6183,6 +6183,19 @@ ans2 <- cbind(ans21, ans24[, 3:4])
 setkey(setnames(setDT(ans2), names(ans1)), x, y)
 test(1501.7, ans1, ans2)
 
+# Additional test after fixing fun.agg creation - using the example here: https://github.com/Rdatatable/data.table/issues/716
+DT = data.table(x=1:5, y=paste("v", 1:5, sep=""), 
+                        v1=6:10, v2=11:15, 
+                        k1=letters[1:5], k2=letters[6:10])
+DT.m = melt(DT, id=1:2, measure=list(3:4, 5:6))
+ans1 <- dcast(DT.m, x ~ y, fun.aggregate = 
+    list(sum, function(x) paste(x, collapse="")), value.var=list("value1", "value2"))
+ans21 <- dcast(as.data.frame(DT.m), x ~ y, fun.agg=sum, value.var="value1")
+ans22 <- dcast(as.data.frame(DT.m), x ~ y, fun.agg=function(x) paste(x, collapse=""), value.var="value2")
+ans2 <- cbind(ans21, ans22[, -1L])
+setkey(setnames(setDT(ans2), names(ans1)), x)
+test(1501.8, ans1, ans2)
+
 ##########################
 
 
