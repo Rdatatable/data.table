@@ -1066,7 +1066,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     if (readInt64As == SXP_REAL) goto case_SXP_REAL;  // a goto here seems readable and reasonable to me
                     if (readInt64As == SXP_STR) goto case_SXP_STR;
                 case SXP_INT64:
-                    u.d = NA_REAL;
+                    // fix for #488. PREVIOSULY: u.d = NA_REAL;
+                    u.l = NAINT64; // NAINT64 is defined in data.table.h, = LLONG_MIN
                     if (Strtoll()) { REAL(thiscol)[i] = u.d; break; }
                     SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_REAL, i, j));
                     // A bump from INT to STR will bump through INT64 and then REAL before STR, coercing each time. Deliberately done this way. It's
