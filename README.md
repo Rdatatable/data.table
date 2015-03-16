@@ -72,6 +72,9 @@
       * providing sep which is not present in the file now reads as if sep="\n" rather than 'sep not found', #738. Thanks to Adam Kennedy for explaining the use-case.
       * seg fault with errors over 1,000 characters (when long lines are included) is fixed, [#802](https://github.com/Rdatatable/data.table/issues/802). Thanks again to Vladimir Sitnikov.
       * Missing `integer64` values are properly assigned `NA`s. Closes [#488](https://github.com/Rdatatable/data.table/issues/488). Thanks to @PeterStoyanov and @richierocks for the report.
+      * Column headers with empty strings aren't skipped anymore. [Closes #483](https://github.com/Rdatatable/data.table/issues/483). Thanks to @RobyJoehanes and @kforner.
+      * Detects separator correctly when commas also exist in text fields. Closes [#923](https://github.com/Rdatatable/data.table/issues/923). Thanks to @raymondben for the report.
+      * `NA` values in NA inflated file are read properly. [Closes #737](https://github.com/Rdatatable/data.table/issues/737). Thanks to Adam Kennedy.
 
   6. Auto indexing:
       * `DT[colA == max(colA)]` now works again without needing `options(datatable.auto.index=FALSE)`. Thanks to Jan Gorecki and kaybenleroll, [#858](https://github.com/Rdatatable/data.table/issues/858). Test added.
