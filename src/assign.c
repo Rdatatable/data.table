@@ -367,6 +367,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                 if (newcolnum<0 || newcolnum>=length(newcolnames))
                     error("Internal logical error. length(newcolnames)=%d, length(names)=%d, coln=%d", length(newcolnames), length(names), coln);
                 if (isNull(thisvalue)) {
+                    // fix for #1082
+                    if (!isNull(rows)) error("When deleting columns, i should not be provided");
                     warning("Adding new column '%s' then assigning NULL (deleting it).",CHAR(STRING_ELT(newcolnames,newcolnum)));
                     continue;
                 }

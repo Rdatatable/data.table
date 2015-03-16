@@ -169,6 +169,8 @@
 
   45. Fixed another segfault in `melt.data.table` issue that was caught due to issue in Windows. Closes [#1059](https://github.com/Rdatatable/data.table/issues/1059). Thanks again to @ChristK for the minimal report. 
 
+  46. `DT[rows, newcol := NULL]` resulted in a segfault on the next assignment by reference. Closes [#1082](https://github.com/Rdatatable/data.table/issues/1082). Thanks to @stevenbagley for the MRE.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
