@@ -26,7 +26,7 @@
 
 \method{anyDuplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...)
 
-uniqueN(x)
+uniqueN(x, by=if (is.data.table(x)) key(x) else NULL)
 }
 \arguments{
   \item{x}{ A data.table. \code{uniqueN} accepts atomic vectors and data.frames as well.}
@@ -57,6 +57,8 @@ uniqueN(x)
      \code{unique} returns a data table with duplicated rows removed.
 
      \code{anyDuplicated} returns a integer value with the index of first duplicate. If none exists, 0L is returned.
+
+     \code{uniqueN} returns the number of unique elements in the vector, \code{data.frame} or \code{data.table}.
 
 }
 \seealso{ \code{\link{setNumericRounding}}, \code{\link{data.table}}, \code{\link{duplicated}}, \code{\link{unique}}, \code{\link{all.equal}} }
@@ -93,8 +95,10 @@ unique(DT, by="B", fromLast=TRUE)
 anyDuplicated(DT, by=c("A", "B"))    # 3L
 any(duplicated(DT, by=c("A", "B")))  # TRUE
 
-# uniqueN, total unique rows
+# uniqueN, unique rows on key columns
 uniqueN(DT)
+# uniqueN, unique rows on all all columns
+uniqueN(DT, by=NULL)
 # uniqueN while grouped by "A"
 DT[, .(uN=uniqueN(.SD)), by=A]
 }

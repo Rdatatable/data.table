@@ -6203,6 +6203,12 @@ test(1502.1, dt1["a", z := NULL], error="When deleting columns, i should not be 
 # this shouldn't segfault on 'dt1[...]'
 test(1502.2, dt1["a", z := 42L], dt2["a", z := 42L])
 
+# fix for #1080
+dt = data.table(col1 = c(1,2,3,2,5,3,2), col2 = c(0,9,8,9,6,5,4), key=c("col1"))
+test(1503.1, uniqueN(dt), 4L) # default on key columns
+test(1503.2, uniqueN(dt, by=NULL), 6L) # on all columns
+test(1503.3, uniqueN(dt$col1), 4L) # on just that column
+
 ##########################
 
 
