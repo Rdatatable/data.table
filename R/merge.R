@@ -12,6 +12,8 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     ## Try to infer proper value for `by`
     if (is.null(by)) {
         by <- intersect(key(x), key(y))
+        if (!length(by)) by <- NULL
+        
     }
     if (is.null(by)) {
         by <- key(x)
