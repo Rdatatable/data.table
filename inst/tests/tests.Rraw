@@ -6128,8 +6128,24 @@ test(1499, ans1, ans2)
 
 # Fix for #488
 if ("package:bit64" %in% search()) {
-    test(1500, fread("x,y\n0,\n", colClasses = list(integer64 = "y")), 
+    test(1500.1, fread("x,y\n0,\n", colClasses = list(integer64 = "y")), 
             data.table(x=0L, y=as.integer64(NA)))
+    # more tests after new fix
+    test(1500.2, fread("x,y\n0,12345678901234\n0,\n0,\n0,\n0,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n12345678901234,\n0,\n0,\n0,\n0,\n0,\n"), 
+        data.table(x=as.integer64(c(rep(0L, 5L), rep(NA, 11), 12345678901234, rep(0L,5L))), 
+                   y=as.integer64(c(12345678901234, rep(NA,21)))))
+
+    x = c("12345678901234", rep("NA", 178), "a")
+    y = sample(letters, length(x), TRUE)
+    ll = paste(x,y, sep=",", collapse="\n")
+    test(1500.3, fread(ll), 
+        data.table(V1=c("12345678901234", rep("", 178), "a"), V2=y), warning="Bumped column 1 to type character on data")
+
+    x = c("12345678901234", rep("NA", 178), "0.5")
+    y = sample(letters, length(x), TRUE)
+    ll = paste(x,y, sep=",", collapse="\n")
+    test(1500.4, fread(ll), data.table(V1=suppressWarnings(as.numeric(x)), V2=y))
+
 }
 
 # dcast.data.table new tests

@@ -341,7 +341,9 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     case SXP_INT64:
         switch(oldtype) {
         case SXP_LGL : case SXP_INT :
-            for (i=0; i<sofar; i++) REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? NA_REAL : (u.l=(long long)INTEGER(v)[i],u.d));
+            for (i=0; i<sofar; i++) {
+                REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? (u.l=NAINT64,u.d) : (u.l=(long long)INTEGER(v)[i],u.d));
+            }
             break;
         default :
             STOP("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
@@ -353,7 +355,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
             for (i=0; i<sofar; i++) REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? NA_REAL : (double)INTEGER(v)[i]);
             break;
         case SXP_INT64 :
-            for (i=0; i<sofar; i++) REAL(newv)[i] = (ISNA(REAL(v)[i]) ? NA_REAL : (double)(*(long long *)&REAL(v)[i]));
+            for (i=0; i<sofar; i++) REAL(newv)[i] = ((*(long long *)&REAL(v)[i] == NAINT64) ? NA_REAL : (double)(*(long long *)&REAL(v)[i]));
             break;
         default :
             STOP("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
