@@ -85,7 +85,7 @@ aggregate_funs <- function(funs, vals, ...) {
         }
         setattr(ans, 'names', nms)
     }
-    ans = lapply(seq_along(funs), function(i) construct_funs(funs[[i]], vals[[i]]))
+    ans = mapply(construct_funs, funs, vals, SIMPLIFY=FALSE)
     as.call(c(quote(list), unlist(ans)))
 }
 

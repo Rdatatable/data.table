@@ -12,14 +12,13 @@
 
 % \method{dcast}{data.table}
 \usage{
-## fast dcast a data.table (not an S3 method yet)
 \method{dcast}{data.table}(data, formula, fun.aggregate = NULL, 
     ..., margins = NULL, subset = NULL, fill = NULL, 
     drop = TRUE, value.var = guess(data),
     verbose = getOption("datatable.verbose"))
 }
 \arguments{
-  \item{data}{ A molten \code{data.table} object, see \code{\link{melt.data.table}}.}
+  \item{data}{ A \code{data.table}.}
   \item{formula}{A formula of the form LHS ~ RHS to cast, see details.}
   \item{fun.aggregate}{Should the data be aggregated before casting? If the formula doesn't identify single observation for each cell, then aggregation defaults to \code{length} with a message.
 
@@ -35,7 +34,7 @@
   \item{verbose}{Not used yet. Maybe dropped in the future or used to provide information messages onto the console.}
 }
 \details{
-The cast formula takes the form \code{LHS ~ RHS}	, ex: \code{var1 + var2 ~ var3}. The order of entries in the formula is essential. There are two special variables: \code{.} and \code{...}. Their functionality is identical to that of \code{reshape2:::dcast}. 
+The cast formula takes the form \code{LHS ~ RHS}	, ex: \code{var1 + var2 ~ var3}. The order of entries in the formula is essential. There are two special variables: \code{.} and \code{...}. Their functionality is identical to that of \code{reshape2::dcast}. 
 
 \code{dcast} also allows \code{value.var} columns of type \code{list}.
 
@@ -43,9 +42,9 @@ When variable combinations in \code{formula} doesn't identify a unique value in 
 
 If the formula's LHS contains the same column more than once, ex: \code{dcast(DT, x+x~ y)}, then the answer will have duplicate names. In those cases, the duplicate names are renamed using \code{make.unique} so that key can be set without issues.
 
-Names for columns that are being cast are generated in the same order (separated by a \code{_}) from the (unique) values in each column mentioned in the formula RHS.
+Names for columns that are being cast are generated in the same order (separated by an underscore, \code{_}) from the (unique) values in each column mentioned in the formula RHS.
 
-From \code{v1.9.4}, \code{dcast} tries to preserve attributes whereever possible, except when \code{value.var} is a factor (or ordered factor). For \code{factor} types, the resulting casted columns will be coerced to character type thereby losing \code{levels} attribute.
+From \code{v1.9.4}, \code{dcast} tries to preserve attributes whereever possible.
 
 \bold{NEW}: From \code{v1.9.6}, it is possible to cast multiple \code{value.var} columns and also cast by providing multiple \code{fun.aggregate} functions. Multiple \code{fun.aggregate} functions should be provided as a \code{list}, for e.g., \code{list(mean, sum, function(x) paste(x, collapse="")}. \code{value.var} can be either a character vector or list of length=1, or a list of length equal to \code{length(fun.aggregate)}. When \code{value.var} is a character vector or a list of length 1, each function mentioned under \code{fun.aggregate} is applied to every column specified under \code{value.var} column. When \code{value.var} is a list of length equal to \code{length(fun.aggregate)} each element of \code{fun.aggregate} is appled to each element of \code{value.var} column.
 
@@ -54,13 +53,6 @@ From \code{v1.9.4}, \code{dcast} tries to preserve attributes whereever possible
     A keyed \code{data.table} that has been cast. The key columns are equal to the variables in the \code{formula} LHS in the same order.
 }
 
-\note{
-\bold{Currently unimplemented features from \code{reshape2::dcast}:}
-\enumerate{
-    \item At the moment, only formula interface is supported. That the argument \code{formula} can accept a list of quoted expressions is yet to be implemented. 
-    \item The argument \code{margins} is yet to be implemented. 
-    }
-}
 \examples{
 require(data.table)
 names(ChickWeight) <- tolower(names(ChickWeight))
@@ -76,15 +68,15 @@ dcast(DT, diet+chick ~ time, drop=FALSE, fill=0)
 dcast(DT, chick ~ time, fun=mean, subset=.(time < 10 & chick < 20))
 
 \dontrun{
-# benchmark against reshape2's dcast
+# benchmark against reshape2's dcast, minimum of 3 runs
 set.seed(45)
 DT <- data.table(aa=sample(1e4, 1e6, TRUE), 
       bb=sample(1e3, 1e6, TRUE), 
       cc = sample(letters, 1e6, TRUE), dd=runif(1e6))
-system.time(dcast(DT, aa ~ cc, fun=sum)) # 0.28 seconds
-system.time(dcast(DT, bb ~ cc, fun=mean)) # 0.08 seconds
-# reshape2::dcast takes 99 seconds
-system.time(dcast(DT, aa + bb ~ cc, fun=sum)) # 2.7 seconds
+system.time(dcast(DT, aa ~ cc, fun=sum)) # 0.12 seconds
+system.time(dcast(DT, bb ~ cc, fun=mean)) # 0.04 seconds
+# reshape2::dcast takes 31 seconds
+system.time(dcast(DT, aa + bb ~ cc, fun=sum)) # 1.2 seconds
 }
 
 # NEW FEATURE - multiple value.var and multiple fun.aggregate
