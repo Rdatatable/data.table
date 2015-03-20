@@ -3129,7 +3129,9 @@ test(1098, dt1[dt2,roll=-Inf,rollends=TRUE]$ind, INT(1,1,1,2,2,2,2,2,2,2))  # ok
 test(1099, dt1[dt2,roll=-Inf,rollends=c(TRUE,FALSE)]$ind, INT(1,1,1,2,2,2,2,NA,NA,NA))  # ok before
 test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,2,2))  # now ok
 
-# dcast
+#########################################
+# All dcast.data.table tests go in here #
+#########################################
 if ("package:reshape2" %in% search()) {
 
     names(ChickWeight) <- tolower(names(ChickWeight))
@@ -3156,6 +3158,176 @@ if ("package:reshape2" %in% search()) {
     # testing without aggregation
     x <- data.table(a=5:1, b=runif(5))
     test(1104.3, as.data.frame(dcast(x, a ~ b, value.var="b")), dcast(as.data.frame(x), a ~ b, value.var="b"))
+
+    # Fix for case 2 in bug report #5149 - dcast dint aggregate properly when formula RHS has "."
+    set.seed(45)
+    DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
+    ans = setDT(dcast(as.data.frame(DT), x ~ ., mean, value.var="y"))
+    setkey(ans, x)
+    test(1148.1, dcast(DT, x ~ ., mean, value.var="y"), ans)
+    # also quashed another bug with `.` in formula (when there's no aggregate function):
+    DT <- data.table(a=sample(5), b=runif(5), c=5:1)
+    ans1 = setDT(dcast(as.data.frame(DT), a ~ ., value.var="c"))
+    ans2 = setDT(dcast(as.data.frame(DT), b+a ~ ., value.var="c"))
+    setkey(ans1, "a")
+    setkey(ans2, "b", "a")
+    test(1148.2, dcast(DT, a ~ ., value.var="c"), ans1)
+    test(1148.3, dcast(DT, b+a~., value.var="c"), ans2)
+
+    # more tests for `dcast` with formula being character and errors when formula is a hybrid
+    set.seed(1)
+    x <- data.table(a=rep(1:5, each=5), b=runif(25))
+    ### adding all extra arguments for no verbose during "test.data.table()" to all dcast tests
+    test(1150.1, dcast(x, " a~ . ", value.var="b", fun=length), data.table(a=1:5, `.`=5L, key="a"))
+    test(1150.2, dcast(x, "a ~  c ", value.var="b"), error="not found or of unknown type")
+    test(1150.3, dcast(x, a ~  a, value.var="c"), error="are not found in 'data'")
+
+    # fix for #5379 - issue when factor columns on formula LHS along with `drop=FALSE`
+    set.seed(1L)
+    df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]),
+                 b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+    dt <- as.data.table(df)
+    test(1198.1, setkey(setDT(dcast(as.data.frame(df), a~b, drop=FALSE, value.var="b", fun=length)), a), dcast(dt, a~b, drop=FALSE, fun=length, value.var="b"))
+    
+    # reverse the levels
+    set.seed(1L)
+    df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[5:1]),
+                 b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+    dt <- as.data.table(df)
+    test(1198.2, setkey(setDT(dcast(as.data.frame(df), a~b, drop=FALSE, value.var="b", fun=length)), a), dcast(dt, a~b, drop=FALSE, value.var="b", fun=length))
+    
+    # more factor cols
+    set.seed(1L)
+    df <- data.frame(a1=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]), # factor col 1
+                 a2=factor(sample(letters[6:10], 10, replace=TRUE), letters[6:10]), # factor col 2
+                 a3=sample(letters[1:3], 10, TRUE), # no factor
+                 b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+    dt <- as.data.table(df)
+    ans <- dcast(dt, a1+a2+a3~b, drop=FALSE, value.var="b")
+    ans[, c(4:7) := lapply(.SD, as.character), .SDcols=4:7]
+    test(1198.3, setkey(setDT(dcast(as.data.frame(df), a1+a2+a3~b, drop=FALSE, value.var="b")), a1,a2,a3), ans)
+
+    # dcast bug fix for 'subset' argument (it doesn't get key set before to run C-fcast):
+    dt <- data.table(x=c(1,1,1,2,2,2,1,1), y=c(1,2,3,1,2,1,1,2), z=c(1,2,3,NA,4,5,NA,NA))
+    test(1252, dcast(dt, x~y, value.var="z", subset=.(!is.na(z))), data.table(x=c(1,2), `1`=c(1,5), `2`=c(2,4), `3`=c(3,NA), key="x"))
+
+    # FR #5675 and DOC #5676
+    set.seed(1L)
+    dt <- data.table(a=sample(10), b=2013:2014, variable=rep(c("c", "d"), each=10), value=runif(20))
+    ans1 <- names(dcast(dt, a ~ ... + b, value.var="value"))
+    test(1286, ans1, c("a", "c_2013", "c_2014", "d_2013", "d_2014"))
+
+    # bug git #693 - dcast error message improvement:
+    dt <- data.table(x=c(1,1), y=c(2,2), z = 3:4)
+    test(1314, dcast(dt, x ~ y, value.var="z", fun.aggregate=identity), error="should take vector inputs and return a single value")
+
+    # bug #688 - preserving attributes
+    DT = data.table(id = c(1,1,2,2), ty = c("a","b","a","b"), da = as.Date("2014-06-20"))
+    test(1315, dcast(DT, formula = id ~ ty, value.var="da"), data.table(id=c(1,2), a=as.Date("2014-06-20"), b=as.Date("2014-06-20"), key="id")) 
+
+    # issues/713 - dcast and fun.aggregate
+    DT <- data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
+    foo <- function (tbl, fun.aggregate) {
+        dcast(tbl, id ~ k, value.var='v', fun.aggregate=fun.aggregate, fill=NA_integer_)
+    }
+    test(1345, foo(DT, last), dcast(DT, id ~ k, value.var='v', fun.aggregate=last, fill=NA_integer_))
+
+    # more minor changes to dcast (subset argument handling symbol - removing any surprises with data.table's typical scoping rules) - test for that.
+    DT <- data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
+    bla <- c(TRUE, rep(FALSE, 6L)) 
+    # calling `subset=.(bla)` gives eval error when testing... not sure what's happeing! using values directly instead for now.
+    test(1346.1, dcast(DT, id ~ k, value.var="v", subset=.(c(TRUE, rep(FALSE, 6L)))), dcast(DT[1L], id ~ k, value.var="v"))
+    DT[, bla := !bla]
+    test(1346.2, dcast(DT, id ~ k, value.var="v", subset=.(bla), fun.aggregate=length), dcast(DT[(bla)], id ~ k, value.var="v", fun.aggregate=length))
+
+    # issues/715
+    DT <- data.table(id=rep(1:2, c(3,2)), k=c(letters[1:3], letters[1:2]), v=1:5)
+    test(1347.1, dcast(DT, id ~ k, fun.aggregate=last, value.var="v"), error="should take vector inputs and return a single value")
+    test(1347.2, dcast(DT, id ~ k, fun.aggregate=last, value.var="v", fill=NA_integer_), data.table(id=1:2, a=c(1L, 4L), b=c(2L,5L), c=c(3L,NA_integer_), key="id"))
+
+    # Fix for #893
+    dt <- data.table(
+        x = factor("a", levels = c("a", "b")),
+        y = factor("b", levels = c("a", "b")),
+        z = 1
+    )
+    test(1457, dcast(dt, y ~ x, drop = FALSE, value.var="z"), 
+                 data.table(dcast(as.data.frame(dt), y ~ x, drop = FALSE, value.var="z"), key="y"))
+
+    # dcast.data.table new tests
+    # Fix for #1070 (special case of ... on LHS)
+    dt <- data.table(label= month.abb[1:5], val=0)
+    test(1501.1, dcast(dt,... ~ label, value.var="val", sum), 
+           data.table(`.`=".", Apr=0, Feb=0, Jan=0, Mar=0, May=0, key="."))
+    # Fix for #862 (optional prefixes)
+    dt <- data.table(name=c("Betty","Joe","Frank","Wendy","Sally"),
+                       address=c(rep("bla1",2), rep("bla2",2), "bla3"))
+    test(1501.2, dcast(dt, address ~ paste("cust", dt[, seq_len(.N), by=address]$V1, sep=""), value.var="name"), data.table(address=paste0("bla", 1:3), cust1=c("Betty", "Frank", "Sally"), 
+                 cust2=c("Joe", "Wendy", NA), key="address"))
+
+    # Fix for #1037 (optional prefixes + undefined variables)
+    dt <- structure(list(V1 = c(0L, 1L, 2L, 3L, 4L, 0L, 1L, 2L, 3L, 4L), 
+              V2 = c(1.052, 0.542, 0.496, 0.402, 0.278, 5.115, 4.329, 4.121, 
+              4.075, 4.0088)), .Names = c("V1", "V2"), class = "data.frame", row.names = c(NA, -10L))
+    setDT(dt)
+    ans1 = dcast(as.data.frame(dt), cumsum(V1 == 0) ~ V1, value.var = 'V2')
+    ans2 = dcast(dt, cumsum(V1 == 0) ~ V1, value.var = 'V2')
+    setkey(setnames(setDT(ans1), names(ans2)), V1)
+    test(1501.3, ans1, ans2)
+
+    # Implement #716 and #739 (multiple value.var and fun.aggregate)
+    # multiple value.var
+    dt = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE), 
+                    z=sample(letters[1:2], 20,TRUE), d1 = runif(20), d2=1L)
+    ans21 <- dcast(as.data.frame(dt), x + y ~ z, fun=sum, value.var="d1")
+    ans22 <- dcast(as.data.frame(dt), x + y ~ z, fun=sum, value.var="d2")
+    ans23 <- dcast(as.data.frame(dt), x + y ~ z, fun=mean, value.var="d1")
+    ans24 <- dcast(as.data.frame(dt), x + y ~ z, fun=mean, value.var="d2")
+
+    ans1 <- dcast(dt, x + y ~ z, fun=sum, value.var=c("d1","d2"))
+    ans2 <- cbind(ans21, ans22[, 3:4])
+    setkey(setnames(setDT(ans2), names(ans1)), x, y)
+    test(1501.4, ans1, ans2)
+    # multiple fun.agg
+    ans1 <- dcast(dt, x + y ~ z, fun=list(sum, mean), value.var="d1")
+    ans2 <- cbind(ans21, ans23[, 3:4])
+    setkey(setnames(setDT(ans2), names(ans1)), x, y)
+    test(1501.5, ans1, ans2)
+    # multiple fun.agg and value.var (all combinations)
+    ans1 <- dcast(dt, x + y ~ z, fun=list(sum, mean), value.var=c("d1", "d2"))
+    ans2 <- cbind(ans21, ans22[, 3:4], ans23[, 3:4], ans24[, 3:4])
+    setkey(setnames(setDT(ans2), names(ans1)), x, y)
+    test(1501.6, ans1, ans2)
+    # multiple fun.agg and value.var (one-to-one)
+    ans1 <- dcast(dt, x + y ~ z, fun=list(sum, mean), value.var=list("d1", "d2"))
+    ans2 <- cbind(ans21, ans24[, 3:4])
+    setkey(setnames(setDT(ans2), names(ans1)), x, y)
+    test(1501.7, ans1, ans2)
+
+    # Additional test after fixing fun.agg creation - using the example here: https://github.com/Rdatatable/data.table/issues/716
+    DT = data.table(x=1:5, y=paste("v", 1:5, sep=""), 
+                            v1=6:10, v2=11:15, 
+                            k1=letters[1:5], k2=letters[6:10])
+    DT.m = melt(DT, id=1:2, measure=list(3:4, 5:6))
+    ans1 <- dcast(DT.m, x ~ y, fun.aggregate = 
+        list(sum, function(x) paste(x, collapse="")), value.var=list("value1", "value2"))
+    ans21 <- dcast(as.data.frame(DT.m), x ~ y, fun.agg=sum, value.var="value1")
+    ans22 <- dcast(as.data.frame(DT.m), x ~ y, fun.agg=function(x) paste(x, collapse=""), value.var="value2")
+    ans2 <- cbind(ans21, ans22[, -1L])
+    setkey(setnames(setDT(ans2), names(ans1)), x)
+    test(1501.8, ans1, ans2)
+
+    # more testing on fun.aggregate
+    dt = as.data.table(airquality)
+    ans = suppressWarnings(melt(dt, id=c("Month", "Day"), na.rm=TRUE))
+    ans = ans[ , .(min=min(value), max=max(value)), by=.(Month, variable)]
+    ans = melt(ans, id=1:2, variable.name="variable2")
+    ans = dcast(ans, Month ~ variable2 + variable)
+    setnames(ans, c("Month", paste(".", names(ans)[-1L], sep="_")))
+    valvars = c("Ozone", "Solar.R", "Wind", "Temp")
+    ans2 <- suppressWarnings(dcast(dt, Month ~ ., fun=list(min, max), na.rm=TRUE, value.var=valvars))
+    setcolorder(ans, names(ans2))
+    test(1501.9, setkey(ans, Month), ans2[, names(ans2)[-1L] := lapply(.SD, as.numeric), .SDcols=-1L])
 }
 
 # test for freading commands
@@ -3444,34 +3616,9 @@ tol = .Machine$double.eps^0.5
 x <- c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.18909, NaN, 5.18909-1.2*tol, 5.18909-0.04*tol)
 test(1147.3, dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
 
-if ("package:reshape2" %in% search()) {
-    # Fix for case 2 in bug report #5149 - dcast dint aggregate properly when formula RHS has "."
-    set.seed(45)
-    DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
-    ans = setDT(dcast(as.data.frame(DT), x ~ ., mean, value.var="y"))
-    setkey(ans, x)
-    test(1148.1, dcast(DT, x ~ ., mean, value.var="y"), ans)
-    # also quashed another bug with `.` in formula (when there's no aggregate function):
-    DT <- data.table(a=sample(5), b=runif(5), c=5:1)
-    ans1 = setDT(dcast(as.data.frame(DT), a ~ ., value.var="c"))
-    ans2 = setDT(dcast(as.data.frame(DT), b+a ~ ., value.var="c"))
-    setkey(ans1, "a")
-    setkey(ans2, "b", "a")
-    test(1148.2, dcast(DT, a ~ ., value.var="c"), ans1)
-    test(1148.3, dcast(DT, b+a~., value.var="c"), ans2)
-}
-
 # test for `iradixorder` when input is integer(0) and numeric(0)
 test(1149.1, iradixorder(integer(0)), integer(0)) 
 test(1149.2, iradixorder(numeric(0)), error="iradixorder is only for integer") 
-
-# more tests for `dcast` with formula being character and errors when formula is a hybrid
-set.seed(1)
-x <- data.table(a=rep(1:5, each=5), b=runif(25))
-### adding all extra arguments for no verbose during "test.data.table()" to all dcast tests
-test(1150.1, dcast(x, " a~ . ", value.var="b", fun=length), data.table(a=1:5, `.`=5L, key="a"))
-test(1150.2, dcast(x, "a ~  c ", value.var="b"), error="not found or of unknown type")
-test(1150.3, dcast(x, a ~  a, value.var="c"), error="are not found in 'data'")
 
 # test uniqlengths
 set.seed(45)
@@ -3766,33 +3913,6 @@ setkey(DT, NULL)  # val[3] and val[4] are now equal, within 2 byte rounding
 test(1195, DT[,.N,keyby=val], setkey(DT,val)[,.N,by=val])
 test(1196, DT[,.N,by=val]$N, INT(1,1,2))
 test(1197, DT[.(x),.N], 2)
-
-# fix for #5379 - issue when factor columns on formula LHS along with `drop=FALSE`
-if ("package:reshape2" %in% search()) {
-    set.seed(1L)
-    df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]),
-                 b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
-    dt <- as.data.table(df)
-    test(1198.1, setkey(setDT(dcast(as.data.frame(df), a~b, drop=FALSE, value.var="b", fun=length)), a), dcast(dt, a~b, drop=FALSE, fun=length, value.var="b"))
-    
-    # reverse the levels
-    set.seed(1L)
-    df <- data.frame(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[5:1]),
-                 b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
-    dt <- as.data.table(df)
-    test(1198.2, setkey(setDT(dcast(as.data.frame(df), a~b, drop=FALSE, value.var="b", fun=length)), a), dcast(dt, a~b, drop=FALSE, value.var="b", fun=length))
-    
-    # more factor cols
-    set.seed(1L)
-    df <- data.frame(a1=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]), # factor col 1
-                 a2=factor(sample(letters[6:10], 10, replace=TRUE), letters[6:10]), # factor col 2
-                 a3=sample(letters[1:3], 10, TRUE), # no factor
-                 b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
-    dt <- as.data.table(df)
-    ans <- dcast(dt, a1+a2+a3~b, drop=FALSE, value.var="b")
-    ans[, c(4:7) := lapply(.SD, as.character), .SDcols=4:7]
-    test(1198.3, setkey(setDT(dcast(as.data.frame(df), a1+a2+a3~b, drop=FALSE, value.var="b")), a1,a2,a3), ans)
-}
 
 DT = data.table(id=1:2, val1=6:1, val2=6:1)   # 5380
 test(1199, DT[, sum(.SD), by=id], error="GForce sum can only be applied to columns, not .SD or similar.*looking for.*lapply(.SD")
@@ -4176,10 +4296,6 @@ if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
 
 ###############
 
-# dcast bug fix for 'subset' argument (it doesn't get key set before to run C-fcast):
-dt <- data.table(x=c(1,1,1,2,2,2,1,1), y=c(1,2,3,1,2,1,1,2), z=c(1,2,3,NA,4,5,NA,NA))
-test(1252, dcast(dt, x~y, value.var="z", subset=.(!is.na(z))), data.table(x=c(1,2), `1`=c(1,5), `2`=c(2,4), `3`=c(3,NA), key="x"))
-
 # turning off tolerance for UPCs (> 11 s.f. stored in numeric), #5369
 DT <- data.table(upc = c(301426027592, 301426027593, 314775802939, 314775802940, 314775803490, 314775803491, 314775815510, 314775815511, 314933000171, 314933000172),
                  year = 2006:2007)
@@ -4353,12 +4469,6 @@ test(1284.2, dt[order(-abs(x))], dt[3:1])
 dt <- data.table(x=numeric(0), y=character(0), key="x")
 test(1285.1, duplicated(dt), duplicated.data.frame(dt))
 test(1285.2, unique(dt), dt)
-
-# FR #5675 and DOC #5676
-set.seed(1L)
-dt <- data.table(a=sample(10), b=2013:2014, variable=rep(c("c", "d"), each=10), value=runif(20))
-ans1 <- names(dcast(dt, a ~ ... + b, value.var="value"))
-test(1286, ans1, c("a", "c_2013", "c_2014", "d_2013", "d_2014"))
 
 # BUG #5672 fix
 a <- data.table(BOD, key="Time")
@@ -4680,14 +4790,6 @@ test(1313.28, DT[, max(y), by=x], DT[, base:::max(y), by=x])
 test(1313.29, DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c("a","a","c","","a",NA)), warning="No non-missing")
 test(1313.30, DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c("b","a","c","a","c",NA)), warning="No non-missing")
 
-# bug git #693 - dcast error message improvement:
-dt <- data.table(x=c(1,1), y=c(2,2), z = 3:4)
-test(1314, dcast(dt, x ~ y, value.var="z", fun.aggregate=identity), error="should take vector inputs and return a single value")
-
-# bug #688 - preserving attributes
-DT = data.table(id = c(1,1,2,2), ty = c("a","b","a","b"), da = as.Date("2014-06-20"))
-test(1315, dcast(DT, formula = id ~ ty, value.var="da"), data.table(id=c(1,2), a=as.Date("2014-06-20"), b=as.Date("2014-06-20"), key="id")) 
-
 # bug 700 - bmerge, roll=TRUE and nomatch=0L when i's key group occurs more than once
 dt1 <- data.table(structure(list(x = c(7L, 33L), y = structure(c(15912, 15912), class = "Date"), z = c(626550.35284, 7766.385)), .Names =
 c("x", "y", "z"), class = "data.frame", row.names = c(NA, -2L)), key = "x,y")
@@ -4853,27 +4955,6 @@ test(1342, unique(bla)[, bla := 2L], data.table(x=c(1,2),y=1,bla=2L))
 # blank and NA fields in logical columns
 test(1343, fread("A,B\n1,TRUE\n2,\n3,F"), data.table(A=1:3, B=c(TRUE,NA,FALSE)))
 test(1344, fread("A,B\n1,T\n2,NA\n3,"), data.table(A=1:3, B=c(TRUE,NA,NA)))
-
-
-# issues/713 - dcast and fun.aggregate
-DT <- data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
-foo <- function (tbl, fun.aggregate) {
-    dcast(tbl, id ~ k, value.var='v', fun.aggregate=fun.aggregate, fill=NA_integer_)
-}
-test(1345, foo(DT, last), dcast(DT, id ~ k, value.var='v', fun.aggregate=last, fill=NA_integer_))
-
-# more minor changes to dcast (subset argument handling symbol - removing any surprises with data.table's typical scoping rules) - test for that.
-DT <- data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
-bla <- c(TRUE, rep(FALSE, 6L)) 
-# calling `subset=.(bla)` gives eval error when testing... not sure what's happeing! using values directly instead for now.
-test(1346.1, dcast(DT, id ~ k, value.var="v", subset=.(c(TRUE, rep(FALSE, 6L)))), dcast(DT[1L], id ~ k, value.var="v"))
-DT[, bla := !bla]
-test(1346.2, dcast(DT, id ~ k, value.var="v", subset=.(bla), fun.aggregate=length), dcast(DT[(bla)], id ~ k, value.var="v", fun.aggregate=length))
-
-# issues/715
-DT <- data.table(id=rep(1:2, c(3,2)), k=c(letters[1:3], letters[1:2]), v=1:5)
-test(1347.1, dcast(DT, id ~ k, fun.aggregate=last, value.var="v"), error="should take vector inputs and return a single value")
-test(1347.2, dcast(DT, id ~ k, fun.aggregate=last, value.var="v", fill=NA_integer_), data.table(id=1:2, a=c(1L, 4L), b=c(2L,5L), c=c(3L,NA_integer_), key="id"))
 
 # .N now available in i
 DT = data.table(a=1:3,b=1:6)
@@ -5699,17 +5780,6 @@ test(1456.1, chmatch2(x1, table), as.integer(c(3,1,NA,2,5,NA)))
 test(1456.2, chmatch2(x2, table), as.integer(c(1,2,NA)))
 test(1456.3, chmatch2(x3, table), as.integer(c(NA,1,2,NA,NA)))
 
-# Fix for #893
-if ("package:reshape2" %in% search()) {
-    dt <- data.table(
-        x = factor("a", levels = c("a", "b")),
-        y = factor("b", levels = c("a", "b")),
-        z = 1
-    )
-    test(1457, dcast(dt, y ~ x, drop = FALSE, value.var="z"), 
-                 data.table(dcast(as.data.frame(dt), y ~ x, drop = FALSE, value.var="z"), key="y"))
-}
-
 # Add tests for which_
 x = sample(c(-5:5, NA), 25, TRUE)
 test(1458.1, which(x > 0), which_(x > 0)) # default is TRUE
@@ -6147,82 +6217,6 @@ if ("package:bit64" %in% search()) {
     test(1500.4, fread(ll), data.table(V1=suppressWarnings(as.numeric(x)), V2=y))
 
 }
-
-# dcast.data.table new tests
-
-# Fix for #1070 (special case of ... on LHS)
-dt <- data.table(label= month.abb[1:5], val=0)
-test(1501.1, dcast(dt,... ~ label, value.var="val", sum), 
-       data.table(`.`=".", Apr=0, Feb=0, Jan=0, Mar=0, May=0, key="."))
-# Fix for #862 (optional prefixes)
-dt <- data.table(name=c("Betty","Joe","Frank","Wendy","Sally"),
-                   address=c(rep("bla1",2), rep("bla2",2), "bla3"))
-test(1501.2, dcast(dt, address ~ paste("cust", dt[, seq_len(.N), by=address]$V1, sep=""), value.var="name"), data.table(address=paste0("bla", 1:3), cust1=c("Betty", "Frank", "Sally"), 
-             cust2=c("Joe", "Wendy", NA), key="address"))
-
-# Fix for #1037 (optional prefixes + undefined variables)
-dt <- structure(list(V1 = c(0L, 1L, 2L, 3L, 4L, 0L, 1L, 2L, 3L, 4L), 
-          V2 = c(1.052, 0.542, 0.496, 0.402, 0.278, 5.115, 4.329, 4.121, 
-          4.075, 4.0088)), .Names = c("V1", "V2"), class = "data.frame", row.names = c(NA, -10L))
-setDT(dt)
-ans1 = dcast(as.data.frame(dt), cumsum(V1 == 0) ~ V1, value.var = 'V2')
-ans2 = dcast(dt, cumsum(V1 == 0) ~ V1, value.var = 'V2')
-setkey(setnames(setDT(ans1), names(ans2)), V1)
-test(1501.3, ans1, ans2)
-
-# Implement #716 and #739 (multiple value.var and fun.aggregate)
-# multiple value.var
-dt = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE), 
-                z=sample(letters[1:2], 20,TRUE), d1 = runif(20), d2=1L)
-ans21 <- dcast(as.data.frame(dt), x + y ~ z, fun=sum, value.var="d1")
-ans22 <- dcast(as.data.frame(dt), x + y ~ z, fun=sum, value.var="d2")
-ans23 <- dcast(as.data.frame(dt), x + y ~ z, fun=mean, value.var="d1")
-ans24 <- dcast(as.data.frame(dt), x + y ~ z, fun=mean, value.var="d2")
-
-ans1 <- dcast(dt, x + y ~ z, fun=sum, value.var=c("d1","d2"))
-ans2 <- cbind(ans21, ans22[, 3:4])
-setkey(setnames(setDT(ans2), names(ans1)), x, y)
-test(1501.4, ans1, ans2)
-# multiple fun.agg
-ans1 <- dcast(dt, x + y ~ z, fun=list(sum, mean), value.var="d1")
-ans2 <- cbind(ans21, ans23[, 3:4])
-setkey(setnames(setDT(ans2), names(ans1)), x, y)
-test(1501.5, ans1, ans2)
-# multiple fun.agg and value.var (all combinations)
-ans1 <- dcast(dt, x + y ~ z, fun=list(sum, mean), value.var=c("d1", "d2"))
-ans2 <- cbind(ans21, ans22[, 3:4], ans23[, 3:4], ans24[, 3:4])
-setkey(setnames(setDT(ans2), names(ans1)), x, y)
-test(1501.6, ans1, ans2)
-# multiple fun.agg and value.var (one-to-one)
-ans1 <- dcast(dt, x + y ~ z, fun=list(sum, mean), value.var=list("d1", "d2"))
-ans2 <- cbind(ans21, ans24[, 3:4])
-setkey(setnames(setDT(ans2), names(ans1)), x, y)
-test(1501.7, ans1, ans2)
-
-# Additional test after fixing fun.agg creation - using the example here: https://github.com/Rdatatable/data.table/issues/716
-DT = data.table(x=1:5, y=paste("v", 1:5, sep=""), 
-                        v1=6:10, v2=11:15, 
-                        k1=letters[1:5], k2=letters[6:10])
-DT.m = melt(DT, id=1:2, measure=list(3:4, 5:6))
-ans1 <- dcast(DT.m, x ~ y, fun.aggregate = 
-    list(sum, function(x) paste(x, collapse="")), value.var=list("value1", "value2"))
-ans21 <- dcast(as.data.frame(DT.m), x ~ y, fun.agg=sum, value.var="value1")
-ans22 <- dcast(as.data.frame(DT.m), x ~ y, fun.agg=function(x) paste(x, collapse=""), value.var="value2")
-ans2 <- cbind(ans21, ans22[, -1L])
-setkey(setnames(setDT(ans2), names(ans1)), x)
-test(1501.8, ans1, ans2)
-
-# more testing on fun.aggregate
-dt = as.data.table(airquality)
-ans = suppressWarnings(melt(dt, id=c("Month", "Day"), na.rm=TRUE))
-ans = ans[ , .(min=min(value), max=max(value)), by=.(Month, variable)]
-ans = melt(ans, id=1:2, variable.name="variable2")
-ans = dcast(ans, Month ~ variable2 + variable)
-setnames(ans, c("Month", paste(".", names(ans)[-1L], sep="_")))
-valvars = c("Ozone", "Solar.R", "Wind", "Temp")
-ans2 <- suppressWarnings(dcast(dt, Month ~ ., fun=list(min, max), na.rm=TRUE, value.var=valvars))
-setcolorder(ans, names(ans2))
-test(1501.9, setkey(ans, Month), ans2[, names(ans2)[-1L] := lapply(.SD, as.numeric), .SDcols=-1L])
 
 # fix for #1082
 dt1 = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9, key=c("x", "y"))
