@@ -687,11 +687,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         }
         if (!with) {
             # missing(by)==TRUE was already checked above before dealing with i
-            if (is.call(jsub) && jsub[[1]]==as.name("!")) {
+            if (is.call(jsub) && deparse(jsub[[1]], 500L) %in% c("!", "-")) {
                 notj = TRUE
-                jsub = jsub[[2]]
+                jsub = jsub[[2L]]
             } else notj = FALSE
-            if (notj) j = eval(jsub, parent.frame(), parent.frame()) # else j will be evaluated for the first time on next line
+            j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame()) # else j will be evaluated for the first time on next line
             if (is.logical(j)) j <- which(j)
             if (!length(j)) return( null.data.table() )
             if (is.factor(j)) j = as.character(j)  # fix for FR: #4867
@@ -892,8 +892,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     # fix for #5190. colsub[[1L]] gave error when it's a symbol.
                     if (is.call(colsub) && deparse(colsub[[1L]], 500L) %in% c("!", "-")) {
                         colm = TRUE
-                        .SDcols = eval(colsub[[2L]], parent.frame(), parent.frame())
+                        colsub = colsub[[2L]]
                     } else colm = FALSE
+                    .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame())
                     if (is.logical(.SDcols)) {
                         ansvals = which_(rep(.SDcols, length.out=length(x)), !colm)
                         ansvars = names(x)[ansvals]

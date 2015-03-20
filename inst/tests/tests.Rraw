@@ -6231,6 +6231,23 @@ test(1503.1, uniqueN(dt), 4L) # default on key columns
 test(1503.2, uniqueN(dt, by=NULL), 6L) # on all columns
 test(1503.3, uniqueN(dt$col1), 4L) # on just that column
 
+# .SDcols and with=FALSE understands colstart:colend syntax
+dt = setDT(lapply(1:10, function(x) sample(3, 10, TRUE)))
+# .SDcols
+test(1504.1, dt[, lapply(.SD, sum), by=V1, .SDcols=V8:V10], 
+             dt[, lapply(.SD, sum), by=V1, .SDcols=8:10])
+test(1504.2, dt[, lapply(.SD, sum), by=V1, .SDcols=V10:V8], 
+             dt[, lapply(.SD, sum), by=V1, .SDcols=10:8])
+test(1504.3, dt[, lapply(.SD, sum), by=V1, .SDcols=-(V8:V10)], 
+             dt[, lapply(.SD, sum), by=V1, .SDcols=-(8:10)])
+test(1504.4, dt[, lapply(.SD, sum), by=V1, .SDcols=!(V8:V10)], 
+             dt[, lapply(.SD, sum), by=V1, .SDcols=!(8:10)])
+# with=FALSE
+test(1504.5, dt[, V8:V10, with=FALSE],    dt[, 8:10, with=FALSE])
+test(1504.6, dt[, V10:V8, with=FALSE],    dt[, 10:8, with=FALSE])
+test(1504.7, dt[, -(V8:V10), with=FALSE], dt[, -(8:10), with=FALSE])
+test(1504.8, dt[, !(V8:V10), with=FALSE], dt[, !(8:10), with=FALSE])
+
 ##########################
 
 
