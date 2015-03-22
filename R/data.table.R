@@ -1654,7 +1654,7 @@ as.matrix.data.table <- function(x,...)
         }
         if (!is.logical(xj))
             all.logical <- FALSE
-        if (length(levels(xj)) > 0 || !(is.numeric(xj) || is.complex(xj)) ||
+        if (length(levels(xj)) > 0 || !(is.numeric(xj) || is.complex(xj) || is.logical(xj)) ||
             (!is.null(cl <- attr(xj, "class")) && any(cl %chin%
                 c("Date", "POSIXct", "POSIXlt"))))
             non.numeric <- TRUE

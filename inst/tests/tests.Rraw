@@ -6248,6 +6248,10 @@ test(1504.6, dt[, V10:V8, with=FALSE],    dt[, 10:8, with=FALSE])
 test(1504.7, dt[, -(V8:V10), with=FALSE], dt[, -(8:10), with=FALSE])
 test(1504.8, dt[, !(V8:V10), with=FALSE], dt[, !(8:10), with=FALSE])
 
+# Fix for #1083
+dt = data.table(x=1:4, y=c(TRUE,FALSE))
+test(1505.1, as.matrix(dt), as.matrix(as.data.frame(dt)))
+
 ##########################
 
 

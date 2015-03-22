@@ -177,6 +177,8 @@
 
   46. `DT[rows, newcol := NULL]` resulted in a segfault on the next assignment by reference. Closes [#1082](https://github.com/Rdatatable/data.table/issues/1082). Thanks to @stevenbagley for the MRE.
 
+  47. `as.matrix(DT)` handles cases where `DT` contains both numeric and logical columns correctly (doesn't coerce to character columns anymore). Closes [#1083](https://github.com/Rdatatable/data.table/issues/1083). Thanks to @bramvisser for the [SO post](http://stackoverflow.com/questions/29068328/correlation-between-numeric-and-logical-variable-gives-intended-error).
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
