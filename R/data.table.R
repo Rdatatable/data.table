@@ -2271,7 +2271,7 @@ setnames <- function(x,old,new) {
 
 setcolorder <- function(x,neworder)
 {
-    if (!is.data.table(x)) stop("x is not a data.table")
+    # if (!is.data.table(x)) stop("x is not a data.table")
     if (length(neworder)!=length(x)) stop("neworder is length ",length(neworder)," but x has ",length(x)," columns.")
     if (is.character(neworder)) {
         if (any(duplicated(neworder))) stop("neworder contains duplicate column names")

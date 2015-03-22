@@ -6252,6 +6252,10 @@ test(1504.8, dt[, !(V8:V10), with=FALSE], dt[, !(8:10), with=FALSE])
 dt = data.table(x=1:4, y=c(TRUE,FALSE))
 test(1505.1, as.matrix(dt), as.matrix(as.data.frame(dt)))
 
+# setcolorder works with data.frames, #1018
+dt = data.table(x=1, y=2)
+test(1506, setcolorder(dt, c("y", "x")), data.table(y=2, x=1))
+
 ##########################
 
 
