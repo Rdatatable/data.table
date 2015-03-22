@@ -687,11 +687,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         }
         if (!with) {
             # missing(by)==TRUE was already checked above before dealing with i
-            if (is.call(jsub) && jsub[[1]]==as.name("!")) {
+            if (is.call(jsub) && deparse(jsub[[1]], 500L) %in% c("!", "-")) {
                 notj = TRUE
-                jsub = jsub[[2]]
+                jsub = jsub[[2L]]
             } else notj = FALSE
-            if (notj) j = eval(jsub, parent.frame(), parent.frame()) # else j will be evaluated for the first time on next line
+            j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame()) # else j will be evaluated for the first time on next line
             if (is.logical(j)) j <- which(j)
             if (!length(j)) return( null.data.table() )
             if (is.factor(j)) j = as.character(j)  # fix for FR: #4867
@@ -892,8 +892,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     # fix for #5190. colsub[[1L]] gave error when it's a symbol.
                     if (is.call(colsub) && deparse(colsub[[1L]], 500L) %in% c("!", "-")) {
                         colm = TRUE
-                        .SDcols = eval(colsub[[2L]], parent.frame(), parent.frame())
+                        colsub = colsub[[2L]]
                     } else colm = FALSE
+                    .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame())
                     if (is.logical(.SDcols)) {
                         ansvals = which_(rep(.SDcols, length.out=length(x)), !colm)
                         ansvars = names(x)[ansvals]
@@ -1723,12 +1724,9 @@ as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...)
     if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
     ans = copy(x)  # TO DO: change this deep copy to be shallow.
     setattr(ans,"row.names",.set_row_names(nrow(x)))
-    tt = class(x)
-    n=chmatch("data.frame",tt)
-    tt = c( head(tt,n-1L), "data.table","data.frame", tail(tt, length(tt)-n) )
     # for nlme::groupedData which has class c("nfnGroupedData","nfGroupedData","groupedData","data.frame")
     # See test 527.
-    setattr(ans,"class",tt)
+    setattr(ans,"class",c("data.table","data.frame"))
     alloc.col(ans)
 }
 
@@ -2392,11 +2390,7 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
     } else if (is.data.frame(x)) {
         rn = if (keep.rownames) rownames(x) else NULL
         setattr(x, "row.names", .set_row_names(nrow(x)))
-        tt = class(x)
-        n = chmatch("data.frame", tt)
-        tt = c(head(tt, n - 1L), "data.table", "data.frame", tail(tt, 
-            length(tt) - n))
-        setattr(x, "class", tt)
+        setattr(x,"class",c("data.table","data.frame"))
         alloc.col(x)
         if (!is.null(rn)) {
             nm = copy(names(x))
