@@ -2456,7 +2456,7 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
                 if (is.character(j)) {
                     j = match(j, names(k))
                     if (is.na(j))
-                        stop("Item '", origjj, "' not found in names of input list")
+                        stop("Item '", origj, "' not found in names of input list")
                 }
             }
             .Call(Csetlistelt,k,as.integer(j), x)

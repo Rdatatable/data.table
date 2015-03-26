@@ -47,7 +47,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
         input = tt
     } else if (substring(input,1,7) %in% "https:/") {
-        if (!require(RCurl))
+        if (!requireNamespace("RCurl", quietly=TRUE))
             stop("Input is a URL requiring a https:// connection, for which fread() requires 'RCurl' package, but cannot be found.")
         input = RCurl::getURL(input)
     } else if (input == "" || length(grep('\\n|\\r', input)) > 0) {
