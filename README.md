@@ -200,6 +200,8 @@
 
   NB: Ideal situation would be for `dcast` to be a generic in reshape2 as well, but it is not. We have issued a [pull request](https://github.com/hadley/reshape/pull/62) to make `dcast` in reshape2 a generic, but that has not yet been accepted. 
 
+  8. Clarified the use of `bit64::integer4` in `merge.data.table()` and `setNumericRounding()`. Closes [#1093](https://github.com/Rdatatable/data.table/issues/1093). Thanks to @sfischme for the report.
+
 ### Changes in v1.9.4  (on CRAN 2 Oct 2014)
 
 #### NEW FEATURES

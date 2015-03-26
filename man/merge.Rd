@@ -10,17 +10,6 @@
   the default columns used to merge two \code{data.table} inputs are the shared key columns
   rather than the shared columns with the same names.
   
-  For a more \code{data.table}-centric (and faster) way of merging two \code{data.table}s,
-  see \code{\link{[.data.table}}; e.g., \code{x[y, ...]}. In recent
-  versions, however, \code{merge()} is much closer to the speed of \code{x[y, ...]}.
-  See FAQ 1.12 for a detailed comparison of \code{merge} and \code{x[y, ...]}.
-  
-  Note that \code{\link{merge}} is a generic function in base R. It dispatches to either the
-  \code{merge.data.frame} method or \code{merge.data.table} method depending on the class of its first argument.
-  Typing \code{?merge} at the prompt should present a choice of two links:
-  the help pages for each of these \code{merge} methods. You don't need to use the full name of the
-  method although you may if you wish; i.e., \code{merge(DT1,DT2)} is idiomatic R but you can bypass
-  method dispatch by going direct if you wish: \code{merge.data.table(DT1,DT2)}. 
 }
 
 \usage{
@@ -75,11 +64,26 @@ allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
 }
 
 \details{
+  \code{\link{merge}} is a generic function in base R. It dispatches to either the
+  \code{merge.data.frame} method or \code{merge.data.table} method depending on the class of its first argument.
+  Typing \code{?merge} at the prompt should present a choice of two links:
+  the help pages for each of these \code{merge} methods. You don't need to use the full name of the
+  method although you may if you wish; i.e., \code{merge(DT1,DT2)} is idiomatic R but you can bypass
+  method dispatch by going direct if you wish: \code{merge.data.table(DT1,DT2)}. 
+
   Note that if the specified columns in \code{by} is not the key (or
   head of the key) of \code{x} or \code{y}, then a copy is first rekeyed 
   prior to performing the merge. This might make this function perform
   slower than you are expecting. When secondary keys are implemented in
   future we expect performance in this case to improve.
+
+  For a more \code{data.table}-centric (and faster) way of merging two \code{data.table}s,
+  see \code{\link{[.data.table}}; e.g., \code{x[y, ...]}. In recent
+  versions, however, \code{merge()} is much closer to the speed of \code{x[y, ...]}.
+  See FAQ 1.12 for a detailed comparison of \code{merge} and \code{x[y, ...]}.
+
+  Columns of numeric types (i.e., double) have their last two bytes rounded off while computing order, by defalult, to avoid any unexpected behaviour due to limitations in representing floating point numbers precisely. For large numbers (integers > 2^31), we recommend using \code{bit64::integer64}. Have a look at \code{\link{setNumericRounding}} to learn more.
+  
 }
 
 \value{

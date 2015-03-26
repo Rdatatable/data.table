@@ -22,6 +22,8 @@ getNumericRounding()
   It's bytes rather than bits because it's tied in with the radix sort algorithm for sorting numerics which sorts byte by byte. With the
   default rounding of 2 bytes, at most 6 passes are needed. With no rounding, at most 8 passes are needed and hence may be slower. The
   choice of default is not for speed however, but to avoid surprising results such as in the example below.
+
+  For large numbers (integers > 2^31), we recommend using \code{bit64::integer64} rather than setting rounding to \code{0}.
 }
 \value{
     \code{setNumericRounding} returns no value; the new value is applied. \code{getNumericRounding} returns the current value: 0, 1 or 2.
