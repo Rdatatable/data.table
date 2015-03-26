@@ -6256,6 +6256,15 @@ test(1505.1, as.matrix(dt), as.matrix(as.data.frame(dt)))
 dt = data.table(x=1, y=2)
 test(1506, setcolorder(dt, c("y", "x")), data.table(y=2, x=1))
 
+# tstrsplit, #1094
+# factor to character
+x = factor(paste(letters[1:5], letters[6:10], sep="-"))
+test(1507.1, tstrsplit(x, "-"), list(letters[1:5], letters[6:10]))
+# type.convert
+x = paste(letters[1:5], 1:5, sep="-")
+test(1507.2, tstrsplit(x, "-"), list(letters[1:5], as.character(1:5)))
+test(1507.3, tstrsplit(x, "-", type.convert=TRUE), list(letters[1:5], 1:5))
+
 ##########################
 
 

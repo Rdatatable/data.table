@@ -36,6 +36,7 @@
     * `uniqueN` gains a `by` argument which is equal to `key(x)` when `x` is a `data.table` so that the behaviour is identical to `duplicated()` and and `unique` methods for `data.table`. Thanks to @kevinmistry for the report. Closes [#1080](https://github.com/Rdatatable/data.table/issues/1080).
 
   11. Implemented `transpose()` to transpose a list and `tstrsplit` which is a wrapper for `transpose(strsplit(...))`. This is particularly useful in scenarios where a column has to be split and the resulting list has to be assigned to multiple columns. See `?transpose` and `?tstrsplit`, [#1025](https://github.com/Rdatatable/data.table/issues/1025) and [#1026](https://github.com/Rdatatable/data.table/issues/1026) for usage scenarios. Closes both #1025 and #1026 issues.
+    * Implemented `type.convert` as suggested by Richard Scriven. Closes [#1094](https://github.com/Rdatatable/data.table/issues/1094).
 
   12. `melt.data.table` can now melt into multiple columns by providing a list of columns to `measure.vars` argument. Closes [#828](https://github.com/Rdatatable/data.table/issues/828). Thanks to Ananda Mahto for the extended email discussions and ideas on generating the `variable` column.
 
