@@ -54,7 +54,9 @@
 
   17. `.SDcols` and `with=FALSE` understand `colA:colB` form now. That is, `DT[, lapply(.SD, sum), by=V1, .SDcols=V4:V6]` and `DT[, V5:V7, with=FALSE]` works as intended. This is quite useful for interactive use. Closes [#748](https://github.com/Rdatatable/data.table/issues/748).
 
-  18. `setcolorder()` works with `data.frames` too.
+  18. `setcolorder()` works with `data.frames` too. Partially addresses [#1018](https://github.com/Rdatatable/data.table/issues/1018).
+
+  19. `as.data.table.*` argument `keep.rownames` can take a column name as well. When `keep.rownames=TRUE`, the column will still automatically named `rn`. Closes [#575](https://github.com/Rdatatable/data.table/issues/575). 
 
 #### BUG FIXES
 

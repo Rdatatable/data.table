@@ -1692,7 +1692,13 @@ as.matrix.data.table <- function(x,...)
 
 as.data.table.matrix <- function(x, keep.rownames=FALSE, ...)
 {
-    if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
+    if (!identical(keep.rownames, FALSE)) {
+        # can specify col name to keep.rownames, #575
+        ans = data.table(rn=rownames(x), x, keep.rownames=FALSE)
+        if (is.character(keep.rownames))
+            setnames(ans, 'rn', keep.rownames[1L])
+        return(ans)
+    }
     d <- dim(x)
     nrows <- d[1L]
     ir <- seq_len(nrows)
@@ -1721,7 +1727,13 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...)
 
 as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...)
 {
-    if (keep.rownames) return(data.table(rn=rownames(x), x, keep.rownames=FALSE))
+    if (!identical(keep.rownames, FALSE)) {
+        # can specify col name to keep.rownames, #575
+        ans = data.table(rn=rownames(x), x, keep.rownames=FALSE)
+        if (is.character(keep.rownames))
+            setnames(ans, 'rn', keep.rownames[1L])
+        return(ans)
+    }
     ans = copy(x)  # TO DO: change this deep copy to be shallow.
     setattr(ans,"row.names",.set_row_names(nrow(x)))
     tt = class(x)
@@ -1778,12 +1790,15 @@ as.data.table.Date <- function(x, keep.rownames=FALSE, ...) {
     tt = deparse(substitute(x))[1]
     nm = names(x)
     # FR #2356 - transfer names of named vector as "rn" column if required
-    if (keep.rownames & !is.null(nm)) 
+    if (!identical(keep.rownames, FALSE) & !is.null(nm)) 
         x <- list(nm, unname(x))
     else x <- list(x)
-    if (tt == make.names(tt))
-        setattr(x, 'names', c(if (length(x) == 2) "rn", tt))
-    as.data.table.list(x, keep.rownames)
+    if (tt == make.names(tt)) {
+        # can specify col name to keep.rownames, #575
+        nm = if (length(x) == 2L) if (is.character(keep.rownames)) keep.rownames[1L] else "rn"
+        setattr(x, 'names', c(nm, tt))
+    }
+    as.data.table.list(x, FALSE)
 }
 
 R300_provideDimnames <- function (x, sep = "", base = list(LETTERS))   # backported from R3.0.0 so data.table can depend on R 2.14.0 
