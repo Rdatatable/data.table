@@ -8,9 +8,10 @@
 }
 
 \usage{
-tstrsplit(..., fill=NA)
+tstrsplit(x, ..., fill=NA)
 }
 \arguments{
+	\item{x}{The vector to split (and transpose).}
   \item{...}{ All the arguments to be passed to \code{strsplit}. }
   \item{fill}{ Default is \code{NA}. It is used to fill shorter list elements so as to return each element of the transposed result of equal lengths. }
 }
