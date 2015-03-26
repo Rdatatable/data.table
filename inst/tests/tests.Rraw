@@ -6273,6 +6273,10 @@ x = as.data.frame(x)
 test(1508.2, as.data.table(x, keep="bla"), data.table(bla=letters[3:1], x))
 x = sample(10); setattr(x, 'names', letters[1:10])
 test(1508.3, as.data.table(x, keep="bla"), data.table(bla=letters[1:10], x=unname(x)))
+# also for setDT
+df = data.frame(x=1:5, y=6:10, row.names=letters[5:1])
+ans = data.table(foo=letters[5:1], df)
+test(1508.4, setDT(df, keep="foo"), ans)
 
 ##########################
 

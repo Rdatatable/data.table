@@ -2406,7 +2406,7 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
     if (is.data.table(x)) {
         if (selfrefok(x) > 0) return(invisible(x)) else alloc.col(x)
     } else if (is.data.frame(x)) {
-        rn = if (keep.rownames) rownames(x) else NULL
+        rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
         setattr(x, "row.names", .set_row_names(nrow(x)))
         tt = class(x)
         n = chmatch("data.frame", tt)
@@ -2415,9 +2415,9 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
         setattr(x, "class", tt)
         alloc.col(x)
         if (!is.null(rn)) {
-            nm = copy(names(x))
-            x[, rn := rn]
-            setcolorder(x, c("rn", nm))
+            nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
+            x[, (nm[1L]) := rn]
+            setcolorder(x, nm)
         }
     } else if (is.null(x) || (is.list(x) && !length(x))) {
         x = null.data.table()

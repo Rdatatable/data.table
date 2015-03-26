@@ -56,7 +56,7 @@
 
   18. `setcolorder()` works with `data.frames` too. Partially addresses [#1018](https://github.com/Rdatatable/data.table/issues/1018).
 
-  19. `as.data.table.*` argument `keep.rownames` can take a column name as well. When `keep.rownames=TRUE`, the column will still automatically named `rn`. Closes [#575](https://github.com/Rdatatable/data.table/issues/575). 
+  19. `as.data.table.*` and `setDT` argument `keep.rownames` can take a column name as well. When `keep.rownames=TRUE`, the column will still automatically named `rn`. Closes [#575](https://github.com/Rdatatable/data.table/issues/575). 
 
 #### BUG FIXES
 
