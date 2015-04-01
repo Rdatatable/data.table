@@ -297,7 +297,7 @@ struct processData {
     Rboolean narm;
 };
 
-void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valnames, Rboolean verbose, struct processData *data) {
+void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valnames, Rboolean narm, Rboolean verbose, struct processData *data) {
 
     SEXP vars,tmp,thiscol;
     SEXPTYPE type;
@@ -308,6 +308,7 @@ void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valnames, Rb
     data->valuecols = PROTECT(VECTOR_ELT(vars, 1)); data->protecti++;
     data->lids = length(data->idcols);
     data->lvalues = length(data->valuecols);
+    data->narm = narm;
     if (length(valnames) != data->lvalues) {
         UNPROTECT(data->protecti);
         if (isNewList(measure)) error("When 'measure.vars' is a list, 'value.name' must be a character vector of length =1 or =length(measure.vars).");
@@ -343,15 +344,18 @@ void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valnames, Rb
             }
         }
     }
+    if (data->narm) {
+        data->naidx = PROTECT(allocVector(VECSXP, data->lmax)); 
+        data->protecti++;
+    }
 }
 
-SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean narm, Rboolean valfactor, Rboolean verbose, struct processData *data) {
+SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, struct processData *data) {
     
     int i, j, k, protecti=0, counter=0, thislen=0;
     SEXP tmp, seqcols, thiscol, thisvaluecols, target, ansvals, thisidx=R_NilValue, flevels, clevels;
     Rboolean coerced=FALSE, thisfac=FALSE, *isordered, copyattr = FALSE, thisvalfactor;
     size_t size;
-    data->narm = narm;
     for (i=0; i<data->lvalues; i++) {
         thisvaluecols = VECTOR_ELT(data->valuecols, i);
         if (!data->isidentical[i])
@@ -363,7 +367,6 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean narm, Rboolean valfactor, Rboo
     }
     if (data->narm) {
         seqcols = PROTECT(seq_int(data->lvalues, 1)); protecti++;
-        data->naidx = PROTECT(allocVector(VECSXP, data->lmax)); protecti++;
         for (i=0; i<data->lmax; i++) {
             tmp = PROTECT(allocVector(VECSXP, data->lvalues));
             for (j=0; j<data->lvalues; j++) { 
@@ -656,14 +659,14 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     if (LOGICAL(narmArg)[0] == TRUE) narm = TRUE;
     if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
     
-    preprocess(DT, id, measure, varnames, valnames, verbose, &data);
+    preprocess(DT, id, measure, varnames, valnames, narm, verbose, &data);
     protecti = data.protecti;
     // edge case no measure.vars
     if (!data.lmax) {
         ans = shallowwrapper(DT, data.idcols);
         ans = PROTECT(duplicate(ans)); protecti++;
     } else {
-        ansvals = PROTECT(getvaluecols(DT, dtnames, narm, LOGICAL(valfactor)[0], verbose, &data)); protecti++;
+        ansvals = PROTECT(getvaluecols(DT, dtnames, LOGICAL(valfactor)[0], verbose, &data)); protecti++;
         ansvars = PROTECT(getvarcols(DT, dtnames, LOGICAL(varfactor)[0], verbose, &data)); protecti++;
         ansids  = PROTECT(getidcols(DT, dtnames, verbose, &data)); protecti++;
 

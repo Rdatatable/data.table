@@ -2931,6 +2931,13 @@ if ("package:reshape2" %in% search()) {
     test(1495, melt(DT, id=1:2), data.table(A=1:2, B=3:4, 
         variable=factor(rep(1L, 4L), labels="D"), value=5:8))
 
+    # segfault of unprotected var caught with the help of address sanitizer
+    set.seed(1)
+    val = sample(c(1:5, NA), 1e6L, TRUE)
+    dt <- setDT(replicate(100L, val, simplify=FALSE))
+    ## to ensure there's no segfault...
+    ans <- melt(dt, measure.vars=names(dt), na.rm=TRUE)
+    test(1509, ans, ans)
 }
 
 # sorting and grouping of Inf, -Inf, NA and NaN,  #4684, #4815 & #4883
@@ -6277,6 +6284,8 @@ test(1508.3, as.data.table(x, keep="bla"), data.table(bla=letters[1:10], x=unnam
 df = data.frame(x=1:5, y=6:10, row.names=letters[5:1])
 ans = data.table(foo=letters[5:1], df)
 test(1508.4, setDT(df, keep="foo"), ans)
+
+# 1509 test added for melt above.
 
 ##########################
 
