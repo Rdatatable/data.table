@@ -6285,7 +6285,12 @@ df = data.frame(x=1:5, y=6:10, row.names=letters[5:1])
 ans = data.table(foo=letters[5:1], df)
 test(1508.4, setDT(df, keep="foo"), ans)
 
-# 1509 test added for melt above.
+# #1509 test added for melt above.
+
+# #1510 transpose converts NULL to NAs
+ll = list(1:2, NULL, 3:4)
+test(1510.1, transpose(ll), list(c(1L, NA, 3L), c(2L, NA, 4L)))
+test(1510.2, transpose(ll, ignore=TRUE), list(c(1L, 3L), c(2L, 4L)))
 
 ##########################
 

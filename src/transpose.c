@@ -24,7 +24,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
     len  = Calloc(ln, R_len_t);
     for (i=0; i<ln; i++) {
         li = VECTOR_ELT(l, i);
-        if (!isVectorAtomic(li)) 
+        if (!isVectorAtomic(li) && !isNull(li)) 
             error("Item %d of list input is not an atomic vector", i+1);
         len[i] = length(li);
         if (len[i] > maxlen)
