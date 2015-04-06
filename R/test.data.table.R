@@ -176,7 +176,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
 ## This method is used primarily to make life easy with a testing harness
 ## built around test_that. A call to test_that::{expect_equal|equal} will
 ## ultimately dispatch to this method when making an "equality" call.
-all.equal.data.table <- function(target, current, trim.levels=TRUE, ...) {
+all.equal.data.table <- function(target, current, trim.levels=TRUE, ignore.row.order=FALSE, ignore.col.order=FALSE, ...) {
     target = copy(target)
     current = copy(current)
     if (trim.levels) {
@@ -198,6 +198,34 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, ...) {
     ## Trim any extra row.names attributes that came from some inheritence
     setattr(target, "row.names", NULL)
     setattr(current, "row.names", NULL)
+    
+    # ignore.col.order
+    if(isTRUE(ignore.col.order)){
+        if(all(names(target) %chin% names(current))){
+            if(!identical(names(target),names(current))){
+                # reorder current to target
+                setcolorder(current, names(target))
+            }
+        } else {
+            return(FALSE)
+        }
+    }
+    
+    # ignore.row.order
+    if(isTRUE(ignore.row.order)){
+        target_key <- key(target)
+        current_key <- key(current)
+        target[, `__unq_N` := .N, by = c(copy(names(target)))]
+        current[, `__unq_N` := .N, by = c(copy(names(current)))]
+        setkeyv(target,names(target))
+        setkeyv(current,names(current))
+        if(nrow(target[!current]) > 0L | nrow(current[!target]) > 0L) return(FALSE)
+        # restore target and current
+        target[, `__unq_N` := NULL]
+        current[, `__unq_N` := NULL]
+        setkeyv(target,target_key)
+        setkeyv(current,current_key)
+    }
     
     # all.equal uses unclass which doesn't know about external pointers; there
     # doesn't seem to be all.equal.externalptr method in base.

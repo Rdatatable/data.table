@@ -6287,6 +6287,21 @@ test(1508.4, setDT(df, keep="foo"), ans)
 
 # 1509 test added for melt above.
 
+# all.equal.data.table, #1106 - ignore.row.order, ignore.col.order
+DT1 <- data.table(a = 1:4, b = letters[1:4])
+DT2 <- data.table(b = letters[1:4], a = 1:4)
+test(1510.1, all.equal(DT1, DT2, ignore.col.order=TRUE), TRUE)
+DT1 <- data.table(a = 1:4, b = letters[1:4])
+DT2 <- data.table(a = 4:1, b = letters[4:1])
+test(1510.2, all.equal(DT1, DT2, ignore.row.order=TRUE), TRUE)
+DT1 <- data.table(a = 1:4, b = letters[1:4])
+DT2 <- data.table(b = letters[4:1], a = 4:1)
+test(1510.3, all.equal(DT1, DT2, ignore.row.order=TRUE, ignore.col.order=TRUE), TRUE)
+DT1 <- data.table(a = 1:4, b = letters[1:4])
+DT2 <- data.table(a = c(1:4,4L), b = letters[c(1:4,4L)])
+test(1510.4, all.equal(DT1, DT2, ignore.row.order=TRUE), FALSE)
+
+
 ##########################
 
 
