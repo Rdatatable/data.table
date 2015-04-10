@@ -392,6 +392,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
     .global$print=""
     if (missing(i) && missing(j)) {
+        if (!missing(by) || !missing(keyby)) stop("'by' or 'keyby' is supplied but not j")
         # ...[] == oops at console, forgot print(...)
         # or some kind of dynamic construction that has edge case of no contents inside [...]
         return(x)
