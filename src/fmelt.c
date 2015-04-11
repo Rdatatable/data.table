@@ -475,6 +475,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         }
     }
     UNPROTECT(protecti);
+    free(isordered);
     return(ansvals);
 }
 
@@ -693,6 +694,8 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     // should be 'free', not 'Free'. Fixes #1059
     free(data.isfactor);
     free(data.maxtype);
+    free(data.leach);
+    free(data.isidentical);
     UNPROTECT(protecti);
     return(ans);
 }
