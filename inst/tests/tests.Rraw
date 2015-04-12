@@ -6292,6 +6292,12 @@ ll = list(1:2, NULL, 3:4)
 test(1510.1, transpose(ll), list(c(1L, NA, 3L), c(2L, NA, 4L)))
 test(1510.2, transpose(ll, ignore=TRUE), list(c(1L, 3L), c(2L, 4L)))
 
+# setorder can reorder data.frames too, #1018
+DF = data.frame(x=sample(3,10,TRUE), y=sample(letters[1:2], 10, TRUE))
+rownames(DF) = sample(letters, 10)
+ans = DF[order(-xtfrm(DF$y), DF$x), ]
+test(1511, ans, setorder(DF, -y, x))
+
 ##########################
 
 

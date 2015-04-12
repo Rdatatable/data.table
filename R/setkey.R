@@ -216,7 +216,7 @@ setorder <- function(x, ..., na.last=FALSE)
 # na.last=FALSE here, to be consistent with data.table's default
 # as opposed to DT[order(.)] where na.last=TRUE, to be consistent with base
 {
-    if (!is.data.table(x)) stop("x must be a data.table.")
+    if (!is.data.frame(x)) stop("x must be a data.frame or data.table.")
     cols = substitute(list(...))[-1]
     if (identical(as.character(cols),"NULL")) return(x)
     if (length(cols)) {
@@ -242,7 +242,7 @@ setorder <- function(x, ..., na.last=FALSE)
 setorderv <- function(x, cols, order=1L, na.last=FALSE)
 {
     if (is.null(cols)) return(x)
-    if (!is.data.table(x)) stop("x is not a data.table")
+    if (!is.data.frame(x)) stop("x must be a data.frame or data.table")
     na.last = as.logical(na.last)
     if (is.na(na.last) || !length(na.last)) stop('na.last must be logical TRUE/FALSE')
     if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setorder.")
@@ -269,6 +269,10 @@ setorderv <- function(x, cols, order=1L, na.last=FALSE)
     o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
     if (length(o)) {
         .Call(Creorder, x, o)
+        if (is.data.frame(x) & !is.data.table(x)) {
+            .Call(Creorder, rn <- rownames(x), o)
+            setattr(x, 'row.names', rn)
+        }
         setattr(x, 'sorted', NULL) # if 'forderv' is not 0-length, it means order has changed. So, set key to NULL, else retain key.
         setattr(x, 'index', NULL)  # remove secondary keys too. These could be reordered and retained, but simpler and faster to remove
     }
