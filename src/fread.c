@@ -381,13 +381,11 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
                 if (ISNA(REAL(v)[i]))
                     SET_STRING_ELT(newv,i,R_BlankString);
                 else {
-                    snprintf(buffer,128,
                     #ifdef WIN32
-                       "%I64d"
+                        snprintf(buffer,128,"%I64d",*(long long *)&REAL(v)[i]);
                     #else
-                       "%lld"
+                       snprintf(buffer,128,"%lld",*(long long *)&REAL(v)[i]);
                     #endif
-                    ,*(long long *)&REAL(v)[i]);
                     SET_STRING_ELT(newv, i, mkChar(buffer));
                 }
             }
