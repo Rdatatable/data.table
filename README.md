@@ -204,6 +204,8 @@
 
   8. Clarified the use of `bit64::integer4` in `merge.data.table()` and `setNumericRounding()`. Closes [#1093](https://github.com/Rdatatable/data.table/issues/1093). Thanks to @sfischme for the report.
 
+  9. Removed an unnecessary (and silly) `giveNames` argument from `setDT()`. Not sure why I added this in the first place!
+
 ### Changes in v1.9.4  (on CRAN 2 Oct 2014)
 
 #### NEW FEATURES
