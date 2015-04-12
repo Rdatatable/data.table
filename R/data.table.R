@@ -2385,11 +2385,8 @@ setDF <- function(x) {
     invisible(x)
 }
 
-setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
-    giveNames <- as.logical(giveNames[1L])
+setDT <- function(x, keep.rownames=FALSE) {
     name = substitute(x)
-    if (is.na(giveNames))
-        stop("Argument 'giveNames' to 'setDT' must be logical TRUE/FALSE")
     if (is.name(name)) {
         home <- function(x, env) {
             if (identical(env, emptyenv()))
@@ -2429,11 +2426,10 @@ setDT <- function(x, giveNames=TRUE, keep.rownames=FALSE) {
             stop("All elements in argument 'x' to 'setDT' must be of same length")
         xn = names(x)
         if (is.null(xn)) {
-            if (giveNames) setattr(x, "names", paste("V",seq_len(length(x)),sep=""))
-            else setattr(x, "names", rep("", length(x)))
+            setattr(x, "names", paste("V",seq_len(length(x)),sep=""))
         } else {
             idx = xn %chin% "" # names can be NA - test 1006 caught that! 
-            if (any(idx) && giveNames) {
+            if (any(idx)) {
                 xn[idx] = paste("V", seq_along(which(idx)), sep="")
                 setattr(x, "names", xn)
             }
