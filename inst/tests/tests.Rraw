@@ -5936,7 +5936,6 @@ test(1468.3, foverlaps(dt2, dt1, which=TRUE), data.table(xid=1L, yid=2L))
 
 
 # Fix for #1010 (discovered while fixing #1007). Don't retain key if i had no key, but irows is sorted, and roll != FALSE... See example in #1010.
-require(data.table) ## 1.9.5
 DT = data.table(x=c(-5,5), y=1:2, key="x")
 test(1469.1, key(DT[J(c(2,0)), roll=TRUE]), NULL)
 test(1469.2, key(DT[J(c(2,0)), .(x,y), roll=TRUE]), NULL)
@@ -6038,7 +6037,6 @@ test(1482.2, ee$DT[, z := 3:1], data.table(x=1L, y=1:3, z=3:1), warning="Invalid
 test(1482.3, truelength(ee$DT) >= 100L, TRUE) # truelength restored?
 
 # Fix for #499 and #945
-require(data.table)
 x <- data.table(k=as.factor(c(NA,1,2)),v=c(0,1,2), key="k")
 y <- data.table(k=as.factor(c(NA,1,3)),v=c(0,1,3), key="k")
 test(1483.1, x[y], data.table(k=factor(c(NA,1,3)), v=c(0,1,NA), i.v=c(0,1,3)))
