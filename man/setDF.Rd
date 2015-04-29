@@ -4,13 +4,13 @@
 \description{
   In \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column.. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
 
-  A helper function to convert a \code{data.table} to \code{data.frame} by reference. It does not handle lists or lists of data.tables.  
+  A helper function to convert a \code{data.table} or \code{list} of equal length to \code{data.frame} by reference.
 }
 \usage{
 setDF(x)
 }
 \arguments{
-  \item{x}{ A \code{data.table}. }
+  \item{x}{ A \code{data.table}, \code{data.frame} or \code{list} of equal length. }
 }
 
 \details{
@@ -26,6 +26,10 @@ setDF(x)
 \examples{
 X = data.table(x=1:5, y=6:10)
 ## convert 'X' to data.frame, without any copy.
+setDF(X)
+
+X = list(x=1:5, y=6:10)
+# X is converted to a data.frame without any copy.
 setDF(X)
 }
 \keyword{ data }

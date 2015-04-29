@@ -4724,6 +4724,13 @@ test(1305.1, setDF(DT), data.frame(x=1:5, y=6:10))
 # setDF should return if input is data.frame, not error.
 df <- data.frame(x=1:5, y=6:10)
 test(1305.2, setDF(df), df) # setDF works on data.frame
+# setDF also works on lists with equal lengths, #1132
+df <- list(a=1:5, b=6:10)
+test(1305.3, data.frame(df), setDF(df))
+df <- list(1:5, 6:10)
+test(1305.4, setDF(as.data.table(df)), setDF(df))
+test(1305.5, setDF(1:5), error="setDF only accepts")
+test(1305.6, setDF(list(1, 2:3)), error="All elements in argument")
 
 # .SD retains as much of head(key) as appropriate.
 #  by= always keeps data appearance order, so it's which columns are grouped and selected that drive how much of key is retained

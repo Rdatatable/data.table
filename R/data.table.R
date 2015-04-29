@@ -2374,13 +2374,32 @@ address <- function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 ":=" <- function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
 
 setDF <- function(x) {
-    if (!is.data.table(x) && !is.data.frame(x)) stop("setDF only accepts data.table or data.frame as input")
+    if (!is.list(x)) stop("setDF only accepts data.table, data.frame or list of equal length as input")
     if (is.data.table(x)) {
         # copied from as.data.frame.data.table
         setattr(x, "row.names", .set_row_names(nrow(x)))
         setattr(x, "class", "data.frame")
         setattr(x, "sorted", NULL)
         setattr(x, ".internal.selfref", NULL)
+    } else if (is.data.frame(x)) {
+        x
+    } else {
+        n = vapply(x, length, 0L)
+        mn = max(n)
+        if (any(n<mn))
+            stop("All elements in argument 'x' to 'setDF' must be of same length")
+        xn = names(x)
+        if (is.null(xn)) {
+            setattr(x, "names", paste("V",seq_len(length(x)),sep=""))
+        } else {
+            idx = xn %chin% ""
+            if (any(idx)) {
+                xn[idx] = paste("V", seq_along(which(idx)), sep="")
+                setattr(x, "names", xn)
+            }
+        }
+        setattr(x,"row.names",.set_row_names(max(n)))
+        setattr(x,"class","data.frame")
     }
     invisible(x)
 }
