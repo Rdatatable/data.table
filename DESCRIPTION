@@ -1,6 +1,6 @@
 Package: data.table
 Version: 1.9.5
-Title: Extension of data.frame
+Title: Extension of Data.frame
 Author: M Dowle, T Short, S Lianoglou, A Srinivasan with contributions from R Saporta, E Antonyan
 Maintainer: Matt Dowle <mdowle@mdowle.plus.com>
 Depends: R (>= 2.14.0)
