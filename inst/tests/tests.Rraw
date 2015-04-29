@@ -6292,6 +6292,21 @@ rownames(DF) = sample(letters, 10)
 ans = DF[order(-xtfrm(DF$y), DF$x), ]
 test(1511, ans, setorder(DF, -y, x))
 
+# fix for #1108
+if ("package:bit64" %in% search()) {
+    dt <- data.table(id = as.integer64(1:3), a = c("a", "b", "c"), key = "id")
+    test(1512.1, dt[.(2)], dt[.(as.integer64(2))])
+    test(1512.2, dt[.(2L)], dt[.(as.integer64(2))])
+
+    dt <- data.table(id = as.numeric(1:3), a = c("a", "b", "c"), key = "id")
+    test(1512.3, dt[.(2L)], dt[.(2)])
+    test(1512.4, dt[.(as.integer64(2))], dt[.(2)])
+
+    dt <- data.table(id = 1:3, a = c("a", "b", "c"), key = "id")
+    test(1512.5, dt[.(2)], dt[.(2L)])
+    test(1512.6, dt[.(as.integer64(2))], dt[.(2L)])
+}
+
 ##########################
 
 

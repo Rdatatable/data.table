@@ -184,6 +184,8 @@
 
   47. `as.matrix(DT)` handles cases where `DT` contains both numeric and logical columns correctly (doesn't coerce to character columns anymore). Closes [#1083](https://github.com/Rdatatable/data.table/issues/1083). Thanks to @bramvisser for the [SO post](http://stackoverflow.com/questions/29068328/correlation-between-numeric-and-logical-variable-gives-intended-error).
 
+  48. Coercion is handled properly on subsets/joins on `integer64` key columns. Closes [#1108](https://github.com/Rdatatable/data.table/issues/1108). Thanks to @vspinu.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
