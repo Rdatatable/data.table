@@ -22,7 +22,7 @@
 
   4. `na.omit` method for data.table is rewritten in C, for speed. It's ~11x faster on bigger data; see examples under `?na.omit`. It also gains two additional arguments a) `cols` accepts column names (or numbers) on which to check for missing values. 2) `invert` when `TRUE` returns the rows with any missing values instead. Thanks to the suggestion and PR from @matthieugomez.
 
-  5. New function `shift()` implements fast `lead/lag` of *vector*, *list*, *data.frames* or *data.tables*. It takes a `type` argument which can be either *"lag"* (default) or *"lead"* and always returns a list, which makes it very convenient to use it along with `:=` or `set()`. For example: `DT[, (cols) := shift(.SD, 1L), by=id]`. Please have a look at `?shift` for more info.
+  5. New function `shift()` implements fast `lead/lag` of *vector*, *list*, *data.frames* or *data.tables*. It takes a `type` argument which can be either *"lag"* (default) or *"lead"*. It enables very convenient usage along with `:=` or `set()`. For example: `DT[, (cols) := shift(.SD, 1L), by=id]`. Please have a look at `?shift` for more info.
 
   6. `frank()` is now implemented. It's much faster than `base::rank` and does more. It accepts *vectors*, *lists* with all elements of equal lengths, *data.frames* and *data.tables*, and optionally takes a `cols` argument. In addition to implementing all the `ties.method` methods available from `base::rank`, it also implements *dense rank*. It is also capable of calculating ranks by ordering column(s) in ascending or descending order. See `?frank` for more. Closes [#760](https://github.com/Rdatatable/data.table/issues/760) and [#771](https://github.com/Rdatatable/data.table/issues/771)
 

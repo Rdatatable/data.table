@@ -4,7 +4,7 @@
 \alias{lag}
 \title{Fast lead/lag for vectors and lists}
 \description{
-  \code{lead} or \code{lag} vectors, lists, data.frames or data.tables. It always returns a list and is implemented in C for speed.
+  \code{lead} or \code{lag} vectors, lists, data.frames or data.tables implemented in C for speed.
 
   \code{bit64::integer64} is also supported.
 }
@@ -20,9 +20,9 @@ shift(x, n=1L, fill=NA, type=c("lag", "lead"), give.names=FALSE)
   \item{give.names}{default is \code{FALSE} which returns an unnamed list. When \code{TRUE}, names are automatically generated corresponding to \code{type} and \code{n}. }
 }
 \details{
-  \code{shift} accepts vectors, lists, data.frames or data.tables, and always returns a list. This is so that it can be used conveniently within data.table's syntax. For example, \code{DT[, (cols) := shift(.SD, 1L), by=id]} would lag every column of \code{.SD} by 1 period for each group. 
+  \code{shift} accepts vectors, lists, data.frames or data.tables. It always returns a list except when the input is a \code{vector} and \code{length(n) == 1} in which case a \code{vector} is returned, for convenience. This is so that it can be used conveniently within data.table's syntax. For example, \code{DT[, (cols) := shift(.SD, 1L), by=id]} would lag every column of \code{.SD} by 1 period for each group and \code{DT[, newcol := colA + shift(colB)]} would assign the sum of two \emph{vectors} to \code{newcol}.
 
-  For the same reason, the argument \code{n} allows multiple values. For example, \code{DT[, (cols) := shift(.SD, 1:2), by=id]} would lag every column of \code{.SD} by \code{1} and \code{2} periods for each group. If \code{.SD} contained four columns, the first two elements of the list would correspond to \code{lag=1} and \code{lag=2} for the first column of \code{.SD}, the next two for second column of \code{.SD} and so on. Please see examples for more.
+  Argument \code{n} allows multiple values. For example, \code{DT[, (cols) := shift(.SD, 1:2), by=id]} would lag every column of \code{.SD} by \code{1} and \code{2} periods for each group. If \code{.SD} contained four columns, the first two elements of the list would correspond to \code{lag=1} and \code{lag=2} for the first column of \code{.SD}, the next two for second column of \code{.SD} and so on. Please see examples for more.
 
   \code{shift} is designed mainly for use in data.tables along with \code{:=} or \code{set}. Therefore, it returns an unnamed list by default as assigning names for each group over and over can be quite time consuming with many groups. It may be useful to set names automatically in other cases, which can be done by setting \code{give.names} to \code{TRUE}.
 }
@@ -31,11 +31,11 @@ shift(x, n=1L, fill=NA, type=c("lag", "lead"), give.names=FALSE)
 }
 
 \examples{
-# on vectors
+# on vectors, returns a vector as long as length(n) == 1, #1127
 x = 1:5
-# lag with period=1 and pad with NA
+# lag with period=1 and pad with NA (returns vector)
 shift(x, n=1, fill=NA, type="lag")
-# lag with period=1 and 2, and pad with 0
+# lag with period=1 and 2, and pad with 0 (returns list)
 shift(x, n=1:2, fill=0, type="lag")
 
 # on data.tables

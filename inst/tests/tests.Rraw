@@ -5835,43 +5835,43 @@ test(1462.3, DT[, sum(unlist(mget(cols))), by=x], DT[, sum(unlist(.SD)), by=x, .
 
 # test for 'shift'
 x=1:5
-test(1463.1,  shift(x,1L),                  list(as.integer(c(NA, 1:4))))
+test(1463.1,  shift(x,1L),                  as.integer(c(NA, 1:4)))
 test(1463.2,  shift(x,1:2),                 list(as.integer(c(NA, 1:4)), as.integer(c(NA, NA, 1:3))))
-test(1463.3,  shift(x,1L, 0L),              list(as.integer(c(0L, 1:4))))
-test(1463.4,  shift(x,1L, type="lead"),     list(as.integer(c(2:5, NA))))
+test(1463.3,  shift(x,1L, 0L),              as.integer(c(0L, 1:4)))
+test(1463.4,  shift(x,1L, type="lead"),     as.integer(c(2:5, NA)))
 test(1463.5,  shift(x,1:2, type="lead"),    list(as.integer(c(2:5, NA)), as.integer(c(3:5, NA, NA))))
-test(1463.6,  shift(x,1L, 0L, type="lead"), list(as.integer(c(2:5, 0L))))
+test(1463.6,  shift(x,1L, 0L, type="lead"), as.integer(c(2:5, 0L)))
 
 x=as.numeric(x)
-test(1463.7,  shift(x,1L),                  list(as.numeric(c(NA, 1:4))))
+test(1463.7,  shift(x,1L),                  as.numeric(c(NA, 1:4)))
 test(1463.8,  shift(x,1:2),                 list(as.numeric(c(NA, 1:4)), as.numeric(c(NA, NA, 1:3))))
-test(1463.9,  shift(x,1L, 0L),              list(as.numeric(c(0L, 1:4))))
-test(1463.10, shift(x,1L, type="lead"),     list(as.numeric(c(2:5, NA))))
+test(1463.9,  shift(x,1L, 0L),              as.numeric(c(0L, 1:4)))
+test(1463.10, shift(x,1L, type="lead"),     as.numeric(c(2:5, NA)))
 test(1463.11, shift(x,1:2, type="lead"),    list(as.numeric(c(2:5, NA)), as.numeric(c(3:5, NA, NA))))
-test(1463.12, shift(x,1L, 0L, type="lead"), list(as.numeric(c(2:5, 0L))))
+test(1463.12, shift(x,1L, 0L, type="lead"), as.numeric(c(2:5, 0L)))
 
 if ("package:bit64" %in% search()) {
     x=as.integer64(x)
-    test(1463.13, shift(x,1L),                  list(as.integer64(c(NA, 1:4))))
+    test(1463.13, shift(x,1L),                  as.integer64(c(NA, 1:4)))
     test(1463.14, shift(x,1:2),                 list(as.integer64(c(NA, 1:4)), as.integer64(c(NA, NA, 1:3))))
-    test(1463.15, shift(x,1L, 0L),              list(as.integer64(c(0L, 1:4))))
-    test(1463.16, shift(x,1L, type="lead"),     list(as.integer64(c(2:5, NA))))
+    test(1463.15, shift(x,1L, 0L),              as.integer64(c(0L, 1:4)))
+    test(1463.16, shift(x,1L, type="lead"),     as.integer64(c(2:5, NA)))
     test(1463.17, shift(x,1:2, type="lead"),    list(as.integer64(c(2:5, NA)), as.integer64(c(3:5, NA, NA))))
-    test(1463.18, shift(x,1L, 0L, type="lead"), list(as.integer64(c(2:5, 0L))))
+    test(1463.18, shift(x,1L, 0L, type="lead"), as.integer64(c(2:5, 0L)))
 }
 
 x=as.character(x)
-test(1463.19, shift(x,1L),                  list(as.character(c(NA, 1:4))))
+test(1463.19, shift(x,1L),                  as.character(c(NA, 1:4)))
 test(1463.20, shift(x,1:2),                 list(as.character(c(NA, 1:4)), as.character(c(NA, NA, 1:3))))
-test(1463.21, shift(x,1L, 0L),              list(as.character(c(0L, 1:4))))
-test(1463.22, shift(x,1L, type="lead"),     list(as.character(c(2:5, NA))))
+test(1463.21, shift(x,1L, 0L),              as.character(c(0L, 1:4)))
+test(1463.22, shift(x,1L, type="lead"),     as.character(c(2:5, NA)))
 test(1463.23, shift(x,1:2, type="lead"),    list(as.character(c(2:5, NA)), as.character(c(3:5, NA, NA))))
-test(1463.24, shift(x,1L, 0L, type="lead"), list(as.character(c(2:5, 0L))))
+test(1463.24, shift(x,1L, 0L, type="lead"), as.character(c(2:5, 0L)))
 
 # Fix for #1009 segfault in shift
 val = runif(1)
-test(1463.25, shift(val, 2L), list(NA_real_))
-test(1463.26, shift(val, 2L, type="lead"), list(NA_real_))
+test(1463.25, shift(val, 2L), NA_real_)
+test(1463.26, shift(val, 2L, type="lead"), NA_real_)
 
 # add tests for date and factor?
 

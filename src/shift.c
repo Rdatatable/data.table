@@ -212,5 +212,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         }
     }
     UNPROTECT(1);
+    if (isVectorAtomic(obj) && length(ans) == 1) 
+        return (VECTOR_ELT(ans, 0));
     return(ans);
 }
