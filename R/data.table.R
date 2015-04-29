@@ -2385,7 +2385,7 @@ setDF <- function(x) {
     invisible(x)
 }
 
-setDT <- function(x, keep.rownames=FALSE) {
+setDT <- function(x, keep.rownames=FALSE, key=NULL) {
     name = substitute(x)
     if (is.name(name)) {
         home <- function(x, env) {
@@ -2440,6 +2440,7 @@ setDT <- function(x, keep.rownames=FALSE) {
     } else {
         stop("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
     }
+    if (!is.null(key)) setkeyv(x, key)
     if (is.name(name)) {
         name = as.character(name)
         assign(name, x, parent.frame(), inherits=TRUE)

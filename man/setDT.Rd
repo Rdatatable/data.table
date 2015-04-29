@@ -8,11 +8,12 @@
   
 }
 \usage{
-setDT(x, keep.rownames=FALSE)
+setDT(x, keep.rownames=FALSE, key=NULL)
 }
 \arguments{
   \item{x}{ A named or unnamed \code{list}, \code{data.frame} or \code{data.table}. }
   \item{keep.rownames}{ For \code{data.frame}s, \code{TRUE} retains the \code{data.frame}'s row names under a new column \code{rn}. }
+  \item{key}{Character vector of one or more column names which is passed to \code{\link{setkeyv}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. }
 }
 
 \details{
@@ -43,6 +44,10 @@ setDT(X)
 # don't provide names
 X = list(a=1:4, letters[1:4])
 setDT(X, FALSE)
+
+# setkey directly
+X = list(a = 4:1, b=runif(4))
+setDT(X, key="a")[]
 }
 \keyword{ data }
 

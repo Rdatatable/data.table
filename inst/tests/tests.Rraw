@@ -6307,6 +6307,10 @@ if ("package:bit64" %in% search()) {
     test(1512.6, dt[.(as.integer64(2))], dt[.(2L)])
 }
 
+# setDT gains key argument, #1121
+X = list(a = 4:1, b=runif(4))
+test(1513, setkey(as.data.table(X), a), setDT(X, key="a"))
+
 ##########################
 
 
