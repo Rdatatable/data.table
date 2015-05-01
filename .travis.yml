@@ -26,6 +26,10 @@ script: ./travis-tool.sh run_tests
 after_failure:
   - ./travis-tool.sh dump_logs
 
+after_success:
+  - ./travis-tool.sh github_install covr
+  - Rscript -e 'library(covr);codecov()'
+
 notifications:
   email:
     on_success: change
