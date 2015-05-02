@@ -27,7 +27,7 @@ after_failure:
   - ./travis-tool.sh dump_logs
 
 after_success:
-  - ./travis-tool.sh github_install covr
+  - ./travis-tool.sh install_github jimhester/covr
   - Rscript -e 'library(covr);codecov()'
 
 notifications:
