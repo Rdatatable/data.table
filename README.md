@@ -505,6 +505,16 @@
   
   15. `address(x)` doesn't increment `NAM()` value when `x` is a vector. Using the object as argument to a non-primitive function is sufficient to increment its reference. Closes #824. Thanks to @tarakc02 for the [question on twitter](https://twitter.com/tarakc02/status/513796515026837504) and hint from Hadley.
   
+  16. `options(datatable.prettyprint.char= int` restricts the number of characters to be printed for character columns. For example:
+    
+        ```
+        options(datatable.prettyprint.char = 5L)
+        DT = data.table(x=1:2, y=c("abcdefghij", "klmnopqrstuv"))
+        DT
+        #    x        y
+        # 1: 1 abcde...
+        # 2: 2 klmno...
+        ```
 ---
 
 ### Changes in v1.9.2 (on CRAN 27 Feb 2014)
