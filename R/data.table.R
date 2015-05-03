@@ -157,16 +157,23 @@ format.data.table <- function (x, ..., justify="none") {
     if (is.atomic(x) && !is.null(x)) {
         stop("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
     }
-     format.item <- function(x) {
+    format.item <- function(x) {
         if (is.atomic(x) || is.formula(x)) # FR #2591 - format.data.table issue with columns of class "formula"
             paste(c(format(head(x,6), justify=justify, ...), if(length(x)>6)""),collapse=",")  # fix for #5435 - format has to be added here...
         else
             paste("<",class(x)[1L],">",sep="")
     }
+    char.trunc <- function(x, trunc.char = getOption("datatable.print.pretty.char")) {
+        trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
+        if (!is.character(x) || trunc.char <= 0L) return(x)
+        idx = which(nchar(x) > trunc.char)
+        x[idx] = paste(substr(x[idx], 1L, as.integer(trunc.char)), "...", sep="")
+        x
+    }
     do.call("cbind",lapply(x,function(col,...){
         if (!is.null(dim(col))) stop("Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
         if (is.list(col)) col = sapply(col, format.item)
-        else col = format(col, justify=justify, ...) # added an else here to fix #5435
+        else col = format(char.trunc(col), justify=justify, ...) # added an else here to fix #5435
         col
     },...))
 }
