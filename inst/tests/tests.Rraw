@@ -6333,6 +6333,12 @@ test(1514.5, isReallyReal(x), TRUE)
 x = as.numeric(runif(2))
 test(1514.6, isReallyReal(x), TRUE)
 
+# #1091
+old.option = getOption("datatable.prettyprint.char")
+options(datatable.prettyprint.char = 5L)
+DT = data.table(x=1:2, y=c("abcdefghijk", "lmnopqrstuvwxyz"))
+test(1515.1, grep("abcde...", capture.output(print(DT))), 2L)
+
 ##########################
 
 

@@ -163,7 +163,9 @@ format.data.table <- function (x, ..., justify="none") {
         else
             paste("<",class(x)[1L],">",sep="")
     }
-    char.trunc <- function(x, trunc.char = getOption("datatable.print.pretty.char")) {
+    # FR #1091 for pretty printing of character
+    # TODO: maybe instead of doing "this is...", we could do "this ... test"?
+    char.trunc <- function(x, trunc.char = getOption("datatable.prettyprint.char")) {
         trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
         if (!is.character(x) || trunc.char <= 0L) return(x)
         idx = which(nchar(x) > trunc.char)
