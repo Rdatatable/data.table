@@ -6339,6 +6339,15 @@ options(datatable.prettyprint.char = 5L)
 DT = data.table(x=1:2, y=c("abcdefghijk", "lmnopqrstuvwxyz"))
 test(1515.1, grep("abcde...", capture.output(print(DT))), 2L)
 
+# test 1516: chain setnames() - used while mapping source to target columns
+SRC = data.table(x=1:2, y=c("abcdefghij", "klmnopqrstuv"), z=rnorm(2))
+src_cols <- c("y","z")
+tgt_cols <- c("name","value")
+DT <- SRC[, src_cols, with=FALSE][, setnames(.SD, tgt_cols)]
+test(1516.1, names(SRC), c("x","y","z")) # src not altered by ref
+test(1516.2, names(DT), tgt_cols) # target expected
+test(1516.3, unname(unclass(DT[, tgt_cols, with=FALSE])), unname(unclass(SRC[,src_cols, with=FALSE]))) # content match
+
 ##########################
 
 
