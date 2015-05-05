@@ -6338,6 +6338,7 @@ old.option = getOption("datatable.prettyprint.char")
 options(datatable.prettyprint.char = 5L)
 DT = data.table(x=1:2, y=c("abcdefghijk", "lmnopqrstuvwxyz"))
 test(1515.1, grep("abcde...", capture.output(print(DT))), 2L)
+options(datatable.prettyprint.char = old.option)
 
 # test 1516: chain setnames() - used while mapping source to target columns
 SRC = data.table(x=1:2, y=c("abcdefghij", "klmnopqrstuv"), z=rnorm(2))
