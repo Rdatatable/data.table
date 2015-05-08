@@ -15,6 +15,7 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(GenomicRanges)
     require(caret)
     require(knitr)
+    require(plm)
     # reshape2 ahead of reshape ...
     try(detach(package:reshape2),silent=TRUE)
     try(detach(package:reshape),silent=TRUE)
@@ -1494,8 +1495,11 @@ DT = data.table(name=c('a','b','c'), value=1:3)
 test(526, base::droplevels(DT[ name != 'a' ]), data.table(name=c('b','c'),value=2:3))   # base:: because we'll implement a fast droplevels, too.
 
 if ("package:nlme" %in% search()) {
-    test(527, {x=Orthodont;tt=lme(distance ~ age, data=x); tt[["data"]]=NULL; tt},
-              {x=as.data.table(Orthodont);tt=lme(distance ~ age, data=x);tt[["data"]]=NULL;tt})
+    # commented out to be consistent with base R, as #1078 and #1128 are more common cases..
+    # until we can find a workaround for this, I'm commenting this one..
+    # Search for "Fix for #1078" for the tests..
+    # test(527, {x=Orthodont;tt=lme(distance ~ age, data=x); tt[["data"]]=NULL; tt},
+    #           {x=as.data.table(Orthodont);tt=lme(distance ~ age, data=x);tt[["data"]]=NULL;tt})
     test(528, {x=iris;tt=groupedData( Sepal.Length ~ Sepal.Width | Species, data=x);attr(tt,"class")=NULL;attr(tt,"FUN")=NULL;tt},
               {x=as.data.table(iris);tt=groupedData( Sepal.Length ~ Sepal.Width | Species, data=x);attr(tt,"class")=NULL;attr(tt,"FUN")=NULL;attr(tt,".internal.selfref")=NULL;tt})
 }
@@ -6348,6 +6352,24 @@ DT <- SRC[, src_cols, with=FALSE][, setnames(.SD, tgt_cols)]
 test(1516.1, names(SRC), c("x","y","z")) # src not altered by ref
 test(1516.2, names(DT), tgt_cols) # target expected
 test(1516.3, unname(unclass(DT[, tgt_cols, with=FALSE])), unname(unclass(SRC[,src_cols, with=FALSE]))) # content match
+
+# Fix for #1078 and #1128
+x = data.frame(x=1L, y=2L)
+setattr(x, 'class', c("foo", "data.frame"))
+test(1517.1, class(as.data.table(x)), c("data.table", "data.frame"))
+test(1517.2, class(setDT(x)), c("data.table", "data.frame"))
+x = data.table(x="a", y=2L)
+setattr(x, 'class', c("foo", "data.table", "data.frame"))
+test(1517.3, class(as.data.table(x)), c("data.table", "data.frame"))
+test(1517.4, class(setDT(x)), c("data.table", "data.frame"))
+# for plm package
+if ("package:plm" %in% search()) {
+    set.seed(45L)
+    x  = data.table(V1=c(1L,2L), V2=LETTERS[1:3], V3=round(rnorm(4),4), V4=1:12)
+    px = pdata.frame(x, index=c("V2", "V4"), drop.index=FALSE, row.names=TRUE)
+    test(1517.5, class(as.data.table(px)), class(x))
+    test(1517.6, class(setDT(px)), class(x))
+}
 
 ##########################
 

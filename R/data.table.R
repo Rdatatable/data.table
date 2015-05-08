@@ -1734,6 +1734,16 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...)
     alloc.col(value)
 }
 
+# don't retain classes before "data.frame" while converting 
+# from it.. like base R does. This'll break test #527 (see 
+# tests and as.data.table.data.frame) I've commented #527 
+# for now. This addresses #1078 and #1128
+.resetclass <- function(x, class) {
+    cx = class(x)
+    n  = chmatch(class, cx)
+    cx = unique( c("data.table", "data.frame", tail(cx, length(cx)-n)) )
+}
+
 as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...)
 {
     if (!identical(keep.rownames, FALSE)) {
@@ -1745,12 +1755,14 @@ as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...)
     }
     ans = copy(x)  # TO DO: change this deep copy to be shallow.
     setattr(ans,"row.names",.set_row_names(nrow(x)))
-    tt = class(x)
-    n=chmatch("data.frame",tt)
-    tt = c( head(tt,n-1L), "data.table","data.frame", tail(tt, length(tt)-n) )
+
+    ## NOTE: This test (#527) is no longer in effect ##
     # for nlme::groupedData which has class c("nfnGroupedData","nfGroupedData","groupedData","data.frame")
     # See test 527.
-    setattr(ans,"class",tt)
+    ## 
+
+    # fix for #1078 and #1128, see .resetclass() for explanation.
+    setattr(ans, "class", .resetclass(x, "data.frame"))
     alloc.col(ans)
 }
 
@@ -1786,7 +1798,11 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
     alloc.col(x)
 }
 
-as.data.table.data.table <- function(x, keep.rownames=FALSE, ...) return(x)
+as.data.table.data.table <- function(x, keep.rownames=FALSE, ...) {
+    # fix for #1078 and #1128, see .resetclass() for explanation.
+    setattr(x, 'class', .resetclass(x, "data.table"))
+    return(x)
+}
 
 # takes care of logical, character, numeric, integer
 as.data.table.factor <- as.data.table.ordered <- 
@@ -2429,15 +2445,14 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL) {
         }
     }
     if (is.data.table(x)) {
+        # fix for #1078 and #1128, see .resetclass() for explanation.
+        setattr(x, 'class', .resetclass(x, 'data.table'))
         if (selfrefok(x) > 0) return(invisible(x)) else alloc.col(x)
     } else if (is.data.frame(x)) {
         rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
         setattr(x, "row.names", .set_row_names(nrow(x)))
-        tt = class(x)
-        n = chmatch("data.frame", tt)
-        tt = c(head(tt, n - 1L), "data.table", "data.frame", tail(tt, 
-            length(tt) - n))
-        setattr(x, "class", tt)
+        # fix for #1078 and #1128, see .resetclass() for explanation.
+        setattr(x, "class", .resetclass(x, 'data.frame'))
         alloc.col(x)
         if (!is.null(rn)) {
             nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
