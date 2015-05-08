@@ -108,6 +108,12 @@ It can be used in `j` in two ways:
 	)]
 	```
 
+#### {.bs-callout .bs-callout-warning}
+
+Note that the code above explains how `:=` can be used. They are not working examples. We will start using them on `flights` *data.table* from the next section.
+
+# 
+
 #### {.bs-callout .bs-callout-info}
 
 * Form (a) is usually easy to program with and is particularly useful when you don't know the columns to assign values to in advance.

@@ -224,6 +224,19 @@ head(ans)
 
 * Wrap both columns within `.()`, or `list()`. That's it.
 
+# 
+
+#### -- Select both `arr_delay` and `dep_delay` columns *and* rename them to `delay_arr` and `delay_dep`.
+
+Since `.()` is just an alias for `list()`, we can name columns as we would while creating a *list*.
+
+```{r}
+ans <- flights[, .(delay_arr = arr_delay, delay_dep = dep_delay)]
+head(ans)
+```
+
+That's it.
+
 ### e) Compute or *do* in `j`
 
 #### -- How many trips have had total delay < 0?
@@ -311,11 +324,40 @@ DF[DF$x > 1, ] # data.frame needs that ',' as well
 DF[with(DF, x > 1), ]
 ```
 
-#### {.bs-callout .bs-callout-info}
+#### {.bs-callout .bs-callout-info #with_false}
 
 * Using `with()` in (2) allows using `DF`'s column `x` as if it were a variable. 
 
     Hence the argument name `with` in *data.table*. Setting `with=FALSE` disables the ability to refer to columns as if they are variables, thereby restoring the "*data.frame* mode".
+
+* We can also *deselect* columns using `-` or `!`. For example:
+
+    ```{r eval=FALSE}
+    ## not run
+
+    # returns all columns except arr_delay and dep_delay
+    ans <- flights[, !c("arr_delay", "dep_delay"), with=FALSE]
+    # or
+    ans <- flights[, -c("arr_delay", "dep_delay"), with=FALSE]
+    ```
+
+* From `v1.9.5+`, we can also select by specifying start and end column names, for e.g, `year:day` to select the first three columns.
+
+    ```{r eval=FALSE}
+    ## not run
+
+    # returns year,month and day
+    ans <- flights[, year:day, with=FALSE]
+    # returns day, month and year
+    ans <- flights[, day:year, with=FALSE]
+    # returns all columns except year, month and day
+    ans <- flights[, -(year:day), with=FALSE]
+    ans <- flights[, !(year:day), with=FALSE]
+    ```
+
+    This is particularly handy while working interactively.
+
+# 
 
 `with = TRUE` is default in *data.table* because we can do much more by allowing `j` to handle expressions - especially when combined with `by` as we'll see in a moment.
 
@@ -419,7 +461,7 @@ ans
 
 #### {.bs-callout .bs-callout-info}
 
-* All we did was to change `by` to `keyby`. This automatically orders the result by the grouping variables in increasing order. 
+* All we did was to change `by` to `keyby`. This automatically orders the result by the grouping variables in increasing order. Note that `keyby()` is applied after performing the  operation, i.e., on the computed result.
 
 **Keys:** Actually `keyby` does a little more than *just ordering*. It also *sets a key* after ordering by setting an *attribute* called `sorted`. But we'll learn more about `keys` in the next vignette. 
 
@@ -545,7 +587,7 @@ We are almost there. There is one little thing left to address. In our `flights`
 
 Using the argument `.SDcols`. It accepts either column names or column indices. For example, `.SDcols = c("arr_delay", "dep_delay")` ensures that `.SD` contains only these two columns for each group. 
 
-You can also provide the columns to remove instead of columns to keep using `-` sign.
+Similar to the [with = FALSE section](#with_false), you can also provide the columns to remove instead of columns to keep using `-` or `!` sign as well as select consecutive columns as `colA:colB` and deselect consecutive columns as `!(colA:colB) or `-(colA:colB)`.
 
 # 
 Now let us try to use `.SD` along with `.SDcols` to get the `mean()` of `arr_delay` and `dep_delay` columns grouped by `origin`, `dest` and `month`.
