@@ -6371,6 +6371,13 @@ if ("package:plm" %in% search()) {
     test(1517.6, class(setDT(px)), class(x))
 }
 
+# Fix for setattr, #1142
+x = factor(rep(1:4, each=2L))
+ax = address(x)
+setattr(x, 'levels', c("a", "a", "b", "b"))
+test(1518.1, levels(x), c("a", "b"))
+test(1518.2, address(x), ax)
+
 ##########################
 
 

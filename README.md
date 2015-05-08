@@ -193,6 +193,9 @@
 
   49. `setDT()` and `as.data.table()` both strip *all classes* preceding *data.table*/*data.frame*, to be consistent with base R. Closes [#1078](https://github.com/Rdatatable/data.table/issues/1078) and [#1128](https://github.com/Rdatatable/data.table/issues/1128). Thanks to Jan and @helix123 for the reports.
 
+  50. `setattr(x, 'levels', value)` handles duplicate levels in `value`
+ appropriately. Thanks to Jeffrey Horner for pointing it out [here](http://jeffreyhorner.tumblr.com/post/118297392563/tidyr-challenge-help-me-do-my-job). Closes [#1142](https://github.com/Rdatatable/data.table/issues/1142).
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

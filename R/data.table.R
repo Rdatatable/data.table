@@ -2245,10 +2245,12 @@ setattr <- function(x,name,value) {
         # Using setnames here so that truelength of names can be retained, to carry out integrity checks such as not
         # creating names longer than the number of columns of x, and to change the key, too
         # For convenience so that setattr(DT,"names",allnames) works as expected without requiring a switch to setnames.
-    else
-        .Call(Csetattrib, x, name, value)
-        # If name=="names" and this is the first time names are assigned (e.g. in data.table()), this will be grown
-        # by alloc.col very shortly afterwards in the caller.
+    else .Call(Csetattrib, x, name, value)
+    # If name=="names" and this is the first time names are assigned (e.g. in data.table()), this will be grown by alloc.col very shortly afterwards in the caller.
+
+    # fix for #1142 - duplicated levels for factors
+    if (name == "levels" && is.factor(x) && anyDuplicated(value))
+        .Call(Csetlevels, x, (value <- as.character(value)), unique(value))
     invisible(x)
 }
 
