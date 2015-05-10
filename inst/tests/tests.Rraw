@@ -6380,6 +6380,13 @@ setattr(x, 'levels', c("a", "a", "b", "b"))
 test(1518.1, levels(x), c("a", "b"))
 test(1518.2, address(x), ax)
 
+# Fix for #1074 and #1092
+x = data.table(x=c(1,1,1,2), y=1:4, key="x")
+test(1519.1, x[.(2:3), .N, nomatch=0L], 1L)
+x = data.table(k = INT(0,2,3,7), o = "b", key = "k")
+y = data.table(k = 1:5, n = paste("n", 1:5, sep=""), key = "k")
+test(1519.2, x[y, o := n, nomatch = 0], data.table(k = INT(0,2,3,7), o = c("b","n2","n3","b"), key = "k"))
+
 ##########################
 
 

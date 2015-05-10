@@ -603,6 +603,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                                                                             # TODO: warn on `:=` when `i` has duplicates? 
                            NULL 
                         else as.double(nrow(x)+nrow(i))) # rows in i might not match to x so old max(nrow(x),nrow(i)) wasn't enough. But this limit now only applies when there are duplicates present so the reason now for nrow(x)+nrow(i) is just to nail it down and be bigger than max(nrow(x),nrow(i)).
+                    # Fix for #1092 and #1074
+                    # TODO: implement better version of "any"/"all"/"which" to avoid 
+                    # unnecessary construction of logical vectors
+                    if (identical(nomatch, 0L) && allLen1) irows = irows[irows != 0L]
                 } else {
                     if (length(xo)) stop("Cannot by=.EACHI when joining to a secondary key, yet")
                     # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.
