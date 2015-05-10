@@ -67,7 +67,7 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, v
         # NOTE: bit64::is.double(int64) returns FALSE.. but base::is.double returns TRUE
         is.int64 <- function(x) inherits(x, 'integer64')
         is.strictlydouble <- function(x) !is.int64(x) && is.double(x)
-        if (is.integer(x[[rc]]) && (is.double(i[[lc]]) || is.logical(i[[lc]]))) {
+        if (is.integer(x[[rc]]) && (base::is.double(i[[lc]]) || is.logical(i[[lc]]))) {
             # TO DO: add warning if reallyreal about loss of precision
             # or could coerce in binary search on the fly, at cost
             if (verbose) cat("Coercing ", typeof(i[[lc]])," column i.'",icnam,"' to integer to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
