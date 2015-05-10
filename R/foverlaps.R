@@ -76,8 +76,8 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     if (identical(by.x, key(origx)[seq_along(by.x)]))
         setattr(x, 'sorted', by.x)
     setattr(y, 'sorted', by.y) ## is definitely sorted on by.y
-    roll = switch(type, start=, end=, equal= FALSE, 
-                    any=, within= TRUE)
+    roll = switch(type, start=, end=, equal= 0.0, 
+                    any=, within= +Inf)
     make_call <- function(names, fun=NULL) {
         if (is.character(names))
             names = lapply(names, as.name)
@@ -113,20 +113,23 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     matches <- function(ii, xx, del, ...) {
         cols = setdiff(names(xx), del)
         xx = shallow(xx, cols)
-        ii[xx, which=TRUE, ...]
+        ans = bmerge(xx, ii, seq_along(xx), seq_along(xx), haskey(xx), integer(0), verbose=verbose, ...)
+        # vecseq part should never run here, but still...
+        if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
     }
     indices <- function(x, y, intervals, ...) {
         if (type == "start") {
-            sidx = eidx = matches(x, y, intervals[2L], ...) ## TODO: eidx can be set to integer(0)
+            sidx = eidx = matches(x, y, intervals[2L], rollends=c(FALSE,FALSE), ...) ## TODO: eidx can be set to integer(0)
         } else if (type == "end") {
-            eidx = sidx = matches(x, y, intervals[1L], ...) ## TODO: sidx can be set to integer(0)
+            eidx = sidx = matches(x, y, intervals[1L], rollends=c(FALSE,FALSE), ...) ## TODO: sidx can be set to integer(0)
         } else {
-            sidx = matches(x, y, intervals[2L], rollends=(type == "any"), ...)
-            eidx = matches(x, y, intervals[1L], ...)
+            sidx = matches(x, y, intervals[2L], rollends=rep(type == "any", 2L), ...)
+            eidx = matches(x, y, intervals[1L], rollends=c(FALSE,TRUE), ...)
         }
         list(sidx, eidx)
     }
-    .Call(Clookup, uy, nrow(y), indices(uy, y, yintervals, roll=roll), maxgap, minoverlap, mult, type, verbose)
+    # nomatch has no effect here, just for passing arguments consistently to `bmerge`
+    .Call(Clookup, uy, nrow(y), indices(uy, y, yintervals, nomatch=0L, roll=roll), maxgap, minoverlap, mult, type, verbose)
     if (maxgap == 0L && minoverlap == 1L) {
         iintervals = tail(names(x), 2L)
         if (verbose) {last.started.at=proc.time()[3];cat("binary search(es) done in ...");flush.console()}
