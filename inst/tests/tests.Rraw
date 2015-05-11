@@ -6387,6 +6387,10 @@ x = data.table(k = INT(0,2,3,7), o = "b", key = "k")
 y = data.table(k = 1:5, n = paste("n", 1:5, sep=""), key = "k")
 test(1519.2, x[y, o := n, nomatch = 0], data.table(k = INT(0,2,3,7), o = c("b","n2","n3","b"), key = "k"))
 
+# Fix for #1141 (thanks to @yvanrichard)
+x <- data.table(zxc = 1:3, vbn = 4:6)
+test(1520, x[, c('zxc', 'qwe', 'rty', 'vbn'), with = FALSE], error = "column(s) not found")
+
 ##########################
 
 

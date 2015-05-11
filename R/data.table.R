@@ -1060,7 +1060,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 xcolsAns = seq_along(ansvars)
                 icols = icolsAns = integer()
             } else {
-                if (!length(leftcols)) stop("column(s) not found: ", paste(ansvars[wna],sep=", "))
+                if (!length(leftcols)) stop("column(s) not found: ", paste(ansvars[wna],collapse=", "))
                 xcols = w[!wna]
                 xcolsAns = which(!wna)
                 ivars = names(i)
