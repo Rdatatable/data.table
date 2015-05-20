@@ -1,4 +1,4 @@
-merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
+merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
                              all.y = all, suffixes = c(".x", ".y"), allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
     if (!inherits(y, 'data.table')) {
         y <- as.data.table(y)
@@ -8,6 +8,17 @@ merge.data.table <- function(x, y, by = NULL, all = FALSE, all.x = all,
     }
     if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
     if (any(duplicated(names(y)))) stop("y has some duplicated column name(s): ",paste(names(y)[duplicated(names(y))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
+    
+    ## Determine by and rename columns of y, if by.x and by.y are supplied
+    if (!is.null(by.x)){
+      if (!is.null(by)) warning("Supplied both by and by.x and only by will be used")
+      else {
+        by <- by.x
+        if (length(by.x) != length(by.y)) stop("by.x and by.y must be of the same length")
+        setnames(y, by.y, by.x)
+        on.exit(setnames(y, by.x, by.y))
+      }
+    }
     
     ## Try to infer proper value for `by`
     if (is.null(by)) {

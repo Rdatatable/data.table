@@ -13,7 +13,7 @@
 }
 
 \usage{
-\method{merge}{data.table}(x, y, by = NULL, all = FALSE, all.x = all, all.y = all, suffixes = c(".x", ".y"), 
+\method{merge}{data.table}(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all, all.y = all, suffixes = c(".x", ".y"), 
 allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
 ...)
 }
@@ -28,6 +28,10 @@ allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
     A vector of shared column names in \code{x} and \code{y} to merge on.
     This defaults to the shared key columns between the two tables.
     If \code{y} has no key columns, this defaults to the key of \code{x}.
+  }
+  
+  \item{by.x, by.y}{
+    Vectors of column names in \code{x} and \code{y} to merge on.
   }
 
   \item{all}{

@@ -1,4 +1,4 @@
-
+﻿
 **Current stable release** (always even) : [v1.9.4 on CRAN](http://cran.r-project.org/web/packages/data.table/index.html), released 2<sup>nd</sup> Oct 2014.  
 **Development version** (always odd): [v1.9.5 on GitHub](https://github.com/Rdatatable/data.table/) [![Build Status](https://travis-ci.org/Rdatatable/data.table.svg?branch=master)](https://travis-ci.org/Rdatatable/data.table) [![codecov.io](http://codecov.io/github/Rdatatable/data.table/coverage.svg?branch=master)](http://codecov.io/github/Rdatatable/data.table?branch=master)
  [How to install?](https://github.com/Rdatatable/data.table/wiki/Installation)
@@ -62,6 +62,8 @@
   20. `setDT` gains a `key` argument so that `setDT(X, key="a")` would convert `X` to a `data.table` by reference *and* key by the columns specified. Closes [#1121](https://github.com/Rdatatable/data.table/issues/1121).
 
   21. `setDF` also converts `list` of equal length to `data.frame` by reference now. Closes [#1132](https://github.com/Rdatatable/data.table/issues/1132).
+
+  22. `merge.data.table` now has new arguments `by.x` and `by.y`. Closes [#637](https://github.com/Rdatatable/data.table/issues/637). Thanks to @NelloBlaser.
 
 #### BUG FIXES
 
