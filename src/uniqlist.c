@@ -81,4 +81,55 @@ SEXP uniqlengths(SEXP x, SEXP n) {
     return(ans);
 }
 
+// we could compute `uniqlist` and `uniqlengths` and then construct the result
+// but that seems unnecessary waste of memory and roundabout..
+// so, we'll do it directly here.. 'order()' is implemented in C-api, but not used 
+// in R side yet, but if need be, it can be added easily.
+SEXP rleid(SEXP l, SEXP order)
+{
+    Rboolean b, byorder;
+    unsigned long long *ulv; // for numeric check speed-up
+    SEXP v, ans, class;
+    R_len_t nrow = length(VECTOR_ELT(l,0)), ncol = length(l);
+    R_len_t i, j, len = 1, thisi, previ;
+
+    if (!nrow || !ncol) return (allocVector(INTSXP, 0));
+    ans = PROTECT(allocVector(INTSXP, nrow));
+    if (NA_INTEGER != NA_LOGICAL || sizeof(NA_INTEGER)!=sizeof(NA_LOGICAL)) 
+        error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
+
+    INTEGER(ans)[0] = 1; // first row is always the first of first group
+    byorder = INTEGER(order)[0] != -1;
+    thisi = byorder ? INTEGER(order)[0]-1 : 0;
+    for (i=1; i<nrow; i++) {
+        previ = thisi;
+        thisi = byorder ? INTEGER(order)[i]-1 : i;
+        j = ncol;  // the last column varies the most frequently so check that first and work backwards
+        b = TRUE;
+        while (--j>=0 && b) {
+            v=VECTOR_ELT(l,j);
+            switch (TYPEOF(v)) {
+            case INTSXP : case LGLSXP :
+                b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
+            case STRSXP :
+                b=STRING_ELT(v,thisi)==STRING_ELT(v,previ); break;  // forder checks no non-ascii unknown, and either UTF-8 or Latin1 but not both. So == pointers is ok given that check.
+            case REALSXP :
+                ulv = (unsigned long long *)REAL(v);  
+                b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
+                if (!b) {
+                    class = getAttrib(v, R_ClassSymbol);
+                    twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
+                    b = twiddle(ulv, thisi, 1) == twiddle(ulv, previ, 1);
+                }
+                break;
+                // TO DO: store previ twiddle call, but it'll need to be vector since this is in a loop through columns. Hopefully the first == will short circuit most often
+            default :
+                error("Type '%s' not supported", type2char(TYPEOF(v))); 
+            }
+        }
+        INTEGER(ans)[i] = b ? len : ++len;
+    }
+    UNPROTECT(1);
+    return(ans);
+}
 

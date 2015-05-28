@@ -2538,9 +2538,7 @@ rleidv <- function(x, cols=seq_along(x)) {
         cols = as.integer(cols)
     }
     x = .shallow(x, cols) # shallow copy even if list..
-    setDT(x)
-    ulist = uniqlist(x)
-    rep.int(seq_along(ulist), uniqlengths(ulist, nrow(x)))
+    .Call(Crleid, setDT(x), -1L)
 }
 
 gsum <- function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
