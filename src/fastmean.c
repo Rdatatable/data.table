@@ -112,6 +112,7 @@ SEXP fastmean(SEXP args)
 	        error("Type '%s' not supported in fastmean", type2char(TYPEOF(x)));
 	    }
     }
+    copyMostAttrib(x, ans);
     UNPROTECT(1);
     return(ans);
 } 

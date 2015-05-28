@@ -6395,6 +6395,9 @@ test(1520, x[, c('zxc', 'qwe', 'rty', 'vbn'), with = FALSE], error = "column(s) 
 x = data.table(a=c(1,1,2))[, unique(.SD)]
 test(1521, x[, b := 5], data.table(a=c(1,2), b=5))
 
+# Fix for #1160, fastmean retaining attributes
+x = data.table(a = c(2,2,1,1,2), b=setattr(1:5, 'class', c('bla', 'integer')))
+test(1522, class(x[, .(mean(b), all(b)), by=a]$V1), c('bla', 'integer'))
 
 ##########################
 
