@@ -198,6 +198,8 @@
 
   51. `x[J(vals), .N, nomatch=0L]` also included no matches in result, [#1074](https://github.com/Rdatatable/data.table/issues/1074). And `x[J(...), col := val, nomatch=0L]` returned a warning with incorrect results when join resulted in no matches as well, even though `nomatch=0L` should have no effect in `:=`, [#1092](https://github.com/Rdatatable/data.table/issues/1092). Both issues are fixed now. Thanks to @riabusan and @cguill95 for #1092.
 
+  52. `.data.table.locked` attributes set to NULL in internal function `subsetDT`. Closes [#1154](https://github.com/Rdatatable/data.table/issues/1154). Thanks to @Jan.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

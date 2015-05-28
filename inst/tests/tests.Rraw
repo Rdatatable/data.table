@@ -6391,6 +6391,11 @@ test(1519.2, x[y, o := n, nomatch = 0], data.table(k = INT(0,2,3,7), o = c("b","
 x <- data.table(zxc = 1:3, vbn = 4:6)
 test(1520, x[, c('zxc', 'qwe', 'rty', 'vbn'), with = FALSE], error = "column(s) not found")
 
+# Fix for #1154 (unnecessary lock on .SD)
+x = data.table(a=c(1,1,2))[, unique(.SD)]
+test(1521, x[, b := 5], data.table(a=c(1,2), b=5))
+
+
 ##########################
 
 
