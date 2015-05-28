@@ -6399,6 +6399,10 @@ test(1521, x[, b := 5], data.table(a=c(1,2), b=5))
 x = data.table(a = c(2,2,1,1,2), b=setattr(1:5, 'class', c('bla', 'integer')))
 test(1522, class(x[, .(mean(b), all(b)), by=a]$V1), c('bla', 'integer'))
 
+# Fix for #1145, .N lock handled properly
+x = data.table(a=1:5)
+test(1523, x[, head(.SD, n=2)[1:.N]], data.table(a=1:2))
+
 ##########################
 
 

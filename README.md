@@ -202,6 +202,8 @@
 
   53. Internal function `fastmean()` retains column attributes. Closes [#1160](https://github.com/Rdatatable/data.table/issues/1160). Thanks to @renkun-ken.
 
+  54. Using `.N` in `i`, for e.g., `DT[, head(.SD, 3)[1:(.N-1L)]]`  accessed incorrect value of `.N`. This is now fixed. Closes [#1145](https://github.com/Rdatatable/data.table/issues/1145). Thanks to @claytonstanley.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
