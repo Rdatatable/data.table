@@ -6410,6 +6410,11 @@ ans1 = merge(d1, d2, by.x = "x1", by.y = "x2")
 ans2 = setkey(setDT(merge.data.frame(d1, d2, by.x = key(d1), by.y = key(d2))), x1)
 test(1524, ans1, ans2)
 
+# 'unique =' argument for CJ, #1148
+x = c(1, 2, 1)
+y = c(5, 8, 8, 4)
+test(1525, CJ(x, y, unique=TRUE), CJ(c(1,2), c(4,5,8)))
+
 ##########################
 
 

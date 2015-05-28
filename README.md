@@ -65,6 +65,8 @@
 
   22. `merge.data.table` now has new arguments `by.x` and `by.y`. Closes [#637](https://github.com/Rdatatable/data.table/issues/637). Thanks to @NelloBlaser.
 
+  23. `CJ` gains logical `unique` argument with default `FALSE`. If `TRUE`, unique values of vectors are automatically computed and used. This is convenient, for example, `DT[CJ(a, b, c, unique=TRUE)]` instead of  doing `DT[CJ(unique(a), unique(b), unique(c))]`. Ultimately, `unique = TRUE` will be default. Closes [#1148](https://github.com/Rdatatable/data.table/issues/1148). 
+
 #### BUG FIXES
 
   1. `if (TRUE) DT[,LHS:=RHS]` no longer prints, [#869](https://github.com/Rdatatable/data.table/issues/869). Tests added. To get this to work we've had to live with one downside: if a `:=` is used inside a function with no `DT[]` before the end of the function, then the next time `DT` is typed at the prompt, nothing will be printed. A repeated `DT` will print. To avoid this: include a `DT[]` after the last `:=` in your function. If that is not possible (e.g., it's not a function you can change) then `print(DT)` and `DT[]` at the prompt are guaranteed to print. As before, adding an extra `[]` on the end of `:=` query is a recommended idiom to update and then print; e.g. `> DT[,foo:=3L][]`. Thanks to Jureiss for reporting.

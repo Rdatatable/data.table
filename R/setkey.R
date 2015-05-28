@@ -292,12 +292,13 @@ SJ <- function(...) {
 
 # TO DO?: Use the CJ list() replication method for SJ (inside as.data.table.list?, #2109) too to avoid alloc.col
 
-CJ <- function(..., sorted = TRUE)
+CJ <- function(..., sorted = TRUE, unique = FALSE)
 {
     # Pass in a list of unique values, e.g. ids and dates
     # Cross Join will then produce a join table with the combination of all values (cross product).
     # The last vector is varied the quickest in the table, so dates should be last for roll for example
     l = list(...)
+    if (unique) l = lapply(l, unique)
 
     # using rep.int instead of rep speeds things up considerably (but attributes are dropped).
     j = lapply(l, class)  # changed "vapply" to avoid errors with "ordered" "factor" input
