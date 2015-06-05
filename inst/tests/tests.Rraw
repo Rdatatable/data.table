@@ -6415,6 +6415,12 @@ x = c(1, 2, 1)
 y = c(5, 8, 8, 4)
 test(1525, CJ(x, y, unique=TRUE), CJ(c(1,2), c(4,5,8)))
 
+# `key` argument is ignored within `setDT` if `DT` is already a `data.table` #1169
+DT <- data.table(A = 1:4, B = 5:8)
+setDT(DT, key = "A")
+test(1526, key(DT), "A")
+
+
 ##########################
 
 

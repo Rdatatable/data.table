@@ -2459,6 +2459,7 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL) {
     if (is.data.table(x)) {
         # fix for #1078 and #1128, see .resetclass() for explanation.
         setattr(x, 'class', .resetclass(x, 'data.table'))
+        if (!is.null(key)) setkeyv(x, key) # fix for #1169
         if (selfrefok(x) > 0) return(invisible(x)) else alloc.col(x)
     } else if (is.data.frame(x)) {
         rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
