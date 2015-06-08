@@ -297,7 +297,7 @@ struct processData {
     Rboolean narm;
 };
 
-void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valnames, Rboolean narm, Rboolean verbose, struct processData *data) {
+static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valnames, Rboolean narm, Rboolean verbose, struct processData *data) {
 
     SEXP vars,tmp,thiscol;
     SEXPTYPE type;
