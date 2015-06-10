@@ -15,8 +15,8 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
       else {
         by <- by.x
         if (length(by.x) != length(by.y)) stop("by.x and by.y must be of the same length")
-        setnames(y, by.y, by.x)
-        on.exit(setnames(y, by.x, by.y))
+        dupnames.y <- setdiff(intersect(by.x, names(y)), by.y)
+        y <- setnames(shallow(y), c(dupnames.y, by.y), c(sprintf("%s.", dupnames.y), by.x))
       }
     }
     
@@ -92,6 +92,10 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     if (length(dupnames)) {
         setnames(dt, sprintf("%s.", dupnames), paste(dupnames, suffixes[2], sep=""))
         setnames(dt, sprintf("i.%s.", dupnames), paste(dupnames, suffixes[1], sep=""))
+    }
+    
+    if (length(dupnames.y)) {
+      setnames(dt, sprintf("%s.", dupnames.y), paste(dupnames.y, suffixes[2], sep=""))
     }
     
     dt
