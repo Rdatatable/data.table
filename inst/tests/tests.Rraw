@@ -3335,8 +3335,8 @@ if ("package:reshape2" %in% search()) {
     ans = suppressWarnings(melt(dt, id=c("Month", "Day"), na.rm=TRUE))
     ans = ans[ , .(min=min(value), max=max(value)), by=.(Month, variable)]
     ans = melt(ans, id=1:2, variable.name="variable2")
-    ans = dcast(ans, Month ~ variable2 + variable)
-    setnames(ans, c("Month", paste(".", names(ans)[-1L], sep="_")))
+    ans = dcast(ans, Month ~ variable + variable2)
+    setnames(ans, c("Month", paste(names(ans)[-1L], ".", sep="_")))
     valvars = c("Ozone", "Solar.R", "Wind", "Temp")
     ans2 <- suppressWarnings(dcast(dt, Month ~ ., fun=list(min, max), na.rm=TRUE, value.var=valvars))
     setcolorder(ans, names(ans2))

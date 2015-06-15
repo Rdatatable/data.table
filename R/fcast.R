@@ -79,7 +79,8 @@ aggregate_funs <- function(funs, vals, ...) {
                 if (length(dots))
                     expr = c(expr, dots)
                 ans[[k]] = as.call(expr)
-                nms[k] = paste(all.names(i, max.names=1L, functions=TRUE), j, sep="_")
+                # changed order of arguments here, #1153
+                nms[k] = paste(j, all.names(i, max.names=1L, functions=TRUE), sep="_")
                 k = k+1L;
             }
         }
@@ -199,7 +200,8 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, ..., margins =
         ans = .Call("Cfcast", lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call))
         allcols = do.call("paste", c(rhs, sep="_"))
         if (length(valnames) > 1L)
-            allcols = do.call("paste", c(setcolorder(CJ(valnames, allcols, sorted=FALSE), 2:1), sep="_"))
+            allcols = do.call("paste", c(CJ(valnames, allcols, sorted=FALSE), sep="_"))
+            # removed 'setcolorder()' here, #1153
         setattr(ans, 'names', c(lhsnames, allcols))
         setDT(ans); setattr(ans, 'sorted', lhsnames)
     } else {

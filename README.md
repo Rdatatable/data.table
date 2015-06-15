@@ -52,6 +52,7 @@
       * accept multiple functions under `fun.aggregate`. Closes [#716](https://github.com/Rdatatable/data.table/issues/716).
       * supports optional column prefixes as mentioned under [this SO post](http://stackoverflow.com/q/26225206/559784). Closes [#862](https://github.com/Rdatatable/data.table/issues/862). Thanks to @JohnAndrews.
       * works with undefined variables directly in formula. Closes [#1037](https://github.com/Rdatatable/data.table/issues/1037). Thanks to @DavidArenburg for the MRE.
+      * Naming conventions on multiple columns changed according to [#1153](https://github.com/Rdatatable/data.table/issues/1153). Thanks to @MichaelChirico for the FR.
 
   17. `.SDcols` and `with=FALSE` understand `colA:colB` form now. That is, `DT[, lapply(.SD, sum), by=V1, .SDcols=V4:V6]` and `DT[, V5:V7, with=FALSE]` works as intended. This is quite useful for interactive use. Closes [#748](https://github.com/Rdatatable/data.table/issues/748).
 
