@@ -2870,45 +2870,46 @@ if ("package:reshape2" %in% search()) {
 
     set.seed(45)
     DT <- data.table(
-          i1 = c(1:5, NA), 
-          i2 = c(NA,6,7,8,9,10), 
-          f1 = factor(sample(c(letters[1:3], NA), 6, TRUE)), 
-          c1 = sample(c(letters[1:3], NA), 6, TRUE), 
-          d1 = as.Date(c(1:3,NA,4:5), origin="2013-09-01"), 
-          d2 = as.Date(6:1, origin="2012-01-01"))
-    DT[, l1 := DT[, list(c=list(rep(i1, sample(5,1)))), by = i1]$c] # generate list cols
-    DT[, l2 := DT[, list(c=list(rep(c1, sample(5,1)))), by = i1]$c]
+          i_1 = c(1:5, NA), 
+          i_2 = c(NA,6,7,8,9,10), 
+          f_1 = factor(sample(c(letters[1:3], NA), 6, TRUE)), 
+          c_1 = sample(c(letters[1:3], NA), 6, TRUE), 
+          d_1 = as.Date(c(1:3,NA,4:5), origin="2013-09-01"), 
+          d_2 = as.Date(6:1, origin="2012-01-01"))
+    DT[, l_1 := DT[, list(c=list(rep(i_1, sample(5,1)))), by = i_1]$c] # generate list cols
+    DT[, l_2 := DT[, list(c=list(rep(c_1, sample(5,1)))), by = i_1]$c]
 
-    test(1035, melt(DT, id=1:2, measure=3:4), melt(DT, id=c("i1", "i2"), measure=c("f1", "c1")))
+    test(1035, melt(DT, id=1:2, measure=3:4), melt(DT, id=c("i_1", "i_2"), measure=c("f_1", "c_1")))
 
-    ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l1"))
-    ans1[, value := DT$l1]
-    test(1036, melt(DT, id=c("i1", "i2", "l2"), measure=c("l1")), ans1)
+    ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
+    ans1[, value := DT$l_1]
+    test(1036, melt(DT, id=c("i_1", "i_2", "l_2"), measure=c("l_1")), ans1)
 
     # melt retains attributes if all are of same type (new)
-    ans2 = data.table(c1=DT$c1, variable=rep(c("d1", "d2"), each=6), value=as.Date(c(DT$d1, DT$d2)))[!is.na(value)]
+    ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=6), value=as.Date(c(DT$d_1, DT$d_2)))[!is.na(value)]
     test(1037, melt(DT, id=4, measure=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
 
     DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
     test(1038, melt(DT2, id=1), error="Unknown column type 'complex'")
     
     # more tests
-    DT[, f2 := factor(c("z", "a", "x", "z", "a", "a"), ordered=TRUE)]
+    DT[, f_2 := factor(c("z", "a", "x", "z", "a", "a"), ordered=TRUE)]
     DT[, id := 1:6]
     ans1 = cbind(melt(DT, id="id", measure=5:6, value.name="value1"), melt(DT, id=integer(0), measure=7:8, value.name="value2")[, variable:=NULL])
     levels(ans1$variable) = as.character(1:2)
     test(1038.2, ans1, melt(DT, id="id", measure=list(5:6, 7:8)))
     test(1038.3, ans1, melt(DT, id="id", measure=list(5:6, 7:8), na.rm=TRUE)) # should've no effect
+    test(1038.7, ans1, melt(DT, id="id", measure=patterns("d_", "l_")))
     # melt retains ordered factors!
-    test(1038.4, melt(DT, id="id", measure=c("f1", "f2"), value.factor=TRUE)$value, factor(c(as.character(DT$f1), as.character(DT$f2)), ordered=TRUE))
+    test(1038.4, melt(DT, id="id", measure=c("f_1", "f_2"), value.factor=TRUE)$value, factor(c(as.character(DT$f_1), as.character(DT$f_2)), ordered=TRUE))
     # if measure is integer(0) just returns a duplicated data.table with all idcols
     test(1038.5, melt(DT, id=1:6, measure=integer(0)), shallow(DT, 1:6))
     # measure.var list with single entry recycles to maximum length
-    ans = cbind(melt(DT, id="id", measure=c("c1", "c1"))[, variable := NULL], melt(DT, id=integer(0), measure=c("f1", "f2")))
+    ans = cbind(melt(DT, id="id", measure=c("c_1", "c_1"))[, variable := NULL], melt(DT, id=integer(0), measure=c("f_1", "f_2")))
     setnames(ans, c("id", "value1", "variable", "value2"))
     setcolorder(ans, c("id", "variable", "value1", "value2"))
     levels(ans$variable) = as.character(1:2)
-    test(1038.6, melt(DT, id="id", measure=list(c("c1", "c1"), c("f1", "f2"))), ans)
+    test(1038.6, melt(DT, id="id", measure=list(c("c_1", "c_1"), c("f_1", "f_2"))), ans)
 
     # test to ensure attributes on non-factor id-columns are preserved after melt
     DT <- data.table(x=1:3, y=letters[1:3], z1=8:10, z2=11:13)
