@@ -39,10 +39,7 @@ Loading required package: data.table
    a
 1: 1
 2: 3
-> print(DT[2,a:=4L])                    # yes
-   a
-1: 1
-2: 4
+> print(DT[2,a:=4L])                    # no
 > print(DT)                             # yes
    a
 1: 1
@@ -64,10 +61,7 @@ NULL
 2: 5
 > (function(){DT[2,a:=5L];NULL})()      # print NULL
 NULL
-> print(DT)                             # yes. guaranteed print
-   a
-1: 1
-2: 5
+> print(DT)                             # no. only DT[] is guaranteed print from v1.9.6 and R 3.2.0
 > (function(){DT[2,a:=5L][];NULL})()    # print NULL
 NULL
 > DT                                    # yes. i) function needs to add [] after last one, so that "DT" alone is guaranteed anyway
@@ -88,10 +82,7 @@ NULL
 1: 1
 2: 6
 > {DT[2,a:=6L];invisible()}             # no
-> print(DT)                             # yes
-   a
-1: 1
-2: 6
+> print(DT)                             # no
 > (function(){print(DT[2,a:=7L]);print(DT);invisible()})()    # yes*2
    a
 1: 1
@@ -99,10 +90,7 @@ NULL
    a
 1: 1
 2: 7
-> {print(DT[2,a:=8L]);print(DT);invisible()}                  # yes*2
-   a
-1: 1
-2: 8
+> {print(DT[2,a:=8L]);print(DT);invisible()}                  # yes*1  Not within function so as at prompt
    a
 1: 1
 2: 8
