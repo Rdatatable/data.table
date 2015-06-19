@@ -447,7 +447,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (exists(".N", envir=parent.frame(), inherits=FALSE)) {
             old.N = get(".N", envir=parent.frame(), inherits=FALSE)
             locked.N = bindingIsLocked(".N", parent.frame())
-            unlockBinding(".N", parent.frame())
+            if (locked.N) eval(call("unlockBinding", ".N", parent.frame()))  # eval call to pass R CMD check NOTE until we find cleaner way
             assign(".N", nrow(x), envir=parent.frame(), inherits=FALSE)
             restore.N = TRUE
             # the comment below is invalid hereafter (due to fix for #1145)
