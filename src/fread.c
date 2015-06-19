@@ -424,9 +424,14 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
     ERANGEwarning = FALSE;  // just while detecting types, then TRUE before the read data loop
-    if (!isInteger(showProgressArg) || LENGTH(showProgressArg)!=1 || (INTEGER(showProgressArg)[0]!=0 && INTEGER(showProgressArg)[0]!=1))
-        error("showProgress must be 0 or 1, currently");
+    
+    // Extra tracing for apparent 32bit Windows problem: https://github.com/Rdatatable/data.table/issues/1111
+    if (!isInteger(showProgressArg)) error("showProgress is not type integer but type '%s'. Please report.", type2char(TYPEOF(showProgressArg)));
+    if (LENGTH(showProgressArg)!=1) error("showProgress is not length 1 but length %d. Please report.", LENGTH(showProgressArg));
     int showProgress = INTEGER(showProgressArg)[0];
+    if (showProgress!=0 && showProgress!=1)
+        error("showProgress is not 0 or 1 but %d. Please report.", showProgress);    
+    
     if (!isString(dec) || LENGTH(dec)!=1 || strlen(CHAR(STRING_ELT(dec,0))) != 1)
         error("dec must be a single character");
     const char decChar = *CHAR(STRING_ELT(dec,0));
@@ -443,7 +448,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     
     if (!isLogical(headerarg) || LENGTH(headerarg)!=1) error("'header' must be 'auto', TRUE or FALSE"); // 'auto' was converted to NA at R level
     header = LOGICAL(headerarg)[0];
-    if (!isNull(nastrings) && !isString(nastrings)) error("'na.strings' is type '",type2char(TYPEOF(nastrings)),"'. Must be a character vector.");
+    if (!isNull(nastrings) && !isString(nastrings)) error("'na.strings' is type '%s'.  Must be a character vector.", type2char(TYPEOF(nastrings)));
     if (!isInteger(nrowsarg) || LENGTH(nrowsarg)!=1 || INTEGER(nrowsarg)[0]==NA_INTEGER) error("'nrows' must be a single non-NA number of type numeric or integer");
     if (!isInteger(autostart) || LENGTH(autostart)!=1 || INTEGER(autostart)[0]<0) error("'autostart' must be a length 1 vector of type numeric or integer and >=0");  // NA_INTEGER is covered by <1
     if (isNumeric(skip)) { skip = PROTECT(coerceVector(skip, INTSXP)); protecti++; }
