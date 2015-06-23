@@ -6339,6 +6339,8 @@ x = as.numeric(sample(c(1:2, -Inf, NA)))
 test(1514.5, isReallyReal(x), TRUE)
 x = as.numeric(runif(2))
 test(1514.6, isReallyReal(x), TRUE)
+x = numeric()
+test(1514.7, isReallyReal(x), FALSE)
 
 # #1091
 old.option = getOption("datatable.prettyprint.char")
