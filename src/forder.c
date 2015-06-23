@@ -1399,10 +1399,12 @@ SEXP isReallyReal(SEXP x) {
         error("x must be of type double.");
     n = length(x);
     ans = PROTECT(allocVector(LGLSXP, 1));
-    INTEGER(ans)[0] = FALSE;
-    while (i < n && (REAL(x)[i] == (int)(REAL(x)[i]) || ISNA(REAL(x)[i])) )
+    while (i<n &&
+          ( ISNA(REAL(x)[i]) ||
+          ( R_FINITE(REAL(x)[i]) && REAL(x)[i] == (int)(REAL(x)[i])))) {
         i++;
-    if (i != n) LOGICAL(ans)[0] = TRUE;
+    }
+    LOGICAL(ans)[0] = (i<n);
     UNPROTECT(1);
     return(ans);
 }
