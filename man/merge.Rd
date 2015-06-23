@@ -13,7 +13,8 @@
 }
 
 \usage{
-\method{merge}{data.table}(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all, all.y = all, suffixes = c(".x", ".y"), 
+\method{merge}{data.table}(x, y, by = NULL, by.x = NULL, by.y = NULL,
+all = FALSE, all.x = all, all.y = all, suffixes = c(".x", ".y"),
 allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
 ...)
 }
