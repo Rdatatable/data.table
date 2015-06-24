@@ -176,7 +176,7 @@ str(DT.c1) ## gender column is character type now!
 
 In fact, `base::reshape` is capable of performing this operation in a very straightforward manner. It is a very useful (and often under rated and criticised) function. You should definitely give it a try!
 
-3. Enhanced (new) functionality - `melt` and `cast`
+## 3. Enhanced (new) functionality - `melt` and `cast`
 		
 ### a) Enhanced `melt`
 
