@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 ```
 This vignette discusses *data.table*'s reference semantics which allows to *add/update/delete* columns of a *data.table by reference*, and also combine them with `i` and `by`. It is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, and perform aggregations by group. If you're not familar with these concepts, please read the *"Introduction to data.table"* vignette first.
 
----
+***
 
 ## Data {#data}
 
@@ -76,7 +76,7 @@ both (1) and (2) resulted in [*deep* copy of the entire *data.frame*](http://r.7
 
 Great performance improvements were made in `R v3.1` as a result of which only a *shallow* copy is made for (1) and not *deep* copy. However, for (2) still, the entire column is *deep* copied even in `R v3.1+`. This means the more columns one subassigns to in the *same query*, the more *deep* copies R does.
 
-#### *shallow* vs *deep* copy {.bs-callout .bs-callout-warning}
+#### *shallow* vs *deep* copy {.bs-callout .bs-callout-info}
 
 A *shallow* copy is just a copy of the vector of column pointers (corresponding to the columns in a *data.frame* or *data.table*). The actual data is not physically copied in memory.
 
@@ -292,7 +292,7 @@ head(ans)
 
 In the previous section, we used `:=` for its side effect. But of course this may not be always desirable. Sometimes, we would like to pass a *data.table* object to a function, and might want to use the `:=` operator, but *wouldn't* want to update the original object. We can accomplish this using the function `copy()`.
 
-#### {.bs-callout .bs-callout-warning}
+#### {.bs-callout .bs-callout-info}
 
 The `copy()` function *deep* copies the input object and therefore any subsequent update by reference operations performed on the copied object will not affect the original object.
 
@@ -320,7 +320,7 @@ There are two particular places where `copy()` function is essential:
     head(ans)
     ```
 
-#### {.bs-callout .bs-callout-warning}
+#### {.bs-callout .bs-callout-info}
 
 * Using `copy()` function did not update `flights` *data.table* by reference. It doesn't contain the column `speed`.
 
@@ -365,5 +365,5 @@ However we could improve this functionality further by *shallow* copying instead
 
 So far we have seen a whole lot in `j`, and how to combine it with `by` and little of `i`. Let's turn our attention back to `i` in the next vignette *"Keys and fast binary search based subset"* to peform *blazing fast subsets* by *keying data.tables*. 
 
----
+***
 

@@ -26,7 +26,7 @@ options(datatable.auto.index=FALSE)
 
 This vignette is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, add/modify/delete columns *by reference* in `j` and  group by using `by`. If you're not familar with these concepts, please read the *"Introduction to data.table"* and *"data.table reference semantics"* vignettes first.
 
----
+***
 
 ## Data {#data}
 
@@ -111,7 +111,7 @@ rownames(DT)
 
 Instead, in *data.tables* we set and use `keys`. Think of a `key` as **supercharged rownames**.
 
-#### Keys and their properties {.bs-callout .bs-callout-warning #key-properties}
+#### Keys and their properties {.bs-callout .bs-callout-info #key-properties}
 
 1. We can set keys on *multiple columns* and the column can be of *different types* -- *integer*, *numeric*, *character*, *factor*, *integer64* etc. *list* and *complex* types are not supported yet.
 
@@ -153,7 +153,7 @@ head(flights)
 
 * You can also set keys directly when creating *data.tables* using the `data.table()` function using `key=` argument. It takes a character vector of column names.
 
-#### set* and `:=`: {.bs-callout .bs-callout-warning}
+#### set* and `:=`: {.bs-callout .bs-callout-info}
 
 In *data.table*, the `:=` operator and all the `set*` (e.g., `setkey`, `setorder`, `setnames` etc..) functions are the only ones which modify the input object *by reference*.
 
@@ -471,7 +471,7 @@ identical(ans1$val, ans2$val)
 
 To understand that, let's first look at what *vector scan approach* (method 1) does.
 
-#### Vector scan approach: {.bs-callout .bs-callout-warning}
+#### Vector scan approach: {.bs-callout .bs-callout-info}
 
 * The column `x` is searched for the value *"g"* row by row, on all 20 million of them. This results in a *logical vector* of size 20 million, with values `TRUE, FALSE or NA` corresponding to `x`'s value.
 
@@ -485,7 +485,7 @@ This is what we call a *vector scan approach*. And this is quite inefficient, es
 
 Now let us look at binary search approach (method 2). Recall from [Properties of key](#key-properties) - *setting keys reorders the data.table by key columns*. Since the data is sorted, we don't have to *scan through the entire length of the column*! We can instead use *binary search* to search a value in `O(log n)` as opposed to `O(n)` in case of *vector scan approach*, where `n` is the number of rows in the *data.table*. 
 
-#### Binary search approach: {.bs-callout .bs-callout-warning}
+#### Binary search approach: {.bs-callout .bs-callout-info}
 
 Here's a very simple illustration. Let's consider the (sorted) numbers shown below:
 
@@ -531,5 +531,5 @@ We don't have to set and use keys for aggregation operations in general, unless 
 
 However, keying *data.tables* are essential to *join* two *data.tables* which is the subject of discussion in the next vignette *"Joins and rolling joins"*. We will extend the concept of key based subsets to joining two *data.tables* based on `key` columns.
 
----
+***
 

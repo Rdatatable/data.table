@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 ```
 This vignette introduces the *data.table* syntax, its general form, how to *subset* rows, *select and compute* on columns and perform aggregations *by group*. Familiarity with *data.frame* data structure from base R is useful, but not essential to follow this vignette.
 
----
+***
 
 ## Data analysis using data.table
 
@@ -279,7 +279,7 @@ The function `length()` requires an input argument. We just needed to compute th
 
 This type of operation occurs quite frequently, especially while grouping as we will see in the next section, that *data.table* provides a *special symbol* `.N` for it.
 
-#### Special symbol `.N`: {.bs-callout .bs-callout-warning #special-N}
+#### Special symbol `.N`: {.bs-callout .bs-callout-info #special-N}
 
 `.N` is a special in-built variable that holds the number of observations in the current group. It is particularly useful when combined with `by` as we'll see in the next section. In the absence of group by operations, it simply returns the number of rows in the subset.
 
@@ -539,7 +539,7 @@ It is of course not practical to have to type `mean(myCol)` for every column one
 
 How can we do this efficiently? To get there, refresh on [this tip](#tip-1) - *"As long as j-expression returns a list, each element of the list will be converted to a column in the resulting data.table"*. Suppose we can refer to the *data subset for each group* as a variable *while grouping*, then we can loop through all the columns of that variable using the already familiar base function `lapply()`. We don't have to learn any new function. 
 
-#### Special symbol `.SD`: {.bs-callout .bs-callout-warning #special-SD}
+#### Special symbol `.SD`: {.bs-callout .bs-callout-info #special-SD}
 
 *data.table* provides a *special* symbol, called `.SD`. It stands for **S**ubset of **D**ata. It by itself is a *data.table* that holds the data for *the current group* defined using `by`. 
 
@@ -583,7 +583,7 @@ We are almost there. There is one little thing left to address. In our `flights`
 
 #### -- How can we specify just the columns we would like to compute the `mean()` on?
 
-#### .SDcols {.bs-callout .bs-callout-warning}
+#### .SDcols {.bs-callout .bs-callout-info}
 
 Using the argument `.SDcols`. It accepts either column names or column indices. For example, `.SDcols = c("arr_delay", "dep_delay")` ensures that `.SD` contains only these two columns for each group. 
 
@@ -713,5 +713,5 @@ As long as `j` returns a *list*, each element of the list will become a column i
 
 We will see how to *add/update/delete* columns *by reference* and how to combine them with `i` and `by` in the next vignette.
 
----
+***
 
