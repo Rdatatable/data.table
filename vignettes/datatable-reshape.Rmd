@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
   collapse=TRUE)
 ```
 
-This vignette discusses the default usage of reshaping functions `melt` and `dcast` in *data.tables* as well as the **new extended functionalities** of melting and casting on *multiple columns* available from `v1.9.5+`.
+This vignette discusses the default usage of reshaping functions `melt` (wide to long) and `dcast` (long to wide) for *data.tables* as well as the **new extended functionalities** of melting and casting on *multiple columns* available from `v1.9.6`.
 
 ***
 
@@ -37,17 +37,26 @@ We will load the data sets directly within sections.
 
 ## Introduction
 
+The `melt` and `dcast` functions for *data.tables* are extensions of the corresponding functions from the [reshape2](http://cran.r-project.org/web/packages/reshape2/index.html) package.  
+
 In this vignette, we will
 
-1. first briefly look at the *default* functionalities of `melt` and `cast` to convert *data.tables* from *wide* to *long* format and vice versa,
+1. first briefly look at the default *melting* and *casting* of *data.tables* to convert them from *wide* to *long* format and vice versa,
 
 2. then look at scenarios where the current functionalities becomes cumbersome and inefficient, 
 
-3. and finally look at the new improvements to both `melt` and `cast` methods for *data.tables* to handle multiple columns simultaneously in an efficient and straightforward manner.
+3. and finally look at the new improvements to both `melt` and `dcast` methods for *data.tables* to handle multiple columns simultaneously.
+    
+The extended functionalities are in line with *data.table's* philosophy of performing operations efficiently and in a straightforward manner.
 
-## 1. Default functionality - `melt` and `cast`
+#### Note: {.bs-callout .bs-callout-info}
 
-### a) `melt`ing *data.tables*
+From `v1.9.6` on, you don't have to load `reshape2` package to use these functions for *data.tables*. You just need to load `data.table`. If you've to load `reshape2` for melting or casting matrices and/or data.frames, then make sure to load it *before* loading `data.table`.
+
+
+## 1. Default functionality
+
+### a) `melt`ing *data.tables* (wide to long)
 
 Suppose we have a `data.table` (artificial data) as shown below:
 
@@ -105,7 +114,7 @@ DT.m1
 
     In addition, a warning message is issued highlighting the columns that are automatically considered to be `id.vars`.
 
-### b) `Cast`ing *data.tables*
+### b) `Cast`ing *data.tables* (long to wide)
 
 In the previous section, we saw how to get from wide form to long form. Let's see the reverse operation in this section.
 
@@ -119,7 +128,7 @@ dcast(DT.m1, family_id + age_mother ~ child, value.var = "dob")
 
 #### {.bs-callout .bs-callout-info}
 
-* `dcast` uses a *formula* interface. The variables on the *LHS* of formula represents the *id vars* and *RHS* the *measure vars*. 
+* `dcast` uses *formula* interface. The variables on the *LHS* of formula represents the *id* vars and *RHS* the *measure*  vars. 
 
 * `value.var` denotes the column to be filled in with while casting to wide format.
 
@@ -174,9 +183,9 @@ str(DT.c1) ## gender column is character type now!
 
 #
 
-In fact, `base::reshape` is capable of performing this operation in a very straightforward manner. It is a very useful (and underrated) function. You should definitely give it a try!
+In fact, `base::reshape` is capable of performing this operation in a very straightforward manner. It is an extremely useful and often underrated function. You should definitely give it a try!
 
-## 3. Enhanced (new) functionality - `melt` and `cast`
+## 3. Enhanced (new) functionality
 		
 ### a) Enhanced `melt`
 
@@ -212,11 +221,11 @@ That's it!
 
 * The functionality is implemented entirely in C, and is therefore both *fast* and *memory efficient* in addition to being *straightforward*.
 
-### b) Enhanced `cast`
+### b) Enhanced `dcast`
 
 Okay great! We can now melt into multiple columns simultaneously. Now given the data set `DT.m2` as shown above, how can we get back to the same format as the original data we started with?
  
-If we use the current functionality of `dcast`, then we'd have to `cast` twice and bind the results together. But that's once again verbose, not straightforward and is also inefficient. 
+If we use the current functionality of `dcast`, then we'd have to cast twice and bind the results together. But that's once again verbose, not straightforward and is also inefficient. 
 
 #### - Casting multiple `value.var`s simultaneously
 
@@ -234,7 +243,11 @@ DT.c2
 
 * Everything is taken care of internally, and efficiently. In addition to being fast, it is also very memory efficient.
 
-* You can also provide *multiple `fun.aggregate`* functions to `dcast` for *data.tables*. You can pass them as a list. Check the examples in `?dcast` which illustrates this functionality.
+# 
+
+#### Multiple functions to `fun.aggregate`: {.bs-callout .bs-callout-info}
+
+You can also provide *multiple functions* to `fun.aggregate` to `dcast` for *data.tables*. Check the examples in `?dcast` which illustrates this functionality.
 
 # 
 
