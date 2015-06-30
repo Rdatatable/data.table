@@ -13,4 +13,3 @@ BugReports: https://github.com/Rdatatable/data.table/issues
 MailingList: datatable-help@lists.r-forge.r-project.org
 VignetteBuilder: knitr
 ByteCompile: TRUE
-
