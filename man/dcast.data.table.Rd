@@ -12,7 +12,7 @@
 
 % \method{dcast}{data.table}
 \usage{
-\method{dcast}{data.table}(data, formula, fun.aggregate = NULL, sep = "_"
+\method{dcast}{data.table}(data, formula, fun.aggregate = NULL, sep = "_", 
     ..., margins = NULL, subset = NULL, fill = NULL, 
     drop = TRUE, value.var = guess(data),
     verbose = getOption("datatable.verbose"))
