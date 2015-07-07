@@ -12,7 +12,7 @@
 
 % \method{dcast}{data.table}
 \usage{
-\method{dcast}{data.table}(data, formula, fun.aggregate = NULL, 
+\method{dcast}{data.table}(data, formula, fun.aggregate = NULL, sep = "_"
     ..., margins = NULL, subset = NULL, fill = NULL, 
     drop = TRUE, value.var = guess(data),
     verbose = getOption("datatable.verbose"))
@@ -23,6 +23,7 @@
   \item{fun.aggregate}{Should the data be aggregated before casting? If the formula doesn't identify single observation for each cell, then aggregation defaults to \code{length} with a message.
 
   \bold{NEW}: it is possible to provide a list of functions to \code{fun.aggregate} argument. See \code{examples}.}
+  \item{sep}{Default is \code{_} for backwards compatibility. Character vector of length 1, indicating the separating character in variable names generated during casting.}
   \item{...}{Any other arguments that maybe passed to the aggregating function.}
   \item{margins}{Not implemented yet. Should take variable names to compute margins on. A value of \code{TRUE} would compute all margins.}
   \item{subset}{Specified if casting should be done on subset of the data. Ex: subset = .(col1 <= 5) or subset = .(variable != "January").}

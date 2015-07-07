@@ -3341,6 +3341,12 @@ if ("package:reshape2" %in% search()) {
     ans2 <- suppressWarnings(dcast(dt, Month ~ ., fun=list(min, max), na.rm=TRUE, value.var=valvars))
     setcolorder(ans, names(ans2))
     test(1501.9, setkey(ans, Month), ans2[, names(ans2)[-1L] := lapply(.SD, as.numeric), .SDcols=-1L])
+
+    # test for #1210, sep argument for dcast
+    dt = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE), 
+                z=sample(letters[1:2], 20,TRUE), d1 = runif(20), d2=1L)
+    test(1501.10, names(dcast(dt, x ~ y + z, fun=length, sep=".")), 
+                  c("x", "1.a", "1.b", "2.a", "2.b"))
 }
 
 # test for freading commands
