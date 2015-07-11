@@ -74,6 +74,25 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     if ( integer64=="integer64" && !exists("print.integer64") && any(sapply(ans,inherits,"integer64")) )
         warning("Some columns have been read as type 'integer64' but package bit64 isn't loaded. Those columns will display as strange looking floating point data. There is no need to reload the data. Just require(bit64) to obtain the integer64 print method and print the data again.")
     setattr(ans,"row.names",.set_row_names(nr))
+    as_factor <- function(x) {
+        lev = forderv(x, retGrp = TRUE)
+        # get levels, also take care of all sorted condition
+        if (length(lev)) lev = x[lev[attributes(lev)$starts]]
+        else lev = x[attributes(lev)$starts]
+        ans = chmatch(x, lev)
+        setattr(ans, 'levels', lev)
+        setattr(ans, 'class', 'factor')
+    }
+    if (isTRUE(as.logical(stringsAsFactors))) {
+        setattr(ans,"class",c("data.table","data.frame"))
+        idx = which(vapply(ans, is.character, TRUE))
+        if (length(idx)) {
+            if (verbose)
+                cat("Converting char column(s) [", paste(names(ans)[idx], collapse=", "), "] to factors", sep="")
+            for (j in idx)
+                set(ans, i = NULL, j = j, value = as_factor(ans[[j]]))
+        }
+    }
     if (isTRUE(data.table)) {
         setattr(ans,"class",c("data.table","data.frame"))
         return(alloc.col(ans))
@@ -82,5 +101,3 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         return(ans)
     }
 }
-
-

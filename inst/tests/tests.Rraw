@@ -6430,6 +6430,19 @@ setDT(DT, key = "A")
 test(1526.1, key(DT), "A")
 test(1526.2, key(setDT(DT, key = NULL)), NULL)
 
+# #501, fread stringsAsFactors=FALSE
+dt = data.table(x=1:5, y = letters[1:5])
+text = "x,y\n1,a\n2,b\n3,c\n4,d\n5,e\n"
+test(1527.1, dt[, y := factor(y)], fread(text, stringsAsFactors=TRUE))
+set.seed(1L)
+dt = data.table(x=1:5, y = sample(letters[1:5]))
+text = "x,y\n1,b\n2,e\n3,d\n4,c\n5,a\n"
+test(1527.2, dt[, y := factor(y)], fread(text, stringsAsFactors=TRUE))
+set.seed(1L)
+dt = data.table(x=1:5, y = sample(letters[1:2], 5, TRUE))
+text = "x,y\n1,a\n2,a\n3,b\n4,b\n5,a\n"
+test(1527.3, dt[, y := factor(y)], fread(text, stringsAsFactors=TRUE))
+
 ##########################
 
 
