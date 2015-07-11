@@ -6479,6 +6479,11 @@ test(1530.2, which.first(x), which(x)[1L])
 test(1530.3, which.last(1:5), error = "x not boolean")
 test(1530.4, which.last(x), tail(which(x), 1L))
 
+# test xts's last()
+if ("package:xts" %in% search()) {
+    test(1531, xts::last(1:5), 5L)
+}
+
 ##########################
 
 
