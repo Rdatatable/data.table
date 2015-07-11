@@ -73,6 +73,8 @@ if (!.devtesting) {
     any_na = data.table:::any_na
     replace_dot = data.table:::replace_dot
     isReallyReal = data.table:::isReallyReal
+    which.first = data.table:::which.first
+    which.last = data.table:::which.last
 }
 
 TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
@@ -6467,6 +6469,15 @@ x = c(NA, runif(15), NA)
 test(1529.10, data.table::between(x, 0.25, 0.75, TRUE), x >= 0.25 & x <= 0.75)
 test(1529.11, x %between% c(0.25, 0.75), x >= 0.25 & x <= 0.75)
 test(1529.12, data.table::between(x, 0.25, 0.75, FALSE), x > 0.25 & x < 0.75)
+
+# add tests for which.first and which.last
+# which.first
+test(1530.1, which.first(sample(5, 20, TRUE)), error = "x not boolean")
+x <- sample(c(TRUE, FALSE), 20, TRUE)
+test(1530.2, which.first(x), which(x)[1L])
+# which.last
+test(1530.3, which.last(1:5), error = "x not boolean")
+test(1530.4, which.last(x), tail(which(x), 1L))
 
 ##########################
 
