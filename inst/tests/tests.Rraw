@@ -6494,6 +6494,12 @@ test(1532.2, y %like% xsub[2L], grepl(xsub[2L], y))
 test(1532.3, like(y, xsub[1L]), grepl(xsub[1L], y))
 test(1532.4, like(y, xsub[2L]), grepl(xsub[2L], y))
 
+# coverage for setkey() to 100%
+dt1 = data.table(x=sample(5), y=1:5, key="y")
+dt2 = as.data.table(dt1); setattr(dt2, 'sorted', NULL)
+test(1533.1, setkeyv(dt1, character(0)), dt2, warning = "cols is a character vector")
+test(1533.2, setkeyv(dt1, "x", verbose=TRUE), setkey(dt2, x), output = "forder took")
+
 ##########################
 
 
