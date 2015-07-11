@@ -3345,7 +3345,7 @@ if ("package:reshape2" %in% search()) {
     # test for #1210, sep argument for dcast
     dt = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE), 
                 z=sample(letters[1:2], 20,TRUE), d1 = runif(20), d2=1L)
-    test(1501.10, names(dcast(dt, x ~ y + z, fun=length, sep=".")), 
+    test(1501.10, names(dcast(dt, x ~ y + z, fun=length, value.var = "d2", sep=".")), 
                   c("x", "1.a", "1.b", "2.a", "2.b"))
 }
 
