@@ -88,7 +88,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         idx = which(vapply(ans, is.character, TRUE))
         if (length(idx)) {
             if (verbose)
-                cat("Converting char column(s) [", paste(names(ans)[idx], collapse=", "), "] to factors", sep="")
+                cat("Converting 'char' column(s) [", paste(names(ans)[idx], collapse=", "), "] to 'factor'\n", sep="")
             for (j in idx)
                 set(ans, i = NULL, j = j, value = as_factor(ans[[j]]))
         }
