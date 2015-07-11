@@ -6484,6 +6484,16 @@ if ("package:xts" %in% search()) {
     test(1531, xts::last(1:5), 5L)
 }
 
+# test for like, %like%
+set.seed(2L)
+x = apply(matrix(sample(letters, 12), nrow=2), 1, paste, collapse="")
+y = sample(c(letters[1:5], x), 20, TRUE)
+xsub = substring(x, 1L, 1L)
+test(1532.1, y %like% xsub[1L], grepl(xsub[1L], y))
+test(1532.2, y %like% xsub[2L], grepl(xsub[2L], y))
+test(1532.3, like(y, xsub[1L]), grepl(xsub[1L], y))
+test(1532.4, like(y, xsub[2L]), grepl(xsub[2L], y))
+
 ##########################
 
 
