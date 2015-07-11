@@ -6450,6 +6450,24 @@ nm3 = names(fread("a,a\n1,2\n3,4", check.names=FALSE))
 test(1528.1, make.unique(nm1), nm2)
 test(1528.2, nm1, nm3)
 
+# add tests for between
+x = sample(10, 20, TRUE)
+test(1529.1, data.table::between(x, 1L, 5L, TRUE), x >= 1L & x <= 5L)
+test(1529.2, x %between% c(1L, 5L), x >= 1L & x <= 5L)
+test(1529.3, data.table::between(x, 1L, 5L, FALSE), x > 1L & x < 5L)
+x = sample(c(1:10, NA), 20, TRUE)
+test(1529.4, data.table::between(x, 1L, 5L, TRUE), x >= 1L & x <= 5L)
+test(1529.5, x %between% c(1L, 5L), x >= 1L & x <= 5L)
+test(1529.6, data.table::between(x, 1L, 5L, FALSE), x > 1L & x < 5L)
+x = runif(15)
+test(1529.7, data.table::between(x, 0.25, 0.75, TRUE), x >= 0.25 & x <= 0.75)
+test(1529.8, x %between% c(0.25, 0.75), x >= 0.25 & x <= 0.75)
+test(1529.9, data.table::between(x, 0.25, 0.75, FALSE), x > 0.25 & x < 0.75)
+x = c(NA, runif(15), NA)
+test(1529.10, data.table::between(x, 0.25, 0.75, TRUE), x >= 0.25 & x <= 0.75)
+test(1529.11, x %between% c(0.25, 0.75), x >= 0.25 & x <= 0.75)
+test(1529.12, data.table::between(x, 0.25, 0.75, FALSE), x > 0.25 & x < 0.75)
+
 ##########################
 
 
