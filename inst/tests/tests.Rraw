@@ -73,9 +73,14 @@ if (!.devtesting) {
     any_na = data.table:::any_na
     replace_dot = data.table:::replace_dot
     isReallyReal = data.table:::isReallyReal
+    between = data.table::between
     which.first = data.table:::which.first
     which.last = data.table:::which.last
+    trim = data.table:::trim
 }
+
+# test for covering tables.R 100%, we need to run tables() before creating any data.tables to return null data.table
+test(0, tables(), null.data.table(), output = "No objects of class")
 
 TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
 setkey(TESTDT,a,b)
@@ -5758,12 +5763,14 @@ quote"\n2,should be ok\n'),
            data.table(A=1:2,B=c('embedded""
 quote','should be ok')))
 
-# quoted multiline (scrambled data thanks to #810)
-test(1449, fread("quoted_multiline.csv")[c(1,43:44),c(1,22:24),with=FALSE],
+if ("package:bit64" %in% search()) {
+    # quoted multiline (scrambled data thanks to #810)
+    test(1449, fread("quoted_multiline.csv")[c(1,43:44),c(1,22:24),with=FALSE],
            data.table(GPMLHTLN=as.integer64(c("3308386085360","3440245203140","1305220146734")),
                       BLYBZ = c(0L,4L,6L),
                       ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE","",""),
                       JKCRUUBAVQ = c("",".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ","")))
+}
 
 # Fix for #927
 DT = data.table(x=1L, y=2L)
@@ -6454,21 +6461,21 @@ test(1528.2, nm1, nm3)
 
 # add tests for between
 x = sample(10, 20, TRUE)
-test(1529.1, data.table::between(x, 1L, 5L, TRUE), x >= 1L & x <= 5L)
+test(1529.1, between(x, 1L, 5L, TRUE), x >= 1L & x <= 5L)
 test(1529.2, x %between% c(1L, 5L), x >= 1L & x <= 5L)
-test(1529.3, data.table::between(x, 1L, 5L, FALSE), x > 1L & x < 5L)
+test(1529.3, between(x, 1L, 5L, FALSE), x > 1L & x < 5L)
 x = sample(c(1:10, NA), 20, TRUE)
-test(1529.4, data.table::between(x, 1L, 5L, TRUE), x >= 1L & x <= 5L)
+test(1529.4, between(x, 1L, 5L, TRUE), x >= 1L & x <= 5L)
 test(1529.5, x %between% c(1L, 5L), x >= 1L & x <= 5L)
-test(1529.6, data.table::between(x, 1L, 5L, FALSE), x > 1L & x < 5L)
+test(1529.6, between(x, 1L, 5L, FALSE), x > 1L & x < 5L)
 x = runif(15)
-test(1529.7, data.table::between(x, 0.25, 0.75, TRUE), x >= 0.25 & x <= 0.75)
+test(1529.7, between(x, 0.25, 0.75, TRUE), x >= 0.25 & x <= 0.75)
 test(1529.8, x %between% c(0.25, 0.75), x >= 0.25 & x <= 0.75)
-test(1529.9, data.table::between(x, 0.25, 0.75, FALSE), x > 0.25 & x < 0.75)
+test(1529.9, between(x, 0.25, 0.75, FALSE), x > 0.25 & x < 0.75)
 x = c(NA, runif(15), NA)
-test(1529.10, data.table::between(x, 0.25, 0.75, TRUE), x >= 0.25 & x <= 0.75)
+test(1529.10, between(x, 0.25, 0.75, TRUE), x >= 0.25 & x <= 0.75)
 test(1529.11, x %between% c(0.25, 0.75), x >= 0.25 & x <= 0.75)
-test(1529.12, data.table::between(x, 0.25, 0.75, FALSE), x > 0.25 & x < 0.75)
+test(1529.12, between(x, 0.25, 0.75, FALSE), x > 0.25 & x < 0.75)
 
 # add tests for which.first and which.last
 # which.first
@@ -6499,6 +6506,22 @@ dt1 = data.table(x=sample(5), y=1:5, key="y")
 dt2 = as.data.table(dt1); setattr(dt2, 'sorted', NULL)
 test(1533.1, setkeyv(dt1, character(0)), dt2, warning = "cols is a character vector")
 test(1533.2, setkeyv(dt1, "x", verbose=TRUE), setkey(dt2, x), output = "forder took")
+
+# coverage for %+% and trim
+test(1534, `%+%.default`(1:5, 6:10), "1,2,3,4,56,7,8,9,10")
+test(1535.1, trim("  abcde "), "abcde")
+test(1535.2, trim("  abcde"), "abcde")
+test(1535.3, trim("abcde "), "abcde")
+
+# remaining test for covering duplicated.data.table
+dt = data.table(x=1:5, y=6:10)
+test(1536, duplicated(dt, incomparables=TRUE), error = "argument 'incomparables != FALSE'")
+
+# test for covering melt 100%
+test(1537 , names(melt(dt, id=1L, variable.name = "x", value.name="x")), c("x", "x.1", "x.2"), output = "Duplicate column names")
+
+# test for tables()
+test(1538, tables(), output = "Total:")
 
 ##########################
 
