@@ -92,7 +92,7 @@ anyDuplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=
 # we really mean `.SD` - used in a grouping operation
 uniqueN <- function(x, by = if (is.data.table(x)) key(x) else NULL) {
     if (!is.atomic(x) && !is.data.frame(x))
-        stop("x must be an atomic vector or data.frames/data.tables")
+        return(length(unique(x)))
     if (is.atomic(x)) x = as_list(x)
     if (is.null(by)) by = seq_along(x)
     length(attr(forderv(x, by=by, retGrp=TRUE), 'starts'))
