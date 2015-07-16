@@ -5,7 +5,7 @@
 \title{ Subsetting data.tables }
 
 \description{
-  Retruns subsets of a \code{data.table}.
+  Returns subsets of a \code{data.table}.
 }
 
 \usage{
