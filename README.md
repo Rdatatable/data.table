@@ -72,7 +72,7 @@
 
   25. `fread` gains `check.names` argument, with default value `FALSE`. When `TRUE`, it uses the base function `make.unique()` to ensure that the column names of the data.table read in are all unique. Thanks to David Arenburg for filing [#1027](https://github.com/Rdatatable/data.table/issues/1027).
 
-  26. data.tables can join now without having to set keys by using the `on` argument. For example: `DT1[DT2, on=c(x = "y"]` would join column 'y' of `DT2` with 'x' of `DT1`. `DT1[DT2, on="y"]` would join on column 'y' on both data.tables. Closes [#1130](https://github.com/Rdatatable/data.table/issues/1130) partly.
+  26. data.tables can join now without having to set keys by using the new `on` argument. For example: `DT1[DT2, on=c(x = "y"]` would join column 'y' of `DT2` with 'x' of `DT1`. `DT1[DT2, on="y"]` would join on column 'y' on both data.tables. Closes [#1130](https://github.com/Rdatatable/data.table/issues/1130) partly.
  
 #### BUG FIXES
 
