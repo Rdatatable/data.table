@@ -2195,16 +2195,13 @@ point <- function(to, to_idx, from, from_idx) {
     .Call(CpointWrapper, to, to_idx, from, from_idx)
 }
 
-.shallow <- function(x, cols = NULL) {
+.shallow <- function(x, cols = NULL, retain.key = FALSE) {
     isnull = is.null(cols)
     if (!isnull) cols = validate(cols, x)  # NULL is default = all columns
     ans = .Call(Cshallowwrapper, x, cols)  # copies VECSXP only
-    if (!isnull) {
-        cols = names(x)[cols]
-        if (identical(cols, key(x)[seq_along(cols)])) 
-            setattr(ans, 'sorted', cols)
-        else setattr(ans, 'sorted', NULL)
-    }
+    cols = if (isnull) names(x) else names(x)[cols]
+    if (retain.key && haskey(x) && !all(key(x) %in% cols))
+        setattr(ans, 'sorted', NULL)
     ans
     # TODO: check/remove attributes for secondary keys?
 }
@@ -2212,7 +2209,7 @@ point <- function(to, to_idx, from, from_idx) {
 shallow <- function(x, cols=NULL) {
     if (!is.data.table(x)) 
         stop("x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table")
-    ans = .shallow(x, cols=cols)
+    ans = .shallow(x, cols=cols, retain.key = TRUE)
     ans
 }
 
