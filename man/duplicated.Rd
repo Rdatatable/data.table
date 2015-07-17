@@ -29,7 +29,7 @@
 uniqueN(x, by=if (is.data.table(x)) key(x) else NULL)
 }
 \arguments{
-  \item{x}{ A data.table, atomic vectors or data.frames. Other types are supported but they will be dispatched to \code{length(unique(x))}.}
+  \item{x}{ Atomic vectors, lists, data.frames or data.tables.}
   \item{\dots}{ Not used at this time. }
   \item{incomparables}{ Not used. Here for S3 method consistency. }
   \item{fromLast}{ logical indicating if duplication should be considered from the reverse side, i.e., the last (or rightmost) of identical elements would correspond to \code{duplicated = FALSE}.}
