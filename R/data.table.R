@@ -363,7 +363,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     .Call(Cchmatch2, x, table, as.integer(nomatch)) # this is in 'rbindlist.c' for now.
 }
 
-"[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, rolltolast=FALSE)
+"[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, rolltolast=FALSE, on=NULL)
 {
     # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
     # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -560,8 +560,21 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         else if (identical(class(i),"data.frame")) i = as.data.table(i)   # TO DO: avoid these as.data.table() and use a flag instead
         else if (identical(class(i),"list")) i = as.data.table(i)
         if (is.data.table(i)) {
-            if (!haskey(x) && is.null(xo)) stop("When i is a data.table (or character vector), x must be keyed (i.e. sorted, and, marked as sorted) so data.table knows which columns to join to and take advantage of x being sorted. Call setkey(x,...) first, see ?setkey.")
-            if (is.null(xo)) { 
+            if (!haskey(x) && missing(on) && is.null(xo)) {
+                stop("When i is a data.table (or character vector), x must be keyed (i.e. sorted, and, marked as sorted) so data.table knows which columns to join to and take advantage of x being sorted. Call setkey(x,...) first, see ?setkey.")
+            }
+            if (!missing(on)) {
+                if (!is.character(on))
+                    stop("'on' argument should be a named atomic vector oc column names indicating which columns in 'i' should be joined with which columns in 'x'.")
+                if (is.null(names(on))) {
+                    if (verbose)
+                        cat("names(on) = NULL. Assigning 'on' to names(on)' as well.\n")
+                    names(on) = on
+                }
+                rightcols = chmatch(names(on), names(x))
+                leftcols  = chmatch(unname(on), names(i))
+                xo = forderv(x, by = rightcols)
+            } else if (is.null(xo)) {
                 rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in bmerge()
                 leftcols = if (haskey(i))
                     chmatch(head(key(i),length(rightcols)),names(i))
@@ -587,7 +600,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 setnames(i, orignames[leftcols])
                 setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
             }
-            ans = bmerge(i<-shallow(i), x, leftcols, rightcols, io<-haskey(i), xo, roll, rollends, nomatch, verbose=verbose)
+            io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
+            i = .shallow(i, retain.key = io)
+            ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, verbose=verbose)
             f__ = ans$starts
             len__ = ans$lens
             allLen1 = ans$allLen1
@@ -615,7 +630,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     # unnecessary construction of logical vectors
                     if (identical(nomatch, 0L) && allLen1) irows = irows[irows != 0L]
                 } else {
-                    if (length(xo)) stop("Cannot by=.EACHI when joining to a secondary key, yet")
+                    if (length(xo) && missing(on)) stop("Cannot by=.EACHI when joining to a secondary key, yet")
                     # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.
                     if (length(irows)) stop("Internal error. irows has length in by=.EACHI")
                 }
@@ -627,6 +642,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             }
             if (length(xo) && length(irows)) irows = xo[irows]   # TO DO: fsort here?
         } else {
+            if (!missing(on)) {
+                stop("logical error. i is not a data.table, but 'on' argument is provided.")
+            }
             # TO DO: TODO: Incorporate which_ here on DT[!i] where i is logical. Should avoid i = !i (above) - inefficient.
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
@@ -1253,7 +1271,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # Much faster for a few known groups vs a 'by' for all followed by a subset
         if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by'=.EACHI")
         byval = i
-        bynames = head(key(x),length(leftcols))
+        bynames = if (missing(on)) head(key(x),length(leftcols)) else names(on)
         allbyvars = NULL
         bysameorder = haskey(i) || (is.sorted(f__) && ((roll == FALSE) || length(f__) == 1L)) # Fix for #1010
         ##  'av' correct here ??  *** TO DO ***
@@ -1532,6 +1550,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         jiscols = chmatch(jisvars,names(i))  # integer() if there are no jisvars (usually there aren't, advanced feature)
         xjiscols = chmatch(xjisvars, names(x))
         SDenv$.xSD = x[min(nrow(i), 1L), xjisvars, with=FALSE]
+        if (!missing(on)) o__ = xo else o__ = integer(0)
     } else {
         groups = byval
         grpcols = seq_along(byval)
@@ -1565,7 +1584,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         ans = c(g, ans)
     } else {
         if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
-        ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, verbose)
+        ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)
         if (verbose) {cat("done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
     }
     # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to

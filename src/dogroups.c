@@ -23,7 +23,7 @@ void setSizes() {
     SelfRefSymbol = install(".internal.selfref");
 }
 
-SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP verbose)
+SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose)
 {
     R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, vlen, origIlen=0, origSDnrow=0;
     int protecti=0;
@@ -41,8 +41,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     //if (TYPEOF(starts) != INTSXP) error("Internal error: starts not integer");
     //if (TYPEOF(lens) != INTSXP) error("Internal error: lens not integer");
     // starts can now be NA (<0): if (INTEGER(starts)[0]<0 || INTEGER(lens)[0]<0) error("starts[1]<0 or lens[1]<0");
-    if (!isNull(jiscols) && LENGTH(order)) error("Internal error: jiscols not NULL but o__ has length");
-    if (!isNull(xjiscols) && LENGTH(order)) error("Internal error: xjiscols not NULL but o__ has length");
+    if (!isNull(jiscols) && LENGTH(order) && !LOGICAL(on)[0]) error("Internal error: jiscols not NULL but o__ has length");
+    if (!isNull(xjiscols) && LENGTH(order) && !LOGICAL(on)[0]) error("Internal error: xjiscols not NULL but o__ has length");
     if(!isEnvironment(env)) error("’env’ should be an environment");
     ngrp = length(starts);  // the number of groups  (nrow(groups) will be larger when by)
     ngrpcols = length(grpcols);
@@ -134,7 +134,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                    (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(jiscols)[j]-1))+i*size,
                    size);  
         }
-        igrp = length(grporder) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
+        igrp = (length(grporder) && !LOGICAL(on)[0]) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
         if (igrp >= 0) for (j=0; j<length(BY); j++) {    // igrp can be -1 so 'if' is important, otherwise memcpy crash
             size = SIZEOF(VECTOR_ELT(BY,j));
             memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),  // ok use of memcpy size 1. Loop'd through columns not rows

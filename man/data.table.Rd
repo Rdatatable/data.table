@@ -32,7 +32,8 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
   drop = NULL,
-  rolltolast = FALSE   # deprecated
+  rolltolast = FALSE,  # deprecated
+  on = NULL # join without setting keys, new feature from v1.9.6+
   )
 }
 \arguments{
@@ -136,6 +137,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \item{rolltolast}{ Deprecated. Setting \code{rolltolast=TRUE} is converted to \code{roll=TRUE;rollends=FALSE} for backwards compatibility.
   
 }
+  \item{on}{ A named atomic vector of column names indicating which columns in \code{i} should be joined to which columns in \code{x}. See \code{Examples}.}
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time :
@@ -282,6 +284,15 @@ DT[!2:4]                   # all rows other than 2:4
 DT[x!="b" | y!=3]          # not yet optimized, currently vector scans
 DT[!.("b",3)]              # same result but much faster
 
+
+# new feature: 'on' argument, from v1.9.6+
+DT1 = data.table(x=c("c", "a", "b", "a", "b"), a=1:5)
+DT2 = data.table(x=c("d", "c", "b"), mul=6:8)
+
+DT1[DT2, on=c(x="x")] # join on columns 'x'
+DT1[DT2, on="x"] # same as above
+DT1[DT2, .(sum(a) * mul), by=.EACHI, on="x"] # using by=.EACHI
+DT1[DT2, .(sum(a) * mul), by=.EACHI, on="x", nomatch=0L] # using by=.EACHI
 
 # Follow r-help posting guide, support is here (*not* r-help) :
 # http://stackoverflow.com/questions/tagged/data.table

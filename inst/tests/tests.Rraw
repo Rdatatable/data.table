@@ -6528,6 +6528,116 @@ test(1538, tables(), output = "Total:")
 d1 <- data.table(a = 1:4, l = list(list(letters[1:2]),list(Sys.time()),list(1:10),list(letters[1:2])))
 test(1539, d1[,uniqueN(l)], 3L)
 
+# feature #1130 - joins without setting keys
+# can't test which=TRUE with DT1.copy's results..
+set.seed(45L)
+DT1 = data.table(x=sample(letters[1:3], 15, TRUE), y=sample(6:10, 15, TRUE), 
+                 a=sample(100, 15), b=runif(15))
+DT2 = CJ(x=letters[1:3], y=6:10)[, mul := sample(20, 15)][sample(15L, 5L)]
+DT3 = rbindlist(list(DT2, list(x="d", y=7L, mul=100L)))
+DT3 = DT3[sample(nrow(DT3))]
+
+# key on char column
+DT1.copy = copy(DT1)
+setkey(DT1.copy, x)
+test(1540.1, DT1[DT2, on=c(x="x")], DT1.copy[DT2])
+test(1540.33, DT1[DT2, on=c("x")], DT1.copy[DT2])
+test(1540.2, DT1[DT2, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(x="x"), .SDcols=c("a", "b")],
+             DT1.copy[DT2, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, .SDcols=c("a", "b")])
+test(1540.3, DT1[DT3, on=c(x="x")], DT1.copy[DT3])
+test(1540.4, DT1[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(x="x"), .SDcols=c("a", "b")],
+             DT1.copy[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, .SDcols=c("a", "b")])
+test(1540.5, DT1[DT3, on=c(x="x"), nomatch=0L], DT1.copy[DT3, nomatch=0L])
+test(1540.6, DT1[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(x="x"), .SDcols=c("a", "b"), nomatch=0L],
+             DT1.copy[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, .SDcols=c("a", "b"), nomatch=0L])
+test(1540.7, DT1[DT3, on=c(x="x"), roll=TRUE], DT1.copy[DT3, roll=TRUE])
+test(1540.8, DT1[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(x="x"), .SDcols=c("a", "b"), roll=TRUE],
+             DT1.copy[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, .SDcols=c("a", "b"), roll=TRUE])
+
+# key on integer col
+DT1.copy = copy(DT1)
+setkey(DT1.copy, y)
+test(1540.9, DT1[DT2, on=c(y="y")], DT1.copy[DT2[, c(2,1,3), with=FALSE]])
+test(1540.34, DT1[DT2, on=c("y")], DT1.copy[DT2[, c(2,1,3), with=FALSE]])
+test(1540.10, DT1[DT2, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(y="y"), .SDcols=c("a", "b")],
+             DT1.copy[DT2[, c(2,1,3), with=FALSE], lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, .SDcols=c("a", "b")])
+test(1540.11, DT1[DT3, on=c(y="y")], DT1.copy[DT3[, c(2,1,3), with=FALSE]])
+test(1540.12, DT1[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(y="y"), .SDcols=c("a", "b")],
+             DT1.copy[DT3[, c(2,1,3), with=FALSE], lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, .SDcols=c("a", "b")])
+test(1540.13, DT1[DT3, on=c(y="y"), nomatch=0L], DT1.copy[DT3[, c(2,1,3), with=FALSE], nomatch=0L])
+test(1540.14, DT1[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(y="y"), .SDcols=c("a", "b"), nomatch=0L],
+             DT1.copy[DT3[, c(2,1,3), with=FALSE], lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, .SDcols=c("a", "b"), nomatch=0L])
+test(1540.15, DT1[DT3, on=c(y="y"), roll=TRUE], DT1.copy[DT3[, c(2,1,3), with=FALSE], roll=TRUE])
+test(1540.16, DT1[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(y="y"), .SDcols=c("a", "b"), roll=TRUE],
+             DT1.copy[DT3[, c(2,1,3), with=FALSE], lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, .SDcols=c("a", "b"), roll=TRUE])
+
+# multiple keys
+DT1.copy = copy(DT1)
+setkey(DT1.copy, x, y)
+test(1540.17, DT1[DT2, on=c(x="x", y="y")], DT1.copy[DT2])
+test(1540.35, DT1[DT2, on=c("x", "y")], DT1.copy[DT2])
+test(1540.18, DT1[DT2, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(x="x", y="y")],
+             DT1.copy[DT2, lapply(.SD, function(x) x * mul), by=.EACHI])
+test(1540.19, DT1[DT3, on=c(x="x", y="y")], DT1.copy[DT3])
+test(1540.20, DT1[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(x="x", y="y")],
+             DT1.copy[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI])
+test(1540.21, DT1[DT3, on=c(x="x", y="y"), nomatch=0L], DT1.copy[DT3, nomatch=0L])
+test(1540.22, DT1[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(x="x", y="y"), nomatch=0L],
+             DT1.copy[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, nomatch=0L])
+test(1540.23, DT1[DT3, on=c(x="x", y="y"), roll=TRUE], DT1.copy[DT3, roll=TRUE])
+test(1540.24, DT1[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(x="x", y="y"), roll=TRUE],
+             DT1.copy[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, roll=TRUE])
+
+# multiple keys, non-identical names
+DT1.copy = copy(DT1)
+setkey(DT1.copy, x, y)
+setnames(DT2, c("q", "r", "mul"))
+setnames(DT3, names(DT2))
+test(1540.25, DT1[DT2, on=c(x="q", y="r")], DT1.copy[DT2])
+test(1540.26, DT1[DT2, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(x="q", y="r")],
+             DT1.copy[DT2, lapply(.SD, function(x) x * mul), by=.EACHI])
+test(1540.27, DT1[DT3, on=c(x="q", y="r")], DT1.copy[DT3])
+test(1540.28, DT1[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(x="q", y="r")],
+             DT1.copy[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI])
+test(1540.29, DT1[DT3, on=c(x="q", y="r"), nomatch=0L], DT1.copy[DT3, nomatch=0L])
+test(1540.30, DT1[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(x="q", y="r"), nomatch=0L],
+             DT1.copy[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, nomatch=0L])
+test(1540.31, DT1[DT3, on=c(x="q", y="r"), roll=TRUE], DT1.copy[DT3, roll=TRUE])
+test(1540.32, DT1[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, on=c(x="q", y="r"), roll=TRUE],
+             DT1.copy[DT3, lapply(.SD, function(x) x * mul), 
+                 by=.EACHI, roll=TRUE])
+
+# to do: add tests for :=
+
 ##########################
 
 

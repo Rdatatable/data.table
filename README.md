@@ -72,6 +72,8 @@
 
   25. `fread` gains `check.names` argument, with default value `FALSE`. When `TRUE`, it uses the base function `make.unique()` to ensure that the column names of the data.table read in are all unique. Thanks to David Arenburg for filing [#1027](https://github.com/Rdatatable/data.table/issues/1027).
 
+  26. data.tables can join now without having to set keys by using the `on` argument. For example: `DT1[DT2, on=c(x = "y"]` would join column 'y' of `DT2` with 'x' of `DT1`. `DT1[DT2, on="y"]` would join on column 'y' on both data.tables. Closes [#1130](https://github.com/Rdatatable/data.table/issues/1130) partly.
+ 
 #### BUG FIXES
 
   1. `if (TRUE) DT[,LHS:=RHS]` no longer prints, [#869](https://github.com/Rdatatable/data.table/issues/869) and [#1122](https://github.com/Rdatatable/data.table/issues/1122). Tests added. To get this to work we've had to live with one downside: if a `:=` is used inside a function with no `DT[]` before the end of the function, then the next time `DT` or `print(DT)` is typed at the prompt, nothing will be printed. A repeated `DT` or `print(DT)` will print. To avoid this: include a `DT[]` after the last `:=` in your function. If that is not possible (e.g., it's not a function you can change) then `DT[]` at the prompt is guaranteed to print. As before, adding an extra `[]` on the end of a `:=` query is a recommended idiom to update and then print; e.g. `> DT[,foo:=3L][]`. Thanks to Jureiss and Jan Gorecki for reporting.
