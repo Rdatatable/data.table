@@ -6524,6 +6524,10 @@ test(1537 , names(melt(dt, id=1L, variable.name = "x", value.name="x")), c("x", 
 # test for tables()
 test(1538, tables(), output = "Total:")
 
+# uniqueN could supports list input #1224
+d1 <- data.table(a = 1:4, l = list(list(letters[1:2]),list(Sys.time()),list(1:10),list(letters[1:2])))
+test(1539, d1[,uniqueN(l)], 3L)
+
 ##########################
 
 
