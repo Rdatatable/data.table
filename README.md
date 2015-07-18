@@ -33,7 +33,7 @@
 
   9. `rbindlist` gains `idcol` argument which can be used to generate an index column. If `idcol=TRUE`, the column is automatically named `.id`. Instead you can also provide a column name directly. If the input list has no names, indices are automatically generated. Closes [#591](https://github.com/Rdatatable/data.table/issues/591). Also thanks to @KevinUshey for filing [#356](https://github.com/Rdatatable/data.table/issues/356).
 
-  10. A new helper function `uniqueN` is now implemented. It is equivalent to `length(unique(x))` but much faster. It handless `atomic vectors`, `lists`, data.frames` and `data.tables` as input and returns the number of unique rows. Closes [#884](https://github.com/Rdatatable/data.table/issues/884). Gains by argument. Closes [#1080](https://github.com/Rdatatable/data.table/issues/1080). Closes [#1224](https://github.com/Rdatatable/data.table/issues/1224). Thanks to @DavidArenburg, @kevinmistry and @jangorecki. 
+  10. A new helper function `uniqueN` is now implemented. It is equivalent to `length(unique(x))` but much faster. It handles `atomic vectors`, `lists`, data.frames` and `data.tables` as input and returns the number of unique rows. Closes [#884](https://github.com/Rdatatable/data.table/issues/884). Gains by argument. Closes [#1080](https://github.com/Rdatatable/data.table/issues/1080). Closes [#1224](https://github.com/Rdatatable/data.table/issues/1224). Thanks to @DavidArenburg, @kevinmistry and @jangorecki. 
 
   11. Implemented `transpose()` to transpose a list and `tstrsplit` which is a wrapper for `transpose(strsplit(...))`. This is particularly useful in scenarios where a column has to be split and the resulting list has to be assigned to multiple columns. See `?transpose` and `?tstrsplit`, [#1025](https://github.com/Rdatatable/data.table/issues/1025) and [#1026](https://github.com/Rdatatable/data.table/issues/1026) for usage scenarios. Closes both #1025 and #1026 issues.
     * Implemented `type.convert` as suggested by Richard Scriven. Closes [#1094](https://github.com/Rdatatable/data.table/issues/1094).
@@ -72,7 +72,7 @@
 
   25. `fread` gains `check.names` argument, with default value `FALSE`. When `TRUE`, it uses the base function `make.unique()` to ensure that the column names of the data.table read in are all unique. Thanks to David Arenburg for filing [#1027](https://github.com/Rdatatable/data.table/issues/1027).
 
-  26. data.tables can join now without having to set keys by using the new `on` argument. For example: `DT1[DT2, on=c(x = "y"]` would join column 'y' of `DT2` with 'x' of `DT1`. `DT1[DT2, on="y"]` would join on column 'y' on both data.tables. Closes [#1130](https://github.com/Rdatatable/data.table/issues/1130) partly.
+  26. data.tables can join now without having to set keys by using the new `on` argument. For example: `DT1[DT2, on=c(x = "y")]` would join column 'y' of `DT2` with 'x' of `DT1`. `DT1[DT2, on="y"]` would join on column 'y' on both data.tables. Closes [#1130](https://github.com/Rdatatable/data.table/issues/1130) partly.
  
 #### BUG FIXES
 
