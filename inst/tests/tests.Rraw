@@ -2433,8 +2433,9 @@ DT[4,e:=NaN]  # write.table writes NaN as NA, though, and all.equal considers Na
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
 test(880, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
 test(881, fread(f), DT)
+# test that columns are not coerced if nastring=NULL
 DT[3,d:="NA"]
-test(882, fread(f,na.strings=NULL), DT)
+test(882, fread(f,na.strings=NULL)[['d']], DT[['d']])
 DT[3,d:=NA_character_]
 unlink(f)
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=TRUE)
@@ -6648,6 +6649,32 @@ dtab <- data.table(pid = factor(c("i", "nouana")),
                   abn = sample(1:5, 2, replace = TRUE), key =
                    c("pid", "year"))
 test(1541, key(dtp[dtab]), c("pid", "year"))
+
+#fixes #504 - handle nastring while reading (without coercion to character)
+K <- 10L
+nastrings <- c('null', 'NULL', 'na', '_NA', 'NA', 'nan', 'Nan', 'NAN', 'NaN')
+DT <- data.table(int = 1:K, 
+                 char = sample(letters, size = K, replace = T), 
+                 float = 1:K + 0.1, 
+                 bool = sample( c(T, F), K, replace = T))
+
+DT_NA <- DT
+for (j in seq_len( ncol(DT) )) {
+  set(x = DT_NA, i = j, j = j, value = NA)
+}
+
+for(k in seq_along(nastrings)) {
+  dt0 = copy(DT)
+  for (j in seq_len( ncol(DT) )) {
+    set(x = dt0, i = NULL, j = j, value = as.character(dt0[[j]]))
+    set(x = dt0, i = j, j = j, value = nastrings[[k]])
+  }
+  temp_file <- tempfile(fileext = '.csv')
+  write.table(dt0, file = temp_file, quote = F, sep = ',', row.names = F, col.names = T)
+  DT_fread <- fread(temp_file, na.strings = nastrings, verbose = F)
+
+  test(1542 + k * 0.1, DT_fread, DT_NA)
+}
 
 ##########################
 
