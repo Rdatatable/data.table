@@ -218,6 +218,8 @@
   55. `setDT` handles `key=` argument properly when input is already a `data.table`. Closes [#1169](https://github.com/Rdatatable/data.table/issues/1169). Thanks to @DavidArenburg for the PR.
 
   56. Key is retained properly when joining on factor type columns. Closes [#477](https://github.com/Rdatatable/data.table/issues/477). Thanks to @nachti for the report.
+  
+  57. Over-allocated memory is released more robustly thanks to Karl Miller's investigation and suggested fix.
 
 #### NOTES
 
@@ -241,7 +243,7 @@
 
   9. Removed an unnecessary (and silly) `giveNames` argument from `setDT()`. Not sure why I added this in the first place!
 
-  10. `options(datatable.prettyprint.char= int` restricts the number of characters to be printed for character columns. For example:
+  10. `options(datatable.prettyprint.char=5L)` restricts the number of characters to be printed for character columns. For example:
     
         options(datatable.prettyprint.char = 5L)
         DT = data.table(x=1:2, y=c("abcdefghij", "klmnopqrstuv"))

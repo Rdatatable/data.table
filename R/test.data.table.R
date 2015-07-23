@@ -4,7 +4,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg") {
         # package developer
         if ("package:data.table" %in% search()) stop("data.table package loaded")
         if (.Platform$OS.type == "unix" && Sys.info()['sysname'] != "Darwin")
-            d = path.expand("~/R/gitdatatable/pkg/inst/tests")
+            d = path.expand("~/data.table/inst/tests")
         else {
             if (!pkg %in% dir()) stop(paste(pkg, " not in dir()", sep=""))
             d = paste(getwd(),"/", pkg, "/inst/tests",sep="")

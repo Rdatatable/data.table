@@ -22,8 +22,9 @@ static void finalizer(SEXP p)
         // already, so nothing to do (but almost never the case).
         return;
     }
-    x = PROTECT(allocVector(VECSXP, 50));   // 50 so it's big enough to be on LargeVector heap. See NodeClassSize in memory.c:allocVector
-    SETLENGTH(x,50+n*2);  // 1*n for the names, 1*n for the VECSXP itself (both are over allocated)
+    x = PROTECT(allocVector(INTSXP, 50));  // 50 so it's big enough to be on LargeVector heap. See NodeClassSize in memory.c:allocVector
+                                           // INTSXP rather than VECSXP so that GC doesn't inspect contents after LENGTH (thanks to Karl Miller, Jul 2015)
+    SETLENGTH(x,50+n*2*sizeof(void *)/4);  // 1*n for the names, 1*n for the VECSXP itself (both are over allocated).
     UNPROTECT(1);
     return;
 }
@@ -50,7 +51,7 @@ void setselfref(SEXP x) {
        location constant within an R session, but can vary from session to session. So, it
        looks like a pointer to a user looking at attributes(DT), but they might wonder how it
        works if they realise the selfref of all data.tables all point to the same address (rather
-       than to the table itself which would be reasonable to expect given the attributes name).
+       than to the table itself which would be reasonable to expect given the attribute's name).
     *  p=NULL rather than R_NilValue works too, other than we need something other than NULL
        so we can detect tables loaded from disk (which set p to NULL, see 5.13 of R-exts).
     *  x is wrapped in another EXTPTR because of object.size (called by tables(), and by users).
@@ -66,6 +67,39 @@ void setselfref(SEXP x) {
        vector which required data.table to do a show/hide dance in a masked identical.
 */
 }
+
+/* There are two reasons the finalizer doesn't restore the LENGTH to TRUELENGTH. i) The finalizer
+happens too late after GC has already released the memory, and ii) copies by base R (e.g.
+[<- in write.table just before test 894) allocate at length LENGTH but copy the TRUELENGTH over.
+If the finalizer sets LENGTH to TRUELENGTH, that's a fail as it wasn't really allocated at
+TRUELENGTH when R did the copy.
+Karl Miller suggested an ENVSXP so that restoring LENGTH in finalizer should work. This is the
+closest I got to getting it to pass all tests :
+
+  SEXP env = PROTECT(allocSExp(ENVSXP));
+  defineVar(SelfRefSymbol, x, env);
+  defineVar(R_NamesSymbol, getAttrib(x, R_NamesSymbol), env);
+  setAttrib(x, SelfRefSymbol, p = R_MakeExternalPtr(
+    R_NilValue,         // for identical() to return TRUE. identical() doesn't look at tag and prot
+    R_NilValue, //getAttrib(x, R_NamesSymbol), // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
+    PROTECT(            // needed when --enable-strict-barrier it seems, iiuc. TO DO: test under that flag and remove if not needed.
+      env               // wrap x in env to avoid an infinite loop in object.size() if prot=x were here
+    )
+  ));
+  R_RegisterCFinalizerEx(p, finalizer, FALSE);
+  UNPROTECT(2);
+    
+Then in finalizer:
+    SETLENGTH(names, tl)
+    SETLENGTH(dt, tl)
+    
+and that finalizer indeed now happens before the GC releases memory (thanks to the env wrapper).
+
+However, we still have problem (ii) above and it didn't pass tests involving base R copies.
+
+We really need R itself to start setting TRUELENGTH to be the allocated length and then
+for GC to release TRUELENGTH not LENGTH.  Would really tidy this up.
+*/
 
 static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
     SEXP v, p, tag, prot, names;
