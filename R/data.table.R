@@ -426,7 +426,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     }
     irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
     notjoin = FALSE
-    rightcols = leftcols = integer(0)
+    rightcols = leftcols = integer()
     
     # To take care of duplicate column names properly (see chmatch2 function above `[data.table`) for description
     dupmatch <- function(x, y, ...) {
@@ -649,7 +649,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
             if (is.logical(i)) {
-                if (length(i)==nrow(x)) irows = i = which(i)   # e.g. DT[colA>3,which=TRUE]
+                if (isTRUE(i)) irows = i = NULL  # fixes #1249
+                else if (length(i)==nrow(x)) irows = i = which(i)   # e.g. DT[colA>3,which=TRUE]
                                                                # also replacing 'i' here - to save memory, #926.
                 else irows=seq_len(nrow(x))[i]  # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness 
                 # it could also be DT[!TRUE, which=TRUE] (silly cases, yes). 
@@ -675,8 +676,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (which) return( if (is.null(irows)) seq_len(nrow(x)) else irows )
     } else {  # missing(i)
         i = NULL
-        leftcols = integer()
-        rightcols = integer()
     }
 
     byval = NULL

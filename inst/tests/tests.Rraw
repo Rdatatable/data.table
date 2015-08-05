@@ -6649,6 +6649,19 @@ dtab <- data.table(pid = factor(c("i", "nouana")),
                    c("pid", "year"))
 test(1541, key(dtp[dtab]), c("pid", "year"))
 
+#  fix DT[TRUE, :=] using too much working memory for i, #1249
+if (!inherits(try(Rprofmem(NULL), silent=TRUE), "try-error")) {  # in case R not compiled with memory profiling enabled
+  f = tempfile()
+  N = 1000000           # or any large number of rows
+  DT = data.table(A=1:N, B=rnorm(N))
+  DT[TRUE, B := B * 2] # stabilize with initial dummy update
+  Rprofmem(f)
+  DT[TRUE, B := B * 2] # or some in-place update
+  Rprofmem(NULL)
+  test(1542, length(grep("000",readLines(f, warn=FALSE))), 1L)  # one allocation for the RHS only
+  unlink(f)
+}
+
 ##########################
 
 
