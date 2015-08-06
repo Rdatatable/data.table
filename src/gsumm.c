@@ -39,7 +39,9 @@ SEXP gend() {
     free(grp); grp = NULL; ngrp = 0;
     return(R_NilValue);
 }
-    
+
+// long double usage here results in test 648 being failed when running with valgrind
+// http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
 SEXP gsum(SEXP x, SEXP narm)
 {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");

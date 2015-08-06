@@ -1839,6 +1839,9 @@ basemean = base::mean  # to isolate time of `::` itself
 tt3 = system.time(ans3<-DT[,list(basemean(x),basemean(y)),by=list(grp1,grp2)])   # 11s
 test(646, ans1, ans2)
 test(647, ans1, ans3)
+# this'll error with `valgrind` because of the 'long double' usage in gsumm.c (although I wonder if we need long double precision). 
+# http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
+# http://comments.gmane.org/gmane.comp.debugging.valgrind/10340
 test(648, any(is.na(ans1$V1)) && !any(is.nan(ans1$V1)))
 if (.devtesting) test(649, tt1["user.self"] < 10*tt2["user.self"])   # should be same speed, but *10 as large margin
 if (.devtesting) test(650, tt1["user.self"] < tt3["user.self"]/2)   # 10 times faster, but test 2 times faster as large margin
@@ -3158,9 +3161,8 @@ if ("package:reshape2" %in% search()) {
     names(ChickWeight) <- tolower(names(ChickWeight))
     DT <- melt(as.data.table(ChickWeight), id=2:4) # calls melt.data.table
 
-    # no S3 method yet, have to use "dcast"
-    if (.Machine$sizeof.longdouble==16)
-        test(1101, as.data.frame(dcast(DT, time ~ variable, fun=mean)), dcast(as.data.frame(DT), time~variable, fun=mean))
+    # changed 'mean' to 'sum' to avoid valgrind floating point precision based error.
+    test(1101, as.data.frame(dcast(DT, time ~ variable, fun=sum)), dcast(as.data.frame(DT), time~variable, fun=sum))
     test(1102, as.data.frame(dcast(DT, diet ~ variable, fun=sum)), dcast(as.data.frame(DT), diet~variable, fun=sum))
     x1 <- as.data.frame(dcast(DT, diet+chick ~ time, drop=FALSE)) 
     x1$chick <- factor(x1$chick, levels=levels(x1$chick), ordered=FALSE)
@@ -4340,6 +4342,7 @@ test(1261, getNumericRounding(), 1L)
 if (.Machine$sizeof.longdouble==16)
     test(1262, length(unique(c(1.2345678901234560, 1.2345678901234561, 1.2345678901234562, 1.2345678901234563))), 2L)
     # 2 not 4 is double precision limit which base::unique() relies on in this test
+    # valgrind will also return (3) instead of (2) here.. due to floating point precision limitation. changing the last two values to 1.2345678901234563 and 1.2345678901234564 returns 2.
 DT = data.table(id=c(1.234567890123450, 1.234567890123451, 1.234567890123452, 1.234567890123453))  # one less digit is limit
 test(1263, length(unique(DT$id)), 4L)
 test(1264, DT[,.N,by=id]$N, 4L)  # 1 byte rounding isn't enough
