@@ -5,7 +5,7 @@ Author: M Dowle, T Short, S Lianoglou, A Srinivasan with contributions from R Sa
 Maintainer: Matt Dowle <mattjdowle@gmail.com>
 Depends: R (>= 2.14.0)
 Imports: methods, chron
-Suggests: ggplot2 (>= 0.9.0), plyr, reshape, reshape2, testthat (>= 0.4), hexbin, fastmatch, nlme, xts, bit64, gdata, GenomicRanges, caret, knitr, curl, zoo, plm
+Suggests: ggplot2 (>= 0.9.0), plyr, reshape, reshape2, testthat (>= 0.4), hexbin, fastmatch, nlme, xts, bit64, gdata, GenomicRanges, caret, knitr, RCurl, zoo, plm
 Description: Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns and a fast file reader (fread). Offers a natural and flexible syntax, for faster development.
 License: GPL (>= 2)
 URL: https://github.com/Rdatatable/data.table/wiki
