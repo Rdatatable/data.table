@@ -38,18 +38,24 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         }
         if (verbose) cat("This R session's locale is now '",tt,"' which provides the desired decimal point for reading numerics in the file - success! The locale will be restored to what it was ('",oldlocale,") even if the function fails for other reasons.\n")
     }
-    if (!is.character(input) || length(input)!=1) {
-        stop("'input' must be a single character string containing a file name, a command, full path to a file, a URL starting 'http://' or 'file://', or the input data itself")
-    } else if (substring(input,1,7) %chin% c("http://", "file://")) {
+
+    is_url <- function(x) grepl("^(http|ftp)s?://", x)
+    is_secureurl <- function(x) grepl("^(http|ftp)s://", x)
+    is_file <- function(x) grepl("^file://", x)
+    if (!is.character(input) || length(input)!=1L) {
+        stop("'input' must be a single character string containing a file name, a command, full path to a file, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or the input data itself")
+    } else if (is_url(input) || is_file(input)) {
         tt = tempfile()
-        on.exit(unlink(tt), add=TRUE)
-        download.file(input, tt, mode="wb", quiet=!showProgress)
+        on.exit(unlink(tt), add = TRUE)
         # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
+        if (!is_secureurl(input)) {
+            download.file(input, tt, mode = "wb", quiet = !showProgress)
+        } else {
+            if (!requireNamespace("curl", quietly = TRUE))
+                stop("Input URL requires https:// connection for which fread() requires 'curl' package, but cannot be found. Please install the package using 'install.packages()'.")
+            curl::curl_download(input, tt, mode = "wb", quite = !showProgress)
+        }
         input = tt
-    } else if (substring(input,1,7) %in% "https:/") {
-        if (!requireNamespace("RCurl", quietly=TRUE))
-            stop("Input is a URL requiring a https:// connection, for which fread() requires 'RCurl' package, but cannot be found.")
-        input = RCurl::getURL(input)
     } else if (input == "" || length(grep('\\n|\\r', input)) > 0) {
         # text input
     } else if (!file.exists(input)) {
