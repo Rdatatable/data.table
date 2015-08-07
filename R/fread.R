@@ -74,6 +74,16 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     if ( integer64=="integer64" && !exists("print.integer64") && any(sapply(ans,inherits,"integer64")) )
         warning("Some columns have been read as type 'integer64' but package bit64 isn't loaded. Those columns will display as strange looking floating point data. There is no need to reload the data. Just require(bit64) to obtain the integer64 print method and print the data again.")
     setattr(ans,"row.names",.set_row_names(nr))
+
+    if (isTRUE(data.table)) {
+        setattr(ans, "class", c("data.table", "data.frame"))
+        alloc.col(ans)
+    } else {
+        setattr(ans, "class", "data.frame")
+    }
+    if (isTRUE(as.logical(check.names))) {
+        setattr(ans, 'names', make.unique(names(ans)))
+    }
     as_factor <- function(x) {
         lev = forderv(x, retGrp = TRUE)
         # get levels, also take care of all sorted condition
@@ -84,23 +94,12 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         setattr(ans, 'class', 'factor')
     }
     if (isTRUE(as.logical(stringsAsFactors))) {
-        setattr(ans,"class",c("data.table","data.frame"))
-        idx = which(vapply(ans, is.character, TRUE))
-        if (length(idx)) {
-            if (verbose)
-                cat("Converting 'char' column(s) [", paste(names(ans)[idx], collapse=", "), "] to 'factor'\n", sep="")
-            for (j in idx)
-                set(ans, i = NULL, j = j, value = as_factor(ans[[j]]))
+        cols = which(vapply(ans, is.character, TRUE))
+        if (length(cols)) {
+            if (verbose) cat("Converting column(s) [", paste(names(ans)[cols], collapse = ", "), "] from 'char' to 'factor'\n", sep = "")
+            for (j in cols) 
+                set(ans, j = j, value = as_factor(.subset2(ans, j)))
         }
     }
-    if (isTRUE(as.logical(check.names))) {
-        setattr(ans, 'names', make.unique(names(ans)))
-    }
-    if (isTRUE(data.table)) {
-        setattr(ans,"class",c("data.table","data.frame"))
-        return(alloc.col(ans))
-    } else {
-        setattr(ans,"class","data.frame")
-        return(ans)
-    }
+    ans
 }
