@@ -53,7 +53,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         } else {
             if (!requireNamespace("curl", quietly = TRUE))
                 stop("Input URL requires https:// connection for which fread() requires 'curl' package, but cannot be found. Please install the package using 'install.packages()'.")
-            curl::curl_download(input, tt, mode = "wb", quite = !showProgress)
+            curl::curl_download(input, tt, mode = "wb", quiet = !showProgress)
         }
         input = tt
     } else if (input == "" || length(grep('\\n|\\r', input)) > 0) {
