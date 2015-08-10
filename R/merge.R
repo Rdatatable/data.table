@@ -1,9 +1,9 @@
 merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
                              all.y = all, suffixes = c(".x", ".y"), allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
-    if (!inherits(y, 'data.table')) {
-        y <- as.data.table(y)
+    if (!is.data.table(y)) {
+        y = as.data.table(y)
         if (missing(by) && missing(by.x)) {
-            by <- key(x)
+            by = key(x)
         }
     }
     if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
@@ -52,19 +52,18 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
 
     if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
         # Perhaps not very commonly used, so not a huge deal that the join is redone here.
-        missingyidx = seq.int(nrow(y))
-        whichy = y[x,which=TRUE,nomatch=0,on=by,allow.cartesian=allow.cartesian]  # !!TO DO!!:  Use not join (i=-x) here now that's implemented
-        whichy = whichy[whichy>0]
-        if (length(whichy)) missingyidx = missingyidx[-whichy]
+        missingyidx = y[!x,which=TRUE,on=by,allow.cartesian=allow.cartesian]
         if (length(missingyidx)) {
             yy = y[missingyidx]
             othercolsx = setdiff(names(x), by)
             if (length(othercolsx)) {
                 tmp = rep.int(NA_integer_, length(missingyidx))
+                # TO DO: use set() here instead..
                 yy = cbind(yy, x[tmp, othercolsx, with = FALSE])
             }
-            dt = rbind(dt, yy, use.names=FALSE) # empty data.tables (nrow =0, ncol>0) doesn't skip names anymore in new rbindlist
-                                                # takes care of #5672 without having to save names. This is how it should be, IMHO.
+            # empty data.tables (nrow =0, ncol>0) doesn't skip names anymore in new rbindlist
+            # takes care of #5672 without having to save names. This is how it should be, IMHO.
+            dt = rbind(dt, yy, use.names=FALSE)
         }
     }
     # X[Y] sytax puts JIS i columns at the end, merge likes them alongside i.
