@@ -64,16 +64,16 @@
 
   21. `setDF` also converts `list` of equal length to `data.frame` by reference now. Closes [#1132](https://github.com/Rdatatable/data.table/issues/1132).
 
-  22. `merge.data.table` now has new arguments `by.x` and `by.y`. Closes [#637](https://github.com/Rdatatable/data.table/issues/637). Thanks to @NelloBlaser.
+  22. `CJ` gains logical `unique` argument with default `FALSE`. If `TRUE`, unique values of vectors are automatically computed and used. This is convenient, for example, `DT[CJ(a, b, c, unique=TRUE)]` instead of  doing `DT[CJ(unique(a), unique(b), unique(c))]`. Ultimately, `unique = TRUE` will be default. Closes [#1148](https://github.com/Rdatatable/data.table/issues/1148). 
 
-  23. `CJ` gains logical `unique` argument with default `FALSE`. If `TRUE`, unique values of vectors are automatically computed and used. This is convenient, for example, `DT[CJ(a, b, c, unique=TRUE)]` instead of  doing `DT[CJ(unique(a), unique(b), unique(c))]`. Ultimately, `unique = TRUE` will be default. Closes [#1148](https://github.com/Rdatatable/data.table/issues/1148). 
+  23. Implemented `stringsAsFactors` argument for `fread()`. When `TRUE`, character columns are converted to factors. Default is `FALSE`. Thanks to Artem Klevtsov for filing [#501](https://github.com/Rdatatable/data.table/issues/501), and to @hmi2015 for [this SO post](http://stackoverflow.com/q/31350209/559784).
 
-  24. Implemented `stringsAsFactors` argument for `fread()`. When `TRUE`, character columns are converted to factors. Default is `FALSE`. Thanks to Artem Klevtsov for filing [#501](https://github.com/Rdatatable/data.table/issues/501), and to @hmi2015 for [this SO post](http://stackoverflow.com/q/31350209/559784).
+  24. `fread` gains `check.names` argument, with default value `FALSE`. When `TRUE`, it uses the base function `make.unique()` to ensure that the column names of the data.table read in are all unique. Thanks to David Arenburg for filing [#1027](https://github.com/Rdatatable/data.table/issues/1027).
 
-  25. `fread` gains `check.names` argument, with default value `FALSE`. When `TRUE`, it uses the base function `make.unique()` to ensure that the column names of the data.table read in are all unique. Thanks to David Arenburg for filing [#1027](https://github.com/Rdatatable/data.table/issues/1027).
+  25. data.tables can join now without having to set keys by using the new `on` argument. For example: `DT1[DT2, on=c(x = "y")]` would join column 'y' of `DT2` with 'x' of `DT1`. `DT1[DT2, on="y"]` would join on column 'y' on both data.tables. Closes [#1130](https://github.com/Rdatatable/data.table/issues/1130) partly.
 
-  26. data.tables can join now without having to set keys by using the new `on` argument. For example: `DT1[DT2, on=c(x = "y")]` would join column 'y' of `DT2` with 'x' of `DT1`. `DT1[DT2, on="y"]` would join on column 'y' on both data.tables. Closes [#1130](https://github.com/Rdatatable/data.table/issues/1130) partly.
- 
+22. `merge.data.table` gains arguments `by.x` and `by.y`. Closes [#637](https://github.com/Rdatatable/data.table/issues/637) and [#1130](https://github.com/Rdatatable/data.table/issues/1130). No copies are made even when the specified columns aren't key columns in data.tables, and therefore much more fast and memory efficient. Thanks to @blasern for the initial PRs.
+
 #### BUG FIXES
 
   1. `if (TRUE) DT[,LHS:=RHS]` no longer prints, [#869](https://github.com/Rdatatable/data.table/issues/869) and [#1122](https://github.com/Rdatatable/data.table/issues/1122). Tests added. To get this to work we've had to live with one downside: if a `:=` is used inside a function with no `DT[]` before the end of the function, then the next time `DT` or `print(DT)` is typed at the prompt, nothing will be printed. A repeated `DT` or `print(DT)` will print. To avoid this: include a `DT[]` after the last `:=` in your function. If that is not possible (e.g., it's not a function you can change) then `DT[]` at the prompt is guaranteed to print. As before, adding an extra `[]` on the end of a `:=` query is a recommended idiom to update and then print; e.g. `> DT[,foo:=3L][]`. Thanks to Jureiss and Jan Gorecki for reporting.

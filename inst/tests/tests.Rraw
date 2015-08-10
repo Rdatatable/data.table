@@ -6665,6 +6665,29 @@ if (!inherits(try(Rprofmem(NULL), silent=TRUE), "try-error")) {  # in case R not
   unlink(f)
 }
 
+# rest of #1130 - merge doesn't copy, instead uses joins without keys.
+set.seed(1L)
+d1 <- data.table(A = sample(letters[1:10]), X = 1:10, total = TRUE)
+d2 <- data.table(A = sample(letters[5:14]), Y = 1:10, total = FALSE)
+
+ans1 <- suppressWarnings(merge(setDF(d1), setDF(d2), by="A"))
+ans2 <- setDF(merge(setDT(d1), setDT(d2), by="A"))
+test(1543.1, ans1, ans2)
+ans1 <- suppressWarnings(merge(setDF(d1), setDF(d2), all=TRUE, by="A"))
+ans2 <- setDF(merge(setDT(d1), setDT(d2), all=TRUE, by="A"))
+test(1542.2, ans1, ans2)
+# test duplicate name cases
+setnames(d2, c("A", "Y"), c("B", "A"))
+ans1 <- suppressWarnings(merge(setDF(d1), setDF(d2), by.x="A", by.y="B"))
+ans2 <- setDF(merge(setDT(d1), setDT(d2), by.x="A", by.y="B"))
+test(1543.3, ans1, ans2)
+ans1 <- suppressWarnings(merge(setDF(d2), setDF(d1), by.x="B", by.y="A"))
+ans2 <- setDF(merge(setDT(d2), setDT(d1), by.x="B", by.y="A"))
+test(1543.4, ans1, ans2)
+ans1 <- suppressWarnings(merge(setDF(d2), setDF(d1), all=TRUE, by.x="B", by.y="A"))
+ans2 <- setDF(merge(setDT(d2), setDT(d1), all=TRUE, by.x="B", by.y="A"))
+test(1543.5, ans1, ans2)
+
 ##########################
 
 
