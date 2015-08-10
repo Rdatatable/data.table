@@ -2217,9 +2217,11 @@ point <- function(to, to_idx, from, from_idx) {
     isnull = is.null(cols)
     if (!isnull) cols = validate(cols, x)  # NULL is default = all columns
     ans = .Call(Cshallowwrapper, x, cols)  # copies VECSXP only
-    cols = if (isnull) names(x) else names(x)[cols]
-    if (retain.key && haskey(x) && !all(key(x) %in% cols))
-        setattr(ans, 'sorted', NULL)
+    if (retain.key && isnull) return(ans)  # handle most frequent case first
+    # rest of the cases
+    cols = names(x)[cols]
+    retain.key = retain.key && identical(cols, head(key(x), length(cols)))
+    setattr(ans, 'sorted', if (haskey(x) && retain.key) cols else NULL)
     ans
     # TODO: check/remove attributes for secondary keys?
 }

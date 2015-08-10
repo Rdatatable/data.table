@@ -78,6 +78,7 @@ if (!.devtesting) {
     which.last = data.table:::which.last
     trim = data.table:::trim
     `%+%.default` = data.table:::`%+%.default`
+    .shallow = data.table:::.shallow
 }
 
 # test for covering tables.R 100%, we need to run tables() before creating any data.tables to return null data.table
@@ -6687,6 +6688,21 @@ test(1543.4, ans1, ans2)
 ans1 <- suppressWarnings(merge(setDF(d2), setDF(d1), all=TRUE, by.x="B", by.y="A"))
 ans2 <- setDF(merge(setDT(d2), setDT(d1), all=TRUE, by.x="B", by.y="A"))
 test(1543.5, ans1, ans2)
+
+# fix for #1258 (bug on .shallow - retains keys when it shouldn't)
+# nice catch and excellent report from @and3k
+x1 <- data.table(a1 = c('a', 'b', 'c'), a2 = c(1L, 3L, 2L))
+y <- data.table(a2 = 1:3)
+setkey(y, a2)
+setkey(x1, a1, a2)
+test(1544.1, setDF(merge(x1, y)), merge(as.data.frame(x1), as.data.frame(y)))
+test(1544.2, setDF(merge(x1, y, by="a2")), merge(as.data.frame(x1), as.data.frame(y), by="a2"))
+# also test shallow here so as to catch future regressions
+x1 <- data.table(a1 = c('a', 'b', 'c'), a2 = c(1L, 3L, 2L), key="a1,a2")
+test(1545.1, key(.shallow(x1, cols="a2")), NULL)
+test(1545.2, key(.shallow(x1, retain.key=FALSE)), NULL)
+test(1545.3, key(.shallow(x1, retain.key=TRUE)), key(x1))
+test(1545.4, key(.shallow(x1, cols="a1", retain.key=TRUE)), "a1")
 
 ##########################
 
