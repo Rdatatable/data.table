@@ -3,7 +3,7 @@
 \alias{getNumericRounding}
 \title{ Change or turn off numeric rounding }
 \description{
-  Change rounding to 0, 1 or 2 bytes when joining or grouping numeric (i.e. double) columns.
+  Change rounding to 0, 1 or 2 bytes when joining, grouping or ordering numeric (i.e. double, POSIXct) columns.
 }
 \usage{
 setNumericRounding(x)
@@ -24,6 +24,8 @@ getNumericRounding()
   choice of default is not for speed however, but to avoid surprising results such as in the example below.
 
   For large numbers (integers > 2^31), we recommend using \code{bit64::integer64} rather than setting rounding to \code{0}.
+  
+  If you're using \code{POSIXct} type column with \emph{millisecond} (or lower) resolution, you might want to consider setting \code{setNumericRounding(1)} . This'll become the default for \code{POSIXct} types in the future, instead of the default \code{2}.
 }
 \value{
     \code{setNumericRounding} returns no value; the new value is applied. \code{getNumericRounding} returns the current value: 0, 1 or 2.
