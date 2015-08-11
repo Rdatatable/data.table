@@ -44,8 +44,8 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     end = setdiff(names(y), by.y)
     dupnames = intersect(start, end)
     if (length(dupnames)) {
-        start[start %in% dupnames] = paste(dupnames, suffixes[1L], sep="")
-        end[end %in% dupnames] = paste(dupnames, suffixes[2L], sep="")
+        start[chmatch(dupnames, start, 0L)] = paste(dupnames, suffixes[1L], sep="")
+        end[chmatch(dupnames, end, 0L)] = paste(dupnames, suffixes[2L], sep="")
     }
 
     dt = y[x,nomatch=ifelse(all.x,NA,0),on=by,allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)

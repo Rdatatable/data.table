@@ -6689,6 +6689,12 @@ ans1 <- suppressWarnings(merge(setDF(d2), setDF(d1), all=TRUE, by.x="B", by.y="A
 ans2 <- setDF(merge(setDT(d2), setDT(d1), all=TRUE, by.x="B", by.y="A"))
 test(1543.5, ans1, ans2)
 
+# thinko in merge dupnames handling
+dt1 = data.table(x=1:5, y1=2L, y2=3L)
+dt2 = data.table(a=4:6, y2=TRUE, y1 = FALSE)
+test(1543.6, setDF(merge(dt1, dt2, by.x="x", by.y="a")), 
+             merge(as.data.frame(dt1), as.data.frame(dt2), by.x="x", by.y="a"))
+
 # fix for #1258 (bug on .shallow - retains keys when it shouldn't)
 # nice catch and excellent report from @and3k
 x1 <- data.table(a1 = c('a', 'b', 'c'), a2 = c(1L, 3L, 2L))
