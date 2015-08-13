@@ -225,6 +225,8 @@
   
   59. Thanks to @and3k for the excellent bug report [#1258](https://github.com/Rdatatable/data.table/issues/1258). This was a result of shallow copy retaining keys when it shouldn't. It affected some cases of joins using `on=`. Fixed now.
 
+  60. `set()` and `:=` handle RHS value `NA_integer_` on factor types properly. Closes [#1234](https://github.com/Rdatatable/data.table/issues/1234). Thanks to @DavidArenburg.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

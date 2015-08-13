@@ -6710,6 +6710,11 @@ test(1545.2, key(.shallow(x1, retain.key=FALSE)), NULL)
 test(1545.3, key(.shallow(x1, retain.key=TRUE)), key(x1))
 test(1545.4, key(.shallow(x1, cols="a1", retain.key=TRUE)), "a1")
 
+# test for #1234
+df1 = df2 = data.frame(cats = rep(c('', ' ',  'meow'), 5))
+df2[grep("^[ ]*$", df2$cats), "cats"] = NA_integer_
+test(1546, set(df1, grep("^[ ]*$", df1$cats), 1L, NA_integer_), df2)
+
 ##########################
 
 
