@@ -434,7 +434,8 @@ frank <- function(x, ..., na.last=TRUE, ties.method=c("average", "first", "rando
 #########################################################################################
 
 
-
+# nocov start
+# don't include functions not used for coverage
 bench <- function(quick=TRUE, testback=TRUE, baseline=FALSE) {
     if (baseline) testback=FALSE  # when baseline return in fastorder.c is uncommented, baseline must be TRUE
     # fastorder benchmark forwards vs backwards
@@ -652,5 +653,4 @@ fastorder <- function(x, by=seq_along(x), verbose=getOption("datatable.verbose")
     o
 }
 
-
-
+# nocov end

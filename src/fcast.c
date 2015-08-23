@@ -3,71 +3,6 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-// Note: all these functions below are internal functions and are designed specific to fcast.
-SEXP zero_init(R_len_t n) {
-    R_len_t i;
-    SEXP ans;
-    if (n < 0) error("Input argument 'n' to 'zero_init' must be >= 0");
-    ans = PROTECT(allocVector(INTSXP, n));
-    for (i=0; i<n; i++) INTEGER(ans)[i] = 0;
-    UNPROTECT(1);
-    return(ans);
-}
-
-SEXP vec_init(R_len_t n, SEXP val) {
-    
-    SEXP ans;
-    R_len_t i;
-    if (n < 0) error("Input argument 'n' to 'vec_init' must be >= 0");
-    ans = PROTECT(allocVector(TYPEOF(val), n));
-    switch(TYPEOF(val)) {
-        case INTSXP :
-        for (i=0; i<n; i++) INTEGER(ans)[i] = INTEGER(val)[0];
-        break;
-        case REALSXP :
-        for (i=0; i<n; i++) REAL(ans)[i] = REAL(val)[0];
-        break;
-        case LGLSXP :
-        for (i=0; i<n; i++) LOGICAL(ans)[i] = LOGICAL(val)[0];
-        break;
-        case STRSXP :
-        for (i=0; i<n; i++) SET_STRING_ELT(ans, i, STRING_ELT(val, 0));
-        break;
-        case VECSXP :
-        for (i=0; i<n; i++) SET_VECTOR_ELT(ans, i, VECTOR_ELT(val, 0));
-        default : 
-        error("Unknown input type '%s'", type2char(TYPEOF(val)));
-    }
-    UNPROTECT(1);
-    return(ans);
-}
-
-SEXP cast_order(SEXP v, SEXP env) {
-    R_len_t len;
-    SEXP call, ans;
-    if (TYPEOF(env) != ENVSXP) error("Argument 'env' to (data.table internals) 'cast_order' must be an environment");
-    if (TYPEOF(v) == VECSXP) len = length(VECTOR_ELT(v, 0)); 
-    else len = length(v);
-    PROTECT(call = lang2(install("forder"), v)); // TODO: save the 'eval' by calling directly the C-function.
-    ans = PROTECT(eval(call, env));
-    if (length(ans) == 0) { // forder returns integer(0) if already sorted
-        UNPROTECT(1); // ans
-        ans = PROTECT(seq_int(len, 1));
-    }
-    UNPROTECT(2);
-    return(ans);
-}
-
-SEXP cross_join(SEXP s, SEXP env) {
-    // Calling CJ is faster and don't have to worry about sorting or setting key.
-    SEXP call, r;
-    if (!isNewList(s) || isNull(s)) error("Argument 's' to 'cross_join' must be a list of length > 0");
-    PROTECT(call = lang3(install("do.call"), install("CJ"), s));
-    r = eval(call, env);
-    UNPROTECT(1);
-    return(r);
-}
-
 static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
 // Only for use by subsetDT() or subsetVector() below, hence static
 // l is the count of non-zero (including NAs) in idx i.e. the length of the result
@@ -272,60 +207,6 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
     return subsetVectorRaw(x, idx, n, n);
 }
 
-
-SEXP diff_int(SEXP x, R_len_t n) {
-    
-    R_len_t i;
-    SEXP ans;
-    if (TYPEOF(x) != INTSXP) error("Argument 'x' to 'diff_int' must be an integer vector");
-    ans = PROTECT(allocVector(INTSXP, length(x)));
-    for (i=1; i<length(x); i++)
-        INTEGER(ans)[i-1] = INTEGER(x)[i] - INTEGER(x)[i-1];
-    INTEGER(ans)[length(x)-1] = n - INTEGER(x)[length(x)-1] + 1;
-    UNPROTECT(1);
-    return(ans);
-}
-
-SEXP intrep(SEXP x, SEXP len) {
-    
-    R_len_t i,j,l=0, k=0;
-    SEXP ans;
-    if (TYPEOF(x) != INTSXP || TYPEOF(len) != INTSXP) error("Arguments 'x' and 'len' to 'intrep' should both be integer vectors");
-    if (length(x) != length(len)) error("'x' and 'len' must be of same length");
-    // assuming both are of length >= 1
-    for (i=0; i<length(len); i++)
-        l += INTEGER(len)[i]; // assuming positive values for len. internal use - can't bother to check.
-    ans = PROTECT(allocVector(INTSXP, l));
-    for (i=0; i<length(len); i++) {
-        for (j=0; j<INTEGER(len)[i]; j++) {
-            INTEGER(ans)[k++] = INTEGER(x)[i];
-        }
-    }
-    UNPROTECT(1); // ans
-    return(ans);
-}
-
-// taken match_transform() from base:::unique.c and modified
-SEXP coerce_to_char(SEXP s, SEXP env)
-{
-    if(OBJECT(s)) {
-    if(inherits(s, "factor")) return asCharacterFactor(s);
-    else if(getAttrib(s, R_ClassSymbol) != R_NilValue) {
-        SEXP call, r;
-        PROTECT(call = lang2(install("as.character"), s));
-        r = eval(call, env);
-        UNPROTECT(1);
-        return r;
-    }
-    }
-    /* else */
-    return coerceVector(s, STRSXP);
-}
-
-// to do: margins
-// SEXP margins(...) {
-// }
-
 // TO DO: margins
 SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg) {
     
@@ -417,3 +298,122 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     UNPROTECT(1);
     return(ans);
 }
+
+// internal functions that are not used anymore..
+
+// # nocov start
+// Note: all these functions below are internal functions and are designed specific to fcast.
+SEXP zero_init(R_len_t n) {
+    R_len_t i;
+    SEXP ans;
+    if (n < 0) error("Input argument 'n' to 'zero_init' must be >= 0");
+    ans = PROTECT(allocVector(INTSXP, n));
+    for (i=0; i<n; i++) INTEGER(ans)[i] = 0;
+    UNPROTECT(1);
+    return(ans);
+}
+
+SEXP vec_init(R_len_t n, SEXP val) {
+
+    SEXP ans;
+    R_len_t i;
+    if (n < 0) error("Input argument 'n' to 'vec_init' must be >= 0");
+    ans = PROTECT(allocVector(TYPEOF(val), n));
+    switch(TYPEOF(val)) {
+        case INTSXP :
+        for (i=0; i<n; i++) INTEGER(ans)[i] = INTEGER(val)[0];
+        break;
+        case REALSXP :
+        for (i=0; i<n; i++) REAL(ans)[i] = REAL(val)[0];
+        break;
+        case LGLSXP :
+        for (i=0; i<n; i++) LOGICAL(ans)[i] = LOGICAL(val)[0];
+        break;
+        case STRSXP :
+        for (i=0; i<n; i++) SET_STRING_ELT(ans, i, STRING_ELT(val, 0));
+        break;
+        case VECSXP :
+        for (i=0; i<n; i++) SET_VECTOR_ELT(ans, i, VECTOR_ELT(val, 0));
+        default :
+        error("Unknown input type '%s'", type2char(TYPEOF(val)));
+    }
+    UNPROTECT(1);
+    return(ans);
+}
+
+SEXP cast_order(SEXP v, SEXP env) {
+    R_len_t len;
+    SEXP call, ans;
+    if (TYPEOF(env) != ENVSXP) error("Argument 'env' to (data.table internals) 'cast_order' must be an environment");
+    if (TYPEOF(v) == VECSXP) len = length(VECTOR_ELT(v, 0));
+    else len = length(v);
+    PROTECT(call = lang2(install("forder"), v)); // TODO: save the 'eval' by calling directly the C-function.
+    ans = PROTECT(eval(call, env));
+    if (length(ans) == 0) { // forder returns integer(0) if already sorted
+        UNPROTECT(1); // ans
+        ans = PROTECT(seq_int(len, 1));
+    }
+    UNPROTECT(2);
+    return(ans);
+}
+
+SEXP cross_join(SEXP s, SEXP env) {
+    // Calling CJ is faster and don't have to worry about sorting or setting key.
+    SEXP call, r;
+    if (!isNewList(s) || isNull(s)) error("Argument 's' to 'cross_join' must be a list of length > 0");
+    PROTECT(call = lang3(install("do.call"), install("CJ"), s));
+    r = eval(call, env);
+    UNPROTECT(1);
+    return(r);
+}
+
+SEXP diff_int(SEXP x, R_len_t n) {
+
+    R_len_t i;
+    SEXP ans;
+    if (TYPEOF(x) != INTSXP) error("Argument 'x' to 'diff_int' must be an integer vector");
+    ans = PROTECT(allocVector(INTSXP, length(x)));
+    for (i=1; i<length(x); i++)
+        INTEGER(ans)[i-1] = INTEGER(x)[i] - INTEGER(x)[i-1];
+    INTEGER(ans)[length(x)-1] = n - INTEGER(x)[length(x)-1] + 1;
+    UNPROTECT(1);
+    return(ans);
+}
+
+SEXP intrep(SEXP x, SEXP len) {
+
+    R_len_t i,j,l=0, k=0;
+    SEXP ans;
+    if (TYPEOF(x) != INTSXP || TYPEOF(len) != INTSXP) error("Arguments 'x' and 'len' to 'intrep' should both be integer vectors");
+    if (length(x) != length(len)) error("'x' and 'len' must be of same length");
+    // assuming both are of length >= 1
+    for (i=0; i<length(len); i++)
+        l += INTEGER(len)[i]; // assuming positive values for len. internal use - can't bother to check.
+    ans = PROTECT(allocVector(INTSXP, l));
+    for (i=0; i<length(len); i++) {
+        for (j=0; j<INTEGER(len)[i]; j++) {
+            INTEGER(ans)[k++] = INTEGER(x)[i];
+        }
+    }
+    UNPROTECT(1); // ans
+    return(ans);
+}
+
+// taken match_transform() from base:::unique.c and modified
+SEXP coerce_to_char(SEXP s, SEXP env)
+{
+    if(OBJECT(s)) {
+    if(inherits(s, "factor")) return asCharacterFactor(s);
+    else if(getAttrib(s, R_ClassSymbol) != R_NilValue) {
+        SEXP call, r;
+        PROTECT(call = lang2(install("as.character"), s));
+        r = eval(call, env);
+        UNPROTECT(1);
+        return r;
+    }
+    }
+    /* else */
+    return coerceVector(s, STRSXP);
+}
+
+// # nocov end

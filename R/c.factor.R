@@ -1,3 +1,5 @@
+# nocov start
+# don't include functions not used for coverage
 
 # c.factor was intended to be deprecated but we need it for rbind. No longer used by 'by'.
 # In dogroups, we now drop factor levels in .SD, work with integers, and add levels back afterwards.
@@ -35,4 +37,4 @@ c.factor <- function(...)
 #    y
 #}
 
-
+# nocov end
