@@ -79,6 +79,7 @@ if (!.devtesting) {
     trim = data.table:::trim
     `%+%.default` = data.table:::`%+%.default`
     .shallow = data.table:::.shallow
+    getdots = data.table:::getdots
 }
 
 # test for covering tables.R 100%, we need to run tables() before creating any data.tables to return null data.table
@@ -6714,6 +6715,10 @@ test(1545.4, key(.shallow(x1, cols="a1", retain.key=TRUE)), "a1")
 df1 = df2 = data.frame(cats = rep(c('', ' ',  'meow'), 5))
 df2[grep("^[ ]*$", df2$cats), "cats"] = NA_integer_
 test(1546, set(df1, grep("^[ ]*$", df1$cats), 1L, NA_integer_), df2)
+
+# Add test for getdots() function (although it doesn't seem to be used anywhere)
+foo <- function(x, y, ...) { getdots() }
+test(1547, foo(1L, 5L, a=2L, "c"), c("2", "c"))
 
 ##########################
 
