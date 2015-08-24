@@ -81,8 +81,6 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                             REAL(tmp)[m] = REAL(thisfill)[0];
                         }
                         copyMostAttrib(this, tmp);
-                        if (isFactor(this))
-                            setAttrib(tmp, R_LevelsSymbol, getAttrib(this, R_LevelsSymbol));
                     }
                 break;
 
@@ -99,8 +97,6 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         for (m=0; m<thisk; m++)
                             LOGICAL(tmp)[m] = LOGICAL(thisfill)[0];
                         copyMostAttrib(this, tmp);
-                        if (isFactor(this))
-                            setAttrib(tmp, R_LevelsSymbol, getAttrib(this, R_LevelsSymbol));
                     }
                 break;
 
@@ -112,8 +108,6 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         for (m=0; m<xrows; m++)
                             SET_STRING_ELT(tmp, m, (m < INTEGER(k)[j]) ? STRING_ELT(thisfill, 0) : STRING_ELT(this, m - INTEGER(k)[j]));
                         copyMostAttrib(this, tmp);
-                        if (isFactor(this))
-                            setAttrib(tmp, R_LevelsSymbol, getAttrib(this, R_LevelsSymbol));
                     }
                 break;
                 default :
@@ -170,8 +164,6 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         for (m=xrows-thisk; m<xrows; m++)
                             REAL(tmp)[m] = REAL(thisfill)[0];
                         copyMostAttrib(this, tmp);
-                        if (isFactor(this))
-                            setAttrib(tmp, R_LevelsSymbol, getAttrib(this, R_LevelsSymbol));
                     }
         		break;
 
@@ -188,8 +180,6 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         for (m=xrows-thisk; m<xrows; m++)
                             LOGICAL(tmp)[m] = LOGICAL(thisfill)[0];
                         copyMostAttrib(this, tmp);
-                        if (isFactor(this))
-                            setAttrib(tmp, R_LevelsSymbol, getAttrib(this, R_LevelsSymbol));
                     }
         		break;
 
@@ -201,8 +191,6 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         for (m=0; m<xrows; m++)
                             SET_STRING_ELT(tmp, m, (xrows-m <= INTEGER(k)[j]) ? STRING_ELT(thisfill, 0) : STRING_ELT(this, m + INTEGER(k)[j]));
                         copyMostAttrib(this, tmp);
-                        if (isFactor(this))
-                            setAttrib(tmp, R_LevelsSymbol, getAttrib(this, R_LevelsSymbol));
                     }
                 break;
     	        default :
