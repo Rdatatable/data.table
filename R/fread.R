@@ -2,9 +2,7 @@
 fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=1L,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", check.names=FALSE, encoding="unknown", showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable")) {
     if (!is.character(dec) || length(dec)!=1L || nchar(dec)!=1) stop("dec must be a single character e.g. '.' or ','")
     # handle encoding, #563
-    if (missing(encoding)) {
-        encoding = NULL
-    } else if (!encoding %in% c("unknown", "UTF-8", "Latin-1")) {
+    if (!encoding %in% c("unknown", "UTF-8", "Latin-1")) {
         stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
     }
     if (getOption("datatable.fread.dec.experiment") && Sys.localeconv()["decimal_point"] != dec) {
