@@ -6739,7 +6739,7 @@ test(1547, foo(1L, 5L, a=2L, "c"), c("2", "c"))
 text="A,B\ną,ž\nū,į\nų,ė\nš,ę\n"
 test(1548.1, unique(unlist(lapply(fread(text, sep=",", header=TRUE), Encoding))), "unknown")
 test(1548.2, unique(unlist(lapply(fread(text, sep=",", header=TRUE, encoding="UTF-8"), Encoding))), "UTF-8")
-
+test(1548.3, fread(text, sep=",", encoding="UTF-8", data.table=FALSE), read.table(text=text, sep=",", header=TRUE, encoding="UTF-8", stringsAsFactors=FALSE))
 ##########################
 
 
