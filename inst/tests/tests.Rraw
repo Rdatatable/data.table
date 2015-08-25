@@ -5924,10 +5924,15 @@ setattr(ans, 'names', nm)
 test(1463.27, shift(x, 1:2, give.names=TRUE), ans)
 
 # FR #686
-DT = data.table(grp=rep(c("A", "B", "C", "A", "B"), 
-          c(2,2,3,1,2)), value=1:10)
-test(1464.1, rleidv(DT, "grp"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
-test(1464.2, rleid(DT$grp), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
+DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)))
+DT[, b := as.integer(factor(a))][, c := as.numeric(factor(a))]
+test(1464.1, rleidv(DT, "a"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
+test(1464.2, rleid(DT$a), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
+test(1464.3, rleidv(DT, "b"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
+test(1464.4, rleid(DT$b), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
+test(1464.5, rleidv(DT, "c"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
+test(1464.6, rleid(DT$c), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
+test(1464.7, rleid(as.complex(c(1,0+5i,0+5i,1))), error="Type 'complex' not supported")
 
 # data.table-xts conversion #882
 
