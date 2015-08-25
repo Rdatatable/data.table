@@ -6734,6 +6734,12 @@ test(1546, set(df1, grep("^[ ]*$", df1$cats), 1L, NA_integer_), df2)
 foo <- function(x, y, ...) { getdots() }
 test(1547, foo(1L, 5L, a=2L, "c"), c("2", "c"))
 
+# Fix for encoding issues in windows, #568
+# perhaps a better way to check exact output in addition to testing encoding?
+text="A,B\ną,ž\nū,į\nų,ė\nš,ę\n"
+test(1548.1, unique(unlist(lapply(fread(text, sep=",", header=TRUE), Encoding))), "unknown")
+test(1548.2, unique(unlist(lapply(fread(text, sep=",", header=TRUE, encoding="UTF-8"), Encoding))), "UTF-8")
+
 ##########################
 
 

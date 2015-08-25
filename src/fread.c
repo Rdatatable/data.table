@@ -413,7 +413,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     return(newv);
 }
 
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP showProgressArg)
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP showProgressArg)
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP thiscol, ans, thisstr;
@@ -424,7 +424,19 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
     ERANGEwarning = FALSE;  // just while detecting types, then TRUE before the read data loop
-    
+
+    // Encoding, #568: Borrowed from do_setencoding from base R
+    // https://github.com/wch/r-source/blob/ca5348f0b5e3f3c2b24851d7aff02de5217465eb/src/main/util.c#L1115
+    // Check for mkCharLenCE function to locate as to where where this is implemented.
+    cetype_t ienc;
+    Rboolean is_no_encoding = TRUE;
+    if (!isNull(encoding)) {
+        is_no_encoding = FALSE;
+        if (!strcmp(CHAR(STRING_ELT(encoding, 0)), "Latin-1")) ienc = CE_LATIN1;
+        else if (!strcmp(CHAR(STRING_ELT(encoding, 0)), "UTF-8")) ienc = CE_UTF8;
+        else ienc = CE_NATIVE;
+    }
+
     // Extra tracing for apparent 32bit Windows problem: https://github.com/Rdatatable/data.table/issues/1111
     if (!isInteger(showProgressArg)) error("showProgress is not type integer but type '%s'. Please report.", type2char(TYPEOF(showProgressArg)));
     if (LENGTH(showProgressArg)!=1) error("showProgress is not length 1 but length %d. Please report.", LENGTH(showProgressArg));
@@ -1083,7 +1095,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
                 case SXP_STR: case SXP_NULL: case_SXP_STR:
                     Field(1);
-                    if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLen(fieldStart, fieldLen));
+                    if (type[j]==SXP_STR) {
+                        SET_STRING_ELT(thiscol, i, (is_no_encoding) ?   
+                              mkCharLen(fieldStart, fieldLen) : mkCharLenCE(fieldStart, fieldLen, ienc));
+                    }
                 }
                 if (ch<eof && *ch==sep && j<ncol-1) {ch++; continue;}  // done, next field
                 if (j<ncol-1) {
