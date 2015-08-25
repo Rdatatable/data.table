@@ -229,6 +229,8 @@
 
   60. `set()` and `:=` handle RHS value `NA_integer_` on factor types properly. Closes [#1234](https://github.com/Rdatatable/data.table/issues/1234). Thanks to @DavidArenburg.
 
+  61. `merge.data.table()` didn't set column order (and therefore names) properly in some cases. Fixed now. Closes [#1290](https://github.com/Rdatatable/data.table/issues/1290). Thanks to @ChristK for the minimal example.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

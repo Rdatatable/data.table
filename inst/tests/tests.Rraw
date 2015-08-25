@@ -6715,6 +6715,20 @@ dt2 = data.table(a=4:6, y2=TRUE, y1 = FALSE)
 test(1543.6, setDF(merge(dt1, dt2, by.x="x", by.y="a")), 
              merge(as.data.frame(dt1), as.data.frame(dt2), by.x="x", by.y="a"))
 
+# fix #1290, restore colorder before setting names
+set.seed(1)
+dt1 <- data.table(sex = rep(1:2, 5), group = rep(letters[1:5], 2),V1 = sample(1:10))
+set.seed(2)
+dt2 <- data.table(group = rep(letters[1:5], 2),sex = rep(1:2, 5),V2 = sample(1:10))
+test(1543.7, setDF(merge(dt1, dt2, by = c("sex", "group"))), 
+             merge(as.data.frame(dt1), as.data.frame(dt2), by=c("sex", "group")))
+by.x = c("sex.1", "group.1")
+by.y = c("sex.2", "group.2")
+setnames(dt1, 1:2, by.x)
+setnames(dt2, 1:2, rev(by.y))
+test(1543.8, setDF(merge(dt1, dt2, by.x=by.x, by.y=by.y)), 
+             merge(as.data.frame(dt1), as.data.frame(dt2), by.x=by.x, by.y=by.y))
+
 # fix for #1258 (bug on .shallow - retains keys when it shouldn't)
 # nice catch and excellent report from @and3k
 x1 <- data.table(a1 = c('a', 'b', 'c'), a2 = c(1L, 3L, 2L))

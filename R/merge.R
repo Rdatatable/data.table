@@ -68,7 +68,8 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     }
     # X[Y] sytax puts JIS i columns at the end, merge likes them alongside i.
     newend = setdiff(names(y), by.y)
-    setcolorder(dt, c(setdiff(names(dt), newend), newend))
+    # fix for #1290, make sure by.y order is set properly before naming
+    setcolorder(dt, c(by.y, setdiff(names(dt), c(by.y, newend)), newend))
     setnames(dt, c(by.x, start, end))
     if (nrow(dt) > 0) setkeyv(dt, by.x)
     dt
