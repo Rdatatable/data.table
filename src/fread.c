@@ -425,7 +425,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     clock_t t0 = clock();
     ERANGEwarning = FALSE;  // just while detecting types, then TRUE before the read data loop
 
-    // Encoding, #568: Borrowed from do_setencoding from base R
+    // Encoding, #563: Borrowed from do_setencoding from base R
     // https://github.com/wch/r-source/blob/ca5348f0b5e3f3c2b24851d7aff02de5217465eb/src/main/util.c#L1115
     // Check for mkCharLenCE function to locate as to where where this is implemented.
     cetype_t ienc;
