@@ -6047,6 +6047,12 @@ ll = lapply(1:12, function(x) {
 ans1 = setDT(transpose(ll))
 ans2 = setDT(lapply(seq_along(ans1), function(x) sapply(ll, `[`, x)))
 test(1477.1, ans1, ans2)
+ans1 = setDT(transpose(ll[4:6]))
+ans2 = setDT(lapply(seq_along(ans1), function(x) sapply(ll[4:6], `[`, x)))
+test(1477.9, ans1, ans2)
+ans1 = setDT(transpose(ll[8:9]))
+ans2 = setDT(lapply(seq_along(ans1), function(x) sapply(ll[8:9], `[`, x)))
+test(1477.10, ans1, ans2)
 # class is preserved?
 dt = data.table(x=1:5, y=6:10)
 test(1477.2, transpose(dt), as.data.table(t(as.matrix(dt))))
@@ -6060,6 +6066,7 @@ ll = sapply(ll, paste, collapse=",")
 test(1477.5, transpose(strsplit(ll, ",", fixed=TRUE)), tstrsplit(ll, ",", fixed=TRUE))
 test(1477.6, transpose(1:5), error="l must be a list")
 test(1477.7, transpose(list(as.complex(c(1, 1+5i)))), error="Unsupported column type")
+test(1477.8, transpose(list(list(1:5))), error="Item 1 of list input is")
 
 # #480 `setDT` and 'lapply'
 ll = list(data.frame(a=1), data.frame(x=1, y=2), NULL, list())
