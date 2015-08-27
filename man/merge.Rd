@@ -15,7 +15,7 @@
 
 \usage{
 \method{merge}{data.table}(x, y, by = NULL, by.x = NULL, by.y = NULL,
-all = FALSE, all.x = all, all.y = all, suffixes = c(".x", ".y"),
+all = FALSE, all.x = all, all.y = all, sort = TRUE, suffixes = c(".x", ".y"),
 allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
 ...)
 }
@@ -53,7 +53,13 @@ allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
   \item{all.y}{
     logical; analogous to \code{all.x} above.
   }
-
+  
+  \item{sort}{
+    logical. If \code{TRUE} (default), the merged \code{data.table} is sorted 
+    by setting the key to the \code{by / by.x} columns. If \code{FALSE}, the 
+    result is not sorted.
+  }
+  
   \item{suffixes}{
     A \code{character(2)} specifying the suffixes to be used for making
     non-\code{by} column names unique. The suffix behavior works in a similar 

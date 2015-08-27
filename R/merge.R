@@ -1,5 +1,7 @@
 merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
-                             all.y = all, suffixes = c(".x", ".y"), allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
+                             all.y = all, sort = TRUE, suffixes = c(".x", ".y"), allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
+    if (!sort %in% c(TRUE, FALSE))
+      stop("Argument 'sort' should be logical TRUE/FALSE")
     if (!is.data.table(y)) {
         y = as.data.table(y)
         if (missing(by) && missing(by.x)) {
@@ -71,6 +73,8 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     # fix for #1290, make sure by.y order is set properly before naming
     setcolorder(dt, c(by.y, setdiff(names(dt), c(by.y, newend)), newend))
     setnames(dt, c(by.x, start, end))
-    if (nrow(dt) > 0) setkeyv(dt, by.x)
+    if (nrow(dt) > 0L) {
+      setkeyv(dt, if (sort) by.x else NULL)
+    }
     dt
 }
