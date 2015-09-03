@@ -3562,10 +3562,12 @@ set.seed(45)
 DT = data.table(x=c("A", "A", "C", "C"), y=1:4, z=runif(4))
 test(1137.12, DT[, lapply(.SD, sum), by=x, .SDcols=-"y"], DT[, lapply(.SD, sum), by=x, .SDcols="z"])
 
-# test for FR #5020 - print.data.table gets new argument "row.names", default=TRUE. if FALSE, the row-names don't get printed
+# test for FR #353 / R-Forge #5020 - print.data.table gets new argument "row.names", default=TRUE. if FALSE, the row-names don't get printed
 # Thanks to Eddi for `capture.output` function!
 DT <- data.table(x=1:5, y=6:10)
-test(1138, capture.output(print(DT, row.names=FALSE)), c(" x  y", " 1  6", " 2  7", " 3  8", " 4  9", " 5 10"))
+test(1138.1, capture.output(print(DT, row.names=FALSE)), c(" x  y", " 1  6", " 2  7", " 3  8", " 4  9", " 5 10"))
+DT <- data.table(x=1:101, y=6:106) # bug described in #1307
+test(1138.2, capture.output(print(DT, row.names=FALSE)), c("      x   y", "      1   6", "      2   7", "      3   8", "      4   9", "      5  10", "---        ", "     97 102", "     98 103", "     99 104", "    100 105", "    101 106"))
 
 # test for FR #2591 (format.data.table issue with column of class "formula")
 DT <- data.table(x=c(a~b, c~d+e), y=1:2)
