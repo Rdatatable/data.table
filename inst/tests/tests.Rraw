@@ -6878,6 +6878,17 @@ ans2 <- c("   s1 s2","1:  A  A","2:  B  B",
 test(1553.1, capture.output(print(DT1, quote = TRUE)), ans1)
 test(1553.2, capture.output(print(DT1)), ans2)
 
+# #826 - subset DT on single integer vector stored as matrix the same way as data.frame
+dt <- data.table(a=letters[1:10])
+idx <- c(2:4,7L,9:10)
+dim(idx) <- c(6L, 1L)
+dimnames(idx) <- list(NULL, "Resample1") # as in caret::createDataPartition
+test(1554.1, dt[idx], data.table(a=letters[idx]))
+test(1554.2, dt[-idx], data.table(a=letters[(1:10)[-idx]]))
+test(1554.3, dt[!idx], data.table(a=letters[(1:10)[-idx]]))
+test(1554.4, idx, structure(c(2L, 3L, 4L, 7L, 9L, 10L), .Dim = c(6L, 1L), .Dimnames = list(NULL, "Resample1")))
+
+
 ##########################
 
 

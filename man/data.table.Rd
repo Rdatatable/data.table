@@ -52,7 +52,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \item{x}{ A \code{data.table}.
 
 }
-  \item{i}{ Integer, logical or character vector, expression of column names, \code{list} or \code{data.table}.
+  \item{i}{ Integer, logical or character vector, expression of column names, \code{list} or \code{data.table}, single column integer \code{matrix}.
 
   integer and logical vectors work the same way they do in \code{\link{[.data.frame}}. Other than \code{NA}s in logical \code{i} are treated as \code{FALSE} and a single \code{NA} logical is not recycled to match the number of rows, as it is in \code{[.data.frame}.
 
