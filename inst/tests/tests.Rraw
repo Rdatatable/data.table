@@ -6775,6 +6775,13 @@ text="A,B\ną,ž\nū,į\nų,ė\nš,ę\n"
 test(1548.1, unique(unlist(lapply(fread(text, sep=",", header=TRUE), Encoding))), "unknown")
 test(1548.2, unique(unlist(lapply(fread(text, sep=",", header=TRUE, encoding="UTF-8"), Encoding))), "UTF-8")
 test(1548.3, fread(text, sep=",", encoding="UTF-8", data.table=FALSE), read.table(text=text, sep=",", header=TRUE, encoding="UTF-8", stringsAsFactors=FALSE))
+
+# #1167 print.data.table row id in non-scientific notation 
+DT <- data.table(a = rep(1:5,3*1e6), b = rep(letters[1:3],5*1e6))
+test(1549, capture.output(print(DT)), c("          a b", "       1: 1 a", "       2: 2 b", "       3: 3 c", "       4: 4 a", "       5: 5 b", "      ---    ", "14999996: 1 b", "14999997: 2 c", "14999998: 3 a", "14999999: 4 b", "15000000: 5 c"))
+rm(DT)
+
+
 ##########################
 
 
