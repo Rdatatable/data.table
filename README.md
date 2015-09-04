@@ -231,7 +231,9 @@
 
   61. `merge.data.table()` didn't set column order (and therefore names) properly in some cases. Fixed now. Closes [#1290](https://github.com/Rdatatable/data.table/issues/1290). Thanks to @ChristK for the minimal example.
 
-  63. Printing data.table will not print row numbers in scientific notation. Closes [#1167](https://github.com/Rdatatable/data.table/issues/1167). Thanks to @jangorecki.
+  62. print.data.table now works for 100+ rows as intended when `row.names=FALSE`. Closes [#1307](https://github.com/Rdatatable/data.table/issues/1307). Thanks to @jangorecki for the PR.
+
+  63. Row numbers are not printed in scientific format. Closes [#1167](https://github.com/Rdatatable/data.table/issues/1167). Thanks to @jangorecki for the PR.
 
 #### NOTES
 
