@@ -136,7 +136,7 @@ print.data.table <- function(x,
     }
     toprint=format.data.table(toprint, ...)
     # FR #5020 - add row.names = logical argument to print.data.table
-    if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE),":",sep="") else rownames(toprint)=rep.int("", nrow(x))
+    if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE,scientific=FALSE),":",sep="") else rownames(toprint)=rep.int("", nrow(x))
     if (is.null(names(x))) colnames(toprint)=rep("NA", ncol(toprint)) # fixes bug #4934
     if (printdots) {
         toprint = rbind(head(toprint,topn),"---"="",tail(toprint,topn))
