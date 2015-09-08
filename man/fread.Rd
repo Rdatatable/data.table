@@ -14,7 +14,7 @@ stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=1L,
 skip=0L, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
 dec=if (sep!=".") "." else ",",
-check.names=FALSE, encoding="unknown",
+check.names=FALSE, encoding="unknown", quote="\"", 
 showProgress=getOption("datatable.showProgress"),   # default: TRUE
 data.table=getOption("datatable.fread.datatable")   # default: TRUE
 )
@@ -36,6 +36,15 @@ data.table=getOption("datatable.fread.datatable")   # default: TRUE
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{base::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
   \item{dec}{ The decimal separator as in \code{base::read.csv}. If not "." (default) then usually ",". See details. }
   \item{check.names}{ default is \code{FALSE}. If \code{TRUE}, it uses the base function \code{\link{make.unique}} to ensure that column names are all unique.}
+  \item{quote}{single character value, e.g., \code{"\""} (default) or empty string (\code{""}). 
+  
+  \emph{Single character value:} \code{character} columns can be quoted by the character specified in \code{quote}, e.g., \code{...,2,"Joe Bloggs",3.14,...} or not quoted, e.g., \code{...,2,Joe Bloggs,3.14,...}. 
+
+  Spaces and other whitepace (other than \code{sep} and \code{\\n}) may appear in an unquoted character field. In essence quoting character fields are \emph{required} only if \code{sep} or \code{\\n} appears in the string value. Quoting may be used to signify that numeric data should be read as text. A quoted field must start with quote and end with a quote that is also immediately followed by \code{sep} or \code{\\n}. Thus, unescaped quotes may be present in a quoted field, e.g., \code{...,2,"Joe, "Bloggs"",3.14,...}, as well as escaped quotes, e.g., \code{...,2,"Joe \",Bloggs\"",3.14,...}. If an embedded quote is followed by the separator inside a quoted field, the embedded quotes up to that point in that field must be balanced; e.g. \code{...,2,"www.blah?x="one",y="two"",3.14,...}.
+
+  \emph{Empty string:} To disable quoting set \code{quote=""}. This is particularly useful in handling rare cases such as malformed quotes in columns, e.g., \code{...,2.3,""qq,...} or where a single double quote has a meaning, e.g., \code{...,2.3,"at the 5\" end of the gene",...} etc. \code{sep} or \code{\\n} are not escaped within quotes and would therefore could lead to undesirable behaviour or \code{warnings/errors} if present.
+
+  }
   \item{encoding}{ default is \code{"unknown"}. Other possible options are \code{"UTF-8"} and \code{"Latin-1"}.  }
   \item{showProgress}{ TRUE displays progress on the console using \code{\\r}. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. }
@@ -47,8 +56,6 @@ Once the separator is found on line \code{autostart}, the number of columns is d
 The first 5 rows, middle 5 rows and last 5 rows are then read to determine column types. The lowest type for each column is chosen from the ordered list \code{integer}, \code{integer64}, \code{double}, \code{character}. This enables \code{fread} to allocate exactly the right number of rows, with columns of the right type, up front once. The file may of course \emph{still} contain data of a different type in rows other than first, middle and last 5. In that case, the column types are bumped mid read and the data read on previous rows is coerced. Setting \code{verbose=TRUE} reports the line and field number of each mid read type bump, and how long this type bumping took (if any).
 
 There is no line length limit, not even a very large one. Since we are encouraging \code{list} columns (i.e. \code{sep2}) this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. There are no buffers used in \code{fread}'s C code at all. The field width limit is limited by R itself: the maximum width of a character string (currenly 2^31-1 bytes, 2GB).
-
-\code{character} columns can be quoted (\code{...,2,"Joe Bloggs",3.14,...}) or not quoted (\code{...,2,Joe Bloggs,3.14,...}). Spaces and other whitepace (other than \code{sep} and \code{\\n}) may appear in an unquoted character field, provided the field doesn't contain \code{sep} itself. Therefore quoting character fields is only \emph{required} if \code{sep} or \code{\\n} appears in the string value. Quoting may be used to signify that numeric data should be read as text, or specify the column type as \code{character} via \code{colClasses}). Field quoting is automatically detected and no arguments are needed to control it. A quoted field must start with quote and end with a quote that is also immediately followed by \code{sep} or \code{\\n}. Thus, unescaped quotes may be present in a quoted field (\code{...,2,"Joe, "Bloggs"",3.14,...}) as well as escaped quotes (\code{...,2,"Joe \",Bloggs\"",3.14,...}). If an embedded quote is followed by the separator inside a quoted field, the embedded quotes up to that point in that field must be balanced; e.g. \code{...,2,"www.blah?x="one",y="two"",3.14,...}.
 
 The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \code{sep2}. Separator detection is entirely driven by the file contents. This can be useful when loading a set of different files which may not be named consistently, or may not have the extension .csv despite being csv. Some datasets have been collected over many years, one file per day for example. Sometimes the file name format has changed at some point in the past or even the format of the file itself. So the idea is that you can loop \code{fread} through a set of files and as long as each file is regular and delimited, \code{fread} can read them all. Whether they all stack is another matter but at least each one is read quickly without you needing to vary \code{colClasses} in \code{read.table} or \code{read.csv}.
 

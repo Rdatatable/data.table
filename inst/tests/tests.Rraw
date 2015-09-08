@@ -6811,6 +6811,34 @@ for(k in seq_along(nastrings)) {
   test(1550 + k * 0.1, DT_fread, DT_NA)
 }
 
+# quote="" argument, FR #568
+str = "a,b\n1.5,\"at the 5\" end of the gene.\""
+ans = data.table(a = 1.5, b = "\"at the 5\" end of the gene.\"")
+test(1551.1, fread(str), error="Field 2 on line 2 starts with quote")
+test(1551.2, fread(str, quote=""), ans)
+# at the moment, quotes like these aren't handled with quote="\"":
+#1256
+str = "x,y\nx1,\"oops\" y1\n"
+ans = data.table(x = "x1", y = "\"oops\" y1")
+test(1551.3, fread(str), error="Field 2 on line 2 starts with")
+test(1551.4, fread(str, quote=""), ans)
+#1077
+str = '2,3\n""foo,bar'
+ans = data.table(V1 = c("2", "\"\"foo"), V2 = c("3", "bar"))
+test(1551.5, fread(str), error="Field 1 on line 2 starts with")
+test(1551.6, fread(str, quote=""), ans)
+#1079
+str = 'L1\tsome\tunquoted\tstuff\nL2\tsome\t"half" quoted\tstuff\nL3\tthis\t"should work"\tok thought'
+ans = data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "\"should work\""), stuff = c("stuff", "ok thought"))
+test(1551.7, fread(str), error="Field 3 on line 2 starts with")
+test(1551.8, fread(str, quote=""), ans)
+#1095
+test(1551.9, fread("issue_1095_fread.txt"), error="")
+cols = paste("V", c(38:40, 43:44), sep="")
+ans1 = fread("issue_1095_fread.txt", quote="")[, (cols) := lapply(.SD, as.logical), .SDcols=cols][]
+ans2 = read.table("issue_1095_fread.txt", sep=",", comment.char="", stringsAsFactors=FALSE, quote="")
+test(1551.10, setDF(ans1), ans2)
+
 ##########################
 
 

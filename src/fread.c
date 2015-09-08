@@ -14,6 +14,7 @@
 #include <fcntl.h>   // for open()
 #include <unistd.h>  // for close()
 #endif
+#include <signal.h> // the debugging machinery + breakpoint aidee
 
 /*****    TO DO    *****
 Restore test 1339 (balanced embedded quotes, see ?fread already updated).
@@ -70,6 +71,8 @@ static int fieldLen;
 #define NUT        8   // Number of User Types (just for colClasses where "numeric"/"double" are equivalent)
 static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "NULL", "double", "CLASS" };  // important that first 6 correspond to TypeName.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
 static int UserTypeNameMap[NUT] = { SXP_LGL, SXP_INT, SXP_INT64, SXP_REAL, SXP_STR, SXP_NULL, SXP_REAL, SXP_STR };
+// quote
+const char *quote;
 
 const char *fnam=NULL, *mmp;
 size_t filesize;
@@ -200,12 +203,12 @@ static inline int can_cast_to_na(const char* lch) {
 
 static inline void Field(int err)
 {
-    if (*ch=='\"') { // protected, now look for the next ", so long as it doesn't leave unbalanced unquoted regions
+    if (*ch==quote[0]) { // protected, now look for the next ", so long as it doesn't leave unbalanced unquoted regions
         fieldStart = ch+1;
         int eolCount=0;  // just >0 is used currently but may as well count
         Rboolean noEmbeddedEOL=FALSE, quoteProblem=FALSE;
         while(++ch<eof) {
-            if (*ch!='\"') {
+            if (*ch!=quote[0]) {
                 if (noEmbeddedEOL && *ch==eol) { quoteProblem=TRUE; break; }
                 eolCount+=(*ch==eol);
                 continue;  // fast return in most cases of characters
@@ -215,10 +218,10 @@ static inline void Field(int err)
             // " followed by sep|eol|eof dominates a field ending with \" (for support of Windows style paths)
             
             if (*(ch-1)!='\\') {
-                if (ch+1<eof && *(ch+1)=='\"') { ch++; continue; }  // skip doubled-quote
+                if (ch+1<eof && *(ch+1)==quote[0]) { ch++; continue; }  // skip doubled-quote
                 // unescaped subregion
                 if (eolCount) {ch++; quoteProblem=TRUE; break;}
-                while (++ch<eof && (*ch!='\"' || *(ch-1)=='\\') && *ch!=eol);
+                while (++ch<eof && (*ch!=quote[0] || *(ch-1)=='\\') && *ch!=eol);
                 if (ch==eof || *ch==eol) {quoteProblem=TRUE; break;}
                 noEmbeddedEOL = 1;
             }
@@ -508,7 +511,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     return(newv);
 }
 
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP showProgressArg)
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP quoteArg, SEXP showProgressArg)
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP thiscol, ans, thisstr;
@@ -519,6 +522,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
     ERANGEwarning = FALSE;  // just while detecting types, then TRUE before the read data loop
+
+    // quoteArg for those rare cases when default scenario doesn't cut it.., FR #568
+    if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
+        error("quote must either be empty or a single character");
+    quote = CHAR(STRING_ELT(quoteArg,0));
 
     // Encoding, #563: Borrowed from do_setencoding from base R
     // https://github.com/wch/r-source/blob/ca5348f0b5e3f3c2b24851d7aff02de5217465eb/src/main/util.c#L1115
@@ -545,6 +553,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (sizeof(double) != 8) error("Internal error: sizeof(double) is %d bytes, not 8.", sizeof(double));
     if (sizeof(long long) != 8) error("Internal error: sizeof(long long) is %d bytes, not 8.", sizeof(long long));
     
+    // raise(SIGINT);
     // ********************************************************************************************
     //   Check inputs.
     // ********************************************************************************************
@@ -559,8 +568,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
          ||(isString(skip) && LENGTH(skip)==1))) error("'skip' must be a length 1 vector of type numeric or integer >=0, or single character search string");
     if (!isNull(separg)) {
         if (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1) error("'sep' must be 'auto' or a single character");
-        if (*CHAR(STRING_ELT(separg,0))=='\"') error("sep='\"' is not an allowed separator");
-        if (*CHAR(STRING_ELT(separg,0)) == decChar) error("The two arguments to fread 'dec' and 'sep' are equal ('%c')", decChar);
+        if (*CHAR(STRING_ELT(separg,0))==quote[0]) error("sep = '%c' = quote, is not an allowed separator.",quote[0]);
+        if (*CHAR(STRING_ELT(separg,0)) == decChar) error("The two arguments to fread 'dec' and 'sep' are equal ('%c').", decChar);
     }
     if (!isString(integer64) || LENGTH(integer64)!=1) error("'integer64' must be a single character string");
     if (strcmp(CHAR(STRING_ELT(integer64,0)), "integer64")!=0 &&
@@ -671,7 +680,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     ch = mmp;
     while (ch<eof && *ch!='\n' && *ch!='\r') {
-        if (*ch=='\"') while(++ch<eof && *ch!='\"') {};  // allows protection of \n and \r inside column names
+        if (*ch==quote[0]) while(++ch<eof && *ch!=quote[0]) {};  // allows protection of \n and \r inside column names
         ch++;                                            // this 'if' needed in case opening protection is not closed before eof
     }
     if (ch>=eof) {
@@ -848,9 +857,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     protecti++;
     allchar=TRUE;
     for (i=0; i<ncol; i++) {
-        if (ch<eof && *ch=='\"') {
-            while(++ch<eof && (*ch!='\"' || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
-            if (ch<eof && *ch++!='\"') STOP("Internal error: quoted field ends before EOF but not with \"sep");
+        if (ch<eof && *ch==quote[0]) {
+            while(++ch<eof && (*ch!=quote[0] || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
+            if (ch<eof && *ch++!=quote[0]) STOP("Internal error: quoted field ends before EOF but not with \"sep");
         } else {                              // if field reads as double ok then it's INT/INT64/REAL; i.e., not character (and so not a column name)
             if (*ch!=sep && *ch!=eol && Strtod())  // blank column names (,,) considered character and will get default names
                 allchar=FALSE;                     // considered testing at least one isalpha, but we want 1E9 to be a value not a column name
@@ -878,7 +887,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         ch = pos;
         line++;
         for (i=0; i<ncol; i++) {
-            if (ch<eof && *ch=='\"') {ch++; ch2=ch; while(ch2<eof && (*ch2!='\"' || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) ch2++;}
+            if (ch<eof && *ch==quote[0]) {ch++; ch2=ch; while(ch2<eof && (*ch2!=quote[0] || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) ch2++;}
             else {ch2=ch; while(ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;}
             if (ch2>ch) {
                 SET_STRING_ELT(names, i, mkCharLen(ch, (int)(ch2-ch)));
@@ -886,7 +895,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 sprintf(buff,"V%d",i+1);
                 SET_STRING_ELT(names, i, mkChar(buff));
             }
-            if (ch2<eof && *ch2=='\"') ch2++;
+            if (ch2<eof && *ch2==quote[0]) ch2++;
             if (i<ncol-1) ch=++ch2;
         }
         while (ch<eof && *ch!=eol) ch++;
