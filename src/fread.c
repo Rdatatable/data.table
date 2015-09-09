@@ -150,6 +150,7 @@ static inline void init_mask() {
 static inline int can_cast_to_na(const char* lch) {
   const char *lch2 = lch;
   // nastrings==NULL => do nothing
+  // TODO: move this out of this function and into strto* functions directly?
   if(FLAG_NA_STRINGS_NULL) {
     return 0;
   }
@@ -288,8 +289,12 @@ static inline Rboolean Strtoll()
     if (lch==eof || *lch==sep || *lch==eol) {   //  ',,' or ',   ,' or '\t\t' or '\t   \t' etc => NA
         ch = lch;                               // advance global ch over empty field
         return(TRUE);                           // caller already set u.l=NA_INTEGR or u.d=NA_REAL as appropriate
-    }  
-    const char *start = lch;                          // start of [+-][0-9]+
+    }
+    // moved this if-statement to the top for #1314
+    if(can_cast_to_na(lch)) { 
+        // ch pointer already set to end of nastring by can_cast_to_na() function
+        return(TRUE);
+    }
     if (*lch=='-') { sign=0; lch++; if (*lch<'0' || *lch>'9') return(FALSE); }   // + or - symbols alone should be character
     else if (*lch=='+') { sign=1; lch++; if (*lch<'0' || *lch>'9') return(FALSE); }
     long long acc = 0;
@@ -304,10 +309,6 @@ static inline Rboolean Strtoll()
         ch = lch;
         u.l = sign ? acc : -acc;
         return(TRUE);     // either int or int64 read ok, result in u.l.  INT_MIN and INT_MAX checked by caller, as appropriate
-    }
-    if(lch == start && can_cast_to_na(lch)) {
-      // ch pointer already set to end of nastring by can_cast_to_na() function
-      return(TRUE);
     }
     return(FALSE);  // invalid integer such as "3.14", "123ABC," or "12345678901234567890" (larger than even int64) => bump type.
 }
@@ -324,6 +325,12 @@ static inline Rboolean Strtod()
     const char *lch=ch;
     while (lch<eof && isspace(*lch) && *lch!=sep && *lch!=eol) lch++;
     if (lch==eof || *lch==sep || *lch==eol) {u.d=NA_REAL; ch=lch; return(TRUE); }  // e.g. ',,' or '\t\t'
+    // moved this if-loop to top for #1314
+    if(can_cast_to_na(lch)) {
+      u.d = NA_REAL;
+      // ch pointer already set to end of nastring by can_cast_to_na() function
+      return(TRUE);
+    }
     const char *start=lch;
     errno = 0;
     u.d = strtod(start, (char **)&lch);
@@ -347,11 +354,6 @@ static inline Rboolean Strtod()
             return(TRUE);
         }
     }
-    if(lch == start && can_cast_to_na(lch)) {
-      u.d = NA_REAL;
-      // ch pointer already set to end of nastring by can_cast_to_na() function
-      return(TRUE);
-    }
     return(FALSE);     // invalid double, need to bump type.
 }
 
@@ -359,7 +361,12 @@ static inline Rboolean Strtob()
 {
     // String (T,F,True,False,TRUE or FALSE) to boolean.  These usually come from R when it writes out.
     const char *start=ch;
-    if (*ch=='T') {
+    // moved this if-statement to top for #1314
+    if(can_cast_to_na(ch)) {
+      u.b = NA_LOGICAL;
+      // ch pointer already set to end of nastring by can_cast_to_na() function
+      return(TRUE);
+    } else if (*ch=='T') {
         u.b = TRUE;
         if (++ch==eof || *ch==sep || *ch==eol) return(TRUE);
         if (*ch=='R' && *++ch=='U' && *++ch=='E' && (++ch==eof || *ch==sep || *ch==eol)) return(TRUE);
@@ -372,11 +379,6 @@ static inline Rboolean Strtob()
         if (*ch=='A' && *++ch=='L' && *++ch=='S' && *++ch=='E' && (++ch==eof || *ch==sep || *ch==eol)) return(TRUE);
         ch = start+1;
         if (*ch=='a' && *++ch=='l' && *++ch=='s' && *++ch=='e' && (++ch==eof || *ch==sep || *ch==eol)) return(TRUE);
-    }
-    else if(can_cast_to_na(ch)) {
-      u.b = NA_LOGICAL;
-      // ch pointer already set to end of nastring by can_cast_to_na() function
-      return(TRUE);
     }
     ch = start;
     return(FALSE);     // invalid boolean, need to bump type.

@@ -6839,6 +6839,17 @@ ans1 = fread("issue_1095_fread.txt", quote="")[, (cols) := lapply(.SD, as.logica
 ans2 = read.table("issue_1095_fread.txt", sep=",", comment.char="", stringsAsFactors=FALSE, quote="")
 test(1551.10, setDF(ans1), ans2)
 
+# FR #1314 rest of na.strings issue
+str = "a,b,c,d\n#N/A,+1,5.5,FALSE\n#N/A,5,6.6,TRUE\n#N/A,+1,#N/A,-999\n#N/A,#N/A,-999,FALSE\n#N/A,1,NA,TRUE"
+read_table = function(str, ...) {
+    setDT(read.table(text=str, stringsAsFactors=FALSE, comment.char="", sep=",", header=TRUE, ...))[]
+}
+test(1552.1, fread(str, na.strings="#N/A"), read_table(str, na.strings="#N/A"))
+test(1552.2, fread(str, na.strings=c("#N/A", "-999")), read_table(str, na.strings=c("#N/A", "-999")))
+test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.strings=c("#N/A", "-999", "+1")))
+test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1")))
+test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), read_table(str, na.strings=c("#N/A", "-999", "FALSE")))
+
 ##########################
 
 
