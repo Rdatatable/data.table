@@ -2433,11 +2433,13 @@ setDF <- function(x, rownames=NULL) {
     if (any(duplicated(rownames))) stop("rownames contains duplicates")
     if (is.data.table(x)) {
         # copied from as.data.frame.data.table
-        if (!is.null(rownames)) {
+        if (is.null(rownames)) {
+            rn <- .set_row_names(nrow(x))
+        }   else {
             if (length(rownames) != nrow(x))
                 stop("rownames incorrect length; expected ", nrow(x), " names, got ", length(rownames))
-            else rn <- rownames
-        }   else rn <- .set_row_names(nrow(x))
+            rn <- rownames
+        }
         setattr(x, "row.names", rn)
         setattr(x, "class", "data.frame")
         setattr(x, "sorted", NULL)
@@ -2446,7 +2448,7 @@ setDF <- function(x, rownames=NULL) {
         if (!is.null(rownames)){
             if (length(rownames) != nrow(x)) 
                 stop("rownames incorrect length; expected ", nrow(x), " names, got ", length(rownames))
-            else setattr(x, "row.names", rownames)
+            setattr(x, "row.names", rownames)
         }
         x
     } else {
@@ -2464,11 +2466,13 @@ setDF <- function(x, rownames=NULL) {
                 setattr(x, "names", xn)
             }
         }
-        if (!is.null(rownames)) {
+        if (is.null(rownames)) {
+            rn <- .set_row_names(mn)
+        } else {
             if (length(rownames) != mn)
                 stop("rownames incorrect length; expected ", mn, " names, got ", length(rownames))
-            else rn <- rownames
-        }   else rn <- .set_row_names(mn)
+            rn <- rownames
+        }
         setattr(x,"row.names", rn)
         setattr(x,"class","data.frame")
     }
