@@ -2428,15 +2428,26 @@ address <- function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
 ":=" <- function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
 
-setDF <- function(x) {
+setDF <- function(x, rownames=NULL) {
     if (!is.list(x)) stop("setDF only accepts data.table, data.frame or list of equal length as input")
+    if (any(duplicated(rownames))) stop("rownames contains duplicates")
     if (is.data.table(x)) {
         # copied from as.data.frame.data.table
-        setattr(x, "row.names", .set_row_names(nrow(x)))
+        if (!is.null(rownames)) {
+            if (length(rownames) != nrow(x))
+                stop("rownames incorrect length; expected ", nrow(x), " names, got ", length(rownames))
+            else rn <- rownames
+        }   else rn <- .set_row_names(nrow(x))
+        setattr(x, "row.names", rn)
         setattr(x, "class", "data.frame")
         setattr(x, "sorted", NULL)
         setattr(x, ".internal.selfref", NULL)
     } else if (is.data.frame(x)) {
+        if (!is.null(rownames)){
+            if (length(rownames) != nrow(x)) 
+                stop("rownames incorrect length; expected ", nrow(x), " names, got ", length(rownames))
+            else setattr(x, "row.names", rownames)
+        }
         x
     } else {
         n = vapply(x, length, 0L)
@@ -2453,7 +2464,12 @@ setDF <- function(x) {
                 setattr(x, "names", xn)
             }
         }
-        setattr(x,"row.names",.set_row_names(max(n)))
+        if (!is.null(rownames)) {
+            if (length(rownames) != mn)
+                stop("rownames incorrect length; expected ", mn, " names, got ", length(rownames))
+            else rn <- rownames
+        }   else rn <- .set_row_names(mn)
+        setattr(x,"row.names", rn)
         setattr(x,"class","data.frame")
     }
     invisible(x)
