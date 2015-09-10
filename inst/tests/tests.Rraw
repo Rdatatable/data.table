@@ -4759,6 +4759,24 @@ df <- list(1:5, 6:10)
 test(1305.4, setDF(as.data.table(df)), setDF(df))
 test(1305.5, setDF(1:5), error="setDF only accepts")
 test(1305.6, setDF(list(1, 2:3)), error="All elements in argument")
+# Tests .7 - .13 for FR #1320: setDF accepts rownames argument
+dt  <- data.table(a=1:5, b=6:10)
+df  <- data.frame(a=1:5, b=6:10)
+lst <- list(a=1:5, b=6:10)
+df2 <- data.frame(a=1:5, b=6:10)
+rownames(df2) <- LETTERS[1:5]
+test(1305.7, setDF(dt, rownames=LETTERS[1:5]), df2)
+test(1305.8, setDF(df, rownames=LETTERS[1:5]), df2)
+test(1305.9, setDF(lst,rownames=LETTERS[1:5]), df2)
+# setDF returns an error for each type if rownames incorrect length
+dt  <- data.table(a=1:5, b=6:10)
+df  <- data.frame(a=1:5, b=6:10)
+lst <- list(a=1:5, b=6:10)
+test(1305.10, setDF(dt, rownames="a"), error='rownames incorrect length')
+test(1305.11, setDF(df, rownames="a"), error='rownames incorrect length')
+test(1305.12, setDF(lst,rownames="a"), error='rownames incorrect length')
+# setDF returns an error when rownames contains duplicates
+test(1305.13, setDF(dt, rownames=rep("a",5)), error='rownames contains duplicates')
 
 # .SD retains as much of head(key) as appropriate.
 #  by= always keeps data appearance order, so it's which columns are grouped and selected that drive how much of key is retained
