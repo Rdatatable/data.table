@@ -240,6 +240,8 @@
 
   63. Row numbers are not printed in scientific format. Closes [#1167](https://github.com/Rdatatable/data.table/issues/1167). Thanks to @jangorecki for the PR.
 
+  64. Using `.GRP` unnamed in `j` now returns a variable named `GRP` instead of `.GRP` as the period was causing issues. Same for `.BY`. Closes [#1243](https://github.com/Rdatatable/data.table/issues/1243); thanks to @MichaelChirico for the PR.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
