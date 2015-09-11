@@ -2172,7 +2172,7 @@ setkey(DT,a)
 test(783, DT[,.I,by=a]$I, 1:8)
 test(784, DT[,.I[which.max(b)],by=a], data.table(a=1:4,V1=INT(2,4,6,8),key="a"))
 test(785, DT[J(2:4),.I,by=a%%2L], data.table(a=rep(0:1,c(4,2)),I=INT(3,4,7,8,5,6)))
-test(786, DT[J(c(3,2,4)),list(.I,.GRP),by=.EACHI], data.table(a=rep(c(3L,2L,4L),each=2),I=INT(5,6,3,4,7,8),.GRP=rep(1:3,each=2L)))
+test(786, DT[J(c(3,2,4)),list(.I,.GRP),by=.EACHI], data.table(a=rep(c(3L,2L,4L),each=2),I=INT(5,6,3,4,7,8),GRP=rep(1:3,each=2L)))
 test(787, DT[J(3:2),`:=`(i=.I,grp=.GRP),by=.EACHI][,list(i,grp)], data.table(i=INT(NA,NA,3:6,NA,NA),grp=INT(NA,NA,2,2,1,1,NA,NA)))
 
 # New not-join (a.k.a. not-select, since not just for data.table i but integer, logical and character too)

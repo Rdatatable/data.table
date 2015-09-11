@@ -893,7 +893,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (is.name(jsub)) {
                 # j is a single unquoted column name
                 if (jsub!=".SD") {
-                    jvnames = gsub("^[.]([NI])$","\\1",as.character(jsub))
+                    jvnames = gsub("^[.](N|I|GRP|BY)$","\\1",as.character(jsub))
                     # jsub is list()ed after it's eval'd inside dogroups.
                 }
             } else if (is.call(jsub) && as.character(jsub[[1L]]) %chin% c("list",".")) {
@@ -904,7 +904,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     if (is.null(jvnames)) jvnames = rep.int("", length(jsubl)-1L)
                     for (jj in seq.int(2L,length(jsubl))) {
                         if (jvnames[jj-1L] == "" && mode(jsubl[[jj]])=="name")
-                            jvnames[jj-1L] = gsub("^[.]([NI])$","\\1",deparse(jsubl[[jj]]))
+                            jvnames[jj-1L] = gsub("^[.](N|I|GRP|BY)$","\\1",deparse(jsubl[[jj]]))
                         # TO DO: if call to a[1] for example, then call it 'a' too
                     }
                     setattr(jsubl, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.
