@@ -60,7 +60,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 
   expression is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables) and can evaluate to any of the other types.
 
-  When \code{i} is a \code{data.table}, \code{x} must have a key. \code{i} is \emph{joined} to \code{x} using \code{x}'s key and the rows in \code{x} that match are returned. An equi-join is performed between each column in \code{i} to each column in \code{x}'s key; i.e., column 1 of \code{i} is matched to the 1st column of \code{x}'s key, column 2 to the second, etc. The match is a binary search in compiled C in O(log n) time. If \code{i} has \emph{fewer} columns than \code{x}'s key then not all of {x}'s key columns will be joined to (a common use case) and many rows of \code{x} will (ordinarily) match to each row of \code{i}. If \code{i} has \emph{more} columns than \code{x}'s key, the columns of \code{i} not involved in the join are included in the result. If \code{i} also has a key, it is \code{i}'s key columns that are used to match to \code{x}'s key columns (column 1 of \code{i}'s key is joined to column 1 of \code{x}'s key, column 2 of \code{i}'s key to column 2 of \code{x}'s key, and so on for as long as the shorter key) and a binary merge of the two tables is carried out. In all joins the names of the columns are irrelevant; the columns of \code{x}'s key are joined to in order, either from column 1 onwards of \code{i} when \code{i} is unkeyed, or from column 1 onwards of \code{i}'s key. In code, the number of join columns is determined by \code{min(length(key(x)),if (haskey(i)) length(key(i)) else ncol(i))}.
+  When \code{i} is a \code{data.table}, \code{x} must have a key. \code{i} is \emph{joined} to \code{x} using \code{x}'s key and the rows in \code{x} that match are returned. An equi-join is performed between each column in \code{i} to each column in \code{x}'s key; i.e., column 1 of \code{i} is matched to the 1st column of \code{x}'s key, column 2 to the second, etc. The match is a binary search in compiled C in O(log n) time. If \code{i} has \emph{fewer} columns than \code{x}'s key then not all of {x}'s key columns will be joined to (a common use case) and many rows of \code{x} will (ordinarily) match to each row of \code{i}. If \code{i} has \emph{more} columns than \code{x}'s key, the columns of \code{i} not involved in the join are included in the result. If any of these column names conflict with an existing column name in \code{x}, then the conflicting columns from \code{i} will be prefixed with \code{i.}. If \code{i} also has a key, it is \code{i}'s key columns that are used to match to \code{x}'s key columns (column 1 of \code{i}'s key is joined to column 1 of \code{x}'s key, column 2 of \code{i}'s key to column 2 of \code{x}'s key, and so on for as long as the shorter key) and a binary merge of the two tables is carried out. In all joins the names of the columns are irrelevant; the columns of \code{x}'s key are joined to in order, either from column 1 onwards of \code{i} when \code{i} is unkeyed, or from column 1 onwards of \code{i}'s key. In code, the number of join columns is determined by \code{min(length(key(x)),if (haskey(i)) length(key(i)) else ncol(i))}.
   
   All types of `i` may be prefixed with \code{!}. This signals a \emph{not-join} or \emph{not-select} should be performed. Throughout \code{data.table} documentation, where we refer to the type of `i`, we mean the type of `i` \emph{after} the `!`, if present. See examples.
 
@@ -137,7 +137,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \item{rolltolast}{ Deprecated. Setting \code{rolltolast=TRUE} is converted to \code{roll=TRUE;rollends=FALSE} for backwards compatibility.
   
 }
-  \item{on}{ A named atomic vector of column names indicating which columns in \code{i} should be joined to which columns in \code{x}. See \code{Examples}.}
+  \item{on}{ A named atomic vector of column names indicating which columns in \code{i} should be joined to which columns in \code{x}, of the form \code{c(name_in_x = name_in_y)}. See \code{Examples}.}
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time :
@@ -288,9 +288,11 @@ DT[!.("b",3)]              # same result but much faster
 # new feature: 'on' argument, from v1.9.6+
 DT1 = data.table(x=c("c", "a", "b", "a", "b"), a=1:5)
 DT2 = data.table(x=c("d", "c", "b"), mul=6:8)
+DT3 = data.table(y=c("d", "c", "b"), mul=6:8)
 
 DT1[DT2, on=c(x="x")] # join on columns 'x'
 DT1[DT2, on="x"] # same as above
+DT1[DT3, on=c(x="y")] # same as above, with "y" in DT3 being mapped to "x" in DT1
 DT1[DT2, .(sum(a) * mul), by=.EACHI, on="x"] # using by=.EACHI
 DT1[DT2, .(sum(a) * mul), by=.EACHI, on="x", nomatch=0L] # using by=.EACHI
 
