@@ -99,7 +99,7 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, v
     if (verbose) {last.started.at=proc.time()[3];cat("Starting bmerge ...");flush.console()}
     .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), io<-haskey(i), xo, roll, rollends, nomatch, f__, len__, allLen1)
     # NB: io<-haskey(i) necessary for test 579 where the := above change the factor to character and remove i's key
-    if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+    if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
 
     # in the caller's shallow copy,  see comment at the top of this function for usage
     # We want to leave the coercions to i in place otherwise, since the caller depends on that to build the result

@@ -14,6 +14,7 @@
 #include <fcntl.h>   // for open()
 #include <unistd.h>  // for close()
 #endif
+#include <signal.h> // the debugging machinery + breakpoint aidee
 
 /*****    TO DO    *****
 Restore test 1339 (balanced embedded quotes, see ?fread already updated).
@@ -70,6 +71,8 @@ static int fieldLen;
 #define NUT        8   // Number of User Types (just for colClasses where "numeric"/"double" are equivalent)
 static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "NULL", "double", "CLASS" };  // important that first 6 correspond to TypeName.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
 static int UserTypeNameMap[NUT] = { SXP_LGL, SXP_INT, SXP_INT64, SXP_REAL, SXP_STR, SXP_NULL, SXP_REAL, SXP_STR };
+// quote
+const char *quote;
 
 const char *fnam=NULL, *mmp;
 size_t filesize;
@@ -102,15 +105,111 @@ void STOP(const char *format, ...) {
     closeFile();  // some errors point to data in the file, hence via msg buffer first
     error(msg);
 }
+// ********************************************************************************************
+// NA handling.
+// algorithm is following
+// 1) Strto*() checks whether we can convert substring into given * type
+// 2) If not, we try to iteratively char-by-char starting from begining of the substring 
+// look forward for maximum max(nchar(nastrings)) symbols:
+// ********************************************************************************************
+// max_na_nchar = max(nchar(nastrings))
+// lch = pointer to begining of substring we want to check
+// for (i in 0:max_na_nchar) {
+//   ch = lch[i]
+//   if( any of nastrings contain ch at position i)
+//      continue
+//   else return FALSE
+// }
+// return TRUE
+// ********************************************************************************************
+// for checking "if" condition we manage mask "na_mask" with length na_len = length(nastrings). 
+// 1 on mask position i means that nastring[i] is still candidate for given substring.
+// 0 means this substring can't be casted into nastring[i], so nastring[i] is not candidate.
+int *NA_MASK;
+// means nastrings == 0; will do nothing with nastrings
+int FLAG_NA_STRINGS_NULL;
+const char **NA_STRINGS;
+int NA_MAX_NCHAR;
+int NASTRINGS_LEN;
+int *EACH_NA_STRING_LEN;
+// calculates maximum string length for a given R character vector
+int get_maxlen(SEXP char_vec) {
+  int maxlen = -1;
+  int cur_len;
+  for (int i=0; i< LENGTH(char_vec); i++) {
+    cur_len = strlen(CHAR(STRING_ELT(char_vec, i)));
+    maxlen = (cur_len > maxlen) ? cur_len : maxlen;
+  }
+  return maxlen;
+}
+// initialize mask. At the begining we assume any nastring can be candidate.
+static inline void init_mask() {
+  for(int i = 0; i < NASTRINGS_LEN; i++)
+    NA_MASK[i] = 1;
+}
+static inline int can_cast_to_na(const char* lch) {
+  const char *lch2 = lch;
+  // nastrings==NULL => do nothing
+  // TODO: move this out of this function and into strto* functions directly?
+  if(FLAG_NA_STRINGS_NULL) {
+    return 0;
+  }
+  init_mask();
+  // check whether mask contains any candidates which still potentially can be casted to NA
+  int non_zero_left = NASTRINGS_LEN;
+  //case when lch is empty string!
+  int na_found_flag = 1;
+  int pos = 0;
+  int j;
+  const char *nastring_iter;
+  // look for possible NA strings:
+  // max forward symbols = max length of the nastring template
+  while (pos < NA_MAX_NCHAR && lch2 != eof && *lch2 != sep && *lch2 != eol) {
+    j = 0;
+    na_found_flag = 0;
+    // check whether any of the nastrings template contains current (i-th forward) symbol at i-th forward positions
+    // iterate through nastrings
+    while( j < NASTRINGS_LEN && non_zero_left > 0 ) {
+      // not marked before
+      if( NA_MASK[j] != 0) {
+        nastring_iter = NA_STRINGS[j];
+        // nastring[j] candidate founded
+        if(EACH_NA_STRING_LEN[j] == pos + 1 && nastring_iter[pos] == *lch2) {
+          na_found_flag = 1;
+        }
+        // nastring[j] candidate has smaller length than we are looking
+        // or doesn't contain necessary symbol at position we are cheking
+        if(EACH_NA_STRING_LEN[j] < pos + 1 || nastring_iter[pos] != *lch2) {
+          NA_MASK[j] = 0;
+          non_zero_left--;
+        }
+      }
+      j++;
+    }
+    //all elements of mask == 0 means we can't convert tested substring to NA
+    if(non_zero_left == 0) {
+      return 0;
+    }
+    pos++;
+    lch2++;
+  }
+  // found delimiter after right NA candidate or empty string
+  if(na_found_flag && (lch2 == eof || *lch2 == sep || *lch2 == eol)) {
+    ch = lch2;
+    return 1;
+  }
+  else return 0;
+}
+// ********************************************************************************************
 
 static inline void Field(int err)
 {
-    if (*ch=='\"') { // protected, now look for the next ", so long as it doesn't leave unbalanced unquoted regions
+    if (*ch==quote[0]) { // protected, now look for the next ", so long as it doesn't leave unbalanced unquoted regions
         fieldStart = ch+1;
         int eolCount=0;  // just >0 is used currently but may as well count
         Rboolean noEmbeddedEOL=FALSE, quoteProblem=FALSE;
         while(++ch<eof) {
-            if (*ch!='\"') {
+            if (*ch!=quote[0]) {
                 if (noEmbeddedEOL && *ch==eol) { quoteProblem=TRUE; break; }
                 eolCount+=(*ch==eol);
                 continue;  // fast return in most cases of characters
@@ -120,10 +219,10 @@ static inline void Field(int err)
             // " followed by sep|eol|eof dominates a field ending with \" (for support of Windows style paths)
             
             if (*(ch-1)!='\\') {
-                if (ch+1<eof && *(ch+1)=='\"') { ch++; continue; }  // skip doubled-quote
+                if (ch+1<eof && *(ch+1)==quote[0]) { ch++; continue; }  // skip doubled-quote
                 // unescaped subregion
                 if (eolCount) {ch++; quoteProblem=TRUE; break;}
-                while (++ch<eof && (*ch!='\"' || *(ch-1)=='\\') && *ch!=eol);
+                while (++ch<eof && (*ch!=quote[0] || *(ch-1)=='\\') && *ch!=eol);
                 if (ch==eof || *ch==eol) {quoteProblem=TRUE; break;}
                 noEmbeddedEOL = 1;
             }
@@ -190,8 +289,12 @@ static inline Rboolean Strtoll()
     if (lch==eof || *lch==sep || *lch==eol) {   //  ',,' or ',   ,' or '\t\t' or '\t   \t' etc => NA
         ch = lch;                               // advance global ch over empty field
         return(TRUE);                           // caller already set u.l=NA_INTEGR or u.d=NA_REAL as appropriate
-    }  
-    const char *start = lch;                          // start of [+-][0-9]+
+    }
+    // moved this if-statement to the top for #1314
+    if(can_cast_to_na(lch)) { 
+        // ch pointer already set to end of nastring by can_cast_to_na() function
+        return(TRUE);
+    }
     if (*lch=='-') { sign=0; lch++; if (*lch<'0' || *lch>'9') return(FALSE); }   // + or - symbols alone should be character
     else if (*lch=='+') { sign=1; lch++; if (*lch<'0' || *lch>'9') return(FALSE); }
     long long acc = 0;
@@ -200,16 +303,12 @@ static inline Rboolean Strtoll()
         acc += *lch-'0';      // have assumed compiler will optimize the constant expression (LLONG_MAX-10)/10
         lch++;                // TO DO can remove lch<eof when last row is specialized in case of no final eol
     }
-    int len = lch-start;
+    //int len = lch-start;
     //Rprintf("Strtoll field '%.*s' has len %d\n", lch-ch+1, ch, len);
     if (lch==eof || *lch==sep || *lch==eol) {   // only if field fully consumed (e.g. not ,123456A,)
         ch = lch;
         u.l = sign ? acc : -acc;
         return(TRUE);     // either int or int64 read ok, result in u.l.  INT_MIN and INT_MAX checked by caller, as appropriate
-    }
-    if (len==0 && lch<eof-1 && *lch++=='N' && *lch++=='A' && (lch==eof || *lch==sep || *lch==eol)) {   // ',NA,'
-        ch = lch;       // advance over NA
-        return(TRUE);   // NA_INTEGER or NA_REAL (for SXP_INT64) was already set by caller
     }
     return(FALSE);  // invalid integer such as "3.14", "123ABC," or "12345678901234567890" (larger than even int64) => bump type.
 }
@@ -226,6 +325,12 @@ static inline Rboolean Strtod()
     const char *lch=ch;
     while (lch<eof && isspace(*lch) && *lch!=sep && *lch!=eol) lch++;
     if (lch==eof || *lch==sep || *lch==eol) {u.d=NA_REAL; ch=lch; return(TRUE); }  // e.g. ',,' or '\t\t'
+    // moved this if-loop to top for #1314
+    if(can_cast_to_na(lch)) {
+      u.d = NA_REAL;
+      // ch pointer already set to end of nastring by can_cast_to_na() function
+      return(TRUE);
+    }
     const char *start=lch;
     errno = 0;
     u.d = strtod(start, (char **)&lch);
@@ -249,11 +354,6 @@ static inline Rboolean Strtod()
             return(TRUE);
         }
     }
-    if (lch==start && lch<eof-1 && *lch++=='N' && *lch++=='A' && (lch==eof || *lch==sep || *lch==eol)) {
-        ch = lch;
-        u.d = NA_REAL;
-        return(TRUE);
-    }
     return(FALSE);     // invalid double, need to bump type.
 }
 
@@ -261,7 +361,12 @@ static inline Rboolean Strtob()
 {
     // String (T,F,True,False,TRUE or FALSE) to boolean.  These usually come from R when it writes out.
     const char *start=ch;
-    if (*ch=='T') {
+    // moved this if-statement to top for #1314
+    if(can_cast_to_na(ch)) {
+      u.b = NA_LOGICAL;
+      // ch pointer already set to end of nastring by can_cast_to_na() function
+      return(TRUE);
+    } else if (*ch=='T') {
         u.b = TRUE;
         if (++ch==eof || *ch==sep || *ch==eol) return(TRUE);
         if (*ch=='R' && *++ch=='U' && *++ch=='E' && (++ch==eof || *ch==sep || *ch==eol)) return(TRUE);
@@ -274,11 +379,6 @@ static inline Rboolean Strtob()
         if (*ch=='A' && *++ch=='L' && *++ch=='S' && *++ch=='E' && (++ch==eof || *ch==sep || *ch==eol)) return(TRUE);
         ch = start+1;
         if (*ch=='a' && *++ch=='l' && *++ch=='s' && *++ch=='e' && (++ch==eof || *ch==sep || *ch==eol)) return(TRUE);
-    }
-    else if (ch==eof || *ch==sep || *ch==eol ||
-             (ch<eof-1 && *ch=='N' && *++ch=='A' && (++ch==eof || *ch==sep || *ch==eol))) {
-        u.b = NA_LOGICAL;
-        return(TRUE);
     }
     ch = start;
     return(FALSE);     // invalid boolean, need to bump type.
@@ -413,7 +513,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     return(newv);
 }
 
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP showProgressArg)
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP quoteArg, SEXP showProgressArg)
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP thiscol, ans, thisstr;
@@ -424,6 +524,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
     ERANGEwarning = FALSE;  // just while detecting types, then TRUE before the read data loop
+
+    // quoteArg for those rare cases when default scenario doesn't cut it.., FR #568
+    if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
+        error("quote must either be empty or a single character");
+    quote = CHAR(STRING_ELT(quoteArg,0));
 
     // Encoding, #563: Borrowed from do_setencoding from base R
     // https://github.com/wch/r-source/blob/ca5348f0b5e3f3c2b24851d7aff02de5217465eb/src/main/util.c#L1115
@@ -450,6 +555,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (sizeof(double) != 8) error("Internal error: sizeof(double) is %d bytes, not 8.", sizeof(double));
     if (sizeof(long long) != 8) error("Internal error: sizeof(long long) is %d bytes, not 8.", sizeof(long long));
     
+    // raise(SIGINT);
     // ********************************************************************************************
     //   Check inputs.
     // ********************************************************************************************
@@ -464,8 +570,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
          ||(isString(skip) && LENGTH(skip)==1))) error("'skip' must be a length 1 vector of type numeric or integer >=0, or single character search string");
     if (!isNull(separg)) {
         if (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1) error("'sep' must be 'auto' or a single character");
-        if (*CHAR(STRING_ELT(separg,0))=='\"') error("sep='\"' is not an allowed separator");
-        if (*CHAR(STRING_ELT(separg,0)) == decChar) error("The two arguments to fread 'dec' and 'sep' are equal ('%c')", decChar);
+        if (*CHAR(STRING_ELT(separg,0))==quote[0]) error("sep = '%c' = quote, is not an allowed separator.",quote[0]);
+        if (*CHAR(STRING_ELT(separg,0)) == decChar) error("The two arguments to fread 'dec' and 'sep' are equal ('%c').", decChar);
     }
     if (!isString(integer64) || LENGTH(integer64)!=1) error("'integer64' must be a single character string");
     if (strcmp(CHAR(STRING_ELT(integer64,0)), "integer64")!=0 &&
@@ -474,7 +580,23 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         strcmp(CHAR(STRING_ELT(integer64,0)), "character")!=0)
         error("integer64='%s' which isn't 'integer64'|'double'|'numeric'|'character'", CHAR(STRING_ELT(integer64,0)));
     if (!isNull(select) && !isNull(drop)) error("Supply either 'select' or 'drop' but not both");
-
+    // ********************************************************************************************
+    //   NA handling preparations
+    // ********************************************************************************************
+    if( ! isNull(nastrings)) {
+      FLAG_NA_STRINGS_NULL = 0;
+      NASTRINGS_LEN = LENGTH(nastrings);
+      NA_MASK = (int *)malloc(NASTRINGS_LEN * sizeof(int));
+      NA_MAX_NCHAR = get_maxlen(nastrings);
+      NA_STRINGS = malloc(NASTRINGS_LEN * sizeof(char *));
+      EACH_NA_STRING_LEN = malloc(NASTRINGS_LEN * sizeof(int));
+      for (int i = 0; i < NASTRINGS_LEN; i++) {
+        NA_STRINGS[i] = CHAR(STRING_ELT(nastrings, i));
+        EACH_NA_STRING_LEN[i] = strlen(CHAR(STRING_ELT(nastrings, i)));
+      }
+    } else {
+      FLAG_NA_STRINGS_NULL = 1;
+    }
     // ********************************************************************************************
     //   Point to text input, or open and mmap file
     // ********************************************************************************************
@@ -560,7 +682,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     ch = mmp;
     while (ch<eof && *ch!='\n' && *ch!='\r') {
-        if (*ch=='\"') while(++ch<eof && *ch!='\"') {};  // allows protection of \n and \r inside column names
+        if (*ch==quote[0]) while(++ch<eof && *ch!=quote[0]) {};  // allows protection of \n and \r inside column names
         ch++;                                            // this 'if' needed in case opening protection is not closed before eof
     }
     if (ch>=eof) {
@@ -737,13 +859,14 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     protecti++;
     allchar=TRUE;
     for (i=0; i<ncol; i++) {
-        if (ch<eof && *ch=='\"') {
-            while(++ch<eof && (*ch!='\"' || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
-            if (ch<eof && *ch++!='\"') STOP("Internal error: quoted field ends before EOF but not with \"sep");
+        if (ch<eof && *ch==quote[0]) {
+            while(++ch<eof && (*ch!=quote[0] || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
+            if (ch<eof && *ch++!=quote[0]) STOP("Internal error: quoted field ends before EOF but not with \"sep");
         } else {                              // if field reads as double ok then it's INT/INT64/REAL; i.e., not character (and so not a column name)
             if (*ch!=sep && *ch!=eol && Strtod())  // blank column names (,,) considered character and will get default names
                 allchar=FALSE;                     // considered testing at least one isalpha, but we want 1E9 to be a value not a column name
-            else while(ch<eof && *ch!=eol && *ch!=sep) ch++;  // skip over unquoted character field
+            else 
+                while(ch<eof && *ch!=eol && *ch!=sep) ch++;  // skip over unquoted character field
         }
         if (i<ncol-1) {   // not the last column (doesn't have a separator after it)
             if (ch<eof && *ch!=sep) STOP("Unexpected character ending field %d of line %d: %.*s", i+1, line, ch-pos+5, pos);
@@ -766,7 +889,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         ch = pos;
         line++;
         for (i=0; i<ncol; i++) {
-            if (ch<eof && *ch=='\"') {ch++; ch2=ch; while(ch2<eof && (*ch2!='\"' || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) ch2++;}
+            if (ch<eof && *ch==quote[0]) {ch++; ch2=ch; while(ch2<eof && (*ch2!=quote[0] || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) ch2++;}
             else {ch2=ch; while(ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;}
             if (ch2>ch) {
                 SET_STRING_ELT(names, i, mkCharLen(ch, (int)(ch2-ch)));
@@ -774,7 +897,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 sprintf(buff,"V%d",i+1);
                 SET_STRING_ELT(names, i, mkChar(buff));
             }
-            if (ch2<eof && *ch2=='\"') ch2++;
+            if (ch2<eof && *ch2==quote[0]) ch2++;
             if (i<ncol-1) ch=++ch2;
         }
         while (ch<eof && *ch!=eol) ch++;
@@ -1133,9 +1256,14 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (verbose) Rprintf("Read %d rows. Exactly what was estimated and allocated up front\n", i);
     }
     for (j=0; j<ncol-numNULL; j++) SETLENGTH(VECTOR_ELT(ans,j), nrow);
-    
+    // release memory from NA handling operations
+    if(!FLAG_NA_STRINGS_NULL) {
+      free(NA_MASK);
+      free(NA_STRINGS);
+      free(EACH_NA_STRING_LEN);
+    }
     // ********************************************************************************************
-    //   Convert na.strings to NA
+    //   Convert na.strings to NA for character columns
     // ********************************************************************************************
     for (k=0; k<length(nastrings); k++) {
         thisstr = STRING_ELT(nastrings,k);

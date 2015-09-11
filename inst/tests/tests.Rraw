@@ -2438,8 +2438,9 @@ DT[4,e:=NaN]  # write.table writes NaN as NA, though, and all.equal considers Na
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
 test(880, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
 test(881, fread(f), DT)
+# test that columns are not coerced if nastring=NULL
 DT[3,d:="NA"]
-test(882, fread(f,na.strings=NULL), DT)
+test(882, fread(f,na.strings=NULL)[['d']], DT[['d']])
 DT[3,d:=NA_character_]
 unlink(f)
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=TRUE)
@@ -3562,10 +3563,12 @@ set.seed(45)
 DT = data.table(x=c("A", "A", "C", "C"), y=1:4, z=runif(4))
 test(1137.12, DT[, lapply(.SD, sum), by=x, .SDcols=-"y"], DT[, lapply(.SD, sum), by=x, .SDcols="z"])
 
-# test for FR #5020 - print.data.table gets new argument "row.names", default=TRUE. if FALSE, the row-names don't get printed
+# test for FR #353 / R-Forge #5020 - print.data.table gets new argument "row.names", default=TRUE. if FALSE, the row-names don't get printed
 # Thanks to Eddi for `capture.output` function!
 DT <- data.table(x=1:5, y=6:10)
-test(1138, capture.output(print(DT, row.names=FALSE)), c(" x  y", " 1  6", " 2  7", " 3  8", " 4  9", " 5 10"))
+test(1138.1, capture.output(print(DT, row.names=FALSE)), c(" x  y", " 1  6", " 2  7", " 3  8", " 4  9", " 5 10"))
+DT <- data.table(x=1:101, y=6:106) # bug described in #1307
+test(1138.2, capture.output(print(DT, row.names=FALSE)), c("      x   y", "      1   6", "      2   7", "      3   8", "      4   9", "      5  10", "---        ", "     97 102", "     98 103", "     99 104", "    100 105", "    101 106"))
 
 # test for FR #2591 (format.data.table issue with column of class "formula")
 DT <- data.table(x=c(a~b, c~d+e), y=1:2)
@@ -4756,6 +4759,24 @@ df <- list(1:5, 6:10)
 test(1305.4, setDF(as.data.table(df)), setDF(df))
 test(1305.5, setDF(1:5), error="setDF only accepts")
 test(1305.6, setDF(list(1, 2:3)), error="All elements in argument")
+# Tests .7 - .13 for FR #1320: setDF accepts rownames argument
+dt  <- data.table(a=1:5, b=6:10)
+df  <- data.frame(a=1:5, b=6:10)
+lst <- list(a=1:5, b=6:10)
+df2 <- data.frame(a=1:5, b=6:10)
+rownames(df2) <- LETTERS[1:5]
+test(1305.7, setDF(dt, rownames=LETTERS[1:5]), df2)
+test(1305.8, setDF(df, rownames=LETTERS[1:5]), df2)
+test(1305.9, setDF(lst,rownames=LETTERS[1:5]), df2)
+# setDF returns an error for each type if rownames incorrect length
+dt  <- data.table(a=1:5, b=6:10)
+df  <- data.frame(a=1:5, b=6:10)
+lst <- list(a=1:5, b=6:10)
+test(1305.10, setDF(dt, rownames="a"), error='rownames incorrect length')
+test(1305.11, setDF(df, rownames="a"), error='rownames incorrect length')
+test(1305.12, setDF(lst,rownames="a"), error='rownames incorrect length')
+# setDF returns an error when rownames contains duplicates
+test(1305.13, setDF(dt, rownames=rep("a",5)), error='rownames contains duplicates')
 
 # .SD retains as much of head(key) as appropriate.
 #  by= always keeps data appearance order, so it's which columns are grouped and selected that drive how much of key is retained
@@ -6775,6 +6796,78 @@ text="A,B\ną,ž\nū,į\nų,ė\nš,ę\n"
 test(1548.1, unique(unlist(lapply(fread(text, sep=",", header=TRUE), Encoding))), "unknown")
 test(1548.2, unique(unlist(lapply(fread(text, sep=",", header=TRUE, encoding="UTF-8"), Encoding))), "UTF-8")
 test(1548.3, fread(text, sep=",", encoding="UTF-8", data.table=FALSE), read.table(text=text, sep=",", header=TRUE, encoding="UTF-8", stringsAsFactors=FALSE))
+
+# #1167 print.data.table row id in non-scientific notation 
+DT <- data.table(a = rep(1:5,3*1e6), b = rep(letters[1:3],5*1e6))
+test(1549, capture.output(print(DT)), c("          a b", "       1: 1 a", "       2: 2 b", "       3: 3 c", "       4: 4 a", "       5: 5 b", "      ---    ", "14999996: 1 b", "14999997: 2 c", "14999998: 3 a", "14999999: 4 b", "15000000: 5 c"))
+rm(DT)
+
+# PR by @dselivanov
+# fixes #504 - handle nastring while reading (without coercion to character) 
+# Note: this doesn't address cases like na.strings="-999" yet. See https://github.com/Rdatatable/data.table/pull/1236 for those examples.
+K = 10L
+nastrings = c('null', 'NULL', 'na', '_NA', 'NA', 'nan', 'Nan', 'NAN', 'NaN')
+DT = data.table(int = 1:K, 
+                 char = sample(letters, size = K, replace = T), 
+                 float = 1:K + 0.1, 
+                 bool = sample( c(T, F), K, replace = T))
+
+DT_NA = DT
+for (j in seq_len( ncol(DT) )) {
+  set(x = DT_NA, i = j, j = j, value = NA)
+}
+
+for(k in seq_along(nastrings)) {
+  dt0 = copy(DT)
+  for (j in seq_len( ncol(DT) )) {
+    set(x = dt0, i = NULL, j = j, value = as.character(dt0[[j]]))
+    set(x = dt0, i = j, j = j, value = nastrings[[k]])
+  }
+  str = do.call(paste, c(dt0, collapse="\n", sep=","))
+  str = paste(paste(names(dt0), collapse=","), str, sep="\n")
+  DT_fread = fread(str, na.strings = nastrings, verbose = FALSE)
+  test(1550 + k * 0.1, DT_fread, DT_NA)
+}
+
+# quote="" argument, FR #568
+str = "a,b\n1.5,\"at the 5\" end of the gene.\""
+ans = data.table(a = 1.5, b = "\"at the 5\" end of the gene.\"")
+test(1551.1, fread(str), error="Field 2 on line 2 starts with quote")
+test(1551.2, fread(str, quote=""), ans)
+# at the moment, quotes like these aren't handled with quote="\"":
+#1256
+str = "x,y\nx1,\"oops\" y1\n"
+ans = data.table(x = "x1", y = "\"oops\" y1")
+test(1551.3, fread(str), error="Field 2 on line 2 starts with")
+test(1551.4, fread(str, quote=""), ans)
+#1077
+str = '2,3\n""foo,bar'
+ans = data.table(V1 = c("2", "\"\"foo"), V2 = c("3", "bar"))
+test(1551.5, fread(str), error="Field 1 on line 2 starts with")
+test(1551.6, fread(str, quote=""), ans)
+#1079
+str = 'L1\tsome\tunquoted\tstuff\nL2\tsome\t"half" quoted\tstuff\nL3\tthis\t"should work"\tok thought'
+ans = data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "\"should work\""), stuff = c("stuff", "ok thought"))
+test(1551.7, fread(str), error="Field 3 on line 2 starts with")
+test(1551.8, fread(str, quote=""), ans)
+#1095
+test(1551.9, fread("issue_1095_fread.txt"), error="")
+cols = paste("V", c(38:40, 43:44), sep="")
+ans1 = fread("issue_1095_fread.txt", quote="")[, (cols) := lapply(.SD, as.logical), .SDcols=cols][]
+ans2 = read.table("issue_1095_fread.txt", sep=",", comment.char="", stringsAsFactors=FALSE, quote="")
+test(1551.10, setDF(ans1), ans2)
+
+# FR #1314 rest of na.strings issue
+str = "a,b,c,d\n#N/A,+1,5.5,FALSE\n#N/A,5,6.6,TRUE\n#N/A,+1,#N/A,-999\n#N/A,#N/A,-999,FALSE\n#N/A,1,NA,TRUE"
+read_table = function(str, ...) {
+    setDT(read.table(text=str, stringsAsFactors=FALSE, comment.char="", sep=",", header=TRUE, ...))[]
+}
+test(1552.1, fread(str, na.strings="#N/A"), read_table(str, na.strings="#N/A"))
+test(1552.2, fread(str, na.strings=c("#N/A", "-999")), read_table(str, na.strings=c("#N/A", "-999")))
+test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.strings=c("#N/A", "-999", "+1")))
+test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1")))
+test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), read_table(str, na.strings=c("#N/A", "-999", "FALSE")))
+
 ##########################
 
 
