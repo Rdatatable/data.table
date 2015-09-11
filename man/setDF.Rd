@@ -7,14 +7,17 @@
   A helper function to convert a \code{data.table} or \code{list} of equal length to \code{data.frame} by reference.
 }
 \usage{
-setDF(x)
+setDF(x, rownames=NULL)
 }
 \arguments{
   \item{x}{ A \code{data.table}, \code{data.frame} or \code{list} of equal length. }
+  \item{rownames}{ A \code{character} vector to assign as the row names of \code{x}. }
 }
 
 \details{
   This feature request came up on the data.table mailing list: \url{http://bit.ly/1xkokNQ}. All \code{data.table} attributes including any keys of the input data.table are stripped off.
+  
+  When using \code{rownames}, recall that the row names of a \code{data.frame} must be unique. By default, the assigned set of row names is simply the sequence 1, ..., \code{nrow(x)} (or \code{length(x)} for \code{list}s).
 }
 
 \value{
@@ -28,9 +31,12 @@ X = data.table(x=1:5, y=6:10)
 ## convert 'X' to data.frame, without any copy.
 setDF(X)
 
+X = data.table(x=1:5, y=6:10)
+## idem, assigning row names
+setDF(X, rownames = LETTERS[1:5])
+
 X = list(x=1:5, y=6:10)
 # X is converted to a data.frame without any copy.
 setDF(X)
 }
 \keyword{ data }
-
