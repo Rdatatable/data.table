@@ -6868,6 +6868,16 @@ test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.
 test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1")))
 test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), read_table(str, na.strings=c("#N/A", "-999", "FALSE")))
 
+# FR #1177: 'quote' option of 'print.data.table'
+DT1 <- data.table(s1=paste0(" ",LETTERS[1:5]),s2=LETTERS[1:5])
+ans1 <- c("     s1  s2","1: \" A\" \"A\"",
+          "2: \" B\" \"B\"","3: \" C\" \"C\"",
+          "4: \" D\" \"D\"","5: \" E\" \"E\"")
+ans2 <- c("   s1 s2","1:  A  A","2:  B  B",
+          "3:  C  C","4:  D  D","5:  E  E")
+test(1553.1, capture.output(print(DT1, quote = TRUE)), ans1)
+test(1553.2, capture.output(print(DT1)), ans2)
+
 ##########################
 
 

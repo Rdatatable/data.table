@@ -242,6 +242,8 @@
 
   64. Using `.GRP` unnamed in `j` now returns a variable named `GRP` instead of `.GRP` as the period was causing issues. Same for `.BY`. Closes [#1243](https://github.com/Rdatatable/data.table/issues/1243); thanks to @MichaelChirico for the PR.
 
+  65. `print.data.table` now accepts a `quote` argument defaulting to `FALSE` (_a la_ `print.data.frame` in `base`). This option surrounds all printed elements with quotes and, e.g., makes whitespace more evident. Closes [#1177](https://github.com/Rdatatable/data.table/issues/1177); thanks to @MichaelChirico for the PR.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
