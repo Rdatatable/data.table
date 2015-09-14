@@ -546,7 +546,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (locked.N) lockBinding(".N", parent.frame())
         }
         if (remove.N) rm(list=".N", envir=parent.frame())
-        if (is.matrix(i)) stop("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please let datatable-help know if you'd like this, or add your comments to FR #1611.")
+        if (is.matrix(i)) {
+            if (is.numeric(i) && ncol(i)==1L) { # #826 - subset DT on single integer vector stored as matrix
+                i = as.integer(i)
+            } else {
+                stop("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please let datatable-help know if you'd like this, or add your comments to FR #657.")
+            }
+        }
         if (is.logical(i)) {
             if (notjoin) {
                 notjoin = FALSE
