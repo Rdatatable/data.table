@@ -73,6 +73,7 @@ static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "n
 static int UserTypeNameMap[NUT] = { SXP_LGL, SXP_INT, SXP_INT64, SXP_REAL, SXP_STR, SXP_NULL, SXP_REAL, SXP_STR };
 // quote
 const char *quote;
+static int quoteStatus;
 
 const char *fnam=NULL, *mmp;
 size_t filesize;
@@ -202,14 +203,16 @@ static inline int can_cast_to_na(const char* lch) {
 }
 // ********************************************************************************************
 
-static inline void Field(int err)
+static inline void Field()
 {
-    if (*ch==quote[0]) { // protected, now look for the next ", so long as it doesn't leave unbalanced unquoted regions
+    quoteStatus=0;
+    if (*ch=='\"') { // protected, now look for the next ", so long as it doesn't leave unbalanced unquoted regions
+        quoteStatus=1;
         fieldStart = ch+1;
         int eolCount=0;  // just >0 is used currently but may as well count
         Rboolean noEmbeddedEOL=FALSE, quoteProblem=FALSE;
         while(++ch<eof) {
-            if (*ch!=quote[0]) {
+            if (*ch!='\"') {
                 if (noEmbeddedEOL && *ch==eol) { quoteProblem=TRUE; break; }
                 eolCount+=(*ch==eol);
                 continue;  // fast return in most cases of characters
@@ -219,24 +222,26 @@ static inline void Field(int err)
             // " followed by sep|eol|eof dominates a field ending with \" (for support of Windows style paths)
             
             if (*(ch-1)!='\\') {
-                if (ch+1<eof && *(ch+1)==quote[0]) { ch++; continue; }  // skip doubled-quote
+                if (ch+1<eof && *(ch+1)=='\"') { ch++; continue; }  // skip doubled-quote
                 // unescaped subregion
                 if (eolCount) {ch++; quoteProblem=TRUE; break;}
-                while (++ch<eof && (*ch!=quote[0] || *(ch-1)=='\\') && *ch!=eol);
+                while (++ch<eof && (*ch!='\"' || *(ch-1)=='\\') && *ch!=eol);
                 if (ch==eof || *ch==eol) {quoteProblem=TRUE; break;}
                 noEmbeddedEOL = 1;
             }
         }
         if (quoteProblem || ch==eof) {
-            if (!err) {
-                fieldLen = -1; // so that countfields/separator testing knows line is invalid
-                return;
-            }
-            STOP("Field %d on line %d starts with quote (\") but then has a problem. It can contain balanced unescaped quoted subregions but if it does it can't contain embedded \\n as well. Check for unbalanced unescaped quotes: %.*s", field+1, line, ch-fieldStart+1, fieldStart-1);
+            // "..." logic has failed. Delegate to normal routine instead of erroring. Solves many cases, especially when files have both proper balanced, and imbalanced quotes. I think this is more towards fread's philosophy than having an explicit 'quote' argument..
+            quoteStatus=0;
+            ch = fieldStart-1;
+        } else {
+            fieldLen = (int)(ch-fieldStart);
+            ch++; // from closing quote to rest on sep|eol|eof
         }
-        fieldLen = (int)(ch-fieldStart);
-        ch++; // from closing quote to rest on sep|eol|eof
-    } else {           // unprotected, look for next next [sep|eol]
+    }
+    if (!quoteStatus) {
+        // either "" logic failed and we're here, or we're directly here.
+        // unprotected, look for next next [sep|eol]
         if (sep==' ') {
             while(ch<eof && *ch==sep) ch++;
             fieldStart = ch;
@@ -260,12 +265,7 @@ static int countfields()
     if (*ch==eol) { ch+=eolLen; return 0; }
     while (1) {
         ncol++;
-        Field(0);
-        if (fieldLen==-1) {
-            while(ch<eof && *ch!=eol) ch++;  // advance to end of line (or next embedded \n - which we now don't know if really embedded)
-            if (ch<eof) ch+=eolLen;          // move ch to the start of the next line
-            return -1;                       // see test 1010
-        }  
+        Field();
         if (ch==eof || *ch==eol) {
             if (ch<eof) ch+=eolLen;          // move ch to the start of the next line
             return ncol;
@@ -513,7 +513,11 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     return(newv);
 }
 
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP quoteArg, SEXP showProgressArg)
+static inline void skip_spaces() {
+    while(ch<eof && *ch!=eol && *ch==' ') ch++;
+}
+
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP showProgressArg)
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP thiscol, ans, thisstr;
@@ -524,11 +528,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
     ERANGEwarning = FALSE;  // just while detecting types, then TRUE before the read data loop
-
-    // quoteArg for those rare cases when default scenario doesn't cut it.., FR #568
-    if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
-        error("quote must either be empty or a single character");
-    quote = CHAR(STRING_ELT(quoteArg,0));
 
     // Encoding, #563: Borrowed from do_setencoding from base R
     // https://github.com/wch/r-source/blob/ca5348f0b5e3f3c2b24851d7aff02de5217465eb/src/main/util.c#L1115
@@ -570,7 +569,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
          ||(isString(skip) && LENGTH(skip)==1))) error("'skip' must be a length 1 vector of type numeric or integer >=0, or single character search string");
     if (!isNull(separg)) {
         if (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1) error("'sep' must be 'auto' or a single character");
-        if (*CHAR(STRING_ELT(separg,0))==quote[0]) error("sep = '%c' = quote, is not an allowed separator.",quote[0]);
+        if (*CHAR(STRING_ELT(separg,0))=='\"') error("sep = '%c' = quote, is not an allowed separator.",'\"');
         if (*CHAR(STRING_ELT(separg,0)) == decChar) error("The two arguments to fread 'dec' and 'sep' are equal ('%c').", decChar);
     }
     if (!isString(integer64) || LENGTH(integer64)!=1) error("'integer64' must be a single character string");
@@ -682,7 +681,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     ch = mmp;
     while (ch<eof && *ch!='\n' && *ch!='\r') {
-        if (*ch==quote[0]) while(++ch<eof && *ch!=quote[0]) {};  // allows protection of \n and \r inside column names
+        if (*ch=='\"') while(++ch<eof && *ch!='\"') {};  // allows protection of \n and \r inside column names
         ch++;                                            // this 'if' needed in case opening protection is not closed before eof
     }
     if (ch>=eof) {
@@ -859,9 +858,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     protecti++;
     allchar=TRUE;
     for (i=0; i<ncol; i++) {
-        if (ch<eof && *ch==quote[0]) {
-            while(++ch<eof && (*ch!=quote[0] || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
-            if (ch<eof && *ch++!=quote[0]) STOP("Internal error: quoted field ends before EOF but not with \"sep");
+        if (ch<eof && *ch=='\"') {
+            while(++ch<eof && (*ch!='\"' || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
+            if (ch<eof && *ch++!='\"') STOP("Internal error: quoted field ends before EOF but not with \"sep");
         } else {                              // if field reads as double ok then it's INT/INT64/REAL; i.e., not character (and so not a column name)
             if (*ch!=sep && *ch!=eol && Strtod())  // blank column names (,,) considered character and will get default names
                 allchar=FALSE;                     // considered testing at least one isalpha, but we want 1E9 to be a value not a column name
@@ -889,7 +888,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         ch = pos;
         line++;
         for (i=0; i<ncol; i++) {
-            if (ch<eof && *ch==quote[0]) {ch++; ch2=ch; while(ch2<eof && (*ch2!=quote[0] || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) ch2++;}
+            if (ch<eof && *ch=='\"') {ch++; ch2=ch; while(ch2<eof && (*ch2!='\"' || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) ch2++;}
             else {ch2=ch; while(ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;}
             if (ch2>ch) {
                 SET_STRING_ELT(names, i, mkCharLen(ch, (int)(ch2-ch)));
@@ -897,7 +896,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 sprintf(buff,"V%d",i+1);
                 SET_STRING_ELT(names, i, mkChar(buff));
             }
-            if (ch2<eof && *ch2==quote[0]) ch2++;
+            if (ch2<eof && *ch2=='\"') ch2++;
             if (i<ncol-1) ch=++ch2;
         }
         while (ch<eof && *ch!=eol) ch++;
@@ -1007,9 +1006,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     if (Strtod()) break;
                     type[field]++;
                 case SXP_STR:
-                    Field(0);   // don't do err=1 here because we don't know 'line' when j=1|2. Leave error to throw in data read step.
+                    Field();   // don't do err=1 here because we don't know 'line' when j=1|2. Leave error to throw in data read step.
                 }
-                if (fieldLen==-1) { i=5; break; } // stop this j early
                 if (ch<eof && *ch==sep && field<ncol-1) {ch++; continue;}  // done, next field
                 if (field<ncol-1) {
                     if (*ch>31) STOP("Expected sep ('%c') but '%c' ends field %d when detecting types (%s): %.*s", sep, *ch, field, str, ch-lineStart+1, lineStart);
@@ -1213,7 +1211,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     if (Strtod()) { REAL(thiscol)[i] = u.d; break; }
                     SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
                 case SXP_STR: case SXP_NULL: case_SXP_STR:
-                    Field(1);
+                    Field();
                     if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLenCE(fieldStart, fieldLen, ienc));
                 }
                 if (ch<eof && *ch==sep && j<ncol-1) {ch++; continue;}  // done, next field
@@ -1223,8 +1221,15 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     // print whole line here because it's often something earlier in the line that messed up
                 }
             }
+            skip_spaces();
             //Rprintf("At end of line with i=%d and ch='%.10s'\n", i, ch);
-            while (ch<eof && *ch!=eol) ch++; // discard after end of line, but before \n. TO DO: warn about uncommented text here
+            if (ch<eof && *ch!=eol) {
+                // TODO: skip spaces here if strip.white=TRUE (arg to be added) and then check+warn
+                // TODO: warn about uncommented text here
+                error("Expecting %d cols, but line %d contains text after processing all cols. It is very likely that this is due to one or more fields having embedded sep='%c' and/or '\\n' characters within unbalanced unescaped quotes. fread cannot handle such ambiguous cases and those lines may not have been read in as expected. Please read the section on quotes in ?fread.", ncol, line, sep);
+                // discard after end of line, but before \n.
+                while (ch<eof && *ch!=eol) ch++; 
+            }
             if (ch<eof && *ch==eol) ch+=eolLen;
             pos = ch;  // start of line position only needed to include the whole line in any error message
             line++;

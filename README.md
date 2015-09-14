@@ -76,13 +76,11 @@
 
   27. `fread()` gains `encoding` argument. Acceptable values are "unknown", "UTF-8" and "Latin-1" with default value of "unknown". Closes [#563](https://github.com/Rdatatable/data.table/issues/563). Thanks to @BenMarwick for the original report and to the many requests from others, and Q on SO.
 
-  28. `fread()` gains `quote` argument with default value `"\""`. Setting `quote=""` disables (could be useful in reading columns with uneven quotes). Closes [#568](https://github.com/Rdatatable/data.table/issues/568). Also addresses/closes [#1256](https://github.com/Rdatatable/data.table/issues/1256), [#1077](https://github.com/Rdatatable/data.table/issues/1077), [#1079](https://github.com/Rdatatable/data.table/issues/1079) and [#1095](https://github.com/Rdatatable/data.table/issues/1095). Thanks to @Synergist, @daroczig, @geotheory and @rsaporta for the reports.
+  28. `setDF()` gains `rownames` argument for ready conversion to a `data.frame` with user-specified rows. Closes [#1320](https://github.com/Rdatatable/data.table/issues/1320). Thanks to @MichaelChirico for the FR and PR.
 
-  29. `setDF()` gains `rownames` argument for ready conversion to a `data.frame` with user-specified rows. Closes [#1320](https://github.com/Rdatatable/data.table/issues/1320). Thanks to @MichaelChirico for the FR and PR.
+  29. `print.data.table` gains `quote` argument (defaul=`FALSE`). This option surrounds all printed elements with quotes, helps make whitespace(s) more evident. Closes [#1177](https://github.com/Rdatatable/data.table/issues/1177); thanks to @MichaelChirico for the PR.
 
-  30. `print.data.table` gains `quote` argument (defaul=`FALSE`). This option surrounds all printed elements with quotes, helps make whitespace(s) more evident. Closes [#1177](https://github.com/Rdatatable/data.table/issues/1177); thanks to @MichaelChirico for the PR.
-
-  31. `[.data.table` now accepts single column numeric matrix in `i` argument the same way as `data.frame`. Closes [#826](https://github.com/Rdatatable/data.table/issues/826). Thanks to @jangorecki for the PR.
+  30. `[.data.table` now accepts single column numeric matrix in `i` argument the same way as `data.frame`. Closes [#826](https://github.com/Rdatatable/data.table/issues/826). Thanks to @jangorecki for the PR.
 
 #### BUG FIXES
 
@@ -108,7 +106,8 @@
       * Column headers with empty strings aren't skipped anymore. [Closes #483](https://github.com/Rdatatable/data.table/issues/483). Thanks to @RobyJoehanes and @kforner.
       * Detects separator correctly when commas also exist in text fields. Closes [#923](https://github.com/Rdatatable/data.table/issues/923). Thanks to @raymondben for the report.
       * `NA` values in NA inflated file are read properly. [Closes #737](https://github.com/Rdatatable/data.table/issues/737). Thanks to Adam Kennedy.  
-      * `fread` now correctly handles `na.strings` argument for all types of columns - it detect possible `NA` values without coercion to character, like in base `read.table`. [fixes #504](https://github.com/Rdatatable/data.table/issues/504). Thanks to @dselivanov for the PR. Also closes [#1314](https://github.com/Rdatatable/data.table/issues/1314), which closes this issue completely, i.e., `na.strings = c("-999", "FALSE")` etc. also work.
+      * correctly handles `na.strings` argument for all types of columns - it detect possible `NA` values without coercion to character, like in base `read.table`. [fixes #504](https://github.com/Rdatatable/data.table/issues/504). Thanks to @dselivanov for the PR. Also closes [#1314](https://github.com/Rdatatable/data.table/issues/1314), which closes this issue completely, i.e., `na.strings = c("-999", "FALSE")` etc. also work.
+      * deals with quotes more robustly. When reading quoted fields fail, it re-attemps to read the field as if it wasn't quoted. This helps read in those fields that might have unbalanced quotes without erroring immediately, thereby closing issues [#568](https://github.com/Rdatatable/data.table/issues/568), [#1256](https://github.com/Rdatatable/data.table/issues/1256), [#1077](https://github.com/Rdatatable/data.table/issues/1077), [#1079](https://github.com/Rdatatable/data.table/issues/1079) and [#1095](https://github.com/Rdatatable/data.table/issues/1095). Thanks to @Synergist, @daroczig, @geotheory and @rsaporta for the reports.
 
   6. Auto indexing:
       * `DT[colA == max(colA)]` now works again without needing `options(datatable.auto.index=FALSE)`. Thanks to Jan Gorecki and kaybenleroll, [#858](https://github.com/Rdatatable/data.table/issues/858). Test added.

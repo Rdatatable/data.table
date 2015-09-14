@@ -2810,9 +2810,9 @@ test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(
 # an fread error shouldn't hold a lock on the file on Windows.
 f = tempfile()
 cat('A,B\n"aa",2\n"bb,2\n"cc",3\n', file=f)  # NB: deliberate missing quote after bb.
-test(1010, fread(f), error="Field 1 on line 3.*Check for unbalanced unescaped quotes: \"bb,2")
+test(1010, fread(f), data.table(A=c("aa", "\"bb", "cc"), B=c(2L,2L,3L)))
 cat('dd",4\n',file=f,append=TRUE)   # tests file lock on Windows after error
-test(1011, fread(f), error="Field 1 on line 3.*Check for unbalanced unescaped quotes: \"bb,2")
+test(1011, fread(f), data.table(A=c("aa", "\"bb", "cc", "dd\""), B=c(2L,2L,3L,4L)))
 cat('A,B\n"aa",1\n"bb",2\n"cc",3\n', file=f)   # testing overwrite
 test(1012, fread(f), data.table(A=c("aa","bb","cc"),B=1:3))
 unlink(f)  # testing file can be removed after error
@@ -3980,8 +3980,8 @@ test(1215,
    fread('N_ID VISIT_DATE REQ_URL REQType\n175931 2013-03-08T23:40:30 http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU 1'),
    data.table(N_ID=175931L, VISIT_DATE="2013-03-08T23:40:30", REQ_URL='http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU', REQType=1L)
 )
-test(1216.1, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n'), error="Field 3 on line 2.*Check for unbalanced unescaped quotes: \"a\"b\"c\"d\"")
-test(1216.2, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,az""\n'), error="Field 3 on line 3.*Check for unbalanced unescaped quotes: \"b,az\"\"")
+test(1216.1, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n'), data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("\"a\"b\"c\"d\"", "\"b")), error="Expecting 3 cols, but line 3 contains")
+test(1216.2, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,az""\n'), data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("a\"b\"c\"d\"", "\"b")), error="Expecting 3 cols, but line 3 contains")
 test(1216.3, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,"az""\n'), 
            data.table(A=c('1.2','fo"o'), B=c('Foo"Bar','bar'),C=c('a"b"c"d"','b,"az"')))
 test(1217, fread('"One,Two","Three",Four\n12,3,4\n56,7,8\n'),  # quoted column names including the separator
@@ -4922,7 +4922,7 @@ test(1322, fread('A,B,C\n1,"foo
 bar",3\n4,baz,6'), data.table(A=c(1L,4L), B=c("foo\nbar","baz"), C=c(3L,6L)))
 # NB: don't remove the newline after foo in test 1322 above, that's what's being tested.
 test(1323, fread('col1,col2\n5,"4\n3"'), data.table(col1=5L, col2="4\n3"))
-test(1324, fread('A,B,C\n1,4,"foo"\n2,5,"bar'), error="Field 3 on line 3 starts with quote.*Check for unbalanced unescaped quotes: \"bar")
+test(1324, fread('A,B,C\n1,4,"foo"\n2,5,"bar'), data.table(A=1:2,B=4:5,C=c("foo", "\"bar")))
 test(1325, fread('A,B,C\n1,4,"foo"\n2,5,"bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar')))
 test(1326, fread('A,B,C\n1,4,"foo"\n2,5,bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar"')))
 test(1327, fread('A,B,C\n1,4,"foo"\n2,5,""bar""'), data.table(A=1:2,B=4:5,C=c("foo",'"bar"')))
@@ -4935,7 +4935,7 @@ test(1330, fread('A,B\nfoo,1\nAnalyst\\,2\nbar,3'), data.table(A=c('foo','Analys
 test(1331, fread('A,B\nfoo,1\nAnalyst\\ ,2\nbar,3'), data.table(A=c('foo','Analyst\\ ','bar'), B=1:3))
 test(1332, fread('A,B\nfoo,1\n"Analyst\\",2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3))
      # double \\ in this file means one in the input, so the above " is escaped by a single '\' but still read ok
-test(1333, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3'), error="Field 1 on line 3 starts with quote.*but then has a problem.*Analyst.* ,2")
+test(1333, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3'), data.table(A = c("foo", "\"Analyst\\\" ", "bar"), B = 1:3))
 test(1334, fread('A,B\nfoo,1\n"Analyst\\" ,",2\nbar,3'), data.table(A=c('foo', 'Analyst\\" ,', 'bar'), B=1:3))
 test(1335, fread('A,B\nfoo,1\n"Analyst\\\\",2\nbar,3'), data.table(A=c('foo','Analyst\\\\','bar'), B=1:3))
 
@@ -4946,7 +4946,7 @@ cat('A,B,C,D,E,F
 "TX",77406,"business analyst\\\\\\\\\\\\\\","the boeing co","",""
 "CA",94116,"na\\none","retired","",""
 ', file = f<-tempfile())   # aside: notice the \\ before n of none as well
-test(1336.1, fread(f), error="Field 4 on line 2.*Check for unbalanced unescaped quotes: \"\"jacoleman high school\",\"\",\"\"")
+test(1336.1, fread(f), data.table(A = c("12", "TX", "CA"), B = c(0L, 77406L, 94116L), C = c("teacher private nfp\\\\\\\\\"", "business analyst\\\\\\\\\\\\\\", "na\\none"), D = c("\"\"jacoleman high school\"", "the boeing co", "retired"), E = c("", "", ""), F = c("", "", "")))
 cat('A,B,C,D,E,F
 "12",0,"teacher private nfp\\\\\\\\"","jacoleman high school","",""
 "TX",77406,"business analyst\\\\\\\\\\\\\\","the boeing co","",""
@@ -5778,9 +5778,10 @@ test(1445, fread("doublequote_newline.csv")[7:10], data.table(A=c(1L,1L,2L,1L), 
 # the example from #489 directly :
 test(1446, fread('A,B,C\n233,"AN ""EMBEDDED"" QUOTE FIELD",morechars\n'), data.table(A=233L, B='AN ""EMBEDDED"" QUOTE FIELD', C='morechars'))
 
-# unescaped quoted subregion followed by newline
-test(1447, fread('A,B,C\n233,"an unescaped "embedded"
-region followed by newline",morechars\n'), error='Field 2 on line 2.*can contain balanced unescaped quoted subregions but.*can\'t contain embedded.*n as well.*: "an unescaped "embedded"')
+# # unescaped quoted subregion followed by newline
+# # commented this test for now as the logic now is to redirect to normal checks
+# test(1447, fread('A,B,C\n233,"an unescaped "embedded"
+# region followed by newline",morechars\n'))
 
 # when detecting types ...
 test(1448.1, fread('A,B\n1,"embedded""\nquote"\n2,should be ok\n'),
@@ -5819,7 +5820,7 @@ test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input wor
 test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist. Include one or more spaces to consider the input a system command.")
 
 # Test for #802
-test(1453, fread("fread_line_error.csv"), error="Field 25 on line 9 starts with quote.*but then has a problem.*Check for unbalanced unescaped quotes")
+test(1453, fread("fread_line_error.csv"), error="Expecting 24 cols, but line 12 contains")
 
 # no-sep-found => sep="\n", use case for this in #738
 test(1454.1, fread('"Foo"`"Bar"\n1`2\n',sep="`"), data.table(Foo=1L,Bar=2L))
@@ -6829,33 +6830,23 @@ for(k in seq_along(nastrings)) {
   test(1550 + k * 0.1, DT_fread, DT_NA)
 }
 
-# quote="" argument, FR #568
+# FR #568
 str = "a,b\n1.5,\"at the 5\" end of the gene.\""
-ans = data.table(a = 1.5, b = "\"at the 5\" end of the gene.\"")
-test(1551.1, fread(str), error="Field 2 on line 2 starts with quote")
-test(1551.2, fread(str, quote=""), ans)
-# at the moment, quotes like these aren't handled with quote="\"":
+test(1551.1, fread(str), data.table(a = 1.5, b = "\"at the 5\" end of the gene.\""))
 #1256
 str = "x,y\nx1,\"oops\" y1\n"
-ans = data.table(x = "x1", y = "\"oops\" y1")
-test(1551.3, fread(str), error="Field 2 on line 2 starts with")
-test(1551.4, fread(str, quote=""), ans)
+test(1551.2, fread(str), data.table(x = "x1", y = "\"oops\" y1"))
 #1077
 str = '2,3\n""foo,bar'
-ans = data.table(V1 = c("2", "\"\"foo"), V2 = c("3", "bar"))
-test(1551.5, fread(str), error="Field 1 on line 2 starts with")
-test(1551.6, fread(str, quote=""), ans)
+test(1551.3, fread(str), data.table(V1 = c("2", "\"\"foo"), V2 = c("3", "bar")))
 #1079
 str = 'L1\tsome\tunquoted\tstuff\nL2\tsome\t"half" quoted\tstuff\nL3\tthis\t"should work"\tok thought'
-ans = data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "\"should work\""), stuff = c("stuff", "ok thought"))
-test(1551.7, fread(str), error="Field 3 on line 2 starts with")
-test(1551.8, fread(str, quote=""), ans)
+test(1551.4, fread(str), data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok thought")))
 #1095
-test(1551.9, fread("issue_1095_fread.txt"), error="")
 cols = paste("V", c(38:40, 43:44), sep="")
-ans1 = fread("issue_1095_fread.txt", quote="")[, (cols) := lapply(.SD, as.logical), .SDcols=cols][]
+ans1 = fread("issue_1095_fread.txt")[, (cols) := lapply(.SD, as.logical), .SDcols=cols][]
 ans2 = read.table("issue_1095_fread.txt", sep=",", comment.char="", stringsAsFactors=FALSE, quote="")
-test(1551.10, setDF(ans1), ans2)
+test(1551.5, setDF(ans1), ans2)
 
 # FR #1314 rest of na.strings issue
 str = "a,b,c,d\n#N/A,+1,5.5,FALSE\n#N/A,5,6.6,TRUE\n#N/A,+1,#N/A,-999\n#N/A,#N/A,-999,FALSE\n#N/A,1,NA,TRUE"
