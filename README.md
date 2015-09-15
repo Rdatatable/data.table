@@ -240,6 +240,13 @@
 
   63. Row numbers are not printed in scientific format. Closes [#1167](https://github.com/Rdatatable/data.table/issues/1167). Thanks to @jangorecki for the PR.
 
+  64. Using `.GRP` unnamed in `j` now returns a variable named `GRP` instead of `.GRP` as the period was causing issues. Same for `.BY`. Closes [#1243](https://github.com/Rdatatable/data.table/issues/1243); thanks to @MichaelChirico for the PR.
+
+  65. `print.data.table` now accepts a `quote` argument defaulting to `FALSE` (_a la_ `print.data.frame` in `base`). This option surrounds all printed elements with quotes and, e.g., makes whitespace more evident. Closes [#1177](https://github.com/Rdatatable/data.table/issues/1177); thanks to @MichaelChirico for the PR.
+
+  66. `[.data.table` now accepts single column integer matrix in `i` argument the same way as data.frame. Closes [#826](https://github.com/Rdatatable/data.table/issues/826). Thanks to @jangorecki.
+
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

@@ -93,7 +93,7 @@ setPackageName("data.table",.global)
 print.data.table <- function(x,
     topn=getOption("datatable.print.topn"),   # (5) print the top topn and bottom topn rows with '---' inbetween
     nrows=getOption("datatable.print.nrows"), # (100) under this the whole (small) table is printed, unless topn is provided
-    row.names = TRUE, ...)
+    row.names = TRUE, quote = FALSE, ...)
 {
     if (.global$print!="" && address(x)==.global$print) {   # The !="" is to save address() calls and R's global cache of address strings
         #  := in [.data.table sets .global$print=address(x) to suppress the next print i.e., like <- does. See FAQ 2.22 and README item in v1.9.5
@@ -141,13 +141,13 @@ print.data.table <- function(x,
     if (printdots) {
         toprint = rbind(head(toprint,topn),"---"="",tail(toprint,topn))
         rownames(toprint) = format(rownames(toprint),justify="right")
-        print(toprint,right=TRUE,quote=FALSE)
+        print(toprint,right=TRUE,quote=quote)
         return(invisible())
     }
     if (nrow(toprint)>20L)
         # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
         toprint=rbind(toprint,matrix(colnames(toprint),nrow=1)) # fixes bug #4934
-    print(toprint,right=TRUE,quote=FALSE)
+    print(toprint,right=TRUE,quote=quote)
     invisible()
 }
 
@@ -546,7 +546,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (locked.N) lockBinding(".N", parent.frame())
         }
         if (remove.N) rm(list=".N", envir=parent.frame())
-        if (is.matrix(i)) stop("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please let datatable-help know if you'd like this, or add your comments to FR #1611.")
+        if (is.matrix(i)) {
+            if (is.numeric(i) && ncol(i)==1L) { # #826 - subset DT on single integer vector stored as matrix
+                i = as.integer(i)
+            } else {
+                stop("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please let datatable-help know if you'd like this, or add your comments to FR #657.")
+            }
+        }
         if (is.logical(i)) {
             if (notjoin) {
                 notjoin = FALSE
@@ -893,7 +899,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (is.name(jsub)) {
                 # j is a single unquoted column name
                 if (jsub!=".SD") {
-                    jvnames = gsub("^[.]([NI])$","\\1",as.character(jsub))
+                    jvnames = gsub("^[.](N|I|GRP|BY)$","\\1",as.character(jsub))
                     # jsub is list()ed after it's eval'd inside dogroups.
                 }
             } else if (is.call(jsub) && as.character(jsub[[1L]]) %chin% c("list",".")) {
@@ -904,7 +910,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     if (is.null(jvnames)) jvnames = rep.int("", length(jsubl)-1L)
                     for (jj in seq.int(2L,length(jsubl))) {
                         if (jvnames[jj-1L] == "" && mode(jsubl[[jj]])=="name")
-                            jvnames[jj-1L] = gsub("^[.]([NI])$","\\1",deparse(jsubl[[jj]]))
+                            jvnames[jj-1L] = gsub("^[.](N|I|GRP|BY)$","\\1",deparse(jsubl[[jj]]))
                         # TO DO: if call to a[1] for example, then call it 'a' too
                     }
                     setattr(jsubl, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.

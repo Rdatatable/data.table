@@ -2172,7 +2172,7 @@ setkey(DT,a)
 test(783, DT[,.I,by=a]$I, 1:8)
 test(784, DT[,.I[which.max(b)],by=a], data.table(a=1:4,V1=INT(2,4,6,8),key="a"))
 test(785, DT[J(2:4),.I,by=a%%2L], data.table(a=rep(0:1,c(4,2)),I=INT(3,4,7,8,5,6)))
-test(786, DT[J(c(3,2,4)),list(.I,.GRP),by=.EACHI], data.table(a=rep(c(3L,2L,4L),each=2),I=INT(5,6,3,4,7,8),.GRP=rep(1:3,each=2L)))
+test(786, DT[J(c(3,2,4)),list(.I,.GRP),by=.EACHI], data.table(a=rep(c(3L,2L,4L),each=2),I=INT(5,6,3,4,7,8),GRP=rep(1:3,each=2L)))
 test(787, DT[J(3:2),`:=`(i=.I,grp=.GRP),by=.EACHI][,list(i,grp)], data.table(i=INT(NA,NA,3:6,NA,NA),grp=INT(NA,NA,2,2,1,1,NA,NA)))
 
 # New not-join (a.k.a. not-select, since not just for data.table i but integer, logical and character too)
@@ -6867,6 +6867,27 @@ test(1552.2, fread(str, na.strings=c("#N/A", "-999")), read_table(str, na.string
 test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.strings=c("#N/A", "-999", "+1")))
 test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1")))
 test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), read_table(str, na.strings=c("#N/A", "-999", "FALSE")))
+
+# FR #1177: 'quote' option of 'print.data.table'
+DT1 <- data.table(s1=paste0(" ",LETTERS[1:5]),s2=LETTERS[1:5])
+ans1 <- c("     s1  s2","1: \" A\" \"A\"",
+          "2: \" B\" \"B\"","3: \" C\" \"C\"",
+          "4: \" D\" \"D\"","5: \" E\" \"E\"")
+ans2 <- c("   s1 s2","1:  A  A","2:  B  B",
+          "3:  C  C","4:  D  D","5:  E  E")
+test(1553.1, capture.output(print(DT1, quote = TRUE)), ans1)
+test(1553.2, capture.output(print(DT1)), ans2)
+
+# #826 - subset DT on single integer vector stored as matrix the same way as data.frame
+dt <- data.table(a=letters[1:10])
+idx <- c(2:4,7L,9:10)
+dim(idx) <- c(6L, 1L)
+dimnames(idx) <- list(NULL, "Resample1") # as in caret::createDataPartition
+test(1554.1, dt[idx], data.table(a=letters[idx]))
+test(1554.2, dt[-idx], data.table(a=letters[(1:10)[-idx]]))
+test(1554.3, dt[!idx], data.table(a=letters[(1:10)[-idx]]))
+test(1554.4, idx, structure(c(2L, 3L, 4L, 7L, 9L, 10L), .Dim = c(6L, 1L), .Dimnames = list(NULL, "Resample1")))
+
 
 ##########################
 
