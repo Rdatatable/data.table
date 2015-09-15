@@ -72,6 +72,8 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \item{j}{ A single column name, single expresson of column names, \code{list()} of expressions of column names, an expression or function call that evaluates to \code{list} (including \code{data.frame} and \code{data.table} which are \code{list}s, too), or (when \code{with=FALSE}) a vector of names or positions to select.
 
   \code{j} is evaluated within the frame of the \code{data.table}; i.e., it sees column names as if they are variables. Use \code{j=list(...)} to return multiple columns and/or expressions of columns. A single column or single expression returns that type, usually a vector. See the examples.
+  
+  When \code{i} is a \code{data.table}, \code{j} sees columns in the result of \code{x[i]}. This means that columns carried over from \code{i} that were not used to perform the join are accessible from \code{j} (see section documentation for \code{i=} and the examples). If one of these leftover columns is used on the right-hand side of an expression with \code{:=}, then it is _not_ carried over to the result. If any of the column names from \code{i} conflict with an existing column name in \code{x}, then the conflicting column names from \code{i} will be prefixed with \code{i.}.
 
 }
   \item{by}{ A single unquoted column name, a \code{list()} of expressions of column names, a single character string containing comma separated column names (where spaces are significant since column names may contain spaces even at the start or end), or a character vector of column names.
@@ -293,6 +295,13 @@ DT1[DT2, on=c(x="x")] # join on columns 'x'
 DT1[DT2, on="x"] # same as above
 DT1[DT2, .(sum(a) * mul), by=.EACHI, on="x"] # using by=.EACHI
 DT1[DT2, .(sum(a) * mul), by=.EACHI, on="x", nomatch=0L] # using by=.EACHI
+
+DT1 = data.table(x=c("c", "a", "b", "a", "b"), y=1:5, key = "x")
+DT2 = data.table(x=c("d", "c", "b"), y=6:8, key = "x")
+names(DT1[DT2]) # columns in 'i' carry over after joins, and are prefixed if there is a naming conflict
+names(DT1[DT2, z := i.y])  # columns are not carried over if they are used on the RHS of ':='
+DT3 = DT1[DT2, z := i.y]
+names(DT3)
 
 # Follow r-help posting guide, support is here (*not* r-help) :
 # http://stackoverflow.com/questions/tagged/data.table
