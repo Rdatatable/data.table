@@ -6889,6 +6889,15 @@ test(1554.3, dt[!idx], data.table(a=letters[(1:10)[-idx]]))
 test(1554.4, idx, structure(c(2L, 3L, 4L, 7L, 9L, 10L), .Dim = c(6L, 1L), .Dimnames = list(NULL, "Resample1")))
 
 
+# test unsetkey()
+dt1 = data.table(id=101:105, type = c("a", "b", "b", "a", "a"), x = sample(5))
+dt1[, y := 3 * x + 2]
+dt2 = copy(dt1)
+setkey(dt1, type, id)
+setkey(dt2, id)
+unsetkey(dt2, type)
+test(1555, dt1, dt2[order(type)])
+
 ##########################
 
 
