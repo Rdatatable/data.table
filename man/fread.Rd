@@ -70,6 +70,8 @@ On Windows, "French_France.1252" is tried which should be available as standard 
 
       If an embedded quote is followed by the separator inside a quoted field, the embedded quotes up to that point in that field must be balanced; e.g. \code{...,2,"www.blah?x="one",y="two"",3.14,...}.
 
+      Quoting may be used to signify that numeric data should be read as text.
+      
       On those fields that do not satisfy these conditions, e.g., fields with unbalanced quotes, \code{fread} re-attempts that field as if it isn't quoted. This is quite useful in reading files that contains fields with unbalanced quotes as well, automatically.}
   }
 
