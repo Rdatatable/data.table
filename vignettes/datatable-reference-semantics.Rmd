@@ -14,7 +14,6 @@ vignette: >
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
-require(RCurl)
 knitr::opts_chunk$set(
   comment = "#",
   error = FALSE,
