@@ -277,6 +277,8 @@
         # 1: 1 abcde...
         # 2: 2 klmno...
 
+  11. `rolltolast` argument in `[.data.table` is now defunct. It was deprecated in 1.9.4.
+
 ### Changes in v1.9.4  (on CRAN 2 Oct 2014)
 
 #### NEW FEATURES

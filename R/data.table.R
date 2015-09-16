@@ -363,7 +363,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     .Call(Cchmatch2, x, table, as.integer(nomatch)) # this is in 'rbindlist.c' for now.
 }
 
-"[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, rolltolast=FALSE, on=NULL)
+"[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
 {
     # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
     # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -386,10 +386,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         roll = if (isTRUE(roll)) +Inf else as.double(roll)
     }
     force(rollends)
-    if (!missing(rolltolast)) {
-        warning("'rolltolast' has been marked 'deprecated' in ?data.table since v1.8.8 on CRAN 3 Mar 2013, see NEWS. Please change to the more flexible 'rollends' instead. 'rolltolast' will be removed in the next version.")
-        if (isTRUE(rolltolast)) { roll=+Inf; rollends=c(FALSE,FALSE) }
-    }
     if (!is.logical(rollends)) stop("rollends must be a logical vector")
     if (length(rollends)>2) stop("rollends must be length 1 or 2")
     if (length(rollends)==1) rollends=rep.int(rollends,2L)
