@@ -66,14 +66,14 @@ static clock_t tCoerce, tCoerceAlloc;
 static const char TypeName[6][10] = {"LGL","INT","INT64","REAL","STR","NULL"};  // for messages and errors
 static int TypeSxp[6] = {LGLSXP,INTSXP,REALSXP,REALSXP,STRSXP,NILSXP};
 static union {double d; long long l; int b;} u;   // b=boolean, can hold NA_LOGICAL
-static const char *fieldStart;
+static const char *fieldStart, *fieldEnd;
 static int fieldLen;
 #define NUT        8   // Number of User Types (just for colClasses where "numeric"/"double" are equivalent)
 static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "NULL", "double", "CLASS" };  // important that first 6 correspond to TypeName.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
 static int UserTypeNameMap[NUT] = { SXP_LGL, SXP_INT, SXP_INT64, SXP_REAL, SXP_STR, SXP_NULL, SXP_REAL, SXP_STR };
 // quote
 const char *quote;
-static int quoteStatus;
+static int quoteStatus, stripWhite;
 
 const char *fnam=NULL, *mmp;
 size_t filesize;
@@ -203,6 +203,10 @@ static inline int can_cast_to_na(const char* lch) {
 }
 // ********************************************************************************************
 
+static inline void skip_spaces() {
+    while(ch<eof && *ch==' ') ch++;
+}
+
 static inline void Field()
 {
     quoteStatus=0;
@@ -217,7 +221,6 @@ static inline void Field()
                 eolCount+=(*ch==eol);
                 continue;  // fast return in most cases of characters
             }
-            
             if (ch+1==eof || *(ch+1)==sep || *(ch+1)==eol) break;
             // " followed by sep|eol|eof dominates a field ending with \" (for support of Windows style paths)
             
@@ -243,16 +246,21 @@ static inline void Field()
         // either "" logic failed and we're here, or we're directly here.
         // unprotected, look for next next [sep|eol]
         if (sep==' ') {
-            while(ch<eof && *ch==sep) ch++;
             fieldStart = ch;
             while(ch<eof && *ch!=sep && *ch!=eol) ch++;
             fieldLen = (int)(ch-fieldStart);
-            while(ch<eof && *ch==sep) ch++;
-            if (ch<eof && *ch!=eol) ch--;  // leave on last space before new field's text
+            if (stripWhite) {
+                skip_spaces();
+                if (ch<eof && *ch!=eol) ch--;  // leave on last space before new field's text
+            }
         } else {
-            fieldStart = ch;
+            fieldStart=ch;
             while(ch<eof && *ch!=sep && *ch!=eol) ch++;
-            fieldLen = (int)(ch-fieldStart);
+            if (stripWhite) {
+                fieldEnd=ch-1;
+                while(fieldEnd>=fieldStart && *fieldEnd==' ') fieldEnd--;
+                fieldLen = (int)(fieldEnd-fieldStart)+1;
+            } else fieldLen = (int)(ch-fieldStart);
         }
     }
     // Rprintf("Processed field %.*s\n", (int)(ch-fieldStart), fieldStart);
@@ -265,6 +273,7 @@ static int countfields()
     if (*ch==eol) { ch+=eolLen; return 0; }
     while (1) {
         ncol++;
+        skip_spaces();
         Field();
         if (ch==eof || *ch==eol) {
             if (ch<eof) ch+=eolLen;          // move ch to the start of the next line
@@ -302,7 +311,10 @@ static inline Rboolean Strtoll()
         acc *= 10;            // overflow avoided, thanks to BDR and CRAN's new ASAN checks, 25 Feb 2014
         acc += *lch-'0';      // have assumed compiler will optimize the constant expression (LLONG_MAX-10)/10
         lch++;                // TO DO can remove lch<eof when last row is specialized in case of no final eol
+        
     }
+    // take care of leading spaces
+    while(lch<eof && *lch!=sep && *lch==' ') lch++;
     //int len = lch-start;
     //Rprintf("Strtoll field '%.*s' has len %d\n", lch-ch+1, ch, len);
     if (lch==eof || *lch==sep || *lch==eol) {   // only if field fully consumed (e.g. not ,123456A,)
@@ -333,7 +345,10 @@ static inline Rboolean Strtod()
     }
     const char *start=lch;
     errno = 0;
+
     u.d = strtod(start, (char **)&lch);
+    // take care of leading spaces
+    while(lch<eof && *lch!=sep && *lch==' ') lch++;
     if (errno==0 && lch>start && (lch==eof || *lch==sep || *lch==eol)) {
         ch = lch;
         return(TRUE);  // double read ok (result in u.d). Done. Most common case.
@@ -513,11 +528,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     return(newv);
 }
 
-static inline void skip_spaces() {
-    while(ch<eof && *ch!=eol && *ch==' ') ch++;
-}
-
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP showProgressArg)
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP stripWhiteArg, SEXP showProgressArg)
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP thiscol, ans, thisstr;
@@ -536,6 +547,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (!strcmp(CHAR(STRING_ELT(encoding, 0)), "Latin-1")) ienc = CE_LATIN1;
     else if (!strcmp(CHAR(STRING_ELT(encoding, 0)), "UTF-8")) ienc = CE_UTF8;
     else ienc = CE_NATIVE;
+
+    stripWhite = LOGICAL(stripWhiteArg)[0];
 
     // Extra tracing for apparent 32bit Windows problem: https://github.com/Rdatatable/data.table/issues/1111
     if (!isInteger(showProgressArg)) error("showProgress is not type integer but type '%s'. Please report.", type2char(TYPEOF(showProgressArg)));
@@ -858,6 +871,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     protecti++;
     allchar=TRUE;
     for (i=0; i<ncol; i++) {
+        skip_spaces(); // remove trailing spaces
         if (ch<eof && *ch=='\"') {
             while(++ch<eof && (*ch!='\"' || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
             if (ch<eof && *ch++!='\"') STOP("Internal error: quoted field ends before EOF but not with \"sep");
@@ -872,7 +886,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             else if (ch<eof) ch++;
         } 
     }
-    // *** TO DO discard any whitespace after last column name on first row before the eol ***
+    // discard any whitespace after last column name on first row before the eol (was a TODO)
+    skip_spaces();
     if (ch<eof && *ch!=eol) STOP("Not positioned correctly after testing format of header row. ch='%c'",*ch);
     if (verbose && header!=NA_LOGICAL) Rprintf("'header' changed by user from 'auto' to %s\n", header?"TRUE":"FALSE");
     char buff[10]; // to construct default column names
@@ -888,18 +903,18 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         ch = pos;
         line++;
         for (i=0; i<ncol; i++) {
-            if (ch<eof && *ch=='\"') {ch++; ch2=ch; while(ch2<eof && (*ch2!='\"' || (ch2+1<eof && *(ch2+1)!=sep && *(ch2+1)!=eol))) ch2++;}
-            else {ch2=ch; while(ch2<eof && *ch2!=sep && *ch2!=eol) ch2++;}
-            if (ch2>ch) {
-                SET_STRING_ELT(names, i, mkCharLen(ch, (int)(ch2-ch)));
+            // Skip trailing spaces and call 'Field()' here as it's already designed to handle quote vs non-quote cases.
+            // Also Fiedl() it takes care of leading spaces. Easier to understand the logic.
+            skip_spaces(); Field();
+            if (fieldLen) {
+                SET_STRING_ELT(names, i, mkCharLen(fieldStart, fieldLen));
             } else {
                 sprintf(buff,"V%d",i+1);
                 SET_STRING_ELT(names, i, mkChar(buff));
             }
-            if (ch2<eof && *ch2=='\"') ch2++;
-            if (i<ncol-1) ch=++ch2;
+            if (i<ncol-1) ch++; // move the beginning char of next field
         }
-        while (ch<eof && *ch!=eol) ch++;
+        while (ch<eof && *ch!=eol) ch++; // no need for skip_spaces() here
         if (ch<eof && *ch==eol) ch+=eolLen;  // now on first data row (row after column names)
         pos = ch;
     }
@@ -972,6 +987,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 if (ch<eof) ch+=eolLen;
                 thispos = ch;
                 i = 0;
+                // countfields() takes care of 'skip_spaces()'
                 while (ch<eof && i<5 && countfields()==ncol) i++;
                 if (i==5) {
                     ch=thispos;
@@ -988,6 +1004,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             i++;
             lineStart = ch;
             for (field=0;field<ncol;field++) {
+                if (stripWhite) skip_spaces();
                 // Rprintf("Field %d: '%.20s'\n", field+1, ch);
                 fieldLen=0;
                 switch (type[field]) {
@@ -1183,6 +1200,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             }
             for (j=0,resj=0; j<ncol; resj+=(type[j]!=SXP_NULL),j++) {
                 //Rprintf("Field %d: '%.10s' as type %d\n", j+1, ch, type[j]);
+                if (stripWhite) skip_spaces();
                 thiscol = VECTOR_ELT(ans, resj);
                 switch (type[j]) {
                 case SXP_LGL:
@@ -1221,16 +1239,14 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     // print whole line here because it's often something earlier in the line that messed up
                 }
             }
-            skip_spaces();
+            if (stripWhite) skip_spaces();
             //Rprintf("At end of line with i=%d and ch='%.10s'\n", i, ch);
             if (ch<eof && *ch!=eol) {
                 // TODO: skip spaces here if strip.white=TRUE (arg to be added) and then check+warn
                 // TODO: warn about uncommented text here
-                error("Expecting %d cols, but line %d contains text after processing all cols. It is very likely that this is due to one or more fields having embedded sep='%c' and/or '\\n' characters within unbalanced unescaped quotes. fread cannot handle such ambiguous cases and those lines may not have been read in as expected. Please read the section on quotes in ?fread.", ncol, line, sep);
-                // discard after end of line, but before \n.
-                while (ch<eof && *ch!=eol) ch++; 
+                error("Expecting %d cols, but line %d contains text after processing all cols. It is very likely that this is due to one or more fields having embedded sep='%c' and/or (unescaped) '\\n' characters within unbalanced unescaped quotes. fread cannot handle such ambiguous cases and those lines may not have been read in as expected. Please read the section on quotes in ?fread.", ncol, line, sep);
             }
-            if (ch<eof && *ch==eol) ch+=eolLen;
+            ch+=eolLen; // now that we error here, the if-statement isn't needed -> // if (ch<eof && *ch==eol) ch+=eolLen;
             pos = ch;  // start of line position only needed to include the whole line in any error message
             line++;
         }

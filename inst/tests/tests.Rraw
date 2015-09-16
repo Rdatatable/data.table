@@ -2517,7 +2517,8 @@ f = "ch11b.dat"  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
 test(900, fread(f), as.data.table(read.table(f)))
 
 f = "1206FUT.txt"    # a CRLF line ending file (DOS)
-test(901, DT<-fread(f), as.data.table(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)))))
+test(901.1, DT<-fread(f,strip.white=FALSE), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)))))
+test(901.2, DT<-fread(f), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)),strip.white=TRUE)))
 
 # Tests the coerce of column 23 to character on line 179 due to the 'A' for the first time :
 f = "2008head.csv"
@@ -4932,10 +4933,12 @@ unlink(f)
 test(1329, fread(), error="Input is either empty or fully whitespace after the skip or autostart")
 # add test that that escaped escapes at the end of a quoted field
 test(1330, fread('A,B\nfoo,1\nAnalyst\\,2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3))
-test(1331, fread('A,B\nfoo,1\nAnalyst\\ ,2\nbar,3'), data.table(A=c('foo','Analyst\\ ','bar'), B=1:3))
+test(1331.1, fread('A,B\nfoo,1\nAnalyst\\ ,2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3)) # strip.white=TRUE
+test(1331.2, fread('A,B\nfoo,1\nAnalyst\\ ,2\nbar,3', strip.white=FALSE), data.table(A=c('foo','Analyst\\ ','bar'), B=1:3))
 test(1332, fread('A,B\nfoo,1\n"Analyst\\",2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3))
-     # double \\ in this file means one in the input, so the above " is escaped by a single '\' but still read ok
-test(1333, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3'), data.table(A = c("foo", "\"Analyst\\\" ", "bar"), B = 1:3))
+# double \\ in this file means one in the input, so the above " is escaped by a single '\' but still read ok
+test(1333.1, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3'), data.table(A = c("foo", "\"Analyst\\\"", "bar"), B = 1:3))
+test(1333.2, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3', strip.white=FALSE), data.table(A = c("foo", "\"Analyst\\\" ", "bar"), B = 1:3))
 test(1334, fread('A,B\nfoo,1\n"Analyst\\" ,",2\nbar,3'), data.table(A=c('foo', 'Analyst\\" ,', 'bar'), B=1:3))
 test(1335, fread('A,B\nfoo,1\n"Analyst\\\\",2\nbar,3'), data.table(A=c('foo','Analyst\\\\','bar'), B=1:3))
 
@@ -6843,10 +6846,8 @@ test(1551.3, fread(str), data.table(V1 = c("2", "\"\"foo"), V2 = c("3", "bar")))
 str = 'L1\tsome\tunquoted\tstuff\nL2\tsome\t"half" quoted\tstuff\nL3\tthis\t"should work"\tok thought'
 test(1551.4, fread(str), data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok thought")))
 #1095
-cols = paste("V", c(38:40, 43:44), sep="")
-ans1 = fread("issue_1095_fread.txt")[, (cols) := lapply(.SD, as.logical), .SDcols=cols][]
-ans2 = read.table("issue_1095_fread.txt", sep=",", comment.char="", stringsAsFactors=FALSE, quote="")
-test(1551.5, setDF(ans1), ans2)
+rhs = read.table("issue_1095_fread.txt", sep=",", comment.char="", stringsAsFactors=FALSE, quote="", strip.white=TRUE)
+test(1551.5, fread("issue_1095_fread.txt"), setDT(rhs), warning="Bumped column 47 to type character on data row")
 
 # FR #1314 rest of na.strings issue
 str = "a,b,c,d\n#N/A,+1,5.5,FALSE\n#N/A,5,6.6,TRUE\n#N/A,+1,#N/A,-999\n#N/A,#N/A,-999,FALSE\n#N/A,1,NA,TRUE"
@@ -6879,6 +6880,51 @@ test(1554.2, dt[-idx], data.table(a=letters[(1:10)[-idx]]))
 test(1554.3, dt[!idx], data.table(a=letters[(1:10)[-idx]]))
 test(1554.4, idx, structure(c(2L, 3L, 4L, 7L, 9L, 10L), .Dim = c(6L, 1L), .Dimnames = list(NULL, "Resample1")))
 
+# strip.white and other enhancements to 'fread()'
+# bug #1113
+ans1 <- fread("issue_1113_fread.txt")
+ans2 <- setDT(read.table("issue_1113_fread.txt", header=TRUE))
+setnames(ans2, names(ans1))
+test(1555.1, ans1, ans2)
+
+# bug #1035, take care of spaces automatically. Note that the columns are also read in proper types. Also with quotes when sep is not space.
+str1=" ITERATION    THETA1       THETA2                
+            0  3.95527E+01  2.10651E+01"
+str2=" ITERATION,    THETA1,       THETA2                
+            0,  3.95527E+01,  2.10651E+01"
+str3=" ITERATION  ,  THETA1   ,    THETA2                
+            0  ,  3.95527E+01  ,  2.10651E+01"
+str4=" ITERATION  ,  THETA1   ,    \"THETA2\"                
+            0  ,  3.95527E+01  ,  2.10651E+01"
+str5=" ITERATION  ,  THETA1   ,    THETA2                
+            bla  ,  3.95527E+01  ,  2.10651E+01"
+test(1555.2, fread(str1), data.table(ITERATION=0L, THETA1=39.5527, THETA2=21.0651))
+test(1555.3, fread(str2), data.table(ITERATION=0L, THETA1=39.5527, THETA2=21.0651))
+test(1555.4, fread(str3), data.table(ITERATION=0L, THETA1=39.5527, THETA2=21.0651))
+test(1555.5, fread(str4), data.table(ITERATION=0L, THETA1=39.5527, `"THETA2"`=21.0651))
+test(1555.6, fread(str5), data.table(ITERATION="bla", THETA1=39.5527, THETA2=21.0651))
+# without strip.white
+# header col spaces are dealt properly irrespective of strip.white
+test(1555.7, fread(str1, strip.white=FALSE), error="Expecting 4 cols, but line 2 contains") 
+test(1555.8, names(fread(str2, strip.white=FALSE)), c("ITERATION","THETA1","THETA2                "))
+test(1555.9, names(fread(str3, strip.white=FALSE)), c("ITERATION  ","THETA1   ","THETA2                "))
+test(1555.10, names(fread(str4, strip.white=FALSE)), c("ITERATION  ","THETA1   ","\"THETA2\"                "))
+
+# bug #1035, reply to the post from another user
+str1="  22 4 6 4\n  34 22 34 5\n  6 2 1 4\n"
+str2="22 4 6 4\n34 22 34 5\n6 2 1 4\n"
+test(1555.11, fread(str1), fread(str2))
+
+# bug #785
+rhs <- setDT(read.table("issue_785_fread.txt", header=TRUE, stringsAsFactors=FALSE, sep="\t", strip.white=TRUE))
+test(1555.12, fread("issue_785_fread.txt"), rhs)
+
+# bug #529, http://stackoverflow.com/questions/22229109/r-data-table-fread-command-how-to-read-large-files-with-irregular-separators
+str1=" YYYY MM DD HH mm             19490             40790
+ 1991 10  1  1  0      1.046465E+00      1.568405E+00"
+str2="YYYY MM DD HH mm             19490             40790
+1991 10  1  1  0      1.046465E+00      1.568405E+00"
+test(1555.13, fread(str1), fread(str2))
 
 ##########################
 
