@@ -37,7 +37,7 @@ We will load the data sets directly within sections.
 
 ## Introduction
 
-The `melt` and `dcast` functions for *data.tables* are extensions of the corresponding functions from the [reshape2](http://cran.r-project.org/web/packages/reshape2/index.html) package.  
+The `melt` and `dcast` functions for *data.tables* are extensions of the corresponding functions from the [reshape2](http://cran.r-project.org/package=reshape2) package.  
 
 In this vignette, we will
 
