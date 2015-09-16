@@ -137,7 +137,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   \item{rolltolast}{ Deprecated. Setting \code{rolltolast=TRUE} is converted to \code{roll=TRUE;rollends=FALSE} for backwards compatibility.
   
 }
-  \item{on}{ A named atomic vector of column names indicating which columns in \code{i} should be joined to which columns in \code{x}. See \code{Examples}.}
+  \item{on}{ A named atomic vector of column names indicating which columns in \code{i} should be joined to which columns in \code{x}, of the form \code{c(name_in_x = name_in_y)}. See \code{Examples}.}
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time :
@@ -288,9 +288,11 @@ DT[!.("b",3)]              # same result but much faster
 # new feature: 'on' argument, from v1.9.6+
 DT1 = data.table(x=c("c", "a", "b", "a", "b"), a=1:5)
 DT2 = data.table(x=c("d", "c", "b"), mul=6:8)
+DT3 = data.table(y=c("d", "c", "b"), mul=6:8)
 
 DT1[DT2, on=c(x="x")] # join on columns 'x'
 DT1[DT2, on="x"] # same as above
+DT1[DT3, on=c(x="y")] # same as above, with "y" in DT3 being mapped to "x" in DT1
 DT1[DT2, .(sum(a) * mul), by=.EACHI, on="x"] # using by=.EACHI
 DT1[DT2, .(sum(a) * mul), by=.EACHI, on="x", nomatch=0L] # using by=.EACHI
 
