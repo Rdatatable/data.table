@@ -15,38 +15,42 @@
 
 #### NEW FEATURES
 
-  1. `fread` now passes `showProgress=FALSE` through to `download.file()` (as `quiet=TRUE`). Thanks to a pull request from Karl Broman and Richard Scriven for filing the issue, [#741](https://github.com/Rdatatable/data.table/issues/741).
+  1. `fread`
+      * passes `showProgress=FALSE` through to `download.file()` (as `quiet=TRUE`). Thanks to a pull request from Karl Broman and Richard Scriven for filing the issue, [#741](https://github.com/Rdatatable/data.table/issues/741).
+      * accepts `dec=','` (and other non-'.' decimal separators), [#917](https://github.com/Rdatatable/data.table/issues/917). A new paragraph has been added to `?fread`. On Windows this should just-work. On Unix it may just-work but if not you will need to read the paragraph for an extra step. In case it somehow breaks `dec='.'`, this new feature can be turned off with `options(datatable.fread.dec.experiment=FALSE)`.
+      * Implemented `stringsAsFactors` argument for `fread()`. When `TRUE`, character columns are converted to factors. Default is `FALSE`. Thanks to Artem Klevtsov for filing [#501](https://github.com/Rdatatable/data.table/issues/501), and to @hmi2015 for [this SO post](http://stackoverflow.com/q/31350209/559784).
+      * gains `check.names` argument, with default value `FALSE`. When `TRUE`, it uses the base function `make.unique()` to ensure that the column names of the data.table read in are all unique. Thanks to David Arenburg for filing [#1027](https://github.com/Rdatatable/data.table/issues/1027).
+      * gains `encoding` argument. Acceptable values are "unknown", "UTF-8" and "Latin-1" with default value of "unknown". Closes [#563](https://github.com/Rdatatable/data.table/issues/563). Thanks to @BenMarwick for the original report and to the many requests from others, and Q on SO.
+      * gains `col.names` argument, and is similar to `base::read.table()`. Closes [#768](https://github.com/Rdatatable/data.table/issues/768). Thanks to @dardesta for filing the FR.
+
+  2. `DT[column == value]` no longer recycles `value` except in the length 1 case (when it still uses DT's key or an automatic secondary key, as introduced in v1.9.4). If `length(value)==length(column)` then it works element-wise as standard in R. Otherwise, a length error is issued to avoid common user errors. `DT[column %in% values]` still uses DT's key (or an an automatic secondary key) as before.  Automatic indexing (i.e., optimization of `==` and `%in%`) may still be turned off with `options(datatable.auto.index=FALSE)`.
+
+  3. `na.omit` method for data.table is rewritten in C, for speed. It's ~11x faster on bigger data; see examples under `?na.omit`. It also gains two additional arguments a) `cols` accepts column names (or numbers) on which to check for missing values. 2) `invert` when `TRUE` returns the rows with any missing values instead. Thanks to the suggestion and PR from @matthieugomez.
+
+  4. New function `shift()` implements fast `lead/lag` of *vector*, *list*, *data.frames* or *data.tables*. It takes a `type` argument which can be either *"lag"* (default) or *"lead"*. It enables very convenient usage along with `:=` or `set()`. For example: `DT[, (cols) := shift(.SD, 1L), by=id]`. Please have a look at `?shift` for more info.
+
+  5. `frank()` is now implemented. It's much faster than `base::rank` and does more. It accepts *vectors*, *lists* with all elements of equal lengths, *data.frames* and *data.tables*, and optionally takes a `cols` argument. In addition to implementing all the `ties.method` methods available from `base::rank`, it also implements *dense rank*. It is also capable of calculating ranks by ordering column(s) in ascending or descending order. See `?frank` for more. Closes [#760](https://github.com/Rdatatable/data.table/issues/760) and [#771](https://github.com/Rdatatable/data.table/issues/771)
+
+  6. `rleid()`, a convenience function for generating a run-length type id column to be used in grouping operations is now implemented. Closes [#686](https://github.com/Rdatatable/data.table/issues/686). Check `?rleid` examples section for usage scenarios.
   
-  2. `fread` now accepts `dec=','` (and other non-'.' decimal separators), [#917](https://github.com/Rdatatable/data.table/issues/917). A new paragraph has been added to `?fread`. On Windows this should just-work. On Unix it may just-work but if not you will need to read the paragraph for an extra step. In case it somehow breaks `dec='.'`, this new feature can be turned off with `options(datatable.fread.dec.experiment=FALSE)`.
-  
-  3. `DT[column == value]` no longer recycles `value` except in the length 1 case (when it still uses DT's key or an automatic secondary key, as introduced in v1.9.4). If `length(value)==length(column)` then it works element-wise as standard in R. Otherwise, a length error is issued to avoid common user errors. `DT[column %in% values]` still uses DT's key (or an an automatic secondary key) as before.  Automatic indexing (i.e., optimization of `==` and `%in%`) may still be turned off with `options(datatable.auto.index=FALSE)`.
+  7. Efficient convertion of `xts` to data.table. Closes [#882](https://github.com/Rdatatable/data.table/issues/882). Check examples in `?as.xts.data.table` and `?as.data.table.xts`. Thanks to @jangorecki for the PR.
 
-  4. `na.omit` method for data.table is rewritten in C, for speed. It's ~11x faster on bigger data; see examples under `?na.omit`. It also gains two additional arguments a) `cols` accepts column names (or numbers) on which to check for missing values. 2) `invert` when `TRUE` returns the rows with any missing values instead. Thanks to the suggestion and PR from @matthieugomez.
+  8. `rbindlist` gains `idcol` argument which can be used to generate an index column. If `idcol=TRUE`, the column is automatically named `.id`. Instead you can also provide a column name directly. If the input list has no names, indices are automatically generated. Closes [#591](https://github.com/Rdatatable/data.table/issues/591). Also thanks to @KevinUshey for filing [#356](https://github.com/Rdatatable/data.table/issues/356).
 
-  5. New function `shift()` implements fast `lead/lag` of *vector*, *list*, *data.frames* or *data.tables*. It takes a `type` argument which can be either *"lag"* (default) or *"lead"*. It enables very convenient usage along with `:=` or `set()`. For example: `DT[, (cols) := shift(.SD, 1L), by=id]`. Please have a look at `?shift` for more info.
+  9. A new helper function `uniqueN` is now implemented. It is equivalent to `length(unique(x))` but much faster. It handles `atomic vectors`, `lists`, `data.frames` and `data.tables` as input and returns the number of unique rows. Closes [#884](https://github.com/Rdatatable/data.table/issues/884). Gains by argument. Closes [#1080](https://github.com/Rdatatable/data.table/issues/1080). Closes [#1224](https://github.com/Rdatatable/data.table/issues/1224). Thanks to @DavidArenburg, @kevinmistry and @jangorecki. 
 
-  6. `frank()` is now implemented. It's much faster than `base::rank` and does more. It accepts *vectors*, *lists* with all elements of equal lengths, *data.frames* and *data.tables*, and optionally takes a `cols` argument. In addition to implementing all the `ties.method` methods available from `base::rank`, it also implements *dense rank*. It is also capable of calculating ranks by ordering column(s) in ascending or descending order. See `?frank` for more. Closes [#760](https://github.com/Rdatatable/data.table/issues/760) and [#771](https://github.com/Rdatatable/data.table/issues/771)
-
-  7. `rleid()`, a convenience function for generating a run-length type id column to be used in grouping operations is now implemented. Closes [#686](https://github.com/Rdatatable/data.table/issues/686). Check `?rleid` examples section for usage scenarios.
-  
-  8. Efficient convertion of `xts` to data.table. Closes [#882](https://github.com/Rdatatable/data.table/issues/882). Check examples in `?as.xts.data.table` and `?as.data.table.xts`. Thanks to @jangorecki for the PR.
-
-  9. `rbindlist` gains `idcol` argument which can be used to generate an index column. If `idcol=TRUE`, the column is automatically named `.id`. Instead you can also provide a column name directly. If the input list has no names, indices are automatically generated. Closes [#591](https://github.com/Rdatatable/data.table/issues/591). Also thanks to @KevinUshey for filing [#356](https://github.com/Rdatatable/data.table/issues/356).
-
-  10. A new helper function `uniqueN` is now implemented. It is equivalent to `length(unique(x))` but much faster. It handles `atomic vectors`, `lists`, `data.frames` and `data.tables` as input and returns the number of unique rows. Closes [#884](https://github.com/Rdatatable/data.table/issues/884). Gains by argument. Closes [#1080](https://github.com/Rdatatable/data.table/issues/1080). Closes [#1224](https://github.com/Rdatatable/data.table/issues/1224). Thanks to @DavidArenburg, @kevinmistry and @jangorecki. 
-
-  11. Implemented `transpose()` to transpose a list and `tstrsplit` which is a wrapper for `transpose(strsplit(...))`. This is particularly useful in scenarios where a column has to be split and the resulting list has to be assigned to multiple columns. See `?transpose` and `?tstrsplit`, [#1025](https://github.com/Rdatatable/data.table/issues/1025) and [#1026](https://github.com/Rdatatable/data.table/issues/1026) for usage scenarios. Closes both #1025 and #1026 issues.
+  10. Implemented `transpose()` to transpose a list and `tstrsplit` which is a wrapper for `transpose(strsplit(...))`. This is particularly useful in scenarios where a column has to be split and the resulting list has to be assigned to multiple columns. See `?transpose` and `?tstrsplit`, [#1025](https://github.com/Rdatatable/data.table/issues/1025) and [#1026](https://github.com/Rdatatable/data.table/issues/1026) for usage scenarios. Closes both #1025 and #1026 issues.
     * Implemented `type.convert` as suggested by Richard Scriven. Closes [#1094](https://github.com/Rdatatable/data.table/issues/1094).
 
-  12. `melt.data.table` can now melt into multiple columns by providing a list of columns to `measure.vars` argument. Closes [#828](https://github.com/Rdatatable/data.table/issues/828). Thanks to Ananda Mahto for the extended email discussions and ideas on generating the `variable` column.
+  11. `melt.data.table` 
+      * can now melt into multiple columns by providing a list of columns to `measure.vars` argument. Closes [#828](https://github.com/Rdatatable/data.table/issues/828). Thanks to Ananda Mahto for the extended email discussions and ideas on generating the `variable` column.
+      * also retains attributes wherever possible. Closes [#702](https://github.com/Rdatatable/data.table/issues/702) and [#993](https://github.com/Rdatatable/data.table/issues/993). Thanks to @richierocks for the report.
 
-  13. `melt.data.table` also retains attributes wherever possible. Closes [#702](https://github.com/Rdatatable/data.table/issues/702) and [#993](https://github.com/Rdatatable/data.table/issues/993). Thanks to @richierocks for the report.
+  12. `.SDcols`
+      * understands `!` now, i.e., `DT[, .SD, .SDcols=!"a"]` now works, and is equivalent to `DT[, .SD, .SDcols = -c("a")]`. Closes [#1066](https://github.com/Rdatatable/data.table/issues/1066). 
+      * accepts logical vectors as well. If length is smaller than number of columns, the vector is recycled. Closes [#1060](https://github.com/Rdatatable/data.table/issues/1060). Thanks to @StefanFritsch.
 
-  14. `.SDcols` understands `!` now, i.e., `DT[, .SD, .SDcols=!"a"]` now works, and is equivalent to `DT[, .SD, .SDcols = -c("a")]`. Closes [#1066](https://github.com/Rdatatable/data.table/issues/1066). 
-
-  15. `.SDcols` accepts logical vectors as well. If length is smaller than number of columns, the vector is recycled. Closes [#1060](https://github.com/Rdatatable/data.table/issues/1060). Thanks to @StefanFritsch.
-
-  16. `dcast` can now:
+  13. `dcast` can now:
       * cast multiple `value.var` columns simultaneously. Closes [#739](https://github.com/Rdatatable/data.table/issues/739).
       * accept multiple functions under `fun.aggregate`. Closes [#716](https://github.com/Rdatatable/data.table/issues/716).
       * supports optional column prefixes as mentioned under [this SO post](http://stackoverflow.com/q/26225206/559784). Closes [#862](https://github.com/Rdatatable/data.table/issues/862). Thanks to @JohnAndrews.
@@ -54,35 +58,27 @@
       * Naming conventions on multiple columns changed according to [#1153](https://github.com/Rdatatable/data.table/issues/1153). Thanks to @MichaelChirico for the FR.
       * also has a `sep` argument with default `_` for backwards compatibility. [#1210](https://github.com/Rdatatable/data.table/issues/1210). Thanks to @dbetebenner for the FR.
 
-  17. `.SDcols` and `with=FALSE` understand `colA:colB` form now. That is, `DT[, lapply(.SD, sum), by=V1, .SDcols=V4:V6]` and `DT[, V5:V7, with=FALSE]` works as intended. This is quite useful for interactive use. Closes [#748](https://github.com/Rdatatable/data.table/issues/748).
+  14. `.SDcols` and `with=FALSE` understand `colA:colB` form now. That is, `DT[, lapply(.SD, sum), by=V1, .SDcols=V4:V6]` and `DT[, V5:V7, with=FALSE]` works as intended. This is quite useful for interactive use. Closes [#748](https://github.com/Rdatatable/data.table/issues/748).
 
-  18. `setcolorder()` and `setorder()` work with `data.frame`s too. Closes [#1018](https://github.com/Rdatatable/data.table/issues/1018).
+  15. `setcolorder()` and `setorder()` work with `data.frame`s too. Closes [#1018](https://github.com/Rdatatable/data.table/issues/1018).
 
-  19. `as.data.table.*` and `setDT` argument `keep.rownames` can take a column name as well. When `keep.rownames=TRUE`, the column will still automatically named `rn`. Closes [#575](https://github.com/Rdatatable/data.table/issues/575). 
+  16. `as.data.table.*` and `setDT` argument `keep.rownames` can take a column name as well. When `keep.rownames=TRUE`, the column will still automatically named `rn`. Closes [#575](https://github.com/Rdatatable/data.table/issues/575). 
 
-  20. `setDT` gains a `key` argument so that `setDT(X, key="a")` would convert `X` to a `data.table` by reference *and* key by the columns specified. Closes [#1121](https://github.com/Rdatatable/data.table/issues/1121).
+  17. `setDT` gains a `key` argument so that `setDT(X, key="a")` would convert `X` to a `data.table` by reference *and* key by the columns specified. Closes [#1121](https://github.com/Rdatatable/data.table/issues/1121).
 
-  21. `setDF` also converts `list` of equal length to `data.frame` by reference now. Closes [#1132](https://github.com/Rdatatable/data.table/issues/1132).
+  18. `setDF` also converts `list` of equal length to `data.frame` by reference now. Closes [#1132](https://github.com/Rdatatable/data.table/issues/1132).
 
-  22. `CJ` gains logical `unique` argument with default `FALSE`. If `TRUE`, unique values of vectors are automatically computed and used. This is convenient, for example, `DT[CJ(a, b, c, unique=TRUE)]` instead of  doing `DT[CJ(unique(a), unique(b), unique(c))]`. Ultimately, `unique = TRUE` will be default. Closes [#1148](https://github.com/Rdatatable/data.table/issues/1148). 
+  19. `CJ` gains logical `unique` argument with default `FALSE`. If `TRUE`, unique values of vectors are automatically computed and used. This is convenient, for example, `DT[CJ(a, b, c, unique=TRUE)]` instead of  doing `DT[CJ(unique(a), unique(b), unique(c))]`. Ultimately, `unique = TRUE` will be default. Closes [#1148](https://github.com/Rdatatable/data.table/issues/1148). 
 
-  23. Implemented `stringsAsFactors` argument for `fread()`. When `TRUE`, character columns are converted to factors. Default is `FALSE`. Thanks to Artem Klevtsov for filing [#501](https://github.com/Rdatatable/data.table/issues/501), and to @hmi2015 for [this SO post](http://stackoverflow.com/q/31350209/559784).
+  20. `on=` syntax: data.tables can join now without having to set keys by using the new `on` argument. For example: `DT1[DT2, on=c(x = "y")]` would join column 'y' of `DT2` with 'x' of `DT1`. `DT1[DT2, on="y"]` would join on column 'y' on both data.tables. Closes [#1130](https://github.com/Rdatatable/data.table/issues/1130) partly.
 
-  24. `fread` gains `check.names` argument, with default value `FALSE`. When `TRUE`, it uses the base function `make.unique()` to ensure that the column names of the data.table read in are all unique. Thanks to David Arenburg for filing [#1027](https://github.com/Rdatatable/data.table/issues/1027).
+  21. `merge.data.table` gains arguments `by.x` and `by.y`. Closes [#637](https://github.com/Rdatatable/data.table/issues/637) and [#1130](https://github.com/Rdatatable/data.table/issues/1130). No copies are made even when the specified columns aren't key columns in data.tables, and therefore much more fast and memory efficient. Thanks to @blasern for the initial PRs. Also gains logical argument `sort` (like base R). Closes [#1282](https://github.com/Rdatatable/data.table/issues/1282).
 
-  25. data.tables can join now without having to set keys by using the new `on` argument. For example: `DT1[DT2, on=c(x = "y")]` would join column 'y' of `DT2` with 'x' of `DT1`. `DT1[DT2, on="y"]` would join on column 'y' on both data.tables. Closes [#1130](https://github.com/Rdatatable/data.table/issues/1130) partly.
+  22. `setDF()` gains `rownames` argument for ready conversion to a `data.frame` with user-specified rows. Closes [#1320](https://github.com/Rdatatable/data.table/issues/1320). Thanks to @MichaelChirico for the FR and PR.
 
-  26. `merge.data.table` gains arguments `by.x` and `by.y`. Closes [#637](https://github.com/Rdatatable/data.table/issues/637) and [#1130](https://github.com/Rdatatable/data.table/issues/1130). No copies are made even when the specified columns aren't key columns in data.tables, and therefore much more fast and memory efficient. Thanks to @blasern for the initial PRs. Also gains logical argument `sort` (like base R). Closes [#1282](https://github.com/Rdatatable/data.table/issues/1282).
+  23. `print.data.table` gains `quote` argument (defaul=`FALSE`). This option surrounds all printed elements with quotes, helps make whitespace(s) more evident. Closes [#1177](https://github.com/Rdatatable/data.table/issues/1177); thanks to @MichaelChirico for the PR.
 
-  27. `fread()` gains `encoding` argument. Acceptable values are "unknown", "UTF-8" and "Latin-1" with default value of "unknown". Closes [#563](https://github.com/Rdatatable/data.table/issues/563). Thanks to @BenMarwick for the original report and to the many requests from others, and Q on SO.
-
-  28. `setDF()` gains `rownames` argument for ready conversion to a `data.frame` with user-specified rows. Closes [#1320](https://github.com/Rdatatable/data.table/issues/1320). Thanks to @MichaelChirico for the FR and PR.
-
-  29. `print.data.table` gains `quote` argument (defaul=`FALSE`). This option surrounds all printed elements with quotes, helps make whitespace(s) more evident. Closes [#1177](https://github.com/Rdatatable/data.table/issues/1177); thanks to @MichaelChirico for the PR.
-
-  30. `[.data.table` now accepts single column numeric matrix in `i` argument the same way as `data.frame`. Closes [#826](https://github.com/Rdatatable/data.table/issues/826). Thanks to @jangorecki for the PR.
-
-  31. `fread` gains `col.names` argument, and is similar to `base::read.table()`. Closes [#768](https://github.com/Rdatatable/data.table/issues/768). Thanks to @dardesta for filing the FR.
+  24. `[.data.table` now accepts single column numeric matrix in `i` argument the same way as `data.frame`. Closes [#826](https://github.com/Rdatatable/data.table/issues/826). Thanks to @jangorecki for the PR.
 
 #### BUG FIXES
 
