@@ -316,6 +316,7 @@
       * URLs now work on Windows. R's `download.file()` converts `\r\n` to `\r\r\n` on Windows. Now avoided by downloading in binary mode. Thanks to Steve Miller and Dean MacGregor for reporting, [#492](https://github.com/Rdatatable/data.table/issues/492).
       * Fixed seg fault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796) and [#722](https://github.com/Rdatatable/data.table/issues/722). Thanks to Adam Kennedy and Richard Cotton for the detailed reproducible reports.
       * New argument `fread(...,data.table=FALSE)` returns a `data.frame` instead of a `data.table`. This can be set globally: `options(datatable.fread.datatable=FALSE)`.
+      * doesn't warn about empty lines when 'nrow' argument is specified and that many rows are read properly. Thanks to @richierocks for the report. Closes [#1330](https://github.com/Rdatatable/data.table/issues/1330).
 
   6. `.()` can now be used in `j` and is identical to `list()`, for consistency with `i`.
     ```R

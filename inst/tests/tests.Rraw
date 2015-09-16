@@ -6927,6 +6927,10 @@ str2="YYYY MM DD HH mm             19490             40790
 1991 10  1  1  0      1.046465E+00      1.568405E+00"
 test(1555.13, fread(str1), fread(str2))
 
+# fix for #1330
+test(1556.1, fread("issue_1330_fread.txt", nrow=2), data.table(a=1:2, b=1:2))
+test(1556.2, fread("issue_1330_fread.txt", nrow=4), data.table(a=1:2, b=1:2), warning="Stopped reading at empty line 4")
+
 ##########################
 
 

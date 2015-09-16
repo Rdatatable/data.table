@@ -1264,7 +1264,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (ch<eof) {
         ch2 = ch;
         while (ch2<eof && *ch2!=eol) ch2++;
-        warning("Stopped reading at empty line %d but text exists afterwards (discarded): %.*s", line, ch2-ch, ch);
+        if (INTEGER(nrowsarg)[0] == -1 || i < nrow) warning("Stopped reading at empty line %d but text exists afterwards (discarded): %.*s", line, ch2-ch, ch);
     }
     if (i<nrow) {
         if (nrow-i > 100 && (double)i/nrow < 0.95)
