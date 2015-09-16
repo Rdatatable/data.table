@@ -1,5 +1,5 @@
 
-fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=1L,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", check.names=FALSE, encoding="unknown", strip.white=TRUE, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable")) {
+fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=1L,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable")) {
     if (!is.character(dec) || length(dec)!=1L || nchar(dec)!=1) stop("dec must be a single character e.g. '.' or ','")
     # handle encoding, #563
     if (!encoding %in% c("unknown", "UTF-8", "Latin-1")) {
@@ -114,5 +114,8 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
                 set(ans, j = j, value = as_factor(.subset2(ans, j)))
         }
     }
+    # FR #768
+    if (!missing(col.names))
+        setnames(ans, col.names) # setnames checks and errors automatically
     ans
 }

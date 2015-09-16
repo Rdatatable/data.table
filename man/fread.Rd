@@ -13,7 +13,7 @@ fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA",
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=1L,
 skip=0L, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
-dec=if (sep!=".") "." else ",",
+dec=if (sep!=".") "." else ",", col.names, 
 check.names=FALSE, encoding="unknown", strip.white=TRUE, 
 showProgress=getOption("datatable.showProgress"),   # default: TRUE
 data.table=getOption("datatable.fread.datatable")   # default: TRUE
@@ -35,6 +35,7 @@ data.table=getOption("datatable.fread.datatable")   # default: TRUE
   \item{colClasses}{ A character vector of classes (named or unnamed), as read.csv. Or a named list of vectors of column names or numbers, see examples. colClasses in fread is intended for rare overrides, not for routine use. fread will only promote a column to a higher type if colClasses requests it. It won't downgrade a column to a lower type since NAs would result. You have to coerce such columns afterwards yourself, if you really require data loss. }
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{base::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
   \item{dec}{ The decimal separator as in \code{base::read.csv}. If not "." (default) then usually ",". See details. }
+  \item{col.names}{ A vector of optional names for the variables (columns). The default is to use the header column if present or detected, or if not "V" followed by the column number. }
   \item{check.names}{ default is \code{FALSE}. If \code{TRUE}, it uses the base function \code{\link{make.unique}} to ensure that column names are all unique.}
   \item{encoding}{ default is \code{"unknown"}. Other possible options are \code{"UTF-8"} and \code{"Latin-1"}.  }
   \item{strip.white}{ default is \code{TRUE}. Strips leading and trailing whitespaces of unquoted fields. If \code{FALSE}, only header trailing spaces are removed. }
@@ -71,7 +72,7 @@ On Windows, "French_France.1252" is tried which should be available as standard 
       If an embedded quote is followed by the separator inside a quoted field, the embedded quotes up to that point in that field must be balanced; e.g. \code{...,2,"www.blah?x="one",y="two"",3.14,...}.
 
       Quoting may be used to signify that numeric data should be read as text.
-      
+
       On those fields that do not satisfy these conditions, e.g., fields with unbalanced quotes, \code{fread} re-attempts that field as if it isn't quoted. This is quite useful in reading files that contains fields with unbalanced quotes as well, automatically.}
   }
 

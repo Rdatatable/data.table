@@ -6931,6 +6931,14 @@ test(1555.13, fread(str1), fread(str2))
 test(1556.1, fread("issue_1330_fread.txt", nrow=2), data.table(a=1:2, b=1:2))
 test(1556.2, fread("issue_1330_fread.txt", nrow=4), data.table(a=1:2, b=1:2), warning="Stopped reading at empty line 4")
 
+# FR #768
+str="1,2\n3,4\n"
+test(1557.1, names(fread(str)), c("V1", "V2")) # autonamed
+test(1557.2, names(fread(str, col.names=letters[1:2])), letters[1:2])
+test(1557.3, names(fread(str, col.names=letters[1])), error="Can't assign 1 names to")
+test(1557.4, names(fread(str, col.names=letters[1:3])), error="Can't assign 3 names to")
+test(1557.5, names(fread(str, col.names=1:2)), error="Passed a vector of type")
+
 ##########################
 
 
