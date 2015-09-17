@@ -2482,7 +2482,7 @@ setDF <- function(x, rownames=NULL) {
   invisible(x)
 }
 
-setDT <- function(x, keep.rownames=FALSE, key=NULL) {
+setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     name = substitute(x)
     if (is.name(name)) {
         home <- function(x, env) {
@@ -2501,10 +2501,12 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL) {
         # fix for #1078 and #1128, see .resetclass() for explanation.
         setattr(x, 'class', .resetclass(x, 'data.table'))
         if (!missing(key)) setkeyv(x, key) # fix for #1169
+        if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
         if (selfrefok(x) > 0) return(invisible(x)) else alloc.col(x)
     } else if (is.data.frame(x)) {
         rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
         setattr(x, "row.names", .set_row_names(nrow(x)))
+        if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
         # fix for #1078 and #1128, see .resetclass() for explanation.
         setattr(x, "class", .resetclass(x, 'data.frame'))
         alloc.col(x)
@@ -2530,6 +2532,7 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL) {
                 xn[idx] = paste("V", seq_along(which(idx)), sep="")
                 setattr(x, "names", xn)
             }
+            if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))
         }
         setattr(x,"row.names",.set_row_names(max(n)))
         setattr(x,"class",c("data.table","data.frame"))
