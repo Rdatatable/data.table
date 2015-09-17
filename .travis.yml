@@ -11,7 +11,7 @@ language: c
 before_install:
   - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
   - chmod 755 ./travis-tool.sh
-  - sed "s/grep -q WARNING/grep WARNING \| grep -v inst\/doc \| grep -v 'Status:.*WARNING,'/" travis-tool.sh > ./tmp.sh
+  - sed "s/grep -q WARNING/grep WARNING \| grep -v inst\/doc \| grep -v 'Status:.*WARNING'/" travis-tool.sh > ./tmp.sh
   - mv tmp.sh travis-tool.sh
   - chmod 755 ./travis-tool.sh  
   - ./travis-tool.sh bootstrap
