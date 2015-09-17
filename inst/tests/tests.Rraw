@@ -6969,6 +6969,11 @@ test(1559.3, setDT(ls1, check.names=TRUE), ans)
 test(1560.1, data.table(x=letters[1:5])[, 0, with=FALSE], null.data.table())
 test(1560.2, data.table(x=letters[1:5])[, c(0,FALSE), with=FALSE], null.data.table())
 
+# Fix for #1298
+d = data.table(a = 1)
+q = quote(.(a))
+test(1561, d[, 1, by = eval(q)], d[, 1, by = .(a)])
+
 ##########################
 
 

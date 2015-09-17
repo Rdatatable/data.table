@@ -782,6 +782,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 }
                 if (length(bysubl) && identical(bysubl[[1L]],quote(eval))) {    # TO DO: or by=..()
                     bysub = eval(bysubl[[2]], parent.frame(), parent.frame())
+                    bysub = replace_dot(bysub) # fix for #1298
                     if (is.expression(bysub)) bysub=bysub[[1L]]
                     bysubl = as.list.default(bysub)
                 } else if (is.call(bysub) && as.character(bysub[[1L]]) %chin% c("c","key","names", "intersect", "setdiff")) {
