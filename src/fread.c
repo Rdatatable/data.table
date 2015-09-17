@@ -995,7 +995,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 }
             }
             if (i<5) {
-                warning("Unable to find 5 lines with expected number of columns (%s)\n", str);
+                if (INTEGER(nrowsarg)[0]==-1)
+                    warning("Unable to find 5 lines with expected number of columns (%s)\n", str);
                 continue;
             }
         }

@@ -6948,6 +6948,13 @@ test(1557.3, names(fread(str, col.names=letters[1])), error="Can't assign 1 name
 test(1557.4, names(fread(str, col.names=letters[1:3])), error="Can't assign 3 names to")
 test(1557.5, names(fread(str, col.names=1:2)), error="Passed a vector of type")
 
+# Fix for #773
+f = "issue_773_fread.txt"
+ans = data.table(AAA=as.integer(c(4,7,rep(1,17),31,21)),
+                 BBB=as.integer(c(5,8,rep(2,17),32,22)),
+                 CCC=as.integer(c(6,9,rep(3,17),33,23)))
+test(1558, fread(f, nrow=21L), ans) # no warning
+
 ##########################
 
 
