@@ -586,6 +586,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 xo = integer()  ## signifies 1:.N
                 if (missing(by) && with && isTRUE(getOption("datatable.old.bywithoutby"))) {
                     # To revert to <=v1.9.2 behaviour.  TO DO: remove option after Sep 2015
+                    warning("The data.table option 'datatable.old.bywithoutby' for grouping on join without providing `by` will be deprecated in the next release, use `by=.EACHI`.", call. = FALSE)
                     by=bysub=as.symbol(".EACHI")
                     byjoin=TRUE
                     txtav = c(names(x)[-rightcols], names(i)[-leftcols])
