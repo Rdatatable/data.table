@@ -250,7 +250,7 @@
 
   65. `DT[, 0, with=FALSE]` returns null data.table to be consistent with `data.frame`'s behaviour. Closes [#1140](https://github.com/Rdatatable/data.table/issues/1140). Thanks to @franknarf1.
 
-  66. Evaluating quoted expressions with `.` in `by` works as intended. That is, `dt = data.table(a=c(1,1,2,2), b=1:4); expr=quote(.(a)); dt[, sum(b), eval(expr)]` works now. Closes [#1123](https://github.com/Rdatatable/data.table/issues/1123). Thanks @eddi.
+  66. Evaluating quoted expressions with `.` in `by` works as intended. That is, `dt = data.table(a=c(1,1,2,2), b=1:4); expr=quote(.(a)); dt[, sum(b), eval(expr)]` works now. Closes [#1298](https://github.com/Rdatatable/data.table/issues/1298). Thanks @eddi.
 
 #### NOTES
 
