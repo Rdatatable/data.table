@@ -6979,6 +6979,14 @@ d = as.IDate(seq(as.Date("2015-01-01"), as.Date("2015-01-15"), by='1 day'))
 test(1562.1, as.list(d), lapply(as.list(as.Date(d)), as.IDate))
 test(1562.2, sapply(d, identity), as.integer(sapply(as.Date(d), identity)))
 
+# Fix for #1216, .SDcols and with=FALSE should evaluate within frame of 'x' only when it's of the form a:b
+dt = data.table(index1=1:10, index2=10:1, index3=1, s=4, i=24)
+i = 2L
+test(1557.1, dt[, paste0("index", 1:i), with=FALSE], dt[, index1:index2, with=FALSE])
+test(1557.2, dt[, paste0("index", 1:i), with=FALSE], dt[, 1:2, with=FALSE])
+test(1557.3, dt[, 5:4, with=FALSE], dt[, i:s, with=FALSE])
+test(1557.4, dt[, .SD, .SDcols=paste0("index", 1:i)], dt[, .SD, .SDcols=index1:index2])
+
 ##########################
 
 

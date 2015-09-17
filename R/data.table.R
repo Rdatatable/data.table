@@ -731,7 +731,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 notj = TRUE
                 jsub = jsub[[2L]]
             } else notj = FALSE
-            j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame()) # else j will be evaluated for the first time on next line
+            # fix for #1216, make sure the paranthesis are peeled from expr of the form (((1:4)))
+            while (is.call(jsub) && jsub[[1L]] == "(") jsub = as.list(jsub)[[-1L]]
+            if (is.call(jsub) && length(jsub) == 3L && jsub[[1L]] == ":") {
+                j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame()) # else j will be evaluated for the first time on next line
+            } else {
+                j = eval(jsub, parent.frame(), parent.frame())
+            }
             if (is.logical(j)) j <- which(j)
             if (!length(j)) return( null.data.table() )
             if (is.factor(j)) j = as.character(j)  # fix for FR: #4867
@@ -936,7 +942,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         colm = TRUE
                         colsub = colsub[[2L]]
                     } else colm = FALSE
-                    .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame())
+                    # fix for #1216, make sure the paranthesis are peeled from expr of the form (((1:4))) 
+                    while(is.call(colsub) && colsub[[1L]] == "(") colsub = as.list(colsub)[[-1L]]
+                    if (is.call(colsub) && length(colsub) == 3L && colsub[[1L]] == ":") {
+                        # .SDcols is of the format a:b
+                        .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame())
+                    } else {
+                        .SDcols = eval(colsub, parent.frame(), parent.frame())
+                    }
                     if (is.logical(.SDcols)) {
                         ansvals = which_(rep(.SDcols, length.out=length(x)), !colm)
                         ansvars = names(x)[ansvals]
