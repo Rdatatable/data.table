@@ -289,6 +289,8 @@
 
   13. Warning about `datatable.old.bywithoutby` option (for grouping on join without providing `by`) being deprecated in the next release is in place now. Thanks to @jangorecki for the PR.
 
+  14. Fixed `allow.cartesian` documentation to `nrow(x)+nrow(i)` instead of `max(nrow(x), nrow(i))`. Closes [#1123](https://github.com/Rdatatable/data.table/issues/1123). 
+
 ### Changes in v1.9.4  (on CRAN 2 Oct 2014)
 
 #### NEW FEATURES
