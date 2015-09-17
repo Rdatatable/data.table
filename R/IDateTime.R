@@ -24,11 +24,13 @@ seq.IDate <-
 c.IDate <-
 rep.IDate <-
 split.IDate <-
-as.list.IDate <-
 unique.IDate <-
     function(x, ...) {
         as.IDate(NextMethod())
     }
+
+# fix for #1315
+as.list.IDate <- function(x, ...) NextMethod()
 
 # rounding -- good for graphing / subsetting
 ## round.IDate <- function (x, digits, units=digits, ...) {

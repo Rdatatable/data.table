@@ -252,6 +252,8 @@
 
   66. Evaluating quoted expressions with `.` in `by` works as intended. That is, `dt = data.table(a=c(1,1,2,2), b=1:4); expr=quote(.(a)); dt[, sum(b), eval(expr)]` works now. Closes [#1298](https://github.com/Rdatatable/data.table/issues/1298). Thanks @eddi.
 
+  67. `as.list` method for `IDate` object works properly. Closes [#1315](https://github.com/Rdatatable/data.table/issues/1315). Thanks to @gwerbin.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).
