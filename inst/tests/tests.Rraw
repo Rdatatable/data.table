@@ -3289,7 +3289,7 @@ if ("package:reshape2" %in% search()) {
     # Fix for #862 (optional prefixes)
     dt <- data.table(name=c("Betty","Joe","Frank","Wendy","Sally"),
                        address=c(rep("bla1",2), rep("bla2",2), "bla3"))
-    test(1501.2, dcast(dt, address ~ paste("cust", dt[, seq_len(.N), by=address]$V1, sep=""), value.var="name"), data.table(address=paste0("bla", 1:3), cust1=c("Betty", "Frank", "Sally"), 
+    test(1501.2, dcast(dt, address ~ paste("cust", dt[, seq_len(.N), by=address]$V1, sep=""), value.var="name"), data.table(address=paste("bla",1:3,sep=""), cust1=c("Betty", "Frank", "Sally"), 
                  cust2=c("Joe", "Wendy", NA), key="address"))
 
     # Fix for #1037 (optional prefixes + undefined variables)
@@ -5051,7 +5051,12 @@ setkey(X, val1)
 test(1354, X[Y, val2 := i.val2, allow.cartesian=TRUE][, val1 := NULL][order(id)], data.table(id=1:10, val2=as.integer(c(8,7,7,6,8,6,6,7,7,8))))
 
 # Fix for #475, setDT(CO2) should error, as it's trying to modify the object whose binding is locked.
-test(1355, setDT(CO2), error="Can not convert 'CO2' to data.table by reference because binding is locked.")
+# CO2 is not locked in R 2.14.1 but is in R >= 3.1.0.  R NEWS isn't clear when that change happened, so just test there is an error when it is locked.
+if (bindingIsLocked("CO2",as.environment("package:datasets"))) {
+    test(1355, setDT(CO2), error="Can not convert 'CO2' to data.table by reference because binding is locked.")
+} else {
+    test(1355, setDT(CO2), CO2)
+}
 
 # Fix for #698. not join doesn't need to check for allow.cartesian=TRUE.
 DT1 <- data.table(x=rep(1:3, each=3L), y=1:9, key="x")
@@ -5585,7 +5590,7 @@ DT = data.table(a = c(1,1,1,2,2,2,3,3,3), b = rnorm(9))
 test(1384, DT[a == max(a)], DT[7:9])
 
 # Dups on RHS of == or %in%
-DT = data.table(id = paste0("id", 1:5))
+DT = data.table(id = paste("id",1:5,sep=""))
 id.sub = c("id1", "id2", "id3", "id3", "id4")   # deliberate dup
 test(1385.1, DT[id %in% id.sub], DT[1:4])
 test(1385.2, DT[id == id.sub], DT[1:3])
@@ -5751,7 +5756,9 @@ test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new ind
 
 # fread dec=',' e.g. France
 test(1438, fread("A;B\n1;2,34\n", dec="12"), error="dec must be a single character")
-test(1439, fread("A;B\n1;2,34\n", dec="1"), error="Unable to change to a locale which provides the desired dec")  # this test runs on many machines so chose a dec for this test which is sure not to be valid in any locale
+
+test(1439, (if (base::getRversion()<"3.3.0") suppressWarnings else identity)(fread("A;B\n1;2,34\n", dec="1")),
+     error="Unable to change to a locale which provides the desired dec")  # this test runs on many machines so chose a dec for this test which is sure not to be valid in any locale
 test(1440, fread("A;B\n1;2,34\n", sep=".", dec="."), error="The two arguments to fread 'dec' and 'sep' are equal ('.')")
 if (.Platform$OS.type=="windows" ||
     (!inherits(tt <- try(system("locale -a", intern=TRUE)), "try-error") && "fr_FR.utf8" %in% tt )) {
@@ -5881,9 +5888,9 @@ test(1461.1, DT[, c(lapply(.SD, mean), lapply(.SD, sd)), by=x],
 # Tests for #994
 DT = data.table(x=c("a", "a", "b", "b"), v1=sample(4), v2=sample(4))
 cols = c("v1", "v2")
-test(1462.1, DT[, mget(cols)], DT[, cols, with=FALSE])
-test(1462.2, DT[, mget(cols[1])], DT[, cols[1], with=FALSE])
-test(1462.3, DT[, sum(unlist(mget(cols))), by=x], DT[, sum(unlist(.SD)), by=x, .SDcol=cols])
+test(1462.1, DT[, mget(cols, as.environment(-1))], DT[, cols, with=FALSE])   # as.environment needed for testing on pre-R3.0.0 which we don't want to depend on yet
+test(1462.2, DT[, mget(cols[1], as.environment(-1))], DT[, cols[1], with=FALSE])
+test(1462.3, DT[, sum(unlist(mget(cols, as.environment(-1)))), by=x], DT[, sum(unlist(.SD)), by=x, .SDcol=cols])
 
 # test for 'shift'
 x=1:5
@@ -5979,7 +5986,7 @@ if ("package:xts" %in% search()) {
 }
 
 # as.data.table.default #969
-ar <- array(NA, dim=c(10,4),dimnames = list(NULL,paste0("col",1:4)))
+ar <- array(NA, dim=c(10,4),dimnames = list(NULL,paste("col",1:4,sep="")))
 test(1466.1, as.data.table(as.data.frame(ar)), as.data.table(ar)) # array type
 x <- rep(Sys.time(),3)
 test(1466.2, as.data.table(as.data.frame(x)), as.data.table(x)) # posix type
@@ -6148,7 +6155,10 @@ test(1484, DT[, SomeFunction(ID, setnull=1L)], DT[, SomeFunction(ID, setnull=2L)
 
 # Fix for #868
 vals = c("setosa", "versicolor", "virginica")
-test(1485, as.data.table(combn(unique(iris$Species),2)), data.table(vals[1:2], vals[c(1,3)], vals[2:3]))
+if (base::getRversion()>="3.1.0") {
+  # depends on bug fix to combn() in R 3.1.0
+  test(1485, as.data.table(combn(unique(iris$Species),2)), data.table(vals[1:2], vals[c(1,3)], vals[2:3]))
+}
 
 # Fix for #955
 DT <- data.table(Time=.POSIXct(0, tz="UTC")+0:1, Value=1:2)
@@ -6861,7 +6871,7 @@ test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str
 test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), read_table(str, na.strings=c("#N/A", "-999", "FALSE")))
 
 # FR #1177: 'quote' option of 'print.data.table'
-DT1 <- data.table(s1=paste0(" ",LETTERS[1:5]),s2=LETTERS[1:5])
+DT1 <- data.table(s1=paste(" ",LETTERS[1:5],sep=""),s2=LETTERS[1:5])
 ans1 <- c("     s1  s2","1: \" A\" \"A\"",
           "2: \" B\" \"B\"","3: \" C\" \"C\"",
           "4: \" D\" \"D\"","5: \" E\" \"E\"")

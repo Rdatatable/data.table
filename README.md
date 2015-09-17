@@ -257,7 +257,7 @@
 
   5. `DT[, j, ]` at times made an additional (unnecessary) copy. This is now fixed. This fix also avoids allocating `.I` when `j` doesn't use it. As a result `:=` and other subset operations should be faster (and use less memory). Thanks to @szilard for the nice report. Closes [#921](https://github.com/Rdatatable/data.table/issues/921).
 
-  6. Because `reshape2` requires R >3.0.0, and `data.table` works with R >= 2.14.0, we can not import `reshape2` anymore. Therefore we define a `melt` generic and `melt.data.table` method for data.tables and redirect to `reshape2`'s `melt` for other objects. This is to ensure that existing code works fine. 
+  6. Because `reshape2` requires R >3.0.0, and `data.table` works with R >= 2.14.1, we can not import `reshape2` anymore. Therefore we define a `melt` generic and `melt.data.table` method for data.tables and redirect to `reshape2`'s `melt` for other objects. This is to ensure that existing code works fine. 
 
   7. `dcast` is also a generic now in data.table. So we can use `dcast(...)` directly, and don't have to spell it out as `dcast.data.table(...)` like before. The `dcast` generic in data.table redirects to `reshape2::dcast` if the input object is not a data.table. But for that you have to load `reshape2` before loading `data.table`. If not,  reshape2's `dcast` overwrites data.table's `dcast` generic, in which case you will need the `::` operator - ex: `data.table::dcast(...)`. 
 
@@ -277,6 +277,8 @@
         # 2: 2 klmno...
 
   11. `rolltolast` argument in `[.data.table` is now defunct. It was deprecated in 1.9.4.
+  
+  12. `data.table`'s dependency has been moved forward from R 2.14.0 to R 2.14.1, now nearly 4 years old (Dec 2011). As usual before release to CRAN we ensure data.table passes the test suite on the stated dependency and keep this as old as possible for as long as possible. As requested by users in managed environments. For this reason we still don't use `paste0()` internally, since that was added to R 2.15.0.
 
 ### Changes in v1.9.4  (on CRAN 2 Oct 2014)
 
