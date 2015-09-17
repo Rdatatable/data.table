@@ -1,7 +1,7 @@
 Package: data.table
 Version: 1.9.5
 Title: Extension of Data.frame
-Author: M Dowle, T Short, S Lianoglou, A Srinivasan with contributions from R Saporta, E Antonyan
+Author: M Dowle, A Srinivasan, T Short, S Lianoglou with contributions from R Saporta, E Antonyan
 Maintainer: Matt Dowle <mattjdowle@gmail.com>
 Depends: R (>= 2.14.1)
 Imports: methods, chron
