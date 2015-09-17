@@ -6956,6 +6956,15 @@ ans = data.table(AAA=as.integer(c(4,7,rep(1,17),31,21)),
                  CCC=as.integer(c(6,9,rep(3,17),33,23)))
 test(1558, fread(f, nrow=21L), ans) # no warning
 
+# FR # 1338 -- check.names argument of setDT
+ans=data.table(X=1:3,"X.1"=1:3)
+dt1<-data.table(X=1:3,X=1:3)
+df1<-data.frame(X=1:3,X=1:3,check.names=FALSE)
+ls1<-list("X"=1:3,"X"=1:3)
+test(1559.1, setDT(dt1, check.names=TRUE), ans)
+test(1559.1, setDT(df1, check.names=TRUE), ans)
+test(1559.1, setDT(ls1, check.names=TRUE), ans)
+
 ##########################
 
 
