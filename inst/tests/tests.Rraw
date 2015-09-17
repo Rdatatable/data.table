@@ -6962,8 +6962,12 @@ dt1<-data.table(X=1:3,X=1:3)
 df1<-data.frame(X=1:3,X=1:3,check.names=FALSE)
 ls1<-list("X"=1:3,"X"=1:3)
 test(1559.1, setDT(dt1, check.names=TRUE), ans)
-test(1559.1, setDT(df1, check.names=TRUE), ans)
-test(1559.1, setDT(ls1, check.names=TRUE), ans)
+test(1559.2, setDT(df1, check.names=TRUE), ans)
+test(1559.3, setDT(ls1, check.names=TRUE), ans)
+
+# Fix #1140
+test(1560.1, data.table(x=letters[1:5])[, 0, with=FALSE], null.data.table())
+test(1560.2, data.table(x=letters[1:5])[, c(0,FALSE), with=FALSE], null.data.table())
 
 ##########################
 

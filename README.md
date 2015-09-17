@@ -248,6 +248,8 @@
 
   64. Using `.GRP` unnamed in `j` now returns a variable named `GRP` instead of `.GRP` as the period was causing issues. Same for `.BY`. Closes [#1243](https://github.com/Rdatatable/data.table/issues/1243); thanks to @MichaelChirico for the PR.
 
+  65. `DT[, 0, with=FALSE]` returns null data.table to be consistent with `data.frame`'s behaviour. Closes [#1140](https://github.com/Rdatatable/data.table/issues/1140). Thanks to @franknarf1.
+
 #### NOTES
 
   1. Clearer explanation of what `duplicated()` does (borrowed from base). Thanks to @matthieugomez for pointing out. Closes [#872](https://github.com/Rdatatable/data.table/issues/872).

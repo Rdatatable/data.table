@@ -754,6 +754,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     ansvals = chmatch(ansvars, names(x))
                 }
             } else if (is.numeric(j)) {
+                if (all(j == 0L)) return (null.data.table())
                 if (any(abs(j) > ncol(x) | j==0L)) stop("j out of bounds")
                 if (any(j<0L) && any(j>0L)) stop("j mixes positive and negative")
                 if (any(j<0L)) j = seq_len(ncol(x))[j]
