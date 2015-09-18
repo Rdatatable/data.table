@@ -211,10 +211,20 @@ res <- revdep_check("data.table", bioconductor=TRUE)
 revdep_check_save_summary(res)
 revdep_check_save_logs(res)
 
-# wait for it to finish before fixing. Any R CMD INSTALL may effect running tests which run under a new R --slave for each one
+# wait for it to finish before fixing; any R CMD INSTALL may affect running tests which run under a new R --slave for each one
 
+# CAGEr & GGtools fail due to not finding KernSmooth. It's so there in /usr/lib/R/library/ alongside other recommended packages that it's not funny. Tried installing KernSmooth in "~/build/revdeplib/" as well and ensured R_LIBS set and present in .libPaths() and they still complain can't find KernSmooth. Searched online and found others with similar problems with KernSmooth too but no clear solution.
+# Similarly, pwOmics fails due to not finding RUnit but that too is so installed it's not funny
+# Running these 3 manually outside of devtools::revdep_check() works fine ...
 cd ~/build
-export R_LIBS=/home/mdowle/build/revdeplib/
+export R_LIBS=~/build/revdeplib/
+R CMD check revdeplib/CAGEr_1.10.0.tar.gz
+R CMD check revdeplib/GGtools_5.4.0.tar.gz
+R CMD check revdeplib/pwOmics_1.1.8.tar.gz
+
+# Now tackle the real fails ...
+cd ~/build
+export R_LIBS=~/build/revdeplib/
 R CMD check revdeplib/bedr_1.0.1.tar.gz
 R CMD INSTALL data.table_1.9.4.tar.gz    # revert to previous version
 R CMD check revdeplib/bedr_1.0.1.tar.gz  # if still fails then it isn't data.table causing fail. Check for missing Ubuntu packages and similar. 
