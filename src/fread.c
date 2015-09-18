@@ -853,12 +853,15 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     if (ch>mmp) {
         if (*(ch-1)!=eol2) STOP("Internal error. No eol2 immediately before line %d after sep detection.", line);
-        if (verbose) {
-            ch2 = ch-eolLen-1;
-            i = 0;
-            while (ch2>=mmp && *ch2!=eol2) { i+=!isspace(*ch2); ch2--; }
-            ch2++;
-            if (i>0) Rprintf("The line before starting line %d is non-empty and will be ignored: %.*s", line, ch-ch2-eolLen, ch2);
+        ch2 = ch-eolLen-1;
+        i = 0;
+        while (ch2>=mmp && *ch2!=eol2) { i+=!isspace(*ch2); ch2--; }
+        ch2++;
+        if (i>0) {
+            if (line==2 && isInteger(skip) && INTEGER(skip)[0]==0)  // warn about line 1, unless skip was provided
+                warning("Starting data input on line 2 and discarding line 1 because it has too few or too many items to be column names or data: %.*s", ch-ch2-eolLen, ch2);
+            else if (verbose) 
+                Rprintf("The line before starting line %d is non-empty and will be ignored (it has too few or too many items to be column names or data): %.*s", line, ch-ch2-eolLen, ch2);
         }
     }
     if (ch!=pos) STOP("Internal error. ch!=pos after sep detection");

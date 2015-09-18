@@ -2525,7 +2525,7 @@ f = "2008head.csv"
 test(902, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)), warning="Bumped column 23 to type character.*may not be lossless")
 
 test(903, fread("A,B\n1,3,foo,5\n2,4,barbaz,6"), data.table(1:2,3:4,c("foo","barbaz"),5:6),
-          warning="Starting data input on line 2 and discarded previous non-empty line: A,B")  # invalid colnames (too short)
+          warning="Starting data input on line 2 and discarding line 1 because.*: A,B")  # invalid colnames (too short)
 test(904, fread("A,B,C,D\n1,3,foo,5\n2,4,barbaz,6"), DT<-data.table(A=1:2,B=3:4,C=c("foo","barbaz"),D=5:6))  # ok
 test(905, fread('A,B,C,D\n1,3,foo,5\n2,4,"barbaz",6'), DT)
 test(906, fread('A,B,C,D\n1,3,foo,5\n2,4,"ba,r,baz",6'), DT[2,C:="ba,r,baz"])
@@ -4928,7 +4928,7 @@ test(1325, fread('A,B,C\n1,4,"foo"\n2,5,"bar"'), data.table(A=1:2,B=4:5,C=c("foo
 test(1326, fread('A,B,C\n1,4,"foo"\n2,5,bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar"')))
 test(1327, fread('A,B,C\n1,4,"foo"\n2,5,""bar""'), data.table(A=1:2,B=4:5,C=c("foo",'"bar"')))
 cat('A,B\n1,"Joe \\",Bloggs"', file = f<-tempfile())
-test(1328, fread(f), data.table(V1=1L, V2='Joe \\', V3='Bloggs"'), warning="Starting data input on line 2 and discarded previous non-empty line: A,B")
+test(1328, fread(f), data.table(V1=1L, V2='Joe \\', V3='Bloggs"'), warning="Starting data input on line 2 and discarding line 1 because.*: A,B")
 unlink(f)
 test(1329, fread(), error="Input is either empty or fully whitespace after the skip or autostart")
 # add test that that escaped escapes at the end of a quoted field
