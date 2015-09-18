@@ -853,13 +853,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     if (ch>mmp) {
         if (*(ch-1)!=eol2) STOP("Internal error. No eol2 immediately before line %d after sep detection.", line);
-        // warn if previous line is not blank, unless skip was provided ...
-        if (isInteger(skip) && INTEGER(skip)[0]==0) {
+        if (verbose) {
             ch2 = ch-eolLen-1;
             i = 0;
             while (ch2>=mmp && *ch2!=eol2) { i+=!isspace(*ch2); ch2--; }
             ch2++;
-            if (i>0) warning("Starting data input on line %d and discarded previous non-empty line: %.*s", line, ch-ch2-eolLen, ch2);
+            if (i>0) Rprintf("The line before starting line %d is non-empty and will be ignored: %.*s", line, ch-ch2-eolLen, ch2);
         }
     }
     if (ch!=pos) STOP("Internal error. ch!=pos after sep detection");
