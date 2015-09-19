@@ -8,7 +8,11 @@ sudo apt-get install pandoc  # but use .deb from pandoc homepage (v1.15) otherwi
 R
 update.packages()
 q()
-grep -R --exclude-dir=".git" --color='auto' -P -n "[\x80-\xFF]" data.table/   # Ensure no non-ASCII other than in README.md.  tests.Rraw in particular has failed CRAN Solaris (only) due to this
+# Ensure no non-ASCII other than in README.md
+# tests.Rraw in particular has failed CRAN Solaris (only) due to this.
+# No unicode either. Put these tests in DtNonAsciiTests package.
+grep -R --exclude-dir=".git" --color='auto' -P -n "[\x80-\xFF]" data.table/
+grep -R --exclude-dir=".git" --color='auto' -n "[\]u[0-9]" data.table/   
 R CMD build data.table
 R CMD check --as-cran data.table_1.9.5.tar.gz
 
@@ -255,7 +259,7 @@ Close milestone
 
 Submit message template:
 "
-One dependent will fail: bedr. Maintainer notified and is ok to submit revision.
+Three dependents will fail: bedr, repra and GenomicInteractions. Maintainers notified and are ok to submit revision.
 Passes winbuilder both r-release and r-devel.
 Passes emulated big endian using QEMU so should pass Solaris Sparc.
 Checked on 64-bit Ubuntu with UBSAN, ASAN and valgrind.
