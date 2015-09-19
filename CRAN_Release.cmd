@@ -219,12 +219,14 @@ revdep_check_save_logs(res)
 
 # CAGEr & GGtools fail due to not finding KernSmooth. It's so there in /usr/lib/R/library/ alongside other recommended packages that it's not funny. Tried installing KernSmooth in "~/build/revdeplib/" as well and ensured R_LIBS set and present in .libPaths() and they still complain can't find KernSmooth. Searched online and found others with similar problems with KernSmooth too but no clear solution.
 # Similarly, pwOmics fails due to not finding RUnit but that too is so installed it's not funny
-# Running these 3 manually outside of devtools::revdep_check() works fine ...
+# Similarly, VanillaICE fails fue to not finding BSgenome.Hsapiens.UCSC.hg18, which again is so there
+# Running these 4 manually outside of devtools::revdep_check() pass fine ...
 cd ~/build
 export R_LIBS=~/build/revdeplib/
 R CMD check revdeplib/CAGEr_1.10.0.tar.gz
 R CMD check revdeplib/GGtools_5.4.0.tar.gz
 R CMD check revdeplib/pwOmics_1.1.8.tar.gz
+R CMD check revdeplib/VanillaICE_1.30.1.tar.gz
 
 # Now tackle the real fails ...
 cd ~/build
@@ -251,19 +253,21 @@ R CMD build data.table
 R CMD check --as-cran data.table_1.9.6.tar.gz
 Resubmit to winbuilder (both R-release and R-devel)
 Submit to CRAN
-Wait for CRAN acceptance
-Bump version in README and DESCRIPTION to next odd dev version
-Push to GitHub
+Bump version in DESCRIPTION to next odd dev version
+Add new heading in README for the next dev version
+Push to GitHub so dev can continue
+Cross fingers accepted first time. If not, push changes to devel and backport locally
 Close milestone
 ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
 
 Submit message template:
 "
-Three dependents will fail: bedr, repra and GenomicInteractions. Maintainers notified and are ok to submit revision.
-Passes winbuilder both r-release and r-devel.
-Passes emulated big endian using QEMU so should pass Solaris Sparc.
-Checked on 64-bit Ubuntu with UBSAN, ASAN and valgrind.
-My email address has changed.
+1. I've seen today's change in R-devel that has just started to cause data.table to fail on CRAN R-devel on Windows. This update will pass.
+2. 3 out of 131 dependents will fail: bedr, repra and GenomicInteractions. Maintainers notified and are ok to submit revision.
+3. Passes winbuilder both r-release and r-devel.
+4. Passes emulated big endian using QEMU so should pass Solaris Sparc.
+5. Checked on 64-bit Ubuntu with UBSAN, ASAN and valgrind.
+6. My email address has changed.
 Many thanks!
 "
 
