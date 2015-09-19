@@ -8,11 +8,11 @@ sudo apt-get install pandoc  # but use .deb from pandoc homepage (v1.15) otherwi
 R
 update.packages()
 q()
-# Ensure no non-ASCII other than in README.md
-# tests.Rraw in particular has failed CRAN Solaris (only) due to this.
+# Ensure no non-ASCII, other than in README.md is ok
+# tests.Rraw in particular have failed CRAN Solaris (only) due to this.
 # No unicode either. Put these tests in DtNonAsciiTests package.
-grep -R --exclude-dir=".git" --color='auto' -P -n "[\x80-\xFF]" data.table/
-grep -R --exclude-dir=".git" --color='auto' -n "[\]u[0-9]" data.table/   
+grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" data.table/
+grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" data.table/   
 R CMD build data.table
 R CMD check --as-cran data.table_1.9.5.tar.gz
 

@@ -50,12 +50,12 @@ options(width=100)
 ```
 
 ```{r}
-flights <- fread("https://raw.githubusercontent.com/wiki/arunsrinivasan/flights/NYCflights14/flights14.csv")
+flights <- fread("flights14.csv")
 flights
 dim(flights)
 ```
 
-Since we will be using this dataset in all the other vignettes as well, it might be better to download the file once and then load it from disk.
+Aside: `fread` accepts `http` and `https` URLs directly as well as operating system commands such as `sed` and `awk` output. See `?fread` for examples.
 
 ## Introduction
 

@@ -60,7 +60,7 @@ From `v1.9.6` on, you don't have to load `reshape2` package to use these functio
 Suppose we have a `data.table` (artificial data) as shown below:
 
 ```{r}
-DT = fread("https://raw.githubusercontent.com/wiki/Rdatatable/data.table/data/melt_default.csv")
+DT = fread("melt_default.csv")
 DT 
 ## dob stands for date of birth.
 
@@ -152,7 +152,7 @@ So far we've seen features of `melt` and `dcast` that are based on `reshape2` pa
 However, there are situations we might run into where the desired operation is not expressed in a straightforward manner. For example, consider the *data.table* shown below:
 
 ```{r}
-DT = fread("https://raw.githubusercontent.com/wiki/Rdatatable/data.table/data/melt_enhanced.csv")
+DT = fread("melt_enhanced.csv")
 DT
 ## 1 = female, 2 = male 
 ``` 
