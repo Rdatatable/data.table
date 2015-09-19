@@ -7,7 +7,7 @@ output:
     highlight: pygments
     css : css/bootstrap.css
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{Reference semantics}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
