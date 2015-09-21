@@ -204,7 +204,7 @@ git clone https://github.com/Rdatatable/data.table.git
 # NB: repos <- c(CRAN="http://cran.rstudio.com/") is hard-coded into devtools::check_cran
 # NB: revdep_check moves the tar.gz of directly dependent packages into revdeplib afterwards. The packages those packages depened on are installed in revdeplib without their tar.gz
 
-export R_LIBS=~/build/revdeplib/     # aids pwOmics find RUnit and VanillaICE find BSgenome
+export R_LIBS=~/build/revdeplib/
 R
 require(devtools) 
 options(devtools.revdep.libpath = "~/build/revdeplib/")
@@ -241,6 +241,11 @@ R CMD check revdeplib/bedr_1.0.1.tar.gz
 # iterate
 
 repeat revdep_check() until passes cleanly
+
+# Check for warnings
+cd /tmp/RtmpNRWfYa/check_crana4e6458d6c8/
+find . -name "00check.log" -exec grep -iH warning {} \;
+find . -name "00check.log" -exec grep -iH "replacing previous import" {} \;
 
 
 ###############################################
