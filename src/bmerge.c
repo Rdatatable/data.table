@@ -22,7 +22,7 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 static SEXP i, x;
 static int ncol, *icols, *xcols, *o, *xo, *retFirst, *retLength, *allLen1, *rollends;
 static double roll, rollabs;
-static Rboolean nearest=FALSE, enc_warn=TRUE;
+static Rboolean rollToNearest=FALSE, enc_warn=TRUE;
 #define XIND(i) (xo ? xo[(i)]-1 : i)
 
 void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int lowmax, int uppmax);
@@ -31,11 +31,11 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
 {
     int xN, iN, protecti=0;
     roll = 0.0;
-    nearest = FALSE;
+    rollToNearest = FALSE;
     enc_warn = TRUE;
     if (isString(rollarg)) {
         if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
-        roll=1.0; nearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
+        roll=1.0; rollToNearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
     } else {
         if (!isReal(rollarg)) error("Internal error: roll is not character or double");
         roll = REAL(rollarg)[0];   // more common case (rolling forwards or backwards) or no roll when 0.0
@@ -69,7 +69,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     if (!isLogical(rollendsArg) || LENGTH(rollendsArg) != 2) error("rollends must be a length 2 logical vector");
     rollends = LOGICAL(rollendsArg);
     
-    if (nearest && TYPEOF(VECTOR_ELT(i, icols[ncol-1]-1))==STRSXP) error("roll='nearest' can't be applied to a character column, yet.");
+    if (rollToNearest && TYPEOF(VECTOR_ELT(i, icols[ncol-1]-1))==STRSXP) error("roll='nearest' can't be applied to a character column, yet.");
          
     for (int j=0; j<iN; j++) {
         // defaults need to populated here as bmerge_r may well not touch many locations, say if the last row of i is before the first row of x.
@@ -106,7 +106,7 @@ static union {
 } ival, xval;
 
 static int mid, tmplow, tmpupp;  // global to save them being added to recursive stack. Maybe optimizer would do this anyway.
-static SEXP ic, xc, class;
+static SEXP ic, xc;
 
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowmax, int uppmax)
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
@@ -114,6 +114,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
 // uppmax=1 if xuppIn is the upper bound of this group (needed for roll)
 {
     int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn, j, k, ir, lir, tmp;
+    SEXP class;
     ir = lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
     if (o) ir = o[lir]-1;                      // ir = the actual i row if i were ordered
 
@@ -270,7 +271,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
     else if (roll!=0.0 && col==ncol-1) {
         // runs once per i row (not each search test), so not hugely time critical
         if (xlow != xupp-1 || xlow<xlowIn || xupp>xuppIn) error("Internal error: xlow!=xupp-1 || xlow<xlowIn || xupp>xuppIn");
-        if (nearest) {   // value of roll ignored currently when nearest
+        if (rollToNearest) {   // value of roll ignored currently when nearest
             if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {
                 if (  ( TYPEOF(ic)==REALSXP && REAL(ic)[ir]-REAL(xc)[XIND(xlow)] <= REAL(xc)[XIND(xupp)]-REAL(ic)[ir] )
                    || ( TYPEOF(ic)<=INTSXP && INTEGER(ic)[ir]-INTEGER(xc)[XIND(xlow)] <= INTEGER(xc)[XIND(xupp)]-INTEGER(ic)[ir] )) {

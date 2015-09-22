@@ -8,13 +8,19 @@ sudo apt-get install pandoc  # but use .deb from pandoc homepage (v1.15) otherwi
 R
 update.packages()
 q()
+
 # Ensure no non-ASCII, other than in README.md is ok
 # tests.Rraw in particular have failed CRAN Solaris (only) due to this.
 # No unicode either. Put these tests in DtNonAsciiTests package.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" data.table/
-grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" data.table/   
+grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" data.table/
+
+# workaround for IBM AIX - ensure no globals named 'nearest' or 'class'. See https://github.com/Rdatatable/data.table/issues/1351
+grep "nearest *=" data.table/src/*.c  # none
+grep "class *=" data.table/src/*.c    # quite a few but none global
+
 R CMD build data.table
-R CMD check --as-cran data.table_1.9.5.tar.gz
+R CMD check --as-cran data.table_1.9.7.tar.gz
 
 # Upload to win-builder, both release and dev
 
