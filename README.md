@@ -17,6 +17,8 @@
 
 #### BUG FIXES
 
+  1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).
+
 #### NOTES
 
 
