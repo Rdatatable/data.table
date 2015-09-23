@@ -6977,6 +6977,10 @@ test(1561.5, rowidv(DT, cols=c("x","y")), as.integer(c(1,1,2,1,2,1)))
 # convenient usage with dcast
 test(1561.6, dcast(DT, x ~ rowid(x, prefix="group"), value.var="z"), data.table(x=c(10,20,30), group1=c(2L,1L,4L), group2=c(3L,6L,5L), key="x"))
 
+# Fix for #1346
+DT = data.table(id=1:3, g1=4:6, g2=7:9)
+test(1562, melt(DT, measure=patterns("^g[12]"), variable.factor=FALSE), data.table(id=1:3, variable=rep(c("g1","g2"),each=3L), value=4:9))
+
 ##########################
 
 

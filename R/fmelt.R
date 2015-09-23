@@ -20,7 +20,7 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
     if (is.call(measure.sub) && measure.sub[[1L]] == "patterns") {
         measure.vars = lapply(eval(measure.sub), grep, names(data))    
     }
-    if (is.list(measure.vars)) {
+    if (is.list(measure.vars) && length(measure.vars) > 1L) {
         if (length(value.name) == 1L)  
           value.name = paste(value.name, seq_along(measure.vars), sep="")
     }

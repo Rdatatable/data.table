@@ -27,6 +27,8 @@
 
   4. `merge.data.table` ignores names when `by` argument is a named vector, [#1352](https://github.com/Rdatatable/data.table/issues/1352). Thanks @sebastian-c.
 
+  5. `melt.data.table` names `value` column correctly when `patterns()` of length=1 is provided to `measure.vars()`, [#1346](https://github.com/Rdatatable/data.table/issues/1346). Thanks @jaapwalhout.
+
 #### NOTES
 
 
