@@ -6966,6 +6966,17 @@ dt2 = data.table(a=3:6, b=8:11, d=1L)
 by_cols = c(x="a", y="b")
 test(1560, merge(dt1,dt2, by=by_cols, sort=FALSE), dt1[dt2, nomatch=0L, on=unname(by_cols)])
 
+# FR #1353
+DT = data.table(x=c(20,10,10,30,30,20), y=c("a", "a", "a", "b", "b", "b"), z=1:6)
+
+test(1561.1, rowid(DT$x), as.integer(c(1,1,2,1,2,2)))
+test(1561.2, rowidv(DT, cols="x"), as.integer(c(1,1,2,1,2,2)))
+test(1561.3, rowid(DT$x, prefix="group"), paste("group", as.integer(c(1,1,2,1,2,2)), sep=""))
+test(1561.4, rowid(DT$x, DT$y), as.integer(c(1,1,2,1,2,1)))
+test(1561.5, rowidv(DT, cols=c("x","y")), as.integer(c(1,1,2,1,2,1)))
+# convenient usage with dcast
+test(1561.6, dcast(DT, x ~ rowid(x, prefix="group"), value.var="z"), data.table(x=c(10,20,30), group1=c(2L,1L,4L), group2=c(3L,6L,5L), key="x"))
+
 ##########################
 
 

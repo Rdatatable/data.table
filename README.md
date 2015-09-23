@@ -15,6 +15,8 @@
 
 #### NEW FEATURES
 
+  1. `rowid()` and `rowidv()` - convenience functions for generating a unique row ids within each group, are implemented. `rowid()` is particularly useful along with `dcast()`. See `?rowid` for more, [#1353](https://github.com/Rdatatable/data.table/issues/1353).
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

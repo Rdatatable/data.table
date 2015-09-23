@@ -31,6 +31,6 @@ DT[, sum(value), by=.(grp, rleid(grp))]
 
 }
 \seealso{
-  \code{\link{data.table}}, \url{http://stackoverflow.com/q/21421047/559784}
+  \code{\link{data.table}}, \code{\link{rowid}}, \url{http://stackoverflow.com/q/21421047/559784}
 }
 \keyword{ data }

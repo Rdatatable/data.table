@@ -2585,6 +2585,35 @@ as_list <- function(x) {
     lx
 }
 
+# FR #1353
+rowid <- function(..., prefix=NULL) {
+    rowidv(list(...), prefix=prefix)
+}
+
+rowidv <- function(x, cols=seq_along(x), prefix=NULL) {
+    if (!is.null(prefix) && (is.character(prefix) && length(prefix) > 1L))
+        stop("prefix must be NULL or a character vector of length=1.")
+    if (is.atomic(x)) {
+        if (!missing(cols) && !is.null(cols))
+            stop("x is a single vector, non-NULL 'cols' doesn't make sense.")
+        cols = 1L
+        x = as_list(x)
+    } else {
+        if (!length(cols))
+            stop("x is a list, 'cols' can not be on 0-length.")
+        if (is.character(cols))
+            cols = chmatch(cols, names(x))
+        cols = as.integer(cols)
+    }
+    xorder = forderv(x, by=cols, retGrp=TRUE)
+    xstart = attr(xorder, 'start')
+    if (!length(xorder)) xorder = seq_along(x[[1L]])
+    ids = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), "sequence")
+    if (!is.null(prefix))
+        ids = paste(prefix, ids, sep="")
+    ids
+}
+
 # FR #686
 rleid <- function(...) {
     rleidv(list(...))
@@ -2593,12 +2622,12 @@ rleid <- function(...) {
 rleidv <- function(x, cols=seq_along(x)) {
     if (is.atomic(x)) {
         if (!missing(cols) && !is.null(cols)) 
-            stop("x is a single vector, non-NULL 'cols' doesn't make sense")
+            stop("x is a single vector, non-NULL 'cols' doesn't make sense.")
         cols = 1L
         x = as_list(x)
     } else {
         if (!length(cols))
-            stop("x is a list, 'cols' can not be 0-length")
+            stop("x is a list, 'cols' can not be 0-length.")
         if (is.character(cols)) 
             cols = chmatch(cols, names(x))
         cols = as.integer(cols)

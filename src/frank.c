@@ -71,13 +71,14 @@ SEXP dt_na(SEXP x, SEXP cols) {
 SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
     int i=0, j=0, k=0, n;
     int *xstart = INTEGER(xstartArg), *xlen = INTEGER(xlenArg), *xorder = INTEGER(xorderArg);
-    enum {MEAN, MAX, MIN, DENSE} ties = MEAN; // RUNLENGTH
+    enum {MEAN, MAX, MIN, DENSE, SEQUENCE} ties = MEAN; // RUNLENGTH
     SEXP ans;
 
     if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "average"))  ties = MEAN;
     else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "max")) ties = MAX;
     else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "min")) ties = MIN;
     else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "dense")) ties = DENSE;
+    else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "sequence")) ties = SEQUENCE;
     // else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "runlength")) ties = RUNLENGTH;
     else error("Internal error: invalid ties.method for frankv(), should have been caught before. Please report to datatable-help");
     n = length(xorderArg);
@@ -108,6 +109,13 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
                 for (j = xstart[i]-1; j < xstart[i]+xlen[i]-1; j++)
                     INTEGER(ans)[xorder[j]-1] = k;
                 k++;
+            }
+            break;
+            case SEQUENCE :
+            for (i = 0; i < length(xstartArg); i++) {
+                k=1;
+                for (j = xstart[i]-1; j < xstart[i]+xlen[i]-1; j++)
+                    INTEGER(ans)[xorder[j]-1] = k++;
             }
             break;
             // case RUNLENGTH :

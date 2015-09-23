@@ -26,6 +26,8 @@ export(address)
 export(.SD,.N,.I,.GRP,.BY,.EACHI)
 export(rleid)
 export(rleidv)
+export(rowid)
+export(rowidv)
 export(as.xts.data.table)
 export(uniqueN)
 
