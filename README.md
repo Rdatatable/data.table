@@ -23,6 +23,8 @@
 
   3. `last()` dispatches `xts::last()` properly again, [#1347](https://github.com/Rdatatable/data.table/issues/1347). Thanks to @JoshuaUlrich for spotting and suggesting the fix.
 
+  4. `merge.data.table` ignores names when `by` argument is a named vector, [#1352](https://github.com/Rdatatable/data.table/issues/1352). Thanks @sebastian-c.
+
 #### NOTES
 
 

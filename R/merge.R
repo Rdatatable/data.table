@@ -36,6 +36,7 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
             stop("A non-empty vector of column names for `by` is required.")
         if (!all(by %in% intersect(colnames(x), colnames(y))))
             stop("Elements listed in `by` must be valid column names in x and y")
+        by = unname(by)
         by.x = by.y = by
     }
     # with i. prefix in v1.9.3, this goes away. Left here for now ...
