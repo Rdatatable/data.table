@@ -21,6 +21,8 @@
 
   2. `as.ITime(NA)` works as intended, [#1354](https://github.com/Rdatatable/data.table/issues/1354). Thanks @geneorama.
 
+  3. `last()` dispatches `xts::last()` properly again, [#1347](https://github.com/Rdatatable/data.table/issues/1347). Thanks to @JoshuaUlrich for spotting and suggesting the fix.
+
 #### NOTES
 
 
