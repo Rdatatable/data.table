@@ -6949,6 +6949,9 @@ test(1557.2, dt[, paste0("index", 1:i), with=FALSE], dt[, 1:2, with=FALSE])
 test(1557.3, dt[, 5:4, with=FALSE], dt[, i:s, with=FALSE])
 test(1557.4, dt[, .SD, .SDcols=paste0("index", 1:i)], dt[, .SD, .SDcols=index1:index2])
 
+# fix for #1354
+test(1558, as.ITime(NA), setattr(NA_integer_, 'class', 'ITime'))
+
 ##########################
 
 
