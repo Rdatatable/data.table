@@ -481,7 +481,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
 
 SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, struct processData *data) {
     
-    int i,j,k,cnt=0,nrows=0, nlevels=0, protecti=0, thislen;
+    int i,j,k,cnt=0,nrows=0, nlevels=0, protecti=0, thislen, zerolen=0;
     SEXP ansvars, thisvaluecols, levels, target, matchvals, thisnames;
 
     ansvars = PROTECT(allocVector(VECSXP, 1)); protecti++;
@@ -499,10 +499,11 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
             for (j=0; j<data->lmax; j++) {
                 thislen = length(VECTOR_ELT(data->naidx, j));
                 for (k=0; k<thislen; k++)
-                    INTEGER(target)[nrows + k] = INTEGER(matchvals)[j];
+                    INTEGER(target)[nrows + k] = INTEGER(matchvals)[j - zerolen]; // fix for #1359
                 nrows += thislen;
-                nlevels += (thislen != 0);
-            } 
+                zerolen += (thislen == 0);
+            }
+            nlevels = data->lmax - zerolen;
         } else {
             for (j=0; j<data->lmax; j++) {
                 for (k=0; k<data->nrow; k++) 

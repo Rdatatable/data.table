@@ -29,6 +29,8 @@
 
   5. `melt.data.table` names `value` column correctly when `patterns()` of length=1 is provided to `measure.vars()`, [#1346](https://github.com/Rdatatable/data.table/issues/1346). Thanks @jaapwalhout.
 
+  6. Fixed a rare case in `melt.data.table` not setting `variable` factor column properly when `na.rm=TRUE`, [#1359](https://github.com/Rdatatable/data.table/issues/1359). Thanks @mplatzer.
+
 #### NOTES
 
 
