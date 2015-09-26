@@ -17,6 +17,8 @@
 
   1. `rowid()` and `rowidv()` - convenience functions for generating a unique row ids within each group, are implemented. `rowid()` is particularly useful along with `dcast()`. See `?rowid` for more, [#1353](https://github.com/Rdatatable/data.table/issues/1353).
 
+  2. `dt[, .N, by=cols]` now uses GForce as well, [#1251](https://github.com/Rdatatable/data.table/issues/1251).
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).
@@ -32,8 +34,6 @@
   6. Fixed a rare case in `melt.data.table` not setting `variable` factor column properly when `na.rm=TRUE`, [#1359](https://github.com/Rdatatable/data.table/issues/1359). Thanks @mplatzer.
 
   7. `dt[i, .SD]` unlocks `.SD` and overallocates correctly now, [#1341](https://github.com/Rdatatable/data.table/issues/1341). Thanks @marc-outins.
-
-  8. `dt[, .N, by=cols]` now uses GForce as well, [#1251](https://github.com/Rdatatable/data.table/issues/1251).
 
 #### NOTES
 
