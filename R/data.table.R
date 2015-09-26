@@ -1358,7 +1358,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     lockBinding(".iSD",SDenv)
     
     GForce = FALSE
-    if ( (getOption("datatable.optimize")>=1 && is.call(jsub)) || (is.name(jsub) && jsub == ".SD") ) {  # Ability to turn off if problems or to benchmark the benefit
+    if ( (getOption("datatable.optimize")>=1 && is.call(jsub)) || (is.name(jsub) && as.character(jsub) %chin% c(".SD",".N")) ) {  # Ability to turn off if problems or to benchmark the benefit
         # Optimization to reduce overhead of calling lapply over and over for each group
         oldjsub = jsub
         funi = 1L # Fix for #985
@@ -1406,133 +1406,143 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 jsub = as.call(c(quote(list), lapply(ansvars, as.name)))
                 jvnames = ansvars
             }
-        } else if ( length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "head") && jsub[[2L]] == ".SD" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N") ) {
-            # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
-            jsub = as.call(c(quote(list), lapply(ansvars, function(x) { jsub[[2L]] = as.name(x); jsub })))
-            jvnames = ansvars
-        } else if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols)) {
-            deparse_ans = .massageSD(jsub)
-            jsub = deparse_ans[[1L]]
-            jvnames = deparse_ans[[2L]]
-        } else if (jsub[[1L]] == "c" && length(jsub) > 1L) {
-            # TODO, TO DO: raise the checks for 'jvnames' earlier (where jvnames is set by checking 'jsub') and set 'jvnames' already.
-            # FR #2722 is just about optimisation of j=c(.N, lapply(.SD, .)) that is taken care of here.
-            # FR #735 tries to optimise j-expressions of the form c(...) as long as ... contains
-            # 1) lapply(.SD, ...), 2) simply .SD or .SD[..], 3) .N, 4) list(...) and 5) functions that normally return a single value*
-            # On 5)* the IMPORTANT point to note is that things that are not wrapped within "list(...)" should *always* 
-            # return length 1 output for us to optimise. Else, there's no equivalent to optimising c(...) to list(...) AFAICT.
-            # One issue could be that these functions (e.g., mean) can be "re-defined" by the OP to produce a length > 1 output
-            # Of course this is worrying too much though. If the issue comes up, we'll just remove the relevant optimisations.
-            # For now, we optimise all functions mentioned in 'optfuns' below.
-            optfuns = c("max", "min", "mean", "length", "sum", "median", "sd", "var")
-            is_valid = TRUE
-            any_SD = FALSE
-            jsubl = as.list.default(jsub)
-            oldjvnames = jvnames
-            jvnames = NULL           # TODO: not let jvnames grow, maybe use (number of lapply(.SD, .))*lenght(ansvars) + other jvars ?? not straightforward.
-            # Fix for #744. Don't use 'i' in for-loops. It masks the 'i' from the input!!
-            for (i_ in 2:length(jsubl)) {
-                this = jsub[[i_]]
-                if (is.name(this)) {
-                    if (this == ".SD") { # optimise '.SD' alone
-                        any_SD = TRUE
-                        jsubl[[i_]] = lapply(ansvars, as.name)
-                        jvnames = c(jvnames, ansvars)
-                    } else if (this == ".N") {
-                        # don't optimise .I in c(.SD, .I), it's length can be > 1 
-                        # only c(.SD, list(.I)) should be optimised!! .N is always length 1.
-                        jvnames = c(jvnames, gsub("^[.]([N])$", "\\1", this))   
-                    } else {
-                        # jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
-                        is_valid=FALSE
-                        break
-                    }
-                } else if (is.call(this)) {
-                    if (this[[1L]] == "lapply" && this[[2L]] == ".SD" && length(xcols)) {
-                        any_SD = TRUE
-                        deparse_ans = .massageSD(this)
-                        funi = funi + 1L # Fix for #985
-                        jsubl[[i_]] = as.list(deparse_ans[[1L]][-1L]) # just keep the '.' from list(.)
-                        jvnames = c(jvnames, deparse_ans[[2L]])
-                    } else if (this[[1]] == "list") {
-                        # also handle c(lapply(.SD, sum), list()) - silly, yes, but can happen
-                        if (length(this) > 1L) {
-                            jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
-                            jn__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
-                            idx  = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
-                            if (any(idx)) jn__[idx] = ifelse(jn__[idx] == "", "I", jn__[idx])
-                            jvnames = c(jvnames, jn__)
-                            jsubl[[i_]] = jl__
+        } else {
+            if ( length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "head") && jsub[[2L]] == ".SD" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N") ) {
+                # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
+                jsub = as.call(c(quote(list), lapply(ansvars, function(x) { jsub[[2L]] = as.name(x); jsub })))
+                jvnames = ansvars
+            } else if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols)) {
+                deparse_ans = .massageSD(jsub)
+                jsub = deparse_ans[[1L]]
+                jvnames = deparse_ans[[2L]]
+            } else if (jsub[[1L]] == "c" && length(jsub) > 1L) {
+                # TODO, TO DO: raise the checks for 'jvnames' earlier (where jvnames is set by checking 'jsub') and set 'jvnames' already.
+                # FR #2722 is just about optimisation of j=c(.N, lapply(.SD, .)) that is taken care of here.
+                # FR #735 tries to optimise j-expressions of the form c(...) as long as ... contains
+                # 1) lapply(.SD, ...), 2) simply .SD or .SD[..], 3) .N, 4) list(...) and 5) functions that normally return a single value*
+                # On 5)* the IMPORTANT point to note is that things that are not wrapped within "list(...)" should *always* 
+                # return length 1 output for us to optimise. Else, there's no equivalent to optimising c(...) to list(...) AFAICT.
+                # One issue could be that these functions (e.g., mean) can be "re-defined" by the OP to produce a length > 1 output
+                # Of course this is worrying too much though. If the issue comes up, we'll just remove the relevant optimisations.
+                # For now, we optimise all functions mentioned in 'optfuns' below.
+                optfuns = c("max", "min", "mean", "length", "sum", "median", "sd", "var")
+                is_valid = TRUE
+                any_SD = FALSE
+                jsubl = as.list.default(jsub)
+                oldjvnames = jvnames
+                jvnames = NULL           # TODO: not let jvnames grow, maybe use (number of lapply(.SD, .))*lenght(ansvars) + other jvars ?? not straightforward.
+                # Fix for #744. Don't use 'i' in for-loops. It masks the 'i' from the input!!
+                for (i_ in 2:length(jsubl)) {
+                    this = jsub[[i_]]
+                    if (is.name(this)) {
+                        if (this == ".SD") { # optimise '.SD' alone
+                            any_SD = TRUE
+                            jsubl[[i_]] = lapply(ansvars, as.name)
+                            jvnames = c(jvnames, ansvars)
+                        } else if (this == ".N") {
+                            # don't optimise .I in c(.SD, .I), it's length can be > 1 
+                            # only c(.SD, list(.I)) should be optimised!! .N is always length 1.
+                            jvnames = c(jvnames, gsub("^[.]([N])$", "\\1", this))   
+                        } else {
+                            # jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
+                            is_valid=FALSE
+                            break
                         }
-                    } else if (is.call(this) && length(this) > 1L && as.character(this[[1L]]) %in% optfuns) {
-                        jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
-                    } else if ( length(this) == 3L && (this[[1L]] == "[" || this[[1L]] == "head") && 
-                                    this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || this[[3L]] == ".N") ) {
-                        # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
-                        any_SD = TRUE
-                        jsubl[[i_]] = lapply(ansvars, function(x) { this[[2L]] = as.name(x); this })
-                        jvnames = c(jvnames, ansvars)
-                    } else if (any(all.vars(this) == ".SD")) {
-                        # TODO, TO DO: revisit complex cases (as illustrated below)
-                        # complex cases like DT[, c(.SD[x>1], .SD[J(.)], c(.SD), a + .SD, lapply(.SD, sum)), by=grp]
-                        # hard to optimise such cases (+ difficulty in counting exact columns and therefore names). revert back to no optimisation.
-                        is_valid=FALSE
-                        break
-                    } else { # just to be sure that any other case (I've overlooked) runs smoothly, without optimisation
-                        # TO DO, TODO: maybe a message/warning here so that we can catch the overlooked cases, if any?
-                        is_valid=FALSE
+                    } else if (is.call(this)) {
+                        if (this[[1L]] == "lapply" && this[[2L]] == ".SD" && length(xcols)) {
+                            any_SD = TRUE
+                            deparse_ans = .massageSD(this)
+                            funi = funi + 1L # Fix for #985
+                            jsubl[[i_]] = as.list(deparse_ans[[1L]][-1L]) # just keep the '.' from list(.)
+                            jvnames = c(jvnames, deparse_ans[[2L]])
+                        } else if (this[[1]] == "list") {
+                            # also handle c(lapply(.SD, sum), list()) - silly, yes, but can happen
+                            if (length(this) > 1L) {
+                                jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
+                                jn__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
+                                idx  = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
+                                if (any(idx)) jn__[idx] = ifelse(jn__[idx] == "", "I", jn__[idx])
+                                jvnames = c(jvnames, jn__)
+                                jsubl[[i_]] = jl__
+                            }
+                        } else if (is.call(this) && length(this) > 1L && as.character(this[[1L]]) %in% optfuns) {
+                            jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
+                        } else if ( length(this) == 3L && (this[[1L]] == "[" || this[[1L]] == "head") && 
+                                        this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || this[[3L]] == ".N") ) {
+                            # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
+                            any_SD = TRUE
+                            jsubl[[i_]] = lapply(ansvars, function(x) { this[[2L]] = as.name(x); this })
+                            jvnames = c(jvnames, ansvars)
+                        } else if (any(all.vars(this) == ".SD")) {
+                            # TODO, TO DO: revisit complex cases (as illustrated below)
+                            # complex cases like DT[, c(.SD[x>1], .SD[J(.)], c(.SD), a + .SD, lapply(.SD, sum)), by=grp]
+                            # hard to optimise such cases (+ difficulty in counting exact columns and therefore names). revert back to no optimisation.
+                            is_valid=FALSE
+                            break
+                        } else { # just to be sure that any other case (I've overlooked) runs smoothly, without optimisation
+                            # TO DO, TODO: maybe a message/warning here so that we can catch the overlooked cases, if any?
+                            is_valid=FALSE
+                            break
+                        }
+                    } else {
+                        is_valid = FALSE
                         break
                     }
-                } else {
-                    is_valid = FALSE
-                    break
                 }
-            }
-            if (!is_valid || !any_SD) { # restore if c(...) doesn't contain lapply(.SD, ..) or if it's just invalid
-                jvnames = oldjvnames           # reset jvnames
-                jsub = oldjsub                 # reset jsub
-                jsubl = as.list.default(jsubl) # reset jsubl
-            } else {
-                setattr(jsubl, 'names', NULL)
-                jsub = as.call(unlist(jsubl, use.names=FALSE))
-                jsub[[1L]] = quote(list)
+                if (!is_valid || !any_SD) { # restore if c(...) doesn't contain lapply(.SD, ..) or if it's just invalid
+                    jvnames = oldjvnames           # reset jvnames
+                    jsub = oldjsub                 # reset jsub
+                    jsubl = as.list.default(jsubl) # reset jsubl
+                } else {
+                    setattr(jsubl, 'names', NULL)
+                    jsub = as.call(unlist(jsubl, use.names=FALSE))
+                    jsub[[1L]] = quote(list)
+                }
             }
         }
         if (verbose) {
             if (!identical(oldjsub, jsub))
-                cat("lapply optimization changed j from '",deparse(oldjsub),"' to '",deparse(jsub,width.cutoff=200),"'\n",sep="")
+                cat("lapply optimization changed j from '",deparse(oldjsub),"' to '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
             else
-                cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200),"'\n",sep="")
+                cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
         }
         dotN <- function(x) if (is.name(x) && x == ".N") TRUE else FALSE # For #5760
-        if (getOption("datatable.optimize")>=2 && !byjoin && !length(irows) && length(f__) && length(ansvars) && !length(lhs)) {
-            # Apply GForce
-            gfuns = c("sum","mean",".N", "min", "max") # added .N for #5760
-            .ok <- function(q) {
-                if (dotN(q)) return(TRUE) # For #5760
-                ans = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]]) && (length(q)==2 || identical("na",substring(names(q)[3L],1,2)))
-                if (is.na(ans)) ans=FALSE
-                ans
-            }
-            if (jsub[[1L]]=="list") {
-                GForce = TRUE
-                for (ii in seq_along(jsub)[-1L]) if (!.ok(jsub[[ii]])) GForce = FALSE
-            } else GForce = .ok(jsub)
-            if (GForce) {
-                if (jsub[[1L]]=="list")
-                    for (ii in seq_along(jsub)[-1L]) { 
-                        if (dotN(jsub[[ii]])) next; # For #5760
-                        jsub[[ii]][[1L]] = as.name(paste("g", jsub[[ii]][[1L]], sep=""))
-                        if (length(jsub[[ii]])==3) jsub[[ii]][[3]] = eval(jsub[[ii]][[3]], parent.frame())  # tests 1187.2 & 1187.4
-                    }
-                else {
-                    jsub[[1L]] = as.name(paste("g", jsub[[1L]], sep=""))
-                    if (length(jsub)==3) jsub[[3]] = eval(jsub[[3]], parent.frame())   # tests 1187.3 & 1187.5
+        if (getOption("datatable.optimize")>=2 && !byjoin && !length(irows) && length(f__) && !length(lhs)) {
+            if (!length(ansvars)) {
+                GForce = FALSE
+                if ( (is.name(jsub) && jsub == ".N") || (is.call(jsub) && length(jsub)==2L && jsub[[1L]] == "list" && jsub[[2L]] == ".N") ) {
+                    GForce = TRUE
+                    if (verbose) cat("GForce optimized j to '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
                 }
-                if (verbose) cat("GForce optimized j to '",deparse(jsub,width.cutoff=200),"'\n",sep="")
-            } else if (verbose) cat("GForce is on, left j unchanged\n");
+            } else {
+                # Apply GForce
+                gfuns = c("sum","mean",".N", "min", "max") # added .N for #5760
+                .ok <- function(q) {
+                    if (dotN(q)) return(TRUE) # For #5760
+                    ans = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]]) && (length(q)==2 || identical("na",substring(names(q)[3L],1,2)))
+                    if (is.na(ans)) ans=FALSE
+                    ans
+                }
+                if (jsub[[1L]]=="list") {
+                    GForce = TRUE
+                    for (ii in seq_along(jsub)[-1L]) if (!.ok(jsub[[ii]])) GForce = FALSE
+                } else GForce = .ok(jsub)
+                if (GForce) {
+                    if (jsub[[1L]]=="list")
+                        for (ii in seq_along(jsub)[-1L]) { 
+                            if (dotN(jsub[[ii]])) next; # For #5760
+                            jsub[[ii]][[1L]] = as.name(paste("g", jsub[[ii]][[1L]], sep=""))
+                            if (length(jsub[[ii]])==3) jsub[[ii]][[3]] = eval(jsub[[ii]][[3]], parent.frame())  # tests 1187.2 & 1187.4
+                        }
+                    else {
+                        jsub[[1L]] = as.name(paste("g", jsub[[1L]], sep=""))
+                        if (length(jsub)==3) jsub[[3]] = eval(jsub[[3]], parent.frame())   # tests 1187.3 & 1187.5
+                    }
+                    if (verbose) cat("GForce optimized j to '",deparse(jsub,width.cutoff=200),"'\n",sep="")
+                } else if (verbose) cat("GForce is on, left j unchanged\n");
+            }
         }
-        if (!GForce) {
+        if (!GForce && !is.name(jsub)) {
             # Still do the old speedup for mean, for now
             nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
             oldjsub = jsub

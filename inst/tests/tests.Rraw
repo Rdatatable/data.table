@@ -6993,6 +6993,18 @@ test(1564.1, truelength(dt[, .SD]), 100L)
 test(1564.2, truelength(dt[a==5, .SD]), 100L)
 test(1564.3, dt[a==5, .SD][, b := 1L], data.table(a=5L, b=1L))
 
+# Fix for #1251, DT[, .N, by=a] and DT[, .(.N), by=a] uses GForce now
+dt = data.table(a=sample(3,20,TRUE), b=1:10)
+optim = getOption("datatable.optimize") # save old optim value
+options(datatable.optimize = Inf)
+ans1 = dt[, .N, by=a]
+ans2 = capture.output(dt[, .N, by=a, verbose=TRUE])
+test(1565.1, length(grep("GForce optimized j to", ans2))>0L, TRUE) # make sure GForce optimisation works
+options(datatable.optimize = 1L) # make sure result is right
+test(1565.2, ans1, dt[, .N, by=a])
+# restore optim level
+options(datatable.optimize = optim)
+
 ##########################
 
 

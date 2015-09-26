@@ -33,6 +33,8 @@
 
   7. `dt[i, .SD]` unlocks `.SD` and overallocates correctly now, [#1341](https://github.com/Rdatatable/data.table/issues/1341). Thanks @marc-outins.
 
+  8. `dt[, .N, by=cols]` now uses GForce as well, [#1251](https://github.com/Rdatatable/data.table/issues/1251).
+
 #### NOTES
 
 
