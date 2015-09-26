@@ -1222,6 +1222,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             } else if ( length(jcpy <- which(sapply(jval, address) %in% sapply(SDenv, address))) ) {
                 for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
             }
+        } else {
+            if (is.data.table(jval)) {
+                setattr(jval, '.data.table.locked', NULL) # fix for #1341
+                if (!truelength(jval)) alloc.col(jval)
+            }
         }
 
         if (!is.null(lhs)) {   # *** TO DO ***: use set() here now that it can add new column(s) and remove newnames and alloc logic above

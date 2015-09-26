@@ -31,6 +31,8 @@
 
   6. Fixed a rare case in `melt.data.table` not setting `variable` factor column properly when `na.rm=TRUE`, [#1359](https://github.com/Rdatatable/data.table/issues/1359). Thanks @mplatzer.
 
+  7. `dt[i, .SD]` unlocks `.SD` and overallocates correctly now, [#1341](https://github.com/Rdatatable/data.table/issues/1341). Thanks @marc-outins.
+
 #### NOTES
 
 

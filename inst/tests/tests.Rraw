@@ -6987,6 +6987,12 @@ test(1562, melt(DT, measure=patterns("^g[12]"), variable.factor=FALSE), data.tab
 
 # tet 1563 added for melt above, fix for #1359.
 
+# fix for #1341
+dt <- data.table(a = 1:10)
+test(1564.1, truelength(dt[, .SD]), 100L)
+test(1564.2, truelength(dt[a==5, .SD]), 100L)
+test(1564.3, dt[a==5, .SD][, b := 1L], data.table(a=5L, b=1L))
+
 ##########################
 
 
