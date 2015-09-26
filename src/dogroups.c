@@ -422,6 +422,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 case STRSXP :
                     for (r=0; r<maxn; r++) SET_STRING_ELT(target,thisansloc+r,NA_STRING);
                     break;
+                case VECSXP :
+                    for (r=0; r<maxn; r++) SET_VECTOR_ELT(target,thisansloc+r,NA_STRING);
+                    break;
                 default:
                     error("Logical error. Type of column should have been checked by now");
                 }

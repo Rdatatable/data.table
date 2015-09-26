@@ -7012,6 +7012,11 @@ test(1566.1, dt[, c], dt[, get("c")])
 test(1566.2, dt[, .(c=c)], dt[, .(c=get("c"))])
 test(1566.3, address(dt$c) == address(dt[, get("c")]), FALSE)
 
+# Fix for #1207
+d1 <- data.table(a = character(), b = list())
+test(1567.1, d1[, b, by=a], d1)
+test(1567.2, d1[, b, keyby=a], data.table(d1, key="a"))
+
 ##########################
 
 

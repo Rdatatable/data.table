@@ -37,6 +37,8 @@
 
   8. Querying a list column with `get()`, e.g., `dt[, get("c")]` is handled properly, [#1212](https://github.com/Rdatatable/data.table/issues/1212). Thanks @DavidArenburg.
 
+  9. Grouping on empty data.table with list col in `j` works as expected, [#1207](https://github.com/Rdatatable/data.table/issues/1207). Thanks @jangorecki.
+
 #### NOTES
 
 
