@@ -35,6 +35,8 @@
 
   7. `dt[i, .SD]` unlocks `.SD` and overallocates correctly now, [#1341](https://github.com/Rdatatable/data.table/issues/1341). Thanks @marc-outins.
 
+  8. Querying a list column with `get()`, e.g., `dt[, get("c")]` is handled properly, [#1212](https://github.com/Rdatatable/data.table/issues/1212). Thanks @DavidArenburg.
+
 #### NOTES
 
 

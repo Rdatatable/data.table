@@ -7005,6 +7005,13 @@ test(1565.2, ans1, dt[, .N, by=a])
 # restore optim level
 options(datatable.optimize = optim)
 
+# Fix for #1212
+set.seed(123)
+dt <- data.table(a=c("abc", "def", "ghi"), b=runif(3))[, c:=list(list(data.table(d=runif(1), e=runif(1))))]
+test(1566.1, dt[, c], dt[, get("c")])
+test(1566.2, dt[, .(c=c)], dt[, .(c=get("c"))])
+test(1566.3, address(dt$c) == address(dt[, get("c")]), FALSE)
+
 ##########################
 
 

@@ -1221,6 +1221,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 jval = copy(jval)
             } else if ( length(jcpy <- which(sapply(jval, address) %in% sapply(SDenv, address))) ) {
                 for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
+            } else if (is.call(jsub) && jsub[[1L]] == "get" && is.list(jval)) {
+                jval = copy(jval) # fix for #1212
             }
         } else {
             if (is.data.table(jval)) {
@@ -1233,8 +1235,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (verbose) cat("Assigning to ",if (is.null(irows)) "all " else paste(length(irows),"row subset of "), nrow(x)," rows\n",sep="")
             .Call(Cassign,x,irows,cols,newnames,jval,verbose)
             return(suppPrint(x))
-        }
-        if ((is.call(jsub) && is.list(jval) && !is.object(jval)) || !missing(by)) {
+        }        
+        if ((is.call(jsub) && is.list(jval) && jsub[[1L]] != "get" && !is.object(jval)) || !missing(by)) {
             # is.call: selecting from a list column should return list
             # is.object: for test 168 and 168.1 (S4 object result from ggplot2::qplot). Just plain list results should result in data.table
 
