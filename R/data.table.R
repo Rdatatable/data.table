@@ -896,6 +896,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                             # if user doesn't like this inferred name, user has to use by=list() to name the column
                         }
                     }
+                    # Fix for #1334
+                    if (any(duplicated(bynames))) {
+                        bynames = make.unique(bynames)
+                    }
                 }
                 setattr(byval, "names", bynames)  # byval is just a list not a data.table hence setattr not setnames
             }

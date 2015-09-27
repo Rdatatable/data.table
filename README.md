@@ -39,6 +39,8 @@
 
   9. Grouping on empty data.table with list col in `j` works as expected, [#1207](https://github.com/Rdatatable/data.table/issues/1207). Thanks @jangorecki.
 
+  10. Unnamed `by/keyby` expressions ensure now that the auto generated names are unique, [#1334](https://github.com/Rdatatable/data.table/issues/1334). Thanks @caneff.
+
 #### NOTES
 
 

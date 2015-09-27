@@ -7017,6 +7017,10 @@ d1 <- data.table(a = character(), b = list())
 test(1567.1, d1[, b, by=a], d1)
 test(1567.2, d1[, b, keyby=a], data.table(d1, key="a"))
 
+# Fix for #1334
+dt = data.table(x=ordered(rep(1:3,each=5)),y=ordered(rep(c("B","A","C"),5),levels=c("B","A","C")),z=1:15)
+test(1568, dt[, sum(z), keyby=.(I(x), I(y))], data.table(I=I(ordered(rep(1:3,each=3))), I.1=I(ordered(rep(c("B","A","C"),3),levels=c("B","A","C"))),V1=c(5L, 7L, 3L, 17L, 8L, 15L, 13L, 25L, 27L), key=c("I", "I.1")))
+
 ##########################
 
 
