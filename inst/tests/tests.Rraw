@@ -347,7 +347,7 @@ TESTDT = data.table(NULL)
 test(122, TESTDT[1], TESTDT)
 test(123, TESTDT[0], TESTDT)
 test(124, TESTDT[1:10], TESTDT)
-test(125, TESTDT["k"], error="x must be keyed")
+test(125, TESTDT["k"], error="data.table must know")
 # test 126 no longer needed now that test() has 'error' argument
 
 TESTDT = data.table(a=3L,v=2L,key="a")  # testing 1-row table
@@ -1200,7 +1200,7 @@ test(415, x:=1, error="defined for use in j, once only and in particular ways")
 
 # Somehow never tested that X[Y] is error if X is unkeyed.
 DT = data.table(a=1:3,b=4:6)
-test(416, DT[J(2)], error="x must be keyed")
+test(416, DT[J(2)], error="data.table must know")
 
 # Test shallow copy warning from := adding a column, and (TO DO) only when X is NAMED.
 DT = data.table(a=1:3,b=4:6)
@@ -7020,6 +7020,11 @@ test(1567.2, d1[, b, keyby=a], data.table(d1, key="a"))
 # Fix for #1334
 dt = data.table(x=ordered(rep(1:3,each=5)),y=ordered(rep(c("B","A","C"),5),levels=c("B","A","C")),z=1:15)
 test(1568, dt[, sum(z), keyby=.(I(x), I(y))], data.table(I=I(ordered(rep(1:3,each=3))), I.1=I(ordered(rep(c("B","A","C"),3),levels=c("B","A","C"))),V1=c(5L, 7L, 3L, 17L, 8L, 15L, 13L, 25L, 27L), key=c("I", "I.1")))
+
+# Fix for #1368
+dt1 = data.table(id=1:3)
+dt2 = data.table(id=2:4)
+test(1569, dt1[dt2], error = "data.table must know")
 
 ##########################
 
