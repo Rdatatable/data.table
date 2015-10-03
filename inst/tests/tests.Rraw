@@ -2935,10 +2935,10 @@ if ("package:reshape2" %in% search()) {
 
     # bug #699 - melt segfaults when vars are not in dt
     x = data.table(a=c(1,2),b=c(2,3),c=c(3,4))
-    test(1316.1, melt(x, id="d"), error="Column 'd' not found in 'data'")
-    test(1316.2, melt(x, measure="d"), error="Column 'd' not found in 'data'")
-    test(1316.3, melt(x, id="a", measure="d"), error="Column 'd' not found in 'data'")
-    test(1316.4, melt(x, id="d", measure="a"), error="Column 'd' not found in 'data'")
+    test(1316.1, melt(x, id="d"), error="One or more values")
+    test(1316.2, melt(x, measure="d"), error="One or more values")
+    test(1316.3, melt(x, id="a", measure="d"), error="One or more values")
+    test(1316.4, melt(x, id="d", measure="a"), error="One or more values")
 
     # fix for #780.
     DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9)
@@ -2963,6 +2963,14 @@ if ("package:reshape2" %in% search()) {
     # improper levels fix, #1359
     dt = data.table(id=1:3, x=NA_character_, y=c('a', NA_character_, 'c'))
     test(1563, melt(dt, id.var="id", na.rm=TRUE), data.table(id=c(1L,3L), variable=factor(c("y", "y")), value=c("a", "c")))
+
+    # fixing segfault due to negative id and measure vars that I detected by accident
+    dt = data.table(x=1:5, y=6:10, z=11:15)
+    test(1569.1, melt(dt, id=-1, measure=NULL), error="One or more values in 'id.vars'")
+    test(1569.2, melt(dt, id=-1, measure=-1), error="One or more values in 'id.vars'")
+    test(1569.3, melt(dt, id=NULL, measure=-1), error="One or more values in 'measure.vars'")
+    test(1569.4, melt(dt, id=5, measure=-1), error="One or more values in 'id.vars'")
+    test(1569.5, melt(dt, id=1, measure=-1), error="One or more values in 'measure.vars'")
 }
 
 # sorting and grouping of Inf, -Inf, NA and NaN,  #4684, #4815 & #4883
@@ -7020,6 +7028,8 @@ test(1567.2, d1[, b, keyby=a], data.table(d1, key="a"))
 # Fix for #1334
 dt = data.table(x=ordered(rep(1:3,each=5)),y=ordered(rep(c("B","A","C"),5),levels=c("B","A","C")),z=1:15)
 test(1568, dt[, sum(z), keyby=.(I(x), I(y))], data.table(I=I(ordered(rep(1:3,each=3))), I.1=I(ordered(rep(c("B","A","C"),3),levels=c("B","A","C"))),V1=c(5L, 7L, 3L, 17L, 8L, 15L, 13L, 25L, 27L), key=c("I", "I.1")))
+
+# Test 1569 is written under melt above.
 
 ##########################
 

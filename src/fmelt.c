@@ -193,8 +193,8 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
         }
         booltmp = PROTECT(duplicated(tmp, FALSE)); protecti++;
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(id, i)));
-            else if (INTEGER(tmp)[i] > ncol) error("id.vars value exceeds ncol(data)");
+            if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol) 
+                error("One or more values in 'id.vars' is invalid.");
             else if (!LOGICAL(booltmp)[i]) targetcols++;
             else continue;
         }
@@ -227,8 +227,8 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
         }
         booltmp = PROTECT(duplicated(tmp, FALSE)); protecti++;
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(measure, i)));
-            else if (INTEGER(tmp)[i] > ncol) error("measure.vars value exceeds ncol(data)");
+            if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol) 
+                error("One or more values in 'measure.vars' is invalid.");
             else if (!LOGICAL(booltmp)[i]) targetcols++;
             else continue;
         }
@@ -257,8 +257,8 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
             default : error("Unknown 'id.vars' type %s, must be character or integer vector", type2char(TYPEOF(id)));
         }
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(id, i)));
-            else if (INTEGER(tmp)[i] > ncol) error("measure.vars value exceeds ncol(data)");
+            if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol) 
+                error("One or more values in 'id.vars' is invalid.");
         }
         idcols = PROTECT(tmp); protecti++;
         switch(TYPEOF(measure)) {
@@ -273,8 +273,8 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
             tmp = PROTECT(unlist_(tmp2)); protecti++;
         }
         for (i=0; i<length(tmp); i++) {
-            if (INTEGER(tmp)[i] <= 0) error("Column '%s' not found in 'data'", CHAR(STRING_ELT(measure, i)));
-            else if (INTEGER(tmp)[i] > ncol) error("measure.vars value exceeds ncol(data)");
+            if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol) 
+                error("One or more values in 'measure.vars' is invalid.");
         }
         if (isNewList(measure)) valuecols = tmp2; 
         else {

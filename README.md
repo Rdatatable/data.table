@@ -41,6 +41,8 @@
 
   10. Unnamed `by/keyby` expressions ensure now that the auto generated names are unique, [#1334](https://github.com/Rdatatable/data.table/issues/1334). Thanks @caneff.
 
+  11. `melt` errors correctly when `id.vars` or `measure.vars` are negative values, [#1372](https://github.com/Rdatatable/data.table/issues/1372).
+
 #### NOTES
 
 
