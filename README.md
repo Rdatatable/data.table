@@ -41,6 +41,8 @@
 
   10. Unnamed `by/keyby` expressions ensure now that the auto generated names are unique, [#1334](https://github.com/Rdatatable/data.table/issues/1334). Thanks @caneff.
 
+  11. Error message for unkeyed join updated to reflect current recommended practice (i.e., shift towards encouraging `on`), [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
+
 #### NOTES
 
 
