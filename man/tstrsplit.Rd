@@ -8,7 +8,7 @@
 }
 
 \usage{
-tstrsplit(x, ..., fill=NA, type.convert=FALSE)
+tstrsplit(x, ..., fill=NA, type.convert=FALSE, give.names=FALSE)
 }
 \arguments{
 	\item{x}{The vector to split (and transpose).}
