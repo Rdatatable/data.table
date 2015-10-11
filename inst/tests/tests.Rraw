@@ -7031,6 +7031,13 @@ test(1568, dt[, sum(z), keyby=.(I(x), I(y))], data.table(I=I(ordered(rep(1:3,eac
 
 # Test 1569 is written under melt above.
 
+# fix for #1378, merge resets class
+X = data.table(a=1:3, b=4:6)
+Y = data.table(a=1L, c=5L)
+setattr(Y, 'class', c("custom","data.table","data.frame"))
+test(1570.1, class(merge(X, Y, all=TRUE, by="a")), class(X))
+test(1570.2, class(merge(Y, X, all=TRUE, by="a")), class(X))
+
 ##########################
 
 

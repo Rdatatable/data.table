@@ -77,5 +77,8 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     if (nrow(dt) > 0L) {
       setkeyv(dt, if (sort) by.x else NULL)
     }
-    dt
+    # merge resets class, #1378. X[Y] is quite clear that X is being *subset* by Y, 
+    # makes sense to therefore retain X's class, unlike `merge`. Hard to tell what 
+    # class to retain for *full join* for example. 
+    setattr(dt, 'class', c("data.table", "data.frame"))
 }

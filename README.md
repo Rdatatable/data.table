@@ -43,6 +43,8 @@
 
   11. `melt` errors correctly when `id.vars` or `measure.vars` are negative values, [#1372](https://github.com/Rdatatable/data.table/issues/1372).
 
+  12. `merge.data.table` always resets class to `c("data.table", "data.frame")` in result to be consistent with `merge.data.frame`, [#1378](https://github.com/Rdatatable/data.table/issues/1378). Thanks @ladida771.
+
 #### NOTES
 
 
