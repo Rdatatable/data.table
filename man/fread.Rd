@@ -14,7 +14,7 @@ stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=1L,
 skip=0L, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
 dec=if (sep!=".") "." else ",", col.names, 
-check.names=FALSE, encoding="unknown", strip.white=TRUE, 
+check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, 
 showProgress=getOption("datatable.showProgress"),   # default: TRUE
 data.table=getOption("datatable.fread.datatable")   # default: TRUE
 )
@@ -38,6 +38,7 @@ data.table=getOption("datatable.fread.datatable")   # default: TRUE
   \item{col.names}{ A vector of optional names for the variables (columns). The default is to use the header column if present or detected, or if not "V" followed by the column number. }
   \item{check.names}{ default is \code{FALSE}. If \code{TRUE}, it uses the base function \code{\link{make.unique}} to ensure that column names are all unique.}
   \item{encoding}{ default is \code{"unknown"}. Other possible options are \code{"UTF-8"} and \code{"Latin-1"}.  }
+  \item{quote}{ By default (\code{"\""}), if a field starts with a doublequote, \code{fread} handles embedded quotes robustly as explained under \code{Details}. If it fails, then another attempt is made to read the field \emph{as is}, i.e., as if quotes are disabled. By setting \code{quote=""}, the field is always read as if quotes are disabled. }
   \item{strip.white}{ default is \code{TRUE}. Strips leading and trailing whitespaces of unquoted fields. If \code{FALSE}, only header trailing spaces are removed. }
   \item{showProgress}{ TRUE displays progress on the console using \code{\\r}. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. }
@@ -60,10 +61,12 @@ If an empty line is encountered then reading stops there, with warning if any te
 
 On Windows, "French_France.1252" is tried which should be available as standard (any locale with comma decimal separator would suffice) and on unix "fr_FR.utf8" (you may need to install this locale on unix). \code{fread()} is very careful to set the locale back again afterwards, even if the function fails with an error. The choice of locale is determined by \code{options()$datatable.fread.dec.locale}. This may be a \emph{vector} of locale names and if so they will be tried in turn until the desired \code{dec} is obtained; thus allowing more than two different decimal separators to be selected. This is a new feature in v1.9.6 and is experimental. In case of problems, turn it off with \code{options(datatable.fread.dec.experiment=FALSE)}.
 
-\bold{Quotes:}
+\bold{Quotes:} 
+
+When \code{quote} is a single character, 
 
   \itemize{
-      \item{Spaces and othe whitespace (other than \code{sep} and \code{\\n}) may appear in unquoted character fields, e.g., \code{...,2,Joe Bloggs,3.14,...}.}
+      \item{Spaces and other whitespace (other than \code{sep} and \code{\\n}) may appear in unquoted character fields, e.g., \code{...,2,Joe Bloggs,3.14,...}.}
 
       \item{When \code{character} columns are \emph{quoted}, they must start and end with that quoting character immediately followed by \code{sep} or \code{\\n}, e.g., \code{...,2,"Joe Bloggs",3.14,...}. 
 
@@ -71,11 +74,10 @@ On Windows, "French_France.1252" is tried which should be available as standard 
 
       If an embedded quote is followed by the separator inside a quoted field, the embedded quotes up to that point in that field must be balanced; e.g. \code{...,2,"www.blah?x="one",y="two"",3.14,...}.
 
-      Quoting may be used to signify that numeric data should be read as text.
-
       On those fields that do not satisfy these conditions, e.g., fields with unbalanced quotes, \code{fread} re-attempts that field as if it isn't quoted. This is quite useful in reading files that contains fields with unbalanced quotes as well, automatically.}
   }
 
+To read fields \emph{as is} instead, use \code{quote = ""}.
 }
 \value{
     A \code{data.table} by default. A \code{data.frame} when argument \code{data.table=FALSE}; e.g. \code{options(datatable.fread.datatable=FALSE)}.
