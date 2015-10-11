@@ -437,6 +437,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!missing(i)) {
         xo = NULL
         isub = substitute(i)
+        isnull_inames = FALSE
         # Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires 
         # the "eval" to be checked before `as.name("!")`. Therefore interchanged.
         restore.N = remove.N = FALSE
@@ -560,7 +561,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (is.character(i)) i = data.table(V1=i)   # for user convenience; e.g. DT["foo"] without needing DT[.("foo")]
         else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) i = as.data.table(i[[1L]])
         else if (identical(class(i),"data.frame")) i = as.data.table(i)   # TO DO: avoid these as.data.table() and use a flag instead
-        else if (identical(class(i),"list")) i = as.data.table(i)
+        else if (identical(class(i),"list")) {
+            isnull_inames = is.null(names(i))
+            i = as.data.table(i)
+        }
         if (is.data.table(i)) {
             if (!haskey(x) && missing(on) && is.null(xo)) {
                 stop("When i is a data.table (or character vector), the columns to join by must be specified either using 'on=' argument (see ?data.table) or by keying x (i.e. sorted, and, marked as sorted, see ?setkey). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
@@ -571,7 +575,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 if (is.null(names(on))) {
                     if (verbose)
                         cat("names(on) = NULL. Assigning 'on' to names(on)' as well.\n")
-                    names(on) = on
+                    on_names = on
+                    # facilitating adhoc joins without having to name them, #1375
+                    if (isnull_inames) on = paste("V", seq_along(on), sep="")
+                    names(on) = on_names
+                } else {
+                    if (length(empty_names <- which(names(on) == ""))) 
+                        names(on)[empty_names] = on[empty_names]
                 }
                 rightcols = chmatch(names(on), names(x))
                 leftcols  = chmatch(unname(on), names(i))

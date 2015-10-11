@@ -284,9 +284,11 @@ DT[!.("b",3)]              # same result but much faster
 # new feature: 'on' argument, from v1.9.6+
 DT1 = data.table(x=c("c", "a", "b", "a", "b"), a=1:5)
 DT2 = data.table(x=c("d", "c", "b"), mul=6:8)
+DT3 = data.table(w=c("d", "c", "b"), mul=6:8)
 
 DT1[DT2, on=c(x="x")] # join on columns 'x'
 DT1[DT2, on="x"] # same as above
+DT1[DT3, on=c(x="w")] # join column 'x' of DT1 to 'w' of DT3
 DT1[DT2, .(sum(a) * mul), by=.EACHI, on="x"] # using by=.EACHI
 DT1[DT2, .(sum(a) * mul), by=.EACHI, on="x", nomatch=0L] # using by=.EACHI
 
