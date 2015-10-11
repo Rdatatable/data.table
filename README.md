@@ -19,6 +19,8 @@
 
   2. `dt[, .N, by=cols]` now uses GForce as well, [#1251](https://github.com/Rdatatable/data.table/issues/1251).
 
+  3. `tstrsplit` gains `give.names` argument, [#1379](https://github.com/Rdatatable/data.table/issues/1379). Thanks @franknarf1.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

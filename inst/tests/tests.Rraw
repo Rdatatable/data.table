@@ -7038,6 +7038,10 @@ setattr(Y, 'class', c("custom","data.table","data.frame"))
 test(1570.1, class(merge(X, Y, all=TRUE, by="a")), class(X))
 test(1570.2, class(merge(Y, X, all=TRUE, by="a")), class(X))
 
+# #1379, tstrsplit gains names argument
+X = data.table(a=c("ABC", "DEFG"))
+test(1571, names(tstrsplit(X$a, "", fixed=TRUE, give.names=TRUE)), paste("V", 1:4, sep=""))
+
 ##########################
 
 

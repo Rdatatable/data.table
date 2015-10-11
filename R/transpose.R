@@ -10,9 +10,10 @@ transpose <- function(l, fill=NA, ignore.empty=FALSE) {
 	ans[]
 }
 
-tstrsplit <- function(x, ..., fill=NA, type.convert=FALSE) {
+tstrsplit <- function(x, ..., fill=NA, type.convert=FALSE, give.names=FALSE) {
 	ans = transpose(strsplit(as.character(x), ...), fill=fill, ignore.empty = FALSE)
 	# Implementing #1094, but default FALSE
   if(type.convert) ans = lapply(ans, type.convert, as.is = TRUE)
+  if (give.names) setattr(ans, 'names', paste("V", seq_along(ans), sep=""))
   ans
 }
