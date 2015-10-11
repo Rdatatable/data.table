@@ -644,7 +644,7 @@
       * `melt.data.table`'s `na.rm = TRUE` parameter is optimised to remove NAs directly during melt and therefore avoids the overhead of subsetting using `!is.na` afterwards on the molten data. 
       * except for `margins` argument from `reshape2:::dcast`, all features of dcast are intact. `dcast.data.table` can also accept `value.var` columns of type list.
     
-    > Reminder of Cologne (Dec 2013) presentation **slide 32** : ["Why not submit a dcast pull request to reshape2?"](http://datatable.r-forge.r-project.org/CologneR_2013.pdf).
+    > Reminder of Cologne (Dec 2013) presentation **slide 32** : ["Why not submit a dcast pull request to reshape2?"](https://github.com/Rdatatable/data.table/wiki/talks/CologneR_2013.pdf).
   
   2.  Joins scale better as the number of rows increases. The binary merge used to start on row 1 of i; it now starts on the middle row of i. Many thanks to Mike Crowe for the suggestion. This has been done within column so scales much better as the number of join columns increase, too. 
 
@@ -1127,8 +1127,7 @@ USER VISIBLE CHANGES
         the value falls in a gap, and to the end value according to 'rollends'.
         'rolltolast' has been deprecated. For backwards compatibility it is converted to
         {roll=TRUE;rollends=c(FALSE,FALSE)}.
-        This implements FR#2300 & FR#206 and helps several recent S.O. questions :
-            https://r-forge.r-project.org/tracker/?group_id=240&atid=978&func=detail&aid=2300
+        This implements [r-forge FR#2300](https://github.com/Rdatatable/data.table/issues/615) & [r-forge FR#206](https://github.com/Rdatatable/data.table/issues/459) and helps several recent S.O. questions.
 
 #### BUG FIXES
 

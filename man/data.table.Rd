@@ -13,7 +13,7 @@
    
    The 10 minute quick start guide to \code{data.table} may be a good place to start: \href{../doc/datatable-intro.pdf}{\code{vignette("datatable-intro")}}. Or, the first section of FAQs is intended to be read from start to finish and is considered core documentation: \href{../doc/datatable-faq.pdf}{\code{vignette("datatable-faq")}}. If you have read and searched these documents and the help page below, please feel free to ask questions on \href{http://r.789695.n4.nabble.com/datatable-help-f2315188.html}{datatable-help} or the Stack Overflow \href{http://stackoverflow.com/questions/tagged/data.table}{data.table tag}. To report a bug please type: \code{bug.report(package="data.table")}.
    
-   Please check the \href{http://datatable.r-forge.r-project.org/}{homepage} for up to the minute \href{https://github.com/Rdatatable/data.table/blob/master/README.md}{news}.
+   Please check the \href{https://github.com/Rdatatable/data.table/wiki}{homepage} for up to the minute \href{https://github.com/Rdatatable/data.table/blob/master/README.md}{news}.
    
    Tip: one of the quickest ways to learn the features is to type \code{example(data.table)} and study the output at the prompt.
 }
@@ -175,7 +175,7 @@ Several \emph{methods} are provided for \code{data.table}, including \code{is.na
 \code{t}, \code{rbind}, \code{cbind}, \code{merge} and others.
 }
 \references{
-\code{data.table} homepage: \url{http://datatable.r-forge.r-project.org/}\cr
+\code{data.table} homepage: \url{https://github.com/Rdatatable/data.table/wiki}\cr
 User reviews: \url{http://crantastic.org/packages/data-table}\cr
 \url{http://en.wikipedia.org/wiki/Binary_search}\cr
 \url{http://en.wikipedia.org/wiki/Radix_sort}             
@@ -183,7 +183,7 @@ User reviews: \url{http://crantastic.org/packages/data-table}\cr
 \note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after `\code{\dots}`. For example, \code{data.table(DF,keep=TRUE)} will create a
 column called \code{"keep"} containing \code{TRUE} and this is correct behaviour; \code{data.table(DF,keep.rownames=TRUE)} was intended.
 
-POSIXlt is not supported as a column type because it uses 40 bytes to store a single datetime. Unexpected errors may occur if you manage to create a column of type POSIXlt. Please see \href{http://r-forge.r-project.org/scm/viewvc.php/pkg/NEWS?view=markup&root=datatable}{NEWS} for 1.6.3, and \code{\link{IDateTime}} instead. IDateTime has methods to convert to and from POSIXlt.
+POSIXlt is not supported as a column type because it uses 40 bytes to store a single datetime. Unexpected errors may occur if you manage to create a column of type POSIXlt. Please see \href{https://github.com/Rdatatable/data.table/blob/master/README.md}{NEWS} for 1.6.3, and \code{\link{IDateTime}} instead. IDateTime has methods to convert to and from POSIXlt.
 }
 \seealso{ \code{\link{data.frame}}, \code{\link{[.data.frame}} , \code{\link{setkey}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}}, \code{\link{unique.data.table}}, \code{\link{copy}}, \code{\link{:=}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{rbindlist}}, \code{\link{setNumericRounding}}
 }
