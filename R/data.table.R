@@ -563,7 +563,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         else if (identical(class(i),"list")) i = as.data.table(i)
         if (is.data.table(i)) {
             if (!haskey(x) && missing(on) && is.null(xo)) {
-                stop("When i is a data.table (or character vector), x must be keyed (i.e. sorted, and, marked as sorted) so data.table knows which columns to join to and take advantage of x being sorted. Call setkey(x,...) first, see ?setkey.")
+                stop("When i is a data.table (or character vector), the columns to join by must be specified either using 'on=' argument (see ?data.table) or by keying x (i.e. sorted, and, marked as sorted, see ?setkey). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
             }
             if (!missing(on)) {
                 if (!is.character(on))
