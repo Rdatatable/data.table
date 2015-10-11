@@ -7061,6 +7061,12 @@ Y = data.table(A=2:4, B=5:7)
 test(1574.2, X[Y, on=c("A",b="B")], X[Y, on=c(A="A", b="B")])
 test(1574.3, X[Y, on=c(b="B", "A")], X[Y, on=c(b="B", A="A")])
 
+# fix for #1376
+X = data.table(a=1:3,b=4:6,c=c("foo","bar","baz"))
+Y = data.table(A=2:4, B=5:7)
+test(1575.1, X[Y, on=c(A="a")], error="not found in x")
+test(1575.2, X[Y, on=c(a="a")], error="not found in i")
+
 ##########################
 
 

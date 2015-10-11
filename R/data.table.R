@@ -584,7 +584,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         names(on)[empty_names] = on[empty_names]
                 }
                 rightcols = chmatch(names(on), names(x))
+                if (length(nacols <- which(is.na(rightcols))))
+                    stop("Column(s) [", paste(names(on)[nacols], collapse=","), "] not found in x")
                 leftcols  = chmatch(unname(on), names(i))
+                if (length(nacols <- which(is.na(leftcols))))
+                    stop("Column(s) [", paste(unname(on)[nacols], collapse=","), "] not found in i")
                 xo = forderv(x, by = rightcols)
             } else if (is.null(xo)) {
                 rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in bmerge()
