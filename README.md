@@ -49,6 +49,8 @@
 
   12. `merge.data.table` always resets class to `c("data.table", "data.frame")` in result to be consistent with `merge.data.frame`, [#1378](https://github.com/Rdatatable/data.table/issues/1378). Thanks @ladida771.
 
+  13. `fread` reads text input with empty newline but with just spaces properly, for e.g., fread('a,b\n1,2\n   '), [#1384](https://github.com/Rdatatable/data.table/issues/1384). Thanks to @ladida771.
+
 #### NOTES
 
 

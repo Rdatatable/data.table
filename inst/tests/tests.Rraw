@@ -7047,6 +7047,11 @@ test(1571, names(tstrsplit(X$a, "", fixed=TRUE, give.names=TRUE)), paste("V", 1:
 test(1572, fread('"abcd efgh." ijkl.\tmnop "qrst uvwx."\t45\n', quote=""), 
            setDT(read.table(text='"abcd efgh." ijkl.\tmnop "qrst uvwx."\t45\n', sep="\t", stringsAsFactors=FALSE, quote="")))
 
+# Fix for #1384, fread with empty new line, initial checks failed due to extra spaces.
+test(1573, fread('a,b
+       1,2
+       '), data.table(a=1L, b=2L))
+
 ##########################
 
 

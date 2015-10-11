@@ -984,7 +984,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         case 1: ch = pos + 1*(eof-pos)/3;  str="+ middle";  break;
         case 2: ch = pos + 2*(eof-pos)/3;  str="+   last";  break;  // 2/3 way through rather than end ... easier
         }
-        if (j) {  
+        if (j) {
             // we may have landed inside quoted field containing embedded sep and/or embedded \n
             // find next \n and see if 5 good lines follow. If not try next \n, and so on, until we find the real \n
             // We don't know which line number this is because we jumped straight to it
@@ -1041,6 +1041,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             }
             while (ch<eof && *ch!=eol) ch++;
             if (ch<eof && *ch==eol) ch+=eolLen;
+            if (stripWhite) skip_spaces();
         }
         if (verbose) { Rprintf("Type codes (%s 5 rows): ",str); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf("\n"); }
     }
