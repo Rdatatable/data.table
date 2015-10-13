@@ -80,6 +80,8 @@ if (!.devtesting) {
     `%+%.default` = data.table:::`%+%.default`
     .shallow = data.table:::.shallow
     getdots = data.table:::getdots
+    as.ITime.default = data.table:::as.ITime.default
+    as.IDate.default = data.table:::as.IDate.default
 }
 
 # test for covering tables.R 100%, we need to run tables() before creating any data.tables to return null data.table
@@ -7066,6 +7068,36 @@ X = data.table(a=1:3,b=4:6,c=c("foo","bar","baz"))
 Y = data.table(A=2:4, B=5:7)
 test(1575.1, X[Y, on=c(A="a")], error="not found in x")
 test(1575.2, X[Y, on=c(a="a")], error="not found in i")
+
+# #1392 IDate ITime new methods for faster conversion
+# conversion in-out match for UTC
+same = list(l = as.POSIXlt("2015-10-12 13:19:35", tz = "UTC"))
+same$p = as.POSIXct(same$l)
+same$d = as.Date(same$p)
+same$n = as.numeric(same$p)
+same$i = as.integer(same$p)
+ld = lapply(same, as.IDate)
+test(1576.1, uniqueN(ld)==1L)
+lt = lapply(same[-3L], as.ITime) # exclude date
+test(1576.2, uniqueN(lt)==1L)
+# some random 1e6 timestamps old defaults vs new methods UTC
+intpx = function(x) as.integer(as.POSIXct(x, origin = "1970-01-01", tz = "UTC"))
+set.seed(1)
+i = sample(seq(intpx("2014-10-12"), intpx("2015-10-12")), 1e6, TRUE)
+p = as.POSIXct(i, origin = "1970-01-01", tz = "UTC")
+test(1576.3, identical(as.ITime.default(p), as.ITime(p)))
+test(1576.4, identical(as.IDate.default(p), as.IDate(p)))
+# test for non-UTC
+p = as.POSIXct(i, origin = "1970-01-01", tz = "Asia/Hong_Kong")
+test(1576.5, identical(as.ITime.default(p), as.ITime(p)))
+test(1576.6, identical(as.IDate.default(p), as.IDate(p)))
+p = as.POSIXct(i, origin = "1970-01-01", tz = "America/New_York")
+test(1576.7, identical(as.ITime.default(p), as.ITime(p)))
+test(1576.8, identical(as.IDate.default(p), as.IDate(p)))
+p = as.POSIXct(i, origin = "1970-01-01")
+test(1576.9, identical(as.ITime.default(p), as.ITime(p)))
+test(1576.10, identical(as.IDate.default(p), as.IDate(p)))
+
 
 ##########################
 

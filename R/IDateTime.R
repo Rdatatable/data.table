@@ -8,9 +8,17 @@ as.IDate <- function(x, ...) UseMethod("as.IDate")
 as.IDate.default <-
     function(x, ...) as.IDate(as.Date(x, ...))
 
+as.IDate.POSIXct <- function(x, ...) {
+    if(attr(x, "tzone") %in% c("UTC", "GMT")) as.IDate(unclass(x), ...) else as.IDate(as.Date(x, ...))
+}
+
+as.IDate.numeric <- function(x, ...) {
+    structure(as.integer(x) %/% 86400L, class=c("IDate","Date"))
+}
+
 as.IDate.Date <- function(x, ...) {
     structure(as.integer(x), class=c("IDate","Date"))
-}    
+}
 
 as.IDate.IDate <- function(x, ...) x
 
@@ -54,6 +62,14 @@ as.ITime <- function(x, ...) UseMethod("as.ITime")
 
 as.ITime.default <- function(x, ...) {
     as.ITime(as.POSIXlt(x, ...))
+}
+
+as.ITime.POSIXct <- function(x, ...) {
+    if(attr(x, "tzone") %in% c("UTC", "GMT")) as.ITime(unclass(x), ...) else as.ITime(as.POSIXlt(x, ...))
+}
+
+as.ITime.numeric <- function(x, ...) {
+    structure(as.integer(x) %% 86400L, class = "ITime")
 }
 
 as.ITime.character <- function(x, format, ...) {
