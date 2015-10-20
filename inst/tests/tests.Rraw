@@ -5390,11 +5390,11 @@ test(1378.1, dim(fread("russellCRLF.csv")), c(19,4))
 f = paste("file://",getwd(),"/russellCRLF.csv",sep="")
 # simulates a http:// request as far as file.download() and unlink() goes, without internet
 # download.file() in fread() changes the input data from \r\n to \n, on Windows.
-test(1378.2, dim(fread(f)), c(19,4))
+test(1378.2, dim(fread(f, showProgress=FALSE)), c(19,4))
 
 f = paste("file://",getwd(),"/russellCRCRLF.csv",sep="")
 # actually has 3 \r in the file, download.file() from file:// changes that to \r\r\n, so we can simulate download.file from http: in text mode.
-test(1378.3, fread(f), error="Line ending is .*r.*r.*n. R's download.file() appears to add the extra .*r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.")
+test(1378.3, fread(f, showProgress=FALSE), error="Line ending is .*r.*r.*n. R's download.file() appears to add the extra .*r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.")
 #====================================
 
 
