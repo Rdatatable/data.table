@@ -61,6 +61,8 @@
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
 
+  2. Fixed test 842 to account for `gdata::last` as well, [#1402](https://github.com/Rdatatable/data.table/issues/1402). Thanks @JanGorecki. 
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
