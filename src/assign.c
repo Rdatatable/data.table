@@ -619,7 +619,15 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             for (i=0; i<LENGTH(cols); i++) {
                 tc2 = c2 = CHAR(STRING_ELT(names, INTEGER(cols)[i]-1));  // the column name being updated; e.g. "col1"
                 while (*tc1) {
-                    if (*tc1!='_' || *(tc1+1)!='_') error("Internal error: __ not found in index name");
+                    if (*tc1!='_' || *(tc1+1)!='_') {
+                    	// fix for #1396
+                    	if (verbose) {
+                    		Rprintf("Dropping index '%s' as it doesn't have '__' at the beginning of index name. It is very likely created using v1.9.4 of data.table.\n", c1);
+                    	}
+                    	setAttrib(index, a, R_NilValue);
+                    	i = LENGTH(cols);
+                    	break;
+                    }
                     tc1 += 2;
                     if (*tc1=='\0') error("Internal error: index name ends with trailing __");
                     while (*tc1 && *tc2 && *tc1 == *tc2) { tc1++; tc2++; }

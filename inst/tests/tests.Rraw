@@ -7068,6 +7068,13 @@ Y = data.table(A=2:4, B=5:7)
 test(1575.1, X[Y, on=c(A="a")], error="not found in x")
 test(1575.2, X[Y, on=c(a="a")], error="not found in i")
 
+# work around for issue introduced in v1.9.4, #1396
+X = data.table(x=5:1, y=6:10)
+setattr(X, 'index', integer(0))
+setattr(attr(X, 'index'), 'x', 5:1) # auto indexed attribute as created from v1.9.4
+ans = capture.output(X[, z := 1:5, verbose=TRUE])
+test(1576, ans[4], "Dropping index 'x' as it doesn't have '__' at the beginning of index name. It is very likely created using v1.9.4 of data.table.")
+
 ##########################
 
 

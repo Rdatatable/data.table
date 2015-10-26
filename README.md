@@ -65,6 +65,8 @@
 
   3. Fixed tests for `fread` 1378.2 and 1378.3 with `showProgress = FALSE`, closes [#1397](https://github.com/Rdatatable/data.table/issues/1397). Thanks to @JanGorecki for the PR.
 
+  4. Worked around auto index error in `v1.9.6` to account for indices created with `v1.9.4`, [#1396](https://github.com/Rdatatable/data.table/issues/1396). Thanks @GRandom.
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
