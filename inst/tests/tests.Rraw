@@ -7075,6 +7075,14 @@ setattr(attr(X, 'index'), 'x', 5:1) # auto indexed attribute as created from v1.
 ans = capture.output(X[, z := 1:5, verbose=TRUE])
 test(1576, ans[4], "Dropping index 'x' as it doesn't have '__' at the beginning of index name. It is very likely created using v1.9.4 of data.table.")
 
+# fix for #1408
+X = fread("a|b|c|d
+          this|is|row|1
+          this|is|row|2
+          this|NA|NA|3
+          this|is|row|4", stringsAsFactors = TRUE)
+test(201.1, is.na(X[3, b]), TRUE)
+
 ##########################
 
 
