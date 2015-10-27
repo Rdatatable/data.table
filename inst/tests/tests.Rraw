@@ -7081,7 +7081,14 @@ X = fread("a|b|c|d
           this|is|row|2
           this|NA|NA|3
           this|is|row|4", stringsAsFactors = TRUE)
-test(201.1, is.na(X[3, b]), TRUE)
+test(1577.1, is.na(X[3, b]), TRUE)
+test(1577.2, levels(X$b), "is")
+X = fread("a|b|c|d
+          this|NA|row|1
+          this|NA|row|2
+          this|NA|NA|3
+          this|NA|row|4", colClasses="character", stringsAsFactors = TRUE)
+test(1577.3, levels(X$b), character(0))
 
 ##########################
 
