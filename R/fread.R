@@ -35,7 +35,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
                 }
                 if (toupper(tt)!=toupper(i)) {
                     warning(cmd, " returned '",tt,"' != '",i,"' (not NULL not '' and allowing for case differences). This may not be a problem but please report.")
-                } 
+                }
                 if (Sys.localeconv()["decimal_point"] == dec) break
                 if (verbose) cat("Successfully changed locale but it provides dec='",Sys.localeconv()["decimal_point"],"' not the desired dec", sep="")
             }
@@ -98,7 +98,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         setattr(ans, 'names', make.unique(names(ans)))
     }
     as_factor <- function(x) {
-        lev = forderv(x, retGrp = TRUE)
+        lev = forderv(x, retGrp = TRUE, na.last = NA)
         # get levels, also take care of all sorted condition
         if (length(lev)) lev = x[lev[attributes(lev)$starts]]
         else lev = x[attributes(lev)$starts]
@@ -110,7 +110,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         cols = which(vapply(ans, is.character, TRUE))
         if (length(cols)) {
             if (verbose) cat("Converting column(s) [", paste(names(ans)[cols], collapse = ", "), "] from 'char' to 'factor'\n", sep = "")
-            for (j in cols) 
+            for (j in cols)
                 set(ans, j = j, value = as_factor(.subset2(ans, j)))
         }
     }

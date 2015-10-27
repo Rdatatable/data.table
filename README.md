@@ -57,6 +57,8 @@
 
   13. `fread` reads text input with empty newline but with just spaces properly, for e.g., fread('a,b\n1,2\n   '), [#1384](https://github.com/Rdatatable/data.table/issues/1384). Thanks to @ladida771.
 
+  14. `fread` with `stringsAsFactors = TRUE` no longer produces factors with NA as a factor level, [#1408](https://github.com/Rdatatable/data.table/pull/1408). Thanks to @DexGroves.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
