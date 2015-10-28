@@ -8,7 +8,7 @@
 }
 
 \usage{
-  \method{all.equal}{data.table}(target, current, trim.levels = TRUE, ...)
+  \method{all.equal}{data.table}(target, current, trim.levels = TRUE, ignore.row.order = FALSE, ignore.col.order = FALSE, ...)
 }
 
 \arguments{
@@ -19,6 +19,14 @@
   \item{trim.levels}{
     A logical indicating whether or not to remove all unused levels in columns
     that are factors before running equality check.
+  }
+  
+  \item{ignore.row.order}{
+    A logical indicating whether or not to ignore rows order in \code{data.table}.
+  }
+  
+  \item{ignore.col.order}{
+    A logical indicating whether or not to ignore columns order in \code{data.table}.
   }
 
   \item{\dots}{
