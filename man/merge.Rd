@@ -74,6 +74,8 @@ allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
   \code{\link{merge}} is a generic function in base R. It dispatches to either the
   \code{merge.data.frame} method or \code{merge.data.table} method depending on the class of its first argument.
 
+  Unlike \code{SQL}, \code{NA} is matched against \code{NA} (and \code{NaN} against \code{NaN}) while merging.
+
   In versions \code{< v1.9.6}, if the specified columns in \code{by} was not the key (or head of the key) of \code{x} or \code{y}, then a \code{\link{copy}} is first rekeyed prior to performing the merge. This was less performant and memory inefficient. 
 
   In version \code{v1.9.4} secondary keys was implemented. In \code{v1.9.6}, the concept of secondary keys has been extended to \code{merge}. No deep copies are made anymore and therefore very performant and memory efficient. Also there is better control for providing the columns to merge on with the help of newly implemented \code{by.x} and \code{by.y} arguments.
