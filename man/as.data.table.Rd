@@ -38,7 +38,7 @@ is.data.table(x)
 
   \code{character} objects are \emph{not} converted to \code{factor} types unlike \code{as.data.frame}.
 
-  If a \code{data.frame} is supplied, all classes preceding \code{"data.frame"} are stripped. Similarly, for \code{data.table} as input, all classes preceding \code{"data.table"} are stripped. \code{as.data.table} method for \code{data.frame} and \code{data.table} returns a \emph{copy} of original data. To modify by reference see \code{\link{setDT}} and \code{\link{setDF}}.
+  If a \code{data.frame} is supplied, all classes preceding \code{"data.frame"} are stripped. Similarly, for \code{data.table} as input, all classes preceding \code{"data.table"} are stripped. \code{as.data.table} methods returns a \emph{copy} of original data. To modify by reference see \code{\link{setDT}} and \code{\link{setDF}}.
 
   \code{keep.rownames} argument can be used to preserve the (row)names attribute in the resulting \code{data.table}.
 }
