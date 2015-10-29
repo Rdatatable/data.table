@@ -15,7 +15,7 @@ skip=0L, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
 dec=if (sep!=".") "." else ",", col.names, 
 check.names=FALSE, encoding="unknown", quote="\"", 
-strip.white=TRUE, blank.lines.skip=TRUE, 
+strip.white=TRUE, blank.lines.skip=FALSE, 
 showProgress=getOption("datatable.showProgress"),   # default: TRUE
 data.table=getOption("datatable.fread.datatable")   # default: TRUE
 )
