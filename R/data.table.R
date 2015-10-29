@@ -135,6 +135,10 @@ print.data.table <- function(x,
         printdots = FALSE
     }
     toprint=format.data.table(toprint, ...)
+    # fix for #975.
+    if (any(sapply(x, function(col) "integer64" %in% class(col))) && !"package:bit64" %in% search()) {
+        warning("Some columns have been read as type 'integer64' but package bit64 isn't loaded. Those columns will display as strange looking floating point data. There is no need to reload the data. Just require(bit64) to obtain the integer64 print method and print the data again.")
+    }
     # FR #5020 - add row.names = logical argument to print.data.table
     if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE,scientific=FALSE),":",sep="") else rownames(toprint)=rep.int("", nrow(toprint))
     if (is.null(names(x))) colnames(toprint)=rep("NA", ncol(toprint)) # fixes bug #4934

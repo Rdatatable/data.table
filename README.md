@@ -31,6 +31,8 @@
 
   8. `fread()` gains `blank.lines.skip` argument that continues reading by skipping empty lines. Default is `FALSE` for backwards compatibility, [#530](https://github.com/Rdatatable/data.table/issues/530). Thanks to @DirkJonker.
 
+  9. `print.data.table` now warns when `bit64` package isn't loaded but the `data.table` contains `integer64` columns, [#975](https://github.com/Rdatatable/data.table/issues/975). Thanks to @StephenMcInerney.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).
