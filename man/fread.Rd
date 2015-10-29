@@ -14,7 +14,8 @@ stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=1L,
 skip=0L, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
 dec=if (sep!=".") "." else ",", col.names, 
-check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, 
+check.names=FALSE, encoding="unknown", quote="\"", 
+strip.white=TRUE, blank.lines.skip=TRUE, 
 showProgress=getOption("datatable.showProgress"),   # default: TRUE
 data.table=getOption("datatable.fread.datatable")   # default: TRUE
 )
@@ -40,6 +41,7 @@ data.table=getOption("datatable.fread.datatable")   # default: TRUE
   \item{encoding}{ default is \code{"unknown"}. Other possible options are \code{"UTF-8"} and \code{"Latin-1"}.  }
   \item{quote}{ By default (\code{"\""}), if a field starts with a doublequote, \code{fread} handles embedded quotes robustly as explained under \code{Details}. If it fails, then another attempt is made to read the field \emph{as is}, i.e., as if quotes are disabled. By setting \code{quote=""}, the field is always read as if quotes are disabled. }
   \item{strip.white}{ default is \code{TRUE}. Strips leading and trailing whitespaces of unquoted fields. If \code{FALSE}, only header trailing spaces are removed. }
+  \item{blank.lines.skip}{\code{logical}, default is \code{FALSE}. If \code{TRUE} blank lines in the input are ignored.}
   \item{showProgress}{ TRUE displays progress on the console using \code{\\r}. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. }
 }
