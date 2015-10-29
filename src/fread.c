@@ -528,14 +528,14 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     return(newv);
 }
 
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP quoteArg, SEXP stripWhiteArg, SEXP showProgressArg)
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP quoteArg, SEXP stripWhiteArg, SEXP skipEmptyLinesArg, SEXP showProgressArg)
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP thiscol, ans, thisstr;
     R_len_t i, resi, j, resj, k, protecti=0, nrow=0, ncol=0;
     int thistype;
     const char *pos, *ch2, *lineStart;
-    Rboolean header, allchar;
+    Rboolean header, allchar, skipEmptyLines;
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
     ERANGEwarning = FALSE;  // just while detecting types, then TRUE before the read data loop
@@ -549,6 +549,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     else ienc = CE_NATIVE;
 
     stripWhite = LOGICAL(stripWhiteArg)[0];
+    skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
 
     // quoteArg for those rare cases when default scenario doesn't cut it.., FR #568
     if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
@@ -809,6 +810,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         i=0;
         int thisLine=line, thisLen=0, thisNcol=-1;  // this* = this run's starting *
         while(ch<=eof && ++i<=30) {
+            if (*ch == eol && skipEmptyLines) {ch++; continue;}
             lineStart = ch;
             ncol = countfields();
             if (ncol==-1) {
@@ -931,7 +933,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     //   Count number of rows
     // ********************************************************************************************
     i = INTEGER(nrowsarg)[0];
-    if (pos==eof || *pos==eol) {
+    if (pos==eof || (*pos==eol && !skipEmptyLines)) {
         nrow=0;
         if (verbose) Rprintf("Byte after header row is eof or eol, 0 data rows present.\n");
     } else if (i>-1) {
@@ -953,6 +955,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             nblank += (i==0);
             ch -= eolLen-1;
         }
+        // TODO: add in logic here for a 'fill=' argument to not skip / leave at blank line, rather to fill with NAs
         // if (nblank==0) There is non white after the last eol. Ok and dealt with. TO DO: reference test id here in comment
         if (ncol==1) tmp = neol-nblank;
         else tmp = MIN( nsep / (ncol-1),  neol-nblank );   // good quick estimate with embedded sep and eol in mind
@@ -1200,9 +1203,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
         R_CheckUserInterrupt();
         batchend = MIN(i+10000, nrow);    // batched into 10k rows to save (expensive) calls to clock()
-        for (; i<batchend && ch<eof; i++) {
+        while(i<batchend && ch<eof) {
             //Rprintf("Row %d : %.10s\n", i+1, ch);
             if (*ch==eol) {
+                if (skipEmptyLines) { ch++; continue; }
                 // blank line causes early stop.  TO DO: allow blank line skips
                 whileBreak = TRUE;  // break the enclosing while too, without changing i
                 break;              // break this for
@@ -1258,6 +1262,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             ch+=eolLen; // now that we error here, the if-statement isn't needed -> // if (ch<eof && *ch==eol) ch+=eolLen;
             pos = ch;  // start of line position only needed to include the whole line in any error message
             line++;
+            i++;
         }
         if (whileBreak) break;
     }

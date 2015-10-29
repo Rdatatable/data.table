@@ -29,6 +29,8 @@
 
   7. `on=` joins now provides more friendly error messages when columns aren't found, [#1376](https://github.com/Rdatatable/data.table/issues/1376).
 
+  8. `fread()` gains `blank.lines.skip` argument that continues reading by skipping empty lines. Default is `FALSE` for backwards compatibility, [#530](https://github.com/Rdatatable/data.table/issues/530). Thanks to @DirkJonker.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

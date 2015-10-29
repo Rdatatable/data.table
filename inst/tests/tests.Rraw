@@ -7090,6 +7090,18 @@ X = fread("a|b|c|d
           this|NA|row|4", colClasses="character", stringsAsFactors = TRUE)
 test(1577.3, levels(X$b), character(0))
 
+# FR #530, skip blank lines
+input = "a,b\n\n1,3\n2,4"
+test(1578.1, fread(input), data.table(V1=1:2, V2=3:4))
+test(1578.2, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
+input = "a,b\n\n\n1,3\n2,4"
+test(1578.3, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
+input = "a,b\n\n\n1,3\n\n2,4\n\n"
+test(1578.4, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
+
+test(1578.5, fread("530_fread.txt", skip=47L), data.table(V1=1:2, V2=3:4))
+test(1578.6, fread("530_fread.txt", skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
+
 ##########################
 
 
