@@ -5,22 +5,14 @@
 if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
     options(warn=0)  # use require() so it warns but doesn't halt if not available
-    require(plyr)
-    require(ggplot2)
-    require(hexbin)
-    require(nlme)
-    require(xts)
-    require(bit64)
-    require(gdata)
-    require(GenomicRanges)
-    require(caret)
-    require(knitr)
-    require(plm)
+    inst_pkgs = rownames(installed.packages())
+    sugg_pkgs = c("plyr","ggplot2","hexbin","nlme","xts","bit64","gdata","GenomicRanges","caret","knitr","plm")
+    lapply(sugg_pkgs, function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))
     # reshape2 ahead of reshape ...
     try(detach(package:reshape2),silent=TRUE)
     try(detach(package:reshape),silent=TRUE)
-    library(reshape2, pos="package:base", logical.return=TRUE)
-    library(reshape, pos="package:base", logical.return=TRUE)
+    if("reshape2" %in% inst_pkgs) library(reshape2, pos="package:base", logical.return=TRUE)
+    if("reshape" %in% inst_pkgs) library(reshape, pos="package:base", logical.return=TRUE)
     .devtesting=FALSE
 } else {
     # Matt has suppressMessages(require(bit64)) in .Rprofile
