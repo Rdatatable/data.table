@@ -73,6 +73,8 @@
 
   4. Worked around auto index error in `v1.9.6` to account for indices created with `v1.9.4`, [#1396](https://github.com/Rdatatable/data.table/issues/1396). Thanks @GRandom.
 
+  5. `test.data.table` gets new argument `silent`, if set to TRUE then it will not raise exception but returns TRUE/FALSE based on the test results.
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
