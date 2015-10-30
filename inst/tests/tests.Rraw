@@ -7102,6 +7102,30 @@ test(1578.4, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 test(1578.5, fread("530_fread.txt", skip=47L), data.table(V1=1:2, V2=3:4))
 test(1578.6, fread("530_fread.txt", skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
 
+# testing gforce::gmedian
+dt = data.table(x  = sample(letters, 300, TRUE), 
+                i1 = sample(-10:10, 300, TRUE),
+                i2 = sample(c(-10:10, NA), 300, TRUE),
+                d1 = as.numeric(sample(-10:10, 300, TRUE)),
+                d2 = as.numeric(sample(c(NA, NaN, -10:10), 300, TRUE)))
+if ('package:bit64' %in% search()) {
+    dt[, `:=`(d3 = as.integer64(sample(-10:10, 300, TRUE)))]
+    dt[, `:=`(d4 = as.integer64(sample(c(-10:10,NA), 300, TRUE)))]
+}
+
+# make sure gforce is on
+optim = getOption("datatable.optimize")
+options(datatable.optimize=2L)
+test(1579.1, dt[, lapply(.SD, median), by=x], 
+             dt[, lapply(.SD, function(x) median(as.numeric(x))), by=x])
+test(1579.2, dt[, lapply(.SD, median, na.rm=TRUE), by=x], 
+             dt[, lapply(.SD, function(x) median(as.numeric(x), na.rm=TRUE)), by=x])
+test(1579.3, dt[, lapply(.SD, median), keyby=x], 
+             dt[, lapply(.SD, function(x) median(as.numeric(x))), keyby=x])
+test(1579.4, dt[, lapply(.SD, median, na.rm=TRUE), keyby=x], 
+             dt[, lapply(.SD, function(x) median(as.numeric(x), na.rm=TRUE)), keyby=x])
+options(datatable.optimize=optim)
+
 ##########################
 
 

@@ -76,3 +76,7 @@ SEXP coerce_to_char(SEXP s, SEXP env);
 
 // rbindlist.c
 SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOrdered);
+
+// quickselect
+double dquickselect(double *x, int n, int k);
+double iquickselect(int *x, int n, int k);

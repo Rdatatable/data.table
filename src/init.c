@@ -60,6 +60,7 @@ SEXP anyNA();
 SEXP isReallyReal();
 SEXP setlevels();
 SEXP rleid();
+SEXP gmedian();
 
 // .Externals
 SEXP fastmean();
@@ -122,6 +123,7 @@ R_CallMethodDef callMethods[] = {
 {"CisReallyReal", (DL_FUNC) &isReallyReal, -1},
 {"Csetlevels", (DL_FUNC) &setlevels, -1},
 {"Crleid", (DL_FUNC) &rleid, -1},
+{"Cgmedian", (DL_FUNC) &gmedian, -1},
 
 {NULL, NULL, 0}
 };
