@@ -458,7 +458,7 @@ SEXP gmax(SEXP x, SEXP narm)
 // gmedian, always returns numeric type (to avoid as.numeric() wrap..)
 SEXP gmedian(SEXP x, SEXP narm) {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
-    if (!isVectorAtomic(x)) error("GForce max can only be applied to columns, not .SD or similar. To find max of all items in a list such as .SD, either add the prefix base::max(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,max),by=,.SDcols=]'");
+    if (!isVectorAtomic(x)) error("GForce median can only be applied to columns, not .SD or similar. To find max of all items in a list such as .SD, either add the prefix base::max(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),by=,.SDcols=]'");
     R_len_t i=0, j=0, k=0, imed=0, thisgrpsize=0, medianindex=0, nacount=0;
     double val = 0.0;
     Rboolean isna = FALSE, isint64 = FALSE;
@@ -611,7 +611,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
         SETLENGTH(sub, maxgrpn);
         break;
     default:
-        error("Type '%s' not supported by GForce median (gmedian). Either add the prefix base::max(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+        error("Type '%s' not supported by GForce median (gmedian). Either add the prefix stats::median(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
     }
     UNPROTECT(2);
     return(ans);
