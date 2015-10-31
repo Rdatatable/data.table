@@ -1,13 +1,15 @@
-\name{datatable-optimize}
+\name{datatable.optimize}
 \alias{datatable-optimize}
 \alias{datatable.optimize}
 \alias{data.table-optimize}
 \alias{data.table.optimize}
 \alias{gforce}
+\alias{GForce}
 \alias{autoindex}
 \alias{autoindexing}
 \alias{auto-index}
 \alias{auto-indexing}
+\alias{rounding}
 \title{Optimisations in data.table}
 \description{
     \code{data.table} internally optimises certain expressions inorder to improve performance. This section briefly summarises those optimisations.
@@ -49,6 +51,12 @@
  	At the moment, expressions of the form \code{dt[col == val]} and \code{dt[col \%in\% val]} are both optimised. We plan to expand this to more operators and conditions in the future.
 
  	Auto indexing can be switched off with the global option \code{options(datatable.auto.index = FALSE)}.
+
+ 	\bold{Numeric rounding:} While grouping by column(s) of \code{numeric} type, e.g., \code{double}, \code{POSIXct} etc., \code{data.table} by default rounds off the last two bytes before computing groups to avoid unexpected behaviours due to limitations in representing floating point numbers. See \code{\link{setNumericRounding}} for more.
+
+}
+\seealso{
+	\code{\link{setNumericRounding}}, \code{\link{getNumericRounding}}
 }
 \examples{
 \dontrun{

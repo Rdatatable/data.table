@@ -31,6 +31,7 @@ getNumericRounding()
     \code{setNumericRounding} returns no value; the new value is applied. \code{getNumericRounding} returns the current value: 0, 1 or 2.
 }
 \seealso{
+\code{\link{datatable-optimize}}\cr
 \url{http://en.wikipedia.org/wiki/Double-precision_floating-point_format}\cr
 \url{http://en.wikipedia.org/wiki/Floating_point}\cr
 \url{http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html}
