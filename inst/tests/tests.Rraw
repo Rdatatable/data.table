@@ -7118,6 +7118,12 @@ test(1579.4, dt[, lapply(.SD, median, na.rm=TRUE), keyby=x],
              dt[, lapply(.SD, function(x) median(as.numeric(x), na.rm=TRUE)), keyby=x])
 options(datatable.optimize=optim)
 
+# test for #1419, rleid doesn't remove names attribute
+x = c("a"=TRUE, "b"=FALSE)
+nx = copy(names(x))
+r = rleid(x)
+test(1580, nx, names(x))
+
 ##########################
 
 

@@ -2505,8 +2505,7 @@ rleidv <- function(x, cols=seq_along(x)) {
             cols = chmatch(cols, names(x))
         cols = as.integer(cols)
     }
-    x = .shallow(x, cols) # shallow copy even if list..
-    .Call(Crleid, setDT(x), -1L)
+    .Call(Crleid, x, -1L)
 }
 
 gsum <- function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)

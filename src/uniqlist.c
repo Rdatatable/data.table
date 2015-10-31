@@ -94,10 +94,13 @@ SEXP rleid(SEXP l, SEXP order)
     R_len_t i, j, len = 1, thisi, previ;
 
     if (!nrow || !ncol) return (allocVector(INTSXP, 0));
-    ans = PROTECT(allocVector(INTSXP, nrow));
+    for (i=1; i<ncol; i++) {
+        if (length(VECTOR_ELT(l,i)) != nrow)
+            error("All elements to input list must be of same length. Element [%d] has length %d != length of first element = %d.", i+1, length(VECTOR_ELT(l,i)), nrow);
+    }
     if (NA_INTEGER != NA_LOGICAL || sizeof(NA_INTEGER)!=sizeof(NA_LOGICAL)) 
         error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
-
+    ans = PROTECT(allocVector(INTSXP, nrow));
     INTEGER(ans)[0] = 1; // first row is always the first of first group
     byorder = INTEGER(order)[0] != -1;
     thisi = byorder ? INTEGER(order)[0]-1 : 0;
