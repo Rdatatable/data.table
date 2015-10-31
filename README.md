@@ -65,6 +65,8 @@
 
   14. `fread` with `stringsAsFactors = TRUE` no longer produces factors with NA as a factor level, [#1408](https://github.com/Rdatatable/data.table/pull/1408). Thanks to @DexGroves.
 
+  15. `test.data.table` no longer raise warning if suggested packages are not available. Thanks to @jangorecki for PR [#1403](https://github.com/Rdatatable/data.table/pull/1403), closes [#1193](https://github.com/Rdatatable/data.table/issues/1193).
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
@@ -74,6 +76,8 @@
   3. Fixed tests for `fread` 1378.2 and 1378.3 with `showProgress = FALSE`, closes [#1397](https://github.com/Rdatatable/data.table/issues/1397). Thanks to @JanGorecki for the PR.
 
   4. Worked around auto index error in `v1.9.6` to account for indices created with `v1.9.4`, [#1396](https://github.com/Rdatatable/data.table/issues/1396). Thanks @GRandom.
+
+  5. `test.data.table` gets new argument `silent`, if set to TRUE then it will not raise exception but returns TRUE/FALSE based on the test results.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 

@@ -1,5 +1,5 @@
 
-test.data.table <- function(verbose=FALSE, pkg="pkg") {
+test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
     if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
         # package developer
         if ("package:data.table" %in% search()) stop("data.table package loaded")
@@ -20,11 +20,17 @@ test.data.table <- function(verbose=FALSE, pkg="pkg") {
     # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
     olddir = setwd(d)
     on.exit(setwd(olddir))
+    envirs <- list()
     for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
         cat("Running",fn,"\n")
         oldverbose = getOption("datatable.verbose")
         if (verbose) options(datatable.verbose=TRUE)
-        sys.source(fn,envir=new.env(parent=.GlobalEnv))
+        envirs[[fn]] = new.env(parent=.GlobalEnv)
+        if(isTRUE(silent)){
+            try(sys.source(fn,envir=envirs[[fn]]), silent=silent)
+        } else {
+            sys.source(fn,envir=envirs[[fn]])
+        }
         options(data.table.verbose=oldverbose)
         # As from v1.7.2, testthat doesn't run the tests.Rraw (hence file name change to .Rraw).
         # There were environment issues with system.time() (when run by test_package) that only
@@ -35,7 +41,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg") {
     }
     options(encoding=oldenc)
     # Sys.setlocale("LC_CTYPE", oldlocale)
-    invisible()
+    invisible(sum(sapply(envirs, `[[`, "nfail"))==0)
 }
 
 # Define test() and its globals here, for use in dev
