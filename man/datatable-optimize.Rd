@@ -44,6 +44,8 @@
  		Normally, once the rows belonging to each groups are identified, the values corresponding to the group is gathered and the \code{j-expression} is evaluated. This can be improved by computing the result directly without having to gather the values or evaluating the expression for each group (which can get costly with large number of groups) by implementing it specifically for a particular function. As a result, it is extremely fast.
 
  		\item In addition to all the functions above, `.N` is also optimised to use GForce. It when used separately or combined with the functions mentioned above still uses GForce.
+
+ 		\item Expressions of the form \code{DT[i, j, by]} are also optimised when \code{i} is a \emph{subset} operation and \code{j} is any/all of the functions discussed above.
  	}
 
  	\bold{Auto indexing:} \code{data.table} also allows for blazing fast subsets by creating an \emph{index} on the first run. Any successive subsets on the same column then reuses this index to \emph{binary search} (instead of \emph{vector scan}) and is therefore fast.

@@ -1531,7 +1531,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
         }
         dotN <- function(x) if (is.name(x) && x == ".N") TRUE else FALSE # For #5760
-        if (getOption("datatable.optimize")>=2 && !byjoin && !length(irows) && length(f__) && !length(lhs)) {
+        # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with 
+        # nomatch=0L even now.. but not switching it on yet, will deal it separately.
+        if (getOption("datatable.optimize")>=2 && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
             if (!length(ansvars)) {
                 GForce = FALSE
                 if ( (is.name(jsub) && jsub == ".N") || (is.call(jsub) && length(jsub)==2L && jsub[[1L]] == "list" && jsub[[2L]] == ".N") ) {
@@ -1615,7 +1617,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     }
     lockBinding(".xSD", SDenv)
     grporder = o__
-    if (length(irows) && !isTRUE(irows)) {
+    # for #971, added !GForce. if (GForce) we do it much more (memory) efficiently than subset of order vector below.
+    if (length(irows) && !isTRUE(irows) && !GForce) {
         # fix for bug #2758. TO DO: provide a better error message
         if (length(irows) > 1 && length(zo__ <- which(irows == 0)) > 0) stop("i[", zo__[1], "] is 0. While grouping, i=0 is allowed when it's the only value. When length(i) > 1, all i should be > 0.")
         if (length(o__) && length(irows)!=length(o__)) stop("Internal error: length(irows)!=length(o__)")
@@ -1631,7 +1634,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
         for (ii in ansvars) assign(ii, x[[ii]], thisEnv)
         assign(".N", len__, thisEnv) # For #5760
-        gstart(o__, f__, len__)
+        gstart(o__, f__, len__, irows) # irows needed for #971.
         ans = eval(jsub, thisEnv)
         if (is.atomic(ans)) ans=list(ans)  # won't copy named argument in new version of R, good
         gend()
@@ -2513,7 +2516,7 @@ gmean <- function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gmedian <- function(x, na.rm=FALSE) .Call(Cgmedian, x, na.rm)
 gmin <- function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
 gmax <- function(x, na.rm=FALSE) .Call(Cgmax, x, na.rm)
-gstart <- function(o, f, l) .Call(Cgstart, o, f, l)
+gstart <- function(o, f, l, rows) .Call(Cgstart, o, f, l, rows)
 gend <- function() .Call(Cgend)
 
 isReallyReal <- function(x) {

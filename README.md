@@ -35,6 +35,8 @@
 
   10. GForce is now also optimised for `median`. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). Check that issue for benchmarks.
 
+  11. GForce kicks in along with subsets in `i` as well, e.g., `DT[x > 2, mean(y), by=z]`. Partly addresses [#971](https://github.com/Rdatatable/data.table/issues/971). 
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

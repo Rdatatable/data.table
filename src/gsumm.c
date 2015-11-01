@@ -5,6 +5,9 @@ static int *grp = NULL;      // the group of each x item, like a factor
 static int ngrp = 0;         // number of groups
 static int *grpsize = NULL;  // size of each group, used by gmean (and gmedian) not gsum
 static int grpn = 0;         // length of underlying x == length(grp)
+static int *irows;           // GForce support for subsets in 'i' (TODO: joins in 'i')
+static int irowslen = -1;    // -1 is for irows = NULL
+
 // for gmedian
 static int maxgrpn = 0;
 static int *oo = NULL;
@@ -13,7 +16,7 @@ static int isunsorted = 0;
 static union {double d;
               long long ll;} u;
 
-SEXP gstart(SEXP o, SEXP f, SEXP l) {
+SEXP gstart(SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int i, j, g, *this;
     // clock_t start = clock();
     if (!isInteger(o)) error("o is not integer vector");
@@ -44,12 +47,16 @@ SEXP gstart(SEXP o, SEXP f, SEXP l) {
     maxgrpn = INTEGER(getAttrib(o, install("maxgrpn")))[0];
     oo = INTEGER(o);
     ff = INTEGER(f);
+
+    irows = INTEGER(irowsArg);
+    if (!isNull(irowsArg)) irowslen = length(irowsArg);
+
     // Rprintf("gstart took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
     return(R_NilValue);
 }
 
 SEXP gend() {
-    free(grp); grp = NULL; ngrp = 0; maxgrpn = 0;
+    free(grp); grp = NULL; ngrp = 0; maxgrpn = 0; irowslen = -1;
     return(R_NilValue);
 }
 
@@ -59,11 +66,11 @@ SEXP gsum(SEXP x, SEXP narm)
 {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
     if (!isVectorAtomic(x)) error("GForce sum can only be applied to columns, not .SD or similar. To sum all items in a list such as .SD, either add the prefix base::sum(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,sum),by=,.SDcols=]'");
-    int i, thisgrp;
-    int n = LENGTH(x);
+    int i, ix, thisgrp;
+    int n = (irowslen == -1) ? length(x) : irowslen;
     //clock_t start = clock();
     SEXP ans;
-    if (grpn != length(x)) error("grpn [%d] != length(x) [%d] in gsum", grpn, length(x));
+    if (grpn != n) error("grpn [%d] != length(x) [%d] in gsum", grpn, n);
     long double *s = malloc(ngrp * sizeof(long double));
     if (!s) error("Unable to allocate %d * %d bytes for gsum", ngrp, sizeof(long double));
     memset(s, 0, ngrp * sizeof(long double)); // all-0 bits == (long double)0, checked in init.c
@@ -71,11 +78,12 @@ SEXP gsum(SEXP x, SEXP narm)
     case LGLSXP: case INTSXP:
         for (i=0; i<n; i++) {
             thisgrp = grp[i];
-            if(INTEGER(x)[i] == NA_INTEGER) { 
+            ix = (irowslen == -1) ? i : irows[i]-1;
+            if(INTEGER(x)[ix] == NA_INTEGER) { 
                 if (!LOGICAL(narm)[0]) s[thisgrp] = NA_REAL;  // Let NA_REAL propogate from here. R_NaReal is IEEE.
                 continue;
             }
-            s[thisgrp] += INTEGER(x)[i];  // no under/overflow here, s is long double (like base)
+            s[thisgrp] += INTEGER(x)[ix];  // no under/overflow here, s is long double (like base)
         }
         ans = PROTECT(allocVector(INTSXP, ngrp));
         for (i=0; i<ngrp; i++) {
@@ -96,8 +104,9 @@ SEXP gsum(SEXP x, SEXP narm)
         ans = PROTECT(allocVector(REALSXP, ngrp));
         for (i=0; i<n; i++) {
             thisgrp = grp[i];
-            if(ISNAN(REAL(x)[i]) && LOGICAL(narm)[0]) continue;  // else let NA_REAL propogate from here
-            s[thisgrp] += REAL(x)[i];  // done in long double, like base
+            ix = (irowslen == -1) ? i : irows[i]-1;
+            if(ISNAN(REAL(x)[ix]) && LOGICAL(narm)[0]) continue;  // else let NA_REAL propogate from here
+            s[thisgrp] += REAL(x)[ix];  // done in long double, like base
         }
         for (i=0; i<ngrp; i++) {
             if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
@@ -119,7 +128,7 @@ SEXP gsum(SEXP x, SEXP narm)
 SEXP gmean(SEXP x, SEXP narm)
 {
     SEXP ans;
-    int i, protecti=0, thisgrp, n;
+    int i, ix, protecti=0, thisgrp, n;
     //clock_t start = clock();
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
     if (!isVectorAtomic(x)) error("GForce mean can only be applied to columns, not .SD or similar. Likely you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table.");
@@ -138,8 +147,8 @@ SEXP gmean(SEXP x, SEXP narm)
         return(ans);
     }
     // na.rm=TRUE.  Similar to gsum, but we need to count the non-NA as well for the divisor
-    n = LENGTH(x);
-    if (grpn != n) error("grpn [%d] != length(x) [%d] in gsum", grpn, length(x));
+    n = (irowslen == -1) ? length(x) : irowslen;
+    if (grpn != n) error("grpn [%d] != length(x) [%d] in gsum", grpn, n);
 
     long double *s = malloc(ngrp * sizeof(long double));
     if (!s) error("Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE", ngrp, sizeof(long double));
@@ -153,16 +162,18 @@ SEXP gmean(SEXP x, SEXP narm)
     case LGLSXP: case INTSXP:
         for (i=0; i<n; i++) {
             thisgrp = grp[i];
-            if(INTEGER(x)[i] == NA_INTEGER) continue;
-            s[thisgrp] += INTEGER(x)[i];  // no under/overflow here, s is long double
+            ix = (irowslen == -1) ? i : irows[i]-1;
+            if(INTEGER(x)[ix] == NA_INTEGER) continue;
+            s[thisgrp] += INTEGER(x)[ix];  // no under/overflow here, s is long double
             c[thisgrp]++;
         }
         break;
     case REALSXP:
         for (i=0; i<n; i++) {
             thisgrp = grp[i];
-            if (ISNAN(REAL(x)[i])) continue;
-            s[thisgrp] += REAL(x)[i];
+            ix = (irowslen == -1) ? i : irows[i]-1;
+            if (ISNAN(REAL(x)[ix])) continue;
+            s[thisgrp] += REAL(x)[ix];
             c[thisgrp]++;
         }
         break;
@@ -192,11 +203,11 @@ SEXP gmin(SEXP x, SEXP narm)
 {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
     if (!isVectorAtomic(x)) error("GForce min can only be applied to columns, not .SD or similar. To find min of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'");
-    R_len_t i, thisgrp=0;
-    int n = LENGTH(x);
+    R_len_t i, ix, thisgrp=0;
+    int n = (irowslen == -1) ? length(x) : irowslen;
     //clock_t start = clock();
     SEXP ans;
-    if (grpn != length(x)) error("grpn [%d] != length(x) [%d] in gmin", grpn, length(x));
+    if (grpn != n) error("grpn [%d] != length(x) [%d] in gmin", grpn, n);
     char *update = Calloc(ngrp, char);
     if (update == NULL) error("Unable to allocate %d * %d bytes for gmin", ngrp, sizeof(char));
     switch(TYPEOF(x)) {
@@ -206,9 +217,10 @@ SEXP gmin(SEXP x, SEXP narm)
         if (!LOGICAL(narm)[0]) {
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
-                if (INTEGER(x)[i] != NA_INTEGER && INTEGER(ans)[thisgrp] != NA_INTEGER) {
-                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] > INTEGER(x)[i] ) {
-                        INTEGER(ans)[thisgrp] = INTEGER(x)[i];
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if (INTEGER(x)[ix] != NA_INTEGER && INTEGER(ans)[thisgrp] != NA_INTEGER) {
+                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] > INTEGER(x)[ix] ) {
+                        INTEGER(ans)[thisgrp] = INTEGER(x)[ix];
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
                 } else INTEGER(ans)[thisgrp] = NA_INTEGER;
@@ -216,9 +228,10 @@ SEXP gmin(SEXP x, SEXP narm)
         } else {
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
-                if (INTEGER(x)[i] != NA_INTEGER) {
-                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] > INTEGER(x)[i] ) {
-                        INTEGER(ans)[thisgrp] = INTEGER(x)[i];
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if (INTEGER(x)[ix] != NA_INTEGER) {
+                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] > INTEGER(x)[ix] ) {
+                        INTEGER(ans)[thisgrp] = INTEGER(x)[ix];
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
                 } else {
@@ -246,9 +259,10 @@ SEXP gmin(SEXP x, SEXP narm)
         if (!LOGICAL(narm)[0]) {
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
-                if (STRING_ELT(x, i) != NA_STRING && STRING_ELT(ans, thisgrp) != NA_STRING) {
-                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, i))) > 0 ) {
-                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, i));
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if (STRING_ELT(x, ix) != NA_STRING && STRING_ELT(ans, thisgrp) != NA_STRING) {
+                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, ix))) > 0 ) {
+                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
                 } else SET_STRING_ELT(ans, thisgrp, NA_STRING);
@@ -256,9 +270,10 @@ SEXP gmin(SEXP x, SEXP narm)
         } else {
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
-                if (STRING_ELT(x, i) != NA_STRING) {
-                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, i))) > 0 ) {
-                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, i));
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if (STRING_ELT(x, ix) != NA_STRING) {
+                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, ix))) > 0 ) {
+                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
                 } else {
@@ -281,9 +296,10 @@ SEXP gmin(SEXP x, SEXP narm)
         if (!LOGICAL(narm)[0]) {
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
-                if ( !ISNA(REAL(x)[i]) && !ISNA(REAL(ans)[thisgrp]) ) {
-                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[i] ) {
-                        REAL(ans)[thisgrp] = REAL(x)[i];
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if ( !ISNA(REAL(x)[ix]) && !ISNA(REAL(ans)[thisgrp]) ) {
+                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[ix] ) {
+                        REAL(ans)[thisgrp] = REAL(x)[ix];
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
                 } else REAL(ans)[thisgrp] = NA_REAL;
@@ -291,9 +307,10 @@ SEXP gmin(SEXP x, SEXP narm)
         } else {
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
-                if ( !ISNA(REAL(x)[i]) ) {
-                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[i] ) {
-                        REAL(ans)[thisgrp] = REAL(x)[i];
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if ( !ISNA(REAL(x)[ix]) ) {
+                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[ix] ) {
+                        REAL(ans)[thisgrp] = REAL(x)[ix];
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
                 } else {
@@ -326,11 +343,11 @@ SEXP gmax(SEXP x, SEXP narm)
 {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
     if (!isVectorAtomic(x)) error("GForce max can only be applied to columns, not .SD or similar. To find max of all items in a list such as .SD, either add the prefix base::max(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,max),by=,.SDcols=]'");
-    R_len_t i, thisgrp=0;
-    int n = LENGTH(x);
+    R_len_t i, ix, thisgrp=0;
+    int n = (irowslen == -1) ? length(x) : irowslen;
     //clock_t start = clock();
     SEXP ans;
-    if (grpn != length(x)) error("grpn [%d] != length(x) [%d] in gmax", grpn, length(x));
+    if (grpn != n) error("grpn [%d] != length(x) [%d] in gmax", grpn, n);
     char *update = Calloc(ngrp, char);
     if (update == NULL) error("Unable to allocate %d * %d bytes for gmax", ngrp, sizeof(char));
     switch(TYPEOF(x)) {
@@ -340,9 +357,10 @@ SEXP gmax(SEXP x, SEXP narm)
         if (!LOGICAL(narm)[0]) { // simple case - deal in a straightforward manner first
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
-                if (INTEGER(x)[i] != NA_INTEGER && INTEGER(ans)[thisgrp] != NA_INTEGER) {
-                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] < INTEGER(x)[i] ) {
-                        INTEGER(ans)[thisgrp] = INTEGER(x)[i];
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if (INTEGER(x)[ix] != NA_INTEGER && INTEGER(ans)[thisgrp] != NA_INTEGER) {
+                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] < INTEGER(x)[ix] ) {
+                        INTEGER(ans)[thisgrp] = INTEGER(x)[ix];
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
                 } else  INTEGER(ans)[thisgrp] = NA_INTEGER;
@@ -350,9 +368,10 @@ SEXP gmax(SEXP x, SEXP narm)
         } else {
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
-                if (INTEGER(x)[i] != NA_INTEGER) {
-                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] < INTEGER(x)[i] ) {
-                        INTEGER(ans)[thisgrp] = INTEGER(x)[i];
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if (INTEGER(x)[ix] != NA_INTEGER) {
+                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] < INTEGER(x)[ix] ) {
+                        INTEGER(ans)[thisgrp] = INTEGER(x)[ix];
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
                 } else {
@@ -380,9 +399,10 @@ SEXP gmax(SEXP x, SEXP narm)
         if (!LOGICAL(narm)[0]) { // simple case - deal in a straightforward manner first
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
-                if (STRING_ELT(x,i) != NA_STRING && STRING_ELT(ans, thisgrp) != NA_STRING) {
-                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x,i))) < 0 ) {
-                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, i));
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if (STRING_ELT(x,ix) != NA_STRING && STRING_ELT(ans, thisgrp) != NA_STRING) {
+                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x,ix))) < 0 ) {
+                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
                 } else  SET_STRING_ELT(ans, thisgrp, NA_STRING);
@@ -390,9 +410,10 @@ SEXP gmax(SEXP x, SEXP narm)
         } else {
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
-                if (STRING_ELT(x, i) != NA_STRING) {
-                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, i))) < 0 ) {
-                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, i));
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if (STRING_ELT(x, ix) != NA_STRING) {
+                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, ix))) < 0 ) {
+                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
                 } else {
@@ -415,9 +436,10 @@ SEXP gmax(SEXP x, SEXP narm)
         if (!LOGICAL(narm)[0]) {
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
-                if ( !ISNA(REAL(x)[i]) && !ISNA(REAL(ans)[thisgrp]) ) {
-                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] < REAL(x)[i] ) {
-                        REAL(ans)[thisgrp] = REAL(x)[i];
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if ( !ISNA(REAL(x)[ix]) && !ISNA(REAL(ans)[thisgrp]) ) {
+                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] < REAL(x)[ix] ) {
+                        REAL(ans)[thisgrp] = REAL(x)[ix];
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
                 } else REAL(ans)[thisgrp] = NA_REAL;
@@ -425,9 +447,10 @@ SEXP gmax(SEXP x, SEXP narm)
         } else {
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
-                if ( !ISNA(REAL(x)[i]) ) {
-                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] < REAL(x)[i] ) {
-                        REAL(ans)[thisgrp] = REAL(x)[i];
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if ( !ISNA(REAL(x)[ix]) ) {
+                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] < REAL(x)[ix] ) {
+                        REAL(ans)[thisgrp] = REAL(x)[ix];
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
                 } else {
@@ -464,7 +487,8 @@ SEXP gmedian(SEXP x, SEXP narm) {
     Rboolean isna = FALSE, isint64 = FALSE;
     SEXP ans, sub, class;
     void *ptr;
-    if (grpn != length(x)) error("grpn [%d] != length(x) [%d] in gmax", grpn, length(x));
+    int n = (irowslen == -1) ? length(x) : irowslen;
+    if (grpn != n) error("grpn [%d] != length(x) [%d] in gmedian", grpn, n);
     switch(TYPEOF(x)) {
     case REALSXP:
         class = getAttrib(x, R_ClassSymbol);
@@ -480,6 +504,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
                 for (j=0; j<thisgrpsize; j++) {
                     k = ff[i]+j-1;
                     if (isunsorted) k = oo[k]-1;
+                    k = (irowslen == -1) ? k : irows[k]-1;
                     // TODO: raise this if-statement?
                     if (!isint64) {
                         if (ISNAN(REAL(x)[k])) {
@@ -514,6 +539,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
                 for (j=0; j<thisgrpsize; j++) {
                     k = ff[i]+j-1;
                     if (isunsorted) k = oo[k]-1;
+                    k = (irowslen == -1) ? k : irows[k]-1;
                     // TODO: raise this if-statement?
                     if (!isint64) {
                         if (ISNAN(REAL(x)[k])) {
@@ -559,6 +585,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
                 for (j=0; j<thisgrpsize; j++) {
                     k = ff[i]+j-1;
                     if (isunsorted) k = oo[k]-1;
+                    k = (irowslen == -1) ? k : irows[k]-1;
                     if (INTEGER(x)[k] == NA_INTEGER) {
                         REAL(ans)[i] = NA_REAL;
                         isna = TRUE; break;
@@ -584,6 +611,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
                 for (j=0; j<thisgrpsize; j++) {
                     k = ff[i]+j-1;
                     if (isunsorted) k = oo[k]-1;
+                    k = (irowslen == -1) ? k : irows[k]-1;
                     if (INTEGER(x)[k] == NA_INTEGER) {
                         nacount++; continue;
                     }
