@@ -56,7 +56,7 @@ SEXP gstart(SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
 }
 
 SEXP gend() {
-    free(grp); grp = NULL; ngrp = 0; maxgrpn = 0; irowslen = -1;
+    free(grp); grp = NULL; ngrp = 0; maxgrpn = 0; irowslen = -1; isunsorted = 0;
     return(R_NilValue);
 }
 
