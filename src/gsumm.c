@@ -772,12 +772,78 @@ SEXP gfirst(SEXP x) {
     return(ans);
 }
 
-SEXP gtail(SEXP x, SEXP n) {
-    if (!isInteger(n) || LENGTH(n)!=1 || INTEGER(n)[0]!=1) error("Internal error, gtail is only implemented for n=1. This should have been caught before. Please report to datatable-help.");
+SEXP gtail(SEXP x, SEXP valArg) {
+    if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, gtail is only implemented for n=1. This should have been caught before. Please report to datatable-help.");
     return (glast(x));
 }
 
-SEXP ghead(SEXP x, SEXP n) {
-    if (!isInteger(n) || LENGTH(n)!=1 || INTEGER(n)[0]!=1) error("Internal error, ghead is only implemented for n=1. This should have been caught before. Please report to datatable-help.");
+SEXP ghead(SEXP x, SEXP valArg) {
+    if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, ghead is only implemented for n=1. This should have been caught before. Please report to datatable-help.");
     return (gfirst(x));
+}
+
+SEXP gnthvalue(SEXP x, SEXP valArg) {
+
+    if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. Please report to datatable-help.");
+    R_len_t i,k, val=INTEGER(valArg)[0];
+    int n = (irowslen == -1) ? length(x) : irowslen;
+    SEXP ans;
+    if (grpn != n) error("grpn [%d] != length(x) [%d] in ghead", grpn, n);
+    switch(TYPEOF(x)) {
+    case LGLSXP: 
+        ans = PROTECT(allocVector(LGLSXP, ngrp));
+        for (i=0; i<ngrp; i++) {
+            if (val > grpsize[i]) { LOGICAL(ans)[i] = NA_LOGICAL; continue; }
+            k = ff[i]+val-2;
+            if (isunsorted) k = oo[k]-1;
+            k = (irowslen == -1) ? k : irows[k]-1;
+            LOGICAL(ans)[i] = LOGICAL(x)[k];
+        }
+    break;
+    case INTSXP:
+        ans = PROTECT(allocVector(INTSXP, ngrp));
+        for (i=0; i<ngrp; i++) {
+            if (val > grpsize[i]) { INTEGER(ans)[i] = NA_INTEGER; continue; }
+            k = ff[i]+val-2;
+            if (isunsorted) k = oo[k]-1;
+            k = (irowslen == -1) ? k : irows[k]-1;
+            INTEGER(ans)[i] = INTEGER(x)[k];
+        }
+    break;
+    case REALSXP:
+        ans = PROTECT(allocVector(REALSXP, ngrp));
+        for (i=0; i<ngrp; i++) {
+            if (val > grpsize[i]) { REAL(ans)[i] = NA_REAL; continue; }
+            k = ff[i]+val-2;
+            if (isunsorted) k = oo[k]-1;
+            k = (irowslen == -1) ? k : irows[k]-1;
+            REAL(ans)[i] = REAL(x)[k];
+        }
+    break;
+    case STRSXP:
+        ans = PROTECT(allocVector(STRSXP, ngrp));
+        for (i=0; i<ngrp; i++) {
+            if (val > grpsize[i]) { SET_STRING_ELT(ans, i, NA_STRING); continue; }
+            k = ff[i]+val-2;
+            if (isunsorted) k = oo[k]-1;
+            k = (irowslen == -1) ? k : irows[k]-1;
+            SET_STRING_ELT(ans, i, STRING_ELT(x, k));
+        }
+    break;
+    case VECSXP:
+        ans = PROTECT(allocVector(VECSXP, ngrp));
+        for (i=0; i<ngrp; i++) {
+            if (val > grpsize[i]) { SET_VECTOR_ELT(ans, i, R_NilValue); continue; }
+            k = ff[i]+val-2;
+            if (isunsorted) k = oo[k]-1;
+            k = (irowslen == -1) ? k : irows[k]-1;
+            SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k));
+        }
+    break;
+    default:
+        error("Type '%s' not supported by GForce subset `[` (gnthvalue). Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    }
+    copyMostAttrib(x, ans);
+    UNPROTECT(1);
+    return(ans);    
 }

@@ -1542,14 +1542,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 }
             } else {
                 # Apply GForce
-                gfuns = c("sum", "mean", "median", ".N", "min", "max", "head", "last", "tail") # added .N for #5760
+                gfuns = c("sum", "mean", "median", ".N", "min", "max", "head", "last", "tail", "[") # added .N for #5760
                 .ok <- function(q) {
                     if (dotN(q)) return(TRUE) # For #5760
                     cond = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]])
                     ans  = cond && (length(q)==2 || identical("na",substring(names(q)[3L],1,2)))
                     if (identical(ans, TRUE)) return(ans)
                     ans = cond && length(q)==3 && ( as.character(q[[1]]) %chin% c("head", "tail") && 
-                                                         (identical(q[[3]], 1) || identical(q[[3]], 1L)) )
+                                                         (identical(q[[3]], 1) || identical(q[[3]], 1L)) || 
+                                                    as.character(q[[1]]) %chin% "[" && is.numeric(q[[3]]) && 
+                                                        length(q[[3]])==1 && q[[3]]>0 )
                     if (is.na(ans)) ans=FALSE
                     ans
                 }
@@ -2515,6 +2517,7 @@ rleidv <- function(x, cols=seq_along(x)) {
     .Call(Crleid, x, -1L)
 }
 
+`g[` <- function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead <- function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
 gtail <- function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
 gfirst <- function(x) .Call(Cgfirst, x)

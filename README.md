@@ -37,7 +37,9 @@
 
   11. GForce kicks in along with subsets in `i` as well, e.g., `DT[x > 2, mean(y), by=z]`. Partly addresses [#971](https://github.com/Rdatatable/data.table/issues/971). 
 
-  12. GForce is optimised for `head(.SD, 1)` and `tail(.SD, 1`). Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). Check the link for benchmarks.
+  12. GForce is optimised for `head(., 1)` and `tail(., 1`), where `.` is a column name or `.SD`. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). Check the link for benchmarks.
+
+  13. GForce is optimised for `.SD[val]` and `col[val]` where `val` is a positive length-1 value. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523).
 
 #### BUG FIXES
 

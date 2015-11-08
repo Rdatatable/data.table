@@ -65,6 +65,7 @@ SEXP gtail();
 SEXP ghead();
 SEXP glast();
 SEXP gfirst();
+SEXP gnthvalue();
 
 // .Externals
 SEXP fastmean();
@@ -132,6 +133,7 @@ R_CallMethodDef callMethods[] = {
 {"Cghead", (DL_FUNC) &ghead, -1},
 {"Cglast", (DL_FUNC) &glast, -1},
 {"Cgfirst", (DL_FUNC) &gfirst, -1},
+{"Cgnthvalue", (DL_FUNC) &gnthvalue, -1},
 {NULL, NULL, 0}
 };
 
