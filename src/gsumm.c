@@ -507,16 +507,20 @@ SEXP gmedian(SEXP x, SEXP narm) {
                     k = (irowslen == -1) ? k : irows[k]-1;
                     // TODO: raise this if-statement?
                     if (!isint64) {
-                        if (ISNAN(REAL(x)[k])) {
+			if (!ISNAN(REAL(x)[k])) {
+			    REAL(sub)[j] = REAL(x)[k];
+			} else {
                             REAL(ans)[i] = NA_REAL;
                             isna = TRUE; break;
-                        } else REAL(sub)[j] = REAL(x)[k];
+			}
                     } else {
                         u.d = REAL(x)[k];
-                        if (u.ll == NAINT64) {
+			if (u.ll != NAINT64) {
+			    REAL(sub)[j] = (double)u.ll;
+			} else {
                             REAL(ans)[i] = NA_REAL;
                             isna = TRUE; break;
-                        } else REAL(sub)[j] = (double)u.ll;
+			}
                     } 
                 }
                 if (isna) continue;
@@ -542,14 +546,14 @@ SEXP gmedian(SEXP x, SEXP narm) {
                     k = (irowslen == -1) ? k : irows[k]-1;
                     // TODO: raise this if-statement?
                     if (!isint64) {
-                        if (ISNAN(REAL(x)[k])) {
-                            nacount++; continue;
-                        } else REAL(sub)[j-nacount] = REAL(x)[k];
+			if (!ISNAN(REAL(x)[k])) {
+			    REAL(sub)[j-nacount] = REAL(x)[k];
+			} else { nacount++; continue; }
                     } else {
                         u.d = REAL(x)[k];
-                        if (u.ll == NAINT64) {
-                            nacount++; continue;
-                        } else REAL(sub)[j-nacount] = (double)u.ll;
+			if (u.ll != NAINT64) {
+			    REAL(sub)[j-nacount] = (double)u.ll;
+			} else { nacount++; continue; }
                     }
                 }
                 if (nacount == thisgrpsize) {
@@ -586,10 +590,12 @@ SEXP gmedian(SEXP x, SEXP narm) {
                     k = ff[i]+j-1;
                     if (isunsorted) k = oo[k]-1;
                     k = (irowslen == -1) ? k : irows[k]-1;
-                    if (INTEGER(x)[k] == NA_INTEGER) {
+		    if (INTEGER(x)[k] != NA_INTEGER) {
+			INTEGER(sub)[j] = INTEGER(x)[k];
+		    } else {
                         REAL(ans)[i] = NA_REAL;
                         isna = TRUE; break;
-                    } else INTEGER(sub)[j] = INTEGER(x)[k];
+		    }
                 }
                 if (isna) continue;
                 medianindex = (R_len_t)(ceil((double)(thisgrpsize)/2));
@@ -612,10 +618,9 @@ SEXP gmedian(SEXP x, SEXP narm) {
                     k = ff[i]+j-1;
                     if (isunsorted) k = oo[k]-1;
                     k = (irowslen == -1) ? k : irows[k]-1;
-                    if (INTEGER(x)[k] == NA_INTEGER) {
-                        nacount++; continue;
-                    }
-                    INTEGER(sub)[j-nacount] = INTEGER(x)[k];
+		    if (INTEGER(x)[k] != NA_INTEGER) {
+			INTEGER(sub)[j-nacount] = INTEGER(x)[k];
+		    } else { nacount++; continue; }
                 }
                 if (nacount == thisgrpsize) {
                     REAL(ans)[i] = NA_REAL; // all NAs
