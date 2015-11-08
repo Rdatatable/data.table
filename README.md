@@ -37,6 +37,8 @@
 
   11. GForce kicks in along with subsets in `i` as well, e.g., `DT[x > 2, mean(y), by=z]`. Partly addresses [#971](https://github.com/Rdatatable/data.table/issues/971). 
 
+  12. GForce is optimised for `head(.SD, 1)` and `tail(.SD, 1`). Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). Check the link for benchmarks.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

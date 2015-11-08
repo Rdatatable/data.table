@@ -1431,7 +1431,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 jvnames = ansvars
             }
         } else {
-            if ( length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "head") && jsub[[2L]] == ".SD" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N") ) {
+            if ( length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "head" || jsub[[1L]] == "tail") && jsub[[2L]] == ".SD" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N") ) {
                 # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
                 jsub = as.call(c(quote(list), lapply(ansvars, function(x) { jsub[[2L]] = as.name(x); jsub })))
                 jvnames = ansvars
@@ -1542,10 +1542,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 }
             } else {
                 # Apply GForce
-                gfuns = c("sum", "mean", "median", ".N", "min", "max") # added .N for #5760
+                gfuns = c("sum", "mean", "median", ".N", "min", "max", "head", "last", "tail") # added .N for #5760
                 .ok <- function(q) {
                     if (dotN(q)) return(TRUE) # For #5760
-                    ans = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]]) && (length(q)==2 || identical("na",substring(names(q)[3L],1,2)))
+                    cond = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]])
+                    ans  = cond && (length(q)==2 || identical("na",substring(names(q)[3L],1,2)))
+                    if (identical(ans, TRUE)) return(ans)
+                    ans = cond && length(q)==3 && ( as.character(q[[1]]) %chin% c("head", "tail") && 
+                                                         (identical(q[[3]], 1) || identical(q[[3]], 1L)) )
                     if (is.na(ans)) ans=FALSE
                     ans
                 }
@@ -2510,6 +2514,11 @@ rleidv <- function(x, cols=seq_along(x)) {
     }
     .Call(Crleid, x, -1L)
 }
+
+ghead <- function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
+gtail <- function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
+gfirst <- function(x) .Call(Cgfirst, x)
+glast <- function(x) .Call(Cglast, x)
 
 gsum <- function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean <- function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)

@@ -61,6 +61,10 @@ SEXP isReallyReal();
 SEXP setlevels();
 SEXP rleid();
 SEXP gmedian();
+SEXP gtail();
+SEXP ghead();
+SEXP glast();
+SEXP gfirst();
 
 // .Externals
 SEXP fastmean();
@@ -124,7 +128,10 @@ R_CallMethodDef callMethods[] = {
 {"Csetlevels", (DL_FUNC) &setlevels, -1},
 {"Crleid", (DL_FUNC) &rleid, -1},
 {"Cgmedian", (DL_FUNC) &gmedian, -1},
-
+{"Cgtail", (DL_FUNC) &gtail, -1},
+{"Cghead", (DL_FUNC) &ghead, -1},
+{"Cglast", (DL_FUNC) &glast, -1},
+{"Cgfirst", (DL_FUNC) &gfirst, -1},
 {NULL, NULL, 0}
 };
 
