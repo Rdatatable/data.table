@@ -75,6 +75,8 @@
 
   16. `rleid()` does not affect attributes of input vector, [#1419](https://github.com/Rdatatable/data.table/issues/1419). Thanks @JanGorecki.
 
+  17. `uniqueN()` now handle NULL properly, [#1429](https://github.com/Rdatatable/data.table/issues/1429). Thanks @JanGorecki.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
