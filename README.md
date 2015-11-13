@@ -309,7 +309,7 @@
 
   56. Key is retained properly when joining on factor type columns. Closes [#477](https://github.com/Rdatatable/data.table/issues/477). Thanks to @nachti for the report.
   
-  57. Over-allocated memory is released more robustly thanks to Karl Miller's investigation and suggested fix.
+  57. Over-allocated memory is released more robustly thanks to Karl Millar's investigation and suggested fix.
   
   58. `DT[TRUE, colA:=colA*2]` no longer churns through 4 unnecessary allocations as large as one column. This was caused by `i=TRUE` being recycled. Thanks to Nathan Kurz for reporting and investigating. Added provided test to test suite. Only a single vector is allocated now for the RHS (`colA*2`). Closes [#1249](https://github.com/Rdatatable/data.table/issues/1249).
   
