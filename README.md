@@ -87,6 +87,8 @@
 
   5. `test.data.table` gets new argument `silent`, if set to TRUE then it will not raise exception but returns TRUE/FALSE based on the test results.
 
+  6. `dim.data.table` is now implemented in C. Thanks to Andrey Riabushenko.
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
