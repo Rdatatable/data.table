@@ -96,3 +96,26 @@ SEXP copyNamedInList(SEXP x)
 	return R_NilValue;
 }
 
+
+
+SEXP dim(SEXP x)
+{
+    // fast implementation of dim.data.table
+
+    if (TYPEOF(x) != VECSXP) {
+	error("dim.data.table expects a data.table as input (which is a list), but seems to be of type %s", 
+	    type2char(TYPEOF(x)));
+    }
+    
+    SEXP ans = allocVector(INTSXP, 2);
+    if(length(x) == 0) {
+	INTEGER(ans)[0] = 0;
+	INTEGER(ans)[1] = 0;
+    }
+    else {
+	INTEGER(ans)[0] = length(VECTOR_ELT(x, 0));
+	INTEGER(ans)[1] = length(x);
+    }
+
+    return ans;
+}

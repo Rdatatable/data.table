@@ -223,7 +223,19 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP verbose) {
     if (!isInteger(newncol) || length(newncol)!=1) error("n must be integer length 1. Has datatable.alloccol somehow become unset?");
     if (!isLogical(verbose) || length(verbose)!=1) error("verbose must be TRUE or FALSE"); 
-    return(alloccol(dt, INTEGER(newncol)[0], LOGICAL(verbose)[0]));
+    
+    SEXP ans = PROTECT(alloccol(dt, INTEGER(newncol)[0], LOGICAL(verbose)[0]));
+    
+    for(R_len_t i = 0; i < LENGTH(ans); i++) {
+        // clear the same excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #4890).
+
+	setAttrib(VECTOR_ELT(ans, i), R_NamesSymbol, R_NilValue);
+	setAttrib(VECTOR_ELT(ans, i), R_DimSymbol, R_NilValue);
+	setAttrib(VECTOR_ELT(ans, i), R_DimNamesSymbol, R_NilValue);
+    }
+
+    UNPROTECT(1);
+    return ans;
 }
 
 SEXP shallowwrapper(SEXP dt, SEXP cols) {

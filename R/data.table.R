@@ -72,10 +72,9 @@ replace_dot <- function(e) {
     e
 }
 
-dim.data.table <- function(x) {
-    if (length(x)) c(length(x[[1L]]), length(x))
-    else c(0L,0L)
-    # TO DO: consider placing "dim" as an attibute updated on inserts. Saves this 'if'.
+dim.data.table <- function(x) 
+{
+    .Call(Cdim, x)
 }
 
 .global <- new.env()  # thanks to: http://stackoverflow.com/a/12605694/403310
@@ -2138,12 +2137,7 @@ alloc.col <- function(DT, n=getOption("datatable.alloccol"), verbose=getOption("
     name = substitute(DT)
     if (identical(name,quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")
     ans = .Call(Calloccolwrapper,DT,as.integer(eval(n)),verbose)
-    for (i in seq_along(ans)) {
-        # clear the same excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #4890).
-        setattr(ans[[i]],"names",NULL)
-        setattr(ans[[i]],"dim",NULL)
-        setattr(ans[[i]],"dimnames",NULL)
-    }
+
     if (is.name(name)) {
         name = as.character(name)
         assign(name,ans,parent.frame(),inherits=TRUE)
