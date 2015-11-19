@@ -7214,6 +7214,8 @@ test(1581.12, any(grepl("^GForce optimized j", opt2)), TRUE)
 
 options(datatable.optimize=optim)
 
+# handle NULL value correctly #1429
+test(1582, uniqueN(NULL), 0L)
 
 ##########################
 

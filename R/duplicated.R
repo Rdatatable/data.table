@@ -91,7 +91,7 @@ anyDuplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=
 # of groups in a vector or data.table. Here by data.table, 
 # we really mean `.SD` - used in a grouping operation
 uniqueN <- function(x, by = if (is.data.table(x)) key(x) else NULL) {
-    if (!is.atomic(x) && !is.data.frame(x))
+    if (is.null(x) || (!is.atomic(x) && !is.data.frame(x)))
         return(length(unique(x)))
     if (is.atomic(x)) x = as_list(x)
     if (is.null(by)) by = seq_along(x)
