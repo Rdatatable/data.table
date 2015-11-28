@@ -41,6 +41,8 @@
 
   13. GForce is optimised for `.SD[val]` and `col[val]` where `val` is a positive length-1 value. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523).
 
+  14. data.table `print` method gets new argument `prettyprint.char` default to `getOption("datatable.prettyprint.char")` which allows easier pretty print without the need to set options. Closes [#1374](https://github.com/Rdatatable/data.table/issues/1374). Thanks @jangorecki.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

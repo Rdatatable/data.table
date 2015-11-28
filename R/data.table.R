@@ -92,6 +92,7 @@ setPackageName("data.table",.global)
 print.data.table <- function(x,
     topn=getOption("datatable.print.topn"),   # (5) print the top topn and bottom topn rows with '---' inbetween
     nrows=getOption("datatable.print.nrows"), # (100) under this the whole (small) table is printed, unless topn is provided
+    prettyprint.char=getOption("datatable.prettyprint.char"), # cut the long string in the char columns
     row.names = TRUE, quote = FALSE, ...)
 {
     if (.global$print!="" && address(x)==.global$print) {   # The !="" is to save address() calls and R's global cache of address strings
@@ -133,7 +134,7 @@ print.data.table <- function(x,
         rn = seq_len(nrow(x))
         printdots = FALSE
     }
-    toprint=format.data.table(toprint, ...)
+    toprint=format.data.table(toprint, prettyprint.char=prettyprint.char, ...)
     # fix for #975.
     if (any(sapply(x, function(col) "integer64" %in% class(col))) && !"package:bit64" %in% search()) {
         warning("Some columns have been read as type 'integer64' but package bit64 isn't loaded. Those columns will display as strange looking floating point data. There is no need to reload the data. Just require(bit64) to obtain the integer64 print method and print the data again.")
@@ -157,7 +158,7 @@ print.data.table <- function(x,
 # FR #2591 - format.data.table issue with columns of class "formula"
 is.formula <- function(x) class(x) == "formula"
 
-format.data.table <- function (x, ..., justify="none") {
+format.data.table <- function (x, ..., prettyprint.char = getOption("datatable.prettyprint.char"), justify="none") {
     if (is.atomic(x) && !is.null(x)) {
         stop("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
     }
@@ -169,7 +170,7 @@ format.data.table <- function (x, ..., justify="none") {
     }
     # FR #1091 for pretty printing of character
     # TODO: maybe instead of doing "this is...", we could do "this ... test"?
-    char.trunc <- function(x, trunc.char = getOption("datatable.prettyprint.char")) {
+    char.trunc <- function(x, trunc.char) {
         trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
         if (!is.character(x) || trunc.char <= 0L) return(x)
         idx = which(nchar(x) > trunc.char)
@@ -179,7 +180,7 @@ format.data.table <- function (x, ..., justify="none") {
     do.call("cbind",lapply(x,function(col,...){
         if (!is.null(dim(col))) stop("Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
         if (is.list(col)) col = sapply(col, format.item)
-        else col = format(char.trunc(col), justify=justify, ...) # added an else here to fix #5435
+        else col = format(char.trunc(col, trunc.char = prettyprint.char), justify=justify, ...) # added an else here to fix #5435
         col
     },...))
 }
