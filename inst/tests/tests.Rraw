@@ -7217,6 +7217,12 @@ options(datatable.optimize=optim)
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
 
+# better consistency with data.frame() #1446
+test(1583.1, data.table(a=1:3, row.names = letters[1:3]), data.table(a=1:3), warning = "'row.names' argument is ignored, use 'keep.rownames'.")
+test(1583.2, data.table(a=1:3, check.rows = TRUE), data.table(a=1:3), warning = "'check.rows' argument is ignored.")
+test(1583.3, data.table(a=1:3, stringsAsFactors = FALSE), data.table(a=1:3), warning = "'stringsAsFactors' argument is ignored, FALSE is used.")
+test(1583.4, data.table(a=1:3, check.rows = TRUE, stringsAsFactors = FALSE), data.table(a=1:3), warning = c("'check.rows' argument is ignored.","'stringsAsFactors' argument is ignored, FALSE is used."))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

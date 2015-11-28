@@ -206,7 +206,7 @@ null.data.table <-function() {
     alloc.col(ans)
 }
 
-data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
+data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, row.names, check.rows, stringsAsFactors)
 {
     # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then setattr(l,"class",c("data.table","data.frame")) at the expense of checking.
     # TO DO: rewrite data.table(), one of the oldest functions here. Many people use data.table() to convert data.frame rather than
@@ -221,6 +221,10 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     # fix for #5377 - data.table(null list, data.frame and data.table) should return null data.table. Simple fix: check all scenarios here at the top.
     if (identical(x, list(NULL)) || identical(x, list(list())) || 
            identical(x, list(data.frame(NULL))) || identical(x, list(data.table(NULL)))) return( null.data.table() )
+    # warning on data.frame's arguments ignored in data.table
+    if(!missing(row.names)) warning("'row.names' argument is ignored, use 'keep.rownames'.")
+    if(!missing(check.rows)) warning("'check.rows' argument is ignored.")
+    if(!missing(stringsAsFactors)) warning("'stringsAsFactors' argument is ignored, FALSE is used.")
     tt <- as.list(substitute(list(...)))[-1L]  # Intention here is that data.table(X,Y) will automatically put X and Y as the column names.  For longer expressions, name the arguments to data.table(). But in a call to [.data.table, wrap in list() e.g. DT[,list(a=mean(v),b=foobarzoo(zang))] will get the col names
     vnames = names(tt)
     if (is.null(vnames)) vnames = rep.int("",length(x))

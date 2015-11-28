@@ -16,7 +16,7 @@
    Tip: one of the quickest ways to learn the features is to type \code{example(data.table)} and study the output at the prompt.
 }
 \usage{
-data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
+data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, row.names, check.rows, stringsAsFactors)
 
 \method{[}{data.table}(x, i, j, by, keyby, with = TRUE,
   nomatch = getOption("datatable.nomatch"),                   # default: NA_integer_
@@ -44,6 +44,15 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 
 }
   \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}.
+
+}
+  \item{row.names}{ Ignored, just for consistency with \code{data.frame} function.
+
+}
+  \item{check.rows}{ Ignored, just for consistency with \code{data.frame} function.
+
+}
+  \item{stringsAsFactors}{ Ignored, just for consistency with \code{data.frame} function.
 
 }
   \item{x}{ A \code{data.table}.
