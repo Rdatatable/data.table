@@ -41,6 +41,8 @@
 
   13. GForce is optimised for `.SD[val]` and `col[val]` where `val` is a positive length-1 value. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523).
 
+  14. Run `install_name_tool` when building on OS X to ensure that the install name for datatable.so matches its filename. Fixes [#1144](https://github.com/Rdatatable/data.table/issues/1144). Thanks to @chenghlee for the PR.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).
