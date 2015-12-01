@@ -93,6 +93,8 @@
 
   6. `dim.data.table` is now implemented in C. Thanks to Andrey Riabushenko.
 
+  7. For consistency `data.table()` gets three arguments of `data.frame()`: `row.names`, `check.rows`, `stringsAsFactors`. All are ignored with a warning. Closes [#1446](https://github.com/Rdatatable/data.table/issues/1446). Thanks @jangorecki for PR.
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
