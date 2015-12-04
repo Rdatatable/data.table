@@ -73,11 +73,13 @@
 
   14. `fread` with `stringsAsFactors = TRUE` no longer produces factors with NA as a factor level, [#1408](https://github.com/Rdatatable/data.table/pull/1408). Thanks to @DexGroves.
 
-  15. `test.data.table` no longer raise warning if suggested packages are not available. Thanks to @jangorecki for PR [#1403](https://github.com/Rdatatable/data.table/pull/1403), closes [#1193](https://github.com/Rdatatable/data.table/issues/1193).
+  15. `test.data.table` no longer raises warning if suggested packages are not available. Thanks to @jangorecki for PR [#1403](https://github.com/Rdatatable/data.table/pull/1403). Closes [#1193](https://github.com/Rdatatable/data.table/issues/1193).
 
   16. `rleid()` does not affect attributes of input vector, [#1419](https://github.com/Rdatatable/data.table/issues/1419). Thanks @JanGorecki.
 
-  17. `uniqueN()` now handle NULL properly, [#1429](https://github.com/Rdatatable/data.table/issues/1429). Thanks @JanGorecki.
+  17. `uniqueN()` now handles NULL properly, [#1429](https://github.com/Rdatatable/data.table/issues/1429). Thanks @JanGorecki.
+
+  18. GForce `min` and `max` functions handle `NaN` correctly, [#1461](https://github.com/Rdatatable/data.table/issues/1461). Thanks to @LyssBucks for [asking on SO](http://stackoverflow.com/q/34081848/559784).
 
 #### NOTES
 

@@ -196,8 +196,7 @@ SEXP gmean(SEXP x, SEXP narm)
     return(ans);
 }
 
-// TO DO: gsd, gprod, gwhich.min, gwhich.max
-
+// TODO: gsd, gprod, gwhich.min, gwhich.max
 // gmin
 SEXP gmin(SEXP x, SEXP narm)
 {
@@ -298,7 +297,8 @@ SEXP gmin(SEXP x, SEXP narm)
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
                 if ( !ISNA(REAL(x)[ix]) && !ISNA(REAL(ans)[thisgrp]) ) {
-                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[ix] ) {
+                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[ix] || 
+                         (ISNAN(REAL(x)[ix]) && !ISNAN(REAL(ans)[thisgrp])) ) { // #1461
                         REAL(ans)[thisgrp] = REAL(x)[ix];
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
@@ -308,7 +308,7 @@ SEXP gmin(SEXP x, SEXP narm)
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
-                if ( !ISNA(REAL(x)[ix]) ) {
+                if ( !ISNAN(REAL(x)[ix]) ) { // #1461
                     if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[ix] ) {
                         REAL(ans)[thisgrp] = REAL(x)[ix];
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
@@ -438,7 +438,8 @@ SEXP gmax(SEXP x, SEXP narm)
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
                 if ( !ISNA(REAL(x)[ix]) && !ISNA(REAL(ans)[thisgrp]) ) {
-                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] < REAL(x)[ix] ) {
+                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] < REAL(x)[ix] || 
+                         (ISNAN(REAL(x)[ix]) && !ISNAN(REAL(ans)[thisgrp])) ) { // #1461
                         REAL(ans)[thisgrp] = REAL(x)[ix];
                         if (update[thisgrp] != 1) update[thisgrp] = 1;
                     }
@@ -448,7 +449,7 @@ SEXP gmax(SEXP x, SEXP narm)
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
-                if ( !ISNA(REAL(x)[ix]) ) {
+                if ( !ISNAN(REAL(x)[ix]) ) { // #1461
                     if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] < REAL(x)[ix] ) {
                         REAL(ans)[thisgrp] = REAL(x)[ix];
                         if (update[thisgrp] != 1) update[thisgrp] = 1;

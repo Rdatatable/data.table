@@ -7217,6 +7217,22 @@ options(datatable.optimize=optim)
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
 
+# bug fix #1461
+dt = data.table(x=c(1,1,1,2,2,2,3,3,3,4,4,4,5), y=c(NaN,1,2, 2,NaN,1, NA,NaN,2, NaN,NA,NaN, NaN))
+optim = getOption("datatable.optimize")
+# make sure gforce is on
+options(datatable.optimize=Inf)
+ans1 = suppressWarnings(dt[, base::min(y, na.rm=TRUE), by=x])
+ans2 = suppressWarnings(dt[, base::max(y, na.rm=TRUE), by=x])
+test(1583.1, dt[, min(y, na.rm=TRUE), by=x], ans1, warning="No non-missing values found")
+test(1583.2, dt[, max(y, na.rm=TRUE), by=x], ans2, warning="No non-missing values found")
+ans3 = suppressWarnings(dt[, base::min(y), by=x])
+ans4 = suppressWarnings(dt[, base::max(y), by=x])
+test(1583.3, dt[, min(y), by=x], ans3)
+test(1583.4, dt[, max(y), by=x], ans4)
+# restore optimisation
+options(datatable.optimize=optim)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
