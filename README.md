@@ -97,6 +97,8 @@
 
   7. Better fix to `fread`'s `check.names` argument using `make.names()`, [#1027](https://github.com/Rdatatable/data.table/issues/1027). Thanks to @DavidArenberg for spotting the issue with the previous fix using `make.unique()`.
 
+  8. Fixed explanation of `skip` argument in `?fread` as spotted by @aushev, [#1425](https://github.com/Rdatatable/data.table/issues/1425).
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
