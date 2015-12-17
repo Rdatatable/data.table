@@ -97,8 +97,9 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     } else {
         setattr(ans, "class", "data.frame")
     }
+    # #1027, make.unique -> make.names as spotted by @DavidArenberg
     if (isTRUE(as.logical(check.names))) {
-        setattr(ans, 'names', make.unique(names(ans)))
+        setattr(ans, 'names', make.names(names(ans), unique=TRUE))
     }
     as_factor <- function(x) {
         lev = forderv(x, retGrp = TRUE, na.last = NA)
