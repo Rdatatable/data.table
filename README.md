@@ -83,6 +83,8 @@
 
   19. Warnings on unable to detect column types from middle/last 5 lines are now moved to messages when `verbose=TRUE`. Closes [#1124](https://github.com/Rdatatable/data.table/issues/1124).
 
+  20. `fread` converts columns to `factor` type when used along with `colClasses` argument, [#721](https://github.com/Rdatatable/data.table/issues/721). Thanks @AmyMikhail.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

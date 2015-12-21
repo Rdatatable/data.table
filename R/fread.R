@@ -113,13 +113,19 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         setattr(ans, 'levels', lev)
         setattr(ans, 'class', 'factor')
     }
-    if (isTRUE(as.logical(stringsAsFactors))) {
+    cols = NULL
+    if (isTRUE(as.logical(stringsAsFactors)))
         cols = which(vapply(ans, is.character, TRUE))
-        if (length(cols)) {
-            if (verbose) cat("Converting column(s) [", paste(names(ans)[cols], collapse = ", "), "] from 'char' to 'factor'\n", sep = "")
-            for (j in cols)
-                set(ans, j = j, value = as_factor(.subset2(ans, j)))
-        }
+    else if (length(colClasses)) {
+        if (is.list(colClasses) && "factor" %in% names(colClasses))
+            cols = colClasses[["factor"]]
+        else if (is.atomic(colClasses) && "factor" %chin% colClasses)
+            cols = which(vapply(ans, is.character, TRUE))
+    }
+    if (length(cols)) {
+        if (verbose) cat("Converting column(s) [", paste(names(ans)[cols], collapse = ", "), "] from 'char' to 'factor'\n", sep = "")
+        for (j in cols) 
+            set(ans, j = j, value = as_factor(.subset2(ans, j)))
     }
     # FR #768
     if (!missing(col.names))
