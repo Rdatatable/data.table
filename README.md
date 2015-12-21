@@ -41,7 +41,7 @@
 
   13. GForce is optimised for `.SD[val]` and `col[val]` where `val` is a positive length-1 value. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523).
 
-  14. Run `install_name_tool` when building on OS X to ensure that the install name for datatable.so matches its filename. Fixes [#1144](https://github.com/Rdatatable/data.table/issues/1144). Thanks to @chenghlee for the PR.
+  14. `fread` gains `fill` argument with default `FALSE` for backwards compatibility. Closes [#536](https://github.com/Rdatatable/data.table/issues/536).
 
 #### BUG FIXES
 
@@ -81,6 +81,8 @@
 
   18. GForce `min` and `max` functions handle `NaN` correctly, [#1461](https://github.com/Rdatatable/data.table/issues/1461). Thanks to @LyssBucks for [asking on SO](http://stackoverflow.com/q/34081848/559784).
 
+  19. Warnings on unable to detect column types from middle/last 5 lines are now moved to messages when `verbose=TRUE`. Closes [#1124](https://github.com/Rdatatable/data.table/issues/1124).
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
@@ -98,6 +100,8 @@
   7. Better fix to `fread`'s `check.names` argument using `make.names()`, [#1027](https://github.com/Rdatatable/data.table/issues/1027). Thanks to @DavidArenberg for spotting the issue with the previous fix using `make.unique()`.
 
   8. Fixed explanation of `skip` argument in `?fread` as spotted by @aushev, [#1425](https://github.com/Rdatatable/data.table/issues/1425).
+
+  9. Run `install_name_tool` when building on OS X to ensure that the install name for datatable.so matches its filename. Fixes [#1144](https://github.com/Rdatatable/data.table/issues/1144). Thanks to @chenghlee for the PR.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 

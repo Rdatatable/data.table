@@ -7235,12 +7235,33 @@ test(1583.4, dt[, max(y), by=x], ans4)
 options(datatable.optimize=optim)
 
 # Fixed a minor bug in fread when blank.lines.skip=TRUE
-test(1584.1, fread("fread_blank.txt", blank.lines.skip=TRUE, data.table=FALSE), 
-             read.table("fread_blank.txt", blank.lines.skip=TRUE, header=TRUE, sep=",", stringsAsFactors=FALSE))
-test(1584.2, fread("fread_blank2.txt", blank.lines.skip=TRUE, data.table=FALSE), 
-             read.table("fread_blank2.txt", blank.lines.skip=TRUE, header=TRUE, sep=",", stringsAsFactors=FALSE))
-test(1584.3, fread("fread_blank3.txt", blank.lines.skip=TRUE, data.table=FALSE), 
-             read.table("fread_blank3.txt", blank.lines.skip=TRUE, header=TRUE, sep=",", stringsAsFactors=FALSE))
+f1 <- function(x, f=TRUE, b=FALSE) fread(x, fill=f, blank.lines.skip=b, data.table=FALSE)
+f2 <- function(x, f=TRUE, b=FALSE) read.table(x, fill=f, blank.lines.skip=b, sep=",", header=TRUE, stringsAsFactors=FALSE)
+test(1584.1, f1("fread_blank.txt", f=FALSE, b=TRUE), f2("fread_blank.txt", f=FALSE, b=TRUE))
+test(1584.2, f1("fread_blank2.txt", f=FALSE, b=TRUE), f2("fread_blank2.txt", f=FALSE, b=TRUE))
+test(1584.3, f1("fread_blank3.txt", f=FALSE, b=TRUE), f2("fread_blank3.txt", f=FALSE, b=TRUE))
+
+# fread fill=TRUE, #536. Also takes care of #1124.
+test(1585.1, f1("536_fread_fill_1.txt"), f2("536_fread_fill_1.txt"))
+test(1585.2, f1("536_fread_fill_1.txt", b=TRUE), f2("536_fread_fill_1.txt", b=TRUE))
+
+test(1585.3, f1("536_fread_fill_2.txt"), f2("536_fread_fill_2.txt"))
+test(1585.4, f1("536_fread_fill_2.txt", b=TRUE), f2("536_fread_fill_2.txt", b=TRUE))
+
+test(1585.5, f1("536_fread_fill_3_extreme.txt"), f2("536_fread_fill_3_extreme.txt"))
+test(1585.6, f1("536_fread_fill_3_extreme.txt", b=TRUE), f2("536_fread_fill_3_extreme.txt", b=TRUE))
+# no warning about bumping type. when fill=TRUE, column type detection starts at first non-empty line (which makes sense). 
+test(1585.7, f1("536_fread_fill_4.txt"), f2("536_fread_fill_4.txt"))
+test(1585.8, f1("536_fread_fill_4.txt", b=TRUE), f2("536_fread_fill_4.txt", b=TRUE))
+
+# TODO: add a test when fill=FALSE, but blank.lines.skip=TRUE, when the same effect should happen
+# TODO: fix and add test for cases like this:
+# a,b,c
+# 1,2,3
+# 4,5,6
+# 7,8,9,6 # extra column, but we've only detected 3 cols
+# 1,2,3
+# ...
 
 ##########################
 

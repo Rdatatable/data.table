@@ -528,14 +528,14 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     return(newv);
 }
 
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP quoteArg, SEXP stripWhiteArg, SEXP skipEmptyLinesArg, SEXP showProgressArg)
+SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP quoteArg, SEXP stripWhiteArg, SEXP skipEmptyLinesArg, SEXP fillArg, SEXP showProgressArg)
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP thiscol, ans, thisstr;
     R_len_t i, resi, j, resj, k, protecti=0, nrow=0, ncol=0;
     int thistype;
     const char *pos, *ch2, *lineStart;
-    Rboolean header, allchar, skipEmptyLines;
+    Rboolean header, allchar, skipEmptyLines, fill;
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
     ERANGEwarning = FALSE;  // just while detecting types, then TRUE before the read data loop
@@ -550,6 +550,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
 
     stripWhite = LOGICAL(stripWhiteArg)[0];
     skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
+    fill = LOGICAL(fillArg)[0];
 
     // quoteArg for those rare cases when default scenario doesn't cut it.., FR #568
     if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
@@ -810,7 +811,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         i=0;
         int thisLine=line, thisLen=0, thisNcol=-1;  // this* = this run's starting *
         while(ch<=eof && ++i<=30) {
-	    if (*ch == eol && skipEmptyLines && i < 30) {ch++; continue;}
+            if (*ch==eol && skipEmptyLines && i<30) {ch++; continue;}
             lineStart = ch;
             ncol = countfields();
             if (ncol==-1) {
@@ -845,9 +846,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         ncol=1;
     } else {
         sep=topSep;
-        ch=pos=topStart;
-        line=topLine;
         ncol=topNcol;
+        if (!fill) { ch=pos=topStart; line=topLine; }
+        else { ch=pos; line=1; }
         if (verbose) {
             if (isNull(separg)) { if (sep=='\t') Rprintf("'\\t'\n"); else Rprintf("'%c'\n", sep); }
             else Rprintf("found ok\n");
@@ -933,7 +934,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     //   Count number of rows
     // ********************************************************************************************
     i = INTEGER(nrowsarg)[0];
-    if (pos==eof || (*pos==eol && !skipEmptyLines)) {
+    if (pos==eof || (*pos==eol && !fill && !skipEmptyLines)) {
         nrow=0;
         if (verbose) Rprintf("Byte after header row is eof or eol, 0 data rows present.\n");
     } else if (i>-1) {
@@ -942,28 +943,57 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         // Intended for nrow=10 to see top 10 rows quickly without touching remaining pages
     } else {
         long long neol=1, nsep=0, tmp;
-        while (ch<eof) {   
-            // goal: quick row count with no branches while still coping with embedded sep and \n, below
-            neol+=(*ch==eol);
-            nsep+=(*ch++==sep);
+        // handle most frequent case first
+        if (!fill) {
+            // goal: quick row count with no branches and cope with embedded sep and \n
+            while (ch<eof) {
+                neol+=(*ch==eol);
+                nsep+=(*ch++==sep);
+            }
+        } else {
+            // goal: don't count newlines within quotes, 
+            // don't rely on 'sep' because it'll provide an underestimate
+            if (!skipEmptyLines) {
+                while (ch<eof) {
+                    if (*ch!=quote[0]) neol += (*ch==eol);
+                    else while(ch+1<eof && *(++ch)!=quote[0]); // quits at next quote
+                    ch++;
+                }
+            } else {
+                while (ch<eof) {
+                    if (*ch!=quote[0]) neol += (*ch==eol && *(ch-1)!=eol);
+                    else while(ch+1<eof && *(++ch)!=quote[0]); // quits at next quote
+                    ch++;
+                }                
+            }
         }
         if (ch!=eof) STOP("Internal error: ch!=eof after counting sep and eol");
-        i=0; int nblank=0;
-        while (i==0 && ch>pos) {   
-            // count blank lines at the end
-            i=0; while (ch>pos && *--ch!=eol2) i += !isspace(*ch);
-            nblank += (i==0);
-            ch -= eolLen-1;
-        }
-        // TODO: add in logic here for a 'fill=' argument to not skip / leave at blank line, rather to fill with NAs
-        // if (nblank==0) There is non white after the last eol. Ok and dealt with. TO DO: reference test id here in comment
-        if (ncol==1) tmp = neol-nblank;
-        else tmp = MIN( nsep / (ncol-1),  neol-nblank );   // good quick estimate with embedded sep and eol in mind
+        i=0; int endblanks=0;
+        if (!fill) {
+            while (i==0 && ch>pos) {
+                // count blank lines at the end
+                i=0; while (ch>pos && *--ch!=eol2) i += !isspace(*ch);
+                endblanks += (i==0);
+                ch -= eolLen-1;
+            }
+        } else if (fill && !skipEmptyLines) endblanks = (*(ch-1) == eol);
+
+        // if (endblanks==0) There is non white after the last eol. Ok and dealt with. TO DO: reference test id here in comment
+        if (ncol==1 || fill) tmp = neol-endblanks;
+        else tmp = MIN( nsep/(ncol-1),  neol-endblanks );   // good quick estimate with embedded sep and eol in mind
         if (verbose || tmp>INT_MAX) {
-            Rprintf("Count of eol: %lld (including %d at the end)\n",neol,nblank);
-            Rprintf("Count of sep: %lld\n",nsep);
-            if (ncol==1) Rprintf("ncol==1 so sep count ignored\n");
-            else Rprintf("nrow = MIN( nsep [%lld] / ncol [%d] -1, neol [%lld] - nblank [%d] ) = %lld\n", nsep, ncol, neol, nblank, tmp);
+            if (!fill) {
+                Rprintf("Count of eol: %lld (including %d at the end)\n",neol,endblanks);
+                if (ncol==1) Rprintf("ncol==1 so sep count ignored\n");
+                else {
+                    Rprintf("Count of sep: %lld\n",nsep);
+                    Rprintf("nrow = MIN( nsep [%lld] / (ncol [%d] -1), neol [%lld] - endblanks [%d] ) = %lld\n", nsep, ncol, neol, endblanks, tmp);
+                }
+            } else {
+                if (!skipEmptyLines) 
+                    Rprintf("nrow = neol [%lld] - endblanks [%d] = %lld\n", neol, endblanks, tmp);
+                else Rprintf("nrow = neol (after discarding blank lines) = %lld\n", tmp);
+            }
             if (tmp > INT_MAX) STOP("nrow larger than current 2^31 limit");
         }
         nrow = tmp;
@@ -983,10 +1013,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     const char *str, *thispos;
     for (j=0; j<(nrow>15?3:1); j++) {
         switch(j) {
-        case 0: ch = pos;                  str="   first";  break;  // str same width so the codes line up vertically
-        case 1: ch = pos + 1*(eof-pos)/3;  str="+ middle";  break;
-        case 2: ch = pos + 2*(eof-pos)/3;  str="+   last";  break;  // 2/3 way through rather than end ... easier
+        case 0: ch = pos;                  str=" first"; break; // str same width so the codes line up vertically
+        case 1: ch = pos + 1*(eof-pos)/3;  str="middle"; break;
+        case 2: ch = pos + 2*(eof-pos)/3;  str="  last"; break;  // 2/3 way through rather than end ... easier
         }
+        // detect types by starting at the first non-empty line
+        if (fill || skipEmptyLines) while (ch<eof && *ch==eol) ch++;
         if (j) {
             // we may have landed inside quoted field containing embedded sep and/or embedded \n
             // find next \n and see if 5 good lines follow. If not try next \n, and so on, until we find the real \n
@@ -1004,9 +1036,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     break;
                 }
             }
-            if (i<5) {
-                if (INTEGER(nrowsarg)[0]==-1)
-                    warning("Unable to find 5 lines with expected number of columns (%s)\n", str);
+            // change warning to verbose, avoids confusion, see #1124
+            if (verbose && i<5) {
+                Rprintf("Couldn't guess column types from %s 5 lines\n", str);
                 continue;
             }
         }
@@ -1037,7 +1069,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     Field();   // don't do err=1 here because we don't know 'line' when j=1|2. Leave error to throw in data read step.
                 }
                 if (ch<eof && *ch==sep && field<ncol-1) {ch++; continue;}  // done, next field
-                if (field<ncol-1) {
+                if (field<ncol-1 && !fill) {
                     if (*ch>31) STOP("Expected sep ('%c') but '%c' ends field %d when detecting types (%s): %.*s", sep, *ch, field, str, ch-lineStart+1, lineStart);
                     else STOP("Expected sep ('%c') but new line, EOF (or other non printing character) ends field %d when detecting types (%s): %.*s", sep, field, str, ch-lineStart+1, lineStart);
                 }
@@ -1207,21 +1239,25 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             //Rprintf("Row %d : %.10s\n", i+1, ch);
             if (*ch==eol) {
                 if (skipEmptyLines) { ch++; continue; }
-                // blank line causes early stop.  TO DO: allow blank line skips
-                whileBreak = TRUE;  // break the enclosing while too, without changing i
-                break;              // break this for
+                else if (!fill) {
+                    whileBreak = TRUE;  // break the enclosing while too, without changing i
+                    break;              // break this while
+                }
             }
             for (j=0,resj=0; j<ncol; resj+=(type[j]!=SXP_NULL),j++) {
-                //Rprintf("Field %d: '%.10s' as type %d\n", j+1, ch, type[j]);
+                // Rprintf("Field %d: '%.10s' as type %d\n", j+1, ch, type[j]);
+                // TODO: fill="auto" to automatically fill when end of line/file and != ncol?
                 if (stripWhite) skip_spaces();
                 thiscol = VECTOR_ELT(ans, resj);
                 switch (type[j]) {
                 case SXP_LGL:
-                    if (Strtob()) { LOGICAL(thiscol)[i] = u.b; break; }
+                    if (fill && (*ch==eol || ch==eof)) { LOGICAL(thiscol)[i] = NA_LOGICAL; break; }
+                    else if (Strtob()) { LOGICAL(thiscol)[i] = u.b; break; }
                     SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_INT, i, j));
                 case SXP_INT:
                     ch2=ch; u.l=NA_INTEGER;
-                    if (Strtoll() && INT_MIN<=u.l && u.l<=INT_MAX) {  // relies on INT_MIN==NA.INTEGER, checked earlier
+                    if (fill && (*ch2==eol || ch2==eof)) { INTEGER(thiscol)[i] = u.l; break; }
+                    else if (Strtoll() && INT_MIN<=u.l && u.l<=INT_MAX) {  // relies on INT_MIN==NA.INTEGER, checked earlier
                         INTEGER(thiscol)[i] = (int)u.l;
                         break;   //  Most common case. Done with this field. Strtoll already moved ch for us to sit on next sep or eol.
                     }
@@ -1233,20 +1269,26 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 case SXP_INT64:
                     // fix for #488. PREVIOSULY: u.d = NA_REAL;
                     u.l = NAINT64; // NAINT64 is defined in data.table.h, = LLONG_MIN
-                    if (Strtoll()) { REAL(thiscol)[i] = u.d; break; }
+                    if (fill && (*ch==eol || ch==eof)) { REAL(thiscol)[i] = u.d; break; }
+                    else if (Strtoll()) { REAL(thiscol)[i] = u.d; break; }
                     SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_REAL, i, j));
                     // A bump from INT to STR will bump through INT64 and then REAL before STR, coercing each time. Deliberately done this way. It's
                     // a small and very rare cost (see comments in coerceVectorSoFar), for better speed 99% of the time (saving deep branches).
                     // TO DO: avoid coercing several times and bump straight to the new type once, somehow.
                 case SXP_REAL: case_SXP_REAL:
-                    if (Strtod()) { REAL(thiscol)[i] = u.d; break; }
+                    if (fill && (*ch==eol || ch==eof)) { REAL(thiscol)[i] = NA_REAL;  break; }
+                    else if (Strtod()) { REAL(thiscol)[i] = u.d; break; }
                     SET_VECTOR_ELT(ans, resj, thiscol = coerceVectorSoFar(thiscol, type[j]++, SXP_STR, i, j));
                 case SXP_STR: case SXP_NULL: case_SXP_STR:
-                    Field();
-                    if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLenCE(fieldStart, fieldLen, ienc));
+                    if (fill && (*ch==eol || ch==eof)) {
+                        if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkChar(""));
+                    } else {
+                        Field();
+                        if (type[j]==SXP_STR) SET_STRING_ELT(thiscol, i, mkCharLenCE(fieldStart, fieldLen, ienc));
+                    }
                 }
                 if (ch<eof && *ch==sep && j<ncol-1) {ch++; continue;}  // done, next field
-                if (j<ncol-1) {
+                if (j<ncol-1 && !fill) {
                     if (*ch>31) STOP("Expected sep ('%c') but '%c' ends field %d on line %d when reading data: %.*s", sep, *ch, j+1, line, ch-pos+1, pos);
                     else STOP("Expected sep ('%c') but new line or EOF ends field %d on line %d when reading data: %.*s", sep, j+1, line, ch-pos+1, pos);
                     // print whole line here because it's often something earlier in the line that messed up
