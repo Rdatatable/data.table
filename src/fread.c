@@ -810,7 +810,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         i=0;
         int thisLine=line, thisLen=0, thisNcol=-1;  // this* = this run's starting *
         while(ch<=eof && ++i<=30) {
-            if (*ch == eol && skipEmptyLines) {ch++; continue;}
+	    if (*ch == eol && skipEmptyLines && i < 30) {ch++; continue;}
             lineStart = ch;
             ncol = countfields();
             if (ncol==-1) {

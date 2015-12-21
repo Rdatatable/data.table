@@ -7234,6 +7234,14 @@ test(1583.4, dt[, max(y), by=x], ans4)
 # restore optimisation
 options(datatable.optimize=optim)
 
+# Fixed a minor bug in fread when blank.lines.skip=TRUE
+test(1584.1, fread("fread_blank.txt", blank.lines.skip=TRUE, data.table=FALSE), 
+             read.table("fread_blank.txt", blank.lines.skip=TRUE, header=TRUE, sep=",", stringsAsFactors=FALSE))
+test(1584.2, fread("fread_blank2.txt", blank.lines.skip=TRUE, data.table=FALSE), 
+             read.table("fread_blank2.txt", blank.lines.skip=TRUE, header=TRUE, sep=",", stringsAsFactors=FALSE))
+test(1584.3, fread("fread_blank3.txt", blank.lines.skip=TRUE, data.table=FALSE), 
+             read.table("fread_blank3.txt", blank.lines.skip=TRUE, header=TRUE, sep=",", stringsAsFactors=FALSE))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
