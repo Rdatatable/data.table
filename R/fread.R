@@ -2,13 +2,13 @@
 fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=1L,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable")) {
     if (!is.character(dec) || length(dec)!=1L || nchar(dec)!=1) stop("dec must be a single character e.g. '.' or ','")
     # handle encoding, #563
-    if (!encoding %in% c("unknown", "UTF-8", "Latin-1")) {
+    if (length(encoding) != 1L || !encoding %in% c("unknown", "UTF-8", "Latin-1")) {
         stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
     }
-    if (!strip.white %in% c(TRUE, FALSE)) {
+    if (length(strip.white) != 1L || !strip.white %in% c(TRUE, FALSE)) {
         stop("Argument 'strip.white' must be logical TRUE/FALSE")
     }
-    if (!blank.lines.skip %in% c(TRUE, FALSE)) {
+    if (length(blank.lines.skip) != 1L || !blank.lines.skip %in% c(TRUE, FALSE)) {
         stop("Argument 'blank.lines.skip' must be logical TRUE/FALSE")
     }
     if (length(fill) != 1L || !fill %in% c(TRUE, FALSE)) {
