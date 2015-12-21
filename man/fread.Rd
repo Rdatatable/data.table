@@ -15,7 +15,7 @@ skip=0L, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
 dec=if (sep!=".") "." else ",", col.names, 
 check.names=FALSE, encoding="unknown", quote="\"", 
-strip.white=TRUE, blank.lines.skip=FALSE, 
+strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, 
 showProgress=getOption("datatable.showProgress"),   # default: TRUE
 data.table=getOption("datatable.fread.datatable")   # default: TRUE
 )
@@ -37,10 +37,11 @@ data.table=getOption("datatable.fread.datatable")   # default: TRUE
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{base::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
   \item{dec}{ The decimal separator as in \code{base::read.csv}. If not "." (default) then usually ",". See details. }
   \item{col.names}{ A vector of optional names for the variables (columns). The default is to use the header column if present or detected, or if not "V" followed by the column number. }
-  \item{check.names}{ default is \code{FALSE}. If \code{TRUE}, it uses the base function \code{\link{make.unique}} to ensure that column names are all unique.}
-  \item{encoding}{ default is \code{"unknown"}. Other possible options are \code{"UTF-8"} and \code{"Latin-1"}.  }
+  \item{check.names}{default is \code{FALSE}. If \code{TRUE} then the names of the variables in the \code{data.table} are checked to ensure that they are syntactically valid variable names. If necessary they are adjusted (by \code{\link{make.names}}) so that they are, and also to ensure that there are no duplicates.}
+  \item{encoding}{ default is \code{"unknown"}. Other possible options are \code{"UTF-8"} and \code{"Latin-1"}.  Note: it is not used to re-encode the input, rather enables handling of encoded strings in their native encoding. }
   \item{quote}{ By default (\code{"\""}), if a field starts with a doublequote, \code{fread} handles embedded quotes robustly as explained under \code{Details}. If it fails, then another attempt is made to read the field \emph{as is}, i.e., as if quotes are disabled. By setting \code{quote=""}, the field is always read as if quotes are disabled. }
   \item{strip.white}{ default is \code{TRUE}. Strips leading and trailing whitespaces of unquoted fields. If \code{FALSE}, only header trailing spaces are removed. }
+  \item{fill}{logical (default is \code{FALSE}). If \code{TRUE} then in case the rows have unequal length, blank fields are implicitly filled.}
   \item{blank.lines.skip}{\code{logical}, default is \code{FALSE}. If \code{TRUE} blank lines in the input are ignored.}
   \item{showProgress}{ TRUE displays progress on the console using \code{\\r}. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. }
@@ -260,6 +261,18 @@ fread(data, drop=2:3)             # same using column numbers
 fread(data, select=c("A","D"))    # less typing, easier to read
 fread(data, select=c(1,4))        # same using column numbers
 
+# skip blank lines
+fread("a,b\n1,a\n2,b\n\n\n3,c\n", blank.lines.skip=TRUE)
+# fill
+fread("a,b\n1,a\n2\n3,c\n", fill=TRUE)
+fread("a,b\n\n1,a\n2\n\n3,c\n\n", fill=TRUE)
+
+# fill with skip blank lines
+fread("a,b\n\n1,a\n2\n\n3,c\n\n", fill=TRUE, blank.lines.skip=TRUE)
+
+# check.names usage
+fread("a b,a b\n1,2\n")
+fread("a b,a b\n1,2\n", check.names=TRUE) # no duplicates + syntactically valid names
 }
 \keyword{ data }
 
