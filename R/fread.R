@@ -1,5 +1,5 @@
 
-fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=1L,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable")) {
+fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=1L,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable")) {
     if (!is.character(dec) || length(dec)!=1L || nchar(dec)!=1) stop("dec must be a single character e.g. '.' or ','")
     # handle encoding, #563
     if (length(encoding) != 1L || !encoding %in% c("unknown", "UTF-8", "Latin-1")) {
@@ -130,5 +130,13 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     # FR #768
     if (!missing(col.names))
         setnames(ans, col.names) # setnames checks and errors automatically
+    if (!is.null(key) && data.table) {
+        if (!is.character(key)) 
+            stop("key argument of data.table() must be character")
+        if (length(key) == 1L) {
+            key = strsplit(key, split = ",")[[1L]]
+        }
+        setkeyv(ans, key)
+    }
     ans
 }

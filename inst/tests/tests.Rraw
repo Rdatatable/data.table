@@ -7268,6 +7268,10 @@ text="x,y\n1,a\n2,b\n"
 test(1586.1, fread(text, colClasses=c("integer", "factor")), data.table(x=1:2, y=factor(letters[1:2])))
 test(1586.2, fread(text, colClasses=c(x="factor")), data.table(x=factor(1:2), y=letters[1:2]))
 
+# FR #590
+text="x,y\n2,a\n1,q\n3,c\n"
+test(1587, fread(text, key="y"), setDT(fread(text), key="y"))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
