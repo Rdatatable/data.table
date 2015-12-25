@@ -499,7 +499,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 if (length(RHS)!=nrow(x)) stop("RHS of == is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
                 i = x[[isub2]] == RHS    # DT[colA == colB] regular element-wise vector scan
             } else if ( (is.integer(x[[isub2]]) && is.double(RHS) && isReallyReal(RHS)) || (mode(x[[isub2]]) != mode(RHS) && !(class(x[[isub2]]) %in% c("character", "factor") && 
-                         class(RHS) %in% c("character", "factor"))) ) {
+                         class(RHS) %in% c("character", "factor"))) || 
+                         (is.factor(x[[isub2]]) && !is.factor(RHS) && mode(RHS)=="numeric") ) { # fringe case, #1361. TODO: cleaner way of doing these checks.
                     # re-direct all non-matching mode cases to base R, as data.table's binary 
                     # search based join is strict in types. #957 and #961.
                     i = if (isub[[1L]] == "==") x[[isub2]] == RHS else x[[isub2]] %in% RHS

@@ -87,6 +87,8 @@
 
   20. `fread` converts columns to `factor` type when used along with `colClasses` argument, [#721](https://github.com/Rdatatable/data.table/issues/721). Thanks @AmyMikhail.
 
+  21. Auto indexing handles logical subset of factor column using numeric value properly, [#1361](https://github.com/Rdatatable/data.table/issues/1361). Thanks @mplatzer.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
