@@ -45,6 +45,8 @@
 
   15. `fread` gains `key` argument, [#590](https://github.com/Rdatatable/data.table/issues/590).
 
+  16. `print.data.table` gains `col.names` argument, [#1482](https://github.com/Rdatatable/data.table/issues/1482). Disabling prevents printing of column names at the bottom of tables whose printed length exceeds 20 rows. Thanks Oleg Bondar on StackOverflow for the suggestion and @MichaelChirico for the PR.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

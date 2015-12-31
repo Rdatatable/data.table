@@ -92,7 +92,7 @@ setPackageName("data.table",.global)
 print.data.table <- function(x,
     topn=getOption("datatable.print.topn"),   # (5) print the top topn and bottom topn rows with '---' inbetween
     nrows=getOption("datatable.print.nrows"), # (100) under this the whole (small) table is printed, unless topn is provided
-    row.names = TRUE, quote = FALSE, ...)
+    row.names = TRUE, quote = FALSE, col.names = TRUE, ...)
 {
     if (.global$print!="" && address(x)==.global$print) {   # The !="" is to save address() calls and R's global cache of address strings
         #  := in [.data.table sets .global$print=address(x) to suppress the next print i.e., like <- does. See FAQ 2.22 and README item in v1.9.5
@@ -147,10 +147,10 @@ print.data.table <- function(x,
         print(toprint,right=TRUE,quote=quote)
         return(invisible())
     }
-    if (nrow(toprint)>20L)
+    if (nrow(toprint) > 20L)
         # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
-        toprint=rbind(toprint,matrix(colnames(toprint),nrow=1)) # fixes bug #4934
-    print(toprint,right=TRUE,quote=quote)
+        toprint = rbind(toprint, if (col.names) matrix(colnames(toprint), nrow = 1)) # fixes bug #97 & implements #1482
+    print(toprint, right = TRUE, quote = quote)
     invisible()
 }
 

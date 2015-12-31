@@ -3122,7 +3122,7 @@ test(1087, class(DT$last.x1), "ITime")
 
 # Tests 1088-1093 were non-ASCII. Now in DtNonAsciiTests
 
-# print of unnamed DT with >20 <= 100 rows, #4934
+# print of unnamed DT with >20 <= 100 rows, #97
 DT <- data.table(x=1:25, y=letters[1:25])
 DT.unnamed <- unname(copy(DT))
 test(1094, print(DT.unnamed), output="NA NA 1:  1  a 2:  2  b 3:  3  c")
@@ -7276,6 +7276,10 @@ test(1587, fread(text, key="y"), setDT(fread(text), key="y"))
 dt = data.table(i=1:10, f=as.factor(1:10))
 test(1588.1, dt[f %in% 3:4], dt[3:4])
 test(1588.2, dt[f == 3], dt[3])
+
+# FR # 1482
+op <- capture.output(print(data.table(x = 1:25, y = letters[1:25]), nrow = 25, col.names = FALSE))
+test(1589, op[length(op)], "25: 25 y")
 
 ##########################
 
