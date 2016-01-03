@@ -7277,6 +7277,12 @@ dt = data.table(i=1:10, f=as.factor(1:10))
 test(1588.1, dt[f %in% 3:4], dt[3:4])
 test(1588.2, dt[f == 3], dt[3])
 
+# fix for #1484
+if ("package:xts" %in% search()) {
+    x = xts::as.xts(8, order.by = as.Date("2016-01-03"))
+    test(1589, all.equal(as.data.table(x), data.table(index = as.Date("2016-01-03"), V1 = 8), check.attributes=FALSE))
+}
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
