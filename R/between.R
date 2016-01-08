@@ -1,9 +1,9 @@
-
-between <- function(x,lower,upper,incbounds=TRUE)
+between <- function(x, lower, upper, incbounds = TRUE)
 {
-  if(incbounds) x>=lower & x<=upper
-  else x>lower & x<upper
+  if (!incbounds %in% list(TRUE, FALSE, "upper", "lower")) 
+    stop('Valid arguments for incbounds are TRUE, FALSE, "upper", and "lower"')
+  (if ((incl <- incbounds == TRUE) | incbounds == "lower") `>=` else `>`)(x, lower) &
+    (if (incl | incbounds == "upper") `<=` else `<`)(x, upper)
 }
 
-"%between%" <- function(x,y) between(x,y[1],y[2],incbounds=TRUE)
-# If we want non inclusive bounds with %between%, just +1 to the left, and -1 to the right (assuming integers)
+"%between%" <- function(x,y) between(x, y[1L], y[2L], incbounds = TRUE)
