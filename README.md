@@ -110,6 +110,8 @@
   8. Fixed explanation of `skip` argument in `?fread` as spotted by @aushev, [#1425](https://github.com/Rdatatable/data.table/issues/1425).
 
   9. Run `install_name_tool` when building on OS X to ensure that the install name for datatable.so matches its filename. Fixes [#1144](https://github.com/Rdatatable/data.table/issues/1144). Thanks to @chenghlee for the PR.
+  
+  10. Updated documentation of `i` in `[.data.table` to emphasize the emergence of the new `on` option as an alternative to keyed joins, [#1488](https://github.com/Rdatatable/data.table/issues/1488). Thanks @MichaelChirico.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
