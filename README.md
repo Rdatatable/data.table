@@ -88,6 +88,8 @@
   20. `fread` converts columns to `factor` type when used along with `colClasses` argument, [#721](https://github.com/Rdatatable/data.table/issues/721). Thanks @AmyMikhail.
 
   21. Auto indexing handles logical subset of factor column using numeric value properly, [#1361](https://github.com/Rdatatable/data.table/issues/1361). Thanks @mplatzer.
+  
+  22. `as.data.table.xts` handles single row `xts` object properly, [#1484](https://github.com/Rdatatable/data.table/issues/1484). Thanks Michael Smith and @jangorecki.
 
 #### NOTES
 
