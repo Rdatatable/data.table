@@ -7283,6 +7283,35 @@ if ("package:xts" %in% search()) {
     test(1589, all.equal(as.data.table(x), data.table(index = as.Date("2016-01-03"), V1 = 8), check.attributes=FALSE))
 }
 
+# Fix for all encoding issues, #66, #69, #469 and #1293
+# #66
+a = b = c("a","ä")
+Encoding(a) = "unknown"
+A = data.table(a, c=1:2, key="a")
+B = data.table(b, d=2:1, key="b")
+test(1590.1, A[B], cbind(A, d=2:1))
+
+# #69
+a  = c("a", "ä", "ß", "z")
+au = iconv(a, "UTF8", "latin1")
+dt = data.table(a,b=1:4)
+df = data.frame(a,b=1:4, stringsAsFactors=FALSE)
+rownames(df) = df$a
+test(1590.2, setDT(merge(df, data.frame(a=au), by="a", sort=FALSE)), 
+             merge(dt, data.table(a=au), by="a", sort=FALSE))
+
+# #469
+A = data.table(
+     kom = rep(101L,20),
+     eje = 1L:20L,
+     gad = rep("A.C. Meyers Vænge",20),
+     num = rep(c('1','10','11','11A'),times=c(10,1,2,7)),
+     enc = sample(c('unkwown','UTF-8'), 20, replace=TRUE))
+Encoding(A$gad) = A$enc
+test(1590.3, unique(A, by=c("kom","gad","num")), 
+             as.data.table(A[!duplicated(paste(A$kom, A$gad, A$num))]))
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

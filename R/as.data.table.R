@@ -90,7 +90,7 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
         setattr(value, "names", paste("V", ic, sep = ""))
     setattr(value,"row.names",.set_row_names(nrows))
     setattr(value,"class",c("data.table","data.frame"))
-    alloc.col(value)
+    alloc.col(setencodingv(value))
 }
 
 as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
@@ -122,7 +122,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
     if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
     setattr(x,"row.names",.set_row_names(max(n)))
     setattr(x,"class",c("data.table","data.frame"))
-    alloc.col(x)
+    alloc.col(setencodingv(x))
 }
 
 # don't retain classes before "data.frame" while converting 
@@ -153,10 +153,11 @@ as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...) {
 
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(ans, "class", .resetclass(x, "data.frame"))
-    alloc.col(ans)
+    alloc.col(setencodingv(ans))
 }
 
 as.data.table.data.table <- function(x, ...) {
+    setencodingv(x)
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(x, 'class', .resetclass(x, "data.table"))
     return(x)

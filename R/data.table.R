@@ -329,6 +329,7 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     setattr(value,"names",vnames)
     setattr(value,"row.names",.set_row_names(nr))
     setattr(value,"class",c("data.table","data.frame"))
+    setencodingv(value) # fix for all mixed encoding issues
     if (!is.null(key)) {
       if (!is.character(key)) stop("key argument of data.table() must be character")
       if (length(key)==1L) {
@@ -2390,6 +2391,7 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
         }
     }
     if (is.data.table(x)) {
+        setencodingv(x)
         # fix for #1078 and #1128, see .resetclass() for explanation.
         setattr(x, 'class', .resetclass(x, 'data.table'))
         if (!missing(key)) setkeyv(x, key) # fix for #1169
@@ -2401,6 +2403,7 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
         if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
         # fix for #1078 and #1128, see .resetclass() for explanation.
         setattr(x, "class", .resetclass(x, 'data.frame'))
+        setencodingv(x)
         alloc.col(x)
         if (!is.null(rn)) {
             nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
@@ -2428,6 +2431,7 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
         }
         setattr(x,"row.names",.set_row_names(max(n)))
         setattr(x,"class",c("data.table","data.frame"))
+        setencodingv(x)
         alloc.col(x)
     } else {
         stop("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
@@ -2528,4 +2532,41 @@ gend <- function() .Call(Cgend)
 
 isReallyReal <- function(x) {
     .Call(CisReallyReal, x)
+}
+
+# handle mixed encoding issues, attempting to fix #66, #69, #469 and #1293.
+charcols <- function(x) {
+    if (!is.data.table(x))
+        stop("x must be a data.table")
+    which(vapply(x, is.character, TRUE))
+}
+
+setencoding <- function(x, ...) {
+    setencodingv(x, as.character(substitute(list(...))[-1]))
+}
+
+setencodingv <- function(x, cols=charcols(x)) {
+    if (!missing(cols)) {
+        if (!is.character(cols) || !length(cols) > 0L)
+            stop("cols must be a character vector of length > 0.")
+        if ( length(idx <- which(!cols %chin% names(x))) )
+            stop("Column(s) [", paste(cols[idx], collapse=","), "] not present in input data.table.")
+        notchars = cols[vapply(cols, function(x) !identical("character", mode(x[[cols]])), TRUE)]
+        if (length(notchars)) {
+            warning("Discarding column(s) [", paste(notchars, collapse=","), "] as they are not character type.")
+            cols = setdiff(cols, notchars)
+        }
+        cols = match(cols, names(x), nomatch=0L)
+    }
+    xkey = key(x)
+    if (length(cols)) {
+        for (col in cols) {
+            this = enc2native(x[[col]]) # does this not handle any case?
+            if ( !identical(Encoding(this), Encoding(x[[col]])) )
+                point(x, col, as_list(this), 1L)
+        }
+    }
+    if (!is.null(xkey)) 
+        setattr(x, 'sorted', xkey)
+    invisible(x)
 }

@@ -91,6 +91,8 @@
   
   22. `as.data.table.xts` handles single row `xts` object properly, [#1484](https://github.com/Rdatatable/data.table/issues/1484). Thanks Michael Smith and @jangorecki.
 
+  23. data.table now solves the issue of mixed encodings by ensuring proper encoding directly during creation/conversion of data.table using `data.table()`, `setDT()`, `as.data.table()` functions, and also in `duplicated()` and `unique()` functions using base R's `enc2native()` function. This resolves issues [#66](https://github.com/Rdatatable/data.table/issues/66), [#69](https://github.com/Rdatatable/data.table/issues/69), [#469](https://github.com/Rdatatable/data.table/issues/469) and [#1293](https://github.com/Rdatatable/data.table/issues/1293). Thanks to @StefanFritsch and @Arthur.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

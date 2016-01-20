@@ -22,7 +22,7 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 static SEXP i, x;
 static int ncol, *icols, *xcols, *o, *xo, *retFirst, *retLength, *allLen1, *rollends;
 static double roll, rollabs;
-static Rboolean rollToNearest=FALSE, enc_warn=TRUE;
+static Rboolean rollToNearest=FALSE; //, enc_warn=TRUE; See setencodingv in data.table.R
 #define XIND(i) (xo ? xo[(i)]-1 : i)
 
 void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int lowmax, int uppmax);
@@ -32,7 +32,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     int xN, iN, protecti=0;
     roll = 0.0;
     rollToNearest = FALSE;
-    enc_warn = TRUE;
+    // enc_warn = TRUE;
     if (isString(rollarg)) {
         if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
         roll=1.0; rollToNearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
@@ -170,14 +170,15 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         while(xlow < xupp-1) {
             mid = xlow + (xupp-xlow)/2;
             xval.s = STRING_ELT(xc, XIND(mid));
-            if (enc_warn && (ENC_KNOWN(ival.s) || ENC_KNOWN(xval.s))) {
-                // The || is only done here to avoid the warning message being repeating in this code.
-                warning("A known encoding (latin1 or UTF-8) was detected in a join column. data.table compares the bytes currently, so doesn't support *mixed* encodings well; i.e., using both latin1 and UTF-8, or if any unknown encodings are non-ascii and some of those are marked known and others not. But if either latin1 or UTF-8 is used exclusively, and all unknown encodings are ascii, then the result should be ok. In future we will check for you and avoid this warning if everything is ok. The tricky part is doing this without impacting performance for ascii-only cases.");
-                // TO DO: check and warn in forder whether any strings are non-ascii (>127) but unknown encoding
-                //        check in forder whether both latin1 and UTF-8 have been used
-                //        See bugs #5159 and #5266 and related #5295 to revisit
-                enc_warn = FALSE;  // just warn once
-            }
+            // See setencodingv in data.table.R. Idea is to correct false encodings upfront while creating data.table (fread, data.table, as.data.table and setDT). This warning is therefore not necessary anymore.
+            // if (enc_warn && (ENC_KNOWN(ival.s) || ENC_KNOWN(xval.s))) {
+            //     // The || is only done here to avoid the warning message being repeating in this code.
+            //     warning("A known encoding (latin1 or UTF-8) was detected in a join column. data.table compares the bytes currently, so doesn't support *mixed* encodings well; i.e., using both latin1 and UTF-8, or if any unknown encodings are non-ascii and some of those are marked known and others not. But if either latin1 or UTF-8 is used exclusively, and all unknown encodings are ascii, then the result should be ok. In future we will check for you and avoid this warning if everything is ok. The tricky part is doing this without impacting performance for ascii-only cases.");
+            //     // TO DO: check and warn in forder whether any strings are non-ascii (>127) but unknown encoding
+            //     //        check in forder whether both latin1 and UTF-8 have been used
+            //     //        See bugs #5159 and #5266 and related #5295 to revisit
+            //     enc_warn = FALSE;  // just warn once
+            // }
             tmp = StrCmp(xval.s, ival.s);  // uses pointer equality first, NA_STRING are allowed and joined to, then uses strcmp on CHAR().
             if (tmp == 0) {                // TO DO: deal with mixed encodings and locale optionally
                 tmplow = mid;
