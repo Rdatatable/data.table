@@ -81,4 +81,5 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     # makes sense to therefore retain X's class, unlike `merge`. Hard to tell what 
     # class to retain for *full join* for example. 
     setattr(dt, 'class', c("data.table", "data.frame"))
+    dt
 }
