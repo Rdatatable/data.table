@@ -37,7 +37,9 @@ SEXP uniqlist(SEXP l, SEXP order)
             case INTSXP : case LGLSXP :
                 b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
             case STRSXP :
-                b=STRING_ELT(v,thisi)==STRING_ELT(v,previ); break;  // forder checks no non-ascii unknown, and either UTF-8 or Latin1 but not both. So == pointers is ok given that check.
+                // fix for #469, when key is set, duplicated calls uniqlist, where encoding 
+                // needs to be taken care of.
+                b=ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ)); break;  // marked non-utf8 encodings are converted to utf8 so as to match properly when inputs are of different encodings.
             case REALSXP :
                 ulv = (unsigned long long *)REAL(v);  
                 b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)

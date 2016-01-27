@@ -22,7 +22,7 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 static SEXP i, x;
 static int ncol, *icols, *xcols, *o, *xo, *retFirst, *retLength, *allLen1, *rollends;
 static double roll, rollabs;
-static Rboolean rollToNearest=FALSE; //, enc_warn=TRUE; See setencodingv in data.table.R
+static Rboolean rollToNearest=FALSE; 
 #define XIND(i) (xo ? xo[(i)]-1 : i)
 
 void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int lowmax, int uppmax);
@@ -32,7 +32,6 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     int xN, iN, protecti=0;
     roll = 0.0;
     rollToNearest = FALSE;
-    // enc_warn = TRUE;
     if (isString(rollarg)) {
         if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
         roll=1.0; rollToNearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
@@ -108,6 +107,16 @@ static union {
 static int mid, tmplow, tmpupp;  // global to save them being added to recursive stack. Maybe optimizer would do this anyway.
 static SEXP ic, xc;
 
+// If we find a non-ASCII, non-NA, non-UTF8 encoding, we try to convert it to UTF8. That is, marked non-ascii/non-UTF8 encodings will always be checked in UTF8 locale. This seems to be the best fix I could think of to put the encoding issues to rest..
+// Since the if-statement will fail with the first condition check in "normal" ASCII cases, there shouldn't be huge penalty issues for default setup.
+// Fix for #66, #69, #469 and #1293
+// TODO: compare 1.9.6 performance with 1.9.7 with huge number of ASCII strings.
+SEXP ENC2UTF8(SEXP s) {
+    if (!IS_ASCII(s) && s != NA_STRING && !IS_UTF8(s))
+        s = mkCharCE(translateCharUTF8(s), CE_UTF8);
+    return (s);
+}
+
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowmax, int uppmax)
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
 // lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
@@ -166,31 +175,22 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         // ilow and iupp now surround the group in ic, too
         break;
     case STRSXP :
-        ival.s = STRING_ELT(ic,ir);
+        ival.s = ENC2UTF8(STRING_ELT(ic,ir));
         while(xlow < xupp-1) {
             mid = xlow + (xupp-xlow)/2;
-            xval.s = STRING_ELT(xc, XIND(mid));
-            // See setencodingv in data.table.R. Idea is to correct false encodings upfront while creating data.table (fread, data.table, as.data.table and setDT). This warning is therefore not necessary anymore.
-            // if (enc_warn && (ENC_KNOWN(ival.s) || ENC_KNOWN(xval.s))) {
-            //     // The || is only done here to avoid the warning message being repeating in this code.
-            //     warning("A known encoding (latin1 or UTF-8) was detected in a join column. data.table compares the bytes currently, so doesn't support *mixed* encodings well; i.e., using both latin1 and UTF-8, or if any unknown encodings are non-ascii and some of those are marked known and others not. But if either latin1 or UTF-8 is used exclusively, and all unknown encodings are ascii, then the result should be ok. In future we will check for you and avoid this warning if everything is ok. The tricky part is doing this without impacting performance for ascii-only cases.");
-            //     // TO DO: check and warn in forder whether any strings are non-ascii (>127) but unknown encoding
-            //     //        check in forder whether both latin1 and UTF-8 have been used
-            //     //        See bugs #5159 and #5266 and related #5295 to revisit
-            //     enc_warn = FALSE;  // just warn once
-            // }
+            xval.s = ENC2UTF8(STRING_ELT(xc, XIND(mid)));
             tmp = StrCmp(xval.s, ival.s);  // uses pointer equality first, NA_STRING are allowed and joined to, then uses strcmp on CHAR().
             if (tmp == 0) {                // TO DO: deal with mixed encodings and locale optionally
                 tmplow = mid;
                 tmpupp = mid;
                 while(tmplow<xupp-1) {
                     mid = tmplow + (xupp-tmplow)/2;
-                    xval.s = STRING_ELT(xc, XIND(mid));
-                    if (ival.s == xval.s) tmplow=mid; else xupp=mid;  // the == here assumes (within this column) no mixing of latin1 and UTF-8, and no unknown non-ascii
-                }                                                     // TO DO: add checks to forder, see above.
+                    xval.s = ENC2UTF8(STRING_ELT(xc, XIND(mid)));
+                    if (ival.s == xval.s) tmplow=mid; else xupp=mid;  // the == here handles encodings as well. Marked non-utf8 encodings are converted to utf-8 using ENC2UTF8.
+                }
                 while(xlow<tmpupp-1) {
                     mid = xlow + (tmpupp-xlow)/2;
-                    xval.s = STRING_ELT(xc, XIND(mid));
+                    xval.s = ENC2UTF8(STRING_ELT(xc, XIND(mid)));
                     if (ival.s == xval.s) tmpupp=mid; else xlow=mid;  // see above re ==
                 }
                 break;
@@ -204,12 +204,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         tmpupp = lir;
         while(tmplow<iupp-1) {
             mid = tmplow + (iupp-tmplow)/2;
-            xval.s = STRING_ELT(ic, o ? o[mid]-1 : mid);
+            xval.s = ENC2UTF8(STRING_ELT(ic, o ? o[mid]-1 : mid));
             if (xval.s == ival.s) tmplow=mid; else iupp=mid;   // see above re ==
         }
         while(ilow<tmpupp-1) {
             mid = ilow + (tmpupp-ilow)/2;
-            xval.s = STRING_ELT(ic, o ? o[mid]-1 : mid);
+            xval.s = ENC2UTF8(STRING_ELT(ic, o ? o[mid]-1 : mid));
             if (xval.s == ival.s) tmpupp=mid; else ilow=mid;   // see above re == 
         }
         break;
@@ -323,4 +323,36 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
         bmerge_r(xupp-1, xuppIn, iupp-1, iuppIn, col, lowmax && xupp-1==xlowIn, uppmax);
 }
 
+// HOPEFULLY NOT NEEDED ANYMORE BUT JUST IN CASE...
+// // adapted from util.c::do_enc2, here so that we can directly update columns
+// SEXP setencoding(SEXP s, SEXP enc_utf8, SEXP enc_latin1) {
+//     R_xlen_t i;
+//     SEXP el;
+//     for (i=0; i<XLENGTH(s); i++) {
+//         el = STRING_ELT(s, i);
+//         if (el == NA_STRING) continue;
+//         if (LOGICAL(enc_utf8)[0]) {
+//             if (IS_ASCII(el) || IS_UTF8(el)) continue;
+//             SET_STRING_ELT(s, i, mkCharCE(translateCharUTF8(el), CE_UTF8));
+//         } else if (ENC_KNOWN(el)) {
+//             if (IS_ASCII(el) || (LOGICAL(enc_latin1)[0] && IS_LATIN1(el))) continue;
+//             if (LOGICAL(enc_latin1)[0])
+//                 SET_STRING_ELT(s, i, mkCharCE(translateChar(el), CE_LATIN1));
+//             else 
+//                 SET_STRING_ELT(s, i, mkChar(translateChar(el)));
+//         }
+//     }
+//     return (R_NilValue);
+// }
 
+// SEXP is_encoding_marked(SEXP x) {
+
+//     int i, n=XLENGTH(x);
+//     SEXP s;
+//     for (i=0; i<n; i++) {
+//         s = STRING_ELT(x, i);
+//         if (s != NA_STRING && !IS_ASCII(s))
+//             break;
+//     }
+//     return (ScalarLogical(i!=n));
+// }

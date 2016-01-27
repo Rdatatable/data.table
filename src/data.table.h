@@ -5,6 +5,10 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
+#define IS_UTF8(x)  (LEVELS(x) & 8)
+#define IS_ASCII(x) (LEVELS(x) & 64)
+#define IS_LATIN(x) (LEVELS(x) & 4)
+
 #define SIZEOF(x) sizes[TYPEOF(x)]
 #ifdef MIN
 #undef MIN
@@ -70,6 +74,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 
 // bmerge.c
 SEXP bmerge(SEXP left, SEXP right, SEXP leftcols, SEXP rightcols, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollends, SEXP nomatch, SEXP retFirst, SEXP retLength, SEXP allLen1);
+SEXP ENC2UTF8(SEXP s);
 
 // fcast.c
 SEXP coerce_to_char(SEXP s, SEXP env);
