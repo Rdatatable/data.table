@@ -7314,6 +7314,16 @@ setkey(A, kom, gad, num)
 test(1590.3, unique(A, by=c("kom","gad","num")), 
              as.data.table(A[!duplicated(paste(A$kom, A$gad, A$num))]))
 
+# encoding issue in forder
+x <- "fa\xE7ile"
+Encoding(x)
+Encoding(x) <- "latin1"
+xx <- iconv(x, "latin1", "UTF-8")
+y = sample(c(x,xx), 10, TRUE)
+test(1590.4, forderv(y), integer(0)) # all sorted
+Encoding(xx) = "unknown"
+y = sample(c(x,xx), 10, TRUE)
+test(1590.5, forderv(y), integer(0)) # all sorted
 
 ##########################
 
