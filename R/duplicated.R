@@ -1,7 +1,6 @@
 
 duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...) {
     if (!cedta()) return(NextMethod("duplicated"))
-    setencodingv(x)
     if (!identical(incomparables, FALSE)) {
         .NotYetUsed("incomparables != FALSE")
     }
