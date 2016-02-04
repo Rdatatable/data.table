@@ -97,6 +97,8 @@
 
   24. `rbindlist` handles `idcol` construction correctly and more efficiently now (logic moved to C), [#1432](https://github.com/Rdatatable/data.table/issues/1432). Thanks to @franknarf1 and @Chris.
 
+  25. `CJ` sorts correctly when duplicates are found in input values and `sorted=TRUE`, [#1513](https://github.com/Rdatatable/data.table/issues/1513). Thanks @alexdeng.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

@@ -300,6 +300,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
     l = list(...)
     if (unique) l = lapply(l, unique)
 
+    dups = FALSE # fix for #1513
     # using rep.int instead of rep speeds things up considerably (but attributes are dropped).
     j = lapply(l, class)  # changed "vapply" to avoid errors with "ordered" "factor" input
     if (length(l)==1L && sorted && length(o <- forderv(l[[1L]])))
@@ -310,7 +311,11 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
         x = c(rev(take(cumprod(rev(n)))), 1L)
         for (i in seq_along(x)) {
             y = l[[i]]
-            if (sorted && length(o <- forderv(y))) y = y[o]
+            # fix for #1513
+            if (sorted) {
+                if (length(o <- forderv(y, retGrp=TRUE))) y = y[o]
+                if (!dups) dups = attr(o, 'maxgrpn') > 1L 
+            }
             if (i == 1L) 
                 l[[i]] = rep.int(y, times = rep.int(x[i], n[i]))   # i.e. rep(y, each=x[i])
             else if (i == length(n))
@@ -331,7 +336,10 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
         setattr(l, "names", vnames)
     }
     l <- alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
-    if (sorted) setattr(l, 'sorted', names(l))
+    if (sorted) {
+        if (!dups) setattr(l, 'sorted', names(l)) 
+        else setkey(l) # fix #1513
+    }
     l
 }
 

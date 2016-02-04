@@ -7341,6 +7341,9 @@ DT <- data.table(x = 1:3, y = 4:6, z = 7:9)
 test(1592.1, setnames(DT, -5, "bla"), error="Items of 'old'")
 test(1592.2, names(setnames(DT, -1, c("m", "n"))), c("x", "m", "n"))
 
+# fix for #1513
+test(1593, CJ(c(1,2,2), c(1,2,3)), data.table(V1=rep(c(1,2), c(3,6)), V2=c(1,2,3,1,1,2,2,3,3), key=c("V1", "V2")))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
