@@ -1542,7 +1542,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 }
             } else {
                 # Apply GForce
-                gfuns = c("sum", "mean", "median", ".N", "min", "max", "head", "last", "tail", "[") # added .N for #5760
+                gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "tail", "[") # added .N for #5760
                 .ok <- function(q) {
                     if (dotN(q)) return(TRUE) # For #5760
                     cond = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]])
@@ -2197,11 +2197,11 @@ setnames <- function(x,old,new) {
         if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
         if (!is.character(new)) stop("'new' is not a character vector")
         if (is.numeric(old)) {
-	    if (length(sgn <- unique(sign(old))) != 1L)
-		stop("Items of 'old' is numeric but has both +ve and -ve indices.")
-	    tt = abs(old)<1L | abs(old)>length(x) | is.na(old)
+            if (length(sgn <- unique(sign(old))) != 1L) 
+                stop("Items of 'old' is numeric but has both +ve and -ve indices.")
+            tt = abs(old)<1L | abs(old)>length(x) | is.na(old)
             if (any(tt)) stop("Items of 'old' either NA or outside range [1,",length(x),"]: ",paste(old[tt],collapse=","))
-	    i = if (sgn == 1L) as.integer(old) else seq_along(x)[as.integer(old)]
+            i = if (sgn == 1L) as.integer(old) else seq_along(x)[as.integer(old)]
             if (any(duplicated(i))) stop("Some duplicates exist in 'old': ",paste(i[duplicated(i)],collapse=","))
         } else {
             if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
@@ -2210,7 +2210,7 @@ setnames <- function(x,old,new) {
             if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
             if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
         }
-	if (length(new)!=length(i)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
+        if (length(new)!=length(i)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
     }
     # update the key if the column name being change is in the key
     m = chmatch(names(x)[i], key(x))
@@ -2299,8 +2299,8 @@ rbindlist <- function(l, use.names=fill, fill=FALSE, idcol=NULL) {
     if (identical(idcol, FALSE)) idcol = NULL
     else if (!is.null(idcol)) {
         if (isTRUE(idcol)) idcol = ".id"
-	if (!is.character(idcol)) stop("idcol must be a logical or character vector of length 1. If logical TRUE the id column will named '.id'.")
-	idcol = idcol[1L]
+        if (!is.character(idcol)) stop("idcol must be a logical or character vector of length 1. If logical TRUE the id column will named '.id'.")
+        idcol = idcol[1L]
     }
     ans = .Call("Crbindlist", l, use.names, fill, idcol)
     if (!length(ans)) return(null.data.table())
@@ -2511,9 +2511,12 @@ glast <- function(x) .Call(Cglast, x)
 
 gsum <- function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean <- function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
+gprod <- function(x, na.rm=FALSE) .Call(Cgprod, x, na.rm)
 gmedian <- function(x, na.rm=FALSE) .Call(Cgmedian, x, na.rm)
 gmin <- function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
 gmax <- function(x, na.rm=FALSE) .Call(Cgmax, x, na.rm)
+gvar <- function(x, na.rm=FALSE) .Call(Cgvar, x, na.rm)
+gsd <- function(x, na.rm=FALSE) .Call(Cgsd, x, na.rm)
 gstart <- function(o, f, l, rows) .Call(Cgstart, o, f, l, rows)
 gend <- function() .Call(Cgend)
 

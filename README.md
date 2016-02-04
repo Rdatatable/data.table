@@ -47,6 +47,8 @@
 
   16. `setnames` accepts negative indices in 'old' argument, [#1443](https://github.com/Rdatatable/data.table/issues/1443). Thanks @richierocks.
 
+  17. `var`, `sd` and `prod` are all GForce optimised for speed and memory efficiency. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). See that post for benchmarks.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

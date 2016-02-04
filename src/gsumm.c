@@ -16,6 +16,13 @@ static int isunsorted = 0;
 static union {double d;
               long long ll;} u;
 
+// from R's src/cov.c (for variance / sd)
+#ifdef HAVE_LONG_DOUBLE
+# define SQRTL sqrtl
+#else
+# define SQRTL sqrt
+#endif
+
 SEXP gstart(SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int i, j, g, *this;
     // clock_t start = clock();
@@ -196,7 +203,6 @@ SEXP gmean(SEXP x, SEXP narm)
     return(ans);
 }
 
-// TODO: gsd, gprod, gwhich.min, gwhich.max
 // gmin
 SEXP gmin(SEXP x, SEXP narm)
 {
@@ -847,4 +853,199 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
     copyMostAttrib(x, ans);
     UNPROTECT(1);
     return(ans);    
+}
+
+// TODO: gwhich.min, gwhich.max
+// implemented this similar to gmedian to balance well between speed and memory usage. There's one extra allocation on maximum groups and that's it.. and that helps speed things up extremely since we don't have to collect x's values for each group for each step (mean, residuals, mean again and then variance).
+SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
+{
+    if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
+    if (!isVectorAtomic(x)) error("GForce var/sd can only be applied to columns, not .SD or similar. To find var/sd of all items in a list such as .SD, either add the prefix stats::var(.SD) (or stats::sd(.SD)) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,var),by=,.SDcols=]'");
+    long double m, s, v;
+    R_len_t i, j, ix, thisgrpsize = 0, n = (irowslen == -1) ? length(x) : irowslen;
+    if (grpn != n) error("grpn [%d] != length(x) [%d] in gvar", grpn, n);
+    SEXP sub, ans = PROTECT(allocVector(REALSXP, ngrp));
+    Rboolean ans_na;
+    switch(TYPEOF(x)) {
+        case LGLSXP: case INTSXP:
+        sub = PROTECT(allocVector(INTSXP, maxgrpn)); // allocate once upfront
+        if (!LOGICAL(narm)[0]) {
+            for (i=0; i<ngrp; i++) {
+                m=0.; s=0.; v=0.; ans_na = FALSE;
+                if (grpsize[i] != 1) {
+                    thisgrpsize = grpsize[i];
+                    SETLENGTH(sub, thisgrpsize); // to gather this group's data
+                    for (j=0; j<thisgrpsize; j++) {
+                        ix = ff[i]+j-1;
+                        if (isunsorted) ix = oo[ix]-1;
+                        ix = (irowslen == -1) ? ix : irows[ix]-1;
+                        if (INTEGER(x)[ix] == NA_INTEGER) { ans_na = TRUE; break; }
+                        INTEGER(sub)[j] = INTEGER(x)[ix];
+                        m += INTEGER(sub)[j]; // sum
+                    }
+                    if (ans_na) { REAL(ans)[i] = NA_REAL; continue; }
+                    m = m/thisgrpsize; // mean, first pass
+                    for (j=0; j<thisgrpsize; j++) s += (INTEGER(sub)[j]-m); // residuals
+                    m += (s/thisgrpsize); // mean, second pass
+                    for (j=0; j<thisgrpsize; j++) { // variance
+                        v += (INTEGER(sub)[j]-(double)m) * (INTEGER(sub)[j]-(double)m);
+                    }
+                    REAL(ans)[i] = (double)v/(thisgrpsize-1);
+                    if (isSD) REAL(ans)[i] = SQRTL(REAL(ans)[i]);
+                } else REAL(ans)[i] = NA_REAL;
+            }
+        } else {
+            for (i=0; i<ngrp; i++) {
+                m=0.; s=0.; v=0.; thisgrpsize = 0;
+                if (grpsize[i] != 1) {
+                    SETLENGTH(sub, grpsize[i]); // to gather this group's data
+                    for (j=0; j<grpsize[i]; j++) {
+                        ix = ff[i]+j-1;
+                        if (isunsorted) ix = oo[ix]-1;
+                        ix = (irowslen == -1) ? ix : irows[ix]-1;
+                        if (INTEGER(x)[ix] == NA_INTEGER) continue;
+                        INTEGER(sub)[thisgrpsize] = INTEGER(x)[ix];
+                        m += INTEGER(sub)[thisgrpsize]; // sum
+                        thisgrpsize++;
+                    }
+                    if (thisgrpsize <= 1) { REAL(ans)[i] = NA_REAL; continue; }
+                    m = m/thisgrpsize; // mean, first pass
+                    for (j=0; j<thisgrpsize; j++) s += (INTEGER(sub)[j]-m); // residuals
+                    m += (s/thisgrpsize); // mean, second pass
+                    for (j=0; j<thisgrpsize; j++) { // variance
+                        v += (INTEGER(sub)[j]-(double)m) * (INTEGER(sub)[j]-(double)m);
+                    }
+                    REAL(ans)[i] = (double)v/(thisgrpsize-1);
+                    if (isSD) REAL(ans)[i] = SQRTL(REAL(ans)[i]);
+                } else REAL(ans)[i] = NA_REAL;
+            }
+        }
+        SETLENGTH(sub, maxgrpn);
+        break;
+        case REALSXP:
+        sub = PROTECT(allocVector(REALSXP, maxgrpn)); // allocate once upfront
+        if (!LOGICAL(narm)[0]) {
+            for (i=0; i<ngrp; i++) {
+                m=0.; s=0.; v=0.; ans_na = FALSE;
+                if (grpsize[i] != 1) {
+                    thisgrpsize = grpsize[i];
+                    SETLENGTH(sub, thisgrpsize); // to gather this group's data
+                    for (j=0; j<thisgrpsize; j++) {
+                        ix = ff[i]+j-1;
+                        if (isunsorted) ix = oo[ix]-1;
+                        ix = (irowslen == -1) ? ix : irows[ix]-1;
+                        if (ISNAN(REAL(x)[ix])) { ans_na = TRUE; break; }
+                        REAL(sub)[j] = REAL(x)[ix];
+                        m += REAL(sub)[j]; // sum
+                    }
+                    if (ans_na) { REAL(ans)[i] = NA_REAL; continue; }
+                    m = m/thisgrpsize; // mean, first pass
+                    for (j=0; j<thisgrpsize; j++) s += (REAL(sub)[j]-m); // residuals
+                    m += (s/thisgrpsize); // mean, second pass
+                    for (j=0; j<thisgrpsize; j++) { // variance
+                        v += (REAL(sub)[j]-(double)m) * (REAL(sub)[j]-(double)m);
+                    }
+                    REAL(ans)[i] = (double)v/(thisgrpsize-1);
+                    if (isSD) REAL(ans)[i] = SQRTL(REAL(ans)[i]);
+                } else REAL(ans)[i] = NA_REAL;
+            }
+        } else {
+            for (i=0; i<ngrp; i++) {
+                m=0.; s=0.; v=0.; thisgrpsize = 0;
+                if (grpsize[i] != 1) {
+                    SETLENGTH(sub, grpsize[i]); // to gather this group's data
+                    for (j=0; j<grpsize[i]; j++) {
+                        ix = ff[i]+j-1;
+                        if (isunsorted) ix = oo[ix]-1;
+                        ix = (irowslen == -1) ? ix : irows[ix]-1;
+                        if (ISNAN(REAL(x)[ix])) continue;
+                        REAL(sub)[thisgrpsize] = REAL(x)[ix];
+                        m += REAL(sub)[thisgrpsize]; // sum
+                        thisgrpsize++;
+                    }
+                    if (thisgrpsize <= 1) { REAL(ans)[i] = NA_REAL; continue; }
+                    m = m/thisgrpsize; // mean, first pass
+                    for (j=0; j<thisgrpsize; j++) s += (REAL(sub)[j]-m); // residuals
+                    m += (s/thisgrpsize); // mean, second pass
+                    for (j=0; j<thisgrpsize; j++) { // variance
+                        v += (REAL(sub)[j]-(double)m) * (REAL(sub)[j]-(double)m);
+                    }
+                    REAL(ans)[i] = (double)v/(thisgrpsize-1);
+                    if (isSD) REAL(ans)[i] = SQRTL(REAL(ans)[i]);
+                } else REAL(ans)[i] = NA_REAL;
+            }
+        }
+        SETLENGTH(sub, maxgrpn);
+        break;
+        default: 
+            if (isSD) {
+                error("Type '%s' not supported by GForce var (gvar). Either add the prefix stats::var(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+            } else {
+                error("Type '%s' not supported by GForce sd (gsd). Either add the prefix stats::sd(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));                
+            }
+    }
+    UNPROTECT(2);
+    return (ans);
+}
+
+SEXP gvar(SEXP x, SEXP narm) {
+    return (gvarsd1(x, narm, FALSE));
+}
+
+SEXP gsd(SEXP x, SEXP narm) {
+    return (gvarsd1(x, narm, TRUE));
+}
+
+SEXP gprod(SEXP x, SEXP narm)
+{
+    if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
+    if (!isVectorAtomic(x)) error("GForce prod can only be applied to columns, not .SD or similar. To multiply all items in a list such as .SD, either add the prefix base::prod(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'");
+    int i, ix, thisgrp;
+    int n = (irowslen == -1) ? length(x) : irowslen;
+    //clock_t start = clock();
+    SEXP ans;
+    if (grpn != n) error("grpn [%d] != length(x) [%d] in gprod", grpn, n);
+    long double *s = malloc(ngrp * sizeof(long double));
+    if (!s) error("Unable to allocate %d * %d bytes for gprod", ngrp, sizeof(long double));
+    for (i=0; i<ngrp; i++) s[i] = 1.0;
+    ans = PROTECT(allocVector(REALSXP, ngrp));
+    switch(TYPEOF(x)) {
+    case LGLSXP: case INTSXP:
+        for (i=0; i<n; i++) {
+            thisgrp = grp[i];
+            ix = (irowslen == -1) ? i : irows[i]-1;
+            if(INTEGER(x)[ix] == NA_INTEGER) { 
+                if (!LOGICAL(narm)[0]) s[thisgrp] = NA_REAL;  // Let NA_REAL propogate from here. R_NaReal is IEEE.
+                continue;
+            }
+            s[thisgrp] *= INTEGER(x)[ix];  // no under/overflow here, s is long double (like base)
+        }
+        for (i=0; i<ngrp; i++) {
+            if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
+            else if (s[i] < -DBL_MAX) REAL(ans)[i] = R_NegInf;
+            else REAL(ans)[i] = (double)s[i];
+        }
+        break;
+    case REALSXP:
+        for (i=0; i<n; i++) {
+            thisgrp = grp[i];
+            ix = (irowslen == -1) ? i : irows[i]-1;
+            if(ISNAN(REAL(x)[ix]) && LOGICAL(narm)[0]) continue;  // else let NA_REAL propogate from here
+            s[thisgrp] *= REAL(x)[ix];  // done in long double, like base
+        }
+        for (i=0; i<ngrp; i++) {
+            if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
+            else if (s[i] < -DBL_MAX) REAL(ans)[i] = R_NegInf;
+            else REAL(ans)[i] = (double)s[i];
+        }
+        break;
+    default:
+        free(s);
+        error("Type '%s' not supported by GForce prod (gprod). Either add the prefix base::prod(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    }
+    free(s);
+    copyMostAttrib(x, ans);
+    UNPROTECT(1);
+    // Rprintf("this gprod took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+    return(ans);
 }

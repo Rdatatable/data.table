@@ -67,6 +67,9 @@ SEXP glast();
 SEXP gfirst();
 SEXP gnthvalue();
 SEXP dim();
+SEXP gvar();
+SEXP gsd();
+SEXP gprod();
 
 // .Externals
 SEXP fastmean();
@@ -136,6 +139,9 @@ R_CallMethodDef callMethods[] = {
 {"Cgfirst", (DL_FUNC) &gfirst, -1},
 {"Cgnthvalue", (DL_FUNC) &gnthvalue, -1},
 {"Cdim", (DL_FUNC) &dim, -1},
+{"Cgvar", (DL_FUNC) &gvar, -1},
+{"Cgsd", (DL_FUNC) &gsd, -1},
+{"Cgprod", (DL_FUNC) &gprod, -1},
 {NULL, NULL, 0}
 };
 

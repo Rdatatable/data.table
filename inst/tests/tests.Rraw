@@ -7344,6 +7344,25 @@ test(1592.2, names(setnames(DT, -1, c("m", "n"))), c("x", "m", "n"))
 # fix for #1513
 test(1593, CJ(c(1,2,2), c(1,2,3)), data.table(V1=rep(c(1,2), c(3,6)), V2=c(1,2,3,1,1,2,2,3,3), key=c("V1", "V2")))
 
+# FR #523, var, sd and prod
+options(datatable.optimize = Inf) # ensure gforce is on
+DT = data.table(x=sample(5, 100, TRUE), 
+               y1=sample(6, 100, TRUE), 
+               y2=sample(c(1:10,NA), 100, TRUE), 
+               z1=runif(100), 
+               z2=sample(c(runif(10),NA,NaN), 100, TRUE))
+test(1594.1, DT[, lapply(.SD, var, na.rm=FALSE), by=x], DT[, lapply(.SD, stats::var, na.rm=FALSE), by=x])
+test(1594.2, DT[, lapply(.SD, var, na.rm=TRUE), by=x], DT[, lapply(.SD, stats::var, na.rm=TRUE), by=x])
+test(1594.3, DT[, lapply(.SD, var, na.rm=TRUE), by=x, verbose=TRUE], output="GForce optimized j to.*gvar")
+
+test(1594.4, DT[, lapply(.SD, sd, na.rm=FALSE), by=x], DT[, lapply(.SD, stats::sd, na.rm=FALSE), by=x])
+test(1594.5, DT[, lapply(.SD, sd, na.rm=TRUE), by=x], DT[, lapply(.SD, stats::sd, na.rm=TRUE), by=x])
+test(1594.6, DT[, lapply(.SD, sd, na.rm=TRUE), by=x, verbose=TRUE], output="GForce optimized j to.*gsd")
+
+test(1594.7, DT[, lapply(.SD, prod, na.rm=FALSE), by=x], DT[, lapply(.SD, base::prod, na.rm=FALSE), by=x])
+test(1594.8, DT[, lapply(.SD, prod, na.rm=TRUE), by=x], DT[, lapply(.SD, base::prod, na.rm=TRUE), by=x])
+test(1594.9, DT[, lapply(.SD, prod, na.rm=TRUE), by=x, verbose=TRUE], output="GForce optimized j to.*gprod")
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
