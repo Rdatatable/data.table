@@ -45,6 +45,8 @@
 
   15. `fread` gains `key` argument, [#590](https://github.com/Rdatatable/data.table/issues/590).
 
+  16. `setnames` accepts negative indices in 'old' argument, [#1443](https://github.com/Rdatatable/data.table/issues/1443). Thanks @richierocks.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

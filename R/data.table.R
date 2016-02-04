@@ -2196,11 +2196,12 @@ setnames <- function(x,old,new) {
     } else {
         if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
         if (!is.character(new)) stop("'new' is not a character vector")
-        if (length(new)!=length(old)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
         if (is.numeric(old)) {
-            tt = old<1L | old>length(x) | is.na(old)
+	    if (length(sgn <- unique(sign(old))) != 1L)
+		stop("Items of 'old' is numeric but has both +ve and -ve indices.")
+	    tt = abs(old)<1L | abs(old)>length(x) | is.na(old)
             if (any(tt)) stop("Items of 'old' either NA or outside range [1,",length(x),"]: ",paste(old[tt],collapse=","))
-            i = as.integer(old)
+	    i = if (sgn == 1L) as.integer(old) else seq_along(x)[as.integer(old)]
             if (any(duplicated(i))) stop("Some duplicates exist in 'old': ",paste(i[duplicated(i)],collapse=","))
         } else {
             if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
@@ -2209,6 +2210,7 @@ setnames <- function(x,old,new) {
             if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
             if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
         }
+	if (length(new)!=length(i)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
     }
     # update the key if the column name being change is in the key
     m = chmatch(names(x)[i], key(x))

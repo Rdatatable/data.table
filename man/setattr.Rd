@@ -14,7 +14,7 @@ setnames(x,old,new)
   \item{name}{ The character attribute name. }
   \item{value}{ The value to assign to the attribute or \code{NULL} removes the attribute, if present. }
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, the new column names, which must be the same length as the number of columns. See examples. }
-  \item{new}{ Optional. New column names, the same length as \code{old}. } 
+  \item{new}{ Optional. New column names, must be the same length as columns provided to \code{old} argument. } 
 }
 \details{
 
@@ -48,6 +48,9 @@ setnames(DT,3,"C")                 # by position with warning if 3 > ncol(DT)
 setnames(DT,2:3,c("D","E"))        # multiple
 setnames(DT,c("a","E"),c("A","F")) # multiple by name (warning if either "a" or "E" is missing)
 setnames(DT,c("X","Y","Z"))        # replace all (length of names must be == ncol(DT))
+
+DT <- data.table(x = 1:3, y = 4:6, z = 7:9)
+setnames(DT, -2, c("a", "b"))      # NEW FR #1443, allows -ve indices in 'old' argument
 
 DT = data.table(a=1:3, b=4:6)
 f = function(...) {

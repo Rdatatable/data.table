@@ -7336,6 +7336,11 @@ ans = data.table(id=rep(c("ID_1","ID_2","ID_3"), c(2,1,4)),
                dens=c(2331,1644,1890,8000,1452,1596,7521))
 test(1591, rbindlist(mylist, idcol="id"), ans)
 
+# FR #1443
+DT <- data.table(x = 1:3, y = 4:6, z = 7:9)
+test(1592.1, setnames(DT, -5, "bla"), error="Items of 'old'")
+test(1592.2, names(setnames(DT, -1, c("m", "n"))), c("x", "m", "n"))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
