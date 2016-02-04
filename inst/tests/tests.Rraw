@@ -7325,6 +7325,17 @@ Encoding(xx) = "unknown"
 y = sample(c(x,xx), 10, TRUE)
 test(1590.5, forderv(y), integer(0)) # all sorted
 
+# #1432 test
+list_1 = list(a = c(44,47), dens = c(2331,1644))
+list_2 = list(a=66, dens= 1890)
+list_3 = list(a=c(44,46,48,50), dens=c(8000,1452,1596,7521)) 
+mylist = list(list_1, list_2, list_3)
+setattr(mylist, 'names', c("ID_1","ID_2","ID_3"))
+ans = data.table(id=rep(c("ID_1","ID_2","ID_3"), c(2,1,4)), 
+                  a=c(44,47,66,44,46,48,50), 
+               dens=c(2331,1644,1890,8000,1452,1596,7521))
+test(1591, rbindlist(mylist, idcol="id"), ans)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

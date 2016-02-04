@@ -93,6 +93,8 @@
 
   23. data.table now solves the issue of mixed encodings by ensuring proper encoding directly during creation/conversion of data.table using `data.table()`, `setDT()`, `as.data.table()` functions, and also in `duplicated()` and `unique()` functions using base R's `enc2native()` function. This resolves issues [#66](https://github.com/Rdatatable/data.table/issues/66), [#69](https://github.com/Rdatatable/data.table/issues/69), [#469](https://github.com/Rdatatable/data.table/issues/469) and [#1293](https://github.com/Rdatatable/data.table/issues/1293). Thanks to @StefanFritsch and @Arthur.
 
+  24. `rbindlist` handles `idcol` construction correctly and more efficiently now (logic moved to C), [#1432](https://github.com/Rdatatable/data.table/issues/1432). Thanks to @franknarf1 and @Chris.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

@@ -595,16 +595,28 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
     }
 }
 
-SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill) {
+// function does c(idcol, nm), where length(idcol)=1
+// fix for #1432, + more efficient to move the logic to C
+SEXP add_idcol(SEXP nm, SEXP idcol, int cols) {
+    SEXP ans = PROTECT(allocVector(STRSXP, cols+1));
+    SET_STRING_ELT(ans, 0, STRING_ELT(idcol, 0));
+    for (int i=0; i<cols; i++) {
+        SET_STRING_ELT(ans, i+1, STRING_ELT(nm, i));
+    }
+    UNPROTECT(1);
+    return (ans);
+}
+
+SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
     
     R_len_t jj, ansloc, resi, i,j,r, idx, thislen;
     struct preprocessData data; 
-    Rboolean usenames, fill, to_copy = FALSE, coerced=FALSE;
+    Rboolean usenames, fill, to_copy = FALSE, coerced=FALSE, isidcol = !isNull(idcol);
     SEXP fnames = R_NilValue, findices = R_NilValue, f_ind = R_NilValue, ans, lf, li, target, thiscol, levels;
     SEXP factorLevels = R_NilValue, finalFactorLevels;
     Rboolean *isRowOrdered = NULL;
-    R_len_t protecti;
-    
+    R_len_t protecti=0;
+
     // first level of error checks
     if (!isLogical(sexp_usenames) || LENGTH(sexp_usenames)!=1 || LOGICAL(sexp_usenames)[0]==NA_LOGICAL)
         error("use.names should be TRUE or FALSE");
@@ -620,6 +632,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill) {
         warning("Resetting 'use.names' to TRUE. 'use.names' can not be FALSE when 'fill=TRUE'.\n");
         usenames=TRUE;
     }
+
     // check for factor, get max types, and when usenames=TRUE get the answer 'names' and column indices for proper reordering.
     preprocess(l, usenames, fill, &data);
     fnames   = VECTOR_ELT(data.ans_ptr, 0);
@@ -629,17 +642,20 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill) {
         UNPROTECT(protecti);
         return(R_NilValue);
     }
-
+    if (isidcol) {
+        fnames = PROTECT(add_idcol(fnames, idcol, data.n_cols));
+        protecti++;
+    }
     factorLevels = PROTECT(allocVector(VECSXP, data.lcount));
     isRowOrdered = Calloc(data.lcount, Rboolean);
     
-    ans = PROTECT(allocVector(VECSXP, data.n_cols)); protecti++;
+    ans = PROTECT(allocVector(VECSXP, data.n_cols+isidcol)); protecti++;
     setAttrib(ans, R_NamesSymbol, fnames);
     lf = VECTOR_ELT(l, data.first);
     for(j=0; j<data.n_cols; j++) {
         if (fill) target = allocNAVector(data.max_type[j], data.n_rows);
         else target = allocVector(data.max_type[j], data.n_rows);
-        SET_VECTOR_ELT(ans, j, target);
+        SET_VECTOR_ELT(ans, j+isidcol, target);
         
         if (usenames) {
             to_copy = TRUE;
@@ -735,11 +751,33 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill) {
             finalFactorLevels = combineFactorLevels(factorLevels, &(data.is_factor[j]), isRowOrdered);
             SEXP factorLangSxp = PROTECT(lang3(install(data.is_factor[j] == 1 ? "factor" : "ordered"),
                                                target, finalFactorLevels));
-            SET_VECTOR_ELT(ans, j, eval(factorLangSxp, R_GlobalEnv));
+            SET_VECTOR_ELT(ans, j+isidcol, eval(factorLangSxp, R_GlobalEnv));
             UNPROTECT(2);  // finalFactorLevels, factorLangSxp
         }
     }
     if (factorLevels != R_NilValue) UNPROTECT_PTR(factorLevels);
+
+    // fix for #1432, + more efficient to move the logic to C
+    if (isidcol) {
+        R_len_t runidx = 1, cntridx = 0;
+        SEXP lnames = getAttrib(l, R_NamesSymbol);
+        if (isNull(lnames)) {
+            target = allocVector(INTSXP, data.n_rows);
+            SET_VECTOR_ELT(ans, 0, target);
+            for (i=0; i<LENGTH(l); i++) {
+                for (j=0; j<data.fn_rows[i]; j++)
+                    INTEGER(target)[cntridx++] = runidx;
+                runidx++;
+            }
+        } else {
+            target = allocVector(STRSXP, data.n_rows);
+            SET_VECTOR_ELT(ans, 0, target);
+            for (i=0; i<LENGTH(l); i++) {
+                for (j=0; j<data.fn_rows[i]; j++)
+                    SET_STRING_ELT(target, cntridx++, STRING_ELT(lnames, i));
+            }
+        }
+    }
 
     Free(data.max_type);
     Free(data.is_factor);

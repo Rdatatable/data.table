@@ -2294,26 +2294,15 @@ chgroup <- function(x) {
 }
 
 rbindlist <- function(l, use.names=fill, fill=FALSE, idcol=NULL) {
-    ans = .Call("Crbindlist", l, use.names, fill)
-    if (!length(ans)) return(null.data.table())
-    setDT(ans)
-    if (!is.null(idcol)) {
+    if (identical(idcol, FALSE)) idcol = NULL
+    else if (!is.null(idcol)) {
         if (isTRUE(idcol)) idcol = ".id"
-        if (!is.character(idcol))
-            stop("idcol must be a logical or character vector of length 1. If logical and 'TRUE' the id column will automatically named '.id'. Else the column will be named with the character value provided in 'idcol'.")
-        if (idcol %in% names(ans))
-            stop(idcol, " is already a column name in the result. Please provide another name for 'idcol'.")
-        nm  = names(l)
-        len = vapply(l, NROW, 0L)
-        idx = which(len > 0L)
-        len = len[idx]
-        if (is.null(nm)) nm = seq_along(len)
-        else nm = nm[idx]
-        ansnames = c(idcol, names(ans))
-        set(ans, j=idcol, value=rep.int(nm, len))
-        setcolorder(ans, ansnames)
+	if (!is.character(idcol)) stop("idcol must be a logical or character vector of length 1. If logical TRUE the id column will named '.id'.")
+	idcol = idcol[1L]
     }
-    ans
+    ans = .Call("Crbindlist", l, use.names, fill, idcol)
+    if (!length(ans)) return(null.data.table())
+    setDT(ans)[]
 }
 
 vecseq <- function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
