@@ -73,6 +73,7 @@ SEXP gsum(SEXP x, SEXP narm)
 {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
     if (!isVectorAtomic(x)) error("GForce sum can only be applied to columns, not .SD or similar. To sum all items in a list such as .SD, either add the prefix base::sum(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,sum),by=,.SDcols=]'");
+    if (inherits(x, "factor")) error("sum is not meaningful for factors.");
     int i, ix, thisgrp;
     int n = (irowslen == -1) ? length(x) : irowslen;
     //clock_t start = clock();
@@ -139,6 +140,7 @@ SEXP gmean(SEXP x, SEXP narm)
     //clock_t start = clock();
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
     if (!isVectorAtomic(x)) error("GForce mean can only be applied to columns, not .SD or similar. Likely you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table.");
+    if (inherits(x, "factor")) error("mean is not meaningful for factors.");
     if (!LOGICAL(narm)[0]) {
         ans = PROTECT(gsum(x,narm)); protecti++;
         switch(TYPEOF(ans)) {
@@ -208,6 +210,7 @@ SEXP gmin(SEXP x, SEXP narm)
 {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
     if (!isVectorAtomic(x)) error("GForce min can only be applied to columns, not .SD or similar. To find min of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'");
+    if (inherits(x, "factor")) error("min is not meaningful for factors.");
     R_len_t i, ix, thisgrp=0;
     int n = (irowslen == -1) ? length(x) : irowslen;
     //clock_t start = clock();
@@ -349,6 +352,7 @@ SEXP gmax(SEXP x, SEXP narm)
 {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
     if (!isVectorAtomic(x)) error("GForce max can only be applied to columns, not .SD or similar. To find max of all items in a list such as .SD, either add the prefix base::max(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,max),by=,.SDcols=]'");
+    if (inherits(x, "factor")) error("max is not meaningful for factors.");
     R_len_t i, ix, thisgrp=0;
     int n = (irowslen == -1) ? length(x) : irowslen;
     //clock_t start = clock();
@@ -487,8 +491,10 @@ SEXP gmax(SEXP x, SEXP narm)
 
 // gmedian, always returns numeric type (to avoid as.numeric() wrap..)
 SEXP gmedian(SEXP x, SEXP narm) {
+
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
     if (!isVectorAtomic(x)) error("GForce median can only be applied to columns, not .SD or similar. To find median of all items in a list such as .SD, either add the prefix stats::median(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),by=,.SDcols=]'");
+    if (inherits(x, "factor")) error("median is not meaningful for factors.");
     R_len_t i=0, j=0, k=0, imed=0, thisgrpsize=0, medianindex=0, nacount=0;
     double val = 0.0;
     Rboolean isna = FALSE, isint64 = FALSE;
@@ -658,6 +664,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
 }
 
 SEXP glast(SEXP x) {
+
     if (!isVectorAtomic(x)) error("GForce tail can only be applied to columns, not .SD or similar. To get tail of all items in a list such as .SD, either add the prefix utils::tail(.SD) or turn off GForce optimization using options(datatable.optimize=1).");
 
     R_len_t i,k;
@@ -719,6 +726,7 @@ SEXP glast(SEXP x) {
 }
 
 SEXP gfirst(SEXP x) {
+
     if (!isVectorAtomic(x)) error("GForce head can only be applied to columns, not .SD or similar. To get head of all items in a list such as .SD, either add the prefix utils::head(.SD) or turn off GForce optimization using options(datatable.optimize=1).");
 
     R_len_t i,k;
@@ -861,6 +869,7 @@ SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
 {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
     if (!isVectorAtomic(x)) error("GForce var/sd can only be applied to columns, not .SD or similar. To find var/sd of all items in a list such as .SD, either add the prefix stats::var(.SD) (or stats::sd(.SD)) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,var),by=,.SDcols=]'");
+    if (inherits(x, "factor")) error("var/sd is not meaningful for factors.");
     long double m, s, v;
     R_len_t i, j, ix, thisgrpsize = 0, n = (irowslen == -1) ? length(x) : irowslen;
     if (grpn != n) error("grpn [%d] != length(x) [%d] in gvar", grpn, n);
@@ -1000,6 +1009,7 @@ SEXP gprod(SEXP x, SEXP narm)
 {
     if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
     if (!isVectorAtomic(x)) error("GForce prod can only be applied to columns, not .SD or similar. To multiply all items in a list such as .SD, either add the prefix base::prod(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'");
+    if (inherits(x, "factor")) error("prod is not meaningful for factors.");
     int i, ix, thisgrp;
     int n = (irowslen == -1) ? length(x) : irowslen;
     //clock_t start = clock();
