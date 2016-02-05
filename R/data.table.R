@@ -2210,7 +2210,7 @@ setnames <- function(x,old,new) {
             if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
             if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
         }
-        if (length(new)!=length(i)) stop("'old' is length ",length(old)," but 'new' is length ",length(new))
+        if (length(new)!=length(i)) stop("'old' is length ",length(i)," but 'new' is length ",length(new))
     }
     # update the key if the column name being change is in the key
     m = chmatch(names(x)[i], key(x))
