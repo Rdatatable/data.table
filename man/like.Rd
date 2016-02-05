@@ -3,14 +3,14 @@
 \alias{\%like\%}
 \title{ Convenience function for calling regexpr. }
 \description{
-  Intended for use in [.data.table i.
+  Intended for use in \code{i} in \code{[.data.table}.
 }
 \usage{
 like(vector,pattern)
-vector %like% pattern
+vector \%like\% pattern
 }
 \arguments{
-   \item{vector}{ Either a character vector or a factor. A factor is faster. }
+   \item{vector}{ Either a \code{character} vector or a \code{factor}. A \code{factor} is faster. }
    \item{pattern}{ Passed on to \code{\link{grepl}}. }
 }
 % \details{
@@ -25,4 +25,3 @@ DT = data.table(Name=c("Mary","George","Martha"), Salary=c(2,3,4))
 DT[Name \%like\% "^Mar"]
 }
 \keyword{ data }
-
