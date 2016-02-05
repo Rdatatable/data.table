@@ -114,6 +114,8 @@
   9. Run `install_name_tool` when building on OS X to ensure that the install name for datatable.so matches its filename. Fixes [#1144](https://github.com/Rdatatable/data.table/issues/1144). Thanks to @chenghlee for the PR.
   
   10. Updated documentation of `i` in `[.data.table` to emphasize the emergence of the new `on` option as an alternative to keyed joins, [#1488](https://github.com/Rdatatable/data.table/issues/1488). Thanks @MichaelChirico.
+  
+  11. Fixed typo for usage of `%like%` in `?like` whereby `%` was commented out, [#1515](https://github.com/Rdatatable/data.table/issues/1515). Thanks @MichaelChirico.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
