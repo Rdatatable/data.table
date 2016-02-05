@@ -44,6 +44,8 @@
   14. `fread` gains `fill` argument with default `FALSE` for backwards compatibility. Closes [#536](https://github.com/Rdatatable/data.table/issues/536).
 
   15. `fread` gains `key` argument, [#590](https://github.com/Rdatatable/data.table/issues/590).
+  
+  16. `between` gains `"upper"` and `"lower"` arguments for semi-closed intervals, [#1489](https://github.com/Rdatatable/data.table/issues/1489). Thanks @MichaelChirico for the FR and the PR.
 
   16. `setnames` accepts negative indices in 'old' argument, [#1443](https://github.com/Rdatatable/data.table/issues/1443). Thanks @richierocks.
 
