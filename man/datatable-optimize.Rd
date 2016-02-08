@@ -39,7 +39,7 @@
 
  	\itemize{
 
- 		\item When expressions in \code{j} which contains only these functions \code{min, max, mean, median}, for example, \code{dt[, list(mean(x), median(x), min(y), max(y)), by=z]}, they are very effectively optimised using, what we call, \emph{GForce}. These functions are replaced with \code{gmean, gmedian, gmin, gmax} instead. 
+ 		\item When expressions in \code{j} which contains only these functions \code{min, max, mean, median, var, sd, prod}, for example, \code{dt[, list(mean(x), median(x), min(y), max(y)), by=z]}, they are very effectively optimised using, what we call, \emph{GForce}. These functions are replaced with \code{gmean, gmedian, gmin, gmax} instead. 
 
  		Normally, once the rows belonging to each groups are identified, the values corresponding to the group is gathered and the \code{j-expression} is evaluated. This can be improved by computing the result directly without having to gather the values or evaluating the expression for each group (which can get costly with large number of groups) by implementing it specifically for a particular function. As a result, it is extremely fast.
 
