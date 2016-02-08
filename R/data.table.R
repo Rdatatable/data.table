@@ -537,7 +537,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 ans = bmerge(i, x, leftcols, rightcols, io<-FALSE, xo, roll=0.0, rollends=c(FALSE,FALSE), nomatch=0L, verbose=verbose)
                 # No need to shallow copy i before passing to bmerge; we just created i above ourselves
                 i = if (ans$allLen1 && !identical(suppressWarnings(min(ans$starts)), 0L)) ans$starts else vecseq(ans$starts, ans$lens, NULL)
-                if (length(xo)) i = fsort(xo[i])
+                if (length(xo)) i = fsort(xo[i]) else i = fsort(i) # fix for #1495
                 leftcols = rightcols = NULL  # these are used later to know whether a join was done, affects column order of result. So reset.
             }
         } else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
@@ -2503,12 +2503,12 @@ rleidv <- function(x, cols=seq_along(x)) {
     .Call(Crleid, x, -1L)
 }
 
+# GForce functions
 `g[` <- function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead <- function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
 gtail <- function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
 gfirst <- function(x) .Call(Cgfirst, x)
 glast <- function(x) .Call(Cglast, x)
-
 gsum <- function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean <- function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gprod <- function(x, na.rm=FALSE) .Call(Cgprod, x, na.rm)
@@ -2519,6 +2519,12 @@ gvar <- function(x, na.rm=FALSE) .Call(Cgvar, x, na.rm)
 gsd <- function(x, na.rm=FALSE) .Call(Cgsd, x, na.rm)
 gstart <- function(o, f, l, rows) .Call(Cgstart, o, f, l, rows)
 gend <- function() .Call(Cgend)
+
+# rowwise summary functions
+rowmeans <- function(x, na.rm=FALSE) .Call("Crowmeans", x, na.rm)
+rowsums <- function(x, na.rm=FALSE) .Call("Crowsums", x, na.rm)
+rowmins <- function(x, na.rm=FALSE) .Call("Crowmins", x, na.rm)
+rowmaxs <- function(x, na.rm=FALSE) .Call("Crowmaxs", x, na.rm)
 
 isReallyReal <- function(x) {
     .Call(CisReallyReal, x)

@@ -105,6 +105,8 @@
 
   25. `CJ` sorts correctly when duplicates are found in input values and `sorted=TRUE`, [#1513](https://github.com/Rdatatable/data.table/issues/1513). Thanks @alexdeng.
 
+  26. Auto indexing returns order of subset properly when input `data.table` is already sorted, [#1495](https://github.com/Rdatatable/data.table/issues/1495). Thanks @huashan for the nice reproducible example.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

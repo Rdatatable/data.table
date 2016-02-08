@@ -7377,6 +7377,12 @@ ans1 <- dcast(DT, v1+v2~v3, value.var="v4", drop=FALSE)
 test(1596.1, dcast(DT, v1+v2~v3, value.var="v4", drop=c(FALSE, TRUE)), ans1[, -6, with=FALSE])
 test(1596.2, dcast(DT, v1+v2~v3, value.var="v4", drop=c(TRUE, FALSE)), ans1[c(1,6)])
 
+# bug fix #1495
+dt  = data.table(id=1:30, nn = paste0('A', 1:30))
+smp = sample(30, size =10)
+lgl = dt$id %in% smp
+test(1597, dt[lgl, ], dt[id %in% smp])
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
