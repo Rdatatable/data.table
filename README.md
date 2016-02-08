@@ -127,7 +127,7 @@
   
   10. Updated documentation of `i` in `[.data.table` to emphasize the emergence of the new `on` option as an alternative to keyed joins, [#1488](https://github.com/Rdatatable/data.table/issues/1488). Thanks @MichaelChirico.
   
-  11. Fixed typo for usage of `%like%` in `?like` whereby `%` was commented out, [#1515](https://github.com/Rdatatable/data.table/issues/1515). Thanks @MichaelChirico.
+  11. Fixed typo for usage of `%like%` in `?like` and `%between%` in `?between` whereby `%` was commented out, [#1515](https://github.com/Rdatatable/data.table/issues/1515) and [#1521](https://github.com/Rdatatable/data.table/issues/1521), as well as a few other clarifications in the help page for `between`. Thanks @MichaelChirico.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
