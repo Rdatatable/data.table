@@ -93,8 +93,8 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
 dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
     if (!is.data.table(data)) stop("'data' must be a data.table.")
     if (anyDuplicated(names(data))) stop('data.table to cast must have unique column names')
-    drop = as.logical(drop[1])
-    if (is.na(drop)) stop("'drop' must be logical TRUE/FALSE")
+    drop = as.logical(rep(drop, length.out=2L))
+    if (any(is.na(drop))) stop("'drop' must be logical TRUE/FALSE")
     lvals = value_vars(value.var, names(data))
     valnames = unique(unlist(lvals))
     lvars = check_formula(formula, names(data), valnames)
@@ -177,14 +177,15 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
     if (length(rhsnames)) {
         lhs = shallow(dat, lhsnames); rhs = shallow(dat, rhsnames); val = shallow(dat, valnames)
         # handle drop=TRUE/FALSE - Update: Logic moved to R, AND faster than previous version. Take that... old me :-).
-        if (drop) {
+        if (all(drop)) {
             map = setDT(lapply(list(lhsnames, rhsnames), function(cols) frankv(dat, cols=cols, ties.method="dense")))
             maporder = lapply(map, order_)
             mapunique = lapply(seq_along(map), function(i) .Call(CsubsetVector, map[[i]], maporder[[i]]))
             lhs = .Call(CsubsetDT, lhs, maporder[[1L]], seq_along(lhs))
             rhs = .Call(CsubsetDT, rhs, maporder[[2L]], seq_along(rhs))
         } else {
-            lhs_ = cj_uniq(lhs); rhs_ = cj_uniq(rhs)
+            lhs_ = if (!drop[1L]) cj_uniq(lhs) else setkey(unique(lhs, by=names(lhs)))
+            rhs_ = if (!drop[2L]) cj_uniq(rhs) else setkey(unique(rhs, by=names(rhs)))
             map = vector("list", 2L)
             .Call(Csetlistelt, map, 1L, lhs_[lhs, which=TRUE])
             .Call(Csetlistelt, map, 2L, rhs_[rhs, which=TRUE])

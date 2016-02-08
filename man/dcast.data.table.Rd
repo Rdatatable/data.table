@@ -28,7 +28,10 @@
   \item{margins}{Not implemented yet. Should take variable names to compute margins on. A value of \code{TRUE} would compute all margins.}
   \item{subset}{Specified if casting should be done on subset of the data. Ex: subset = .(col1 <= 5) or subset = .(variable != "January").}
   \item{fill}{Value to fill missing cells with. If \code{fun.aggregate} is present, takes the value by applying the function on 0-length vector.}
-  \item{drop}{\code{FALSE} will cast by including all missing combinations.}
+  \item{drop}{\code{FALSE} will cast by including all missing combinations. 
+
+  \bold{NEW:} Following \href{https://github.com/Rdatatable/data.table/issues/1512}{#1512}, \code{c(FALSE, TRUE)} will only include all missing combinations of formula \code{LHS}. And \code{c(TRUE, FALSE)} will only include all missing combinations of formula RHS. See examples.}
+  
   \item{value.var}{Name of the column whose values will be filled to cast. Function `guess()` tries to, well, guess this column automatically, if none is provided.
 
   \bold{NEW}: it is possible to cast multiple \code{value.var} columns simultaneously now. See \code{examples}.}
@@ -67,6 +70,17 @@ dcast(DT, diet+chick ~ time, drop=FALSE, fill=0)
 
 # using subset
 dcast(DT, chick ~ time, fun=mean, subset=.(time < 10 & chick < 20))
+
+# drop argument, #1512
+DT <- data.table(v1 = c(1.1, 1.1, 1.1, 2.2, 2.2, 2.2),
+                 v2 = factor(c(1L, 1L, 1L, 3L, 3L, 3L), levels=1:3), 
+                 v3 = factor(c(2L, 3L, 5L, 1L, 2L, 6L), levels=1:6), 
+                 v4 = c(3L, 2L, 2L, 5L, 4L, 3L)) 
+# drop=TRUE
+dcast(DT, v1 + v2 ~ v3)                      # default is drop=TRUE
+dcast(DT, v1 + v2 ~ v3, drop=FALSE)          # all missing combinations of both LHS and RHS
+dcast(DT, v1 + v2 ~ v3, drop=c(FALSE, TRUE)) # all missing combinations of only LHS
+dcast(DT, v1 + v2 ~ v3, drop=c(TRUE, FALSE)) # all missing combinations of only RHS
 
 \dontrun{
 # benchmark against reshape2's dcast, minimum of 3 runs

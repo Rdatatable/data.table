@@ -51,6 +51,8 @@
 
   18. `merge.data.table` by default also checks for common key columns between the two `data.table`s before resulting in error when `by` or `by.x, by.y` arguments are not provided, [#1517](https://github.com/Rdatatable/data.table/issues/1517). Thanks @DavidArenburg.
 
+  19. `dcast.data.table` now allows `drop = c(FALSE, TRUE)` and `drop = c(TRUE, FALSE)`. The former only fills all missing combinations of formula LHS, where as the latter fills only all missing combinations of formula RHS. Thanks to Ananda Mahto for [this SO post](http://stackoverflow.com/q/34830908/559784) and to Jaap for filing [#1512](https://github.com/Rdatatable/data.table/issues/1512).
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).
