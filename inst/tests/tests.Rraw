@@ -7363,6 +7363,11 @@ test(1594.7, DT[, lapply(.SD, prod, na.rm=FALSE), by=x], DT[, lapply(.SD, base::
 test(1594.8, DT[, lapply(.SD, prod, na.rm=TRUE), by=x], DT[, lapply(.SD, base::prod, na.rm=TRUE), by=x])
 test(1594.9, DT[, lapply(.SD, prod, na.rm=TRUE), by=x, verbose=TRUE], output="GForce optimized j to.*gprod")
 
+# FR #1517
+dt1 = data.table(x=c(1,1,2), y=1:3)
+dt2 = data.table(x=c(2,3,4), z=4:6)
+test(1595, merge(dt1,dt2), merge(dt1,dt2, by="x"))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

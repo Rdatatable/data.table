@@ -49,6 +49,8 @@
 
   17. `var`, `sd` and `prod` are all GForce optimised for speed and memory efficiency. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). See that post for benchmarks.
 
+  18. `merge.data.table` by default also checks for common key columns between the two `data.table`s before resulting in error when `by` or `by.x, by.y` arguments are not provided, [#1517](https://github.com/Rdatatable/data.table/issues/1517). Thanks @DavidArenburg.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

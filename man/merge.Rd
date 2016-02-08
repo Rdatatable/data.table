@@ -3,9 +3,15 @@
 \alias{merge.data.table}
 \title{Merge two data.tables}
 \description{
-  Fast merge of two \code{data.table}s.
+  Fast merge of two \code{data.table}s. The \code{data.table} method behaves very similarly to that of \code{data.frame}s except that, by default, it attempts to merge
 
-  This \code{merge} method for \code{data.table} behaves very similarly to that of \code{data.frame}s with one major exception: By default, the columns used to merge the \code{data.table}s are the shared key columns rather than the shared columns with the same names. Set the \code{by}, or \code{by.x}, \code{by.y} arguments explicitly to override this default.
+  \itemize{
+    \item at first based on the shared key columns, and if there are none, 
+    \item then based on key columns of the first argument \code{x}, and if there are none, 
+    \item then based on the common columns between the two \code{data.table}s.
+  }
+
+  Set the \code{by}, or \code{by.x} and \code{by.y} arguments explicitly to override this default.
 }
 
 \usage{
@@ -72,13 +78,9 @@ allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
 
 \details{
   \code{\link{merge}} is a generic function in base R. It dispatches to either the
-  \code{merge.data.frame} method or \code{merge.data.table} method depending on the class of its first argument.
+  \code{merge.data.frame} method or \code{merge.data.table} method depending on the class of its first argument. Note that, unlike \code{SQL}, \code{NA} is matched against \code{NA} (and \code{NaN} against \code{NaN}) while merging.
 
-  Unlike \code{SQL}, \code{NA} is matched against \code{NA} (and \code{NaN} against \code{NaN}) while merging.
-
-  In versions \code{< v1.9.6}, if the specified columns in \code{by} was not the key (or head of the key) of \code{x} or \code{y}, then a \code{\link{copy}} is first rekeyed prior to performing the merge. This was less performant and memory inefficient. 
-
-  In version \code{v1.9.4} secondary keys was implemented. In \code{v1.9.6}, the concept of secondary keys has been extended to \code{merge}. No deep copies are made anymore and therefore very performant and memory efficient. Also there is better control for providing the columns to merge on with the help of newly implemented \code{by.x} and \code{by.y} arguments.
+  In versions \code{<= v1.9.4}, if the specified columns in \code{by} was not the key (or head of the key) of \code{x} or \code{y}, then a \code{\link{copy}} is first rekeyed prior to performing the merge. This was less performant and memory inefficient. The concept of secondary keys (implemented in \code{v1.9.4}) was used to overcome this limitation from \code{v1.9.6}+. No deep copies are made anymore and therefore very performant and memory efficient. Also there is better control for providing the columns to merge on with the help of newly implemented \code{by.x} and \code{by.y} arguments.
 
   For a more \code{data.table}-centric way of merging two \code{data.table}s, see \code{\link{[.data.table}}; e.g., \code{x[y, ...]}. See FAQ 1.12 for a detailed comparison of \code{merge} and \code{x[y, ...]}.
 

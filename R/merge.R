@@ -31,7 +31,7 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
         if (is.null(by)) 
             by = key(x)
         if (is.null(by))
-            stop("Can not match keys in x and y to automatically determine appropriate `by` parameter. Please set `by` value explicitly.")
+            by = intersect(names(x), names(y))
         if (length(by) == 0L || !is.character(by))
             stop("A non-empty vector of column names for `by` is required.")
         if (!all(by %in% intersect(colnames(x), colnames(y))))
