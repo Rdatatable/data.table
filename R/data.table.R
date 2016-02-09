@@ -2520,12 +2520,6 @@ gsd <- function(x, na.rm=FALSE) .Call(Cgsd, x, na.rm)
 gstart <- function(o, f, l, rows) .Call(Cgstart, o, f, l, rows)
 gend <- function() .Call(Cgend)
 
-# rowwise summary functions
-rowmeans <- function(x, na.rm=FALSE) .Call("Crowmeans", x, na.rm)
-rowsums <- function(x, na.rm=FALSE) .Call("Crowsums", x, na.rm)
-rowmins <- function(x, na.rm=FALSE) .Call("Crowmins", x, na.rm)
-rowmaxs <- function(x, na.rm=FALSE) .Call("Crowmaxs", x, na.rm)
-
 isReallyReal <- function(x) {
     .Call(CisReallyReal, x)
 }
