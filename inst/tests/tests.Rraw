@@ -7383,6 +7383,12 @@ smp = sample(30, size =10)
 lgl = dt$id %in% smp
 test(1597, dt[lgl, ], dt[id %in% smp])
 
+# FR #643
+vv = sample(letters[1:3], 10, TRUE)
+test(1599.1, data.table(x=vv, y=1:10, stringsAsFactors=TRUE)$x, factor(vv))
+vv = sample(c(letters[1:3], NA), 10, TRUE)
+test(1599.2, data.table(x=vv, y=1:10, stringsAsFactors=TRUE)$x, factor(vv))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
