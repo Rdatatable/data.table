@@ -16,7 +16,7 @@
    Tip: one of the quickest ways to learn the features is to type \code{example(data.table)} and study the output at the prompt.
 }
 \usage{
-data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
+data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 
 \method{[}{data.table}(x, i, j, by, keyby, with = TRUE,
   nomatch = getOption("datatable.nomatch"),                   # default: NA_integer_
@@ -45,6 +45,8 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
 }
   \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}.
 
+}
+  \item{stringsAsFactors}{Logical (default is \code{FALSE}). Convert all \code{character} columns to \code{factor}s?
 }
   \item{x}{ A \code{data.table}.
 

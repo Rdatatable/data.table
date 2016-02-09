@@ -104,15 +104,6 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     if (isTRUE(as.logical(check.names))) {
         setattr(ans, 'names', make.names(names(ans), unique=TRUE))
     }
-    as_factor <- function(x) {
-        lev = forderv(x, retGrp = TRUE, na.last = NA)
-        # get levels, also take care of all sorted condition
-        if (length(lev)) lev = x[lev[attributes(lev)$starts]]
-        else lev = x[attributes(lev)$starts]
-        ans = chmatch(x, lev)
-        setattr(ans, 'levels', lev)
-        setattr(ans, 'class', 'factor')
-    }
     cols = NULL
     if (isTRUE(as.logical(stringsAsFactors)))
         cols = which(vapply(ans, is.character, TRUE))
@@ -122,11 +113,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         else if (is.atomic(colClasses) && "factor" %chin% colClasses)
             cols = which(vapply(ans, is.character, TRUE))
     }
-    if (length(cols)) {
-        if (verbose) cat("Converting column(s) [", paste(names(ans)[cols], collapse = ", "), "] from 'char' to 'factor'\n", sep = "")
-        for (j in cols) 
-            set(ans, j = j, value = as_factor(.subset2(ans, j)))
-    }
+    setfactor(ans, cols, verbose)
     # FR #768
     if (!missing(col.names))
         setnames(ans, col.names) # setnames checks and errors automatically
@@ -139,4 +126,22 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         setkeyv(ans, key)
     }
     ans
+}
+
+# for internal use only. Used in `fread` and `data.table` for 'stringsAsFactors' argument
+setfactor <- function(x, cols, verbose) {
+    # simplified but faster version of `factor()` for internal use.
+    as_factor <- function(x) {
+        lev = forderv(x, retGrp = TRUE, na.last = NA)
+        # get levels, also take care of all sorted condition
+        lev = if (length(lev)) x[lev[attributes(lev)$starts]] else x[attributes(lev)$starts]
+        ans = chmatch(x, lev)
+        setattr(ans, 'levels', lev)
+        setattr(ans, 'class', 'factor')
+    }
+    if (length(cols)) {
+        if (verbose) cat("Converting column(s) [", paste(names(x)[cols], collapse = ", "), "] from 'char' to 'factor'\n", sep = "")
+        for (j in cols) set(x, j = j, value = as_factor(.subset2(x, j)))
+    }
+    invisible(x)
 }

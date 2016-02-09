@@ -206,7 +206,7 @@ null.data.table <-function() {
     alloc.col(ans)
 }
 
-data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
+data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 {
     # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then setattr(l,"class",c("data.table","data.frame")) at the expense of checking.
     # TO DO: rewrite data.table(), one of the oldest functions here. Many people use data.table() to convert data.frame rather than
@@ -346,6 +346,8 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
            && !any(duplicated(names(value)[names(value) %in% ckey])))
            setattr(value, "sorted", ckey)
     }
+    # FR #1446, setfactor is an internal function in fread.R
+    if (isTRUE(stringsAsFactors)) setfactor(value, which(vapply(value, is.character, TRUE)), FALSE)
     alloc.col(value)  # returns a NAMED==0 object, unlike data.frame()
 }
 
@@ -2519,6 +2521,12 @@ gvar <- function(x, na.rm=FALSE) .Call(Cgvar, x, na.rm)
 gsd <- function(x, na.rm=FALSE) .Call(Cgsd, x, na.rm)
 gstart <- function(o, f, l, rows) .Call(Cgstart, o, f, l, rows)
 gend <- function() .Call(Cgend)
+
+# rowwise summary functions
+rowmeans <- function(x, na.rm=FALSE) .Call("Crowmeans", x, na.rm)
+rowsums <- function(x, na.rm=FALSE) .Call("Crowsums", x, na.rm)
+rowmins <- function(x, na.rm=FALSE) .Call("Crowmins", x, na.rm)
+rowmaxs <- function(x, na.rm=FALSE) .Call("Crowmaxs", x, na.rm)
 
 isReallyReal <- function(x) {
     .Call(CisReallyReal, x)
