@@ -7389,6 +7389,10 @@ test(1599.1, data.table(x=vv, y=1:10, stringsAsFactors=TRUE)$x, factor(vv))
 vv = sample(c(letters[1:3], NA), 10, TRUE)
 test(1599.2, data.table(x=vv, y=1:10, stringsAsFactors=TRUE)$x, factor(vv))
 
+# bug #1477
+DT <- data.table(a = 0L:1L, b = c(1L, 1L))
+test(1600, DT[ , lapply(.SD, function(x) if (all(x)) x)], data.table(b=c(1L, 1L)))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
