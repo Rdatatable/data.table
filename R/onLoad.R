@@ -32,6 +32,8 @@
              "datatable.optimize"="Inf",             # datatable.<argument name>
              "datatable.print.nrows"="100L",         # datatable.<argument name>
              "datatable.print.topn"="5L",            # datatable.<argument name>
+             "datatable.print.class"="FALSE",        # for print.data.table
+             "datatable.print.byfill"="\"\"",            # for print.data.table
              "datatable.allow.cartesian"="FALSE",    # datatable.<argument name>
              "datatable.dfdispatchwarn"="TRUE",                   # not a function argument
              "datatable.warnredundantby"="TRUE",                  # not a function argument

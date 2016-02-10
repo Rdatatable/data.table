@@ -7393,6 +7393,65 @@ test(1599.2, data.table(x=vv, y=1:10, stringsAsFactors=TRUE)$x, factor(vv))
 DT <- data.table(a = 0L:1L, b = c(1L, 1L))
 test(1600, DT[ , lapply(.SD, function(x) if (all(x)) x)], data.table(b=c(1L, 1L)))
 
+# set of enhancements to print.data.table for #1523
+## dplyr-like column summary
+icol <- 1L:3L
+Dcol <- as.Date(paste0("2016-01-0", 1:3))
+DT1 <- data.table(lcol = list(list(1:3), list(1:3), list(1:3)),
+                  icol, ncol = as.numeric(icol), ccol = c("a", "b", "c"), 
+                  xcol = as.complex(icol), ocol = factor(icol, ordered = TRUE),
+                  fcol = factor(icol))
+
+DT2 <- data.table(Dcol, Pcol = as.POSIXct(Dcol), 
+                  gcol = as.logical(icol), 
+                  Icol = as.IDate(Dcol), ucol = icol)
+class(DT2$ucol) <- "asdf"
+test(1601.1, capture.output(print(DT1, print.class = TRUE)),
+     c("     lcol  icol  ncol   ccol   xcol  ocol   fcol",
+       "   <list> <int> <num> <char> <cplx> <ord> <fctr>", 
+       "1: <list>     1     1      a   1+0i     1      1", 
+       "2: <list>     2     2      b   2+0i     2      2", 
+       "3: <list>     3     3      c   3+0i     3      3"))
+
+##by grouping demarcation
+set.seed(98549)
+DT1 <- data.table(a = rep(c("A", "B"), each = 4),
+                  b = rep(rep(c("A", "B"), 2), c(2, 2, 1, 3)),
+                  c = runif(8))
+
+test(1601.2, capture.output(print(DT1, by = "a")),
+     c("   a b          c", "1: A A 0.98008318", "2: A A 0.90173297", 
+      "3: A B 0.62432818", "4: A B 0.05347447", "                 ", 
+      "5: B A 0.65027844", "6: B B 0.53764463", "7: B B 0.99533002", 
+      "8: B B 0.95554375"))
+test(1601.3, capture.output(print(DT1, by = "a,b")),
+     c("   a b          c", "1: A A 0.98008318", "2: A A 0.90173297", 
+       "                 ", "3: A B 0.62432818", "4: A B 0.05347447", 
+       "                 ", "5: B A 0.65027844", "                 ", 
+       "6: B B 0.53764463", "7: B B 0.99533002", "8: B B 0.95554375"))
+test(1601.4, print(DT1[.N:1], by = "a"), error = "Use of 'by' for printing")
+
+DT2 <- data.table(a = c("a", rep("b", 100), rep("c", 10)),
+                  b = runif(111))
+test(1601.5, capture.output(print(DT2, by = "a")),
+     c("     a           b", "  1: a 0.034000229", "                  ", 
+       "  2: b 0.274722317", "  3: b 0.409345747", "  4: b 0.494246782", 
+       "  5: b 0.639384426", "---               ", "107: c 0.406546372", 
+       "108: c 0.275413455", "109: c 0.002144594", "110: c 0.395671326", 
+       "111: c 0.424717964"))
+test(1601.6, capture.output(print(DT2[a!="c"], by = "a")),
+     c("     a          b", "  1: a 0.03400023", "                 ", 
+       "  2: b 0.27472232", "  3: b 0.40934575", "  4: b 0.49424678", 
+       "  5: b 0.63938443", "---              ", " 97: b 0.32467134", 
+       " 98: b 0.61198181", " 99: b 0.74260287", "100: b 0.61692269", 
+       "101: b 0.39077314"))
+options(datatable.print.byfill = "-")
+test(1601.7, capture.output(print(DT1, by = c("a", "b"))),
+     c("   a b          c", "1: A A 0.98008318", "2: A A 0.90173297", 
+       "-  - -          -", "3: A B 0.62432818", "4: A B 0.05347447", 
+       "-  - -          -", "5: B A 0.65027844", "-  - -          -", 
+       "6: B B 0.53764463", "7: B B 0.99533002", "8: B B 0.95554375"))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
