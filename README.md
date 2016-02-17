@@ -139,6 +139,8 @@
 
   13. `?shift.Rd` is fixed so that it does not get misconstrued to be in a time series sense. Closes [#1530](https://github.com/Rdatatable/data.table/issues/1530). Thanks to @pstoyanov.
 
+  14. `?truelength.Rd` is fixed to reflect that over-allocation happens on data.tables loaded from disk only during column additions and not deletions, [#1536](https://github.com/Rdatatable/data.table/issues/1536). Thanks to @Roland and @rajkrpan.
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
