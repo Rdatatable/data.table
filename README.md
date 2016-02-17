@@ -109,7 +109,7 @@
 
   26. Auto indexing returns order of subset properly when input `data.table` is already sorted, [#1495](https://github.com/Rdatatable/data.table/issues/1495). Thanks @huashan for the nice reproducible example.
 
-  27. `[.data.table` handles column subsets based on conditions that result in `NULL` as list elements correctly, [#1477](https://github.com/Rdatatable/data.table/issues/1477). Thanks @MichaelChirico.
+  27. `[.data.table` handles column subsets based on conditions that result in `NULL` as list elements correctly, [#1477](https://github.com/Rdatatable/data.table/issues/1477). Thanks @MichaelChirico. Also thanks to @Max from DSR for spotting a bug as a result of this fix. Now fixed.
 
 #### NOTES
 

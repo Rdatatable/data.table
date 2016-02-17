@@ -1277,7 +1277,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 lenjval = vapply(jval, length, 0L)
                 if (any(lenjval != lenjval[1L])) {
                     jval = as.data.table.list(jval)   # does the vector expansion to create equal length vectors
-                    jvnames = names(jval) # fix for #1477
+                    jvnames = jvnames[lenjval != 0L]  # fix for #1477
                 } else setDT(jval)
             }
             if (is.null(jvnames)) jvnames = character(length(jval)-length(bynames))

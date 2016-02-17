@@ -7389,9 +7389,17 @@ test(1599.1, data.table(x=vv, y=1:10, stringsAsFactors=TRUE)$x, factor(vv))
 vv = sample(c(letters[1:3], NA), 10, TRUE)
 test(1599.2, data.table(x=vv, y=1:10, stringsAsFactors=TRUE)$x, factor(vv))
 
-# bug #1477
+# bug #1477 fix
 DT <- data.table(a = 0L:1L, b = c(1L, 1L))
-test(1600, DT[ , lapply(.SD, function(x) if (all(x)) x)], data.table(b=c(1L, 1L)))
+test(1600.1, DT[ , lapply(.SD, function(x) if (all(x)) x)], data.table(b=c(1L, 1L)))
+# this fix wasn't entirely nice as it introduced another issue.
+# it's fixed now, but adding a test for that issue as well to catch it early next time.
+set.seed(17022016L)
+DT1 = data.table(id1 = c("c", "a", "b", "b", "b", "c"), 
+                  z1 = sample(100L, 6L), 
+                  z2 = sample(letters, 6L))
+DT2 = data.table(id1=c("c", "w", "b"), val=50:52)
+test(1600.2, names(DT1[DT2, .(id1=id1, val=val, bla=sum(z1, na.rm=TRUE)), on="id1"]), c("id1", "val", "bla"))
 
 ##########################
 
