@@ -137,6 +137,8 @@
 
   12. Several improvements and fixes to `?between` [#1521](https://github.com/Rdatatable/data.table/issues/1521). Thanks @MichaelChirico for the PR.
 
+  13. `?shift.Rd` is fixed so that it does not get misconstrued to be in a time series sense. Closes [#1530](https://github.com/Rdatatable/data.table/issues/1530). Thanks to @pstoyanov.
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
