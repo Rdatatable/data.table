@@ -141,6 +141,8 @@
 
   14. `?truelength.Rd` is fixed to reflect that over-allocation happens on data.tables loaded from disk only during column additions and not deletions, [#1536](https://github.com/Rdatatable/data.table/issues/1536). Thanks to @Roland and @rajkrpan.
 
+  15. Added `\n` to message displayed in `melt.data.table` when duplicate names are found, [#1538](https://github.com/Rdatatable/data.table/issues/1538). Thanks @Franknarf1.
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
