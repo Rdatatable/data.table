@@ -8,6 +8,7 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
             by = key(x)
         }
     }
+    if ((x0 <- length(x)==0L) | (y0 <- length(y)==0L)) warning(sprintf("You are trying to join data.tables where %s 0 columns data.table.", if(x0 & y0) "'x' and 'y' arguments are" else if(x0 & !y0) "'x' argument is" else if(!x0 & y0) "'y' argument is"))
     if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
     if (any(duplicated(names(y)))) stop("y has some duplicated column name(s): ",paste(names(y)[duplicated(names(y))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
     

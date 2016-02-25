@@ -7401,6 +7401,13 @@ DT1 = data.table(id1 = c("c", "a", "b", "b", "b", "c"),
 DT2 = data.table(id1=c("c", "w", "b"), val=50:52)
 test(1600.2, names(DT1[DT2, .(id1=id1, val=val, bla=sum(z1, na.rm=TRUE)), on="id1"]), c("id1", "val", "bla"))
 
+# warn when merge empty data.table #597
+test(1601.1, merge(data.table(a=1),data.table(a=1), by="a"), data.table(a=1, key="a"))
+test(1601.2, tryCatch(merge(data.table(a=1),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'y' argument is 0 columns data.table.")
+test(1601.3, tryCatch(merge(data.table(NULL),data.table(a=1), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'x' argument is 0 columns data.table.")
+test(1601.4, tryCatch(merge(data.table(NULL),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'x' and 'y' arguments are 0 columns data.table.")
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
