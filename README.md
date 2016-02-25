@@ -143,6 +143,8 @@
 
   15. Added `\n` to message displayed in `melt.data.table` when duplicate names are found, [#1538](https://github.com/Rdatatable/data.table/issues/1538). Thanks @Franknarf1.
 
+  16. `merge.data.table` will raise warning if any of data.tables to join has 0 columns. Closes [#597](https://github.com/Rdatatable/data.table/issues/597).
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
