@@ -2068,7 +2068,8 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
 }
 
 which_ <- function(x, bool = TRUE) {
-    .Call("Cwhichwrapper", x, bool)
+    # fix for #1467, quotes result in "not resolved in current namespace" error
+    .Call(Cwhichwrapper, x, bool)
 }
 
 is.na.data.table <- function (x) {
@@ -2305,7 +2306,8 @@ rbindlist <- function(l, use.names=fill, fill=FALSE, idcol=NULL) {
         if (!is.character(idcol)) stop("idcol must be a logical or character vector of length 1. If logical TRUE the id column will named '.id'.")
         idcol = idcol[1L]
     }
-    ans = .Call("Crbindlist", l, use.names, fill, idcol)
+    # fix for #1467, quotes result in "not resolved in current namespace" error
+    ans = .Call(Crbindlist, l, use.names, fill, idcol)
     if (!length(ans)) return(null.data.table())
     setDT(ans)[]
 }

@@ -111,6 +111,8 @@
 
   27. `[.data.table` handles column subsets based on conditions that result in `NULL` as list elements correctly, [#1477](https://github.com/Rdatatable/data.table/issues/1477). Thanks @MichaelChirico. Also thanks to @Max from DSR for spotting a bug as a result of this fix. Now fixed.
 
+  28. Providing the first argument to `.Call`, for e.g., `.Call("Crbindlist", ...)` seems to result in *"not resolved in current namespace"* error. A potential fix is to simply remove the quotes like so many other calls in data.table. Potentially fixes [#1467](https://github.com/Rdatatable/data.table/issues/1467). Thanks to @rBatt, @rsaporta and @damienchallet.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
