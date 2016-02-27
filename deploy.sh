@@ -10,8 +10,8 @@ addToDrat(){
 
   ## Set up Repo parameters
   git init
-  git config user.name "addToDrat"
-  git config user.email "<>"
+  git config user.name "jangorecki"
+  git config user.email "j.gorecki@wit.edu.pl"
   git config --global push.default simple
 
   ## Get drat repo
