@@ -43,4 +43,4 @@ env:
     - PKG_CFLAGS="-g -O3 -Wall -pedantic"
     - WARNINGS_ARE_ERRORS=1
     # drat using @jangorecki token
-    - secure: "FilvtH+HCm0TJEAQSQHu5H1l+nYqgHqe+qwnF/iJfCMPc7RanGWSqKtgd3MU3S1nSvXUXS1AkJmExs4+v+m+02MutkpTiVW5RChUnhgjPi0zFCJv/TPtgi+DHwE6T+JJtd1GBsNoG3K+mzSjOqibpygUgYG1+C7eID0+/o6UlJU="
+    - secure: aujmS0URy0iTrOgZqoCfn3Z4Km5OqBR38EI+PK5apVNf1yNqEZT6SralGYJin3rJT9HVWH0DSFX2m2FNYoTbkaNzK4l7bBBZ5EsohPuJrN/j7no/rCPfn6m5ZtaIRZRGZNyVzk1jRk4EKJzmYqH04bIyCGgSz9IRveFy7tAMXT4=
