@@ -1,3 +1,4 @@
 ^\.travis\.yml$
 ^Contributing\.md$
 ^CRAN_Release\.cmd$
+^deploy\.sh$

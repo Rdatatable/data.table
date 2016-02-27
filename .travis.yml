@@ -31,7 +31,7 @@ after_success:
   - ./travis-tool.sh install_github jimhester/covr
   - Rscript -e 'library(covr);codecov()'
   - ./travis-tool.sh install_github eddelbuettel/drat
-  - test $TRAVIS_PULL_REQUEST == "true" && test $TRAVIS_BRANCH == "testing-autodrat" && bash deploy.sh
+  - test $TRAVIS_BRANCH == "testing-autodrat" && bash deploy.sh
 
 notifications:
   email:
