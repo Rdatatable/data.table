@@ -9,7 +9,12 @@ last <- function(x, ...) {
         	if (!length(x)) return(x) else return(x[[length(x)]])  # for vectors, [[ works like [
         } else if (is.data.frame(x)) return(x[NROW(x),])
     }
-    # fix with suggestion from Joshua, #1347
-    if (!"package:xts" %in% search()) tail(x,...)
-    xts::last(x,...)   # UseMethod("last") doesn't find xts's methods, not sure what I did wrong.
+    if(!requireNamespace("xts", quietly = TRUE)) {
+        tail(x, n = 1L, ...)
+    } else {
+        # fix with suggestion from Joshua, #1347
+        if (!"package:xts" %in% search()) {
+            tail(x, n = 1L, ...)
+        } else xts::last(x, ...) # UseMethod("last") doesn't find xts's methods, not sure what I did wrong.
+    }
 }
