@@ -91,7 +91,7 @@ S3method(na.omit, data.table)
 export(as.IDate,as.ITime,IDateTime)
 export(hour,yday,wday,mday,week,month,quarter,year)
 
-importFrom(chron, chron, as.chron)
+#importFrom(chron, chron, as.chron) # chron went to Suggests since #1558
 export(as.chron.IDate,as.chron.ITime)
 
 S3method("[", ITime)
