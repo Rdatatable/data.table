@@ -113,6 +113,8 @@
 
   28. Providing the first argument to `.Call`, for e.g., `.Call("Crbindlist", ...)` seems to result in *"not resolved in current namespace"* error. A potential fix is to simply remove the quotes like so many other calls in data.table. Potentially fixes [#1467](https://github.com/Rdatatable/data.table/issues/1467). Thanks to @rBatt, @rsaporta and @damienchallet.
 
+  29. `last` function will now properly redirect method if `xts` is not installed or not attached on search path. Closes [#1560](https://github.com/Rdatatable/data.table/issues/1560).
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
