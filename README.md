@@ -149,6 +149,8 @@
 
   17. Travis-CI will now automatically deploy package to drat repository hosted on [data.table@gh-pages](https://github.com/Rdatatable/data.table/tree/gh-pages) branch allowing to install latest devel from source via `install.packages("data.table", repos = c("https://Rdatatable.github.io/data.table", "https://cran.rstudio.com"))`. CRAN repo is still required to reach `chron` dependency. Closes [#1505](https://github.com/Rdatatable/data.table/issues/1505).
 
+  18. Dependency on `chron` package has been changed to *suggested*. Closes [#1558](https://github.com/Rdatatable/data.table/issues/1558).
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES

@@ -6,8 +6,8 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
     options(warn=0)  # use require() so it warns but doesn't halt if not available
     inst_pkgs = rownames(installed.packages())
-    sugg_pkgs = c("plyr","ggplot2","hexbin","nlme","xts","bit64","gdata","GenomicRanges","caret","knitr","plm")
-    lapply(sugg_pkgs, function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))
+    sugg_pkgs = c("chron", "ggplot2", "plyr", "reshape", "reshape2", "testthat", "hexbin", "fastmatch", "nlme", "xts", "bit64", "gdata", "GenomicRanges", "caret", "knitr", "curl", "zoo", "plm")
+    lapply(setNames(nm = sugg_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))
     # reshape2 ahead of reshape ...
     try(detach(package:reshape2),silent=TRUE)
     try(detach(package:reshape),silent=TRUE)
@@ -7406,6 +7406,17 @@ test(1601.1, merge(data.table(a=1),data.table(a=1), by="a"), data.table(a=1, key
 test(1601.2, tryCatch(merge(data.table(a=1),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'y' argument is 0 columns data.table.")
 test(1601.3, tryCatch(merge(data.table(NULL),data.table(a=1), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'x' argument is 0 columns data.table.")
 test(1601.4, tryCatch(merge(data.table(NULL),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'x' and 'y' arguments are 0 columns data.table.")
+
+# migrate `chron` dependency to Suggests #1558
+dd = as.IDate("2016-02-28")
+tt = as.ITime("03:04:43")
+if(!requireNamespace("chron", quietly = TRUE)){
+    test(1602.1, as.chron.IDate(dd), error = "Install suggested `chron` package to use `as.chron.IDate` function.")
+    test(1602.2, as.chron.ITime(tt), error = "Install suggested `chron` package to use `as.chron.ITime` function.")
+} else {
+    test(1602.3, as.chron.IDate(dd), chron::as.chron(as.Date(dd)))
+    test(1602.4, class(as.chron.ITime(tt)), "times")
+}
 
 
 ##########################

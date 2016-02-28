@@ -163,19 +163,23 @@ as.POSIXlt.ITime <- function(x, ...) {
 # chron support
 
 as.chron.IDate <- function(x, time = NULL, ...) {
-    if (!is.null(time)) {
-        chron(dates. = as.chron(as.Date(x)), times. = as.chron(time))
-    } else {
-        chron(dates. = as.chron(as.Date(x)))
-    }    
+    if(!requireNamespace("chron", quietly = TRUE)) stop("Install suggested `chron` package to use `as.chron.IDate` function.") else {
+        if (!is.null(time)) {
+            chron::chron(dates. = chron::as.chron(as.Date(x)), times. = chron::as.chron(time))
+        } else {
+            chron::chron(dates. = chron::as.chron(as.Date(x)))
+        }    
+    }
 }
 
 as.chron.ITime <- function(x, date = NULL, ...) {
-    if (!is.null(date)) {
-        chron(dates. = as.chron(as.Date(date)), times. = as.chron(x))
-    } else {
-        chron(times. = as.character(x))
-    }    
+    if(!requireNamespace("chron", quietly = TRUE)) stop("Install suggested `chron` package to use `as.chron.ITime` function.") else {
+        if (!is.null(date)) {
+            chron::chron(dates. = chron::as.chron(as.Date(date)), times. = chron::as.chron(x))
+        } else {
+            chron::chron(times. = as.character(x))
+        }  
+    }
 }
 
 as.ITime.times <- function(x, ...) {
