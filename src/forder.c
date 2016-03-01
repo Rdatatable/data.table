@@ -1086,9 +1086,14 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     if (isNewList(DT)) {
         if (!length(DT)) error("DT is an empty list() of 0 columns");
         if (!isInteger(by) || !length(by)) error("DT has %d columns but 'by' is either not integer or length 0", length(DT));  // seq_along(x) at R level
-        for (i=0; i<LENGTH(by); i++) if (INTEGER(by)[i] < 1 || INTEGER(by)[i] > length(DT)) error("'by' value %d out of range [1,%d]", INTEGER(by)[i], length(DT));
         n = length(VECTOR_ELT(DT,0));
-        x = VECTOR_ELT(DT,INTEGER(by)[0]-1);        
+        for (i=0; i<LENGTH(by); i++) {
+            if (INTEGER(by)[i] < 1 || INTEGER(by)[i] > length(DT)) 
+                error("'by' value %d out of range [1,%d]", INTEGER(by)[i], length(DT));
+            if ( n != length(VECTOR_ELT(DT, INTEGER(by)[i]-1)) )
+                error("Column %d is length %d which differs from length of column 1 (%d)\n", INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), n);
+        }
+        x = VECTOR_ELT(DT,INTEGER(by)[0]-1);
     } else {
         if (!isNull(by)) error("Input is a single vector but 'by' is not NULL");
         n = length(DT);
