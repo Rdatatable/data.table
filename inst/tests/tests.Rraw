@@ -7418,6 +7418,10 @@ if(!requireNamespace("chron", quietly = TRUE)){
     test(1602.4, class(as.chron.ITime(tt)), "times")
 }
 
+# fix for #1549
+d1 <- data.table(v1=1:2,x=x)
+d2 <- data.table(v1=3:4)
+test(1603.1, rbindlist(list(d2, d1), fill=TRUE), rbindlist(list(d1,d2), fill=TRUE)[c(3:4, 1:2)])
 
 ##########################
 

@@ -585,7 +585,7 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
             } else {
                 // Fix for #705, check attributes and error if non-factor class and not identical
                 if (!data->is_factor[i] && 
-                    !R_compute_identical(thisClass, getAttrib(thiscol, R_ClassSymbol), 0)) {
+                    !R_compute_identical(thisClass, getAttrib(thiscol, R_ClassSymbol), 0) && !fill) {
                     error("Class attributes at column %d of input list at position %d does not match with column %d of input list at position %d. Coercion of objects of class 'factor' alone is handled internally by rbind/rbindlist at the moment.", i+1, j+1, i+1, data->first+1);
                 }
                 type = TYPEOF(thiscol);
