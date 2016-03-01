@@ -787,7 +787,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 ansvars = names(x)[ if (notj) -j else j ]  # DT[,!"columntoexclude",with=FALSE], if a copy is needed, rather than :=NULL
                 # DT[, c(1,3), with=FALSE] should clearly provide both 'x' columns
                 ansvals = if (notj) setdiff(seq_along(x), as.integer(j)) else as.integer(j)
-            }
+	    } else stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
             if (!length(ansvals)) return(null.data.table())
         } else {   # with=TRUE and byjoin could be TRUE
             bynames = NULL

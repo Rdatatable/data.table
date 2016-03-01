@@ -117,6 +117,8 @@
 
   30. `rbindlist` (and `rbind`) works as expected when `fill = TRUE` and the first element of input list doesn't have columns present in other elements of the list, [#1549](https://github.com/Rdatatable/data.table/issues/1549). Thanks to @alexkowa.
 
+  31. `DT[, .(col), with=FALSE]` now returns a meaningful error message, [#1440](https://github.com/Rdatatable/data.table/issues/1440). Thanks to @VasilyA for [posting on SO](http://stackoverflow.com/q/33851742/559784).
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
