@@ -12,17 +12,18 @@
    See examples for more.
 }
 \usage{
-rowid(..., prefix=NULL)
-rowidv(x, cols=seq_along(x), prefix=NULL)
+rowid(..., prefix=NULL, labels=NULL)
+rowidv(x, cols=seq_along(x), prefix=NULL, labels=NULL)
 }
 \arguments{
   \item{x}{ A vector, list, data.frame or data.table. }
   \item{...}{ A sequence of numeric, integer64, character or logical vectors, all of same length. For interactive use.}
   \item{cols}{ Only meaningful for lists, data.frames or data.tables. A character vector of column names (or numbers) of x. }
   \item{prefix}{ Either \code{NULL} (default) or a character vector of length=1 which is prefixed to the row ids, returning a character vector (instead of an integer vector).}
+  \item{labels}{ A vector of labels to be given to the row IDs. }
 }
 \value{
-	When \code{prefix = NULL}, an integer vector with same length as \code{NROW(x)}, else a character vector with the value in \code{prefix} prefixed to the ids obtained.
+	When \code{prefix = NULL} and \code{labels = NULL}, an integer vector with same length as \code{NROW(x)}; when only \code{prefix} is activated, a \code{character} vector with the value in \code{prefix} prepended to the ids obtained; when \code{labels} is activated, a \code{factor} vector with \code{labels} (possibly prepended by \code{prefix}) representing the underlying row IDs in order.
 }
 \examples{
 DT = data.table(x=c(20,10,10,30,30,20), y=c("a", "a", "a", "b", "b", "b"), z=1:6)
@@ -33,6 +34,7 @@ rowidv(DT, cols="x") # same as above
 rowid(DT$x, prefix="group") # prefixed with 'group'
 
 rowid(DT$x, DT$y) # 1,1,2,1,2,1
+rowid(DT$x, DT$y, labels=c("b","a")) # b,b,a,b,a,b
 rowidv(DT, cols=c("x","y")) # same as above
 DT[, .(N=seq_len(.N)), by=.(x,y)]$N # same as above
 

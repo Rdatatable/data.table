@@ -2459,11 +2459,11 @@ as_list <- function(x) {
 }
 
 # FR #1353
-rowid <- function(..., prefix=NULL) {
-    rowidv(list(...), prefix=prefix)
+rowid <- function(..., prefix=NULL, labels=NULL) {
+    rowidv(list(...), prefix=prefix, labels=labels)
 }
 
-rowidv <- function(x, cols=seq_along(x), prefix=NULL) {
+rowidv <- function(x, cols=seq_along(x), prefix=NULL, labels = NULL) {
     if (!is.null(prefix) && (is.character(prefix) && length(prefix) > 1L))
         stop("prefix must be NULL or a character vector of length=1.")
     if (is.atomic(x)) {
@@ -2482,6 +2482,11 @@ rowidv <- function(x, cols=seq_along(x), prefix=NULL) {
     xstart = attr(xorder, 'start')
     if (!length(xorder)) xorder = seq_along(x[[1L]])
     ids = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), "sequence")
+    if (!is.null(labels)) {
+        if ((M <- max(ids)) != length(labels)) 
+            stop("Supplied", length(labels), "labels for", M, "levels.")
+        ids = factor(ids, labels = labels)
+    }
     if (!is.null(prefix))
         ids = paste(prefix, ids, sep="")
     ids
