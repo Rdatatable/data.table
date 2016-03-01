@@ -151,7 +151,7 @@
 
   16. `merge.data.table` will raise warning if any of data.tables to join has 0 columns. Closes [#597](https://github.com/Rdatatable/data.table/issues/597).
 
-  17. Travis-CI will now automatically deploy package to drat repository hosted on [data.table@gh-pages](https://github.com/Rdatatable/data.table/tree/gh-pages) branch allowing to install latest devel from source via `install.packages("data.table", repos = c("https://Rdatatable.github.io/data.table", "https://cran.rstudio.com"))`. CRAN repo is still required to reach `chron` dependency. Closes [#1505](https://github.com/Rdatatable/data.table/issues/1505).
+  17. Travis-CI will now automatically deploy package to drat repository hosted on [data.table@gh-pages](https://github.com/Rdatatable/data.table/tree/gh-pages) branch allowing to install latest devel from **source** via `install.packages("data.table", repos = "https://Rdatatable.github.io/data.table", type = "source")`. Closes [#1505](https://github.com/Rdatatable/data.table/issues/1505).
 
   18. Dependency on `chron` package has been changed to *suggested*. Closes [#1558](https://github.com/Rdatatable/data.table/issues/1558).
 

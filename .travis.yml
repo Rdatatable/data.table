@@ -31,7 +31,7 @@ after_success:
   - ./travis-tool.sh install_github jimhester/covr
   - Rscript -e 'library(covr);codecov()'
   - ./travis-tool.sh install_github eddelbuettel/drat
-  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && bash deploy.sh
+  - test $TRAVIS_REPO_SLUG == "Rdatatable/data.table" && test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && bash deploy.sh
 
 notifications:
   email:
@@ -43,4 +43,4 @@ env:
     - PKG_CFLAGS="-g -O3 -Wall -pedantic"
     - WARNINGS_ARE_ERRORS=1
     # drat using @jangorecki token
-    - secure: aujmS0URy0iTrOgZqoCfn3Z4Km5OqBR38EI+PK5apVNf1yNqEZT6SralGYJin3rJT9HVWH0DSFX2m2FNYoTbkaNzK4l7bBBZ5EsohPuJrN/j7no/rCPfn6m5ZtaIRZRGZNyVzk1jRk4EKJzmYqH04bIyCGgSz9IRveFy7tAMXT4=
+    - secure: "CxDW++rsQApQWos+h1z/F76odysyD6AtXJrDwlCHlgqXeKJNRATR4wZDDR18SK+85jUqjoqOvpyrq+5kKuyg6AnA/zduaX2uYE5mcntEUiyzlG/jJUKbcJqt22nyAvFXP3VS60T2u4H6IIhVmr7dArdxLkv8W+pJvf2Tg6kx8Ws="

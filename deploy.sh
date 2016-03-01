@@ -1,12 +1,12 @@
 #!/bin/bash
 
 set -o errexit -o nounset
+PKG_REPO=$PWD
+PKG_TARBALL=$(ls -1t *.tar.gz | head -n 1)
+cd ..
 
 addToDrat(){
-  PKG_REPO=$PWD
-  PKG_TARBALL=$(ls -1t *.tar.gz | head -n 1)
-
-  cd ..; mkdir drat; cd drat
+  mkdir drat; cd drat
 
   ## Set up Repo parameters
   git init
@@ -21,8 +21,8 @@ addToDrat(){
 
   Rscript -e "drat::insertPackage('$PKG_REPO/$PKG_TARBALL', \
     repodir = '.', \
-    commit='Travis update: build $TRAVIS_BUILD_NUMBER')"
-  git push
+    commit='Travis publish data.table: build $TRAVIS_BUILD_NUMBER')"
+  git push 2>err.txt
   
 }
 
