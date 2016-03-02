@@ -32,10 +32,6 @@ pre {
   /*border: 1px solid #FDF6E3;*/
 }
 
-body {
-  font-size: 16px;
-}
-
 pre code {
   padding: 0;
   font-size: inherit;
