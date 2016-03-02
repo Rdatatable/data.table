@@ -16,7 +16,7 @@
 
      \code{anyDuplicated} returns the \emph{index} \code{i} of the first duplicated entry if there is one, and 0 otherwise. 
 
-     \code{uniqueN} is equivalent to \code{length(unique(x))} but much faster for \code{atomic vectors}, \code{data.frames} and \code{data.tables}, for other types it dispatch to \code{length(unique(x))}. The number of unique rows are computed directly without materialising the intermediate unique data.table and is therefore memory efficient as well.
+     \code{uniqueN} is equivalent to \code{length(unique(x))} but much faster. It accepts \code{atomic vectors}, \code{data.frames} and \code{data.tables}. The number of unique rows are computed directly without materialising the intermediate unique data.table and is therefore memory efficient as well.
 
 }
 \usage{
@@ -29,7 +29,7 @@
 uniqueN(x, by=if (is.data.table(x)) key(x) else NULL)
 }
 \arguments{
-  \item{x}{ Atomic vectors, lists, data.frames or data.tables.}
+  \item{x}{ A data.table. \code{uniqueN} accepts atomic vectors and data.frames as well.}
   \item{\dots}{ Not used at this time. }
   \item{incomparables}{ Not used. Here for S3 method consistency. }
   \item{fromLast}{ logical indicating if duplication should be considered from the reverse side, i.e., the last (or rightmost) of identical elements would correspond to \code{duplicated = FALSE}.}
