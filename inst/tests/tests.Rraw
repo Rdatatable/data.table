@@ -7320,10 +7320,12 @@ Encoding(x)
 Encoding(x) <- "latin1"
 xx <- iconv(x, "latin1", "UTF-8")
 y = sample(c(x,xx), 10, TRUE)
-test(1590.4, forderv(y), integer(0)) # all sorted
+oy = if (length(oy <- forderv(y))) oy else seq_along(y)
+test(1590.4, oy, order(y))
 Encoding(xx) = "unknown"
 y = sample(c(x,xx), 10, TRUE)
-test(1590.5, forderv(y), integer(0)) # all sorted
+oy = if (length(oy <- forderv(y))) oy else seq_along(y)
+test(1590.5, oy, order(y))
 
 # #1432 test
 list_1 = list(a = c(44,47), dens = c(2331,1644))
