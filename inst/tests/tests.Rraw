@@ -4112,6 +4112,14 @@ setnames(ans2, names(ans1))
 test(1240.1, ans1, setDT(as.data.frame(with(DT, table(XX, yy)), stringsAsFactors=FALSE)))
 test(1240.2, ans2, ans1)
 
+# r-devel (v3.3+) seems to use data.table's radix sort by default for order() on integer/factors.
+# also it has an additional argument 'method'. We've to use 'shell' to pass 1241, as well as for 
+# checking correctness. So creating order function depending on r-version
+base_order <- function(..., na.last=TRUE, decreasing=FALSE, method="shell") {
+    if (base::getRversion()<="3.2.3")
+        order(..., na.last=na.last, decreasing=decreasing) # ignore method
+    else order(..., na.last=na.last, decreasing=decreasing, method=method)
+}
 # Test for optimisation of 'order' to 'forder'
 set.seed(45L)
 DT <- data.table(x=sample(1e2, 1e6,TRUE), y=sample(1e2, 1e6,TRUE))
@@ -4120,8 +4128,7 @@ optim = getOption("datatable.optimize")
 options(datatable.optimize=Inf)
 t1 = unname(system.time(ans1 <- DT[order(x,-y)])['elapsed'])
 # without optimisation
-options(datatable.optimize=0L)
-t2 = unname(system.time(ans2 <- DT[order(x,-y)])['elapsed'])
+t2 = unname(system.time(ans2 <- DT[base_order(x,-y, method="shell")])['elapsed'])
 test(1241.1, ans1, ans2)
 test(1241.2, t1 < t2, TRUE)  # with optimisation must be faster
 # restore optimisation
@@ -4267,12 +4274,13 @@ ans = vector("list", length(names(DT)))
 
 test_no = 1253.13
 oldnfail = nfail
+# explicitly setting to 'shell' method on v > 3.2.3 to check for correctness
 for (i in seq_along(names(DT))) {
     cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
     ans[[i]] = combn(names(DT), i, function(x) {
         tmp = apply(cj, 1, function(y) {
             test_no <<- signif(test_no+.001, 7)
-            ll = as.call(c(as.name("order"), 
+            ll = as.call(c(as.name("base_order"), # see 1241 test for what base_order is
                     lapply(seq_along(x), function(j) {
                         if (y[j] == 1L) 
                             as.name(x[j]) 
@@ -4282,7 +4290,8 @@ for (i in seq_along(names(DT))) {
                             else 
                                 as.call(list(as.name("-"), as.name(x[j])))
                             }
-                        })
+                        }),
+                        list(method = "shell")
                     )
                 )
             ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
