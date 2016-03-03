@@ -2103,7 +2103,19 @@ copy <- function(x) {
     newx = .Call(Ccopy,x)  # copies at length but R's duplicate() also copies truelength over.
                            # TO DO: inside Ccopy it could reset tl to 0 or length, but no matter as selfrefok detects it
                            # TO DO: revisit duplicate.c in R 3.0.3 and see where it's at
-    if (!is.data.table(x)) return(newx)   # e.g. in as.data.table.list() the list is copied before changing to data.table
+    if (!is.data.table(x)) {
+	# fix for #1476. TODO: find if a cleaner fix is possible..
+	if (is.list(x)) {
+	    anydt = vapply(x, is.data.table, TRUE, USE.NAMES=FALSE)
+	    if (sum(anydt)) {
+		newx[anydt] = lapply(newx[anydt], function(x) {
+				    setattr(x, ".data.table.locked", NULL)
+				    alloc.col(x)
+				})
+	    }
+	}
+	return(newx)   # e.g. in as.data.table.list() the list is copied before changing to data.table
+    }
     setattr(newx,".data.table.locked",NULL)
     alloc.col(newx)
 }

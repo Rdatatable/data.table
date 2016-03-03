@@ -126,6 +126,8 @@
 
   34. Fixed an edge case in fread's `fill` argument, [#1503](https://github.com/Rdatatable/data.table/issues/1503). Thanks to @AnandaMahto.
 
+  35. `copy()` overallocates properly when input is a *list-of-data.tables*, [#1476](https://github.com/Rdatatable/data.table/issues/1476). Thanks to @kimiylilammi and @AmitaiPerlstein for the report.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

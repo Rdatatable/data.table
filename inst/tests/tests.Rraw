@@ -7453,6 +7453,11 @@ test(1605, DT[order(-x, "D")], error="Column 2 is length 1 which differs")
 # fix for #1503, fread's fill argument polishing
 test(1606, fread("2\n1,a,b", fill=TRUE), data.table(V1=2:1, V2=c("","a"), V3=c("","b")))
 
+# fix for #1476
+dt = data.table(resp=c(1:5))
+wide = copy(list(metrics = dt))$metrics # copy here copies the list of data.table and therefore didn't overallocate before..
+test(1607, wide[, id := .I], data.table(resp = 1:5, id = 1:5))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
