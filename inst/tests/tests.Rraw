@@ -6,7 +6,7 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
     options(warn=0)  # use require() so it warns but doesn't halt if not available
     inst_pkgs = rownames(installed.packages())
-    sugg_pkgs = c("chron", "ggplot2", "plyr", "reshape", "reshape2", "testthat", "hexbin", "fastmatch", "nlme", "xts", "bit64", "gdata", "GenomicRanges", "caret", "knitr", "curl", "zoo", "plm")
+    sugg_pkgs = c("chron", "ggplot2", "plyr", "reshape", "reshape2", "testthat", "hexbin", "fastmatch", "nlme", "xts", "bit64", "gdata", "GenomicRanges", "caret", "knitr", "curl", "zoo", "plm", "rmarkdown")
     lapply(setNames(nm = sugg_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))
     # reshape2 ahead of reshape ...
     try(detach(package:reshape2),silent=TRUE)
