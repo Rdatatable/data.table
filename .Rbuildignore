@@ -4,3 +4,4 @@
 ^deploy\.sh$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^appveyor\.yml$
