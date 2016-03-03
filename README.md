@@ -1,6 +1,7 @@
 
 **Current stable release** (always even) : [![CRAN](http://www.r-pkg.org/badges/version/data.table)](http://cran.r-project.org/package=data.table), released 19<sup>th</sup> Sep 2015.  
-**Development version** (always odd): [![devel](https://img.shields.io/badge/devel-1.9.7-brightgreen.svg)](https://github.com/Rdatatable/data.table/) [![Build Status](https://travis-ci.org/Rdatatable/data.table.svg?branch=master)](https://travis-ci.org/Rdatatable/data.table) [![codecov.io](http://codecov.io/github/Rdatatable/data.table/coverage.svg?branch=master)](http://codecov.io/github/Rdatatable/data.table?branch=master) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/Rdatatable/data.table?branch=master&svg=true)](https://ci.appveyor.com/project/jangorecki/data-table)
+**Development version** (always odd): [![devel](https://img.shields.io/badge/devel-1.9.7-brightgreen.svg)](https://github.com/Rdatatable/data.table/) [![Build Status](https://travis-ci.org/Rdatatable/data.table.svg?branch=master)](https://travis-ci.org/Rdatatable/data.table) [![codecov.io](http://codecov.io/github/Rdatatable/data.table/coverage.svg?branch=master)](http://codecov.io/github/Rdatatable/data.table?branch=master) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/kayjdh5qtgymhoxr/branch/master?svg=true
+)](https://ci.appveyor.com/project/arunsrinivasan/data-table)
  [How to install?](https://github.com/Rdatatable/data.table/wiki/Installation)
 
 <!-- Note this file is displayed on the CRAN page, as well as on GitHub. So the the link to GitHub is not to itself when viewed on the CRAN page. -->
