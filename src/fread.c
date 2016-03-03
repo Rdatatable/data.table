@@ -892,8 +892,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 while(ch<eof && *ch!=eol && *ch!=sep) ch++;  // skip over unquoted character field
         }
         if (i<ncol-1) {   // not the last column (doesn't have a separator after it)
-            if (ch<eof && *ch!=sep) STOP("Unexpected character ending field %d of line %d: %.*s", i+1, line, ch-pos+5, pos);
-            else if (ch<eof) ch++;
+            if (ch<eof && *ch!=sep) {
+                if (!fill) STOP("Unexpected character ending field %d of line %d: %.*s", i+1, line, ch-pos+5, pos);
+            } else if (ch<eof) ch++;
         } 
     }
     // discard any whitespace after last column name on first row before the eol (was a TODO)

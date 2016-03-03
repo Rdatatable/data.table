@@ -124,6 +124,8 @@
   
   33. Reverted support of *list-of-lists* made in [#1224](https://github.com/Rdatatable/data.table/issues/1224) for consistency.
 
+  34. Fixed an edge case in fread's `fill` argument, [#1503](https://github.com/Rdatatable/data.table/issues/1503). Thanks to @AnandaMahto.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

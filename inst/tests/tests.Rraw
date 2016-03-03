@@ -7450,6 +7450,9 @@ test(1604, DT[,.(myCol),with=F], error="When with=FALSE,")
 DT = data.table(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
 test(1605, DT[order(-x, "D")], error="Column 2 is length 1 which differs")
 
+# fix for #1503, fread's fill argument polishing
+test(1606, fread("2\n1,a,b", fill=TRUE), data.table(V1=2:1, V2=c("","a"), V3=c("","b")))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
