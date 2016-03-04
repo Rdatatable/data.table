@@ -232,7 +232,8 @@ static inline void Field()
                 while (++ch<eof && (*ch!=quote[0] || *(ch-1)=='\\') && *ch!=eol && *ch!=sep);
                 if (ch==eof || *ch==eol || *ch==sep) {quoteProblem=TRUE; break;}
                 noEmbeddedEOL = 1;
-            }
+            } else if (ch+1<eof && *(ch+1)==quote[0] && ch+2<eof && *(ch+2)!=sep) { ch++; continue; }
+            // above else if is necessary for #1164. ch+2 condition is to take care of cases like <"blabla \"",> where sep=',' (test 1336.1)
         }
         if (quoteProblem || ch==eof) {
             // "..." logic has failed. Delegate to normal routine instead of erroring. Solves many cases, especially when files have both proper balanced, and imbalanced quotes. I think this is more towards fread's philosophy than having an explicit 'quote' argument..

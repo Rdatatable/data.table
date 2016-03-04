@@ -128,6 +128,8 @@
 
   35. `copy()` overallocates properly when input is a *list-of-data.tables*, [#1476](https://github.com/Rdatatable/data.table/issues/1476). Thanks to @kimiylilammi and @AmitaiPerlstein for the report.
 
+  36. `fread()` handles embedded double quotes in json fields as expected, [#1164](https://github.com/Rdatatable/data.table/issues/1164). Thanks @richardtessier.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
