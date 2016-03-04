@@ -7465,6 +7465,26 @@ test(1608, dim(fread('issue_1462_fread_quotes.txt', header=FALSE)), c(4L, 224L))
 # fix for #1164
 test(1609, fread("issue_1164_json.txt"), data.table(json1='{""f1"":""value1"",""f2"":""double quote escaped with a backslash [ \\"" ]""}', string1="string field"))
 
+# set of enhancements to print.data.table for #1523
+## dplyr-like column summary
+icol <- 1L:3L
+Dcol <- as.Date(paste0("2016-01-0", 1:3))
+DT1 <- data.table(lcol = list(list(1:3), list(1:3), list(1:3)),
+                  icol, ncol = as.numeric(icol), ccol = c("a", "b", "c"), 
+                  xcol = as.complex(icol), ocol = factor(icol, ordered = TRUE),
+                  fcol = factor(icol))
+
+DT2 <- data.table(Dcol, Pcol = as.POSIXct(Dcol), 
+                  gcol = as.logical(icol), 
+                  Icol = as.IDate(Dcol), ucol = icol)
+class(DT2$ucol) <- "asdf"
+test(1601.1, capture.output(print(DT1, print.class = TRUE)),
+     c("     lcol  icol  ncol   ccol   xcol  ocol   fcol",
+       "   <list> <int> <num> <char> <cplx> <ord> <fctr>", 
+       "1: <list>     1     1      a   1+0i     1      1", 
+       "2: <list>     2     2      b   2+0i     2      2", 
+       "3: <list>     3     3      c   3+0i     3      3"))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
