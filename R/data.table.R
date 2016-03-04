@@ -89,12 +89,11 @@ setPackageName("data.table",.global)
 # So even though .BY doesn't appear in this file, it should still be NULL here and exported because it's
 # defined in SDenv and can be used by users.
 
-print.data.table <- 
-  function(x, topn = getOption("datatable.print.topn"),      # (5) print the top topn and bottom topn rows with '---' inbetween
-           nrows = getOption("datatable.print.nrows"),       # (100) under this the whole (small) table is printed, unless topn is provided
-           print.class = getOption("datatable.print.class"), # (FALSE) whether to include beneath each column a summary of its class
-           row.names = TRUE, quote= FALSE, ...)
-{
+print.data.table <- function(x, topn=getOption("datatable.print.topn"), nrows=getOption("datatable.print.nrows"),
+	   print.class=getOption("datatable.print.class"), row.names=TRUE, quote=FALSE, ...) {
+    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
+    # nrows - under this the whole (small) table is printed, unless topn is provided (100)
+    # class - should column class be printed underneath column name? (FALSE)
     if (.global$print!="" && address(x)==.global$print) {   # The !="" is to save address() calls and R's global cache of address strings
         #  := in [.data.table sets .global$print=address(x) to suppress the next print i.e., like <- does. See FAQ 2.22 and README item in v1.9.5
         # The issue is distinguishing "> DT" (after a previous := in a function) from "> DT[,foo:=1]". To print.data.table(), there
@@ -144,17 +143,17 @@ print.data.table <-
     if (is.null(names(x))) colnames(toprint)=rep("NA", ncol(toprint)) # fixes bug #4934
     if (isTRUE(print.class)) {
       #Matching table for most common types & their abbreviations
-      class_abb <- c(list = "<list>", integer = "<int>", numeric = "<num>",
-                     character = "<char>", Date = "<Date>", complex = "<cplx>",
-                     factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
-                     IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
-                     expression = "<expr>", ordered = "<ord>")
-      classes <- unname(class_abb[vapply(x, function(col) class(col)[1L], character(1L))])
-      classes[idx] <- 
-        vapply(x[ , idx <- which(is.na(classes)), with = FALSE], 
-               function(col) paste0("<", class(col)[1L], ">"), character(1))
-      toprint = rbind(classes, toprint)
-      rownames(toprint)[1L] <- ""
+      class_abb = c(list = "<list>", integer = "<int>", numeric = "<num>",
+		    character = "<char>", Date = "<Date>", complex = "<cplx>",
+		    factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
+		    IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
+		    expression = "<expr>", ordered = "<ord>")
+      classes = vapply(x, function(col) class(col)[1L], "", USE.NAMES=FALSE)
+      abbs = unname(class_abb[classes])
+      if ( length(idx <- which(is.na(abbs))) )
+	abbs[idx] = paste("<", classes[idx], ">", sep="")
+      toprint = rbind(abbs, toprint)
+      rownames(toprint)[1L] = ""
     }
     if (printdots) {
         toprint = rbind(head(toprint,topn),"---"="",tail(toprint,topn))

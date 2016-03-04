@@ -7478,12 +7478,19 @@ DT2 <- data.table(Dcol, Pcol = as.POSIXct(Dcol),
                   gcol = as.logical(icol), 
                   Icol = as.IDate(Dcol), ucol = icol)
 class(DT2$ucol) <- "asdf"
-test(1601.1, capture.output(print(DT1, print.class = TRUE)),
+test(1610.1, capture.output(print(DT1, print.class = TRUE)),
      c("     lcol  icol  ncol   ccol   xcol  ocol   fcol",
        "   <list> <int> <num> <char> <cplx> <ord> <fctr>", 
        "1: <list>     1     1      a   1+0i     1      1", 
        "2: <list>     2     2      b   2+0i     2      2", 
        "3: <list>     3     3      c   3+0i     3      3"))
+
+test(1610.2, capture.output(print(DT2, print.class = TRUE)),
+     c("         Dcol                Pcol   gcol       Icol   ucol", 
+"       <Date>              <POSc> <lgcl>     <IDat> <asdf>", 
+"1: 2016-01-01 2016-01-01 01:00:00   TRUE 2016-01-01      1", 
+"2: 2016-01-02 2016-01-02 01:00:00   TRUE 2016-01-02      2", 
+"3: 2016-01-03 2016-01-03 01:00:00   TRUE 2016-01-03      3"))
 
 ##########################
 
