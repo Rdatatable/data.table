@@ -228,8 +228,9 @@ static inline void Field()
                 if (ch+1<eof && *(ch+1)==quote[0]) { ch++; continue; }  // skip doubled-quote
                 // unescaped subregion
                 if (eolCount) {ch++; quoteProblem=TRUE; break;}
-                while (++ch<eof && (*ch!=quote[0] || *(ch-1)=='\\') && *ch!=eol);
-                if (ch==eof || *ch==eol) {quoteProblem=TRUE; break;}
+                // *ch!=sep needed for detecting cases mentioned in SO post under #1462
+                while (++ch<eof && (*ch!=quote[0] || *(ch-1)=='\\') && *ch!=eol && *ch!=sep);
+                if (ch==eof || *ch==eol || *ch==sep) {quoteProblem=TRUE; break;}
                 noEmbeddedEOL = 1;
             }
         }
@@ -1300,7 +1301,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (ch<eof && *ch!=eol) {
                 // TODO: skip spaces here if strip.white=TRUE (arg to be added) and then check+warn
                 // TODO: warn about uncommented text here
-                error("Expecting %d cols, but line %d contains text after processing all cols. It is very likely that this is due to one or more fields having embedded sep='%c' and/or (unescaped) '\\n' characters within unbalanced unescaped quotes. fread cannot handle such ambiguous cases and those lines may not have been read in as expected. Please read the section on quotes in ?fread.", ncol, line, sep);
+                error("Expecting %d cols, but line %d contains text after processing all cols. It is very likely that fread's logic in distinguishing one or more fields having embedded sep='%c' and/or (unescaped) '\\n' characters within unbalanced unescaped quotes has failed. Please file an issue so that we can figure out if the logic could be improved; also let us know if setting quote='' helped. See section on quotes in ?fread.", ncol, line, sep);
             }
             ch+=eolLen; // now that we error here, the if-statement isn't needed -> // if (ch<eof && *ch==eol) ch+=eolLen;
             pos = ch;  // start of line position only needed to include the whole line in any error message

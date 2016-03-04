@@ -7458,6 +7458,10 @@ dt = data.table(resp=c(1:5))
 wide = copy(list(metrics = dt))$metrics # copy here copies the list of data.table and therefore didn't overallocate before..
 test(1607, wide[, id := .I], data.table(resp = 1:5, id = 1:5))
 
+# better fix for #1462, + improved error message (if this better fix fails)
+# no need for quote="" and sep="\t"..
+test(1608, dim(fread('issue_1462_fread_quotes.txt', header=FALSE)), c(4L, 224L))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

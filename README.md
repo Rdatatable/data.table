@@ -22,7 +22,7 @@
 
   3. `tstrsplit` gains `give.names` argument, [#1379](https://github.com/Rdatatable/data.table/issues/1379). Thanks @franknarf1.
 
-  4. `fread` gains `quote` argument. `quote = ""` disables quoting altogether which reads each field *as is*, [#1367](https://github.com/Rdatatable/data.table/issues/1367). Thanks @manimal. 
+  4. `fread` gains `quote` argument. `quote = ""` disables quoting altogether which reads each field *as is*, [#1367](https://github.com/Rdatatable/data.table/issues/1367). Thanks @manimal. A better fix for [#1462](https://github.com/Rdatatable/data.table/issues/1462) makes `fread()` slightly more robust in handling quotes.Thanks to @Pascal for [posting on SO](http://stackoverflow.com/q/34144314/559784).
 
   5. Joins using `on=` accepts unnamed columns on ad hoc joins, e.g., X[.(5), on="b"] joins "b" from `X` to "V1" from `i`, partly closes [#1375](https://github.com/Rdatatable/data.table/issues/1375).
 
