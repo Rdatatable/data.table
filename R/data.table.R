@@ -89,10 +89,11 @@ setPackageName("data.table",.global)
 # So even though .BY doesn't appear in this file, it should still be NULL here and exported because it's
 # defined in SDenv and can be used by users.
 
-print.data.table <- function(x,
-    topn=getOption("datatable.print.topn"),   # (5) print the top topn and bottom topn rows with '---' inbetween
-    nrows=getOption("datatable.print.nrows"), # (100) under this the whole (small) table is printed, unless topn is provided
-    row.names = TRUE, quote = FALSE, ...)
+print.data.table <- 
+  function(x, topn = getOption("datatable.print.topn"),      # (5) print the top topn and bottom topn rows with '---' inbetween
+           nrows = getOption("datatable.print.nrows"),       # (100) under this the whole (small) table is printed, unless topn is provided
+           print.class = getOption("datatable.print.class"), # (FALSE) whether to include beneath each column a summary of its class
+           by = NULL, row.names = TRUE, quote= FALSE, ...)
 {
     if (.global$print!="" && address(x)==.global$print) {   # The !="" is to save address() calls and R's global cache of address strings
         #  := in [.data.table sets .global$print=address(x) to suppress the next print i.e., like <- does. See FAQ 2.22 and README item in v1.9.5
@@ -133,6 +134,18 @@ print.data.table <- function(x,
         rn = seq_len(nrow(x))
         printdots = FALSE
     }
+    if (nnlby <- !is.null(by)){
+      if (length(grep(",", by))){
+        if (length(by) > 1L) stop("'by' is of length ", length(by), " but one or more items ",
+                                  "include a comma. Either pass a vector of column names ",
+                                  "(which can contain spaces, but no commas), or pass a ",
+                                  "vector length 1 containing comma separated column names.")
+        by = strsplit(by, split = ",")[[1L]]
+      }
+      if (length(forderv(x, by))) stop("Use of 'by' for printing is currently restricted to sorted tables. ",
+                                       "Please use, e.g.,  'keyby' or a keyed table before printing.")
+      bylen = toprint[ , .N, keyby = by]$N
+    }
     toprint=format.data.table(toprint, ...)
     # fix for #975.
     if (any(sapply(x, function(col) "integer64" %in% class(col))) && !"package:bit64" %in% search()) {
@@ -141,16 +154,52 @@ print.data.table <- function(x,
     # FR #5020 - add row.names = logical argument to print.data.table
     if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE,scientific=FALSE),":",sep="") else rownames(toprint)=rep.int("", nrow(toprint))
     if (is.null(names(x))) colnames(toprint)=rep("NA", ncol(toprint)) # fixes bug #4934
+    if (isTRUE(print.class)) {
+      #Matching table for most common types & their abbreviations
+      class_abb <- c(list = "<list>", integer = "<int>", numeric = "<num>",
+                     character = "<char>", Date = "<Date>", complex = "<cplx>",
+                     factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
+                     IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
+                     expression = "<expr>", ordered = "<ord>")
+      classes <- unname(class_abb[vapply(x, function(col) class(col)[1L], character(1L))])
+      classes[idx] <- 
+        vapply(x[ , idx <- which(is.na(classes)), with = FALSE], 
+               function(col) paste0("<", class(col)[1L], ">"), character(1))
+      toprint = rbind(classes, toprint)
+      rownames(toprint)[1L] <- ""
+    }
     if (printdots) {
         toprint = rbind(head(toprint,topn),"---"="",tail(toprint,topn))
+        if (nnlby){
+          #if a break was induced by truncation, let the whitespace introduced
+          #  thereby serve the 'by' whitespace's purposes
+          if (any(idx <- cumsum(bylen) == topn)) bylen <- bylen[-which(idx)]
+          out = matrix(fll <- getOption("datatable.print.byfill"), 
+                       nrow = nr <- nrow(toprint) + length(bylen) - 1L, ncol = ncol(toprint),
+                       dimnames = list(rep(fll, nr), colnames(toprint)))
+          out[idx <- -(print.class + cumsum(bylen[-length(bylen)] + 1L)), ] <- toprint
+          if (isTRUE(row.names)) rownames(out)[idx] <- rownames(toprint)
+          rownames(toprint) = format(rownames(toprint), justify = "right")
+          print(out, right = TRUE, quote = quote)
+          return(invisible())
+        }
         rownames(toprint) = format(rownames(toprint),justify="right")
-        print(toprint,right=TRUE,quote=quote)
+        print(toprint, right=TRUE, quote=quote)
         return(invisible())
     }
     if (nrow(toprint)>20L)
         # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
-        toprint=rbind(toprint,matrix(colnames(toprint),nrow=1)) # fixes bug #4934
-    print(toprint,right=TRUE,quote=quote)
+        toprint=rbind(toprint, matrix(colnames(toprint), nrow = 1L)) # fixes bug #4934
+    if (nnlby){
+        out = matrix(fll <- getOption("datatable.print.byfill"), 
+                     nrow = nr <- nrow(toprint) + length(bylen) - 1L, ncol = ncol(toprint),
+                     dimnames = list(rep(fll, nr), colnames(toprint)))
+        out[idx <- -(print.class + cumsum(bylen[-length(bylen)] + 1L)), ] <- toprint
+        if (isTRUE(row.names)) rownames(out)[idx] <- rownames(toprint)
+        print(out, right = TRUE, quote = quote)
+        return(invisible())
+    }
+    print(toprint, right = TRUE, quote = quote)
     invisible()
 }
 
