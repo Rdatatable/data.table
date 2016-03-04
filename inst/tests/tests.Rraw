@@ -7487,6 +7487,12 @@ test(1610.1, capture.output(print(DT1, print.class=TRUE)),
 #        "2: 2016-01-02 2016-01-02 01:00:00   TRUE 2016-01-02      2", 
 #        "3: 2016-01-03 2016-01-03 01:00:00   TRUE 2016-01-03      3"))
 
+# fix for #833
+l1 = list(a=seq_len(5), matrix(seq_len(25),ncol = 5, nrow = 5))
+l2 = list(seq_len(5), matrix(seq_len(25),ncol = 5, nrow = 5))
+test(1611.1, as.data.table(l1), setnames(setDT(as.data.frame(l1)), c("a", paste("V", 1:5, sep=""))))
+test(1611.2, as.data.table(l2), setnames(setDT(as.data.frame(l2)), c("V1", "V1.1", paste("V", 2:5, sep=""))))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

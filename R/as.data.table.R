@@ -95,6 +95,16 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
 
 as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
     if (!length(x)) return( null.data.table() )
+    # fix for #833, as.data.table.list with matrix/data.frame/data.table as a list element..
+    # TODO: move this entire logic (along with data.table() to C
+    for (i in seq_along(x)) {
+        dims = dim(x[[i]])
+        if (!is.null(dims)) {
+            ans = do.call("data.table", x)
+            setnames(ans, make.unique(names(ans)))
+            return(ans)
+        }
+    }
     n = vapply(x, length, 0L)
     mn = max(n)
     x = copy(x)

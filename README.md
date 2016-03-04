@@ -132,6 +132,8 @@
 
   36. `fread()` handles embedded double quotes in json fields as expected, [#1164](https://github.com/Rdatatable/data.table/issues/1164). Thanks @richardtessier.
 
+  37. `as.data.table.list` handles list elements that are matrices/data.frames/data.tables properly, [#833](https://github.com/Rdatatable/data.table/issues/833). Thanks to @talexand.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
