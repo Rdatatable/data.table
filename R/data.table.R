@@ -89,8 +89,7 @@ setPackageName("data.table",.global)
 # So even though .BY doesn't appear in this file, it should still be NULL here and exported because it's
 # defined in SDenv and can be used by users.
 
-print.data.table <- function(x, topn=getOption("datatable.print.topn"), nrows=getOption("datatable.print.nrows"),
-	   print.class=getOption("datatable.print.class"), row.names=TRUE, quote=FALSE, ...) {
+print.data.table <- function(x, topn=getOption("datatable.print.topn"), nrows=getOption("datatable.print.nrows"), print.class=getOption("datatable.print.class"), row.names=TRUE, quote=FALSE, ...) {
     # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
     # nrows - under this the whole (small) table is printed, unless topn is provided (100)
     # class - should column class be printed underneath column name? (FALSE)
@@ -144,14 +143,14 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"), nrows=ge
     if (isTRUE(print.class)) {
       #Matching table for most common types & their abbreviations
       class_abb = c(list = "<list>", integer = "<int>", numeric = "<num>",
-		    character = "<char>", Date = "<Date>", complex = "<cplx>",
-		    factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
-		    IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
-		    expression = "<expr>", ordered = "<ord>")
+            character = "<char>", Date = "<Date>", complex = "<cplx>",
+            factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
+            IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
+            expression = "<expr>", ordered = "<ord>")
       classes = vapply(x, function(col) class(col)[1L], "", USE.NAMES=FALSE)
       abbs = unname(class_abb[classes])
       if ( length(idx <- which(is.na(abbs))) )
-	abbs[idx] = paste("<", classes[idx], ">", sep="")
+        abbs[idx] = paste("<", classes[idx], ">", sep="")
       toprint = rbind(abbs, toprint)
       rownames(toprint)[1L] = ""
     }
