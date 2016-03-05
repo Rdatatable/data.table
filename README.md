@@ -142,6 +142,8 @@
 
   40. Not join along with `mult="first"` and `mult="last"` is handled correctly, [#1571](https://github.com/Rdatatable/data.table/issues/1571).
 
+  41. `by=.EACHI` works as expected along with `mult="first"` and `mult="last"`, [#1287](https://github.com/Rdatatable/data.table/issues/1287) and [#1271](https://github.com/Rdatatable/data.table/issues/1271).
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

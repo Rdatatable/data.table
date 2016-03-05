@@ -7618,6 +7618,14 @@ test(1615.1, x[!y, on="V1", mult="first"], data.table(V1=c(1,7), V2=INT(c(1,4)))
 test(1615.2, x[!y, on="V1", mult="last"], data.table(V1=c(1,7), V2=INT(c(2,9))))
 test(1615.3, x[!y, on="V1", mult="all"], data.table(V1=c(1,1,7,7), V2=INT(c(1,2,4,9))))
 
+# fix for #1287 and #1271
+set.seed(1L)
+dt = data.table(a=c(1,1,2), b=sample(10,3), c=sample(10,3))
+test(1616.1, dt[.(1:2), if (c-b > 0L) b, on="a", by=.EACHI, mult="first"], data.table(a=c(1,2), V1=c(3L,5L)))
+test(1616.2, dt[.(1:2), if (c-b > 0L) b, on="a", by=.EACHI, mult="last"], data.table(a=c(2), V1=5L))
+test(1613.1, dt[.(1:2), c := if (c-b > 0L) b, by=.EACHI, mult="first", on="a"], 
+             data.table(a=dt$a, b=dt$b, c=c(3L,2L,5L)) )
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
