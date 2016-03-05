@@ -627,7 +627,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 }
             }
             # Implementation for not-join along with by=.EACHI, #604
-            if (notjoin && byjoin) {
+	    if (notjoin && (byjoin || mult != "all")) { # mult != "all" needed for #1571 fix
                 notjoin = FALSE
                 if (verbose) {last.started.at=proc.time()[3];cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff(x,i) ...");flush.console()}
                 orignames = copy(names(i))

@@ -140,6 +140,8 @@
 
   39. `roll` argument handles -ve integer64 values correctly, [#1405](https://github.com/Rdatatable/data.table/issues/1405). Thanks @bryan4887.
 
+  40. Not join along with `mult="first"` and `mult="last"` is handled correctly, [#1571](https://github.com/Rdatatable/data.table/issues/1571).
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
