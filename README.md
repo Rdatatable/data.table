@@ -144,6 +144,8 @@
 
   41. `by=.EACHI` works as expected along with `mult="first"` and `mult="last"`, [#1287](https://github.com/Rdatatable/data.table/issues/1287) and [#1271](https://github.com/Rdatatable/data.table/issues/1271).
 
+  42. Subsets using logical expressions in `i` never returns all-`NA` rows. Edge case `DT[NA]` is now fixed, [#1252](https://github.com/Rdatatable/data.table/issues/1252). Thanks to @sergiizaskaleta.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

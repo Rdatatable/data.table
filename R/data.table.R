@@ -574,7 +574,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 notjoin = FALSE
                 i = !i
             }
-            if (identical(i,NA)) i = NA_integer_  # see DT[NA] thread re recycling of NA logical
         }
         if (is.null(i)) return( null.data.table() )
         if (is.character(i)) i = data.table(V1=i)   # for user convenience; e.g. DT["foo"] without needing DT[.("foo")]
@@ -689,6 +688,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
             if (is.logical(i)) {
                 if (isTRUE(i)) irows = i = NULL  # fixes #1249
+		else if (identical(i, NA)) irows=i=integer(0)  # DT[NA] thread recycling of NA logical exists,
+							   # but for #1252 and consistency, we need to return 0-rows
                 else if (length(i)==nrow(x)) irows = i = which(i)   # e.g. DT[colA>3,which=TRUE]
                                                                # also replacing 'i' here - to save memory, #926.
                 else irows=seq_len(nrow(x))[i]  # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness 
