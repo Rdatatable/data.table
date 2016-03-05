@@ -7502,6 +7502,104 @@ test(1612.2, dt[, d2 := strptime(d1, "%Y-%m-%d")], ans, warning="POSIXlt column 
 ll = list(a=as.POSIXlt("2015-01-01"), b=2L)
 test(1612.3, setDT(ll), error="Column 1 is of POSIXlt type")
 
+# tests for all.equal.data.table #1106
+# diff nrow
+DT1 <- data.table(a = 1:4, b = letters[1:4])
+DT2 <- data.table(a = c(1:4,4L), b = letters[c(1:4,4L)])
+test(1613.1, all.equal(DT1, DT2), "Different number of rows")
+# diff ncol
+DT1 <- data.table(a = 1:4, b = letters[1:4])
+DT2 <- data.table(a = 1:4)
+test(1613.2, all.equal(DT1, DT2), c("Different number of columns", "Different column names"))
+# diff colnames
+DT1 <- data.table(a = 1:4, b = letters[1:4])
+DT2 <- data.table(aa = 1:4, bb = letters[1:4])
+test(1613.3, all.equal(DT1, DT2), "Different column names")
+# diff column order
+DT1 <- data.table(a = 1:4, b = letters[1:4])
+DT2 <- data.table(b = letters[1:4], a = 1:4)
+test(1613.4, all.equal(DT1, DT2), "Different column order")
+test(1613.5, all.equal(DT1, DT2, ignore.col.order=TRUE), TRUE)
+# diff row order
+DT1 <- data.table(a = 1:4, b = letters[1:4])
+DT2 <- data.table(a = 4:1, b = letters[4:1])
+test(1613.6, all.equal(DT1, DT2), "Column 'a': Mean relative difference: 0.8")
+test(1613.7, all.equal(DT1, DT2, ignore.row.order=TRUE), TRUE)
+# diff column order and diff row order
+DT1 <- data.table(a = 1:4, b = letters[1:4])
+DT2 <- data.table(b = letters[4:1], a = 4:1)
+test(1613.8, all.equal(DT1, DT2), "Different column order")
+test(1613.9, all.equal(DT1, DT2, ignore.row.order=TRUE), "Different column order")
+test(1613.10, all.equal(DT1, DT2, ignore.col.order=TRUE), "Column 'a': Mean relative difference: 0.8")
+test(1613.11, all.equal(DT1, DT2, ignore.row.order=TRUE, ignore.col.order=TRUE), TRUE)
+# non-overlapping duplicates
+DT1 <- data.table(a = c(1:4,1:2), b = letters[c(1:4,1:2)])
+DT2 <- data.table(a = c(1:4,3:4), b = letters[c(1:4,3:4)])
+test(1613.12, all.equal(DT1, DT2), "Column 'a': Mean relative difference: 1.333333")
+test(1613.13, all.equal(DT1, DT2, ignore.row.order=TRUE), "Dataset 'current' has rows present in different quantity than in 'target'.")
+# overlapping duplicates
+DT1 <- data.table(a = c(1:4,1:2), b = letters[c(1:4,1:2)])
+DT2 <- data.table(a = c(1:4,2:1), b = letters[c(1:4,2:1)])
+test(1613.14, all.equal(DT1, DT2), "Column 'a': Mean relative difference: 0.6666667")
+test(1613.15, all.equal(DT1, DT2, ignore.row.order=TRUE), TRUE)
+# mixed overlapping duplicates
+DT1 <- data.table(a = c(1:4,1:2), b = letters[c(1:4,1:2)])
+DT2 <- data.table(a = c(1:4,2:3), b = letters[c(1:4,2:3)])
+test(1613.16, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has rows present in different quantity than in 'target'.")
+# overlapping duplicates not equal in count
+DT1 <- data.table(a = c(1:4, rep(1L,3), rep(2L,2)), b = letters[c(1:4, rep(1L,3), rep(2L,2))])
+DT2 <- data.table(a = c(1:4, rep(1L,2), rep(2L,3)), b = letters[c(1:4, rep(1L,2), rep(2L,3))])
+test(1613.17, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has rows present in different quantity than in 'target'.")
+# overlapping duplicates equal in count
+DT1 <- data.table(a = c(1:4, 1L, 2L, 1L, 2L), b = letters[c(1:4, 1L, 2L, 1L, 2L)])
+DT2 <- data.table(a = c(2L, 1L, 1L, 2L, 1:4), b = letters[c(2L, 1L, 1L, 2L, 1:4)])
+test(1613.18, all.equal(DT1, DT2, ignore.row.order = TRUE), TRUE)
+# subset with overlapping duplicates
+DT1 <- data.table(a = c(1:3,3L), b = letters[c(1:3,3L)])
+DT2 <- data.table(a = c(1:4), b = letters[c(1:4)])
+test(1613.19, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'target' has duplicate rows while 'current' don't have any duplicate rows.")
+# different number of unique rows
+DT1 <- data.table(a = c(1:3,2:3), b = letters[c(1:3,2:3)])
+DT2 <- data.table(a = c(1L,1:4), b = letters[c(1L,1:4)])
+test(1613.20, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has more unique rows than 'target'.")
+test(1613.21, all.equal(DT2, DT1, ignore.row.order = TRUE), "Dataset 'target' has more unique rows than 'current'.")
+# test attributes: key
+DT1 <- data.table(a = 1:4, b = letters[1:4], key = "a")
+DT2 <- data.table(a = 1:4, b = letters[1:4])
+test(1613.22, all.equal(DT1, DT2), "Datasets has different keys. 'target': a. 'current' has no key.")
+test(1613.23, all.equal(DT1, DT2, check.attributes = FALSE), TRUE)
+test(1613.24, all.equal(DT1, setkeyv(DT2, "a"), check.attributes = TRUE), TRUE)
+# test attributes: index
+DT1 <- data.table(a = 1:4, b = letters[1:4])
+DT2 <- data.table(a = 1:4, b = letters[1:4])
+set2keyv(DT1, "b")
+test(1613.25, all.equal(DT1, DT2), "Datasets has different indexes. 'target': b. 'current' has no index.")
+test(1613.26, all.equal(DT1, DT2, check.attributes = FALSE), TRUE)
+test(1613.27, all.equal(DT1, set2keyv(DT2, "a")), "Datasets has different indexes. 'target': b. 'current': a.")
+test(1613.28, all.equal(DT1, set2keyv(DT2, "b")), "Datasets has different indexes. 'target': b. 'current': a, b.")
+test(1613.29, all.equal(DT1, set2keyv(set2keyv(DT2, NULL), "b")), TRUE)
+# test custom attribute
+DT1 <- data.table(a = 1:4, b = letters[1:4])
+DT2 <- data.table(a = 1:4, b = letters[1:4])
+setattr(DT1, "custom", 1L)
+test(1613.30, all.equal(DT1, DT2), "Datasets has different number of (non-excluded) attributes: target 3, current 2.")
+test(1613.31, all.equal(DT1, DT2, check.attributes = FALSE), TRUE)
+setattr(DT2, "custom2", 2L)
+test(1613.32, all.equal(DT1, DT2), "Datasets has attributes with different names: custom, custom2.")
+setattr(DT1, "custom2", 2L)
+setattr(DT2, "custom", 0L)
+test(1613.33, all.equal(DT1, DT2), paste0("Attributes: < Component ", dQuote("custom"), ": Mean relative difference: 1 >"))
+setattr(DT2, "custom", 1L)
+test(1613.34, all.equal(DT1, DT2), TRUE)
+# trim.levels
+dt1 <- data.table(A = factor(letters[1:10])[1:4]) # 10 levels
+dt2 <- data.table(A = factor(letters[1:5])[1:4]) # 5 levels
+test(1613.35, all.equal(dt1, dt2), TRUE)
+test(1613.36, all.equal(dt1, dt2, trim.levels = FALSE), paste0("Column 'A': Attributes: < Component ", dQuote("levels"), ": Lengths (10, 5) differ (string compare on first 5) >"))
+test(1613.37, all.equal(dt1, dt2, trim.levels = FALSE, check.attributes = FALSE), TRUE)
+test(1613.38, all.equal(dt1, dt2, trim.levels = FALSE, ignore.row.order = TRUE), TRUE)
+test(1613.39, length(levels(dt1$A)) == 10L && length(levels(dt2$A)) == 5L, TRUE) # dt1 and dt2 not updated by reference
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

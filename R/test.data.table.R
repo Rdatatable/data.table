@@ -177,41 +177,79 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     invisible()
 }
 
-
-## Tests that two data.tables (`target` and `current`) are equivalent.
-## This method is used primarily to make life easy with a testing harness
-## built around test_that. A call to test_that::{expect_equal|equal} will
-## ultimately dispatch to this method when making an "equality" call.
-all.equal.data.table <- function(target, current, trim.levels=TRUE, ...) {
-    target = copy(target)
-    current = copy(current)
-    if (trim.levels) {
-        ## drop unused levels
-        if (length(target)) {
-            for (i in which(sapply(target, is.factor))) {
-                .xi = factor(target[[i]])
-                target[,(i):=.xi]
-            }
+# rewritten when implementing #1106 
+all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attributes=TRUE, ignore.col.order=FALSE, ignore.row.order=FALSE, ...) {
+    stopifnot(is.data.table(target), is.data.table(current), is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order))
+    
+    msg = character(0)
+    # init checks that detect high level all.equal
+    if(nrow(current) != nrow(target)) msg = "Different number of rows"
+    if(ncol(current) != ncol(target)) msg = c(msg, "Different number of columns")
+    diff.colnames = !identical(sort(names(target)), sort(names(current)))
+    diff.colorder = !identical(names(target), names(current))
+    if(diff.colnames) msg = c(msg, "Different column names")
+    if(!diff.colnames && !ignore.col.order && diff.colorder) msg = c(msg, "Different column order")
+    
+    if(length(msg)) return(msg) # skip check.attributes and further heavy processing
+    
+    # ignore.col.order
+    if (ignore.col.order && diff.colorder) current = current[, names(target), with=FALSE]
+    
+    # check attributes
+    if (check.attributes) {
+        # check key
+        k1 = key(target)
+        k2 = key(current)
+        if (!identical(k1, k2)) {
+            return(sprintf("Datasets has different keys. 'target'%s. 'current'%s.",
+                           if(length(k1)) paste0(": ", paste(k1, collapse=", ")) else " has no key",
+                           if(length(k2)) paste0(": ", paste(k2, collapse=", ")) else " has no key"))
         }
-        if (length(current)) {
-            for (i in which(sapply(current, is.factor))) {
-                .xi = factor(current[[i]])
-                current[,(i):=.xi]
-            }
+        # check index
+        i1 = key2(target)
+        i2 = key2(current)
+        if (!identical(i1, i2)) {
+            return(sprintf("Datasets has different indexes. 'target'%s. 'current'%s.",
+                           if(length(i1)) paste0(": ", paste(i1, collapse=", ")) else " has no index",
+                           if(length(i2)) paste0(": ", paste(i2, collapse=", ")) else " has no index"))
+        }
+        
+        # Trim any extra row.names attributes that came from some inheritence
+        # Trim ".internal.selfref" as long as there is no `all.equal.externalptr` method
+        exclude.attrs = function(x, attrs = c("row.names",".internal.selfref")) x[!names(x) %in% attrs]
+        a1 = exclude.attrs(attributes(target))
+        a2 = exclude.attrs(attributes(current))
+        if (length(a1) != length(a2)) return(sprintf("Datasets has different number of (non-excluded) attributes: target %s, current %s.", length(a1), length(a2)))
+        if (!identical(nm1 <- sort(names(a1)), nm2 <- sort(names(a2)))) return(sprintf("Datasets has attributes with different names: %s.", paste(setdiff(union(names(a1), names(a2)), intersect(names(a1), names(a2))), collapse=", ")))
+        attrs.r = all.equal(a1[nm1], a2[nm2], ..., check.attributes = check.attributes)
+        if (is.character(attrs.r)) return(paste("Attributes: <", attrs.r, ">")) # skip further heavy processing
+    }
+    
+    # ignore.row.order
+    if (ignore.row.order) {
+        if(".unqn" %in% names(target)) stop("None of the datasets to test should contain a column named '.unqn'.") # handle datasets with `N` column
+        target_dup = as.logical(anyDuplicated(target))
+        current_dup = as.logical(anyDuplicated(current))
+        if (target_dup && !current_dup) return("Dataset 'target' has duplicate rows while 'current' don't have any duplicate rows.")
+        if (!target_dup && current_dup) return("Dataset 'current' has duplicate rows while 'target' don't have any duplicate rows.")
+        if (target_dup && current_dup) {
+            `.` = NULL # CRAN NOTE fix
+            target = target[, .(`.unqn` = .N), by=names(target)]
+            current = current[, .(`.unqn` = .N), by=names(current)]
+            if(nrow(target) > nrow(current)) return("Dataset 'target' has more unique rows than 'current'.")
+            if(nrow(target) < nrow(current)) return("Dataset 'current' has more unique rows than 'target'.")
+        }
+        ans = target[current, nomatch=NA, which=TRUE, on=names(target)]
+        if (anyNA(ans)) return("Dataset 'current' has rows present in different quantity than in 'target'.")
+        ans = current[target, nomatch=NA, which=TRUE, on=names(current)]
+        if (anyNA(ans)) return("Dataset 'target' has rows present in different quantity than in 'current'.")
+    } else {
+        for (i in seq_along(target)) {
+            # trim.levels moved here
+            if.trim = function(x) if (check.attributes && trim.levels && is.factor(x)) factor(x) else x
+            cols.r = all.equal(if.trim(target[[i]]), if.trim(current[[i]]), ..., check.attributes = check.attributes)
+            if (is.character(cols.r)) return(paste0("Column '", names(target)[i], "': ", cols.r))
         }
     }
-
-    ## Trim any extra row.names attributes that came from some inheritence
-    setattr(target, "row.names", NULL)
-    setattr(current, "row.names", NULL)
-    
-    # all.equal uses unclass which doesn't know about external pointers; there
-    # doesn't seem to be all.equal.externalptr method in base.
-    setattr(target, ".internal.selfref", NULL)
-    setattr(current, ".internal.selfref", NULL)
-    
-    all.equal.list(target, current, ...)
+    TRUE
 }
-
-
-
