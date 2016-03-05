@@ -193,7 +193,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     if(length(msg)) return(msg) # skip check.attributes and further heavy processing
     
     # ignore.col.order
-    if (ignore.col.order && diff.colorder) current = current[, names(target), with=FALSE]
+    if (ignore.col.order && diff.colorder) current = setcolorder(shallow(current), names(target))
     
     # check attributes
     if (check.attributes) {
@@ -227,7 +227,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     
     # ignore.row.order
     if (ignore.row.order) {
-        if(".unqn" %in% names(target)) stop("None of the datasets to test should contain a column named '.unqn'.") # handle datasets with `N` column
+        if(".unqn" %chin% names(target)) stop("None of the datasets to test should contain a column named '.unqn'.") # handle datasets with `N` column
         target_dup = as.logical(anyDuplicated(target))
         current_dup = as.logical(anyDuplicated(current))
         if (target_dup && !current_dup) return("Dataset 'target' has duplicate rows while 'current' don't have any duplicate rows.")
