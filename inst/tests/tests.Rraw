@@ -7625,8 +7625,13 @@ set.seed(1L)
 dt = data.table(a=c(1,1,2), b=sample(10,3), c=sample(10,3))
 test(1616.1, dt[.(1:2), if (c-b > 0L) b, on="a", by=.EACHI, mult="first"], data.table(a=c(1,2), V1=c(3L,5L)))
 test(1616.2, dt[.(1:2), if (c-b > 0L) b, on="a", by=.EACHI, mult="last"], data.table(a=c(2), V1=5L))
-test(1613.1, dt[.(1:2), c := if (c-b > 0L) b, by=.EACHI, mult="first", on="a"], 
+test(1616.3, dt[.(1:2), c := if (c-b > 0L) b, by=.EACHI, mult="first", on="a"], 
              data.table(a=dt$a, b=dt$b, c=c(3L,2L,5L)) )
+
+# fix for #1281
+x <- 3 > 0
+ans = setattr(copy(x), "foo", "bar")
+test(1617, setattr(x, "foo", "bar"), ans, warning = "Input is a length=1 logical that")
 
 ##########################
 

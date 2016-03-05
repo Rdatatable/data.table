@@ -14,6 +14,12 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
          isString(value) && (strcmp(CHAR(STRING_ELT(value, 0)), "data.table") == 0 || 
          strcmp(CHAR(STRING_ELT(value, 0)), "data.frame") == 0) )
         error("Internal structure doesn't seem to be a list. Can't set class to be 'data.table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods instead.");
+    if (isLogical(x) && x == ScalarLogical(TRUE)) {
+        x = PROTECT(duplicate(x));
+        setAttrib(x, name, NAMED(value) ? duplicate(value) : value);
+        UNPROTECT(1);
+        return(x);
+    }
     setAttrib(x, name,
         NAMED(value) ? duplicate(value) : value);
         // duplicate is temp fix to restore R behaviour prior to R-devel change on 10 Jan 2014 (r64724).

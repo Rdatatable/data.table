@@ -146,6 +146,8 @@
 
   42. Subsets using logical expressions in `i` never returns all-`NA` rows. Edge case `DT[NA]` is now fixed, [#1252](https://github.com/Rdatatable/data.table/issues/1252). Thanks to @sergiizaskaleta.
 
+  43. `setattr()` catches logical input that points to R's global TRUE value and sets attributes on a copy instead, along with a warning, [#1281](https://github.com/Rdatatable/data.table/issues/1281). Thanks to @tdeenes.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
