@@ -134,6 +134,8 @@
 
   37. `as.data.table.list` handles list elements that are matrices/data.frames/data.tables properly, [#833](https://github.com/Rdatatable/data.table/issues/833). Thanks to @talexand.
 
+  38. `data.table()`, `as.data.table()` and `[.data.table` warn on `POSIXlt` type column and converts to `POSIXct` type. `setDT()` errors when input is list and any column is of type `POSIXlt`, [#646](https://github.com/Rdatatable/data.table/issues/646). Thanks to @tdhock.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

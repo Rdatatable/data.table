@@ -7493,6 +7493,15 @@ l2 = list(seq_len(5), matrix(seq_len(25),ncol = 5, nrow = 5))
 test(1611.1, as.data.table(l1), setnames(setDT(as.data.frame(l1)), c("a", paste("V", 1:5, sep=""))))
 test(1611.2, as.data.table(l2), setnames(setDT(as.data.frame(l2)), c("V1", "V1.1", paste("V", 2:5, sep=""))))
 
+# fix for #646
+ll = list(a=as.POSIXlt("2015-01-01"), b=1:5)
+test(1612.1, as.data.table(ll), data.table(a=as.POSIXct("2015-01-01"), b=1:5), warning="POSIXlt column type detected")
+dt = data.table(d1="1984-03-17")
+ans = data.table(d1="1984-03-17", d2=as.POSIXct("1984-03-17"))
+test(1612.2, dt[, d2 := strptime(d1, "%Y-%m-%d")], ans, warning="POSIXlt column type detected and converted")
+ll = list(a=as.POSIXlt("2015-01-01"), b=2L)
+test(1612.3, setDT(ll), error="Column 1 is of POSIXlt type")
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

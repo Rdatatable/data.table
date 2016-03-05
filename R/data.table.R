@@ -1162,8 +1162,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     }  # end of  if !missing(j)
     
     SDenv = new.env(parent=parent.frame())
-    # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
+    # taking care of warnings for posixlt type, #646
+    SDenv$strptime <- function(x, ...) {
+	warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+	as.POSIXct(base::strptime(x, ...))
+    }
 
+    # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
     if (missing(by) || (!byjoin && !length(byval))) {
         # No grouping: 'by' = missing | NULL | character() | "" | list()
         # Considered passing a one-group to dogroups but it doesn't do the recycling of i within group, that's done here
@@ -2432,6 +2437,10 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
         x = null.data.table()
     } else if (is.list(x)) {
         # copied from as.data.table.list - except removed the copy
+	for (i in seq_along(x)) {
+	    if (inherits(x[[i]], "POSIXlt"))
+		stop("Column ", i, " is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+	}
         n = vapply(x, length, 0L)
         mn = max(n)
         if (any(n<mn))

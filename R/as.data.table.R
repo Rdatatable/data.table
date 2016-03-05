@@ -112,6 +112,10 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
     if (length(idx)) {
         for (i in idx) {
             if (!is.null(x[[i]])) {# avoids warning when a list element is NULL
+                if (inherits(x[[i]], "POSIXlt")) {
+                    warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+                    x[[i]] = as.POSIXct(x[[i]])
+                }
                 # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
                 if (!n[i] && mn)
                     warning("Item ", i, " is of size 0 but maximum size is ", mn, ", therefore recycled with 'NA'")
