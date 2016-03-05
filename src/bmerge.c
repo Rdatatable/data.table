@@ -102,7 +102,7 @@ static union {
   double d;
   unsigned long long ll;
   SEXP s;
-} ival, xval;
+} ival, xval, xvallow, xvalupp; // last two are for #1405 for use in roll condition check
 
 static int mid, tmplow, tmpupp;  // global to save them being added to recursive stack. Maybe optimizer would do this anyway.
 static SEXP ic, xc;
@@ -290,10 +290,16 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
                 retLength[ir] = 1;
             }
         } else {
+            // fix for #1405
+            if (TYPEOF(ic) == REALSXP) {
+                xvalupp.ll = REAL(xc)[XIND(xupp)];
+                xvallow.ll = REAL(xc)[XIND(xlow)];
+                ival.ll = REAL(ic)[ir];
+            }
             if ( (   (roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
                   || (roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )
-              && (   (TYPEOF(ic)==REALSXP && (REAL(ic)[ir]-REAL(xc)[XIND(xlow)]-rollabs<1e-6 || 
-                                              REAL(ic)[ir]-REAL(xc)[XIND(xlow)] == rollabs)) // #1007 fix
+              && (   (TYPEOF(ic)==REALSXP && ((double)(ival.ll-xvallow.ll)-rollabs<1e-6 || 
+                                              (double)(ival.ll-xvallow.ll) == rollabs)) // #1007 fix
                   || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(ic)[ir]-INTEGER(xc)[XIND(xlow)])-rollabs<1e-6 ) 
                   || (TYPEOF(ic)==STRSXP)   )) {
                 retFirst[ir] = xlow+1;
@@ -301,8 +307,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int lowma
             } else if
                (  (  (roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))
                   || (roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )
-              && (   (TYPEOF(ic)==REALSXP && (REAL(xc)[XIND(xupp)]-REAL(ic)[ir]-rollabs<1e-6 || 
-                                              REAL(xc)[XIND(xupp)]-REAL(ic)[ir] == rollabs)) // 1007 fix
+              && (   (TYPEOF(ic)==REALSXP && ((double)(xvalupp.ll-ival.ll)-rollabs<1e-6 || 
+                                              (double)(xvalupp.ll-ival.ll) == rollabs)) // 1007 fix
                   || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(xc)[XIND(xupp)]-INTEGER(ic)[ir])-rollabs<1e-6 )
                   || (TYPEOF(ic)==STRSXP)   )) {
                 retFirst[ir] = xupp+1;   // == xlow+2

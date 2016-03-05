@@ -7600,6 +7600,17 @@ test(1613.37, all.equal(dt1, dt2, trim.levels = FALSE, check.attributes = FALSE)
 test(1613.38, all.equal(dt1, dt2, trim.levels = FALSE, ignore.row.order = TRUE), TRUE)
 test(1613.39, length(levels(dt1$A)) == 10L && length(levels(dt2$A)) == 5L, TRUE) # dt1 and dt2 not updated by reference
 
+if ("package:bit64" %in% search()) {
+    # fix for #1405, handles roll with -ve int64 values properly
+    dt = data.table(x=as.integer64(c(-1000, 0)), y=c(5,10))
+    val = c(-1100,-900,100)
+    ans = data.table(x=as.integer64(val))
+    test(1614.1, dt[.(val), roll=Inf,  on="x"], ans[, y:=c(NA,5,10)])
+    test(1614.2, dt[.(val), roll=Inf, on="x", rollends=TRUE], ans[, y:=c(5,5,10)])
+    test(1614.3, dt[.(val), roll=-Inf, on="x"], ans[, y:=c(5,10,NA)])
+    test(1614.4, dt[.(val), roll=-Inf, on="x", rollends=TRUE], ans[, y:=c(5,10,10)])
+}
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
