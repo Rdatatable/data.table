@@ -673,7 +673,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 		if (!byjoin) { # fix for #1287 and #1271
 		    irows = if (mult=="first") f__ else f__+len__-1L
 		    if (identical(nomatch,0L)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
-		    if (length(len__)) len__ = pmin(len__,1L)
 		} else { if (mult == "last") f__ = f__+len__- 1L } # fix for #1287 and #1271
 		# for test 456, and consistency generally. The if() is for R < 2.15.1 when pmin was enhanced, see v1.8.6.
 		if (length(len__)) len__ = pmin(len__, 1L)
