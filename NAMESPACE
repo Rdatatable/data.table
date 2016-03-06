@@ -30,6 +30,11 @@ export(rowid)
 export(rowidv)
 export(as.xts.data.table)
 export(uniqueN)
+# set operators
+export(fintersect)
+export(fsetdiff)
+export(funion)
+export(fsetequal)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
