@@ -173,5 +173,6 @@ as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...) {
 as.data.table.data.table <- function(x, ...) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(x, 'class', .resetclass(x, "data.table"))
+    if (!selfrefok(x)) x = alloc.col(x) # fix for #473
     return(x)
 }

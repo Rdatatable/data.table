@@ -7646,6 +7646,11 @@ DT = data.table(x=1:2, y=5:6)
 test(1619.1, DT[, .BY, by=x]$BY, as.list(1:2))
 test(1619.2, DT[, bycol := .BY, by=x]$bycol, as.list(1:2))
 
+# fix for #473
+DT = data.frame(x=1, y=2)
+setattr(DT, 'class', c('data.table', 'data.frame')) # simulates over-allocation lost scenario
+if (!truelength(DT)) test(1620, truelength(as.data.table(DT)), 100L)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

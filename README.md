@@ -152,6 +152,8 @@
 
   45. `DT[, .BY, by=x]` and other variants of adding a column using `.BY` is handled correctly in R v3.1.0+, [#1270](https://github.com/Rdatatable/data.table/issues/1270). 
 
+  46. `as.data.table.data.table()` method checks and restores over-allocation, [#473](https://github.com/Rdatatable/data.table/issues/473). 
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
