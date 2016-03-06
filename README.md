@@ -203,6 +203,8 @@
   A *quick tour of data.table* HTML vignette is in the works in the spirit of the previous *10 minute quick intro* PDF guide.
   
   20. `row.names` argument to `print.data.table` can now be changed by default via `options("datatable.print.rownames")` (`TRUE` by default, the inherited standard), [#1097](https://github.com/Rdatatable/data.table/issues/1097). Thanks to @smcinerney for the suggestion and @MichaelChirico for the PR.
+  
+  21. `data.table`s with `NULL` or blank column names now print with blank column names, [#545](https://github.com/Rdatatable/data.table/issues/545), with minor revision to [#97](https://github.com/Rdatatable/data.table/issues/97). Thanks to @arunsrinivasan for reporting and @MichaelChirico for the PR.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 

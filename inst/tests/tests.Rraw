@@ -3124,10 +3124,22 @@ test(1087, class(DT$last.x1), "ITime")
 
 # Tests 1088-1093 were non-ASCII. Now in DtNonAsciiTests
 
-# print of unnamed DT with >20 <= 100 rows, #4934
+# print of unnamed DT with >20 <= 100 rows, #97 (RF#4934)
 DT <- data.table(x=1:25, y=letters[1:25])
 DT.unnamed <- unname(copy(DT))
-test(1094, print(DT.unnamed), output="NA NA 1:  1  a 2:  2  b 3:  3  c")
+test(1094.1, capture.output(print(DT.unnamed)),
+     c("        ", " 1:  1 a", " 2:  2 b", " 3:  3 c", " 4:  4 d", 
+       " 5:  5 e", " 6:  6 f", " 7:  7 g", " 8:  8 h", " 9:  9 i",
+       "10: 10 j", "11: 11 k", "12: 12 l", "13: 13 m", "14: 14 n",
+       "15: 15 o", "16: 16 p", "17: 17 q", "18: 18 r", "19: 19 s", 
+       "20: 20 t", "21: 21 u", "22: 22 v", "23: 23 w", "24: 24 x",
+       "25: 25 y", "        "))
+
+# print of blank-named DT (eliminating matrix notation)
+#   #545 (RF#5253) and part of #1523
+DT <- data.table(x = 1:3)
+setnames(DT, "")
+test(1094.2, capture.output(print(DT)), c("    ", "1: 1", "2: 2", "3: 3"))
 
 # DT[!TRUE] or DT[!TRUE, which=TRUE], #4930. !TRUE still can be a recycling operation with !(all TRUE)
 DT <- data.table(x=1:3, y=4:6)

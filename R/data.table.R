@@ -142,7 +142,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     }
     # FR #5020 - add row.names = logical argument to print.data.table
     if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE,scientific=FALSE),":",sep="") else rownames(toprint)=rep.int("", nrow(toprint))
-    if (is.null(names(x))) colnames(toprint)=rep("NA", ncol(toprint)) # fixes bug #4934
+    if (is.null(names(x)) | all(names(x) == "")) colnames(toprint)=rep("", ncol(toprint)) # fixes bug #97 (RF#4934) and #545 (RF#5253)
     if (isTRUE(print.class)) {
       #Matching table for most common types & their abbreviations
       class_abb = c(list = "<list>", integer = "<int>", numeric = "<num>",
