@@ -201,6 +201,8 @@
   19. Rnw vignettes are converted to Rmd. The *10 minute quick introduction* Rnw vignette has been removed, since almost all of its contents are consolidated into the new intro Rmd vignette. Thanks to @MichaelChirico and @Jan. 
 
   A *quick tour of data.table* HTML vignette is in the works in the spirit of the previous *10 minute quick intro* PDF guide.
+  
+  20. `row.names` argument to `print.data.table` can now be changed by default via `options("datatable.print.rownames")` (`TRUE` by default, the inherited standard), [#1097](https://github.com/Rdatatable/data.table/issues/1097). Thanks to @smcinerney for the suggestion and @MichaelChirico for the PR.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
