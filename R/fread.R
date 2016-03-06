@@ -14,6 +14,8 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     if (length(fill) != 1L || !fill %in% c(TRUE, FALSE)) {
         stop("Argument 'fill' must be logical TRUE/FALSE")
     }
+    if (dir.exists(input)[1L]) # fix for #989
+        stop("'input' can not be a directory name, but must be a single character string containing a file name, a command, full path to a file, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or the input data itself.")
     if (getOption("datatable.fread.dec.experiment") && Sys.localeconv()["decimal_point"] != dec) {
         oldlocale = Sys.getlocale("LC_NUMERIC")
         if (verbose) cat("dec='",dec,"' but current locale ('",oldlocale,"') has dec='",Sys.localeconv()["decimal_point"],"'. Attempting to change locale to one that has the desired decimal point.\n",sep="")

@@ -158,6 +158,8 @@
 
   47. When the number of rows read are less than the number of guessed rows (or allocated), `fread()` doesn't warn anymore; rather restricts to a verbose message, [#1116](https://github.com/Rdatatable/data.table/issues/1116) and [#1239](https://github.com/Rdatatable/data.table/issues/1239). Thanks to @slowteetoe and @hshipper.
 
+  48. `fread()` throws an error if input is a *directory*, [#989](https://github.com/Rdatatable/data.table/issues/989). Thanks @vlsi.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
