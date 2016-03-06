@@ -60,9 +60,7 @@
   
   22. `all.equal.data.table` gets new features for testing equality of data.tables, new arguments are `check.attributes`, `ignore.col.order`, `ignore.row.order`.
 
-  23. Use of `mult='first'` or `mult='last'` when `i` argument is *logical/numeric* now provides a warning that `mult` argument is ignored, [#1295](https://github.com/Rdatatable/data.table/issues/1295). Thanks to @nkurz.
-
-  24. Fast set operations `fsetdiff`, `fintersect`, `funion` and `fsetequal` for data.tables is now implemented, [#547](https://github.com/Rdatatable/data.table/issues/547).
+  23. Fast set operations `fsetdiff`, `fintersect`, `funion` and `fsetequal` for data.tables is now implemented, [#547](https://github.com/Rdatatable/data.table/issues/547).
 
 #### BUG FIXES
 
