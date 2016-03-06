@@ -1040,8 +1040,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 }
             }
             // change warning to verbose, avoids confusion, see #1124
-            if (verbose && i<5) {
-                Rprintf("Couldn't guess column types from %s 5 lines\n", str);
+            if (i<5) {
+                if (verbose) Rprintf("Couldn't guess column types from %s 5 lines\n", str);
                 continue;
             }
         }

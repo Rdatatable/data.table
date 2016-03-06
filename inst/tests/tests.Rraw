@@ -7652,7 +7652,8 @@ setattr(DT, 'class', c('data.table', 'data.frame')) # simulates over-allocation 
 if (!truelength(DT)) test(1620, truelength(as.data.table(DT)), 100L)
 
 # fix for #1116, (#1239 and #1201)
-test(1621, fread("issue_1116_fread_few_lines.txt"), setDT(read.delim("issue_1116_fread_few_lines.txt", stringsAsFactors=FALSE, sep=",", check.names=FALSE)))
+test(1621.1, fread("issue_1116_fread_few_lines.txt"), setDT(read.delim("issue_1116_fread_few_lines.txt", stringsAsFactors=FALSE, sep=",", check.names=FALSE)))
+test(1621.2, fread("issue_1116_fread_few_lines_2.txt"), setDT(read.delim("issue_1116_fread_few_lines_2.txt", stringsAsFactors=FALSE, sep=",", check.names=FALSE)))
 
 # fix for #1573
 ans1 = fread("issue_1573_fill.txt", fill=TRUE, na.strings="")
