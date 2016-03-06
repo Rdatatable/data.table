@@ -1326,10 +1326,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (INTEGER(nrowsarg)[0] == -1 || i < nrow) warning("Stopped reading at empty line %d but text exists afterwards (discarded): %.*s", line, ch2-ch, ch);
     }
     if (i<nrow) {
-        if (nrow-i > 100 && (double)i/nrow < 0.95)
-            warning("Read less rows (%d) than were allocated (%d). Run again with verbose=TRUE and please report.",i,nrow);
-        else if (verbose)
-            Rprintf("Read slightly fewer rows (%d) than were allocated (%d).\n", i, nrow);
+        // the condition above happens usually when the file contains many newlines. This is not necesarily something to be worried about. I've therefore commented the warning part, and retained the verbose message. If there are cases where lines don't get read in, we can revisit this warning. Fixes #1116.
+        // if (nrow-i > 100 && (double)i/nrow < 0.95)
+            // warning("Read less rows (%d) than were allocated (%d). Run again with verbose=TRUE and please report.",i,nrow);
+        // else if (verbose)
+        if (verbose)
+            Rprintf("Read fewer rows (%d) than were allocated (%d).\n", i, nrow);
         nrow = i;
     } else {
         if (i!=nrow) STOP("Internal error: i [%d] > nrow [%d]", i, nrow);

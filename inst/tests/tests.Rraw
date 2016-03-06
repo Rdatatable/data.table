@@ -7651,6 +7651,9 @@ DT = data.frame(x=1, y=2)
 setattr(DT, 'class', c('data.table', 'data.frame')) # simulates over-allocation lost scenario
 if (!truelength(DT)) test(1620, truelength(as.data.table(DT)), 100L)
 
+# fix for #1116, (#1239 and #1201)
+test(1621, fread("issue_1116_fread_few_lines.txt"), setDT(read.delim("issue_1116_fread_few_lines.txt", stringsAsFactors=FALSE, sep=",", check.names=FALSE)))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

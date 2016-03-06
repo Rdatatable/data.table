@@ -154,6 +154,8 @@
 
   46. `as.data.table.data.table()` method checks and restores over-allocation, [#473](https://github.com/Rdatatable/data.table/issues/473). 
 
+  47. When the number of rows read are less than the number of guessed rows (or allocated), `fread()` doesn't warn anymore; rather restricts to a verbose message, [#1116](https://github.com/Rdatatable/data.table/issues/1116) and [#1239](https://github.com/Rdatatable/data.table/issues/1239). Thanks to @slowteetoe and @hshipper.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
