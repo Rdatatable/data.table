@@ -7654,6 +7654,12 @@ if (!truelength(DT)) test(1620, truelength(as.data.table(DT)), 100L)
 # fix for #1116, (#1239 and #1201)
 test(1621, fread("issue_1116_fread_few_lines.txt"), setDT(read.delim("issue_1116_fread_few_lines.txt", stringsAsFactors=FALSE, sep=",", check.names=FALSE)))
 
+# fix for #1573
+ans1 = fread("issue_1573_fill.txt", fill=TRUE, na.strings="")
+ans2 = setDT(read.table("issue_1573_fill.txt", header=TRUE, fill=TRUE, stringsAsFactors=FALSE, na.strings=""))
+test(1622.1, ans1, ans2)
+test(1622.2, ans1, fread("issue_1573_fill.txt", fill=TRUE, sep=" ", na.strings=""))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

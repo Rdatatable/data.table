@@ -42,7 +42,7 @@
 
   13. GForce is optimised for `.SD[val]` and `col[val]` where `val` is a positive length-1 value. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523).
 
-  14. `fread` gains `fill` argument with default `FALSE` for backwards compatibility. Closes [#536](https://github.com/Rdatatable/data.table/issues/536).
+  14. `fread` gains `fill` argument with default `FALSE` for backwards compatibility. Closes [#536](https://github.com/Rdatatable/data.table/issues/536). Also, `fill=TRUE` prioritises maximum cols instead of longest run with identical columns when `fill=TRUE` which allows handle missing columns slightly more robustly, [#1573](https://github.com/Rdatatable/data.table/issues/1573).
 
   15. `fread` gains `key` argument, [#590](https://github.com/Rdatatable/data.table/issues/590).
 
@@ -59,6 +59,8 @@
   21. New argument `print.class` for `print.data.table` allows for including column class under column names (as inspired by `tbl_df` in `dplyr`); default (adjustable via `"datatable.print.class"` option) is `FALSE`, the inherited behavior. Part of [#1523](https://github.com/Rdatatable/data.table/issues/1523); thanks to @MichaelChirico for the FR & PR.
   
   22. `all.equal.data.table` gets new features for testing equality of data.tables, new arguments are `check.attributes`, `ignore.col.order`, `ignore.row.order`.
+
+  23. Use of `mult='first'` or `mult='last'` when `i` argument is *logical/numeric* now provides a warning that `mult` argument is ignored, [#1295](https://github.com/Rdatatable/data.table/issues/1295). Thanks to @nkurz.
 
 #### BUG FIXES
 

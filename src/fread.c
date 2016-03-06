@@ -824,7 +824,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (ch==eof || i==30 || ncol!=thisNcol) {
                 // this* still refers to the previous run which has just finished
                 // Rprintf("\nRun: s='%c' thisLine=%d thisLen=%d thisNcol=%d", sep, thisLine, thisLen, thisNcol);
-                if (thisNcol>1 && (thisLen>topLen ||     // longest run wins
+                if (thisNcol>1 && (( thisLen>topLen && (!fill || (fill && thisNcol>topNcol)) ) ||     // longest run wins as long as fill=FALSE. If not, retain longest column so far. Fixes 
                                    (thisLen==topLen && sep==topSep && thisNcol>topNcol))) {  // if tied, the one that divides it more (test 1328, 2 rows)
                     topStart = thisStart;
                     topLine = thisLine;
