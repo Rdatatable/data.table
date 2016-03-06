@@ -89,8 +89,11 @@ setPackageName("data.table",.global)
 # So even though .BY doesn't appear in this file, it should still be NULL here and exported because it's
 # defined in SDenv and can be used by users.
 
-print.data.table <- function(x, topn=getOption("datatable.print.topn"), nrows=getOption("datatable.print.nrows"), print.class=getOption("datatable.print.class"), row.names=TRUE, quote=FALSE, ...) {
-    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
+print.data.table <- function(x, topn=getOption("datatable.print.topn"), 
+                             nrows=getOption("datatable.print.nrows"), 
+                             print.class=getOption("datatable.print.class"), 
+                             row.names=getOption("datatable.print.rownames"), 
+                             quote=FALSE, ...) {    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
     # nrows - under this the whole (small) table is printed, unless topn is provided (100)
     # class - should column class be printed underneath column name? (FALSE)
     if (.global$print!="" && address(x)==.global$print) {   # The !="" is to save address() calls and R's global cache of address strings

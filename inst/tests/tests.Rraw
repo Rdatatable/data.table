@@ -7654,6 +7654,13 @@ if (!truelength(DT)) test(1620, truelength(as.data.table(DT)), 100L)
 # fix for #1116, (#1239 and #1201)
 test(1621, fread("issue_1116_fread_few_lines.txt"), setDT(read.delim("issue_1116_fread_few_lines.txt", stringsAsFactors=FALSE, sep=",", check.names=FALSE)))
 
+# testing print.rownames option
+old = getOption("datatable.print.rownames")
+options(datatable.print.rownames = FALSE)
+DT <- data.table(a = 1:3)
+test(1622, capture.output(print(DT)), c(" a", " 1", " 2", " 3"))
+options(datatable.print.rownames = old)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

@@ -8,10 +8,11 @@
 }
 \usage{
   \method{print}{data.table}(x,
-    topn=getOption("datatable.print.topn"),         # default: 5
-    nrows=getOption("datatable.print.nrows"),       # default: 100
-    print.class=getOption("datatable.print.class"), # default: FALSE
-    row.names=TRUE,quote=FALSE,...)
+    topn=getOption("datatable.print.topn"),          # default: 5
+    nrows=getOption("datatable.print.nrows"),        # default: 100
+    print.class=getOption("datatable.print.class"),  # default: FALSE
+    row.names=getOption("datatable.print.rownames"), # default: TRUE
+    quote=FALSE,...)
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
