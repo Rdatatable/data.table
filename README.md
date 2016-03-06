@@ -148,6 +148,8 @@
 
   43. `setattr()` catches logical input that points to R's global TRUE value and sets attributes on a copy instead, along with a warning, [#1281](https://github.com/Rdatatable/data.table/issues/1281). Thanks to @tdeenes.
 
+  44. `fread` respects order of columns provided to argument `select` in result, and also errors if the column(s) provided is not present, [#1445](https://github.com/Rdatatable/data.table/issues/1445). 
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

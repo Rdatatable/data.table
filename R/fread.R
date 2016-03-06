@@ -114,6 +114,17 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
             cols = which(vapply(ans, is.character, TRUE))
     }
     setfactor(ans, cols, verbose)
+    if (!missing(select)) {
+        # fix for #1445
+        if (is.numeric(select)) {
+            reorder = if (length(o <- forderv(select))) o else seq_along(select)
+        } else {
+            if (length(idx <- which(!select %chin% names(ans))))
+                stop("Column(s) [", paste(select[idx], collapse=","), "] not found.")
+            reorder = select
+        }
+        setcolorder(ans, reorder)
+    }
     # FR #768
     if (!missing(col.names))
         setnames(ans, col.names) # setnames checks and errors automatically
