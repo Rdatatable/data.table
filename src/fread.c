@@ -1240,6 +1240,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         batchend = MIN(i+10000, nrow);    // batched into 10k rows to save (expensive) calls to clock()
         while(i<batchend && ch<eof) {
             //Rprintf("Row %d : %.10s\n", i+1, ch);
+            if (stripWhite) skip_spaces(); // #1575 fix
             if (*ch==eol) {
                 if (skipEmptyLines) { ch++; continue; }
                 else if (!fill) {

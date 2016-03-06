@@ -30,7 +30,7 @@
 
   7. `on=` joins now provides more friendly error messages when columns aren't found, [#1376](https://github.com/Rdatatable/data.table/issues/1376).
 
-  8. `fread()` gains `blank.lines.skip` argument that continues reading by skipping empty lines. Default is `FALSE` for backwards compatibility, [#530](https://github.com/Rdatatable/data.table/issues/530). Thanks to @DirkJonker.
+  8. `fread()` gains `blank.lines.skip` argument that continues reading by skipping empty lines. Default is `FALSE` for backwards compatibility, [#530](https://github.com/Rdatatable/data.table/issues/530). Thanks to @DirkJonker. Also pushed another bug fix, [#1575](https://github.com/Rdatatable/data.table/issues/1575).
 
   9. `print.data.table` now warns when `bit64` package isn't loaded but the `data.table` contains `integer64` columns, [#975](https://github.com/Rdatatable/data.table/issues/975). Thanks to @StephenMcInerney.
 
