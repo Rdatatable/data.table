@@ -115,9 +115,9 @@ Note that the code above explains how `:=` can be used. They are not working exa
 
 #### {.bs-callout .bs-callout-info}
 
-* Form (a) is usually easy to program with and is particularly useful when you don't know the columns to assign values to in advance.
+* In (a), `LHS` takes a character vector of column names and `RHS` a *list of values*. `RHS` just needs to be a `list`, irrespective of how its generated (e.g., using `lapply()`, `list()`, `mget()`, `mapply()` etc.). This form is usually easy to program with and is particularly useful when you don't know the columns to assign values to in advance. 
 
-* On the other hand, form (b) is handy if you would like to jot some comments down for later.
+* On the other hand, (b) is handy if you would like to jot some comments down for later.
 
 * The result is returned *invisibly*. 
 
