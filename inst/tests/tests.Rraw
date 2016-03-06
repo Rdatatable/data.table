@@ -7664,11 +7664,11 @@ test(1622.2, ans1, fread("issue_1573_fill.txt", fill=TRUE, sep=" ", na.strings="
 # fix for #989
 test(1623, fread("~"), error="can not be a directory name")
 
-# testing print.rownames option
+# testing print.rownames option, #1097 (part of #1523)
 old = getOption("datatable.print.rownames")
 options(datatable.print.rownames = FALSE)
 DT <- data.table(a = 1:3)
-test(1622, capture.output(print(DT)), c(" a", " 1", " 2", " 3"))
+test(1624, capture.output(print(DT)), c(" a", " 1", " 2", " 3"))
 options(datatable.print.rownames = old)
 
 ##########################
