@@ -62,6 +62,8 @@
 
   23. Use of `mult='first'` or `mult='last'` when `i` argument is *logical/numeric* now provides a warning that `mult` argument is ignored, [#1295](https://github.com/Rdatatable/data.table/issues/1295). Thanks to @nkurz.
 
+  24. Fast set operations `fsetdiff`, `fintersect`, `funion` and `fsetequal` for data.tables is now implemented, [#547](https://github.com/Rdatatable/data.table/issues/547).
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).
