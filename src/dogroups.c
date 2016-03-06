@@ -49,6 +49,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     SD = findVar(install(".SD"), env);
     
     defineVar(install(".BY"), BY = allocVector(VECSXP, ngrpcols), env);
+    SET_NAMED(BY, 2); // for #1270
     bynames = PROTECT(allocVector(STRSXP, ngrpcols));  protecti++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?
     for (i=0; i<ngrpcols; i++) {
         j = INTEGER(grpcols)[i]-1;
@@ -292,17 +293,20 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 // see that link (or scroll down for the non := version) for comments
                 #if defined(R_VERSION) && R_VERSION >= R_Version(3, 1, 0)
                 named=0;
-                if (isNewList(RHS) && NAMED(RHS) != 2) {
-                    dupcol = VECTOR_ELT(RHS, 0);
-                    named  = NAMED(dupcol);
-                    while(isNewList(dupcol)) {
-                        if (named == 2) break;
-                        else {
-                            dupcol = VECTOR_ELT(dupcol, 0);
-                            named = NAMED(dupcol);
+                if (isNewList(RHS)) {
+                    if (NAMED(RHS) == 2) { named=2; RHS = PROTECT(duplicate(RHS)); } // for #1270
+                    else {
+                        dupcol = VECTOR_ELT(RHS, 0);
+                        named  = NAMED(dupcol);
+                        while(isNewList(dupcol)) {
+                            if (named == 2) break;
+                            else {
+                                dupcol = VECTOR_ELT(dupcol, 0);
+                                named = NAMED(dupcol);
+                            }
                         }
+                        if (named == 2) RHS = PROTECT(duplicate(RHS));
                     }
-                    if (named == 2) RHS = PROTECT(duplicate(RHS));
                 }
                 memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);
                 if (named == 2) UNPROTECT(1);
@@ -442,23 +446,24 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             // because unique(y) returns NAMED(2). So, do it only if v>= 3.1.0. If <3.1.0,
             // it gets duplicated anyway, so avoid copying twice!
             named=0;
-            if (isNewList(source) && NAMED(source) != 2) {
-                // NAMED(source) != 2 prevents DT[, list(y), by=x] where 'y' is already a list 
-                // or data.table and 99% of cases won't clear the if-statement above.
-                dupcol = VECTOR_ELT(source, 0);
-                named  = NAMED(dupcol);
-                while(isNewList(dupcol)) {
-                    // while loop basically peels each list() layer one by one until there's no 
-                    // list() wrapped anymore. Ex: consider DT[, list(list(list(sum(y)))), by=x] - 
-                    // here, we don't need to duplicate, but we won't know that until we reach 
-                    // 'sum(y)' and know that it's NAMED() != 2.
-                    if (named == 2) break;
-                    else {
-                        dupcol = VECTOR_ELT(dupcol, 0);
-                        named = NAMED(dupcol);
+            if (isNewList(source)) {
+                if (NAMED(source) == 2) { named=2; source = PROTECT(duplicate(source)); } // for #1270
+                else {
+                    dupcol = VECTOR_ELT(source, 0);
+                    named  = NAMED(dupcol);
+                    while(isNewList(dupcol)) {
+                        // while loop basically peels each list() layer one by one until there's no 
+                        // list() wrapped anymore. Ex: consider DT[, list(list(list(sum(y)))), by=x] - 
+                        // here, we don't need to duplicate, but we won't know that until we reach 
+                        // 'sum(y)' and know that it's NAMED() != 2.
+                        if (named == 2) break;
+                        else {
+                            dupcol = VECTOR_ELT(dupcol, 0);
+                            named = NAMED(dupcol);
+                        }
                     }
+                    if (named == 2) source = PROTECT(duplicate(source));
                 }
-                if (named == 2) source = PROTECT(duplicate(source));
             }
             memrecycle(target, R_NilValue, thisansloc, maxn, source);
             if (named == 2) UNPROTECT(1);

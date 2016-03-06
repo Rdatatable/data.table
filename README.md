@@ -150,6 +150,8 @@
 
   44. `fread` respects order of columns provided to argument `select` in result, and also errors if the column(s) provided is not present, [#1445](https://github.com/Rdatatable/data.table/issues/1445). 
 
+  45. `DT[, .BY, by=x]` and other variants of adding a column using `.BY` is handled correctly in R v3.1.0+, [#1270](https://github.com/Rdatatable/data.table/issues/1270). 
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
