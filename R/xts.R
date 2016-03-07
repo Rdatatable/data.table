@@ -1,10 +1,11 @@
-as.data.table.xts <- function(x, keep.rownames = TRUE, ...){
+as.data.table.xts <- function(x, keep.rownames = TRUE, key=NULL, ...){
   stopifnot(requireNamespace("xts"), !missing(x), xts::is.xts(x))
-  if(!keep.rownames) return(setDT(as.data.frame(x, row.names=NULL))[])
+  if(!keep.rownames) return(setDT(as.data.frame(x, row.names=NULL), key=key)[])
   if("index" %in% names(x)) stop("Input xts object should not have 'index' column because it would result in duplicate column names. Rename 'index' column in xts or use `keep.rownames=FALSE` and add index manually as another column.")
   r = setDT(as.data.frame(x, row.names=NULL))
   index = NULL # fix for "no visible binding for global variable index"
   r[, index := zoo::index(x)]
+  if (!is.null(key)) setkeyv(r, key) # can't pass to setDT above since user may specify "index" as key
   setcolorder(r,c("index",names(r)[names(r)!="index"]))[]
 }
 

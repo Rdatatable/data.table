@@ -18,9 +18,9 @@ Functions to check if an object is \code{data.table}, or coerce it if possible.
 
 }
 \usage{
-as.data.table(x, keep.rownames=FALSE, \dots)
+as.data.table(x, keep.rownames=FALSE, key=NULL, \dots)
 
-\method{as.data.table}{data.table}(x, \dots)
+\method{as.data.table}{data.table}(x, keep.rownames=FALSE, key=NULL, \dots)
 
 is.data.table(x)
 
@@ -28,6 +28,7 @@ is.data.table(x)
 \arguments{
   \item{x}{An R object.}
   \item{keep.rownames}{Default is \code{FALSE}. If \code{TRUE}, adds the input object's names as a separate column named \code{"rn"}. \code{keep.rownames = "id"} names the column \code{"id"} instead.}
+  \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkeyv}}, such as \code{key=c("x","y","z")}. }
   \item{\dots}{Additional arguments to be passed to or from other methods.}
 }
 \details{
@@ -54,13 +55,14 @@ as.data.table(nn, keep.rownames="rownames")
 # char object not converted to factor
 cc = c(X="a", Y="b", Z="c")
 as.data.table(cc)
-as.data.table(cc, keep.rownames=TRUE)
+as.data.table(cc, keep.rownames=TRUE, key="rn")
 as.data.table(cc, keep.rownames="rownames")
 
 mm = matrix(1:4, ncol=2, dimnames=list(c("r1", "r2"), c("c1", "c2")))
 as.data.table(mm)
 as.data.table(mm, keep.rownames=TRUE)
 as.data.table(mm, keep.rownames="rownames")
+as.data.table(mm, key="c1")
 
 ll = list(a=1:2, b=3:4)
 as.data.table(ll)
@@ -74,6 +76,6 @@ as.data.table(df, keep.rownames="rownames")
 
 dt = data.table(x=rep(c("x","y","z"),each=2), y=c(1:6))
 as.data.table(dt)
+as.data.table(dt, key="x")
 }
 \keyword{ data }
-

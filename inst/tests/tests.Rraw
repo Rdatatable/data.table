@@ -7799,6 +7799,64 @@ if(require("bit64", quietly = TRUE)){
 # fix for #1087 and #1465
 test(1627, charToRaw(names(fread("issue_1087_utf8_bom.csv"))[1L]), as.raw(97L))
 
+#tests for adding key to as.data.table, #890
+## as.data.table.numeric (should cover as.data.table.factor, 
+## *.ordered, *.integer, *.logical, *.character, and *.Date since
+## all are the same function in as.data.table.R)
+nn = c(a=0.1, c=0.2, b=0.3, d=0.4)
+test(1628.1, capture.output(as.data.table(nn, key="nn")), 
+     c("    nn", "1: 0.1", "2: 0.2", "3: 0.3", "4: 0.4"))
+test(1628.2, capture.output(as.data.table(nn, keep.rownames=TRUE, key="rn")),
+     c("   rn  nn", "1:  a 0.1", "2:  b 0.3", "3:  c 0.2", "4:  d 0.4"))
+
+## as.data.table.data.frame
+DF <- data.frame(a = rep(1:3, each = 2), b = rep(1:2, 3))
+test(1628.3, capture.output(as.data.table(DF, key=c("b","a"))),
+     c("   a b", "1: 1 1", "2: 2 1", "3: 3 1",
+       "4: 1 2", "5: 2 2", "6: 3 2"))
+
+## as.data.table.data.table
+DT <- data.table(a = rep(1:3, each = 2), b = rep(1:2, 3))
+test(1628.4, capture.output(as.data.table(DT, key=c("b","a"))),
+     c("   a b", "1: 1 1", "2: 2 1", "3: 3 1",
+       "4: 1 2", "5: 2 2", "6: 3 2"))
+
+## as.data.table.default
+rr <- as.raw(3:1)
+test(1628.5, capture.output(as.data.table(rr, keep.rownames=TRUE, key=c("rn"))),
+     c("   rn  x", "1:  1 03", "2:  2 02", "3:  3 01"))
+
+## as.data.table.list
+ll1 <- list(c=10:8, matrix(1:6, ncol = 2, dimnames=list(1:3, c("a","b"))))
+test(1628.6, capture.output(as.data.table(ll1, key="c")),
+     c("    c a b", "1:  8 3 6", "2:  9 2 5", "3: 10 1 4"))
+
+ll2 <- list(a=1:3, b=4:6, c=9:7)
+test(1628.7, capture.output(as.data.table(ll2, key="c")),
+     c("   a b c", "1: 3 6 7", "2: 2 5 8", "3: 1 4 9"))
+
+## as.data.table.matrix
+mm <- matrix(1:6, ncol = 2, dimnames=list(1:3, c("a","b")))
+test(1628.8, capture.output(as.data.table(mm, key="b")),
+     c("   a b", "1: 1 4", "2: 2 5", "3: 3 6"))
+
+## as.data.table.table
+tt <- table(rep(1:3, 3:1))
+test(1628.9, capture.output(as.data.table(tt, key="N")),
+     c("   V1 N", "1:  3 1", "2:  2 2", "3:  1 3"))
+
+## as.data.table.xts
+if ("package:xts" %in% search()) {
+    x = xts(1:10, as.Date(1:10, origin = "1970-01-01"))
+    test(1628.10, capture.output(as.data.table(x, key="index")),
+         c("         index V1", " 1: 1970-01-02  1", " 2: 1970-01-03  2", 
+           " 3: 1970-01-04  3", " 4: 1970-01-05  4", " 5: 1970-01-06  5", 
+           " 6: 1970-01-07  6", " 7: 1970-01-08  7", " 8: 1970-01-09  8", 
+           " 9: 1970-01-10  9", "10: 1970-01-11 10"))
+} else {
+    cat("Test 1628.10 not run. If required call library(xts) first.\n")
+}
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
