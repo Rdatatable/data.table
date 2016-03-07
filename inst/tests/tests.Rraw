@@ -7807,6 +7807,42 @@ test(1628.2, uniqueN(dt, na.rm=TRUE), nrow(na.omit(dt[, .N, by=.(x,y,z)])))
 test(1628.3, dt[, uniqueN(y, na.rm=TRUE), by=z], dt[, length(unique(na.omit(y))), by=z])
 test(1628.4, dt[, uniqueN(.SD, na.rm=TRUE), by=z], dt[, nrow(na.omit(.SD[, .N, by=.(x,y)])), by=z])
 
+# fix for long standing FR/bug, #495
+# most likely I'm missing some tests, but we'll fix/add them as we go along.
+dt = data.table(grp=c(2,3,3,1,1,2,3), v1=1:7, v2=7:1, v3=10:16)
+test(1629.1, dt[, .SD*v1, .SDcols=v2:v3], dt[, .(v2=v2*v1, v3=v3*v1)])
+test(1629.2, dt[, lapply(.SD, function(x) x*v1), .SDcols=v2:v3], dt[, .(v2=v2*v1, v3=v3*v1)])
+test(1629.3, dt[, lapply(.SD, function(x) mean(x)*sum(v1)), .SDcols=v2:v3], data.table(v2=112, v3=364))
+test(1629.4, dt[, c(sum(v1), lapply(.SD, mean)), .SDcols=v2:v3], data.table(V1=28L, v2=4, v3=13))
+test(1629.5, dt[, c(v1=sum(v1), lapply(.SD, mean)), .SDcols=v2:v3], data.table(v1=28L, v2=4, v3=13))
+test(1629.6, dt[, .(v1=sum(v1), lapply(.SD, mean)), .SDcols=v2:v3], data.table(v1=28L, V2=list(4,13)))
+test(1629.7, dt[0][, .SD*v1, .SDcols=v2:v3], dt[0][, .SD, .SDcols=v2:v3])
+# add/update
+dt2 = copy(dt)
+test(1629.8, dt2[, c("v2", "v3") := .SD*v1, .SDcols=v2:v3], dt[, .(grp, v1, v2=v2*v1, v3=v3*v1)])
+# grouping operations
+oldopts = getOption("datatable.optimize") # backup
+options(datatable.optimize = 1L) # no gforce
+test(1629.9, dt[, .SD*sum(v1), by=grp, .SDcols=v2:v3], dt[, .SD*sum(v1), by=grp][, v1 := NULL])
+ans1 = dt[, sum(v1), by=grp]
+ans2 = dt[, base::max(.SD), by=grp, .SDcols=v2:v3]
+test(1629.10, dt[, max(.SD)*sum(v1), by=grp, .SDcols=v2:v3], ans1[, .(grp, V1=V1*ans2$V1)])
+test(1629.11, dt[, lapply(.SD, function(x) weighted.mean(x, w=v2)), .SDcols=c("v1","v3"), by=grp], 
+         dt[, .(v1=weighted.mean(v1,w=v2), v3=weighted.mean(v3, w=v2)), by=grp])
+test(1629.12, dt[, c(v1=max(v1), lapply(.SD, base::min)), by=grp, .SDcols=v2:v3], dt[, .(v1=max(v1), v2=min(v2), v3=min(v3)), by=grp])
+# gforce
+options(datatable.optimize = Inf) # Inf
+test(1629.13, dt[, c(v1=max(v1), lapply(.SD, min)), by=grp, .SDcols=v2:v3], dt[, .(v1=max(v1), v2=min(v2), v3=min(v3)), by=grp])
+# even more complex, shouldn't run any optimisation
+dt[, v4 := v1/2]
+test(1629.14, dt[, c(.(v1=v1*min(v4)), lapply(.SD, function(x) x*max(v4))), by=grp, .SDcols=v2:v3], 
+    dt[, .(v1=v1*min(v4), v2=v2*max(v4), v3=v3*max(v4)), by=grp])
+test(1629.15, copy(dt)[, c("a", "b", "c") := c(min(v1), lapply(.SD, function(x) max(x)*min(v1))), by=grp, .SDcols=v3:v4], copy(dt)[, c("a", "b", "c") := .(min(v1), max(v3)*min(v1), max(v4)*min(v1)), by=grp])
+options(datatable.optimize = oldopts)
+# by=.EACHI and operations with 'i'
+test(1629.16, dt[.(2:3), c(.(sum(v1)), lapply(.SD, function(x) mean(x)*min(v1))), by=.EACHI, .SDcols=v2:v3, on="grp"], dt[grp %in% 2:3, c(.(sum(v1)), lapply(.SD, function(x) mean(x)*min(v1))), by=grp, .SDcols=v2:v3])
+test(1629.17, dt[.(2:3), c(sum(v1), lapply(.SD, function(x) mean(x)*v1)), .SDcols=v2:v3, on="grp"][order(V1,v2,v3)], dt[grp %in% 2:3, c(sum(v1), lapply(.SD, function(x) mean(x)*v1)), .SDcols=v2:v3][order(V1,v2,v3)])
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

@@ -64,6 +64,8 @@
 
   24. `uniqueN` gains `na.rm` argument, [#1455](https://github.com/Rdatatable/data.table/issues/1455).
 
+  25. Finally, we can now refer to the columns that are not mentioned in `.SD/.SDcols` in `j` as well. For example, `DT[, .(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:V3]` works fine, [#495](https://github.com/Rdatatable/data.table/issues/495).
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

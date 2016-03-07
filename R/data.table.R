@@ -723,6 +723,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     byval = NULL
     xnrow = nrow(x)
     xcols = xcolsAns = icols = icolsAns = integer()
+    othervars = character(0)
     if (missing(j)) {
         # missing(by)==TRUE was already checked above before dealing with i
         if (!length(x)) return(null.data.table())
@@ -1009,6 +1010,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
                         ansvals = chmatch(ansvars, names(x))
                     }
+                    # fix for long standing FR/bug, #495
+                    if ( length(othervars <- intersect(av, names(x))) ) {
+                        # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or 
+                        # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc., 
+                        ansvars = union(ansvars, othervars)
+                        ansvals = chmatch(ansvars, names(x))
+                    }
                     # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
                 }
             } else {
@@ -1235,11 +1243,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             
             if (!with || missing(j)) return(alloc.col(ans))
 
-            SDenv$.SD = ans
+            SDenv$.SDall = ans
+            SDenv$.SD = if (!length(othervars)) SDenv$.SDall else shallow(SDenv$.SDall, setdiff(ansvars, othervars))
             SDenv$.N = nrow(SDenv$.SD)
 
         } else {
-            SDenv$.SD = null.data.table()   # no columns used by j so .SD can be empty. Only needs to exist so that we can rely on it being there when locking it below for example. If .SD were used by j, of course then xvars would be the columns and we wouldn't be in this leaf.
+            SDenv$.SDall = SDenv$.SD = null.data.table()   # no columns used by j so .SD can be empty. Only needs to exist so that we can rely on it being there when locking it below for example. If .SD were used by j, of course then xvars would be the columns and we wouldn't be in this leaf.
             SDenv$.N = if (is.null(irows)) nrow(x) else length(irows) * !identical(suppressWarnings(max(irows)), 0L)
             # Fix for #963.
             # When irows is integer(0), length(irows) = 0 will result in 0 (as expected).
@@ -1249,11 +1258,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         SDenv$.I = if (!missing(j) && ".I" %chin% av) seq_len(SDenv$.N) else 0L
         SDenv$.GRP = 1L
         setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
+        setattr(SDenv$.SDall,".data.table.locked",TRUE)
         lockBinding(".SD",SDenv)
+        lockBinding(".SDall",SDenv)
         lockBinding(".N",SDenv)
         lockBinding(".I",SDenv)
         lockBinding(".GRP",SDenv)
-        for (ii in ansvars) assign(ii, SDenv$.SD[[ii]], SDenv)
+        for (ii in ansvars) assign(ii, SDenv$.SDall[[ii]], SDenv)
         # Since .SD is inside SDenv, alongside its columns as variables, R finds .SD symbol more quickly, if used.
         # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
 
@@ -1335,7 +1346,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     assign("print", function(x,...){base::print(x,...);NULL}, SDenv)
     # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
 
-    SDenv$.SD = null.data.table()  # e.g. test 607. Grouping still proceeds even though no .SD e.g. grouping key only tables, or where j consists of .N only
+    SDenv$.SDall = SDenv$.SD = null.data.table()  # e.g. test 607. Grouping still proceeds even though no .SD e.g. grouping key only tables, or where j consists of .N only
     SDenv$.N = as.integer(0)     # not 0L for the reson on next line :
     SDenv$.GRP = as.integer(1)   # oddly using 1L doesn't work reliably here! Possible R bug? TO DO: create reproducible example and report. To reproduce change to 1L and run test.data.table, test 780 fails. The assign seems ineffective and a previous value for .GRP from a previous test is retained, despite just creating a new SDenv.
 
@@ -1396,13 +1407,19 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     alloc = if (length(len__)) seq_len(max(len__)) else 0L
     SDenv$.I = alloc
     if (length(xcols)) {
-        SDenv$.SD = .Call(CsubsetDT,x,alloc,xcols)    # i.e. x[alloc, xcols, with=FALSE] but without recursive overhead
+        SDenv$.SDall = .Call(CsubsetDT,x,alloc,xcols)    # i.e. x[alloc, xcols, with=FALSE] but without recursive overhead
+        SDenv$.SD = if (!length(othervars)) SDenv$.SDall else shallow(SDenv$.SDall, setdiff(ansvars, othervars))
         # Must not shallow copy here. This is the allocation for the largest group. Since i=alloc is passed in here, it won't shallow copy, even in future. Only DT[,xvars,with=FALSE] might ever shallow copy automatically.
     }
-    if (nrow(SDenv$.SD)==0L) setattr(SDenv$.SD,"row.names",c(NA_integer_,0L))
+    if (nrow(SDenv$.SDall)==0L) {
+        setattr(SDenv$.SDall,"row.names",c(NA_integer_,0L))
+        setattr(SDenv$.SD,"row.names",c(NA_integer_,0L))
+    }
     # .set_row_names() basically other than not integer() for 0 length, otherwise dogroups has no [1] to modify to -.N
     setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
+    setattr(SDenv$.SDall,".data.table.locked",TRUE)
     lockBinding(".SD",SDenv)
+    lockBinding(".SDall",SDenv)
     lockBinding(".N",SDenv)
     lockBinding(".GRP",SDenv)
     lockBinding(".I",SDenv)
@@ -1411,6 +1428,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     GForce = FALSE
     if ( (getOption("datatable.optimize")>=1 && is.call(jsub)) || (is.name(jsub) && as.character(jsub) %chin% c(".SD",".N")) ) {  # Ability to turn off if problems or to benchmark the benefit
         # Optimization to reduce overhead of calling lapply over and over for each group
+        ansvarsnew = setdiff(ansvars, othervars)
         oldjsub = jsub
         funi = 1L # Fix for #985
         # convereted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
@@ -1431,14 +1449,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 if (is.character(fun)) fun = as.name(fun)
                 txt[[1L]] = fun
             }
-            ans = vector("list",length(ansvars)+1L)
+            ans = vector("list",length(ansvarsnew)+1L)
             ans[[1L]] = as.name("list")
-            for (ii in seq_along(ansvars)) {
-                txt[[2L]] = as.name(ansvars[ii])
+            for (ii in seq_along(ansvarsnew)) {
+                txt[[2L]] = as.name(ansvarsnew[ii])
                 ans[[ii+1L]] = as.call(txt)
             }
             jsub = as.call(ans)  # important no names here
-            jvnames = ansvars      # but here instead
+            jvnames = ansvarsnew      # but here instead
             list(jsub, jvnames)
             # It may seem inefficient to constuct a potentially long expression. But, consider calling
             # lapply 100000 times. The C code inside lapply does the LCONS stuff anyway, every time it
@@ -1454,14 +1472,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         }
         if (is.name(jsub)) {
             if (jsub == ".SD") {
-                jsub = as.call(c(quote(list), lapply(ansvars, as.name)))
-                jvnames = ansvars
+                jsub = as.call(c(quote(list), lapply(ansvarsnew, as.name)))
+                jvnames = ansvarsnew
             }
         } else {
             if ( length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "head" || jsub[[1L]] == "tail") && jsub[[2L]] == ".SD" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N") ) {
                 # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
-                jsub = as.call(c(quote(list), lapply(ansvars, function(x) { jsub[[2L]] = as.name(x); jsub })))
-                jvnames = ansvars
+                jsub = as.call(c(quote(list), lapply(ansvarsnew, function(x) { jsub[[2L]] = as.name(x); jsub })))
+                jvnames = ansvarsnew
             } else if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols)) {
                 deparse_ans = .massageSD(jsub)
                 jsub = deparse_ans[[1L]]
@@ -1481,15 +1499,15 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 any_SD = FALSE
                 jsubl = as.list.default(jsub)
                 oldjvnames = jvnames
-                jvnames = NULL           # TODO: not let jvnames grow, maybe use (number of lapply(.SD, .))*lenght(ansvars) + other jvars ?? not straightforward.
+                jvnames = NULL           # TODO: not let jvnames grow, maybe use (number of lapply(.SD, .))*lenght(ansvarsnew) + other jvars ?? not straightforward.
                 # Fix for #744. Don't use 'i' in for-loops. It masks the 'i' from the input!!
                 for (i_ in 2:length(jsubl)) {
                     this = jsub[[i_]]
                     if (is.name(this)) {
                         if (this == ".SD") { # optimise '.SD' alone
                             any_SD = TRUE
-                            jsubl[[i_]] = lapply(ansvars, as.name)
-                            jvnames = c(jvnames, ansvars)
+                            jsubl[[i_]] = lapply(ansvarsnew, as.name)
+                            jvnames = c(jvnames, ansvarsnew)
                         } else if (this == ".N") {
                             # don't optimise .I in c(.SD, .I), it's length can be > 1 
                             # only c(.SD, list(.I)) should be optimised!! .N is always length 1.
@@ -1522,8 +1540,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                                         this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || this[[3L]] == ".N") ) {
                             # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
                             any_SD = TRUE
-                            jsubl[[i_]] = lapply(ansvars, function(x) { this[[2L]] = as.name(x); this })
-                            jvnames = c(jvnames, ansvars)
+                            jsubl[[i_]] = lapply(ansvarsnew, function(x) { this[[2L]] = as.name(x); this })
+                            jvnames = c(jvnames, ansvarsnew)
                         } else if (any(all.vars(this) == ".SD")) {
                             # TODO, TO DO: revisit complex cases (as illustrated below)
                             # complex cases like DT[, c(.SD[x>1], .SD[J(.)], c(.SD), a + .SD, lapply(.SD, sum)), by=grp]
