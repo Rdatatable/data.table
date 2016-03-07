@@ -26,7 +26,7 @@
 
 \method{anyDuplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...)
 
-uniqueN(x, by=if (is.data.table(x)) key(x) else NULL)
+uniqueN(x, by=if (is.data.table(x)) key(x) else NULL, na.rm=FALSE)
 }
 \arguments{
   \item{x}{ A data.table. \code{uniqueN} accepts atomic vectors and data.frames as well.}
@@ -40,6 +40,7 @@ uniqueN(x, by=if (is.data.table(x)) key(x) else NULL)
     uses all columns and acts like the analogous
     \code{data.frame} methods.
   }
+  \item{na.rm}{Logical (default is \code{FALSE}). Should missing values (including \code{NaN}) be removed?}
 }
 \details{
   Because data.tables are usually sorted by key, tests for duplication are   especially quick when only the keyed columns are considered. Unlike \code{\link[base]{unique.data.frame}}, \code{paste} is not used to ensure equality of floating point data. It is instead accomplished directly (for speed) whilst avoiding unexpected behaviour due to floating point representation by rounding the last two bytes off the significand (default) as explained in \code{\link{setNumericRounding}}.
@@ -101,6 +102,11 @@ uniqueN(DT)
 uniqueN(DT, by=NULL)
 # uniqueN while grouped by "A"
 DT[, .(uN=uniqueN(.SD)), by=A]
+
+# uniqueN's na.rm=TRUE
+x = sample(c(NA, NaN, runif(3)), 10, TRUE)
+uniqueN(x, na.rm = FALSE) # 5, default
+uniqueN(x, na.rm=TRUE) # 3
 }
 \keyword{ data }
 
