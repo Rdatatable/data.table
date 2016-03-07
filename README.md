@@ -62,6 +62,8 @@
 
   23. Fast set operations `fsetdiff`, `fintersect`, `funion` and `fsetequal` for data.tables is now implemented, [#547](https://github.com/Rdatatable/data.table/issues/547).
 
+  24. `uniqueN` gains `na.rm` argument, [#1455](https://github.com/Rdatatable/data.table/issues/1455).
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

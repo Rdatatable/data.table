@@ -7799,6 +7799,14 @@ if(require("bit64", quietly = TRUE)){
 # fix for #1087 and #1465
 test(1627, charToRaw(names(fread("issue_1087_utf8_bom.csv"))[1L]), as.raw(97L))
 
+# uniqueN gains na.rm argument, #1455
+set.seed(1L)
+dt = data.table(x=sample(3,25,TRUE), y=sample(c(NA,"a", "b"), 25,TRUE), z=sample(2,25,TRUE))
+test(1628.1, uniqueN(dt, by=1:2, na.rm=TRUE), nrow(na.omit(dt[, .N, by=.(x,y)])))
+test(1628.2, uniqueN(dt, na.rm=TRUE), nrow(na.omit(dt[, .N, by=.(x,y,z)])))
+test(1628.3, dt[, uniqueN(y, na.rm=TRUE), by=z], dt[, length(unique(na.omit(y))), by=z])
+test(1628.4, dt[, uniqueN(.SD, na.rm=TRUE), by=z], dt[, nrow(na.omit(.SD[, .N, by=.(x,y)])), by=z])
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

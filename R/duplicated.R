@@ -90,11 +90,12 @@ anyDuplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=
 # simple straightforward helper function to get the number 
 # of groups in a vector or data.table. Here by data.table, 
 # we really mean `.SD` - used in a grouping operation
-uniqueN <- function(x, by = if (is.data.table(x)) key(x) else NULL) {
+uniqueN <- function(x, by = if (is.data.table(x)) key(x) else NULL, na.rm=FALSE) { # na.rm, #1455
     if (is.null(x)) return(0L)
     if (!is.atomic(x) && !is.data.frame(x))
         stop("x must be an atomic vector or data.frames/data.tables")
     if (is.atomic(x)) x = as_list(x)
     if (is.null(by)) by = seq_along(x)
-    length(attr(forderv(x, by=by, retGrp=TRUE), 'starts'))
+    o = forderv(x, by=by, retGrp=TRUE, na.last=if (!na.rm) FALSE else NA)
+    if (!na.rm) length(attr(o, 'starts')) else sum(o[attr(o, 'starts')] != 0L) # TODO: internal efficient sum
 }
