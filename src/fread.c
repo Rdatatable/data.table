@@ -701,6 +701,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     //   Auto detect eol, first eol where there are two (i.e. CRLF)
     // ********************************************************************************************
+    // take care of UTF8 BOM, #1087 and #1465
+    if (!memcmp(mmp, "\xef\xbb\xbf", 3)) mmp += 3;
     ch = mmp;
     while (ch<eof && *ch!='\n' && *ch!='\r') {
         if (*ch==quote[0]) while(++ch<eof && *ch!=quote[0]) {};  // allows protection of \n and \r inside column names

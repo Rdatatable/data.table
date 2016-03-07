@@ -160,6 +160,8 @@
 
   48. `fread()` throws an error if input is a *directory*, [#989](https://github.com/Rdatatable/data.table/issues/989). Thanks @vlsi.
 
+  49. UTF8 BOM header is excluded properly in `fread()`, [#1087](https://github.com/Rdatatable/data.table/issues/1087) and [#1465](https://github.com/Rdatatable/data.table/issues/1465). Thanks to @nigmastar and @MichaelChirico.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
