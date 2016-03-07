@@ -1,20 +1,20 @@
-as.data.table <-function(x, keep.rownames=FALSE, ...)
+as.data.table <-function(x, keep.rownames=FALSE, key=NULL, ...)
 {
     if (is.null(x))
         return(null.data.table())
     UseMethod("as.data.table")
 }
 
-as.data.table.default <- function(x, ...){
-  setDT(as.data.frame(x, ...))[]
+as.data.table.default <- function(x, keep.rownames=FALSE, key=NULL, ...){
+  setDT(as.data.frame(x, ...), keep.rownames, key)[]
 }
 
 as.data.table.factor <- as.data.table.ordered <- 
 as.data.table.integer <- as.data.table.numeric <- 
 as.data.table.logical <- as.data.table.character <- 
-as.data.table.Date <- function(x, keep.rownames=FALSE, ...) {
+as.data.table.Date <- function(x, keep.rownames=FALSE, key=NULL, ...) {
     if (is.matrix(x)) {
-        return(as.data.table.matrix(x, ...))
+        return(as.data.table.matrix(x, keep.rownames, key, ...))
     }
     tt = deparse(substitute(x))[1]
     nm = names(x)
@@ -27,7 +27,7 @@ as.data.table.Date <- function(x, keep.rownames=FALSE, ...) {
         nm = if (length(x) == 2L) if (is.character(keep.rownames)) keep.rownames[1L] else "rn"
         setattr(x, 'names', c(nm, tt))
     }
-    as.data.table.list(x, FALSE)
+    as.data.table.list(x, FALSE, key)
 }
 
 R300_provideDimnames <- function (x, sep = "", base = list(LETTERS)) {
@@ -49,20 +49,20 @@ R300_provideDimnames <- function (x, sep = "", base = list(LETTERS)) {
 }
 
 # as.data.table.table - FR #4848
-as.data.table.table <- function(x, keep.rownames=FALSE, ...) {
+as.data.table.table <- function(x, keep.rownames=FALSE, key=NULL, ...) {
     # Fix for bug #5408 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
     val = rev(dimnames(R300_provideDimnames(x)))
     if (is.null(names(val)) || all(nchar(names(val)) == 0L)) 
         setattr(val, 'names', paste("V", rev(seq_along(val)), sep=""))
-    ans <- data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x))
+    ans <- data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x), key=key)
     setcolorder(ans, c(rev(head(names(ans), -1)), "N"))
     ans
 }
 
-as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
+as.data.table.matrix <- function(x, keep.rownames=FALSE, key=NULL, ...) {
     if (!identical(keep.rownames, FALSE)) {
         # can specify col name to keep.rownames, #575
-        ans = data.table(rn=rownames(x), x, keep.rownames=FALSE)
+        ans = data.table(rn=rownames(x), x, keep.rownames=FALSE, key=key)
         if (is.character(keep.rownames))
             setnames(ans, 'rn', keep.rownames[1L])
         return(ans)
@@ -90,17 +90,18 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
         setattr(value, "names", paste("V", ic, sep = ""))
     setattr(value,"row.names",.set_row_names(nrows))
     setattr(value,"class",c("data.table","data.frame"))
+    if (!is.null(key)) setkeyv(value, key)
     alloc.col(value)
 }
 
-as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
+as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, ...) {
     if (!length(x)) return( null.data.table() )
     # fix for #833, as.data.table.list with matrix/data.frame/data.table as a list element..
     # TODO: move this entire logic (along with data.table() to C
     for (i in seq_along(x)) {
         dims = dim(x[[i]])
         if (!is.null(dims)) {
-            ans = do.call("data.table", x)
+            ans = do.call("data.table", c(x, key=key))
             setnames(ans, make.unique(names(ans)))
             return(ans)
         }
@@ -136,6 +137,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
     if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
     setattr(x,"row.names",.set_row_names(max(n)))
     setattr(x,"class",c("data.table","data.frame"))
+    if (!is.null(key)) setkeyv(x, key)
     alloc.col(x)
 }
 
@@ -149,10 +151,10 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
     cx = unique( c("data.table", "data.frame", tail(cx, length(cx)-n)) )
 }
 
-as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...) {
+as.data.table.data.frame <- function(x, keep.rownames=FALSE, key=NULL, ...) {
     if (!identical(keep.rownames, FALSE)) {
         # can specify col name to keep.rownames, #575
-        ans = data.table(rn=rownames(x), x, keep.rownames=FALSE)
+        ans = data.table(rn=rownames(x), x, keep.rownames=FALSE, key=key)
         if (is.character(keep.rownames))
             setnames(ans, 'rn', keep.rownames[1L])
         return(ans)
@@ -167,12 +169,14 @@ as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...) {
 
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(ans, "class", .resetclass(x, "data.frame"))
+    if (!is.null(key)) setkeyv(ans, key)
     alloc.col(ans)
 }
 
-as.data.table.data.table <- function(x, ...) {
+as.data.table.data.table <- function(x, keep.rownames=FALSE, key=NULL, ...) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(x, 'class', .resetclass(x, "data.table"))
+    if (!is.null(key)) setkeyv(x, key)
     if (!selfrefok(x)) x = alloc.col(x) # fix for #473
     return(x)
 }
