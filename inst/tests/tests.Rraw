@@ -7801,7 +7801,7 @@ test(1627, charToRaw(names(fread("issue_1087_utf8_bom.csv"))[1L]), as.raw(97L))
 
 # uniqueN gains na.rm argument, #1455
 set.seed(1L)
-dt = data.table(x=sample(3,25,TRUE), y=sample(c(NA,"a", "b"), 25,TRUE), z=sample(2,25,TRUE))
+dt = data.table(x=sample(c(1:3,NA),25,TRUE), y=sample(c(NA,"a", "b"), 25,TRUE), z=sample(2,25,TRUE))
 test(1628.1, uniqueN(dt, by=1:2, na.rm=TRUE), nrow(na.omit(dt[, .N, by=.(x,y)])))
 test(1628.2, uniqueN(dt, na.rm=TRUE), nrow(na.omit(dt[, .N, by=.(x,y,z)])))
 test(1628.3, dt[, uniqueN(y, na.rm=TRUE), by=z], dt[, length(unique(na.omit(y))), by=z])
