@@ -2301,7 +2301,7 @@ l = list(data.table(a=1:3), data.table(b=4:6))
 test(843, l[[2L]][,c:=7:9], data.table(b=4:6,c=7:9))
 test(844, l, list(data.table(a=1:3), data.table(b=4:6,c=7:9)))
 names(l) = c("foo","bar")   # R >= 3.1 no longer copies all the contents, yay
-test(845, l[["foo"]][2,d:=4], data.table(a=1:3,d=c(NA,4L,NA)),
+test(845, l[["foo"]][2,d:=4L], data.table(a=1:3,d=c(NA,4L,NA)),
     warning= if (!.R.assignNamesCopiesAll) NULL else "Invalid .internal.selfref detected and fixed")
 l = list(data.table(a=1:3), data.table(b=4:6))
 setattr(l,"names",c("foo","bar"))
@@ -2801,7 +2801,7 @@ test(1008.2, rbindlist(list(DT1, DT3)), data.table(a = c(1L,2L), b = c(2, 2.5)))
 
 # optimized mean() respects na.rm=TRUE by default, as intended
 DT = data.table(a=c(NA,NA,FALSE,FALSE), b=c(1,1,2,2))
-test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(NA,0)))
+test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(NA_integer_,0L))) # sum(logical()) should be integer, not real
 
 # an fread error shouldn't hold a lock on the file on Windows.
 f = tempfile()
@@ -2983,7 +2983,7 @@ test(1041, rbindlist(l), data.table(i1=factor(letters[1:5]),val=1:5))
 
 # negative indexing in *i* leads to crash/wrong aggregates when dogroups is called. bug #2697
 DT = data.table(x = c(1,2,3,4,5), group = c(1,1,2,2,3))
-test(1042, DT[-5, mean(x), by = group], data.table(group=1:2, V1=c(1.5, 3.5)))
+test(1042, DT[-5, mean(x), by = group], data.table(group=c(1,2), V1=c(1.5, 3.5)))
 # Test when abs(negative index) > nrow(dt) - should warn
 test(1042.1, DT[-10], DT, warning="Item 1 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 1.")
 test(1042.2, DT[c(-5, -10), mean(x), by = group], data.table(group=c(1,2),V1=c(1.5,3.5)), warning="Item 2 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 2.") 
@@ -3455,7 +3455,7 @@ test(1125, rbindlist(list(DT1, DT1)), data.table(factor(c('a','a'), levels = c('
 DT = data.table(a = 1:2, b = 1:2)
 DT1 = data.table(a = 3:4, c = 1:2)
 
-test(1126, rbind(DT, DT1, fill = TRUE), data.table(a = 1:4, b = c(1, 2, NA, NA), c = c(NA, NA, 1, 2)))
+test(1126, rbind(DT, DT1, fill = TRUE), data.table(a = 1:4, b = c(1:2, NA, NA), c = c(NA, NA, 1:2)))
 
 ## check for #4959 - rbind'ing empty data.table's
 DT = data.table(a=character())
@@ -3571,7 +3571,7 @@ test(1139, capture.output(print(DT)), c("           x y", "1:     a ~ b 1", "2: 
 
 # FR #4813 - provide warnings if there are remainders for both as.data.table.list(.) and data.table(.)
 X = list(a = 1:2, b = 1:3)
-test(1140, as.data.table(X), data.table(a=c(1,2,1), b=c(1,2,3)), warning="Item 1 is of size 2 but maximum")
+test(1140, as.data.table(X), data.table(a=c(1:2,1L), b=c(1:3)), warning="Item 1 is of size 2 but maximum")
 test(1141.1, data.table(a=1:2, b=1:3), data.table(a=c(1L,2L,1L), b=1:3), warning="Item 1 is of size 2 but maximum")
 test(1141.2, data.table(a=1:2, data.table(x=1:5, y=6:10)), data.table(a=c(1L,2L,1L,2L,1L), x=1:5, y=6:10), warning="Item 1 is of size 2 but maximum")
 test(1141.3, data.table(a=1:5, data.table(x=c(1,2), y=c(3,4))), data.table(a=c(1:5), x=c(1,2,1,2,1), y=c(3,4,3,4,3)), warning="Item 2 is of size 2 but maximum")
@@ -5956,14 +5956,14 @@ test(1464.7, rleid(as.complex(c(1,0+5i,0+5i,1))), error="Type 'complex' not supp
 
 if ("package:xts" %in% search()) {
     # Date index
-    dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = rep(c(1:5),10),value = rep(c(1:10)*100,5))
+    dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
     xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
     dt_xt = as.data.table(xt)
     xt_dt = as.xts.data.table(dt)
     test(1465.1, all.equal(dt, dt_xt, check.attributes = FALSE))
     test(1465.2, xt, xt_dt)
     # POSIXct index
-    dt <- data.table(index = as.POSIXct(as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),origin="1970-01-01"),quantity = rep(c(1:5),10),value = rep(c(1:10)*100,5))
+    dt <- data.table(index = as.POSIXct(as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
     xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
     dt_xt = as.data.table(xt)
     xt_dt = as.xts.data.table(dt)
@@ -6017,9 +6017,9 @@ test(1469.6, key(DT[J(c(2,0)), roll="nearest"]), NULL)
 
 # 1007 fix, dealing with Inf and -Inf correctly in rolling joins.
 DT = data.table(x=c(-Inf, 3, Inf), y=1:3, key="x")
-test(1470.1, DT[J(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(2,-Inf,5,Inf), y=c(1, 1, 2, 3)))
+test(1470.1, DT[J(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(2,-Inf,5,Inf), y=c(1L, 1:3)))
 test(1470.2, DT[J(c(2,-Inf,5,Inf)), roll=10], data.table(x=c(2,-Inf,5,Inf), y=INT(c(NA, 1, 2, 3))))
-test(1470.3, DT[SJ(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf,2,5,Inf), y=c(1, 1, 2, 3), key="x"))
+test(1470.3, DT[SJ(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf,2,5,Inf), y=c(1L, 1:3), key="x"))
 
 # 1006, second bug with -Inf, now that #1007 is fixed.
 x <- c(-Inf, -0.1, 0, 0.1, Inf)
@@ -7538,7 +7538,7 @@ test(1613.11, all.equal(DT1, DT2, ignore.row.order=TRUE, ignore.col.order=TRUE),
 DT1 <- data.table(a = c(1:4,1:2), b = letters[c(1:4,1:2)])
 DT2 <- data.table(a = c(1:4,3:4), b = letters[c(1:4,3:4)])
 test(1613.12, all.equal(DT1, DT2), "Column 'a': Mean relative difference: 1.333333")
-test(1613.13, all.equal(DT1, DT2, ignore.row.order=TRUE), "Dataset 'current' has rows present in different quantity than in 'target'.")
+test(1613.13, all.equal(DT1, DT2, ignore.row.order=TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
 # overlapping duplicates
 DT1 <- data.table(a = c(1:4,1:2), b = letters[c(1:4,1:2)])
 DT2 <- data.table(a = c(1:4,2:1), b = letters[c(1:4,2:1)])
@@ -7547,11 +7547,11 @@ test(1613.15, all.equal(DT1, DT2, ignore.row.order=TRUE), TRUE)
 # mixed overlapping duplicates
 DT1 <- data.table(a = c(1:4,1:2), b = letters[c(1:4,1:2)])
 DT2 <- data.table(a = c(1:4,2:3), b = letters[c(1:4,2:3)])
-test(1613.16, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has rows present in different quantity than in 'target'.")
+test(1613.16, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
 # overlapping duplicates not equal in count
 DT1 <- data.table(a = c(1:4, rep(1L,3), rep(2L,2)), b = letters[c(1:4, rep(1L,3), rep(2L,2))])
 DT2 <- data.table(a = c(1:4, rep(1L,2), rep(2L,3)), b = letters[c(1:4, rep(1L,2), rep(2L,3))])
-test(1613.17, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has rows present in different quantity than in 'target'.")
+test(1613.17, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
 # overlapping duplicates equal in count
 DT1 <- data.table(a = c(1:4, 1L, 2L, 1L, 2L), b = letters[c(1:4, 1L, 2L, 1L, 2L)])
 DT2 <- data.table(a = c(2L, 1L, 1L, 2L, 1:4), b = letters[c(2L, 1L, 1L, 2L, 1:4)])
@@ -7559,12 +7559,12 @@ test(1613.18, all.equal(DT1, DT2, ignore.row.order = TRUE), TRUE)
 # subset with overlapping duplicates
 DT1 <- data.table(a = c(1:3,3L), b = letters[c(1:3,3L)])
 DT2 <- data.table(a = c(1:4), b = letters[c(1:4)])
-test(1613.19, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'target' has duplicate rows while 'current' don't have any duplicate rows.")
+test(1613.19, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'target' has duplicate rows while 'current' don't have any duplicate rows")
 # different number of unique rows
 DT1 <- data.table(a = c(1:3,2:3), b = letters[c(1:3,2:3)])
 DT2 <- data.table(a = c(1L,1:4), b = letters[c(1L,1:4)])
-test(1613.20, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has more unique rows than 'target'.")
-test(1613.21, all.equal(DT2, DT1, ignore.row.order = TRUE), "Dataset 'target' has more unique rows than 'current'.")
+test(1613.20, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has more unique rows than 'target'")
+test(1613.21, all.equal(DT2, DT1, ignore.row.order = TRUE), "Dataset 'target' has more unique rows than 'current'")
 # test attributes: key
 DT1 <- data.table(a = 1:4, b = letters[1:4], key = "a")
 DT2 <- data.table(a = 1:4, b = letters[1:4])
@@ -7584,10 +7584,10 @@ test(1613.29, all.equal(DT1, set2keyv(set2keyv(DT2, NULL), "b")), TRUE)
 DT1 <- data.table(a = 1:4, b = letters[1:4])
 DT2 <- data.table(a = 1:4, b = letters[1:4])
 setattr(DT1, "custom", 1L)
-test(1613.30, all.equal(DT1, DT2), "Datasets has different number of (non-excluded) attributes: target 3, current 2.")
+test(1613.30, all.equal(DT1, DT2), "Datasets has different number of (non-excluded) attributes: target 3, current 2")
 test(1613.31, all.equal(DT1, DT2, check.attributes = FALSE), TRUE)
 setattr(DT2, "custom2", 2L)
-test(1613.32, all.equal(DT1, DT2), "Datasets has attributes with different names: custom, custom2.")
+test(1613.32, all.equal(DT1, DT2), "Datasets has attributes with different names: custom, custom2")
 setattr(DT1, "custom2", 2L)
 setattr(DT2, "custom", 0L)
 test(1613.33, all.equal(DT1, DT2), paste0("Attributes: < Component ", dQuote("custom"), ": Mean relative difference: 1 >"))
@@ -7601,6 +7601,42 @@ test(1613.36, all.equal(dt1, dt2, trim.levels = FALSE), paste0("Column 'A': Attr
 test(1613.37, all.equal(dt1, dt2, trim.levels = FALSE, check.attributes = FALSE), TRUE)
 test(1613.38, all.equal(dt1, dt2, trim.levels = FALSE, ignore.row.order = TRUE), TRUE)
 test(1613.39, length(levels(dt1$A)) == 10L && length(levels(dt2$A)) == 5L, TRUE) # dt1 and dt2 not updated by reference
+# unsupported column types: list
+dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = lapply(1:4, function(x) new.env()))
+test(1613.40, all.equal(dt, dt), TRUE)
+test(1613.41, all.equal(dt, dt, ignore.row.order = TRUE), error = "Datasets to compare with 'ignore.row.order' must not have unsupported column types: list")
+# unsupported type in set-ops: complex, raw
+dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = as.complex(1:4), V4 = as.raw(1:4), V5 = lapply(1:4, function(x) NULL))
+test(1613.42, all.equal(dt, dt), TRUE)
+test(1613.43, all.equal(dt, dt, ignore.row.order = TRUE), error = "Datasets to compare with 'ignore.row.order' must not have unsupported column types: raw, complex, list")
+# supported types multi column test
+dt = data.table(
+    V1 = 1:4,
+    V2 = as.numeric(1:4),
+    V3 = letters[rep(1:2, 2)],
+    V4 = factor(c("a","a","b","b")),
+    V5 = as.POSIXct("2016-03-05 12:00:00", origin="1970-01-01")+(1:4)*3600,
+    V6 = as.Date("2016-03-05", origin="1970-01-01")+(1:4)
+)[, V7 := as.IDate(V6)
+  ][, V8 := as.ITime(V5)]
+test(1613.44, all.equal(dt, dt), TRUE)
+test(1613.45, all.equal(dt, dt, ignore.row.order = TRUE), TRUE)
+test(1613.44, all.equal(dt[c(1:4,1L)], dt[c(1:4,1L)]), TRUE)
+test(1613.44, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)]), "Column 'V1': Mean relative difference: 0.6")
+test(1613.45, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)], ignore.row.order = TRUE), TRUE)
+test(1613.45, all.equal(dt[c(1:4,1:2)], dt[c(1L,1L,1:4)], ignore.row.order = TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
+test(1613.46, all.equal(dt[c(1:2,1:4,1:2)], dt[c(1:2,1:2,1:4)], ignore.row.order = TRUE), TRUE)
+# supported type all.equal: integer64
+if ("package:bit64" %in% search()) {
+    dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = bit64::as.integer64("90000000000")+1:4)
+    test(1613.47, all.equal(dt, dt), TRUE)
+    test(1613.48, all.equal(dt, dt, ignore.row.order = TRUE), TRUE)
+    test(1613.49, all.equal(dt[c(1:4,1L)], dt[c(1:4,1L)]), TRUE)
+    test(1613.50, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)]), "Column 'V1': Mean relative difference: 0.6")
+    test(1613.51, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)], ignore.row.order = TRUE), TRUE)
+    test(1613.52, all.equal(dt[c(1:4,1:2)], dt[c(1L,1L,1:4)], ignore.row.order = TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
+    test(1613.53, all.equal(dt[c(1:2,1:4,1:2)], dt[c(1:2,1:2,1:4)], ignore.row.order = TRUE), TRUE)
+}
 
 if ("package:bit64" %in% search()) {
     # fix for #1405, handles roll with -ve int64 values properly

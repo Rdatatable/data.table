@@ -22,11 +22,11 @@ test_that("`xkey` column names are valid in merge (bug#1299", {
 test_that("one column merges work (bug #1241)", {
     dt <- data.table(a=rep(1:2,each=3), b=1:6, key="a")
     y <- data.table(a=c(0,1), bb=c(10,11), key="a")
-    expect_equal(merge(y, dt), data.table(a=1L, bb=11L, b=1:3, key="a"),
+    expect_equal(merge(y, dt), data.table(a=1L, bb=11, b=1:3, key="a"),
                  info="Original test #231")
     expect_equal(merge(y, dt, all=TRUE),
                  data.table(a=rep(c(0L,1L,2L),c(1,3,3)),
-                            bb=rep(c(10L,11L,NA_integer_),c(1,3,3)),
+                            bb=rep(c(10,11,NA_real_),c(1,3,3)),
                             b=c(NA_integer_,1:6), key="a"),
                  info="Original test #232")
 

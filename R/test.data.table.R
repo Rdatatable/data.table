@@ -179,7 +179,8 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
 
 # rewritten when implementing #1106 
 all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attributes=TRUE, ignore.col.order=FALSE, ignore.row.order=FALSE, ...) {
-    stopifnot(is.data.table(target), is.data.table(current), is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order))
+    stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order))
+    if (!is.data.table(target) || !is.data.table(current)) stop("'target' and 'current' must be both data.tables")
     
     msg = character(0)
     # init checks that detect high level all.equal
@@ -194,6 +195,9 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     
     # ignore.col.order
     if (ignore.col.order && diff.colorder) current = setcolorder(shallow(current), names(target))
+    
+    # check column classes match
+    if (!identical(lapply(target, class), lapply(current, class))) return("Datasets has different column classes")
     
     # check attributes
     if (check.attributes) {
@@ -219,30 +223,31 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
         exclude.attrs = function(x, attrs = c("row.names",".internal.selfref")) x[!names(x) %in% attrs]
         a1 = exclude.attrs(attributes(target))
         a2 = exclude.attrs(attributes(current))
-        if (length(a1) != length(a2)) return(sprintf("Datasets has different number of (non-excluded) attributes: target %s, current %s.", length(a1), length(a2)))
-        if (!identical(nm1 <- sort(names(a1)), nm2 <- sort(names(a2)))) return(sprintf("Datasets has attributes with different names: %s.", paste(setdiff(union(names(a1), names(a2)), intersect(names(a1), names(a2))), collapse=", ")))
+        if (length(a1) != length(a2)) return(sprintf("Datasets has different number of (non-excluded) attributes: target %s, current %s", length(a1), length(a2)))
+        if (!identical(nm1 <- sort(names(a1)), nm2 <- sort(names(a2)))) return(sprintf("Datasets has attributes with different names: %s", paste(setdiff(union(names(a1), names(a2)), intersect(names(a1), names(a2))), collapse=", ")))
         attrs.r = all.equal(a1[nm1], a2[nm2], ..., check.attributes = check.attributes)
         if (is.character(attrs.r)) return(paste("Attributes: <", attrs.r, ">")) # skip further heavy processing
     }
     
     # ignore.row.order
     if (ignore.row.order) {
-        if(".unqn" %chin% names(target)) stop("None of the datasets to test should contain a column named '.unqn'.") # handle datasets with `N` column
+        if (".seqn" %in% names(target)) stop("None of the datasets to compare should contain a column named '.seqn'")
+        bad.type = setNames(c("raw","complex","list") %chin% c(vapply(current, typeof, FUN.VALUE = ""), vapply(target, typeof, FUN.VALUE = "")), c("raw","complex","list"))
+        if (any(bad.type)) stop(sprintf("Datasets to compare with 'ignore.row.order' must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
         target_dup = as.logical(anyDuplicated(target))
         current_dup = as.logical(anyDuplicated(current))
-        if (target_dup && !current_dup) return("Dataset 'target' has duplicate rows while 'current' don't have any duplicate rows.")
-        if (!target_dup && current_dup) return("Dataset 'current' has duplicate rows while 'target' don't have any duplicate rows.")
+        if (target_dup && !current_dup) return("Dataset 'target' has duplicate rows while 'current' don't have any duplicate rows")
+        if (!target_dup && current_dup) return("Dataset 'current' has duplicate rows while 'target' don't have any duplicate rows")
         if (target_dup && current_dup) {
-            `.` = NULL # CRAN NOTE fix
-            target = target[, .(`.unqn` = .N), by=names(target)]
-            current = current[, .(`.unqn` = .N), by=names(current)]
-            if(nrow(target) > nrow(current)) return("Dataset 'target' has more unique rows than 'current'.")
-            if(nrow(target) < nrow(current)) return("Dataset 'current' has more unique rows than 'target'.")
+            target = target[, list(`.seqn` = .N), by=names(target)]
+            current = current[, list(`.seqn` = .N), by=names(current)]
+            if(nrow(target) > nrow(current)) return("Dataset 'target' has more unique rows than 'current'")
+            if(nrow(target) < nrow(current)) return("Dataset 'current' has more unique rows than 'target'")
         }
         ans = target[current, nomatch=NA, which=TRUE, on=names(target)]
-        if (anyNA(ans)) return("Dataset 'current' has rows present in different quantity than in 'target'.")
+        if (anyNA(ans)) return("Dataset 'current' has duplicated rows present in different quantity than in 'target'")
         ans = current[target, nomatch=NA, which=TRUE, on=names(current)]
-        if (anyNA(ans)) return("Dataset 'target' has rows present in different quantity than in 'current'.")
+        if (anyNA(ans)) return("Dataset 'target' has duplicated rows present in different quantity than in 'current'")
     } else {
         for (i in seq_along(target)) {
             # trim.levels moved here

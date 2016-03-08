@@ -30,7 +30,7 @@
   }
   
   \item{ignore.row.order}{
-    A logical indicating whether or not to ignore rows order in \code{data.table}.
+    A logical indicating whether or not to ignore rows order in \code{data.table}. This option requires datasets to use data types on which join can be made, so no support for \emph{list, complex, raw}, but still supports \link[bit64]{integer64}.
   }
 
   \item{\dots}{
@@ -58,18 +58,28 @@ isTRUE(all.equal(dt1, dt1))
 is.character(all.equal(dt1, dt2))
 
 # ignore.col.order
-all.equal(dt1, dt1[, .(X, A)], ignore.col.order = TRUE)
-all.equal(dt1, dt1[, .(X, A)])
+x <- copy(dt1)
+y <- dt1[, .(X, A)]
+all.equal(x, y)
+all.equal(x, y, ignore.col.order = TRUE)
+
 # ignore.row.order
-all.equal(setkeyv(copy(dt1), NULL), dt1[sample(nrow(dt1))], ignore.row.order = TRUE)
-all.equal(setkeyv(copy(dt1), NULL), dt1[sample(nrow(dt1))])
+x <- setkeyv(copy(dt1), NULL)
+y <- dt1[sample(nrow(dt1))]
+all.equal(x, y)
+all.equal(x, y, ignore.row.order = TRUE)
+
 # check.attributes
-all.equal(dt1, setkeyv(copy(dt1), NULL), check.attributes = FALSE)
-all.equal(dt1, setkeyv(copy(dt1), NULL))
+x = copy(dt1)
+y = setkeyv(copy(dt1), NULL)
+all.equal(x, y)
+all.equal(x, y, check.attributes = FALSE)
+
 # trim.levels
-dt1 <- data.table(A = factor(letters[1:10])[1:4]) # 10 levels
-dt2 <- data.table(A = factor(letters[1:5])[1:4]) # 5 levels
-all.equal(dt1, dt2)
-all.equal(dt1, dt2, trim.levels = FALSE)
+x <- data.table(A = factor(letters[1:10])[1:4]) # 10 levels
+y <- data.table(A = factor(letters[1:5])[1:4]) # 5 levels
+all.equal(x, y, trim.levels = FALSE)
+all.equal(x, y, trim.levels = FALSE, check.attributes = FALSE)
+all.equal(x, y)
 }
 
