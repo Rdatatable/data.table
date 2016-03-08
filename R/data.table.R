@@ -91,7 +91,7 @@ setPackageName("data.table",.global)
 
 print.data.table <- function(x, topn=getOption("datatable.print.topn"), 
                              nrows=getOption("datatable.print.nrows"), 
-                             print.class=getOption("datatable.print.class"), 
+                             class=getOption("datatable.print.class"), 
                              row.names=getOption("datatable.print.rownames"), 
                              quote=FALSE, ...) {    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
     # nrows - under this the whole (small) table is printed, unless topn is provided (100)
@@ -143,7 +143,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     # FR #5020 - add row.names = logical argument to print.data.table
     if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE,scientific=FALSE),":",sep="") else rownames(toprint)=rep.int("", nrow(toprint))
     if (is.null(names(x))) colnames(toprint)=rep("NA", ncol(toprint)) # fixes bug #4934
-    if (isTRUE(print.class)) {
+    if (isTRUE(class)) {
       #Matching table for most common types & their abbreviations
       class_abb = c(list = "<list>", integer = "<int>", numeric = "<num>",
             character = "<char>", Date = "<Date>", complex = "<cplx>",

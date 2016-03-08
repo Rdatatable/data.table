@@ -10,7 +10,7 @@
   \method{print}{data.table}(x,
     topn=getOption("datatable.print.topn"),          # default: 5
     nrows=getOption("datatable.print.nrows"),        # default: 100
-    print.class=getOption("datatable.print.class"),  # default: FALSE
+    class=getOption("datatable.print.class"),  # default: FALSE
     row.names=getOption("datatable.print.rownames"), # default: TRUE
     quote=FALSE,...)
 }
@@ -18,7 +18,7 @@
   \item{x}{ A \code{data.table}. }
   \item{topn}{ The number of rows to be printed from the beginning and end of tables with more than \code{nrows} rows. }
   \item{nrows}{ The number of rows which will be printed before truncation is enforced. }
-  \item{print.class}{ If \code{TRUE}, the resulting output will include above each column its storage class (or a self-evident abbreviation thereof). }
+  \item{class}{ If \code{TRUE}, the resulting output will include above each column its storage class (or a self-evident abbreviation thereof). }
   \item{row.names}{ If \code{TRUE}, row indices will be printed alongside \code{x}. }
   \item{quote}{ If \code{TRUE}, all output will appear in quotes, as in \code{print.default}. }
   \item{\dots}{ Other arguments ultimately passed to \code{format}. }
@@ -37,11 +37,11 @@
                    noblanks = c("12", "34"))
   print(DT, quote = TRUE)
   
-  #`print.class` provides handy column type summaries at a glance
+  #`class` provides handy column type summaries at a glance
   DT <- data.table(a = vector("integer", 3), 
                    b = vector("complex", 3),
                    c = as.IDate(paste0("2016-02-0", 1:3)))
-  print(DT, print.class = TRUE)
+  print(DT, class = TRUE)
   
   #`row.names` can be eliminated to save space
   DT <- data.table(a = 1:3)
