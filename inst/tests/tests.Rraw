@@ -7073,6 +7073,7 @@ X = data.table(A=1:3,b=4:6,c=c("foo","bar","baz"))
 Y = data.table(A=2:4, B=5:7)
 test(1574.2, X[Y, on=c("A",b="B")], X[Y, on=c(A="A", b="B")])
 test(1574.3, X[Y, on=c(b="B", "A")], X[Y, on=c(b="B", A="A")])
+test(1574.4, X["bar", on="c"], X[2L]) # missed previously
 
 # fix for #1376
 X = data.table(a=1:3,b=4:6,c=c("foo","bar","baz"))

@@ -579,8 +579,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             }
         }
         if (is.null(i)) return( null.data.table() )
-        if (is.character(i)) i = data.table(V1=i)   # for user convenience; e.g. DT["foo"] without needing DT[.("foo")]
-        else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) i = as.data.table(i[[1L]])
+	if (is.character(i)) {
+	    isnull_inames = TRUE
+	    i = data.table(V1=i)   # for user convenience; e.g. DT["foo"] without needing DT[.("foo")]
+	} else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) i = as.data.table(i[[1L]])
         else if (identical(class(i),"data.frame")) i = as.data.table(i)   # TO DO: avoid these as.data.table() and use a flag instead
         else if (identical(class(i),"list")) {
             isnull_inames = is.null(names(i))
