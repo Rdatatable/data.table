@@ -7564,8 +7564,8 @@ test(1613.19, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'target' ha
 # different number of unique rows
 DT1 <- data.table(a = c(1:3,2:3), b = letters[c(1:3,2:3)])
 DT2 <- data.table(a = c(1L,1:4), b = letters[c(1L,1:4)])
-test(1613.20, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has more unique rows than 'target'")
-test(1613.21, all.equal(DT2, DT1, ignore.row.order = TRUE), "Dataset 'target' has more unique rows than 'current'")
+test(1613.20, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
+test(1613.21, all.equal(DT2, DT1, ignore.row.order = TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
 # test attributes: key
 DT1 <- data.table(a = 1:4, b = letters[1:4], key = "a")
 DT2 <- data.table(a = 1:4, b = letters[1:4])

@@ -173,17 +173,20 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
         if (any(bad.type)) stop(sprintf("Datasets to compare with 'ignore.row.order' must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
         target_dup = as.logical(anyDuplicated(target))
         current_dup = as.logical(anyDuplicated(current))
-        if (target_dup && !current_dup) return("Dataset 'target' has duplicate rows while 'current' don't have any duplicate rows")
-        if (!target_dup && current_dup) return("Dataset 'current' has duplicate rows while 'target' don't have any duplicate rows")
+        if (target_dup && !current_dup)
+            return("Dataset 'target' has duplicate rows while 'current' don't have any duplicate rows")
+        if (!target_dup && current_dup)
+            return("Dataset 'current' has duplicate rows while 'target' don't have any duplicate rows")
         if (target_dup && current_dup) {
-            target = target[, list(`.seqn` = .N), by=names(target)]
-            current = current[, list(`.seqn` = .N), by=names(current)]
-            if(nrow(target) > nrow(current)) return("Dataset 'target' has more unique rows than 'current'")
-            if(nrow(target) < nrow(current)) return("Dataset 'current' has more unique rows than 'target'")
+            target = shallow(target)[, ".seqn" := rowidv(target)]
+            current = shallow(current)[, ".seqn" := rowidv(current)]
+            jn.on = c(".seqn",setdiff(names(target),".seqn"))
+        } else {
+            jn.on = names(target)
         }
-        ans = target[current, nomatch=NA, which=TRUE, on=names(target)]
+        ans = target[current, nomatch=NA, which=TRUE, on=jn.on]
         if (anyNA(ans)) return("Dataset 'current' has duplicated rows present in different quantity than in 'target'")
-        ans = current[target, nomatch=NA, which=TRUE, on=names(current)]
+        ans = current[target, nomatch=NA, which=TRUE, on=jn.on]
         if (anyNA(ans)) return("Dataset 'target' has duplicated rows present in different quantity than in 'current'")
     } else {
         for (i in seq_along(target)) {
