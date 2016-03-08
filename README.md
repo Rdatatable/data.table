@@ -66,6 +66,8 @@
 
   25. Finally, we can now refer to the columns that are not mentioned in `.SD/.SDcols` in `j` as well. For example, `DT[, .(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:V3]` works fine, [#495](https://github.com/Rdatatable/data.table/issues/495). Thanks to @MattWeller for filing the report, and to all the others who linked various SO posts to be updated.
 
+  26. While updating by reference, adding a new column is guaranteed even if there are no matches when `nomatch=NA`, [#759](https://github.com/Rdatatable/data.table/issues/759). Thanks @mchen402.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

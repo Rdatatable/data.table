@@ -750,9 +750,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (is.null(jsub)) return(NULL)
 
         if (is.call(jsub) && jsub[[1L]]==as.name(":=")) {
-            if (identical(irows, integer())) {  # short circuit do-nothing, don't do further checks on .SDcols for example
-                .global$print = address(x)
-                return(invisible(x))          # irows=NULL means all rows at this stage
+            # short circuit do-nothing, don't do further checks on .SDcols for example
+            if (identical(irows, integer())) {
+                if (identical(nomatch, 0L)) {
+                    .global$print = address(x)
+                    return(invisible(x))          # irows=NULL means all rows at this stage
+                } else irows = rep(NA_integer_, nrow(x)) # fix for #759
             }
             if (!with) {
                 if (is.null(names(jsub)) && is.name(jsub[[2L]])) {
@@ -1054,9 +1057,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # FR #4996 - verbose message and return when a join matches nothing with `:=` in j
                 if (byjoin & !notjoin) {
                     # Note: !notjoin is here only until the notjoin is implemented as a "proper" byjoin
-                    if ((all(is.na(f__)) | (all(f__ == 0L) & nomatch == 0L))) {
+                    if (identical(nomatch,0L) && all(f__ == 0L)) {
                         if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")
                         return(suppPrint(x))
+                    } else if (all(is.na(f__))) { # nomatch can't be 0 here
+                        # fix for #759
+                        irows = rep(NA_integer_, nrow(x))
+                        byjoin = FALSE
                     }
                 }
                 if (!is.null(irows)) {

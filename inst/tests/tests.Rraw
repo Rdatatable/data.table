@@ -1725,8 +1725,8 @@ test(616, DT[a>1,p:=sum(b)]$p, rep(c(NA,3.3),c(3,6)))
 test(617, DT[a>1,q:=sum(b),by=a]$q, rep(c(NA,1.5,1.8),each=3))
 
 # Empty i clause, #2034. Thanks to Chris for testing, tests from him.
-test(618, copy(DT)[a>3,r:=sum(b)], DT)
-test(619, copy(DT)[J(-1),r:=sum(b)], DT)
+test(618, copy(DT)[a>3,r:=sum(b), nomatch=0L], DT) # followng #759 fix
+test(619, copy(DT)[J(-1),r:=sum(b), nomatch=0L], DT) # followng #759 fix
 test(620, copy(DT)[J(-1),r:=sum(b),nomatch=0], DT)
 DT = data.table(x=letters, key="x")
 test(621, copy(DT)[J("bb"), x:="foo"], DT)  # when no update, key should be retained
@@ -5382,12 +5382,13 @@ options(datatable.auto.index = TRUE)
 test(1376.12, list(DT[a==2L], key2(DT)), list(DT[9L],"a"))
 
 # When i is FALSE, it shouldn't matter if .SDcols is wrong. Package vardpoor relies on this in example(vardchanges).
+# as long as nomatch=0L (following #759 fix)
 DT = data.table(a=1:3, b=4:6)
 test(1377.1, DT[FALSE, foo:=7], DT)
 test(1377.2, DT[0, foo:=7], DT)
 test(1377.3, DT[, foo := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","b")], data.table(a=1:3, b=4:6, foo=c("1__4","2__5","3__6")))
 test(1377.4, DT[, bar := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","zz")], error="Some items of .SDcols are not column names")
-test(1377.5, DT[FALSE, bar := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","zz")], DT)
+test(1377.5, DT[FALSE, bar := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","zz"), nomatch=0L], DT)
 
 #====================================
 # fread issue with http download on Windows, thanks to Steve Miller for highlighting.
@@ -5980,7 +5981,7 @@ test(1466.2, as.data.table(as.data.frame(x)), as.data.table(x)) # posix type
 # fix for #1001
 options(datatable.auto.index=TRUE)
 DT <- data.table(a=1:2)
-test(1467.1, DT[a==3, b:=d+1], DT)
+test(1467.1, DT[a==3, b:=d+1, nomatch=0L], DT) # following #759 fix, added nomatch=0L
 # restore
 options(datatable.auto.index=FALSE)
 
@@ -7878,6 +7879,18 @@ options(datatable.optimize = oldopts)
 # by=.EACHI and operations with 'i'
 test(1629.16, dt[.(2:3), c(.(sum(v1)), lapply(.SD, function(x) mean(x)*min(v1))), by=.EACHI, .SDcols=v2:v3, on="grp"], dt[grp %in% 2:3, c(.(sum(v1)), lapply(.SD, function(x) mean(x)*min(v1))), by=grp, .SDcols=v2:v3])
 test(1629.17, dt[.(2:3), c(sum(v1), lapply(.SD, function(x) mean(x)*v1)), .SDcols=v2:v3, on="grp"][order(V1,v2,v3)], dt[grp %in% 2:3, c(sum(v1), lapply(.SD, function(x) mean(x)*v1)), .SDcols=v2:v3][order(V1,v2,v3)])
+
+# #759, add new cols on :=
+dt1 <- data.table(id = 1:2, x = 3:4)
+dt2 <- data.table(id = 3:4, y = 5:6)
+# nomatch=0 has no effect
+test(1630.1, dt1[id>5, z := 2, nomatch=0L], data.table(id = 1:2, x = 3:4))
+test(1630.2, dt1[dt2, z := 2, nomatch=0L, on="id"], data.table(id = 1:2, x = 3:4))
+test(1630.3, copy(dt1)[dt2, z := y, on="id", by=.EACHI, nomatch=0L], data.table(id = 1:2, x = 3:4))
+# nomatch=NA guarantees all-NA col
+test(1630.4, copy(dt1)[id>5, z := 2], data.table(id = 1:2, x = 3:4, z = NA_real_))
+test(1630.5, copy(dt1)[dt2, z := y, on="id"], data.table(id = 1:2, x = 3:4, z = NA_integer_))
+test(1630.6, copy(dt1)[dt2, z := y, on="id", by=.EACHI], data.table(id = 1:2, x = 3:4, z = NA_integer_))
 
 ##########################
 

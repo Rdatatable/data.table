@@ -338,7 +338,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                 error("i[%d] is %d which is out of range [1,nrow=%d].",i+1,INTEGER(rows)[i],nrow);
             if (INTEGER(rows)[i]>=1) anyToDo = TRUE;
         }
-        if (!anyToDo) return(dt);  // all items of rows either 0 or NA, nothing to do.  
+        // added !length(newcolnames) for #759 fix
+        if (!anyToDo && !length(newcolnames)) return(dt);  // all items of rows either 0 or NA, nothing to do.  
     }
     if (!length(cols)) {
         warning("length(LHS) = 0, meaning no columns to delete or assign RHS to.");
