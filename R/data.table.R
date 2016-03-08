@@ -2542,7 +2542,7 @@ rowidv <- function(x, cols=seq_along(x), prefix=NULL) {
             cols = chmatch(cols, names(x))
         cols = as.integer(cols)
     }
-    xorder = forderv(x, by=cols, retGrp=TRUE)
+    xorder = forderv(x, by=cols, sort=FALSE, retGrp=TRUE) # speedup on char with sort=FALSE
     xstart = attr(xorder, 'start')
     if (!length(xorder)) xorder = seq_along(x[[1L]])
     ids = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), "sequence")
