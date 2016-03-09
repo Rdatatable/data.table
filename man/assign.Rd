@@ -68,6 +68,11 @@ Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerc
 
 Since \code{[.data.table} incurs overhead to check the existence and type of arguments (for example), \code{set()} provides direct (but less flexible) assignment by reference with low overhead, appropriate for use inside a \code{for} loop. See examples. \code{:=} is more powerful and flexible than \code{set()} because \code{:=} is intended to be combined with \code{i} and \code{by} in single queries on large datasets.
 }
+\section{Note:}{
+    \code{X[a > 4, b := c]} is different from \code{X[a > 4][, b := c]}. The first expression updates (or adds) column \code{b} with the value \code{c} on those rows where \code{a > 4} evaluates to \code{TRUE}. \code{X} is updated \emph{by reference}, therefore no assignment needed. 
+
+    The second expression on the other hand updates a \emph{new} \code{data.table} that's returned by the subset operation. Since the subsetted data.table is ephemeral (it is not assigned to a symbol), the result would be lost; unless the result is assigned, for example, as follows: \code{ans <- X[a > 4][, b := c]}.
+}
 \value{
 \code{DT} is modified by reference and returned invisibly. If you require a copy, take a \code{\link{copy}} first (using \code{DT2 = copy(DT)}).
 }
@@ -83,6 +88,10 @@ DT                          # DT changed by reference
 DT[2, d := 10L][]           # shorthand for update and print
 
 DT[b > 4, b := d * 2L]      # subassign to b with d*2L on those rows where b > 4 is TRUE
+DT[b > 4][, b := d * 2L]    # different from above. [, := ] is performed on the subset 
+                            # which is an new (ephemeral) data.table. Result needs to be 
+                            # assigned to a variable (using `<-`).
+
 DT[, e := mean(d), by = a]  # add new column by group by reference
 DT["A", b := 0L, on = "a"]  # ad-hoc update of column b for group "A" using
 			    # joins-as-subsets with binary search and 'on='

@@ -190,6 +190,12 @@ Let's look at all the `hours` to verify.
 flights[, sort(unique(hour))]
 ```
 
+#### Exercise: {.bs-callout .bs-callout-warning #update-by-reference-question}
+
+What is the difference between `flights[hour == 24L, hour := 0L]` and `flights[hour == 24L][, hour := 0L]`? Hint: The latter needs an assignment (`<-`) if you would want to use the result later. 
+
+If you can't figure it out, have a look at the `Note` section of `?":="`.
+
 ### c) Delete column by reference
 
 #### -- Remove `delay` column

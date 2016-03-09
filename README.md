@@ -212,6 +212,10 @@
   
   20. `row.names` argument to `print.data.table` can now be changed by default via `options("datatable.print.rownames")` (`TRUE` by default, the inherited standard), [#1097](https://github.com/Rdatatable/data.table/issues/1097). Thanks to @smcinerney for the suggestion and @MichaelChirico for the PR.
 
+  21. Added a FAQ entry for the new update to `:=` which sometimes doesn't print the result on the first time, [#939](https://github.com/Rdatatable/data.table/issues/939).
+
+  22. Added `Note` section and examples to `?":="` for [#905](https://github.com/Rdatatable/data.table/issues/905).
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
