@@ -347,10 +347,6 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
     setattr(value,"class",c("data.table","data.frame"))
     if (!is.null(key)) {
       if (!is.character(key)) stop("key argument of data.table() must be character")
-      if (length(key)==1L) {
-          key = strsplit(key,split=",")[[1L]]
-          # eg key="A,B"; a syntax only useful in key argument to data.table(), really.
-      }
       setkeyv(value,key)
     } else {
        # retain key of cbind(DT1, DT2, DT3) where DT2 is keyed but not DT1. cbind calls data.table().

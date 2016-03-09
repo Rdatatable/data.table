@@ -31,7 +31,7 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 \arguments{
   \item{x}{ A \code{data.table}. }
   \item{\dots}{ The columns to sort by. Do not quote the column names. If \code{\dots} is missing (i.e. \code{setkey(DT)}), all the columns are used. \code{NULL} removes the key. }
-  \item{cols}{ A character vector (only) of column names. }
+  \item{cols}{ A character vector of column names, \emph{or} a comma-separated length-one string such as \code{"x,y,z"}. }
   \item{value}{ In (deprecated) \code{key<-}, a character vector (only) of column names.}
   \item{verbose}{ Output status and information. }
   \item{physical}{ TRUE changes the order of the data in RAM. FALSE adds a secondary key a.k.a. index. }

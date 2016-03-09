@@ -215,6 +215,8 @@
   21. Added a FAQ entry for the new update to `:=` which sometimes doesn't print the result on the first time, [#939](https://github.com/Rdatatable/data.table/issues/939).
 
   22. Added `Note` section and examples to `?":="` for [#905](https://github.com/Rdatatable/data.table/issues/905).
+  
+  23. `setkeyv` now understands comma-separated arguments, i.e., `setkeyv(DT, "key1,key2")` works, as previously was acceptable only in `data.table()`. By proxy, this syntax is now accepted anywhere with a `key` argument (e.g., `setDT`). Thanks @MichaelChirico.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
