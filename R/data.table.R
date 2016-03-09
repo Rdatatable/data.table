@@ -1243,7 +1243,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (haskey(x)) {
                 keylen = which.first(!key(x) %chin% ansvars)-1L
                 if (is.na(keylen)) keylen = length(key(x))
-                if (keylen > length(rightcols) && !.Call(CisOrderedSubset, irows, nrow(x))) keylen = length(rightcols)
+                len = length(rightcols)
+                if (keylen > len && !.Call(CisOrderedSubset, irows, nrow(x))) {
+                    keylen = if (missing(on) || identical(names(on), head(key(x), len))) len else 0L # fix for #1268
+                }
                 if (keylen && ((is.data.table(i) && haskey(i)) || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
                     setattr(ans,"sorted",head(key(x),keylen))
             }

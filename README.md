@@ -168,6 +168,8 @@
 
   49. UTF8 BOM header is excluded properly in `fread()`, [#1087](https://github.com/Rdatatable/data.table/issues/1087) and [#1465](https://github.com/Rdatatable/data.table/issues/1465). Thanks to @nigmastar and @MichaelChirico.
 
+  50. Joins using `on=` retains (and discards) keys properly, [#1268](https://github.com/Rdatatable/data.table/issues/1268). Thanks @DouglasClark for [this SO post](http://stackoverflow.com/q/29918595/559784) that helped discover the issue.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
