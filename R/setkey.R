@@ -32,6 +32,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     } else {
         # remove backticks from cols 
         cols <- gsub("`", "", cols)
+        if (length(cols) == 1L) cols <- strsplit(cols, ",")[[1L]]
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
