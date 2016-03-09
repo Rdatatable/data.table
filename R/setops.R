@@ -43,7 +43,7 @@ setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE
     .Call("CsubsetDT", ux, which_(ix, FALSE), seq_along(ux)) # more memory efficient version of which(!ix)
 }
 
-# set operators ---
+# set operators ----
 
 funique <- function(x) {
     stopifnot(is.data.table(x))
@@ -64,7 +64,8 @@ fintersect <- function(x, y, all=FALSE) {
     if (all) {
         x = shallow(x)[, ".seqn" := rowidv(x)]
         y = shallow(y)[, ".seqn" := rowidv(y)]
-        x[y, .SD, .SDcols=setdiff(names(x),".seqn"), nomatch=0L, on=names(x)]
+        jn.on = c(".seqn",setdiff(names(x),".seqn"))
+        x[y, .SD, .SDcols=setdiff(names(x),".seqn"), nomatch=0L, on=jn.on]
     } else {
         x[funique(y), nomatch=0L, on=names(x), mult="first"]
     }
@@ -84,7 +85,8 @@ fsetdiff <- function(x, y, all=FALSE) {
     if (all) {
         x = shallow(x)[, ".seqn" := rowidv(x)]
         y = shallow(y)[, ".seqn" := rowidv(y)]
-        x[!y, .SD, .SDcols=setdiff(names(x),".seqn"), on=names(x)]
+        jn.on = c(".seqn",setdiff(names(x),".seqn"))
+        x[!y, .SD, .SDcols=setdiff(names(x),".seqn"), on=jn.on]
     } else {
         funique(x[!y, on=names(x)])
     }
