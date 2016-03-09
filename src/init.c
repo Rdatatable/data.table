@@ -29,8 +29,6 @@ SEXP fmelt();
 SEXP fcast();
 SEXP uniqlist();
 SEXP uniqlengths();
-SEXP fastradixdouble();
-SEXP fastradixint();
 SEXP setrev();
 SEXP forder();
 SEXP fsorted();
@@ -101,8 +99,6 @@ R_CallMethodDef callMethods[] = {
 {"Cfcast", (DL_FUNC) &fcast, -1}, 
 {"Cuniqlist", (DL_FUNC) &uniqlist, -1},
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
-{"Cfastradixdouble", (DL_FUNC) &fastradixdouble, -1}, 
-{"Cfastradixint", (DL_FUNC) &fastradixint, -1},
 {"Csetrev", (DL_FUNC) &setrev, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
 {"Cfsorted", (DL_FUNC) &fsorted, -1},

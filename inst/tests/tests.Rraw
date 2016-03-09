@@ -42,9 +42,6 @@ if (!.devtesting) {
     forderv = data.table:::forderv
     forder = data.table:::forder
     null.data.table = data.table:::null.data.table
-    ordernumtol = data.table:::ordernumtol   # TO DO: deprecated, remove
-    iradixorder = data.table:::iradixorder   # TO DO: deprecated, remove
-    dradixorder = data.table:::dradixorder   # TO DO: deprecated, remove
     uniqlist = data.table:::uniqlist
     uniqlengths = data.table:::uniqlengths
     setrev = data.table:::setrev
@@ -1672,7 +1669,6 @@ test(597, unique(DT), DT[c(1,2,4)])
 test(598, DT[,list(count=.N),by=c("x","y")], data.table(x=0.0,y=c(0.0,0.1,0.2),count=c(3L,1L,1L)))
 
 # And that numeric NAs sort stably to the beginning. Whether NAs are allowed in keys, another issue but
-# ordernumtol needs to deal with NA anyway for add hoc by and unique.
 DT = data.table( c(1.34, 1.34, 1.34,   NA, 2.22, 2.22, 1.34, NA,  NA, 1.34, 0.999), c(75.1,   NA, 75.1, 75.1,  2.3,  2.4,  2.5, NA, 1.1,   NA, 7.9 ))
 test(599, DT[c(8,9,4,11,2,10,7,1,3,5,6)], setkey(setkey(DT),NULL))
 
@@ -3632,22 +3628,6 @@ test(1146.1, DT[, Time:= as.numeric(Time)], ans)
 DF <- as.data.frame(DT)
 test(1146.2, {set(DF, i=NULL, j=1L, value=seq_len(nrow(DF)));setattr(DF,"reference",NULL);DF}, data.frame(Time=1:nrow(BOD), demand=BOD$demand))
 test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="set() on a data.frame is for changing existing columns, not adding new ones. Please use a data.table for that.")
-
-# Feature - implemented fast radix order for numeric types (both +ve and -ve numerics).
-# note that if "x" is already a list, then the values will be modified by reference!
-# Note: 'ordernumtol' doesn't distinguish between NA and NaN whereas this one does!
-# R-wrapper is dradixorder
-set.seed(45)
-x <- rnorm(1e6)*1e4
-test(1147.1, base::order(x), dradixorder(x, tol=numeric(0))) # base::order doesn't test with tolerance
-test(1147.2, ordernumtol(x), dradixorder(x))
-tol = .Machine$double.eps^0.5
-x <- c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.18909, NaN, 5.18909-1.2*tol, 5.18909-0.04*tol)
-test(1147.3, dradixorder(x), c(6L, 9L, 2L, 11L, 8L, 7L, 4L, 12L, 5L, 10L, 13L, 1L, 3L))
-
-# test for `iradixorder` when input is integer(0) and numeric(0)
-test(1149.1, iradixorder(integer(0)), integer(0)) 
-test(1149.2, iradixorder(numeric(0)), error="iradixorder is only for integer") 
 
 # test uniqlengths
 set.seed(45)
