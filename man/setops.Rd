@@ -1,4 +1,5 @@
 \name{setops}
+\alias{setops}
 \alias{intersect}
 \alias{fintersect}
 \alias{setdiff}
@@ -22,8 +23,7 @@ funion(x, y, all = FALSE)
 fsetequal(x, y)
 }
 \arguments{
-  \item{x}{A data.table.}
-  \item{y}{A data.table.}
+  \item{x,y}{\code{data.table}s.}
   \item{all}{Logical. Default is \code{FALSE} and removes duplicate rows on the result. When \code{TRUE}, if there are \code{xn} copies of a particular row in \code{x} and \code{yn} copies of the same row in \code{y}, then:
 
       \code{fintersect} will return \code{min(xn, yn)} copies of that row.
