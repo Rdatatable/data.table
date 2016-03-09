@@ -7,8 +7,18 @@ setkey <- function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE
     setkeyv(x, cols, verbose=verbose, physical=physical)
 }
 
-set2key <- function(...) setkey(..., physical=FALSE)
-set2keyv <- function(...) setkeyv(..., physical=FALSE)
+# FR #1442
+setindex <- function(...) setkey(..., physical=FALSE)
+setindexv <- function(...) setkeyv(..., physical=FALSE)
+
+set2key <- function(...) {
+    warning("set2key will be deprecated in the next relase. Please use setindex instead.")
+    setkey(..., physical=FALSE)
+}
+set2keyv <- function(...) {
+    warning("set2key will be deprecated in the next relase. Please use setindex instead.")
+    setkeyv(..., physical=FALSE)
+}
 
 setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
 {

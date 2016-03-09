@@ -6,6 +6,8 @@
 \alias{haskey}
 \alias{set2key}
 \alias{set2keyv}
+\alias{setindex}
+\alias{setindexv}
 \alias{key2}
 \title{ Create key on a data table }
 \description{
