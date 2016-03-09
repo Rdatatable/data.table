@@ -541,6 +541,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
     ERANGEwarning = FALSE;  // just while detecting types, then TRUE before the read data loop
+    PROTECT_INDEX pi;
 
     // Encoding, #563: Borrowed from do_setencoding from base R
     // https://github.com/wch/r-source/blob/ca5348f0b5e3f3c2b24851d7aff02de5217465eb/src/main/util.c#L1115
@@ -1178,7 +1179,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (length(select)) {
         if (any_duplicated(select,FALSE)) STOP("Duplicates detected in select");
         if (isString(select)) {
-            itemsInt = PROTECT(chmatch(names, select, NA_INTEGER, FALSE)); protecti++;
+            // invalid cols check part of #1445 moved here (makes sense before reading the file)
+            itemsInt = PROTECT(chmatch(select, names, NA_INTEGER, FALSE)); protecti++;
+            for (i=0; i<length(select); i++) if (INTEGER(itemsInt)[i]==NA_INTEGER) 
+                error("Column(s) [%s] not found in file.", CHAR(STRING_ELT(select, i)));
+            PROTECT_WITH_INDEX(itemsInt, &pi);
+            REPROTECT(itemsInt = chmatch(names, select, NA_INTEGER, FALSE), pi);
             for (i=0; i<ncol; i++) if (INTEGER(itemsInt)[i]==NA_INTEGER) { type[i]=SXP_NULL; numNULL++; }
         } else {
             itemsInt = PROTECT(coerceVector(select, INTSXP)); protecti++;
