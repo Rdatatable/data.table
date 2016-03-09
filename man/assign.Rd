@@ -98,12 +98,12 @@ m = matrix(1, nrow = 2e6L, ncol = 100L)
 DF = as.data.frame(m)
 DT = as.data.table(m)    
 
-system.time(for (i in 1:1000) DF[i,1] <- i)
+system.time(for (i in 1:1000) DF[i, 1] = i)
 # 15.856 seconds
-system.time(for (i in 1:1000) DT[i,V1:=i])
+system.time(for (i in 1:1000) DT[i, V1 := i])
 # 0.279 seconds  (57 times faster)
-system.time(for (i in 1:1000) set(DT,i,1L,i))
-# 0.002 seconds  ( 7930 times faster, overhead of [.data.table is avoided)
+system.time(for (i in 1:1000) set(DT, i, 1L, i))
+# 0.002 seconds  (7930 times faster, overhead of [.data.table is avoided)
 
 # However, normally, we call [.data.table *once* on *large* data, not many times on small data.
 # The above is to demonstrate overhead, not to recommend looping in this way. But the option
