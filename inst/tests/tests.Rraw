@@ -7887,6 +7887,8 @@ dt = data.table(a = rep(c(F,F,T,F,F,F,F,F,F), 3), b = c("x", "y", "z"))
 set2key(dt, b)
 dt[, a := as.logical(sum(a)), by = b]
 test(1632.2, names(attributes(attr(dt, 'index'))), "__b")
+dt = data.table(a = rep(c(F,F,T,F,F,F,F,F,F), 3), b = c("x", "y", "z"))
+test(1632.3, copy(dt)[, c := !a, by=b], copy(dt)[, c := c(T,T,F,T,T,T,T,T,T)])
 
 ##########################
 

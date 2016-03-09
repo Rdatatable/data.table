@@ -1720,9 +1720,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # fixes #1479. Take care of secondary indices, TODO: cleaner way of doing this
         attrs = attr(x, 'index')
         skeys = names(attributes(attrs))
-        hits  = unlist(lapply(paste("__", names(x)[cols], sep=""), function(x) grep(x, skeys)))
-        hits  = skeys[unique(hits)]
-        for (i in seq_along(hits)) setattr(attrs, hits[i], NULL) # does by reference
+        if (!is.null(skeys)) {
+            hits  = unlist(lapply(paste("__", names(x)[cols], sep=""), function(x) grep(x, skeys)))
+            hits  = skeys[unique(hits)]
+            for (i in seq_along(hits)) setattr(attrs, hits[i], NULL) # does by reference
+        }
         if (!missing(keyby)) {
             cnames = as.character(bysubl)[-1]
             if (all(cnames %chin% names(x)))
