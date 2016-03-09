@@ -7880,11 +7880,11 @@ test(1631, key(A[B, on="x"]), NULL)
 
 # fix for #1479, secondary keys are removed when necessary
 dt = data.table(a = rep(c(F,F,T,F,F,F,F,F,F), 3), b = c("x", "y", "z"))
-set2key(dt, a)
+setindex(dt, a)
 dt[, a := as.logical(sum(a)), by = b]
 test(1632.1, names(attributes(attr(dt, 'index'))), NULL)
 dt = data.table(a = rep(c(F,F,T,F,F,F,F,F,F), 3), b = c("x", "y", "z"))
-set2key(dt, b)
+setindex(dt, b)
 dt[, a := as.logical(sum(a)), by = b]
 test(1632.2, names(attributes(attr(dt, 'index'))), "__b")
 dt = data.table(a = rep(c(F,F,T,F,F,F,F,F,F), 3), b = c("x", "y", "z"))

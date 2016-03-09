@@ -23,8 +23,8 @@
 \usage{
 setkey(x, ..., verbose=getOption("datatable.verbose"), physical = TRUE)
 setkeyv(x, cols, verbose=getOption("datatable.verbose"), physical = TRUE)
-set2key(...)
-set2keyv(...)
+setindex(...)
+setindexv(...)
 key(x)
 key2(x)
 haskey(x)
