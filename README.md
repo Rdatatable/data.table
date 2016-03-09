@@ -170,6 +170,8 @@
 
   50. Joins using `on=` retains (and discards) keys properly, [#1268](https://github.com/Rdatatable/data.table/issues/1268). Thanks @DouglasClark for [this SO post](http://stackoverflow.com/q/29918595/559784) that helped discover the issue.
 
+  51. Secondary keys are properly removed when those columns get updated, [#1479](https://github.com/Rdatatable/data.table/issues/1479). Thanks @fabiangehring for the report, and also @ChristK for the MRE.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
