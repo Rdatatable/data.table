@@ -188,7 +188,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 rownum = INTEGER(starts)[i]-1;
                 for (j=0; j<length(SDall); j++) {
                     size = SIZEOF(VECTOR_ELT(SDall,j));
-                    if (grpn) memcpy((char *)DATAPTR(VECTOR_ELT(SDall,j)),  // direct memcpy best here, for usually large size groups. by= each row is slow and not recommended anyway, so we don't mind there's no switch here for grpn==1
+                    memcpy((char *)DATAPTR(VECTOR_ELT(SDall,j)),  // direct memcpy best here, for usually large size groups. by= each row is slow and not recommended anyway, so we don't mind there's no switch here for grpn==1
                        (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+rownum*size,
                        grpn*size);
                     // SD is our own alloc'd memory, and the source (DT) is protected throughout, so no need for SET_* overhead
@@ -537,7 +537,7 @@ SEXP growVector(SEXP x, R_len_t newlen)
         // TO DO: Again, is there bulk op to avoid this loop, which still respects older generations    
         break;
     default :
-        if (len) memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*SIZEOF(x));   // SIZEOF() returns size_t (just as sizeof()) so * shouldn't overflow 
+        memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*SIZEOF(x));   // SIZEOF() returns size_t (just as sizeof()) so * shouldn't overflow 
     }
     // if (verbose) Rprintf("Growing vector from %d to %d items of type '%s'\n", len, newlen, type2char(TYPEOF(x)));
     // Would print for every column if here. Now just up in dogroups (one msg for each table grow).

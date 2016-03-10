@@ -95,7 +95,7 @@ SEXP reorder(SEXP x, SEXP order)
                 tmpp += 8;
             }
         }
-        if (end-start+1) memcpy(vd + start*size, tmp, (end-start+1) * size);
+        memcpy(vd + start*size, tmp, (end-start+1) * size);
     }
     free(tmp);
     return(R_NilValue);

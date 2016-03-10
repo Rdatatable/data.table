@@ -386,10 +386,8 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
         otmp[j] = osub[i];
         ((int *)xtmp)[j] = xsub[i];
     }
-    if (n) {
-        memcpy(osub, otmp, n*sizeof(int));
-        memcpy(xsub, xtmp, n*sizeof(int));
-    }
+    memcpy(osub, otmp, n*sizeof(int));
+    memcpy(xsub, xtmp, n*sizeof(int));
     
     nextradix = radix-1;
     while (nextradix>=0 && skip[nextradix]) nextradix--;
@@ -670,10 +668,8 @@ static void dradix_r(unsigned char *xsub, int *osub, int n, int radix)
             p -= colSize;
         }
     }
-    if (n) {
-        memcpy(osub, otmp, n*sizeof(int));
-        memcpy(xsub, xtmp, n*colSize);
-    }
+    memcpy(osub, otmp, n*sizeof(int));
+    memcpy(xsub, xtmp, n*colSize);
     
     nextradix = radix-1;
     while (nextradix>=0 && skip[nextradix]) nextradix--;
@@ -770,7 +766,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
         j = --thiscounts[thisx];
         cradix_xtmp[j] = xsub[i];
     }
-    if (n) memcpy(xsub, cradix_xtmp, n*sizeof(SEXP));
+    memcpy(xsub, cradix_xtmp, n*sizeof(SEXP));
     if (radix == maxlen-1) {
         memset(thiscounts, 0, 256*sizeof(int)); 
         return;
@@ -1272,7 +1268,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             if (newo[0] != -1) {
                 if (nalast != 0) for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = osub[ newo[j]-1 ];           // reuse xsub to reorder osub
                 else for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = (newo[j] == 0) ? 0 : osub[ newo[j]-1 ];  // final nalast case to handle!
-                if (thisgrpn) memcpy(osub, xsub, thisgrpn*sizeof(int));            
+                memcpy(osub, xsub, thisgrpn*sizeof(int));            
             }
             TEND(6)
         }
