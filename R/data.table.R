@@ -154,8 +154,8 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
       abbs = unname(class_abb[classes])
       if ( length(idx <- which(is.na(abbs))) )
         abbs[idx] = paste("<", classes[idx], ">", sep="")
-      toprint = rbind(abbs, toprint)
-      rownames(toprint)[1L] = ""
+      toprint = rbind(colnames(toprint), toprint)
+      colnames(toprint) <- abbs
     }
     if (printdots) {
         toprint = rbind(head(toprint,topn),"---"="",tail(toprint,topn))
@@ -163,9 +163,9 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
         print(toprint,right=TRUE,quote=quote)
         return(invisible())
     }
-    if (nrow(toprint)>20L)
+    if (nrow(toprint)>20L + class)
         # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
-        toprint=rbind(toprint,matrix(colnames(toprint),nrow=1)) # fixes bug #4934
+        toprint=rbind(toprint, if (isTRUE(class)) toprint[1, ] else colnames(toprint)) # fixes bug #4934
     print(toprint,right=TRUE,quote=quote)
     invisible()
 }

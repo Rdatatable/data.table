@@ -10,7 +10,7 @@
   \method{print}{data.table}(x,
     topn=getOption("datatable.print.topn"),          # default: 5
     nrows=getOption("datatable.print.nrows"),        # default: 100
-    class=getOption("datatable.print.class"),  # default: FALSE
+    class=getOption("datatable.print.class"),        # default: TRUE
     row.names=getOption("datatable.print.rownames"), # default: TRUE
     quote=FALSE,...)
 }
