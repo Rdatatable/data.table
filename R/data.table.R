@@ -154,18 +154,18 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
       abbs = unname(class_abb[classes])
       if ( length(idx <- which(is.na(abbs))) )
         abbs[idx] = paste("<", classes[idx], ">", sep="")
-      toprint = rbind(abbs, toprint)
-      rownames(toprint)[1L] = ""
+      toprint = rbind(colnames(toprint), toprint)
+      colnames(toprint) <- abbs
     }
     if (printdots) {
-        toprint = rbind(head(toprint,topn),"---"="",tail(toprint,topn))
+        toprint = rbind(head(toprint,topn + class),"---"="",tail(toprint,topn))
         rownames(toprint) = format(rownames(toprint),justify="right")
         print(toprint,right=TRUE,quote=quote)
         return(invisible())
     }
-    if (nrow(toprint)>20L)
+    if (nrow(toprint)>20L + class)
         # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
-        toprint=rbind(toprint,matrix(colnames(toprint),nrow=1)) # fixes bug #4934
+        toprint=rbind(toprint, if (isTRUE(class)) toprint[1, ] else colnames(toprint)) # fixes bug #4934
     print(toprint,right=TRUE,quote=quote)
     invisible()
 }
@@ -541,7 +541,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     xo = get2key(x,isub2)  # Can't be any index with that col as the first one because those indexes will reorder within each group
                     if (is.null(xo)) {   # integer() would be valid and signifies o=1:.N
                         if (verbose) {cat("Creating new index '",isub2,"'\n",sep="");flush.console()}
-                        set2keyv(x,isub2)
+                        setindexv(x,isub2)
                         xo = get2key(x,isub2)
                     } else {
                         if (verbose) {cat("Using existing index '",isub2,"'\n",sep="");flush.console()}
