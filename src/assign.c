@@ -747,11 +747,11 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
                 REAL(target)[start+r] = REAL(source)[r%slen];
         } else {
             for (r=r>0?1:0; r<(len/slen); r++) {   // if the first slen were done in the switch above, convert r=slen to r=1
-                memcpy((char *)DATAPTR(target) + (start+r*slen)*size,
+                if (slen) memcpy((char *)DATAPTR(target) + (start+r*slen)*size,
                        (char *)DATAPTR(source),
                        slen * size);
             }
-            memcpy((char *)DATAPTR(target) + (start+r*slen)*size,
+            if (len%slen) memcpy((char *)DATAPTR(target) + (start+r*slen)*size,
                    (char *)DATAPTR(source),
                    (len%slen) * size);
         }
@@ -896,12 +896,12 @@ SEXP setcolorder(SEXP x, SEXP o)
     SEXP *tmp = Calloc(LENGTH(x),SEXP);
     for (int i=0; i<LENGTH(x); i++)
         tmp[i] = VECTOR_ELT(x, INTEGER(o)[i]-1);
-    memcpy((char *)DATAPTR(x),(char *)tmp,LENGTH(x)*sizeof(char *)); // sizeof is of type size_t (unsigned) - so no overflow here
+    if (LENGTH(x)) memcpy((char *)DATAPTR(x),(char *)tmp,LENGTH(x)*sizeof(char *)); // sizeof is of type size_t (unsigned) - so no overflow here
     SEXP names = getAttrib(x,R_NamesSymbol);
     if (isNull(names)) error("dt passed to setcolorder has no names");
     for (int i=0; i<LENGTH(x); i++)
         tmp[i] = STRING_ELT(names, INTEGER(o)[i]-1);
-    memcpy((char *)DATAPTR(names),(char *)tmp,LENGTH(x)*sizeof(char *));
+    if (LENGTH(x)) memcpy((char *)DATAPTR(names),(char *)tmp,LENGTH(x)*sizeof(char *));
     // No need to change key (if any); sorted attribute is column names not positions
     Free(tmp);
     return(R_NilValue);
