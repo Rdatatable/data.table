@@ -12,11 +12,11 @@ setindex <- function(...) setkey(..., physical=FALSE)
 setindexv <- function(...) setkeyv(..., physical=FALSE)
 
 set2key <- function(...) {
-    warning("set2key will be deprecated in the next relase. Please use setindex instead.")
+    warning("set2key will be deprecated in the next relase. Please use setindex instead.", call.=FALSE)
     setkey(..., physical=FALSE)
 }
 set2keyv <- function(...) {
-    warning("set2key will be deprecated in the next relase. Please use setindex instead.")
+    warning("set2key will be deprecated in the next relase. Please use setindex instead.", call.=FALSE)
     setkeyv(..., physical=FALSE)
 }
 
