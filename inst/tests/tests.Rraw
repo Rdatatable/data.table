@@ -7890,6 +7890,12 @@ test(1632.2, names(attributes(attr(dt, 'index'))), "__b")
 dt = data.table(a = rep(c(F,F,T,F,F,F,F,F,F), 3), b = c("x", "y", "z"))
 test(1632.3, copy(dt)[, c := !a, by=b], copy(dt)[, c := c(T,T,F,T,T,T,T,T,T)])
 
+# by accepts colA:colB for interactive scenarios, #1395
+dt = data.table(x=rep(1,18), y=rep(1:2, each=9), z=rep(1:3,each=6), a=rep(1:6, each=3))[, b := 6]
+test(1633.1, dt[, sum(b), by=x:a], dt[, sum(b), by=.(x,y,z,a)])
+test(1633.2, dt[, sum(b), by=y:a], dt[, sum(b), by=.(y,z,a)])
+test(1633.3, dt[, sum(b), by=a:y], dt[, sum(b), by=.(a,z,y)])
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

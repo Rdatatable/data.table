@@ -68,6 +68,8 @@
 
   26. While updating by reference, adding a new column is guaranteed even if there are no matches when `nomatch=NA`, [#759](https://github.com/Rdatatable/data.table/issues/759). Thanks @mchen402.
 
+  27. `by` understands `colA:colB` syntax now, like `.SDcols` does, [#1395](https://github.com/Rdatatable/data.table/issues/1395). Thanks @franknarf1.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

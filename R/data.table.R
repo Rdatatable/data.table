@@ -846,7 +846,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     tt = eval(bysub, parent.frame(), parent.frame())
                     if (!is.character(tt)) stop("by=c(...), key(...) or names(...) must evaluate to 'character'")
                     bysub=tt
-                } else if (is.call(bysub) && !as.character(bysub[[1L]]) %chin% c("list", "as.list", "{", ".")) {
+                } else if (is.call(bysub) && !as.character(bysub[[1L]]) %chin% c("list", "as.list", "{", ".", ":")) {
                     # potential use of function, ex: by=month(date). catch it and wrap with "(", because we need to set "bysameorder" to FALSE as we don't know if the function will return ordered results just because "date" is ordered. Fixes #2670.
                     bysub = as.call(c(as.name('('), list(bysub)))
                     bysubl = as.list.default(bysub)
@@ -868,7 +868,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # orderedirows = is.sorted(f__)
                 bysameorder = orderedirows && haskey(x) && all(sapply(bysubl,is.name)) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
                 if (is.null(irows))
-                    byval = eval(bysub, x, parent.frame())
+                    if (is.call(bysub) && length(bysub) == 3L && bysub[[1L]] == ":") {
+                        byval = eval(bysub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame())
+                        byval = as.list(x)[byval]
+                    } else byval = eval(bysub, x, parent.frame())
                 else {
                     if (!is.integer(irows)) stop("Internal error: irows isn't integer")  # length 0 when i returns no rows
                     # Passing irows as i to x[] below has been troublesome in a rare edge case.
@@ -885,7 +888,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         if (verbose) cat("i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '",deparse(by),"'\n",sep="")
                         xss = x[irows,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends]
                     }
-                    byval = eval(bysub, xss, parent.frame())
+                    if (is.call(bysub) && length(bysub) == 3L && bysub[[1L]] == ":") {
+                        byval = eval(bysub, setattr(as.list(seq_along(xss)), 'names', names(xss)), parent.frame())
+                        byval = as.list(xss)[byval]
+                    } else byval = eval(bysub, xss, parent.frame())
                     xnrow = nrow(xss)
                     # TO DO: pass xss (x subset) through into dogroups. Still need irows there (for :=), but more condense
                     # and contiguous to use xss to form .SD in dogroups than going via irows
