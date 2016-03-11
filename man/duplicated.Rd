@@ -62,7 +62,8 @@ uniqueN(x, by=if (is.data.table(x)) key(x) else NULL, na.rm=FALSE)
      \code{uniqueN} returns the number of unique elements in the vector, \code{data.frame} or \code{data.table}.
 
 }
-\seealso{ \code{\link{setNumericRounding}}, \code{\link{data.table}}, \code{\link{duplicated}}, \code{\link{unique}}, \code{\link{all.equal}} }
+\seealso{ \code{\link{setNumericRounding}}, \code{\link{data.table}}, \code{\link{duplicated}}, \code{\link{unique}}, \code{\link{all.equal}}, \code{\link{fsetdiff}}, \code{\link{funion}}, \code{\link{fintersect}}, \code{\link{fsetequal}}
+}
 \examples{
 DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B")
 duplicated(DT)
