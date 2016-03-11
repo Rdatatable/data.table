@@ -46,7 +46,7 @@ is.data.table(x)
   \code{\link{data.table}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setkey}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{:=}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{rbindlist}}, \code{\link{setNumericRounding}}, \code{\link{datatable-optimize}}
 }
 \examples{
-nn = runif(c(a=0.1, b=0.2, c=0.3, d=0.4))
+nn = c(a=0.1, b=0.2, c=0.3, d=0.4)
 as.data.table(nn)
 as.data.table(nn, keep.rownames=TRUE)
 as.data.table(nn, keep.rownames="rownames")

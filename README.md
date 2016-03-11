@@ -222,6 +222,8 @@
 
   22. Added `Note` section and examples to `?":="` for [#905](https://github.com/Rdatatable/data.table/issues/905).
 
+  23. Fixed example in `?as.data.table.Rd`, [#1576](https://github.com/Rdatatable/data.table/issues/1576). Thanks @MichaelChirico.
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
