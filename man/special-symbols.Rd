@@ -42,7 +42,8 @@ DT[, .SD[1], by=x]                     # first row of 'y' and 'v' for each group
 DT[, c(.N, lapply(.SD, sum)), by=x]    # get rows *and* sum columns 'v' and 'y' by group
 DT[, .I[1], by=x]                      # row number in DT corresponding to each group
 DT[, .N, by=rleid(v)]                  # get count of consecutive runs of 'v'
-DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b] # compute 'j' for each consecutive runs of 'v'
+DT[, c(.(y=max(y)), lapply(.SD, min)), 
+        by=rleid(v), .SDcols=v:b]      # compute 'j' for each consecutive runs of 'v'
 DT[, grp := .GRP, by=x]                # add a group counter
 X[, DT[.BY, y, on="x"], by=x]          # join within each group
 }}
