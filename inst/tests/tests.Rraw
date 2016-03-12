@@ -4098,7 +4098,7 @@ test(1240.2, ans2, ans1)
 # also it has an additional argument 'method'. We've to use 'shell' to pass 1241, as well as for 
 # checking correctness. So creating order function depending on r-version
 base_order <- function(..., na.last=TRUE, decreasing=FALSE, method="shell") {
-    if (base::getRversion()<="3.2.3")
+    if (base::getRversion()<="3.2.4")
         order(..., na.last=na.last, decreasing=decreasing) # ignore method
     else order(..., na.last=na.last, decreasing=decreasing, method=method)
 }
