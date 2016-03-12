@@ -123,7 +123,12 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
         
         A common idiom is to select a contemporaneous regular time series (\code{dts}) across a set of identifiers (\code{ids}):  \code{DT[CJ(ids,dts),roll=TRUE]} where \code{DT} has a 2-column key (id,date) and \code{\link{CJ}} stands for \emph{cross join}.}
 
-    \item{rollends}{ A logical vector length 2 (a single logical is recycled). When rolling forward (e.g. \code{roll=TRUE}) if a value is past the \emph{last} observation within each group defined by the join columns, \code{rollends[2]=TRUE} will roll the last value forwards. \code{rollends[1]=TRUE} will roll the first value backwards if the value is before it. If \code{rollends=FALSE} the value of \code{i} must fall in a gap in \code{x} but not after the end or before the beginning of the data, for that group defined by all but the last join column. When \code{roll} is a finite number, that limit is also applied when rolling the ends.}
+    \item{rollends}{ A logical vector length 2 (a single logical is recycled) indicating whether values falling before the first value or after the last value for a group should be rolled as well.
+        \itemize{
+            \item{If \code{rollends[2]=TRUE}, it will roll the last value forward. \code{TRUE} by default for LOCF and \code{FALSE} for NOCB rolls.}
+            \item{If \code{rollends[1]=TRUE}, it will roll the first value backward. \code{TRUE} by default for NOCB and \code{FALSE} for LOCF rolls.}
+        }
+        When \code{roll} is a finite number, that limit is also applied when rolling the ends.}
 
     \item{which}{\code{TRUE} returns the row numbers of \code{x} that \code{i} matches to. If \code{NA}, returns the row numbers of \code{i} that have no match in \code{x}. By default \code{FALSE} and the rows in \code{x} that match are returned.}
 
