@@ -412,11 +412,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (length(rollends)==1) rollends=rep.int(rollends,2L)
     # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
     missingnomatch = missing(nomatch)
-    if (!is.na(nomatch) && nomatch!=0L & !is.null(nomatch)) stop("nomatch must either be NA or NULL")
-    # if (identical(nomatch, 0L)) {
-    #     warning("Please use nomatch=NULL instead of 0. From the next release, nomatch=0 will replace the missing values with 0, for consistency. Use options(warn=2) and rerun your code to catch these cases and replace 0 with NULL.")
-    #         nomatch = NULL
-    # }
+    if (!is.na(nomatch) && nomatch!=0L) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
     nomatch = as.integer(nomatch)
     if (!is.logical(which) || length(which)>1) stop("'which' must be a logical vector length 1. Either FALSE, TRUE or NA.")
     if ((isTRUE(which)||is.na(which)) && !missing(j)) stop("'which' is ",which," (meaning return row numbers) but 'j' is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
