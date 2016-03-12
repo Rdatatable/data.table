@@ -9,6 +9,7 @@
 \alias{setindex}
 \alias{setindexv}
 \alias{key2}
+\alias{indices}
 \title{ Create key on a data table }
 \description{
   In \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column.. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
@@ -26,7 +27,7 @@ setkeyv(x, cols, verbose=getOption("datatable.verbose"), physical = TRUE)
 setindex(...)
 setindexv(...)
 key(x)
-key2(x)
+indices(x)
 haskey(x)
 key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 }

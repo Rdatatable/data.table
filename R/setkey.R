@@ -12,11 +12,11 @@ setindex <- function(...) setkey(..., physical=FALSE)
 setindexv <- function(...) setkeyv(..., physical=FALSE)
 
 set2key <- function(...) {
-    warning("set2key will be deprecated in the next relase. Please use setindex instead.", call.=FALSE)
+    warning("set2key() will be deprecated in the next relase. Please use setindex() instead.", call.=FALSE)
     setkey(..., physical=FALSE)
 }
 set2keyv <- function(...) {
-    warning("set2key will be deprecated in the next relase. Please use setindex instead.", call.=FALSE)
+    warning("set2key() will be deprecated in the next relase. Please use setindex() instead.", call.=FALSE)
     setkeyv(..., physical=FALSE)
 }
 
@@ -81,10 +81,17 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
 
 key <- function(x) attr(x,"sorted",exact=TRUE)
 key2 <- function(x) {
+    warning("key2() will be deprecated in the next relase. Please use indices() instead.", call.=FALSE)
     ans = names(attributes(attr(x,"index",exact=TRUE)))
     if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
     gsub("^__","",ans)
 }
+indices <- function(x) {
+    ans = names(attributes(attr(x,"index",exact=TRUE)))
+    if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
+    gsub("^__","",ans)
+}
+
 get2key <- function(x, col) attr(attr(x,"index",exact=TRUE),paste("__",col,sep=""),exact=TRUE)   # work in progress, not yet exported
 
 "key<-" <- function(x,value) {
