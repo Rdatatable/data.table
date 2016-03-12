@@ -149,8 +149,8 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
                            if(length(k2)) paste0(": ", paste(k2, collapse=", ")) else " has no key"))
         }
         # check index
-        i1 = key2(target)
-        i2 = key2(current)
+        i1 = indices(target)
+        i2 = indices(current)
         if (!identical(i1, i2)) {
             return(sprintf("Datasets has different indexes. 'target'%s. 'current'%s.",
                            if(length(i1)) paste0(": ", paste(i1, collapse=", ")) else " has no index",

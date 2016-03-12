@@ -5344,22 +5344,22 @@ test(1375.3, DT[,mean(Petal.Width),by=Species][V1>1,Species:=toupper(Species)]$S
 
 # Secondary keys a.k.a indexes ...
 DT = data.table(a=1:10,b=10:1)
-test(1376.1, key2(DT), NULL)
+test(1376.1, indices(DT), NULL)
 test(1376.2, DT[b==7L,verbose=TRUE], DT[4L], output="Creating new index 'b'")
-test(1376.3, key2(DT), "b")
+test(1376.3, indices(DT), "b")
 test(1376.4, DT[b==8L,verbose=TRUE], DT[3L], output="Using existing index 'b'")
 test(1376.5, DT[a==7L,verbose=TRUE], DT[7L], output="Creating new index")  # add 2nd secondary key
-test(1376.6, key2(DT), c("b","a"))  # 2 secondary keys of single columns
+test(1376.6, indices(DT), c("b","a"))  # 2 secondary keys of single columns
 test(1376.7, DT[a==7L,verbose=TRUE], DT[7L], output="Using existing index 'a'")
 setkey(DT,b)
-test(1376.8, key2(DT), NULL)
-test(1376.9, list(DT[a==2L], key2(DT)), list(DT[9L],"a"))  # create key2 for next test
+test(1376.8, indices(DT), NULL)
+test(1376.9, list(DT[a==2L], indices(DT)), list(DT[9L],"a"))  # create indices for next test
 setindex(DT,NULL)
-test(1376.10, list(key(DT), key2(DT)), list("b", NULL))
+test(1376.10, list(key(DT), indices(DT)), list("b", NULL))
 options(datatable.auto.index = FALSE)
-test(1376.11, list(DT[a==2L], key2(DT)), list(DT[9L],NULL))
+test(1376.11, list(DT[a==2L], indices(DT)), list(DT[9L],NULL))
 options(datatable.auto.index = TRUE)
-test(1376.12, list(DT[a==2L], key2(DT)), list(DT[9L],"a"))
+test(1376.12, list(DT[a==2L], indices(DT)), list(DT[9L],"a"))
 
 # When i is FALSE, it shouldn't matter if .SDcols is wrong. Package vardpoor relies on this in example(vardchanges).
 # as long as nomatch=0L (following #759 fix)
@@ -5662,11 +5662,11 @@ DT = data.table(a=1:3, b=4:6)
 test(1396, DT[a==2, verbose=TRUE], DT[2], output="Creating new index 'a'")
 test(1397, DT[b==6, verbose=TRUE], DT[3], output="Creating new index 'b'")
 test(1398, DT[b==6, verbose=TRUE], DT[3], output="Using existing index 'b'")
-test(1399, key2(DT), c("a","b"))
+test(1399, indices(DT), c("a","b"))
 test(1400, DT[2, a:=4L, verbose=TRUE], data.table(a=c(1L,4L,3L),b=4:6), output="Dropping index 'a' due to update on 'a' (column 1)")
-test(1401, key2(DT), "b")
+test(1401, indices(DT), "b")
 test(1402, DT[,b:=NULL,verbose=TRUE], data.table(a=c(1L,4L,3L)), output="Dropping index 'b' due to delete of 'b' (column 2)")
-test(1403, key2(DT), NULL)
+test(1403, indices(DT), NULL)
 DT = data.table(x=1:5)
 test(1404, DT[, y := x <= 2L], data.table(x=1:5, y=c(TRUE,TRUE,FALSE,FALSE,FALSE)))
 test(1405, DT[y == TRUE, .N, verbose=TRUE], 2L, output="Creating new index")
@@ -5674,18 +5674,18 @@ test(1406, DT[, y := x <= 3L, verbose=TRUE], data.table(x=1:5, y=c(TRUE,TRUE,TRU
 test(1407, DT[y == TRUE, .N], 3L)
 DT = data.table(x=1:5, y=10:6)
 test(1408, DT[x==3,verbose=TRUE], DT[3], output="Creating")
-test(1409, key2(DT), "x")
+test(1409, indices(DT), "x")
 set(DT,1:3,1L,-10L)
-test(1410, key2(DT), NULL)
+test(1410, indices(DT), NULL)
 test(1411, DT[x==5], DT[5])
 setorder(DT, y)
-test(1412, key2(DT), NULL)
+test(1412, indices(DT), NULL)
 test(1413, DT[x==5], DT[1])
 DT = data.table(foo=1:3, bar=4:6, baz=9:7)
 setindex(DT,foo,bar,baz)
-test(1414, key2(DT), c("foo__bar__baz"))
+test(1414, indices(DT), c("foo__bar__baz"))
 test(1415, DT[2,bar:=10L,verbose=TRUE], output="Dropping index 'foo__bar__baz' due to update on 'bar'")  # test middle
-test(1416, key2(DT), NULL)
+test(1416, indices(DT), NULL)
 setindex(DT,foo,bar,baz)
 test(1417, DT[2,baz:=10L,verbose=TRUE], output="Dropping index 'foo__bar__baz' due to update on 'baz'")  # test last
 setindex(DT,bar,baz)
@@ -5696,18 +5696,18 @@ test(1419, DT[2,c("foo","baz"):=10L,verbose=TRUE], output="Dropping index.* due 
 # setnames updates secondary key
 DT = data.table(a=1:5,b=10:6)
 setindex(DT,b)
-test(1420, key2(DT), "b")
+test(1420, indices(DT), "b")
 setnames(DT,"b","foo")
-test(1421, key2(DT), "foo")
+test(1421, indices(DT), "foo")
 test(1422, DT[foo==9, verbose=TRUE], DT[2], output="Using existing index 'foo'")
 setindex(DT,a,foo)
-test(1423, key2(DT), c("foo","a__foo"))   # tests as well that order of attributes is retained although we don't use that property currently.
-test(1424, key2(setnames(DT,"foo","bar")), c("bar","a__bar"))
-test(1425, key2(setnames(DT,"a","baz")), c("bar","baz__bar"))
+test(1423, indices(DT), c("foo","a__foo"))   # tests as well that order of attributes is retained although we don't use that property currently.
+test(1424, indices(setnames(DT,"foo","bar")), c("bar","a__bar"))
+test(1425, indices(setnames(DT,"a","baz")), c("bar","baz__bar"))
 test(1426, DT[baz==4L, verbose=TRUE], output="Creating new index 'baz'")
-test(1427, key2(DT), c("bar","baz__bar","baz"))
+test(1427, indices(DT), c("bar","baz__bar","baz"))
 test(1428, DT[bar==9L, verbose=TRUE], output="Using existing index 'bar'")
-test(1429, key2(setnames(DT,"bar","a")), c("baz", "a", "baz__a"))
+test(1429, indices(setnames(DT,"bar","a")), c("baz", "a", "baz__a"))
 
 # Finalised == and %in% optimization in i
 DT = data.table(a=1:3,b=c(0,2,3,0,0,2))
