@@ -7896,6 +7896,14 @@ test(1633.1, dt[, sum(b), by=x:a], dt[, sum(b), by=.(x,y,z,a)])
 test(1633.2, dt[, sum(b), by=y:a], dt[, sum(b), by=.(y,z,a)])
 test(1633.3, dt[, sum(b), by=a:y], dt[, sum(b), by=.(a,z,y)])
 
+# reuse secondary indices
+dt = data.table(x=sample(3, 10, TRUE), y=1:10)
+v1 = capture.output(ans1 <- dt[.(3:2), on="x", verbose=TRUE])
+setindex(dt, x)
+v2 = capture.output(ans2 <- dt[.(3:2), on="x", verbose=TRUE])
+test(1634.1, any(grepl("not found", v1)), TRUE)
+test(1634.2, any(grepl("Reusing index", v2)), TRUE)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
