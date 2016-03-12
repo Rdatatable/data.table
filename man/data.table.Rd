@@ -203,7 +203,7 @@ column called \code{"keep"} containing \code{TRUE} and this is correct behaviour
 
 \code{POSIXlt} is not supported as a column type because it uses 40 bytes to store a single datetime. They are implicitly converted to \code{POSIXct} type with \emph{warning}. You may also be interested in \code{\link{IDateTime}} instead; it has methods to convert to and from \code{POSIXlt}. See \href{https://github.com/Rdatatable/data.table/blob/master/README.md}{NEWS} for v1.6.3. 
 }
-\seealso{ \code{\link{special-symbols}}, \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{setorder}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}}, \code{\link{unique.data.table}}, \code{\link{copy}}, \code{\link{:=}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{rbindlist}}, \code{\link{setNumericRounding}}, \code{\link{datatable-optimize}}, \code{\link{fsetdiff}}, \code{\link{funion}}, \code{\link{fintersect}}, \code{\link{fsetequal}}, \code{\link{anyDuplicated}}, \code{\link{uniqueN}}, \code{\link{rowid}}, \code{\link{rleid}}, \code{\link{na.omit}} }
+\seealso{ \code{\link{special-symbols}}, \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{setorder}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}}, \code{\link{unique.data.table}}, \code{\link{copy}}, \code{\link{:=}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{rbindlist}}, \code{\link{setNumericRounding}}, \code{\link{datatable-optimize}}, \code{\link{fsetdiff}}, \code{\link{funion}}, \code{\link{fintersect}}, \code{\link{fsetequal}}, \code{\link{anyDuplicated}}, \code{\link{uniqueN}}, \code{\link{rowid}}, \code{\link{rleid}}, \code{\link{na.omit}}, \code{\link{frank}} }
 \examples{
 \dontrun{
 example(data.table)  # to run these examples at the prompt}
@@ -229,6 +229,7 @@ DT[order(x), ]                 # same as above. The ',' is optional
 DT[c(FALSE,TRUE)]              # even rows (usual recycling)
 DT[y>2]                        # all rows where DT$y > 2
 DT[y>2 & v>5]                  # compound logical expressions
+DT[!2:4]                       # all rows other than 2:4
 
 # select|compute columns data.table way
 DT[, v]                        # v column (as vector)
@@ -248,29 +249,45 @@ DT[2:5, cat(v, "\n")]          # just for j's side effect
 # select columns the data.frame way
 DT[, 2, with=FALSE]            # 2nd column, returns a data.table always
 colNum = 2
-DT[, colNum, with=FALSE]       # same
-
-# fast row subsets (subsets as joins)
-DT["a", on="x"]                # same as x == "a" but uses binary search (fast)
-DT[.("a"), on="x"]             # same
-DT[x=="a"]                     # single expression with "==" optimised to use binary search (fast)
-DT[.("b", 3), on=c("x", "y")]  # join on columns x,y of DT; uses binary search (fast)
-DT[.("b", 1:2), on=c("x", "y")]  # no match returns NA
-DT[.("b", 1:2), on=c("x", "y"), nomatch=0]  # no match row is not returned
-DT[.("b", 1:2), on=c("x", "y"), roll=Inf] # locf, nomatch row gets rolled by previous row
-DT[.("b", 1:2), on=c("x", "y"), roll=-Inf] # nocb, nomatch row gets rolled by next row
-
-DT["b", sum(v*y), on="x"]      # on rows where DT$x=="b", calculate sum(v*y)
+DT[, colNum, with=FALSE]       # same, equivalent to DT[, .SD, .SDcols=colNum]
+DT[["v"]]                      # same as DT[, v] but much faster
 
 # grouping operations - j and by
 DT[, sum(v), by=x]             # ad hoc by, order of groups preserved in result
 DT[, sum(v), keyby=x]          # same, but order the result on by cols
 DT[, sum(v), by=x][order(x)]   # same but by chaining expressions together
 
+# fast ad hoc row subsets (subsets as joins)
+DT["a", on="x"]                # same as x == "a" but uses binary search (fast)
+DT[.("a"), on="x"]             # same
+DT[x=="a"]                     # same, single "==" internally optimised to use binary search (fast)
+DT[x!="b" | y!=3]              # not yet optimized, currently vector scan subset
+DT[.("b", 3), on=c("x", "y")]  # join on columns x,y of DT; uses binary search (fast)
+DT[.("b", 1:2), on=c("x", "y")]             # no match returns NA
+DT[.("b", 1:2), on=c("x", "y"), nomatch=0]  # no match row is not returned
+DT[.("b", 1:2), on=c("x", "y"), roll=Inf]   # locf, nomatch row gets rolled by previous row
+DT[.("b", 1:2), on=c("x", "y"), roll=-Inf]  # nocb, nomatch row gets rolled by next row
+DT["b", sum(v*y), on="x"]                   # on rows where DT$x=="b", calculate sum(v*y)
+
 # all together now
-DT[x!="a", sum(v), by=x]                   # i, j and by together
-DT[!"a", sum(v), by=.EACHI, on="x"]        # get sum(v) by "x" for each i != "a"
-DT[c("b","c"), sum(v), by=.EACHI, on="x"]  # same as above
+DT[x!="a", sum(v), by=x]                    # get sum(v) by "x" for each i != "a"
+DT[!"a", sum(v), by=.EACHI, on="x"]         # same, but using subsets-as-joins
+DT[c("b","c"), sum(v), by=.EACHI, on="x"]   # same
+
+# joins as subsets
+X = data.table(x=c("c","b"), v=8:7, foo=c(4,2))
+X
+
+DT[X, on="x"]                         # right join
+X[DT, on="x"]                         # left join
+DT[X, on="x", nomatch=0]              # inner join
+DT[!X, on="x"]                        # not join
+
+DT[X, on="x", mult="first"]           # first row of each group
+DT[X, on="x", mult="last"]            # last row of each group
+DT[X, sum(v), by=.EACHI, on="x"]      # join and eval j for each row in i
+DT[X, sum(v)*foo, by=.EACHI, on="x"]  # join inherited scope
+DT[X, sum(v)*i.v, by=.EACHI, on="x"]  # 'i,v' refers to X's v column
 
 # setting keys
 kDT = copy(DT)                        # (deep) copy DT to kDT to work with it.
@@ -289,24 +306,11 @@ kDT["a", on="x"]                      # same, being explicit using 'on=' (prefer
 # all together
 kDT[!"a", sum(v), by=.EACHI]          # get sum(v) for each i != "a"
 
-# joins as subsets
-X = data.table(x=c("c","b"), v=8:7, foo=c(4,2))
-X
-
-DT[X, on="x"]                         # right join
-X[DT, on="x"]                         # left join
-DT[X, on="x", nomatch=0]              # inner join
-DT[!X, on="x"]                        # not join
-
-DT[X, on="x", mult="first"]           # first row of each group
-DT[X, on="x", mult="last"]            # last row of each group
-DT[X, sum(v), by=.EACHI, on="x"]      # join and eval j for each row in i
-DT[X, sum(v)*foo, by=.EACHI, on="x"]  # join inherited scope
-DT[X, sum(v)*i.v, by=.EACHI, on="x"]  # 'i,v' refers to X's v column
-
+# multi-column key
 setkey(kDT,x,y)                       # 2-column key
 setkeyv(kDT,c("x","y"))               # same
 
+# fast *keyed* subsets on multi-column key
 kDT["a"]                              # join to 1st column of key
 kDT["a", on="x"]                      # on= is optional, but is preferred
 kDT[.("a")]                           # same, .() is an alias for list()
@@ -317,40 +321,20 @@ kDT[.("a", 3:6), nomatch=0]           # remove missing
 kDT[.("a", 3:6), roll=TRUE]           # locf rolling join
 kDT[.("a", 3:6), roll=Inf]            # same as above
 kDT[.("a", 3:6), roll=-Inf]           # nocb rolling join
+kDT[!.("a")]                          # not join
+kDT[!"a"]                             # same
 
-kDT[!.("a")]                           # not join
-kDT[!"a"]                              # same
-kDT[!2:4]                              # all rows other than 2:4
-kDT[x!="b" | y!=3]                     # not yet optimized, currently vector scans
-kDT[!.("b",3)]                         # same result but much faster
-
-# more on special symbols
-DT[.N]                                 # last row
-DT[, .N]                               # total number of rows in DT
-DT[, .N, by=x]                         # number of rows in each group
-DT[, .SD, .SDcols=x:y]                 # select columns 'x' and 'y'
-DT[, .SD[1]]                           # first row of all columns
-DT[, .SD[1], by=x]                     # first row of 'y' and 'v' for each group in 'x'
-DT[, c(.N, lapply(.SD, sum)), by=x]    # get rows *and* sum columns 'v' and 'y' by group
-DT[, .I[1], by=x]                      # row number in DT corresponding to each group
-DT[, grp := .GRP, by=x]                # add a group counter column
-X[, DT[.BY, y, on="x"], by=x]          # join within each group
-
-# advanced usage
-DT[, sum(v), by=.(y\%\%2)]              # expressions in by
-DT[, sum(v), by=.(bool = y\%\%2)]       # same, using a named list to change by column name
-DT[, .SD[2], by=x]                    # get 2nd row of each group
-DT[, tail(.SD,2), by=x]               # last 2 rows of each group
-DT[, lapply(.SD, sum), by=x]          # sum of all (other) columns for each group
-DT[, .SD[which.min(v)], by=x][]       # nested query by group
-
-DT[, list(MySum=sum(v),
-          MyMin=min(v),
-          MyMax=max(v)),
-    by=.(x, y\%\%2)]                    # by 2 expressions
-
-DT[, sum(v), x][V1<20]                # compound query
-DT[, sum(v), x][order(-V1)]           # ordering results
+# more on special symbols, see also ?"special-symbols"
+DT[.N]                                # last row
+DT[, .N]                              # total number of rows in DT
+DT[, .N, by=x]                        # number of rows in each group
+DT[, .SD, .SDcols=x:y]                # select columns 'x' and 'y'
+DT[, .SD[1]]                          # first row of all columns
+DT[, .SD[1], by=x]                    # first row of 'y' and 'v' for each group in 'x'
+DT[, c(.N, lapply(.SD, sum)), by=x]   # get rows *and* sum columns 'v' and 'y' by group
+DT[, .I[1], by=x]                     # row number in DT corresponding to each group
+DT[, grp := .GRP, by=x]               # add a group counter column
+X[, DT[.BY, y, on="x"], by=x]         # join within each group
 
 # add/update/delete by reference (see ?assign)
 print(DT[, z:=42L])                   # add new column by reference
@@ -360,21 +344,38 @@ print(DT["b", v2:=84L, on="x"])       # subassign to new column by reference (NA
 
 DT[, m:=mean(v), by=x][]              # add new column by reference by group
                                       # NB: postfix [] is shortcut to print()
+# advanced usage
+DT = data.table(x=rep(c("b","a","c"),each=3), v=c(1,1,1,2,2,1,1,2,2), y=c(1,3,6), a=1:9, b=9:1)
+
+DT[, sum(v), by=.(y\%\%2)]              # expressions in by
+DT[, sum(v), by=.(bool = y\%\%2)]       # same, using a named list to change by column name
+DT[, .SD[2], by=x]                    # get 2nd row of each group
+DT[, tail(.SD,2), by=x]               # last 2 rows of each group
+DT[, lapply(.SD, sum), by=x]          # sum of all (other) columns for each group
+DT[, .SD[which.min(v)], by=x]         # nested query by group
+
+DT[, list(MySum=sum(v),
+          MyMin=min(v),
+          MyMax=max(v)),
+    by=.(x, y\%\%2)]                    # by 2 expressions
+
+DT[, .(a = .(a), b = .(b)), by=x]     # list columns
+DT[, .(seq = min(a):max(b)), by=x]    # j is not limited to just aggregations
+DT[, sum(v), by=x][V1<20]             # compound query
+DT[, sum(v), by=x][order(-V1)]        # ordering results
+DT[, c(.N, lapply(.SD,sum)), by=x]    # get number of observations and sum per group
+DT[, {tmp <- mean(y); 
+      .(a = a-tmp, b = b-tmp)
+      }, by=x]                        # anonymous lambdain 'j', j accepts any valid 
+                                      # expression. TO REMEMBER: every element of 
+                                      # the list becomes a column in result.
+pdf("new.pdf")
+DT[, plot(a,b), by=x]         # can also plot in 'j'
+dev.off()
+
 
 # using rleid, get max(y) and min of all cols in .SDcols for each consecutive run of 'v'
-DT = data.table(x=rep(c("b","a","c"),each=3), v=c(1,1,1,2,2,1,1,2,2), y=c(1,3,6), a=1:9, b=9:1)
 DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
-
-# more on the new feature: 'on' argument, from v1.9.6+
-DT1 = data.table(x=c("c", "a", "b", "a", "b"), a=1:5)
-DT2 = data.table(x=c("d", "c", "b"), mul=6:8)
-DT3 = data.table(w=c("d", "c", "b"), mul=6:8)
-
-DT1[DT2, on=c(x="x")]                                  # join on columns 'x'
-DT1[DT2, on="x"]                                       # same as above
-DT1[DT3, on=c(x="w")]                                  # join column 'x' of DT1 to 'w' of DT3
-DT1[DT2, .(sum(a)*mul), by=.EACHI, on="x"]             # using by=.EACHI
-DT1[DT2, .(sum(a)*mul), by=.EACHI, on="x", nomatch=0L] # using by=.EACHI
 
 # Follow r-help posting guide, support is here (*not* r-help) :
 # http://stackoverflow.com/questions/tagged/data.table
