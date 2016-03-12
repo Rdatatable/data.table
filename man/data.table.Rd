@@ -333,6 +333,7 @@ X[, DT[.BY, y, on="x"], by=x]          # join within each group
 
 # advanced usage
 DT[, sum(v), by=.(y\%\%2)]              # expressions in by
+DT[, sum(v), by=.(bool = y\%\%2)]       # same, using a named list to change by column name
 DT[, .SD[2], by=x]                    # get 2nd row of each group
 DT[, tail(.SD,2), by=x]               # last 2 rows of each group
 DT[, lapply(.SD, sum), by=x]          # sum of all (other) columns for each group
