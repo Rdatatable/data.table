@@ -93,6 +93,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
                              nrows=getOption("datatable.print.nrows"), 
                              class=getOption("datatable.print.class"), 
                              row.names=getOption("datatable.print.rownames"), 
+                             print.keys=getOption("datatable.print.keys"),
                              quote=FALSE, ...) {    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
     # nrows - under this the whole (small) table is printed, unless topn is provided (100)
     # class - should column class be printed underneath column name? (FALSE)
@@ -119,6 +120,13 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     if (!is.numeric(topn)) topn = 5L
     topnmiss = missing(topn)
     topn = max(as.integer(topn),1L)
+    if (print.keys){
+      if (!is.null(ky <- key(x))) 
+        cat("Key: <", paste(ky, collapse=", "), ">\n", sep="")
+      if (!is.null(ixs <- indices(x))) 
+        cat("Ind", if (length(ixs) > 1) "ices" else "ex", ": <",
+            paste(ixs, collapse=">, <"), ">\n", sep="")
+    }
     if (nrow(x) == 0L) {
         if (length(x)==0L)
            cat("Null data.table (0 rows and 0 cols)\n")  # See FAQ 2.5 and NEWS item in v1.8.9
