@@ -71,6 +71,8 @@
   27. `by` understands `colA:colB` syntax now, like `.SDcols` does, [#1395](https://github.com/Rdatatable/data.table/issues/1395). Thanks @franknarf1.
 
   28. Joins (and binary search based subsets) using `on=` argument now reuses existing (secondary) indices, [#1439](https://github.com/Rdatatable/data.table/issues/1439). Thanks @jangorecki.
+  
+  29. `print.data.table` gains `print.keys` argument, `FALSE` by default, which optionally displays the keys and/or indices (secondary keys) of a `data.table`, more of [#1523](https://github.com/Rdatatable/data.table/issues/1523). Thanks @MichaelChirico for the PR, Yike Lu for the suggestion of an option to highlight keys, and Arun for honing that idea to its present form.
 
 #### BUG FIXES
 
