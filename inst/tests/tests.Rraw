@@ -7904,6 +7904,443 @@ v2 = capture.output(ans2 <- dt[.(3:2), on="x", verbose=TRUE])
 test(1634.1, any(grepl("not found", v1)), TRUE)
 test(1634.2, any(grepl("Reusing index", v2)), TRUE)
 
+#1389 - split.data.table - big chunk of unit tests
+set.seed(123)
+dt = data.table(x1 = rep(letters[1:2], 6), x2 = rep(letters[3:5], 4), x3 = rep(letters[5:8], 3), y = rnorm(12))
+dt = dt[sample(nrow(dt))]
+df = as.data.frame(dt)
+# - [x] split by factor the same as `split.data.frame` - `f` argument ----
+test(1635.1, lapply(split(df, as.factor(1:2)), setDT), split(dt, as.factor(1:2))) # drop=FALSE on same factor
+test(1635.2, lapply(split(df, as.factor(1:2), drop=TRUE), setDT), split(dt, as.factor(1:2), drop=TRUE)) # drop=TRUE on same factor
+test(1635.3, lapply(split(df, as.factor(1:4)[3:2]), setDT), split(dt, as.factor(1:4)[3:2])) # drop=FALSE on same factor with empty levels
+test(1635.4, lapply(split(df, as.factor(1:4)[3:2], drop=TRUE), setDT), split(dt, as.factor(1:4)[3:2], drop=TRUE)) # drop=TRUE on same factor with empty levels
+test(1635.5, lapply(split(df, as.factor(1:12)), setDT), split(dt, as.factor(1:12))) # drop=FALSE factor length of nrow
+test(1635.6, lapply(split(df, as.factor(1:12), drop=TRUE), setDT), split(dt, as.factor(1:12), drop=TRUE)) # drop=TRUE factor length of nrow
+ord = sample(2:13)
+test(1635.7, lapply(split(df, as.factor(1:14)[ord]), setDT), split(dt, as.factor(1:14)[ord])) # drop=FALSE factor length of nrow with empty levels
+test(1635.8, lapply(split(df, as.factor(1:14)[ord], drop=TRUE), setDT), split(dt, as.factor(1:14)[ord], drop=TRUE)) # drop=TRUE factor length of nrow with empty levels
+test(1635.9, lapply(split(df, list(as.factor(1:2), as.factor(3:2))), setDT), split(dt, list(as.factor(1:2), as.factor(3:2)))) # `f` list object drop=FALSE
+test(1635.10, lapply(split(df, list(as.factor(1:2), as.factor(3:2)), drop=TRUE), setDT), split(dt, list(as.factor(1:2), as.factor(3:2)), drop=TRUE)) # `f` list object drop=TRUE
+test(1635.11, split(dt, as.factor(integer())), error = "group length is 0 but data nrow > 0") # factor length 0L
+test(1635.12, split(dt, as.factor(integer()), drop=TRUE), error = "group length is 0 but data nrow > 0")
+test(1635.13, split(dt, as.factor(1:2)[0L]), error = "group length is 0 but data nrow > 0") # factor length 0L with empty levels
+test(1635.14, split(dt, as.factor(1:2)[0L], drop=TRUE), error = "group length is 0 but data nrow > 0")
+# - [x] edge cases for `f` argument ----
+test(1635.15, split(df, as.factor(NA)), split(dt, as.factor(NA))) # factor NA
+test(1635.16, split(df, as.factor(NA), drop=TRUE), split(dt, as.factor(NA), drop=TRUE))
+test(1635.17, lapply(split(df, as.factor(1:2)[0L][1L]), setDT), split(dt, as.factor(1:2)[0L][1L])) # factor NA with empty levels
+test(1635.18, split(df, as.factor(1:2)[0L][1L], drop=TRUE), split(dt, as.factor(1:2)[0L][1L], drop=TRUE))
+test(1635.19, lapply(split(df, as.factor(c(1L,NA,2L))), setDT), split(dt, as.factor(c(1L,NA,2L)))) # factor has NA
+test(1635.20, lapply(split(df, as.factor(c(1L,NA,2L)), drop=TRUE), setDT), split(dt, as.factor(c(1L,NA,2L)), drop=TRUE))
+test(1635.21, lapply(split(df, as.factor(c(1L,NA,2:4))[1:3]), setDT), split(dt, as.factor(c(1L,NA,2:4))[1:3])) # factor has NA with empty levels
+test(1635.22, lapply(split(df, as.factor(c(1L,NA,2:4))[1:3], drop=TRUE), setDT), split(dt, as.factor(c(1L,NA,2:4))[1:3], drop=TRUE))
+test(1635.23, lapply(split(df, letters[c(1L,NA,2L)]), setDT), split(dt, letters[c(1L,NA,2L)])) # character as `f` arg
+test(1635.24, lapply(split(df, letters[c(1L,NA,2L)], drop=TRUE), setDT), split(dt, letters[c(1L,NA,2L)], drop=TRUE))
+test(1635.25, lapply(split(df, "z"), setDT), split(dt, "z")) # character as `f` arg, length 1L
+test(1635.26, lapply(split(df, "z", drop=TRUE), setDT), split(dt, "z", drop=TRUE))
+test(1635.27, lapply(split(df, letters[c(1L,NA)]), setDT), split(dt, letters[c(1L,NA)])) # character as `f` arg, length 1L of non-NA
+test(1635.28, lapply(split(df, letters[c(1L,NA)], drop=TRUE), setDT), split(dt, letters[c(1L,NA)], drop=TRUE))
+test(1635.29, lapply(split(df[0L,], "z"), setDT), split(dt[0L], "z")) # nrow 0, f length 1-2
+test(1635.30, lapply(split(df[0L,], c("z1","z2")), setDT), split(dt[0L], c("z1","z2")))
+test(1635.31, lapply(split(df[0L,], "z", drop=TRUE), setDT), split(dt[0L], "z", drop=TRUE))
+test(1635.32, lapply(split(df[0L,], c("z1","z2"), drop=TRUE), setDT), split(dt[0L], c("z1","z2"), drop=TRUE))
+test(1635.33, lapply(split(df[1L,], "z"), setDT), split(dt[1L], "z")) # nrow 1, f length 1-2
+test(1635.34, lapply(suppressWarnings(split(df[1L,], c("z1","z2"))), setDT), suppressWarnings(split(dt[1L], c("z1","z2"))))
+test(1635.35, lapply(split(df[1L,], "z", drop=TRUE), setDT), split(dt[1L], "z", drop=TRUE) )
+test(1635.36, lapply(suppressWarnings(split(df[1L,], c("z1","z2"), drop=TRUE)), setDT), suppressWarnings(split(dt[1L], c("z1","z2"), drop=TRUE)))
+test(1635.37, lapply(split(df[0L,], as.factor(NA_character_)), setDT), split(dt[0L], as.factor(NA_character_))) # nrow 0, f factor length 1L NA
+test(1635.38, lapply(split(df[0L,], as.factor(NA_character_), drop=TRUE), setDT), split(dt[0L], as.factor(NA_character_), drop=TRUE))
+test(1635.39, lapply(split(df[0L,], as.factor(1:2)[0L][1L]), setDT), split(dt[0L], as.factor(1:2)[0L][1L])) # nrow 0, f factor length 1L NA with empty levels
+test(1635.40, lapply(split(df[0L,], as.factor(1:2)[0L][1L], drop=TRUE), setDT), split(dt[0L], as.factor(1:2)[0L][1L], drop=TRUE))
+test(1635.41, lapply(split(df[0L,], as.factor(integer())), setDT), split(dt[0L], as.factor(integer()))) # nrow 0, f factor length 0L
+test(1635.42, lapply(split(df[0L,], as.factor(integer()), drop=TRUE), setDT), split(dt[0L], as.factor(integer()), drop=TRUE))
+test(1635.43, lapply(split(df[0L,], as.factor(1:2)[0L]), setDT), split(dt[0L], as.factor(1:2)[0L])) # nrow 0, f factor length 0L with empty levels
+test(1635.44, lapply(split(df[0L,], as.factor(1:2)[0L], drop=TRUE), setDT), split(dt[0L], as.factor(1:2)[0L], drop=TRUE))
+test(1635.45, lapply(split(df[0L,], as.factor(1:3)[c(2L,NA,3L)]), setDT), split(dt[0L], as.factor(1:3)[c(2L,NA,3L)])) # nrow 0, f factor with empty levels and NA
+test(1635.46, lapply(split(df[0L,], as.factor(1:3)[c(2L,NA,3L)], drop=TRUE), setDT), split(dt[0L], as.factor(1:3)[c(2L,NA,3L)], drop=TRUE)) # nrow 0, f character length 1L NA
+test(1635.47, lapply(split(df[0L,], NA_character_), setDT), split(dt[0L], NA_character_))
+test(1635.48, lapply(split(df[0L,], NA_character_, drop=TRUE), setDT), split(dt[0L], NA_character_, drop=TRUE))
+test(1635.49, lapply(split(df[0L,], letters[c(NA,1:3)]), setDT), split(dt[0L], letters[c(NA,1:3)])) # nrow 0, f length > 1L, with NA
+test(1635.50, lapply(split(df[0L,], letters[c(NA,1:3)], drop=TRUE), setDT), split(dt[0L], letters[c(NA,1:3)], drop=TRUE))
+# - [x] split by reference to column names - `by` - for factor column ----
+fdt = dt[, c(lapply(.SD, as.factor), list(y=y)), .SDcols=x1:x3]
+l = split(fdt, by = "x1") # single col
+test(1635.51,TRUE, all(is.list(l), identical(names(l), c("b","a")), sapply(l, is.data.table), sapply(l, nrow) == c(b=6L, a=6L), sapply(l, ncol) == c(b=4L, a=4L)))
+l = split(fdt, by = "x2")
+test(1635.52,TRUE, all(is.list(l), identical(names(l), c("d","e","c")), sapply(l, is.data.table), sapply(l, nrow) == c(d=4L, e=4L, c=4L), sapply(l, ncol) == c(d=4L, e=4L, c=4L)))
+l = split(fdt, by = "x3")
+test(1635.53,TRUE, all(is.list(l), identical(names(l), c("h","f","g","e")), sapply(l, is.data.table), sapply(l, nrow) == c(h=3L, f=3L, g=3L, e=3L), sapply(l, ncol) == c(h=4L, f=4L, g=4L, e=4L)))
+l = split(fdt, by = c("x1","x2")) # multi col
+test(1635.54,TRUE, all(
+    is.list(l), identical(names(l), c("b","a")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(b=c("d","e","c"), a=c("e","d","c"))),
+    sapply(l, sapply, nrow) == rep(2L, 6),
+    sapply(l, sapply, ncol) == rep(4L, 6)
+))
+l = split(fdt, by = c("x1","x3")) # empty levels appears due subset x3 by x1 groups
+test(1635.55,TRUE, all(
+    is.list(l), identical(names(l), c("b","a")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(b=c("h","f","e","g"), a=c("g","e","f","h"))),
+    sapply(l, sapply, nrow) == rep(c(3L,3L,0L,0L), 2),
+    sapply(l, sapply, ncol) == rep(4L, 8)
+))
+l = split(fdt, by = c("x2","x3"))
+test(1635.56,TRUE, all(
+    is.list(l), identical(names(l), c("d","e","c")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(d=c("h","f","e","g"), e=c("h","f","g","e"), c=c("f","h","e","g"))),
+    sapply(l, sapply, nrow) == rep(1L, 12),
+    sapply(l, sapply, ncol) == rep(4L, 4)
+))
+l = split(fdt, by = c("x1","x2","x3")) # empty levels in x3 after subset are expanded
+test(1635.57,TRUE, all(
+    is.list(l), identical(names(l), c("b","a")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, lapply, names), list(b=list(d=c("h","f","e","g"), e=c("h","f","e","g"), c=c("f","h","e","g")), a=list(e=c("g","e","f","h"), d=c("e","g","f","h"), c=c("e","g","f","h")))),
+    sapply(l, sapply, sapply, nrow) == rep(c(1L,1L,0L,0L), 6),
+    sapply(l, sapply, sapply, ncol) == rep(4L, 24)
+))
+l = split(fdt, by = c("x3","x1"), drop=TRUE) # multi col rev
+test(1635.58,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
+    sapply(l, sapply, nrow) == rep(3L, 4),
+    sapply(l, sapply, ncol) == rep(4L, 8)
+))
+l = split(fdt, by = c("x3","x1")) # x1 has empty levels after split on x3 first
+test(1635.59,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(h=c("b","a"), f=c("b","a"), g=c("a","b"), e=c("a","b"))),
+    sapply(l, sapply, nrow) == rep(c(3L,0L), 4),
+    sapply(l, sapply, ncol) == rep(4L, 8)
+))
+l = split(fdt, by = c("x3","x2","x1"), drop = TRUE)
+test(1635.60,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, lapply, names), list(h=list(d=c("b"), e=c("b"), c=c("b")), f=list(e=c("b"), c=c("b"), d=c("b")), g=list(e=c("a"), d=c("a"), c=c("a")), e=list(e=c("a"), d=c("a"), c=c("a")))),
+    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+    sapply(l, sapply, sapply, ncol) == rep(4L, 12)
+))
+sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x3)) # split.data.frame match
+test(1635.61, unlist(split(fdt, by = c("x1","x3"), sorted = TRUE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE
+sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x3), drop=TRUE)
+test(1635.62, unlist(split(fdt, by = c("x1","x3"), sorted = TRUE, drop=TRUE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=TRUE
+fdt = dt[, .(x1 = as.factor(c(as.character(x1), "c"))[-13L], # empty levels in factor and drop=FALSE
+             x2 = as.factor(c("a", as.character(x2)))[-1L],
+             x3 = as.factor(c("a", as.character(x3), "z"))[c(-1L,-14L)],
+             y = y)]
+l = split(fdt, by = "x1")
+test(1635.63,TRUE, all(is.list(l), identical(names(l), c("b","a","c")), sapply(l, is.data.table), sapply(l, nrow) == c(b=6L, a=6L, c=0L), sapply(l, ncol) == c(b=4L, a=4L, c=4L)))
+l = split(fdt, by = "x2")
+test(1635.64,TRUE, all(is.list(l), identical(names(l), c("d","e","c","a")), sapply(l, is.data.table), sapply(l, nrow) == c(d=4L, e=4L, c=4L, a=0L), sapply(l, ncol) == c(d=4L, e=4L, c=4L, a=4L)))
+l = split(fdt, by = c("x3","x1"))
+test(1635.65,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e","a","z")),
+    sapply(l, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, names), list(h=c("b","a","c"), f=c("b","a","c"), g=c("a","b","c"), e=c("a","b","c"), a=c("a","b","c"), z=c("a","b","c"))),
+    sapply(l, sapply, nrow) == c(rep(c(3L,0L,0L), 4), rep(0L, 6)),
+    sapply(l, sapply, ncol) == rep(4L, 18)
+))
+l = split(fdt, by = "x1", drop=TRUE) # empty levels in factor and drop=TRUE
+test(1635.66,TRUE, all(is.list(l), identical(names(l), c("b","a")), sapply(l, is.data.table), sapply(l, nrow) == c(b=6L, a=6L), sapply(l, ncol) == c(b=4L, a=4L)))
+l = split(fdt, by = "x2", drop=TRUE)
+test(1635.67,TRUE, all(is.list(l), identical(names(l), c("d","e","c")), sapply(l, is.data.table), sapply(l, nrow) == c(d=4L, e=4L, c=4L), sapply(l, ncol) == c(d=4L, e=4L, c=4L)))
+l = split(fdt, by = c("x3","x1"), drop=TRUE)
+test(1635.68,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e")),
+    sapply(l, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
+    sapply(l, sapply, nrow) == rep(3L, 4),
+    sapply(l, sapply, ncol) == rep(4L, 4)
+))
+l = split(fdt, by = c("x3","x1"), sorted=TRUE) # test order for empty levels in factor and drop=FALSE
+test(1635.69,TRUE, all(
+    is.list(l), identical(names(l), c("a","e","f","g","h","z")),
+    sapply(l, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, names), setNames(rep(list(c("a","b","c")), 6), c("a","e","f","g","h","z"))),
+    sapply(l, sapply, nrow) == c(0L,0L,0L,3L,0L,0L,0L,3L,0L,3L,0L,0L,0L,3L,0L,0L,0L,0L),
+    sapply(l, sapply, ncol) == rep(4L, 18)
+))
+l = split(fdt, by = c("x3","x1"), sorted=TRUE, drop=TRUE) # test order for empty levels in factor and drop=TRUE
+test(1635.70,TRUE, all(
+    is.list(l), identical(names(l), c("e","f","g","h")),
+    sapply(l, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, names), list(e=c("a"), f=c("b"), g=c("a"), h=c("b"))),
+    sapply(l, sapply, nrow) == rep(3L, 4),
+    sapply(l, sapply, ncol) == rep(4L, 4)
+))
+sdf = split(as.data.frame(fdt), list(fdt$x3, fdt$x1)) # split.data.frame match on by = 2L and empty levels, drop=FALSE
+test(1635.71, unlist(split(fdt, by = c("x3","x1"), sorted=TRUE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT))
+sdf = split(as.data.frame(fdt), list(fdt$x3, fdt$x1), drop=TRUE) # split.data.frame match on by = 2L and empty levels, drop=TRUE
+test(1635.72, unlist(split(fdt, by = c("x3","x1"), sorted=TRUE, drop=TRUE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT))
+# - [x] split by reference to column names - `by` - factor and character column ----
+fdt = dt[, .(x1 = x1,
+             x2 = x2,
+             x3 = as.factor(x3),
+             y = y)]
+l = split(fdt, by = c("x2","x3"))
+test(1635.73,TRUE, all(
+    is.list(l), identical(names(l), c("d","e","c")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(d=c("h","f","e","g"), e=c("h","f","g","e"), c=c("f","h","e","g"))),
+    sapply(l, sapply, nrow) == rep(1L, 12),
+    sapply(l, sapply, ncol) == rep(4L, 4)
+))
+l = split(fdt, by = c("x1","x2","x3")) # empty levels in x3 after subset on x1, x2
+test(1635.74,TRUE, all(
+    is.list(l), identical(names(l), c("b","a")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, lapply, names), list(b=list(d=c("h","f","e","g"), e=c("h","f","e","g"), c=c("f","h","e","g")), a=list(e=c("g","e","f","h"), d=c("e","g","f","h"), c=c("e","g","f","h")))),
+    sapply(l, sapply, sapply, nrow) == rep(c(1L,1L,0L,0L), 6),
+    sapply(l, sapply, sapply, ncol) == rep(4L, 24)
+))
+l = split(fdt, by = c("x1","x2","x3"), drop=TRUE)
+test(1635.75,TRUE, all(
+    is.list(l), identical(names(l), c("b","a")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, lapply, names), list(b=list(d=c("h","f"), e=c("h","f"), c=c("f","h")), a=list(e=c("g","e"), d=c("e","g"), c=c("e","g")))),
+    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+    sapply(l, sapply, sapply, ncol) == rep(4L, 12)
+))
+l = split(fdt, by = c("x3","x1")) # multi col rev
+test(1635.76,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
+    sapply(l, sapply, nrow) == rep(3L, 4),
+    sapply(l, sapply, ncol) == rep(4L, 4)
+))
+l = split(fdt, by = c("x3","x2","x1"))
+test(1635.77,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, lapply, names), list(h=list(d=c("b"), e=c("b"), c=c("b")), f=list(e=c("b"), c=c("b"), d=c("b")), g=list(e=c("a"), d=c("a"), c=c("a")), e=list(e=c("a"), d=c("a"), c=c("a")))),
+    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+    sapply(l, sapply, sapply, ncol) == rep(4L, 12)
+))
+fdt = dt[, .(x1 = x1, # empty levels in factor and drop=FALSE
+             x2 = x2,
+             x3 = as.factor(c("a", as.character(x3), "z"))[c(-1L,-14L)],
+             y = y)]
+l = split(fdt, by = c("x3","x1")) # empty levels in factor and drop=FALSE
+test(1635.78,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e","a","z")),
+    sapply(l, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"), a=character(), z=character())),
+    identical(lapply(l, lapply, nrow), list(h=list(b=3L), f=list(b=3L), g=list(a=3L), e=list(a=3L), a=structure(list(), .Names = character(0)), z=structure(list(), .Names = character(0)))),
+    identical(lapply(l, lapply, ncol), list(h=list(b=4L), f=list(b=4L), g=list(a=4L), e=list(a=4L), a=structure(list(), .Names = character(0)), z=structure(list(), .Names = character(0))))
+))
+
+l = split(fdt, by = c("x3","x1"), drop=TRUE) # empty levels in factor and drop=TRUE
+test(1635.79,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e")),
+    sapply(l, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
+    sapply(l, sapply, nrow) == rep(3L, 4),
+    sapply(l, sapply, ncol) == rep(4L, 4)
+))
+l = split(fdt, by = c("x3","x1"), sorted=TRUE) # test order for empty levels in factor and drop=FALSE
+test(1635.80,TRUE, all(
+    is.list(l), identical(names(l), c("a","e","f","g","h","z")),
+    sapply(l, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, names), list(a=character(), e=c("a"), f=c("b"), g=c("a"), h=c("b"), z=character())),
+    identical(lapply(l, lapply, nrow), list(a=structure(list(), .Names = character(0)), e=list(a=3L), f=list(b=3L), g=list(a=3L), h=list(b=3L), z=structure(list(), .Names = character(0)))),
+    identical(lapply(l, lapply, ncol), list(a=structure(list(), .Names = character(0)), e=list(a=4L), f=list(b=4L), g=list(a=4L), h=list(b=4L), z=structure(list(), .Names = character(0))))
+))
+l = split(fdt, by = c("x3","x1"), sorted=TRUE, drop=TRUE) # test order for empty levels in factor and drop=TRUE
+test(1635.81,TRUE, all(
+    is.list(l), identical(names(l), c("e","f","g","h")),
+    sapply(l, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, names), list(e=c("a"), f=c("b"), g=c("a"), h=c("b"))),
+    sapply(l, sapply, nrow) == rep(3L, 4),
+    sapply(l, sapply, ncol) == rep(4L, 4)
+))
+# - [x] split by reference to column names - `by` - for character column ----
+l = split(dt, by = "x1") # single col
+test(1635.82,TRUE, all(is.list(l), identical(names(l), c("b","a")), sapply(l, is.data.table), sapply(l, nrow) == c(b=6L, a=6L), sapply(l, ncol) == c(b=4L, a=4L)))
+l = split(dt, by = "x2")
+test(1635.83,TRUE, all(is.list(l), identical(names(l), c("d","e","c")), sapply(l, is.data.table), sapply(l, nrow) == c(d=4L, e=4L, c=4L), sapply(l, ncol) == c(d=4L, e=4L, c=4L)))
+l = split(dt, by = "x3")
+test(1635.84,TRUE, all(is.list(l), identical(names(l), c("h","f","g","e")), sapply(l, is.data.table), sapply(l, nrow) == c(h=3L, f=3L, g=3L, e=3L), sapply(l, ncol) == c(h=4L, f=4L, g=4L, e=4L)))
+l = split(dt, by = c("x1","x2")) # multi col
+test(1635.85,TRUE, all(
+    is.list(l), identical(names(l), c("b","a")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(b=c("d","e","c"), a=c("e","d","c"))),
+    sapply(l, sapply, nrow) == rep(2L, 6),
+    sapply(l, sapply, ncol) == rep(4L, 6)
+))
+l = split(dt, by = c("x1","x3"))
+test(1635.86,TRUE, all(
+    is.list(l), identical(names(l), c("b","a")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(b=c("h","f"), a=c("g","e"))),
+    sapply(l, sapply, nrow) == rep(3L, 4),
+    sapply(l, sapply, ncol) == rep(4L, 4)
+))
+l = split(dt, by = c("x2","x3"))
+test(1635.87,TRUE, all(
+    is.list(l), identical(names(l), c("d","e","c")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(d=c("h","f","e","g"), e=c("h","f","g","e"), c=c("f","h","e","g"))),
+    sapply(l, sapply, nrow) == rep(1L, 12),
+    sapply(l, sapply, ncol) == rep(4L, 4)
+))
+l = split(dt, by = c("x1","x2","x3"))
+test(1635.88,TRUE, all(
+    is.list(l), identical(names(l), c("b","a")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, lapply, names), list(b=list(d=c("h","f"), e=c("h","f"), c=c("f","h")), a=list(e=c("g","e"), d=c("e","g"), c=c("e","g")))),
+    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+    sapply(l, sapply, sapply, ncol) == rep(4L, 12)
+))
+l = split(dt, by = c("x3","x1")) # multi col rev
+test(1635.89,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
+    sapply(l, sapply, nrow) == rep(3L, 4),
+    sapply(l, sapply, ncol) == rep(4L, 4)
+))
+l = split(dt, by = c("x3","x2","x1"))
+test(1635.90,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, lapply, names), list(h=list(d="b", e="b", c="b"), f=list(e="b", c="b", d="b"), g=list(e="a", d="a", c="a"), e=list(e="a",d="a",c="a"))),
+    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+    sapply(l, sapply, sapply, ncol) == rep(4L, 12)
+))
+# - [x] allow to keep or drop field on which we split - `drop.by` argument ----
+l = split(dt, by = "x1", drop.by = TRUE)
+test(1635.91,TRUE, all(is.list(l), identical(names(l), c("b","a")), sapply(l, is.data.table), sapply(l, nrow) == c(b=6L, a=6L), sapply(l, ncol) == c(b=3L, a=3L)))
+l = split(dt, by = "x2", drop.by = TRUE)
+test(1635.92,TRUE, all(is.list(l), identical(names(l), c("d","e","c")), sapply(l, is.data.table), sapply(l, nrow) == c(d=4L, e=4L, c=4L), sapply(l, ncol) == c(d=3L, e=3L, c=3L)))
+l = split(dt, by = "x3", drop.by = TRUE)
+test(1635.93,TRUE, all(is.list(l), identical(names(l), c("h","f","g","e")), sapply(l, is.data.table), sapply(l, nrow) == c(h=3L, f=3L, g=3L, e=3L), sapply(l, ncol) == c(h=3L, f=3L, g=3L, e=3L)))
+l = split(dt, by = c("x1","x2"), drop.by = TRUE) # multi col
+test(1635.94,TRUE, all(
+    is.list(l), identical(names(l), c("b","a")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(b=c("d","e","c"), a=c("e","d","c"))),
+    sapply(l, sapply, nrow) == rep(2L, 6),
+    sapply(l, sapply, ncol) == rep(2L, 6)
+))
+l = split(dt, by = c("x1","x3"), drop.by = TRUE)
+test(1635.95,TRUE, all(
+    is.list(l), identical(names(l), c("b","a")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(b=c("h","f"), a=c("g","e"))),
+    sapply(l, sapply, nrow) == rep(3L, 4),
+    sapply(l, sapply, ncol) == rep(2L, 4)
+))
+l = split(dt, by = c("x2","x3"), drop.by = TRUE)
+test(1635.96,TRUE, all(
+    is.list(l), identical(names(l), c("d","e","c")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(d=c("h","f","e","g"), e=c("h","f","g","e"), c=c("f","h","e","g"))),
+    sapply(l, sapply, nrow) == rep(1L, 12),
+    sapply(l, sapply, ncol) == rep(2L, 12)
+))
+l = split(dt, by = c("x1","x2","x3"), drop.by = TRUE)
+test(1635.97,TRUE, all(
+    is.list(l), identical(names(l), c("b","a")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, lapply, names), list(b=list(d=c("h","f"), e=c("h","f"), c=c("f","h")), a=list(e=c("g","e"), d=c("e","g"), c=c("e","g")))),
+    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+    sapply(l, sapply, sapply, ncol) == rep(1L, 12)
+))
+l = split(dt, by = c("x3","x1"), drop.by = TRUE) # multi col rev
+test(1635.98,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
+    sapply(l, sapply, nrow) == rep(3L, 4),
+    sapply(l, sapply, ncol) == rep(2L, 4)
+))
+l = split(dt, by = c("x3","x2","x1"), drop.by = TRUE)
+test(1635.99,TRUE, all(
+    is.list(l), identical(names(l), c("h","f","g","e")), 
+    sapply(l, function(x) !is.data.table(x) && is.list(x)), 
+    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+    identical(lapply(l, lapply, names), list(h=list(d="b", e="b", c="b"), f=list(e="b", c="b", d="b"), g=list(e="a", d="a", c="a"), e=list(e="a",d="a",c="a"))),
+    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+    sapply(l, sapply, sapply, ncol) == rep(1L, 12)
+))
+# - [x] support recursive split into nested lists for `length(by) > 2L` (default) and `flatten` arg to produce non-nested list of data.table ----
+fdt = dt[, c(lapply(.SD, as.factor), list(y=y)), .SDcols=x1:x3] # factors, flatten consistent to non-flatten length(by)==1L
+test(1635.100, split(fdt, by = "x1"), split(fdt, by = "x1", flatten = TRUE)) # length(by) == 1L should be same as flatten=FALSE # ref data already checked in above test
+test(1635.101, split(fdt, by = "x2"), split(fdt, by = "x2", flatten = TRUE))
+test(1635.102, split(fdt, by = "x3"), split(fdt, by = "x3", flatten = TRUE))
+test(1635.103, split(fdt, by = "x1", sorted = TRUE), split(fdt, by = "x1", flatten = TRUE, sorted = TRUE))
+test(1635.104, split(fdt, by = "x3", sorted = TRUE), split(fdt, by = "x3", flatten = TRUE, sorted = TRUE))
+test(1635.105, split(fdt, by = "x1", sorted = TRUE, drop = TRUE), split(fdt, by = "x1", flatten = TRUE, sorted = TRUE, drop = TRUE))
+test(1635.106, split(fdt, by = "x1", sorted = TRUE, drop.by = TRUE), split(fdt, by = "x1", flatten = TRUE, sorted = TRUE, drop.by = TRUE))
+test(1635.107, unlist(split(fdt, by = c("x1","x2"), sorted = TRUE), recursive = FALSE), split(fdt, by = c("x1","x2"), flatten = TRUE, sorted = TRUE)) # by two variables - match after unlist nested one # sorted=TRUE
+test(1635.108, unlist(split(fdt, by = c("x1","x2"), sorted = FALSE), recursive = FALSE), split(fdt, by = c("x1","x2"), flatten = TRUE, sorted = FALSE)) # sorted=FALSE
+test(1635.109, unlist(split(fdt, by = c("x1","x2"), sorted = TRUE, drop.by = TRUE), recursive = FALSE), split(fdt, by = c("x1","x2"), flatten = TRUE, sorted = TRUE, drop.by = TRUE)) # drop.by=TRUE
+sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2)) # vs split.data.frame by 2L # this will dispatch to `interaction(x1, x2)` which results into different order, see: levels(interaction(1:2,1:2)) vs CJ(1:2,1:2)
+test(1635.110, split(fdt, by = c("x1","x2"), flatten = TRUE, sorted = TRUE),lapply(sdf[sort(names(sdf))], setDT))# vs split.data.frame by 2L drop=FALSE
+test(1635.111, unlist(split(fdt, by = c("x1","x2"), flatten = FALSE, sorted = TRUE), recursive = FALSE),lapply(sdf[sort(names(sdf))], setDT))# vs split.data.frame by 2L drop=FALSE, flatten=FALSE + unlist
+sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2), drop=TRUE)
+test(1635.112, split(fdt, by = c("x1","x2"), flatten = TRUE, sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=TRUE
+sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2, fdt$x3)) # vs split.data.frame by 3L
+test(1635.113, split(fdt, by = c("x1","x2","x3"), flatten = TRUE, sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 3L drop=FALSE
+sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2, fdt$x3), drop=TRUE)
+test(1635.114, split(fdt, by = c("x1","x2","x3"), flatten = TRUE, sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 3L drop=TRUE
+fdt = dt[, .(x1 = as.factor(c(as.character(x1), "c"))[-13L], # empty levels in factors
+             x2 = as.factor(c("a", as.character(x2)))[-1L],
+             x3 = as.factor(c("a", as.character(x3), "z"))[c(-1L,-14L)],
+             y = y)]
+sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2)) # vs split.data.frame by 2L # this will dispatch to `interaction(x1, x2)` which results into different order, see: levels(interaction(1:2,1:2)) vs CJ(1:2,1:2)
+test(1635.115, split(fdt, by = c("x1","x2"), flatten = TRUE, sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE
+test(1635.116, unlist(split(fdt, by = c("x1","x2"), flatten = FALSE, sorted = TRUE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE, flatten=FALSE + unlist
+sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2), drop=TRUE)
+test(1635.117, split(fdt, by = c("x1","x2"), flatten = TRUE, sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=TRUE
+sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2, fdt$x3)) # vs split.data.frame by 3L
+test(1635.118, split(fdt, by = c("x1","x2","x3"), flatten = TRUE, sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 3L drop=FALSE
+sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2, fdt$x3), drop=TRUE)
+test(1635.119, split(fdt, by = c("x1","x2","x3"), flatten = TRUE, sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 3L drop=TRUE
+sdf = split(as.data.frame(fdt[, .SD, .SDcols=c("x3","y")]), f=list(fdt$x1, fdt$x2)) # flatten drop.by and empty lists # this will dispatch to `interaction(x1, x2)` which results into different order, see: levels(interaction(1:2,1:2)) vs CJ(1:2,1:2)
+test(1635.120, split(fdt, by = c("x1","x2"), flatten = TRUE, sorted = TRUE, drop.by = TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE
+test(1635.121, unlist(split(fdt, by = c("x1","x2"), flatten = FALSE, sorted = TRUE, drop.by = TRUE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE, flatten=FALSE + unlist
+sdf = split(as.data.frame(fdt[, .SD, .SDcols=c("x3","y")]), f=list(fdt$x1, fdt$x2), drop=TRUE)
+test(1635.122, split(fdt, by = c("x1","x2"), flatten = TRUE, sorted = TRUE, drop=TRUE, drop.by = TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=TRUE
+# - [x] edge cases for `by` and `sorted`, 0 rows, 1 unique value in cols, drop ----
+test(1635.123, length(split(dt[0L], by = "x1")), 0L) # drop=FALSE vs split.data.frame expand list with empty levels won't work on characters, use factor with defined levels, included those unused.
+test(1635.124, length(split(as.data.frame(dt[0L]), df$x1)), 2L) # unlike data.frame because character != factor
+fdt = dt[, c(lapply(.SD, as.factor), list(y=y)), .SDcols=x1:x3] # factors no empty levels
+test(1635.125, length(split(fdt[0L], by = "x1")), 2L)
+test(1635.126, length(split(as.data.frame(fdt[0L]), df$x1)), 2L) # match on factors work
+test(1635.127, split(fdt[0L], by = "x1"), lapply(split(as.data.frame(fdt[0L]), df$x1), setDT)) # we match also on complete structure
+fdt = dt[, .(x1 = as.factor(c(as.character(x1), "c"))[-13L], # factors empty levels
+             x2 = as.factor(c("a", as.character(x2)))[-1L],
+             x3 = as.factor(c("a", as.character(x3), "z"))[c(-1L,-14L)],
+             y = y)]
+sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2)) # vs split.data.frame by 2L# this will dispatch to `interaction(x1, x2)` which results into different order, see: levels(interaction(1:2,1:2)) vs CJ(1:2,1:2)
+test(1635.128, split(fdt, by = c("x1","x2"), flatten = TRUE, sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE
+sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2), drop=TRUE)
+test(1635.129, split(fdt, by = c("x1","x2"), flatten = TRUE, sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=TRUE
+test(1635.130, split(dt[0L], by = "x1"), structure(list(), .Names = character(0))) # 0 nrow character/factor with empty levels # no empty levels
+test(1635.131, split(fdt[0L], by = "x1"), lapply(c(a=1L,b=2L,c=3L), function(i) data.table(x1=factor(levels = c("a","b","c")),x2=factor(levels = c("a","c","d","e")),x3=factor(levels = c("a","e","f","g","h","z")),y=numeric()))) # expand empty levels
+test(1635.132, split(dt[0L], by = "x1", sorted = TRUE), structure(list(), .Names = character(0)))
+test(1635.133, split(fdt[0L], by = "x1", sorted = TRUE), lapply(c(a=1L,b=2L,c=3L), function(i) data.table(x1=factor(levels = c("a","b","c")),x2=factor(levels = c("a","c","d","e")),x3=factor(levels = c("a","e","f","g","h","z")),y=numeric()))) # same as none sorted as all appended on the end in sorted order due to lack of data
+dt2 = copy(dt)[, "l" := lapply(1:12, function(i) i)] # non-atomic type to 'by' should raise error
+test(1635.134, split(dt2, by = "l"), error = "argument 'by' must refer only to atomic type columns, classes of 'l' columns are not atomic type")
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

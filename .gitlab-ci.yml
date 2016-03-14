@@ -1,0 +1,19 @@
+pages:
+  image: docker.io/jangorecki/r-data.table-dev
+  script:
+    # build package
+    - R CMD build . --no-manual
+    # run check
+    - R CMD check $(ls -1t *.tar.gz | head -n 1) --no-manual --as-cran
+    # gl-pages dir and Rcheck results dir
+    - mkdir public public/split Rcheck
+    # produce artifacts
+    - Rscript -e 'drat::insertArtifacts(repodir="public/split", repo.url="https://jangorecki.gitlab.io/data.table/split")'
+    # move Rcheck results
+    - mv $(find . -maxdepth 1 -name "*.Rcheck" -type d) Rcheck
+  only:
+    - split-method
+  artifacts:
+    paths:
+      - Rcheck
+      - public

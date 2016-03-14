@@ -2169,11 +2169,74 @@ Ops.data.table <- function(e1, e2 = NULL)
     ans
 }
 
-
-split.data.table <- function(...) {
-    if (cedta() && getOption("datatable.dfdispatchwarn"))  # or user can use suppressWarnings
-        warning("split is inefficient. It copies memory. Please use [,j,by=list(...)] syntax. See data.table FAQ.")
-    NextMethod()  # allow user to do it though, split object will be data.table's with 'NA' repeated in row.names silently
+split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, drop.by = FALSE, flatten = FALSE, ..., verbose = getOption("datatable.verbose")) {
+    if (!is.data.table(x)) stop("x argument must be a data.table")
+    stopifnot(is.logical(drop), is.logical(sorted), is.logical(drop.by),  is.logical(flatten))
+    # split data.frame way, using `f` and not `by` argument
+    if (!missing(f)) {
+        if (!length(f) && nrow(x))
+            stop("group length is 0 but data nrow > 0")
+        if (!missing(by))
+            stop("passing 'f' argument together with 'by' is not allowed, use only one of them")
+        # same as split.data.frame - handling all exceptions, factor orders etc, in a single stream of processing was a nightmare
+        return(lapply(split(x = seq_len(nrow(x)), f = f, drop = drop, ...), function(ind) x[ind]))
+    }
+    if (missing(by)) stop("you must provide 'by' or 'f' arguments")
+    # check reserved column names during processing
+    if (".ll.tech.split" %in% names(x)) stop("column '.ll.tech.split' is reserved for split.data.table processing")
+    if (".nm.tech.split" %in% by) stop("column '.nm.tech.split' is reserved for split.data.table processing")
+    if (!all(by %in% names(x))) stop("argument 'by' must refer to data.table column names")
+    if (!all(by.atomic <- sapply(by, function(.by) is.atomic(x[[.by]])))) stop(sprintf("argument 'by' must refer only to atomic type columns, classes of '%s' columns are not atomic type", paste(by[!by.atomic], collapse=", ")))
+    # list of data.tables (flatten) or list of lists of ... data.tables
+    make.levels = function(x, cols, sorted) {
+        by.order = x[, funique(.SD), .SDcols=cols]
+        ul = lapply(setNames(nm=cols), function(col) if (!is.factor(x[[col]])) unique(x[[col]]) else levels(x[[col]]))
+        r = do.call("CJ", c(ul, sorted=sorted, unique=TRUE))
+        if (!sorted && nrow(by.order)) {
+            ii = r[by.order, on=cols, which=TRUE]
+            r = rbindlist(list(
+                r[ii], # original order from data
+                r[-ii] # empty levels at the end
+            ))
+        }
+        r
+    }
+    .by = by[1L]
+    # this builds data.table call - is much more cleaner than handling each case one by one
+    dtq = as.list(call("[", as.name("x")))
+    join = FALSE
+    flatten_any <- flatten && any(sapply(by, function(col) is.factor(x[[col]])))
+    nested_current <- !flatten && is.factor(x[[.by]])
+    if (!drop && (flatten_any || nested_current)) {
+        dtq[["i"]] = substitute(make.levels(x, cols=.cols, sorted=.sorted), list(.cols=if (flatten) by else .by, .sorted=sorted))
+        join = TRUE
+    }
+    dtq[["j"]] = substitute(
+        list(.ll.tech.split=list(.expr)),
+        list(.expr = if (join) quote(if(.N == 0L) .SD[0L] else .SD) else as.name(".SD")) # simplify when `nomatch` accept NULL #857 ?
+    )
+    by.or.keyby = if (join) "by" else c("by"[!sorted], "keyby"[sorted])[1L]
+    dtq[[by.or.keyby]] = substitute( # retain order, for `join` and `sorted` it will use order of `i` data.table instead of `keyby`.
+        .expr,
+        list(.expr = if(join) as.name(".EACHI") else if (flatten) by else .by)
+    )
+    dtq[[".SDcols"]] = if (drop.by) setdiff(names(x), if (flatten) by else .by) else names(x)
+    if (join) dtq[["on"]] = if (flatten) by else .by
+    dtq = as.call(dtq)
+    if (isTRUE(verbose)) cat("Processing split.data.table with: ", deparse(dtq, width.cutoff=500L), "\n", sep="")
+    tmp = eval(dtq)
+    # add names on list
+    setattr(ll <- tmp$.ll.tech.split,
+            "names", 
+            as.character(
+                if (!flatten) tmp[[.by]] else tmp[, list(.nm.tech.split=paste(unlist(.SD), collapse = ".")), by=by, .SDcols=by]$.nm.tech.split
+            ))
+    # handle nested split
+    if (flatten || length(by) == 1L) return(
+        lapply(ll, setattr, '.data.table.locked', NULL)
+    ) else if (length(by) > 1L) return(
+        lapply(ll, split.data.table, drop=drop, by=by[-1L], sorted=sorted, drop.by=drop.by)
+    )
 }
 
 # TO DO, add more warnings e.g. for by.data.table(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
