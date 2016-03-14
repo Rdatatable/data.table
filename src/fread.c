@@ -1180,11 +1180,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (any_duplicated(select,FALSE)) STOP("Duplicates detected in select");
         if (isString(select)) {
             // invalid cols check part of #1445 moved here (makes sense before reading the file)
-            itemsInt = PROTECT(chmatch(select, names, NA_INTEGER, FALSE)); protecti++;
+            itemsInt = PROTECT(chmatch(select, names, NA_INTEGER, FALSE));
             for (i=0; i<length(select); i++) if (INTEGER(itemsInt)[i]==NA_INTEGER) 
                 error("Column(s) [%s] not found in file.", CHAR(STRING_ELT(select, i)));
+            UNPROTECT(1);
             PROTECT_WITH_INDEX(itemsInt, &pi);
-            REPROTECT(itemsInt = chmatch(names, select, NA_INTEGER, FALSE), pi);
+            REPROTECT(itemsInt = chmatch(names, select, NA_INTEGER, FALSE), pi); protecti++;
             for (i=0; i<ncol; i++) if (INTEGER(itemsInt)[i]==NA_INTEGER) { type[i]=SXP_NULL; numNULL++; }
         } else {
             itemsInt = PROTECT(coerceVector(select, INTSXP)); protecti++;
