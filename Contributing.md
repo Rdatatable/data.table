@@ -15,13 +15,16 @@ It becomes cumbersome to have to ask the same set of questions over and over. So
 Pull Requests
 -------------
 
+Please file an issue before creating PRs so that it can be discussed first *before* you invest time implementing it, unless the issue is extremely trivial (e.g., typos). It saves us both time.
+
 1. Please create all pull requests (PR) against the `master` branch.
 2. Create **one PR per feature/bug fix**.
 3. Create a branch for that feature/bug fix, and use that as a base for your pull requests. Pull requests directly against your version of `master` will not be accepted.
 4. Unless there's a strong reason against, please **squash all your commits together before issuing a PR**, since you would be working on one issue. 
 5. In your pull request's description, please state clearly as to what your PR does, i.e., what FR or bug your PR addresses, along with the issue number. For e.g, "Closes #717, rbindlist segfault on factor columns fixed and added tests."
 6. All bug fixes and feature requests should also have **tests** added, to help catch any regressions while fixing another issue some time later. Tests should be added to `inst/tests/tests.Rraw` file. 
-7. The `README.md` file also has to be updated while fixing or implementing an issue. It should mention the issue number (along with the link) and what the issue is being closed. And also add a "Thanks to @your_name for the PR".
+7. Ensure that all tests pass by typing `test.data.table()` on your branch. It's also better to `R CMD check --as-cran`. PRs with failed tests can't be merged of course, and it is hard to debug every PR and explain why it fails and how to fix it. The lesser the feedback required, the faster it is likely to be merged.
+8. The `README.md` file also has to be updated while fixing or implementing an issue. It should mention the issue number (along with the link) and what the issue is being closed. And also add a "Thanks to @your_name for the PR".
 
 **References:** If you are not sure how to issue a PR, but would like to contribute, these links should help get you started:
 
