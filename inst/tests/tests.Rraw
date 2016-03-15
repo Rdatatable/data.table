@@ -7917,6 +7917,12 @@ v2 = capture.output(ans2 <- dt[.(3:2), on="x", verbose=TRUE])
 test(1634.1, any(grepl("not found", v1)), TRUE)
 test(1634.2, any(grepl("Reusing index", v2)), TRUE)
 
+# fread's fill argument detects separator better in complex cases as well, #1573
+text = "a	b	c	d	e	f	g	h	i	j	k	l\n1	P	P;A;E;	Y	YW;	H().	1-3 pro\n2	Q9	a;a;a;a;	YB	YH;	M().	13 pn ba\n1	P3	P;	Y	Y;	R().	14 p\n53	P	P6;B;D;0;5;a;X;a;4R;	Y	Y;	H().	13 pe e\n1	P	P;O;O;a;a;a;	HLA-A	HLA-A;;	H().	HcIha,A-n\n102	P	P;O;P;P;P;P;P;P;a;a;a;a;a;a;a;a;a;a;	H-A	H-A;;	H().	HcIha,A"
+test(1635.1, ans1 <- fread(text, fill=TRUE), setDT(read.table(text=text, stringsAsFactors=FALSE, fill=TRUE, sep="\t", header=TRUE)))
+text = "a	b	c	d	e\n1	P	P;A;E;	Y	YW;	H().	1-3 pro\n2	Q9	a;a;a;a;	YB	YH;	M().	13 pn ba\n1	P3	P;	Y	Y;	R().	14 p\n53	P	P6;B;D;0;5;a;X;a;4R;	Y	Y;	H().	13 pe e\n1	P	P;O;O;a;a;a;	HLA-A	HLA-A;;	H().	HcIha,A-n\n102	P	P;O;P;P;P;P;P;P;a;a;a;a;a;a;a;a;a;a;	H-A	H-A;;	H().	HcIha,A"
+test(1635.2, fread(text, fill=TRUE), setnames(ans1[, 1:7, with=FALSE], c(letters[1:5], paste("V", 6:7, sep=""))))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

@@ -806,7 +806,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (verbose) Rprintf("Using supplied sep '%s' ... ", seps[0]=='\t'?"\\t":seps);
     }
     int nseps = strlen(seps);
-    
+    int *maxcols = Calloc(nseps, int); // if (fill) grab longest col stretch as topNcol
+    if (maxcols == NULL) error("Error while allocating memory to store max column size of each separator.");
     const char *topStart=ch, *thisStart=ch;
     char topSep=seps[0];
     int topLine=0, topLen=0, topNcol=-1;
@@ -819,6 +820,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (*ch==eol && skipEmptyLines && i<30) {ch++; continue;}
             lineStart = ch;
             ncol = countfields();
+            maxcols[s] = (fill && ncol > maxcols[s]) ? ncol : maxcols[s];
             if (ncol==-1) {
                 if (thisNcol==-1) break;  // if first row has quote problem, move straight on to test a different sep
                 ncol=thisNcol;   // skip the quote problem row for now (consider part of current run)
@@ -827,12 +829,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (ch==eof || i==30 || ncol!=thisNcol) {
                 // this* still refers to the previous run which has just finished
                 // Rprintf("\nRun: s='%c' thisLine=%d thisLen=%d thisNcol=%d", sep, thisLine, thisLen, thisNcol);
-                if (thisNcol>1 && (( thisLen>topLen && (!fill || (fill && thisNcol>topNcol)) ) ||     // longest run wins as long as fill=FALSE. If not, retain longest column so far. Fixes 
+                if (thisNcol>1 && ( thisLen>topLen || // longest run wins
                                    (thisLen==topLen && sep==topSep && thisNcol>topNcol))) {  // if tied, the one that divides it more (test 1328, 2 rows)
                     topStart = thisStart;
                     topLine = thisLine;
                     topLen = thisLen;
-                    topNcol = thisNcol;
+                    topNcol = (!fill) ? thisNcol : maxcols[s]; // if fill=TRUE, longest column stretch
                     topSep = sep;
                 }
                 if (lineStart==eof) break;
@@ -843,6 +845,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             }
         }
     }
+    Free(maxcols);
     if (topNcol<2) {
         if (verbose) Rprintf("Deducing this is a single column input.\n");
         sep=eol;
@@ -860,7 +863,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         } 
     }
     if (verbose) {
-        if (sep!=eol) Rprintf("Detected %d columns. Longest stretch was from line %d to line %d\n",ncol,line,line+topLen-1);
+        if (sep!=eol) {
+            if (!fill) Rprintf("Detected %d columns. Longest stretch was from line %d to line %d\n",ncol,line,line+topLen-1);
+            else Rprintf("Detected %d (maximum) columns (fill=TRUE)\n", ncol);
+        }
         ch2 = ch; while(++ch2<eof && *ch2!=eol && ch2-ch<10);
         Rprintf("Starting data input on line %d (either column names or first row of data). First 10 characters: %.*s\n", line, (int)(ch2-ch), ch);
     }
@@ -928,7 +934,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 sprintf(buff,"V%d",i+1);
                 SET_STRING_ELT(names, i, mkChar(buff));
             }
-            if (i<ncol-1) ch++; // move the beginning char of next field
+            if (ch<eof && *ch!=eol && i<ncol-1) ch++; // move the beginning char of next field
         }
         while (ch<eof && *ch!=eol) ch++; // no need for skip_spaces() here
         if (ch<eof && *ch==eol) ch+=eolLen;  // now on first data row (row after column names)
