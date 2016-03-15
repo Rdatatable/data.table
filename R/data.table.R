@@ -879,7 +879,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # orderedirows = is.sorted(f__)
                 bysameorder = orderedirows && haskey(x) && all(sapply(bysubl,is.name)) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
                 if (is.null(irows))
-                    if (is.call(bysub) && length(bysub) == 3L && bysub[[1L]] == ":") {
+                    if (is.call(bysub) && length(bysub) == 3L && bysub[[1L]] == ":" && is.name(bysub[[2L]]) && is.name(bysub[[3L]])) {
                         byval = eval(bysub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame())
                         byval = as.list(x)[byval]
                     } else byval = eval(bysub, x, parent.frame())

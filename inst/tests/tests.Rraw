@@ -7907,6 +7907,7 @@ dt = data.table(x=rep(1,18), y=rep(1:2, each=9), z=rep(1:3,each=6), a=rep(1:6, e
 test(1633.1, dt[, sum(b), by=x:a], dt[, sum(b), by=.(x,y,z,a)])
 test(1633.2, dt[, sum(b), by=y:a], dt[, sum(b), by=.(y,z,a)])
 test(1633.3, dt[, sum(b), by=a:y], dt[, sum(b), by=.(a,z,y)])
+test(1633.4, dt[, .SD, by=1:nrow(dt)], data.table(nrow=1:nrow(dt), dt)) # make sure this works
 
 # reuse secondary indices
 dt = data.table(x=sample(3, 10, TRUE), y=1:10)
