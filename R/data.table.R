@@ -1457,7 +1457,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     lockBinding(".iSD",SDenv)
     
     GForce = FALSE
-    if ( (getOption("datatable.optimize")>=1 && is.call(jsub)) || (is.name(jsub) && as.character(jsub) %chin% c(".SD",".N")) ) {  # Ability to turn off if problems or to benchmark the benefit
+    if ( getOption("datatable.optimize")>=1 && (is.call(jsub) || (is.name(jsub) && as.character(jsub) %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
         # Optimization to reduce overhead of calling lapply over and over for each group
         ansvarsnew = setdiff(ansvars, othervars)
         oldjsub = jsub

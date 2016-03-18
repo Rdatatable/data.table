@@ -7942,6 +7942,14 @@ test(1637.3, dt[, data.table(a, .SD), by = a], data.table(a=1,a=1,b=1))
 test(1637.4, dt[, data.table(b, .SD), by = cumsum(a)], data.table(cumsum=1, b=1, b=1))
 test(1637.5, dt[, data.table(a, b), by = cumsum(a)], data.table(cumsum=1, a=1, b=1))
 
+# when datatable.optimize<1, no optimisation of j should take place:
+oldopt = getOption("datatable.optimize")
+options(datatable.optimize = 0L)
+dt = data.table(x=1:5, y=6:10, z=c(1,1,1,2,2))
+out = capture.output(dt[, .SD, by=z, verbose=TRUE])
+test(1638, out[2], "All optimizations are turned off")
+options(datatable.optimize = oldopt)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
