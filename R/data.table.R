@@ -1034,15 +1034,15 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
                         ansvals = chmatch(ansvars, names(x))
                     }
-                    # fix for long standing FR/bug, #495
-                    if ( length(othervars <- intersect(av, names(x))) ) {
-                        # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or 
-                        # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc., 
-                        ansvars = union(ansvars, othervars)
-                        ansvals = chmatch(ansvars, names(x))
-                    }
-                    # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
                 }
+                # fix for long standing FR/bug, #495 and #484
+                if ( length(othervars <- setdiff(intersect(av, names(x)), c(bynames, ansvars))) ) {
+                    # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or 
+                    # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc., 
+                    ansvars = union(ansvars, othervars)
+                    ansvals = chmatch(ansvars, names(x))
+                }
+                # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
             } else {
                 if (!missing(.SDcols)) warning("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
                 ansvars = setdiff(intersect(av,c(names(x),names(i),paste("i.",names(i),sep=""))), bynames)

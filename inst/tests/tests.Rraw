@@ -7934,6 +7934,14 @@ dt = data.table(x=1:2, y=c(sum, min))
 test(1636.5, class(dt$y), "list")
 test(1636.6, any(grepl("2: 2 <function>", capture.output(print(dt)))), TRUE)
 
+# #484 fix (related to #495 fix above)
+dt = data.table(a = 1, b = 1)
+test(1637.1, dt[, data.table(a, .SD), by = cumsum(a)], data.table(cumsum=1, a=1, b=1))
+test(1637.2, dt[, data.table(a, .SD), by = cumsum(a), .SDcols=a:b], data.table(cumsum=1, a=1, a=1, b=1))
+test(1637.3, dt[, data.table(a, .SD), by = a], data.table(a=1,a=1,b=1))
+test(1637.4, dt[, data.table(b, .SD), by = cumsum(a)], data.table(cumsum=1, b=1, b=1))
+test(1637.5, dt[, data.table(a, b), by = cumsum(a)], data.table(cumsum=1, a=1, b=1))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

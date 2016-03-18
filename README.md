@@ -64,7 +64,7 @@
 
   24. `uniqueN` gains `na.rm` argument, [#1455](https://github.com/Rdatatable/data.table/issues/1455).
 
-  25. Finally, we can now refer to the columns that are not mentioned in `.SD/.SDcols` in `j` as well. For example, `DT[, .(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:V3]` works fine, [#495](https://github.com/Rdatatable/data.table/issues/495). Thanks to @MattWeller for filing the report, and to all the others who linked various SO posts to be updated.
+  25. Finally, we can now refer to the columns that are not mentioned in `.SD/.SDcols` in `j` as well. For example, `DT[, .(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:V3]` works fine, [#495](https://github.com/Rdatatable/data.table/issues/495). Thanks to @MattWeller for filing the report, and to all the others who linked various SO posts to be updated. Also closes [#484](https://github.com/Rdatatable/data.table/issues/484).
 
   26. While updating by reference, adding a new column is guaranteed even if there are no matches when `nomatch=NA`, [#759](https://github.com/Rdatatable/data.table/issues/759). Thanks @mchen402.
 
