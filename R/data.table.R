@@ -275,6 +275,8 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
         } else if (is.table(xi)) {
             x[[i]] = xi = as.data.table.table(xi, keep.rownames=keep.rownames)
             numcols[i] = length(xi)
+        } else if (is.function(xi)) {
+            x[[i]] = xi = list(xi)
         }
         nrows[i] <- NROW(xi)    # for a vector (including list() columns) returns the length
         if (numcols[i]>0L) {

@@ -228,6 +228,8 @@
 
   23. Fixed example in `?as.data.table.Rd`, [#1576](https://github.com/Rdatatable/data.table/issues/1576). Thanks @MichaelChirico.
 
+  24. Fixed an edge case and added tests for columns of type `function`, [#518](https://github.com/Rdatatable/data.table/issues/518).
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
