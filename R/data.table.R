@@ -2231,7 +2231,7 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
     setattr(ll <- tmp$.ll.tech.split,
             "names", 
             as.character(
-                if (!flatten) tmp[[.by]] else tmp[, list(.nm.tech.split=paste(unlist(.SD), collapse = ".")), by=by, .SDcols=by]$.nm.tech.split
+                if (!flatten) tmp[[.by]] else tmp[, list(.nm.tech.split=paste(unlist(lapply(.SD, as.character)), collapse = ".")), by=by, .SDcols=by]$.nm.tech.split
             ))
     # handle nested split
     if (flatten || length(by) == 1L) return(

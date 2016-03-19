@@ -8385,6 +8385,24 @@ test(1639.132, split(dt[0L], by = "x1", sorted = TRUE), structure(list(), .Names
 test(1639.133, split(fdt[0L], by = "x1", sorted = TRUE), lapply(c(a=1L,b=2L,c=3L), function(i) data.table(x1=factor(levels = c("a","b","c")),x2=factor(levels = c("a","c","d","e")),x3=factor(levels = c("a","e","f","g","h","z")),y=numeric()))) # same as none sorted as all appended on the end in sorted order due to lack of data
 dt2 = copy(dt)[, "l" := lapply(1:12, function(i) i)] # non-atomic type to 'by' should raise error
 test(1639.134, split(dt2, by = "l"), error = "argument 'by' must refer only to atomic type columns, classes of 'l' columns are not atomic type")
+# - [x] additional tests for names consistency with data.frame, and current examples in SO
+df = data.frame(product = c("b", "a", "b", "a"),
+                value = c(sample(1:10,4)),
+                year = c(2001, 2001, 2000, 2000))
+tmp = as.data.table(df)[, list(grp=list(.SD)), by=.(product, year), .SDcols=names(df)] # http://stackoverflow.com/a/33068928/2490497
+setattr(ans <- tmp$grp, 'names', paste(tmp$product, tmp$year, sep="."))
+dt = as.data.table(df) # http://stackoverflow.com/q/33068791/2490497
+dt[, grp := .GRP, by = list(product,year)] 
+setkey(dt, grp)
+o2 = dt[, list(list(.SD)), by = grp]$V1
+setattr(o2, 'names', paste(tmp$product, tmp$year, sep=".")) # names reused
+test(1639.135, o2, ans)
+lapply(ans, setattr, ".data.table.locked", NULL)
+sort.by.names = function(x) x[sort(names(x))]
+test(1639.136, sort.by.names(ans), sort.by.names(split(as.data.table(df), f=list(df$product, df$year))))
+test(1639.137, sort.by.names(ans), sort.by.names(unlist(split(setDT(df), by=c("product","year"), flatten = FALSE), recursive = FALSE)))
+test(1639.138, sort.by.names(ans), sort.by.names(split(as.data.table(df), by=c("product","year"))))
+test(1639.139, sort.by.names(ans), sort.by.names(unlist(split(as.data.table(df), by=c("product","year"), flatten=FALSE), recursive = FALSE)))
 
 
 ##########################
