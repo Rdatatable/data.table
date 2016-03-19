@@ -8401,7 +8401,7 @@ lapply(ans, setattr, ".data.table.locked", NULL)
 sort.by.names = function(x) x[sort(names(x))]
 test(1639.136, sort.by.names(ans), sort.by.names(split(as.data.table(df), f=list(df$product, df$year))))
 test(1639.137, sort.by.names(ans), sort.by.names(unlist(split(setDT(df), by=c("product","year"), flatten = FALSE), recursive = FALSE)))
-test(1639.138, sort.by.names(ans), sort.by.names(split(as.data.table(df), by=c("product","year"))))
+test(1639.138, ans, split(as.data.table(df), by=c("product","year")))
 test(1639.139, sort.by.names(ans), sort.by.names(unlist(split(as.data.table(df), by=c("product","year"), flatten=FALSE), recursive = FALSE)))
 
 
