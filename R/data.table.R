@@ -610,7 +610,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 		    if (any(idx_op %in% c(0L, 6L)))
 			stop("Invalid operators ", paste(this_op[idx_op==0L], collapse=","), ". Only allowed operators are ", paste(ops[1:5], collapse=""), ".")
 		    if (is.null(names(on))) {
-			on[idx] = if (isnull_inames) paste(on[idx], paste("V", seq_along(sum(idx)), sep=""), sep="==")
+			on[idx] = if (isnull_inames) paste(on[idx], paste("V", seq_len(sum(idx)), sep=""), sep="==")
 				  else paste(on[idx], on[idx], sep="==")
 		    } else {
 			on[idx] = paste(names(on)[idx], on[idx], sep="==")
