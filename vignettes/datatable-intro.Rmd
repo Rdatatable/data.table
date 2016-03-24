@@ -1,7 +1,7 @@
 ---
 title: "Introduction to data.table"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_document:
     theme: spacelab
     highlight: pygments
@@ -30,11 +30,11 @@ This vignette introduces the *data.table* syntax, its general form, how to *subs
 
 Data manipulation operations such as *subset*, *group*, *update*, *join* etc., are all inherently related. Keeping these *related operations together* allows for:
 
-* *concise* and *consistent* syntax irrespective of the set of operations you would like to perform to achieve your end goal. 
+* *concise* and *consistent* syntax irrespective of the set of operations you would like to perform to achieve your end goal.
 
-* performing analysis *fluidly* without the cognitive burden of having to map each operation to a particular function from a set of functions available before to perform the analysis. 
+* performing analysis *fluidly* without the cognitive burden of having to map each operation to a particular function from a set of functions available before to perform the analysis.
 
-* *automatically* optimising operations internally, and very effectively, by knowing precisely the data required for each operation and therefore very fast and memory efficient. 
+* *automatically* optimising operations internally, and very effectively, by knowing precisely the data required for each operation and therefore very fast and memory efficient.
 
 Briefly, if you are interested in reducing *programming* and *compute* time tremendously, then this package is for you. The philosophy that *data.table* adheres to makes this possible. Our goal is to illustrate it through this series of vignettes.
 
@@ -63,7 +63,7 @@ In this vignette, we will
 
 1. start with basics - what is a *data.table*, its general form, how to *subset* rows, *select and compute* on columns
 
-2. and then we will look at performing data aggregations by group, 
+2. and then we will look at performing data aggregations by group,
 
 ## 1. Basics {#basics-1}
 
@@ -86,7 +86,7 @@ You can also convert existing objects to a *data.table* using `as.data.table()`.
 * Row numbers are printed with a `:` in order to visually separate the row number from the first column.
 
 * When the number of rows to print exceeds the global option `datatable.print.nrows` (default = `r getOption("datatable.print.nrows")`), it automatically prints only the top 5 and bottom 5 rows (as can be seen in the [Data](#data) section).
-    
+
     ```{.r}
     getOption("datatable.print.nrows")
     ```
@@ -110,7 +110,7 @@ Users who have a SQL background might perhaps immediately relate to this syntax.
 
 Take `DT`, subset rows using `i`, then calculate `j`, grouped by `by`.
 
-# 
+#
 
 Let's begin by looking at `i` and `j` first - subsetting rows and operating on columns.
 
@@ -203,7 +203,7 @@ head(ans)
 
 #
 
-*data.tables* (and *data.frames*) are internally *lists*  as well, but with all its columns of equal length and with a *class* attribute. Allowing `j` to return a *list* enables converting and returning a *data.table* very efficiently. 
+*data.tables* (and *data.frames*) are internally *lists*  as well, but with all its columns of equal length and with a *class* attribute. Allowing `j` to return a *list* enables converting and returning a *data.table* very efficiently.
 
 #### Tip: {.bs-callout .bs-callout-warning #tip-1}
 
@@ -223,7 +223,7 @@ head(ans)
 
 * Wrap both columns within `.()`, or `list()`. That's it.
 
-# 
+#
 
 #### -- Select both `arr_delay` and `dep_delay` columns *and* rename them to `delay_arr` and `delay_dep`.
 
@@ -247,14 +247,14 @@ ans
 
 #### What's happening here? {.bs-callout .bs-callout-info}
 
-* *data.table*'s `j` can handle more than just *selecting columns* - it can handle *expressions*, i.e., *compute on columns*. This shouldn't be surprising, as columns can be referred to as if they are variables. Then we should be able to *compute* by calling functions on those variables. And that's what precisely happens here. 
+* *data.table*'s `j` can handle more than just *selecting columns* - it can handle *expressions*, i.e., *compute on columns*. This shouldn't be surprising, as columns can be referred to as if they are variables. Then we should be able to *compute* by calling functions on those variables. And that's what precisely happens here.
 
 ### f) Subset in `i` *and* do in `j`
 
 #### -- Calculate the average arrival and departure delay for all flights with "JFK" as the origin airport in the month of June.
 
 ```{r}
-ans <- flights[origin == "JFK" & month == 6L, 
+ans <- flights[origin == "JFK" & month == 6L,
                .(m_arr=mean(arr_delay), m_dep=mean(dep_delay))]
 ans
 ```
@@ -265,7 +265,7 @@ ans
 
 * Now, we look at `j` and find that it uses only *two columns*. And what we have to do is to compute their `mean()`. Therefore we subset just those columns corresponding to the matching rows, and compute their `mean()`.
 
-Because the three main components of the query (`i`, `j` and `by`) are *together* inside `[...]`, *data.table* can see all three and optimise the query altogether *before evaluation*, not each separately. We are able to therefore avoid the entire subset, for both speed and memory efficiency. 
+Because the three main components of the query (`i`, `j` and `by`) are *together* inside `[...]`, *data.table* can see all three and optimise the query altogether *before evaluation*, not each separately. We are able to therefore avoid the entire subset, for both speed and memory efficiency.
 
 #### -- How many trips have been made in 2014 from "JFK" airport in the month of June?
 
@@ -274,7 +274,7 @@ ans <- flights[origin == "JFK" & month == 6L, length(dest)]
 ans
 ```
 
-The function `length()` requires an input argument. We just needed to compute the number of rows in the subset. We could have used any other column as input argument to `length()` really. 
+The function `length()` requires an input argument. We just needed to compute the number of rows in the subset. We could have used any other column as input argument to `length()` really.
 
 This type of operation occurs quite frequently, especially while grouping as we will see in the next section, that *data.table* provides a *special symbol* `.N` for it.
 
@@ -294,7 +294,7 @@ ans
 
 * Once again, we subset in `i` to get the *row indices* where `origin` airport equals *"JFK"*, and `month` equals *6*.
 
-* We see that `j` uses only `.N` and no other columns. Therefore the entire subset is not materialised. We simply return the number of rows in the subset (which is just the length of row indices). 
+* We see that `j` uses only `.N` and no other columns. Therefore the entire subset is not materialised. We simply return the number of rows in the subset (which is just the length of row indices).
 
 * Note that we did not wrap `.N` with `list()` or `.()`. Therefore a vector is returned.
 
@@ -302,7 +302,7 @@ We could have accomplished the same operation by doing `nrow(flights[origin == "
 
 ### g) Great! But how can I refer to columns by names in `j` (like in a *data.frame*)?
 
-You can refer to column names the *data.frame* way using `with = FALSE`. 
+You can refer to column names the *data.frame* way using `with = FALSE`.
 
 #### -- Select both `arr_delay` and `dep_delay` columns the *data.frame* way.
 
@@ -325,7 +325,7 @@ DF[with(DF, x > 1), ]
 
 #### {.bs-callout .bs-callout-info #with_false}
 
-* Using `with()` in (2) allows using `DF`'s column `x` as if it were a variable. 
+* Using `with()` in (2) allows using `DF`'s column `x` as if it were a variable.
 
     Hence the argument name `with` in *data.table*. Setting `with=FALSE` disables the ability to refer to columns as if they are variables, thereby restoring the "*data.frame* mode".
 
@@ -356,7 +356,7 @@ DF[with(DF, x > 1), ]
 
     This is particularly handy while working interactively.
 
-# 
+#
 
 `with = TRUE` is default in *data.table* because we can do much more by allowing `j` to handle expressions - especially when combined with `by` as we'll see in a moment.
 
@@ -395,7 +395,7 @@ ans
 
     We'll use this convenient form wherever applicable hereafter.
 
-# 
+#
 
 #### -- How can we calculate the number of trips for each origin airport for carrier code *"AA"*? {#origin-.N}
 
@@ -429,8 +429,8 @@ head(ans)
 #### -- How can we get the average arrival and departure delay for each `orig,dest` pair for each month for carrier code *"AA"*? {#origin-dest-month}
 
 ```{r}
-ans <- flights[carrier == "AA", 
-        .(mean(arr_delay), mean(dep_delay)), 
+ans <- flights[carrier == "AA",
+        .(mean(arr_delay), mean(dep_delay)),
         by=.(origin, dest, month)]
 ans
 ```
@@ -447,13 +447,13 @@ Now what if we would like to order the result by those grouping columns `origin`
 
 ### b) keyby
 
-*data.table* retaining the original order of groups is intentional and by design. There are cases when preserving the original order is essential. But at times we would like to automatically sort by the variables we grouped by. 
+*data.table* retaining the original order of groups is intentional and by design. There are cases when preserving the original order is essential. But at times we would like to automatically sort by the variables we grouped by.
 
 #### -- So how can we directly order by all the grouping variables?
 
 ```{r}
-ans <- flights[carrier == "AA", 
-        .(mean(arr_delay), mean(dep_delay)), 
+ans <- flights[carrier == "AA",
+        .(mean(arr_delay), mean(dep_delay)),
         keyby=.(origin, dest, month)]
 ans
 ```
@@ -462,7 +462,7 @@ ans
 
 * All we did was to change `by` to `keyby`. This automatically orders the result by the grouping variables in increasing order. Note that `keyby()` is applied after performing the  operation, i.e., on the computed result.
 
-**Keys:** Actually `keyby` does a little more than *just ordering*. It also *sets a key* after ordering by setting an *attribute* called `sorted`. But we'll learn more about `keys` in the next vignette. 
+**Keys:** Actually `keyby` does a little more than *just ordering*. It also *sets a key* after ordering by setting an *attribute* called `sorted`. But we'll learn more about `keys` in the next vignette.
 
 For now, all you've to know is you can use `keyby` to automatically order by the columns specified in `by`.
 
@@ -476,7 +476,7 @@ ans <- flights[carrier == "AA", .N, by = .(origin, dest)]
 
 #### -- How can we order `ans` using the columns `origin` in ascending order, and `dest` in descending order?
 
-We can store the intermediate result in a variable, and then use `order(origin, -dest)` on that variable. It seems fairly straightforward. 
+We can store the intermediate result in a variable, and then use `order(origin, -dest)` on that variable. It seems fairly straightforward.
 
 ```{r}
 ans <- ans[order(origin, -dest)]
@@ -491,7 +491,7 @@ head(ans)
 
 #
 
-But this requires having to assign the intermediate result and then overwriting that result. We can do one better and avoid this intermediate assignment on to a variable altogther by `chaining` expressions.
+But this requires having to assign the intermediate result and then overwriting that result. We can do one better and avoid this intermediate assignment on to a variable altogether by `chaining` expressions.
 
 ```{r}
 ans <- flights[carrier == "AA", .N, by=.(origin, dest)][order(origin, -dest)]
@@ -505,9 +505,9 @@ head(ans, 10)
 * Or you can also chain them vertically:
 
     ```{r eval=FALSE}
-    DT[ ... 
-     ][ ... 
-     ][ ... 
+    DT[ ...
+     ][ ...
+     ][ ...
      ]
     ```
 
@@ -528,7 +528,7 @@ ans
 
 * Note that we did not provide any names to `by-expression`. And names have been automatically assigned in the result.
 
-* You can provide other columns along with expressions, for example: `DT[, .N, by=.(a, b>0)]`. 
+* You can provide other columns along with expressions, for example: `DT[, .N, by=.(a, b>0)]`.
 
 ### e) Multiple columns in `j` - `.SD`
 
@@ -536,15 +536,15 @@ ans
 
 It is of course not practical to have to type `mean(myCol)` for every column one by one. What if you had a 100 columns to compute `mean()` of?
 
-How can we do this efficiently? To get there, refresh on [this tip](#tip-1) - *"As long as j-expression returns a list, each element of the list will be converted to a column in the resulting data.table"*. Suppose we can refer to the *data subset for each group* as a variable *while grouping*, then we can loop through all the columns of that variable using the already familiar base function `lapply()`. We don't have to learn any new function. 
+How can we do this efficiently? To get there, refresh on [this tip](#tip-1) - *"As long as j-expression returns a list, each element of the list will be converted to a column in the resulting data.table"*. Suppose we can refer to the *data subset for each group* as a variable *while grouping*, then we can loop through all the columns of that variable using the already familiar base function `lapply()`. We don't have to learn any new function.
 
 #### Special symbol `.SD`: {.bs-callout .bs-callout-info #special-SD}
 
-*data.table* provides a *special* symbol, called `.SD`. It stands for **S**ubset of **D**ata. It by itself is a *data.table* that holds the data for *the current group* defined using `by`. 
+*data.table* provides a *special* symbol, called `.SD`. It stands for **S**ubset of **D**ata. It by itself is a *data.table* that holds the data for *the current group* defined using `by`.
 
 Recall that a *data.table* is internally a list as well with all its columns of equal length.
 
-# 
+#
 
 Let's use the [*data.table* `DT` from before](#what-is-datatable-1a) to get a glimpse of what `.SD` looks like.
 
@@ -556,7 +556,7 @@ DT[, print(.SD), by=ID]
 
 #### {.bs-callout .bs-callout-info}
 
-* `.SD` contains all the columns *except the grouping columns* by default. 
+* `.SD` contains all the columns *except the grouping columns* by default.
 
 * It is also generated by preserving the original order - data corresponding to `ID = "b"`, then `ID = "a"`, and then `ID = "c"`.
 
@@ -570,25 +570,25 @@ DT[, lapply(.SD, mean), by=ID]
 
 #### {.bs-callout .bs-callout-info}
 
-* `.SD` holds the rows corresponding to columns *a*, *b* and *c* for that group. We compute the `mean()` on each of these columns using the already familiar base function `lapply()`. 
+* `.SD` holds the rows corresponding to columns *a*, *b* and *c* for that group. We compute the `mean()` on each of these columns using the already familiar base function `lapply()`.
 
 * Each group returns a list of three elements containing the mean value which will become the columns of the resulting `data.table`.
 
 * Since `lapply()` returns a *list*, there is no need to wrap it with an additional `.()` (if necessary, refer to [this tip](#tip-1)).
 
-# 
+#
 
-We are almost there. There is one little thing left to address. In our `flights` *data.table*, we only wanted to calculate the `mean()` of two columns `arr_delay` and `dep_delay`. But `.SD` would contain all the columns other than the grouping variables by default. 
+We are almost there. There is one little thing left to address. In our `flights` *data.table*, we only wanted to calculate the `mean()` of two columns `arr_delay` and `dep_delay`. But `.SD` would contain all the columns other than the grouping variables by default.
 
 #### -- How can we specify just the columns we would like to compute the `mean()` on?
 
 #### .SDcols {.bs-callout .bs-callout-info}
 
-Using the argument `.SDcols`. It accepts either column names or column indices. For example, `.SDcols = c("arr_delay", "dep_delay")` ensures that `.SD` contains only these two columns for each group. 
+Using the argument `.SDcols`. It accepts either column names or column indices. For example, `.SDcols = c("arr_delay", "dep_delay")` ensures that `.SD` contains only these two columns for each group.
 
 Similar to the [with = FALSE section](#with_false), you can also provide the columns to remove instead of columns to keep using `-` or `!` sign as well as select consecutive columns as `colA:colB` and deselect consecutive columns as `!(colA:colB) or `-(colA:colB)`.
 
-# 
+#
 Now let us try to use `.SD` along with `.SDcols` to get the `mean()` of `arr_delay` and `dep_delay` columns grouped by `origin`, `dest` and `month`.
 
 ```{r}
@@ -617,7 +617,7 @@ head(ans)
 
 So that we have a consistent syntax and keep using already existing (and familiar) base functions instead of learning new functions. To illustrate, let us use the *data.table* `DT` we created at the very beginning under [What is a data.table?](#what-is-datatable-1a) section.
 
-#### -- How can we concatenate columns `a` and `b` for each group in `ID`? 
+#### -- How can we concatenate columns `a` and `b` for each group in `ID`?
 
 ```{r}
 DT[, .(val = c(a,b)), by=ID]
@@ -639,8 +639,8 @@ DT[, .(val = list(c(a,b))), by=ID]
 
 * Note those commas are for display only. A list column can contain any object in each cell, and in this example, each cell is itself a vector and some cells contain longer vectors than others.
 
-# 
-Once you start internalising usage in `j`, you will realise how powerful the syntax can be. A very useful way to understand it is by playing around, with the help of `print()`. 
+#
+Once you start internalising usage in `j`, you will realise how powerful the syntax can be. A very useful way to understand it is by playing around, with the help of `print()`.
 
 For example:
 
@@ -687,12 +687,12 @@ We can do much more in `i` by keying a *data.table*, which allows blazing fast s
 #
 
 #### Using `by`: {.bs-callout .bs-callout-info}
- 
+
 * Using `by`, we can group by columns by specifying a *list of columns* or a *character vector of column names* or even *expressions*. The flexibility of `j`, combined with `by` and `i` makes for a very powerful syntax.
 
-* `by` can handle multiple columns and also *expressions*. 
+* `by` can handle multiple columns and also *expressions*.
 
-* We can `keyby` grouping columns to automatically sort the grouped result. 
+* We can `keyby` grouping columns to automatically sort the grouped result.
 
 * We can use `.SD` and `.SDcols` in `j` to operate on multiple columns using already familiar base functions. Here are some examples:
 
@@ -708,7 +708,7 @@ We can do much more in `i` by keying a *data.table*, which allows blazing fast s
 
 As long as `j` returns a *list*, each element of the list will become a column in the resulting *data.table*.
 
-# 
+#
 
 We will see how to *add/update/delete* columns *by reference* and how to combine them with `i` and `by` in the next vignette.
 

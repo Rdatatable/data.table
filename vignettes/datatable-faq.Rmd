@@ -1,7 +1,7 @@
 ---
 title: "Frequently Asked Questions about data.table"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_document:
     toc: true
     number_sections: true
@@ -38,7 +38,7 @@ Say column 5 is called `"region"`, just do `DT[ , region]` instead. Notice there
 
 You can place _any_ *R* expression in `j` _e.g._, `DT[ , colA*colB/2]`. Further, `j` may be a set of *R* expressions (including calls to any *R* package) wrapped with `list()`, `.()` or an anonymous code block wrapped with braces `{}`. A simple example is `DT[ , fitdistr(d1, "normal")]`.
 
-Having said this, there are some circumstances where referring to a column by number is ok, such as
+Having said this, there are some circumstances where referring to a column by number is OK, such as
 a sequence of columns. In these situations just do `DT[ , 5:10, with=FALSE]` or `DT[ , c(1,4,10), with=FALSE]`.
 
 See `?data.table` for an explanation of the `with` argument. When `FALSE`, it lets you use `data.table` the same way as `data.frame`, when you need to.
@@ -105,7 +105,7 @@ myfunction = function(dt, expr) {
 myfunction(DT, sum(Sepal.Width))
 ```
 
-`quote()` and `eval()` are like macros in other languages. Instead of `j = myfunction()` (which won't work without laboriously passing in all the arguments) it's `j = eval(mymacro)`. This can be more efficient than a function call, and convenient. When `data.table` sees `j = eval(mymacro)` it knows to find `mymacro` in calling scope so as not to be tripped up if a column name happens to be called `mymacro`, too. 
+`quote()` and `eval()` are like macros in other languages. Instead of `j = myfunction()` (which won't work without laboriously passing in all the arguments) it's `j = eval(mymacro)`. This can be more efficient than a function call, and convenient. When `data.table` sees `j = eval(mymacro)` it knows to find `mymacro` in calling scope so as not to be tripped up if a column name happens to be called `mymacro`, too.
 
 For example, let's make sure that exactly the same `j` is run for a set of different grouping criteria :
 
@@ -122,13 +122,13 @@ DT[, eval(whatToRun), by=.(Petal.Width = round(Petal.Width, 0))]
 
 `j` doesn't have to be just column names. You can write any *R* _expression_ of column names directly as `j`, _e.g._, `DT[ , mean(x*y/z)]`.  The same applies to `i`, _e.g._, `DT[x>1000, sum(y*z)]`.
 
-This runs the `j` expression on the set of rows where the `i` expression is true. You don't even need to return data, _e.g._, `DT[x>1000, plot(y, z)]`. Finally, you can do `j` by group simply by adding `by=`, _e.g._, `DT[x>1000, sum(y*z), by=w]`. This runs `j` for each group in column `w` but just over the rows where `x>1000`. By placing the 3 parts of the query (where, select and group by) inside the square brackets, `data.table` sees this query as a whole before any part of it is evaluated. Thus it can optimize the query for performance. 
+This runs the `j` expression on the set of rows where the `i` expression is true. You don't even need to return data, _e.g._, `DT[x>1000, plot(y, z)]`. Finally, you can do `j` by group simply by adding `by=`, _e.g._, `DT[x>1000, sum(y*z), by=w]`. This runs `j` for each group in column `w` but just over the rows where `x>1000`. By placing the 3 parts of the query (where, select and group by) inside the square brackets, `data.table` sees this query as a whole before any part of it is evaluated. Thus it can optimize the query for performance.
 
 ## OK, I'm starting to see what `data.table` is about, but why didn't you just enhance `data.frame` in *R*? Why does it have to be a new package?
 
 As [highlighted above](#j-num), `j` in `[.data.table` is fundamentally different from `j` in `[.data.frame`. Even something as simple as `DF[ , 1]` would break existing code in many packages and user code.  This is by design. We want it to work this way for more complicated syntax to work. There are other differences, too (see [below](#SmallerDiffs) ).
 
-Furthermore, `data.table` _inherits_ from `data.frame`. It _is_ a `data.frame`, too. A `data.table` can be passed to any package that only accepts `data.frame` and that package can use `[.data.frame` syntax on the `data.table`. 
+Furthermore, `data.table` _inherits_ from `data.frame`. It _is_ a `data.frame`, too. A `data.table` can be passed to any package that only accepts `data.frame` and that package can use `[.data.frame` syntax on the `data.table`.
 
 We _have_ proposed enhancements to *R* wherever possible, too. One of these was accepted as a new feature in *R* 2.12.0 :
 
@@ -169,7 +169,7 @@ This behaviour changed in v1.9.4 (Sep 2014). It now does the `X[Y]` join and the
 For example, (further complicating it by using _join inherited scope_, too):
 
 ```{r}
-X = data.table(grp = c("a", "a", "b", 
+X = data.table(grp = c("a", "a", "b",
                        "b", "b", "c", "c"), foo = 1:7)
 setkey(X, grp)
 Y = data.table(c("b", "c"), bar = c(4, 2))
@@ -185,7 +185,7 @@ The request to change came from users. The feeling was that if a query is doing 
 
 Of the 66 packages on CRAN or Bioconductor that depend on or import `data.table` at the time of releasing v1.9.4, only one was affected by the change. That could be because many packages don't have comprehensive tests, or just that grouping by each row in `i` wasn't being used much by downstream packages. We always test the new version with all dependent packages before release and coordinate any changes with those maintainers. So this release was quite straightforward in that regard.
 
-Another compelling reason to make the change was that previously, there was no efficient way to achieve what `X[Y, sum(foo*bar)]` does now. You had to write `X[Y][ , sum(foo*bar)]`. That was suboptimal because `X[Y]` joined all the columns and passed them all to the second compound query without knowing that only `foo` and `bar` are needed. To solve that efficiency problem, extra programming effort was required: `X[Y, list(foo, bar)][ , sum(foo*bar)]`.  The change to `by = .EACHI` has simplified this by allowing both queries to be expressed inside a single `DT[...]` query for efficieny.
+Another compelling reason to make the change was that previously, there was no efficient way to achieve what `X[Y, sum(foo*bar)]` does now. You had to write `X[Y][ , sum(foo*bar)]`. That was suboptimal because `X[Y]` joined all the columns and passed them all to the second compound query without knowing that only `foo` and `bar` are needed. To solve that efficiency problem, extra programming effort was required: `X[Y, list(foo, bar)][ , sum(foo*bar)]`.  The change to `by = .EACHI` has simplified this by allowing both queries to be expressed inside a single `DT[...]` query for efficiency.
 
 # General Syntax
 
@@ -294,7 +294,7 @@ Try something like this:
 DT[ , {
   cat("Objects:", paste(objects(), collapse=","), "\n")
   cat("Trace: x=", as.character(x), " y=", y, "\n")
-  sum(y)}, 
+  sum(y)},
   by=x]
 ```
 
@@ -400,7 +400,7 @@ Yes :
  - `nomatch=0`  $\Leftrightarrow$  inner join
  - `mult="first"|"last"`  $\Leftrightarrow$  N/A because SQL is inherently unordered
  - `roll=TRUE`  $\Leftrightarrow$  N/A because SQL is inherently unordered
- 
+
 The general form is :
 
 ```{r, eval = FALSE}
@@ -476,7 +476,7 @@ base::cbind.data.frame
 That modification is made dynamically, _i.e._, the `base` definition of `cbind.data.frame` is fetched, the `for` loop added to the beginning and then assigned back to `base`. This solution is intended to be robust to different definitions of `base::cbind.data.frame` in different versions of *R*, including unknown future changes. Again, it is a last resort until a better solution is known or made available. The competing requirements are:
 
  - `cbind(DT, DF)` needs to work. Defining `cbind.data.table` doesn't work because `base::cbind` does its own S3 dispatch and requires that the _first_ `cbind` method for each object it is passed is _identical_. This is not true in `cbind(DT, DF)` because the first method for `DT` is `cbind.data.table` but the first method for `DF` is `cbind.data.frame`. `base::cbind` then falls through to its internal `bind` code which appears to treat `DT` as a regular `list` and returns very odd looking and unusable `matrix` output. See [below](#cbinderror). We cannot just advise users not to call `cbind(DT, DF)` because packages such as `ggplot2` make such a call ([test 167.2](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L444-L447)).
- 
+
  - This naturally leads to trying to mask `cbind.data.frame` instead. Since a `data.table` is a `data.frame`, `cbind` would find the same method for both `DT` and `DF`. However, this doesn't work either because `base::cbind` appears to find methods in `base` first; _i.e._, `base::cbind.data.frame` isn't maskable. This is reproducible as follows :
 
 ```{r}
@@ -494,7 +494,7 @@ If you know of a better solution that still solves all the issues above, then pl
 
 This comes up quite a lot, but it's really earth-shatteringly simple. A function such as `merge` is _generic_ if it consists of a call to `UseMethod`. When you see people talking about whether or not functions are _generic_ functions they are merely typing the function without `()` afterwards, looking at the program code inside it and if they see a call to `UseMethod` then it is _generic_.  What does `UseMethod` do? It literally slaps the function name together with the class of the first argument, separated by period (`.`) and then calls that function, passing along the same arguments. It's that simple. For example, `merge(X, Y)` contains a `UseMethod` call which means it then _dispatches_ (i.e. calls) `paste("merge", class(X), sep=".")`. Functions with dots in their name may or may not be methods. The dot is irrelevant really, other than dot being the separator that `UseMethod` uses. Knowing this background should now highlight why, for example, it is obvious to R folk that `as.data.table.data.frame`  is the `data.frame` method for the `as.data.table` generic function. Further, it may help to elucidate that, yes, you are correct, it is not obvious from its name alone that `ls.fit` is not the fit method of the `ls` generic function. You only know that by typing `ls` (not `ls()`) and observing it isn't a single call to `UseMethod`.
 
-You might now ask: where is this documented in R? Answer: it's quite clear, but, you need to first know to look in `?UseMethod` and _that_ help file contains : 
+You might now ask: where is this documented in R? Answer: it's quite clear, but, you need to first know to look in `?UseMethod` and _that_ help file contains :
 
 <div id="proposed-enhancements" class="section level4 bs-callout bs-callout-info">
 When a function calling `UseMethod('fun')` is applied to an object with class attribute `c('first', 'second')`, the system searches for a function called `fun.first` and, if it finds it, applies it to the object. If no such function is found a function called `fun.second` is tried. If no class name produces a suitable function, the function `fun.default` is used, if it exists, or an error results.
@@ -568,7 +568,7 @@ DT[ , { mySD = copy(.SD)
 
 ## "cannot change value of locked binding for `.N`"
 
-Please upgrade to v1.8.1 or later. From this version, if `.N` is returned by `j` it is renamed to `N` to avoid any abiguity in any subsequent grouping between the `.N` special variable and a column called `".N"`.
+Please upgrade to v1.8.1 or later. From this version, if `.N` is returned by `j` it is renamed to `N` to avoid any ambiguity in any subsequent grouping between the `.N` special variable and a column called `".N"`.
 
 The old behaviour can be reproduced by forcing `.N` to be called `.N`, like this :
 ```{r}
@@ -580,7 +580,7 @@ cat(try(
 , silent=TRUE))
 ```
 
-If you are already running v1.8.1 or later then the error message is now more helpful than the "cannot change value of locked binding" error, as you can see above, since this vignette was produced using v1.8.1 or later. 
+If you are already running v1.8.1 or later then the error message is now more helpful than the "cannot change value of locked binding" error, as you can see above, since this vignette was produced using v1.8.1 or later.
 
 The more natural syntax now works :
 ```{r}
@@ -595,7 +595,7 @@ if (packageVersion("data.table") >= "1.9.3") {
 # Warning messages
 ## "The following object(s) are masked from `package:base`: `cbind`, `rbind`"
 
-This warning was present in v1.6.5 and v.1.6.6 only, when loading the package. The motivation was to allow `cbind(DT, DF)` to work, but as it transpired, this broke (full) compatibility with package `IRanges`. Please upgrade to v1.6.7 or later. 
+This warning was present in v1.6.5 and v.1.6.6 only, when loading the package. The motivation was to allow `cbind(DT, DF)` to work, but as it transpired, this broke (full) compatibility with package `IRanges`. Please upgrade to v1.6.7 or later.
 
 ## "Coerced numeric RHS to integer to match the column's type"
 

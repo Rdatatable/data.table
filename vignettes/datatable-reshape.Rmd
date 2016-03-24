@@ -1,7 +1,7 @@
 ---
 title: "Efficient reshaping using data.tables"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_document:
     theme: spacelab
     highlight: pygments
@@ -32,20 +32,20 @@ options(width=100)
 
 ## Data
 
-We will load the data sets directly within sections. 
+We will load the data sets directly within sections.
 
 ## Introduction
 
-The `melt` and `dcast` functions for *data.tables* are extensions of the corresponding functions from the [reshape2](http://cran.r-project.org/package=reshape2) package.  
+The `melt` and `dcast` functions for *data.tables* are extensions of the corresponding functions from the [reshape2](http://cran.r-project.org/package=reshape2) package.
 
 In this vignette, we will
 
 1. first briefly look at the default *melting* and *casting* of *data.tables* to convert them from *wide* to *long* format and vice versa,
 
-2. then look at scenarios where the current functionalities becomes cumbersome and inefficient, 
+2. then look at scenarios where the current functionalities becomes cumbersome and inefficient,
 
 3. and finally look at the new improvements to both `melt` and `dcast` methods for *data.tables* to handle multiple columns simultaneously.
-    
+
 The extended functionalities are in line with *data.table's* philosophy of performing operations efficiently and in a straightforward manner.
 
 #### Note: {.bs-callout .bs-callout-info}
@@ -61,7 +61,7 @@ Suppose we have a `data.table` (artificial data) as shown below:
 
 ```{r}
 DT = fread("melt_default.csv")
-DT 
+DT
 ## dob stands for date of birth.
 
 str(DT)
@@ -76,7 +76,7 @@ str(DT)
 We could accomplish this using `melt()` by specifying `id.vars` and `measure.vars` arguments as follows:
 
 ```{r}
-DT.m1 = melt(DT, id.vars = c("family_id", "age_mother"), 
+DT.m1 = melt(DT, id.vars = c("family_id", "age_mother"),
                 measure.vars = c("dob_child1", "dob_child2", "dob_child3"))
 DT.m1
 str(DT.m1)
@@ -97,17 +97,17 @@ str(DT.m1)
 #
 
 #### - Name the `variable` and `value` columns to `child` and `dob` respectively
- 
+
 
 ```{r}
-DT.m1 = melt(DT, measure.vars = c("dob_child1", "dob_child2", "dob_child3"), 
+DT.m1 = melt(DT, measure.vars = c("dob_child1", "dob_child2", "dob_child3"),
                variable.name = "child", value.name = "dob")
 DT.m1
 ```
 
 #### {.bs-callout .bs-callout-info}
 
-* By default, when one of `id.vars` or `measure.vars` is missing, the rest of the columns are *automatically assigned* to the missing argument. 
+* By default, when one of `id.vars` or `measure.vars` is missing, the rest of the columns are *automatically assigned* to the missing argument.
 
 * When neither `id.vars` nor `measure.vars` are specified, as mentioned under `?melt`, all *non*-`numeric`, `integer`, `logical` columns will be assigned to `id.vars`.
 
@@ -117,7 +117,7 @@ DT.m1
 
 In the previous section, we saw how to get from wide form to long form. Let's see the reverse operation in this section.
 
-#### - How can we get back to the original data table `DT` from `DT.m`? 
+#### - How can we get back to the original data table `DT` from `DT.m`?
 
 That is, we'd like to collect all *child* observations corresponding to each `family_id, age_mother` together under the same row. We can accomplish it using `dcast` as follows:
 
@@ -127,16 +127,16 @@ dcast(DT.m1, family_id + age_mother ~ child, value.var = "dob")
 
 #### {.bs-callout .bs-callout-info}
 
-* `dcast` uses *formula* interface. The variables on the *LHS* of formula represents the *id* vars and *RHS* the *measure*  vars. 
+* `dcast` uses *formula* interface. The variables on the *LHS* of formula represents the *id* vars and *RHS* the *measure*  vars.
 
 * `value.var` denotes the column to be filled in with while casting to wide format.
 
 * `dcast` also tries to preserve attributes in result wherever possible.
- 
-# 
+
+#
 
 #### - Starting from `DT.m`, how can we get the number of children in each family?
- 
+
 You can also pass a function to aggregate by in `dcast` with the argument `fun.aggregate`. This is particularly essential when the formula provided does not identify single observation for each cell.
 
 ```{r}
@@ -154,10 +154,10 @@ However, there are situations we might run into where the desired operation is n
 ```{r}
 DT = fread("melt_enhanced.csv")
 DT
-## 1 = female, 2 = male 
-``` 
+## 1 = female, 2 = male
+```
 
-And you'd like to combine (melt) all the `dob` columns together, and `gender` columns together. Using the current functionalty, we can do something like this:
+And you'd like to combine (melt) all the `dob` columns together, and `gender` columns together. Using the current functionality, we can do something like this:
 
 ```{r}
 DT.m1 = melt(DT, id = c("family_id", "age_mother"))
@@ -185,7 +185,7 @@ str(DT.c1) ## gender column is character type now!
 In fact, `base::reshape` is capable of performing this operation in a very straightforward manner. It is an extremely useful and often underrated function. You should definitely give it a try!
 
 ## 3. Enhanced (new) functionality
-		
+
 ### a) Enhanced `melt`
 
 Since we'd like for *data.tables* to perform this operation straightforward and efficient using the same interface, we went ahead and implemented an *additional functionality*, where we can `melt` to multiple columns *simultaneously*.
@@ -201,7 +201,7 @@ DT.m2 = melt(DT, measure = list(colA, colB), value.name = c("dob", "gender"))
 DT.m2
 
 str(DT.m2) ## col type is preserved
-``` 
+```
 
 #### - Using `patterns()`
 
@@ -223,8 +223,8 @@ That's it!
 ### b) Enhanced `dcast`
 
 Okay great! We can now melt into multiple columns simultaneously. Now given the data set `DT.m2` as shown above, how can we get back to the same format as the original data we started with?
- 
-If we use the current functionality of `dcast`, then we'd have to cast twice and bind the results together. But that's once again verbose, not straightforward and is also inefficient. 
+
+If we use the current functionality of `dcast`, then we'd have to cast twice and bind the results together. But that's once again verbose, not straightforward and is also inefficient.
 
 #### - Casting multiple `value.var`s simultaneously
 
@@ -242,13 +242,13 @@ DT.c2
 
 * Everything is taken care of internally, and efficiently. In addition to being fast, it is also very memory efficient.
 
-# 
+#
 
 #### Multiple functions to `fun.aggregate`: {.bs-callout .bs-callout-info}
 
 You can also provide *multiple functions* to `fun.aggregate` to `dcast` for *data.tables*. Check the examples in `?dcast` which illustrates this functionality.
 
-# 
+#
 
 ***
 
