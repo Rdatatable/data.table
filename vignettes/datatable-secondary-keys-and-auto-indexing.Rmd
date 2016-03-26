@@ -46,7 +46,7 @@ In this vignette, we will
 
 * discuss *secondary indices* and provide rationale as to why we need them by citing cases where setting keys is not necessarily ideal,
 
-* perform fast subsetting, once again, but using the new `on` argument, which builds secondary indices internally for the task (temporarily), and reuses if one already exists,
+* perform fast subsetting, once again, but using the new `on` argument, which computes secondary indices internally for the task (temporarily), and reuses if one already exists,
 
 * and finally look at *auto indexing* which goes a step further and creates secondary indices automatically, but does so on native R syntax for subsetting.
 
@@ -144,7 +144,7 @@ As we will see in the next section, the `on` argument provides several advantage
 
 #### `on` argument {.bs-callout .bs-callout-info}
 
-* enables subsetting by creating secondary indices on the fly. This eliminates having to do `setindex()` every time.
+* enables subsetting by computing secondary indices on the fly. This eliminates having to do `setindex()` every time.
 
 * allows easy reuse of existing indices by just checking the attributes.
 
@@ -168,9 +168,9 @@ flights["JFK", on = "origin"]
 # flights[list("JFK"), on = "origin"]
 ```
 
-* This statement performs a fast binary search based subset as well, by creating the index on the fly. However, note that it doesn't save the index as an attribute automatically. This may change in the future.
+* This statement performs a fast binary search based subset as well, by computing the index on the fly. However, note that it doesn't save the index as an attribute automatically. This may change in the future.
 
-* If we had already added a secondary index, then `on` would reuse the existing index instead of computing it on the fly. We can see that by using `verbose = TRUE`:
+* If we had already created a secondary index, using `setindex()`, then `on` would reuse it instead of (re)computing it. We can see that by using `verbose = TRUE`:
 
     ```{r}
     setindex(flights, origin)
@@ -247,7 +247,7 @@ ans <- flights["JFK", max(dep_delay), keyby = month, on = "origin"]
 head(ans)
 ```
 
-* We would have had to set the `key` back to `origin, dest` again, if we did not use `on` which internally uses secondary indices.
+* We would have had to set the `key` back to `origin, dest` again, if we did not use `on` which internally builds secondary indices on the fly.
 
 ### g) The *mult* argument
 
@@ -281,7 +281,7 @@ flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", on = c("origin", "dest"
 
 First we looked at how to fast subset using binary search using *keys*. Then we figured out that we could improve performance even further and have more cleaner syntax by using secondary indices. What could be better than that? The answer is to optimise *native R syntax* to use secondary indices internally so that we can have the same performance without having to use newer syntax.
 
-That is what *auto indexing* does. At the moment, it is only implemented for binary operators `==` and `%in%`. And it only works with a single column at the moment as well. An index is automatically created *and* saved as an attribute. That is, unlike the `on` argument which creates a *temporary* index on the fly each time, a secondary index is created here. 
+That is what *auto indexing* does. At the moment, it is only implemented for binary operators `==` and `%in%`. And it only works with a single column at the moment as well. An index is automatically created *and* saved as an attribute. That is, unlike the `on` argument which computes the index on the fly each time, a secondary index is created here. 
 
 Let's start by creating a data.table big enough to highlight the advantage.
 
