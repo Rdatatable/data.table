@@ -392,7 +392,7 @@ flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last"]
 
 * Once again, the query for second key column `dest`,  *"XNA"*, is recycled to fit the length of the query for first key column `origin`, which is of length 3.
 
-### The *nomatch* argument
+### b) The *nomatch* argument
 
 We can choose if queries that do not match should return `NA` or be skipped altogether using the `nomatch` argument.
 
