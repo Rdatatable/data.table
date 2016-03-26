@@ -8404,6 +8404,118 @@ test(1639.137, sort.by.names(ans), sort.by.names(unlist(split(setDT(df), by=c("p
 test(1639.138, ans, split(as.data.table(df), by=c("product","year")))
 test(1639.139, sort.by.names(ans), sort.by.names(unlist(split(as.data.table(df), by=c("product","year"), flatten=FALSE), recursive = FALSE)))
 
+# fwrite tests
+local({
+  fwrite_test <- function(number, writer, expected_result) {
+    f <- tempfile()
+    writer(f)
+    result <- readChar(f, file.info(f)$size)
+    unlink(f)
+    test(number, result, expected_result)
+  }
+
+  # without quoting
+  fwrite_test(1640.1, function(f) {
+    fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar')), f, quote=F)
+  }, 'a,b\n,foo\n2,\n3.01,bar\n')
+
+  # with quoting and qmethod="escape"
+  fwrite_test(1640.2, function(f) {
+    fwrite(data.table(
+      a=c(NA, 2, 3.01),
+      `other column`=c('foo bar', NA, 'quote" and \\ bs \n and newline')),
+      f, quote=T, qmethod="escape")
+  }, '"a","other column"\n,"foo bar"\n2,""\n3.01,"quote\\" and \\\\ bs \n and newline"\n')
+
+  # with quoting and qmethod="double" (default)
+  fwrite_test(1640.3, function(f) {
+    fwrite(data.table(
+      a=c(NA, 1e-10, 3.01),
+      `other "column`=c('foo bar', NA, 'quote" and \\ bs')),
+      f, quote=T, qmethod="double")
+  }, '"a","other ""column"\n,"foo bar"\n1e-10,""\n3.01,"quote"" and \\ bs"\n')
+
+  # changing sep
+  fwrite_test(1640.4, function(f) { fwrite(data.table(a="foo", b="ba\"r"), f, sep=";") },
+              '"a";"b"\n"foo";"ba""r"\n')
+
+  # changing eol
+  fwrite_test(1640.5, function(f) { fwrite(data.table(a="foo", b="bar"), f, eol="\r\n") },
+              '"a","b"\r\n"foo","bar"\r\n')
+  
+  # no col.names
+  fwrite_test(1640.6, function(f) { fwrite(data.table(a="foo", b="bar"), f, col.names=F) },
+              '"foo","bar"\n')
+
+  # small block size to assert that blocking works correctly
+  fwrite_test(1640.7, function(f) { fwrite(data.table(a=c(1:5), b=c(1:5)), f, block.size=2) },
+              '"a","b"\n1,1\n2,2\n3,3\n4,4\n5,5\n')
+
+  # block size equal to number of rows
+  fwrite_test(1640.8, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, block.size=3) },
+              '"a","b"\n1,1\n2,2\n3,3\n')
+
+  # block size one bigger than number of rows
+  fwrite_test(1640.9, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, block.size=4) },
+              '"a","b"\n1,1\n2,2\n3,3\n')
+
+  # block size one less than number of rows
+  fwrite_test(1640.10, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, block.size=2) },
+              '"a","b"\n1,1\n2,2\n3,3\n')
+
+  # writing a data.frame
+  fwrite_test(1640.11, function(f) { fwrite(data.frame(a="foo", b="bar"), f) },
+              '"a","b"\n"foo","bar"\n')
+  
+  # single-column data.table
+  fwrite_test(1640.12, function(f) { fwrite(data.table(a=c(1,2,3)), f) },
+              '"a"\n1\n2\n3\n')
+  
+  # single-column data.frame
+  fwrite_test(1640.13, function(f) { fwrite(data.frame(a=c(1,2,3)), f) },
+              '"a"\n1\n2\n3\n')
+
+  # factor columns
+  fwrite_test(1640.14, function(f) {
+    fwrite(data.table(a=as.factor(c('foo', 'bar')), b=as.factor(c(NA, "baz"))), f)
+  }, '"a","b"\n"foo",""\n"bar","baz"\n')
+
+  # empty data table (headers but no rows)
+  empty_dt <- data.table(a=1, b=2)[0,]
+  fwrite_test(1640.15, function(f) { fwrite(empty_dt, f) }, '"a","b"\n')
+
+  # test append
+  f <- tempfile()
+  fwrite(data.table(a=c(1,2), b=c('a', 'b')), f)
+  fwrite(data.table(a=c(3,4), b=c('c', 'd')), f, append=T)
+  res <- readChar(f, file.info(f)$size)
+  unlink(f)
+  test(1640.16, res, '"a","b"\n1,"a"\n2,"b"\n3,"c"\n4,"d"\n')
+
+  # simple data table (reference for the error cases below)
+  ok_dt <- data.table(foo="bar")
+  fwrite_test(1640.17, function(f) { fwrite(ok_dt, f) }, '"foo"\n"bar"\n')
+
+  # error cases
+  fwrite_expect_error <- function(test_number, writer) {
+    f <- tempfile()
+    was_error <- F
+    tryCatch(writer(f), error=function(e) { was_error <<- T })
+    test(test_number, TRUE, was_error)
+    stopifnot(!file.exists(f))
+  }
+
+  # wrong argument types
+  fwrite_expect_error(1640.18, function(f) {fwrite(ok_dt, 1)})
+  fwrite_expect_error(1640.19, function(f) {fwrite(ok_dt, f, quote=123)})
+  fwrite_expect_error(1640.20, function(f) {fwrite(ok_dt, f, sep="...")})
+  fwrite_expect_error(1640.21, function(f) {fwrite(ok_dt, f, qmethod=c("double", "double"))})
+  fwrite_expect_error(1640.22, function(f) {fwrite(ok_dt, f, col.names="foobar")})
+  fwrite_expect_error(1640.23, function(f) {fwrite(data.table(a=1, a=2), f)})
+
+  # null data table (no columns)
+  fwrite_expect_error(1640.24, function(f) {fwrite(data.table(a=1)[NULL,], f)})
+})
 
 ##########################
 

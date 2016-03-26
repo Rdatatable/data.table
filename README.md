@@ -73,6 +73,8 @@
   28. Joins (and binary search based subsets) using `on=` argument now reuses existing (secondary) indices, [#1439](https://github.com/Rdatatable/data.table/issues/1439). Thanks @jangorecki.
   
   29. New `split` method for data.table. Faster, more flexible and consistent with data.frame method. Closes [#1389](https://github.com/Rdatatable/data.table/issues/1389).
+  
+  30. New function `fwrite`. Fixes [#580](https://github.com/Rdatatable/data.table/issues/580). Thanks @oseiskar.
 
 #### BUG FIXES
 
