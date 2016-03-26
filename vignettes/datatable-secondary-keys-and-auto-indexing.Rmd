@@ -44,11 +44,11 @@ dim(flights)
 
 In this vignette, we will
 
-* discuss *secondary indices* and provide rationale as to why we need them by citing cases wherer setting keys is not necessarily ideal,
+* discuss *secondary indices* and provide rationale as to why we need them by citing cases where setting keys is not necessarily ideal,
 
-* perform fast subsetting, once again, but using the new `on` argument, which *automatically* sets secondary indices under the hood,
+* perform fast subsetting, once again, but using the new `on` argument, which builds secondary indices internally for the task (temporarily), and reuses if one already exists,
 
-* and finally look at *auto indexing* which goes a step further and sets secondary indices automatically as well, but does so on native R syntax for subsetting!
+* and finally look at *auto indexing* which goes a step further and creates secondary indices automatically, but does so on native R syntax for subsetting.
 
 ## 1. Secondary indices
 
