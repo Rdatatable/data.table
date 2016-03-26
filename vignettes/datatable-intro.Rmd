@@ -16,11 +16,10 @@ vignette: >
 require(data.table)
 knitr::opts_chunk$set(
   comment = "#",
-  error = FALSE,
-  tidy = FALSE,
-  cache = FALSE,
-  collapse=TRUE)
-# options(datatable.auto.index=FALSE)
+    error = FALSE,
+     tidy = FALSE,
+    cache = FALSE,
+ collapse = TRUE)
 ```
 This vignette introduces the *data.table* syntax, its general form, how to *subset* rows, *select and compute* on columns and perform aggregations *by group*. Familiarity with *data.frame* data structure from base R is useful, but not essential to follow this vignette.
 
@@ -45,8 +44,8 @@ In this vignette, we will use [NYC-flights14](https://github.com/arunsrinivasan/
 
 We can use *data.table's* fast file reader `fread` to load *flights* directly as follows:
 
-```{r echo=FALSE}
-options(width=100)
+```{r echo = FALSE}
+options(width = 100L)
 ```
 
 ```{r}
@@ -72,7 +71,7 @@ In this vignette, we will
 *data.table* is an R package that provides **an enhanced version** of *data.frames*. In the [Data](#data) section, we already created a *data.table* using `fread()`. We can also create one using the `data.table()` function. Here is an example:
 
 ```{r}
-DT = data.table(ID = c("b","b","b","a","a","c"), a = 1:6, b = 7:12, c=13:18)
+DT = data.table(ID = c("b","b","b","a","a","c"), a = 1:6, b = 7:12, c = 13:18)
 DT
 class(DT$ID)
 ```
@@ -156,7 +155,7 @@ head(ans)
 * In addition, `order(...)` within the frame of a *data.table* uses *data.table*'s internal fast radix order `forder()`, which is much faster than `base::order`. Here's a small example to highlight the difference.
 
     ```{r}
-    odt = data.table(col=sample(1e7))
+    odt = data.table(col = sample(1e7))
     (t1 <- system.time(ans1 <- odt[base::order(col)]))  ## uses order from base R
     (t2 <- system.time(ans2 <- odt[order(col)]))        ## uses data.table's forder
     (identical(ans1, ans2))
@@ -255,7 +254,7 @@ ans
 
 ```{r}
 ans <- flights[origin == "JFK" & month == 6L,
-               .(m_arr=mean(arr_delay), m_dep=mean(dep_delay))]
+               .(m_arr = mean(arr_delay), m_dep = mean(dep_delay))]
 ans
 ```
 
@@ -307,7 +306,7 @@ You can refer to column names the *data.frame* way using `with = FALSE`.
 #### -- Select both `arr_delay` and `dep_delay` columns the *data.frame* way.
 
 ```{r}
-ans <- flights[, c("arr_delay", "dep_delay"), with=FALSE]
+ans <- flights[, c("arr_delay", "dep_delay"), with = FALSE]
 head(ans)
 ```
 
@@ -327,31 +326,31 @@ DF[with(DF, x > 1), ]
 
 * Using `with()` in (2) allows using `DF`'s column `x` as if it were a variable.
 
-    Hence the argument name `with` in *data.table*. Setting `with=FALSE` disables the ability to refer to columns as if they are variables, thereby restoring the "*data.frame* mode".
+    Hence the argument name `with` in *data.table*. Setting `with = FALSE` disables the ability to refer to columns as if they are variables, thereby restoring the "*data.frame* mode".
 
 * We can also *deselect* columns using `-` or `!`. For example:
 
-    ```{r eval=FALSE}
+    ```{r eval = FALSE}
     ## not run
 
     # returns all columns except arr_delay and dep_delay
-    ans <- flights[, !c("arr_delay", "dep_delay"), with=FALSE]
+    ans <- flights[, !c("arr_delay", "dep_delay"), with = FALSE]
     # or
-    ans <- flights[, -c("arr_delay", "dep_delay"), with=FALSE]
+    ans <- flights[, -c("arr_delay", "dep_delay"), with = FALSE]
     ```
 
 * From `v1.9.5+`, we can also select by specifying start and end column names, for e.g, `year:day` to select the first three columns.
 
-    ```{r eval=FALSE}
+    ```{r eval = FALSE}
     ## not run
 
     # returns year,month and day
-    ans <- flights[, year:day, with=FALSE]
+    ans <- flights[, year:day, with = FALSE]
     # returns day, month and year
-    ans <- flights[, day:year, with=FALSE]
+    ans <- flights[, day:year, with = FALSE]
     # returns all columns except year, month and day
-    ans <- flights[, -(year:day), with=FALSE]
-    ans <- flights[, !(year:day), with=FALSE]
+    ans <- flights[, -(year:day), with = FALSE]
+    ans <- flights[, !(year:day), with = FALSE]
     ```
 
     This is particularly handy while working interactively.
@@ -369,11 +368,11 @@ We've already seen `i` and `j` from *data.table*'s general form in the previous 
 #### -- How can we get the number of trips corresponding to each origin airport?
 
 ```{r}
-ans <- flights[, .(.N), by=.(origin)]
+ans <- flights[, .(.N), by = .(origin)]
 ans
 
 ## or equivalently using a character vector in 'by'
-# ans <- flights[, .(.N), by="origin"]
+# ans <- flights[, .(.N), by = "origin"]
 ```
 
 #### {.bs-callout .bs-callout-info}
@@ -389,7 +388,7 @@ ans
 * When there's only one column or expression to refer to in `j` and `by`, we can drop the `.()` notation. This is purely for convenience. We could instead do:
 
     ```{r}
-    ans <- flights[, .N, by=origin]
+    ans <- flights[, .N, by = origin]
     ans
     ```
 
@@ -402,7 +401,7 @@ ans
 The unique carrier code *"AA"* corresponds to *American Airlines Inc.*
 
 ```{r}
-ans <- flights[carrier == "AA", .N, by=origin]
+ans <- flights[carrier == "AA", .N, by = origin]
 ans
 ```
 
@@ -415,11 +414,11 @@ ans
 #### -- How can we get the total number of trips for each `origin, dest` pair for carrier code *"AA"*? {#origin-dest-.N}
 
 ```{r}
-ans <- flights[carrier == "AA", .N, by=.(origin,dest)]
+ans <- flights[carrier == "AA", .N, by = .(origin,dest)]
 head(ans)
 
 ## or equivalently using a character vector in 'by'
-# ans <- flights[carrier == "AA", .N, by=c("origin", "dest")]
+# ans <- flights[carrier == "AA", .N, by = c("origin", "dest")]
 ```
 
 #### {.bs-callout .bs-callout-info}
@@ -431,7 +430,7 @@ head(ans)
 ```{r}
 ans <- flights[carrier == "AA",
         .(mean(arr_delay), mean(dep_delay)),
-        by=.(origin, dest, month)]
+        by = .(origin, dest, month)]
 ans
 ```
 
@@ -454,7 +453,7 @@ Now what if we would like to order the result by those grouping columns `origin`
 ```{r}
 ans <- flights[carrier == "AA",
         .(mean(arr_delay), mean(dep_delay)),
-        keyby=.(origin, dest, month)]
+        keyby = .(origin, dest, month)]
 ans
 ```
 
@@ -494,7 +493,7 @@ head(ans)
 But this requires having to assign the intermediate result and then overwriting that result. We can do one better and avoid this intermediate assignment on to a variable altogether by `chaining` expressions.
 
 ```{r}
-ans <- flights[carrier == "AA", .N, by=.(origin, dest)][order(origin, -dest)]
+ans <- flights[carrier == "AA", .N, by = .(origin, dest)][order(origin, -dest)]
 head(ans, 10)
 ```
 
@@ -504,7 +503,7 @@ head(ans, 10)
 
 * Or you can also chain them vertically:
 
-    ```{r eval=FALSE}
+    ```{r eval = FALSE}
     DT[ ...
      ][ ...
      ][ ...
@@ -528,7 +527,7 @@ ans
 
 * Note that we did not provide any names to `by-expression`. And names have been automatically assigned in the result.
 
-* You can provide other columns along with expressions, for example: `DT[, .N, by=.(a, b>0)]`.
+* You can provide other columns along with expressions, for example: `DT[, .N, by = .(a, b>0)]`.
 
 ### e) Multiple columns in `j` - `.SD`
 
@@ -551,7 +550,7 @@ Let's use the [*data.table* `DT` from before](#what-is-datatable-1a) to get a gl
 ```{r}
 DT
 
-DT[, print(.SD), by=ID]
+DT[, print(.SD), by = ID]
 ```
 
 #### {.bs-callout .bs-callout-info}
@@ -565,7 +564,7 @@ DT[, print(.SD), by=ID]
 To compute on (multiple) columns, we can then simply use the base R function `lapply()`.
 
 ```{r}
-DT[, lapply(.SD, mean), by=ID]
+DT[, lapply(.SD, mean), by = ID]
 ```
 
 #### {.bs-callout .bs-callout-info}
@@ -592,10 +591,10 @@ Similar to the [with = FALSE section](#with_false), you can also provide the col
 Now let us try to use `.SD` along with `.SDcols` to get the `mean()` of `arr_delay` and `dep_delay` columns grouped by `origin`, `dest` and `month`.
 
 ```{r}
-flights[carrier == "AA",                     ## Only on trips with carrier "AA"
-        lapply(.SD, mean),                   ## compute the mean
-        by=.(origin, dest, month),           ## for every 'origin,dest,month'
-        .SDcols=c("arr_delay", "dep_delay")] ## for just those specified in .SDcols
+flights[carrier == "AA",                       ## Only on trips with carrier "AA"
+        lapply(.SD, mean),                     ## compute the mean
+        by = .(origin, dest, month),           ## for every 'origin,dest,month'
+        .SDcols = c("arr_delay", "dep_delay")] ## for just those specified in .SDcols
 ```
 
 ### f) Subset `.SD` for each group:
@@ -603,7 +602,7 @@ flights[carrier == "AA",                     ## Only on trips with carrier "AA"
 #### -- How can we return the first two rows for each `month`?
 
 ```{r}
-ans <- flights[, head(.SD, 2), by=month]
+ans <- flights[, head(.SD, 2), by = month]
 head(ans)
 ```
 
@@ -620,7 +619,7 @@ So that we have a consistent syntax and keep using already existing (and familia
 #### -- How can we concatenate columns `a` and `b` for each group in `ID`?
 
 ```{r}
-DT[, .(val = c(a,b)), by=ID]
+DT[, .(val = c(a,b)), by = ID]
 ```
 
 #### {.bs-callout .bs-callout-info}
@@ -630,7 +629,7 @@ DT[, .(val = c(a,b)), by=ID]
 #### -- What if we would like to have all the values of column `a` and `b` concatenated, but returned as a list column?
 
 ```{r}
-DT[, .(val = list(c(a,b))), by=ID]
+DT[, .(val = list(c(a,b))), by = ID]
 ```
 
 #### {.bs-callout .bs-callout-info}
@@ -646,10 +645,10 @@ For example:
 
 ```{r}
 ## (1) look at the difference between
-DT[, print(c(a,b)), by=ID]
+DT[, print(c(a,b)), by = ID]
 
 ## (2) and
-DT[, print(list(c(a,b))), by=ID]
+DT[, print(list(c(a,b))), by = ID]
 ```
 
 In (1), for each group, a vector is returned, with length = 6,4,2 here. However (2) returns a list of length 1 for each group, with its first element holding vectors of length 6,4,2. Therefore (1) results in a length of ` 6+4+2 = `r 6+4+2``, whereas (2) returns `1+1+1=`r 1+1+1``.
@@ -658,7 +657,7 @@ In (1), for each group, a vector is returned, with length = 6,4,2 here. However 
 
 The general form of *data.table* syntax is:
 
-```{r eval=FALSE}
+```{r eval = FALSE}
 DT[i, j, by]
 ```
 
@@ -676,7 +675,7 @@ We can do much more in `i` by keying a *data.table*, which allows blazing fast s
 
 1. Select columns the *data.table* way: `DT[, .(colA, colB)]`.
 
-2. Select columns the *data.frame* way: `DT[, c("colA", "colB"), with=FALSE]`.
+2. Select columns the *data.frame* way: `DT[, c("colA", "colB"), with = FALSE]`.
 
 3. Compute on columns: `DT[, .(sum(colA), mean(colB))]`.
 
@@ -696,11 +695,11 @@ We can do much more in `i` by keying a *data.table*, which allows blazing fast s
 
 * We can use `.SD` and `.SDcols` in `j` to operate on multiple columns using already familiar base functions. Here are some examples:
 
-    1. `DT[, lapply(.SD, fun), by=., .SDcols=...]` - applies `fun` to all columns specified in `.SDcols` while grouping by the columns specified in `by`.
+    1. `DT[, lapply(.SD, fun), by = ..., .SDcols = ...]` - applies `fun` to all columns specified in `.SDcols` while grouping by the columns specified in `by`.
 
-    2. `DT[, head(.SD, 2), by=.]` - return the first two rows for each group.
+    2. `DT[, head(.SD, 2), by = ...]` - return the first two rows for each group.
 
-    3. `DT[col > val, head(.SD, 1), by=.]` - combine `i` along with `j` and `by`.
+    3. `DT[col > val, head(.SD, 1), by = ...]` - combine `i` along with `j` and `by`.
 
 #
 
