@@ -14,6 +14,9 @@ fwrite <- function(x, file.path, append = FALSE, quote = TRUE,
   stopifnot(length(append) == 1 && class(append) == "logical")
   stopifnot(length(block.size) == 1 && block.size > 0)
   
+  # handle paths like "~/foo/bar"
+  file.path <- path.expand(file.path)
+  
   quoted_cols <- rep(quote, ncol(x))
   
   # special case: single-column data.frame, doing x[block_begin:block_end,]
