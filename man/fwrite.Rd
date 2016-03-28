@@ -5,11 +5,11 @@
   Similar to \code{write.table} but faster and more limited in features.
 }
 \usage{
-fwrite(dt, file.path, append = FALSE, quote = TRUE, sep = ",", eol = "\n",
+fwrite(x, file.path, append = FALSE, quote = TRUE, sep = ",", eol = "\n",
        col.names = TRUE, qmethod = "double", block.size = 10000)
 }
 \arguments{
-  \item{dt}{The \code{data.table} or \code{data.frame} to be write}
+  \item{x}{The \code{data.table} or \code{data.frame} to write}
   \item{file.path}{Output file name}
   \item{append}{If \code{TRUE}, the file is opened in append mode and column names (header row) are not written.}
   \item{quote}{If \code{TRUE}, all columns of character and factor types, as well as all column names, will be surrounded by double quotes. If \code{FALSE}, nothing is quoted, even if this would break the CSV (the column contents are not checked for separator characters).}

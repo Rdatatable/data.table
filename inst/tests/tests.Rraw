@@ -8484,6 +8484,9 @@ local({
   empty_dt <- data.table(a=1, b=2)[0,]
   fwrite_test(1640.15, function(f) { fwrite(empty_dt, f) }, '"a","b"\n')
 
+  # data.table with duplicate column names
+  fwrite_test(1640.151, function(f) {fwrite(data.table(a=1, a=2), f)}, '"a","a"\n1,2\n')
+
   # test append
   f <- tempfile()
   fwrite(data.table(a=c(1,2), b=c('a', 'b')), f)
@@ -8511,7 +8514,6 @@ local({
   fwrite_expect_error(1640.20, function(f) {fwrite(ok_dt, f, sep="...")})
   fwrite_expect_error(1640.21, function(f) {fwrite(ok_dt, f, qmethod=c("double", "double"))})
   fwrite_expect_error(1640.22, function(f) {fwrite(ok_dt, f, col.names="foobar")})
-  fwrite_expect_error(1640.23, function(f) {fwrite(data.table(a=1, a=2), f)})
 
   # null data table (no columns)
   fwrite_expect_error(1640.24, function(f) {fwrite(data.table(a=1)[NULL,], f)})
