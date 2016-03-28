@@ -8425,7 +8425,7 @@ local({
       a=c(NA, 2, 3.01),
       `other column`=c('foo bar', NA, 'quote" and \\ bs \n and newline')),
       f, quote=T, qmethod="escape")
-  }, '"a","other column"\n,"foo bar"\n2,""\n3.01,"quote\\" and \\\\ bs \n and newline"\n')
+  }, '"a","other column"\n,"foo bar"\n2,\n3.01,"quote\\" and \\\\ bs \n and newline"\n')
 
   # with quoting and qmethod="double" (default)
   fwrite_test(1640.3, function(f) {
@@ -8433,7 +8433,7 @@ local({
       a=c(NA, 1e-10, 3.01),
       `other "column`=c('foo bar', NA, 'quote" and \\ bs')),
       f, quote=T, qmethod="double")
-  }, '"a","other ""column"\n,"foo bar"\n1e-10,""\n3.01,"quote"" and \\ bs"\n')
+  }, '"a","other ""column"\n,"foo bar"\n1e-10,\n3.01,"quote"" and \\ bs"\n')
 
   # changing sep
   fwrite_test(1640.4, function(f) { fwrite(data.table(a="foo", b="ba\"r"), f, sep=";") },
@@ -8442,6 +8442,10 @@ local({
   # changing eol
   fwrite_test(1640.5, function(f) { fwrite(data.table(a="foo", b="bar"), f, eol="\r\n") },
               '"a","b"\r\n"foo","bar"\r\n')
+  
+  # changing NA
+  fwrite_test(1640.51, function(f) { fwrite(data.table(a=c("foo", NA), b=c(1, NA)), f, na="NA") },
+              '"a","b"\n"foo",1\nNA,NA\n')
   
   # no col.names
   fwrite_test(1640.6, function(f) { fwrite(data.table(a="foo", b="bar"), f, col.names=F) },
@@ -8475,10 +8479,14 @@ local({
   fwrite_test(1640.13, function(f) { fwrite(data.frame(a=c(1,2,3)), f) },
               '"a"\n1\n2\n3\n')
 
-  # factor columns
+  # different column types
   fwrite_test(1640.14, function(f) {
-    fwrite(data.table(a=as.factor(c('foo', 'bar')), b=as.factor(c(NA, "baz"))), f)
-  }, '"a","b"\n"foo",""\n"bar","baz"\n')
+    fwrite(data.table(
+      factor1=as.factor(c('foo', 'bar')),
+      factor2=as.factor(c(NA, "baz")),
+      bool=c(TRUE,NA),
+      ints=as.integer(c(NA, 5))), f, na='na')},
+    '"factor1","factor2","bool","ints"\n"foo",na,TRUE,na\n"bar","baz",na,5\n')
 
   # empty data table (headers but no rows)
   empty_dt <- data.table(a=1, b=2)[0,]

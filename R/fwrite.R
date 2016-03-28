@@ -1,5 +1,5 @@
 fwrite <- function(x, file.path, append = FALSE, quote = TRUE,
-                   sep = ",", eol = "\n", col.names = TRUE, qmethod = "double",
+                   sep = ",", eol = "\n", na = "", col.names = TRUE, qmethod = "double",
                    block.size = 10000) {
   
   # validate arguments
@@ -22,7 +22,7 @@ fwrite <- function(x, file.path, append = FALSE, quote = TRUE,
   
   # write header row separately for correct quoting of row names
   if (col.names && !append) {
-    .Call(Cwritefile, as.list(names(x)), file.path, sep, eol, quoted_cols, qmethod == "escape", append)
+    .Call(Cwritefile, as.list(names(x)), file.path, sep, eol, na, quoted_cols, qmethod == "escape", append)
     append <- TRUE
   }
   
@@ -46,12 +46,13 @@ fwrite <- function(x, file.path, append = FALSE, quote = TRUE,
     
     # convert data.frame row block to a list of columns
     col_list <- lapply(dt_block, function(column) {
-      str_col <- as.character(column)
-      str_col[is.na(str_col)] <- ''
-      str_col
+      if (!(class(column) %chin% c('integer', 'numeric', 'character'))) {
+        column <- as.character(column)
+      }
+      column
     })
     
-    .Call(Cwritefile, col_list, file.path, sep, eol, quoted_cols, qmethod == "escape", append)
+    .Call(Cwritefile, col_list, file.path, sep, eol, na, quoted_cols, qmethod == "escape", append)
     
     if (block_end == nrow(x)) break
     
