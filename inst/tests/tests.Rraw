@@ -8494,6 +8494,10 @@ local({
 
   # data.table with duplicate column names
   fwrite_test(1640.151, function(f) {fwrite(data.table(a=1, a=2), f)}, '"a","a"\n1,2\n')
+  
+  # number of significant digits = 15
+  fwrite_test(1640.152, function(f) {fwrite(data.table(a=1/0.9), f)},
+    '"a"\n1.11111111111111\n')
 
   # test append
   f <- tempfile()

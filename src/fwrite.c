@@ -46,7 +46,7 @@ void writefile(SEXP list_of_columns,
       
       case REALSXP:
         if (ISNA(REAL(column)[row_i])) fputs(na_str, f);
-        else fprintf(f, "%g", REAL(column)[row_i]);
+        else fprintf(f, "%.15g", REAL(column)[row_i]);
         break;
       
       default: /* assuming STRSXP */
