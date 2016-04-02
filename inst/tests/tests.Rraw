@@ -8404,6 +8404,13 @@ test(1639.137, sort.by.names(ans), sort.by.names(unlist(split(setDT(df), by=c("p
 test(1639.138, ans, split(as.data.table(df), by=c("product","year")))
 test(1639.139, sort.by.names(ans), sort.by.names(unlist(split(as.data.table(df), by=c("product","year"), flatten=FALSE), recursive = FALSE)))
 
+# allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
+# patch for #1615. Note that I specifically have not implemented x[y, aa, on=c(aa="bb")] 
+# to refer to x's join column as well because x[i, col] == x[i][, col] will not be TRUE anymore..
+x <- data.table(aa = 1:3, cc = letters[1:3])
+y <- data.table(bb = 3:5, dd = 3:1)
+test(1640.1, x[y, x.aa, on=c(aa="bb")], INT(3,NA,NA))
+test(1640.2, x[y, c(.SD, .(x.aa=x.aa)), on=c(aa="bb")], data.table(aa=3:5, cc=c("c", NA,NA), x.aa=INT(3,NA,NA)))
 
 ##########################
 

@@ -782,7 +782,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (missing(j)) {
         # missing(by)==TRUE was already checked above before dealing with i
         if (!length(x)) return(null.data.table())
-        if (!length(leftcols)) {               
+        if (!length(leftcols)) {
             ansvars = names(x)
             jisvars = character()
             xcols = xcolsAns = seq_along(x)
@@ -1076,7 +1076,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     }
                 }
                 # fix for long standing FR/bug, #495 and #484
-                if ( length(othervars <- setdiff(intersect(av, names(x)), c(bynames, ansvars))) ) {
+                allcols = c(names(x), paste("x.",names(x),sep=""), if (is.data.table(i)) c(names(i), paste("i.", names(i), sep="")))
+                if ( length(othervars <- setdiff(intersect(av, allcols), c(bynames, ansvars))) ) {
                     # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or 
                     # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc., 
                     ansvars = union(ansvars, othervars)
@@ -1085,7 +1086,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
             } else {
                 if (!missing(.SDcols)) warning("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
-                ansvars = setdiff(intersect(av,c(names(x),names(i),paste("i.",names(i),sep=""))), bynames)
+                allcols = c(names(x), paste("x.",names(x),sep=""), if (is.data.table(i)) c(names(i), paste("i.", names(i), sep="")))
+                ansvars = setdiff(intersect(av,allcols), bynames)
                 if (verbose) cat("Detected that j uses these columns:",if (!length(ansvars)) "<none>" else paste(ansvars,collapse=","),"\n")
                 # using a few named columns will be faster
                 # Consider:   DT[,max(diff(date)),by=list(month=month(date))]
@@ -1101,7 +1103,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     # get('varname') is too difficult to detect which columns are used in general
                     # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
                 }
-                ansvars = setdiff(c(names(x), if (is.data.table(i)) c(names(i), paste("i.", names(i), sep=""))),bynames) # fix for bug #5443
+                allcols = c(names(x), paste("x.",names(x),sep=""), if (is.data.table(i)) c(names(i), paste("i.", names(i), sep="")))
+                ansvars = setdiff(allcols,bynames) # fix for bug #5443
                 ansvals = chmatch(ansvars, names(x))
                 if (verbose) cat("New:",paste(ansvars,collapse=","),"\n")
             }
@@ -1215,7 +1218,15 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         
         if (length(ansvars)) {
             w = ansvals
-            if (length(rightcols) && missing(by)) w[ w %in% rightcols ] = NA
+            if (length(rightcols) && missing(by)) {
+                w[ w %in% rightcols ] = NA
+            }
+            # patch for #1615. Allow 'x.' syntax. Only useful during join op when x's join col needs to be used.
+            # Note that I specifically have not implemented x[y, aa, on=c(aa="bb")] to refer to x's join column 
+            # as well because x[i, col] == x[i][, col] will not be TRUE anymore..
+            xjoincols = paste("x.",names(x),sep="")
+            if ( any(xjoinvals <- ansvars %in% xjoincols))
+                w[xjoinvals] = chmatch(ansvars[xjoinvals], xjoincols)
             if (!any(wna <- is.na(w))) {
                 xcols = w
                 xcolsAns = seq_along(ansvars)

@@ -68,7 +68,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
         \emph{Advanced:} When \code{i} is a single variable name, it is not considered an expression of column names and is instead evaluated in calling scope.
 
-        See \href{../doc/datatable-keys-fast-subsets}{Keys and fast binary search based subsets}, \href{../doc/datatable-secondary-indices}{Secondary indices} and \href{datatable-extend-subsets-to-joins}{Extending subsets to joins} vignettes.
+        See \href{../doc/datatable-keys-fast-subset.html}{Keys and fast binary search based subset}, \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} and \href{../doc/datatable-extend-subsets-to-joins.html}{Extending subsets to joins} vignettes.
     }
 
     \item{j}{When \code{with=TRUE} (default), \code{j} is evaluated within the frame of the data.table; i.e., it sees column names as if they are variables. This allows to not just \emph{select} columns in \code{j}, but also \code{compute} on them e.g., \code{x[, a]} and \code{x[, sum(a)]} returns \code{x$a} and \code{sum(x$a)} as a vector respectively. \code{x[, .(a, b)]} and \code{x[, .(sa=sum(a), sb=sum(b))]} returns a two column data.table each, the first simply \emph{selecting} columns \code{a, b} and the second \emph{computing} their sums. 
@@ -143,7 +143,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
   
   \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \href{../doc/datatable-faq.html}{datatable-faq}.}
 
-  \item{on}{ A named atomic vector of column names indicating which columns in \code{i} should be joined to which columns in \code{x}. When specified, this overrides the keys set on \code{x} and \code{i}. See \href{../doc/secondary-indices.html}{Secondary indices} and \href{../doc/datatable-extend-subsets-to-joins.html}{Extending subsets to joins} vignettes, and examples.}
+  \item{on}{ A named atomic vector of column names indicating which columns in \code{i} should be joined to which columns in \code{x}. When specified, this overrides the keys set on \code{x} and \code{i}. See \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} and \href{../doc/datatable-extend-subsets-to-joins.html}{Extending subsets to joins} vignettes, and examples.}
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr
