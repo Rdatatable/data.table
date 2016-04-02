@@ -257,6 +257,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                 mid = tmplow + (iupp-tmplow)/2;
                 xval.i = INTEGER(ic)[ o ? o[mid]-1 : mid ];   // reuse xval to search in i
                 if (xval.i == ival.i) tmplow=mid; else iupp=mid;
+                // if we could guarantee ivals to be *always* sorted for all columns independently (= max(nestedid) = 1), then we can speed this up by 2x by adding checks for GE,GT,LE,LT separately.
             }
             while(ilow<tmpupp-1) {
                 mid = ilow + (tmpupp-ilow)/2;
@@ -342,16 +343,19 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         }
         tmplow = lir;
         tmpupp = lir;
-        while(tmplow<iupp-1) {
-            mid = tmplow + (iupp-tmplow)/2;
-            xval.ll = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid, 1 );
-            if (xval.ll == ival.ll) tmplow=mid; else iupp=mid;
+        if (col>-1) {
+            while(tmplow<iupp-1) {
+                mid = tmplow + (iupp-tmplow)/2;
+                xval.ll = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid, 1 );
+                if (xval.ll == ival.ll) tmplow=mid; else iupp=mid;
+            }
+            while(ilow<tmpupp-1) {
+                mid = ilow + (tmpupp-ilow)/2;
+                xval.ll = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid, 1 );
+                if (xval.ll == ival.ll) tmpupp=mid; else ilow=mid;
+            }
         }
-        while(ilow<tmpupp-1) {
-            mid = ilow + (tmpupp-ilow)/2;
-            xval.ll = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid, 1 );
-            if (xval.ll == ival.ll) tmpupp=mid; else ilow=mid;
-        }
+        // ilow and iupp now surround the group in ic, too
         break;
     default:
         error("Type '%s' not supported as key column", type2char(TYPEOF(xc)));
@@ -359,10 +363,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     // Rprintf("BEFORE %d: ilow=%d, iupp=%d, ilowIn=%d, iuppIn=%d, xlow=%d, xlowIn=%d, xupp=%d, xuppIn=%d, col=%d, op=%d\n", tmpctr, ilow, iupp, ilowIn, iuppIn, xlow, xlowIn, xupp, xuppIn, col, op[col]);
     if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
         if (col<ncol-1) {
+            bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1, tmpctr+1);
             // final two 1's are lowmax and uppmax
-            if (op[col]==EQ) bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1, tmpctr+1);
-            else for (int jj=ilow; jj<iupp-1; jj++) bmerge_r(xlow, xupp, jj, jj+2, col+1, thisgrp, 1,1,tmpctr+1);
-            // ilow/iupp limit is set only for "==". So, this for-loop will've multiple values only when there's identical i.val. I'm not sure yet if there's any advantage to setting ilow/iupp for other ops as well. The point is, if we've multiple i.val matches (whatever the op is), we need to wrap this part up for *each row* before looking above or below (with the last two bmerge_r calls). This was tricky to figure out.
         } else {
             int len = xupp-xlow-1;
             if (len>1) allLen1[0] = FALSE;
@@ -470,17 +472,17 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     break;
     case LE: case LT:
         // roll is not yet implemented
-        if (ilow>ilowIn && (xlow<xupp-1 || col<ncol-1))
-            bmerge_r(xlow, xupp, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, tmpctr+1);
-        if (iupp<iuppIn && (xlow<xupp-1 || col<ncol-1))
+        if (ilow>ilowIn)
+            bmerge_r(xlow, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, tmpctr+1);
+        if (iupp<iuppIn)
             bmerge_r(xlow, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, tmpctr+1);
     break;
     case GE: case GT:
         // roll is not yet implemented
-        if (ilow>ilowIn && (xlow<xupp-1 || col<ncol-1))
+        if (ilow>ilowIn)
             bmerge_r(xlowIn, xupp, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, tmpctr+1);
-        if (iupp<iuppIn && (xlow<xupp-1 || col<ncol-1))
-            bmerge_r(xlow, xupp, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, tmpctr+1);
+        if (iupp<iuppIn)
+            bmerge_r(xlowIn, xupp, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, tmpctr+1);
     break;
     }
 }
