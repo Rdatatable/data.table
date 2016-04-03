@@ -203,6 +203,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
 {
     int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn, j, k, ir, lir, tmp;
     SEXP class;
+    Rboolean isInt64;
     ir = lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
     if (o) ir = o[lir]-1;                      // ir = the actual i row if i were ordered
     // Rprintf("Begin %d: ilow=%d, iupp=%d, ilowIn=%d, iuppIn=%d, xlow=%d, xlowIn=%d, xupp=%d, xuppIn=%d, col=%d, op=%d\n", tmpctr, ilow, iupp, ilowIn, iuppIn, xlow, xlowIn, xupp, xuppIn, col, op[col]);
@@ -241,7 +242,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
             }
         }
         // Rprintf("Inter %d: ilow=%d, iupp=%d, ilowIn=%d, iuppIn=%d, xlow=%d, xlowIn=%d, xupp=%d, xuppIn=%d, col=%d, op=%d\n", tmpctr, ilow, iupp, ilowIn, iuppIn, xlow, xlowIn, xupp, xuppIn, col, op[col]);
-        if (col>-1 && op[col] != EQ) {
+        if (col>-1 && op[col] != EQ && ival.i != NA_INTEGER) {
             switch (op[col]) {
             case LE : xlow = xlowIn; break;
             case LT : xupp = xlow + 1; xlow = xlowIn; break;
@@ -308,7 +309,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         break;
     case REALSXP :
         class = getAttrib(xc, R_ClassSymbol);
-        twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
+        isInt64 = isString(class) && STRING_ELT(class, 0)==char_integer64;
+        twiddle = isInt64 ? &i64twiddle : &dtwiddle;
         ival.ll = twiddle(DATAPTR(ic), ir, 1);
         while(xlow < xupp-1) {
             mid = xlow + (xupp-xlow)/2;
@@ -333,7 +335,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                 break;
             }
         }
-        if (col>-1 && op[col] != EQ) {
+        if (col>-1 && op[col] != EQ && (!isInt64 ? !ISNAN(REAL(ic)[ir]) : (*(long long *)&REAL(ic)[ir] != NAINT64))) {
             switch (op[col]) {
             case LE : xlow = xlowIn; break;
             case LT : xupp = xlow + 1; xlow = xlowIn; break;
