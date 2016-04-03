@@ -8404,6 +8404,14 @@ test(1639.137, sort.by.names(ans), sort.by.names(unlist(split(setDT(df), by=c("p
 test(1639.138, ans, split(as.data.table(df), by=c("product","year")))
 test(1639.139, sort.by.names(ans), sort.by.names(unlist(split(as.data.table(df), by=c("product","year"), flatten=FALSE), recursive = FALSE)))
 
+# allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
+# patch for #1615. Note that I specifically have not implemented x[y, aa, on=c(aa="bb")] 
+# to refer to x's join column as well because x[i, col] == x[i][, col] will not be TRUE anymore..
+x <- data.table(aa = 1:3, cc = letters[1:3])
+y <- data.table(bb = 3:5, dd = 3:1)
+test(1640.1, x[y, x.aa, on=c(aa="bb")], INT(3,NA,NA))
+test(1640.2, x[y, c(.SD, .(x.aa=x.aa)), on=c(aa="bb")], data.table(aa=3:5, cc=c("c", NA,NA), x.aa=INT(3,NA,NA)))
+
 # fwrite tests
 local({
   fwrite_test <- function(number, writer, expected_result) {
@@ -8415,12 +8423,12 @@ local({
   }
 
   # without quoting
-  fwrite_test(1640.1, function(f) {
+  fwrite_test(1641.1, function(f) {
     fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar')), f, quote=F)
   }, 'a,b\n,foo\n2,\n3.01,bar\n')
 
   # with quoting and qmethod="escape"
-  fwrite_test(1640.2, function(f) {
+  fwrite_test(1641.2, function(f) {
     fwrite(data.table(
       a=c(NA, 2, 3.01),
       `other column`=c('foo bar', NA, 'quote" and \\ bs \n and newline')),
@@ -8428,7 +8436,7 @@ local({
   }, '"a","other column"\n,"foo bar"\n2,\n3.01,"quote\\" and \\\\ bs \n and newline"\n')
 
   # with quoting and qmethod="double" (default)
-  fwrite_test(1640.3, function(f) {
+  fwrite_test(1641.3, function(f) {
     fwrite(data.table(
       a=c(NA, 1.2e-100, 3.01),
       `other "column`=c('foo bar', NA, 'quote" and \\ bs')),
@@ -8436,51 +8444,51 @@ local({
   }, '"a","other ""column"\n,"foo bar"\n1.2e-100,\n3.01,"quote"" and \\ bs"\n')
 
   # changing sep
-  fwrite_test(1640.4, function(f) { fwrite(data.table(a="foo", b="ba\"r"), f, sep=";") },
+  fwrite_test(1641.4, function(f) { fwrite(data.table(a="foo", b="ba\"r"), f, sep=";") },
               '"a";"b"\n"foo";"ba""r"\n')
 
   # changing eol
-  fwrite_test(1640.5, function(f) { fwrite(data.table(a="foo", b="bar"), f, eol="\r\n") },
+  fwrite_test(1641.5, function(f) { fwrite(data.table(a="foo", b="bar"), f, eol="\r\n") },
               '"a","b"\r\n"foo","bar"\r\n')
   
   # changing NA
-  fwrite_test(1640.51, function(f) { fwrite(data.table(a=c("foo", NA), b=c(1, NA)), f, na="NA") },
+  fwrite_test(1641.51, function(f) { fwrite(data.table(a=c("foo", NA), b=c(1, NA)), f, na="NA") },
               '"a","b"\n"foo",1\nNA,NA\n')
   
   # no col.names
-  fwrite_test(1640.6, function(f) { fwrite(data.table(a="foo", b="bar"), f, col.names=F) },
+  fwrite_test(1641.6, function(f) { fwrite(data.table(a="foo", b="bar"), f, col.names=F) },
               '"foo","bar"\n')
 
   # small block size to assert that blocking works correctly
-  fwrite_test(1640.7, function(f) { fwrite(data.table(a=c(1:5), b=c(1:5)), f, block.size=2) },
+  fwrite_test(1641.7, function(f) { fwrite(data.table(a=c(1:5), b=c(1:5)), f, block.size=2) },
               '"a","b"\n1,1\n2,2\n3,3\n4,4\n5,5\n')
 
   # block size equal to number of rows
-  fwrite_test(1640.8, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, block.size=3) },
+  fwrite_test(1641.8, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, block.size=3) },
               '"a","b"\n1,1\n2,2\n3,3\n')
 
   # block size one bigger than number of rows
-  fwrite_test(1640.9, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, block.size=4) },
+  fwrite_test(1641.9, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, block.size=4) },
               '"a","b"\n1,1\n2,2\n3,3\n')
 
   # block size one less than number of rows
-  fwrite_test(1640.10, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, block.size=2) },
+  fwrite_test(1641.10, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, block.size=2) },
               '"a","b"\n1,1\n2,2\n3,3\n')
 
   # writing a data.frame
-  fwrite_test(1640.11, function(f) { fwrite(data.frame(a="foo", b="bar"), f) },
+  fwrite_test(1641.11, function(f) { fwrite(data.frame(a="foo", b="bar"), f) },
               '"a","b"\n"foo","bar"\n')
   
   # single-column data.table
-  fwrite_test(1640.12, function(f) { fwrite(data.table(a=c(1,2,3)), f) },
+  fwrite_test(1641.12, function(f) { fwrite(data.table(a=c(1,2,3)), f) },
               '"a"\n1\n2\n3\n')
   
   # single-column data.frame
-  fwrite_test(1640.13, function(f) { fwrite(data.frame(a=c(1,2,3)), f) },
+  fwrite_test(1641.13, function(f) { fwrite(data.frame(a=c(1,2,3)), f) },
               '"a"\n1\n2\n3\n')
 
   # different column types
-  fwrite_test(1640.14, function(f) {
+  fwrite_test(1641.14, function(f) {
     fwrite(data.table(
       factor1=as.factor(c('foo', 'bar')),
       factor2=as.factor(c(NA, "baz")),
@@ -8490,13 +8498,13 @@ local({
 
   # empty data table (headers but no rows)
   empty_dt <- data.table(a=1, b=2)[0,]
-  fwrite_test(1640.15, function(f) { fwrite(empty_dt, f) }, '"a","b"\n')
+  fwrite_test(1641.15, function(f) { fwrite(empty_dt, f) }, '"a","b"\n')
 
   # data.table with duplicate column names
-  fwrite_test(1640.151, function(f) {fwrite(data.table(a=1, a=2), f)}, '"a","a"\n1,2\n')
+  fwrite_test(1641.151, function(f) {fwrite(data.table(a=1, a=2), f)}, '"a","a"\n1,2\n')
   
   # number of significant digits = 15
-  fwrite_test(1640.152, function(f) {fwrite(data.table(a=1/0.9), f)},
+  fwrite_test(1641.152, function(f) {fwrite(data.table(a=1/0.9), f)},
     '"a"\n1.11111111111111\n')
 
   # test append
@@ -8505,11 +8513,11 @@ local({
   fwrite(data.table(a=c(3,4), b=c('c', 'd')), f, append=T)
   res <- readChar(f, file.info(f)$size)
   unlink(f)
-  test(1640.16, res, '"a","b"\n1,"a"\n2,"b"\n3,"c"\n4,"d"\n')
+  test(1641.16, res, '"a","b"\n1,"a"\n2,"b"\n3,"c"\n4,"d"\n')
 
   # simple data table (reference for the error cases below)
   ok_dt <- data.table(foo="bar")
-  fwrite_test(1640.17, function(f) { fwrite(ok_dt, f) }, '"foo"\n"bar"\n')
+  fwrite_test(1641.17, function(f) { fwrite(ok_dt, f) }, '"foo"\n"bar"\n')
 
   # error cases
   fwrite_expect_error <- function(test_number, writer) {
@@ -8521,14 +8529,14 @@ local({
   }
 
   # wrong argument types
-  fwrite_expect_error(1640.18, function(f) {fwrite(ok_dt, 1)})
-  fwrite_expect_error(1640.19, function(f) {fwrite(ok_dt, f, quote=123)})
-  fwrite_expect_error(1640.20, function(f) {fwrite(ok_dt, f, sep="...")})
-  fwrite_expect_error(1640.21, function(f) {fwrite(ok_dt, f, qmethod=c("double", "double"))})
-  fwrite_expect_error(1640.22, function(f) {fwrite(ok_dt, f, col.names="foobar")})
+  fwrite_expect_error(1641.18, function(f) {fwrite(ok_dt, 1)})
+  fwrite_expect_error(1641.19, function(f) {fwrite(ok_dt, f, quote=123)})
+  fwrite_expect_error(1641.20, function(f) {fwrite(ok_dt, f, sep="...")})
+  fwrite_expect_error(1641.21, function(f) {fwrite(ok_dt, f, qmethod=c("double", "double"))})
+  fwrite_expect_error(1641.22, function(f) {fwrite(ok_dt, f, col.names="foobar")})
 
   # null data table (no columns)
-  fwrite_expect_error(1640.24, function(f) {fwrite(data.table(a=1)[NULL,], f)})
+  fwrite_expect_error(1641.24, function(f) {fwrite(data.table(a=1)[NULL,], f)})
 })
 
 ##########################

@@ -16,18 +16,18 @@ vignette: >
 require(data.table)
 knitr::opts_chunk$set(
   comment = "#",
-  error = FALSE,
-  tidy = FALSE,
-  cache = FALSE,
-  collapse=TRUE)
+    error = FALSE,
+     tidy = FALSE,
+    cache = FALSE,
+ collapse = TRUE)
 ```
 
 This vignette discusses the default usage of reshaping functions `melt` (wide to long) and `dcast` (long to wide) for *data.tables* as well as the **new extended functionalities** of melting and casting on *multiple columns* available from `v1.9.6`.
 
 ***
 
-```{r echo=FALSE}
-options(width=100)
+```{r echo = FALSE}
+options(width = 100L)
 ```
 
 ## Data
@@ -161,7 +161,7 @@ And you'd like to combine (melt) all the `dob` columns together, and `gender` co
 
 ```{r}
 DT.m1 = melt(DT, id = c("family_id", "age_mother"))
-DT.m1[, c("variable", "child") := tstrsplit(variable, "_", fixed=TRUE)]
+DT.m1[, c("variable", "child") := tstrsplit(variable, "_", fixed = TRUE)]
 DT.c1 = dcast(DT.m1, family_id + age_mother + child ~ variable, value.var = "value")
 DT.c1
 
@@ -195,8 +195,8 @@ Since we'd like for *data.tables* to perform this operation straightforward and 
 The idea is quite simple. We pass a list of columns to `measure.vars`, where each element of the list contains the columns that should be combined together.
 
 ```{r}
-colA = paste("dob_child", 1:3, sep="")
-colB = paste("gender_child", 1:3, sep="")
+colA = paste("dob_child", 1:3, sep = "")
+colB = paste("gender_child", 1:3, sep = "")
 DT.m2 = melt(DT, measure = list(colA, colB), value.name = c("dob", "gender"))
 DT.m2
 

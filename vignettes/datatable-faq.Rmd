@@ -14,14 +14,20 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+<style>
+h2 {
+    font-size: 20px;
+}
+</style>
+
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
 knitr::opts_chunk$set(
   comment = "#",
-  error = FALSE,
-  tidy = FALSE,
-  cache = FALSE,
-  collapse=TRUE)
+    error = FALSE,
+     tidy = FALSE,
+    cache = FALSE,
+ collapse = TRUE)
 ```
 
 This vignette covers the most common mix-ups and points of confusion for `data.table` users -- first and foremost beginners and new users, and then also more experienced users who may be caught off guard by subtle details of how `data.table` works.
@@ -39,7 +45,7 @@ Say column 5 is called `"region"`, just do `DT[ , region]` instead. Notice there
 You can place _any_ *R* expression in `j` _e.g._, `DT[ , colA*colB/2]`. Further, `j` may be a set of *R* expressions (including calls to any *R* package) wrapped with `list()`, `.()` or an anonymous code block wrapped with braces `{}`. A simple example is `DT[ , fitdistr(d1, "normal")]`.
 
 Having said this, there are some circumstances where referring to a column by number is OK, such as
-a sequence of columns. In these situations just do `DT[ , 5:10, with=FALSE]` or `DT[ , c(1,4,10), with=FALSE]`.
+a sequence of columns. In these situations just do `DT[ , 5:10, with = FALSE]` or `DT[ , c(1,4,10), with = FALSE]`.
 
 See `?data.table` for an explanation of the `with` argument. When `FALSE`, it lets you use `data.table` the same way as `data.frame`, when you need to.
 
@@ -47,7 +53,7 @@ Note that `with()` has been a `base` function for a long time.  That's one reaso
 
 ## Why does `DT[ , "region"]` return `"region"`?
 
-See the [answer above](#j-num). Try `DT[ , region]` instead. Or `DT[ , "region", with=FALSE]`.
+See the [answer above](#j-num). Try `DT[ , region]` instead. Or `DT[ , "region", with = FALSE]`.
 
 
 ## Why does `DT[ , region]` return a vector?  I'd like a 1-column `data.table`. There is no `drop` argument like I'm used to in `data.frame`.
@@ -60,7 +66,7 @@ The `j` expression is the 2nd argument. The correct way to do this is `DT[ , .(x
 
 ## I assigned a variable `mycol = "x"` but then `DT[ , mycol]` returns `"x"`. How do I get it to look up the column name contained in the `mycol` variable?
 
-This is what we mean when we say the `j` expression 'sees' objects in the calling scope. The variable `mycol` does not exist as a column name of `DT` so *R* then looked in the calling scope and found `mycol` there and returned its value `"x"`. This is correct behaviour. Had `mycol` been a column name, then that column's data would have been returned. What you probably meant was `DT[ , mycol, with=FALSE]`, which will return the `x` column's data as you wanted. Alternatively, since a `data.table` _is_ a `list`, too, you can write `DT[["x"]]` or `DT[[mycol]]`.
+This is what we mean when we say the `j` expression 'sees' objects in the calling scope. The variable `mycol` does not exist as a column name of `DT` so *R* then looked in the calling scope and found `mycol` there and returned its value `"x"`. This is correct behaviour. Had `mycol` been a column name, then that column's data would have been returned. What you probably meant was `DT[ , mycol, with = FALSE]`, which will return the `x` column's data as you wanted. Alternatively, since a `data.table` _is_ a `list`, too, you can write `DT[["x"]]` or `DT[[mycol]]`.
 
 ## OK, but I don't know the expressions in advance. How do I programatically pass them in?
 
@@ -100,7 +106,7 @@ DT = as.data.table(iris)
 setkey(DT, Species)
 myfunction = function(dt, expr) {
     e = substitute(expr)
-    dt[ , eval(e), by=Species]
+    dt[ , eval(e), by = Species]
 }
 myfunction(DT, sum(Sepal.Width))
 ```
@@ -113,16 +119,16 @@ For example, let's make sure that exactly the same `j` is run for a set of diffe
 DT = as.data.table(iris)
 whatToRun = quote( .(AvgWidth = mean(Sepal.Width),
                      MaxLength = max(Sepal.Length)) )
-DT[, eval(whatToRun), by=Species]
-DT[, eval(whatToRun), by=.(FirstLetter = substring(Species, 1, 1))]
-DT[, eval(whatToRun), by=.(Petal.Width = round(Petal.Width, 0))]
+DT[, eval(whatToRun), by = Species]
+DT[, eval(whatToRun), by = .(FirstLetter = substring(Species, 1, 1))]
+DT[, eval(whatToRun), by = .(Petal.Width = round(Petal.Width, 0))]
 ```
 
 ## What are the benefits of being able to use column names as if they are variables inside `DT[...]`?
 
 `j` doesn't have to be just column names. You can write any *R* _expression_ of column names directly as `j`, _e.g._, `DT[ , mean(x*y/z)]`.  The same applies to `i`, _e.g._, `DT[x>1000, sum(y*z)]`.
 
-This runs the `j` expression on the set of rows where the `i` expression is true. You don't even need to return data, _e.g._, `DT[x>1000, plot(y, z)]`. Finally, you can do `j` by group simply by adding `by=`, _e.g._, `DT[x>1000, sum(y*z), by=w]`. This runs `j` for each group in column `w` but just over the rows where `x>1000`. By placing the 3 parts of the query (where, select and group by) inside the square brackets, `data.table` sees this query as a whole before any part of it is evaluated. Thus it can optimize the query for performance.
+This runs the `j` expression on the set of rows where the `i` expression is true. You don't even need to return data, _e.g._, `DT[x>1000, plot(y, z)]`. Finally, you can do `j` by group simply by adding `by = `, _e.g._, `DT[x>1000, sum(y*z), by = w]`. This runs `j` for each group in column `w` but just over the rows where `x>1000`. By placing the 3 parts of the query (where, select and group by) inside the square brackets, `data.table` sees this query as a whole before any part of it is evaluated. Thus it can optimize the query for performance.
 
 ## OK, I'm starting to see what `data.table` is about, but why didn't you just enhance `data.frame` in *R*? Why does it have to be a new package?
 
@@ -164,7 +170,7 @@ _BUT_ that misses the main point. Most tasks require something to be done on the
 
 ## Anything else about `X[Y, sum(foo*bar)]`?
 
-This behaviour changed in v1.9.4 (Sep 2014). It now does the `X[Y]` join and then runs `sum(foo*bar)` over all the rows; i.e., `X[Y][ , sum(foo*bar)]`. It used to run `j` for each _group_ of `X` that each row of `Y` matches to. That can still be done as it's very useful but you now need to be explicit and specify `by=.EACHI`, _i.e._, `X[Y, sum(foo*bar), by=.EACHI]`. We call this _grouping by each `i`_.
+This behaviour changed in v1.9.4 (Sep 2014). It now does the `X[Y]` join and then runs `sum(foo*bar)` over all the rows; i.e., `X[Y][ , sum(foo*bar)]`. It used to run `j` for each _group_ of `X` that each row of `Y` matches to. That can still be done as it's very useful but you now need to be explicit and specify `by = .EACHI`, _i.e._, `X[Y, sum(foo*bar), by = .EACHI]`. We call this _grouping by each `i`_.
 
 For example, (further complicating it by using _join inherited scope_, too):
 
@@ -176,7 +182,7 @@ Y = data.table(c("b", "c"), bar = c(4, 2))
 X
 Y
 X[Y, sum(foo*bar)]
-X[Y, sum(foo*bar), by=.EACHI]
+X[Y, sum(foo*bar), by = .EACHI]
 ```
 
 ## That's nice. How did you manage to change it?
@@ -191,19 +197,19 @@ Another compelling reason to make the change was that previously, there was no e
 
 ## How can I avoid writing a really long `j` expression? You've said that I should use the column _names_, but I've got a lot of columns.
 
-When grouping, the `j` expression can use column names as variables, as you know, but it can also use a reserved symbol `.SD` which refers to the **S**ubset of the **D**ata.table for each group (excluding the grouping columns). So to sum up all your columns it's just `DT[ , lapply(.SD, sum), by=grp]`. It might seem tricky, but it's fast to write and fast to run. Notice you don't have to create an anonymous function. The `.SD` object is efficiently implemented internally and more efficient than passing an argument to a function. But if the `.SD` symbol appears in `j` then `data.table` has to populate `.SD` fully for each group even if `j` doesn't use all of it.
+When grouping, the `j` expression can use column names as variables, as you know, but it can also use a reserved symbol `.SD` which refers to the **S**ubset of the **D**ata.table for each group (excluding the grouping columns). So to sum up all your columns it's just `DT[ , lapply(.SD, sum), by = grp]`. It might seem tricky, but it's fast to write and fast to run. Notice you don't have to create an anonymous function. The `.SD` object is efficiently implemented internally and more efficient than passing an argument to a function. But if the `.SD` symbol appears in `j` then `data.table` has to populate `.SD` fully for each group even if `j` doesn't use all of it.
 
-So please don't do, for example, `DT[ , sum(.SD[["sales"]]), by=grp]`. That works but is inefficient and inelegant. `DT[ , sum(sales), by=grp]` is what was intended, and it could be 100s of times faster. If you use _all_ of the data in `.SD` for each group (such as in `DT[ , lapply(.SD, sum), by=grp]`) then that's very good usage of `.SD`. If you're using _several_ but not _all_ of the columns, you can combine `.SD` with `.SDcols`; see `?data.table`.
+So please don't do, for example, `DT[ , sum(.SD[["sales"]]), by = grp]`. That works but is inefficient and inelegant. `DT[ , sum(sales), by = grp]` is what was intended, and it could be 100s of times faster. If you use _all_ of the data in `.SD` for each group (such as in `DT[ , lapply(.SD, sum), by = grp]`) then that's very good usage of `.SD`. If you're using _several_ but not _all_ of the columns, you can combine `.SD` with `.SDcols`; see `?data.table`.
 
 ## Why is the default for `mult` now `"all"`?
 
 In v1.5.3 the default was changed to `"all"`. When `i` (or `i`'s key if it has one) has fewer columns than `x`'s key, `mult` was already set to `"all"` automatically. Changing the default makes this clearer and easier for users as it came up quite often.
 
-In versions up to v1.3, `"all"` was slower. Internally, `"all"` was implemented by joining using `"first"`, then again from scratch using `"last"`, after which a diff between them was performed to work out the span of the matches in `x` for each row in `i`. Most often we join to single rows, though, where `"first"`,`"last"` and `"all"` return the same result. We preferred maximum performance for the majority of situations so the default chosen was `"first"`. When working with a non-unique key (generally a single column containing a grouping variable), `DT["A"]` returned the first row of that group so `DT["A", mult="all"]` was needed to return all the rows in that group.
+In versions up to v1.3, `"all"` was slower. Internally, `"all"` was implemented by joining using `"first"`, then again from scratch using `"last"`, after which a diff between them was performed to work out the span of the matches in `x` for each row in `i`. Most often we join to single rows, though, where `"first"`,`"last"` and `"all"` return the same result. We preferred maximum performance for the majority of situations so the default chosen was `"first"`. When working with a non-unique key (generally a single column containing a grouping variable), `DT["A"]` returned the first row of that group so `DT["A", mult = "all"]` was needed to return all the rows in that group.
 
 In v1.4 the binary search in C was changed to branch at the deepest level to find first and last. That branch will likely occur within the same final pages of RAM so there should no longer be a speed disadvantage in defaulting `mult` to `"all"`. We warned that the default might change and made the change in v1.5.3.
 
-A future version of `data.table` may allow a distinction between a key and a _unique key_. Internally `mult="all"` would perform more like `mult="first"` when all `x`'s key columns were joined to and `x`'s key was a unique key. `data.table` would need checks on insert and update to make sure a unique key is maintained. An advantage of specifying a unique key would be that `data.table` would ensure no duplicates could be inserted, in addition to performance.
+A future version of `data.table` may allow a distinction between a key and a _unique key_. Internally `mult = "all"` would perform more like `mult = "first"` when all `x`'s key columns were joined to and `x`'s key was a unique key. `data.table` would need checks on insert and update to make sure a unique key is maintained. An advantage of specifying a unique key would be that `data.table` would ensure no duplicates could be inserted, in addition to performance.
 
 ## I'm using `c()` in `j` and getting strange results.
 
@@ -281,7 +287,7 @@ This is _lexical scoping_ as explained in [R FAQ 3.3.1](http://cran.r-project.or
 ```{r}
 DT = data.table(x = rep(c("a", "b"), c(2, 3)), y = 1:5)
 DT
-DT[ , {z = sum(y); z + 3}, by=x]
+DT[ , {z = sum(y); z + 3}, by = x]
 ```
 
 Some programming languages call this a _lambda_.
@@ -292,10 +298,10 @@ Try something like this:
 
 ```{r}
 DT[ , {
-  cat("Objects:", paste(objects(), collapse=","), "\n")
+  cat("Objects:", paste(objects(), collapse = ","), "\n")
   cat("Trace: x=", as.character(x), " y=", y, "\n")
   sum(y)},
-  by=x]
+  by = x]
 ```
 
 ## Inside each group, why are the group variables length-1?
@@ -303,8 +309,8 @@ DT[ , {
 [Above](#j-trace), `x` is a grouping variable and (as from v1.6.1) has `length` 1 (if inspected or used in `j`). It's for efficiency and convenience. Therefore, there is no difference between the following two statements:
 
 ```{r}
-DT[ , .(g = 1, h = 2, i = 3, j = 4, repeatgroupname = x, sum(y)), by=x]
-DT[ , .(g = 1, h = 2, i = 3, j = 4, repeatgroupname = x[1], sum(y)), by=x]
+DT[ , .(g = 1, h = 2, i = 3, j = 4, repeatgroupname = x, sum(y)), by = x]
+DT[ , .(g = 1, h = 2, i = 3, j = 4, repeatgroupname = x[1], sum(y)), by = x]
 ```
 
 If you need the size of the current group, use `.N` rather than calling `length()` on any column.
@@ -319,7 +325,7 @@ If you want to show more than just the top (and bottom) 10 rows of a `data.table
 
 ## With an `X[Y]` join, what if `X` contains a column called `"Y"`?
 
-When `i` is a single name such as `Y` it is evaluated in the calling frame. In all other cases such as calls to `.()` or other expressions, `i` is evaluated within the scope of `X`. This facilitates easy _self-joins_ such as `X[J(unique(colA)), mult="first"]`.
+When `i` is a single name such as `Y` it is evaluated in the calling frame. In all other cases such as calls to `.()` or other expressions, `i` is evaluated within the scope of `X`. This facilitates easy _self-joins_ such as `X[J(unique(colA)), mult = "first"]`.
 
 ## `X[Z[Y]]` is failing because `X` contains a column `"Y"`. I'd like it to use the table `Y` in calling scope.
 
@@ -329,7 +335,7 @@ The `Z[Y]` part is not a single name so that is evaluated within the frame of `X
 
 Consider `A[B]` syntax using an example matrix `A` :
 ```{r}
-A = matrix(1:12, nrow=4)
+A = matrix(1:12, nrow = 4)
 A
 ```
 
@@ -376,7 +382,7 @@ But, notice that the result was coerced to `character.` *R* coerced `A` to `matr
 
 ```{r}
 B = data.frame(c("a", "c"), c("B", "C"))
-cat(try(A[B], silent=TRUE))
+cat(try(A[B], silent = TRUE))
 ```
 
 So we can't subset a `data.frame` by a `data.frame` in base R. What if we want row names and column names that aren't `character` but `integer` or `float`? What if we want more than 2 dimensions of mixed types? Enter `data.table`.
@@ -396,10 +402,10 @@ Yes :
  - `by`  $\Leftrightarrow$  group by
  - `i`  $\Leftrightarrow$  order by (in compound syntax)
  - `i`  $\Leftrightarrow$  having (in compound syntax)
- - `nomatch=NA`  $\Leftrightarrow$  outer join
- - `nomatch=0`  $\Leftrightarrow$  inner join
- - `mult="first"|"last"`  $\Leftrightarrow$  N/A because SQL is inherently unordered
- - `roll=TRUE`  $\Leftrightarrow$  N/A because SQL is inherently unordered
+ - `nomatch = NA`  $\Leftrightarrow$  outer join
+ - `nomatch = 0L`  $\Leftrightarrow$  inner join
+ - `mult = "first"|"last"`  $\Leftrightarrow$  N/A because SQL is inherently unordered
+ - `roll = TRUE`  $\Leftrightarrow$  N/A because SQL is inherently unordered
 
 The general form is :
 
@@ -418,10 +424,10 @@ A key advantage of column vectors in *R* is that they are _ordered_, unlike SQL[
  - For this reason we say the comma is _optional_ in `DT`, but not optional in `DF`
  - `DT[[3]] == DF[3] == DF[[3]]`
  - `DT[i, ]`, where `i` is a single integer, returns a single row, just like `DF[i, ]`, but unlike a matrix single-row subset which returns a vector.
- - `DT[ , j, with=FALSE]` where `j` is a single integer returns a one-column `data.table`, unlike `DF[, j]` which returns a vector by default
- - `DT[ , "colA", with=FALSE][[1]] == DF[ , "colA"]`.
+ - `DT[ , j, with = FALSE]` where `j` is a single integer returns a one-column `data.table`, unlike `DF[, j]` which returns a vector by default
+ - `DT[ , "colA", with = FALSE][[1]] == DF[ , "colA"]`.
  - `DT[ , colA] == DF[ , "colA"]`
- - `DT[ , list(colA)] == DF[ , "colA", drop=FALSE]`
+ - `DT[ , list(colA)] == DF[ , "colA", drop = FALSE]`
  - `DT[NA]` returns 1 row of `NA`, but `DF[NA]` returns a copy of `DF` containing `NA` throughout. The symbol `NA` is type `logical` in *R* and is therefore recycled by `[.data.frame`. The intention was probably `DF[NA_integer_]`. `[.data.table` does this automatically for convenience.
  - `DT[c(TRUE, NA, FALSE)]` treats the `NA` as `FALSE`, but `DF[c(TRUE, NA, FALSE)]` returns
   `NA` rows for each `NA`
@@ -431,13 +437,13 @@ A key advantage of column vectors in *R* is that they are _ordered_, unlike SQL[
  - `stringsAsFactors` is by default `TRUE` in `data.frame` but `FALSE` in `data.table`, for efficiency. Since a global string cache was added to R, characters items are a pointer to the single cached string and there is no longer a performance benefit of converting to `factor`.
  - Atomic vectors in `list` columns are collapsed when printed using `", "` in `data.frame`, but `","` in `data.table` with a trailing comma after the 6th item to avoid accidental printing of large embedded objects.
 
-In `[.data.frame` we very often set `drop=FALSE`. When we forget, bugs can arise in edge cases where single columns are selected and all of a sudden a vector is returned rather than a single column `data.frame`. In `[.data.table` we took the opportunity to make it consistent and drop `drop`.
+In `[.data.frame` we very often set `drop = FALSE`. When we forget, bugs can arise in edge cases where single columns are selected and all of a sudden a vector is returned rather than a single column `data.frame`. In `[.data.table` we took the opportunity to make it consistent and drop `drop`.
 
 When a `data.table` is passed to a `data.table`-unaware package, that package is not concerned with any of these differences; it just works.
 
 ## I'm using `j` for its side effect only, but I'm still getting data returned. How do I stop that?
 
-In this case `j` can be wrapped with `invisible()`; e.g., `DT[ , invisible(hist(colB)), by=colA]`[^3]
+In this case `j` can be wrapped with `invisible()`; e.g., `DT[ , invisible(hist(colB)), by = colA]`[^3]
 
 [^3]: _e.g._, `hist()` returns the breakpoints in addition to plotting to the graphics device.
 
@@ -492,7 +498,7 @@ If you know of a better solution that still solves all the issues above, then pl
 
 ## I've read about method dispatch (_e.g._ `merge` may or may not dispatch to `merge.data.table`) but _how_ does R know how to dispatch? Are dots significant or special? How on earth does R know which function to dispatch and when? {#r-dispatch}
 
-This comes up quite a lot, but it's really earth-shatteringly simple. A function such as `merge` is _generic_ if it consists of a call to `UseMethod`. When you see people talking about whether or not functions are _generic_ functions they are merely typing the function without `()` afterwards, looking at the program code inside it and if they see a call to `UseMethod` then it is _generic_.  What does `UseMethod` do? It literally slaps the function name together with the class of the first argument, separated by period (`.`) and then calls that function, passing along the same arguments. It's that simple. For example, `merge(X, Y)` contains a `UseMethod` call which means it then _dispatches_ (i.e. calls) `paste("merge", class(X), sep=".")`. Functions with dots in their name may or may not be methods. The dot is irrelevant really, other than dot being the separator that `UseMethod` uses. Knowing this background should now highlight why, for example, it is obvious to R folk that `as.data.table.data.frame`  is the `data.frame` method for the `as.data.table` generic function. Further, it may help to elucidate that, yes, you are correct, it is not obvious from its name alone that `ls.fit` is not the fit method of the `ls` generic function. You only know that by typing `ls` (not `ls()`) and observing it isn't a single call to `UseMethod`.
+This comes up quite a lot, but it's really earth-shatteringly simple. A function such as `merge` is _generic_ if it consists of a call to `UseMethod`. When you see people talking about whether or not functions are _generic_ functions they are merely typing the function without `()` afterwards, looking at the program code inside it and if they see a call to `UseMethod` then it is _generic_.  What does `UseMethod` do? It literally slaps the function name together with the class of the first argument, separated by period (`.`) and then calls that function, passing along the same arguments. It's that simple. For example, `merge(X, Y)` contains a `UseMethod` call which means it then _dispatches_ (i.e. calls) `paste("merge", class(X), sep = ".")`. Functions with dots in their name may or may not be methods. The dot is irrelevant really, other than dot being the separator that `UseMethod` uses. Knowing this background should now highlight why, for example, it is obvious to R folk that `as.data.table.data.frame`  is the `data.frame` method for the `as.data.table` generic function. Further, it may help to elucidate that, yes, you are correct, it is not obvious from its name alone that `ls.fit` is not the fit method of the `ls` generic function. You only know that by typing `ls` (not `ls()`) and observing it isn't a single call to `UseMethod`.
 
 You might now ask: where is this documented in R? Answer: it's quite clear, but, you need to first know to look in `?UseMethod` and _that_ help file contains :
 
@@ -563,7 +569,7 @@ DT
 DT[ , { mySD = copy(.SD)
       mySD[1, b := 99L]
       mySD},
-    by=a]
+    by = a]
 ```
 
 ## "cannot change value of locked binding for `.N`"
@@ -576,8 +582,8 @@ DT = data.table(a = c(1,1,2,2,2), b = c(1,2,2,2,1))
 DT
 DT[ , list(.N = .N), list(a, b)]   # show intermediate result for exposition
 cat(try(
-    DT[ , list(.N = .N), by = list(a, b)][ , unique(.N), by=a]   # compound query more typical
-, silent=TRUE))
+    DT[ , list(.N = .N), by = list(a, b)][ , unique(.N), by = a]   # compound query more typical
+, silent = TRUE))
 ```
 
 If you are already running v1.8.1 or later then the error message is now more helpful than the "cannot change value of locked binding" error, as you can see above, since this vignette was produced using v1.8.1 or later.
@@ -585,10 +591,10 @@ If you are already running v1.8.1 or later then the error message is now more he
 The more natural syntax now works :
 ```{r}
 if (packageVersion("data.table") >= "1.8.1") {
-    DT[ , .N, by=list(a, b)][ , unique(N), by=a]
+    DT[ , .N, by = list(a, b)][ , unique(N), by = a]
   }
 if (packageVersion("data.table") >= "1.9.3") {
-    DT[ , .N, by=.(a, b)][ , unique(N), by=a]   # same
+    DT[ , .N, by = .(a, b)][ , unique(N), by = a]   # same
 }
 ```
 
