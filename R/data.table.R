@@ -461,8 +461,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         xo = NULL
         isub = substitute(i)
         isnull_inames = FALSE
-	nqgrp = integer(0)  # for non-equi join
-	nqmaxgrp = 1L       # for non-equi join
+        nqgrp = integer(0)  # for non-equi join
+        nqmaxgrp = 1L       # for non-equi join
         # Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires 
         # the "eval" to be checked before `as.name("!")`. Therefore interchanged.
         restore.N = remove.N = FALSE
@@ -556,7 +556,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 i = as.data.table( unique(RHS) )
                 # To do: wrap isub[[3L]] with as.data.table() first before eval to save copy
                 leftcols = 1L
-		ans = bmerge(i, x, leftcols, rightcols, io<-FALSE, xo, roll=0.0, rollends=c(FALSE,FALSE), nomatch=0L, 1L, nqgrp, nqmaxgrp, verbose=verbose)
+                ans = bmerge(i, x, leftcols, rightcols, io<-FALSE, xo, roll=0.0, rollends=c(FALSE,FALSE), nomatch=0L, 1L, nqgrp, nqmaxgrp, verbose=verbose)
                 # No need to shallow copy i before passing to bmerge; we just created i above ourselves
                 i = if (ans$allLen1 && !identical(suppressWarnings(min(ans$starts)), 0L)) ans$starts else vecseq(ans$starts, ans$lens, NULL)
                 if (length(xo)) i = fsort(xo[i]) else i = fsort(i) # fix for #1495
@@ -583,10 +583,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             }
         }
         if (is.null(i)) return( null.data.table() )
-	if (is.character(i)) {
-	    isnull_inames = TRUE
-	    i = data.table(V1=i)   # for user convenience; e.g. DT["foo"] without needing DT[.("foo")]
-	} else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) i = as.data.table(i[[1L]])
+        if (is.character(i)) {
+            isnull_inames = TRUE
+            i = data.table(V1=i)   # for user convenience; e.g. DT["foo"] without needing DT[.("foo")]
+        } else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) i = as.data.table(i[[1L]])
         else if (identical(class(i),"data.frame")) i = as.data.table(i)   # TO DO: avoid these as.data.table() and use a flag instead
         else if (identical(class(i),"list")) {
             isnull_inames = is.null(names(i))
@@ -598,64 +598,63 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             }
             if (!missing(on)) {
                 if (!is.character(on))
-		    stop("'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
-		parse_on <- function(on) {
-		    ops = c("==", "<=", "<", ">=", ">", "!=")
-		    pat = paste("(", ops, ")", sep = "", collapse = "|")
-		    this_op = regmatches(on, gregexpr(pat, on))
-		    idx = (vapply(this_op, length, 0L) == 0L)
-		    this_op[idx] = "=="
-		    this_op = unlist(this_op, use.names=FALSE)
-		    idx_op = match(this_op, ops, nomatch=0L)
-		    if (any(idx_op %in% c(0L, 6L)))
-			stop("Invalid operators ", paste(this_op[idx_op==0L], collapse=","), ". Only allowed operators are ", paste(ops[1:5], collapse=""), ".")
-		    if (is.null(names(on))) {
-			on[idx] = if (isnull_inames) paste(on[idx], paste("V", seq_len(sum(idx)), sep=""), sep="==")
-				  else paste(on[idx], on[idx], sep="==")
-		    } else {
-			on[idx] = paste(names(on)[idx], on[idx], sep="==")
-		    }
-		    split = tstrsplit(on, paste("[ ]*", pat, "[ ]*", sep=""))
-		    on = setattr(split[[2L]], 'names', split[[1L]])
-		    if (length(empty_idx <- which(names(on) == "")))
-			names(on)[empty_idx] = on[empty_idx]
-		    list(on = on, ops = idx_op)
+                    stop("'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
+                parse_on <- function(on) {
+                    ops = c("==", "<=", "<", ">=", ">", "!=")
+                    pat = paste("(", ops, ")", sep = "", collapse = "|")
+                    this_op = regmatches(on, gregexpr(pat, on))
+                    idx = (vapply(this_op, length, 0L) == 0L)
+                    this_op[idx] = "=="
+                    this_op = unlist(this_op, use.names=FALSE)
+                    idx_op = match(this_op, ops, nomatch=0L)
+                    if (any(idx_op %in% c(0L, 6L)))
+                        stop("Invalid operators ", paste(this_op[idx_op==0L], collapse=","), ". Only allowed operators are ", paste(ops[1:5], collapse=""), ".")
+                    if (is.null(names(on))) {
+                        on[idx] = if (isnull_inames) paste(on[idx], paste("V", seq_len(sum(idx)), sep=""), sep="==") else paste(on[idx], on[idx], sep="==")
+                    } else {
+                        on[idx] = paste(names(on)[idx], on[idx], sep="==")
+                    }
+                    split = tstrsplit(on, paste("[ ]*", pat, "[ ]*", sep=""))
+                    on = setattr(split[[2L]], 'names', split[[1L]])
+                    if (length(empty_idx <- which(names(on) == "")))
+                        names(on)[empty_idx] = on[empty_idx]
+                    list(on = on, ops = idx_op)
                 }
-		on_ops = parse_on(on)
-		on = on_ops[[1L]]
-		ops = on_ops[[2L]]
-		# TODO: collect all '==' ops first to speeden up Cnestedid
-		rightcols = chmatch(names(on), names(x))
+                on_ops = parse_on(on)
+                on = on_ops[[1L]]
+                ops = on_ops[[2L]]
+                # TODO: collect all '==' ops first to speeden up Cnestedid
+                rightcols = chmatch(names(on), names(x))
                 if (length(nacols <- which(is.na(rightcols))))
                     stop("Column(s) [", paste(names(on)[nacols], collapse=","), "] not found in x")
                 leftcols  = chmatch(unname(on), names(i))
                 if (length(nacols <- which(is.na(leftcols))))
                     stop("Column(s) [", paste(unname(on)[nacols], collapse=","), "] not found in i")
-		# figure out the columns on which to compute groups on
-		non_equi = which.first(ops != 1L) # 1 is "==" operator
-		if (!is.na(non_equi)) { # non-equi conditions present.. investigate groups..
-		    nqcols = rightcols[non_equi:length(rightcols)]
-		    nqgrp = .Call(Cnestedid, x, nqcols, forderv(x, nqcols))
-		    if ( (nqmaxgrp <- max(nqgrp)) > 1L) { # got some non-equi join work to do
-			if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
-			set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
-			xo = forderv(nqx, c(ncol(nqx), rightcols))
-		    } else nqgrp = integer(0)
-		}
-		if (nqmaxgrp == 1L) { # equi join. Reuse secondary index, #1439
-		    if (verbose) cat("Looking for existing (secondary) index... ")
-		    xo = attr(attr(x, 'index'), paste("__", names(x)[rightcols], sep="", collapse=""))
-		    if (is.null(xo)) {
-			if (verbose) {
-			    cat("not found.\n")
-			    tt = system.time(xo <- forderv(x, by=rightcols))
-			    cat("forder took", tt["user.self"] + tt["sys.self"], "sec\n")
-			} else xo = forderv(x, by = rightcols)
-		    } else {
-			if (verbose) cat("found. Reusing index.\n")
-		    }
+                # figure out the columns on which to compute groups on
+                non_equi = which.first(ops != 1L) # 1 is "==" operator
+                if (!is.na(non_equi)) { # non-equi conditions present.. investigate groups..
+                    nqcols = rightcols[non_equi:length(rightcols)]
+                    nqgrp = .Call(Cnestedid, x, nqcols, forderv(x, nqcols))
+                    if ( (nqmaxgrp <- max(nqgrp)) > 1L) { # got some non-equi join work to do
+                        if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
+                        set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
+                        xo = forderv(nqx, c(ncol(nqx), rightcols))
+                    } else nqgrp = integer(0)
+                }
+                if (nqmaxgrp == 1L) { # equi join. Reuse secondary index, #1439
+                    if (verbose) cat("Looking for existing (secondary) index... ")
+                    xo = attr(attr(x, 'index'), paste("__", names(x)[rightcols], sep="", collapse=""))
+                    if (is.null(xo)) {
+                        if (verbose) {
+                            cat("not found.\n")
+                            tt = system.time(xo <- forderv(x, by=rightcols))
+                            cat("forder took", tt["user.self"] + tt["sys.self"], "sec\n")
+                        } else xo = forderv(x, by = rightcols)
+                    } else {
+                        if (verbose) cat("found. Reusing index.\n")
+                    }
                 } else {
-		    if (!missing(by)) stop("by-joins are not yet implemented for multi-group non-equi-joins.")
+                    if (!missing(by)) stop("by-joins are not yet implemented for multi-group non-equi-joins.")
                 }
             } else if (is.null(xo)) {
                 rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in bmerge()
@@ -673,10 +672,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     txtav = c(names(x)[-rightcols], names(i)[-leftcols])
                     if (missing(j)) j = jsub = as.call(parse(text=paste(".(",paste(txtav, collapse=","),")",sep="")))[[1]]
                 }
-		ops = rep(1L, length(leftcols))
+                ops = rep(1L, length(leftcols))
             }
             # Implementation for not-join along with by=.EACHI, #604
-	    if (notjoin && (byjoin || mult != "all")) { # mult != "all" needed for #1571 fix
+            if (notjoin && (byjoin || mult != "all")) { # mult != "all" needed for #1571 fix
                 notjoin = FALSE
                 if (verbose) {last.started.at=proc.time()[3];cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff(x,i) ...");flush.console()}
                 orignames = copy(names(i))
@@ -687,12 +686,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             }
             io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
             i = .shallow(i, retain.key = io)
-	    ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, ops, nqgrp, nqmaxgrp, verbose=verbose)
-	    allLen1 = ans$allLen1
-	    allGrp1 = ans$allGrp1
+            ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, ops, nqgrp, nqmaxgrp, verbose=verbose)
+            allLen1 = ans$allLen1
+            allGrp1 = ans$allGrp1
             f__ = ans$starts
             len__ = ans$lens
-	    indices__ = ans$indices
+            indices__ = ans$indices
             # length of input nomatch (single 0 or NA) is 1 in both cases.
             # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
             # If using secondary key of x, f__ will refer to xo
@@ -722,19 +721,19 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     if (length(irows)) stop("Internal error. irows has length in by=.EACHI")
                 }
             } else {
-		if (nqmaxgrp>1L) stop("Non-equi joins don't work with mult='first' and mult='last' yet.")
-		if (!byjoin) { # fix for #1287 and #1271
-		    irows = if (mult=="first") f__ else f__+len__-1L
-		    if (identical(nomatch,0L)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
-		} else { if (mult == "last") f__ = f__+len__- 1L } # fix for #1287 and #1271
-		# for test 456, and consistency generally. The if() is for R < 2.15.1 when pmin was enhanced, see v1.8.6.
-		if (length(len__)) len__ = pmin(len__, 1L)
-	    }
-	    if (length(xo) && length(irows)) {
-		irows = xo[irows]   # TO DO: fsort here?
-		if (mult=="all" && nqmaxgrp>1L && length(xo)) {
-		    irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))$irows
-		}
+                if (nqmaxgrp>1L) stop("Non-equi joins don't work with mult='first' and mult='last' yet.")
+                if (!byjoin) { # fix for #1287 and #1271
+                    irows = if (mult=="first") f__ else f__+len__-1L
+                    if (identical(nomatch,0L)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
+                } else { if (mult == "last") f__ = f__+len__- 1L } # fix for #1287 and #1271
+                # for test 456, and consistency generally. The if() is for R < 2.15.1 when pmin was enhanced, see v1.8.6.
+                if (length(len__)) len__ = pmin(len__, 1L)
+            }
+            if (length(xo) && length(irows)) {
+                irows = xo[irows]   # TO DO: fsort here?
+                if (mult=="all" && nqmaxgrp>1L && length(xo)) {
+                    irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))$irows
+                }
             }
         } else {
             if (!missing(on)) {
@@ -745,8 +744,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
             if (is.logical(i)) {
                 if (isTRUE(i)) irows = i = NULL  # fixes #1249
-		else if (identical(i, NA)) irows=i=integer(0)  # DT[NA] thread recycling of NA logical exists,
-							   # but for #1252 and consistency, we need to return 0-rows
+                else if (identical(i, NA)) irows=i=integer(0)  # DT[NA] thread recycling of NA logical exists,
+                                # but for #1252 and consistency, we need to return 0-rows
                 else if (length(i)==nrow(x)) irows = i = which(i)   # e.g. DT[colA>3,which=TRUE]
                                                                # also replacing 'i' here - to save memory, #926.
                 else irows=seq_len(nrow(x))[i]  # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness 
