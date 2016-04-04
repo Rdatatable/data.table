@@ -8511,6 +8511,12 @@ nqjoin_test(dt1,dt2,2L,1651.0)
 nqjoin_test(dt1,dt2,3L,1652.0)
 # TODO: add tests for nomatch=NA..
 
+# test for the issue Jan spotted...
+dt = data.table(id="x", a=as.integer(c(3,8,8,15,15,15,16,22,22,25,25)), b=as.integer(c(9,10,25,19,22,25,38,3,9,7,28)), c=as.integer(c(22,33,44,14,49,44,40,25,400,52,77)))
+set.seed(1L)
+dt=dt[sample(.N)]
+test(1653, uniqueN(dt[dt, .(x.id, x.a, x.b, x.c, i.id, i.a, i.b, i.c), which=FALSE, on = c("id==id","a>=a","b>=b"), allow.cartesian=TRUE]), 42L)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

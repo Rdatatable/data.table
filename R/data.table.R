@@ -687,6 +687,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
             i = .shallow(i, retain.key = io)
             ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, ops, nqgrp, nqmaxgrp, verbose=verbose)
+            # temp fix for issue spotted by Jan. Ideally would like to avoid this 'setorder', as there's another 
+            # 'setorder' in generating 'irows' below...
+            if (length(ans$indices)) setorder(setDT(ans[1:3]), indices)
             allLen1 = ans$allLen1
             allGrp1 = ans$allGrp1
             f__ = ans$starts
