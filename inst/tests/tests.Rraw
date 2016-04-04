@@ -8414,7 +8414,8 @@ test(1640.2, x[y, c(.SD, .(x.aa=x.aa)), on=c(aa="bb")], data.table(aa=3:5, cc=c(
 
 # tests for non-equi joins
 # function to create a random data.table with all necessary columns
-set.seed(45L)
+# set.seed(45L) # for testing..
+set.seed(unclass(Sys.time()))
 nq_fun = function(n=100L) {
     i1 = sample(sample(n, 10L), n, TRUE)
     i2 = sample(-n/2:n/2, n, TRUE)
@@ -8442,11 +8443,9 @@ nq_fun = function(n=100L) {
 
 dt1 = nq_fun(400L)
 dt2 = nq_fun(50L)
-# for now skip NAs
 x = na.omit(dt1)
 y = na.omit(dt2)
-test_no = 1641.0
-nqjoin_test <- function(x, y, k=1L) {
+nqjoin_test <- function(x, y, k=1L, test_no) {
     ops = c("==", ">=", "<=", ">", "<")
     xclass = sapply(x, class)
     runcmb = as.data.table(combn(names(x), k))
@@ -8460,12 +8459,12 @@ nqjoin_test <- function(x, y, k=1L) {
     construct <- function(cols, vals, ops) {
         expr = lapply(seq_along(cols), function(i) {
             if (is_int64(vals[[i]])) {
-                if (is.na.integer64(vals[[i]])) as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
+                if (is.na.integer64(vals[[i]])) if (ops[i] %in% c(">", "<")) quote(integer(0)) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
                 else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), as.integer(vals[[i]])))
                 # don't know how to construct a call with int64 -- vals[[i]] gets converted to NAN
             } else {
-                if (is.nan(vals[[i]])) as.call(list(quote(is.nan), as.name(cols[[i]])))
-                else if (is_only_na(vals[[i]])) as.call(list(quote(is_only_na), as.name(cols[[i]])))
+                if (is.nan(vals[[i]])) if (ops[i] %in% c(">", "<")) quote(integer(0)) else as.call(list(quote(is.nan), as.name(cols[[i]])))
+                else if (is_only_na(vals[[i]])) if (ops[i] %in% c(">", "<")) quote(integer(0)) else as.call(list(quote(is_only_na), as.name(cols[[i]])))
                 else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), vals[[i]]))
             }
         })
@@ -8497,11 +8496,20 @@ nqjoin_test <- function(x, y, k=1L) {
         # if (identical(all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)) cat("successful\n") else stop("failed\n")
     }
 }
-nqjoin_test(x,y,1L)
-nqjoin_test(x,y,2L)
-nqjoin_test(x,y,3L)
-
-# k = 2   i = 13   thiscols = [i1,I4]  thisops = [<,>]     
+nqjoin_test(  x,  y,1L,1641.0) # without NAs in x and i
+nqjoin_test(  x,  y,2L,1642.0)
+nqjoin_test(  x,  y,3L,1643.0)
+# tested, but takes quite some time.. so commenting for now
+# nqjoin_test(  x,dt2,1L,1644.0) # without NA only in x
+# nqjoin_test(  x,dt2,2L,1645.0)
+# nqjoin_test(  x,dt2,3L,1646.0)
+# nqjoin_test(dt1,  y,1L,1647.0) # without NA only in i
+# nqjoin_test(dt1,  y,2L,1648.0)
+# nqjoin_test(dt1,  y,3L,1649.0)
+nqjoin_test(dt1,dt2,1L,1650.0) # with NAs in x and i
+nqjoin_test(dt1,dt2,2L,1651.0)
+nqjoin_test(dt1,dt2,3L,1652.0)
+# TODO: add tests for nomatch=NA..
 
 ##########################
 

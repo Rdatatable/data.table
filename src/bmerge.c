@@ -200,6 +200,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
 // lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
 // uppmax=1 if xuppIn is the upper bound of this group (needed for roll)
+// new: col starts with -1 for non-equi joins, which gathers rows from nested id group counter 'thisgrp'
 {
     int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn, j, k, ir, lir, tmp;
     SEXP class;
@@ -242,12 +243,22 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
             }
         }
         // Rprintf("Inter %d: ilow=%d, iupp=%d, ilowIn=%d, iuppIn=%d, xlow=%d, xlowIn=%d, xupp=%d, xuppIn=%d, col=%d, op=%d\n", tmpctr, ilow, iupp, ilowIn, iuppIn, xlow, xlowIn, xupp, xuppIn, col, op[col]);
-        if (col>-1 && op[col] != EQ && ival.i != NA_INTEGER) {
+        if (col>-1 && op[col] != EQ) {
             switch (op[col]) {
-            case LE : xlow = xlowIn; break;
-            case LT : xupp = xlow + 1; xlow = xlowIn; break;
-            case GE : xupp = xuppIn; break;
-            case GT : xlow = xupp - 1; xupp = xuppIn; break;
+                case LE : xlow = xlowIn; break;
+                case LT : xupp = xlow + 1; xlow = xlowIn; break;
+                case GE : if (ival.i != NA_INTEGER) xupp = xuppIn; break;
+                case GT : xlow = xupp - 1; if (ival.i != NA_INTEGER) xupp = xuppIn; break;
+            }
+            // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
+            if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && INTEGER(xc)[XIND(xlow+1)] == NA_INTEGER) {
+                tmplow = xlow; tmpupp = xupp;
+                while (tmplow < tmpupp-1) {
+                    mid = tmplow + (tmpupp-tmplow)/2;
+                    xval.i = INTEGER(xc)[XIND(mid)];
+                    if (xval.i == NA_INTEGER) tmplow = mid; else tmpupp = mid;
+                }
+                xlow = tmplow; // tmplow is the index of last NA value
             }
         }
         // Rprintf("End %d: ilow=%d, iupp=%d, ilowIn=%d, iuppIn=%d, xlow=%d, xlowIn=%d, xupp=%d, xuppIn=%d, col=%d, op=%d\n", tmpctr, ilow, iupp, ilowIn, iuppIn, xlow, xlowIn, xupp, xuppIn, col, op[col]);
@@ -335,12 +346,23 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                 break;
             }
         }
-        if (col>-1 && op[col] != EQ && (!isInt64 ? !ISNAN(REAL(ic)[ir]) : (*(long long *)&REAL(ic)[ir] != NAINT64))) {
+        if (col>-1 && op[col] != EQ) {
+            Rboolean isivalNA = !isInt64 ? ISNAN(REAL(ic)[ir]) : (*(long long *)&REAL(ic)[ir] == NAINT64);
             switch (op[col]) {
-            case LE : xlow = xlowIn; break;
-            case LT : xupp = xlow + 1; xlow = xlowIn; break;
-            case GE : xupp = xuppIn; break;
-            case GT : xlow = xupp - 1; xupp = xuppIn; break;
+            case LE : if (!isivalNA) xlow = xlowIn; break;
+            case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
+            case GE : if (!isivalNA) xupp = xuppIn; break;
+            case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
+            }
+            // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
+            if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(REAL(xc)[XIND(xlow+1)]) : (*(long long *)&REAL(xc)[XIND(xlow+1)] == NAINT64))) {
+                tmplow = xlow; tmpupp = xupp;
+                while (tmplow < tmpupp-1) {
+                    mid = tmplow + (tmpupp-tmplow)/2;
+                    xval.d = REAL(xc)[XIND(mid)];
+                    if (!isInt64 ? ISNAN(xval.d) : xval.ll == NAINT64) tmplow = mid; else tmpupp = mid;
+                }
+                xlow = tmplow; // tmplow is the index of last NA value
             }
         }
         tmplow = lir;
@@ -475,16 +497,16 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     case LE: case LT:
         // roll is not yet implemented
         if (ilow>ilowIn)
-            bmerge_r(xlow, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, tmpctr+1);
+            bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, tmpctr+1);
         if (iupp<iuppIn)
-            bmerge_r(xlow, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, tmpctr+1);
+            bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, tmpctr+1);
     break;
     case GE: case GT:
         // roll is not yet implemented
         if (ilow>ilowIn)
-            bmerge_r(xlowIn, xupp, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, tmpctr+1);
+            bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, tmpctr+1);
         if (iupp<iuppIn)
-            bmerge_r(xlowIn, xupp, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, tmpctr+1);
+            bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, tmpctr+1);
     break;
     }
 }
