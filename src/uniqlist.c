@@ -159,7 +159,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order) {
             j = ncol;
             b = TRUE;
             previ = grp[k];
-            while(--j>0 && b) {
+            while(--j>0 && b) { // >= is not necessary since first col will always be in increasing order
                 v=VECTOR_ELT(l,INTEGER(cols)[j]-1);
                 switch(TYPEOF(v)) {
                     case INTSXP: case LGLSXP:
