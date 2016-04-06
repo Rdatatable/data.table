@@ -8448,7 +8448,8 @@ y = na.omit(dt2)
 nqjoin_test <- function(x, y, k=1L, test_no) {
     ops = c("==", ">=", "<=", ">", "<")
     xclass = sapply(x, class)
-    runcmb = as.data.table(combn(names(x), k))
+    runcmb = combn(names(x), k)
+    runcmb = as.data.table(runcmb[, 1:min(100L, ncol(runcmb)), drop=FALSE]) # max 100 combinations to test
     runops = lapply(runcmb, function(cols) {
         thisops = sample(ops, k, TRUE)
         thisops[grepl("^c", cols)] = "=="
