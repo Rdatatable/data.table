@@ -8540,6 +8540,11 @@ set.seed(1L)
 dt=dt[sample(.N)][, row_id := 1:.N]
 test(1656, nrow(dt[dt, .(x.id, x.a, x.b, x.c, x.row_id, i.id, i.a, i.b, i.c, i.row_id), on = .(c,b<=b,id,a>=a), allow.cartesian = TRUE]), 12L) # just to check that there's no warning
 
+# between is vectorised, #534
+set.seed(1L)
+dt = data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE), z=sample(5,10,TRUE))
+test(1657, dt[x %between% list(y,z)], dt[x>=y & x<=z])
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
