@@ -1282,7 +1282,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # TO DO: port more of this to C
             ans = vector("list", length(ansvars))
             if (length(i) && length(icols)) {
-                if (allLen1 && (is.na(nomatch) || !any(f__==0L))) {   # nomatch=0 should drop rows in i that have no match
+                if (allLen1 && nqmaxgrp==1L && (is.na(nomatch) || !any(f__==0L))) {   # nomatch=0 should drop rows in i that have no match
                     for (s in seq_along(icols)) {
                         target = icolsAns[s]
                         source = icols[s]

@@ -8532,6 +8532,14 @@ test(1655.3, dt1[dt2, on=.(x==x)], dt1[dt2, on=c("x"="x")])
 test(1655.4, dt1[dt2, on=.(y>=y)], dt1[dt2, on=c("y>=y")])
 test(1655.4, dt1[dt2, on=.(x==x, y>=y)], dt1[dt2, on=c("x==x", "y>=y")])
 
+# Patching another issue spotted by Jan
+dt = data.table(id="x", a=as.integer(c(3,8,8,15,15,15,16,22,22,25,25)), 
+                b=as.integer(c(9,10,25,19,22,25,38,3,9,7,28)),
+                c=as.integer(c(22,33,44,14,49,44,40,25,400,52,77)))
+set.seed(1L)
+dt=dt[sample(.N)][, row_id := 1:.N]
+test(1656, nrow(dt[dt, .(x.id, x.a, x.b, x.c, x.row_id, i.id, i.a, i.b, i.c, i.row_id), on = .(c,b<=b,id,a>=a), allow.cartesian = TRUE]), 12L) # just to check that there's no warning
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
