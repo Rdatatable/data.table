@@ -280,6 +280,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         // ilow and iupp now surround the group in ic, too
         break;
     case STRSXP :
+        if (op[col] != EQ) error("Only '==' operator is supported for columns of type %s.", type2char(TYPEOF(xc)));
         ival.s = ENC2UTF8(STRING_ELT(ic,ir));
         while(xlow < xupp-1) {
             mid = xlow + (xupp-xlow)/2;
