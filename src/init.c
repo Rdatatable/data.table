@@ -68,6 +68,7 @@ SEXP dim();
 SEXP gvar();
 SEXP gsd();
 SEXP gprod();
+SEXP nestedid();
 
 // .Externals
 SEXP fastmean();
@@ -138,6 +139,7 @@ R_CallMethodDef callMethods[] = {
 {"Cgvar", (DL_FUNC) &gvar, -1},
 {"Cgsd", (DL_FUNC) &gsd, -1},
 {"Cgprod", (DL_FUNC) &gprod, -1},
+{"Cnestedid", (DL_FUNC) &nestedid, -1},
 {NULL, NULL, 0}
 };
 

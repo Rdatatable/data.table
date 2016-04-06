@@ -8412,6 +8412,134 @@ y <- data.table(bb = 3:5, dd = 3:1)
 test(1640.1, x[y, x.aa, on=c(aa="bb")], INT(3,NA,NA))
 test(1640.2, x[y, c(.SD, .(x.aa=x.aa)), on=c(aa="bb")], data.table(aa=3:5, cc=c("c", NA,NA), x.aa=INT(3,NA,NA)))
 
+# tests for non-equi joins
+# function to create a random data.table with all necessary columns
+# set.seed(45L) # for testing..
+set.seed(unclass(Sys.time()))
+nq_fun = function(n=100L) {
+    i1 = sample(sample(n, 10L), n, TRUE)
+    i2 = sample(-n/2:n/2, n, TRUE)
+    i3 = sample(-1e6:1e6, n, TRUE)
+    i4 = sample(c(NA_integer_, sample(-n:n, 10L, FALSE)), n, TRUE)
+
+    d1 = sample(rnorm(10L), n, TRUE)
+    d2 = sample(rnorm(50), n, TRUE)
+    d3 = sample(c(Inf, -Inf, NA, NaN, runif(10L)), n, TRUE)
+    d4 = sample(c(NA, NaN, rnorm(10L)), n, TRUE)
+
+    c1 = sample(letters[1:5], n, TRUE)
+    c2 = sample(LETTERS[1:15], n, TRUE)
+
+    dt = data.table(i1,i2,i3,i4, d1,d2,d3,d4, c1,c2)
+    if ("package:bit64" %in% search()) {
+        I1 = as.integer64(sample(sample(n, 10L), n, TRUE))
+        I2 = as.integer64(sample(-n/2:n/2, n, TRUE))
+        I3 = as.integer64(sample(-1e6:1e6, n, TRUE))
+        I4 = as.integer64(sample(c(NA_integer_, sample(-n:n, 10L, FALSE)), n, TRUE))
+        dt = cbind(dt, data.table(I1,I2,I3,I4))
+    }
+    dt
+}
+
+dt1 = nq_fun(400L)
+dt2 = nq_fun(50L)
+x = na.omit(dt1)
+y = na.omit(dt2)
+nqjoin_test <- function(x, y, k=1L, test_no) {
+    ops = c("==", ">=", "<=", ">", "<")
+    xclass = sapply(x, class)
+    runcmb = combn(names(x), k)
+    runcmb = as.data.table(runcmb[, 1:min(100L, ncol(runcmb)), drop=FALSE]) # max 100 combinations to test
+    runops = lapply(runcmb, function(cols) {
+        thisops = sample(ops, k, TRUE)
+        thisops[grepl("^c", cols)] = "=="
+        thisops
+    })
+    is_only_na <- function(x) is.na(x) & !is.nan(x)
+    is_int64 <- function(x) "integer64" %in% class(x)
+    construct <- function(cols, vals, ops) {
+        expr = lapply(seq_along(cols), function(i) {
+            if (is_int64(vals[[i]])) {
+                if (is.na.integer64(vals[[i]])) if (ops[i] %in% c(">", "<")) quote(integer(0)) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
+                else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), as.integer(vals[[i]])))
+                # don't know how to construct a call with int64 -- vals[[i]] gets converted to NAN
+            } else {
+                if (is.nan(vals[[i]])) if (ops[i] %in% c(">", "<")) quote(integer(0)) else as.call(list(quote(is.nan), as.name(cols[[i]])))
+                else if (is_only_na(vals[[i]])) if (ops[i] %in% c(">", "<")) quote(integer(0)) else as.call(list(quote(is_only_na), as.name(cols[[i]])))
+                else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), vals[[i]]))
+            }
+        })
+        ans = expr[[1L]]
+        lapply(expr[-1L], function(e) ans <<- as.call(list(quote(`&`), ans, e)))
+        ans
+    }
+    check <- function(x, y, cols, ops) {
+        expr = lapply(1:nrow(y), function(i) {
+            expr = construct(cols, as.list(y[i, cols, with=FALSE]), ops)
+        })
+        ans = lapply(expr, function(e) x[eval(e)])
+        rbindlist(ans)
+    }
+    nq <- function(x, y, cols, ops, nomatch=0L) {
+        sd_cols = c(paste("x.", cols, sep=""), setdiff(names(x), cols))
+        ans = x[y, mget(sd_cols), on = paste(cols, ops, cols, sep=""), allow=TRUE, nomatch=nomatch]
+        setnames(ans, gsub("^x[.]", "", names(ans)))
+        setcolorder(ans, names(x))[]
+    }
+    for (i in seq_along(runcmb)) {
+        thiscols = runcmb[[i]]
+        thisops = runops[[i]]
+        # cat("k = ", k, "\ti = ", i, "\t thiscols = [", paste(thiscols,collapse=","), "]\t thisops = [", paste(thisops,collapse=","), "]\t ", sep="")
+        ans1 = nq(x, y, thiscols, thisops, 0L)
+        ans2 = check(x, y, thiscols, thisops)
+        test_no = signif(test_no+.001, 7)
+        test(test_no, all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)
+        # if (identical(all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)) cat("successful\n") else stop("failed\n")
+    }
+}
+nqjoin_test(  x,  y,1L,1641.0) # without NAs in x and i
+nqjoin_test(  x,  y,2L,1642.0)
+nqjoin_test(  x,  y,3L,1643.0)
+# tested, but takes quite some time.. so commenting for now
+# nqjoin_test(  x,dt2,1L,1644.0) # without NA only in x
+# nqjoin_test(  x,dt2,2L,1645.0)
+# nqjoin_test(  x,dt2,3L,1646.0)
+# nqjoin_test(dt1,  y,1L,1647.0) # without NA only in i
+# nqjoin_test(dt1,  y,2L,1648.0)
+# nqjoin_test(dt1,  y,3L,1649.0)
+nqjoin_test(dt1,dt2,1L,1650.0) # with NAs in x and i
+nqjoin_test(dt1,dt2,2L,1651.0)
+nqjoin_test(dt1,dt2,3L,1652.0)
+# TODO: add tests for nomatch=NA..
+
+# test for the issue Jan spotted...
+dt = data.table(id="x", a=as.integer(c(3,8,8,15,15,15,16,22,22,25,25)), b=as.integer(c(9,10,25,19,22,25,38,3,9,7,28)), c=as.integer(c(22,33,44,14,49,44,40,25,400,52,77)))
+set.seed(1L)
+dt=dt[sample(.N)]
+test(1653, uniqueN(dt[dt, .(x.id, x.a, x.b, x.c, i.id, i.a, i.b, i.c), which=FALSE, on = c("id==id","a>=a","b>=b"), allow.cartesian=TRUE]), 42L)
+
+# error on any op other than "==" on char type
+dt1 = data.table(x=sample(letters[1:2], 10, TRUE), y=sample(c(1L,5L,7L), 10, TRUE), z=1:10, k=11:20)
+dt2 = data.table(x=c("b", "a"), y=c(1L, 9L))
+test(1654, dt1[dt2, on="x>x"], error="Only '==' operator")
+
+# on= with .() syntax, #1257
+dt1 = data.table(x=sample(letters[1:2], 10, TRUE), y=sample(c(1L,5L,7L), 10, TRUE), z=1:10, k=11:20)
+dt2 = data.table(x=c("b", "a"), y=c(1L, 9L))
+test(1655.1, dt1[dt2, on=.(x)], dt1[dt2, on="x"])
+test(1655.2, dt1[dt2, on=.(x==x)], dt1[dt2, on=c("x==x")])
+test(1655.3, dt1[dt2, on=.(x==x)], dt1[dt2, on=c("x"="x")])
+test(1655.4, dt1[dt2, on=.(y>=y)], dt1[dt2, on=c("y>=y")])
+test(1655.4, dt1[dt2, on=.(x==x, y>=y)], dt1[dt2, on=c("x==x", "y>=y")])
+
+# Patching another issue spotted by Jan
+dt = data.table(id="x", a=as.integer(c(3,8,8,15,15,15,16,22,22,25,25)), 
+                b=as.integer(c(9,10,25,19,22,25,38,3,9,7,28)),
+                c=as.integer(c(22,33,44,14,49,44,40,25,400,52,77)))
+set.seed(1L)
+dt=dt[sample(.N)][, row_id := 1:.N]
+test(1656, nrow(dt[dt, .(x.id, x.a, x.b, x.c, x.row_id, i.id, i.a, i.b, i.c, i.row_id), on = .(c,b<=b,id,a>=a), allow.cartesian = TRUE]), 12L) # just to check that there's no warning
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

@@ -87,8 +87,7 @@ SEXP uniqlengths(SEXP x, SEXP n) {
 // but that seems unnecessary waste of memory and roundabout..
 // so, we'll do it directly here.. 'order()' is implemented in C-api, but not used 
 // in R side yet, but if need be, it can be added easily.
-SEXP rleid(SEXP l, SEXP order)
-{
+SEXP rleid(SEXP l, SEXP order) {
     Rboolean b, byorder;
     unsigned long long *ulv; // for numeric check speed-up
     SEXP v, ans, class;
@@ -138,3 +137,60 @@ SEXP rleid(SEXP l, SEXP order)
     return(ans);
 }
 
+SEXP nestedid(SEXP l, SEXP cols, SEXP order) {
+    Rboolean b, byorder;
+    SEXP v, ans, class;
+    R_len_t nrow = length(VECTOR_ELT(l,0)), ncol = length(cols);
+    R_len_t i, j, k, thisi, previ, grpsize=1000, ngrp=0;
+    R_len_t *tmp, *grp = Calloc(grpsize, R_len_t), *i64 = Calloc(ncol, R_len_t);
+    if (!isInteger(cols) || ncol == 0) error("cols must be an integer vector of positive length");
+    for (j=0; j<ncol; j++) {
+        class = getAttrib(VECTOR_ELT(l, INTEGER(cols)[j]-1), R_ClassSymbol);
+        i64[j] = isString(class) && STRING_ELT(class, 0) == char_integer64;
+    }
+    ans  = PROTECT(allocVector(INTSXP, nrow));
+    int *ians = INTEGER(ans);
+    byorder = length(order);
+    thisi = byorder ? INTEGER(order)[0]-1 : 0;
+    grp[0] = thisi; ngrp = 1; ians[thisi] = 1;
+    for (i=1; i<nrow; i++) {
+        thisi = byorder ? INTEGER(order)[i]-1 : i;
+        for (k=0; k<ngrp; k++) {
+            j = ncol;
+            b = TRUE;
+            previ = grp[k];
+            while(--j>0 && b) { // >= is not necessary since first col will always be in increasing order
+                v=VECTOR_ELT(l,INTEGER(cols)[j]-1);
+                switch(TYPEOF(v)) {
+                    case INTSXP: case LGLSXP:
+                    b = INTEGER(v)[thisi]>=INTEGER(v)[previ];
+                    break;
+                    case STRSXP :
+                    b=ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ)); break;
+                    case REALSXP:
+                    twiddle = i64[j] ? &i64twiddle : &dtwiddle;
+                    b = twiddle(DATAPTR(v), thisi, 1) >= twiddle(DATAPTR(v), previ, 1);
+                    break;
+                    default: error("Type '%s' not supported", type2char(TYPEOF(v)));
+                }
+            }
+            if (b) break;
+        }
+        if (b) {
+            grp[k] = thisi;
+            ians[thisi] = k+1;
+        } else {
+            grp[ngrp] = thisi;
+            ians[thisi] = ++ngrp;
+        }
+        if (ngrp >= grpsize) {
+            grpsize = 1.1*grpsize*nrow/i;
+            tmp = Realloc(grp, grpsize, int);
+            if (tmp != NULL) grp = tmp; else error("Error in reallocating memory in 'uniqlist'\n");
+        }
+    }
+    Free(grp);
+    Free(i64);
+    UNPROTECT(1);
+    return(ans);
+}
