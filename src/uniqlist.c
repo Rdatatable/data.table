@@ -190,6 +190,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order) {
         }
     }
     Free(grp);
+    Free(i64);
     UNPROTECT(1);
     return(ans);
 }
