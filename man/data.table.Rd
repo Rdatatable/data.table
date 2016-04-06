@@ -143,7 +143,17 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
   
   \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \href{../doc/datatable-faq.html}{datatable-faq}.}
 
-  \item{on}{ A named atomic vector of column names indicating which columns in \code{i} should be joined to which columns in \code{x}. When specified, this overrides the keys set on \code{x} and \code{i}. See \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} and \href{../doc/datatable-extend-subsets-to-joins.html}{Extending subsets to joins} vignettes, and examples.}
+  \item{on}{ Indicate which columns in \code{i} should be joined with columns in \code{x} along with the type of binary operator to join with. When specified, this overrides the keys set on \code{x} and \code{i}. There are multiple ways of specifying \code{on} argument: 
+        \itemize{
+            \item{As a character vector, e.g., \code{X[Y, on=c("a", "b")]}. This assumes both these columns are present in \code{X} and \code{Y}.}
+            \item{As a \emph{named} character vector, e.g., \code{X[Y, on=c(x="a", y="b")]}. This is useful when column names to join by are different between the two tables. 
+
+            NB: \code{X[Y, on=c("a", y="b")]} is also possible if column \code{"a"} is common between the two tables.}
+            \item{For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.}
+            \item{From v1.9.8, (non-equi) joins using binary operators \code{>=, >, <=, <} are also possible, e.g., \code{X[Y, on=c("x>=a", "y<=b")]}, or for interactive use as \code{X[Y, on=.(x>=a, y<=b)]}.}
+        }
+        See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} and \href{../doc/datatable-extend-subsets-to-joins.html}{Extending subsets to joins} vignettes for more.
+    }
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr
@@ -259,20 +269,23 @@ DT[, sum(v), by=x][order(x)]   # same but by chaining expressions together
 
 # fast ad hoc row subsets (subsets as joins)
 DT["a", on="x"]                # same as x == "a" but uses binary search (fast)
+DT["a", on=.(x)]               # same, for convenience, no need to quote every column
 DT[.("a"), on="x"]             # same
 DT[x=="a"]                     # same, single "==" internally optimised to use binary search (fast)
 DT[x!="b" | y!=3]              # not yet optimized, currently vector scan subset
 DT[.("b", 3), on=c("x", "y")]  # join on columns x,y of DT; uses binary search (fast)
+DT[.("b", 3), on=.(x, y)]      # same, but using on=.()
 DT[.("b", 1:2), on=c("x", "y")]             # no match returns NA
-DT[.("b", 1:2), on=c("x", "y"), nomatch=0]  # no match row is not returned
+DT[.("b", 1:2), on=.(x, y), nomatch=0]      # no match row is not returned
 DT[.("b", 1:2), on=c("x", "y"), roll=Inf]   # locf, nomatch row gets rolled by previous row
-DT[.("b", 1:2), on=c("x", "y"), roll=-Inf]  # nocb, nomatch row gets rolled by next row
+DT[.("b", 1:2), on=.(x, y), roll=-Inf]      # nocb, nomatch row gets rolled by next row
 DT["b", sum(v*y), on="x"]                   # on rows where DT$x=="b", calculate sum(v*y)
 
 # all together now
 DT[x!="a", sum(v), by=x]                    # get sum(v) by "x" for each i != "a"
 DT[!"a", sum(v), by=.EACHI, on="x"]         # same, but using subsets-as-joins
 DT[c("b","c"), sum(v), by=.EACHI, on="x"]   # same
+DT[c("b","c"), sum(v), by=.EACHI, on=.(x)]  # same, using on=.()
 
 # joins as subsets
 X = data.table(x=c("c","b"), v=8:7, foo=c(4,2))
@@ -282,6 +295,12 @@ DT[X, on="x"]                         # right join
 X[DT, on="x"]                         # left join
 DT[X, on="x", nomatch=0]              # inner join
 DT[!X, on="x"]                        # not join
+DT[X, on=.(y<=foo)]                   # NEW non-equi join (v1.9.8+)
+DT[X, on="y<=foo"]                    # same as above
+DT[X, on=c("y<=foo")]                 # same as above
+DT[X, on=.(y>=foo)]                   # NEW non-equi join (v1.9.8+)
+DT[X, on=.(x, y<=foo)]                # NEW non-equi join (v1.9.8+)
+DT[X, .(x,y,x.y,v), on=.(x, y>=foo)]  # Select x's join columns as well
 
 DT[X, on="x", mult="first"]           # first row of each group
 DT[X, on="x", mult="last"]            # last row of each group
@@ -386,13 +405,13 @@ DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
 vignette("datatable-intro")
 vignette("datatable-reference-semantics")
 vignette("datatable-keys-fast-subset")
-vignette("datatable-secondary-indices")
+vignette("datatable-secondary-indices-and-auto-indexing")
 vignette("datatable-extending-subsets-to-joins")
 vignette("datatable-reshape")
 vignette("datatable-faq")
 
 
-test.data.table()          # over 4700 low level tests
+test.data.table()          # over 5300 low level tests
 
 update.packages()          # keep up to date
 }}
