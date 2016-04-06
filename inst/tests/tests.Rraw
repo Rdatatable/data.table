@@ -8517,6 +8517,11 @@ set.seed(1L)
 dt=dt[sample(.N)]
 test(1653, uniqueN(dt[dt, .(x.id, x.a, x.b, x.c, i.id, i.a, i.b, i.c), which=FALSE, on = c("id==id","a>=a","b>=b"), allow.cartesian=TRUE]), 42L)
 
+# error on any op other than "==" on char type
+dt1 = data.table(x=sample(letters[1:2], 10, TRUE), y=sample(c(1L,5L,7L), 10, TRUE), z=1:10, k=11:20)
+dt2 = data.table(x=c("b", "a"), y=c(1L, 9L))
+test(1654, dt1[dt2, on="x>x"], error="Only '==' operator")
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
