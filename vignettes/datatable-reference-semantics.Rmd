@@ -135,7 +135,7 @@ For the rest of the vignette, we will work with `flights` *data.table*.
 #### -- How can we add columns *speed* and *total delay* of each flight to `flights` *data.table*?
 
 ```{r}
-flights[, `:=`(speed = distance / (air_time/60), # speed in km/h
+flights[, `:=`(speed = distance / (air_time/60), # speed in mph (mi/h)
                delay = arr_delay + dep_delay)]   # delay in minutes
 head(flights)
 
