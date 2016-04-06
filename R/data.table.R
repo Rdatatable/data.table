@@ -597,11 +597,22 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 stop("When i is a data.table (or character vector), the columns to join by must be specified either using 'on=' argument (see ?data.table) or by keying x (i.e. sorted, and, marked as sorted, see ?setkey). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
             }
             if (!missing(on)) {
-                if (!is.character(on))
-                    stop("'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
-                parse_on <- function(on) {
+                # on = .() is now possible, #1257
+                parse_on <- function(onsub) {
                     ops = c("==", "<=", "<", ">=", ">", "!=")
                     pat = paste("(", ops, ")", sep = "", collapse = "|")
+                    if (is.call(onsub) && onsub[[1L]] == "eval") {
+                        onsub = eval(onsub[[2L]], parent.frame(2L), parent.frame(2L))
+                        if (is.call(onsub) && onsub[[1L]] == "eval") onsub = onsub[[2L]]
+                    }
+                    if (is.call(onsub) && as.character(onsub[[1L]]) %in% c("list", ".")) {
+                        spat = paste("[ ]+(", pat, ")[ ]+", sep="")
+                        onsub = lapply(as.list(onsub)[-1L], function(x) gsub(spat, "\\1", deparse(x, width.cutoff=500L)))
+                        onsub = as.call(c(quote(c), onsub))
+                    }
+                    on = eval(onsub, parent.frame(2L), parent.frame(2L))
+                    if (!is.character(on))
+                        stop("'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
                     this_op = regmatches(on, gregexpr(pat, on))
                     idx = (vapply(this_op, length, 0L) == 0L)
                     this_op[idx] = "=="
@@ -620,7 +631,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         names(on)[empty_idx] = on[empty_idx]
                     list(on = on, ops = idx_op)
                 }
-                on_ops = parse_on(on)
+                on_ops = parse_on(substitute(on))
                 on = on_ops[[1L]]
                 ops = on_ops[[2L]]
                 # TODO: collect all '==' ops first to speeden up Cnestedid

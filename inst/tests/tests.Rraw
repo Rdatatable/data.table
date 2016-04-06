@@ -8522,6 +8522,15 @@ dt1 = data.table(x=sample(letters[1:2], 10, TRUE), y=sample(c(1L,5L,7L), 10, TRU
 dt2 = data.table(x=c("b", "a"), y=c(1L, 9L))
 test(1654, dt1[dt2, on="x>x"], error="Only '==' operator")
 
+# on= with .() syntax, #1257
+dt1 = data.table(x=sample(letters[1:2], 10, TRUE), y=sample(c(1L,5L,7L), 10, TRUE), z=1:10, k=11:20)
+dt2 = data.table(x=c("b", "a"), y=c(1L, 9L))
+test(1655.1, dt1[dt2, on=.(x)], dt1[dt2, on="x"])
+test(1655.2, dt1[dt2, on=.(x==x)], dt1[dt2, on=c("x==x")])
+test(1655.3, dt1[dt2, on=.(x==x)], dt1[dt2, on=c("x"="x")])
+test(1655.4, dt1[dt2, on=.(y>=y)], dt1[dt2, on=c("y>=y")])
+test(1655.4, dt1[dt2, on=.(x==x, y>=y)], dt1[dt2, on=c("x==x", "y>=y")])
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
