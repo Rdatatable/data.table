@@ -30,28 +30,19 @@ static SEXP i, x, nqgrp;
 static int ncol, *icols, *xcols, *o, *xo, *retFirst, *retLength, *retIndex, *allLen1, *allGrp1, *rollends, ilen, anslen;
 static int *op, nqmaxgrp, *tmpptr, scols;
 static int ctr, nomatch; // populating matches for non-equi joins
+enum {ALL, FIRST, LAST} mult = ALL;
 static double roll, rollabs;
 static Rboolean rollToNearest=FALSE;
 #define XIND(i) (xo ? xo[(i)]-1 : i)
 
 void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int thisgrp, int lowmax, int uppmax, int tmpctr);
 
-SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
+SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
     int xN, iN, protecti=0;
-    roll = 0.0;
-    rollToNearest = FALSE;
-    ctr=0, nomatch=INTEGER(nomatchArg)[0]; // needed for non-equi join case
+    ctr=0; // needed for non-equi join case
     SEXP retFirstArg, retLengthArg, retIndexArg, allLen1Arg, allGrp1Arg;
-    if (isString(rollarg)) {
-        if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
-        roll=1.0; rollToNearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
-    } else {
-        if (!isReal(rollarg)) error("Internal error: roll is not character or double");
-        roll = REAL(rollarg)[0];   // more common case (rolling forwards or backwards) or no roll when 0.0
-    }
-    rollabs = fabs(roll);
-    // raise(SIGINT);
-    
+
+    // iArg, xArg, icolsArg and xcolsArg
     i = iArg; x = xArg;  // set globals so bmerge_r can see them.
     if (!isInteger(icolsArg)) error("Internal error: icols is not integer vector");
     if (!isInteger(xcolsArg)) error("Internal error: xcols is not integer vector");
@@ -70,24 +61,48 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
         int xt = TYPEOF(VECTOR_ELT(x, xcols[col]-1));
         if (it != xt) error("typeof x.%s (%s) != typeof i.%s (%s)", CHAR(STRING_ELT(getAttrib(x,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(i,R_NamesSymbol),icols[col]-1)), type2char(it));
     }
-    if (!isLogical(rollendsArg) || LENGTH(rollendsArg) != 2) error("rollends must be a length 2 logical vector");
+    // raise(SIGINT);
+
+    // rollArg, rollendsArg
+    roll = 0.0; rollToNearest = FALSE;
+    if (isString(rollarg)) {
+        if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
+        roll=1.0; rollToNearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
+    } else {
+        if (!isReal(rollarg)) error("Internal error: roll is not character or double");
+        roll = REAL(rollarg)[0];   // more common case (rolling forwards or backwards) or no roll when 0.0
+    }
+    rollabs = fabs(roll);
+    if (!isLogical(rollendsArg) || LENGTH(rollendsArg) != 2)
+        error("rollends must be a length 2 logical vector");
     rollends = LOGICAL(rollendsArg);
-    if (rollToNearest && TYPEOF(VECTOR_ELT(i, icols[ncol-1]-1))==STRSXP) error("roll='nearest' can't be applied to a character column, yet.");
-    if (!isInteger(nqmaxgrpArg) || length(nqmaxgrpArg) != 1 || INTEGER(nqmaxgrpArg)[0] <= 0)
-        error("Intrnal error: nqmaxgrpArg is not a positive length-1 integer vector");
-    nqmaxgrp = INTEGER(nqmaxgrpArg)[0];
-    if (nqmaxgrp>1) anslen = 1.1 * ((iN > 1000) ? iN : 1000);
-    allLen1Arg = PROTECT(allocVector(LGLSXP, 1));
-    allLen1 = LOGICAL(allLen1Arg);
-    allLen1[0] = TRUE;  // All-0 and All-NA are considered all length 1 according to R code currently. Really, it means any(length>1).
-    allGrp1Arg = PROTECT(allocVector(LGLSXP, 1));
-    allGrp1 = LOGICAL(allGrp1Arg);
-    allGrp1[0] = TRUE;
-    protecti += 2;
+    if (rollToNearest && TYPEOF(VECTOR_ELT(i, icols[ncol-1]-1))==STRSXP)
+        error("roll='nearest' can't be applied to a character column, yet.");
+
+    // nomatch arg
+    nomatch = INTEGER(nomatchArg)[0];
+
+    // mult arg
+    if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
+    else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
+    else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
+    else error("Internal error: invalid value for 'mult', should have been caught before. Please report to datatable-help");
+
+    // opArg
     if (!isInteger(opArg) || length(opArg) != ncol)
         error("Internal error: opArg is not an integer vector of length equal to length(on)");
     op = INTEGER(opArg);
-    if (nqmaxgrp == 1) { // equi-joins
+    if (!isInteger(nqgrpArg))
+        error("Internal error: nqgrpArg must be an integer vector");
+    nqgrp = nqgrpArg; // set global for bmerge_r
+    scols = (!length(nqgrpArg)) ? 0 : -1; // starting col index, -1 is external group column for non-equi join case
+
+    // nqmaxgrpArg
+    if (!isInteger(nqmaxgrpArg) || length(nqmaxgrpArg) != 1 || INTEGER(nqmaxgrpArg)[0] <= 0)
+        error("Intrnal error: nqmaxgrpArg is not a positive length-1 integer vector");
+    nqmaxgrp = INTEGER(nqmaxgrpArg)[0];
+    if (nqmaxgrp>1 && mult == ALL) anslen = 1.1 * ((iN > 1000) ? iN : 1000);
+    if (nqmaxgrp == 1 || (nqmaxgrp>1 && mult != ALL)) { // equi joins (or) non-equi join but no multiple matches
         retFirstArg = PROTECT(allocVector(INTSXP, anslen));
         retFirst = INTEGER(retFirstArg);
         retLengthArg = PROTECT(allocVector(INTSXP, anslen));
@@ -96,7 +111,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
         retIndex = INTEGER(retIndexArg);
         protecti += 3;
     } else {
-        // non-equi case, may need reallocation
+        // non-equi case with mult=ALL, may need reallocation
         retFirst = Calloc(anslen, int); // anslen is set above
         retLength = Calloc(anslen, int);
         retIndex = Calloc(anslen, int);
@@ -109,6 +124,19 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
         // retLength[j] = 0;   // TO DO: do this to save the branch below and later branches at R level to set .N to 0
         retLength[j] = nomatch==0 ? 0 : 1;
     }
+
+    // allLen1Arg
+    allLen1Arg = PROTECT(allocVector(LGLSXP, 1));
+    allLen1 = LOGICAL(allLen1Arg);
+    allLen1[0] = TRUE;  // All-0 and All-NA are considered all length 1 according to R code currently. Really, it means any(length>1).
+
+    // allGrp1Arg, if TRUE, out of all nested group ids, only one of them matches 'x'. Might be rare, but helps to be more efficient in that case.
+    allGrp1Arg = PROTECT(allocVector(LGLSXP, 1));
+    allGrp1 = LOGICAL(allGrp1Arg);
+    allGrp1[0] = TRUE;
+    protecti += 2;
+
+    // isorted arg
     o = NULL;
     if (!LOGICAL(isorted)[0]) {
         SEXP order = PROTECT(vec_init(length(icolsArg), ScalarInteger(1))); // rep(1, length(icolsArg))
@@ -116,17 +144,17 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
         protecti += 2;
         if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
     }
+
+    // xo arg
     xo = NULL;
     if (length(xoArg)) {
         if (!isInteger(xoArg)) error("Internal error: xoArg is not an integer vector");
         xo = INTEGER(xoArg);
     }
-    if (!isInteger(nqgrpArg))
-        error("Internal error: nqgrpArg must be an integer vector");
-    nqgrp = nqgrpArg;
-    scols = (!length(nqgrpArg)) ? 0 : -1; // starting col index, -1 is external group column for non-equi join case
+
+    // start bmerge
     if (iN) {
-        // this part is embarassingly parallel, if we've storage space for nqmaxgrp*iN
+        // embarassingly parallel if we've storage space for nqmaxgrp*iN
         for (int kk=0; kk<nqmaxgrp; kk++) {
             // Rprintf("kk = %d, max = %d, ctr=%d, len=%d\n", kk+1, nqmaxgrp, ctr, anslen);
             bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1,0);
@@ -144,7 +172,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
         }
     }
     ctr += iN;
-    if (nqmaxgrp > 1) {
+    if (nqmaxgrp > 1 && mult == ALL) {
         // memcpy ret* to SEXP
         retFirstArg = PROTECT(allocVector(INTSXP, ctr));
         retLengthArg = PROTECT(allocVector(INTSXP, ctr));
@@ -167,7 +195,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     SET_STRING_ELT(ansnames, 3, mkChar("allLen1"));
     SET_STRING_ELT(ansnames, 4, mkChar("allGrp1"));
     setAttrib(ans, R_NamesSymbol, ansnames);
-    if (nqmaxgrp > 1) {
+    if (nqmaxgrp > 1 && mult == ALL) {
         Free(retFirst);
         Free(retLength);
         Free(retIndex);
@@ -392,38 +420,56 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
             // final two 1's are lowmax and uppmax
         } else {
             int len = xupp-xlow-1;
-            if (len>1) allLen1[0] = FALSE;
+            if (mult==ALL && len>1) allLen1[0] = FALSE;
             if (nqmaxgrp == 1) {
                 for (j=ilow+1; j<iupp; j++) {   // usually iterates once only for j=ir
                     k = o ? o[j]-1 : j;
-                    retFirst[k] = xlow+2;       // extra +1 for 1-based indexing at R level
-                    retLength[k]= len;
+                    retFirst[k] = (mult != LAST) ? xlow+2 : xupp; // extra +1 for 1-based indexing at R level
+                    retLength[k]= (mult == ALL) ? len : 1;
                     // retIndex initialisation is taken care of in bmerge and doesn't change for thisgrp=1
                 }
             } else {
-                // non-equi join, and for this irow, we've matches on more than one group
+                // non-equi join
                 for (j=ilow+1; j<iupp; j++) {
                     k = o ? o[j]-1 : j;
                     if (retFirst[k] != nomatch) {
-                        retFirst[ctr+ilen] = xlow+2;
-                        retLength[ctr+ilen] = len;
-                        retIndex[ctr+ilen] = k+1;
-                        ++ctr;
-                        if (ctr+ilen >= anslen) {
-                            anslen = 1.1*anslen;
-                            tmpptr = Realloc(retFirst, anslen, int);
-                            if (tmpptr != NULL) retFirst = tmpptr; else error("Error in reallocating memory in non-equi joins \n");
-                            tmpptr = Realloc(retLength, anslen, int);
-                            if (tmpptr != NULL) retLength = tmpptr; else error("Error in reallocating memory in non-equi joins \n");
-                            tmpptr = Realloc(retIndex, anslen, int);
-                            if (tmpptr != NULL) retIndex = tmpptr; else error("Error in reallocating memory in non-equi joins \n");
+                        if (mult == ALL) {
+                            // for this irow, we've matches on more than one group
+                            allGrp1[0] = FALSE;
+                            retFirst[ctr+ilen] = xlow+2;
+                            retLength[ctr+ilen] = len;
+                            retIndex[ctr+ilen] = k+1;
+                            ++ctr;
+                            if (ctr+ilen >= anslen) {
+                                anslen = 1.1*anslen;
+                                tmpptr = Realloc(retFirst, anslen, int);
+                                if (tmpptr != NULL) retFirst = tmpptr; 
+                                else error("Error in reallocating memory in non-equi joins \n");
+                                tmpptr = Realloc(retLength, anslen, int);
+                                if (tmpptr != NULL) retLength = tmpptr; 
+                                else error("Error in reallocating memory in non-equi joins \n");
+                                tmpptr = Realloc(retIndex, anslen, int);
+                                if (tmpptr != NULL) retIndex = tmpptr; 
+                                else error("Error in reallocating memory in non-equi joins \n");
+                            }
+                        } else if (mult == FIRST) {
+                            retFirst[k] = (retFirst[k] > xlow+2) ? xlow+2 : retFirst[k];
+                            retLength[k] = 1;
+                        } else {
+                            retFirst[k] = (retFirst[k] < xupp) ? xupp : retFirst[k];
+                            retLength[k] = 1;
                         }
                     } else {
                         // none of the groups so far have filled in for this index. So use it!
-                        retFirst[k] = xlow+2;
-                        retLength[k] = len;
-                        retIndex[k] = k+1;
-                        // no need to increment ctr of course
+                        if (mult == ALL) {
+                            retFirst[k] = xlow+2;
+                            retLength[k] = len;
+                            retIndex[k] = k+1;
+                            // no need to increment ctr of course
+                        } else {
+                            retFirst[k] = (mult == FIRST) ? xlow+2 : xupp;
+                            retLength[k] = 1;
+                        }
                     }
                 }
             }
@@ -481,7 +527,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                 retLength[k]= retLength[ir]; 
             }
         }
-    } else if (nqmaxgrp>1) {
+    } else if (nqmaxgrp > 1 && mult == ALL) {
         for (j=ilow+1; j<iupp; j++) {
             k = o ? o[j]-1 : j;
             retIndex[k] = k+1;

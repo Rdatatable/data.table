@@ -80,7 +80,7 @@
 
   31. `on=.()` syntax is now posible, e.g., `X[Y, on=.(x==a, y==b)]`, [#1257](https://github.com/Rdatatable/data.table/issues/1257). Thanks @dselivanov.
 
-  32. Non-equi joins are now possible using the familiar `on=` syntax. With this, the set of binary operators extend from just `==` to `>=`, `>`, `<=`, `<` and `==`. For e.g., `X[Y, on=.(a, b>b)]` looks for `X.a == Y.a` first and within those matching rows for rows where`X.b > Y.b`. Partly addreses [#1452](https://github.com/Rdatatable/data.table/issues/1452).
+  32. Non-equi joins are now possible using the familiar `on=` syntax. With this, the set of binary operators extend from just `==` to `>=`, `>`, `<=`, `<` and `==`. For e.g., `X[Y, on=.(a, b>b)]` looks for `X.a == Y.a` first and within those matching rows for rows where`X.b > Y.b`. Arguments `mult` and `nomatch` work as expected. `by=.EACHI` is not yet implemented. Partly addreses [#1452](https://github.com/Rdatatable/data.table/issues/1452).
 
   33. `%between%` is vectorised which means we can now do: `DT[x %between% list(y,z)]` which is equivalent to `DT[x >= y & x <= z]`, [#534](https://github.com/Rdatatable/data.table/issues/534). Thanks @MicheleCarriero for filing the issue and the idea.
 

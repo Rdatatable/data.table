@@ -556,7 +556,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 i = as.data.table( unique(RHS) )
                 # To do: wrap isub[[3L]] with as.data.table() first before eval to save copy
                 leftcols = 1L
-                ans = bmerge(i, x, leftcols, rightcols, io<-FALSE, xo, roll=0.0, rollends=c(FALSE,FALSE), nomatch=0L, 1L, nqgrp, nqmaxgrp, verbose=verbose)
+                ans = bmerge(i, x, leftcols, rightcols, io<-FALSE, xo, roll=0.0, rollends=c(FALSE,FALSE), nomatch=0L, mult="all", 1L, nqgrp, nqmaxgrp, verbose=verbose)
                 # No need to shallow copy i before passing to bmerge; we just created i above ourselves
                 i = if (ans$allLen1 && !identical(suppressWarnings(min(ans$starts)), 0L)) ans$starts else vecseq(ans$starts, ans$lens, NULL)
                 if (length(xo)) i = fsort(xo[i]) else i = fsort(i) # fix for #1495
@@ -697,7 +697,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             }
             io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
             i = .shallow(i, retain.key = io)
-            ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, ops, nqgrp, nqmaxgrp, verbose=verbose)
+            ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
             # temp fix for issue spotted by Jan. Ideally would like to avoid this 'setorder', as there's another 
             # 'setorder' in generating 'irows' below...
             if (length(ans$indices)) setorder(setDT(ans[1:3]), indices)
@@ -735,13 +735,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     if (length(irows)) stop("Internal error. irows has length in by=.EACHI")
                 }
             } else {
-                if (nqmaxgrp>1L) stop("Non-equi joins don't work with mult='first' and mult='last' yet.")
-                if (!byjoin) { # fix for #1287 and #1271
-                    irows = if (mult=="first") f__ else f__+len__-1L
+                # mult="first"/"last" logic moved to bmerge.c, also handles non-equi cases, #1452
+                if (!byjoin) { #1287 and #1271
+                    irows = f__ # len__ is set to 1 as well, no need for 'pmin' logic
                     if (identical(nomatch,0L)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
-                } else { if (mult == "last") f__ = f__+len__- 1L } # fix for #1287 and #1271
-                # for test 456, and consistency generally. The if() is for R < 2.15.1 when pmin was enhanced, see v1.8.6.
-                if (length(len__)) len__ = pmin(len__, 1L)
+                }
+                # TODO: when nomatch=NA, len__ need not be allocated / set at all for mult="first"/"last"?
+                # TODO: how about when nomatch=0L, can we avoid allocating then as well?
             }
             if (length(xo) && length(irows)) {
                 irows = xo[irows]   # TO DO: fsort here?

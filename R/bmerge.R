@@ -1,5 +1,5 @@
 
-bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, ops, nqgrp, nqmaxgrp, verbose)
+bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose)
 {
     # TO DO: rename leftcols to icols, rightcols to xcols
     # NB: io is currently just TRUE or FALSE for whether i is keyed
@@ -90,7 +90,7 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, o
         }
     }
     if (verbose) {last.started.at=proc.time()[3];cat("Starting bmerge ...");flush.console()}
-    ans = .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), io<-haskey(i), xo, roll, rollends, nomatch, ops, nqgrp, nqmaxgrp)
+    ans = .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), io<-haskey(i), xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
     # NB: io<-haskey(i) necessary for test 579 where the := above change the factor to character and remove i's key
     if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
 
