@@ -1625,7 +1625,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                                 jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
                                 jn__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
                                 idx  = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
-                                if (any(idx)) jn__[idx] = ifelse(jn__[idx] == "", "I", jn__[idx])
+                                if (any(idx)) jn__[idx & (jn__ == "")] = "I"
                                 jvnames = c(jvnames, jn__)
                                 jsubl[[i_]] = jl__
                             }
