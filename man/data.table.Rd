@@ -7,9 +7,11 @@
 \alias{[.data.table}
 \title{ Enhanced data.frame }
 \description{
-   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast subset, fast grouping, fast update, fast equi, rolling and overlapping range joins, fast file reader in a short and flexible syntax, for faster development. It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that accept \emph{only} \code{data.frame}s.
+   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast and nemory efficient: file reader and writer, aggregations, updates, equi, non-equi, rolling, range and interval joins, in a short and flexible syntax, for faster development. 
+
+   It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that accept \emph{only} \code{data.frame}s.
    
-   Type \code{vignette(package="data.table")} to get started. The \href{../doc/datatable-intro.html}{Introduction to data.table} vignette introduces \code{data.table}'s \code{x[i, j, by]} syntax and is a good place to start. If you have read the vignettes and the help page below, please feel free to ask questions on Stack Overflow \href{http://stackoverflow.com/questions/tagged/data.table}{data.table tag} or on \href{http://r.789695.n4.nabble.com/datatable-help-f2315188.html}{datatable-help} mailing list. To report a bug please type: \code{bug.report(package="data.table")}.
+   Type \code{vignette(package="data.table")} to get started. The \href{../doc/datatable-intro.html}{Introduction to data.table} vignette introduces \code{data.table}'s \code{x[i, j, by]} syntax and is a good place to start. If you have read the vignettes and the help page below, please feel free to ask questions on Stack Overflow \href{http://stackoverflow.com/questions/tagged/data.table}{data.table tag} or on \href{http://r.789695.n4.nabble.com/datatable-help-f2315188.html}{datatable-help} mailing list. To report a bug please type: \code{bug.report(package = "data.table")}.
    
    Please check the \href{https://github.com/Rdatatable/data.table/wiki}{homepage} for up to the minute \href{https://github.com/Rdatatable/data.table/blob/master/README.md}{news}.
    
@@ -52,23 +54,26 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
         \code{character}, \code{list} and \code{data.frame} input to \code{i} is converted into a \code{data.table} internally using \code{\link{as.data.table}}. 
 
-        If \code{i} is a \code{data.table}, the columns in \code{i} to be matched against \code{x} can be done using one of these ways:
+        If \code{i} is a \code{data.table}, the columns in \code{i} to be matched against \code{x} can be specified using one of these ways:
 
         \itemize{
-            \item{\code{on} argument (see below) -- takes a named vector of column names, e.g., \code{c(m="a", n="b")}indicates \code{i.a} to be matched against \code{x.m} and \code{i.b} against \code{x.b}. This is the recommended method now.}
+            \item{\code{on} argument (see below). It allows for both \code{equi-} and the newly implemented \code{non-equi} joins.}
 
-            \item{If not, \code{x} \emph{must be keyed}. Key can be set using \code{\link{setkey}}. If \code{i} is also keyed, then first \emph{key} column of \code{i} is matched against first \emph{key} column of \code{x}, second against second, etc.. 
+            \item{If not, \code{x} \emph{must be keyed}. Key can be set using \code{\link{setkey}}. If \code{i} is also keyed, then first \emph{key} column of \code{i} is matched against first \emph{key} column of \code{x}, second against second, etc..
 
             If \code{i} is not keyed, then first column of \code{i} is matched against first \emph{key} column of \code{x}, second column of \code{i} against second \emph{key} column of \code{x}, etc...
 
             This is summarised in code as \code{min(length(key(x)), if (haskey(i)) length(key(i)) else ncol(i))}.}
         }
+        Using \code{on=} is recommended (even during keyed joins) as it helps understand the code better and also allows for \emph{non-equi} joins.
   
-        This performs an \emph{equi-join}. In SQL terms, \code{x[i]} is a \emph{right join} by default. \code{i} prefixed with \code{!} signals a \emph{not-join} or \emph{not-select}.
+        When the binary operator \code{==} alone is used, an \emph{equi} join is performed. In SQL terms, \code{x[i]} then performs a \emph{right join} by default. \code{i} prefixed with \code{!} signals a \emph{not-join} or \emph{not-select}. 
 
-        \emph{Advanced:} When \code{i} is a single variable name, it is not considered an expression of column names and is instead evaluated in calling scope.
+        Support for \emph{non-equi} join was recently implemented, which allows for other binary operators \code{>=, >, <= and <}.
 
         See \href{../doc/datatable-keys-fast-subset.html}{Keys and fast binary search based subset}, \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} and \href{../doc/datatable-extend-subsets-to-joins.html}{Extending subsets to joins} vignettes.
+
+        \emph{Advanced:} When \code{i} is a single variable name, it is not considered an expression of column names and is instead evaluated in calling scope.
     }
 
     \item{j}{When \code{with=TRUE} (default), \code{j} is evaluated within the frame of the data.table; i.e., it sees column names as if they are variables. This allows to not just \emph{select} columns in \code{j}, but also \code{compute} on them e.g., \code{x[, a]} and \code{x[, sum(a)]} returns \code{x$a} and \code{sum(x$a)} as a vector respectively. \code{x[, .(a, b)]} and \code{x[, .(sa=sum(a), sb=sum(b))]} returns a two column data.table each, the first simply \emph{selecting} columns \code{a, b} and the second \emph{computing} their sums. 
@@ -79,7 +84,9 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
     \emph{Advanced:} \code{j} also allows the use of special \emph{read-only} symbols: \code{\link{.SD}}, \code{\link{.N}}, \code{\link{.I}}, \code{\link{.GRP}}, \code{\link{.BY}}.
 
-    \emph{Advanced:} When \code{i} is a \code{data.table}, the columns of \code{i} can be referred to in \code{j} by using the prefix \code{i.}, e.g., \code{X[Y, .(val, i.val)]}. Here \code{val} refers to \code{X}'s column and \code{i.val} \code{Y}'s.
+    \emph{Advanced:} When \code{i} is a \code{data.table}, the columns of \code{i} can be referred to in \code{j} by using the prefix \code{i.}, e.g., \code{X[Y, .(val, i.val)]}. Here \code{val} refers to \code{X}'s column and \code{i.val} \code{Y}'s. 
+
+    \emph{Advanced:} Columns of \code{x} can now be referred to using the prefix \code{x.} and is particularly useful during joining to refer to \code{x}'s \emph{join} columns as they are otherwise masked by \code{i}'s. For example, \code{X[Y, .(x.a-i.a, b), on="a"]}.
 
     See \href{../doc/datatable-intro.html}{Introduction to data.table} vignette and examples.} 
 
@@ -389,14 +396,13 @@ DT[, {tmp <- mean(y);
                                       # expression. TO REMEMBER: every element of 
                                       # the list becomes a column in result.
 pdf("new.pdf")
-DT[, plot(a,b), by=x]         # can also plot in 'j'
+DT[, plot(a,b), by=x]                 # can also plot in 'j'
 dev.off()
-
 
 # using rleid, get max(y) and min of all cols in .SDcols for each consecutive run of 'v'
 DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
 
-# Follow r-help posting guide, support is here (*not* r-help) :
+# Follow r-help posting guide, SUPPORT is here (*not* r-help) :
 # http://stackoverflow.com/questions/tagged/data.table
 # or
 # datatable-help@lists.r-forge.r-project.org
@@ -413,7 +419,11 @@ vignette("datatable-faq")
 
 test.data.table()          # over 5300 low level tests
 
-update.packages()          # keep up to date
+# keep up to date with latest stable version on CRAN
+update.packages()
+# get the latest devel (needs Rtools for windows, xcode for mac)
+install.packages("data.table", repos = "https://Rdatatable.github.io/data.table", type = "source")
+
 }}
 \keyword{ data }
 
