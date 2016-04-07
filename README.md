@@ -239,6 +239,8 @@
   23. Fixed example in `?as.data.table.Rd`, [#1576](https://github.com/Rdatatable/data.table/issues/1576). Thanks @MichaelChirico.
 
   24. Fixed an edge case and added tests for columns of type `function`, [#518](https://github.com/Rdatatable/data.table/issues/518).
+  
+  25. `data.table`'s dependency has been moved forward from R 2.14.1 to R 2.15.0 (Mar 2012; i.e. 4 years old). We keep this dependency as old as possible for as long as possible as requested by users in managed environments. This bump allows `data.table` to use `paste0()` internally and in tests for the first time. Before release to CRAN [our procedures](https://github.com/Rdatatable/data.table/blob/master/CRAN_Release.cmd) include running the test suite using this stated dependency.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
