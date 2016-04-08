@@ -735,6 +735,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     if (length(irows)) stop("Internal error. irows has length in by=.EACHI")
                 }
             } else {
+                if (nqmaxgrp>1L) stop("Non-equi joins aren't yet functional with mult='first' and mult='last'.")
                 # mult="first"/"last" logic moved to bmerge.c, also handles non-equi cases, #1452
                 if (!byjoin) { #1287 and #1271
                     irows = f__ # len__ is set to 1 as well, no need for 'pmin' logic
