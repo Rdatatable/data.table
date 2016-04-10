@@ -14,7 +14,7 @@ addToDrat(){
   git config user.email "addToDrat@travis.ci"
 
   ## Get drat repo
-  git remote add upstream "https://$GH_TOKEN@github.com/Rdatatable/data.table.git"
+  git remote add upstream "https://$GH_TOKEN@github.com/Rdatatable/data.table.git" 2>err.txt
   git fetch upstream gh-pages 2>err.txt
   git checkout gh-pages 2>err.txt
   git reset --hard "88000defd316538c37af4c8dc842e73e7953f4e2" 2>err.txt
