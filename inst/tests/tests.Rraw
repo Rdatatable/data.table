@@ -8513,11 +8513,12 @@ nqjoin_test(dt1,dt2,3L,1652.0)
 # TODO: add tests for nomatch=NA..
 # TODO: add tests for mult="first" and mult="last"
 
-# test for the issue Jan spotted...
+# test for the issues Jan spotted...
 dt = data.table(id="x", a=as.integer(c(3,8,8,15,15,15,16,22,22,25,25)), b=as.integer(c(9,10,25,19,22,25,38,3,9,7,28)), c=as.integer(c(22,33,44,14,49,44,40,25,400,52,77)))
 set.seed(1L)
 dt=dt[sample(.N)]
-test(1653, uniqueN(dt[dt, .(x.id, x.a, x.b, x.c, i.id, i.a, i.b, i.c), which=FALSE, on = c("id==id","a>=a","b>=b"), allow.cartesian=TRUE]), 42L)
+test(1653.1, uniqueN(dt[dt, .(x.id, x.a, x.b, x.c, i.id, i.a, i.b, i.c), which=FALSE, on = c("id==id","a>=a","b>=b"), allow.cartesian=TRUE]), 42L)
+test(1653.2, x[y, .(x.i1, x.i2, x.i3, x.i4, x.d1, x.d2, x.d3, x.d4, x.c1, x.c2, i.i1, i.i2, i.i3, i.i4, i.d1, i.d2, i.d3, i.d4, i.c1, i.c2), on = c("i4==i4", "i1>=i1", "d4<=d4", "i3==i3", "d3>d3", "i2>i2", "d2>=d2", "d1>d1"), allow.cartesian = TRUE], x[y, .(x.i1, x.i2, x.i3, x.i4, x.d1, x.d2, x.d3, x.d4, x.c1, x.c2, i.i1, i.i2, i.i3, i.i4, i.d1, i.d2, i.d3, i.d4, i.c1, i.c2), on = c("i4==i4", "i1>=i1", "d4<=d4", "i3==i3", "d3>d3", "i2>i2", "d2>=d2", "d1>d1"), allow.cartesian = TRUE]) # ensuring there are no warnings here really..
 
 # error on any op other than "==" on char type
 dt1 = data.table(x=sample(letters[1:2], 10, TRUE), y=sample(c(1L,5L,7L), 10, TRUE), z=1:10, k=11:20)
@@ -8573,7 +8574,7 @@ local({
   fwrite_test(1658.3, function(f) {
     fwrite(data.table(
       a=c(NA, 1.2e-100, 3.01),
-      `other "column`=c('foo bar', NA, 'quote" and \\ bs')),
+      "other \"column"=c('foo bar', NA, 'quote" and \\ bs')),
       f, quote=T, qmethod="double")
   }, '"a","other ""column"\n,"foo bar"\n1.2e-100,\n3.01,"quote"" and \\ bs"\n')
 
@@ -8679,6 +8680,24 @@ range = data.table(start = 1:5, end = 6:10)
 test(1659.1, dt[a %anywhere% range], dt[1:4])
 test(1659.2, dt[anywhere(a, range$start, range$end)], dt[1:4])
 test(1659.3, dt[anywhere(a, range$start, range$end, incbounds=FALSE)], dt[c(1,2,4)])
+
+# tests for non-equi joins returning columns correctly when j is missing
+dt1 = fread('Chr    Start    End    Region
+chr6    3324    3360   Region1
+chr4    2445    2455   Region2
+chr1    1034    1090   Region4')
+dt2 = fread('Site    Chr     Location    Gene    
+Site1   chr4    2447        GeneB   
+Site2   chr9    1153        GeneT   
+Site3   chr6    3350        GeneM   
+Site4   chr1    1034        GeneC   
+Site5   chr1    2000        GeneU   
+Site6   chr6    3359        GeneF   
+Site7   chr7    1158        GeneI   
+Site8   chr4    2451        GeneO
+Site9   chr6    3367        GeneZ   ')
+test(1660.1, names(dt2[dt1, on=.(Chr, Location>=Start, Location<=End)]), c(names(dt2), "Location.1", "Region"))
+test(1660.2, names(dt1[dt2, on=.(Chr, Start<=Location, End>=Location)]), c(names(dt1), "Site", "Gene"))
 
 ##########################
 

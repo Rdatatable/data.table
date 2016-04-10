@@ -746,7 +746,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             }
             if (length(xo) && length(irows)) {
                 irows = xo[irows]   # TO DO: fsort here?
-                if (mult=="all" && nqmaxgrp>1L && length(xo)) {
+                if (mult=="all" && !allGrp1 && length(xo)) {
                     irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))$irows
                 }
             }
@@ -797,19 +797,24 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # missing(by)==TRUE was already checked above before dealing with i
         if (!length(x)) return(null.data.table())
         if (!length(leftcols)) {
-            ansvars = names(x)
+            ansvars = nx = names(x)
             jisvars = character()
             xcols = xcolsAns = seq_along(x)
         } else {
             jisvars = names(i)[-leftcols]
             tt = jisvars %chin% names(x)
             if (length(tt)) jisvars[tt] = paste("i.",jisvars[tt],sep="")
-            ansvars = make.unique(c(names(x), jisvars))
+            if (length(duprightcols <- rightcols[duplicated(rightcols)])) {
+                nx = c(names(x), names(x)[duprightcols])
+                rightcols = chmatch2(names(x)[rightcols], nx)
+                nx = make.unique(nx)
+            } else nx = names(x)
+            ansvars = make.unique(c(nx, jisvars))
             icols = c(leftcols, seq_along(i)[-leftcols])
-            icolsAns = c(rightcols, seq.int(ncol(x)+1L, length.out=ncol(i)-length(leftcols)))
+            icolsAns = c(rightcols, seq.int(length(nx)+1L, length.out=ncol(i)-length(unique(leftcols))))
             xcols = xcolsAns = seq_along(x)[-rightcols]
         }
-        ansvals = chmatch(ansvars, names(x))
+        ansvals = chmatch(ansvars, nx)
     } else {
         # These commented lines are moved to the top for #800.
         # jsub = substitute(j)
@@ -1283,7 +1288,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # TO DO: port more of this to C
             ans = vector("list", length(ansvars))
             if (length(i) && length(icols)) {
-                if (allLen1 && nqmaxgrp==1L && (is.na(nomatch) || !any(f__==0L))) {   # nomatch=0 should drop rows in i that have no match
+                if (allLen1 && allGrp1 && (is.na(nomatch) || !any(f__==0L))) {   # nomatch=0 should drop rows in i that have no match
                     for (s in seq_along(icols)) {
                         target = icolsAns[s]
                         source = icols[s]
@@ -1291,7 +1296,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         if (address(ans[[target]]) == address(i[[source]])) ans[[target]] = copy(ans[[target]])
                     }
                 } else {
-		    ii = rep.int(if(nqmaxgrp==1L) seq_len(nrow(i)) else indices__, len__)
+		    ii = rep.int(if(allGrp1) seq_len(nrow(i)) else indices__, len__)
                     for (s in seq_along(icols)) {
                         target = icolsAns[s]
                         source = icols[s]

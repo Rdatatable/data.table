@@ -117,6 +117,8 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
         retIndex = Calloc(anslen, int);
         if (retFirst==NULL || retLength==NULL || retIndex==NULL)
             error("Internal error in allocating memory for non-equi join");
+        // initialise retIndex here directly, as next loop is meant ofr both equi and non-equi joins
+        for (int j=0; j<anslen; j++) retIndex[j] = j+1;
     }
     for (int j=0; j<anslen; j++) {
         // defaults need to populated here as bmerge_r may well not touch many locations, say if the last row of i is before the first row of x.
@@ -526,11 +528,6 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                 retFirst[k] = retFirst[ir];
                 retLength[k]= retLength[ir]; 
             }
-        }
-    } else if (nqmaxgrp > 1 && mult == ALL) {
-        for (j=ilow+1; j<iupp; j++) {
-            k = o ? o[j]-1 : j;
-            retIndex[k] = k+1;
         }
     }
     // Rprintf("FINAL %d: ilow=%d, iupp=%d, ilowIn=%d, iuppIn=%d, xlow=%d, xlowIn=%d, xupp=%d, xuppIn=%d, col=%d, op=%d\n", tmpctr, ilow, iupp, ilowIn, iuppIn, xlow, xlowIn, xupp, xuppIn, col, op[col]);
