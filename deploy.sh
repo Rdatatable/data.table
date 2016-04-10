@@ -12,17 +12,17 @@ addToDrat(){
   git init
   git config user.name "addToDrat"
   git config user.email "addToDrat@travis.ci"
-  git config --global push.default simple
 
   ## Get drat repo
   git remote add upstream "https://$GH_TOKEN@github.com/Rdatatable/data.table.git"
-  git fetch upstream 2>err.txt
-  git checkout gh-pages
+  git fetch upstream gh-pages 2>err.txt
+  git checkout gh-pages 2>err.txt
+  git reset --hard "88000defd316538c37af4c8dc842e73e7953f4e2" 2>err.txt
 
   Rscript -e "drat::insertPackage('$PKG_REPO/$PKG_TARBALL', \
     repodir = '.', \
     commit='Travis publish data.table: build $TRAVIS_BUILD_NUMBER')"
-  git push 2>err.txt
+  git push --force upstream gh-pages 2>err.txt
   
 }
 
