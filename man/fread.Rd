@@ -90,7 +90,7 @@ To read fields \emph{as is} instead, use \code{quote = ""}.
 Background :\cr
 \url{http://cran.r-project.org/doc/manuals/R-data.html}\cr
 \url{http://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}\cr
-\url{www.biostat.jhsph.edu/~rpeng/docs/R-large-tables.html}\cr
+\url{http://www.biostat.jhsph.edu/~rpeng/docs/R-large-tables.html}\cr
 \url{https://stat.ethz.ch/pipermail/r-help/2007-August/138315.html}\cr
 \url{http://www.cerebralmastication.com/2009/11/loading-big-data-into-r/}\cr
 \url{http://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
