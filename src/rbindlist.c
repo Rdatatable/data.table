@@ -1,20 +1,10 @@
 #include "data.table.h"
 #include <Rdefines.h>
-#include <Rversion.h>
 #include <stdint.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
 /* Eddi's hash setup for combining factor levels appropriately - untouched from previous state (except made combineFactorLevels static) */
-
-// Fixes #5150
-// a simple check for R version to decide if the type should be R_len_t or R_xlen_t
-// long vector support was added in R 3.0.0
-#if defined(R_VERSION) && R_VERSION >= R_Version(3, 0, 0)
-  typedef R_xlen_t RLEN;
-#else
-  typedef R_len_t RLEN;
-#endif
 
 // a simple linked list, will use this when finding global order for ordered factors
 // will keep two ints

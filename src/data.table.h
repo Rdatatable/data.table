@@ -1,9 +1,19 @@
 #include <R.h>
 #define USE_RINTERNALS
 #include <Rinternals.h>
+#include <Rversion.h>
 // #include <omp.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
+
+// Fixes R-Forge #5150, and #1641
+// a simple check for R version to decide if the type should be R_len_t or R_xlen_t
+// long vector support was added in R 3.0.0
+#if defined(R_VERSION) && R_VERSION >= R_Version(3, 0, 0)
+  typedef R_xlen_t RLEN;
+#else
+  typedef R_len_t RLEN;
+#endif
 
 #define IS_UTF8(x)  (LEVELS(x) & 8)
 #define IS_ASCII(x) (LEVELS(x) & 64)

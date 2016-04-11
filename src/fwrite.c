@@ -1,3 +1,4 @@
+#include "data.table.h"
 #include <R.h>
 #include <errno.h>
 #include <Rinternals.h>
@@ -28,10 +29,10 @@ void writefile(SEXP list_of_columns,
   FILE *f = fopen(CHAR(STRING_ELT(filename, 0)), open_mode);
   if (f == NULL) goto end;
   
-  R_xlen_t ncols = LENGTH(list_of_columns);
-  R_xlen_t nrows = LENGTH(VECTOR_ELT(list_of_columns, 0));
+  RLEN ncols = LENGTH(list_of_columns);
+  RLEN nrows = LENGTH(VECTOR_ELT(list_of_columns, 0));
   
-  for (R_xlen_t row_i = 0; row_i < nrows; ++row_i) {
+  for (RLEN row_i = 0; row_i < nrows; ++row_i) {
     for (int col_i = 0; col_i < ncols; ++col_i) {
       
       if (col_i > 0) fputc(col_sep, f);

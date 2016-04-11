@@ -187,9 +187,9 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
             jn.on = names(target)
         }
         ans = target[current, nomatch=NA, which=TRUE, on=jn.on]
-        if (anyNA(ans)) return("Dataset 'current' has duplicated rows present in different quantity than in 'target'")
+	if (any_na(as_list(ans))) return("Dataset 'current' has duplicated rows present in different quantity than in 'target'")
         ans = current[target, nomatch=NA, which=TRUE, on=jn.on]
-        if (anyNA(ans)) return("Dataset 'target' has duplicated rows present in different quantity than in 'current'")
+	if (any_na(as_list(ans))) return("Dataset 'target' has duplicated rows present in different quantity than in 'current'")
     } else {
         for (i in seq_along(target)) {
             # trim.levels moved here
