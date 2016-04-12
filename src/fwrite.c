@@ -10,7 +10,16 @@ void writefile(SEXP list_of_columns,
                SEXP na_exp,
                SEXP quote_cols,
                SEXP qmethod_escape_exp,
-               SEXP append) {
+               SEXP append)
+{
+  if (!isNewList(list_of_columns)) error("fwrite must be passed an object of type list, data.table or data.frame");
+  RLEN ncols = length(list_of_columns);
+  if (ncols==0) error("fwrite must be passed a non-empty list");
+  RLEN nrows = length(VECTOR_ELT(list_of_columns, 0));
+  for (int i=1; i<ncols; i++) {
+    if (nrows != length(VECTOR_ELT(list_of_columns, i)))
+      error("Column %d's length (%d) is not the same as column 1's length (%d)", i+1, length(VECTOR_ELT(list_of_columns, i)), nrows);
+  }
 
   int error_number = 0;
   int qmethod_escape = *LOGICAL(qmethod_escape_exp);
@@ -28,9 +37,7 @@ void writefile(SEXP list_of_columns,
   if (*LOGICAL(append)) open_mode = "ab";
   FILE *f = fopen(CHAR(STRING_ELT(filename, 0)), open_mode);
   if (f == NULL) goto end;
-  
-  RLEN ncols = LENGTH(list_of_columns);
-  RLEN nrows = LENGTH(VECTOR_ELT(list_of_columns, 0));
+  int true_false;
   
   for (RLEN row_i = 0; row_i < nrows; ++row_i) {
     for (int col_i = 0; col_i < ncols; ++col_i) {
@@ -38,24 +45,35 @@ void writefile(SEXP list_of_columns,
       if (col_i > 0) fputc(col_sep, f);
       
       SEXP column = VECTOR_ELT(list_of_columns, col_i);
-      
+      SEXP str = NULL;
       switch(TYPEOF(column)) {
-      case INTSXP:
-        if (INTEGER(column)[row_i] == NA_INTEGER) fputs(na_str, f);
-        else fprintf(f, "%d", INTEGER(column)[row_i]);
+      case LGLSXP:
+        true_false = LOGICAL(column)[row_i];
+        fputs(true_false == NA_LOGICAL ? na_str : (true_false ? "TRUE" : "FALSE"), f);
         break;
-      
       case REALSXP:
         if (ISNA(REAL(column)[row_i])) fputs(na_str, f);
         else fprintf(f, "%.15g", REAL(column)[row_i]);
         break;
-      
-      default: /* assuming STRSXP */
-        if (STRING_ELT(column, row_i) == NA_STRING) fputs(na_str, f);
+      case INTSXP:
+        if (INTEGER(column)[row_i] == NA_INTEGER) {
+          fputs(na_str, f);
+          break;
+        }
+        if (isFactor(column)) {
+          str = STRING_ELT(getAttrib(column, R_LevelsSymbol), INTEGER(column)[row_i]-1);
+          // fall through to STRSXP case
+        } else {
+          fprintf(f, "%d", INTEGER(column)[row_i]);
+          break;
+        }
+      case STRSXP:
+        if (str==NULL) str = STRING_ELT(column, row_i);
+        if (str==NA_STRING) fputs(na_str, f);
         else {
           int quote = LOGICAL(quote_cols)[col_i];
           if (quote) fputc(QUOTE_CHAR, f);
-          for (const char *ch = CHAR(STRING_ELT(column, row_i)); *ch != '\0'; ++ch) {
+          for (const char *ch = CHAR(str); *ch != '\0'; ++ch) {
             if (quote) {
               if (*ch == QUOTE_CHAR) {
                 if (qmethod_escape) fputc(ESCAPE_CHAR, f);
@@ -68,6 +86,8 @@ void writefile(SEXP list_of_columns,
           if (quote) fputc(QUOTE_CHAR, f);
         }
         break;
+      default:
+         error("Column %d's type is '%s' - not yet implemented.", col_i+1,type2char(TYPEOF(column)) );
       }
     }
     if (fputs(row_sep, f) < 0) goto end;
@@ -78,3 +98,5 @@ void writefile(SEXP list_of_columns,
   if (f != NULL) fclose(f);
   if (error_number) error(strerror(errno));
 }
+
+

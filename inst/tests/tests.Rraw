@@ -7812,7 +7812,7 @@ test(1626.66, funion(x, y, all=TRUE), dt[c(2:4,2L,2L,1:3,2L)])
 test(1626.67, fsetequal(x, y), FALSE)
 test(1626.68, fsetequal(dt[c(2:3,3L)], dt[c(2:3,3L)]), TRUE)
 # supported type in set-ops: integer64
-if(require("bit64", quietly = TRUE)){
+if ("package:bit64" %in% search()) {
     dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = bit64::as.integer64("90000000000")+1:4)
     x = dt[c(2:4,2L,2L)]
     y = dt[c(1:3,2L)]
@@ -7824,6 +7824,8 @@ if(require("bit64", quietly = TRUE)){
     test(1626.74, funion(x, y, all=TRUE), dt[c(2:4,2L,2L,1:3,2L)])
     test(1626.75, fsetequal(x, y), FALSE)
     test(1626.76, fsetequal(dt[c(2:3,3L)], dt[c(2:3,3L)]), TRUE)
+} else {
+    cat("Tests 1626.[69-76] not run. If required call library(bit64) first.\n")
 }
 
 # fix for #1087 and #1465
@@ -8594,20 +8596,19 @@ local({
   fwrite_test(1658.6, function(f) { fwrite(data.table(a="foo", b="bar"), f, col.names=F) },
               '"foo","bar"\n')
 
-  # small block size to assert that blocking works correctly
-  fwrite_test(1658.7, function(f) { fwrite(data.table(a=c(1:5), b=c(1:5)), f, block.size=2) },
+  fwrite_test(1658.7, function(f) { fwrite(data.table(a=c(1:5), b=c(1:5)), f) },
               '"a","b"\n1,1\n2,2\n3,3\n4,4\n5,5\n')
 
   # block size equal to number of rows
-  fwrite_test(1658.8, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, block.size=3) },
+  fwrite_test(1658.8, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f) },
               '"a","b"\n1,1\n2,2\n3,3\n')
 
   # block size one bigger than number of rows
-  fwrite_test(1658.9, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, block.size=4) },
+  fwrite_test(1658.9, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f) },
               '"a","b"\n1,1\n2,2\n3,3\n')
 
   # block size one less than number of rows
-  fwrite_test(1658.10, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, block.size=2) },
+  fwrite_test(1658.10, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f) },
               '"a","b"\n1,1\n2,2\n3,3\n')
 
   # writing a data.frame
