@@ -4,7 +4,7 @@
 #include <Rinternals.h>
 #include <unistd.h>  // for access()
 
-void writefile(SEXP list_of_columns,
+SEXP writefile(SEXP list_of_columns,
                SEXP filenameArg,
                SEXP col_sep_exp,
                SEXP row_sep_exp,
@@ -35,8 +35,9 @@ void writefile(SEXP list_of_columns,
   const char *filename = CHAR(STRING_ELT(filenameArg, 0));
 
   /* open input file in correct mode */
-  const char *open_mode = "wt";
-  if (LOGICAL(append)[0]) open_mode = "at";
+  const char *open_mode = "wb";   // wt currently fails Windows tests as f* converts \n to \r\n on Windows. 
+  if (LOGICAL(append)[0]) open_mode = "ab";
+  // TO DO: setup eol=\r\n for Windows but keep writing in binary mode rather than let f* do it
   FILE *f = fopen(filename, open_mode);
   if (f == NULL) {
     if( access( filename, F_OK ) != -1 )
@@ -106,15 +107,10 @@ void writefile(SEXP list_of_columns,
     }
     fputs(row_sep, f);
   }
-  
-  //end:   // don't mind the goto really. it's more that the levels vla prevents goto in gcc. Will do differently anyway.
-  //  error_number = errno;
-  Rprintf("About to close file\n");
   if (f == NULL) error("File handle is NULL at the end.");
-  if (fflush(f)) error("Error flushing file before closing it.");
+  if (fflush(f)) error("Error flushing file before closing it. Is disk full?"); 
   if (fclose(f)) error("Error closing file: %s", filename);
-  Rprintf("closed file ok\n");
-  //if (error_number) error(strerror(errno));
+  return(R_NilValue);  // must always return SEXP from C level otherwise hang on Windows
 }
 
 
