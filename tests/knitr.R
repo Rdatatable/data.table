@@ -1,4 +1,4 @@
-if(requireNamespace("knitr", quietly = TRUE)){
+if (suppressPackageStartupMessages(requireNamespace("knitr", quietly = TRUE))) {
     require(knitr)
     knit("knitr.Rmd", quiet=TRUE)
     cat(readLines("knitr.md"), sep="\n")

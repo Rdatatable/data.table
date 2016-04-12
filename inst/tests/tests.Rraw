@@ -7,7 +7,7 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     options(warn=0)  # use require() so it warns but doesn't halt if not available
     inst_pkgs = rownames(installed.packages())
     sugg_pkgs = c("chron", "ggplot2", "plyr", "reshape", "reshape2", "testthat", "hexbin", "fastmatch", "nlme", "xts", "bit64", "gdata", "GenomicRanges", "caret", "knitr", "curl", "zoo", "plm", "rmarkdown")
-    lapply(setNames(nm = sugg_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))
+    lapply(setNames(sugg_pkgs, nm = sugg_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))
     # reshape2 ahead of reshape ...
     try(detach(package:reshape2),silent=TRUE)
     try(detach(package:reshape),silent=TRUE)
@@ -7584,14 +7584,14 @@ setattr(DT2, "custom2", 2L)
 test(1613.32, all.equal(DT1, DT2), "Datasets has attributes with different names: custom, custom2")
 setattr(DT1, "custom2", 2L)
 setattr(DT2, "custom", 0L)
-test(1613.33, all.equal(DT1, DT2), paste0("Attributes: < Component ", dQuote("custom"), ": Mean relative difference: 1 >"))
+if (base::getRversion() > "3.0.0") test(1613.33, all.equal(DT1, DT2), paste0("Attributes: < Component ", dQuote("custom"), ": Mean relative difference: 1 >"))
 setattr(DT2, "custom", 1L)
 test(1613.34, all.equal(DT1, DT2), TRUE)
 # trim.levels
 dt1 <- data.table(A = factor(letters[1:10])[1:4]) # 10 levels
 dt2 <- data.table(A = factor(letters[1:5])[1:4]) # 5 levels
 test(1613.35, all.equal(dt1, dt2), TRUE)
-test(1613.36, all.equal(dt1, dt2, trim.levels = FALSE), paste0("Column 'A': Attributes: < Component ", dQuote("levels"), ": Lengths (10, 5) differ (string compare on first 5) >"))
+if (base::getRversion() > "3.0.0") test(1613.36, all.equal(dt1, dt2, trim.levels = FALSE), paste0("Column 'A': Attributes: < Component ", dQuote("levels"), ": Lengths (10, 5) differ (string compare on first 5) >"))
 test(1613.37, all.equal(dt1, dt2, trim.levels = FALSE, check.attributes = FALSE), TRUE)
 test(1613.38, all.equal(dt1, dt2, trim.levels = FALSE, ignore.row.order = TRUE), TRUE)
 test(1613.39, length(levels(dt1$A)) == 10L && length(levels(dt2$A)) == 5L, TRUE) # dt1 and dt2 not updated by reference
@@ -7661,7 +7661,7 @@ test(1616.3, dt[.(1:2), c := if (c-b > 0L) b, by=.EACHI, mult="first", on="a"],
 # fix for #1281
 x <- 3 > 0
 ans = setattr(copy(x), "foo", "bar")
-test(1617, setattr(x, "foo", "bar"), ans, warning = "Input is a length=1 logical that")
+if (base::getRversion() > "3.0.0") test(1617, setattr(x, "foo", "bar"), ans, warning = "Input is a length=1 logical that")
 
 # fix for #1445
 test(1618.1, fread("a,c,b\n1,2,3", select=c("b", "c")), data.table(b=3L, c=2L))
@@ -7974,10 +7974,10 @@ test(1639.12, split(dt, as.factor(integer()), drop=TRUE), error = "group length 
 test(1639.13, split(dt, as.factor(1:2)[0L]), error = "group length is 0 but data nrow > 0") # factor length 0L with empty levels
 test(1639.14, split(dt, as.factor(1:2)[0L], drop=TRUE), error = "group length is 0 but data nrow > 0")
 # - [x] edge cases for `f` argument ----
-test(1639.15, split(df, as.factor(NA)), split(dt, as.factor(NA))) # factor NA
-test(1639.16, split(df, as.factor(NA), drop=TRUE), split(dt, as.factor(NA), drop=TRUE))
-test(1639.17, lapply(split(df, as.factor(1:2)[0L][1L]), setDT), split(dt, as.factor(1:2)[0L][1L])) # factor NA with empty levels
-test(1639.18, split(df, as.factor(1:2)[0L][1L], drop=TRUE), split(dt, as.factor(1:2)[0L][1L], drop=TRUE))
+if (base::getRversion() > "3.0.0") test(1639.15, split(df, as.factor(NA)), split(dt, as.factor(NA))) # factor NA
+if (base::getRversion() > "3.0.0") test(1639.16, split(df, as.factor(NA), drop=TRUE), split(dt, as.factor(NA), drop=TRUE))
+if (base::getRversion() > "3.0.0") test(1639.17, lapply(split(df, as.factor(1:2)[0L][1L]), setDT), split(dt, as.factor(1:2)[0L][1L])) # factor NA with empty levels
+if (base::getRversion() > "3.0.0") test(1639.18, split(df, as.factor(1:2)[0L][1L], drop=TRUE), split(dt, as.factor(1:2)[0L][1L], drop=TRUE))
 test(1639.19, lapply(split(df, as.factor(c(1L,NA,2L))), setDT), split(dt, as.factor(c(1L,NA,2L)))) # factor has NA
 test(1639.20, lapply(split(df, as.factor(c(1L,NA,2L)), drop=TRUE), setDT), split(dt, as.factor(c(1L,NA,2L)), drop=TRUE))
 test(1639.21, lapply(split(df, as.factor(c(1L,NA,2:4))[1:3]), setDT), split(dt, as.factor(c(1L,NA,2:4))[1:3])) # factor has NA with empty levels
@@ -7996,18 +7996,18 @@ test(1639.33, lapply(split(df[1L,], "z"), setDT), split(dt[1L], "z")) # nrow 1, 
 test(1639.34, lapply(suppressWarnings(split(df[1L,], c("z1","z2"))), setDT), suppressWarnings(split(dt[1L], c("z1","z2"))))
 test(1639.35, lapply(split(df[1L,], "z", drop=TRUE), setDT), split(dt[1L], "z", drop=TRUE) )
 test(1639.36, lapply(suppressWarnings(split(df[1L,], c("z1","z2"), drop=TRUE)), setDT), suppressWarnings(split(dt[1L], c("z1","z2"), drop=TRUE)))
-test(1639.37, lapply(split(df[0L,], as.factor(NA_character_)), setDT), split(dt[0L], as.factor(NA_character_))) # nrow 0, f factor length 1L NA
-test(1639.38, lapply(split(df[0L,], as.factor(NA_character_), drop=TRUE), setDT), split(dt[0L], as.factor(NA_character_), drop=TRUE))
-test(1639.39, lapply(split(df[0L,], as.factor(1:2)[0L][1L]), setDT), split(dt[0L], as.factor(1:2)[0L][1L])) # nrow 0, f factor length 1L NA with empty levels
-test(1639.40, lapply(split(df[0L,], as.factor(1:2)[0L][1L], drop=TRUE), setDT), split(dt[0L], as.factor(1:2)[0L][1L], drop=TRUE))
+if (base::getRversion() > "3.0.0") test(1639.37, lapply(split(df[0L,], as.factor(NA_character_)), setDT), split(dt[0L], as.factor(NA_character_))) # nrow 0, f factor length 1L NA
+if (base::getRversion() > "3.0.0") test(1639.38, lapply(split(df[0L,], as.factor(NA_character_), drop=TRUE), setDT), split(dt[0L], as.factor(NA_character_), drop=TRUE))
+if (base::getRversion() > "3.0.0") test(1639.39, lapply(split(df[0L,], as.factor(1:2)[0L][1L]), setDT), split(dt[0L], as.factor(1:2)[0L][1L])) # nrow 0, f factor length 1L NA with empty levels
+if (base::getRversion() > "3.0.0") test(1639.40, lapply(split(df[0L,], as.factor(1:2)[0L][1L], drop=TRUE), setDT), split(dt[0L], as.factor(1:2)[0L][1L], drop=TRUE))
 test(1639.41, lapply(split(df[0L,], as.factor(integer())), setDT), split(dt[0L], as.factor(integer()))) # nrow 0, f factor length 0L
 test(1639.42, lapply(split(df[0L,], as.factor(integer()), drop=TRUE), setDT), split(dt[0L], as.factor(integer()), drop=TRUE))
-test(1639.43, lapply(split(df[0L,], as.factor(1:2)[0L]), setDT), split(dt[0L], as.factor(1:2)[0L])) # nrow 0, f factor length 0L with empty levels
-test(1639.44, lapply(split(df[0L,], as.factor(1:2)[0L], drop=TRUE), setDT), split(dt[0L], as.factor(1:2)[0L], drop=TRUE))
+if (base::getRversion() > "3.0.0") test(1639.43, lapply(split(df[0L,], as.factor(1:2)[0L]), setDT), split(dt[0L], as.factor(1:2)[0L])) # nrow 0, f factor length 0L with empty levels
+if (base::getRversion() > "3.0.0") test(1639.44, lapply(split(df[0L,], as.factor(1:2)[0L], drop=TRUE), setDT), split(dt[0L], as.factor(1:2)[0L], drop=TRUE))
 test(1639.45, lapply(split(df[0L,], as.factor(1:3)[c(2L,NA,3L)]), setDT), split(dt[0L], as.factor(1:3)[c(2L,NA,3L)])) # nrow 0, f factor with empty levels and NA
 test(1639.46, lapply(split(df[0L,], as.factor(1:3)[c(2L,NA,3L)], drop=TRUE), setDT), split(dt[0L], as.factor(1:3)[c(2L,NA,3L)], drop=TRUE)) # nrow 0, f character length 1L NA
-test(1639.47, lapply(split(df[0L,], NA_character_), setDT), split(dt[0L], NA_character_))
-test(1639.48, lapply(split(df[0L,], NA_character_, drop=TRUE), setDT), split(dt[0L], NA_character_, drop=TRUE))
+if (base::getRversion() > "3.0.0") test(1639.47, lapply(split(df[0L,], NA_character_), setDT), split(dt[0L], NA_character_))
+if (base::getRversion() > "3.0.0") test(1639.48, lapply(split(df[0L,], NA_character_, drop=TRUE), setDT), split(dt[0L], NA_character_, drop=TRUE))
 test(1639.49, lapply(split(df[0L,], letters[c(NA,1:3)]), setDT), split(dt[0L], letters[c(NA,1:3)])) # nrow 0, f length > 1L, with NA
 test(1639.50, lapply(split(df[0L,], letters[c(NA,1:3)], drop=TRUE), setDT), split(dt[0L], letters[c(NA,1:3)], drop=TRUE))
 # - [x] split by reference to column names - `by` - for factor column ----
