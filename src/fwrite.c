@@ -2,9 +2,10 @@
 #include <R.h>
 #include <errno.h>
 #include <Rinternals.h>
+#include <unistd.h>  // for access()
 
 void writefile(SEXP list_of_columns,
-               SEXP filename,
+               SEXP filenameArg,
                SEXP col_sep_exp,
                SEXP row_sep_exp,
                SEXP na_exp,
@@ -31,12 +32,18 @@ void writefile(SEXP list_of_columns,
   const char *na_str = CHAR(STRING_ELT(na_exp, 0));
   const char QUOTE_CHAR = '"';
   const char ESCAPE_CHAR = '\\';
+  const char *filename = CHAR(STRING_ELT(filenameArg, 0));
 
   /* open input file in correct mode */
-  const char *open_mode = "wb";
-  if (*LOGICAL(append)) open_mode = "ab";
-  FILE *f = fopen(CHAR(STRING_ELT(filename, 0)), open_mode);
-  if (f == NULL) error("Unable to open file: %s", filename);
+  const char *open_mode = "wt";
+  if (LOGICAL(append)[0]) open_mode = "at";
+  FILE *f = fopen(filename, open_mode);
+  if (f == NULL) {
+    if( access( filename, F_OK ) != -1 )
+      error("File exists and failed to open for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open? File: %s", filename);
+    else 
+      error("Unable to create new file for writing (it does not exist already). Do you have permission to write here and is there space on the disk? File: %s", filename); 
+  }
   int true_false;
   
   // prefetch levels of factor columns (if any) to save getAttrib on every field on every row of any factor column
@@ -102,7 +109,11 @@ void writefile(SEXP list_of_columns,
   
   //end:   // don't mind the goto really. it's more that the levels vla prevents goto in gcc. Will do differently anyway.
   //  error_number = errno;
-  if (f != NULL) fclose(f);
+  Rprintf("About to close file\n");
+  if (f == NULL) error("File handle is NULL at the end.");
+  if (fflush(f)) error("Error flushing file before closing it.");
+  if (fclose(f)) error("Error closing file: %s", filename);
+  Rprintf("closed file ok\n");
   //if (error_number) error(strerror(errno));
 }
 
