@@ -21,7 +21,7 @@ void writefile(SEXP list_of_columns,
       error("Column %d's length (%d) is not the same as column 1's length (%d)", i+1, length(VECTOR_ELT(list_of_columns, i)), nrows);
   }
 
-  int error_number = 0;
+  //int error_number = 0;
   int qmethod_escape = *LOGICAL(qmethod_escape_exp);
   
   errno = 0; /* clear flag possibly set by previous errors */
@@ -36,8 +36,15 @@ void writefile(SEXP list_of_columns,
   const char *open_mode = "wb";
   if (*LOGICAL(append)) open_mode = "ab";
   FILE *f = fopen(CHAR(STRING_ELT(filename, 0)), open_mode);
-  if (f == NULL) goto end;
+  if (f == NULL) error("Unable to open file: %s", filename);
   int true_false;
+  
+  // prefetch levels of factor columns (if any) to save getAttrib on every field on every row of any factor column
+  SEXP levels[ncols];  // on-stack vla
+  for (int col_i=0; col_i<ncols; col_i++) {
+    SEXP column = VECTOR_ELT(list_of_columns, col_i);
+    levels[col_i] = isFactor(column) ? getAttrib(column, R_LevelsSymbol) : NULL;
+  }
   
   for (RLEN row_i = 0; row_i < nrows; ++row_i) {
     for (int col_i = 0; col_i < ncols; ++col_i) {
@@ -60,8 +67,8 @@ void writefile(SEXP list_of_columns,
           fputs(na_str, f);
           break;
         }
-        if (isFactor(column)) {
-          str = STRING_ELT(getAttrib(column, R_LevelsSymbol), INTEGER(column)[row_i]-1);
+        if (levels[col_i] != NULL) {   // isFactor(column) == TRUE
+          str = STRING_ELT(levels[col_i], INTEGER(column)[row_i]-1);
           // fall through to STRSXP case
         } else {
           fprintf(f, "%d", INTEGER(column)[row_i]);
@@ -90,13 +97,13 @@ void writefile(SEXP list_of_columns,
          error("Column %d's type is '%s' - not yet implemented.", col_i+1,type2char(TYPEOF(column)) );
       }
     }
-    if (fputs(row_sep, f) < 0) goto end;
+    fputs(row_sep, f);
   }
   
-  end:
-    error_number = errno;
+  //end:   // don't mind the goto really. it's more that the levels vla prevents goto in gcc. Will do differently anyway.
+  //  error_number = errno;
   if (f != NULL) fclose(f);
-  if (error_number) error(strerror(errno));
+  //if (error_number) error(strerror(errno));
 }
 
 
