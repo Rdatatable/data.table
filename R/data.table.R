@@ -2262,7 +2262,7 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
     # list of data.tables (flatten) or list of lists of ... data.tables
     make.levels = function(x, cols, sorted) {
         by.order = if (!sorted) x[, funique(.SD), .SDcols=cols] # remember order of data, only when not sorted=FALSE
-        ul = lapply(setNames(nm=cols), function(col) if (!is.factor(x[[col]])) unique(x[[col]]) else levels(x[[col]]))
+        ul = lapply(setNames(cols, nm=cols), function(col) if (!is.factor(x[[col]])) unique(x[[col]]) else levels(x[[col]]))
         r = do.call("CJ", c(ul, sorted=sorted, unique=TRUE))
         if (!sorted && nrow(by.order)) {
             ii = r[by.order, on=cols, which=TRUE]

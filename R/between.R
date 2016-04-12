@@ -13,7 +13,7 @@ anywhere <- function(x,lower,upper,incbounds=TRUE) {
     query = setDT(list(x=x, ans=rep(FALSE, length(x))))
     subject = setDT(list(l=lower, u=upper))
     on = if (incbounds) c("x>=l", "x<=u") else c("x>l", "x<u")
-    query[subject, ans := TRUE, on=on]
+    query[subject, "ans" := TRUE, on=on]
     query$ans
 }
 
