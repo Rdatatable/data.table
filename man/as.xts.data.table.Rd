@@ -5,10 +5,11 @@
   Efficient conversion of data.table to xts, data.table must have \emph{POSIXct} or \emph{Date} type in first column.
 }
 \usage{
-as.xts.data.table(x)
+as.xts.data.table(x, ...)
 }
 \arguments{
 \item{x}{data.table to convert to xts, must have \emph{POSIXct} or \emph{Date} in the first column. All others non-numeric columns will be omitted with warning.}
+\item{\dots}{ignored, just for consistency with generic method.}
 }
 \seealso{ \code{\link{as.data.table.xts}} }
 \examples{
