@@ -8586,8 +8586,13 @@ local({
               '"a";"b"\n"foo";"ba""r"\n')
 
   # changing eol
-  fwrite_test(1658.5, function(f) { fwrite(data.table(a="foo", b="bar"), f, eol="\r\n") },
+  if (.Platform$OS.type=="linux") {
+    # can change eol on windows too; the only reason for running this test on linux only
+    # is that inside fwrite_test() on windows it gsub's '\r\n' in the result to '\n'
+    # for the other tests which have a fixed \n endings to compare to
+    fwrite_test(1658.5, function(f) { fwrite(data.table(a="foo", b="bar"), f, eol="\r\n") },
               '"a","b"\r\n"foo","bar"\r\n')
+  }
   
   # changing NA
   fwrite_test(1658.51, function(f) { fwrite(data.table(a=c("foo", NA), b=c(1, NA)), f, na="NA") },
