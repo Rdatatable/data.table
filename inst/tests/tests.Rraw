@@ -8578,7 +8578,7 @@ local({
       a=c(NA, 1.2e-100, 3.01),
       "other \"column"=c('foo bar', NA, 'quote" and \\ bs')),
       f, quote=T, qmethod="double")
-  }, '"a","other ""column"\n,"foo bar"\n1.2e-100,\n3.01,"quote"" and \\ bs"\n')
+  }, '"a","other ""column"\n,"foo bar"\n1.2E-100,\n3.01,"quote"" and \\ bs"\n')
 
   # changing sep
   fwrite_test(1658.4, function(f) { fwrite(data.table(a="foo", b="ba\"r"), f, sep=";") },

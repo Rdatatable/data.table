@@ -76,15 +76,15 @@
 
   30. x's columns can be referred to in `j` using the prefix `x.` at all times. This is particularly useful when it is necessary to x's column that is *also a join column*. This is a patch addressing [#1615](https://github.com/Rdatatable/data.table/issues/1615).
   
-  31. New function `fwrite`. Fixes [#580](https://github.com/Rdatatable/data.table/issues/580). Thanks @oseiskar.
+  31. New function `fwrite` implements [#580](https://github.com/Rdatatable/data.table/issues/580). Thanks to Otto Seiskari for C code, R wrapper, manual page and extensive tests.
 
-  31. `on=.()` syntax is now posible, e.g., `X[Y, on=.(x==a, y==b)]`, [#1257](https://github.com/Rdatatable/data.table/issues/1257). Thanks @dselivanov.
+  32. `on=.()` syntax is now posible, e.g., `X[Y, on=.(x==a, y==b)]`, [#1257](https://github.com/Rdatatable/data.table/issues/1257). Thanks @dselivanov.
 
-  32. Non-equi joins are now possible using the familiar `on=` syntax. With this, the set of binary operators extend from just `==` to `>=`, `>`, `<=`, `<` and `==`. For e.g., `X[Y, on=.(a, b>b)]` looks for `X.a == Y.a` first and within those matching rows for rows where`X.b > Y.b`. Arguments `mult` and `nomatch` work as expected. `by=.EACHI` is not yet implemented. Partly addreses [#1452](https://github.com/Rdatatable/data.table/issues/1452).
+  33. Non-equi joins are now possible using the familiar `on=` syntax. With this, the set of binary operators extend from just `==` to `>=`, `>`, `<=`, `<` and `==`. For e.g., `X[Y, on=.(a, b>b)]` looks for `X.a == Y.a` first and within those matching rows for rows where`X.b > Y.b`. Arguments `mult` and `nomatch` work as expected. `by=.EACHI` is not yet implemented. Partly addreses [#1452](https://github.com/Rdatatable/data.table/issues/1452).
 
-  33. `%between%` is vectorised which means we can now do: `DT[x %between% list(y,z)]` which is equivalent to `DT[x >= y & x <= z]`, [#534](https://github.com/Rdatatable/data.table/issues/534). Thanks @MicheleCarriero for filing the issue and the idea.
+  34. `%between%` is vectorised which means we can now do: `DT[x %between% list(y,z)]` which is equivalent to `DT[x >= y & x <= z]`, [#534](https://github.com/Rdatatable/data.table/issues/534). Thanks @MicheleCarriero for filing the issue and the idea.
 
-  34. New functions `anywhere()` and `%anywhere%` are exported. `between()` answers the question: *"Is x[i] present in between `lower[i]` and `upper[i]`?"*. `anywhere()` on the other hand answers the question: *"Is x[i] present in any of the intervals specified by `lower, upper`?"*. This makes use of the recently implemented `non-equi` join to provide a convenient function to perform a *range join* [#679](https://github.com/Rdatatable/data.table/issues/679).
+  35. New functions `anywhere()` and `%anywhere%` are exported. `between()` answers the question: *"Is x[i] present in between `lower[i]` and `upper[i]`?"*. `anywhere()` on the other hand answers the question: *"Is x[i] present in any of the intervals specified by `lower, upper`?"*. This makes use of the recently implemented `non-equi` join to provide a convenient function to perform a *range join* [#679](https://github.com/Rdatatable/data.table/issues/679).
 
 #### BUG FIXES
 
