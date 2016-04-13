@@ -5,6 +5,14 @@
 #include <unistd.h>  // for access()
 #include <fcntl.h>
 #include <time.h>
+#ifdef WIN32
+#include <io.h>
+#define WRITE _write
+#define CLOSE _close
+#else
+#define WRITE write
+#define CLOSE close
+#endif
 
 #define QUOTE_FIELD \
   *ch++ = QUOTE; \
@@ -49,9 +57,13 @@ SEXP writefile(SEXP list_of_columns,
   const char ESCAPE_QUOTE = qmethod_escape ? ESCAPE : QUOTE;
   const char *filename = CHAR(STRING_ELT(filenameArg, 0));
 
-  // TODO: ensure Windows opens in O_BINARY and set row_sep='\r\n' -OR- leave O_TEXT and write() will convert \n to \r\n for us.
   errno = 0;   // clear flag possibly set by previous errors
+#ifdef WIN32
+  int f = _open(filename, _O_WRONLY | _O_BINARY | _O_CREAT | (LOGICAL(append)[0] ? _O_APPEND : _O_TRUNC), _S_IWRITE);
+  // TODO: set row_sep='\r\n' since write() auto-converts \n to \r\n on Windows only in O_TEXT mode.
+#else
   int f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
+#endif
   if (f == -1) {
     if( access( filename, F_OK ) != -1 )
       error("File exists and failed to open for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open? File: %s", filename);
@@ -167,7 +179,7 @@ SEXP writefile(SEXP list_of_columns,
     // Rprintf("Writing a line out length %d %10s\n", (int)(ch-buffer), buffer);
     if ((ch-buffer)>writeTrigger) {
       t1 = clock(); tformat += t1-t0; t0 = t1;
-      if (write(f, buffer, (int)(ch-buffer)) == -1) { close(f); error("Error writing to file: %s", filename); }
+      if (WRITE(f, buffer, (int)(ch-buffer)) == -1) { close(f); error("Error writing to file: %s", filename); }
       t1 = clock(); twrite += t1-t0; t0 = t1;
       numWrite++;
       ch = buffer;
@@ -176,11 +188,11 @@ SEXP writefile(SEXP list_of_columns,
   if (ch>buffer) {
     // write last batch remaining in buffer
     t1 = clock(); tformat += t1-t0; t0 = t1;
-    if (write(f, buffer, (int)(ch-buffer)) == -1) { close(f); error("Error writing to file: %s", filename); }
+    if (WRITE(f, buffer, (int)(ch-buffer)) == -1) { close(f); error("Error writing to file: %s", filename); }
     numWrite++;
     t1 = clock(); twrite += t1-t0; t0 = t1;
   }
-  if (close(f)) error("Error closing file: %s", filename);
+  if (CLOSE(f)) error("Error closing file: %s", filename);
   Free(buffer);
   if (verbose) {
     Rprintf("%8.3fs (%3.0f%%) format\n", 1.0*tformat/CLOCKS_PER_SEC, 100.0*tformat/(tformat+twrite));
