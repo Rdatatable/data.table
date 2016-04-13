@@ -8707,6 +8707,24 @@ names(DT) <- c("k", "m")
 test(1661.1, nn, c("x","y"))
 test(1661.2, names(DT), c("k","m"))
 
+# as.Date.IDate won't change the class if xts package loaded #1500 
+if (requireNamespace("zoo", quietly = TRUE)) {
+    x = as.IDate("2016-01-15")
+    require(zoo)
+    test(1662, class(as.Date(x)), "Date")
+}
+
+# IDate support in as.xts.data.table #1499
+if (requireNamespace("xts", quietly = TRUE)) {
+    dt <- data.table(date = c(as.IDate("2014-12-31"),
+                              as.IDate("2015-12-31"),
+                              as.IDate("2016-12-31")), 
+                     nav = c(100,101,99),
+                     key = "date")
+    dt.xts <- as.xts.data.table(dt)
+    test(1663, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
+}
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
