@@ -2094,7 +2094,8 @@ dimnames.data.table <- function(x) {
     if ( ((tt<-identical(caller,"colnames<-")) && cedta(3)) || cedta() ) {
         if (.R.assignNamesCopiesAll)
             warning("This is R<3.1.0 where ",if(tt)"col","names(x)<-value deep copies the entire table (several times). Please upgrade to R>=3.1.0 and see ?setnames which allows you to change names by name with built-in checks and warnings.")
-    } else x = shallow(x) ## Fix for #476 and #825. Needed for R v3.1.0+.  TO DO: revisit
+    }
+    x = shallow(x) # `names<-` should NOT modify by reference. Related to #1015, #476 and #825. Needed for R v3.1.0+.  TO DO: revisit
     if (is.null(value))
         setattr(x,"names",NULL)   # e.g. plyr::melt() calls base::unname()
     else

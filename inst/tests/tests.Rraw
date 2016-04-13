@@ -8700,6 +8700,13 @@ Site9   chr6    3367        GeneZ   ')
 test(1660.1, names(dt2[dt1, on=.(Chr, Location>=Start, Location<=End)]), c(names(dt2), "Location.1", "Region"))
 test(1660.2, names(dt1[dt2, on=.(Chr, Start<=Location, End>=Location)]), c(names(dt1), "Site", "Gene"))
 
+# `names<-` should NOT modify by reference #1015
+DT = data.table(x=1, y=2)
+nn = names(DT)
+names(DT) <- c("k", "m")
+test(1661.1, nn, c("x","y"))
+test(1661.2, names(DT), c("k","m"))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
