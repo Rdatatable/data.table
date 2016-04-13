@@ -1,5 +1,6 @@
 fwrite <- function(x, file.path, append = FALSE, quote = TRUE,
-                   sep = ",", eol = "\n", na = "", col.names = TRUE, qmethod = "double", verbose=FALSE) {
+                   sep = ",", eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
+                   na = "", col.names = TRUE, qmethod = "double", verbose=FALSE) {
   
   # validate arguments
   stopifnot(is.data.frame(x))
@@ -8,7 +9,6 @@ fwrite <- function(x, file.path, append = FALSE, quote = TRUE,
   stopifnot(isTRUE(quote) || isFALSE(quote))
   stopifnot(length(sep) == 1 && class(sep) == "character" && nchar(sep) == 1)
   stopifnot(length(eol) == 1 && class(eol) == "character")
-  if (!eol %in% c("\n","\r\n")) warning('eol is not linux standard \\n or windows standard \\r\\n')
   stopifnot(length(qmethod) == 1 && qmethod %in% c("double", "escape"))
   stopifnot(isTRUE(col.names) || isFALSE(col.names))
   stopifnot(isTRUE(append) || isFALSE(append))

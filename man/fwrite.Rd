@@ -5,8 +5,9 @@
   Similar to \code{write.table} but faster and more limited in features.
 }
 \usage{
-fwrite(x, file.path, append = FALSE, quote = TRUE, sep = ",", eol = "\n", na = "",
-       col.names = TRUE, qmethod = "double", verbose=FALSE)
+fwrite(x, file.path, append = FALSE, quote = TRUE, sep = ",",
+       eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
+       na = "", col.names = TRUE, qmethod = "double", verbose=FALSE)
 }
 \arguments{
   \item{x}{The \code{data.table} or \code{data.frame} to write}

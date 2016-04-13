@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <time.h>
 #ifdef WIN32
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <io.h>
 #define WRITE _write
 #define CLOSE _close
@@ -60,7 +62,8 @@ SEXP writefile(SEXP list_of_columns,
   errno = 0;   // clear flag possibly set by previous errors
 #ifdef WIN32
   int f = _open(filename, _O_WRONLY | _O_BINARY | _O_CREAT | (LOGICAL(append)[0] ? _O_APPEND : _O_TRUNC), _S_IWRITE);
-  // TODO: set row_sep='\r\n' since write() auto-converts \n to \r\n on Windows only in O_TEXT mode.
+  // row_sep must be passed from R level as '\r\n' on Windows since write() only auto-converts \n to \r\n
+  // in _O_TEXT mode. We use O_BINARY for full control and perhaps speed since O_TEXT must have to deep branch an if('\n')
 #else
   int f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
 #endif

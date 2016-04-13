@@ -8555,6 +8555,7 @@ local({
     f <- tempfile()
     writer(f)
     result <- readChar(f, file.info(f)$size)
+    if (.Platform$OS.type=="windows") result <- gsub("\r\n", "\n", result)  # expected_result has \n endings
     unlink(f)
     test(number, result, expected_result)
   }
@@ -8644,12 +8645,10 @@ local({
     '"a"\n1.11111111111111\n')
 
   # test append
-  f <- tempfile()
-  fwrite(data.table(a=c(1,2), b=c('a', 'b')), f)
-  fwrite(data.table(a=c(3,4), b=c('c', 'd')), f, append=T)
-  res <- readChar(f, file.info(f)$size)
-  unlink(f)
-  test(1658.16, res, '"a","b"\n1,"a"\n2,"b"\n3,"c"\n4,"d"\n')
+  fwrite_test(1658.16, function(f) {
+    fwrite(data.table(a=c(1,2), b=c('a', 'b')), f)
+    fwrite(data.table(a=c(3,4), b=c('c', 'd')), f, append=T)
+  }, '"a","b"\n1,"a"\n2,"b"\n3,"c"\n4,"d"\n')
 
   # simple data table (reference for the error cases below)
   ok_dt <- data.table(foo="bar")
