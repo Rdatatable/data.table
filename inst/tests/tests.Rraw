@@ -8729,6 +8729,17 @@ if (requireNamespace("xts", quietly = TRUE)) {
     test(1663, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
 }
 
+# fwrite crash on very large number of columns (say 100k)
+set.seed(123)
+m <- matrix(runif(3*100000), nrow = 3)
+DT <- as.data.table(m)
+f <- tempfile()
+system.time(fwrite(DT, f, eol='\n'))  # eol fixed so size test passes on Windows
+system.time(fwrite(DT, f, eol='\n'))  # run again to force seg fault
+test(1664, file.info(f)$size, 6288931)
+unlink(f)
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
