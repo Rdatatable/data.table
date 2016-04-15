@@ -15,7 +15,7 @@
 #define WRITE write
 #define CLOSE close
 #endif
-  
+
 static inline int maxStrLen(SEXP x, int na_len) {
   // The max nchar of any string in a column or factor level
   int max=na_len, nrow=length(x);
@@ -23,6 +23,10 @@ static inline int maxStrLen(SEXP x, int na_len) {
     int l = LENGTH(STRING_ELT(x,i));
     if (l>max) max=l;
   }
+  // TODO if(quote) count them here (we hopped already to get LENGTH), add that quote count to max
+  //      exactly and remove the *(1+quote) later
+  //      if there are no quotes present in any string in a column save in quotePresent[ncol] lookup
+  //      and switch to memcpy when it's known no quotes are present to be escaped for that column
   return max;
 }
 
