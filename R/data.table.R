@@ -2138,6 +2138,7 @@ transform.data.table <- function (`_data`, ...)
     inx <- chmatch(tags, names(`_data`))
     matched <- !is.na(inx)
     if (any(matched)) {
+        if (isTRUE(attr(`_data`, ".data.table.locked", TRUE))) setattr(`_data`, ".data.table.locked", NULL) # fix for #1641
         `_data`[,inx[matched]] <- e[matched]
         `_data` <- data.table(`_data`)
     }
