@@ -8707,8 +8707,7 @@ test(1660.2, names(dt1[dt2, on=.(Chr, Start<=Location, End>=Location)]), c(names
 # `names<-` should NOT modify by reference #1015
 DT = data.table(x=1, y=2)
 nn = names(DT)
-names(DT) <- c("k", "m")
-test(1661.1, nn, c("x","y"))
+test(1661.1, {names(DT) <- c("k", "m"); nn}, c("x","y"), warning=if (base::getRversion()>="3.1.0") NULL else "Please upgrade")
 test(1661.2, names(DT), c("k","m"))
 
 # as.Date.IDate won't change the class if xts package loaded #1500 
