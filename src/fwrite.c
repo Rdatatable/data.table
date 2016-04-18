@@ -5,7 +5,11 @@
 #include <unistd.h>  // for access()
 #include <fcntl.h>
 #include <time.h>
+
+#ifdef _OPENMP
 #include <omp.h>
+#endif
+
 #ifdef WIN32
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -59,6 +63,9 @@ SEXP writefile(SEXP list_of_columns,
     if (nrows != length(VECTOR_ELT(list_of_columns, i)))
       error("Column %d's length (%d) is not the same as column 1's length (%d)", i+1, length(VECTOR_ELT(list_of_columns, i)), nrows);
   }
+#ifndef _OPENMP
+  warning("Your platform/environment has not detected OpenMP support. fwrite() will still work but slower in single threaded mode.");
+#endif 
   const Rboolean verbose = LOGICAL(verboseArg)[0];
   const Rboolean quote = LOGICAL(quoteArg)[0];
   
