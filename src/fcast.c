@@ -1,5 +1,8 @@
 #include "data.table.h"
 #include <Rdefines.h>
+#ifdef _OPENMP
+   #include <omp.h>
+#endif
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
@@ -9,52 +12,205 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
 // tl is the amount to be allocated,  tl>=l
 // TO DO: if no 0 or NA detected up front in subsetDT() below, could switch to a faster subsetVectorRawNo0orNA()
 {
-    int i, this, ansi=0, max=length(x);
+    int i, this, ansi=0, max=length(x), n=LENGTH(idx), *pidx=INTEGER(idx);
     if (tl<l) error("Internal error: tl<n passed to subsetVectorRaw");
     SEXP ans = PROTECT(allocVector(TYPEOF(x), tl));
     SETLENGTH(ans, l);
     SET_TRUELENGTH(ans, tl);
+    // Rprintf("l=%d, tl=%d, LENGTH(idx)=%d\n", l, tl, LENGTH(idx));
+#ifdef _OPENMP
+    int *ctr = (int *)calloc(omp_get_max_threads()+1, sizeof(int));
+#endif
+
     switch(TYPEOF(x)) {
     case INTSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
+#ifdef _OPENMP
+	#pragma omp parallel
+	{
+	    int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();    // local
+	    // computing count indices correctly is tricky when there are 0-indices.
+	    // 1. count number of non-0 'idx' for each thread
+	    #pragma omp for
+	    for (i=0; i<n; i++) tmp += (pidx[i] != 0);  // don't use ctr[ithread+1] here -- false sharing
+							// TODO: use SIMD here?
+	    ctr[ithread+1] = tmp;                       // ctr[0]=0, rest contains count where iidx!=0,
+							// within each thread's range
+	    #pragma omp barrier                         // wait for all threads, important
+	    // 2. using that, set the starting index for each thread appropriately
+	    #pragma omp single
+	    for (i=0; i<nthreads; i++)
+		ctr[i+1] += ctr[i];                     // for each thread, compute the right starting point, by
+							// taking (non)0-count into account, computed above.
+	    tmp = ctr[ithread];                         // copy back from shared to thread's local var. All set.
+	    #pragma omp barrier                         // wait for all threads, important
+	    // 3. use old code, but with thread's local var with right start index as counter
+	    #pragma omp for private(this) reduction(+:ansi)
+	    for (i=0; i<n; i++) {
+		this = pidx[i];
+		if (this==0) continue;
+		// have to use 'tmp' here, and not ctr[ithread++] -- false sharing
+		INTEGER(ans)[tmp++] = (this==NA_INTEGER || this>max) ? NA_INTEGER : INTEGER(x)[this-1];
+		ansi++;                                 // not required, but just to be sure
+	    }
+	}
+#else
+	for (i=0; i<n; i++) {
+	    this = pidx[i];
             if (this==0) continue;
             INTEGER(ans)[ansi++] = (this==NA_INTEGER || this>max) ? NA_INTEGER : INTEGER(x)[this-1];
         }
+#endif
         break;
     case REALSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
+#ifdef _OPENMP
+	#pragma omp parallel
+	{
+	    int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
+	    #pragma omp for
+	    for (i=0; i<n; i++) tmp += (pidx[i] != 0);
+	    ctr[ithread+1] = tmp;
+	    #pragma omp barrier
+	    #pragma omp single
+	    for (i=0; i<nthreads; i++)
+		ctr[i+1] += ctr[i];
+	    tmp = ctr[ithread];
+	    #pragma omp barrier
+	    #pragma omp for private(this) reduction(+:ansi)
+	    for (i=0; i<n; i++) {
+		this = pidx[i];
+		if (this==0) continue;
+		REAL(ans)[tmp++] = (this==NA_INTEGER || this>max) ? NA_REAL : REAL(x)[this-1];
+		ansi++;
+	    }
+	}
+#else
+	for (i=0; i<n; i++) {
+	    this = pidx[i];
             if (this==0) continue;
             REAL(ans)[ansi++] = (this==NA_INTEGER || this>max) ? NA_REAL : REAL(x)[this-1];
         }
+#endif
         break;
     case LGLSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
+#ifdef _OPENMP
+	#pragma omp parallel
+	{
+	    int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
+	    #pragma omp for
+	    for (i=0; i<n; i++) tmp += (pidx[i] != 0);
+	    ctr[ithread+1] = tmp;
+	    #pragma omp barrier
+	    #pragma omp single
+	    for (i=0; i<nthreads; i++)
+		ctr[i+1] += ctr[i];
+	    tmp = ctr[ithread];
+	    #pragma omp barrier
+	    #pragma omp for private(this) reduction(+:ansi)
+	    for (i=0; i<n; i++) {
+		this = pidx[i];
+		if (this==0) continue;
+		LOGICAL(ans)[tmp++] = (this==NA_INTEGER || this>max) ? NA_LOGICAL : LOGICAL(x)[this-1];
+		ansi++;
+	    }
+	}
+#else
+	for (i=0; i<n; i++) {
+	    this = pidx[i];
             if (this==0) continue;
             LOGICAL(ans)[ansi++] = (this==NA_INTEGER || this>max) ? NA_LOGICAL : LOGICAL(x)[this-1];
         }
+#endif
         break;
     case STRSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
+#ifdef _OPENMP
+	#pragma omp parallel
+	{
+	    int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
+	    #pragma omp for
+	    for (i=0; i<n; i++) tmp += (pidx[i] != 0);
+	    ctr[ithread+1] = tmp;
+	    #pragma omp barrier
+	    #pragma omp single
+	    for (i=0; i<nthreads; i++)
+		ctr[i+1] += ctr[i];
+	    tmp = ctr[ithread];
+	    #pragma omp barrier
+	    #pragma omp for private(this) reduction(+:ansi)
+	    for (i=0; i<n; i++) {
+		this = pidx[i];
+		if (this==0) continue;
+		SET_STRING_ELT(ans, tmp++, (this==NA_INTEGER || this>max) ? NA_STRING : STRING_ELT(x, this-1));
+		ansi++;
+	    }
+	}
+#else
+	for (i=0; i<n; i++) {
+	    this = pidx[i];
             if (this==0) continue;
             SET_STRING_ELT(ans, ansi++, (this==NA_INTEGER || this>max) ? NA_STRING : STRING_ELT(x, this-1));
         }
+#endif
         break;
     case VECSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
+#ifdef _OPENMP
+	#pragma omp parallel
+	{
+	    int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
+	    #pragma omp for
+	    for (i=0; i<n; i++) tmp += (pidx[i] != 0);
+	    ctr[ithread+1] = tmp;
+	    #pragma omp barrier
+	    #pragma omp single
+	    for (i=0; i<nthreads; i++)
+		ctr[i+1] += ctr[i];
+	    tmp = ctr[ithread];
+	    #pragma omp barrier
+	    #pragma omp for private(this) reduction(+:ansi)
+	    for (i=0; i<n; i++) {
+		this = pidx[i];
+		if (this==0) continue;
+		SET_VECTOR_ELT(ans, tmp++, (this==NA_INTEGER || this>max) ? R_NilValue : VECTOR_ELT(x, this-1));
+		ansi++;
+	    }
+	}
+#else
+	for (i=0; i<n; i++) {
+	    this = pidx[i];
             if (this==0) continue;
             SET_VECTOR_ELT(ans, ansi++, (this==NA_INTEGER || this>max) ? R_NilValue : VECTOR_ELT(x, this-1));
         }
+#endif
         break;
     // Fix for #982
     // source: https://github.com/wch/r-source/blob/fbf5cdf29d923395b537a9893f46af1aa75e38f3/src/main/subset.c    
     case CPLXSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
+#ifdef _OPENMP
+	#pragma omp parallel
+	{
+	    int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
+	    #pragma omp for
+	    for (i=0; i<n; i++) tmp += (pidx[i] != 0);
+	    ctr[ithread+1] = tmp;
+	    #pragma omp barrier
+	    #pragma omp single
+	    for (i=0; i<nthreads; i++)
+		ctr[i+1] += ctr[i];
+	    tmp = ctr[ithread];
+	    #pragma omp barrier
+	    #pragma omp for private(this) reduction(+:ansi)
+	    for (i=0; i<n; i++) {
+		this = pidx[i];
+		if (this==0) continue;
+		if (this == NA_INTEGER || this>max) {
+		    COMPLEX(ans)[tmp].r = NA_REAL;
+		    COMPLEX(ans)[tmp++].i = NA_REAL;
+		} else COMPLEX(ans)[tmp++] = COMPLEX(x)[this-1];
+		ansi++;
+	    }
+	}
+#else
+	for (i=0; i<n; i++) {
+	    this = pidx[i];
             if (this == 0) continue;
             if (this == NA_INTEGER || this>max) {
                 COMPLEX(ans)[ansi].r = NA_REAL;
@@ -62,17 +218,44 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
             } else COMPLEX(ans)[ansi] = COMPLEX(x)[this-1];
             ansi++;
         }
+#endif
         break;
     case RAWSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
+#ifdef _OPENMP
+	#pragma omp parallel
+	{
+	    int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
+	    #pragma omp for
+	    for (i=0; i<n; i++) tmp += (pidx[i] != 0);
+	    ctr[ithread+1] = tmp;
+	    #pragma omp barrier
+	    #pragma omp single
+	    for (i=0; i<nthreads; i++)
+		ctr[i+1] += ctr[i];
+	    tmp = ctr[ithread];
+	    #pragma omp barrier
+	    #pragma omp for private(this) reduction(+:ansi)
+	    for (i=0; i<n; i++) {
+		this = pidx[i];
+		if (this==0) continue;
+		RAW(ans)[tmp++] = (this == NA_INTEGER || this>max) ? (Rbyte) 0 : RAW(x)[this-1];
+		ansi++;
+	    }
+	}
+#else
+	for (i=0; i<n; i++) {
+	    this = pidx[i];
             if (this == 0) continue;
             RAW(ans)[ansi++] = (this == NA_INTEGER || this>max) ? (Rbyte) 0 : RAW(x)[this-1];
         }
+#endif
         break;
     default :
         error("Unknown column type '%s'", type2char(TYPEOF(x)));
     }
+#ifdef _OPENMP
+    free(ctr);
+#endif
     if (ansi != l) error("Internal error: ansi [%d] != l [%d] at the end of subsetVector", ansi, l);
     copyMostAttrib(x, ans);
     UNPROTECT(1);
