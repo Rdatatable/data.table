@@ -73,6 +73,8 @@
 
   35. New functions `anywhere()` and `%anywhere%` are exported. `between()` answers the question: *"Is x[i] present in between `lower[i]` and `upper[i]`?"*. `anywhere()` on the other hand answers the question: *"Is x[i] present in any of the intervals specified by `lower, upper`?"*. This makes use of the recently implemented `non-equi` join to provide a convenient function to perform a *range join* [#679](https://github.com/Rdatatable/data.table/issues/679).
 
+  36. `rbindlist` supports columns of type `complex`, [#1659](https://github.com/Rdatatable/data.table/issues/1659).
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

@@ -8738,6 +8738,12 @@ system.time(fwrite(DT, f, eol='\n'))  # run again to force seg fault
 test(1664, file.info(f)$size %/% 100, 62889)  # file size appears to be 34 bytes bigger on Windows (6288931 vs 6288965)
 unlink(f)
 
+# rbindlist support for complex type
+dt1 = data.table(x=1L, y=2+3i)
+dt2 = data.table(x=0:101, y=3+sample(102)*1i)
+test(1665.1, rbindlist(list(dt1,dt2)), setDT(rbind(as.data.frame(dt1), as.data.frame(dt2))))
+# print method now works (when rows > 100 it uses rbind/rbindlist internally)
+test(1665.2, ans <- capture.output(dt2), ans) # just checking that it doesn't error, really.
 
 ##########################
 
