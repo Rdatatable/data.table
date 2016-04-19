@@ -86,9 +86,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
 SEXP ENC2UTF8(SEXP s);
 
-// fcast.c
-SEXP coerce_to_char(SEXP s, SEXP env);
-
 // rbindlist.c
 SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOrdered);
 
