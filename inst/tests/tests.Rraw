@@ -34,6 +34,7 @@ whichfail = NULL
 .timingtests = FALSE
 started.at = Sys.time()
 oldbwb = options(datatable.old.bywithoutby=FALSE)  # in case user set it, or set in dev
+oldalloccol = options(datatable.alloccol = quote(max(100L,ncol(DT)+64L)))   # use old default as tests in this file test 100 
 
 if (!.devtesting) {
     test = data.table:::test
@@ -8827,7 +8828,8 @@ options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
 
 ##########################
 options(warn=0)
-options(oldbwb) # set at top of this file
+options(oldbwb)       # set at top of this file
+options(oldalloccol)  # set at top of this file
 plat = paste("endian=",.Platform$endian,", sizeof(long double)==",.Machine$sizeof.longdouble,sep="")
 if (nfail > 0) {
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}

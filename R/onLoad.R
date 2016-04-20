@@ -37,7 +37,7 @@
              "datatable.allow.cartesian"="FALSE",    # datatable.<argument name>
              "datatable.dfdispatchwarn"="TRUE",                   # not a function argument
              "datatable.warnredundantby"="TRUE",                  # not a function argument
-             "datatable.alloccol"="quote(max(100L,ncol(DT)+64L))",# argument 'n' of alloc.col. Allocate at least 64 spare slots by default. Needs to be 100L floor to save small object reallocs.
+             "datatable.alloccol"="quote(ncol(DT)+1024L)", # argument 'n' of alloc.col. Over-allocate 1024 spare column slots by default.
              "datatable.integer64"="'integer64'",    # datatable.<argument name>    integer64|double|character
              "datatable.showProgress"="1L",          # in fread
              "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
