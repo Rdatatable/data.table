@@ -115,7 +115,28 @@ static inline void writeNumeric(double x, char **thisCh)
     }
   }
   *thisCh = ch;
-} 
+}
+
+static inline void writeInteger(int x, char **thisCh)
+{
+  char *ch = *thisCh;
+  if (x == NA_INTEGER) {
+    if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
+  } else if (x == 0) {
+    *ch++ = '0';
+  } else {
+    if (x<0) { *ch++ = '-'; x=-x; }
+    // avoid log() call for speed. write backwards then reverse when we know how long
+    int width = 0;
+    while (x>0) { *ch++ = '0'+x%10; x /= 10; width++; }
+    for (int i=width/2; i>0; i--) {
+      char tmp=*(ch-i);
+      *(ch-i) = *(ch-width+i-1);
+      *(ch-width+i-1) = tmp;
+    }
+  }
+  *thisCh = ch;
+}
 
 SEXP writefile(SEXP list_of_columns,
                SEXP filenameArg,
@@ -191,6 +212,7 @@ SEXP writefile(SEXP list_of_columns,
     case INTSXP:
       if (isFactor(column)) {
         levels[col_i] = getAttrib(column, R_LevelsSymbol);
+        sameType = 0; // TODO: enable deep-switch-avoidance for all columns factor
         lineLenMax += maxStrLen(levels[col_i], na_len)*(1+quote) + quote*2;
         //                                    ^^^^^^^^^^ in case every character in the field is a quote, each to be escaped (!)
       } else {
@@ -288,7 +310,18 @@ SEXP writefile(SEXP list_of_columns,
           ch--;  // backup onto the last col_sep after the last column
           memcpy(ch, row_sep, row_sep_len);  // replace it with the newline.
           ch += row_sep_len;
-        }    
+        }
+      } else if (turbo && sameType == INTSXP) {
+        for (RLEN row_i = start_row; row_i < upp; row_i++) {
+          for (int col_i = 0; col_i < ncols; col_i++) {
+            SEXP column = VECTOR_ELT(list_of_columns, col_i);
+            writeInteger(INTEGER(column)[row_i], &ch);
+            *ch++ = col_sep;
+          }
+          ch--;
+          memcpy(ch, row_sep, row_sep_len);
+          ch += row_sep_len;
+        }
       } else {
         for (RLEN row_i = start_row; row_i < upp; row_i++) {
           for (int col_i = 0; col_i < ncols; col_i++) {
@@ -308,12 +341,12 @@ SEXP writefile(SEXP list_of_columns,
               }
               break;
             case REALSXP:
-              if (turbo) {
-                writeNumeric(REAL(column)[row_i], &ch);
+              if (ISNA(REAL(column)[row_i])) {
+                if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
               } else {
-                // if there are any problems with the hand rolled double writing, then turbo=FALSE reverts to standard library
-                if (ISNA(REAL(column)[row_i])) {
-                  if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
+                if (turbo) {
+                  // if there are any problems with the hand rolled double writing, then turbo=FALSE reverts to standard library
+                  writeNumeric(REAL(column)[row_i], &ch);
                 } else {
                   //tt0 = clock();
                   ch += sprintf(ch, "%.15G", REAL(column)[row_i]);
@@ -333,7 +366,11 @@ SEXP writefile(SEXP list_of_columns,
                   ch += LENGTH(str);
                 }
               } else {
-                ch += sprintf(ch, "%d", INTEGER(column)[row_i]);
+                if (turbo) {
+                  writeInteger(INTEGER(column)[row_i], &ch);
+                } else {
+                  ch += sprintf(ch, "%d", INTEGER(column)[row_i]);
+                }
               }
               break;
             case STRSXP:
