@@ -243,6 +243,8 @@
   
   27. The default number of over-allocated spare column pointer slots has been increased from 64 to 1024. The wasted memory overhead (if never used) is insignificant (0.008 MB). The advantage is that adding a large number of columns by reference using := or set() inside a loop will not now saturate as quickly and need reallocating. An alleviation to issue [#1633](https://github.com/Rdatatable/data.table/issues/1633). See `?alloc.col` for how to change this default yourself.
 
+  28. `?IDateTime` now makes clear that `wday`, `yday` and `month` are all 1- (not 0- as in `POSIXlt`) based, [#1658](https://github.com/Rdatatable/data.table/issues/1658); thanks @MichaelChirico.
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
