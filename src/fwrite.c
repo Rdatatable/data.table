@@ -77,9 +77,10 @@ static inline void writeNumeric(double x, char **thisCh)
   } else {
     if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign.  no need to pass back sign, already written to output
     int exp = (int)floor(log10(x));
-    long l = (long)(x / pow(10, exp-NUM_SF+1));
+    long long l = (long long)(x / pow(10, exp-NUM_SF+1));
     // TODO:            ^^^  use lookup table like base R (here in fwrite it might make a difference whereas in base R
     //                       other very significant write.table inefficiency dominates)
+    // NB: long long is for Windows.
     if (l%10 == 9) l++;  // TODO: this is unlikely good enough. Revisit scientific() and R_nearbyint() in R/src/main/format.c
     if (l == 0) {
       *ch++ = '0';
