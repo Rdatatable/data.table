@@ -24,6 +24,8 @@ check_formula <- function(formula, varnames, valnames) {
     vars = all.vars(formula)
     vars = vars[!vars %chin% c(".", "...")]
     allvars = c(vars, valnames)
+    if (any(allvars %in% varnames[duplicated(varnames)])) 
+      stop('data.table to cast must have unique column names')
     ans = deparse_formula(as.list(formula)[-1L], varnames, allvars)
 }
 
@@ -92,7 +94,6 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
 
 dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
     if (!is.data.table(data)) stop("'data' must be a data.table.")
-    if (anyDuplicated(names(data))) stop('data.table to cast must have unique column names')
     drop = as.logical(rep(drop, length.out=2L))
     if (any(is.na(drop))) stop("'drop' must be logical TRUE/FALSE")
     lvals = value_vars(value.var, names(data))

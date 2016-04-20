@@ -8798,6 +8798,15 @@ test(1666.16, grep("Looking for existing (secondary) index", capture.output(d1[d
 # reset defaults
 options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
 
+
+#testing fix to #1654 (dcast should only error when _using_ duplicated names)
+DT <- data.table(a = 1:4, a = 1:4, id = rep(1:4, 2), V1 = 8:1)
+test(1667.1, capture.output(dcast(DT, id ~ rowid(id), value.var = "V1")), 
+     c("   id 1 2", "1:  1 8 4", "2:  2 7 3",
+       "3:  3 6 2", "4:  4 5 1"))
+DT <- data.table(a = 1:4, id = 1:4, id = rep(1:4, 2), V1 = 8:1)
+test(1667.2, dcast(DT, id ~ rowid(id), value.var = "V1"), error = "data.table to cast")
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
