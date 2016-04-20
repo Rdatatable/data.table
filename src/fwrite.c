@@ -51,6 +51,27 @@ static inline int maxStrLen(SEXP x, int na_len) {
 static int na_len;
 static const char *na_str;
 
+static inline void writeInteger(int x, char **thisCh)
+{
+  char *ch = *thisCh;
+  if (x == NA_INTEGER) {
+    if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
+  } if (x == 0) {
+    *ch++ = '0';
+  } else {
+    if (x<0) { *ch++ = '-'; x=-x; }
+    // avoid log() call for speed. write backwards then reverse when we know how long
+    int width = 0;
+    while (x>0) { *ch++ = '0'+x%10; x /= 10; width++; }
+    for (int i=width/2; i>0; i--) {
+      char tmp=*(ch-i);
+      *(ch-i) = *(ch-width+i-1);
+      *(ch-width+i-1) = tmp;
+    }
+  }
+  *thisCh = ch;
+}
+
 static inline void writeNumeric(double x, char **thisCh)
 {
   // hand-rolled / specialized for speed
@@ -74,6 +95,12 @@ static inline void writeNumeric(double x, char **thisCh)
     }
   } else if (x == 0.0) {
     *ch++ = '0';   // and we're done.  so much easier rather than passing back special cases
+  } else if (x==(int)x && x>=INT_MIN && x<=INT_MAX) {
+    // it's not really a real; users often end up with integers stored as type double
+    // use writeInteger instead for speed
+    // careful not to pass NA_INTEGER (<INT_MIN) to writeInteger otherwise it'd get written NA
+    writeInteger((int)x, thisCh);
+    return;
   } else {
     if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign.  no need to pass back sign, already written to output
     int exp = (int)floor(log10(x));
@@ -113,27 +140,6 @@ static inline void writeNumeric(double x, char **thisCh)
           *ch++ = '0' + (exp % 10);
         }
       }
-    }
-  }
-  *thisCh = ch;
-}
-
-static inline void writeInteger(int x, char **thisCh)
-{
-  char *ch = *thisCh;
-  if (x == NA_INTEGER) {
-    if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
-  } else if (x == 0) {
-    *ch++ = '0';
-  } else {
-    if (x<0) { *ch++ = '-'; x=-x; }
-    // avoid log() call for speed. write backwards then reverse when we know how long
-    int width = 0;
-    while (x>0) { *ch++ = '0'+x%10; x /= 10; width++; }
-    for (int i=width/2; i>0; i--) {
-      char tmp=*(ch-i);
-      *(ch-i) = *(ch-width+i-1);
-      *(ch-width+i-1) = tmp;
     }
   }
   *thisCh = ch;
