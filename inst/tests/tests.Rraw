@@ -8740,7 +8740,7 @@ DT <- as.data.table(m)
 f <- tempfile()
 system.time(fwrite(DT, f, eol='\n'))  # eol fixed so size test passes on Windows
 system.time(fwrite(DT, f, eol='\n'))  # run again to force seg fault
-test(1664, file.info(f)$size %/% 100, 62889)  # file size appears to be 34 bytes bigger on Windows (6288931 vs 6288965)
+test(1664, file.info(f)$size %/% 100000, 62)  # file size appears to be 34 bytes bigger on Windows (6288931 vs 6288965)
 unlink(f)
 
 # rbindlist support for complex type

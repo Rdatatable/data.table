@@ -1,6 +1,6 @@
 fwrite <- function(x, file.path, append = FALSE, quote = TRUE,
                    sep = ",", eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
-                   na = "", col.names = TRUE, qmethod = "double", verbose=FALSE) {
+                   na = "", col.names = TRUE, qmethod = "double", verbose=FALSE, turbo=TRUE) {
   
   # validate arguments
   stopifnot(is.data.frame(x))
@@ -13,12 +13,13 @@ fwrite <- function(x, file.path, append = FALSE, quote = TRUE,
   stopifnot(isTRUE(col.names) || isFALSE(col.names))
   stopifnot(isTRUE(append) || isFALSE(append))
   stopifnot(isTRUE(verbose) || isFALSE(verbose))
+  stopifnot(isTRUE(turbo) || isFALSE(turbo))
   if (append && missing(col.names)) col.names = FALSE  # Otto's test 1658.16 checks this
   
   # handle paths like "~/foo/bar"
   file.path <- path.expand(file.path)
   
-  .Call(Cwritefile, x, file.path, sep, eol, na, quote, qmethod == "escape", append, col.names, verbose)
+  .Call(Cwritefile, x, file.path, sep, eol, na, quote, qmethod == "escape", append, col.names, verbose, turbo)
   invisible()
 }
 

@@ -8,7 +8,7 @@
 #ifdef _OPENMP
   #include <omp.h>
 #else
-  #define omp_get_num_threads() 0 // so it still compiles on machines with compilers void of openmp support
+  #define omp_get_num_threads() 1 // so it still compiles on machines with compilers void of openmp support
 #endif
 #ifdef WIN32
 #include <sys/types.h>
@@ -44,6 +44,79 @@ static inline int maxStrLen(SEXP x, int na_len) {
   } \
   *ch++ = QUOTE
 
+#define NUM_SF 15
+#define DECIMAL_SEP '.'  // TODO allow other decimal separator e.g. ','
+
+// Globals for this file only (written once to hold parameters passed from R level)
+static int na_len;
+static const char *na_str;
+
+static inline void writeNumeric(double x, char **thisCh)
+{
+  // hand-rolled / specialized for speed
+  // *thisCh is safely the output destination with enough space (ensured via calculating maxLineLen up front)
+  // technique similar to base R (format.c:formatReal and printutils.c:EncodeReal0)
+  // differences/tricks :
+  //   i) no buffers. writes straight to the final file buffer passed to write()
+  //  ii) no C libary calls such as sprintf() where the fmt string has to be interpretted over and over
+  // iii) no need to return variables or flags.  Just writes.
+  //  iv) shorter, easier to read and reason with. In one self contained place.
+  char *ch = *thisCh;
+  if (!R_FINITE(x)) {
+    if (ISNA(x)) {
+      if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }  // by default na_len==0 and the memcpy call will be skipped
+    } else if (ISNAN(x)) {
+      *ch++ = 'N'; *ch++ = 'a'; *ch++ = 'N';
+    } else if (x>0) {
+      *ch++ = 'I'; *ch++ = 'n'; *ch++ = 'f';
+    } else {
+      *ch++ = '-'; *ch++ = 'I'; *ch++ = 'n'; *ch++ = 'f';
+    }
+  } else if (x == 0.0) {
+    *ch++ = '0';   // and we're done.  so much easier rather than passing back special cases
+  } else {
+    if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign.  no need to pass back sign, already written to output
+    int exp = (int)floor(log10(x));
+    long l = (long)(x / pow(10, exp-NUM_SF+1));
+    // TODO:            ^^^  use lookup table like base R (here in fwrite it might make a difference whereas in base R
+    //                       other very significant write.table inefficiency dominates)
+    if (l%10 == 9) l++;  // TODO: this is unlikely good enough. Revisit scientific() and R_nearbyint() in R/src/main/format.c
+    if (l == 0) {
+      *ch++ = '0';
+    } else {
+      // Count trailing zeros and therefore s.f. present
+      int trailZero = 0;
+      while (l%10 == 0) { l /= 10; trailZero++; }
+      int sf = NUM_SF - trailZero;
+      // TODO: Improve deciding what's shortest to write here.
+      if (exp<0 && exp>-5) { sf-=exp; exp=0; }
+      ch += sf;
+      for (int i=sf; i>1; i--) {
+        *ch-- = '0' + l%10;   // l is long for compound accuracy. If kept in double, repeated *=10. or /=10. could compound errors 
+        l /= 10;
+      }
+      if (sf == 1) ch--; else *ch-- = DECIMAL_SEP;
+      *ch = '0' + l;
+      ch += sf + (sf>1);
+      if (exp != 0) {
+        *ch++ = 'E';
+        if (exp < 0) { *ch++ = '-'; exp=-exp; }
+        if (exp < 10) {
+          *ch++ = '0' + exp;
+        } else if (exp < 100) {
+          *ch++ = '0' + (exp / 10);
+          *ch++ = '0' + (exp % 10);
+        } else {
+          *ch++ = '0' + (exp / 100);
+          *ch++ = '0' + (exp / 10) % 10;
+          *ch++ = '0' + (exp % 10);
+        }
+      }
+    }
+  }
+  *thisCh = ch;
+} 
+
 SEXP writefile(SEXP list_of_columns,
                SEXP filenameArg,
                SEXP col_sep_Arg,
@@ -53,7 +126,8 @@ SEXP writefile(SEXP list_of_columns,
                SEXP qmethod_escapeArg,  // TRUE|FALSE
                SEXP append,             // TRUE|FALSE
                SEXP col_names,          // TRUE|FALSE
-               SEXP verboseArg)
+               SEXP verboseArg,
+               SEXP turboArg)
 {
   if (!isNewList(list_of_columns)) error("fwrite must be passed an object of type list, data.table or data.frame");
   RLEN ncols = length(list_of_columns);
@@ -64,17 +138,18 @@ SEXP writefile(SEXP list_of_columns,
       error("Column %d's length (%d) is not the same as column 1's length (%d)", i+1, length(VECTOR_ELT(list_of_columns, i)), nrows);
   }
 #ifndef _OPENMP
-  warning("Your platform/environment has not detected OpenMP support. fwrite() will still work but slower in single threaded mode.");
+  warning("Your platform/environment has not detected OpenMP support. fwrite() will still work, but slower in single threaded mode.");
 #endif 
   const Rboolean verbose = LOGICAL(verboseArg)[0];
   const Rboolean quote = LOGICAL(quoteArg)[0];
+  const Rboolean turbo = LOGICAL(turboArg)[0];
   
   const char col_sep = *CHAR(STRING_ELT(col_sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
   
   const char *row_sep = CHAR(STRING_ELT(row_sep_Arg, 0));
   const int row_sep_len = strlen(row_sep);  // someone somewhere might want a trailer on every line
-  const char *na_str = CHAR(STRING_ELT(na_Arg, 0));
-  const int na_len = strlen(na_str);
+  na_str = CHAR(STRING_ELT(na_Arg, 0));
+  na_len = strlen(na_str);
   const char QUOTE = '"';
   const char ESCAPE = '\\';
   const Rboolean qmethod_escape = LOGICAL(qmethod_escapeArg)[0];
@@ -102,8 +177,10 @@ SEXP writefile(SEXP list_of_columns,
   // ii) calculate certain upper bound of line length
   SEXP levels[ncols];  // on-stack vla
   int lineLenMax = 2;  // initialize with eol max width of \r\n on windows
+  int sameType = TYPEOF(VECTOR_ELT(list_of_columns, 0));
   for (int col_i=0; col_i<ncols; col_i++) {
     SEXP column = VECTOR_ELT(list_of_columns, col_i);
+    if (TYPEOF(column) != sameType) sameType = 0;
     switch(TYPEOF(column)) {
     case LGLSXP:
       lineLenMax+=5;  // width of FALSE
@@ -182,8 +259,8 @@ SEXP writefile(SEXP list_of_columns,
   if (lineLenMax > bufSize) bufSize = lineLenMax;
   const int rowsPerBatch = bufSize/lineLenMax;
   const int numBatches = (nrows-1)/rowsPerBatch + 1;
-  if (verbose) Rprintf("Writing data rows in %d batches of %d rows (each buffer size %.3fMB) ... ",
-    numBatches, rowsPerBatch, 1.0*bufSize/(1024*1024));
+  if (verbose) Rprintf("Writing data rows in %d batches of %d rows (each buffer size %.3fMB, turbo=%d) ... ",
+    numBatches, rowsPerBatch, 1.0*bufSize/(1024*1024), turbo);
   t0 = clock();
   
   int nth;
@@ -200,68 +277,87 @@ SEXP writefile(SEXP list_of_columns,
     for(RLEN start_row = 0; start_row < nrows; start_row += rowsPerBatch) { 
       int upp = start_row + rowsPerBatch;
       if (upp > nrows) upp = nrows;
-      for (RLEN row_i = start_row; row_i < upp; row_i++) {
-        for (int col_i = 0; col_i < ncols; col_i++) {
-          SEXP column = VECTOR_ELT(list_of_columns, col_i);
-          SEXP str;
-          switch(TYPEOF(column)) {
-          case LGLSXP:
-            true_false = LOGICAL(column)[row_i];
-            if (true_false == NA_LOGICAL) {
-              if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
-            } else if (true_false) {
-              memcpy(ch,"TRUE",4);   // Other than strings, field widths are limited which we check elsewhere here to ensure
-              ch += 4;
-            } else {
-              memcpy(ch,"FALSE",5);
-              ch += 5;
-            }
-            break;
-          case REALSXP:
-            if (ISNA(REAL(column)[row_i])) {
-              if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
-            } else {
-              //tt0 = clock();
-              ch += sprintf(ch, "%.15G", REAL(column)[row_i]);
-              //tNUM += clock()-tt0;
-            }
-            break;
-          case INTSXP:
-            if (INTEGER(column)[row_i] == NA_INTEGER) {
-              if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
-            } else if (levels[col_i] != NULL) {   // isFactor(column) == TRUE
-              str = STRING_ELT(levels[col_i], INTEGER(column)[row_i]-1);
-              if (quote) {
+      if (turbo && sameType == REALSXP) {
+        // avoid deep switch. turbo switches on both sameType and specialized writeNumeric
+        for (RLEN row_i = start_row; row_i < upp; row_i++) {
+          for (int col_i = 0; col_i < ncols; col_i++) {
+            SEXP column = VECTOR_ELT(list_of_columns, col_i);
+            writeNumeric(REAL(column)[row_i], &ch);
+            *ch++ = col_sep;
+          }
+          ch--;  // backup onto the last col_sep after the last column
+          memcpy(ch, row_sep, row_sep_len);  // replace it with the newline.
+          ch += row_sep_len;
+        }    
+      } else {
+        for (RLEN row_i = start_row; row_i < upp; row_i++) {
+          for (int col_i = 0; col_i < ncols; col_i++) {
+            SEXP column = VECTOR_ELT(list_of_columns, col_i);
+            SEXP str;
+            switch(TYPEOF(column)) {
+            case LGLSXP:
+              true_false = LOGICAL(column)[row_i];
+              if (true_false == NA_LOGICAL) {
+                if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
+              } else if (true_false) {
+                memcpy(ch,"TRUE",4);   // Other than strings, field widths are limited which we check elsewhere here to ensure
+                ch += 4;
+              } else {
+                memcpy(ch,"FALSE",5);
+                ch += 5;
+              }
+              break;
+            case REALSXP:
+              if (turbo) {
+                writeNumeric(REAL(column)[row_i], &ch);
+              } else {
+                // if there are any problems with the hand rolled double writing, then turbo=FALSE reverts to standard library
+                if (ISNA(REAL(column)[row_i])) {
+                  if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
+                } else {
+                  //tt0 = clock();
+                  ch += sprintf(ch, "%.15G", REAL(column)[row_i]);
+                  //tNUM += clock()-tt0;
+                }
+              }
+              break;
+            case INTSXP:
+              if (INTEGER(column)[row_i] == NA_INTEGER) {
+                if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
+              } else if (levels[col_i] != NULL) {   // isFactor(column) == TRUE
+                str = STRING_ELT(levels[col_i], INTEGER(column)[row_i]-1);
+                if (quote) {
+                  QUOTE_FIELD;
+                } else {
+                  memcpy(ch, CHAR(str), LENGTH(str));
+                  ch += LENGTH(str);
+                }
+              } else {
+                ch += sprintf(ch, "%d", INTEGER(column)[row_i]);
+              }
+              break;
+            case STRSXP:
+              str = STRING_ELT(column, row_i);
+              if (str==NA_STRING) {
+                if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
+              } else if (quote) {
                 QUOTE_FIELD;
               } else {
-                memcpy(ch, CHAR(str), LENGTH(str));
+                //tt0 = clock();
+                memcpy(ch, CHAR(str), LENGTH(str));  // could have large fields. Doubt call overhead is much of an issue on small fields.
                 ch += LENGTH(str);
+                //tSTR += clock()-tt0;
               }
-            } else {
-              ch += sprintf(ch, "%d", INTEGER(column)[row_i]);
+              break;
+            // default:
+            // An uncovered type would have already thrown above when calculating maxLineLen earlier
             }
-            break;
-          case STRSXP:
-            str = STRING_ELT(column, row_i);
-            if (str==NA_STRING) {
-              if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
-            } else if (quote) {
-              QUOTE_FIELD;
-            } else {
-              //tt0 = clock();
-              memcpy(ch, CHAR(str), LENGTH(str));  // could have large fields. Doubt call overhead is much of an issue on small fields.
-              ch += LENGTH(str);
-              //tSTR += clock()-tt0;
-            }
-            break;
-          // default:
-          // An uncovered type would have already thrown above when calculating maxLineLen earlier
+            *ch++ = col_sep;
           }
-          *ch++ = col_sep;
+          ch--;  // backup onto the last col_sep after the last column
+          memcpy(ch, row_sep, row_sep_len);  // replace it with the newline. TODO: replace memcpy call with eol1 eol2 --eolLen 
+          ch += row_sep_len;
         }
-        ch--;  // backup onto the last col_sep after the last column
-        memcpy(ch, row_sep, row_sep_len);  // replace it with the newline. TODO: replace memcpy call with eol1 eol2 --eolLen 
-        ch += row_sep_len;
       }
       #pragma omp ordered
       {

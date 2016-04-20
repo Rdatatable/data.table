@@ -7,7 +7,7 @@
 \usage{
 fwrite(x, file.path, append = FALSE, quote = TRUE, sep = ",",
        eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
-       na = "", col.names = TRUE, qmethod = "double", verbose=FALSE)
+       na = "", col.names = TRUE, qmethod = "double", verbose=FALSE, turbo=TRUE)
 }
 \arguments{
   \item{x}{The \code{data.table} or \code{data.frame} to write}
@@ -20,6 +20,7 @@ fwrite(x, file.path, append = FALSE, quote = TRUE, sep = ",",
   \item{col.names}{A logical value indicating if the column names (header row) should be written}
   \item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings. Must be one of "escape", in which case the quote character (as well as the backslash character) is escaped in C style by a backslash, or "double" (default), in which case it is doubled.}
   \item{verbose}{Be chatty and report timings?}
+  \item{turbo}{Use specialized custom C code to format numeric and integer columns. This reduces call overhead to the C library and avoids any use of memory buffers (copies) at all. Try with and without to see the difference it makes on your machine and please report any significant differences in output.}
 }
 \details{
 The speed-up compared to \code{write.csv} depends on the parameters and column types.
