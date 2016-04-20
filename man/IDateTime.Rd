@@ -153,6 +153,8 @@ round to weeks, months, quarters, and years.
    for hour, day of year, day of week, day of month, week, month,
    quarter, and year.
    
+   These values are all taken directly from the \code{POSIXlt} representation of \code{x}, with the notable difference that while \code{yday}, \code{wday}, and \code{mon} are all 0-based, here they are 1-based.
+   
 }
 \references{
 
