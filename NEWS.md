@@ -238,6 +238,8 @@
   25. `data.table`'s dependency has been moved forward from R 2.14.1 to R 2.15.0 (Mar 2012; i.e. 4 years old). We keep this dependency as old as possible for as long as possible as requested by users in managed environments. This bump allows `data.table` to use `paste0()` internally and in tests for the first time. Before release to CRAN [our procedures](https://github.com/Rdatatable/data.table/blob/master/CRAN_Release.cmd) include running the test suite using this stated dependency.
 
   26. New option `options(datatable.use.index = TRUE)` (default) gives better control over usage of indices, when combined with `options(datatable.auto.index = FALSE)` it allows to use only indices created manually with `setindex` or `setindexv`. Closes [#1422](https://github.com/Rdatatable/data.table/issues/1422).  
+  
+  27. `?IDateTime` now makes clear that `wday`, `yday` and `month` are all 1- (not 0- as in `POSIXlt`) based, [#1658](https://github.com/Rdatatable/data.table/issues/1658); thanks @MichaelChirico.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
