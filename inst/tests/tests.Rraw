@@ -7425,6 +7425,7 @@ test(1601.4, tryCatch(merge(data.table(NULL),data.table(NULL), by="a"), warning 
 dd = as.IDate("2016-02-28")
 tt = as.ITime("03:04:43")
 if(!requireNamespace("chron", quietly = TRUE)){
+    # Since chron is recommended package and installed by default, perhaps it's ok doing requireNamespace
     test(1602.1, as.chron.IDate(dd), error = "Install suggested `chron` package to use `as.chron.IDate` function.")
     test(1602.2, as.chron.ITime(tt), error = "Install suggested `chron` package to use `as.chron.ITime` function.")
 } else {
@@ -8711,14 +8712,16 @@ test(1661.1, {names(DT) <- c("k", "m"); nn}, c("x","y"), warning=if (base::getRv
 test(1661.2, names(DT), c("k","m"))
 
 # as.Date.IDate won't change the class if xts package loaded #1500 
-if (requireNamespace("zoo", quietly = TRUE)) {
+if ("package:zoo" %in% search()) {
     x = as.IDate("2016-01-15")
     require(zoo)
     test(1662, class(as.Date(x)), "Date")
+} else {
+    cat("Test 1662 not run. If required call library(zoo) first.\n")
 }
 
 # IDate support in as.xts.data.table #1499
-if (requireNamespace("xts", quietly = TRUE)) {
+if ("package:xts" %in% search()) {
     dt <- data.table(date = c(as.IDate("2014-12-31"),
                               as.IDate("2015-12-31"),
                               as.IDate("2016-12-31")), 
@@ -8726,6 +8729,8 @@ if (requireNamespace("xts", quietly = TRUE)) {
                      key = "date")
     dt.xts <- as.xts.data.table(dt)
     test(1663, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
+} else {
+    cat("Test 1663 not run. If required call library(xts) first.\n")
 }
 
 # fwrite crash on very large number of columns (say 100k)
