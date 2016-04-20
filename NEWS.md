@@ -65,6 +65,8 @@
   
   31. New function `fwrite` implements [#580](https://github.com/Rdatatable/data.table/issues/580). Thanks to Otto Seiskari for C code, R wrapper, manual page and extensive tests.
 
+  Update: Matt has since then worked on top of this excellent contribution by reducing i/o overhead, parallelisation and internal functions for faster write of integer/numeric values.
+
   32. `on=.()` syntax is now posible, e.g., `X[Y, on=.(x==a, y==b)]`, [#1257](https://github.com/Rdatatable/data.table/issues/1257). Thanks @dselivanov.
 
   33. Non-equi joins are now possible using the familiar `on=` syntax. With this, the set of binary operators extend from just `==` to `>=`, `>`, `<=`, `<` and `==`. For e.g., `X[Y, on=.(a, b>b)]` looks for `X.a == Y.a` first and within those matching rows for rows where`X.b > Y.b`. Arguments `mult` and `nomatch` work as expected. `by=.EACHI` is not yet implemented. Partly addreses [#1452](https://github.com/Rdatatable/data.table/issues/1452).
