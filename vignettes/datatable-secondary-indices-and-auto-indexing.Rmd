@@ -319,6 +319,8 @@ system.time(dt[x %in% 1989:2012])
 
 * Auto indexing can be disabled by setting the global argument `options(datatable.auto.index = FALSE)`.
 
+* Disabling auto indexing still allows to use indices created explicitly with `setindex` or `setindexv`. You can disable indices fully by setting global argument `options(datatable.use.index = FALSE)`.
+
 # 
 
 In the future, we plan to extend auto indexing to expressions involving more than one column. Also we are working on extending binary search to work with more binary operators like `<`, `<=`, `>` and `>=`. Once done, it would be straightforward to extend it to these operators as well. 

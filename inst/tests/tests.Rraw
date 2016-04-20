@@ -8745,6 +8745,53 @@ test(1665.1, rbindlist(list(dt1,dt2)), setDT(rbind(as.data.frame(dt1), as.data.f
 # print method now works (when rows > 100 it uses rbind/rbindlist internally)
 test(1665.2, ans <- capture.output(dt2), ans) # just checking that it doesn't error, really.
 
+# Use existing index even when auto index is disabled #1422
+d = data.table(k=3:1) # subset - no index
+options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
+test(1666.1, d[k==1L, verbose=TRUE], d[3L], output="Creating new index 'k'")
+d = data.table(k=3:1)
+options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
+test(1666.2, grep("Creating new index", capture.output(d[k==1L, verbose=TRUE])), integer(0)) # do not create index
+d = data.table(k=3:1)
+options("datatable.use.index"=FALSE, "datatable.auto.index"=FALSE)
+test(1666.3, grep("Creating new index", capture.output(d[k==1L, verbose=TRUE])), integer(0))
+d = data.table(k=3:1)
+options("datatable.use.index"=FALSE, "datatable.auto.index"=TRUE)
+test(1666.4, grep("Creating new index", capture.output(d[k==1L, verbose=TRUE])), integer(0))
+d = data.table(k=3:1) # subset - index
+setindex(d, k)
+options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
+test(1666.5, d[k==1L, verbose=TRUE], d[3L], output="Using existing index 'k'")
+options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
+test(1666.6, d[k==1L, verbose=TRUE], d[3L], output="Using existing index 'k'")
+options("datatable.use.index"=FALSE, "datatable.auto.index"=FALSE)
+test(1666.7, grep("Using existing index", capture.output(d[k==1L, verbose=TRUE])), integer(0)) # not using existing index
+options("datatable.use.index"=FALSE, "datatable.auto.index"=TRUE)
+test(1666.8, grep("Using existing index", capture.output(d[k==1L, verbose=TRUE])), integer(0))
+d1 = data.table(k=3:1) # join - no index
+d2 = data.table(k=2:4)
+options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
+test(1666.9, d1[d2, on="k", verbose=TRUE], d1[d2, on="k"], output="not found.")
+options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
+test(1666.10, d1[d2, on="k", verbose=TRUE], d1[d2, on="k"], output="not found.")
+options("datatable.use.index"=FALSE, "datatable.auto.index"=FALSE)
+test(1666.11, grep("Looking for existing (secondary) index", capture.output(d1[d2, on="k", verbose=TRUE])), integer(0)) # not looking for index
+options("datatable.use.index"=FALSE, "datatable.auto.index"=TRUE)
+test(1666.12, grep("Looking for existing (secondary) index", capture.output(d1[d2, on="k", verbose=TRUE])), integer(0))
+d1 = data.table(k=3:1) # join - index
+d2 = data.table(k=2:4)
+setindex(d1, k)
+options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
+test(1666.13, d1[d2, on="k", verbose=TRUE], d1[d2, on="k"], output="found. Reusing index.")
+options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
+test(1666.14, d1[d2, on="k", verbose=TRUE], d1[d2, on="k"], output="found. Reusing index.")
+options("datatable.use.index"=FALSE, "datatable.auto.index"=FALSE)
+test(1666.15, grep("Looking for existing (secondary) index", capture.output(d1[d2, on="k", verbose=TRUE])), integer(0)) # not looking for index
+options("datatable.use.index"=FALSE, "datatable.auto.index"=TRUE)
+test(1666.16, grep("Looking for existing (secondary) index", capture.output(d1[d2, on="k", verbose=TRUE])), integer(0))
+# reset defaults
+options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

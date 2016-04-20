@@ -505,11 +505,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             assign("x", x, order_env)
             i = eval(isub, order_env, parent.frame())             # for optimisation of 'order' to 'forder'
             # that forder returns integer(0) is taken care of internally within forder
-          } else if (is.call(isub) && getOption("datatable.auto.index") &&
-                   as.character(isub[[1L]]) %chin% c("==","%in%") &&
-                   is.name(isub[[2L]]) &&
-                   (isub2<-as.character(isub[[2L]])) %chin% names(x) && 
-                   is.null(attr(x, '.data.table.locked'))) {  # fix for #958, don't create auto index on '.SD'.
+          } else if (is.call(isub) &&
+                     getOption("datatable.use.index") && # #1422
+                     as.character(isub[[1L]]) %chin% c("==","%in%") &&
+                     is.name(isub[[2L]]) &&
+                     (isub2<-as.character(isub[[2L]])) %chin% names(x) &&
+                     (getOption("datatable.auto.index") || (isub2 %chin% indices(x))) && # `||` used to either auto.index or already have index #1422
+                     is.null(attr(x, '.data.table.locked'))) {  # fix for #958, don't create auto index on '.SD'.
             # LHS is a column name symbol
             # simplest case for now (single ==).  Later, top level may be &,|,< or >
             # TO DO: print method could print physical and secondary keys at end.
@@ -545,6 +547,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     xo = get2key(x,isub2)  # Can't be any index with that col as the first one because those indexes will reorder within each group
                     if (is.null(xo)) {   # integer() would be valid and signifies o=1:.N
                         if (verbose) {cat("Creating new index '",isub2,"'\n",sep="");flush.console()}
+                        if (identical(getOption("datatable.auto.index"), FALSE)) warning("Index is being created on '",isub2,"' besides the fact that option 'datatable.auto.index' is FALSE. Please report to data.table#1422.") # why not double check that, even if won't happen now may be a good check for future changes
                         setindexv(x,isub2)
                         xo = get2key(x,isub2)
                     } else {
@@ -653,11 +656,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     } else nqgrp = integer(0)
                 }
                 if (nqmaxgrp == 1L) { # equi join. Reuse secondary index, #1439
-                    if (verbose) cat("Looking for existing (secondary) index... ")
-                    xo = attr(attr(x, 'index'), paste("__", names(x)[rightcols], sep="", collapse=""))
+                    xo = if (isTRUE(getOption("datatable.use.index"))) {
+                        if (verbose) cat("Looking for existing (secondary) index... ")
+                        attr(attr(x, 'index'), paste("__", names(x)[rightcols], sep="", collapse=""))
+                    }
                     if (is.null(xo)) {
                         if (verbose) {
-                            cat("not found.\n")
+                            if (isTRUE(getOption("datatable.use.index"))) cat("not found.\n")
                             tt = system.time(xo <- forderv(x, by=rightcols))
                             cat("forder took", tt["user.self"] + tt["sys.self"], "sec\n")
                         } else xo = forderv(x, by = rightcols)

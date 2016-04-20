@@ -52,7 +52,7 @@
 
  	At the moment, expressions of the form \code{dt[col == val]} and \code{dt[col \%in\% val]} are both optimised. We plan to expand this to more operators and conditions in the future.
 
- 	Auto indexing can be switched off with the global option \code{options(datatable.auto.index = FALSE)}.
+ 	Auto indexing can be switched off with the global option \code{options(datatable.auto.index = FALSE)}. To switch off using existing indices set global option \code{options(datatable.use.index = FALSE)}.
 
  	\bold{Numeric rounding:} While grouping by column(s) of \code{numeric} type, e.g., \code{double}, \code{POSIXct} etc., \code{data.table} by default rounds off the last two bytes before computing groups to avoid unexpected behaviours due to limitations in representing floating point numbers. See \code{\link{setNumericRounding}} for more.
 
@@ -105,7 +105,7 @@ identical(ans1, ans2)
 options(datatable.optimize = Inf)
 
 # auto indexing
-options(datatable.auto.index=FALSE)
+options(datatable.auto.index = FALSE)
 system.time(ans1 <- dt[id == 100L]) # vector scan
 system.time(ans2 <- dt[id == 100L]) # vector scan
 system.time(dt[id %in% 100:500])    # vector scan
