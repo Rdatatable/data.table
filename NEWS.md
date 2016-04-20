@@ -180,6 +180,8 @@
   50. Joins using `on=` retains (and discards) keys properly, [#1268](https://github.com/Rdatatable/data.table/issues/1268). Thanks @DouglasClark for [this SO post](http://stackoverflow.com/q/29918595/559784) that helped discover the issue.
 
   51. Secondary keys are properly removed when those columns get updated, [#1479](https://github.com/Rdatatable/data.table/issues/1479). Thanks @fabiangehring for the report, and also @ChristK for the MRE.
+  
+  52. `dcast` no longer errors on tables with duplicate columns that are unused in the call, [#1654](https://github.com/Rdatatable/data.table/issues/1654). Thanks @MichaelChirico for FR&PR.
 
 #### NOTES
 
