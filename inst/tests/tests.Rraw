@@ -73,7 +73,8 @@ if (!.devtesting) {
 }
 
 # test for covering tables.R 100%, we need to run tables() before creating any data.tables to return null data.table
-test(0, tables(), null.data.table(), output = "No objects of class")
+test(0.1, tables(), null.data.table(), output = "No objects of class")
+test(0.2, columns(), null.data.table(), output = "No objects of class")
 
 TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
 setkey(TESTDT,a,b)
@@ -210,8 +211,29 @@ test(59, TESTDT[J(c("g","d","d","d","e","d"),c("b","g","k","b","a","f")),v,roll=
 test(68, "TESTDT" %in% tables(silent=TRUE)[,NAME])  # NAME is returned as a column in which we look for the string
 test(69, "TESTDT" %in% tables(silent=TRUE)[,as.character(NAME)]) # an old test (from when NAME was factor) but no harm in keeping it
 test(69.1, names(tables(silent=TRUE)), c("NAME","NROW","NCOL","MB","COLS","KEY"))
-test(69.2, names(tables(silent=TRUE,mb=FALSE)), c("NAME","NROW","NCOL","COLS","KEY"))
+test(69.2, names(tables(silent=TRUE, mb=FALSE)), c("NAME","NROW","NCOL","COLS","KEY"))
+test(69.3, names(tables(silent=TRUE, mb=FALSE, stats=TRUE)),
+     c("NAME", "NROW", "NCOL", "COLS", "KEY", "UNQ_NROW", "KEY_UNQ_NROW"))
+test(69.4, names(tables(silent=TRUE, mb=FALSE, index=TRUE)),
+     c("NAME", "NROW", "NCOL", "COLS", "KEY", "INDICES"))
 
+xenv <- new.env()
+xenv$TESTDT <- TESTDT
+rm(TESTDT)
+DT <- data.table(a = 1)
+setnames(DT, paste(rev(LETTERS), collapse=""))
+
+test(69.5, capture.output(tables(width = 10L)),
+     c("   NAME NROW NCOL MB COLS       KEY",
+       "1: DT      1    1  0 ZYXWVUTSRQ    ", "Total: 0MB"))
+test(69.6, names(tables(silent=TRUE, mb=FALSE, address=TRUE)),
+     c("NAME", "NROW", "NCOL", "COLS", "KEY", "ADDRESS"))
+
+nenv <- new.env()
+nenv$DT <- data.table(a = 1)
+test(69.7, tables(silent=TRUE, env=nenv)$NAME, "DT")
+
+TESTDT <- xenv$TESTDT
 a = "d"
 # Variable Twister.  a in this scope has same name as a inside DT scope.
 # Aug 2010 : As a result of bug 1005, and consistency with 'j' and 'by' we now allow self joins (test 183) in 'i'.
@@ -8806,6 +8828,26 @@ test(1667.1, capture.output(dcast(DT, id ~ rowid(id), value.var = "V1")),
        "3:  3 6 2", "4:  4 5 1"))
 DT <- data.table(a = 1:4, id = 1:4, id = rep(1:4, 2), V1 = 8:1)
 test(1667.2, dcast(DT, id ~ rowid(id), value.var = "V1"), error = "data.table to cast")
+
+xenv <- new.env()
+xenv$DT <- data.table(a = 1L, b = 1.2, c = "a", key = "a")
+setindexv(xenv$DT, "c")
+test(1668.1, capture.output(columns(env=xenv)),
+     c("   TABLE_NAME COLUMN_NAME ORDER      TYPE IS_KEY IS_INDEX     CLASS", 
+       "1:         DT           a     1   integer   TRUE    FALSE   integer", 
+       "2:         DT           b     2    double  FALSE    FALSE   numeric", 
+       "3:         DT           c     3 character  FALSE     TRUE character"))
+test(1668.2, capture.output(columns(silent=TRUE, env=xenv)), character(0))
+
+class(xenv$DT$a) <- c("integer", "super_integer")
+test(1668.3, columns(silent=TRUE, pretty=FALSE, env=xenv)$CLASS,
+     list(c("integer", "super_integer"), "numeric", "character"))
+test(1668.4, names(columns(silent=TRUE, stats=TRUE, env=xenv)),
+     c("TABLE_NAME", "COLUMN_NAME", "ORDER", "TYPE", "IS_KEY", "IS_INDEX", 
+       "CLASS", "COUNT", "COUNT_UNQ", "COUNT_NA", "RATIO_NA"))
+test(1668.5, names(columns(silent=TRUE, address=TRUE, env=xenv)),
+     c("TABLE_NAME", "COLUMN_NAME", "ORDER", "TYPE",
+       "IS_KEY", "IS_INDEX", "CLASS", "ADDRESS"))
 
 ##########################
 

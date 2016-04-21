@@ -5,7 +5,7 @@ import(methods)
 exportClasses(data.table, IDate, ITime)
 ##
 
-export(data.table, tables, setkey, setkeyv, key, "key<-", haskey, CJ, SJ, copy)
+export(data.table, tables, columns, setkey, setkeyv, key, "key<-", haskey, CJ, SJ, copy)
 export(set2key, set2keyv, key2, setindex, setindexv, indices)
 export(as.data.table,is.data.table,test.data.table,last,like,"%like%",between,"%between%",anywhere,"%anywhere%")
 export(timetaken)

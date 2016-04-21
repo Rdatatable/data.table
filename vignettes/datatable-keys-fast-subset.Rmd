@@ -464,7 +464,7 @@ dim(ans2)
 identical(ans1$val, ans2$val)
 ```
 
-* The speedup is **~`r round(t1[3]/t2[3])`x**!
+* The speedup is **~`r round(t1[3]/max(t2[3], .001))`x**!
 
 ### b) Why does keying a *data.table* result in blazing fast susbets?
 
