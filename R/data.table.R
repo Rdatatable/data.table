@@ -1,67 +1,3 @@
-deconstruct_and_eval <- function(expr, envir = parent.frame(), enclos = parent.frame()) {
-    if (!mode(expr) %in% c("call", "expression", "(")) return(expr)
-    # Fix for #774.
-    # the only place where a call is of length 1, that I can think of is 
-    # a function call with empty arguments: e.g., a[[1L]]() or a$b() or b()
-    # and in all these cases, we *don't* want to deconstruct and eval
-    # hence the "else if" statement is commented below. No existing tests 
-    # are broken in doing so. If there are other reports, will revisit.
-    if (length(expr) == 1L) {
-        if (is.expression(expr)) return (deconstruct_and_eval(expr[[1L]]))
-        # else if (is.call(expr[[1L]])) return (list(deconstruct_and_eval(expr[[1L]])))
-        else return(expr)
-    }
-    # Fix for #2496. The `{` in `DT[, {var := bla}, by=x]` is caught and removed from `j`.
-    if (expr[[1L]] == "{" & is.call(expr[[2L]])) {
-        if (identical(expr[[2L]][[1L]], quote(`:=`))) {
-            warning('Caught and removed `{` wrapped around := in j. := and `:=`(...) are 
-                defined for use in j, once only and in particular ways. See help(":=").')
-            return(deconstruct_and_eval(expr[[2L]], envir, enclos))
-        }
-    }
-    # don't evaluate eval's if the environment is specified
-    if (expr[[1L]] == quote(eval) && length(expr) < 3L) {
-        return(deconstruct_and_eval(eval(expr[[2L]], envir, enclos), envir, enclos))
-    }
-    ff <- function(m) {
-        if (is.call(m)) {
-            if (m[[1L]] == quote(eval))
-                # fix for #880. Hopefully this resolve the eval(parse(.)) issue for good.
-                if (is.call(m[[2L]]) && m[[2L]][[1L]] == quote(parse)) 
-                    deconstruct_and_eval(m, envir, enclos)
-                else deconstruct_and_eval(eval(m[[2L]], envir, enclos), envir, enclos)
-            else deconstruct_and_eval(m, envir, enclos)
-        } else m
-    }
-    lapply(expr, ff)
-}
-
-construct <- function(l) {
-    if (length(l) == 0L) return(NULL)
-    if (is.name(l)) return(l) # fix for error in cases as reported in Bug #5007: DT[, (cols) := lapply(.SD, function(x) MyValueIsTen), by=ID]
-                              # construct(l[[3L]] would give an error when l[[3L]] is MyValueIsTen if not for this line)
-    if (length(l) == 1L) {
-        if (length(l[[1L]]) == 1L & !is.call(l)) return(l[[1L]]) # so that DT[, test()] does not return just the function definition
-        else return(as.call(list(construct(l[[1L]]))))
-    }
-
-    if (identical(l[[1L]], quote(`function`))) return(as.call(list(l[[1L]], l[[2L]], construct(l[[3L]]))))
-
-    if (!is.list(l)) return(l)
-
-    as.call(setNames(lapply(l, function(m) {
-        if (length(m) == 1L) m
-        else construct(m)
-    }), names(l)))
-}
-
-replace_dot <- function(e) {
-    if (is.call(e)) {
-        if (e[[1L]] == ".") e[[1L]] = quote(list)
-        for (i in seq_along(e)[-1]) if (!is.null(e[[i]])) e[[i]] = replace_dot(e[[i]])
-    }
-    e
-}
 
 dim.data.table <- function(x) 
 {
@@ -360,7 +296,18 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
     alloc.col(value)  # returns a NAMED==0 object, unlike data.frame()
 }
 
+replace_dot_alias <- function(e) {
+    # we don't just simply alias .=list because i) list is a primitive (faster to iterate) and ii) we test for use
+    # of "list" in several places so it saves having to remember to write "." || "list" in those places 
+    if (is.call(e)) {
+        if (e[[1L]] == ".") e[[1L]] = quote(list)
+        for (i in seq_along(e)[-1]) if (!is.null(e[[i]])) e[[i]] = replace_dot_alias(e[[i]])
+    }
+    e
+}
+
 .massagei <- function(x) {
+    # J alias for list as well in i, just if the first symbol 
     if (is.call(x) && as.character(x[[1L]]) %chin% c("J","."))
         x[[1L]] = quote(list)
     x
@@ -418,9 +365,22 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     }
     if (!with && missing(j)) stop("j must be provided when with=FALSE")
     if (!missing(j)) {
-        jsub = substitute(j) # Ignore allow.cartesian when `jsub` has `:=`. Search for #800 to see where we need this.
-        # deconstruct and eval everything with just one argument, then reconstruct back to a call
-        if (is.call(jsub)) jsub = construct(deconstruct_and_eval(replace_dot(jsub), parent.frame(), parent.frame()))
+        jsub = replace_dot_alias(substitute(j))
+        if (is.call(jsub) && jsub[[1L]]=="{") {
+            if (length(jsub)==2) jsub = jsub[[2L]]  # to allow {} wrapping of := e.g. [,{`:=`(...)},] [#376]
+            else if (is.call(jsub[[2L]]) && jsub[[2L]][[1L]] == ":=")
+                stop("You have wrapped := with {} which is ok but then := must be the only thing inside {}. You have something else inside {} as well. Consider placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}")
+        }
+        if (is.call(jsub)) {
+            if (jsub[[1L]] == "eval" && !any(all.vars(jsub[[2]]) %in% names(x))) {
+                # Grab the dynamic expression from calling scope now to give the optimizer a chance to optimize it
+                # Only when top level is eval call.  Not nested like x:=eval(...) or `:=`(x=eval(...), y=eval(...))
+                jsub = eval(jsub[[2L]], parent.frame(), parent.frame())  # this evals the symbol to return the dynamic expression
+                if (is.expression(jsub)) jsub = jsub[[1L]]    # if expression, convert it to call
+                # Note that the dynamic expression could now be := (new in v1.9.7)
+            }
+            if (is.call(jsub) && jsub[[1L]] == ":=") allow.cartesian=TRUE   # (see #800)
+        }
     }
     bysub=NULL
     if (!missing(by)) bysub=substitute(by)
@@ -712,14 +672,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (mult=="all") {
                 if (!byjoin) {
                     # Really, `anyDuplicated` in base is AWESOME!
-                    # allow.cartesian shouldn't error if a) not-join, b) 'i' has no duplicates or c) jsub has `:=`.
+                    # allow.cartesian shouldn't error if a) not-join, b) 'i' has no duplicates
                     irows = if (allLen1) f__ else vecseq(f__,len__,
                         if( allow.cartesian || 
-                            notjoin || # #698 fix. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
-                            !anyDuplicated(f__, incomparables = c(0L, NA_integer_)) || # #742 fix. If 'i' has no duplicates, ignore as well.
-                            (!missing(j) && all.vars(jsub, TRUE)[1L] == ":=")) # #800 fix. if jsub[1L] == ":=" ignore allow.cartesian.
-                                                                            # TODO: warn on `:=` when `i` has duplicates? 
-                           NULL 
+                            notjoin || # #698. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
+                            !anyDuplicated(f__, incomparables = c(0L, NA_integer_)))  # #742. If 'i' has no duplicates, ignore 
+                            NULL 
                         else as.double(nrow(x)+nrow(i))) # rows in i might not match to x so old max(nrow(x),nrow(i)) wasn't enough. But this limit now only applies when there are duplicates present so the reason now for nrow(x)+nrow(i) is just to nail it down and be bigger than max(nrow(x),nrow(i)).
                     # Fix for #1092 and #1074
                     # TODO: implement better version of "any"/"all"/"which" to avoid 
@@ -812,14 +770,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         }
         ansvals = chmatch(ansvars, nx)
     } else {
-        # These commented lines are moved to the top for #800.
-        # jsub = substitute(j)
-        # # deconstruct and eval everything with just one argument, then reconstruct back to a call
-        # if (is.call(jsub))
-        #     jsub = construct(deconstruct_and_eval(jsub, parent.frame(), parent.frame()))
+        # j was substituted before dealing with i so that := can set allow.cartesian=FALSE (#800) (used above in i logic)
         if (is.null(jsub)) return(NULL)
-
-        if (is.call(jsub) && jsub[[1L]]==as.name(":=")) {
+        if (is.call(jsub) && jsub[[1L]]==":=") {
             # short circuit do-nothing, don't do further checks on .SDcols for example
             if (identical(irows, integer())) {
                 if (identical(nomatch, 0L)) {
@@ -840,7 +793,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         }
         if (!with) {
             # missing(by)==TRUE was already checked above before dealing with i
-            if (is.call(jsub) && deparse(jsub[[1]], 500L) %in% c("!", "-")) {
+            if (is.call(jsub) && deparse(jsub[[1]], 500L) %in% c("!", "-")) {  # TODO is deparse avoidable here?
                 notj = TRUE
                 jsub = jsub[[2L]]
             } else notj = FALSE
@@ -901,7 +854,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 }
                 if (length(bysubl) && identical(bysubl[[1L]],quote(eval))) {    # TO DO: or by=..()
                     bysub = eval(bysubl[[2]], parent.frame(), parent.frame())
-                    bysub = replace_dot(bysub) # fix for #1298
+                    bysub = replace_dot_alias(bysub) # fix for #1298
                     if (is.expression(bysub)) bysub=bysub[[1L]]
                     bysubl = as.list.default(bysub)
                 } else if (is.call(bysub) && as.character(bysub[[1L]]) %chin% c("c","key","names", "intersect", "setdiff")) {
@@ -930,7 +883,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     bysub = parse(text=paste("list(",paste(bysub,collapse=","),")",sep=""))[[1L]]
                     bysubl = as.list.default(bysub)
                 }
-                allbyvars = intersect(all.vars(construct(bysubl), FALSE),names(x))
+                allbyvars = intersect(all.vars(bysub),names(x))
                 
                 orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause)
                 # orderedirows = is.sorted(f__)
@@ -1046,7 +999,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 } # else empty list is needed for test 468: adding an empty list column
             } # else maybe a call to transform or something which returns a list.
             av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
-            if (".SD" %chin% av) {
+            # browser()
+            if (any(c(".SD","eval","get","mget") %chin% av)) {
                 if (missing(.SDcols)) {
                     # here we need to use 'dupdiff' instead of 'setdiff'. Ex: setdiff(c("x", "x"), NULL) will give 'x'.
                     ansvars = dupdiff(names(x),union(bynames,allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
@@ -1111,10 +1065,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 ansvals = chmatch(ansvars, names(x))
             }
             # if (!length(ansvars)) Leave ansvars empty. Important for test 607.
+            
+            # TODO remove as (m)get is now folded in above.
             # added 'mget' - fix for #994
             if (any(c("get", "mget") %chin% av)) {
                 if (verbose) {
-                    cat("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld:", paste(ansvars,collapse=","),"\n")
+                    cat("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld:", paste(ansvars,collapse=","),"\n")
                     # get('varname') is too difficult to detect which columns are used in general
                     # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
                 }
@@ -1504,9 +1460,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     alloc = if (length(len__)) seq_len(max(len__)) else 0L
     SDenv$.I = alloc
     if (length(xcols)) {
-        SDenv$.SDall = .Call(CsubsetDT,x,alloc,xcols)    # i.e. x[alloc, xcols, with=FALSE] but without recursive overhead
+        #  TODO add: if (length(alloc)==nrow(x)) stop("There is no need to deep copy x in this case")
+        SDenv$.SDall = .Call(CsubsetDT,x,alloc,xcols)    # must be deep copy when largest group is a subset
         SDenv$.SD = if (!length(othervars)) SDenv$.SDall else shallow(SDenv$.SDall, setdiff(ansvars, othervars))
-        # Must not shallow copy here. This is the allocation for the largest group. Since i=alloc is passed in here, it won't shallow copy, even in future. Only DT[,xvars,with=FALSE] might ever shallow copy automatically.
     }
     if (nrow(SDenv$.SDall)==0L) {
         setattr(SDenv$.SDall,"row.names",c(NA_integer_,0L))

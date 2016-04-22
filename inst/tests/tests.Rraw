@@ -61,7 +61,7 @@ if (!.devtesting) {
     which_ = data.table:::which_
     shift = data.table:::shift
     any_na = data.table:::any_na
-    replace_dot = data.table:::replace_dot
+    replace_dot_alias = data.table:::replace_dot_alias
     isReallyReal = data.table:::isReallyReal
     between = data.table::between
     which.first = data.table:::which.first
@@ -2374,7 +2374,7 @@ test(864.3, rbindlist(list(data.table(logical(0),logical(0)), DT<-data.table(baz
 # Steve's find that setnames failed for numeric 'old' when pointing to duplicated names
 DT = data.table(a=1:3,b=1:3,v=1:6,w=1:6)
 test(865, ans1<-DT[,{list(name1=sum(v),name2=sum(w))},by="a,b",verbose=TRUE],
-          output="result of j is a named list. It's very inefficient.*removed and put back")
+          output="GForce optimized.*gsum(v), gsum(w)")  # v1.9.7 treats wrapped {} better, so this is now optimized
 test(866, names(ans1), c("a","b","name1","name2"))
 test(867, names(ans2<-DT[,list(name1=sum(v),name2=sum(w)),by="a,b"]), c("a","b","name1","name2"))  # list names extracted here
 test(868, ans1, ans2)
@@ -3512,8 +3512,10 @@ test(1133.2, DT[, new := c(1,2), by=x], data.table(x=c(1,1,1,1,1,2,2), new=c(1,2
 # Fix for FR #2496 - catch `{` in `:=` expression in `j`:
 DT <- data.table(x=c("A", "A", "B", "B"), val =1:4)
 DT2 <- copy(DT)[, a := 1L]
-test(1134.1, DT[, {a := 1L}], DT2, warning="Caught and removed")
-test(1134.2, DT[, {b := 2L}, by=x], DT2[, b:=2L, by=x], warning="Caught and removed")
+test(1134.1, DT[, {a := 1L}], DT2)
+test(1134.2, DT[, {a := 1L; NULL}], error="You have wrapped.*which is ok.*Consider")
+test(1134.3, DT[, {b := 2L}, by=x], DT2[, b:=2L, by=x])
+test(1134.3, DT[, {b := 2L; sum(val)}, by=x], error="You have wrapped.*which is ok.*Consider")
 
 # fix for bug #5069 
 if ("package:gdata" %in% search()) {
@@ -4206,9 +4208,9 @@ test(1248.1, DT[, y := y * eval(parse(text="1*2"))], data.table(x=seq(1,10,1), y
 # fix in 1248 was not complete. resurfaced again as bug #5527. Fixed now, test added here below:
 DT <- data.table(id=1:5, var=letters[1:5])
 ans <- copy(DT)
-id <- "va"
-test(1248.2, DT[, eval(parse(text=paste(id,"r",sep="")))], letters[1:5])
-test(1248.3, DT[, id2:=eval(parse(text=paste(id,"r",sep="")))], ans[, id2 := var])
+idPrefix <- "va"   # if this variable were named 'id' then the paste(id) below would see the 'id' _column_.
+test(1248.2, DT[, eval(parse(text=paste(idPrefix,"r",sep="")))], letters[1:5])
+test(1248.3, DT[, id2:=eval(parse(text=paste(idPrefix,"r",sep="")))], ans[, id2 := var])
 
 # test to make sure DT[order(...)] works fine when it's already sorted (forgot the case where forder returns integer(0) before)
 DT <- data.table(x=rep(1:4, each=5), y=1:20)
@@ -6228,12 +6230,12 @@ ee3 = quote(.(v1=.(.SD), v2=.(lm(. ~ xx)), v3=.(.(x)), v4=.(x^2)))
 ee4 = quote(c("a", "b") := .(.SD))
 ee5 = quote(c("a", "b") := .(v1=x^2, v2 = .(.SD[[1L]])))
 ee6 = quote(.(v1=.(.SD), v2=.(lm(. ~ xx)), v3=list(.(x)), v4=.(x^2)))
-test(1491.1, replace_dot(ee1), quote(list(val = lm(x ~ .))))
-test(1491.2, replace_dot(ee2), quote(list(v1=list(.SD), v2=list(min(y)), v3=list(list(x)), v4=list(x))))
-test(1491.3, replace_dot(ee3), quote(list(v1=list(.SD), v2=list(lm(. ~ xx)), v3=list(list(x)), v4=list(x^2))))
-test(1491.4, replace_dot(ee4), quote(c("a", "b") := list(.SD)))
-test(1491.5, replace_dot(ee5), quote(c("a", "b") := list(v1=x^2, v2 = list(.SD[[1L]]))))
-test(1491.6, replace_dot(ee6), quote(list(v1=list(.SD), v2=list(lm(. ~ xx)), v3=list(list(x)), v4=list(x^2))))
+test(1491.1, replace_dot_alias(ee1), quote(list(val = lm(x ~ .))))
+test(1491.2, replace_dot_alias(ee2), quote(list(v1=list(.SD), v2=list(min(y)), v3=list(list(x)), v4=list(x))))
+test(1491.3, replace_dot_alias(ee3), quote(list(v1=list(.SD), v2=list(lm(. ~ xx)), v3=list(list(x)), v4=list(x^2))))
+test(1491.4, replace_dot_alias(ee4), quote(c("a", "b") := list(.SD)))
+test(1491.5, replace_dot_alias(ee5), quote(c("a", "b") := list(v1=x^2, v2 = list(.SD[[1L]]))))
+test(1491.6, replace_dot_alias(ee6), quote(list(v1=list(.SD), v2=list(lm(. ~ xx)), v3=list(list(x)), v4=list(x^2))))
 
 # Fix for #1050
 dt = data.table(x=1:5, y=6:10)
