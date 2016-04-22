@@ -57,17 +57,8 @@ construct <- function(l) {
 
 replace_dot <- function(e) {
     if (is.call(e)) {
-        if (e[[1L]] == ".")
-            e[[1L]] = quote(list)
-        le = as.list(e)
-        for (i in seq_along(le)) {
-            if (is.call(le[[i]])) {
-                if (le[[i]][[1L]] == ".") 
-                    le[[i]][[1L]] = quote(list)
-                le[[i]] = as.call(replace_dot(le[[i]]))
-            }
-        }
-        e = as.call(le)
+        if (e[[1L]] == ".") e[[1L]] = quote(list)
+        for (i in seq_along(e)[-1]) if (!is.null(e[[i]])) e[[i]] = replace_dot(e[[i]])
     }
     e
 }
