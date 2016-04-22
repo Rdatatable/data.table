@@ -1819,7 +1819,7 @@ test(645, setkey(DT,b), error="Column 2 is length 2 which differs from length of
 # Test faster mean.  Example from (now not needed as much) data.table wiki point 3.
 # Example is a lot of very small groups.
 set.seed(100)
-n=1e4  # small n so as not to overload daily CRAN checks.
+n=1e5  # small n so as not to overload daily CRAN checks.
 DT=data.table(grp1=sample(1:750, n, replace=TRUE),
               grp2=sample(1:750, n, replace=TRUE),
               x=rnorm(n),
@@ -1836,8 +1836,8 @@ test(647, ans1, ans3)
 # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
 # http://comments.gmane.org/gmane.comp.debugging.valgrind/10340
 test(648, any(is.na(ans1$V1)) && !any(is.nan(ans1$V1)))
-if (.devtesting) test(649, tt1["user.self"] < 10*tt2["user.self"])   # should be same speed, but *10 as large margin
-if (.devtesting) test(650, tt1["user.self"] < tt3["user.self"]/2)   # 10 times faster, but test 2 times faster as large margin
+if (.devtesting) test(649, tt1["user.self"] < tt2["user.self"])
+if (.devtesting) test(650, tt2["user.self"] < tt3["user.self"])
 
 tt1 = system.time(ans1<-DT[,list(mean(x,na.rm=TRUE),mean(y,na.rm=TRUE)),by=list(grp1,grp2)])   # 2.0s
 tt2 = system.time(ans2<-DT[,list(mean.default(x,na.rm=TRUE),mean.default(y,na.rm=TRUE)),by=list(grp1,grp2)])  # 5.0s
