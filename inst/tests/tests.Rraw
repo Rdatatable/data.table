@@ -8566,7 +8566,7 @@ local({
 
   # without quoting
   fwrite_test(1658.1, function(f) {
-    fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar')), f, quote=F)
+    fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar')), f, quote=FALSE)
   }, 'a,b\n,foo\n2,\n3.01,bar\n')
 
   # with quoting and qmethod="escape"
@@ -8574,7 +8574,7 @@ local({
     fwrite(data.table(
       a=c(NA, 2, 3.01),
       `other column`=c('foo bar', NA, 'quote" and \\ bs \n and newline')),
-      f, quote=T, qmethod="escape")
+      f, quote=TRUE, qmethod="escape")
   }, '"a","other column"\n,"foo bar"\n2,\n3.01,"quote\\" and \\\\ bs \n and newline"\n')
 
   # with quoting and qmethod="double" (default)
@@ -8582,55 +8582,55 @@ local({
     fwrite(data.table(
       a=c(NA, 1.2e-100, 3.01),
       "other \"column"=c('foo bar', NA, 'quote" and \\ bs')),
-      f, quote=T, qmethod="double")
+      f, quote=TRUE, qmethod="double")
   }, '"a","other ""column"\n,"foo bar"\n1.2E-100,\n3.01,"quote"" and \\ bs"\n')
 
   # changing sep
-  fwrite_test(1658.4, function(f) { fwrite(data.table(a="foo", b="ba\"r"), f, sep=";") },
+  fwrite_test(1658.4, function(f) { fwrite(data.table(a="foo", b="ba\"r"), f, sep=";", quote=TRUE) },
               '"a";"b"\n"foo";"ba""r"\n')
 
   # changing eol
-  if (.Platform$OS.type=="linux") {
+  if (.Platform$OS.type=="unix") {
     # can change eol on windows too; the only reason for running this test on linux only
     # is that inside fwrite_test() on windows it gsub's '\r\n' in the result to '\n'
     # for the other tests which have a fixed \n endings to compare to
-    fwrite_test(1658.5, function(f) { fwrite(data.table(a="foo", b="bar"), f, eol="\r\n") },
+    fwrite_test(1658.5, function(f) { fwrite(data.table(a="foo", b="bar"), f, eol="\r\n", quote=TRUE) },
               '"a","b"\r\n"foo","bar"\r\n')
   }
   
   # changing NA
-  fwrite_test(1658.51, function(f) { fwrite(data.table(a=c("foo", NA), b=c(1, NA)), f, na="NA") },
+  fwrite_test(1658.51, function(f) { fwrite(data.table(a=c("foo", NA), b=c(1, NA)), f, na="NA", quote=TRUE) },
               '"a","b"\n"foo",1\nNA,NA\n')
   
   # no col.names
-  fwrite_test(1658.6, function(f) { fwrite(data.table(a="foo", b="bar"), f, col.names=F) },
+  fwrite_test(1658.6, function(f) { fwrite(data.table(a="foo", b="bar"), f, col.names=F, quote=TRUE) },
               '"foo","bar"\n')
 
-  fwrite_test(1658.7, function(f) { fwrite(data.table(a=c(1:5), b=c(1:5)), f) },
+  fwrite_test(1658.7, function(f) { fwrite(data.table(a=c(1:5), b=c(1:5)), f, quote=TRUE) },
               '"a","b"\n1,1\n2,2\n3,3\n4,4\n5,5\n')
 
   # block size equal to number of rows
-  fwrite_test(1658.8, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f) },
+  fwrite_test(1658.8, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, quote=TRUE) },
               '"a","b"\n1,1\n2,2\n3,3\n')
 
   # block size one bigger than number of rows
-  fwrite_test(1658.9, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f) },
+  fwrite_test(1658.9, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, quote=TRUE) },
               '"a","b"\n1,1\n2,2\n3,3\n')
 
   # block size one less than number of rows
-  fwrite_test(1658.10, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f) },
+  fwrite_test(1658.10, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, quote=TRUE) },
               '"a","b"\n1,1\n2,2\n3,3\n')
 
   # writing a data.frame
-  fwrite_test(1658.11, function(f) { fwrite(data.frame(a="foo", b="bar"), f) },
+  fwrite_test(1658.11, function(f) { fwrite(data.frame(a="foo", b="bar"), f, quote=TRUE) },
               '"a","b"\n"foo","bar"\n')
   
   # single-column data.table
-  fwrite_test(1658.12, function(f) { fwrite(data.table(a=c(1,2,3)), f) },
+  fwrite_test(1658.12, function(f) { fwrite(data.table(a=c(1,2,3)), f, quote=TRUE) },
               '"a"\n1\n2\n3\n')
   
   # single-column data.frame
-  fwrite_test(1658.13, function(f) { fwrite(data.frame(a=c(1,2,3)), f) },
+  fwrite_test(1658.13, function(f) { fwrite(data.frame(a=c(1,2,3)), f, quote=TRUE) },
               '"a"\n1\n2\n3\n')
 
   # different column types
@@ -8639,29 +8639,29 @@ local({
       factor1=as.factor(c('foo', 'bar')),
       factor2=as.factor(c(NA, "baz")),
       bool=c(TRUE,NA),
-      ints=as.integer(c(NA, 5))), f, na='na')},
+      ints=as.integer(c(NA, 5))), f, na='na', quote=TRUE)},
     '"factor1","factor2","bool","ints"\n"foo",na,TRUE,na\n"bar","baz",na,5\n')
 
   # empty data table (headers but no rows)
   empty_dt <- data.table(a=1, b=2)[0,]
-  fwrite_test(1658.15, function(f) { fwrite(empty_dt, f) }, '"a","b"\n')
+  fwrite_test(1658.15, function(f) { fwrite(empty_dt, f, quote=TRUE) }, '"a","b"\n')
 
   # data.table with duplicate column names
-  fwrite_test(1658.151, function(f) {fwrite(data.table(a=1, a=2), f)}, '"a","a"\n1,2\n')
+  fwrite_test(1658.151, function(f) {fwrite(data.table(a=1, a=2), f, quote=TRUE)}, '"a","a"\n1,2\n')
   
   # number of significant digits = 15
-  fwrite_test(1658.152, function(f) {fwrite(data.table(a=1/0.9), f)},
+  fwrite_test(1658.152, function(f) {fwrite(data.table(a=1/0.9), f, quote=TRUE)},
     '"a"\n1.11111111111111\n')
 
   # test append
   fwrite_test(1658.16, function(f) {
-    fwrite(data.table(a=c(1,2), b=c('a', 'b')), f)
-    fwrite(data.table(a=c(3,4), b=c('c', 'd')), f, append=T)
+    fwrite(data.table(a=c(1,2), b=c('a', 'b')), f, quote=TRUE)
+    fwrite(data.table(a=c(3,4), b=c('c', 'd')), f, append=TRUE, quote=TRUE)
   }, '"a","b"\n1,"a"\n2,"b"\n3,"c"\n4,"d"\n')
 
   # simple data table (reference for the error cases below)
   ok_dt <- data.table(foo="bar")
-  fwrite_test(1658.17, function(f) { fwrite(ok_dt, f) }, '"foo"\n"bar"\n')
+  fwrite_test(1658.17, function(f) { fwrite(ok_dt, f, quote=TRUE) }, '"foo"\n"bar"\n')
 
   # error cases
   fwrite_expect_error <- function(test_number, writer) {
@@ -8741,8 +8741,8 @@ set.seed(123)
 m <- matrix(runif(3*100000), nrow = 3)
 DT <- as.data.table(m)
 f <- tempfile()
-system.time(fwrite(DT, f, eol='\n'))  # eol fixed so size test passes on Windows
-system.time(fwrite(DT, f, eol='\n'))  # run again to force seg fault
+system.time(fwrite(DT, f, eol='\n', quote=TRUE))  # eol fixed so size test passes on Windows
+system.time(fwrite(DT, f, eol='\n', quote=TRUE))  # run again to force seg fault
 test(1664, abs(file.info(f)$size %/% 100000 - 62) <= 1.5)  # file size appears to be 34 bytes bigger on Windows (6288931 vs 6288965)
 unlink(f)
 
