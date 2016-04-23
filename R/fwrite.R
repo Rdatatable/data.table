@@ -1,4 +1,4 @@
-fwrite <- function(x, file.path, append = FALSE, quote = TRUE,
+fwrite <- function(x, file.path, append = FALSE, quote = "auto",
                    sep = ",", eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
                    na = "", col.names = TRUE, qmethod = "double", verbose=FALSE, turbo=TRUE) {
   
@@ -6,6 +6,7 @@ fwrite <- function(x, file.path, append = FALSE, quote = TRUE,
   stopifnot(is.data.frame(x))
   stopifnot(ncol(x) > 0)
   isFALSE = function(x)identical(FALSE,x)  # it seems there is no isFALSE in R?
+  if (identical(quote,"auto")) quote=FALSE # TODO to implement auto at C level per field/column
   stopifnot(isTRUE(quote) || isFALSE(quote))
   stopifnot(length(sep) == 1 && class(sep) == "character" && nchar(sep) == 1)
   stopifnot(length(eol) == 1 && class(eol) == "character")
