@@ -5,7 +5,7 @@
 Similar to \code{write.table} but \emph{much} faster and runs in parallel. It has relatively limited features compared to \code{write.table}.
 }
 \usage{
-fwrite(x, file.path, append = FALSE, quote = TRUE, sep = ",",
+fwrite(x, file.path, append = FALSE, quote = "auto", sep = ",",
        eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
        na = "", col.names = TRUE, qmethod = "double",
        verbose=FALSE, turbo=TRUE)
@@ -14,7 +14,7 @@ fwrite(x, file.path, append = FALSE, quote = TRUE, sep = ",",
   \item{x}{A \code{data.table} or \code{data.frame} to write.}
   \item{file.path}{Output file name.}
   \item{append}{If \code{TRUE}, the file is opened in append mode and column names (header row) are not written.}
-  \item{quote}{If \code{TRUE}, all columns of character and factor types, as well as all column names, will be surrounded by double quotes. If \code{FALSE}, nothing is quoted, even if this would break the CSV (the column contents are not checked for separator characters).}
+  \item{quote}{When \code{"auto"}, character and factor columns as well as all column names will only be surrounded by double quotes if the field contains the separator, a line ending or the quote itself, otherwise the quote characters are omitted. If \code{FALSE} the fields are never wrapped with quotes even if this would break the CSV due to the contents of the field. If \code{TRUE} quotes are always included for character and factor columns.}
   \item{sep}{The separator between columns. Default is \code{","}.}
   \item{eol}{Line separator. Default is \code{"\r\n"} for windows and \code{"\n"} otherwise.}
   \item{na}{The string to use for missing values in the data. Default is a blank string, \code{""}.}
