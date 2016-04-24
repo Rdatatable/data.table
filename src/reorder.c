@@ -1,5 +1,6 @@
 #include "data.table.h"
 #include <Rdefines.h>
+#include <omp.h>
 
 // reverse a vector - equivalent of rev(x) in base, but implemented in C and about 12x faster (on 1e8)
 SEXP setrev(SEXP x) {
@@ -35,15 +36,14 @@ SEXP setrev(SEXP x) {
     return(R_NilValue);
 }
 
-SEXP reorder(SEXP x, SEXP order)
-{
+SEXP reorder(SEXP x, SEXP order) {
     // For internal use only by setkey().
     // Reordering a vector in-place doesn't change generations so we can skip SET_STRING_ELT overhead etc.
     // Speed is dominated by page fetch when input is randomly ordered so we're at the software limit here (better bus etc should shine).
     // 'order' must strictly be a permutation of 1:n (i.e. no repeats, zeros or NAs)
     // If only a small subset is reordered, this is detected using start and end.
     // x may be a vector, or a list of vectors e.g. data.table
-    char *tmp, *tmpp, *vd;
+    char *tmp, *vd;
     SEXP v;
     R_len_t i, j, itmp, nrow, ncol, start, end;
     size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
@@ -81,18 +81,17 @@ SEXP reorder(SEXP x, SEXP order)
         v = isNewList(x) ? VECTOR_ELT(x,i) : x;
         size = SIZEOF(v);
         if (!size) error("don't know how to reorder type '%s' of column %d. Please send this message to datatable-help",type2char(TYPEOF(v)),i+1);
-        tmpp=tmp;
         vd = (char *)DATAPTR(v);
         if (size==4) {
+            # pragma omp parallel for
             for (j=start;j<=end;j++) {
-                *(int *)tmpp = ((int *)vd)[INTEGER(order)[j]-1];  // just copies 4 bytes (pointers on 32bit too)
-                tmpp += 4;
+                *((int *)(tmp+4*(j-start))) = ((int *)vd)[INTEGER(order)[j]-1];  // just copies 4 bytes (pointers on 32bit too)
             }
         } else {
             if (size!=8) error("Size of column %d's type isn't 4 or 8", i+1);
+            # pragma omp parallel for
             for (j=start;j<=end;j++) {
-                *(double *)tmpp = ((double *)vd)[INTEGER(order)[j]-1];  // just copies 8 bytes (pointers on 64bit too)
-                tmpp += 8;
+                *((double *)(tmp+8*(j-start))) = ((double *)vd)[INTEGER(order)[j]-1];  // just copies 8 bytes (pointers on 64bit too)
             }
         }
         memcpy(vd + start*size, tmp, (end-start+1) * size);
