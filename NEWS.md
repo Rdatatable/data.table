@@ -79,6 +79,8 @@
 
   37. Row subset operations of data.table is now parallelised with OpenMP, [#1660](https://github.com/Rdatatable/data.table/issues/1660). See the linked issue page for a rough benchmark on speedup.
 
+  38. Added `setthreads()` and `getthreads()` to globally control the threads used in data.table functions that are parallelised with OpenMP.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

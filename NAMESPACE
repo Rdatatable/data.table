@@ -31,6 +31,7 @@ export(rowid)
 export(rowidv)
 export(as.xts.data.table)
 export(uniqueN)
+export(setthreads, getthreads)
 # set operators
 export(fintersect)
 export(fsetdiff)

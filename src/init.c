@@ -70,6 +70,8 @@ SEXP gvar();
 SEXP gsd();
 SEXP gprod();
 SEXP nestedid();
+SEXP setThreads();
+SEXP getThreads();
 
 // .Externals
 SEXP fastmean();
@@ -142,6 +144,8 @@ R_CallMethodDef callMethods[] = {
 {"Cgsd", (DL_FUNC) &gsd, -1},
 {"Cgprod", (DL_FUNC) &gprod, -1},
 {"Cnestedid", (DL_FUNC) &nestedid, -1},
+{"CsetThreads", (DL_FUNC) &setThreads, -1},
+{"CgetThreads", (DL_FUNC) &getThreads, -1},
 {NULL, NULL, 0}
 };
 
