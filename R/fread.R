@@ -62,7 +62,12 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         on.exit(unlink(tt), add = TRUE)
         # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
         if (!is_secureurl(input)) {
-            download.file(input, tt, mode = "wb", quiet = !showProgress)
+            #1668 - force "auto" when is_file to
+            #  ensure we don't use an invalid option, e.g. wget
+            method <- if (is_file(input)) "auto" else 
+                getOption("download.file.method", default = "auto")
+            download.file(input, tt, method = method,
+                          mode = "wb", quiet = !showProgress)
         } else {
             if (!requireNamespace("curl", quietly = TRUE))
                 stop("Input URL requires https:// connection for which fread() requires 'curl' package, but cannot be found. Please install the package using 'install.packages()'.")

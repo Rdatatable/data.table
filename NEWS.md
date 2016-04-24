@@ -184,6 +184,8 @@
   51. Secondary keys are properly removed when those columns get updated, [#1479](https://github.com/Rdatatable/data.table/issues/1479). Thanks @fabiangehring for the report, and also @ChristK for the MRE.
   
   52. `dcast` no longer errors on tables with duplicate columns that are unused in the call, [#1654](https://github.com/Rdatatable/data.table/issues/1654). Thanks @MichaelChirico for FR&PR.
+  
+  53. `fread` won't use `wget` for file:// input, [#1668](https://github.com/Rdatatable/data.table/issues/1668); thanks @MichaelChirico for FR&PR.
 
 #### NOTES
 
