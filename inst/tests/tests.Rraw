@@ -8812,6 +8812,18 @@ test(1667.2, dcast(DT, id ~ rowid(id), value.var = "V1"), error = "data.table to
 # fix for #1672
 test(1668, chmatch(c("a","b"), c("a","c"), nomatch = integer()), c(1L, NA_integer_))
 
+# fix for #1650, segfault in rolling joins resulting from fixing #1405.
+library(data.table)
+x = data.table(Date = as.Date(c("2015-12-29", "2015-12-29", "2015-12-29", "2015-12-29", "2016-01-30", "2016-01-30", 
+                                "2016-01-30", "2016-01-30", "2016-02-29", "2016-02-29", "2016-02-29", "2016-02-29", 
+                                "2016-03-26", "2016-03-26", "2016-03-26", "2016-03-26")), 
+                 ID = c("A", "B", "C", "D", "A", "B", "C", "D", "A", "B", "C", "D", "A", "B", "C", "D"), 
+              Value = c("A201512", "B201512", "C201512", "D201512", "A201601", "B201601", "C201601", "D201601", 
+                        "A201602", "B201602", "C201602", "D201602", "A201603", "B201603", "C201603", "D201603"), 
+              key = c('Date', 'ID'))
+y = CJ(Date = as.Date(c("2015-12-31", "2016-01-31", "2016-02-29", "2016-03-31")), ID = unique(x$ID))
+test(1669, x[y, on=c("ID", "Date"), roll=TRUE, which=TRUE], 1:16)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

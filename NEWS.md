@@ -159,7 +159,7 @@
 
   38. `data.table()`, `as.data.table()` and `[.data.table` warn on `POSIXlt` type column and converts to `POSIXct` type. `setDT()` errors when input is list and any column is of type `POSIXlt`, [#646](https://github.com/Rdatatable/data.table/issues/646). Thanks to @tdhock.
 
-  39. `roll` argument handles -ve integer64 values correctly, [#1405](https://github.com/Rdatatable/data.table/issues/1405). Thanks @bryan4887.
+  39. `roll` argument handles -ve integer64 values correctly, [#1405](https://github.com/Rdatatable/data.table/issues/1405). Thanks @bryan4887. Also closes [#1650](https://github.com/Rdatatable/data.table/issues/1650), a segfault due to this fix. Thanks @Franknarf1 for filing the issue.
 
   40. Not join along with `mult="first"` and `mult="last"` is handled correctly, [#1571](https://github.com/Rdatatable/data.table/issues/1571).
 
