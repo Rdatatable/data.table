@@ -8809,6 +8809,9 @@ test(1667.1, capture.output(dcast(DT, id ~ rowid(id), value.var = "V1")),
 DT <- data.table(a = 1:4, id = 1:4, id = rep(1:4, 2), V1 = 8:1)
 test(1667.2, dcast(DT, id ~ rowid(id), value.var = "V1"), error = "data.table to cast")
 
+# fix for #1672
+test(1668, chmatch(c("a","b"), c("a","c"), nomatch = integer()), c(1L, NA_integer_))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

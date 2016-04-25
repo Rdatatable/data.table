@@ -2458,7 +2458,7 @@ set <- function(x,i=NULL,j,value)  # low overhead, loopable
 }
 
 chmatch <- function(x,table,nomatch=NA_integer_)
-    .Call(Cchmatchwrapper,x,table,as.integer(nomatch),FALSE)
+    .Call(Cchmatchwrapper,x,table,as.integer(nomatch[1L]),FALSE) # [1L] to fix #1672
 
 "%chin%" <- function(x,table) {
     # TO DO  if table has 'ul' then match to that
