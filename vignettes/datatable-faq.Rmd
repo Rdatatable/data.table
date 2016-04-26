@@ -625,7 +625,7 @@ DT[ , b := rnorm(5)]  # 'replace' integer column with a numeric column
 
 ## Reading `data.table` from RDS or RData file
 
-`*.RDS` and `*.RData` are file types which can store in-memory R objects on disk efficiently. However, storing `data.table` into the binary file loses its column over-allocation. This isn't a big deal -- your `data.table` will be copied in memory on the next _by reference_ operation and throw a warning. Therefore it is recommended to call `alloc.col()` on each loaded `data.table`.
+`*.RDS` and `*.RData` are file types which can store in-memory R objects on disk efficiently. However, storing `data.table` into the binary file loses its column over-allocation. This isn't a big deal -- your `data.table` will be copied in memory on the next _by reference_ operation and throw a warning. Therefore it is recommended to call `alloc.col()` on each `data.table` loaded with `readRDS()` or `load()` calls.
 
 # General questions about the package
 
@@ -664,4 +664,5 @@ Sure. You're more likely to get a faster answer from the Issues page or Stack Ov
 
 ## I have created a package that depends on `data.table`. How do I ensure my package is `data.table`-aware so that inheritance from `data.frame` works?
 
-Either i) include `data.table` in the `Depends:` field of your DESCRIPTION file, or ii) include `data.table` in the `Imports:` field of your DESCRIPTION file AND `import(data.table)` in your NAMESPACE file.
+In your DESCRIPTION file include `data.table` in `Depends:` or `Imports:` field. Additionally add `import(data.table)` to your NAMESPACE file. For more details read *Package Dependencies* section in [Writing R Extensions](https://cran.r-project.org/doc/manuals/R-exts.html) manual.
+
