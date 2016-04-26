@@ -103,24 +103,24 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     if (!isInteger(nqmaxgrpArg) || length(nqmaxgrpArg) != 1 || INTEGER(nqmaxgrpArg)[0] <= 0)
         error("Intrnal error: nqmaxgrpArg is not a positive length-1 integer vector");
     nqmaxgrp = INTEGER(nqmaxgrpArg)[0];
-    if (nqmaxgrp>1 && mult == ALL) anslen = 1.1 * ((iN > 1000) ? iN : 1000);
-    if (nqmaxgrp == 1 || (nqmaxgrp>1 && mult != ALL)) { // equi joins (or) non-equi join but no multiple matches
-        retFirstArg = PROTECT(allocVector(INTSXP, anslen));
-        retFirst = INTEGER(retFirstArg);
-        retLengthArg = PROTECT(allocVector(INTSXP, anslen));
-        retLength = INTEGER(retLengthArg);
-        retIndexArg = PROTECT(allocVector(INTSXP, 0));
-        retIndex = INTEGER(retIndexArg);
-        protecti += 3;
-    } else {
+    if (nqmaxgrp>1 && mult == ALL) {
         // non-equi case with mult=ALL, may need reallocation
+	anslen = 1.1 * ((iN > 1000) ? iN : 1000);
         retFirst = Calloc(anslen, int); // anslen is set above
         retLength = Calloc(anslen, int);
         retIndex = Calloc(anslen, int);
         if (retFirst==NULL || retLength==NULL || retIndex==NULL)
             error("Internal error in allocating memory for non-equi join");
-        // initialise retIndex here directly, as next loop is meant ofr both equi and non-equi joins
+	// initialise retIndex here directly, as next loop is meant for both equi and non-equi joins
         for (int j=0; j<anslen; j++) retIndex[j] = j+1;
+    } else { // equi joins (or) non-equi join but no multiple matches
+	retFirstArg = PROTECT(allocVector(INTSXP, anslen));
+	retFirst = INTEGER(retFirstArg);
+	retLengthArg = PROTECT(allocVector(INTSXP, anslen)); // TODO: no need to allocate length at all when
+	retLength = INTEGER(retLengthArg);                   // mult = "first" / "last"
+	retIndexArg = PROTECT(allocVector(INTSXP, 0));
+	retIndex = INTEGER(retIndexArg);
+	protecti += 3;
     }
     for (int j=0; j<anslen; j++) {
         // defaults need to populated here as bmerge_r may well not touch many locations, say if the last row of i is before the first row of x.
@@ -448,19 +448,19 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                                 anslen = 1.1*anslen;
                                 tmpptr = Realloc(retFirst, anslen, int);
                                 if (tmpptr != NULL) retFirst = tmpptr; 
-                                else error("Error in reallocating memory in non-equi joins \n");
+				else error("Error in reallocating memory in non-equi joins.\n");
                                 tmpptr = Realloc(retLength, anslen, int);
                                 if (tmpptr != NULL) retLength = tmpptr; 
-                                else error("Error in reallocating memory in non-equi joins \n");
+				else error("Error in reallocating memory in non-equi joins.\n");
                                 tmpptr = Realloc(retIndex, anslen, int);
                                 if (tmpptr != NULL) retIndex = tmpptr; 
-                                else error("Error in reallocating memory in non-equi joins \n");
+				else error("Error in reallocating memory in non-equi joins.\n");
                             }
                         } else if (mult == FIRST) {
-                            retFirst[k] = (retFirst[k] > xlow+2) ? xlow+2 : retFirst[k];
+			    retFirst[k] = (XIND(retFirst[k]-1) > XIND(xlow+1)) ? xlow+2 : retFirst[k];
                             retLength[k] = 1;
                         } else {
-                            retFirst[k] = (retFirst[k] < xupp) ? xupp : retFirst[k];
+			    retFirst[k] = (XIND(retFirst[k]-1) < XIND(xupp-1)) ? xupp : retFirst[k];
                             retLength[k] = 1;
                         }
                     } else {
