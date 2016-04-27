@@ -27,7 +27,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 {
     R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, vlen, origIlen=0, origSDnrow=0;
     int protecti=0;
-    SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, SDall, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source;
+    SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, SDall, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source, tmp;
     SEXP *nameSyms, *xknameSyms;
     Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE, recycleWarn=TRUE;
     #if defined(R_VERSION) && R_VERSION >= R_Version(3, 1, 0)
@@ -273,9 +273,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                     // first time adding to new column
                     if (isNull(RHS)) error("RHS is NULL when grouping :=. Makes no sense to delete a column by group. Perhaps use an empty vector instead.");
                     if (TRUELENGTH(dt) < INTEGER(lhs)[j]) error("Internal error: Trying to add new column by reference but tl is full; alloc.col should have run first at R level before getting to this point in dogroups");
+                    tmp = PROTECT(allocNAVector(TYPEOF(RHS), LENGTH(VECTOR_ELT(dt,0))));
+                    // increment length only if the allocation passes, #1676
                     SETLENGTH(dtnames, LENGTH(dtnames)+1);
                     SETLENGTH(dt, LENGTH(dt)+1);
-                    SET_VECTOR_ELT(dt, INTEGER(lhs)[j]-1, allocNAVector(TYPEOF(RHS), LENGTH(VECTOR_ELT(dt,0))));
+                    SET_VECTOR_ELT(dt, INTEGER(lhs)[j]-1, tmp);
+                    UNPROTECT(1);
                     // Even if we could know reliably to switch from allocNAVector to allocVector for slight speedup, user code could still contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than uninitialized or 0.
                     // dtnames = getAttrib(dt, R_NamesSymbol); // commented this here and added it on the beginning to fix #4990
                     SET_STRING_ELT(dtnames, INTEGER(lhs)[j]-1, STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1));

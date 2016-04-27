@@ -8836,6 +8836,10 @@ test(1670.1, address(x) != address(as.data.table(x)), TRUE)
 setattr(x, 'class', c('a', class(x)))
 test(1670.2, class(as.data.table(x)), class(x)[2:3])
 
+# #1676, `:=` with by shouldn't add cols on supported types
+dt = data.table(x=1, y=2)
+test(1671, dt[, z := sd, by=x], error="invalid type/length (closure/1)")
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
