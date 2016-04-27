@@ -190,6 +190,8 @@
   53. `fread` won't use `wget` for file:// input, [#1668](https://github.com/Rdatatable/data.table/issues/1668); thanks @MichaelChirico for FR&PR.
 
   54. `chmatch()` handles `nomatch = integer(0)` properly, [#1672](https://github.com/Rdatatable/data.table/issues/1672).
+  
+  55. `dimnames.data.table` no longer errors in `data.table`-unaware environments when a `data.table` has, e.g., been churned through some `dplyr` functions and acquired extra classes, [#1678](https://github.com/Rdatatable/data.table/issues/1678). Thanks Daisy Lee on SO for pointing this out and @MichaelChirico for the fix.
 
 #### NOTES
 
