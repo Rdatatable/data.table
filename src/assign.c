@@ -215,7 +215,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
     if (tl>0 && tl<l) error("Internal error, please report (including result of sessionInfo()) to datatable-help: tl (%d) < l (%d) but tl of class is marked.", tl, l);
     if (tl>l+10000) warning("tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report this to datatable-help including the result of sessionInfo().",tl,l);
     if (n>tl) return(shallow(dt,R_NilValue,n)); // usual case (increasing alloc)
-    if (n<tl) warning("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy.",tl,n);
+    if (n<tl) warning("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. Use := inside DT[...] instead.",tl,n);
               // otherwise the finalizer can't clear up the Large Vector heap
     return(dt);
 }
