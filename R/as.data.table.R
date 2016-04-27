@@ -171,8 +171,9 @@ as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...) {
 }
 
 as.data.table.data.table <- function(x, ...) {
+    # as.data.table always returns a copy, automatically takes care of #473
+    x = copy(x) # #1681
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(x, 'class', .resetclass(x, "data.table"))
-    if (!selfrefok(x)) x = alloc.col(x) # fix for #473
     return(x)
 }
