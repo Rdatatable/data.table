@@ -8824,6 +8824,12 @@ x = data.table(Date = as.Date(c("2015-12-29", "2015-12-29", "2015-12-29", "2015-
 y = CJ(Date = as.Date(c("2015-12-31", "2016-01-31", "2016-02-29", "2016-03-31")), ID = unique(x$ID))
 test(1669, x[y, on=c("ID", "Date"), roll=TRUE, which=TRUE], 1:16)
 
+# 1680 fix, fread header encoding issue
+x = "Stra\xdfe"
+Encoding(x) = "latin1"
+nm = names(fread("1680-fread-header-encoding.csv", encoding="Latin-1"))
+test(1670, nm[2], x)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

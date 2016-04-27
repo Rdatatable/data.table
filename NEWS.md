@@ -191,6 +191,8 @@
 
   54. `chmatch()` handles `nomatch = integer(0)` properly, [#1672](https://github.com/Rdatatable/data.table/issues/1672).
 
+  55. `fread()` did not respect encoding on header column. Now fixed, [#1680](https://github.com/Rdatatable/data.table/issues/1680). Thanks @nachti.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

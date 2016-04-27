@@ -929,7 +929,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             // Also Fiedl() it takes care of leading spaces. Easier to understand the logic.
             skip_spaces(); Field();
             if (fieldLen) {
-                SET_STRING_ELT(names, i, mkCharLen(fieldStart, fieldLen));
+                SET_STRING_ELT(names, i, mkCharLenCE(fieldStart, fieldLen, ienc)); // #1680 fix, respect encoding on header col
             } else {
                 sprintf(buff,"V%d",i+1);
                 SET_STRING_ELT(names, i, mkChar(buff));
