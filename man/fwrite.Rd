@@ -2,7 +2,7 @@
 \alias{fwrite}
 \title{Fast CSV writer}
 \description{
-Similar to \code{write.table} but \emph{much} faster and runs in parallel. It has relatively limited features compared to \code{write.table}.
+Similar to \code{write.csv} and but \emph{much} faster and runs in parallel. Its benefits are greatest on large data sets where for example \code{write.csv} can take over 1 minute but \code{fwrite} takes 2 seconds. Machines with 16GB of RAM or more always have more than one core so \code{fwrite} uses them; on all operating systems including Linux, Mac and Windows.
 }
 \usage{
 fwrite(x, file.path, append = FALSE, quote = "auto", sep = ",",
@@ -39,7 +39,12 @@ The logic for formatting \code{integer} columns is simpler (= faster) than \code
 With this, writing a \code{data.table} of approximately 23 million rows and 19 columns (~2.85GB on disk) takes ~5.9s with \code{turbo = TRUE} and ~20s with \code{turbo = FALSE} on a 13' Macbook Pro with 512GB SSD and an i7 processor with 2 cores containing one thread per core (and two virtual threads via hyperthreading).
 
 }
-\seealso{ \code{\link{fread}}, \code{\link[utils]{write.csv}}, \code{\link[utils]{write.table}} }
+\seealso{
+  \code{\link{fread}}, \code{\link[utils]{write.csv}}, \code{\link[utils]{write.table}}
+}
+\references{
+  \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}
+}
 \examples{
 \dontrun{
 fwrite(data.table(first=c(1,2), second=c(NA, 'foo"bar')), "table.csv")
