@@ -2,7 +2,7 @@
 \alias{fwrite}
 \title{Fast CSV writer}
 \description{
-Similar to \code{write.csv} and but \emph{much} faster and runs in parallel. Its benefits are greatest on large data sets where for example \code{write.csv} can take over 1 minute but \code{fwrite} takes 2 seconds. Machines with 16GB of RAM or more always have more than one core so \code{fwrite} uses them; on all operating systems including Linux, Mac and Windows.
+As \code{write.csv} and but \emph{much} faster (e.g. 1 minute versus 2 seconds) and just as flexible. Machines with 16GB of RAM or more always have more than one core so \code{fwrite} uses them; on all operating systems including Linux, Mac and Windows.
 }
 \usage{
 fwrite(x, file.path, append = FALSE, quote = "auto", sep = ",",
