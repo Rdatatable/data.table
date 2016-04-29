@@ -8813,7 +8813,6 @@ test(1667.2, dcast(DT, id ~ rowid(id), value.var = "V1"), error = "data.table to
 test(1668, chmatch(c("a","b"), c("a","c"), nomatch = integer()), c(1L, NA_integer_))
 
 # fix for #1650, segfault in rolling joins resulting from fixing #1405.
-library(data.table)
 x = data.table(Date = as.Date(c("2015-12-29", "2015-12-29", "2015-12-29", "2015-12-29", "2016-01-30", "2016-01-30", 
                                 "2016-01-30", "2016-01-30", "2016-02-29", "2016-02-29", "2016-02-29", "2016-02-29", 
                                 "2016-03-26", "2016-03-26", "2016-03-26", "2016-03-26")), 
