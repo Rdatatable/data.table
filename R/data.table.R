@@ -1000,6 +1000,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 } # else empty list is needed for test 468: adding an empty list column
             } # else maybe a call to transform or something which returns a list.
             av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
+            use.I = ".I" %chin% av
             # browser()
             if (any(c(".SD","eval","get","mget") %chin% av)) {
                 if (missing(.SDcols)) {
@@ -1309,7 +1310,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # Binary search can return all 0 irows when none of the input matches. Instead of doing all(irows==0L) (previous method), which has to allocate a logical vector the size of irows, we can make use of 'max'. If max is 0, we return 0. The condition where only some irows > 0 won't occur.
         }
         # Temp fix for #921. Allocate `.I` only if j-expression uses it.
-        SDenv$.I = if (!missing(j) && ".I" %chin% av) seq_len(SDenv$.N) else 0L
+        SDenv$.I = if (!missing(j) && use.I) seq_len(SDenv$.N) else 0L
         SDenv$.GRP = 1L
         setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
         setattr(SDenv$.SDall,".data.table.locked",TRUE)
@@ -1633,7 +1634,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with 
         # nomatch=0L even now.. but not switching it on yet, will deal it separately.
         if (getOption("datatable.optimize")>=2 && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
-            if (!length(ansvars)) {
+            if (!length(ansvars) && !use.I) {
                 GForce = FALSE
                 if ( (is.name(jsub) && jsub == ".N") || (is.call(jsub) && length(jsub)==2L && jsub[[1L]] == "list" && jsub[[2L]] == ".N") ) {
                     GForce = TRUE
@@ -1739,6 +1740,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
         for (ii in ansvars) assign(ii, x[[ii]], thisEnv)
         assign(".N", len__, thisEnv) # For #5760
+        #fix for #1683
+        if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
         gstart(o__, f__, len__, irows) # irows needed for #971.
         ans = eval(jsub, thisEnv)
         if (is.atomic(ans)) ans=list(ans)  # won't copy named argument in new version of R, good

@@ -198,6 +198,8 @@
   56. as.data.table's `data.table` method returns a copy as it should, [#1681](https://github.com/Rdatatable/data.table/issues/1681).
 
   57. Grouped update operations, e.g., `DT[, y := val, by=x]` where `val` is an unsupported type errors *without adding an unnamed column*, [#1676](https://github.com/Rdatatable/data.table/issues/1676). Thanks @wligtenberg.
+  
+  58. Handled use of `.I` in some `GForce` operations, [#1683](https://github.com/Rdatatable/data.table/issues/1683). Thanks gibbz00 from SO and @franknarf1 for reporting and @MichaelChirico for the PR.
 
 #### NOTES
 
