@@ -1,6 +1,8 @@
 #include "data.table.h"
 #include <Rdefines.h>
-#include <omp.h>
+#ifdef _OPENMP
+    #include <omp.h>
+#endif
 
 // reverse a vector - equivalent of rev(x) in base, but implemented in C and about 12x faster (on 1e8)
 SEXP setrev(SEXP x) {
@@ -45,7 +47,7 @@ SEXP reorder(SEXP x, SEXP order) {
     // x may be a vector, or a list of vectors e.g. data.table
     char *tmp, *vd;
     SEXP v;
-    R_len_t i, j, itmp, nrow, ncol, start, end;
+    R_len_t i, j, itmp, nrow, ncol, start, end, chk=0; 
     size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
 
     if (isNewList(x)) {
@@ -69,7 +71,14 @@ SEXP reorder(SEXP x, SEXP order) {
     if (start==nrow) return(R_NilValue);  // input is 1:n, nothing to do
     end = nrow-1;
     while (INTEGER(order)[end] == end+1) end--;
-    for (i=start; i<=end; i++) { itmp=INTEGER(order)[i]-1; if (itmp<start || itmp>end) error("order is not a permutation of 1:nrow[%d]", nrow); }
+    // rewriting the loop for parallelising since the loop will run in 
+    // almost all cases from start to end in most cases
+    #pragma omp parallel for reduction(+:chk) private(itmp)
+    for (i=start; i<=end; i++) {
+        itmp = INTEGER(order)[i]-1;
+        chk += itmp<start || itmp>end;
+    }
+    if (chk) error("order is not a permutation of 1:nrow[%d]", nrow);
     // Creorder is for internal use (so we should get the input right!), but the check above seems sensible, otherwise
     // would be segfault below. The for loop above should run in neglible time (sequential) and will also catch NAs.
     // It won't catch duplicates in order, but that's ok. Checking that would be going too far given this is for internal use only.
@@ -82,6 +91,8 @@ SEXP reorder(SEXP x, SEXP order) {
         size = SIZEOF(v);
         if (!size) error("don't know how to reorder type '%s' of column %d. Please send this message to datatable-help",type2char(TYPEOF(v)),i+1);
         vd = (char *)DATAPTR(v);
+        // the speedup isn't great but the op isn't cache efficient and 
+        // still better than without.
         if (size==4) {
             # pragma omp parallel for
             for (j=start;j<=end;j++) {
