@@ -43,6 +43,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     int xN, iN, protecti=0;
     ctr=0; // needed for non-equi join case
     SEXP retFirstArg, retLengthArg, retIndexArg, allLen1Arg, allGrp1Arg;
+    retFirstArg = retLengthArg = retIndexArg = R_NilValue; // suppress gcc msg
 
     // iArg, xArg, icolsArg and xcolsArg
     i = iArg; x = xArg;  // set globals so bmerge_r can see them.
