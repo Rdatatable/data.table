@@ -5,3 +5,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^appveyor\.yml$
+^.gitlab-ci\.yml$
+inst/doc/ci\.*
