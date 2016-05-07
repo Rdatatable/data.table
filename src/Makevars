@@ -4,6 +4,6 @@ PKG_LIBS = $(SHLIB_OPENMP_CFLAGS)
 
 all: $(SHLIB)
 	mv $(SHLIB) datatable$(SHLIB_EXT)
-	if [ `uname -s` = 'Darwin' ]; then install_name_tool -id datatable$(SHLIB_EXT) datatable$(SHLIB_EXT); fi
+	if [ "$(OS)" != "Windows_NT" ] && [ `uname -s` = 'Darwin' ]; then install_name_tool -id datatable$(SHLIB_EXT) datatable$(SHLIB_EXT); fi
 
 
