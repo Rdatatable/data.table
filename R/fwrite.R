@@ -5,16 +5,16 @@ fwrite <- function(x, file.path, append = FALSE, quote = "auto",
   # validate arguments
   stopifnot(is.data.frame(x))
   stopifnot(ncol(x) > 0)
-  isFALSE = function(x)identical(FALSE,x)  # it seems there is no isFALSE in R?
+  isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
   if (identical(quote,"auto")) quote=FALSE # TODO to implement auto at C level per field/column
-  stopifnot(isTRUE(quote) || isFALSE(quote))
+  stopifnot(isLOGICAL(quote))
   stopifnot(length(sep) == 1 && class(sep) == "character" && nchar(sep) == 1)
   stopifnot(length(eol) == 1 && class(eol) == "character")
   stopifnot(length(qmethod) == 1 && qmethod %in% c("double", "escape"))
-  stopifnot(isTRUE(col.names) || isFALSE(col.names))
-  stopifnot(isTRUE(append) || isFALSE(append))
-  stopifnot(isTRUE(verbose) || isFALSE(verbose))
-  stopifnot(isTRUE(turbo) || isFALSE(turbo))
+  stopifnot(isLOGICAL(col.names))
+  stopifnot(isLOGICAL(append))
+  stopifnot(isLOGICAL(verbose))
+  stopifnot(isLOGICAL(turbo))
   if (append && missing(col.names)) col.names = FALSE  # Otto's test 1658.16 checks this
   
   # handle paths like "~/foo/bar"
