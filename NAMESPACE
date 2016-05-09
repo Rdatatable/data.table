@@ -103,6 +103,7 @@ export(as.chron.IDate, as.chron.ITime)
 export(as.Date.IDate) # workaround for zoo bug, see #1500
 
 S3method("[", ITime)
+S3method("+", IDate)
 S3method(as.character, ITime)
 S3method(as.data.frame, ITime)
 S3method(as.Date, IDate)
