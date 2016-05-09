@@ -18,8 +18,8 @@ fwrite(x, file.path, append = FALSE, quote = "auto", sep = ",",
   \item{sep}{The separator between columns. Default is \code{","}.}
   \item{eol}{Line separator. Default is \code{"\r\n"} for windows and \code{"\n"} otherwise.}
   \item{na}{The string to use for missing values in the data. Default is a blank string, \code{""}.}
-  \item{col.names}{A logical value indicating if the column names (header row) should be written to file.}
-  \item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
+  \item{col.names}{A logical value indicating if the column names (header row) should be written to file. If missing and \code{append} is \code{TRUE}, this is forced to \code{FALSE} to prevent mid-file deployment of column names unless \code{file.path} already exists.}
+\item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
       \itemize{
 	\item{"escape" - the quote character (as well as the backslash character) is escaped in C style by a backslash, or}
 	\item{"double" (default), in which case it is doubled.}
