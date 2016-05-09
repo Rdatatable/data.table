@@ -15,7 +15,8 @@ fwrite <- function(x, file.path, append = FALSE, quote = "auto",
   stopifnot(isLOGICAL(append))
   stopifnot(isLOGICAL(verbose))
   stopifnot(isLOGICAL(turbo))
-  if (append && missing(col.names)) col.names = FALSE  # Otto's test 1658.16 checks this
+  if (append && missing(col.names) && file.exists(file.path)) 
+    col.names = FALSE  # Otto's test 1658.16 checks this
   
   # handle paths like "~/foo/bar"
   file.path <- path.expand(file.path)
