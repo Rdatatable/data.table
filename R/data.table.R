@@ -16,6 +16,9 @@ setPackageName("data.table",.global)
 # So even though .BY doesn't appear in this file, it should still be NULL here and exported because it's
 # defined in SDenv and can be used by users.
 
+mimicsAutoPrint = c("knit_print.default")
+# add maybe repr_text.default.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
+
 print.data.table <- function(x, topn=getOption("datatable.print.topn"), 
                              nrows=getOption("datatable.print.nrows"), 
                              class=getOption("datatable.print.class"), 
@@ -34,7 +37,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
         SYS <- sys.calls()
         if (length(SYS) <= 2 ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
             ( length(SYS) > 3L &&
-              SYS[[length(SYS)-3L]][[1L]] == "knit_print.default") ) {   # knitr auto print to mimic the prompt
+              as.character(SYS[[length(SYS)-3L]][[1L]]) %chin% mimicsAutoPrint ) )  {
             .global$print = ""
             return(invisible())
         }
