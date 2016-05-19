@@ -19,6 +19,13 @@ setPackageName("data.table",.global)
 mimicsAutoPrint = c("knit_print.default")
 # add maybe repr_text.default.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
 
+shouldPrint = function(x) {
+  ret = (.global$print=="" ||   # to save address() calls and adding lots of address strings to R's global cache
+         address(x)!=.global$print)
+  .global$print = ""
+  ret
+}
+
 print.data.table <- function(x, topn=getOption("datatable.print.topn"), 
                              nrows=getOption("datatable.print.nrows"), 
                              class=getOption("datatable.print.class"), 
@@ -26,7 +33,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
                              quote=FALSE, ...) {    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
     # nrows - under this the whole (small) table is printed, unless topn is provided (100)
     # class - should column class be printed underneath column name? (FALSE)
-    if (.global$print!="" && address(x)==.global$print) {   # The !="" is to save address() calls and R's global cache of address strings
+    if (!shouldPrint(x)) {   
         #  := in [.data.table sets .global$print=address(x) to suppress the next print i.e., like <- does. See FAQ 2.22 and README item in v1.9.5
         # The issue is distinguishing "> DT" (after a previous := in a function) from "> DT[,foo:=1]". To print.data.table(), there
         # is no difference. Now from R 3.2.0 a side effect of the very welcome and requested change to avoid silent deep copy is that
@@ -38,11 +45,9 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
         if (length(SYS) <= 2 ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
             ( length(SYS) > 3L &&
               as.character(SYS[[length(SYS)-3L]][[1L]]) %chin% mimicsAutoPrint ) )  {
-            .global$print = ""
             return(invisible())
         }
     }
-    .global$print = ""
     if (!is.numeric(nrows)) nrows = 100L
     if (!is.infinite(nrows)) nrows = as.integer(nrows)
     if (nrows <= 0L) return(invisible())   # ability to turn off printing

@@ -38,6 +38,7 @@ export(fsetdiff)
 export(funion)
 export(fsetequal)
 S3method(all.equal, data.table)
+export(shouldPrint)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
