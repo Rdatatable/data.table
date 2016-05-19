@@ -12,6 +12,7 @@
 }
 \details{
   Should IRkernel/Jupyter print a data.table returned invisibly by DT[,:=] ?
+  This is a read-once function since it resets an internal flag. If you need the value more than once in your logic, store the value from the first call.
 }
 \value{
   TRUE or FALSE.
