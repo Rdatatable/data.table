@@ -9108,6 +9108,12 @@ test_values <- c(53L, 53L, 52L, 1L, 52L, 1L, 1L,
 
 test(1702, isoweek(test_cases), test_values)
 
+# 
+lines <- fread("a,b\n ab,cd,ce\n abcdef\n hjkli \n", sep = "\n", header = T)[[1]]
+test(1703.1, lines, c(" ab,cd,ce", " abcdef", " hjkli ") )
+lines <- fread("a,b\r\n ab,cd,ce\r\n abcdef\r\n hjkli \r\n", sep = "\n", header = T)[[1]]
+test(1703.2, lines, c(" ab,cd,ce", " abcdef", " hjkli ") )
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
