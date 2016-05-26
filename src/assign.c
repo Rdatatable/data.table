@@ -542,8 +542,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                                 PROTECT(addlevels = growVector(addlevels, length(addlevels)+1000));
                                 protecti++;
                             }
-                            SET_STRING_ELT(addlevels,addi,thisv);
-                            SET_TRUELENGTH(thisv,++addi+length(targetlevels));  
+                            SET_STRING_ELT(addlevels,addi++,thisv);
+                            // if-else for #1718 fix
+                            SET_TRUELENGTH(thisv, (thisv != NA_STRING) ? (addi+length(targetlevels)) : NA_INTEGER);
                         }
                         INTEGER(RHS)[j] = TRUELENGTH(thisv);
                     }
