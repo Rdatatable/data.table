@@ -93,15 +93,14 @@ static void gsfree() {
      3. Separated setRange so forder can redirect to iradix
 */
 
-static int range, off;                                                      // used by both icount and forder
+static int range, xmin;                                                  // used by both icount and forder
 static void setRange(int *x, int n)
 {
     int i, tmp;
-    int xmin = NA_INTEGER, xmax = NA_INTEGER;
+    xmin = NA_INTEGER;     // used by forder
+    int xmax = NA_INTEGER; // declared locally as we only need xmin outside
     double overflow;
     
-    off = (nalast == 1) ? 0 : 1;   // nalast^decreasing ? 0 : 1;            // off=0 will store values starting from index 0. NAs will go last.
-                                                                            // off=1 will store values starting from index 1. NAs will be at 0th index.
     i = 0;
     while(i<n && x[i]==NA_INTEGER) i++;
     if (i<n) xmax = xmin = x[i];
@@ -116,8 +115,7 @@ static void setRange(int *x, int n)
     overflow = (double)xmax - (double)xmin + 1;                             // ex: x=c(-2147483647L, NA_integer_, 1L) results in overflowing int range.
     if (overflow > INT_MAX) {range = INT_MAX; return;}                      // detect and force iradix here, since icount is out of the picture
     range = xmax-xmin+1;
-    off = order==1 ? -xmin+off : xmax+off;                                  // so that  off+order*x[i]  (below in icount)
-                                                                            // => (x[i]-xmin)+0|1  or  (xmax-x[i])+0|1
+    
     return;
 }
 
@@ -135,31 +133,41 @@ static void icount(int *x, int *o, int n)
 */
 {
     int i=0, tmp;
-    int napos = (nalast == 1) ? range : 0;      // increasing ? 0 : range   // take care of 'nalast' argument
+    int napos = range;  // always count NA in last bucket and we'll account for nalast option in due course
     static unsigned int counts[N_RANGE+1] = {0};                            // static is IMPORTANT, counting sort is called repetitively.
     /* counts are set back to 0 at the end efficiently. 1e5 = 0.4MB i.e 
     tiny. We'll only use the front part of it, as large as range. So it's 
     just reserving space, not using it. Have defined N_RANGE to be 100000.*/
     if (range > N_RANGE) Error("Internal error: range = %d; isorted can't handle range > %d", range, N_RANGE);
     for(i=0; i<n; i++) {
-        if (x[i] == NA_INTEGER) counts[napos]++;                            // For nalast=NA case, we won't remove/skip NAs, rather set 'o' indices
-        else counts[off + order*x[i]]++;                                     // to 0. subset will skip them. We can't know how many NAs to skip 
-    }                                                                       // beforehand - i.e. while allocating "ans" vector
+        if (x[i] == NA_INTEGER) counts[napos]++;             // For nalast=NA case, we won't remove/skip NAs, rather set 'o' indices
+        else counts[x[i]-xmin]++;                            // to 0. subset will skip them. We can't know how many NAs to skip 
+    }                                                        // beforehand - i.e. while allocating "ans" vector
     // TO DO: at this point if the last count==n then it's all the same number and we can stop now.
     // Idea from Terdiman, then improved on that by not needing to loop through counts.
     
-    tmp = 0;                                                                // *** BLOCK 4 ***
-    for (i=0; i<=range; i++) 
+    tmp = 0;
+    if (nalast!=1 && counts[napos]) {
+        push(counts[napos]);
+        tmp += counts[napos];
+    }
+    int w = (order==1) ? 0 : range-1;                                   // *** BLOCK 4 ***
+    for (i=0; i<range; i++) 
     /* no point in adding tmp<n && i<=range, since range includes max, 
        need to go to max, unlike 256 loops elsewhere in forder.c */
     {
-        if (counts[i]) {                                                    // cumulate but not through 0's. Helps resetting zeros when n<range, below.
-            push(counts[i]);
-            counts[i] = (tmp += counts[i]);
+        if (counts[w]) {                                                    // cumulate but not through 0's. Helps resetting zeros when n<range, below.
+            push(counts[w]);
+            counts[w] = (tmp += counts[w]);
         }
+        w += order; // order is +1 or -1
+    }
+    if (nalast==1 && counts[napos]) {
+        push(counts[napos]);
+        counts[napos] = (tmp += counts[napos]);
     }
     for(i=n-1; i>=0; i--) {
-        o[--counts[(x[i] == NA_INTEGER) ? napos : off+order*x[i]]] = (int)(i+1);    // This way na.last=TRUE/FALSE cases will have just a single if-check overhead.
+        o[--counts[(x[i] == NA_INTEGER) ? napos : x[i]-xmin]] = (int)(i+1);    // This way na.last=TRUE/FALSE cases will have just a single if-check overhead.
     }
     if (nalast == 0)                                                        // nalast = 1, -1 are both taken care already.
         for (i=0; i<n; i++) o[i] = (x[o[i]-1] == NA_INTEGER) ? 0 : o[i];    // nalast = 0 is dealt with separately as it just sets o to 0
@@ -172,7 +180,7 @@ static void icount(int *x, int *o, int n)
         doesn't matter if we set to 0 several times on any repeats */
         counts[napos]=0;
         for (i=0; i<n; i++) {
-            if (x[i]!=NA_INTEGER) counts[off + order*x[i]]=0;
+            if (x[i]!=NA_INTEGER) counts[x[i]-xmin]=0;
         }
     } else {
         memset(counts, 0, (range+1)*sizeof(int));                           // *** BLOCK 6 ***

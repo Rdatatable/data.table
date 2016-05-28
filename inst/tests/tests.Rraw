@@ -8867,6 +8867,12 @@ test(1672.6, capture.output(DT[1:5, .(.I[1L], V2[1L]), by = V1]),
 TT <- as.IDate("2016-04-25")
 test(1673, class(TT + 4L), c("IDate", "Date"))
 
+# test for radix integer order when MAXINT is present AND decreasing=TRUE AND na.last=FALSE
+# https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16925
+# It seems this 'just' fails ASAN, but also results in seg fault under some compilers
+# https://github.com/rstudio/shiny/issues/1200
+test(1674, forderv(c(2147483645L, 2147483646L, 2147483647L, 2147483644L), order=-1L), c(3,2,1,4))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
