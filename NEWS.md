@@ -209,6 +209,8 @@
 
   61. Adding missing factor levels are handled correctly in case of NAs. This affected a case of join+update operation as shown in [#1718](https://github.com/Rdatatable/data.table/issues/1718). Thanks to @daniellemccool.
 
+  62. `fwrite` handles `na` argument properly by internally converting it to character, closes [#1725](https://github.com/Rdatatable/data.table/issues/1725). Thanks @contefranz.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

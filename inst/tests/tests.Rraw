@@ -8885,6 +8885,14 @@ A[, bar := factor(bar, levels = c(4, 5), labels = c("Boop", "Beep"), exclude = 6
 B[, bar := factor(bar, levels = c(4, 5), labels = c("Boop", "Beep"), exclude = 6)]
 test(1675.2, as.integer(B[A, bar := i.bar, on="foo"]$bar), c(1:2,NA,1:2,NA))
 
+# fwrite na arg segfault fix, #1725
+dt = data.table(x=1:2, y=c(NA,"a"))
+f = tempfile()
+test(1676.1, fwrite(dt, f, na=NULL), error="is not TRUE")
+fwrite(dt, f, na=NA)
+test(1676.2, fread(f), data.table(x=1:2, y=c(NA, "a")))
+unlink(f)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
