@@ -98,6 +98,8 @@
 
   45. Most common use case for `between()`, i.e., `lower` and `upper` are length=1, is now implemented in C and parallelised. This results in ~7-10x speed improvement on vectors of length >= 1e6.
 
+  46. `fread` gets new argument `file` which expect existing file on input, to ensure no shell commands will be executed when reading file. Closes [#1702](https://github.com/Rdatatable/data.table/issues/1702).
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).
