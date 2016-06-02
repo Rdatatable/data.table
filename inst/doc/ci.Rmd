@@ -1,0 +1,306 @@
+---
+title: "Continuous Integration on data.table"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_document:
+    toc: true
+    theme: spacelab
+    highlight: pygments
+    css : ../../vignettes/css/bootstrap.css
+---
+
+```{r, echo = FALSE, message = FALSE}
+# published at https://rawgit.com/wiki/Rdatatable/data.table/inst/doc/ci.html
+require(data.table)
+require(xtable)
+knitr::opts_chunk$set(
+  comment = "#",
+    error = FALSE,
+     tidy = FALSE,
+    cache = FALSE,
+ collapse = TRUE)
+```
+
+```{r, echo=FALSE, results='hide'}
+# all CI metadata
+ci = list(
+    "travis-ci" = list(
+        service = "travis-ci",
+        test_purpose = "standard",
+        website = c("project-ci" = "https://travis-ci.org/Rdatatable/data.table"),
+        os = "ubuntu:12.04",
+        image = character(),
+        os_image_control = FALSE,
+        r_version = "r-release",
+        force_suggests = TRUE,
+        tests_suggests = "all",
+        build_opts = c("--no-build-vignettes","--no-manual"),
+        check_opts = c("--no-build-vignettes","--no-manual","--as-cran"),
+        build_vignettes = FALSE,
+        redundant_pkgs = "a lot of redundant pkgs",
+        publish = c(drat = "https://Rdatatable.github.io/data.table", covr = "https://codecov.io/github/Rdatatable/data.table"),
+        files_in_repo = c(".travis.yml" = "https://github.com/Rdatatable/data.table/blob/master/.travis.yml", "deploy.sh" = "https://github.com/Rdatatable/data.table/blob/master/deploy.sh")
+    ),
+    "appveyor" = list(
+        service = "appveyor",
+        test_purpose = "windows",
+        website = c("project-ci" = "https://ci.appveyor.com/project/Rdatatable/data-table"),
+        os = "Windows Server 2012",
+        image = character(),
+        os_image_control = FALSE,
+        r_version = "r-release",
+        force_suggests = TRUE,
+        tests_suggests = "all",
+        build_opts = c("--no-manual"),
+        check_opts = c("--no-manual","--as-cran","--install-args=--build","--no-multiarch"),
+        build_vignettes = FALSE,
+        redundant_pkgs = "a lot of redundant pkgs",
+        publish = c("raw artifacts" = "https://ci.appveyor.com/project/Rdatatable/data-table/build/artifacts"),
+        files_in_repo = c("appveyor.yml" = "https://github.com/Rdatatable/data.table/blob/master/appveyor.yml")
+    ),
+    "gitlab-ci" = list(
+        service = "gitlab-ci",
+        test_purpose = "all suggests and no redundant pkgs",
+        website = c("project-ci" = "https://gitlab.com/jangorecki/data.table/builds"),
+        os = "ubuntu:16.04",
+        image = c("jangorecki/r-pkg" = "https://hub.docker.com/r/jangorecki/r-pkg/"),
+        os_image_control = TRUE,
+        r_version = "r-release",
+        force_suggests = TRUE,
+        tests_suggests = "all",
+        build_opts = character(),
+        check_opts = c("--no-manual","--as-cran"),
+        build_vignettes = TRUE,
+        redundant_pkgs = character(),
+        publish = c("drat, manual, vignettes, logs" = "https://jangorecki.gitlab.io/data.table"),
+        files_in_repo = c(".gitlab-ci.yml" = "https://github.com/Rdatatable/data.table/blob/master/.gitlab-ci.yml")
+    ),
+    "gitlab-ci:vanilla" = list(
+        service = "gitlab-ci",
+        test_purpose = "R vanilla strict zero pkgs",
+        website = c("project-ci" = "https://gitlab.com/jangorecki/data.table/builds"),
+        os = "ubuntu:16.04",
+        image = c("jangorecki/r-base-dev" = "https://hub.docker.com/r/jangorecki/r-base-dev/"),
+        os_image_control = TRUE,
+        r_version = "r-release",
+        force_suggests = FALSE,
+        tests_suggests = "none",
+        build_opts = character(),
+        check_opts = c("--ignore-vignettes","--no-manual","--as-cran"),
+        build_vignettes = FALSE,
+        redundant_pkgs = character(),
+        publish = c("drat, manual, logs" = "https://jangorecki.gitlab.io/data.table/vanilla"),
+        files_in_repo = c(".gitlab-ci.yml" = "https://github.com/Rdatatable/data.table/blob/master/.gitlab-ci.yml")
+    ),
+    "gitlab-ci:r-devel" = list(
+        service = "gitlab-ci",
+        test_purpose = "R devel",
+        website = c("project-ci" = "https://gitlab.com/jangorecki/data.table/builds"),
+        os = "debian:testing",
+        image = c("jangorecki/drd-pkg" = "https://hub.docker.com/r/jangorecki/drd-pkg/"),
+        os_image_control = FALSE,
+        r_version = "r-devel",
+        force_suggests = FALSE,
+        tests_suggests = "most",
+        build_opts = character(),
+        check_opts = c("--no-manual","--as-cran"),
+        build_vignettes = TRUE,
+        redundant_pkgs = "docopt",
+        publish = c("drat, manual, vignettes, logs" = "https://jangorecki.gitlab.io/data.table/r-devel"),
+        files_in_repo = c(".gitlab-ci.yml" = "https://github.com/Rdatatable/data.table/blob/master/.gitlab-ci.yml")
+    ),
+    "gitlab-ci:r-2.15.0" = list(
+        service = "gitlab-ci",
+        test_purpose = "R 2.15.0 stated dependency",
+        website = c("project-ci" = "https://gitlab.com/jangorecki/data.table/builds"),
+        os = "ubuntu:16.04",
+        image = c("jangorecki/r-2.15.0" = "https://hub.docker.com/r/jangorecki/r-2.15.0/"),
+        os_image_control = TRUE,
+        r_version = "2.15.0",
+        force_suggests = FALSE,
+        tests_suggests = "none",
+        build_opts = character(),
+        check_opts = c("--no-manual","--as-cran"),
+        build_vignettes = FALSE,
+        redundant_pkgs = character(),
+        publish = c("drat, manual, logs" = "https://jangorecki.gitlab.io/data.table/r-2.15.0"),
+        files_in_repo = c(".gitlab-ci.yml" = "https://github.com/Rdatatable/data.table/blob/master/.gitlab-ci.yml")
+    )
+)
+ci.desc = c(
+    image = "States if some pre-built base image was used.",
+    os_image_control = "States if the OS/image base setup is under control of data.table maintainers.",
+    force_suggests = "Reflects `_R_CHECK_FORCE_SUGGESTS_` environment variable. Defines if suggested dependencies are required to perform package check. Some suggested dependencies might not be available for R-devel.",
+    tests_suggests = "Describes tested suggested packages.",
+    build_vignettes = "States if vignettes are being built during CI. It doesn't directly translates to `R CMD` options, as for example appveyor cuts out `VignetteBuilder` field from `DESCRIPTION` file.",
+    redundant_pkgs = "States if redundant packages were present during CI. This may be important as suggested dependencies of `data.table` can have own suggested deps, and their existence in the library might potentially change their behavior and impact `data.table` CI results.",
+    publish = "Location where artifacts of the builds can be accessed.",
+    files_in_repo = "Files in git repo related to particular CI setup."
+)
+```
+
+---
+
+## CI current state
+
+Hover mouse on bold attribute name to see extended description.
+
+```{r, results='asis', echo=FALSE}
+l = lapply(ci, sapply, function(x) {
+    if (is.logical(x)) x = c("no", "yes")[x+1L] # decode logical to "no", "yes"
+    if (length(names(x))) x = sprintf("<a href='%s'>%s</a>", x, names(x)) # named vector to url links
+    paste(x, collapse="<br/>")
+})
+xt = xtable::xtable(setDF(l, rownames=names(l[[1L]])), align=rep("c", length(l)+1L))
+print(xt, type = "html",
+      sanitize.text.function = function(x) gsub("--", "&#45;&#45;", x, fixed=TRUE),
+      sanitize.rownames.function = function(x) { # description of features
+          if.desc = x %in% names(ci.desc)
+          label = gsub("_", " ", x, fixed=TRUE)
+          label = ifelse(if.desc, paste0("<b>",label,"</b>"), label)
+          desc = ifelse(if.desc, paste0(" title=\"", ci.desc[x], "\""), "")
+          sprintf("<p%s>%s</p>", desc, label)
+      },
+      sanitize.colnames.function = function(x) gsub(":", "<br/>", x, fixed=TRUE))
+```
+
+<br>
+- Travis and Appveyor builds are automatically run on each commit and PR to data.table repo.  
+- GitLab builds are triggered after each push to [mirror repo on GitLab](https://gitlab.com/jangorecki/data.table/), which happens on ad-hoc basis.  
+
+---
+
+## CI maintenance info
+
+### CI dependencies
+
+Following tools have been employed in CI process or when establishing CI configuration and can be valuable when debugging any issues.  
+
+- [craigcitro/r-travis](https://github.com/craigcitro/r-travis/) - upstream of `travis-tool.sh` script sourced on every travis build.
+- [csgillespie/dratTravis](https://github.com/csgillespie/dratTravis) - working example of setting up drat repository from travis build.
+- [krlmlr/r-appveyor](https://github.com/krlmlr/r-appveyor/) - initially used to produce `appveyor.yml` template for appveyor build.
+- [eddelbuettel/drat](https://github.com/eddelbuettel/drat) - R package used to publish drat repositories from travis build and gitlab builds.
+- [jangorecki/drat@artifacts](https://github.com/jangorecki/drat/tree/artifacts) - additionally to *drat* master branch it is used to publish manual, vignettes and logs. It also retains support for old R versions, [unlike](https://github.com/eddelbuettel/drat/commit/3350bb97220684fdca0502e71fc151cd9fdb4b2b) *drat* master branch.
+
+### Custom tokens
+
+- travis-ci  
+
+Personal access token for github API is used only to publish drat repository from travis build into gh-pages branch. Token was generated by @jangorecki and it is stored in `.travis.yml` file under `env: global: secure` field. See [csgillespie/dratTravis](https://github.com/csgillespie/dratTravis) for details on setting it up.  
+
+### Dirty hacks
+
+- travis-ci  
+
+To publishing artifacts content into gh-pages branch it uses `deploy.sh` and github API secure token. Branch `gh-pages` is always rolled back to the first commit, so gh-pages doesn't grow by keeping history of drat repositories.  
+
+- appveyor  
+
+Currently cuts out the `VignetteBuilder` field from `DESCRIPTION` file to force avoid building vignettes.
+
+### Adding R dependencies
+
+At the time of writing, when adding new package to optional dependencies like *Suggests*, the following places needs to be updated:  
+
+- `DESCRIPTION` file, appropriate field.  
+- At the beginning of `tests.Rraw` append new dependency into `sugg_pkgs` character vector.  
+- New unit tests defined in `tests.Rraw` for functionality related to new dependency has to be properly escaped when optional dependency is not present.  
+
+CI setup is adding one extra place where new dependency needs to be added:  
+
+- Append into `.gitlab-ci.yml` builds which tests CI with suggested packages.  
+
+### Adjust CI for forked repos
+
+Besides being useful for arbitrary users forks of data.table, this can be also useful when debugging CI issues on user account fork, instead of trying on *Rdatatable* organization account directly.
+
+- travis-ci  
+
+For publishing drat repository to own namespace user need to replace github API token to new one from own account. Then in `.travis.yml` step `after_success` update expected value for variable `$TRAVIS_REPO_SLUG` replacing `Rdatatable/data.table` to `[USERNS]/data.table` and potentially also changing branch `$TRAVIS_BRANCH` variable to your development branch. Also in `deploy.sh` file change the `upstream` remote url from `Rdatatable/data.table.git` to `[USERNS]/data.table.git` so it will be used as a target for drat repository.  
+
+- appveyor  
+
+Looks like it should works out of the box.  
+
+- gitlab  
+
+No adjustment is required to run CI. Published content is handled appropriately to each user namespace. Although the published `index.html` display drat *install string* based on `USERNS` variable in `.gitlab-ci.yml`. This only affects the displayed *install string*, not the drat location itself. Can be easy controlled with `variables: USERNS`.  
+
+### CI - FAQ
+
+- way to cancel builds  
+
+Look for *cancel build* button on CI builds website. On all used services those buttons can be found in right upper corner when looking at build log. Be aware you still need to have permission to do so.
+
+- way to skip builds  
+
+Put `[ci skip]` string into commit message to suppress build for particular commit - this will work for all CI services. Additionally GitLab CI can skip particular build jobs from CI by prefixing job name in `.gitlab-ci.yml` with a dot, i.e. `.test-r-devel`.
+
+- package binaries  
+
+Currently only package sources are published as drat repository. Windows binaries are produced during build on appveyor and can be found in *Artifacts* as `data.table_1.9.7.zip`. Which can be installed as any other R package binaries from local file `install.packages("data.table_1.9.7.zip", repos=NULL)`. Only install those windows binaries if you trust the appveyor platform that builds those binaries. I recommend to build `data.table` from source, it builds fast and doesn't have any R dependencies. This way you are actually able to audit the code you are running.  
+
+- lint validation for CI yaml files  
+
+[travis-ci](https://lint.travis-ci.org/), [gitlab](https://gitlab.com/ci/lint), didn't find any for appveyor.
+
+- build badges  
+
+Badges available as `svg` at [travis-ci](https://travis-ci.org/Rdatatable/data.table.svg?branch=master), [appveyor](https://ci.appveyor.com/api/projects/status/kayjdh5qtgymhoxr/branch/master?svg=true), [gitlab](https://gitlab.com/jangorecki/data.table/badges/master/build.svg).
+
+- browse Rcheck logs of failed build  
+
+All services allows to view builds logs on their websites. `travis-ci` in case of error it prints to main log `cat` of Rcheck output files. It has button *Raw log* which just open full plaintext log. `appveyor` on failure will pack Rcheck files into `failure.zip` and put into *Artifacts* storage. GitLab at the moment lacks of such feature, see [gitlab-ci-multi-runner#990](https://gitlab.com/gitlab-org/gitlab-ci-multi-runner/issues/990) for status on that.
+
+---
+
+## Running CI locally
+
+Sometimes it may be desired to run CI locally. As GitLab is an open source project, including its CI engine, it allows to start own instances of GitLab and GitLab CI runner locally and process CI builds.  
+Below steps to setup local CI uses [docker](https://www.docker.com/) for simplicity. You may need to replace `172.17.0.2` with the proper ip assigned to your image.  
+
+1. run gitlab
+2. run ci runner
+3. create empty data.table project
+4. register ci runner
+5. push data.table to local gitlab
+6. visit builds in web browser
+
+```sh
+# run gitlab: http://doc.gitlab.com/omnibus/docker/
+sudo docker run --detach \
+    --hostname 172.17.0.2 \
+    --publish 443:443 --publish 80:80 --publish 22:22 \
+    --name gitlab \
+    --volume /srv/gitlab/config:/etc/gitlab \
+    --volume /srv/gitlab/logs:/var/log/gitlab \
+    --volume /srv/gitlab/data:/var/opt/gitlab \
+    gitlab/gitlab-ce:latest
+
+# run ci runner: https://gitlab.com/gitlab-org/gitlab-ci-multi-runner/blob/master/docs/install/docker.md
+docker run -d --name gitlab-runner \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /srv/gitlab-runner/config:/etc/gitlab-runner \
+  gitlab/gitlab-runner:latest
+
+# create empty data.table project at: http://172.17.0.2
+
+# register ci runner: http://doc.gitlab.com/ce/ci/docker/using_docker_images.html
+# substitute $token with value from: http://172.17.0.2/admin/runners
+docker exec -it gitlab-runner gitlab-runner register -n \
+    --url "http://172.17.0.2/ci" \
+    --executor "docker" \
+    --docker-image "ubuntu:16.04" \
+    -r "$token"
+
+# push data.table to local gitlab
+cd data.table
+git remote add local-ci http://172.17.0.2/root/data.table.git
+git push local-ci master
+
+# visit builds: http://172.17.0.2/root/data.table/builds
+```
+
+Instances can be stopped with `docker stop gitlab gitlab-runner`. Important files from docker images are stored locally in paths defined when calling `docker run`. At later time you can start your existing instances using `docker start gitlab gitlab-runner`.  
+If you need to scale your CI you can start more runners and register them. If want to scale to cloud, just spawn instances in cloud and register CI to your GitLab instance.  
+To run CI locally for [windows](https://gitlab.com/gitlab-org/gitlab-ci-multi-runner/blob/master/docs/install/windows.md) or [osx](https://gitlab.com/gitlab-org/gitlab-ci-multi-runner/blob/master/docs/install/osx.md) configure CI runners according to linked docs.  
