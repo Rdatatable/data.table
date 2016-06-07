@@ -211,6 +211,8 @@
 
   62. `fwrite` handles `na` argument properly by internally converting it to character, closes [#1725](https://github.com/Rdatatable/data.table/issues/1725). Thanks @contefranz.
 
+  63. `foverlaps` now raise a meaningful error for duplicate column names, closes [#1730](https://github.com/Rdatatable/data.table/issues/1730). Thanks @rodonn.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
