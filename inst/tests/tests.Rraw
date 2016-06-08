@@ -8902,7 +8902,9 @@ test(1677.2, foverlaps(b, a), error="y has some duplicated column")
 # na.omit.data.table removes indices #1734
 dt = data.table(a=4:1, b=c(letters[c(1L,NA,2:3)]))
 setindexv(dt, "a")
-test(1678, indices(na.omit(dt, cols="b")), NULL)
+test(1678.1, indices(dt2 <- na.omit(dt, cols="b")), NULL)
+setindexv(dt2, "a")
+test(1678.2, indices(na.omit(dt2, cols="b")), "a")
 
 ##########################
 
