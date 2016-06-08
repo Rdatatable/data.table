@@ -8899,6 +8899,11 @@ b = data.table(start = 1:5, end = 2:6, c3 = rnorm(5), key=c("start","end"))
 test(1677.1, foverlaps(a, b), error="x has some duplicated column")
 test(1677.2, foverlaps(b, a), error="y has some duplicated column")
 
+# na.omit.data.table removes indices #1734
+dt = data.table(a=4:1, b=c(letters[c(1L,NA,2:3)]))
+setindexv(dt, "a")
+test(1678, indices(na.omit(dt, cols="b")), NULL)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

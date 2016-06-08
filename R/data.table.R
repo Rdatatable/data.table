@@ -2181,7 +2181,8 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
     }
     cols = as.integer(cols)
     ix = .Call(Cdt_na, object, cols)
-    .Call(CsubsetDT, object, which_(ix, bool = invert), seq_along(object))
+    ans = .Call(CsubsetDT, object, which_(ix, bool = invert), seq_along(object))
+    setindexv(ans, NULL)[] #1734
     # compare the above to stats:::na.omit.data.frame
 }
 

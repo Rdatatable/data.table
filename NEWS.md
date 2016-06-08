@@ -213,6 +213,8 @@
 
   63. `foverlaps` now raise a meaningful error for duplicate column names, closes [#1730](https://github.com/Rdatatable/data.table/issues/1730). Thanks @rodonn.
 
+  64. `na.omit` method now removes indices, closes [#1734](https://github.com/Rdatatable/data.table/issues/1734). Thanks @m-dz.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
