@@ -7536,7 +7536,7 @@ test(1613.11, all.equal(DT1, DT2, ignore.row.order=TRUE, ignore.col.order=TRUE),
 DT1 <- data.table(a = c(1:4,1:2), b = letters[c(1:4,1:2)])
 DT2 <- data.table(a = c(1:4,3:4), b = letters[c(1:4,3:4)])
 test(1613.12, all.equal(DT1, DT2), "Column 'a': Mean relative difference: 1.333333")
-test(1613.13, all.equal(DT1, DT2, ignore.row.order=TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
+test(1613.13, all.equal(DT1, DT2, ignore.row.order=TRUE), "Dataset 'current' has rows not present in 'target' or present in different quantity")
 # overlapping duplicates
 DT1 <- data.table(a = c(1:4,1:2), b = letters[c(1:4,1:2)])
 DT2 <- data.table(a = c(1:4,2:1), b = letters[c(1:4,2:1)])
@@ -7545,11 +7545,11 @@ test(1613.15, all.equal(DT1, DT2, ignore.row.order=TRUE), TRUE)
 # mixed overlapping duplicates
 DT1 <- data.table(a = c(1:4,1:2), b = letters[c(1:4,1:2)])
 DT2 <- data.table(a = c(1:4,2:3), b = letters[c(1:4,2:3)])
-test(1613.16, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
+test(1613.16, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has rows not present in 'target' or present in different quantity")
 # overlapping duplicates not equal in count
 DT1 <- data.table(a = c(1:4, rep(1L,3), rep(2L,2)), b = letters[c(1:4, rep(1L,3), rep(2L,2))])
 DT2 <- data.table(a = c(1:4, rep(1L,2), rep(2L,3)), b = letters[c(1:4, rep(1L,2), rep(2L,3))])
-test(1613.17, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
+test(1613.17, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has rows not present in 'target' or present in different quantity")
 # overlapping duplicates equal in count
 DT1 <- data.table(a = c(1:4, 1L, 2L, 1L, 2L), b = letters[c(1:4, 1L, 2L, 1L, 2L)])
 DT2 <- data.table(a = c(2L, 1L, 1L, 2L, 1:4), b = letters[c(2L, 1L, 1L, 2L, 1:4)])
@@ -7557,12 +7557,12 @@ test(1613.18, all.equal(DT1, DT2, ignore.row.order = TRUE), TRUE)
 # subset with overlapping duplicates
 DT1 <- data.table(a = c(1:3,3L), b = letters[c(1:3,3L)])
 DT2 <- data.table(a = c(1:4), b = letters[c(1:4)])
-test(1613.19, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'target' has duplicate rows while 'current' don't have any duplicate rows")
+test(1613.19, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'target' has duplicate rows while 'current' doesn't")
 # different number of unique rows
 DT1 <- data.table(a = c(1:3,2:3), b = letters[c(1:3,2:3)])
 DT2 <- data.table(a = c(1L,1:4), b = letters[c(1L,1:4)])
-test(1613.20, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
-test(1613.21, all.equal(DT2, DT1, ignore.row.order = TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
+test(1613.20, all.equal(DT1, DT2, ignore.row.order = TRUE), "Dataset 'current' has rows not present in 'target' or present in different quantity")
+test(1613.21, all.equal(DT2, DT1, ignore.row.order = TRUE), "Dataset 'current' has rows not present in 'target' or present in different quantity")
 # test attributes: key
 DT1 <- data.table(a = 1:4, b = letters[1:4], key = "a")
 DT2 <- data.table(a = 1:4, b = letters[1:4])
@@ -7617,12 +7617,12 @@ dt = data.table(
     V6 = as.Date("2016-03-05", origin="1970-01-01")+(1:4)
 )[, V7 := as.IDate(V6)
   ][, V8 := as.ITime(V5)]
-test(1613.44, all.equal(dt, dt), TRUE)
-test(1613.45, all.equal(dt, dt, ignore.row.order = TRUE), TRUE)
-test(1613.44, all.equal(dt[c(1:4,1L)], dt[c(1:4,1L)]), TRUE)
-test(1613.44, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)]), "Column 'V1': Mean relative difference: 0.6")
-test(1613.45, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)], ignore.row.order = TRUE), TRUE)
-test(1613.45, all.equal(dt[c(1:4,1:2)], dt[c(1L,1L,1:4)], ignore.row.order = TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
+test(1613.441, all.equal(dt, dt), TRUE)
+test(1613.442, all.equal(dt, dt, ignore.row.order = TRUE), TRUE)
+test(1613.443, all.equal(dt[c(1:4,1L)], dt[c(1:4,1L)]), TRUE)
+test(1613.444, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)]), "Column 'V1': Mean relative difference: 0.6")
+test(1613.445, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)], ignore.row.order = TRUE), TRUE)
+test(1613.45, all.equal(dt[c(1:4,1:2)], dt[c(1L,1L,1:4)], ignore.row.order = TRUE), c("Both datasets have duplicate rows, they also have numeric columns, together with ignore.row.order this force 'tolerance' argument to 0", "Dataset 'current' has rows not present in 'target' or present in different quantity"))
 test(1613.46, all.equal(dt[c(1:2,1:4,1:2)], dt[c(1:2,1:2,1:4)], ignore.row.order = TRUE), TRUE)
 # supported type all.equal: integer64
 if ("package:bit64" %in% search()) {
@@ -7632,9 +7632,43 @@ if ("package:bit64" %in% search()) {
     test(1613.49, all.equal(dt[c(1:4,1L)], dt[c(1:4,1L)]), TRUE)
     test(1613.50, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)]), "Column 'V1': Mean relative difference: 0.6")
     test(1613.51, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)], ignore.row.order = TRUE), TRUE)
-    test(1613.52, all.equal(dt[c(1:4,1:2)], dt[c(1L,1L,1:4)], ignore.row.order = TRUE), "Dataset 'current' has duplicated rows present in different quantity than in 'target'")
+    test(1613.52, all.equal(dt[c(1:4,1:2)], dt[c(1L,1L,1:4)], ignore.row.order = TRUE), "Dataset 'current' has rows not present in 'target' or present in different quantity")
     test(1613.53, all.equal(dt[c(1:2,1:4,1:2)], dt[c(1:2,1:2,1:4)], ignore.row.order = TRUE), TRUE)
 }
+# all.equal - new argument 'tolerance' #1737
+x = data.table(1) # test numeric after adding 'tolerance' argument
+y = data.table(2)
+test(1613.541, is.character(all.equal(x, y, ignore.row.order = FALSE)), is.character(all.equal(x, y, ignore.row.order = TRUE)))
+x = data.table(c(1,1))
+y = data.table(c(2,2))
+test(1613.542, is.character(all.equal(x, y, ignore.row.order = FALSE)), is.character(all.equal(x, y, ignore.row.order = TRUE)))
+x = data.table(c(1,2))
+y = data.table(c(2,2))
+test(1613.543, is.character(all.equal(x, y, ignore.row.order = FALSE)), is.character(all.equal(x, y, ignore.row.order = TRUE)))
+x = data.table(as.factor(1)) # test factor adding 'tolerance' argument
+y = data.table(as.factor(2))
+test(1613.551, is.character(all.equal(x, y, ignore.row.order = FALSE)), is.character(all.equal(x, y, ignore.row.order = TRUE)))
+x = data.table(as.factor(c(1,1)))
+y = data.table(as.factor(c(2,2)))
+test(1613.552, is.character(all.equal(x, y, ignore.row.order = FALSE)), is.character(all.equal(x, y, ignore.row.order = TRUE)))
+x = data.table(as.factor(c(1,2)))
+y = data.table(as.factor(c(2,2)))
+test(1613.553, is.character(all.equal(x, y, ignore.row.order = FALSE)), is.character(all.equal(x, y, ignore.row.order = TRUE)))
+x = data.table(-0.000189921844659375) # tolerance in action
+y = data.table(-0.000189921844655161)
+test(1613.561, all.equal(x, y, ignore.row.order = FALSE), all.equal(x, y, ignore.row.order = TRUE))
+test(1613.562, is.character(all.equal(x, y, ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(x, y, ignore.row.order = TRUE, tolerance = 0)))
+test(1613.563, all.equal(rbind(x,y), rbind(y,y), ignore.row.order = FALSE), all.equal(rbind(x,y), rbind(y,y), ignore.row.order = TRUE))
+test(1613.564, is.character(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = TRUE, tolerance = 0)))
+test(1613.565, all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE), is.character(r<-all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE)) && any(grepl("force 'tolerance' argument to 0", r))) # no-match due factor force tolerance=0
+test(1613.566, all.equal(rbind(x,y,y), rbind(x,y,y), ignore.row.order = FALSE, tolerance = 0), all.equal(rbind(x,y,y), rbind(x,y,y), ignore.row.order = TRUE, tolerance = 0))
+test(1613.567, is.character(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE, tolerance = 0)))
+test(1613.571, all.equal(cbind(x, list(factor(1))), cbind(y, list(factor(1))), ignore.row.order = FALSE), is.character(r<-all.equal(cbind(x, list(factor(1))), cbind(y, list(factor(1))), ignore.row.order = TRUE)) && any(grepl("force 'tolerance' argument to 0", r))) # no-match due factor force tolerance=0
+test(1613.572, is.character(all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = FALSE)), is.character(all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = TRUE))) # x to x with factor equality
+test(1613.573, all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = TRUE, tolerance = 1), error = "Factor columns and ignore.row.order cannot be used with non 0 tolerance argument") # error due to provided non zero tolerance
+test(1613.581, all.equal(x, y, ignore.row.order = FALSE, tolerance = 1), all.equal(x, y, ignore.row.order = TRUE, tolerance = 1))
+test(1613.582, identical(all.equal(x, y, ignore.row.order = FALSE, tolerance = sqrt(.Machine$double.eps)/2), all.equal(x, y, ignore.row.order = TRUE, tolerance = sqrt(.Machine$double.eps)/2)), warning = "Argument 'tolerance' was forced"
+)
 
 if ("package:bit64" %in% search()) {
     # fix for #1405, handles roll with -ve int64 values properly

@@ -45,7 +45,7 @@
   
   21. New argument `print.class` for `print.data.table` allows for including column class under column names (as inspired by `tbl_df` in `dplyr`); default (adjustable via `"datatable.print.class"` option) is `FALSE`, the inherited behavior. Part of [#1523](https://github.com/Rdatatable/data.table/issues/1523); thanks to @MichaelChirico for the FR & PR.
   
-  22. `all.equal.data.table` gets new features for testing equality of data.tables, new arguments are `check.attributes`, `ignore.col.order`, `ignore.row.order`. It will now also check column classes match, unlike `all.equal.list` it will also report *integer/real* types mismatch.
+  22. `all.equal.data.table` gets new features for testing equality of data.tables, new arguments are `check.attributes`, `ignore.col.order`, `ignore.row.order` and `tolerance`. It will also check column classes match, unlike `all.equal.list` it will report *integer/real* types mismatch.
 
   23. Fast set operations `fsetdiff`, `fintersect`, `funion` and `fsetequal` for data.tables is now implemented, [#547](https://github.com/Rdatatable/data.table/issues/547).
 

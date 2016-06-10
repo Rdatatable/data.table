@@ -48,7 +48,7 @@ setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE
 funique <- function(x) {
     stopifnot(is.data.table(x))
     dup = duplicated(x)
-    if(any(dup)) .Call("CsubsetDT", x, which_(dup, FALSE), seq_along(x)) else x
+    if (any(dup)) .Call("CsubsetDT", x, which_(dup, FALSE), seq_along(x)) else x
 }
 
 fintersect <- function(x, y, all=FALSE) {
@@ -81,7 +81,7 @@ fsetdiff <- function(x, y, all=FALSE) {
     if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have same column classes")
     if (".seqn" %in% names(x)) stop("None of the datasets to setdiff should contain a column named '.seqn'")
     if (!nrow(x)) return(x)
-    if (!nrow(y)) return(if(!all) funique(x) else x)
+    if (!nrow(y)) return(if (!all) funique(x) else x)
     if (all) {
         x = shallow(x)[, ".seqn" := rowidv(x)]
         y = shallow(y)[, ".seqn" := rowidv(y)]
@@ -117,26 +117,26 @@ fsetequal <- function(x, y) {
 
 # all.equal ----
 
-all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attributes=TRUE, ignore.col.order=FALSE, ignore.row.order=FALSE, ...) {
-    stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order))
+all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attributes=TRUE, ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps), ...) {
+    stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order), is.numeric(tolerance))
     if (!is.data.table(target) || !is.data.table(current)) stop("'target' and 'current' must be both data.tables")
     
     msg = character(0)
     # init checks that detect high level all.equal
-    if(nrow(current) != nrow(target)) msg = "Different number of rows"
-    if(ncol(current) != ncol(target)) msg = c(msg, "Different number of columns")
+    if (nrow(current) != nrow(target)) msg = "Different number of rows"
+    if (ncol(current) != ncol(target)) msg = c(msg, "Different number of columns")
     diff.colnames = !identical(sort(names(target)), sort(names(current)))
     diff.colorder = !identical(names(target), names(current))
-    if(diff.colnames) msg = c(msg, "Different column names")
-    if(!diff.colnames && !ignore.col.order && diff.colorder) msg = c(msg, "Different column order")
+    if (diff.colnames) msg = c(msg, "Different column names")
+    if (!diff.colnames && !ignore.col.order && diff.colorder) msg = c(msg, "Different column order")
     
-    if(length(msg)) return(msg) # skip check.attributes and further heavy processing
+    if (length(msg)) return(msg) # skip check.attributes and further heavy processing
     
     # ignore.col.order
     if (ignore.col.order && diff.colorder) current = setcolorder(shallow(current), names(target))
     
     # check column classes match
-    if (!identical(lapply(target, class), lapply(current, class))) return("Datasets has different column classes")
+    if (!identical(colClasses<-lapply(target, class), lapply(current, class))) return("Datasets has different column classes")
     
     # check attributes
     if (check.attributes) {
@@ -170,31 +170,72 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     
     # ignore.row.order
     if (ignore.row.order) {
-        if (".seqn" %in% names(target)) stop("None of the datasets to compare should contain a column named '.seqn'")
+        if (".seqn" %in% names(target))
+            stop("None of the datasets to compare should contain a column named '.seqn'")
         bad.type = setNames(c("raw","complex","list") %chin% c(vapply(current, typeof, FUN.VALUE = ""), vapply(target, typeof, FUN.VALUE = "")), c("raw","complex","list"))
-        if (any(bad.type)) stop(sprintf("Datasets to compare with 'ignore.row.order' must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
+        if (any(bad.type))
+            stop(sprintf("Datasets to compare with 'ignore.row.order' must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
+        if (between(tolerance, 0, sqrt(.Machine$double.eps), incbounds=FALSE)) {
+            warning(sprintf("Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine$double.eps)` from provided %s", format(tolerance, scientific=FALSE)))
+            tolerance = sqrt(.Machine$double.eps)
+        }
         target_dup = as.logical(anyDuplicated(target))
         current_dup = as.logical(anyDuplicated(current))
-        if (target_dup && !current_dup)
-            return("Dataset 'target' has duplicate rows while 'current' don't have any duplicate rows")
-        if (!target_dup && current_dup)
-            return("Dataset 'current' has duplicate rows while 'target' don't have any duplicate rows")
-        if (target_dup && current_dup) {
+        tolerance.msg = if (identical(tolerance, 0)) ", be aware you are using `tolerance=0` which may result into visually equal data" else ""
+        if (target_dup || current_dup) {
+            # handling 'tolerance' for duplicate rows - those `msg` will be returned only when equality with tolerance will fail
+            if ("numeric" %chin% unlist(colClasses) && !identical(tolerance, 0)) {
+                if (target_dup && !current_dup) msg = c(msg, "Dataset 'target' has duplicate rows while 'current' doesn't")
+                else if (!target_dup && current_dup) msg = c(msg, "Dataset 'current' has duplicate rows while 'target' doesn't")
+                else { # both
+                    if (!identical(tolerance, sqrt(.Machine$double.eps))) # non-default will raise error
+                        stop("Duplicate rows in datasets, numeric columns and ignore.row.order cannot be used with non 0 tolerance argument")
+                    msg = c(msg, "Both datasets have duplicate rows, they also have numeric columns, together with ignore.row.order this force 'tolerance' argument to 0")
+                    tolerance = 0
+                }
+            } else { # no numeric columns or tolerance==0L
+                if (target_dup && !current_dup)
+                    return(sprintf("Dataset 'target' has duplicate rows while 'current' doesn't%s", tolerance.msg))
+                if (!target_dup && current_dup)
+                    return(sprintf("Dataset 'current' has duplicate rows while 'target' doesn't%s", tolerance.msg))
+            }
+        }
+        jn.on = if (target_dup && current_dup) {
             target = shallow(target)[, ".seqn" := rowidv(target)]
             current = shallow(current)[, ".seqn" := rowidv(current)]
-            jn.on = c(".seqn",setdiff(names(target),".seqn"))
-        } else {
-            jn.on = names(target)
+            c(".seqn", setdiff(names(target), ".seqn"))
+        } else names(target)
+        # handling 'tolerance' for factor cols - those `msg` will be returned only when equality with tolerance will fail
+        if ("factor" %chin% unlist(colClasses) && !identical(tolerance, 0)) {
+            if (!identical(tolerance, sqrt(.Machine$double.eps))) # non-default will raise error
+                stop("Factor columns and ignore.row.order cannot be used with non 0 tolerance argument")
+            msg = c(msg, "Using factor columns together together with ignore.row.order, this force 'tolerance' argument to 0")
+            tolerance = 0
         }
-        ans = target[current, nomatch=NA, which=TRUE, on=jn.on]
-	if (any_na(as_list(ans))) return("Dataset 'current' has duplicated rows present in different quantity than in 'target'")
-        ans = current[target, nomatch=NA, which=TRUE, on=jn.on]
-	if (any_na(as_list(ans))) return("Dataset 'target' has duplicated rows present in different quantity than in 'current'")
+        # roll join to support 'tolerance' argument, conditional to retain support for factor when tolerance=0
+        ans = if (identical(tolerance, 0)) target[current, nomatch=NA, which=TRUE, on=jn.on] else {
+            ans1 = target[current, roll=tolerance, rollends=TRUE, which=TRUE, on=jn.on]
+            ans2 = target[current, roll=-tolerance, rollends=TRUE, which=TRUE, on=jn.on]
+            pmin(ans1, ans2, na.rm=TRUE)
+        }
+        if (any_na(as_list(ans))) {
+            msg = c(msg, sprintf("Dataset 'current' has rows not present in 'target'%s%s", if (target_dup || current_dup) " or present in different quantity" else "", tolerance.msg))
+            return(msg)
+        }
+        ans = if (identical(tolerance, 0)) current[target, nomatch=NA, which=TRUE, on=jn.on] else {
+            ans1 = current[target, roll=tolerance, rollends=TRUE, which=TRUE, on=jn.on]
+            ans2 = current[target, roll=-tolerance, rollends=TRUE, which=TRUE, on=jn.on]
+            pmin(ans1, ans2, na.rm=TRUE)
+        }
+        if (any_na(as_list(ans))) {
+            msg = c(msg, sprintf("Dataset 'target' has rows not present in 'current'%s%s", if (target_dup || current_dup) " or present in different quantity" else "", tolerance.msg))
+            return(msg)
+        }
     } else {
         for (i in seq_along(target)) {
             # trim.levels moved here
             if.trim = function(x) if (check.attributes && trim.levels && is.factor(x)) factor(x) else x
-            cols.r = all.equal(if.trim(target[[i]]), if.trim(current[[i]]), ..., check.attributes = check.attributes)
+            cols.r = all.equal(if.trim(target[[i]]), if.trim(current[[i]]), tolerance=tolerance, ..., check.attributes=check.attributes)
             if (is.character(cols.r)) return(paste0("Column '", names(target)[i], "': ", cols.r))
         }
     }

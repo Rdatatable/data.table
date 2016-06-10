@@ -7,8 +7,9 @@
 }
 
 \usage{
-  \method{all.equal}{data.table}(target, current, trim.levels = TRUE, check.attributes = TRUE, 
-    ignore.col.order = FALSE, ignore.row.order = FALSE, ...)
+  \method{all.equal}{data.table}(target, current, trim.levels=TRUE, check.attributes=TRUE, 
+    ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps),
+    ...)
 }
 
 \arguments{
@@ -31,6 +32,10 @@
   
   \item{ignore.row.order}{
     A logical indicating whether or not to ignore rows order in \code{data.table}. This option requires datasets to use data types on which join can be made, so no support for \emph{list, complex, raw}, but still supports \link[bit64]{integer64}.
+  }
+  
+  \item{tolerance}{
+    A numeric value used when comparing numeric columns, by default \code{sqrt(.Machine$double.eps)}. Unless non-default value provided it will be forced to \code{0} if used together with \code{ignore.row.order} and duplicate rows detected or factor columns present.
   }
 
   \item{\dots}{
