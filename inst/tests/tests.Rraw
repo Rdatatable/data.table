@@ -7048,7 +7048,13 @@ test(1570.2, class(merge(Y, X, all=TRUE, by="a")), class(X))
 
 # #1379, tstrsplit gains names argument
 X = data.table(a=c("ABC", "DEFG"))
-test(1571, names(tstrsplit(X$a, "", fixed=TRUE, give.names=TRUE)), paste("V", 1:4, sep=""))
+test(1571.1, names(tstrsplit(X$a, "", fixed=TRUE, names=TRUE)), paste("V", 1:4, sep=""))
+test(1571.2, names(tstrsplit(X$a, "", fixed=TRUE, names=letters[1:3])), error="is not equal to ")
+test(1571.3, names(tstrsplit(X$a, "", fixed=TRUE, names=letters[1:4])), letters[1:4])
+# tstrsplit also gains 'keep' argument
+test(1571.4, tstrsplit(X$a, "", fixed=TRUE, keep=c(2,4)), list(c("B", "E"), c(NA, "G")))
+test(1571.5, tstrsplit(X$a, "", fixed=TRUE, keep=c(2,7)), error="should contain integer")
+test(1571.5, tstrsplit(X$a, "", fixed=TRUE, keep=c(2,4), names=letters[1:5]), error="is not equal to")
 
 # fix for #1367, quote="" argument in use. Using embedded quotes in the example below reads the 
 # first two columns as one. I couldn't find a way to avoid introducing quote argument.

@@ -83,6 +83,11 @@
 
   39. `rleid()` gains `prefix` argument, similar to `rowid()`.
 
+  40. `tstrsplit` gains argument `keep` which corresponds to the indices of list elements to return from the transposed list.
+
+  41. `give.names` argument in `tstrsplit` is renamed to simply `names`. It now accepts a character vector 
+  of column names as well.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).
