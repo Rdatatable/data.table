@@ -8940,6 +8940,11 @@ test(1678.1, indices(dt2 <- na.omit(dt, cols="b")), NULL)
 setindexv(dt2, "a")
 test(1678.2, indices(na.omit(dt2, cols="b")), "a")
 
+# rleid gains `prefix` argument, similar to rowid
+x = sample(3,10,TRUE)
+test(1679.1, rleid(x, prefix="id"), paste0("id", rleid(x)))
+test(1679.2, rleidv(x, prefix="id"), paste0("id", rleidv(x)))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

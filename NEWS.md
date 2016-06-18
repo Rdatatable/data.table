@@ -81,6 +81,8 @@
 
   38. Added `setthreads()` and `getthreads()` to globally control the threads used in data.table functions that are parallelised with OpenMP.
 
+  39. `rleid()` gains `prefix` argument, similar to `rowid()`.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

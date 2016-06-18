@@ -2668,7 +2668,7 @@ rowid <- function(..., prefix=NULL) {
 }
 
 rowidv <- function(x, cols=seq_along(x), prefix=NULL) {
-    if (!is.null(prefix) && (is.character(prefix) && length(prefix) > 1L))
+    if (!is.null(prefix) && (!is.character(prefix) || length(prefix) != 1L))
         stop("prefix must be NULL or a character vector of length=1.")
     if (is.atomic(x)) {
         if (!missing(cols) && !is.null(cols))
@@ -2687,16 +2687,18 @@ rowidv <- function(x, cols=seq_along(x), prefix=NULL) {
     if (!length(xorder)) xorder = seq_along(x[[1L]])
     ids = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), "sequence")
     if (!is.null(prefix))
-        ids = paste(prefix, ids, sep="")
+        ids = paste0(prefix, ids)
     ids
 }
 
 # FR #686
-rleid <- function(...) {
-    rleidv(list(...))
+rleid <- function(..., prefix=NULL) {
+    rleidv(list(...), prefix=prefix)
 }
 
-rleidv <- function(x, cols=seq_along(x)) {
+rleidv <- function(x, cols=seq_along(x), prefix=NULL) {
+    if (!is.null(prefix) && (!is.character(prefix) || length(prefix) != 1L))
+        stop("prefix must be NULL or a character vector of length=1.")
     if (is.atomic(x)) {
         if (!missing(cols) && !is.null(cols)) 
             stop("x is a single vector, non-NULL 'cols' doesn't make sense.")
@@ -2709,7 +2711,9 @@ rleidv <- function(x, cols=seq_along(x)) {
             cols = chmatch(cols, names(x))
         cols = as.integer(cols)
     }
-    .Call(Crleid, x, -1L)
+    ids = .Call(Crleid, x, -1L)
+    if (!is.null(prefix)) ids = paste0(prefix, ids)
+    ids
 }
 
 # GForce functions
