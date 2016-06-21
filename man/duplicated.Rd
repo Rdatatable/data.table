@@ -16,7 +16,7 @@
 
      \code{anyDuplicated} returns the \emph{index} \code{i} of the first duplicated entry if there is one, and 0 otherwise. 
 
-     \code{uniqueN} is equivalent to \code{length(unique(x))} but much faster. It accepts \code{atomic vectors}, \code{data.frames} and \code{data.tables}. The number of unique rows are computed directly without materialising the intermediate unique data.table and is therefore memory efficient as well.
+     \code{uniqueN} is equivalent to \code{length(unique(x))} when x is an \code{atomic vector}, and \code{nrow(unique(x))} when x is a \code{data.frame} or \code{data.table}. The number of unique rows are computed directly without materialising the intermediate unique data.table and is therefore faster and more memory efficient.
 
 }
 \usage{

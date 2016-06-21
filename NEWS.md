@@ -284,6 +284,8 @@
 
   28. `?IDateTime` now makes clear that `wday`, `yday` and `month` are all 1- (not 0- as in `POSIXlt`) based, [#1658](https://github.com/Rdatatable/data.table/issues/1658); thanks @MichaelChirico.
 
+  29. Fixed misleading documentation of `?uniqueN`, [#1746](https://github.com/Rdatatable/data.table/issues/1746). Thanks @SymbolixAU.
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
