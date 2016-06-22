@@ -8951,6 +8951,14 @@ x = sample(3,10,TRUE)
 test(1679.1, rleid(x, prefix="id"), paste0("id", rleid(x)))
 test(1679.2, rleidv(x, prefix="id"), paste0("id", rleidv(x)))
 
+# melt.data.table call along with patterns from within a function, #1749
+x = data.table(x1=1:2, x2=3:4, y1=5:6, y2=7:8, z1=9:10, z2=11:12)
+foo <- function(x) {
+    pats = c("^y", "z")
+    melt(x, measure.vars=patterns(pats))
+}
+test(1680.1, foo(x), melt(x, measure.vars=patterns("^y", "^z")))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

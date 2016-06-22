@@ -88,6 +88,8 @@
   41. `give.names` argument in `tstrsplit` is renamed to simply `names`. It now accepts a character vector 
   of column names as well.
 
+  42. `melt.data.table` finds variables provided to `patterns()` when called from within user defined functions, [#1749](https://github.com/Rdatatable/data.table/issues/1749). Thanks to @kendonB for the report.
+
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).

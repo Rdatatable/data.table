@@ -6,8 +6,11 @@ melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
       reshape2::melt(data, ..., na.rm=na.rm, value.name=value.name)
 }
 
-patterns <- function(...) {
+patterns <- function(..., cols=character(0)) {
     p = unlist(list(...), use.names=FALSE)
+    if (!is.character(p))
+        stop("Input patterns must be of type character.")
+    lapply(p, grep, cols)
 }
 
 melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variable", 
@@ -18,7 +21,9 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
     if (missing(measure.vars)) measure.vars = NULL
     measure.sub = substitute(measure.vars)
     if (is.call(measure.sub) && measure.sub[[1L]] == "patterns") {
-        measure.vars = lapply(eval(measure.sub), grep, names(data))    
+        measure.sub = as.list(measure.sub)[-1L]
+        pats = lapply(measure.sub, eval, parent.frame())
+        measure.vars = patterns(pats, cols=names(data))
     }
     if (is.list(measure.vars) && length(measure.vars) > 1L) {
         if (length(value.name) == 1L)  
@@ -36,4 +41,3 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
     setattr(ans, 'sorted', NULL)
     ans
 }
-
