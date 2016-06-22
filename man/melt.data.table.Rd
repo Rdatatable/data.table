@@ -66,8 +66,10 @@ effect.
 
 From version \code{1.9.6}, \code{melt} gains a feature with \code{measure.vars} 
 accepting a list of \code{character} or \code{integer} vectors as well to melt 
-into multiple columns in a single function call efficiently. See the 
-\code{Examples} section for the usage.
+into multiple columns in a single function call efficiently. The function 
+\code{\link{patterns}} can be used to provide regular expression patterns. When 
+used along with \code{melt}, if \code{cols} argument is not provided, the 
+patterns will be matched against \code{names(data)}, for convenience.
 
 Attributes are preserved if all \code{value} columns are of the same type. By 
 default, if any of the columns to be melted are of type \code{factor}, it'll 

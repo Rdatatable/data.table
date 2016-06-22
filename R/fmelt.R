@@ -22,8 +22,13 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
     measure.sub = substitute(measure.vars)
     if (is.call(measure.sub) && measure.sub[[1L]] == "patterns") {
         measure.sub = as.list(measure.sub)[-1L]
+        idx = which("cols" %in% names(measure.sub))
+        if (length(idx)) {
+            cols = measure.sub[["cols"]]
+            measure.sub = measure.sub[-idx]
+        } else cols = names(data)
         pats = lapply(measure.sub, eval, parent.frame())
-        measure.vars = patterns(pats, cols=names(data))
+        measure.vars = patterns(pats, cols=cols)
     }
     if (is.list(measure.vars) && length(measure.vars) > 1L) {
         if (length(value.name) == 1L)  

@@ -25,6 +25,9 @@ patterns(..., cols=character(0))
 \examples{
 dt = data.table(x1 = 1:5, x2 = 6:10, y1 = letters[1:5], y2 = letters[6:10])
 # melt all columns that begin with 'x' & 'y', respectively, into separate columns
+melt(dt, measure.vars = patterns("^x", "^y", cols=names(dt)))
+# when used with melt, 'cols' is implictly assumed to be names of input 
+# data.table, if not provided.
 melt(dt, measure.vars = patterns("^x", "^y"))
 }
 \keyword{data}
