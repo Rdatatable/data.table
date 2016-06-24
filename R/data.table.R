@@ -348,6 +348,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         return(ans)
     }
     if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
+    missingroll = missing(roll)
     if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
     if (is.character(roll)) {
         if (roll!="nearest") stop("roll is '",roll,"' (type character). Only valid character value is 'nearest'.")
@@ -606,8 +607,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # figure out the columns on which to compute groups on
                 non_equi = which.first(ops != 1L) # 1 is "==" operator
                 if (!is.na(non_equi)) { # non-equi conditions present.. investigate groups..
-                    nqcols = rightcols[non_equi:length(rightcols)]
-                    nqgrp = .Call(Cnestedid, x, nqcols, forderv(x, nqcols))
+                    if (!missingroll) stop("roll is not implemented for non-equi joins yet.")
+                    # slightly faster for mult="all" case
+                    # nqcols = if (mult == "all") rightcols[non_equi:length(rightcols)] else rightcols
+                    nqcols = if (mult == "all") rightcols[non_equi:length(rightcols)] else rightcols
+                    nqo = forderv(x, nqcols, retGrp=TRUE)
+                    nqgrp = .Call(Cnestedid, x, nqcols, nqo, attr(nqo, 'starts'), mult)
                     if ( (nqmaxgrp <- max(nqgrp)) > 1L) { # got some non-equi join work to do
                         if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
                         set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
@@ -662,8 +667,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
             i = .shallow(i, retain.key = io)
             ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
-            # temp fix for issue spotted by Jan. Ideally would like to avoid this 'setorder', as there's another 
-            # 'setorder' in generating 'irows' below...
+            # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this 
+            # 'setorder', as there's another 'setorder' in generating 'irows' below...
             if (length(ans$indices)) setorder(setDT(ans[1:3]), indices)
             allLen1 = ans$allLen1
             allGrp1 = ans$allGrp1
@@ -697,8 +702,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     if (length(irows)) stop("Internal error. irows has length in by=.EACHI")
                 }
             } else {
-		# turning on mult = "first"/"last" for non-equi joins again to test..
-		# if (nqmaxgrp>1L) stop("Non-equi joins aren't yet functional with mult='first' and mult='last'.")
+                # turning on mult = "first"/"last" for non-equi joins again to test..
+                # if (nqmaxgrp>1L) stop("Non-equi joins aren't yet functional with mult='first' and mult='last'.")
                 # mult="first"/"last" logic moved to bmerge.c, also handles non-equi cases, #1452
                 if (!byjoin) { #1287 and #1271
                     irows = f__ # len__ is set to 1 as well, no need for 'pmin' logic
@@ -709,7 +714,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             }
             if (length(xo) && length(irows)) {
                 irows = xo[irows]   # TO DO: fsort here?
-                if (mult=="all" && !allGrp1 && length(xo)) {
+                if (mult=="all" && !allGrp1) {
                     irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))$irows
                 }
             }
@@ -842,7 +847,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 ansvars = names(x)[ if (notj) -j else j ]  # DT[,!"columntoexclude",with=FALSE], if a copy is needed, rather than :=NULL
                 # DT[, c(1,3), with=FALSE] should clearly provide both 'x' columns
                 ansvals = if (notj) setdiff(seq_along(x), as.integer(j)) else as.integer(j)
-	    } else stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
+        } else stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
             if (!length(ansvals)) return(null.data.table())
         } else {   # with=TRUE and byjoin could be TRUE
             bynames = NULL
@@ -1238,8 +1243,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     SDenv = new.env(parent=parent.frame())
     # taking care of warnings for posixlt type, #646
     SDenv$strptime <- function(x, ...) {
-	warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
-	as.POSIXct(base::strptime(x, ...))
+    warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+    as.POSIXct(base::strptime(x, ...))
     }
 
     # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
@@ -1258,7 +1263,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         if (address(ans[[target]]) == address(i[[source]])) ans[[target]] = copy(ans[[target]])
                     }
                 } else {
-		    ii = rep.int(if(allGrp1) seq_len(nrow(i)) else indices__, len__)
+            ii = rep.int(if(allGrp1) seq_len(nrow(i)) else indices__, len__)
                     for (s in seq_along(icols)) {
                         target = icolsAns[s]
                         source = icols[s]
