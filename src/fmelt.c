@@ -106,7 +106,7 @@ SEXP whichwrapper(SEXP x, SEXP bool) {
 SEXP concat(SEXP vec, SEXP idx) {
     
     SEXP s, t, v;
-    int i;
+    int i, nidx=length(idx);
     
     if (TYPEOF(vec) != STRSXP) error("concat: 'vec must be a character vector");
     if (!isInteger(idx) || length(idx) < 0) error("concat: 'idx' must be an integer vector of length >= 0");
@@ -114,10 +114,11 @@ SEXP concat(SEXP vec, SEXP idx) {
         if (INTEGER(idx)[i] < 0 || INTEGER(idx)[i] > length(vec)) 
             error("concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= length(vec)");
     }
-    PROTECT(v = allocVector(STRSXP, length(idx)));
-    for (i=0; i<length(idx); i++) {
+    PROTECT(v = allocVector(STRSXP, nidx > 5 ? 5 : nidx));
+    for (i=0; i<length(v); i++) {
         SET_STRING_ELT(v, i, STRING_ELT(vec, INTEGER(idx)[i]-1));
     }
+    if (nidx > 5) SET_STRING_ELT(v, 4, mkChar("..."));
     PROTECT(t = s = allocList(3));
     SET_TYPEOF(t, LANGSXP);
     SETCAR(t, install("paste")); t = CDR(t);

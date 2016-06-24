@@ -8975,6 +8975,12 @@ foo <- function(x) {
 }
 test(1680.1, foo(x), melt(x, measure.vars=patterns("^y", "^z")))
 
+# melt warning prints only first 5 cols, #1752
+DT = fread("melt-warning-1752.tsv")
+ans = suppressWarnings(melt(DT[, names(DT) %like% "(^Id[0-9]*$)|GEOGRAPHIC AREA CODES", with=FALSE], id=1:2))
+test(1681, melt(DT[, names(DT) %like% "(^Id[0-9]*$)|GEOGRAPHIC AREA CODES", with=FALSE], id=1:2), 
+    ans, warning="are not all of the same type")
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

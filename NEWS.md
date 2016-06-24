@@ -288,6 +288,8 @@
 
   29. Fixed misleading documentation of `?uniqueN`, [#1746](https://github.com/Rdatatable/data.table/issues/1746). Thanks @SymbolixAU.
 
+  30. `melt.data.table` restricts column names printed during warning messages to a maximum of five, [#1752](https://github.com/Rdatatable/data.table/issues/1752).
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
