@@ -8455,7 +8455,7 @@ dt1 = nq_fun(400L)
 dt2 = nq_fun(50L)
 x = na.omit(dt1)
 y = na.omit(dt2)
-nqjoin_test <- function(x, y, k=1L, test_no) {
+nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
     ops = c("==", ">=", "<=", ">", "<")
     xclass = sapply(x, class)
     runcmb = combn(names(x), k)
@@ -8483,16 +8483,20 @@ nqjoin_test <- function(x, y, k=1L, test_no) {
         lapply(expr[-1L], function(e) ans <<- as.call(list(quote(`&`), ans, e)))
         ans
     }
-    check <- function(x, y, cols, ops) {
+    check <- function(x, y, cols, ops, mult="all") {
         expr = lapply(1:nrow(y), function(i) {
             expr = construct(cols, as.list(y[i, cols, with=FALSE]), ops)
         })
-        ans = lapply(expr, function(e) x[eval(e)])
+        ans = lapply(expr, function(e) {
+                val = x[eval(e)]
+                if (!nrow(val)) return(val)
+                val = if (mult=="first") val[1L] else if (mult=="last") val[.N] else val
+            })
         rbindlist(ans)
     }
-    nq <- function(x, y, cols, ops, nomatch=0L) {
+    nq <- function(x, y, cols, ops, nomatch=0L, mult="all") {
         sd_cols = c(paste("x.", cols, sep=""), setdiff(names(x), cols))
-        ans = x[y, mget(sd_cols, as.environment(-1)), on = paste(cols, ops, cols, sep=""), allow=TRUE, nomatch=nomatch]
+        ans = x[y, mget(sd_cols, as.environment(-1)), on = paste(cols, ops, cols, sep=""), allow=TRUE, nomatch=nomatch, mult=mult]
         setnames(ans, gsub("^x[.]", "", names(ans)))
         setcolorder(ans, names(x))[]
     }
@@ -8500,28 +8504,40 @@ nqjoin_test <- function(x, y, k=1L, test_no) {
         thiscols = runcmb[[i]]
         thisops = runops[[i]]
         # cat("k = ", k, "\ti = ", i, "\t thiscols = [", paste(thiscols,collapse=","), "]\t thisops = [", paste(thisops,collapse=","), "]\t ", sep="")
-        ans1 = nq(x, y, thiscols, thisops, 0L)
-        ans2 = check(x, y, thiscols, thisops)
+        ans1 = nq(x, y, thiscols, thisops, 0L, mult=mult)
+        ans2 = check(x, y, thiscols, thisops, mult=mult)
         test_no = signif(test_no+.001, 7)
         test(test_no, all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)
         # if (identical(all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)) cat("successful\n") else stop("failed\n")
     }
 }
-nqjoin_test(  x,  y,1L,1641.0) # without NAs in x and i
-nqjoin_test(  x,  y,2L,1642.0)
-nqjoin_test(  x,  y,3L,1643.0)
+# without NAs in x and i
+nqjoin_test(x, y, 1L, 1641.0, mult="all")
+nqjoin_test(x, y, 2L, 1642.0, mult="all")
+nqjoin_test(x, y, 1L, 1643.0, mult="first")
+nqjoin_test(x, y, 2L, 1644.0, mult="first")
+nqjoin_test(x, y, 1L, 1645.0, mult="last")
+nqjoin_test(x, y, 2L, 1646.0, mult="last")
+
+# with NAs in x and i
+nqjoin_test(dt1, dt2, 1L, 1647.0, mult="all")
+nqjoin_test(dt1, dt2, 2L, 1648.0, mult="all")
+nqjoin_test(dt1, dt2, 1L, 1649.0, mult="first")
+nqjoin_test(dt1, dt2, 2L, 1650.0, mult="first")
+nqjoin_test(dt1, dt2, 1L, 1651.0, mult="last")
+nqjoin_test(dt1, dt2, 2L, 1652.0, mult="last")
+
+# TODO: add tests for nomatch=NA..
 # tested, but takes quite some time.. so commenting for now
+# nqjoin_test(x, y, 3L,1643.0)
+# nqjoin_test(dt1,dt2,3L,1652.0)
+
 # nqjoin_test(  x,dt2,1L,1644.0) # without NA only in x
 # nqjoin_test(  x,dt2,2L,1645.0)
 # nqjoin_test(  x,dt2,3L,1646.0)
 # nqjoin_test(dt1,  y,1L,1647.0) # without NA only in i
 # nqjoin_test(dt1,  y,2L,1648.0)
 # nqjoin_test(dt1,  y,3L,1649.0)
-nqjoin_test(dt1,dt2,1L,1650.0) # with NAs in x and i
-nqjoin_test(dt1,dt2,2L,1651.0)
-nqjoin_test(dt1,dt2,3L,1652.0)
-# TODO: add tests for nomatch=NA..
-# TODO: add tests for mult="first" and mult="last"
 
 # test for the issues Jan spotted...
 dt = data.table(id="x", a=as.integer(c(3,8,8,15,15,15,16,22,22,25,25)), b=as.integer(c(9,10,25,19,22,25,38,3,9,7,28)), c=as.integer(c(22,33,44,14,49,44,40,25,400,52,77)))

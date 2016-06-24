@@ -37,7 +37,7 @@ static double roll, rollabs;
 static Rboolean rollToNearest=FALSE;
 #define XIND(i) (xo ? xo[(i)]-1 : i)
 
-void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int thisgrp, int lowmax, int uppmax, int tmpctr);
+void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int thisgrp, int lowmax, int uppmax);
 
 SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
     int xN, iN, protecti=0;
@@ -89,7 +89,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
     else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
     else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-    else error("Internal error: invalid value for 'mult', should have been caught before. Please report to datatable-help");
+    else error("Internal error: invalid value for 'mult'. Please report to datatable-help");
 
     // opArg
     if (!isInteger(opArg) || length(opArg) != ncol)
@@ -106,22 +106,22 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     nqmaxgrp = INTEGER(nqmaxgrpArg)[0];
     if (nqmaxgrp>1 && mult == ALL) {
         // non-equi case with mult=ALL, may need reallocation
-	anslen = 1.1 * ((iN > 1000) ? iN : 1000);
+        anslen = 1.1 * ((iN > 1000) ? iN : 1000);
         retFirst = Calloc(anslen, int); // anslen is set above
         retLength = Calloc(anslen, int);
         retIndex = Calloc(anslen, int);
         if (retFirst==NULL || retLength==NULL || retIndex==NULL)
             error("Internal error in allocating memory for non-equi join");
-	// initialise retIndex here directly, as next loop is meant for both equi and non-equi joins
+        // initialise retIndex here directly, as next loop is meant for both equi and non-equi joins
         for (int j=0; j<anslen; j++) retIndex[j] = j+1;
     } else { // equi joins (or) non-equi join but no multiple matches
-	retFirstArg = PROTECT(allocVector(INTSXP, anslen));
-	retFirst = INTEGER(retFirstArg);
-	retLengthArg = PROTECT(allocVector(INTSXP, anslen)); // TODO: no need to allocate length at all when
-	retLength = INTEGER(retLengthArg);                   // mult = "first" / "last"
-	retIndexArg = PROTECT(allocVector(INTSXP, 0));
-	retIndex = INTEGER(retIndexArg);
-	protecti += 3;
+        retFirstArg = PROTECT(allocVector(INTSXP, anslen));
+        retFirst = INTEGER(retFirstArg);
+        retLengthArg = PROTECT(allocVector(INTSXP, anslen)); // TODO: no need to allocate length at all when
+        retLength = INTEGER(retLengthArg);                   // mult = "first" / "last"
+        retIndexArg = PROTECT(allocVector(INTSXP, 0));
+        retIndex = INTEGER(retIndexArg);
+        protecti += 3;
     }
     for (int j=0; j<anslen; j++) {
         // defaults need to populated here as bmerge_r may well not touch many locations, say if the last row of i is before the first row of x.
@@ -161,19 +161,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     if (iN) {
         // embarassingly parallel if we've storage space for nqmaxgrp*iN
         for (int kk=0; kk<nqmaxgrp; kk++) {
-            // Rprintf("kk = %d, max = %d, ctr=%d, len=%d\n", kk+1, nqmaxgrp, ctr, anslen);
-            bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1,0);
-            // Rprintf("kk = %d, max = %d, ctr=%d, len=%d\n", kk+1, nqmaxgrp, ctr, anslen);
-            // for (int ii=0; ii<ctr; ii++)
-            //     Rprintf("%d,", retFirst[ii]);
-            // Rprintf("\n");
-            // for (int ii=0; ii<ctr; ii++)
-            //     Rprintf("%d,", retLength[ii]);
-            // Rprintf("\n");
-            // for (int ii=0; ii<ctr; ii++)
-            //     Rprintf("%d,", retIndex[ii]);
-            // Rprintf("\n");
-            // Rprintf("\n---\n\n");
+            bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
         }
     }
     ctr += iN;
@@ -229,7 +217,7 @@ SEXP ENC2UTF8(SEXP s) {
     return (s);
 }
 
-void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax, int tmpctr)
+void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax)
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
 // lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
 // uppmax=1 if xuppIn is the upper bound of this group (needed for roll)
@@ -240,7 +228,6 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     Rboolean isInt64;
     ir = lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
     if (o) ir = o[lir]-1;                      // ir = the actual i row if i were ordered
-    // Rprintf("Begin %d: ilow=%d, iupp=%d, ilowIn=%d, iuppIn=%d, xlow=%d, xlowIn=%d, xupp=%d, xuppIn=%d, col=%d, op=%d\n", tmpctr, ilow, iupp, ilowIn, iuppIn, xlow, xlowIn, xupp, xuppIn, col, op[col]);
     if (col>-1) {
         ic = VECTOR_ELT(i,icols[col]-1);  // ic = i column
         xc = VECTOR_ELT(x,xcols[col]-1);  // xc = x column
@@ -256,7 +243,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                 xlow=mid;
             } else if (xval.i>ival.i) {   // TO DO: is *(&xlow, &xupp)[0|1]=mid more efficient than branch?
                 xupp=mid;
-            } else { // xval.i == ival.i  including NA_INTEGER==NA_INTEGER
+            } else {
+                // xval.i == ival.i  including NA_INTEGER==NA_INTEGER
                 // branch mid to find start and end of this group in this column
                 // TO DO?: not if mult=first|last and col<ncol-1
                 tmplow = mid;
@@ -275,7 +263,6 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                 break;
             }
         }
-        // Rprintf("Inter %d: ilow=%d, iupp=%d, ilowIn=%d, iuppIn=%d, xlow=%d, xlowIn=%d, xupp=%d, xuppIn=%d, col=%d, op=%d\n", tmpctr, ilow, iupp, ilowIn, iuppIn, xlow, xlowIn, xupp, xuppIn, col, op[col]);
         if (col>-1 && op[col] != EQ) {
             switch (op[col]) {
                 case LE : xlow = xlowIn; break;
@@ -294,7 +281,6 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                 xlow = tmplow; // tmplow is the index of last NA value
             }
         }
-        // Rprintf("End %d: ilow=%d, iupp=%d, ilowIn=%d, iuppIn=%d, xlow=%d, xlowIn=%d, xupp=%d, xuppIn=%d, col=%d, op=%d\n", tmpctr, ilow, iupp, ilowIn, iuppIn, xlow, xlowIn, xupp, xuppIn, col, op[col]);
         tmplow = lir;
         tmpupp = lir;
         if (col>-1) {
@@ -418,10 +404,9 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     default:
         error("Type '%s' not supported as key column", type2char(TYPEOF(xc)));
     }
-    // Rprintf("BEFORE %d: ilow=%d, iupp=%d, ilowIn=%d, iuppIn=%d, xlow=%d, xlowIn=%d, xupp=%d, xuppIn=%d, col=%d, op=%d\n", tmpctr, ilow, iupp, ilowIn, iuppIn, xlow, xlowIn, xupp, xuppIn, col, op[col]);
     if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
         if (col<ncol-1) {
-            bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1, tmpctr+1);
+            bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1);
             // final two 1's are lowmax and uppmax
         } else {
             int len = xupp-xlow-1;
@@ -449,19 +434,19 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                                 anslen = 1.1*anslen;
                                 tmpptr = Realloc(retFirst, anslen, int);
                                 if (tmpptr != NULL) retFirst = tmpptr; 
-				else error("Error in reallocating memory in non-equi joins.\n");
+                                else error("Error in reallocating memory in non-equi joins.\n");
                                 tmpptr = Realloc(retLength, anslen, int);
                                 if (tmpptr != NULL) retLength = tmpptr; 
-				else error("Error in reallocating memory in non-equi joins.\n");
+                                else error("Error in reallocating memory in non-equi joins.\n");
                                 tmpptr = Realloc(retIndex, anslen, int);
                                 if (tmpptr != NULL) retIndex = tmpptr; 
-				else error("Error in reallocating memory in non-equi joins.\n");
+                                else error("Error in reallocating memory in non-equi joins.\n");
                             }
                         } else if (mult == FIRST) {
-			    retFirst[k] = (XIND(retFirst[k]-1) > XIND(xlow+1)) ? xlow+2 : retFirst[k];
+                            retFirst[k] = (XIND(retFirst[k]-1) > XIND(xlow+1)) ? xlow+2 : retFirst[k];
                             retLength[k] = 1;
                         } else {
-			    retFirst[k] = (XIND(retFirst[k]-1) < XIND(xupp-1)) ? xupp : retFirst[k];
+                            retFirst[k] = (XIND(retFirst[k]-1) < XIND(xupp-1)) ? xupp : retFirst[k];
                             retLength[k] = 1;
                         }
                     } else {
@@ -526,35 +511,36 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                 retLength[ir] = 1;
             }
         }
-        if (iupp-ilow > 2 && retFirst[ir]!=NA_INTEGER) {  // >=2 equal values in the last column being rolling to the same point.  
-            for (j=ilow+1; j<iupp; j++) {                 // will rewrite retFirst[ir] to itself, but that's ok
+        if (iupp-ilow > 2 && retFirst[ir]!=NA_INTEGER) {
+            // >=2 equal values in the last column being rolling to the same point.  
+            for (j=ilow+1; j<iupp; j++) {
+                // will rewrite retFirst[ir] to itself, but that's ok
                 if (o) k=o[j]-1; else k=j;
                 retFirst[k] = retFirst[ir];
                 retLength[k]= retLength[ir]; 
             }
         }
     }
-    // Rprintf("FINAL %d: ilow=%d, iupp=%d, ilowIn=%d, iuppIn=%d, xlow=%d, xlowIn=%d, xupp=%d, xuppIn=%d, col=%d, op=%d\n", tmpctr, ilow, iupp, ilowIn, iuppIn, xlow, xlowIn, xupp, xuppIn, col, op[col]);
     switch (op[col]) {
     case EQ:
         if (ilow>ilowIn && (xlow>xlowIn || ((roll!=0.0 || op[col] != EQ) && col==ncol-1)))
-            bmerge_r(xlowIn, xlow+1, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, tmpctr+1);
+            bmerge_r(xlowIn, xlow+1, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
         if (iupp<iuppIn && (xupp<xuppIn || ((roll!=0.0 || op[col] != EQ) && col==ncol-1)))
-            bmerge_r(xupp-1, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, tmpctr+1);
+            bmerge_r(xupp-1, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
     break;
     case LE: case LT:
         // roll is not yet implemented
         if (ilow>ilowIn)
-            bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, tmpctr+1);
+            bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
         if (iupp<iuppIn)
-            bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, tmpctr+1);
+            bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
     break;
     case GE: case GT:
         // roll is not yet implemented
         if (ilow>ilowIn)
-            bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, tmpctr+1);
+            bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
         if (iupp<iuppIn)
-            bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, tmpctr+1);
+            bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
     break;
     }
 }
