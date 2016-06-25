@@ -219,3 +219,27 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP multArg) {
     UNPROTECT(1);
     return(ans);
 }
+
+SEXP nqnewindices(SEXP xo, SEXP len, SEXP indices, SEXP nArg) {
+
+    R_len_t i, n = INTEGER(nArg)[0], nas=0, tmp=0;
+    SEXP ans, newstarts, newlen;
+    ans = PROTECT(allocVector(VECSXP, 2));
+    SET_VECTOR_ELT(ans, 0, (newstarts = allocVector(INTSXP, n)));
+    SET_VECTOR_ELT(ans, 1, (newlen = allocVector(INTSXP, n)));
+
+    for (i=0; i<n; i++) INTEGER(newlen)[i] = 0;
+    for (i=0; i<length(indices); i++) {
+        INTEGER(newlen)[INTEGER(indices)[i]-1] += INTEGER(len)[i];
+    }
+    for (i=0; i<n; i++) {
+        if (INTEGER(xo)[nas++] == NA_INTEGER) {
+            INTEGER(newstarts)[i] = NA_INTEGER;
+        } else {
+            INTEGER(newstarts)[i] = tmp+1;
+            tmp += INTEGER(newlen)[i];
+        }
+    }
+    UNPROTECT(1);
+    return (ans);
+}

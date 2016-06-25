@@ -8981,6 +8981,26 @@ ans = suppressWarnings(melt(DT[, names(DT) %like% "(^Id[0-9]*$)|GEOGRAPHIC AREA 
 test(1681, melt(DT[, names(DT) %like% "(^Id[0-9]*$)|GEOGRAPHIC AREA CODES", with=FALSE], id=1:2), 
     ans, warning="are not all of the same type")
 
+# non-equi joins with by=.EACHI, not as exhaustive, but given the previous
+# tests were, this should be fine.. we'll add tests as we go along.
+set.seed(45L)
+dt1 = data.table(x=sample(8,20,TRUE), y=sample(8,20,TRUE), z=1:20)
+dt2 = data.table(c(2,5), c(5,7), c(2,4))
+dt3 = data.table(c(12,5), c(15,7), c(2,4))
+
+test(1682.1, dt1[dt2, .N, by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, .N, by=.(x,y)])
+test(1682.2, dt1[dt2, sum(z), by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, sum(z), by=.(x,y)])
+test(1682.3, dt1[dt2, as.numeric(median(z)), by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, median(z), by=.(x,y)])
+test(1682.4, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt3, on=.(x>=V1, y<=V2)][, .(N=sum(!is.na(z))), by=.(x,y)])
+test(1682.5, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2), nomatch=0L], dt1[dt3, on=.(x>=V1, y<=V2), nomatch=0L][, .N, by=.(x,y)])
+test(1682.6, dt1[dt2, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt2, on=.(x>=V1, y<=V2)][, sum(z)*V3[1L], by=.(x,y)])
+test(1682.7, dt1[dt3, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt3, on=.(x>=V1, y<=V2)][, sum(z)*V3[1L], by=.(x,y)])
+# add test for update operation
+idx = dt1[dt2[1], which=TRUE, on=.(x>=V1, y<=V2)]
+test(1682.8, copy(dt1)[dt2[1], z := 2L*z, by=.EACHI, on=.(x>=V1, y<=V2)], copy(dt1)[(idx), z := 2L*z])
+# add test for add by reference
+test(1682.9, copy(dt1)[dt2[1], foo := z, by=.EACHI, on=.(x>=V1, y<=V2)], copy(dt1)[(idx), foo := z])
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

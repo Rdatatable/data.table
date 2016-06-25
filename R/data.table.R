@@ -633,8 +633,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     } else {
                         if (verbose) cat("found. Reusing index.\n")
                     }
-                } else {
-                    if (!missing(by)) stop("by-joins are not yet implemented for multi-group non-equi-joins.")
                 }
             } else if (is.null(xo)) {
                 rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in bmerge()
@@ -683,7 +681,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 return( if (length(xo)) fsort(xo[w]) else which(w) )
             }
             if (mult=="all") {
-                if (!byjoin) {
+                # is by=.EACHI along with non-equi join?
+                nqbyjoin = byjoin && length(ans$indices) && !allGrp1
+                if (!byjoin || nqbyjoin) {
                     # Really, `anyDuplicated` in base is AWESOME!
                     # allow.cartesian shouldn't error if a) not-join, b) 'i' has no duplicates
                     irows = if (allLen1) f__ else vecseq(f__,len__,
@@ -697,9 +697,20 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     # unnecessary construction of logical vectors
                     if (identical(nomatch, 0L) && allLen1) irows = irows[irows != 0L]
                 } else {
-                    if (length(xo) && missing(on)) stop("Cannot by=.EACHI when joining to a secondary key, yet")
+                    if (length(xo) && missing(on))
+                        stop("Cannot by=.EACHI when joining to a secondary key, yet")
                     # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.
-                    if (length(irows)) stop("Internal error. irows has length in by=.EACHI")
+                    if (length(irows)) 
+                        stop("Internal error. irows has length in by=.EACHI")
+                }
+                if (nqbyjoin) {
+                    irows = if (length(xo)) xo[irows] else irows
+                    xo = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
+                    ans = .Call("Cnqnewindices", xo, len__, indices__, max(indices__))
+                    f__ = ans[[1L]]; len__ = ans[[2L]]
+                    allLen1 = FALSE # TODO; should this always be FALSE?
+                    irows = NULL # important to reset
+                    if (any_na(as_list(xo))) xo = xo[!is.na(xo)]
                 }
             } else {
                 # turning on mult = "first"/"last" for non-equi joins again to test..
@@ -715,7 +726,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (length(xo) && length(irows)) {
                 irows = xo[irows]   # TO DO: fsort here?
                 if (mult=="all" && !allGrp1) {
-                    irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))$irows
+                    irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
                 }
             }
         } else {
