@@ -544,37 +544,3 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     break;
     }
 }
-
-// HOPEFULLY NOT NEEDED ANYMORE BUT JUST IN CASE...
-// // adapted from util.c::do_enc2, here so that we can directly update columns
-// SEXP setencoding(SEXP s, SEXP enc_utf8, SEXP enc_latin1) {
-//     R_xlen_t i;
-//     SEXP el;
-//     for (i=0; i<XLENGTH(s); i++) {
-//         el = STRING_ELT(s, i);
-//         if (el == NA_STRING) continue;
-//         if (LOGICAL(enc_utf8)[0]) {
-//             if (IS_ASCII(el) || IS_UTF8(el)) continue;
-//             SET_STRING_ELT(s, i, mkCharCE(translateCharUTF8(el), CE_UTF8));
-//         } else if (ENC_KNOWN(el)) {
-//             if (IS_ASCII(el) || (LOGICAL(enc_latin1)[0] && IS_LATIN1(el))) continue;
-//             if (LOGICAL(enc_latin1)[0])
-//                 SET_STRING_ELT(s, i, mkCharCE(translateChar(el), CE_LATIN1));
-//             else 
-//                 SET_STRING_ELT(s, i, mkChar(translateChar(el)));
-//         }
-//     }
-//     return (R_NilValue);
-// }
-
-// SEXP is_encoding_marked(SEXP x) {
-
-//     int i, n=XLENGTH(x);
-//     SEXP s;
-//     for (i=0; i<n; i++) {
-//         s = STRING_ELT(x, i);
-//         if (s != NA_STRING && !IS_ASCII(s))
-//             break;
-//     }
-//     return (ScalarLogical(i!=n));
-// }

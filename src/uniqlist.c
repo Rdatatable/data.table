@@ -230,7 +230,9 @@ SEXP nqnewindices(SEXP xo, SEXP len, SEXP indices, SEXP nArg) {
 
     for (i=0; i<n; i++) INTEGER(newlen)[i] = 0;
     for (i=0; i<length(indices); i++) {
-        INTEGER(newlen)[INTEGER(indices)[i]-1] += INTEGER(len)[i];
+        if (INTEGER(xo)[i] != NA_INTEGER)
+            INTEGER(newlen)[INTEGER(indices)[i]-1] += INTEGER(len)[i];
+        else INTEGER(newlen)[INTEGER(indices)[i]-1] = 1;
     }
     for (i=0; i<n; i++) {
         if (INTEGER(xo)[nas++] == NA_INTEGER) {
