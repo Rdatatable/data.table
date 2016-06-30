@@ -8998,8 +8998,12 @@ test(1682.7, dt1[dt3, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt3, on=.(x
 # add test for update operation
 idx = dt1[dt2[1], which=TRUE, on=.(x>=V1, y<=V2)]
 test(1682.8, copy(dt1)[dt2[1], z := 2L*z, by=.EACHI, on=.(x>=V1, y<=V2)], copy(dt1)[(idx), z := 2L*z])
-# add test for add by reference
+# test for add by reference
 test(1682.9, copy(dt1)[dt2[1], foo := z, by=.EACHI, on=.(x>=V1, y<=V2)], copy(dt1)[(idx), foo := z])
+# test for nomatch=0L with by=.EACHI fix for non-equi joins
+dt = data.table(x=c(1,4,7,10), y=c(6,12,18,24), z=4:1)
+test(1683.1, dt[.(c(2,15), c(100,25)), sum(z), on=.(x>=V1, y<=V2), by=.EACHI], data.table(x=c(2,15), y=c(100,25), V1=c(6L, NA)))
+test(1683.2, dt[.(c(2,15), c(100,25)), sum(z), on=.(x>=V1, y<=V2), by=.EACHI, nomatch=0L], data.table(x=2, y=100, V1=6L))
 
 ##########################
 

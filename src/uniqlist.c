@@ -232,13 +232,13 @@ SEXP nqnewindices(SEXP xo, SEXP len, SEXP indices, SEXP nArg) {
     for (i=0; i<length(indices); i++) {
         if (INTEGER(xo)[i] != NA_INTEGER)
             INTEGER(newlen)[INTEGER(indices)[i]-1] += INTEGER(len)[i];
-        else INTEGER(newlen)[INTEGER(indices)[i]-1] = 1;
+        else INTEGER(newlen)[INTEGER(indices)[i]-1] = INTEGER(len)[i] != 0;
     }
     for (i=0; i<n; i++) {
         if (INTEGER(xo)[nas++] == NA_INTEGER) {
             INTEGER(newstarts)[i] = NA_INTEGER;
         } else {
-            INTEGER(newstarts)[i] = tmp+1;
+            INTEGER(newstarts)[i] = INTEGER(newlen)[i] ? tmp+1 : 0;
             tmp += INTEGER(newlen)[i];
         }
     }
