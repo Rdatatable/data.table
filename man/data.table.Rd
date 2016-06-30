@@ -314,6 +314,7 @@ DT[X, on="x", mult="last"]            # last row of each group
 DT[X, sum(v), by=.EACHI, on="x"]      # join and eval j for each row in i
 DT[X, sum(v)*foo, by=.EACHI, on="x"]  # join inherited scope
 DT[X, sum(v)*i.v, by=.EACHI, on="x"]  # 'i,v' refers to X's v column
+DT[X, on=.(x, v>=v), sum(y)*foo, by=.EACHI] # NEW non-equi join with by=.EACHI (v1.9.8+)
 
 # setting keys
 kDT = copy(DT)                        # (deep) copy DT to kDT to work with it.
