@@ -9013,6 +9013,15 @@ dt[d == TRUE, `:=`(b = "M")] # create index
 udt <- unique(dt, by = c("a", "b"))
 test(1684, nrow(udt[d == TRUE]), 2)
 
+# #1758, data.table print issue
+foo <- function(annot=c("a", "b")) {
+  dt = data.table(x=annot, y=NA)
+  ro = structure(list(dt=dt), class="dtu")
+  ro$dt[, flag := TRUE]
+  ro
+}
+test(1685, grep("dtu", capture.output(foo())), 7L)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

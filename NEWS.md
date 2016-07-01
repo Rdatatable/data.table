@@ -224,6 +224,8 @@
 
   64. `na.omit` and `unique` methods now removes indices, closes [#1734](https://github.com/Rdatatable/data.table/issues/1734) and [#1760](https://github.com/Rdatatable/data.table/issues/1760). Thanks @m-dz and @fc9.30.
 
+  65. List of data.tables with custom class is printed properly, [#1758](https://github.com/Rdatatable/data.table/issues/1758). Thanks @fruce-ki.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.
@@ -288,7 +290,7 @@
 
   29. Fixed misleading documentation of `?uniqueN`, [#1746](https://github.com/Rdatatable/data.table/issues/1746). Thanks @SymbolixAU.
 
-  30. `melt.data.table` restricts column names printed during warning messages to a maximum of five, [#1752](https://github.com/Rdatatable/data.table/issues/1752).
+  30. `melt.data.table` restricts column names printed during warning messages to a maximum of five, [#1752](https://github.com/Rdatatable/data.table/issues/1752). Thanks @franknarf1.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 

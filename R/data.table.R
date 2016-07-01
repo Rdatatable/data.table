@@ -43,9 +43,10 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
         #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
         SYS <- sys.calls()
         if (length(SYS) <= 2 ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
-            ( length(SYS) > 3L &&
-              as.character(SYS[[length(SYS)-3L]][[1L]]) %chin% mimicsAutoPrint ) )  {
+            ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) && 
+              as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
             return(invisible())
+            # is.symbol() temp fix for #1758.
         }
     }
     if (!is.numeric(nrows)) nrows = 100L
