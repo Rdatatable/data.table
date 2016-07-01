@@ -607,17 +607,20 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # figure out the columns on which to compute groups on
                 non_equi = which.first(ops != 1L) # 1 is "==" operator
                 if (!is.na(non_equi)) { # non-equi conditions present.. investigate groups..
+                    if (verbose) cat("Non-equi join operators detected ...\n")
                     if (!missingroll) stop("roll is not implemented for non-equi joins yet.")
                     # slightly faster for mult="all" case
                     # nqcols = if (mult == "all") rightcols[non_equi:length(rightcols)] else rightcols
                     nqcols = if (mult == "all") rightcols[non_equi:length(rightcols)] else rightcols
                     nqo = forderv(x, nqcols, retGrp=TRUE)
-                    nqgrp = .Call(Cnestedid, x, nqcols, nqo, attr(nqo, 'starts'), mult)
+                    tt = system.time(nqgrp <- .Call(Cnestedid, x, nqcols, nqo, attr(nqo, 'starts'), mult))
+                    if (verbose) cat("Generating non-equi groups took", tt["user.self"] + tt["sys.self"], "sec\n")
                     if ( (nqmaxgrp <- max(nqgrp)) > 1L) { # got some non-equi join work to do
                         if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
                         set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
                         xo = forderv(nqx, c(ncol(nqx), rightcols))
                     } else nqgrp = integer(0)
+                    if (verbose) cat("Found", nqmaxgrp, "non-equi groups...\n")
                 }
                 if (nqmaxgrp == 1L) { # equi join. Reuse secondary index, #1439
                     xo = if (isTRUE(getOption("datatable.use.index"))) {
