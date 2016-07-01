@@ -9017,7 +9017,7 @@ test(1684, nrow(udt[d == TRUE]), 2)
 foo <- function(annot=c("a", "b")) {
   dt = data.table(x=annot, y=NA)
   ro = structure(list(dt=dt), class="dtu")
-  ro$dt[, flag := TRUE]
+  suppressWarnings(ro$dt[, flag := TRUE])
   ro
 }
 test(1685, grep("dtu", capture.output(foo())), 7L)
