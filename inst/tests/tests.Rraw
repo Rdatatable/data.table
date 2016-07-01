@@ -9005,6 +9005,14 @@ dt = data.table(x=c(1,4,7,10), y=c(6,12,18,24), z=4:1)
 test(1683.1, dt[.(c(2,15), c(100,25)), sum(z), on=.(x>=V1, y<=V2), by=.EACHI], data.table(x=c(2,15), y=c(100,25), V1=c(6L, NA)))
 test(1683.2, dt[.(c(2,15), c(100,25)), sum(z), on=.(x>=V1, y<=V2), by=.EACHI, nomatch=0L], data.table(x=2, y=100, V1=6L))
 
+# unique should remove index #1760
+dt <- data.table(a = c("1", "1", "2", "2", "3", "4", "4", "4"), 
+                 b = letters[1:8], 
+                 d = c(TRUE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE))
+dt[d == TRUE, `:=`(b = "M")] # create index
+udt <- unique(dt, by = c("a", "b"))
+test(1684, nrow(udt[d == TRUE]), 2)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

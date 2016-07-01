@@ -222,7 +222,7 @@
 
   63. `foverlaps` now raise a meaningful error for duplicate column names, closes [#1730](https://github.com/Rdatatable/data.table/issues/1730). Thanks @rodonn.
 
-  64. `na.omit` method now removes indices, closes [#1734](https://github.com/Rdatatable/data.table/issues/1734). Thanks @m-dz.
+  64. `na.omit` and `unique` methods now removes indices, closes [#1734](https://github.com/Rdatatable/data.table/issues/1734) and [#1760](https://github.com/Rdatatable/data.table/issues/1760). Thanks @m-dz and @fc9.30.
 
 #### NOTES
 

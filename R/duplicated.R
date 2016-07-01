@@ -28,7 +28,8 @@ duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key
 unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...) {
     if (!cedta()) return(NextMethod("unique"))
     dups <- duplicated.data.table(x, incomparables, fromLast, by, ...)
-    .Call(CsubsetDT, x, which_(dups, FALSE), seq_len(ncol(x))) # more memory efficient version of which(!dups)
+    ans <- .Call(CsubsetDT, x, which_(dups, FALSE), seq_len(ncol(x))) # more memory efficient version of which(!dups)
+    if (nrow(x) != nrow(ans)) setindexv(ans, NULL)[] else ans #1760
     # i.e. x[!dups] but avoids [.data.table overhead when unique() is loop'd
     # TO DO: allow logical to be passed through to C level, and allow cols=NULL to mean all, for further speed gain.
     #        See news for v1.9.3 for link to benchmark use-case on datatable-help.
