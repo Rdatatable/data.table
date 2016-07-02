@@ -39,6 +39,7 @@ export(funion)
 export(fsetequal)
 S3method(all.equal, data.table)
 export(shouldPrint)
+export(fsort)  # experimental parallel sort for vector type double only, currently
 
 S3method("[", data.table)
 S3method("[<-", data.table)

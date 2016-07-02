@@ -2,7 +2,11 @@
 #define USE_RINTERNALS
 #include <Rinternals.h>
 #include <Rversion.h>
-// #include <omp.h>
+#ifdef _OPENMP
+  #include <omp.h>
+#else
+  #define omp_get_num_threads() 1 // so it still compiles on machines with compilers void of openmp support
+#endif
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 

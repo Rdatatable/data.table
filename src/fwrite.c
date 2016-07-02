@@ -1,15 +1,8 @@
 #include "data.table.h"
-#include <R.h>
 #include <errno.h>
-#include <Rinternals.h>
 #include <unistd.h>  // for access()
 #include <fcntl.h>
 #include <time.h>
-#ifdef _OPENMP
-  #include <omp.h>
-#else
-  #define omp_get_num_threads() 1 // so it still compiles on machines with compilers void of openmp support
-#endif
 #ifdef WIN32
 #include <sys/types.h>
 #include <sys/stat.h>

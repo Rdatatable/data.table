@@ -523,7 +523,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 ans = bmerge(i, x, leftcols, rightcols, io<-FALSE, xo, roll=0.0, rollends=c(FALSE,FALSE), nomatch=0L, mult="all", 1L, nqgrp, nqmaxgrp, verbose=verbose)
                 # No need to shallow copy i before passing to bmerge; we just created i above ourselves
                 i = if (ans$allLen1 && !identical(suppressWarnings(min(ans$starts)), 0L)) ans$starts else vecseq(ans$starts, ans$lens, NULL)
-                if (length(xo)) i = fsort(xo[i]) else i = fsort(i) # fix for #1495
+                if (length(xo)) i = fsort(xo[i], internal=TRUE) else i = fsort(i, internal=TRUE) # fix for #1495
                 leftcols = rightcols = NULL  # these are used later to know whether a join was done, affects column order of result. So reset.
             }
         } else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
@@ -682,7 +682,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # If using secondary key of x, f__ will refer to xo
             if (is.na(which)) {
                 w = if (notjoin) f__!=0L else is.na(f__)
-                return( if (length(xo)) fsort(xo[w]) else which(w) )
+                return( if (length(xo)) fsort(xo[w], internal=TRUE) else which(w) )
             }
             if (mult=="all") {
                 # is by=.EACHI along with non-equi join?
