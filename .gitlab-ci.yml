@@ -58,19 +58,19 @@ test-r-devel:
     paths:
       - public
 
-test-r-2.15.0:
+test-r-3.0.0:
   stage: test
-  image: docker.io/jangorecki/r-2.15.0
+  image: docker.io/jangorecki/r-3.0.0
   script:
     # build package
-    - R2 CMD build .
+    - R3 CMD build .
     # run check
     - export _R_CHECK_CRAN_INCOMING_=FALSE
     - export _R_CHECK_FORCE_SUGGESTS_=FALSE
-    - R2 CMD check $(ls -1t *.tar.gz | head -n 1) --no-manual --as-cran
+    - R3 CMD check $(ls -1t *.tar.gz | head -n 1) --no-manual --as-cran
     # produce artifacts
-    - R2script -e 'install.packages("drat", repos="https://jangorecki.gitlab.io/drat", method="curl")'
-    - R2script -e 'drat::insertArtifacts(repodir="public/r-2.15.0", repo.url="'"$USERNS"'/data.table/r-2.15.0", log.files=c("tests/tests.Rout"))'
+    - R3script -e 'install.packages("drat", repos="https://jangorecki.gitlab.io/drat", method="curl")'
+    - R3script -e 'drat::insertArtifacts(repodir="public/r-3.0.0", repo.url="'"$USERNS"'/data.table/r-3.0.0", log.files=c("tests/tests.Rout"))'
   artifacts:
     paths:
       - public
