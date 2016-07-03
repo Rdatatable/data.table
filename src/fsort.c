@@ -9,24 +9,23 @@ SEXP fsort(SEXP x) {
   Rboolean verbose = TRUE;
   if (!isNumeric(x)) error("x must be a vector of type 'double' currently");
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
+  #ifndef _OPENMP
+  Rprintf("Your platform/environment has not detected OpenMP support. fsort() will still work, but slower in single threaded mode.\n");
+  // Rprintf rather than warning() because warning() would cause test.data.table() to error about the unexpected warnings
+  #endif
   
   int nBatch=128;
   // At least as many cores.
   // A few times more to reduce last-man-home time.
   // Not too many though, otherwise counts too big for cache
   
-  if (length(x) < nBatch) error("Length of input must be at least %d, currently.", nBatch);
-  long batchSize = (length(x)-1)/nBatch + 1;
-  nBatch = (length(x)-1)/batchSize + 1;
-  long lastBatchSize = length(x) - (nBatch-1)*batchSize;  // could be that lastBatchSize == batchSize
+  if (xlength(x) < nBatch) error("Length of input must be at least %d, currently.", nBatch);
+  long batchSize = (xlength(x)-1)/nBatch + 1;
+  nBatch = (xlength(x)-1)/batchSize + 1;
+  long lastBatchSize = xlength(x) - (nBatch-1)*batchSize;  // could be that lastBatchSize == batchSize
   
-  SEXP ansVec = PROTECT(allocVector(REALSXP, length(x)));
+  SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));  // much cheaper than a copy followed by in-place  TODO: document
   double *ans = (double *)DATAPTR(ansVec);
-  
-  #ifndef _OPENMP
-  Rprintf("Your platform/environment has not detected OpenMP support. fsort() will still work, but slower in single threaded mode.\n");
-  // Rprintf rather than warning() because warning() would cause test.data.table() to error about the unexpected warnings
-  #endif
   
   double mins[nBatch], maxs[nBatch];
   #pragma omp parallel for
@@ -124,6 +123,10 @@ SEXP fsort(SEXP x) {
     if (from < to) R_qsort(ans, from, to);  // 1-based from and to
   }
   // TODO: omp_set_nested(1) to handle skew
+  
+  // TODO: parallel sweep to check sorted using <= on original input. Feasible that twiddling messed up.
+  //       After a few years of heavy use remove this check for speed, and move into unit tests.
+  //       It's a perfectly contiguous and cache efficient parallel scan so should be relatively negligible.
   
   UNPROTECT(1);
   return(ansVec);
