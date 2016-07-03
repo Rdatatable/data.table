@@ -28,7 +28,7 @@ after_failure:
 
 after_success:
   - ./travis-tool.sh install_github jimhester/covr
-  - Rscript -e 'library(covr);codecov()'
+  - travis_wait Rscript -e 'library(covr);codecov()'
   - ./travis-tool.sh install_github eddelbuettel/drat
   - test $TRAVIS_REPO_SLUG == "Rdatatable/data.table" && test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && bash deploy.sh
 
