@@ -1,40 +1,146 @@
 #include "data.table.h"
 
+#define INSERT_THRESH 200  // TODO: expose via api and test
+
+static void dinsert(double *x, int n) {   // TODO: if and when twiddled, double => ull
+  if (n<2) return;
+  for (int i=1; i<n; i++) {
+    double xtmp = x[i];
+    int j = i-1;
+    if (xtmp<x[j]) {
+      x[j+1] = x[j];
+      j--;
+      while (j>=0 && xtmp<x[j]) { x[j+1] = x[j]; j--; }
+      x[j+1] = xtmp;
+    }
+  }
+}
+
 static union {
   double d;
   unsigned long long ull;
 } u;
+static unsigned long long minULL;
+
+static void dradix_r(  // single-threaded recursive worker
+  double *in,          // n doubles to be sorted
+  double *working,     // working memory to put the sorted items before copying over *in; must not overlap *in
+  R_xlen_t n,          // number of items to sort.  *in and *working must be at least n long
+  int fromBit,         // After twiddle to ordered ull, the bits [fromBit,toBit] are used to count  
+  int toBit,           //   fromBit<toBit; bit 0 is the least significant; fromBit is right shift amount too
+  R_xlen_t *counts     // already zero'd counts vector, 2^(toBit-fromBit+1) long. A stack of these is reused.
+) {
+  unsigned long long width = 1ULL<<(toBit-fromBit+1);
+  unsigned long long mask = width-1;
+  
+  const double *tmp=in;
+  for (R_xlen_t i=0; i<n; i++) {
+    counts[(*(unsigned long long *)tmp - minULL) >> fromBit & mask]++;
+    tmp++;
+  }
+  int last = (*(unsigned long long *)--tmp - minULL) >> fromBit & mask;
+  if (counts[last] == n) {
+    // Single value for these bits here. All counted in one bucket which must be the bucket for the last item.
+    counts[last] = 0;  // clear ready for reuse. All other counts must be zero already so save time by not setting to 0. 
+    if (fromBit > 0)   // move on to next bits (if any remain) to resolve 
+      dradix_r(in, working, n, fromBit<8 ? 0 : fromBit-8, toBit-8, counts+256);
+    return;
+  }
+
+  R_xlen_t cumSum=0;
+  for (R_xlen_t i=0; cumSum<n; i++) { // cumSum<n better than i<width as may return early
+    unsigned long long tmp;
+    if ((tmp=counts[i])) {  // don't cumulate through 0s, important below to save a wasteful memset to zero
+      counts[i] = cumSum;
+      cumSum += tmp;
+    }
+  } // leaves cumSum==n && 0<i && i<=width
+  
+  tmp=in;
+  for (R_xlen_t i=0; i<n; i++) {  // go forwards not backwards to give cpu pipeline better chance
+    int thisx = (*(unsigned long long *)tmp - minULL) >> fromBit & mask;
+    working[ counts[thisx]++ ] = *tmp;
+    tmp++;
+  }
+  
+  memcpy(in, working, n*sizeof(double));
+  
+  if (fromBit==0) {
+    // nothing left to do other than reset the counts to 0, ready for next recursion
+    // the final bucket must contain n and it might be close to the start. After that must be all 0 so no need to reset.
+    // Also this way, we don't need to know how big thisCounts is and therefore no possibility of getting that wrong.
+    // wasteful thisCounts[i]=0 even when already 0 is better than a branch. We are highly recursive at this point
+    // so avoiding memset() is known to be worth it.
+    for (int i=0; counts[i]<n; i++) counts[i]=0;
+    return;
+  }
+  
+  cumSum=0;
+  for (int i=0; cumSum<n; i++) {   // again, cumSum<n better than i<width as it can return early
+    if (counts[i] == 0) continue;
+    R_xlen_t thisN = counts[i] - cumSum;  // undo cummulate; i.e. diff
+    if (thisN <= INSERT_THRESH) {
+      dinsert(in+cumSum, thisN);  // for thisN==1 this'll return instantly. Probably better than several branches here.
+    } else {
+      dradix_r(in+cumSum, working, thisN, fromBit<=8 ? 0 : fromBit-8, toBit-8, counts+256);
+    }  
+    cumSum = counts[i];
+    counts[i] = 0; // reset to 0 to save wasteful memset afterwards
+  }
+}
+
+R_xlen_t *qsort_data;
+// would have liked to define cmp inside fsort where qsort is called but wasn't sure that's portable
+int qsort_cmp(const void *a, const void *b) {
+  // return >0 if the element a goes after the element b
+  // doesn't master if stable or not
+  R_xlen_t x = qsort_data[*(int *)a];
+  R_xlen_t y = qsort_data[*(int *)b];
+  // return x-y;  would like this, but this is long and the cast to int return may not preserve sign
+  // We have long vectors in mind (1e10(74GB), 1e11(740GB)) where extreme skew may feasibly mean the largest count
+  // is greater than 2^32. The first split is (currently) 16 bits so should be very rare but to be safe keep 64bit counts.    
+  return (x<y)-(x>y);   // largest first in a safe branchless way casting long to int
+}
 
 SEXP fsort(SEXP x) {
   Rboolean verbose = TRUE;
   if (!isNumeric(x)) error("x must be a vector of type 'double' currently");
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
   #ifndef _OPENMP
-  Rprintf("Your platform/environment has not detected OpenMP support. fsort() will still work, but slower in single threaded mode.\n");
+  Rprintf("Your platform/environment has not detected OpenMP support."
+          "fsort() will still work, but slower in single threaded mode.\n");
   // Rprintf rather than warning() because warning() would cause test.data.table() to error about the unexpected warnings
   #endif
   
-  int nBatch=128;
-  // At least as many cores.
-  // A few times more to reduce last-man-home time.
-  // Not too many though, otherwise counts too big for cache
+  SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));
+  double *ans = REAL(ansVec);
+  // allocate early in case fails if not enough RAM
+  // TODO: document this is much cheaper than a copy followed by in-place.
   
-  if (xlength(x) < nBatch) error("Length of input must be at least %d, currently.", nBatch);
-  long batchSize = (xlength(x)-1)/nBatch + 1;
+  int nth;
+  #pragma omp parallel
+  {
+    nth = omp_get_num_threads();  // each thread overwrites the same value to nth, ok
+  }
+  int nBatch=nth*2;  // at least nth; more to reduce last-man-home; but not too large to keep counts small in cache
+  if (verbose) Rprintf("nth=%d, nBatch=%d\n",nth,nBatch);
+  
+  R_xlen_t batchSize = (xlength(x)-1)/nBatch + 1;
+  if (batchSize < 1024) batchSize = 1024; // simple attempt to work reasonably for short vector. 1024*8 = 2 4kb pages
   nBatch = (xlength(x)-1)/batchSize + 1;
-  long lastBatchSize = xlength(x) - (nBatch-1)*batchSize;  // could be that lastBatchSize == batchSize
-  
-  SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));  // much cheaper than a copy followed by in-place  TODO: document
-  double *ans = (double *)DATAPTR(ansVec);
+  R_xlen_t lastBatchSize = xlength(x) - (nBatch-1)*batchSize;
+  // could be that lastBatchSize == batchSize when i) xlength(x) is multiple of nBatch
+  // and ii) for small vectors with just one batch 
   
   double mins[nBatch], maxs[nBatch];
-  #pragma omp parallel for
+  #pragma omp parallel for schedule(dynamic)
   for (int batch=0; batch<nBatch; batch++) {
-    long thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
+    R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     double *d = &REAL(x)[batchSize * batch];
     double myMin=*d, myMax=*d;
     d++;
-    for (long j=1; j<thisLen; j++) {
+    for (R_xlen_t j=1; j<thisLen; j++) {
+      // TODO: test for sortedness here as well.
       if (*d<myMin) myMin=*d;
       else if (*d>myMax) myMax=*d;
       d++;
@@ -44,85 +150,152 @@ SEXP fsort(SEXP x) {
   }
   double min=mins[0], max=maxs[0];
   for (int i=1; i<nBatch; i++) {
+    // TODO: if boundaries are sorted then we only need sort the unsorted batches known above
     if (mins[i]<min) min=mins[i];
     if (maxs[i]>max) max=maxs[i];
   }
-  Rprintf("Range = [%g,%g]\n", min, max);
-  if (min < 0.0) error("Cannot yet handle negatives.");   // TODO:  -0ULL should allow negatives
+  if (verbose) Rprintf("Range = [%g,%g]\n", min, max);
+  if (min < 0.0) error("Cannot yet handle negatives.");
+  // TODO: -0ULL should allow negatives
+  //       avoid twiddle function call as expensive in recent tests (0.34 vs 2.7)
+  //       possibly twiddle once to *ans, then untwiddle at the end in a fast parallel sweep
   u.d = max;
   unsigned long long maxULL = u.ull;
   u.d = min;
-  unsigned long long minULL = u.ull;
+  minULL = u.ull;  // set static global for use by dradix_r
   
-  int maxBit = 1 + floor(log(maxULL-minULL) / log(2));
-  int shift = maxBit > 8 ? maxBit-8 : 0;
+  int maxBit = floor(log(maxULL-minULL) / log(2));  // 0 is the least significant bit
+  int MSBNbits = maxBit > 15 ? 16 : maxBit+1;       // how many bits make up the MSB
+  int shift = maxBit + 1 - MSBNbits;                // the right shift to leave the MSB bits remaining
+  int MSBsize = 1<<MSBNbits;                        // the number of possible MSB values (16 bits => 65,536)
+  if (verbose) Rprintf("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n", maxBit, MSBNbits, shift, MSBsize);
   
-  Rprintf("maxBit=%d; shift=%d\n", maxBit, shift);
+  R_xlen_t *counts = calloc(nBatch*MSBsize, sizeof(R_xlen_t));
+  // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
+  // TODO: change all calloc, malloc and free to Calloc and Free to be robust to error() and catch ooms. 
   
-  long counts[nBatch][256];  // each N has 4 * 4K pages (so no page invalidation due to overlap) ... 8*8*256 = 16K
-  memset(counts, 0, sizeof(counts));
+  if (verbose) Rprintf("counts is %dMB (%d pages per nBatch=%d, batchSize=%lld, lastBatchSize=%lld)\n",
+                       nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024), nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch),
+                       nBatch, batchSize, lastBatchSize);
   
-  if (verbose) Rprintf("counts is %dMB (%d pages per nBatch=%d, batchSize=%lld)\n", sizeof(counts)/(1024*1024), sizeof(counts)/(4*1024*nBatch), nBatch, batchSize);
-  
-  // TODO Test skipping batch numbers by 2 to avoid page invalidation on counts
-  // TODO Report time of each part when verbose
-  // TODO: could also find range in this single sweep. And if already sorted.
-  // NB: twiddle expensive iteratively here (0.34 vs 2.7).
-  // unsigned long long d = dtwiddle(x, off+j, /*order*/1);
-  // TODO: undo twiddle from radix order as well
-  // NB: no need for radix skipping now
-      
   #pragma omp parallel for
   for (int batch=0; batch<nBatch; batch++) {
-    long thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
+    R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     double *tmp = &REAL(x)[batchSize * batch];
-    for (long j=0; j<thisLen; j++) {
-      counts[batch][(*(unsigned long long *)tmp - minULL) >> shift]++;
+    R_xlen_t *thisCounts = counts + batch*MSBsize;
+    for (R_xlen_t j=0; j<thisLen; j++) {
+      thisCounts[(*(unsigned long long *)tmp - minULL) >> shift]++;
       tmp++;
     }
   }
   
-  // now decide strategy.  e.g. if range is 0, or already sorted then return early.
-  // If sorted already by chunk, just sort within the unsorted chunks.
-  
-  // i) cumulate columnwise across batches for the msb
-  // ii) total the byte counts as we'll descend into those groups later
-  long byteCounts[256] = {0};
-  long rollSum=0;
-  for (int byte=0; byte<256; byte++) {
+  // cumulate columnwise; parallel histogram; small so no need to parallelize
+  R_xlen_t rollSum=0;
+  for (int msb=0; msb<MSBsize; msb++) {
+    int j = msb;
     for (int batch=0; batch<nBatch; batch++) {
-      long tmp = counts[batch][byte];
-      byteCounts[byte] += tmp;
-      counts[batch][byte] = rollSum;
+      R_xlen_t tmp = counts[j];
+      counts[j] = rollSum;
       rollSum += tmp;
+      j += MSBsize;  // deliberately non-contiguous here
     }
-  }
+  }  // leaves msb cumSum in the last batch i.e. last row of the matrix
   
   #pragma omp parallel for
   for (int batch=0; batch<nBatch; batch++) {
-    long thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
+    R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     double *source = &REAL(x)[batchSize * batch];
-    for (long j=0; j<thisLen; j++) {
-      ans[ counts[batch][(*(unsigned long long *)source - minULL) >> shift]++ ] = *source;
-      // This assignment to ans is not random access, but cache efficient by design
-      // TODO: move counts[batch] outside j loop
+    R_xlen_t *thisCounts = counts + batch*MSBsize;
+    for (R_xlen_t j=0; j<thisLen; j++) {
+      ans[ thisCounts[(*(unsigned long long *)source - minULL) >> shift]++ ] = *source;
+      // This assignment to ans is not random access as it may seem, but cache efficient by
+      // design since target pages are written to contiguously. MSBsize * 4k < cache.
+      // TODO: therefore 16 bit MSB seems too big for this step. Time this step and reduce 16 a lot.
+      //       20MB cache / nth / 4k => MSBsize=160
       source++;
     }
-  }  
+  }
   // Done with batches now. Will not use batch dimension again.
   
-  // Cummulate byteCounts
-  for (int byte=1; byte<256; byte++)
-    byteCounts[byte] += byteCounts[byte-1];
+  // TODO: add a timing point up to here
   
-  // DONE: schedule(dynamic) makes a big difference here
-  #pragma omp parallel for schedule(dynamic)   
-  for (int byte=0; byte<256; byte++) {
-    long from= (byte>0) ? (byteCounts[byte-1]+1) : 1;
-    long to = byteCounts[byte];
-    if (from < to) R_qsort(ans, from, to);  // 1-based from and to
+  if (shift > 0) { // otherwise, no more bits left to resolve ties and we're done  
+    int toBit = shift-1;
+    int fromBit = toBit>7 ? toBit-7 : 0;
+
+    // sort bins by size, largest first to minimise last-man-home
+    R_xlen_t *msbCounts = counts + (nBatch-1)*MSBsize;
+    // msbCounts currently contains the ending position of each MSB (the starting location of the next) even across empty
+    if (msbCounts[MSBsize-1] != xlength(x)) error("Internal error: counts[nBatch-1][MSBsize-1] != length(x)");
+    R_xlen_t *msbFrom = malloc(MSBsize*sizeof(R_xlen_t));
+    int *order = malloc(MSBsize*sizeof(int));
+    R_xlen_t cumSum = 0;
+    for (int i=0; i<MSBsize; i++) {
+      msbFrom[i] = cumSum;
+      msbCounts[i] = msbCounts[i] - cumSum;
+      cumSum += msbCounts[i];
+      order[i] = i;
+    }
+    qsort_data = msbCounts;
+    qsort(order, MSBsize, sizeof(int), qsort_cmp);  // find order of the sizes, largest first
+    // Would have liked to define qsort_cmp() inside this function right here, but not sure that's fully portable.
+    // TODO: time this qsort but likely insignificant.
+    
+    if (verbose) {
+      Rprintf("Top 5 MSB counts: "); for(int i=0; i<5; i++) Rprintf("%lld ", msbCounts[order[i]]); Rprintf("\n");
+      Rprintf("Reduced MSBsize from %d to ", MSBsize);
+    }
+    while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
+    if (verbose) {
+      Rprintf("%d by excluding 0 and 1 counts\n", MSBsize);
+    }
+    
+    #pragma omp parallel
+    {
+      R_xlen_t *counts = calloc((toBit/8 + 1)*256, sizeof(R_xlen_t));
+      // each thread has its own (small) stack of counts
+      // don't use VLAs here: perhaps too big for stack yes but more that VLAs apparently fail with schedule(dynamic)
+      
+      double *working=NULL;
+      // the working memory (for the largest groups) is allocated the first time the thread is assigned to
+      // an iteration.
+     
+      #pragma omp for schedule(dynamic,1)    
+      // All we assume here is that a thread can never be assigned to an earlier iteration; i.e. threads 0:(nth-1)
+      // get iterations 0:(nth-1) possibly out of order, then first-come-first-served in order after that.
+      // If a thread deals with an msb lower than the first one it dealt with, then its *working will be too small.
+      for (int msb=0; msb<MSBsize; msb++) {
+      
+        R_xlen_t from= msbFrom[order[msb]];
+        R_xlen_t thisN = msbCounts[order[msb]];
+        
+        if (working==NULL) working = malloc(thisN * sizeof(double)); // TODO: check succeeded otherwise exit gracefully 
+        // Depends on msbCounts being sorted largest first before this parallel loop
+        // Could be significant RAM saving if the largest msb is
+        // a lot larger than the 2nd largest msb, especially as nth grows to perhaps 128 on X1.
+        // However, the initial split is so large (16bits => 65,536) that the largest MSB should be
+        // relatively small anyway (n/65,536 if uniformly distributed).
+        // For msb>=nth, that thread's *working will already be big
+        // enough because the smallest *working (for thread nth-1) is big enough for all iterations following.
+        // Progressively, less and less of the working will be needed by the thread (just the first thisN will be
+        // used) and the unused pages will simply not be cached.
+        // TODO: Calloc isn't thread-safe. But this deep malloc should be ok here as no possible error() points
+        //       before free. Just need to add the check and exit thread safely somehow.
+
+        if (thisN <= INSERT_THRESH) {
+          dinsert(ans+from, thisN);
+        } else {
+          dradix_r(ans+from, working, thisN, fromBit, toBit, counts);
+        }
+      }
+      free(counts);
+      free(working);
+    }
+    free(msbFrom);
+    free(order);
   }
-  // TODO: omp_set_nested(1) to handle skew
+  
+  free(counts);
   
   // TODO: parallel sweep to check sorted using <= on original input. Feasible that twiddling messed up.
   //       After a few years of heavy use remove this check for speed, and move into unit tests.
