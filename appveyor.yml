@@ -10,12 +10,8 @@ init:
 install:
   ps: Bootstrap
 
-# Adapt as necessary starting from here
-
 build_script:
-  - travis-tool.sh bioc_install IRanges
-  - travis-tool.sh bioc_install GenomicRanges
-  - travis-tool.sh install_deps
+  - set _R_CHECK_FORCE_SUGGESTS_=false
 
 test_script:
   - travis-tool.sh run_tests
