@@ -607,23 +607,38 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     stop("Column(s) [", paste(unname(on)[nacols], collapse=","), "] not found in i")
                 # figure out the columns on which to compute groups on
                 non_equi = which.first(ops != 1L) # 1 is "==" operator
-                if (!is.na(non_equi)) { # non-equi conditions present.. investigate groups..
-                    if (verbose) cat("Non-equi join operators detected ...\n")
+                if (!is.na(non_equi)) {
+                    # non-equi operators present.. investigate groups..
+                    if (verbose) cat("Non-equi join operators detected ... \n")
                     if (!missingroll) stop("roll is not implemented for non-equi joins yet.")
-                    # slightly faster for mult="all" case
-                    # nqcols = if (mult == "all") rightcols[non_equi:length(rightcols)] else rightcols
-                    nqcols = if (mult == "all") rightcols[non_equi:length(rightcols)] else rightcols
-                    nqo = forderv(x, nqcols, retGrp=TRUE)
-                    tt = system.time(nqgrp <- .Call(Cnestedid, x, nqcols, nqo, attr(nqo, 'starts'), mult))
-                    if (verbose) cat("Generating non-equi groups took", tt["user.self"] + tt["sys.self"], "sec\n")
+                    if (verbose) {last.started.at=proc.time()[3];cat("  forder took ... ");flush.console()}
+                    # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
+                    xo = forderv(x, rightcols, retGrp=TRUE)
+                    if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+                    xg = attr(xo, 'starts')
+                    resetcols = head(rightcols, non_equi-1L)
+                    if (length(resetcols)) {
+                        # TODO: can we get around having to reorder twice here?
+                        # or at least reuse previous order?
+                        if (verbose) {last.started.at=proc.time()[3];cat("  Generating group lengths ... ");flush.console()}
+                        resetlen = attr(forderv(x, resetcols, retGrp=TRUE), 'starts')
+                        resetlen = .Call(Cuniqlengths, resetlen, nrow(x))
+                        if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+                    } else resetlen = integer(0)
+                    if (verbose) {last.started.at=proc.time()[3];cat("  Generating non-equi group ids ... ");flush.console()}
+                    nqgrp = .Call(Cnestedid, x, rightcols[non_equi:length(rightcols)], xo, xg, resetlen, mult)
+                    if (verbose) {cat("done in", round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
                     if ( (nqmaxgrp <- max(nqgrp)) > 1L) { # got some non-equi join work to do
                         if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
+                        if (verbose) {last.started.at=proc.time()[3];cat("  Recomputing forder with non-equi ids ... ");flush.console()}
                         set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
                         xo = forderv(nqx, c(ncol(nqx), rightcols))
+                        if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
                     } else nqgrp = integer(0)
-                    if (verbose) cat("Found", nqmaxgrp, "non-equi groups...\n")
+                    if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
                 }
-                if (nqmaxgrp == 1L) { # equi join. Reuse secondary index, #1439
+                if (is.na(non_equi)) {
+                    # equi join. try and reuse secondary index, #1439
                     xo = if (isTRUE(getOption("datatable.use.index"))) {
                         if (verbose) cat("Looking for existing (secondary) index... ")
                         attr(attr(x, 'index'), paste("__", names(x)[rightcols], sep="", collapse=""))
@@ -631,8 +646,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     if (is.null(xo)) {
                         if (verbose) {
                             if (isTRUE(getOption("datatable.use.index"))) cat("not found.\n")
-                            tt = system.time(xo <- forderv(x, by=rightcols))
-                            cat("forder took", tt["user.self"] + tt["sys.self"], "sec\n")
+                            last.started.at=proc.time()[3];cat("forder took... \n");flush.console()
+                            xo = forderv(x, by=rightcols)
+                            cat("",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console
                         } else xo = forderv(x, by = rightcols)
                     } else {
                         if (verbose) cat("found. Reusing index.\n")

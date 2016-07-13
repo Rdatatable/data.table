@@ -137,22 +137,23 @@ SEXP rleid(SEXP l, SEXP order) {
     return(ans);
 }
 
-SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP multArg) {
+SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP multArg) {
     Rboolean b, byorder = length(order);
     SEXP v, ans, class;
     R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
     R_len_t i, j, k, thisi, previ, ansgrpsize=1000, nansgrp=0;
-    R_len_t *ptr, *ansgrp = Calloc(ansgrpsize, R_len_t), tmp, idx, grplen;
+    R_len_t *ptr, *ansgrp = Calloc(ansgrpsize, R_len_t), tmp, starts, grplen;
     R_len_t ngrps = length(grps), *i64 = Calloc(ncols, R_len_t);
+    R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
+    if (!isInteger(cols) || ncols == 0)
+        error("cols must be an integer vector of positive length");
     // mult arg
     enum {ALL, FIRST, LAST} mult = ALL;
     if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
     else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
     else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
     else error("Internal error: invalid value for 'mult'. Please report to datatable-help");
-
-    if (!isInteger(cols) || ncols == 0)
-        error("cols must be an integer vector of positive length");
+    // integer64
     for (j=0; j<ncols; j++) {
         class = getAttrib(VECTOR_ELT(l, INTEGER(cols)[j]-1), R_ClassSymbol);
         i64[j] = isString(class) && STRING_ELT(class, 0) == char_integer64;
@@ -160,8 +161,8 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP multArg) {
     ans  = PROTECT(allocVector(INTSXP, nrows));
     int *ians = INTEGER(ans), *igrps = INTEGER(grps);
     grplen = (ngrps == 1) ? nrows : igrps[1]-igrps[0];
-    idx = igrps[0]-1 + (mult != LAST ? 0 : grplen-1);
-    ansgrp[0] = byorder ? INTEGER(order)[idx]-1 : idx;
+    starts = igrps[0]-1 + (mult != LAST ? 0 : grplen-1);
+    ansgrp[0] = byorder ? INTEGER(order)[starts]-1 : starts;
     for (j=0; j<grplen; j++) {
         ians[byorder ? INTEGER(order)[igrps[0]-1+j]-1 : igrps[0]-1+j] = 1;
     }
@@ -173,8 +174,8 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP multArg) {
         // could result in more groups.. so done only for first/last cases 
         // as it allows to extract indices directly in bmerge.
         grplen = (i+1 < ngrps) ? igrps[i+1]-igrps[i] : nrows-igrps[i]+1;
-        idx = igrps[i]-1 + (mult != LAST ? 0 : grplen-1);
-        thisi = byorder ? INTEGER(order)[idx]-1 : idx;
+        starts = igrps[i]-1 + (mult != LAST ? 0 : grplen-1);
+        thisi = byorder ? INTEGER(order)[starts]-1 : starts;
         for (k=0; k<nansgrp; k++) {
             j = ncols;
             previ = ansgrp[k];
@@ -202,7 +203,15 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP multArg) {
             }
             if (b) break;
         }
-        tmp = b ? k : nansgrp++;
+        // TODO: move this as the outer for-loop and parallelise..
+        // but preferably wait to see if problems with that big non-equi 
+        // group sizes do occur that commonly before to invest time here.
+        if (rlen != starts) {
+            tmp = b ? k : nansgrp++;
+        } else { // we're wrapping up this group, reset nansgrp
+            tmp = 0; nansgrp = 1;
+            rlen += INTEGER(resetvals)[++resetctr];
+        }
         if (nansgrp >= ansgrpsize) {
             ansgrpsize = 1.1*ansgrpsize*nrows/i;
             ptr = Realloc(ansgrp, ansgrpsize, int);
