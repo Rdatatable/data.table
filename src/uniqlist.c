@@ -254,3 +254,22 @@ SEXP nqnewindices(SEXP xo, SEXP len, SEXP indices, SEXP nArg) {
     UNPROTECT(1);
     return (ans);
 }
+
+SEXP inrange(SEXP ansArg, SEXP xoArg, SEXP startsArg, SEXP lenArg) {
+
+    int *ans = INTEGER(ansArg), *xo = INTEGER(xoArg);
+    int *starts = INTEGER(startsArg), *len = INTEGER(lenArg);
+    R_len_t n = length(startsArg), nxo = length(xoArg); 
+    R_len_t i = 0,j, ss,ee,old_ss = -1,old_ee = -1;
+    do {
+        ss = starts[i]-1;
+        while(i < n && ss == starts[i]-1) i++;
+        ee = ss + len[i-1]-1;
+        ss = old_ee <= ss ? ss : old_ee+1;
+        if (ee >= ss) {
+            for (j=ss; j<=ee; j++) ans[nxo ? xo[j]-1 : j] = 1;
+            old_ss = ss; old_ee = ee;
+        }
+    } while (i < n);
+    return (R_NilValue);
+}

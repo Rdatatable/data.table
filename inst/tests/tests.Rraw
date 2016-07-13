@@ -8743,12 +8743,12 @@ local({
   fwrite_expect_error(1658.24, function(f) {fwrite(data.table(a=1)[NULL,], f)})
 })
 
-# tests for #679, anywhere()
+# tests for #679, inrange()
 dt = data.table(a=c(8,3,10,7,-10), val=runif(5))
 range = data.table(start = 1:5, end = 6:10)
-test(1659.1, dt[a %anywhere% range], dt[1:4])
-test(1659.2, dt[anywhere(a, range$start, range$end)], dt[1:4])
-test(1659.3, dt[anywhere(a, range$start, range$end, incbounds=FALSE)], dt[c(1,2,4)])
+test(1659.1, dt[a %inrange% range], dt[1:4])
+test(1659.2, dt[inrange(a, range$start, range$end)], dt[1:4])
+test(1659.3, dt[inrange(a, range$start, range$end, incbounds=FALSE)], dt[c(1,2,4)])
 
 # tests for non-equi joins returning columns correctly when j is missing
 dt1 = fread('Chr    Start    End    Region

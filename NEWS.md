@@ -73,7 +73,7 @@
 
   34. `%between%` is vectorised which means we can now do: `DT[x %between% list(y,z)]` which is equivalent to `DT[x >= y & x <= z]`, [#534](https://github.com/Rdatatable/data.table/issues/534). Thanks @MicheleCarriero for filing the issue and the idea.
 
-  35. New functions `anywhere()` and `%anywhere%` are exported. `between()` answers the question: *"Is x[i] present in between `lower[i]` and `upper[i]`?"*. `anywhere()` on the other hand answers the question: *"Is x[i] present in any of the intervals specified by `lower, upper`?"*. This makes use of the recently implemented `non-equi` join to provide a convenient function to perform a *range join* [#679](https://github.com/Rdatatable/data.table/issues/679).
+  35. New functions `inrange()` and `%inrange%` are exported. It performs a range join making use of the recently implemented `non-equi` joins ([#1452](https://github.com/Rdatatable/data.table/issues/1452)) [#679](https://github.com/Rdatatable/data.table/issues/679).
 
   36. `rbindlist` supports columns of type `complex`, [#1659](https://github.com/Rdatatable/data.table/issues/1659).
 

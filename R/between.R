@@ -9,12 +9,16 @@ between <- function(x,lower,upper,incbounds=TRUE) {
 # If we want non inclusive bounds with %between%, just +1 to the left, and -1 to the right (assuming integers)
 
 # is x[i] found anywhere within [lower, upper] range?
-anywhere <- function(x,lower,upper,incbounds=TRUE) {
-    query = setDT(list(x=x, ans=rep(FALSE, length(x))))
+inrange <- function(x,lower,upper,incbounds=TRUE) {
+    query = setDT(list(x=x))
     subject = setDT(list(l=lower, u=upper))
-    on = if (incbounds) c("x>=l", "x<=u") else c("x>l", "x<u")
-    query[subject, "ans" := TRUE, on=on]
-    query$ans
+    ops = if (incbounds) c(4L, 2L) else c(5L, 3L) # >=,<= and >,<
+    ans = bmerge(shallow(subject), query, 1:2, c(1L,1L), FALSE, xo <- forderv(query), 
+            0, c(FALSE, TRUE), 0L, "all", ops, integer(0), 
+            1L, FALSE)
+    setDT(ans[c("starts", "lens")], key=c("starts", "lens"))
+    .Call(Cinrange, idx <- rep(FALSE, length(x)), xo, ans[["starts"]], ans[["lens"]])
+    idx
 }
 
-"%anywhere%" <- function(x,y) anywhere(x,y[[1L]],y[[2L]],incbounds=TRUE)
+"%inrange%" <- function(x,y) inrange(x,y[[1L]],y[[2L]],incbounds=TRUE)
