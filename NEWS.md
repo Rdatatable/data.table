@@ -226,6 +226,8 @@
 
   65. List of data.tables with custom class is printed properly, [#1758](https://github.com/Rdatatable/data.table/issues/1758). Thanks @fruce-ki.
 
+  66. `uniqueN` handles `na.rm=TRUE` argument on sorted inputs correctly, [#1771](https://github.com/Rdatatable/data.table/issues/1771). Thanks @ywhuofu.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

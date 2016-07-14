@@ -9022,6 +9022,10 @@ foo <- function(annot=c("a", "b")) {
 }
 test(1685, grep("dtu", capture.output(foo())), 7L)
 
+# fix for #1771
+test(1686.1, uniqueN(1L), 1L)
+test(1685.2, uniqueN(1L, na.rm=TRUE), 1L)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

@@ -99,5 +99,12 @@ uniqueN <- function(x, by = if (is.data.table(x)) key(x) else NULL, na.rm=FALSE)
     if (is.atomic(x)) x = as_list(x)
     if (is.null(by)) by = seq_along(x)
     o = forderv(x, by=by, retGrp=TRUE, na.last=if (!na.rm) FALSE else NA)
-    if (!na.rm) length(attr(o, 'starts')) else sum(o[attr(o, 'starts')] != 0L) # TODO: internal efficient sum
+    starts = attr(o, 'starts')
+    if (!na.rm) {
+        length(starts)
+    } else {
+        # TODO: internal efficient sum
+        # fix for #1771, account for already sorted input
+        sum( (if (length(o)) o[starts] else starts) != 0L)
+    }
 }
