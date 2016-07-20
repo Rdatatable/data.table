@@ -8743,7 +8743,7 @@ local({
   fwrite_expect_error(1658.24, function(f) {fwrite(data.table(a=1)[NULL,], f)})
 })
 
-# tests for #679, inrange()
+# tests for #679, inrange(), FR #707
 dt = data.table(a=c(8,3,10,7,-10), val=runif(5))
 range = data.table(start = 1:5, end = 6:10)
 test(1659.1, dt[a %inrange% range], dt[1:4])

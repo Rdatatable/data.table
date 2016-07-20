@@ -8,6 +8,7 @@ between <- function(x,lower,upper,incbounds=TRUE) {
 "%between%" <- function(x,y) between(x,y[[1]],y[[2]],incbounds=TRUE)
 # If we want non inclusive bounds with %between%, just +1 to the left, and -1 to the right (assuming integers)
 
+# issue FR #707
 # is x[i] found anywhere within [lower, upper] range?
 inrange <- function(x,lower,upper,incbounds=TRUE) {
     query = setDT(list(x=x))
