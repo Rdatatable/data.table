@@ -1,8 +1,5 @@
 #include "data.table.h"
 #include <Rdefines.h>
-#ifdef _OPENMP
-    #include <omp.h>
-#endif
 
 // reverse a vector - equivalent of rev(x) in base, but implemented in C and about 12x faster (on 1e8)
 SEXP setrev(SEXP x) {
@@ -38,16 +35,17 @@ SEXP setrev(SEXP x) {
     return(R_NilValue);
 }
 
-SEXP reorder(SEXP x, SEXP order) {
+SEXP reorder(SEXP x, SEXP order)
+{
     // For internal use only by setkey().
     // Reordering a vector in-place doesn't change generations so we can skip SET_STRING_ELT overhead etc.
     // Speed is dominated by page fetch when input is randomly ordered so we're at the software limit here (better bus etc should shine).
     // 'order' must strictly be a permutation of 1:n (i.e. no repeats, zeros or NAs)
     // If only a small subset is reordered, this is detected using start and end.
     // x may be a vector, or a list of vectors e.g. data.table
-    char *tmp, *vd;
+    char *tmp, *tmpp, *vd;
     SEXP v;
-    R_len_t i, j, itmp, nrow, ncol, start, end, chk=0; 
+    R_len_t i, j, itmp, nrow, ncol, start, end;
     size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
 
     if (isNewList(x)) {
@@ -71,14 +69,7 @@ SEXP reorder(SEXP x, SEXP order) {
     if (start==nrow) return(R_NilValue);  // input is 1:n, nothing to do
     end = nrow-1;
     while (INTEGER(order)[end] == end+1) end--;
-    // rewriting the loop for parallelising since the loop will run in 
-    // almost all cases from start to end in most cases
-    #pragma omp parallel for reduction(+:chk) private(itmp)
-    for (i=start; i<=end; i++) {
-        itmp = INTEGER(order)[i]-1;
-        chk += itmp<start || itmp>end;
-    }
-    if (chk) error("order is not a permutation of 1:nrow[%d]", nrow);
+    for (i=start; i<=end; i++) { itmp=INTEGER(order)[i]-1; if (itmp<start || itmp>end) error("order is not a permutation of 1:nrow[%d]", nrow); }
     // Creorder is for internal use (so we should get the input right!), but the check above seems sensible, otherwise
     // would be segfault below. The for loop above should run in neglible time (sequential) and will also catch NAs.
     // It won't catch duplicates in order, but that's ok. Checking that would be going too far given this is for internal use only.
@@ -90,19 +81,18 @@ SEXP reorder(SEXP x, SEXP order) {
         v = isNewList(x) ? VECTOR_ELT(x,i) : x;
         size = SIZEOF(v);
         if (!size) error("don't know how to reorder type '%s' of column %d. Please send this message to datatable-help",type2char(TYPEOF(v)),i+1);
+        tmpp=tmp;
         vd = (char *)DATAPTR(v);
-        // the speedup isn't great but the op isn't cache efficient and 
-        // still better than without.
         if (size==4) {
-            # pragma omp parallel for
             for (j=start;j<=end;j++) {
-                *((int *)(tmp+4*(j-start))) = ((int *)vd)[INTEGER(order)[j]-1];  // just copies 4 bytes (pointers on 32bit too)
+                *(int *)tmpp = ((int *)vd)[INTEGER(order)[j]-1];  // just copies 4 bytes (pointers on 32bit too)
+                tmpp += 4;
             }
         } else {
             if (size!=8) error("Size of column %d's type isn't 4 or 8", i+1);
-            # pragma omp parallel for
             for (j=start;j<=end;j++) {
-                *((double *)(tmp+8*(j-start))) = ((double *)vd)[INTEGER(order)[j]-1];  // just copies 8 bytes (pointers on 64bit too)
+                *(double *)tmpp = ((double *)vd)[INTEGER(order)[j]-1];  // just copies 8 bytes (pointers on 64bit too)
+                tmpp += 8;
             }
         }
         memcpy(vd + start*size, tmp, (end-start+1) * size);
