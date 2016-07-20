@@ -9026,6 +9026,11 @@ test(1685, grep("dtu", capture.output(foo())), 7L)
 test(1686.1, uniqueN(1L), 1L)
 test(1685.2, uniqueN(1L, na.rm=TRUE), 1L)
 
+# fix for #1744
+DT = data.table(ID = 1:2, A = 3:4, B = 5:6)
+test(1686.1, DT[, .(A,B)], DT[, c(mget("A"), .SD), .SDcols="B"])
+test(1686.2, DT[, .(V1=A,B)], DT[, c(.(get("A")), .SD), .SDcols="B"])
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

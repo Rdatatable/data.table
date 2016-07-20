@@ -1120,9 +1120,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     # get('varname') is too difficult to detect which columns are used in general
                     # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
                 }
+                if (length(ansvars)) othervars = ansvars # #1744 fix
                 allcols = c(names(x), paste("x.",names(x),sep=""), if (is.data.table(i)) c(names(i), paste("i.", names(i), sep="")))
                 ansvars = setdiff(allcols,bynames) # fix for bug #5443
                 ansvals = chmatch(ansvars, names(x))
+                if (length(othervars)) othervars = setdiff(ansvars, othervars) # #1744 fix
                 if (verbose) cat("New:",paste(ansvars,collapse=","),"\n")
             }
 
