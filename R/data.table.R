@@ -1688,7 +1688,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 }
             } else {
                 # Apply GForce
-                gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "tail", "[") # added .N for #5760
+                gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "first", "tail", "[") # added .N for #5760
                 .ok <- function(q) {
                     if (dotN(q)) return(TRUE) # For #5760
                     cond = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]])

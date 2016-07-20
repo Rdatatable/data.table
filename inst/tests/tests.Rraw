@@ -6,7 +6,7 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
     options(warn=0)  # use require() so it warns but doesn't halt if not available
     inst_pkgs = rownames(installed.packages())
-    sugg_pkgs = c("chron", "ggplot2", "plyr", "reshape", "reshape2", "testthat", "hexbin", "fastmatch", "nlme", "xts", "bit64", "gdata", "GenomicRanges", "caret", "knitr", "curl", "zoo", "plm", "rmarkdown")
+    sugg_pkgs = c("chron", "ggplot2", "plyr", "reshape", "reshape2", "testthat", "hexbin", "fastmatch", "nlme", "GenomicRanges", "xts", "bit64", "gdata", "caret", "knitr", "curl", "zoo", "plm", "rmarkdown")
     lapply(setNames(sugg_pkgs, nm = sugg_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))
     # reshape2 ahead of reshape ...
     try(detach(package:reshape2),silent=TRUE)
@@ -9030,6 +9030,10 @@ test(1685.2, uniqueN(1L, na.rm=TRUE), 1L)
 DT = data.table(ID = 1:2, A = 3:4, B = 5:6)
 test(1686.1, DT[, .(A,B)], DT[, c(mget("A"), .SD), .SDcols="B"])
 test(1686.2, DT[, .(V1=A,B)], DT[, c(.(get("A")), .SD), .SDcols="B"])
+
+# tests for first
+test(1687.1, first(1:5), 1L)
+test(1687.2, first(data.table(x=1:5, y=6:10)), data.table(x=1L, y=6L))
 
 ##########################
 
