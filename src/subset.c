@@ -30,25 +30,24 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
         // 1. count number of non-0 'idx' for each thread
         #pragma omp for
         for (i=0; i<n; i++) tmp += (pidx[i] != 0);  // don't use ctr[ithread+1] here -- false sharing
-                            // TODO: use SIMD here?
         ctr[ithread+1] = tmp;                       // ctr[0]=0, rest contains count where iidx!=0,
-                            // within each thread's range
+                                                    // within each thread's range
         #pragma omp barrier                         // wait for all threads, important
         // 2. using that, set the starting index for each thread appropriately
         #pragma omp single
         for (i=0; i<nthreads; i++)
-        ctr[i+1] += ctr[i];                     // for each thread, compute the right starting point, by
-                            // taking (non)0-count into account, computed above.
+            ctr[i+1] += ctr[i];                     // for each thread, compute the right starting point, by
+                                                    // taking (non)0-count into account, computed above.
         tmp = ctr[ithread];                         // copy back from shared to thread's local var. All set.
         #pragma omp barrier                         // wait for all threads, important
         // 3. use old code, but with thread's local var with right start index as counter
         #pragma omp for private(this) reduction(+:ansi)
         for (i=0; i<n; i++) {
-        this = pidx[i];
-        if (this==0) continue;
-        // have to use 'tmp' here, and not ctr[ithread++] -- false sharing
-        INTEGER(ans)[tmp++] = (this==NA_INTEGER || this>max) ? NA_INTEGER : INTEGER(x)[this-1];
-        ansi++;                                 // not required, but just to be sure
+            this = pidx[i];
+            if (this==0) continue;
+            // have to use 'tmp' here, and not ctr[ithread++] -- false sharing
+            INTEGER(ans)[tmp++] = (this==NA_INTEGER || this>max) ? NA_INTEGER : INTEGER(x)[this-1];
+            ansi++;                                 // not required, but just to be sure
         }
     }
 #else
@@ -70,22 +69,22 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
         #pragma omp barrier
         #pragma omp single
         for (i=0; i<nthreads; i++)
-        ctr[i+1] += ctr[i];
+            ctr[i+1] += ctr[i];
         tmp = ctr[ithread];
         #pragma omp barrier
         #pragma omp for private(this) reduction(+:ansi)
         for (i=0; i<n; i++) {
-        this = pidx[i];
-        if (this==0) continue;
-        REAL(ans)[tmp++] = (this==NA_INTEGER || this>max) ? NA_REAL : REAL(x)[this-1];
-        ansi++;
+            this = pidx[i];
+            if (this==0) continue;
+            REAL(ans)[tmp++] = (this==NA_INTEGER || this>max) ? NA_REAL : REAL(x)[this-1];
+            ansi++;
         }
     }
 #else
     for (i=0; i<n; i++) {
         this = pidx[i];
         if (this==0) continue;
-        REAL(ans)[ansi++] = (this==NA_INTEGER || this>max) ? NA_REAL : REAL(x)[this-1];
+        REAL(ans)[ans++] = (this==NA_INTEGER || this>max) ? NA_REAL : REAL(x)[this-1];
     }
 #endif
     break;
@@ -100,15 +99,15 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
         #pragma omp barrier
         #pragma omp single
         for (i=0; i<nthreads; i++)
-        ctr[i+1] += ctr[i];
+            ctr[i+1] += ctr[i];
         tmp = ctr[ithread];
         #pragma omp barrier
         #pragma omp for private(this) reduction(+:ansi)
         for (i=0; i<n; i++) {
-        this = pidx[i];
-        if (this==0) continue;
-        LOGICAL(ans)[tmp++] = (this==NA_INTEGER || this>max) ? NA_LOGICAL : LOGICAL(x)[this-1];
-        ansi++;
+            this = pidx[i];
+            if (this==0) continue;
+            LOGICAL(ans)[tmp++] = (this==NA_INTEGER || this>max) ? NA_LOGICAL : LOGICAL(x)[this-1];
+            ansi++;
         }
     }
 #else
@@ -146,18 +145,18 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
         #pragma omp barrier
         #pragma omp single
         for (i=0; i<nthreads; i++)
-        ctr[i+1] += ctr[i];
+            ctr[i+1] += ctr[i];
         tmp = ctr[ithread];
         #pragma omp barrier
         #pragma omp for private(this) reduction(+:ansi)
         for (i=0; i<n; i++) {
-        this = pidx[i];
-        if (this==0) continue;
-        if (this == NA_INTEGER || this>max) {
-            COMPLEX(ans)[tmp].r = NA_REAL;
-            COMPLEX(ans)[tmp++].i = NA_REAL;
-        } else COMPLEX(ans)[tmp++] = COMPLEX(x)[this-1];
-        ansi++;
+            this = pidx[i];
+            if (this==0) continue;
+            if (this == NA_INTEGER || this>max) {
+                COMPLEX(ans)[tmp].r = NA_REAL;
+                COMPLEX(ans)[tmp++].i = NA_REAL;
+            } else COMPLEX(ans)[tmp++] = COMPLEX(x)[this-1];
+            ansi++;
         }
     }
 #else
@@ -165,8 +164,8 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
         this = pidx[i];
         if (this == 0) continue;
         if (this == NA_INTEGER || this>max) {
-        COMPLEX(ans)[ansi].r = NA_REAL;
-        COMPLEX(ans)[ansi].i = NA_REAL;
+            COMPLEX(ans)[ansi].r = NA_REAL;
+            COMPLEX(ans)[ansi].i = NA_REAL;
         } else COMPLEX(ans)[ansi] = COMPLEX(x)[this-1];
         ansi++;
     }
@@ -183,15 +182,15 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
         #pragma omp barrier
         #pragma omp single
         for (i=0; i<nthreads; i++)
-        ctr[i+1] += ctr[i];
+            ctr[i+1] += ctr[i];
         tmp = ctr[ithread];
         #pragma omp barrier
         #pragma omp for private(this) reduction(+:ansi)
         for (i=0; i<n; i++) {
-        this = pidx[i];
-        if (this==0) continue;
-        RAW(ans)[tmp++] = (this == NA_INTEGER || this>max) ? (Rbyte) 0 : RAW(x)[this-1];
-        ansi++;
+            this = pidx[i];
+            if (this==0) continue;
+            RAW(ans)[tmp++] = (this == NA_INTEGER || this>max) ? (Rbyte) 0 : RAW(x)[this-1];
+            ansi++;
         }
     }
 #else
