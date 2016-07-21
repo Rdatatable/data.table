@@ -1,9 +1,14 @@
+# handles #1284
+duplicated_warning <- function() {
+    message("Default value of duplicated.data.table method's 'by' argument will be changed to seq_along(x) (from key(x)) from the next release to be consistent with the default behaviour of base::unique.data.frame.")
+}
 
 duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...) {
     if (!cedta()) return(NextMethod("duplicated"))
     if (!identical(incomparables, FALSE)) {
         .NotYetUsed("incomparables != FALSE")
     }
+    if (missing(by) && !is.null(key(x))) duplicated_warning()
     if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0)) # fix for bug #5582
     if (is.na(fromLast) || !is.logical(fromLast)) stop("'fromLast' must be TRUE or FALSE")
     query <- .duplicated.helper(x, by)
@@ -27,6 +32,7 @@ duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key
 
 unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...) {
     if (!cedta()) return(NextMethod("unique"))
+    if (missing(by) && !is.null(key(x))) duplicated_warning()
     dups <- duplicated.data.table(x, incomparables, fromLast, by, ...)
     ans <- .Call(CsubsetDT, x, which_(dups, FALSE), seq_len(ncol(x))) # more memory efficient version of which(!dups)
     if (nrow(x) != nrow(ans)) setindexv(ans, NULL)[] else ans #1760
@@ -81,6 +87,7 @@ unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key(x),
 # This is just a wrapper. That being said, it should be incredibly fast on data.tables (due to data.table's fast forder)
 anyDuplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...) {
     if (!cedta()) return(NextMethod("anyDuplicated"))
+    if (missing(by) && !is.null(key(x))) duplicated_warning()
     dups <- duplicated(x, incomparables, fromLast, by, ...)
     if (fromLast) idx = tail(which(dups), 1L) else idx = head(which(dups), 1L)
     if (!length(idx)) idx=0L
@@ -93,6 +100,7 @@ anyDuplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=
 # we really mean `.SD` - used in a grouping operation
 # TODO: optimise uniqueN further with GForce.
 uniqueN <- function(x, by = if (is.data.table(x)) key(x) else NULL, na.rm=FALSE) { # na.rm, #1455
+    if (missing(by) && !is.null(key(x))) duplicated_warning()
     if (is.null(x)) return(0L)
     if (!is.atomic(x) && !is.data.frame(x))
         stop("x must be an atomic vector or data.frames/data.tables")

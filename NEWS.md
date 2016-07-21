@@ -300,6 +300,8 @@
 
   31. data.table's `setNumericRounding` has a default value of 0, which means ordering, joining and grouping of numeric values will be done at *full precision* by default. Handles [#1642](https://github.com/Rdatatable/data.table/issues/1642), [#1728](https://github.com/Rdatatable/data.table/issues/1728), [#1463](https://github.com/Rdatatable/data.table/issues/1463), [#485](https://github.com/Rdatatable/data.table/issues/485).
 
+  32. A message that default value of `by` will be changed from `key(x)` to `NULL` has been raised in this release if the data.table is keyed and `by` argument is missing. In the next release, `by=NULL` will be default. Partially handles [#1284](https://github.com/Rdatatable/data.table/issues/1284).
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
