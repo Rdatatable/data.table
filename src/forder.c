@@ -422,7 +422,8 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
 // + changed to MSD and hooked into forder framework here.
 // + replaced tolerance with rounding s.f.
 
-static int dround = 2;
+// No rounding by default, for now. Handles #1642, #1728, #1463, #485
+static int dround = 0;
 static unsigned long long dmask1;
 static unsigned long long dmask2;
 
