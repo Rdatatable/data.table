@@ -120,64 +120,18 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
 #endif
     break;
     case STRSXP :
-#ifdef _OPENMP
-    #pragma omp parallel
-    {
-        int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
-        #pragma omp for
-        for (i=0; i<n; i++) tmp += (pidx[i] != 0);
-        ctr[ithread+1] = tmp;
-        #pragma omp barrier
-        #pragma omp single
-        for (i=0; i<nthreads; i++)
-        ctr[i+1] += ctr[i];
-        tmp = ctr[ithread];
-        #pragma omp barrier
-        #pragma omp for private(this) reduction(+:ansi)
-        for (i=0; i<n; i++) {
-        this = pidx[i];
-        if (this==0) continue;
-        SET_STRING_ELT(ans, tmp++, (this==NA_INTEGER || this>max) ? NA_STRING : STRING_ELT(x, this-1));
-        ansi++;
-        }
-    }
-#else
     for (i=0; i<n; i++) {
         this = pidx[i];
         if (this==0) continue;
         SET_STRING_ELT(ans, ansi++, (this==NA_INTEGER || this>max) ? NA_STRING : STRING_ELT(x, this-1));
     }
-#endif
     break;
     case VECSXP :
-#ifdef _OPENMP
-    #pragma omp parallel
-    {
-        int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
-        #pragma omp for
-        for (i=0; i<n; i++) tmp += (pidx[i] != 0);
-        ctr[ithread+1] = tmp;
-        #pragma omp barrier
-        #pragma omp single
-        for (i=0; i<nthreads; i++)
-        ctr[i+1] += ctr[i];
-        tmp = ctr[ithread];
-        #pragma omp barrier
-        #pragma omp for private(this) reduction(+:ansi)
-        for (i=0; i<n; i++) {
-        this = pidx[i];
-        if (this==0) continue;
-        SET_VECTOR_ELT(ans, tmp++, (this==NA_INTEGER || this>max) ? R_NilValue : VECTOR_ELT(x, this-1));
-        ansi++;
-        }
-    }
-#else
     for (i=0; i<n; i++) {
         this = pidx[i];
         if (this==0) continue;
         SET_VECTOR_ELT(ans, ansi++, (this==NA_INTEGER || this>max) ? R_NilValue : VECTOR_ELT(x, this-1));
     }
-#endif
     break;
     // Fix for #982
     // source: https://github.com/wch/r-source/blob/fbf5cdf29d923395b537a9893f46af1aa75e38f3/src/main/subset.c
