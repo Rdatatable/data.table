@@ -12,54 +12,82 @@
 \alias{rounding}
 \title{Optimisations in data.table}
 \description{
-    \code{data.table} internally optimises certain expressions inorder to improve performance. This section briefly summarises those optimisations.
+\code{data.table} internally optimises certain expressions inorder to improve 
+performance. This section briefly summarises those optimisations.
 
-	Note that there's no additional input needed from the user to take advantage of these optimisations. They happen automatically.
+Note that there's no additional input needed from the user to take advantage 
+of these optimisations. They happen automatically.
 
-	Run the code under the \emph{example} section to get a feel for the performance benefits from these optimisations.
+Run the code under the \emph{example} section to get a feel for the performance 
+benefits from these optimisations.
 
 }
 \details{
-	\code{data.table} reads the global option \code{datatable.optimize} to figure out what level of optimisation is required. The default value \code{Inf} activates \emph{all} available optimisations.
+\code{data.table} reads the global option \code{datatable.optimize} to figure 
+out what level of optimisation is required. The default value \code{Inf} 
+activates \emph{all} available optimisations.
 
-	At optimisation level \code{>= 1}, i.e., \code{getOption("datatable.optimize")} >= 1, these are the optimisations:
+At optimisation level \code{>= 1}, i.e., \code{getOption("datatable.optimize")} 
+>= 1, these are the optimisations:
 
-	\itemize{
+\itemize{
+    \item The base function \code{order} is internally replaced with 
+    \code{data.table}'s \emph{fast ordering}. That is, \code{dt[order(...)]} 
+    gets internally optimised to \code{dt[forder(...)]}. 
 
-		\item The base function \code{order} is internally replaced with \code{data.table}'s \emph{fast ordering}. That is, \code{dt[order(...)]} gets internally optimised to \code{dt[forder(...)]}. 
+    \item The expression \code{dt[, lapply(.SD, fun), by=.]} gets optimised 
+    to \code{dt[, list(fun(a), fun(b), ...), by=.]} where \code{a,b, ...} are 
+    columns in \code{.SD}. This improves performance tremendously.
 
-		\item The expression \code{dt[, lapply(.SD, fun), by=.]} gets optimised to \code{dt[, list(fun(a), fun(b), ...), by=.]} where \code{a,b, ...} are columns in \code{.SD}. This improves performance tremendously.
+    \item Similarly, the expression \code{dt[, c(.N, lapply(.SD, fun)), by=.]} 
+    gets optimised to \code{dt[, list(.N, fun(a), fun(b), ...)]}. \code{.N} is 
+    just for example here. 
 
-		\item Similarly, the expression \code{dt[, c(.N, lapply(.SD, fun)), by=.]} gets optimised to \code{dt[, list(.N, fun(a), fun(b), ...)]}. \code{.N} is just for example here. 
-
-		\item \code{base::mean} function is internally optimised to use \code{data.table}'s \code{fastmean} function. \code{mean()} from \code{base} is an S3 generic and gets slow with many groups.
- 	}
-
- 	At optimisation level \code{>= 2}, i.e., \code{getOption("datatable.optimize")} >= 2, additional optimisations are implemented on top of the optimisations already shown above. 
-
- 	\itemize{
-
- 		\item When expressions in \code{j} which contains only these functions \code{min, max, mean, median, var, sd, prod}, for example, \code{dt[, list(mean(x), median(x), min(y), max(y)), by=z]}, they are very effectively optimised using, what we call, \emph{GForce}. These functions are replaced with \code{gmean, gmedian, gmin, gmax} instead. 
-
- 		Normally, once the rows belonging to each groups are identified, the values corresponding to the group is gathered and the \code{j-expression} is evaluated. This can be improved by computing the result directly without having to gather the values or evaluating the expression for each group (which can get costly with large number of groups) by implementing it specifically for a particular function. As a result, it is extremely fast.
-
- 		\item In addition to all the functions above, `.N` is also optimised to use GForce. It when used separately or combined with the functions mentioned above still uses GForce.
-
- 		\item Expressions of the form \code{DT[i, j, by]} are also optimised when \code{i} is a \emph{subset} operation and \code{j} is any/all of the functions discussed above.
- 	}
-
- 	\bold{Auto indexing:} \code{data.table} also allows for blazing fast subsets by creating an \emph{index} on the first run. Any successive subsets on the same column then reuses this index to \emph{binary search} (instead of \emph{vector scan}) and is therefore fast.
-
- 	At the moment, expressions of the form \code{dt[col == val]} and \code{dt[col \%in\% val]} are both optimised. We plan to expand this to more operators and conditions in the future.
-
- 	Auto indexing can be switched off with the global option \code{options(datatable.auto.index = FALSE)}. To switch off using existing indices set global option \code{options(datatable.use.index = FALSE)}.
-
- 	\bold{Numeric rounding:} While grouping by column(s) of \code{numeric} type, e.g., \code{double}, \code{POSIXct} etc., \code{data.table} by default rounds off the last two bytes before computing groups to avoid unexpected behaviours due to limitations in representing floating point numbers. See \code{\link{setNumericRounding}} for more.
-
+    \item \code{base::mean} function is internally optimised to use 
+    \code{data.table}'s \code{fastmean} function. \code{mean()} from \code{base} 
+    is an S3 generic and gets slow with many groups.
 }
-\seealso{
-	\code{\link{setNumericRounding}}, \code{\link{getNumericRounding}}
+
+At optimisation level \code{>= 2}, i.e., \code{getOption("datatable.optimize")} >= 2, additional optimisations are implemented on top of the optimisations already shown above. 
+
+\itemize{
+
+    \item When expressions in \code{j} which contains only these functions 
+    \code{min, max, mean, median, var, sd, prod}, for example, 
+    \code{dt[, list(mean(x), median(x), min(y), max(y)), by=z]}, they are very 
+    effectively optimised using, what we call, \emph{GForce}. These functions 
+    are replaced with \code{gmean, gmedian, gmin, gmax} instead. 
+
+    Normally, once the rows belonging to each groups are identified, the values 
+    corresponding to the group is gathered and the \code{j-expression} is 
+    evaluated. This can be improved by computing the result directly without 
+    having to gather the values or evaluating the expression for each group 
+    (which can get costly with large number of groups) by implementing it 
+    specifically for a particular function. As a result, it is extremely fast.
+
+    \item In addition to all the functions above, `.N` is also optimised to 
+    use GForce. It when used separately or combined with the functions mentioned 
+    above still uses GForce.
+
+    \item Expressions of the form \code{DT[i, j, by]} are also optimised when 
+    \code{i} is a \emph{subset} operation and \code{j} is any/all of the functions 
+    discussed above.
 }
+
+\bold{Auto indexing:} \code{data.table} also allows for blazing fast subsets by 
+creating an \emph{index} on the first run. Any successive subsets on the same 
+column then reuses this index to \emph{binary search} (instead of 
+\emph{vector scan}) and is therefore fast.
+
+At the moment, expressions of the form \code{dt[col == val]} and 
+\code{dt[col \%in\% val]} are both optimised. We plan to expand this to more 
+operators and conditions in the future.
+
+Auto indexing can be switched off with the global option 
+\code{options(datatable.auto.index = FALSE)}. To switch off using existing 
+indices set global option \code{options(datatable.use.index = FALSE)}.
+}
+\seealso{ \code{\link{setNumericRounding}}, \code{\link{getNumericRounding}} }
 \examples{
 \dontrun{
 # Generate a big data.table with a relatively many columns
