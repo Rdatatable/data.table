@@ -4,6 +4,11 @@
    #include <omp.h>
 #endif
 
+static union {
+    double d;
+    long long ll;
+} naval;
+
 static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
 // Only for use by subsetDT() or subsetVector() below, hence static
 // l is the count of non-zero (including NAs) in idx i.e. the length of the result
@@ -12,7 +17,9 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
 {
     int i, this, ansi=0, max=length(x), n=LENGTH(idx), *pidx=INTEGER(idx);
     if (tl<l) error("Internal error: tl<n passed to subsetVectorRaw");
-    SEXP ans = PROTECT(allocVector(TYPEOF(x), tl));
+    SEXP class = getAttrib(x, R_ClassSymbol), ans = PROTECT(allocVector(TYPEOF(x), tl));
+    Rboolean i64 = isString(class) && STRING_ELT(class, 0) == char_integer64;
+    if (i64) naval.ll = NAINT64; else naval.d = NA_REAL;
     SETLENGTH(ans, l);
     SET_TRUELENGTH(ans, tl);
     // Rprintf("l=%d, tl=%d, LENGTH(idx)=%d\n", l, tl, LENGTH(idx));
@@ -76,7 +83,7 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
         for (i=0; i<n; i++) {
             this = pidx[i];
             if (this==0) continue;
-            REAL(ans)[tmp++] = (this==NA_INTEGER || this>max) ? NA_REAL : REAL(x)[this-1];
+            REAL(ans)[tmp++] = (this==NA_INTEGER || this>max) ? naval.d : REAL(x)[this-1];
             ansi++;
         }
     }
@@ -84,7 +91,7 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
     for (i=0; i<n; i++) {
         this = pidx[i];
         if (this==0) continue;
-        REAL(ans)[ans++] = (this==NA_INTEGER || this>max) ? NA_REAL : REAL(x)[this-1];
+        REAL(ans)[ans++] = (this==NA_INTEGER || this>max) ? naval.d : REAL(x)[this-1];
     }
 #endif
     break;

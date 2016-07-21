@@ -9059,6 +9059,17 @@ test(1686.2, DT[, .(V1=A,B)], DT[, c(.(get("A")), .SD), .SDcols="B"])
 test(1687.1, first(1:5), 1L)
 test(1687.2, first(data.table(x=1:5, y=6:10)), data.table(x=1L, y=6L))
 
+if ("package:bit64" %in% search()) {
+    # fix for #1385 and part of #1459
+    x1 = data.table(id=1, value=as.integer64(1))
+    x2 = data.table(id=c(1,2))
+    test(1688.1, merge(x2, x1, by="id", all.x=TRUE)$value, as.integer64(c(1,NA)))
+
+    x1 = data.table(x = c(1),y = integer64(1))
+    x2 = data.table(x = c(1,2))
+    test(1688.2, merge(x1, x2, all=TRUE, by="x")$y, as.integer64(c(0, NA)))
+}
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
