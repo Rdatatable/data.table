@@ -9073,6 +9073,26 @@ if ("package:bit64" %in% search()) {
 test(1689, capture.output(IDateTime(as.POSIXct("2016/01/13 17:00", tz = "America/Los_Angeles"))),
      c("        idate    itime", "1: 2016-01-13 17:00:00"))
 
+# fix for #1766 and #1704
+A = data.table(i = 1:6, j = rep(1:2, 3), x = letters[1:6], key = "i")
+B = data.table(j = 1:2, y = letters[1:2], key = "j")
+test(1690.1, key(A[B, on = "j"]), NULL)
+test(1690.2, key(A[B, on = "j"]), NULL)
+
+dt <-  data.table(
+        origin = c("A", "A", "A", "A", "A", "A", "B", "B", "A", "A", "C", "C", "B", "B", "B", "B", "B", "C", "C", "B", "A", "C", "C", "C", "C", "C", "A", "A", "C", "C", "B", "B"),
+        destination = c("A", "A", "A", "A", "B", "B", "A", "A", "C", "C", "A", "A", "B", "B", "B", "C", "C", "B", "B", "A", "B", "C", "C", "C", "A", "A", "C", "C", "B", "B", "C", "C"),
+        points_in_dest = c(5, 5, 5, 5, 4, 4, 5, 5, 3, 3, 5, 5, 4, 4, 4, 3, 3, 4, 4, 5, 4, 3, 3, 3, 5,5, 3, 3, 4, 4, 3, 3),
+        depart_time = c(7, 8, 16, 18, 7, 8, 16, 18, 7, 8, 16, 18, 7, 8, 16, 7, 8, 16, 18, 8, 16, 7, 8, 18, 7, 8, 16, 18, 7, 8, 16, 18), 
+        travel_time = c(0, 0, 0, 0, 70, 10, 70, 10, 10, 10, 70, 70, 0, 0, 0, 70, 10, 10, 70, 70, 10, 0, 0, 0, 10, 70, 10, 70, 10, 70, 70, 10))
+dt[ depart_time<=8  & travel_time < 60, condition1 := TRUE]
+dt[ depart_time>=16 & travel_time < 60, condition2 := TRUE] 
+setkey(dt, origin, destination)
+res <- unique(dt[(condition1)])[unique(dt[(condition2)]), 
+                                on = c(destination = "origin", origin = "destination"), 
+                                nomatch = 0L]
+test(1690.3, res[, .(points = sum(points_in_dest)),  keyby = origin], data.table(origin=LETTERS[1:3], points=c(9,7,12), key="origin"))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
