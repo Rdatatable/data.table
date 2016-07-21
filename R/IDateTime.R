@@ -12,6 +12,10 @@ as.IDate.Date <- function(x, ...) {
     structure(as.integer(x), class=c("IDate","Date"))
 }    
 
+as.IDate.POSIXct <- function(x, ...) {
+  as.IDate(as.Date(x, tz = attr(x, "tzone"), ...))
+}
+
 as.IDate.IDate <- function(x, ...) x
 
 as.Date.IDate <- function(x, ...) { 

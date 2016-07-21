@@ -233,6 +233,8 @@
   67. `get()` / `mget()` play nicely with `.SD` / `.SDcols`, [#1744](https://github.com/Rdatatable/data.table/issues/1753). Thanks @franknarf1.
 
   68. Joins on integer64 columns assigns `NA` correctly for no matching rows, [#1385](https://github.com/Rdatatable/data.table/issues/1385) and partly [#1459](https://github.com/Rdatatable/data.table/issues/1459). Thanks @dlithio and @abielr.
+  
+  69. Added `as.IDate.POSIXct` to prevent loss of timezone information, [#1498](https://github.com/Rdatatable/data.table/issues/1498). Thanks @dougedmunds for reporting and @MichaelChirico for the investigating & fixing.
 
 #### NOTES
 

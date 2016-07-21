@@ -9070,6 +9070,9 @@ if ("package:bit64" %in% search()) {
     test(1688.2, merge(x1, x2, all=TRUE, by="x")$y, as.integer64(c(0, NA)))
 }
 
+test(1689, capture.output(IDateTime(as.POSIXct("2016/01/13 17:00", tz = "America/Los_Angeles"))),
+     c("        idate    itime", "1: 2016-01-13 17:00:00"))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
