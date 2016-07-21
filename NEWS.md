@@ -298,6 +298,8 @@
 
   30. `melt.data.table` restricts column names printed during warning messages to a maximum of five, [#1752](https://github.com/Rdatatable/data.table/issues/1752). Thanks @franknarf1.
 
+  31. data.table's `setNumericRounding` has a default value of 0, which means ordering, joining and grouping of numeric values will be done at *full precision* by default. Handles [#1642](https://github.com/Rdatatable/data.table/issues/1642), [#1728](https://github.com/Rdatatable/data.table/issues/1728), [#1463](https://github.com/Rdatatable/data.table/issues/1463), [#485](https://github.com/Rdatatable/data.table/issues/485).
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
