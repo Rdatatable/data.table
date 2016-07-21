@@ -197,7 +197,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
     memset(&ld, 0, sizeof(long double));
     if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
     
-    setNumericRounding(ScalarInteger(2));
+    setNumericRounding(ScalarInteger(0)); // #1642, #1728, #1463, #485
     
     char_integer64 = mkChar("integer64");  // for speed, similar to R_*Symbol.
 }
