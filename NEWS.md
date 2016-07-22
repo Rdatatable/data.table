@@ -238,6 +238,8 @@
 
   70. Retaining / removing keys is handled better when join is performed on non-key columns using `on` argument, [#1766](https://github.com/Rdatatable/data.table/issues/1766) and [#1704](https://github.com/Rdatatable/data.table/issues/1704). Thanks @mllg and @DavidArenburg.
 
+  71. `rbind` for data.tables now coerces non-list inputs to data.tables first before calling `rbindlist` so that binding list of data.tables and matrices work as expected to be consistent with base's rbind, [#1626](https://github.com/Rdatatable/data.table/issues/1626). Thanks @ems for reporting [here](http://stackoverflow.com/q/34426957/559784) on SO.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

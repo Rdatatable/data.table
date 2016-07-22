@@ -418,7 +418,7 @@ vignette("datatable-reshape")
 vignette("datatable-faq")
 
 
-test.data.table()          # over 5300 low level tests
+test.data.table()          # over 5700 low level tests
 
 # keep up to date with latest stable version on CRAN
 update.packages()

@@ -9093,6 +9093,12 @@ res <- unique(dt[(condition1)])[unique(dt[(condition2)]),
                                 nomatch = 0L]
 test(1690.3, res[, .(points = sum(points_in_dest)),  keyby = origin], data.table(origin=LETTERS[1:3], points=c(9,7,12), key="origin"))
 
+# fix for #1626 (so that rbind plays nicely with non-list inputs, e.g., package 
+# psych creates a list with the input data.frame/data.table and a matrix it 
+# creates...)
+dt = data.table(x=1:5, y=6:10)
+test(1691, rbind(dt, dt), rbind(dt, as.matrix(dt)))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

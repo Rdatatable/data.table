@@ -2533,8 +2533,9 @@ chgroup <- function(x) {
 .rbind.data.table <- function(..., use.names=TRUE, fill=FALSE, idcol=NULL) {
     # See FAQ 2.23
     # Called from base::rbind.data.frame
-    l = list(...)
-    # if (missing(use.names)) message("Columns will be bound by name for consistency with base. You can supply unnamed lists and the columns will then be joined by position, or set use.names=FALSE. Alternatively, explicitly setting use.names to TRUE will remove this message.")
+    # fix for #1626.. because some packages (like psych) bind an input
+    # data.frame/data.table with a matrix..
+    l = lapply(list(...), function(x) if (is.list(x)) x else as.data.table(x))
     rbindlist(l, use.names, fill, idcol)
 }
 
