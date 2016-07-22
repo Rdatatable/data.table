@@ -1375,7 +1375,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # copy 'jval' when required
         # More speedup - only check + copy if irows is NULL
         if (is.null(irows)) {
-            if (is.atomic(jval)) {
+            if (!is.list(jval)) { # performance improvement when i-arg is S4, but not list, #1438, Thanks @DCEmilberg.
                 jcpy = address(jval) %in% sapply(SDenv$.SD, address) # %chin% errors when RHS is list()
                 if (jcpy) jval = copy(jval)
             } else if (address(jval) == address(SDenv$.SD)) {
