@@ -91,7 +91,7 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
     for (i=0; i<n; i++) {
         this = pidx[i];
         if (this==0) continue;
-        REAL(ans)[ans++] = (this==NA_INTEGER || this>max) ? naval.d : REAL(x)[this-1];
+        REAL(ans)[ansi++] = (this==NA_INTEGER || this>max) ? naval.d : REAL(x)[this-1];
     }
 #endif
     break;
