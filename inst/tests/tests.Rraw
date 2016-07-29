@@ -9099,6 +9099,10 @@ test(1690.3, res[, .(points = sum(points_in_dest)),  keyby = origin], data.table
 dt = data.table(x=1:5, y=6:10)
 test(1691, rbind(dt, dt), rbind(dt, as.matrix(dt)))
 
+# For #1783 -- subsetting a data.table by an ITime object
+test(1692, capture.output(as.data.table(structure(57600L, class = "ITime"))),
+     c("         V1", "1: 16:00:00"))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
