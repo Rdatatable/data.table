@@ -12,7 +12,7 @@ as.data.table.default <- function(x, ...){
 as.data.table.factor <- as.data.table.ordered <- 
 as.data.table.integer <- as.data.table.numeric <- 
 as.data.table.logical <- as.data.table.character <- 
-as.data.table.Date <- function(x, keep.rownames=FALSE, ...) {
+as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ...) {
     if (is.matrix(x)) {
         return(as.data.table.matrix(x, ...))
     }
