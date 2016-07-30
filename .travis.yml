@@ -21,7 +21,9 @@ install:
   - ./travis-tool.sh bioc_install GenomicRanges
   - ./travis-tool.sh install_deps
   
-script: ./travis-tool.sh run_tests
+script:
+  - echo "Commit:" $TRAVIS_COMMIT >> ./DESCRIPTION
+  - ./travis-tool.sh run_tests
 
 after_failure:
   - ./travis-tool.sh dump_logs

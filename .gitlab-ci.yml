@@ -12,6 +12,8 @@ test:
     # install suggests
     - Rscript -e 'install.packages(c("chron", "ggplot2", "plyr", "reshape", "reshape2", "testthat", "hexbin", "fastmatch", "nlme", "xts", "bit64", "gdata", "caret", "knitr", "curl", "zoo", "plm", "rmarkdown"))'
     - Rscript -e 'source("https://bioconductor.org/biocLite.R"); biocLite("GenomicRanges")'
+    # add git commit hash metadata
+    - echo "Commit:" $CI_BUILD_REF >> ./DESCRIPTION
     # build package
     - R CMD build .
     # run check
