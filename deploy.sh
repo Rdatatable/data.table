@@ -21,7 +21,8 @@ addToDrat(){
 
   Rscript -e "drat::insertPackage('$PKG_REPO/$PKG_TARBALL', \
     repodir = '.', \
-    commit='Travis publish data.table: build $TRAVIS_BUILD_NUMBER')"
+    commit='Travis publish data.table: build $TRAVIS_COMMIT', \
+    fields='Commit')"
   git push --force upstream gh-pages 2>err.txt
   
 }
