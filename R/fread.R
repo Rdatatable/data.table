@@ -1,5 +1,5 @@
 
-fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",file,stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=1L,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable")) {
+fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",file,stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=1L,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable"),vs.inf.nan=FALSE) {
     if (!is.character(dec) || length(dec)!=1L || nchar(dec)!=1) stop("dec must be a single character e.g. '.' or ','")
     # handle encoding, #563
     if (length(encoding) != 1L || !encoding %in% c("unknown", "UTF-8", "Latin-1")) {
@@ -101,7 +101,13 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     if (identical(header,"auto")) header=NA
     if (identical(sep,"auto")) sep=NULL
     if (is.atomic(colClasses) && !is.null(names(colClasses))) colClasses = tapply(names(colClasses),colClasses,c,simplify=FALSE)
-    ans = .Call(Creadfile,input,sep,as.integer(nrows),header,na.strings,verbose,as.integer(autostart),skip,select,drop,colClasses,integer64,dec,encoding,quote,strip.white,blank.lines.skip,fill,as.integer(showProgress))
+
+    if (vs.inf.nan) {
+    	ans = .Call(Creadfile_vsinfnan,input,sep,as.integer(nrows),header,na.strings,verbose,as.integer(autostart),skip,select,drop,colClasses,integer64,dec,encoding,quote,strip.white,blank.lines.skip,fill,as.integer(showProgress))
+    } else {
+    	ans = .Call(Creadfile,input,sep,as.integer(nrows),header,na.strings,verbose,as.integer(autostart),skip,select,drop,colClasses,integer64,dec,encoding,quote,strip.white,blank.lines.skip,fill,as.integer(showProgress))
+    }
+
     nr = length(ans[[1]])
     if ( integer64=="integer64" && !exists("print.integer64") && any(sapply(ans,inherits,"integer64")) )
         warning("Some columns have been read as type 'integer64' but package bit64 isn't loaded. Those columns will display as strange looking floating point data. There is no need to reload the data. Just require(bit64) to obtain the integer64 print method and print the data again.")

@@ -17,6 +17,7 @@ SEXP setcharvec();
 SEXP setcolorder();
 SEXP chmatchwrapper();
 SEXP readfile();
+SEXP readfile_vsinfnan();
 SEXP writefile();
 SEXP reorder();
 SEXP rbindlist();
@@ -95,6 +96,7 @@ R_CallMethodDef callMethods[] = {
 {"Csetcolorder", (DL_FUNC) &setcolorder, -1},
 {"Cchmatchwrapper", (DL_FUNC) &chmatchwrapper, -1},
 {"Creadfile", (DL_FUNC) &readfile, -1},
+{"Creadfile_vsinfnan", (DL_FUNC) &readfile_vsinfnan, -1},
 {"Cwritefile", (DL_FUNC) &writefile, -1},
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
