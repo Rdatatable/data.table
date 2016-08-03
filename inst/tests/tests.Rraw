@@ -9103,6 +9103,18 @@ test(1691, rbind(dt, dt), rbind(dt, as.matrix(dt)))
 test(1692, capture.output(as.data.table(structure(57600L, class = "ITime"))),
      c("         V1", "1: 16:00:00"))
 
+# testing all time part extraction routines (subsumes #874)
+t <- "2016-08-03 01:02:03.45"
+test(1693.1, second(t), 3L)
+test(1693.2, minute(t), 2L)
+test(1693.3, hour(t), 1L)
+test(1693.4, yday(t), 216L)
+test(1693.5, wday(t), 4L)
+test(1693.6, week(t), 31L)
+test(1693.7, month(t), 8L)
+test(1693.8, quarter(t), 3L)
+test(1693.9, year(t), 2016L)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

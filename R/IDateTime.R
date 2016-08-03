@@ -221,6 +221,8 @@ as.ITime.times <- function(x, ...) {
 #   lubridate routines do not return integer values.
 ###################################################################
 
+second  <- function(x) as.integer(as.POSIXlt(x)$sec)
+minute  <- function(x) as.POSIXlt(x)$min
 hour    <- function(x) as.POSIXlt(x)$hour
 yday    <- function(x) as.POSIXlt(x)$yday + 1L
 wday    <- function(x) as.POSIXlt(x)$wday + 1L

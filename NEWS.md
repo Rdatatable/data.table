@@ -91,6 +91,8 @@
   42. `melt.data.table` finds variables provided to `patterns()` when called from within user defined functions, [#1749](https://github.com/Rdatatable/data.table/issues/1749). Thanks to @kendonB for the report.
 
   43. `first()` is now exported to return the first element of vectors, data.frames and data.tables.
+  
+  44. Added `second` and `minute` extraction functions which, like extant `hour`/`yday`/`week`/etc, always return an integer, [#874](https://github.com/Rdatatable/data.table/issues/874). Thanks to @bthieurmel for the FR and @MichaelChirico for the PR.
 
 #### BUG FIXES
 
