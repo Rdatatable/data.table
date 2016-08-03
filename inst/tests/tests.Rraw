@@ -9115,6 +9115,9 @@ test(1693.7, month(t), 8L)
 test(1693.8, quarter(t), 3L)
 test(1693.9, year(t), 2016L)
 
+# expansion of uses of as.ITime.character
+test(1694, as.ITime("2015-09-29 08:22:00"), structure(30120L, class = "ITime"))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

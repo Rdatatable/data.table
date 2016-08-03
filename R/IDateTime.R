@@ -77,15 +77,19 @@ as.ITime.default <- function(x, ...) {
     as.ITime(as.POSIXlt(x, ...))
 }
 
-as.ITime.character <- function(x, format, ...) {
+as.ITime.character <- function (x, format, ...) {
     x <- unclass(x)
-    if (!missing(format)) 
-        return(as.ITime(strptime(x, format = format, ...)))
-    y <- strptime(x, format = "%H:%M:%OS", ...)
-    y.nas <- is.na(y)
-    y[y.nas] <- strptime(x[y.nas], format = "%H:%M", ...)
-
-    return(as.ITime(y))
+    if (!missing(format)) return(as.ITime(strptime(x, format = format, ...)))
+    xx <- x[!is.na(x)]
+    if (!length(xx)) return(as.ITime(strptime(x, "%Y/%m/%d", ...)))
+    if (all(!is.na(strptime(xx, f <- "%Y-%m-%d %H:%M:%OS", ...))) || 
+        all(!is.na(strptime(xx, f <- "%Y/%m/%d %H:%M:%OS", ...))) ||
+        all(!is.na(strptime(xx, f <- "%Y-%m-%d %H:%M", ...))) ||
+        all(!is.na(strptime(xx, f <- "%Y/%m/%d %H:%M", ...))) ||
+        all(!is.na(strptime(xx, f <- "%Y-%m-%d", ...))) ||
+        all(!is.na(strptime(xx, f <- "%Y/%m/%d", ...)))) {
+        return(as.ITime(strptime(x, f, ...)))
+    }
 }
 
 as.ITime.POSIXlt <- function(x, ...) {

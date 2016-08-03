@@ -93,6 +93,8 @@
   43. `first()` is now exported to return the first element of vectors, data.frames and data.tables.
   
   44. Added `second` and `minute` extraction functions which, like extant `hour`/`yday`/`week`/etc, always return an integer, [#874](https://github.com/Rdatatable/data.table/issues/874). Thanks to @bthieurmel for the FR and @MichaelChirico for the PR.
+  
+  45. Improved auto-detection of `character` inputs' formats to `as.ITime` to mirror the logic in `as.POSIXlt.character`, [#1383](https://github.com/Rdatatable/data.table/issues/1383) Thanks @franknarf1 for identifying a discrepancy and @MichaelChirico for investigating.
 
 #### BUG FIXES
 
