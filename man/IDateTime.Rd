@@ -29,6 +29,8 @@
 \alias{round.IDate}
 \alias{seq.IDate}
 \alias{split.IDate}
+\alias{second}
+\alias{minute}
 \alias{hour}   
 \alias{yday}   
 \alias{wday}   
@@ -64,6 +66,8 @@ as.ITime(x, ...)
 IDateTime(x, ...)
 \method{IDateTime}{default}(x, ...)
 
+second(x)
+minute(x)
 hour(x)   
 yday(x)   
 wday(x)   
@@ -148,10 +152,11 @@ round to weeks, months, quarters, and years.
    For \code{IDateTime}, a data table with columns \code{idate} and
    \code{itime} in \code{IDate} and \code{ITime} format.
 
-   \code{hour}, code{yday}, \code{wday}, \code{mday}, \code{week},
-   \code{month}, \code{quarter}, and \code{year} return integer values
-   for hour, day of year, day of week, day of month, week, month,
-   quarter, and year.
+   \code{second}, \code{minute}, \code{hour}, code{yday}, \code{wday}, 
+   \code{mday}, \code{week}, \code{month}, \code{quarter}, 
+   and \code{year} return integer values
+   for second, minute, hour, day of year, day of week, 
+   day of month, week, month, quarter, and year, respectively.
    
    These values are all taken directly from the \code{POSIXlt} representation of \code{x}, with the notable difference that while \code{yday}, \code{wday}, and \code{mon} are all 0-based, here they are 1-based.
    

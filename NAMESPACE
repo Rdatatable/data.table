@@ -100,7 +100,7 @@ S3method(na.omit, data.table)
 
 # IDateTime support:
 export(as.IDate,as.ITime,IDateTime)
-export(hour,yday,wday,mday,week,month,quarter,year)
+export(second,minute,hour,yday,wday,mday,week,month,quarter,year)
 
 export(as.chron.IDate, as.chron.ITime)
 export(as.Date.IDate) # workaround for zoo bug, see #1500
