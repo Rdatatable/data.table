@@ -313,6 +313,8 @@
   32. A message that default value of `by` will be changed from `key(x)` to `NULL` has been raised in this release if the data.table is keyed and `by` argument is missing. In the next release, `by=NULL` will be default. Partially handles [#1284](https://github.com/Rdatatable/data.table/issues/1284).
 
   33. Subsets with S4 objects in `i` are now faster, [#1438](https://github.com/Rdatatable/data.table/issues/1438). Thanks @DCEmilberg.
+  
+  34. Printing with `quote = TRUE` now quotes column names as well, [#1319](https://github.com/Rdatatable/data.table/issues/1319). Thanks @jan-glx for the suggestion and @MichaelChirico for the PR.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
