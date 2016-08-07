@@ -107,8 +107,8 @@ NULL
 2: 10
 > 
 > # Test that error in := doesn't suppress next valid print, bug #2376
-> try(DT[,foo:=ColumnNameTypo])         # error: not found.
-Error in eval(expr, envir, enclos) : object 'ColumnNameTypo' not found
+> tryCatch(DT[,foo:=ColumnNameTypo], error=function(e) e$message)         # error: not found.
+[1] "object 'ColumnNameTypo' not found"
 > DT                                    # yes
     a
 1: 10
