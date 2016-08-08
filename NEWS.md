@@ -93,6 +93,8 @@
   43. `first()` is now exported to return the first element of vectors, data.frames and data.tables.
   
   44. Added `second` and `minute` extraction functions which, like extant `hour`/`yday`/`week`/etc, always return an integer, [#874](https://github.com/Rdatatable/data.table/issues/874). Thanks to @bthieurmel for the FR and @MichaelChirico for the PR.
+  
+  45. `tables` gains `index` argument for supplementary metadata about `data.table`s in memory (or any optionally specified environment), part of [#1648](https://github.com/Rdatatable/data.table/issues/1648). Thanks due variously to @jangorecki, @rsaporta, @MichaelChirico for ideas and work towards PR.
 
 #### BUG FIXES
 
