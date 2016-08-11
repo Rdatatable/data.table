@@ -244,6 +244,8 @@
 
   71. `rbind` for data.tables now coerces non-list inputs to data.tables first before calling `rbindlist` so that binding list of data.tables and matrices work as expected to be consistent with base's rbind, [#1626](https://github.com/Rdatatable/data.table/issues/1626). Thanks @ems for reporting [here](http://stackoverflow.com/q/34426957/559784) on SO.
 
+  72. Subassigning a factor column with `NA` works as expected. Also, the warning message on coercion is suppressed when RHS is singleton NA, [#1740](https://github.com/Rdatatable/data.table/issues/1740). Thanks @Zus.
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

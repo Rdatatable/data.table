@@ -427,7 +427,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         if (isMatrix(thisvalue) && (j=INTEGER(getAttrib(thisvalue, R_DimSymbol))[1]) > 1)  // matrix passes above (considered atomic vector)
             warning("%d column matrix RHS of := will be treated as one vector", j);
         if ((coln+1)<=oldncol && isFactor(VECTOR_ELT(dt,coln)) &&
-            !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && !isReal(thisvalue) && !isNewList(thisvalue))  // !=INTSXP includes factor
+            !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue) && !isNewList(thisvalue))  // !=INTSXP includes factor
             error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
         if (nrow>0) {
             if (vlen>targetlen)
@@ -560,12 +560,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                     savetl_end();
                 } else {
                     // value is either integer or numeric vector
-                    if (TYPEOF(thisvalue)!=INTSXP && !isReal(thisvalue))
+                    if (TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue))
                         error("Internal logical error. Up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. Please report to datatable-help.", type2char(TYPEOF(thisvalue)), CHAR(STRING_ELT(names,coln)));
-                    if (isReal(thisvalue)) {
+                    if (isReal(thisvalue) || TYPEOF(thisvalue)==LGLSXP) {
                         PROTECT(RHS = coerceVector(thisvalue,INTSXP));
                         protecti++;
-                        warning("Coerced 'double' RHS to 'integer' to match the factor column's underlying type. Character columns are now recommended (can be in keys), or coerce RHS to integer or character first.");
+                        // silence warning on singleton NAs
+                        if (INTEGER(RHS)[0] != NA_INTEGER) warning("Coerced '%s' RHS to 'integer' to match the factor column's underlying type. Character columns are now recommended (can be in keys), or coerce RHS to integer or character first.", type2char(TYPEOF(thisvalue)));
                     } else RHS = thisvalue;
                     for (j=0; j<length(RHS); j++) {
                         if ( (INTEGER(RHS)[j]<1 || INTEGER(RHS)[j]>LENGTH(targetlevels)) 

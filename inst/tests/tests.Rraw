@@ -9123,6 +9123,11 @@ test(1693.7, month(t), 8L)
 test(1693.8, quarter(t), 3L)
 test(1693.9, year(t), 2016L)
 
+# fix for #1740 - sub-assigning NAs for factors
+dt = data.table(x = 1:5, y = factor(c("","a","b","a", "")), z = 5:9)
+ans = data.table(x = 1:5, y = factor(c(NA,"a","b","a", NA)), z = 5:9)
+test(1694.0, dt[y=="", y := NA], ans)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
