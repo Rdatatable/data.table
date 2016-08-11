@@ -5945,6 +5945,13 @@ test(1463.30, shift(x,1L, type="lead"),     c(x[-1L], NA))
 test(1463.31, shift(x,1:2, type="lead"),    list(c(x[-1L],NA), c(x[-(1:2)],NA,NA)))
 test(1463.32, shift(x,1L, 0L, type="lead"), c(x[-(1)], FALSE))
 
+# for list of list, #1595
+x = data.table(foo = c(list(c("a","b","c")), list(c("b","c")), list(c("a","b")), list(c("a"))), id = c(1,1,2,2))
+test(1463.33, x[, shift(list(foo)), by=id],
+    data.table(id=c(1,1,2,2), V1=list(NA, c("a", "b", "c"), NA, c("a", "b"))))
+test(1463.34, x[, shift(list(foo), type="lead", fill=NA_integer_), by=id],
+    data.table(id=c(1,1,2,2), V1=list(c("b", "c"), NA_integer_, c("a"), NA_integer_)))
+
 # Fix for #1009 segfault in shift
 val = runif(1)
 test(1463.33, shift(val, 2L), NA_real_)

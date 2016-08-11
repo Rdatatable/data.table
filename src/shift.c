@@ -110,6 +110,18 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         copyMostAttrib(this, tmp);
                     }
                 break;
+
+		case VECSXP :
+		    thisfill = PROTECT(coerceVector(fill, VECSXP));
+		    for (j=0; j<nk; j++) {
+			tmp = allocVector(VECSXP, xrows);
+			SET_VECTOR_ELT(ans, i*nk+j, tmp);
+			for (m=0; m<xrows; m++)
+			    SET_VECTOR_ELT(tmp, m, (m < INTEGER(k)[j]) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(this, m - INTEGER(k)[j]));
+			copyMostAttrib(this, tmp);
+		    }
+		break;
+
                 default :
                     error("Unsupported type '%s'", type2char(TYPEOF(this)));
             }
@@ -193,6 +205,18 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         copyMostAttrib(this, tmp);
                     }
                 break;
+
+		case VECSXP :
+		    thisfill = PROTECT(coerceVector(fill, VECSXP));
+		    for (j=0; j<nk; j++) {
+			tmp = allocVector(VECSXP, xrows);
+			SET_VECTOR_ELT(ans, i*nk+j, tmp);
+			for (m=0; m<xrows; m++)
+			    SET_VECTOR_ELT(tmp, m, (xrows-m <= INTEGER(k)[j]) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(this, m + INTEGER(k)[j]));
+			copyMostAttrib(this, tmp);
+		    }
+		break;
+
     	        default :
     	            error("Unsupported type '%s'", type2char(TYPEOF(this)));
         	}
