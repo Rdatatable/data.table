@@ -194,7 +194,7 @@ str(DT.c1) ## gender column is character type now!
 
 #
 
-In fact, `base::reshape` is capable of performing this operation in a very straightforward manner. It is an extremely useful and often underrated function. You should definitely give it a try!
+In fact, `stats::reshape` is capable of performing this operation in a very straightforward manner. It is an extremely useful and often underrated function. You should definitely give it a try!
 
 ## 3. Enhanced (new) functionality
 
