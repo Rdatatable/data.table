@@ -75,6 +75,7 @@ SEXP getThreads();
 SEXP nqnewindices();
 SEXP fsort();
 SEXP inrange();
+SEXP between();
 
 // .Externals
 SEXP fastmean();
@@ -152,6 +153,7 @@ R_CallMethodDef callMethods[] = {
 {"Cnqnewindices", (DL_FUNC) &nqnewindices, -1},
 {"Cfsort", (DL_FUNC) &fsort, -1},
 {"Cinrange", (DL_FUNC) &inrange, -1},
+{"Cbetween", (DL_FUNC) &between, -1},
 {NULL, NULL, 0}
 };
 

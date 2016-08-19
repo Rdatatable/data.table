@@ -9128,6 +9128,13 @@ dt = data.table(x = 1:5, y = factor(c("","a","b","a", "")), z = 5:9)
 ans = data.table(x = 1:5, y = factor(c(NA,"a","b","a", NA)), z = 5:9)
 test(1694.0, dt[y=="", y := NA], ans)
 
+# more tests for between()
+x = c(NaN, NA, 1, 5, -Inf, Inf)
+test(1695.1, x %between% c(3, 7), c(NA, NA, FALSE, TRUE, FALSE, FALSE))
+test(1695.2, x %between% c(NA, 7), c(NA, NA, NA, NA, NA, FALSE))
+test(1695.3, x %between% c(3, NA), c(NA, NA, FALSE, NA, FALSE, NA))
+test(1695.4, x %between% c(NA, NA), rep(NA, 6L))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

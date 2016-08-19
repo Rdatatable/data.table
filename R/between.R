@@ -1,7 +1,14 @@
 # is x[i] in between lower[i] and upper[i] ? 
 between <- function(x,lower,upper,incbounds=TRUE) {
-  if(incbounds) x>=lower & x<=upper
-  else x>lower & x<upper
+    is_strictly_numeric <- function(x) is.numeric(x) && !"integer64" %in% class(x)
+    if (is_strictly_numeric(x) && is_strictly_numeric(lower) &&
+	is_strictly_numeric(upper) && length(lower) == 1L && length(upper) == 1L) {
+	# faster parallelised version for int/double for most common scenario
+	.Call("Cbetween", x, lower, upper, incbounds)
+    } else {
+	if(incbounds) x>=lower & x<=upper
+	else x>lower & x<upper
+    }
 }
 
 # %between% is vectorised, #534.
