@@ -23,7 +23,7 @@ inrange <- function(x,lower,upper,incbounds=TRUE) {
     ops = if (incbounds) c(4L, 2L) else c(5L, 3L) # >=,<= and >,<
     ans = bmerge(shallow(subject), query, 1:2, c(1L,1L), FALSE, xo <- forderv(query), 
             0, c(FALSE, TRUE), 0L, "all", ops, integer(0), 
-            1L, FALSE)
+            1L, getOption("datatable.verbose")) # fix for #1819, turn on verbose messages
     setDT(ans[c("starts", "lens")], key=c("starts", "lens"))
     .Call(Cinrange, idx <- rep(FALSE, length(x)), xo, ans[["starts"]], ans[["lens"]])
     idx

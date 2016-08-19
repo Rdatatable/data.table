@@ -9135,6 +9135,14 @@ test(1695.2, x %between% c(NA, 7), c(NA, NA, NA, NA, NA, FALSE))
 test(1695.3, x %between% c(3, NA), c(NA, NA, FALSE, NA, FALSE, NA))
 test(1695.4, x %between% c(NA, NA), rep(NA, 6L))
 
+# test for #1819, verbose message for bmerge
+old_opt = getOption("datatable.verbose")
+options(datatable.verbose = TRUE)
+x = data.table(A = 10:17)
+test(1696.0, grepl("bmerge", capture.output(DT[A %inrange% 13:14])[1L]), TRUE)
+# restore verbosity
+options(datatable.verbose = old_opt)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
