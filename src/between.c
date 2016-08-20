@@ -1,8 +1,5 @@
 #include "data.table.h"
 #include <Rdefines.h>
-#ifdef _OPENMP
-   #include <omp.h>
-#endif
 
 static double l=0.0, u=0.0;
 
@@ -57,16 +54,17 @@ Rboolean double_both_open(SEXP x, R_len_t i) {
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
 
     R_len_t i, nx = length(x), nl = length(lower), nu = length(upper);
+    l = 0.0; u = 0.0;
     SEXP ans;
     Rboolean (*flower)(), (*fupper)(), (*fboth)();
     if (!nx || !nl || !nu)
-	return (allocVector(LGLSXP, 0));
+        return (allocVector(LGLSXP, 0));
     if (nl != 1 && nl != nx)
-	error("length(lower) (%d) must be either 1 or length(x) (%d)", nl, nx);
+        error("length(lower) (%d) must be either 1 or length(x) (%d)", nl, nx);
     if (nu != 1 && nu != nx)
-	error("length(upper) (%d) must be either 1 or length(x) (%d)", nu, nx);
+        error("length(upper) (%d) must be either 1 or length(x) (%d)", nu, nx);
     if (!isLogical(bounds) || LOGICAL(bounds)[0] == NA_LOGICAL)
-	error("incbounds must be logical TRUE/FALSE.");
+        error("incbounds must be logical TRUE/FALSE.");
 
     // no support for int64 yet (only handling most common cases)
     // coerce to also get NA values properly
@@ -75,31 +73,31 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
     ans   = PROTECT(allocVector(LGLSXP, nx));
 
     if (LOGICAL(bounds)[0]) {
-	fupper = isInteger(x) ? &int_upper_closed : &double_upper_closed;
-	flower = isInteger(x) ? &int_lower_closed : &double_lower_closed;
-	fboth  = isInteger(x) ? &int_both_closed  : &double_both_closed;
+        fupper = isInteger(x) ? &int_upper_closed : &double_upper_closed;
+        flower = isInteger(x) ? &int_lower_closed : &double_lower_closed;
+        fboth  = isInteger(x) ? &int_both_closed  : &double_both_closed;
     } else {
-	fupper = isInteger(x) ? &int_upper_open : &double_upper_open;
-	flower = isInteger(x) ? &int_lower_open : &double_lower_open;
-	fboth  = isInteger(x) ? &int_both_open  : &double_both_open;
+        fupper = isInteger(x) ? &int_upper_open : &double_upper_open;
+        flower = isInteger(x) ? &int_lower_open : &double_lower_open;
+        fboth  = isInteger(x) ? &int_both_open  : &double_both_open;
     }
 
     if ( ISNAN(REAL(lower)[0]) ) {
-	if ( ISNAN(REAL(upper)[0]) ) {
-	    #pragma omp parallel for
-	    for (i=0; i<nx; i++) LOGICAL(ans)[i] = NA_LOGICAL;
-	} else {
-	    #pragma omp parallel for
-	    for (i=0; i<nx; i++) LOGICAL(ans)[i] = fupper(x, i);
-	}
+        if ( ISNAN(REAL(upper)[0]) ) {
+            #pragma omp parallel for
+            for (i=0; i<nx; i++) LOGICAL(ans)[i] = NA_LOGICAL;
+        } else {
+            #pragma omp parallel for
+            for (i=0; i<nx; i++) LOGICAL(ans)[i] = fupper(x, i);
+        }
     } else {
-	if ( ISNAN(REAL(upper)[0]) ) {
-	    #pragma omp parallel for
-	    for (i=0; i<nx; i++) LOGICAL(ans)[i] = flower(x, i);
-	} else {
-	    #pragma omp parallel for
-	    for (i=0; i<nx; i++) LOGICAL(ans)[i] = fboth(x, i);
-	}
+        if ( ISNAN(REAL(upper)[0]) ) {
+            #pragma omp parallel for
+            for (i=0; i<nx; i++) LOGICAL(ans)[i] = flower(x, i);
+        } else {
+            #pragma omp parallel for
+            for (i=0; i<nx; i++) LOGICAL(ans)[i] = fboth(x, i);
+        }
     }
     UNPROTECT(3);
     return(ans);

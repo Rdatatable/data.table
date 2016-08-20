@@ -9137,6 +9137,21 @@ test(1695.2, x %between% c(NA, 7), c(NA, NA, NA, NA, NA, FALSE))
 test(1695.3, x %between% c(3, NA), c(NA, NA, FALSE, NA, FALSE, NA))
 test(1695.4, x %between% c(NA, NA), rep(NA, 6L))
 
+x = c(NA, 1L, 5L)
+test(1695.5, x %between% c(3, 7), c(NA, FALSE, TRUE))
+test(1695.6, x %between% c(NA, 7), c(NA, NA, NA))
+test(1695.7, x %between% c(3, NA), c(NA, FALSE, NA))
+test(1695.8, x %between% c(NA, NA), rep(NA, 3L))
+
+x = rep(NA_integer_, 3)
+test(1695.9, x %between% c(3, 7), rep(NA, 3L))
+test(1695.10, x %between% c(NA, 7), rep(NA, 3L))
+test(1695.11, x %between% c(3, NA), rep(NA, 3L))
+test(1695.12, x %between% c(NA, NA), rep(NA, 3L))
+
+x = integer(0)
+test(1695.13, x %between% c(3, 7), logical(0))
+
 # test for #1819, verbose message for bmerge
 old_opt = getOption("datatable.verbose")
 options(datatable.verbose = TRUE)
