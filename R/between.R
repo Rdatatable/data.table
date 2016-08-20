@@ -21,11 +21,19 @@ inrange <- function(x,lower,upper,incbounds=TRUE) {
     query = setDT(list(x=x))
     subject = setDT(list(l=lower, u=upper))
     ops = if (incbounds) c(4L, 2L) else c(5L, 3L) # >=,<= and >,<
-    ans = bmerge(shallow(subject), query, 1:2, c(1L,1L), FALSE, xo <- forderv(query), 
+    verbose = getOption("datatable.verbose")
+    if (verbose) {last.started.at=proc.time()[3];cat("forderv(query) took ... ");flush.console()}
+    xo = forderv(query)
+    if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+    ans = bmerge(shallow(subject), query, 1:2, c(1L,1L), FALSE, xo, 
             0, c(FALSE, TRUE), 0L, "all", ops, integer(0), 
-            1L, getOption("datatable.verbose")) # fix for #1819, turn on verbose messages
+            1L, verbose) # fix for #1819, turn on verbose messages
+    options(datatable.verbose=FALSE)
     setDT(ans[c("starts", "lens")], key=c("starts", "lens"))
-    .Call(Cinrange, idx <- rep(FALSE, length(x)), xo, ans[["starts"]], ans[["lens"]])
+    options(datatable.verbose=verbose)
+    if (verbose) {last.started.at=proc.time()[3];cat("Generating final logical vector ... ");flush.console()}
+    .Call(Cinrange, idx <- vector("logical", length(x)), xo, ans[["starts"]], ans[["lens"]])
+    if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
     idx
 }
 

@@ -8781,6 +8781,8 @@ range = data.table(start = 1:5, end = 6:10)
 test(1659.1, dt[a %inrange% range], dt[1:4])
 test(1659.2, dt[inrange(a, range$start, range$end)], dt[1:4])
 test(1659.3, dt[inrange(a, range$start, range$end, incbounds=FALSE)], dt[c(1,2,4)])
+range[4, `:=`(start=-12L, end=-4L)]
+test(1659.5, dt[a %inrange% range], dt)
 
 # tests for non-equi joins returning columns correctly when j is missing
 dt1 = fread('Chr    Start    End    Region
@@ -9139,7 +9141,7 @@ test(1695.4, x %between% c(NA, NA), rep(NA, 6L))
 old_opt = getOption("datatable.verbose")
 options(datatable.verbose = TRUE)
 x = data.table(A = 10:17)
-test(1696.0, grepl("bmerge", capture.output(DT[A %inrange% 13:14])[1L]), TRUE)
+test(1696.0, any(grepl("bmerge", capture.output(x[A %inrange% 13:14]))), TRUE)
 # restore verbosity
 options(datatable.verbose = old_opt)
 
