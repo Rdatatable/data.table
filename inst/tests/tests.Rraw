@@ -9160,6 +9160,14 @@ test(1696.0, any(grepl("bmerge", capture.output(x[A %inrange% 13:14]))), TRUE)
 # restore verbosity
 options(datatable.verbose = old_opt)
 
+# adding a test for #1825 (though it is not on timing, but correctness while 
+# joining on keyed tables using 'on' argument)
+x = data.table(a=1:3, b=4:6, key="a")
+y = data.table(a=2:4, c=7:9)
+test(1697.1, x[y], x[y, on=key(x)])
+y = data.table(m=2:4, c=7:9, key="m")
+test(1697.2, x[y], x[y, on=c(a="m")])
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

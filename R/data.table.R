@@ -466,7 +466,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             assign("x", x, order_env)
             i = eval(isub, order_env, parent.frame())             # for optimisation of 'order' to 'forder'
             # that forder returns integer(0) is taken care of internally within forder
-          } else if (is.call(isub) &&
+        } else if (is.call(isub) &&
                      getOption("datatable.use.index") && # #1422
                      as.character(isub[[1L]]) %chin% c("==","%in%") &&
                      is.name(isub[[2L]]) &&
@@ -638,20 +638,22 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
                 }
                 if (is.na(non_equi)) {
-                    # equi join. try and reuse secondary index, #1439
-                    xo = if (isTRUE(getOption("datatable.use.index"))) {
+                    # equi join. use existing key (#1825) or existing secondary index (#1439)
+                    if ( identical(head(key(x), length(on)), names(on)) ) {
+                        xo = integer(0)
+                    } else if (isTRUE(getOption("datatable.use.index"))) {
                         if (verbose) cat("Looking for existing (secondary) index... ")
-                        attr(attr(x, 'index'), paste("__", names(x)[rightcols], sep="", collapse=""))
-                    }
-                    if (is.null(xo)) {
-                        if (verbose) {
-                            if (isTRUE(getOption("datatable.use.index"))) cat("not found.\n")
-                            last.started.at=proc.time()[3];cat("forder took... \n");flush.console()
-                            xo = forderv(x, by=rightcols)
-                            cat("",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console
-                        } else xo = forderv(x, by = rightcols)
-                    } else {
-                        if (verbose) cat("found. Reusing index.\n")
+                        xo =  attr(attr(x, 'index'), paste("__", names(on), sep="", collapse=""))
+                        if (is.null(xo)) {
+                            if (verbose) {
+                                if (isTRUE(getOption("datatable.use.index"))) cat("not found.\n")
+                                last.started.at=proc.time()[3];cat("forder took... \n");flush.console()
+                                xo = forderv(x, by=rightcols)
+                                cat("",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console
+                            } else xo = forderv(x, by = rightcols)
+                        } else {
+                            if (verbose) cat("found. Reusing index.\n")
+                        }
                     }
                 }
             } else if (is.null(xo)) {
