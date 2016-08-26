@@ -242,7 +242,7 @@
   
   69. Added `as.IDate.POSIXct` to prevent loss of timezone information, [#1498](https://github.com/Rdatatable/data.table/issues/1498). Thanks @dougedmunds for reporting and @MichaelChirico for the investigating & fixing.
 
-  70. Retaining / removing keys is handled better when join is performed on non-key columns using `on` argument, [#1766](https://github.com/Rdatatable/data.table/issues/1766) and [#1704](https://github.com/Rdatatable/data.table/issues/1704). Thanks @mllg and @DavidArenburg.
+  70. Retaining / removing keys is handled better when join is performed on non-key columns using `on` argument, [#1766](https://github.com/Rdatatable/data.table/issues/1766), [#1704](https://github.com/Rdatatable/data.table/issues/1704) and [#1823](https://github.com/Rdatatable/data.table/issues/1823). Thanks @mllg, @DavidArenburg and @mllg.
 
   71. `rbind` for data.tables now coerces non-list inputs to data.tables first before calling `rbindlist` so that binding list of data.tables and matrices work as expected to be consistent with base's rbind, [#1626](https://github.com/Rdatatable/data.table/issues/1626). Thanks @ems for reporting [here](http://stackoverflow.com/q/34426957/559784) on SO.
 

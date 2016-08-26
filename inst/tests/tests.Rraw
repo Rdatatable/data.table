@@ -9168,6 +9168,11 @@ test(1697.1, x[y], x[y, on=key(x)])
 y = data.table(m=2:4, c=7:9, key="m")
 test(1697.2, x[y], x[y, on=c(a="m")])
 
+# #1823, fix for 'on='' on keyed anti-joins loses key
+x = data.table(id = 1:10, val = letters[1:10], key = "id")
+y = data.table(id = 3:6, key = "id")
+test(1698.1, key(x[!y]), key(x[!y, on = "id"]))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
