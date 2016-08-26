@@ -69,6 +69,7 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
             vals = replicate(length(funs), vals)
         else stop("When 'fun.aggregate' and 'value.var' are both lists, 'value.var' must be either of length =1 or =length(fun.aggregate).")
     }
+    only_one_fun = length(unlist(funs)) == 1L
     dots = list(...)
     construct_funs <- function(fun, val) {
         if (!is.list(fun)) fun = list(fun)
@@ -82,7 +83,8 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
                     expr = c(expr, dots)
                 ans[[k]] = as.call(expr)
                 # changed order of arguments here, #1153
-                nms[k] = paste(j, all.names(i, max.names=1L, functions=TRUE), sep=sep)
+                nms[k] = if (only_one_fun) j else 
+                            paste(j, all.names(i, max.names=1L, functions=TRUE), sep=sep)
                 k = k+1L;
             }
         }

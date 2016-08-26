@@ -9177,6 +9177,17 @@ test(1698.1, key(x[!y]), key(x[!y, on = "id"]))
 dt = data.table(x=c(1,1,1,2,2,2), y=1:6, z=6:1)
 test(1699.1, dcast(dt, x ~ ., value.var="z", fun=list(sd, mean)), data.table(x=c(1,2), z_sd=1, z_mean=c(5,2), key="x"))
 
+# minor enhancement to dcast, #1810
+dt = data.table(
+    var1 = c("a","b","c","b","d","e","f"),
+    var2 = c("aa","bb","cc","dd","ee","ee","ff"),
+    subtype = c("1","2","2","2","1","1","2"),
+    type = c("A","A","A","A","B","B","B")
+)
+test(1700.1, dcast(dt, type ~ subtype, value.var = c("var1", "var2"), fun = function(v) paste0(unique(v), collapse = "|")), 
+    data.table(type=c("A","B"), var1_1=c("a", "d|e"), var1_2=c("b|c", "f"), 
+                var2_1=c("aa", "ee"), var2_2=c("bb|cc|dd","ff"), key="type"))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
