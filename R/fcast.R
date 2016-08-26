@@ -202,7 +202,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
         allcols = do.call("paste", c(rhs, sep=sep))
         if (length(valnames) > 1L)
             allcols = do.call("paste", if (identical(".", allcols)) list(valnames, sep=sep) 
-                        else c(CJ(valnames, all.cols, sorted=FALSE), sep=sep))
+                        else c(CJ(valnames, allcols, sorted=FALSE), sep=sep))
             # removed 'setcolorder()' here, #1153
         setattr(ans, 'names', c(lhsnames, allcols))
         setDT(ans); setattr(ans, 'sorted', lhsnames)
