@@ -201,7 +201,8 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
         ans = .Call("Cfcast", lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call))
         allcols = do.call("paste", c(rhs, sep=sep))
         if (length(valnames) > 1L)
-            allcols = do.call("paste", c(CJ(valnames, allcols, sorted=FALSE), sep=sep))
+            allcols = do.call("paste", if (identical(".", allcols)) list(valnames, sep=sep) 
+                        else c(CJ(valnames, all.cols, sorted=FALSE), sep=sep))
             # removed 'setcolorder()' here, #1153
         setattr(ans, 'names', c(lhsnames, allcols))
         setDT(ans); setattr(ans, 'sorted', lhsnames)

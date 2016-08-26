@@ -322,6 +322,8 @@
 
   33. Subsets with S4 objects in `i` are now faster, [#1438](https://github.com/Rdatatable/data.table/issues/1438). Thanks @DCEmilberg.
 
+  34. When formula RHS is `.` and multiple functions are provided to `fun.aggregate`, column names of the cast data.table columns don't have the `.` in them, as it doesn't add any useful information really, [#1821](https://github.com/Rdatatable/data.table/issues/1821). Thanks @franknarf1.
+
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
 #### NEW FEATURES
