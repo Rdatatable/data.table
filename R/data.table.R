@@ -793,6 +793,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     byval = NULL
     xnrow = nrow(x)
     xcols = xcolsAns = icols = icolsAns = integer()
+    xdotcols = FALSE
     othervars = character(0)
     if (missing(j)) {
         # missing(by)==TRUE was already checked above before dealing with i
@@ -817,6 +818,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         }
         ansvals = chmatch(ansvars, nx)
     } else {
+        if (is.data.table(i)) {
+            idotprefix = paste0("i.", names(i))
+            xdotprefix = paste0("x.", names(x))
+        } else idotprefix = xdotprefix = character(0)
+
         # j was substituted before dealing with i so that := can set allow.cartesian=FALSE (#800) (used above in i logic)
         if (is.null(jsub)) return(NULL)
         if (is.call(jsub) && jsub[[1L]]==":=") {
@@ -1093,7 +1099,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     }
                 }
                 # fix for long standing FR/bug, #495 and #484
-                allcols = c(names(x), paste("x.",names(x),sep=""), if (is.data.table(i)) c(names(i), paste("i.", names(i), sep="")))
+                allcols = c(names(x), xdotprefix, names(i), idotprefix)
                 if ( length(othervars <- setdiff(intersect(av, allcols), c(bynames, ansvars))) ) {
                     # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or 
                     # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc., 
@@ -1103,7 +1109,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
             } else {
                 if (!missing(.SDcols)) warning("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
-                allcols = c(names(x), paste("x.",names(x),sep=""), if (is.data.table(i)) c(names(i), paste("i.", names(i), sep="")))
+                allcols = c(names(x), xdotprefix, names(i), idotprefix)
                 ansvars = setdiff(intersect(av,allcols), bynames)
                 if (verbose) cat("Detected that j uses these columns:",if (!length(ansvars)) "<none>" else paste(ansvars,collapse=","),"\n")
                 # using a few named columns will be faster
@@ -1123,7 +1129,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
                 }
                 if (length(ansvars)) othervars = ansvars # #1744 fix
-                allcols = c(names(x), paste("x.",names(x),sep=""), if (is.data.table(i)) c(names(i), paste("i.", names(i), sep="")))
+                allcols = c(names(x), xdotprefix, names(i), idotprefix)
                 ansvars = setdiff(allcols,bynames) # fix for bug #5443
                 ansvals = chmatch(ansvars, names(x))
                 if (length(othervars)) othervars = setdiff(ansvars, othervars) # #1744 fix
@@ -1245,9 +1251,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # patch for #1615. Allow 'x.' syntax. Only useful during join op when x's join col needs to be used.
             # Note that I specifically have not implemented x[y, aa, on=c(aa="bb")] to refer to x's join column 
             # as well because x[i, col] == x[i][, col] will not be TRUE anymore..
-            xjoincols = paste("x.",names(x),sep="")
-            if ( any(xjoinvals <- ansvars %in% xjoincols))
-                w[xjoinvals] = chmatch(ansvars[xjoinvals], xjoincols)
+            if ( any(xdotprefixvals <- ansvars %in% xdotprefix)) {
+                w[xdotprefixvals] = chmatch(ansvars[xdotprefixvals], xdotprefix)
+                xdotcols = TRUE
+            }
             if (!any(wna <- is.na(w))) {
                 xcols = w
                 xcolsAns = seq_along(ansvars)
@@ -1514,6 +1521,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (length(xcols)) {
         #  TODO add: if (length(alloc)==nrow(x)) stop("There is no need to deep copy x in this case")
         SDenv$.SDall = .Call(CsubsetDT,x,alloc,xcols)    # must be deep copy when largest group is a subset
+        if (xdotcols) setattr(SDenv$.SDall, 'names', ansvars[seq_along(xcols)]) # now that we allow 'x.' prefix in 'j'
         SDenv$.SD = if (!length(othervars)) SDenv$.SDall else shallow(SDenv$.SDall, setdiff(ansvars, othervars))
     }
     if (nrow(SDenv$.SDall)==0L) {

@@ -61,7 +61,7 @@
   
   29. New `split` method for data.table. Faster, more flexible and consistent with data.frame method. Closes [#1389](https://github.com/Rdatatable/data.table/issues/1389).
 
-  30. x's columns can be referred to in `j` using the prefix `x.` at all times. This is particularly useful when it is necessary to x's column that is *also a join column*. This is a patch addressing [#1615](https://github.com/Rdatatable/data.table/issues/1615).
+  30. x's columns can be referred to in `j` using the prefix `x.` at all times. This is particularly useful when it is necessary to x's column that is *also a join column*. This is a patch addressing [#1615](https://github.com/Rdatatable/data.table/issues/1615). Also closes [#1705](https://github.com/Rdatatable/data.table/issues/1705) (thanks @dbetebenner) and [#1761](https://github.com/Rdatatable/data.table/issues/1761).
   
   31. New function `fwrite` implements [#580](https://github.com/Rdatatable/data.table/issues/580). Thanks to Otto Seiskari for C code, R wrapper, manual page and extensive tests.
 

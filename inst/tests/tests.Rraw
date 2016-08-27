@@ -4556,10 +4556,10 @@ test(1288.16, rbindlist(ll, fill=TRUE), error="fill=TRUE, but names of input lis
 # TO DO: TODO: think of and add more tests for rbindlist
 
 # fix for #5647
-dt <- data.table(x=1L, y=1:10)
+dt = data.table(x=1L, y=1:10)
 cp = copy(dt)
 test(1289.1, dt[,z := c(rep(NA, 5), y), by=x], cp[, z := c(rep(NA, 5), y[1:5])], warning="RHS 1 is length 15")
-dt<-data.table(x=c(1:2), y=1:10)
+dt = data.table(x=c(1:2), y=1:10)
 cp = copy(dt)
 test(1289.2, dt[, z := c(rep(NA, 5),y), by=x], cp[, z := rep(NA_integer_, 10)], warning="RHS 1 is length 10")
 
@@ -9187,6 +9187,22 @@ dt = data.table(
 test(1700.1, dcast(dt, type ~ subtype, value.var = c("var1", "var2"), fun = function(v) paste0(unique(v), collapse = "|")), 
     data.table(type=c("A","B"), var1_1=c("a", "d|e"), var1_2=c("b|c", "f"), 
                 var2_1=c("aa", "ee"), var2_2=c("bb|cc|dd","ff"), key="type"))
+
+# fixing regression introduced on providing functionality of 'x.' prefix in 'j' (for non-equi joins)
+A = data.table(x=c(1,1,1,2,2), y=1:5, z=5:1)
+B = data.table(x=c(2,3), val=4)
+col1 = "y"
+col2 = "x.y"
+test(1701.1, A[, .(length(x), length(y)), by=x], data.table(x=c(1,2), V1=1L, V2=c(3:2)))
+test(1701.2, A[, .(x), by=x], data.table(x=c(1,2), x=c(1,2)))
+test(1701.3, A[B, x.x, on="x"], c(2,2,NA))
+test(1701.4, A[B, x.y, on="x"], c(4:5,NA))
+test(1701.5, A[B, .(get("x"), get("x.x")), on="x"], data.table(V1=c(2,2,3), V2=c(2,2,NA)))
+test(1701.6, A[B, mget(c("x", "x.x")), on="x"], data.table(x=c(2,2,3), x.x=c(2,2,NA)))
+# 1761 fix as well 
+test(1701.6, A[B, .(x.x, get("x.x"), x.y), on="x", by=.EACHI], data.table(x=c(2,2,3), x.x=c(2,2,NA), V2=c(2,2,NA), x.y=c(4:5,NA)))
+dt = data.table(a=1L)
+test(1701.7, dt[dt, .(xa=x.a, ia=i.a), .EACHI, on="a"], data.table(a=1L, xa=1L, ia=1L))
 
 ##########################
 
