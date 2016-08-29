@@ -92,7 +92,7 @@
 
   43. `first()` is now exported to return the first element of vectors, data.frames and data.tables.
   
-  44. Added `second` and `minute` extraction functions which, like extant `hour`/`yday`/`week`/etc, always return an integer, [#874](https://github.com/Rdatatable/data.table/issues/874). Thanks to @bthieurmel for the FR and @MichaelChirico for the PR.
+  44. Added `second` and `minute` extraction functions which, like extant `hour`/`yday`/`week`/etc, always return an integer, [#874](https://github.com/Rdatatable/data.table/issues/874). Also added ISO 8601-consistent weeks in `isoweek`, [#1765](https://github.com/Rdatatable/data.table/issues/1765). Thanks to @bthieurmel and @STATWORX for the FRs and @MichaelChirico for the PRs. 
 
   44. `shift()` understands and operates on list-of-list inputs as well, [#1595](https://github.com/Rdatatable/data.table/issues/1595). Thanks to @enfascination and to @chris for [asking on SO](http://stackoverflow.com/q/38900293/559784).
 
