@@ -228,6 +228,25 @@ yday    <- function(x) as.POSIXlt(x)$yday + 1L
 wday    <- function(x) as.POSIXlt(x)$wday + 1L
 mday    <- function(x) as.POSIXlt(x)$mday
 week    <- function(x) yday(x) %/% 7L + 1L
+isoweek <- function(x) {
+  #ISO 8601-conformant week, as described at
+  #  https://en.wikipedia.org/wiki/ISO_week_date
+  
+  #Approach:
+  # * Find nearest Thursday to each element of x
+  # * Find the number of weeks having passed between
+  #   January 1st of the year of the nearest Thursdays and x
+  
+  xlt <- as.POSIXlt(x)
+  
+  #We want Thursday to be 3 (4 by default in POSIXlt), so
+  #  subtract 1 and re-divide; also, POSIXlt increment by seconds
+  nearest_thurs <- xlt + (3 - ((xlt$wday - 1) %% 7)) * 86400
+  
+  year_start <- as.POSIXct(paste0(as.POSIXlt(nearest_thurs)$year + 1900L, "-01-01"))
+  
+  as.integer(1 + unclass(difftime(nearest_thurs, year_start, units = "days")) %/% 7)
+}
 month   <- function(x) as.POSIXlt(x)$mon + 1L
 quarter <- function(x) as.POSIXlt(x)$mon %/% 3L + 1L
 year    <- function(x) as.POSIXlt(x)$year + 1900L

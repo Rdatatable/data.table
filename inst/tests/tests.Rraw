@@ -9204,6 +9204,20 @@ test(1701.6, A[B, .(x.x, get("x.x"), x.y), on="x", by=.EACHI], data.table(x=c(2,
 dt = data.table(a=1L)
 test(1701.7, dt[dt, .(xa=x.a, ia=i.a), .EACHI, on="a"], data.table(a=1L, xa=1L, ia=1L))
 
+# ISO 8601-consistent week numbering, #1765
+#  test cases via https://en.wikipedia.org/wiki/ISO_week_date
+test_cases <- c("2005-01-01", "2005-01-02", "2005-12-31",
+                "2007-01-01", "2007-12-30", "2007-12-31",
+                "2008-01-01", "2008-12-28", "2008-12-29",
+                "2008-12-30", "2008-12-31", "2009-01-01", 
+                "2009-12-31", "2010-01-01",
+                "2010-01-02", "2010-01-03")
+
+test_values <- c(53L, 53L, 52L, 1L, 52L, 1L, 1L, 
+                 52L, 1L, 1L, 1L, 1L, 53L, 53L, 53L, 53L)
+
+test(1702, isoweek(test_cases), test_values)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

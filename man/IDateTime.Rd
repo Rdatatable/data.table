@@ -36,6 +36,7 @@
 \alias{wday}   
 \alias{mday}   
 \alias{week}   
+\alias{isoweek}
 \alias{month}  
 \alias{quarter}
 \alias{year}
@@ -73,6 +74,7 @@ yday(x)
 wday(x)   
 mday(x)   
 week(x)   
+isoweek(x)
 month(x)  
 quarter(x)
 year(x)   
@@ -135,7 +137,7 @@ intervals. \code{as.POSIXlt} is also useful. For example,
 \code{as.POSIXlt(x)$mon} is the integer month. The R base convenience
 functions \code{weekdays}, \code{months}, and \code{quarters} can also
 be used, but these return character values, so they must be converted to
-factors for use with data.table.
+factors for use with data.table. \code{isoweek} is ISO 8601-consistent.
 
 The \code{round} method for IDate's is useful for grouping and plotting. It can
 round to weeks, months, quarters, and years.
@@ -168,6 +170,7 @@ round to weeks, months, quarters, and years.
 
   H. Wickham, http://gist.github.com/10238.
   
+  ISO 8601, http://www.iso.org/iso/home/standards/iso8601.htm
 }
 
 \author{ Tom Short, t.short@ieee.org }
