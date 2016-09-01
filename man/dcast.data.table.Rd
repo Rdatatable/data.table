@@ -5,9 +5,9 @@
 \description{
   \code{dcast.data.table} is a much faster version of \code{reshape2::dcast}, but for \code{data.table}s. More importantly, it's capable of handling very large data quite efficiently in terms of memory usage in comparison to \code{reshape2::dcast}. 
 
-  From 1.9.6, \code{dcast} is a implemented as a S3 generic in \code{data.table}. To melt or cast data.tables, it is not necessary to load \code{reshape2} anymore. If you have to, then load \code{reshape2} package before loading \code{data.table}. 
+  From 1.9.6, \code{dcast} is implemented as an S3 generic in \code{data.table}. To melt or cast \code{data.table}s, it is not necessary to load \code{reshape2} anymore. If you have load \code{reshape2}, do so before loading \code{data.table} to prevent unwanted masking. 
 
-  \bold{NEW}: \code{dcast.data.table} can now cast multiple \code{value.var} columns and also accepts multiple functions under \code{fun.aggregate} argument. See \code{examples} for more.
+  \bold{NEW}: \code{dcast.data.table} can now cast multiple \code{value.var} columns and also accepts multiple functions to \code{fun.aggregate}. See Examples for more.
 }
 
 % \method{dcast}{data.table}
@@ -19,26 +19,26 @@
 }
 \arguments{
   \item{data}{ A \code{data.table}.}
-  \item{formula}{A formula of the form LHS ~ RHS to cast, see details.}
-  \item{fun.aggregate}{Should the data be aggregated before casting? If the formula doesn't identify single observation for each cell, then aggregation defaults to \code{length} with a message.
+  \item{formula}{A formula of the form LHS ~ RHS to cast, see Details.}
+  \item{fun.aggregate}{Should the data be aggregated before casting? If the formula doesn't identify a single observation for each cell, then aggregation defaults to \code{length} with a message.
 
-  \bold{NEW}: it is possible to provide a list of functions to \code{fun.aggregate} argument. See \code{examples}.}
-  \item{sep}{Default is \code{_} for backwards compatibility. Character vector of length 1, indicating the separating character in variable names generated during casting.}
-  \item{...}{Any other arguments that maybe passed to the aggregating function.}
+  \bold{NEW}: it is possible to provide a list of functions to \code{fun.aggregate}. See Examples. }
+  \item{sep}{Character vector of length 1, indicating the separating character in variable names generated during casting. Default is \code{_} for backwards compatibility. }
+  \item{...}{Any other arguments that may be passed to the aggregating function.}
   \item{margins}{Not implemented yet. Should take variable names to compute margins on. A value of \code{TRUE} would compute all margins.}
-  \item{subset}{Specified if casting should be done on subset of the data. Ex: subset = .(col1 <= 5) or subset = .(variable != "January").}
-  \item{fill}{Value to fill missing cells with. If \code{fun.aggregate} is present, takes the value by applying the function on 0-length vector.}
+  \item{subset}{Specified if casting should be done on a subset of the data. Ex: \code{subset = .(col1 <= 5)} or \code{subset = .(variable != "January")}.}
+  \item{fill}{Value with which to fill missing cells. If \code{fun.aggregate} is present, takes the value by applying the function on a 0-length vector.}
   \item{drop}{\code{FALSE} will cast by including all missing combinations. 
 
-  \bold{NEW:} Following \href{https://github.com/Rdatatable/data.table/issues/1512}{#1512}, \code{c(FALSE, TRUE)} will only include all missing combinations of formula \code{LHS}. And \code{c(TRUE, FALSE)} will only include all missing combinations of formula RHS. See examples.}
+  \bold{NEW:} Following \href{https://github.com/Rdatatable/data.table/issues/1512}{#1512}, \code{c(FALSE, TRUE)} will only include all missing combinations of formula \code{LHS}. And \code{c(TRUE, FALSE)} will only include all missing combinations of formula RHS. See Examples.}
   
   \item{value.var}{Name of the column whose values will be filled to cast. Function `guess()` tries to, well, guess this column automatically, if none is provided.
 
-  \bold{NEW}: it is possible to cast multiple \code{value.var} columns simultaneously now. See \code{examples}.}
-  \item{verbose}{Not used yet. Maybe dropped in the future or used to provide information messages onto the console.}
+  \bold{NEW}: it is now possible to cast multiple \code{value.var} columns simultaneously. See Examples. }
+  \item{verbose}{Not used yet. May be dropped in the future or used to provide informative messages through the console.}
 }
 \details{
-The cast formula takes the form \code{LHS ~ RHS}	, ex: \code{var1 + var2 ~ var3}. The order of entries in the formula is essential. There are two special variables: \code{.} and \code{...}. Their functionality is identical to that of \code{reshape2::dcast}. 
+The cast formula takes the form \code{LHS ~ RHS}, ex: \code{var1 + var2 ~ var3}. The order of entries in the formula is essential. There are two special variables: \code{.} and \code{...}. \code{.} represents no variable; \code{...} represents all variables not otherwise mentioned in \code{formula}; see Examples. 
 
 \code{dcast} also allows \code{value.var} columns of type \code{list}.
 
@@ -81,6 +81,17 @@ dcast(DT, v1 + v2 ~ v3)                      # default is drop=TRUE
 dcast(DT, v1 + v2 ~ v3, drop=FALSE)          # all missing combinations of both LHS and RHS
 dcast(DT, v1 + v2 ~ v3, drop=c(FALSE, TRUE)) # all missing combinations of only LHS
 dcast(DT, v1 + v2 ~ v3, drop=c(TRUE, FALSE)) # all missing combinations of only RHS
+
+# using . and ...
+DT <- data.table(v1 = rep(1:2, each = 6),
+                 v2 = rep(rep(1:3, 2), each = 2),
+                 v3 = rep(1:2, 6),
+                 v4 = rnorm(6))
+dcast(DT, ... ~ v3, value.var = "v4") #same as v1 + v2 ~ v3, value.var = "v4"
+dcast(DT, v1 + v2 + v3 ~ ., value.var = "v4")
+
+## for each combination of (v1, v2), add up all values of v4
+dcast(DT, v1 + v2 ~ ., value.var = "v4", fun.aggregate = sum)
 
 \dontrun{
 # benchmark against reshape2's dcast, minimum of 3 runs
