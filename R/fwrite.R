@@ -1,4 +1,4 @@
-fwrite <- function(x, file.path, append=FALSE, quote="auto",
+fwrite <- function(x, file.path, append=FALSE, quote=TRUE,
                    sep=",", eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
                    na="", col.names=TRUE, qmethod="double", verbose=FALSE, turbo=TRUE) {
 
