@@ -218,7 +218,7 @@
   
   58. Handled use of `.I` in some `GForce` operations, [#1683](https://github.com/Rdatatable/data.table/issues/1683). Thanks gibbz00 from SO and @franknarf1 for reporting and @MichaelChirico for the PR.
   
-  59. Added `+.IDate` method so that IDate + integer doesn't revert to `Date`, [#1528](https://github.com/Rdatatable/data.table/issues/1528); thanks @MichaelChirico for FR&PR.
+  59. Added `+.IDate` method so that IDate + integer doesn't revert to `Date`, [#1528](https://github.com/Rdatatable/data.table/issues/1528); also add `-.IDate`. Thanks @franknarf1 for [#1836](https://github.com/Rdatatable/data.table/issues/1836) highlighting the need for a subtraction method and @co_biostat on SO for drawing Frank's attention, as well as to MichaelChirico for FR (on `+`) & PR.
   
   60. Radix ordering an integer vector containing INTMAX (2147483647) with decreasing=TRUE and na.last=FALSE failed ASAN check and seg faulted some systems. As reported for base R [#16925](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16925) whose new code comes from data.table. Simplified code, added test and proposed change to base R.
 
