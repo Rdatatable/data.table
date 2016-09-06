@@ -49,7 +49,7 @@ static inline void writeInteger(int x, char **thisCh)
   char *ch = *thisCh;
   if (x == NA_INTEGER) {
     if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
-  } if (x == 0) {
+  } else if (x == 0) {
     *ch++ = '0';
   } else {
     if (x<0) { *ch++ = '-'; x=-x; }
