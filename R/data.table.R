@@ -527,7 +527,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 leftcols = rightcols = NULL  # these are used later to know whether a join was done, affects column order of result. So reset.
             }
         } else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
-          else i = eval(isub, parent.frame(), parent.frame())
+          else {
+               if (verbose) {
+                   i = tryCatch(eval(isub, parent.frame(), parent.frame()),
+                                error = identity)
+                   if (inherits(i, "error")) {
+                       if (grepl("not found", i$message))
+                           stop(i$message, "\nIs `", deparse(isub), "` a logical vector? If so, be sure to wrap in `()` to force evaluation as such")
+                   }
+               } else i = eval(isub, parent.frame(), parent.frame())
+          }
         if (restore.N) {
             assign(".N", old.N, envir=parent.frame())
             if (locked.N) lockBinding(".N", parent.frame())

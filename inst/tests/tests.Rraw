@@ -9218,6 +9218,13 @@ test_values <- c(53L, 53L, 52L, 1L, 52L, 1L, 1L,
 
 test(1702, isoweek(test_cases), test_values)
 
+# For #1844 -- with verbose, add potentially helpful
+#   pointer to error message when using logical
+#   column names incorrectly.
+rm(b)
+DT <- data.table(b = c(FALSE, TRUE), d = 1:2)
+test(1703, DT[b, verbose = TRUE], error = "be sure to wrap")
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
