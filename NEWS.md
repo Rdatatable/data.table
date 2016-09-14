@@ -325,6 +325,8 @@
   34. When formula RHS is `.` and multiple functions are provided to `fun.aggregate`, column names of the cast data.table columns don't have the `.` in them, as it doesn't add any useful information really, [#1821](https://github.com/Rdatatable/data.table/issues/1821). Thanks @franknarf1.
 
   35. Function names are added to column names on cast data.tables only when more than one function is provided, [#1810](https://github.com/Rdatatable/data.table/issues/1810). Thanks @franknarf1.
+  
+  36. The option `datatable.old.bywithoutby` to restore the old default has been removed. As warned 2 years ago in release notes and explicitly warned about for 1 year when used. Search down this file for the text 'bywithoutby' to see previous notes on this topic.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 

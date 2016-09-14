@@ -43,7 +43,6 @@
              "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
              "datatable.use.index"="TRUE",           # global switch to address #1422
              "datatable.fread.datatable"="TRUE",
-             "datatable.old.bywithoutby"="FALSE",    # temp rollback method for code migration, will be removed in future
              "datatable.fread.dec.experiment"="TRUE", # temp.  will remove once stable
              "datatable.fread.dec.locale"=if (.Platform$OS.type=="unix") "'fr_FR.utf8'" else "'French_France.1252'",
              "datatable.prettyprint.char" = NULL # FR #1091
@@ -51,6 +50,10 @@
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))
     }
+    
+    if (!is.null(getOption("datatable.old.bywithoutby")))
+        warning("Option 'datatable.old.bywithoutby' has been removed as warned for 2 years. It is now ignored. Please use by=.EACHI instead and stop using this option.")
+    
     # reshape2
     # Tried this :
     # if (!"package:reshape2" %in% search()) {
