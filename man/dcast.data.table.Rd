@@ -118,7 +118,7 @@ dcast(dt, x + y ~ z, fun=list(sum, mean), value.var=c("d1", "d2"))
 dcast(dt, x + y ~ z, fun=list(sum, mean), value.var=list("d1", "d2"))
 }
 \seealso{
-  \code{\link{melt.data.table}}, \code{\link{rowid}}, \url{http://cran.r-project.org/package=reshape}
+  \code{\link{melt.data.table}}, \code{\link{rowid}}, \url{https://cran.r-project.org/package=reshape}
 }
 \keyword{data}
 
