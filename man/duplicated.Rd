@@ -26,13 +26,13 @@ memory efficient.
 
 }
 \usage{
-\method{duplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...)
+\method{duplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...)
 
-\method{unique}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...)
+\method{unique}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...)
 
-\method{anyDuplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=key(x), ...)
+\method{anyDuplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...)
 
-uniqueN(x, by=if (is.data.table(x)) key(x) else NULL, na.rm=FALSE)
+uniqueN(x, by=if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE)
 }
 \arguments{
 \item{x}{ A data.table. \code{uniqueN} accepts atomic vectors and data.frames 
