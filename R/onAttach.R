@@ -18,5 +18,7 @@
     if (dev && (Sys.Date() - as.Date(d))>28) packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update.\n**********")
     packageStartupMessage('For help type ?data.table or https://github.com/Rdatatable/data.table/wiki')
     packageStartupMessage('The fastest way to learn (by data.table authors): https://www.datacamp.com/courses/data-analysis-the-data-table-way')
+    packageStartupMessage("By default all columns are now used by unique(), duplicated() and uniqueN() data.table methods. To restore old behaviour: setOption(datatable.old.unique.by.key=TRUE).")
   }
 }
+
