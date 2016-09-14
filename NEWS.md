@@ -328,7 +328,7 @@
   
   36. The option `datatable.old.bywithoutby` to restore the old default has been removed. As warned 2 years ago in release notes and explicitly warned about for 1 year when used. Search down this file for the text 'bywithoutby' to see previous notes on this topic.
   
-  37. By default all columns are now used by unique(), duplicated() and uniqueN() data.table methods. To restore old behaviour: setOption(datatable.old.unique.by.key=TRUE). Startup message added. In 1 year this option to restore the old default will be deprecated with warning. In 2 years the option will be removed.
+  37. By default all columns are now used by unique(), duplicated() and uniqueN() data.table methods, [#1284](https://github.com/Rdatatable/data.table/issues/1810) and [#1841](https://github.com/Rdatatable/data.table/issues/1841). To restore old behaviour: setOption(datatable.old.unique.by.key=TRUE). Startup message added. In 1 year this option to restore the old default will be deprecated with warning. In 2 years the option will be removed.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
