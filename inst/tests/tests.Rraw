@@ -9142,9 +9142,7 @@ if (nfail > 0) {
     stop(nfail," error",s1," out of ",ntest, " (lastID=",lastnum,", ",plat, ") in inst/tests/tests.Rraw on ",date(),". Search tests.Rraw for test number",s2,paste(whichfail,collapse=", "),".")
     # important to stop() here, so that 'R CMD check' fails
 }
-cat("\rAll ",ntest," tests (lastID=",lastnum,") in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date()," (",plat,")\n",sep="")
-# Reporting lastnum rather than ntest makes it easier to check user has the latest version, assuming
-# each release or patch has extra tests.
+cat("\n",plat,"\n\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
 # date() is included so we can tell when CRAN checks were run (in particular if they have been rerun since
 # an update to Rdevel itself; data.table doesn't have any other dependency) since there appears to be no other
 # way to see the timestamp that CRAN checks were run. Some CRAN machines lag by several days.
