@@ -20,7 +20,7 @@
     packageStartupMessage('The fastest way to learn (by data.table authors): https://www.datacamp.com/courses/data-analysis-the-data-table-way')
     packageStartupMessage('View documentation: browseVignettes("data.table")')
     packageStartupMessage('Test your data.table installation: test.data.table()')
-    packageStartupMessage("** By default all columns are now used by unique(), duplicated() and uniqueN(). To restore old default: setOption(datatable.old.unique.by.key=TRUE).")
+    packageStartupMessage("** By default all columns are now used by unique(), duplicated() and uniqueN(). To restore old default: options(datatable.old.unique.by.key=TRUE).")
   }
 }
 
