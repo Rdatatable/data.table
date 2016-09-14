@@ -16,9 +16,11 @@
     dev = as.integer(v[1,3])%%2 == 1  # version number odd
     packageStartupMessage("data.table ", v, if(dev) paste0(" IN DEVELOPMENT built ", d))
     if (dev && (Sys.Date() - as.Date(d))>28) packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update.\n**********")
-    packageStartupMessage('For help type ?data.table or https://github.com/Rdatatable/data.table/wiki')
+    packageStartupMessage('For help type ?data.table and browse sidebar on http://r-datatable.com')
     packageStartupMessage('The fastest way to learn (by data.table authors): https://www.datacamp.com/courses/data-analysis-the-data-table-way')
-    packageStartupMessage("By default all columns are now used by unique(), duplicated() and uniqueN() data.table methods. To restore old behaviour: setOption(datatable.old.unique.by.key=TRUE).")
+    packageStartupMessage('View documentation: browseVignettes("data.table")')
+    packageStartupMessage('Test your data.table installation: test.data.table()')
+    packageStartupMessage("** By default all columns are now used by unique(), duplicated() and uniqueN(). To restore old default: setOption(datatable.old.unique.by.key=TRUE).")
   }
 }
 
