@@ -4,13 +4,38 @@
    #include <omp.h>
 #endif
 
+/*
+* TODO: test. Taking a subset of fewer rows just goes single threaded.
+* TODO: going parallel or not should also depend on the number of columns
+* TODO: within column is good, but go parallel across columns, too
+*/
+#define P_THRESH 1000
+
 static union {
     double d;
     long long ll;
 } naval;
 
-#define P_THRESH 1000  // TODO: test.  Taking a subset of fewer rows just goes single threaded.
-                       // TODO: within column is good, but go parallel across columns, too
+/*
+* Previously subsetVectorRaw contained 
+*   1) separate code for parallel and non-parallel versions which can become 
+*       to maintain, and
+*   2) computed the indices to schedule for each thread *for every column*!! 
+*       That is just inefficient. 
+*
+* Therefore, I've moved the logic for computing the row indices start for 
+* each thread to 'chk_idx()'. These globals are necessary for that. '*ctr'
+* contains the start row index that each thread will start with, and 'nthr' 
+* contains the number of threads (based on our <new> condition).
+* 
+* TODO: verify if the number of threads when set will definitely be available 
+* completely within the function call. That is, 'chk_idx()' is called from 
+* 'subsetDT()'. Let's say at this time we've figured out 'nthr=4'. Is it 100% 
+* certain that the same 4 threads will be available for each call to 
+* 'subsetVectorRaw()'? I think so, but not sure.. If so, this logic *might* 
+* create problems and we might have to revert to old logic.
+*/
+static int *ctr, nthr=1;
 
 static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
 // Only for use by subsetDT() or subsetVector() below, hence static
@@ -25,61 +50,28 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
     if (i64) naval.ll = NAINT64; else naval.d = NA_REAL;
     SETLENGTH(ans, l);
     SET_TRUELENGTH(ans, tl);
-    // Rprintf("l=%d, tl=%d, LENGTH(idx)=%d\n", l, tl, LENGTH(idx));
-#ifdef _OPENMP
-    int *ctr = (int *)calloc(getDTthreads()+1, sizeof(int));
-#endif
 
     switch(TYPEOF(x)) {
     case INTSXP :
-#ifdef _OPENMP
-    #pragma omp parallel num_threads(n<P_THRESH ? 1 : getDTthreads())
+    #pragma omp parallel num_threads(nthr)
     {
-        int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();    // local
-        // computing count indices correctly is tricky when there are 0-indices.
-        // 1. count number of non-0 'idx' for each thread
-        #pragma omp for
-        for (i=0; i<n; i++) tmp += (pidx[i] != 0);  // don't use ctr[ithread+1] here -- false sharing
-        ctr[ithread+1] = tmp;                       // ctr[0]=0, rest contains count where iidx!=0,
-                                                    // within each thread's range
-        #pragma omp barrier                         // wait for all threads, important
-        // 2. using that, set the starting index for each thread appropriately
-        #pragma omp single
-        for (i=0; i<nthreads; i++)
-            ctr[i+1] += ctr[i];                     // for each thread, compute the right starting point, by
-                                                    // taking (non)0-count into account, computed above.
-        tmp = ctr[ithread];                         // copy back from shared to thread's local var. All set.
-        #pragma omp barrier                         // wait for all threads, important
-        // 3. use old code, but with thread's local var with right start index as counter
+        int tmp=0, ithread = omp_get_thread_num();
+        tmp = ctr[ithread];
+        #pragma omp barrier
         #pragma omp for private(this) reduction(+:ansi)
         for (i=0; i<n; i++) {
             this = pidx[i];
             if (this==0) continue;
             // have to use 'tmp' here, and not ctr[ithread++] -- false sharing
             INTEGER(ans)[tmp++] = (this==NA_INTEGER || this>max) ? NA_INTEGER : INTEGER(x)[this-1];
-            ansi++;                                 // not required, but just to be sure
+            ansi++; // not required, but just to be sure
         }
     }
-#else
-    for (i=0; i<n; i++) {
-        this = pidx[i];
-        if (this==0) continue;
-        INTEGER(ans)[ansi++] = (this==NA_INTEGER || this>max) ? NA_INTEGER : INTEGER(x)[this-1];
-    }
-#endif
     break;
     case REALSXP :
-#ifdef _OPENMP
-    #pragma omp parallel num_threads(n<P_THRESH ? 1 : getDTthreads())
+    #pragma omp parallel num_threads(nthr)
     {
-        int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
-        #pragma omp for
-        for (i=0; i<n; i++) tmp += (pidx[i] != 0);
-        ctr[ithread+1] = tmp;
-        #pragma omp barrier
-        #pragma omp single
-        for (i=0; i<nthreads; i++)
-            ctr[i+1] += ctr[i];
+        int tmp=0, ithread = omp_get_thread_num();
         tmp = ctr[ithread];
         #pragma omp barrier
         #pragma omp for private(this) reduction(+:ansi)
@@ -90,26 +82,11 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
             ansi++;
         }
     }
-#else
-    for (i=0; i<n; i++) {
-        this = pidx[i];
-        if (this==0) continue;
-        REAL(ans)[ansi++] = (this==NA_INTEGER || this>max) ? naval.d : REAL(x)[this-1];
-    }
-#endif
     break;
     case LGLSXP :
-#ifdef _OPENMP
-    #pragma omp parallel num_threads(n<P_THRESH ? 1 : getDTthreads())
+    #pragma omp parallel num_threads(nthr)
     {
-        int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
-        #pragma omp for
-        for (i=0; i<n; i++) tmp += (pidx[i] != 0);
-        ctr[ithread+1] = tmp;
-        #pragma omp barrier
-        #pragma omp single
-        for (i=0; i<nthreads; i++)
-            ctr[i+1] += ctr[i];
+        int tmp=0, ithread = omp_get_thread_num();
         tmp = ctr[ithread];
         #pragma omp barrier
         #pragma omp for private(this) reduction(+:ansi)
@@ -120,13 +97,6 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
             ansi++;
         }
     }
-#else
-    for (i=0; i<n; i++) {
-        this = pidx[i];
-        if (this==0) continue;
-        LOGICAL(ans)[ansi++] = (this==NA_INTEGER || this>max) ? NA_LOGICAL : LOGICAL(x)[this-1];
-    }
-#endif
     break;
     case STRSXP :
     for (i=0; i<n; i++) {
@@ -145,17 +115,9 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
     // Fix for #982
     // source: https://github.com/wch/r-source/blob/fbf5cdf29d923395b537a9893f46af1aa75e38f3/src/main/subset.c
     case CPLXSXP :
-#ifdef _OPENMP
-    #pragma omp parallel num_threads(n<P_THRESH ? 1 : getDTthreads())
+    #pragma omp parallel num_threads(nthr)
     {
-        int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
-        #pragma omp for
-        for (i=0; i<n; i++) tmp += (pidx[i] != 0);
-        ctr[ithread+1] = tmp;
-        #pragma omp barrier
-        #pragma omp single
-        for (i=0; i<nthreads; i++)
-            ctr[i+1] += ctr[i];
+        int tmp=0, ithread = omp_get_thread_num();
         tmp = ctr[ithread];
         #pragma omp barrier
         #pragma omp for private(this) reduction(+:ansi)
@@ -169,30 +131,11 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
             ansi++;
         }
     }
-#else
-    for (i=0; i<n; i++) {
-        this = pidx[i];
-        if (this == 0) continue;
-        if (this == NA_INTEGER || this>max) {
-            COMPLEX(ans)[ansi].r = NA_REAL;
-            COMPLEX(ans)[ansi].i = NA_REAL;
-        } else COMPLEX(ans)[ansi] = COMPLEX(x)[this-1];
-        ansi++;
-    }
-#endif
     break;
     case RAWSXP :
-#ifdef _OPENMP
-    #pragma omp parallel num_threads(n<P_THRESH ? 1 : getDTthreads())
+    #pragma omp parallel num_threads(nthr)
     {
-        int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
-        #pragma omp for
-        for (i=0; i<n; i++) tmp += (pidx[i] != 0);
-        ctr[ithread+1] = tmp;
-        #pragma omp barrier
-        #pragma omp single
-        for (i=0; i<nthreads; i++)
-            ctr[i+1] += ctr[i];
+        int tmp=0, ithread = omp_get_thread_num();
         tmp = ctr[ithread];
         #pragma omp barrier
         #pragma omp for private(this) reduction(+:ansi)
@@ -203,38 +146,81 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
             ansi++;
         }
     }
-#else
-    for (i=0; i<n; i++) {
-        this = pidx[i];
-        if (this == 0) continue;
-        RAW(ans)[ansi++] = (this == NA_INTEGER || this>max) ? (Rbyte) 0 : RAW(x)[this-1];
-    }
-#endif
     break;
     default :
+    free(ctr);
     error("Unknown column type '%s'", type2char(TYPEOF(x)));
     }
-#ifdef _OPENMP
-    free(ctr);
-#endif
-    if (ansi != l) error("Internal error: ansi [%d] != l [%d] at the end of subsetVector", ansi, l);
+    if (ansi != l) {
+        free(ctr);
+        error("Internal error: ansi [%d] != l [%d] at the end of \
+                subsetVector", ansi, l);
+    }
     copyMostAttrib(x, ans);
     UNPROTECT(1);
     return(ans);
 }
 
-static int check_idx(SEXP idx, int n)
-{
-    int i, this, ans=0;
-    if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx)));
-    for (i=0; i<LENGTH(idx); i++) {  // check idx once up front and count the non-0 so we know how long the answer will be
-    this = INTEGER(idx)[i];
-    if (this==0) continue;
-    if (this!=NA_INTEGER && this<0) error("Internal error: item %d of idx is %d. Negatives should have been dealt with earlier.", i+1, this);
-    // this>n is treated as NA for consistency with [.data.frame and things like cbind(DT[w],DT[w+1])
-    ans++;
+/* 
+* chk_idx - checks row index for invalid values, counts the total number of 
+* non-zero row indices provided (which will be the length of final answer) and 
+* schedules the row start indices each thread has to start from (to parallelise).
+* 
+* The parallel logic: Since we might have some 0-indices which needs to be 
+* skipped, the logic is slightly more complicated.
+*
+*   1) Identify the total number of non-zero indices for each thread (by 
+*       scheduling in static manner).
+*   2) Store those results in 'ctr' from 1-index. ctr[0]=0 which is always the 
+*       start index for the first thread. 
+*   3) Cumulative sum 'ctr' so as to get the set the start row index for each 
+*       thread. We'll need a 'barrier' and 'single' just before this to ensure 
+*       proper counts being assigned to 'ctr' and to cumulative sum only once.
+*   4) Now we've the right start index in 'ctr'. Now we've to assign the 
+*       count value to each thread using a local variable 'tmp'.
+*   5) At this point we're all set. Loop through and assign subset to 'ans'. In 
+*       addition, also use a check variable to ensure we're assigning as many 
+*       rows as we are supposed to, with 'ansi'.
+* 
+* Return total number of rows (as it was in the older code)
+*/
+static int check_idx(SEXP idx, int n) {
+    int i, this, nidx=length(idx), isError=0, *pidx;
+    if (!isInteger(idx)) {
+        error("Internal error. 'idx' is type '%s' not 'integer'", 
+                type2char(TYPEOF(idx)));
     }
-    return ans;
+    pidx = INTEGER(idx);
+    // ctr[0]=0, rest contains count of idx!=0 for each thread
+    nthr = nidx<P_THRESH ? 1 : getDTthreads();
+    ctr = (int *)calloc(nthr+1, sizeof(int));
+    #pragma omp parallel num_threads(nthr)
+    {
+        // local vars
+        int tmp=0, ithread=omp_get_thread_num();
+
+        #pragma omp for reduction(+:isError)
+        for (i=0; i<nidx; i++) {
+            tmp += (pidx[i] != 0);
+            if (pidx[i]!=NA_INTEGER && pidx[i]<0) {
+                isError++;
+            }
+        }
+        ctr[ithread+1] = tmp;   // implicit barrier after for
+        #pragma omp barrier     // IMPORTANT: wait for threads, explicit barrier
+        #pragma omp single
+        for (i=0; i<nthr; i++) {
+            ctr[i+1] += ctr[i];
+        }
+        if (isError) {
+            free(ctr);
+            error("Internal error: item %d of idx is %d. Negatives \
+                    should have been dealt with earlier.", i+1, this);
+            // this>n is treated as NA for consistency with [.data.frame and 
+            // things like cbind(DT[w],DT[w+1])
+        }
+    }
+    return ctr[nthr];
 }
 
 SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
@@ -315,7 +301,6 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
                 not 'list'", type2char(TYPEOF(rows)));
     }
     if (!length(x)) return(x);  // return empty list
-    nans = check_idx(rows, nx); // check once up front before looping calls to subsetVectorRaw below
     if (!isInteger(cols)) {
         error("Internal error. Argument 'cols' to Csubset is type '%s' \
             not 'integer'", type2char(TYPEOF(cols)));
@@ -336,11 +321,17 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     SET_TRUELENGTH(ans, LENGTH(ans));
     SETLENGTH(ans, ncols);
 
+    nthr = 1; // make sure nthr is reset (static global declared above)
+    // check_idx sets the right value of nthr
+    nans = check_idx(rows, nx); // check once up front before looping calls to subsetVectorRaw below
     for (i=0; i<ncols; i++) {
         // NOTE: column vectors aren't over allocated yet
         tmp = VECTOR_ELT(x, INTEGER(cols)[i]-1);
         SET_VECTOR_ELT(ans, i, subsetVectorRaw(tmp, rows, nans, nans));
     }
+    // NOTE: this part will *never* run in parallel as it is a STRSXP. 
+    // If we manage to parallelise STRSXP in the future, we'll either need to 
+    // recompute check_idx or set nthr=1 here.
     xnames = getAttrib(x, R_NamesSymbol);
     setAttrib(ans, R_NamesSymbol, subsetVectorRaw(xnames, cols, ncols, ncols+64));
     tmp = PROTECT(allocVector(INTSXP, 2));
@@ -373,10 +364,14 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     setAttrib(ans, install(".data.table.locked"), R_NilValue);
     setselfref(ans);
     UNPROTECT(2);
+    free(ctr);
     return ans;
 }
 
 SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
+    nthr = 1; // make sure nthr is reset (static global declared above)
     int n = check_idx(idx, length(x));
-    return subsetVectorRaw(x, idx, n, n);
+    SEXP ans = subsetVectorRaw(x, idx, n, n);
+    free(ctr);
+    return ans;
 }
