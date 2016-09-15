@@ -295,50 +295,80 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
     return(ans);
 }
 
-SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // rows and cols are 1-based passed from R level
-
-// Originally for subsetting vectors in fcast and now the beginnings of [.data.table ported to C
-// Immediate need is for R 3.1 as lglVec[1] now returns R's global TRUE and we don't want := to change that global [think 1 row data.tables]
-// Could do it other ways but may as well go to C now as we were going to do that anyway
-
-    SEXP ans, tmp;
-    R_len_t i, j, ansn=0;
-    int this;
-    if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows)));
+/*
+* subsetDT - Subsets a data.table
+* NOTE:
+*   1) 'rows' and 'cols' are 1-based, passed from R level
+*   2) Originally for subsetting vectors in fcast and now the beginnings of 
+*       [.data.table ported to C
+*   3) Immediate need is for R 3.1 as lglVec[1] now returns R's global TRUE 
+*       and we don't want := to change that global [think 1 row data.tables]
+*   4) Could do it other ways but may as well go to C now as we were going to 
+*       do that anyway
+*/
+SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
+    SEXP ans, tmp, key, xnames;
+    R_len_t i, j, this, nx=length(VECTOR_ELT(x, 0));
+    R_len_t nans=0, ncols=0;
+    if (!isNewList(x)) {
+        error("Internal error. Argument 'x' to CsubsetDT is type '%s' \
+                not 'list'", type2char(TYPEOF(rows)));
+    }
     if (!length(x)) return(x);  // return empty list
-    ansn = check_idx(rows, length(VECTOR_ELT(x,0)));  // check once up front before looping calls to subsetVectorRaw below
-    if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols)));
-    for (i=0; i<LENGTH(cols); i++) {
-    this = INTEGER(cols)[i];
-    if (this<1 || this>LENGTH(x)) error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
+    nans = check_idx(rows, nx); // check once up front before looping calls to subsetVectorRaw below
+    if (!isInteger(cols)) {
+        error("Internal error. Argument 'cols' to Csubset is type '%s' \
+            not 'integer'", type2char(TYPEOF(cols)));
     }
-    ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+64));  // just do alloc.col directly, eventually alloc.col can be deprecated.
-    copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
-                 // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
+    ncols = LENGTH(cols);
+    for (i=0; i<ncols; i++) {
+        this = INTEGER(cols)[i];
+        if (this<1 || this>LENGTH(x)) {
+            error("Item %d of 'cols' is %d which is outside 1-based range \
+                [1,ncol(x)=%d]", i+1, this, LENGTH(x));
+        }
+    }
+    // just do alloc.col directly, eventually alloc.col can be deprecated.
+    ans = PROTECT(allocVector(VECSXP, ncols+64));
+    copyMostAttrib(x, ans); // other than R_NamesSymbol, R_DimSymbol and 
+    // R_DimNamesSymbol so includes row.names (oddly, given other dims aren't) 
+    // and "sorted", dealt with below
     SET_TRUELENGTH(ans, LENGTH(ans));
-    SETLENGTH(ans, LENGTH(cols));
-    for (i=0; i<LENGTH(cols); i++) {
-    SET_VECTOR_ELT(ans, i, subsetVectorRaw(VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, ansn, ansn));  // column vectors aren't over allocated yet
+    SETLENGTH(ans, ncols);
+
+    for (i=0; i<ncols; i++) {
+        // NOTE: column vectors aren't over allocated yet
+        tmp = VECTOR_ELT(x, INTEGER(cols)[i]-1);
+        SET_VECTOR_ELT(ans, i, subsetVectorRaw(tmp, rows, nans, nans));
     }
-    setAttrib(ans, R_NamesSymbol, subsetVectorRaw( getAttrib(x, R_NamesSymbol), cols, LENGTH(cols), LENGTH(cols)+64 ));
+    xnames = getAttrib(x, R_NamesSymbol);
+    setAttrib(ans, R_NamesSymbol, subsetVectorRaw(xnames, cols, ncols, ncols+64));
     tmp = PROTECT(allocVector(INTSXP, 2));
     INTEGER(tmp)[0] = NA_INTEGER;
-    INTEGER(tmp)[1] = -ansn;
-    setAttrib(ans, R_RowNamesSymbol, tmp);  // The contents of tmp must be set before being passed to setAttrib(). setAttrib looks at tmp value and copies it in the case of R_RowNamesSymbol. Caused hard to track bug around 28 Sep 2014.
+    INTEGER(tmp)[1] = -nans;
+    setAttrib(ans, R_RowNamesSymbol, tmp);  // The contents of tmp must be set 
+    // before being passed to setAttrib(). setAttrib looks at tmp value and 
+    // copies it in the case of R_RowNamesSymbol. Caused hard to track bug 
+    // around 28 Sep 2014.
+
     // maintain key if ordered subset ...
-    SEXP key = getAttrib(x, install("sorted"));
+    key = getAttrib(x, install("sorted"));
     if (length(key)) {
-    SEXP in = PROTECT(chmatch(key,getAttrib(ans,R_NamesSymbol), 0, TRUE)); // (nomatch ignored when in=TRUE)
-    i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
-    UNPROTECT(1);
-    // i is now the keylen that can be kept. 2 lines above much easier in C than R
-    if (i==0) {
-        setAttrib(ans, install("sorted"), R_NilValue);
-        // clear key that was copied over by copyMostAttrib() above
-    } else if (isOrderedSubset(rows, ScalarInteger(length(VECTOR_ELT(x,0))))) {
-        setAttrib(ans, install("sorted"), tmp=allocVector(STRSXP, i));
-        for (j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
-    }
+        SEXP in = PROTECT(chmatch(key, getAttrib(ans, R_NamesSymbol), 0, TRUE)); // nomatch ignored when in=TRUE
+        i = 0;
+        while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
+        UNPROTECT(1);
+        // i is now the keylen that can be kept. 2 lines above much easier in C than R
+        if (i==0) {
+            // clear key that was copied over by copyMostAttrib() above
+            setAttrib(ans, install("sorted"), R_NilValue);
+        } else if (isOrderedSubset(rows, ScalarInteger(nx))) {
+            tmp = allocVector(STRSXP, i);
+            setAttrib(ans, install("sorted"), tmp);
+            for (j=0; j<i; j++) {
+                SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
+            }
+        }
     }
     setAttrib(ans, install(".data.table.locked"), R_NilValue);
     setselfref(ans);
