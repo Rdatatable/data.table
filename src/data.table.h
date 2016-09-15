@@ -4,15 +4,15 @@
 #include <Rversion.h>
 #ifdef _OPENMP
   #include <omp.h>
-#else
-  #define omp_get_num_threads() 1 // so it still compiles on machines with compilers void of openmp support
+#else // so it still compiles on machines with compilers void of openmp support
+  #define omp_get_num_threads() 1 
 #endif
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
 // Fixes R-Forge #5150, and #1641
-// a simple check for R version to decide if the type should be R_len_t or R_xlen_t
-// long vector support was added in R 3.0.0
+// a simple check for R version to decide if the type should be R_len_t or 
+// R_xlen_t long vector support was added in R 3.0.0
 #if defined(R_VERSION) && R_VERSION >= R_Version(3, 0, 0)
   typedef R_xlen_t RLEN;
 #else
@@ -84,14 +84,19 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
 
-SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose);
+SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, 
+                SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, 
+                SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, 
+                SEXP on, SEXP verbose);
 
 // bmerge.c
-SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
+SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, 
+                SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, 
+                SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
 SEXP ENC2UTF8(SEXP s);
 
 // rbindlist.c
-SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOrdered);
+SEXP combineFactorLevels(SEXP factorLevels, int *factorType, Rboolean *isRowOrdered);
 
 // quickselect
 double dquickselect(double *x, int n, int k);
