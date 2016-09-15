@@ -96,3 +96,6 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
 // quickselect
 double dquickselect(double *x, int n, int k);
 double iquickselect(int *x, int n, int k);
+
+// openmp-utils.c
+int getDTthreads();
