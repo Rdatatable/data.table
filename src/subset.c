@@ -185,7 +185,7 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
 * Return total number of rows (as it was in the older code)
 */
 static int check_idx(SEXP idx, int n) {
-    int i, this, nidx=length(idx), isError=0, *pidx;
+    int i, nidx=length(idx), isError=0, *pidx;
     if (!isInteger(idx)) {
         error("Internal error. 'idx' is type '%s' not 'integer'", 
                 type2char(TYPEOF(idx)));
@@ -214,8 +214,8 @@ static int check_idx(SEXP idx, int n) {
         }
         if (isError) {
             free(ctr);
-            error("Internal error: item %d of idx is %d. Negatives \
-                    should have been dealt with earlier.", i+1, this);
+            error("Internal error: one or more item(s) in idx is < 0. \
+                    Negatives should have been dealt with earlier.");
             // this>n is treated as NA for consistency with [.data.frame and 
             // things like cbind(DT[w],DT[w+1])
         }
