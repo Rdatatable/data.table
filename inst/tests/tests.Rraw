@@ -28,6 +28,10 @@ if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
 }
 options(warn=2)
 
+setDTthreads(2)
+# Tests are small and quick so should themselves switch to 1 thread, but explicity limit to 2
+# so as not to breach CRAN policy, just in case. 
+
 nfail = ntest = lastnum = 0
 whichfail = NULL
 
@@ -9134,6 +9138,7 @@ test(1702, isoweek(test_cases), test_values)
 
 ##########################
 options(warn=0)
+setDTthreads(0)
 options(oldalloccol)  # set at top of this file
 plat = paste("endian=",.Platform$endian,", sizeof(long double)==",.Machine$sizeof.longdouble,sep="")
 if (nfail > 0) {
@@ -9146,3 +9151,4 @@ cat("\n",plat,"\n\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in 
 # date() is included so we can tell when CRAN checks were run (in particular if they have been rerun since
 # an update to Rdevel itself; data.table doesn't have any other dependency) since there appears to be no other
 # way to see the timestamp that CRAN checks were run. Some CRAN machines lag by several days.
+

@@ -70,8 +70,8 @@ SEXP gvar();
 SEXP gsd();
 SEXP gprod();
 SEXP nestedid();
-SEXP setThreads();
-SEXP getThreads();
+SEXP setDTthreads();
+SEXP getDTthreads_R();
 SEXP nqnewindices();
 SEXP fsort();
 SEXP inrange();
@@ -148,8 +148,8 @@ R_CallMethodDef callMethods[] = {
 {"Cgsd", (DL_FUNC) &gsd, -1},
 {"Cgprod", (DL_FUNC) &gprod, -1},
 {"Cnestedid", (DL_FUNC) &nestedid, -1},
-{"CsetThreads", (DL_FUNC) &setThreads, -1},
-{"CgetThreads", (DL_FUNC) &getThreads, -1},
+{"CsetDTthreads", (DL_FUNC) &setDTthreads, -1},
+{"CgetDTthreads", (DL_FUNC) &getDTthreads_R, -1},
 {"Cnqnewindices", (DL_FUNC) &nqnewindices, -1},
 {"Cfsort", (DL_FUNC) &fsort, -1},
 {"Cinrange", (DL_FUNC) &inrange, -1},

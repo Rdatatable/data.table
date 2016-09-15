@@ -15,6 +15,14 @@ q()
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" data.table/
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" data.table/
 
+# Ensure no calls to omp_set_num_threads() [to avoid effecting other packages and base R]
+# grep TODO
+# Endure no calls to omp_get_max_threads() also since access should be via getDTthreads()
+# grep TODO
+# Ensure all #pragama omp parallel directives include num_threads() clause
+# grep TODO
+
+
 # workaround for IBM AIX - ensure no globals named 'nearest' or 'class'. See https://github.com/Rdatatable/data.table/issues/1351
 grep "nearest *=" data.table/src/*.c  # none
 grep "class *=" data.table/src/*.c    # quite a few but none global

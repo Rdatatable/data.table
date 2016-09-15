@@ -9,6 +9,9 @@ static union {
     long long ll;
 } naval;
 
+#define P_THRESH 1000  // TODO: test.  Taking a subset of fewer rows just goes single threaded.
+                       // TODO: within column is good, but go parallel across columns, too
+
 static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
 // Only for use by subsetDT() or subsetVector() below, hence static
 // l is the count of non-zero (including NAs) in idx i.e. the length of the result
@@ -24,13 +27,13 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
     SET_TRUELENGTH(ans, tl);
     // Rprintf("l=%d, tl=%d, LENGTH(idx)=%d\n", l, tl, LENGTH(idx));
 #ifdef _OPENMP
-    int *ctr = (int *)calloc(omp_get_max_threads()+1, sizeof(int));
+    int *ctr = (int *)calloc(getDTthreads()+1, sizeof(int));
 #endif
 
     switch(TYPEOF(x)) {
     case INTSXP :
 #ifdef _OPENMP
-    #pragma omp parallel
+    #pragma omp parallel num_threads(n<P_THRESH ? 1 : getDTthreads())
     {
         int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();    // local
         // computing count indices correctly is tricky when there are 0-indices.
@@ -67,7 +70,7 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
     break;
     case REALSXP :
 #ifdef _OPENMP
-    #pragma omp parallel
+    #pragma omp parallel num_threads(n<P_THRESH ? 1 : getDTthreads())
     {
         int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
         #pragma omp for
@@ -97,7 +100,7 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
     break;
     case LGLSXP :
 #ifdef _OPENMP
-    #pragma omp parallel
+    #pragma omp parallel num_threads(n<P_THRESH ? 1 : getDTthreads())
     {
         int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
         #pragma omp for
@@ -143,7 +146,7 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
     // source: https://github.com/wch/r-source/blob/fbf5cdf29d923395b537a9893f46af1aa75e38f3/src/main/subset.c
     case CPLXSXP :
 #ifdef _OPENMP
-    #pragma omp parallel
+    #pragma omp parallel num_threads(n<P_THRESH ? 1 : getDTthreads())
     {
         int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
         #pragma omp for
@@ -180,7 +183,7 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
     break;
     case RAWSXP :
 #ifdef _OPENMP
-    #pragma omp parallel
+    #pragma omp parallel num_threads(n<P_THRESH ? 1 : getDTthreads())
     {
         int tmp=0, ithread = omp_get_thread_num(), nthreads = omp_get_num_threads();
         #pragma omp for
