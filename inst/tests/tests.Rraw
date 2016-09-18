@@ -9109,11 +9109,14 @@ test_values <- c(53L, 53L, 52L, 1L, 52L, 1L, 1L,
 test(1702, isoweek(test_cases), test_values)
 
 # fread, ensure no shell commands #1702
-cat("a,b\n1,2", file=f<-tempfile())
-cmd <- sprintf("cat %s", f)
-if (.Platform$OS.type=="unix") test(1703.1, fread(cmd), data.table(a=1L, b=2L))
-test(1703.2, fread(file=cmd), error=sprintf("Provided file '%s' does not exists", cmd))
-unlink(f)
+if (.Platform$OS.type=="unix") {
+    cat("a,b\n1,2", file=f<-tempfile())
+    cmd <- sprintf("cat %s", f)
+    test(1703.1, fread(cmd), data.table(a=1L, b=2L))
+    test(1703.2, fread(file=cmd), error=sprintf("Provided file '%s' does not exists", cmd))
+    unlink(f)
+}
+
 
 ##########################
 
