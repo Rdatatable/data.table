@@ -8843,9 +8843,14 @@ test(1672.5, capture.output(DT[order(V1), .I[1L], by = V1]),
 test(1672.6, capture.output(DT[1:5, .(.I[1L], V2[1L]), by = V1]),
      c("   V1 V1 V2", "1:  1  1  1", "2:  2  2  2"))
      
-#tests for #1528
+#tests for #1528 and #1836
 TT <- as.IDate("2016-04-25")
-test(1673, class(TT + 4L), c("IDate", "Date"))
+TT2 <- as.IDate("2016-04-26")
+test(1673.1, class(TT + 4L), c("IDate", "Date"))
+test(1673.2, class(TT - 4L), c("IDate", "Date"))
+test(1673.3, -TT, error = "unary - is not defined for \"IDate\"")
+test(1673.4, capture.output(dput(TT2 - TT)), 
+     "structure(1L, units = \"days\", class = \"difftime\")")
 
 # test for radix integer order when MAXINT is present AND decreasing=TRUE AND na.last=FALSE
 # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16925

@@ -66,6 +66,22 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
               class = c("IDate", "Date"))
 }
 
+#Adapted from `-.Date`
+`-.IDate` <- function(e1, e2) {
+  if (!inherits(e1, "IDate")) `-.Date`(e1, e2)
+  if (nargs() == 1) 
+    stop("unary - is not defined for \"IDate\" objects")
+  if (inherits(e2, "IDate")) 
+    return(structure(unclass(e1) - unclass(e2), units = "days", class = "difftime"))
+  if (inherits(e2, "difftime")) 
+    e2 <- round(switch(attr(e2, "units"), 
+                       secs = x/86400, mins = x/1440, 
+                       hours = x/24, days = x, weeks = 7 * x))
+  if (!is.null(attr(e2, "class"))) 
+    stop("can only subtract numbers from \"IDate\" objects")
+  structure(unclass(e1) - as.integer(e2), class = c("IDate", "Date"))
+}
+
 ###################################################################
 # ITime -- Integer time-of-day class
 #          Stored as seconds in the day
