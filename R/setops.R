@@ -127,7 +127,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     if (ncol(current) != ncol(target)) msg = c(msg, "Different number of columns")
     diff.colnames = !identical(sort(names(target)), sort(names(current)))
     diff.colorder = !identical(names(target), names(current))
-    if (diff.colnames) msg = c(msg, "Different column names")
+    if (check.attributes && diff.colnames) msg = c(msg, "Different column names")
     if (!diff.colnames && !ignore.col.order && diff.colorder) msg = c(msg, "Different column order")
     
     if (length(msg)) return(msg) # skip check.attributes and further heavy processing
@@ -135,8 +135,9 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     # ignore.col.order
     if (ignore.col.order && diff.colorder) current = setcolorder(shallow(current), names(target))
     
-    # check column classes match
-    if (!identical(colClasses<-lapply(target, class), lapply(current, class))) return("Datasets has different column classes")
+    # check column classes match. Remove column names with unname() as they're checked separately
+    if (!identical(colClasses<-unname(lapply(target, class)),
+                   unname(lapply(current, class)))) return("Datasets have different column classes")
     
     # check attributes
     if (check.attributes) {

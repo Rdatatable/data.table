@@ -8845,7 +8845,12 @@ test(1672.6, capture.output(DT[1:5, .(.I[1L], V2[1L]), by = V1]),
      
 #tests for #1528
 TT <- as.IDate("2016-04-25")
-test(1673, class(TT + 4L), c("IDate", "Date"))
+test(1673.1, TT + 4L, as.IDate("2016-04-29"))
+test(1673.2, TT + 4, as.IDate("2016-04-29"))
+test(1673.3, TT - 3, as.IDate("2016-04-22"))
+test(1673.4, TT - 3L, as.IDate("2016-04-22"))
+test(1673.5, as.IDate("2016-04-28") - as.IDate("2016-04-20"), 8L)
+
 
 # test for radix integer order when MAXINT is present AND decreasing=TRUE AND na.last=FALSE
 # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16925
@@ -9116,6 +9121,10 @@ if (.Platform$OS.type=="unix") {
     test(1703.2, fread(file=cmd), error=sprintf("Provided file '%s' does not exists", cmd))
     unlink(f)
 }
+
+# Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
+# as used by package popEpi in its tests
+test(1704, all.equal(data.table( a=1:3, b=4:6 ), data.table( A=1:3, B=4:6 ), check.attributes=FALSE))
 
 
 ##########################
