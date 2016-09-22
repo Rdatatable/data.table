@@ -9126,21 +9126,24 @@ if (.Platform$OS.type=="unix") {
 # as used by package popEpi in its tests
 test(1704, all.equal(data.table( a=1:3, b=4:6 ), data.table( A=1:3, B=4:6 ), check.attributes=FALSE))
 
-if ("package:parallel" %in% search()) {   #1745 and #1727
-  test(1705, getDTthreads(), 2) # this was set at the top of tests.Rraw.  CRAN's policy is max two. 
-  lx <- replicate(4, runif(1e6), simplify=FALSE)
-  f <- function(mc.cores = 2, threads = 2) {
-    setDTthreads(threads)
-    invisible(mclapply(lx, function(x) fsort(x), mc.cores = mc.cores))
+if (.Platform$OS.type!="windows") {
+  # On Windows: "'mc.cores' > 1 is not supported on Windows"
+  if ("package:parallel" %in% search()) {   #1745 and #1727
+    test(1705, getDTthreads(), 2) # this was set at the top of tests.Rraw.  CRAN's policy is max two. 
+    lx <- replicate(4, runif(1e6), simplify=FALSE)
+    f <- function(mc.cores = 2, threads = 2) {
+      setDTthreads(threads)
+      invisible(mclapply(lx, function(x) fsort(x), mc.cores = mc.cores))
+    }
+    f(1, 1) # was always ok
+    f(2, 1) # was always ok
+    f(1, 2) # was always ok
+    f(2, 2) # used to hang. Now should not because data.table auto switches to single threaded
+            # commenting out avoid_openmp_hang_within_fork() confirms this test catches catches the hang
+    test(1706, getDTthreads(), 2) # Tests that it reverts to previous state after use of mclapply  
+  } else {
+    cat("Tests 1705 and 1706 not run. If required call library(parallel) first.\n")
   }
-  f(1, 1) # was always ok
-  f(2, 1) # was always ok
-  f(1, 2) # was always ok
-  f(2, 2) # used to hang. Now should not because data.table auto switches to single threaded
-          # commenting out avoid_openmp_hang_within_fork() confirms this test catches catches the hang
-  test(1706, getDTthreads(), 2) # Tests that it reverts to previous state after use of mclapply  
-} else {
-  cat("Tests 1705 and 1706 not run. If required call library(parallel) first.\n")
 }
 
 ##########################
