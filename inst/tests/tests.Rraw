@@ -9146,6 +9146,10 @@ if (.Platform$OS.type!="windows") {
   }
 }
 
+# Fix #1852 -- calling print on null data.table output NULL
+test(1707, capture.output(print(data.table(NULL))),
+     "Null data.table (0 rows and 0 cols)")
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
