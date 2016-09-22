@@ -79,7 +79,7 @@
 
   37. Row subset operations of data.table is now parallelised with OpenMP, [#1660](https://github.com/Rdatatable/data.table/issues/1660). See the linked issue page for a rough benchmark on speedup.
 
-  38. Added `setDTthreads()` and `getDTthreads()` to control the threads used in data.table functions that are parallelized with OpenMP. This control does not affect base R or other packages using OpenMP.
+  38. Added `setDTthreads()` and `getDTthreads()` to control the threads used in data.table functions that are parallelized with OpenMP. This control does not affect base R or other packages using OpenMP. Further, when data.table is used from the parallel package (e.g. `mclapply`) it automatically uses 1 thread to avoid a [deadlock/hang](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58378) when OpenMP is used with fork(); [#1745]((https://github.com/Rdatatable/data.table/issues/1745), [#1727](https://github.com/Rdatatable/data.table/issues/1727) thanks to Kontstantinos Tsardounis, Ramon Diaz-Uriarte and Jan Gorecki for testing in dev before release and providing reproducible examples. After `parallel::mclapply` has finished, data.table reverts to the prior `getDTthreads()` state. Tests added.
 
   39. `rleid()` gains `prefix` argument, similar to `rowid()`.
 

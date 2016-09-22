@@ -9,18 +9,21 @@ R
 update.packages()
 q()
 
+# Ensure latest version of R otherwise problems with CRAN not finding dependents that depend on latest R
+# e.g. mirror may have been disabled in sources.list when upgrading ubuntu
+
 # Ensure no non-ASCII, other than in README.md is ok
 # tests.Rraw in particular have failed CRAN Solaris (only) due to this.
 # No unicode either. Put these tests in DtNonAsciiTests package.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" data.table/
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" data.table/
 
-# Ensure no calls to omp_set_num_threads() [to avoid effecting other packages and base R]
-# grep TODO
+# Ensure no calls to omp_set_num_threads() [to avoid affecting other packages and base R]
+grep omp_set_num_threads data.table/src/*
 # Endure no calls to omp_get_max_threads() also since access should be via getDTthreads()
-# grep TODO
+grep omp_get_max_threads data.table/src/*
 # Ensure all #pragama omp parallel directives include num_threads() clause
-# grep TODO
+grep "pragma omp parallel" data.table/src/*.c
 
 
 # workaround for IBM AIX - ensure no globals named 'nearest' or 'class'. See https://github.com/Rdatatable/data.table/issues/1351
@@ -206,6 +209,10 @@ sudo apt-get -y install tk8.6-dev
 sudo apt-get -y install clustalo  # for package LowMACA
 sudo apt-get -y install texlive-xetex   # for package optiRum
 sudo apt-get -y install texlive-pstricks  # for package GGtools
+sudo apt-get -y install libfftw3-dev  # for package fftwtools
+sudo apt-get -y install libgsl-dev
+sudo apt-get -y install octave liboctave-dev
+sudo apt-get -y install jags
 sudo R CMD javareconf
 # ENDIF
 
@@ -214,17 +221,25 @@ cd ~/build
 git clone https://github.com/Rdatatable/data.table.git
 # end if
 
+tools::package_dependencies("data.table", which="most", reverse=FALSE, recursive=TRUE)
+
+# In my .bashrc as we know use R CMD check (and we'll get NOTEs)
+export _R_CHECK_FORCE_SUGGESTS_=false
+
 # do not build, install, require() or library() data.table. revdep_check will read ~/build/data.table and install from there
 # NB: repos <- c(CRAN="http://cran.rstudio.com/") is hard-coded into devtools::check_cran
 # NB: revdep_check moves the tar.gz of directly dependent packages into revdeplib afterwards. The packages those packages depened on are installed in revdeplib without their tar.gz
 
 export R_LIBS=~/build/revdeplib/
 R
+update.packages(ask=FALSE)                     # may as well do this first before revdepcheck
+source("http://bioconductor.org/biocLite.R")
+biocLite("BiocUpgrade")                        # and this
 require(devtools) 
 options(devtools.revdep.libpath = "~/build/revdeplib/")
   # essential as the first-time download can be several hours, mainly BSgenome with its 10 * 500MB+ files.
   # revdep_check(..., ignore="BSgenome") is ignored and BSgenome still downloads, I guess only direct dependencies can be ignored
-options(Ncpus = 6)
+options(Ncpus = 7)
 res <- revdep_check("data.table", bioconductor=TRUE)
 revdep_check_save_summary(res)
 revdep_check_save_logs(res)

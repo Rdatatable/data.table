@@ -84,18 +84,18 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
 
     if ( ISNAN(REAL(lower)[0]) ) {
         if ( ISNAN(REAL(upper)[0]) ) {
-            #pragma omp parallel for
+            #pragma omp parallel for num_threads(getDTthreads())
             for (i=0; i<nx; i++) LOGICAL(ans)[i] = NA_LOGICAL;
         } else {
-            #pragma omp parallel for
+            #pragma omp parallel for num_threads(getDTthreads())
             for (i=0; i<nx; i++) LOGICAL(ans)[i] = fupper(x, i);
         }
     } else {
         if ( ISNAN(REAL(upper)[0]) ) {
-            #pragma omp parallel for
+            #pragma omp parallel for num_threads(getDTthreads())
             for (i=0; i<nx; i++) LOGICAL(ans)[i] = flower(x, i);
         } else {
-            #pragma omp parallel for
+            #pragma omp parallel for num_threads(getDTthreads())
             for (i=0; i<nx; i++) LOGICAL(ans)[i] = fboth(x, i);
         }
     }

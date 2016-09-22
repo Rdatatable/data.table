@@ -102,8 +102,10 @@ int qsort_cmp(const void *a, const void *b) {
   return (x<y)-(x>y);   // largest first in a safe branchless way casting long to int
 }
 
-SEXP fsort(SEXP x) {
-  Rboolean verbose = TRUE;
+SEXP fsort(SEXP x, SEXP verboseArg) {
+  if (!isLogical(verboseArg) || LENGTH(verboseArg)!=1 || LOGICAL(verboseArg)[0]==NA_LOGICAL)
+    error("verbose must be TRUE or FALSE");
+  Rboolean verbose = LOGICAL(verboseArg)[0];
   if (!isNumeric(x)) error("x must be a vector of type 'double' currently");
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
   #ifndef _OPENMP
@@ -118,7 +120,7 @@ SEXP fsort(SEXP x) {
   // TODO: document this is much cheaper than a copy followed by in-place.
   
   int nth;
-  #pragma omp parallel
+  #pragma omp parallel num_threads(getDTthreads())
   {
     nth = omp_get_num_threads();  // each thread overwrites the same value to nth, ok
   }
@@ -133,7 +135,7 @@ SEXP fsort(SEXP x) {
   // and ii) for small vectors with just one batch 
   
   double mins[nBatch], maxs[nBatch];
-  #pragma omp parallel for schedule(dynamic)
+  #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     double *d = &REAL(x)[batchSize * batch];
@@ -178,7 +180,7 @@ SEXP fsort(SEXP x) {
                        nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024), nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch),
                        nBatch, batchSize, lastBatchSize);
   
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(getDTthreads())
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     double *tmp = &REAL(x)[batchSize * batch];
@@ -201,7 +203,7 @@ SEXP fsort(SEXP x) {
     }
   }  // leaves msb cumSum in the last batch i.e. last row of the matrix
   
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(getDTthreads())
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     double *source = &REAL(x)[batchSize * batch];
@@ -250,7 +252,7 @@ SEXP fsort(SEXP x) {
       Rprintf("%d by excluding 0 and 1 counts\n", MSBsize);
     }
     
-    #pragma omp parallel
+    #pragma omp parallel num_threads(getDTthreads())
     {
       R_xlen_t *counts = calloc((toBit/8 + 1)*256, sizeof(R_xlen_t));
       // each thread has its own (small) stack of counts

@@ -289,7 +289,7 @@ SEXP writefile(SEXP list_of_columns,
   t0 = clock();
   
   int nth;
-  #pragma omp parallel
+  #pragma omp parallel num_threads(getDTthreads())
   {
     char *buffer = malloc(bufSize);  // one buffer per thread
     // TODO Ask Norm how to error() safely ... if (buffer == NULL) error("Unable to allocate %dMB buffer", bufSize/(1024*1024)); 
