@@ -262,7 +262,7 @@ status = function(which="both") {
   if (which=="both") {
      cat("CRAN:\n"); status("cran")
      cat("BIOC:\n"); status("bioc")
-     return()
+     return(invisible())
   }
   if (which=="cran") deps = deps[grep("cran",avail[deps,"Repository"])]
   if (which=="bioc") deps = deps[grep("bioc",avail[deps,"Repository"])]
