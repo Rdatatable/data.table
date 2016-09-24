@@ -7522,10 +7522,10 @@ test(1613.34, all.equal(DT1, DT2), TRUE)
 # trim.levels
 dt1 <- data.table(A = factor(letters[1:10])[1:4]) # 10 levels
 dt2 <- data.table(A = factor(letters[1:5])[1:4]) # 5 levels
-test(1613.35, all.equal(dt1, dt2), TRUE)
-if (base::getRversion() > "3.0.0") test(1613.36, all.equal(dt1, dt2, trim.levels = FALSE), paste0("Column 'A': Attributes: < Component ", dQuote("levels"), ": Lengths (10, 5) differ (string compare on first 5) >"))
-test(1613.37, all.equal(dt1, dt2, trim.levels = FALSE, check.attributes = FALSE), TRUE)
-test(1613.38, all.equal(dt1, dt2, trim.levels = FALSE, ignore.row.order = TRUE), TRUE)
+test(1613.35, all.equal(dt1, dt2))
+test(1613.36, !isTRUE(all.equal(dt1, dt2, trim.levels = FALSE)))
+test(1613.37, !isTRUE(all.equal(dt1, dt2, trim.levels = FALSE, check.attributes = FALSE)))
+test(1613.38, all.equal(dt1, dt2, trim.levels = FALSE, ignore.row.order = TRUE))
 test(1613.39, length(levels(dt1$A)) == 10L && length(levels(dt2$A)) == 5L, TRUE) # dt1 and dt2 not updated by reference
 # unsupported column types: list
 dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = lapply(1:4, function(x) new.env()))
@@ -7560,28 +7560,35 @@ if ("package:bit64" %in% search()) {
     test(1613.49, all.equal(dt[c(1:4,1L)], dt[c(1:4,1L)]), TRUE)
     test(1613.50, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)]), "Column 'V1': Mean relative difference: 0.6")
     test(1613.51, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)], ignore.row.order = TRUE), TRUE)
-    test(1613.52, all.equal(dt[c(1:4,1:2)], dt[c(1L,1L,1:4)], ignore.row.order = TRUE), "Dataset 'current' has rows not present in 'target' or present in different quantity")
+    test(1613.52, all.equal(dt[c(1:4,1:2)], dt[c(1L,1L,1:4)], ignore.row.order = TRUE), c("Both datasets have duplicate rows, they also have numeric columns, together with ignore.row.order this force 'tolerance' argument to 0","Dataset 'current' has rows not present in 'target' or present in different quantity"))
     test(1613.53, all.equal(dt[c(1:2,1:4,1:2)], dt[c(1:2,1:2,1:4)], ignore.row.order = TRUE), TRUE)
 }
 # all.equal - new argument 'tolerance' #1737
 x = data.table(1) # test numeric after adding 'tolerance' argument
 y = data.table(2)
-test(1613.541, is.character(all.equal(x, y, ignore.row.order = FALSE)), is.character(all.equal(x, y, ignore.row.order = TRUE)))
+test(1613.5411, !isTRUE(all.equal(x, y, ignore.row.order = FALSE)))
+test(1613.5412, !isTRUE(all.equal(x, y, ignore.row.order = TRUE)))
 x = data.table(c(1,1))
 y = data.table(c(2,2))
-test(1613.542, is.character(all.equal(x, y, ignore.row.order = FALSE)), is.character(all.equal(x, y, ignore.row.order = TRUE)))
+test(1613.5421, !isTRUE(all.equal(x, y, ignore.row.order = FALSE)))
+test(1613.5422, !isTRUE(all.equal(x, y, ignore.row.order = TRUE)))
 x = data.table(c(1,2))
 y = data.table(c(2,2))
-test(1613.543, is.character(all.equal(x, y, ignore.row.order = FALSE)), is.character(all.equal(x, y, ignore.row.order = TRUE)))
+test(1613.5431, !isTRUE(all.equal(x, y, ignore.row.order = FALSE)))
+test(1613.5432, !isTRUE(all.equal(x, y, ignore.row.order = TRUE)))
 x = data.table(as.factor(1)) # test factor adding 'tolerance' argument
 y = data.table(as.factor(2))
-test(1613.551, is.character(all.equal(x, y, ignore.row.order = FALSE)), is.character(all.equal(x, y, ignore.row.order = TRUE)))
+test(1613.5511, !isTRUE(all.equal(x,y)))
+test(1613.5512, !isTRUE(all.equal(x, y, ignore.row.order = FALSE)))
+test(1613.5513, !isTRUE(all.equal(x, y, ignore.row.order = TRUE)))
 x = data.table(as.factor(c(1,1)))
 y = data.table(as.factor(c(2,2)))
-test(1613.552, is.character(all.equal(x, y, ignore.row.order = FALSE)), is.character(all.equal(x, y, ignore.row.order = TRUE)))
+test(1613.5521, !isTRUE(all.equal(x, y, ignore.row.order = FALSE)))
+test(1613.5522, !isTRUE(all.equal(x, y, ignore.row.order = TRUE)))
 x = data.table(as.factor(c(1,2)))
 y = data.table(as.factor(c(2,2)))
-test(1613.553, is.character(all.equal(x, y, ignore.row.order = FALSE)), is.character(all.equal(x, y, ignore.row.order = TRUE)))
+test(1613.5531, !isTRUE(all.equal(x, y, ignore.row.order = FALSE)))
+test(1613.5532, !isTRUE(all.equal(x, y, ignore.row.order = TRUE)))
 x = data.table(-0.000189921844659375) # tolerance in action
 y = data.table(-0.000189921844655161)
 test(1613.561, all.equal(x, y, ignore.row.order = FALSE), all.equal(x, y, ignore.row.order = TRUE))
@@ -9145,6 +9152,29 @@ if (.Platform$OS.type!="windows") {
     cat("Tests 1705 and 1706 not run. If required call library(parallel) first.\n")
   }
 }
+
+# all.equal.data.table should consider modes equal like base R (detected via Bioc's flowWorkspace tests)
+# If strict testing is required, then use identical().
+# TODO: add strict.numeric (default FALSE) to all.equal.data.table() ?
+test(1707.1, all.equal( data.frame(a=0L), data.frame(a=0) ) )
+test(1707.2, all.equal( data.table(a=0L), data.table(a=0) ) )
+test(1708.1, !isTRUE(all.equal( data.frame(a=0L), data.frame(a=FALSE) )))
+test(1708.2, all.equal( data.table(a=0L), data.table(a=FALSE) ),
+             "Datasets have different column modes. First 3: a(numeric!=logical)")
+x = data.frame(a=0L)
+y = data.frame(a=0)
+setattr(y[[1]],"class",c("hello","world"))
+test(1709.1, !isTRUE(all.equal(x,y,check.attributes=TRUE)))   # desired
+test(1709.2, !isTRUE(all.equal(x,y,check.attributes=FALSE)))  # not desired
+x = as.data.table(x)
+y = as.data.table(y)
+test(1710.1, mode(x[[1]]) == mode(y[[1]]))
+test(1710.2, storage.mode(x[[1]]) != storage.mode(y[[1]]))
+test(1710.3, class(y[[1]]), c("hello","world"))
+test(1710.4, all.equal(x,y,check.attributes=TRUE),            # desired
+             "Datasets have different column classes. First 3: a(numeric!=hello;world)")
+test(1710.5, isTRUE(all.equal(x,y,check.attributes=FALSE)))   # desired
+
 
 ##########################
 

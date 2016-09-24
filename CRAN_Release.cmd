@@ -286,15 +286,19 @@ status = function(which="both") {
       "OK      :",sprintf("%3d",length(ok)),"\n",
       "TOTAL   :",length(e)+length(w)+length(n)+length(ok),"/",length(deps),"\n",
       "RUNNING :",sprintf("%3d",length(r)),":",paste(sort(names(x)[r])),"\n")
+  invisible()
 }
 
 status()
 
 # Investigate and fix the fails ...
+# For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 more <failing_package>.Rcheck/00check.log
 R CMD check <failing_package>.tar.gz
 R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
 R CMD check <failing_package>.tar.gz
+ls *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check
+
 
 
 
