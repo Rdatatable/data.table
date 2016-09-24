@@ -1,6 +1,12 @@
 
 ### Changes in v1.9.7  ( in development on GitHub )
 
+#### IMPORTANT HIGHLIGHTED CHANGES
+
+  1. By default all columns are now used by `unique()`, `duplicated()` and `uniqueN()` data.table methods, [#1284](https://github.com/Rdatatable/data.table/issues/1810) and [#1841](https://github.com/Rdatatable/data.table/issues/1841). To restore old behaviour: `options(datatable.old.unique.by.key=TRUE)`. In 1 year this option to restore the old default will be deprecated with warning. In 2 years the option will be removed. Please explicity pass `by=key(DT)` for clarity. Only those relying on the default are affected. 262 CRAN and Bioconductor packages using data.table were checked before release. 9 needed to change and were notified. Any lines of code without test coverage will have been missed by these checks. Any packages not on CRAN or Bioconductor were not checked.
+
+  2. Added `setDTthreads()` and `getDTthreads()` to control the threads used in data.table functions that are now parallelized with OpenMP (subsetting, `fwrite()` and `fsort()`) on all architectures including Windows. When data.table is used from the parallel package (e.g. `mclapply` as done by 3 CRAN and Bioconductor packages) data.table automatically switches down to one thread to avoid a [deadlock/hang](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58378) when OpenMP is used with fork(); [#1745]((https://github.com/Rdatatable/data.table/issues/1745), [#1727](https://github.com/Rdatatable/data.table/issues/1727) thanks to Kontstantinos Tsardounis, Ramon Diaz-Uriarte and Jan Gorecki for testing before release and providing reproducible examples. After `parallel::mclapply` has finished, data.table reverts to the prior `getDTthreads()` state. Tests added and therefore will run every day thanks to CRAN.
+
 #### NEW FEATURES
 
   1. `rowid()` and `rowidv()` - convenience functions for generating a unique row ids within each group, are implemented. `rowid()` is particularly useful along with `dcast()`. See `?rowid` for more, [#1353](https://github.com/Rdatatable/data.table/issues/1353).
@@ -79,20 +85,18 @@
 
   37. Row subset operations of data.table is now parallelised with OpenMP, [#1660](https://github.com/Rdatatable/data.table/issues/1660). See the linked issue page for a rough benchmark on speedup.
 
-  38. Added `setDTthreads()` and `getDTthreads()` to control the threads used in data.table functions that are parallelized with OpenMP. This control does not affect base R or other packages using OpenMP. Further, when data.table is used from the parallel package (e.g. `mclapply`) it automatically uses 1 thread to avoid a [deadlock/hang](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58378) when OpenMP is used with fork(); [#1745]((https://github.com/Rdatatable/data.table/issues/1745), [#1727](https://github.com/Rdatatable/data.table/issues/1727) thanks to Kontstantinos Tsardounis, Ramon Diaz-Uriarte and Jan Gorecki for testing in dev before release and providing reproducible examples. After `parallel::mclapply` has finished, data.table reverts to the prior `getDTthreads()` state. Tests added.
+  38. `rleid()` gains `prefix` argument, similar to `rowid()`.
 
-  39. `rleid()` gains `prefix` argument, similar to `rowid()`.
+  39. `tstrsplit` gains argument `keep` which corresponds to the indices of list elements to return from the transposed list.
 
-  40. `tstrsplit` gains argument `keep` which corresponds to the indices of list elements to return from the transposed list.
-
-  41. `give.names` argument in `tstrsplit` is renamed to simply `names`. It now accepts a character vector 
+  40. `give.names` argument in `tstrsplit` is renamed to simply `names`. It now accepts a character vector 
   of column names as well.
 
-  42. `melt.data.table` finds variables provided to `patterns()` when called from within user defined functions, [#1749](https://github.com/Rdatatable/data.table/issues/1749). Thanks to @kendonB for the report.
+  41. `melt.data.table` finds variables provided to `patterns()` when called from within user defined functions, [#1749](https://github.com/Rdatatable/data.table/issues/1749). Thanks to @kendonB for the report.
 
-  43. `first()` is now exported to return the first element of vectors, data.frames and data.tables.
+  42. `first()` is now exported to return the first element of vectors, data.frames and data.tables.
   
-  44. Added `second` and `minute` extraction functions which, like extant `hour`/`yday`/`week`/etc, always return an integer, [#874](https://github.com/Rdatatable/data.table/issues/874). Also added ISO 8601-consistent weeks in `isoweek`, [#1765](https://github.com/Rdatatable/data.table/issues/1765). Thanks to @bthieurmel and @STATWORX for the FRs and @MichaelChirico for the PRs. 
+  43. Added `second` and `minute` extraction functions which, like extant `hour`/`yday`/`week`/etc, always return an integer, [#874](https://github.com/Rdatatable/data.table/issues/874). Also added ISO 8601-consistent weeks in `isoweek`, [#1765](https://github.com/Rdatatable/data.table/issues/1765). Thanks to @bthieurmel and @STATWORX for the FRs and @MichaelChirico for the PRs. 
 
   44. `shift()` understands and operates on list-of-list inputs as well, [#1595](https://github.com/Rdatatable/data.table/issues/1595). Thanks to @enfascination and to @chris for [asking on SO](http://stackoverflow.com/q/38900293/559784).
 
@@ -330,7 +334,6 @@
   
   36. The option `datatable.old.bywithoutby` to restore the old default has been removed. As warned 2 years ago in release notes and explicitly warned about for 1 year when used. Search down this file for the text 'bywithoutby' to see previous notes on this topic.
   
-  37. By default all columns are now used by unique(), duplicated() and uniqueN() data.table methods, [#1284](https://github.com/Rdatatable/data.table/issues/1810) and [#1841](https://github.com/Rdatatable/data.table/issues/1841). To restore old behaviour: options(datatable.old.unique.by.key=TRUE). Startup message added. In 1 year this option to restore the old default will be deprecated with warning. In 2 years the option will be removed.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
