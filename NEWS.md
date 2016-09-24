@@ -192,7 +192,7 @@
 
   43. `setattr()` catches logical input that points to R's global TRUE value and sets attributes on a copy instead, along with a warning, [#1281](https://github.com/Rdatatable/data.table/issues/1281). Thanks to @tdeenes.
 
-  44. `fread` respects order of columns provided to argument `select` in result, and also errors if the column(s) provided is not present, [#1445](https://github.com/Rdatatable/data.table/issues/1445). 
+  44. `fread` respects order of columns provided to argument `select` in result, and also warns if the column(s) provided is not present, [#1445](https://github.com/Rdatatable/data.table/issues/1445). 
 
   45. `DT[, .BY, by=x]` and other variants of adding a column using `.BY` is handled correctly in R v3.1.0+, [#1270](https://github.com/Rdatatable/data.table/issues/1270). 
 

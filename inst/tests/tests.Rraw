@@ -7642,7 +7642,7 @@ test(1618.2, fread("a,c,b\n1,2,3", select=c("c", "b")), data.table(c=2L, b=3L))
 test(1618.3, fread("a,c,b\n1,2,3", select=c(3,2)), data.table(b=3L, c=2L))
 test(1618.4, fread("a,c,b\n1,2,3", select=c(2:3)), data.table(c=2L, b=3L))
 test(1618.5, fread("a,c,b\n1,2,3", select=c("b", "c"), col.names=c("q", "r")), data.table(q=3L, r=2L))
-test(1618.6, fread("a,c,b\n1,2,3", select=c("b", "z")), error="Column(s)")
+test(1618.6, fread("a,c,b\n1,2,3", select=c("b", "z")), data.table(b=3L), warning="Column name 'z' not found.*skipping")
 
 # fix for #1270 - uncomment when #1270 re-fixed, so it can pass R 2.15.0
 #DT = data.table(x=1:2, y=5:6)

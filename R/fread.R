@@ -131,7 +131,10 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         # fix for #1445
         if (is.numeric(select)) {
             reorder = if (length(o <- forderv(select))) o else seq_along(select)
-        } else reorder = select # checking for invalid cols in select logic moved to fread.c
+        } else {
+            reorder = select[select %chin% names(ans)]
+            # any missing columns are warning about in fread.c and skipped
+        }
         setcolorder(ans, reorder)
     }
     # FR #768
