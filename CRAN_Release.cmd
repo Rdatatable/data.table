@@ -9,18 +9,21 @@ R
 update.packages()
 q()
 
+# Ensure latest version of R otherwise problems with CRAN not finding dependents that depend on latest R
+# e.g. mirror may have been disabled in sources.list when upgrading ubuntu
+
 # Ensure no non-ASCII, other than in README.md is ok
 # tests.Rraw in particular have failed CRAN Solaris (only) due to this.
 # No unicode either. Put these tests in DtNonAsciiTests package.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" data.table/
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" data.table/
 
-# Ensure no calls to omp_set_num_threads() [to avoid effecting other packages and base R]
-# grep TODO
+# Ensure no calls to omp_set_num_threads() [to avoid affecting other packages and base R]
+grep omp_set_num_threads data.table/src/*
 # Endure no calls to omp_get_max_threads() also since access should be via getDTthreads()
-# grep TODO
+grep omp_get_max_threads data.table/src/*
 # Ensure all #pragama omp parallel directives include num_threads() clause
-# grep TODO
+grep "pragma omp parallel" data.table/src/*.c
 
 
 # workaround for IBM AIX - ensure no globals named 'nearest' or 'class'. See https://github.com/Rdatatable/data.table/issues/1351
@@ -206,60 +209,97 @@ sudo apt-get -y install tk8.6-dev
 sudo apt-get -y install clustalo  # for package LowMACA
 sudo apt-get -y install texlive-xetex   # for package optiRum
 sudo apt-get -y install texlive-pstricks  # for package GGtools
+sudo apt-get -y install libfftw3-dev  # for package fftwtools
+sudo apt-get -y install libgsl-dev
+sudo apt-get -y install octave liboctave-dev
+sudo apt-get -y install jags
 sudo R CMD javareconf
 # ENDIF
 
-cd ~/build
-# if on EC2 spot
-git clone https://github.com/Rdatatable/data.table.git
-# end if
-
-# do not build, install, require() or library() data.table. revdep_check will read ~/build/data.table and install from there
-# NB: repos <- c(CRAN="http://cran.rstudio.com/") is hard-coded into devtools::check_cran
-# NB: revdep_check moves the tar.gz of directly dependent packages into revdeplib afterwards. The packages those packages depened on are installed in revdeplib without their tar.gz
-
+cd ~/build/revdeplib/
 export R_LIBS=~/build/revdeplib/
 R
-require(devtools) 
-options(devtools.revdep.libpath = "~/build/revdeplib/")
-  # essential as the first-time download can be several hours, mainly BSgenome with its 10 * 500MB+ files.
-  # revdep_check(..., ignore="BSgenome") is ignored and BSgenome still downloads, I guess only direct dependencies can be ignored
-options(Ncpus = 6)
-res <- revdep_check("data.table", bioconductor=TRUE)
-revdep_check_save_summary(res)
-revdep_check_save_logs(res)
+update.packages(ask=FALSE)
 
-# wait for it to finish before fixing; any R CMD INSTALL may affect running tests which run under a new R --slave for each one
+# Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
+source("http://bioconductor.org/biocLite.R")
+biocLite()  # like update.packages() but for bioc
 
-# CAGEr & GGtools fail due to not finding KernSmooth. It's so there in /usr/lib/R/library/ alongside other recommended packages that it's not funny. Tried installing KernSmooth in "~/build/revdeplib/" as well and ensured R_LIBS set and present in .libPaths() and they still complain can't find KernSmooth. Searched online and found others with similar problems with KernSmooth too but no clear solution.
-# Similarly, pwOmics fails due to not finding RUnit but that too is so installed it's not funny
-# Similarly, VanillaICE fails fue to not finding BSgenome.Hsapiens.UCSC.hg18, which again is so there
-# Running these 4 manually outside of devtools::revdep_check() pass fine ...
-cd ~/build
-export R_LIBS=~/build/revdeplib/
-R CMD check revdeplib/CAGEr_1.10.0.tar.gz
-R CMD check revdeplib/GGtools_5.4.0.tar.gz
-R CMD check revdeplib/pwOmics_1.1.8.tar.gz
-R CMD check revdeplib/VanillaICE_1.30.1.tar.gz
+avail = available.packages(repos=c(getOption("repos"), BiocInstaller::biocinstallRepos()[["BioCsoft"]]))
+deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
+table(avail[deps,"Repository"])
+old = 0
+new = 0
+for (p in deps) {
+   fn = paste0(p, "_", avail[p,"Version"], ".tar.gz")
+   if (!file.exists(fn)) {
+     system(paste0("rm ", p, "*.tar.gz"))  # Remove previous *.tar.gz
+     if (!length(grep("bioc",avail[p,"Repository"]))) {
+       install.packages(p)  # To install its dependencies really.
+     } else {
+       biocLite(p)          # To install its dependencies really.
+     }
+     download.packages(p, destdir="~/build/revdeplib", contriburl=avail[p,"Repository"])   # So R CMD check can run on these
+     if (!file.exists(fn)) stop("Still does not exist!:", fn)
+     new = new+1
+   } else {
+     old = old+1
+   }
+   if (packageVersion(p) != avail[p,"Version"])
+       stop("Installed version of ",p," doesn't equal the previously downloaded tar.gz")
+}
+cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
+table(avail[deps,"Repository"])
 
-# Now tackle the real fails ...
-cd ~/build
-export R_LIBS=~/build/revdeplib/
-R CMD check revdeplib/bedr_1.0.1.tar.gz
-R CMD INSTALL data.table_1.9.4.tar.gz    # revert to previous version
-R CMD check revdeplib/bedr_1.0.1.tar.gz  # if still fails then it isn't data.table causing fail. Check for missing Ubuntu packages and similar. 
-# fix data.table
-R CMD build data.table
-R CMD INSTALL data.table_1.9.5.tar.gz
-R CMD check revdeplib/bedr_1.0.1.tar.gz
-# iterate
+tocheck = deps
+cat(paste0(tocheck,"_", avail[deps,"Version"], ".tar.gz"),file="tocheck.txt",sep="\n")
 
-repeat revdep_check() until passes cleanly
+R CMD INSTALL ~/data.table_1.9.7.tar.gz   # ** ensure latest version installed **
+export _R_CHECK_FORCE_SUGGESTS_=false
+cat tocheck.txt | parallel R CMD check
 
-# Check for warnings
-cd /tmp/RtmpNRWfYa/check_crana4e6458d6c8/
-find . -name "00check.log" -exec grep -iH warning {} \;
-find . -name "00check.log" -exec grep -iH "replacing previous import" {} \;
+status = function(which="both") {
+  if (which=="both") {
+     cat("CRAN:\n"); status("cran")
+     cat("BIOC:\n"); status("bioc")
+     return(invisible())
+  }
+  if (which=="cran") deps = deps[grep("cran",avail[deps,"Repository"])]
+  if (which=="bioc") deps = deps[grep("bioc",avail[deps,"Repository"])]
+  x = unlist(sapply(deps, function(x) {
+    fn = paste0("./",x,".Rcheck/00check.log")
+    if (file.exists(fn)) {
+       v = suppressWarnings(system(paste0("grep 'Status:' ",fn), intern=TRUE))
+       if (!length(v)) return("RUNNING")
+       return(substring(v,9))
+    }
+    if (file.exists(paste0("./",x,".Rcheck"))) return("RUNNING")
+  }))
+  e = grep("ERROR",x)
+  w = setdiff( grep("WARNING",x), e)
+  n = setdiff( grep("NOTE",x), c(e,w) )
+  ok = setdiff( grep("OK",x), c(e,w,n) )
+  r = grep("RUNNING",x)
+  cat(" ERROR   :",sprintf("%3d",length(e)),":",paste(sort(names(x)[e])),"\n",
+      "WARNING :",sprintf("%3d",length(w)),":",paste(sort(names(x)[w])),"\n",
+      "NOTE    :",sprintf("%3d",length(n)),"\n",  #":",paste(sort(names(x)[n])),"\n",
+      "OK      :",sprintf("%3d",length(ok)),"\n",
+      "TOTAL   :",length(e)+length(w)+length(n)+length(ok),"/",length(deps),"\n",
+      "RUNNING :",sprintf("%3d",length(r)),":",paste(sort(names(x)[r])),"\n")
+  invisible()
+}
+
+status()
+
+# Investigate and fix the fails ...
+# For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+more <failing_package>.Rcheck/00check.log
+R CMD check <failing_package>.tar.gz
+R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
+R CMD check <failing_package>.tar.gz
+ls *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check
+
+
 
 
 ###############################################

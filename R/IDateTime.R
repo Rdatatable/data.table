@@ -51,20 +51,39 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
 
 #Adapted from `+.Date`
 `+.IDate` <- function (e1, e2) {
-    coerceTimeUnit <- function(x) as.vector(round(switch(attr(x, 
-        "units"), secs = x/86400, mins = x/1440, hours = x/24, 
-        days = x, weeks = 7 * x)))
     if (nargs() == 1L) 
         return(e1)
+    if (inherits(e1, "difftime") || inherits(e2, "difftime"))
+        stop("difftime objects may not be added to IDate. Use plain integer instead of difftime.")
+    if ( (storage.mode(e1)=="double" && isReallyReal(e1)) ||
+         (storage.mode(e2)=="double" && isReallyReal(e2)) ) {
+        return(`+.Date`(e1,e2))
+        # IDate doesn't support fractional days; revert to base Date
+    }
     if (inherits(e1, "Date") && inherits(e2, "Date")) 
         stop("binary + is not defined for \"IDate\" objects")
-    if (inherits(e1, "difftime")) 
-        e1 <- coerceTimeUnit(e1)
-    if (inherits(e2, "difftime")) 
-        e2 <- coerceTimeUnit(e2)
-    structure(as.integer(unclass(e1) + unclass(e2)), 
-              class = c("IDate", "Date"))
+    structure(as.integer(unclass(e1) + unclass(e2)), class = c("IDate", "Date"))
 }
+
+`-.IDate` <- function (e1, e2) {
+    if (!inherits(e1, "IDate")) 
+        stop("can only subtract from \"IDate\" objects")
+    if (storage.mode(e1) != "integer")
+        stop("Internal error: storage mode of IDate is somehow no longer integer")
+    if (nargs() == 1) 
+        stop("unary - is not defined for \"IDate\" objects")
+    if (inherits(e2, "difftime"))
+        stop("difftime objects may not be subtracted from IDate. Use plain integer instead of difftime.")
+    if ( storage.mode(e2)=="double" && isReallyReal(e2) ) {
+        return(`-.Date`(as.Date(e1),as.Date(e2)))
+        # IDate doesn't support fractional days so revert to base Date
+    }
+    ans = as.integer(unclass(e1) - unclass(e2))
+    if (!inherits(e2, "Date")) class(ans) = c("IDate","Date")
+    return(ans)
+}
+
+
 
 ###################################################################
 # ITime -- Integer time-of-day class

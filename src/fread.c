@@ -1195,7 +1195,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             // invalid cols check part of #1445 moved here (makes sense before reading the file)
             itemsInt = PROTECT(chmatch(select, names, NA_INTEGER, FALSE));
             for (i=0; i<length(select); i++) if (INTEGER(itemsInt)[i]==NA_INTEGER) 
-                error("Column(s) [%s] not found in file.", CHAR(STRING_ELT(select, i)));
+                warning("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(select, i)));
             UNPROTECT(1);
             PROTECT_WITH_INDEX(itemsInt, &pi);
             REPROTECT(itemsInt = chmatch(names, select, NA_INTEGER, FALSE), pi); protecti++;

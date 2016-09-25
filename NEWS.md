@@ -1,6 +1,12 @@
 
 ### Changes in v1.9.7  ( in development on GitHub )
 
+#### IMPORTANT HIGHLIGHTED CHANGES
+
+  1. By default all columns are now used by `unique()`, `duplicated()` and `uniqueN()` data.table methods, [#1284](https://github.com/Rdatatable/data.table/issues/1810) and [#1841](https://github.com/Rdatatable/data.table/issues/1841). To restore old behaviour: `options(datatable.old.unique.by.key=TRUE)`. In 1 year this option to restore the old default will be deprecated with warning. In 2 years the option will be removed. Please explicity pass `by=key(DT)` for clarity. Only those relying on the default are affected. 262 CRAN and Bioconductor packages using data.table were checked before release. 9 needed to change and were notified. Any lines of code without test coverage will have been missed by these checks. Any packages not on CRAN or Bioconductor were not checked.
+
+  2. Added `setDTthreads()` and `getDTthreads()` to control the threads used in data.table functions that are now parallelized with OpenMP (subsetting, `fwrite()` and `fsort()`) on all architectures including Windows. When data.table is used from the parallel package (e.g. `mclapply` as done by 3 CRAN and Bioconductor packages) data.table automatically switches down to one thread to avoid a [deadlock/hang](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58378) when OpenMP is used with fork(); [#1745](https://github.com/Rdatatable/data.table/issues/1745), [#1727](https://github.com/Rdatatable/data.table/issues/1727) thanks to Kontstantinos Tsardounis, Ramon Diaz-Uriarte and Jan Gorecki for testing before release and providing reproducible examples. After `parallel::mclapply` has finished, data.table reverts to the prior `getDTthreads()` state. Tests added and therefore will run every day thanks to CRAN.
+
 #### NEW FEATURES
 
   1. `rowid()` and `rowidv()` - convenience functions for generating a unique row ids within each group, are implemented. `rowid()` is particularly useful along with `dcast()`. See `?rowid` for more, [#1353](https://github.com/Rdatatable/data.table/issues/1353).
@@ -45,7 +51,7 @@
   
   21. New argument `print.class` for `print.data.table` allows for including column class under column names (as inspired by `tbl_df` in `dplyr`); default (adjustable via `"datatable.print.class"` option) is `FALSE`, the inherited behavior. Part of [#1523](https://github.com/Rdatatable/data.table/issues/1523); thanks to @MichaelChirico for the FR & PR.
   
-  22. `all.equal.data.table` gets new features for testing equality of data.tables, new arguments are `check.attributes`, `ignore.col.order`, `ignore.row.order` and `tolerance`. It will also check column classes match, unlike `all.equal.list` it will report *integer/real* types mismatch.
+  22. `all.equal.data.table` gains `check.attributes`, `ignore.col.order`, `ignore.row.order` and `tolerance`.
 
   23. Fast set operations `fsetdiff`, `fintersect`, `funion` and `fsetequal` for data.tables is now implemented, [#547](https://github.com/Rdatatable/data.table/issues/547).
 
@@ -79,24 +85,24 @@
 
   37. Row subset operations of data.table is now parallelised with OpenMP, [#1660](https://github.com/Rdatatable/data.table/issues/1660). See the linked issue page for a rough benchmark on speedup.
 
-  38. Added `setDTthreads()` and `getDTthreads()` to control the threads used in data.table functions that are parallelized with OpenMP. This control does not affect base R or other packages using OpenMP.
+  38. `rleid()` gains `prefix` argument, similar to `rowid()`.
 
-  39. `rleid()` gains `prefix` argument, similar to `rowid()`.
+  39. `tstrsplit` gains argument `keep` which corresponds to the indices of list elements to return from the transposed list.
 
-  40. `tstrsplit` gains argument `keep` which corresponds to the indices of list elements to return from the transposed list.
-
-  41. `give.names` argument in `tstrsplit` is renamed to simply `names`. It now accepts a character vector 
+  40. `give.names` argument in `tstrsplit` is renamed to simply `names`. It now accepts a character vector 
   of column names as well.
 
-  42. `melt.data.table` finds variables provided to `patterns()` when called from within user defined functions, [#1749](https://github.com/Rdatatable/data.table/issues/1749). Thanks to @kendonB for the report.
+  41. `melt.data.table` finds variables provided to `patterns()` when called from within user defined functions, [#1749](https://github.com/Rdatatable/data.table/issues/1749). Thanks to @kendonB for the report.
 
-  43. `first()` is now exported to return the first element of vectors, data.frames and data.tables.
+  42. `first()` is now exported to return the first element of vectors, data.frames and data.tables.
   
-  44. Added `second` and `minute` extraction functions which, like extant `hour`/`yday`/`week`/etc, always return an integer, [#874](https://github.com/Rdatatable/data.table/issues/874). Also added ISO 8601-consistent weeks in `isoweek`, [#1765](https://github.com/Rdatatable/data.table/issues/1765). Thanks to @bthieurmel and @STATWORX for the FRs and @MichaelChirico for the PRs. 
+  43. Added `second` and `minute` extraction functions which, like extant `hour`/`yday`/`week`/etc, always return an integer, [#874](https://github.com/Rdatatable/data.table/issues/874). Also added ISO 8601-consistent weeks in `isoweek`, [#1765](https://github.com/Rdatatable/data.table/issues/1765). Thanks to @bthieurmel and @STATWORX for the FRs and @MichaelChirico for the PRs. 
 
   44. `shift()` understands and operates on list-of-list inputs as well, [#1595](https://github.com/Rdatatable/data.table/issues/1595). Thanks to @enfascination and to @chris for [asking on SO](http://stackoverflow.com/q/38900293/559784).
 
   45. Most common use case for `between()`, i.e., `lower` and `upper` are length=1, is now implemented in C and parallelised. This results in ~7-10x speed improvement on vectors of length >= 1e6.
+
+  46. `fread` gets new argument `file` which expect existing file on input, to ensure no shell commands will be executed when reading file. Closes [#1702](https://github.com/Rdatatable/data.table/issues/1702).
 
 #### BUG FIXES
 
@@ -186,7 +192,7 @@
 
   43. `setattr()` catches logical input that points to R's global TRUE value and sets attributes on a copy instead, along with a warning, [#1281](https://github.com/Rdatatable/data.table/issues/1281). Thanks to @tdeenes.
 
-  44. `fread` respects order of columns provided to argument `select` in result, and also errors if the column(s) provided is not present, [#1445](https://github.com/Rdatatable/data.table/issues/1445). 
+  44. `fread` respects order of columns provided to argument `select` in result, and also warns if the column(s) provided is not present, [#1445](https://github.com/Rdatatable/data.table/issues/1445). 
 
   45. `DT[, .BY, by=x]` and other variants of adding a column using `.BY` is handled correctly in R v3.1.0+, [#1270](https://github.com/Rdatatable/data.table/issues/1270). 
 
@@ -218,7 +224,7 @@
   
   58. Handled use of `.I` in some `GForce` operations, [#1683](https://github.com/Rdatatable/data.table/issues/1683). Thanks gibbz00 from SO and @franknarf1 for reporting and @MichaelChirico for the PR.
   
-  59. Added `+.IDate` method so that IDate + integer doesn't revert to `Date`, [#1528](https://github.com/Rdatatable/data.table/issues/1528); thanks @MichaelChirico for FR&PR.
+  59. Added `+.IDate` method so that IDate + integer retains the `IDate` class, [#1528](https://github.com/Rdatatable/data.table/issues/1528); thanks @MichaelChirico for FR&PR. Similarly, added `-.IDate` so that IDate - IDate returns a plain integer rather than difftime.
   
   60. Radix ordering an integer vector containing INTMAX (2147483647) with decreasing=TRUE and na.last=FALSE failed ASAN check and seg faulted some systems. As reported for base R [#16925](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16925) whose new code comes from data.table. Simplified code, added test and proposed change to base R.
 
@@ -328,7 +334,6 @@
   
   36. The option `datatable.old.bywithoutby` to restore the old default has been removed. As warned 2 years ago in release notes and explicitly warned about for 1 year when used. Search down this file for the text 'bywithoutby' to see previous notes on this topic.
   
-  37. By default all columns are now used by unique(), duplicated() and uniqueN() data.table methods, [#1284](https://github.com/Rdatatable/data.table/issues/1810) and [#1841](https://github.com/Rdatatable/data.table/issues/1841). To restore old behaviour: options(datatable.old.unique.by.key=TRUE). Startup message added. In 1 year this option to restore the old default will be deprecated with warning. In 2 years the option will be removed.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 

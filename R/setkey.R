@@ -223,12 +223,11 @@ forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
     o
 }
 
-fsort <- function(x, decreasing = FALSE, na.last = FALSE, internal=FALSE, ...)
+fsort <- function(x, decreasing = FALSE, na.last = FALSE, internal=FALSE, verbose=FALSE, ...)
 {
     if (typeof(x)=="double" && !decreasing && !na.last) {
       if (internal) stop("Internal code should not be being called on type double")
-      cat("Experimental new parallel sort. Returned invisibly as probably large.\n")      
-      return(invisible(.Call(Cfsort, x)))
+      return(.Call(Cfsort, x, verbose))
     } else {
       # fsort is now exported for testing. Trying to head off complaints "it's slow on integer"
       # The only places internally we use fsort internally (3 calls, all on integer) have had internal=TRUE added for now.

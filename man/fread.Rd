@@ -9,7 +9,7 @@
    `fread` is for \emph{regular} delimited files; i.e., where every row has the same number of columns. In future, secondary separator (\code{sep2}) may be specified \emph{within} each column. Such columns will be read as type \code{list} where each cell is itself a vector.
 }
 \usage{
-fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA",
+fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA", file=NULL,
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=1L,
 skip=0L, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
@@ -27,6 +27,7 @@ data.table=getOption("datatable.fread.datatable")   # default: TRUE
   \item{nrows}{ The number of rows to read, by default -1 means all. Unlike \code{read.table}, it doesn't help speed to set this to the number of rows in the file (or an estimate), since the number of rows is automatically determined and is already fast. Only set \code{nrows} if you require the first 10 rows, for example. `nrows=0` is a special case that just returns the column names and types; e.g., a dry run for a large file or to quickly check format consistency of a set of files before starting to read any. }
   \item{header}{ Does the first data line contain column names? Defaults according to whether every non-empty field on the first data line is type character. If so, or TRUE is supplied, any empty column names are given a default name. }
   \item{na.strings}{ A character vector of strings which are to be interpreted as \code{NA} values. By default \code{",,"} for columns read as type character is read as a blank string (\code{""}) and \code{",NA,"} is read as \code{NA}. Typical alternatives might be \code{na.strings=NULL} (no coercion to NA at all!) or perhaps \code{na.strings=c("NA","N/A","null")}. }
+  \item{file}{ File path, useful when we want to ensure that no shell commands will be executed. File path can also be provided to \code{input} argument. }
   \item{stringsAsFactors}{ Convert all character columns to factors? }
   \item{verbose}{ Be chatty and report timings? }
   \item{autostart}{ Any line number within the region of machine readable delimited text, by default 30. If the file is shorter or this line is empty (e.g. short files with trailing blank lines) then the last non empty line (with a non empty line above that) is used. This line and the lines above it are used to auto detect \code{sep}, \code{sep2} and the number of fields. It's extremely unlikely that \code{autostart} should ever need to be changed, we hope. }

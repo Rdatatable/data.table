@@ -6,13 +6,14 @@
 }
 
 \usage{
-fsort(x, decreasing = FALSE, na.last = FALSE, internal=FALSE, ...)
+fsort(x, decreasing = FALSE, na.last = FALSE, internal=FALSE, verbose=FALSE, ...)
 }
 \arguments{
   \item{x}{ A vector. Type double, currently. }
   \item{decreasing}{ Decreasing order? }
   \item{na.last}{ Control treatment of \code{NA}s. If \code{TRUE}, missing values in the data are put last; if \code{FALSE}, they are put first; if \code{NA}, they are removed; if \code{"keep"} they are kept with rank \code{NA}. }
   \item{internal}{ Internal use only. Temporary variable. Will be removed. }
+  \item{verbose}{ Print tracing information. }
   \item{...}{ Not sure yet. Should be consistent with base R.}
 }
 \details{
