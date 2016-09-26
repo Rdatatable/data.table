@@ -7591,19 +7591,18 @@ test(1613.5531, !isTRUE(all.equal(x, y, ignore.row.order = FALSE)))
 test(1613.5532, !isTRUE(all.equal(x, y, ignore.row.order = TRUE)))
 x = data.table(-0.000189921844659375) # tolerance in action
 y = data.table(-0.000189921844655161)
-test(1613.561, all.equal(x, y, ignore.row.order = FALSE), all.equal(x, y, ignore.row.order = TRUE))
-test(1613.562, is.character(all.equal(x, y, ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(x, y, ignore.row.order = TRUE, tolerance = 0)))
-test(1613.563, all.equal(rbind(x,y), rbind(y,y), ignore.row.order = FALSE), all.equal(rbind(x,y), rbind(y,y), ignore.row.order = TRUE))
-test(1613.564, is.character(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = TRUE, tolerance = 0)))
-test(1613.565, all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE), is.character(r<-all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE)) && any(grepl("force 'tolerance' argument to 0", r))) # no-match due factor force tolerance=0
-test(1613.566, all.equal(rbind(x,y,y), rbind(x,y,y), ignore.row.order = FALSE, tolerance = 0), all.equal(rbind(x,y,y), rbind(x,y,y), ignore.row.order = TRUE, tolerance = 0))
-test(1613.567, is.character(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE, tolerance = 0)))
-test(1613.571, all.equal(cbind(x, list(factor(1))), cbind(y, list(factor(1))), ignore.row.order = FALSE), is.character(r<-all.equal(cbind(x, list(factor(1))), cbind(y, list(factor(1))), ignore.row.order = TRUE)) && any(grepl("force 'tolerance' argument to 0", r))) # no-match due factor force tolerance=0
-test(1613.572, is.character(all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = FALSE)), is.character(all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = TRUE))) # x to x with factor equality
+test(1613.561, all(all.equal(x, y, ignore.row.order = FALSE), all.equal(x, y, ignore.row.order = TRUE)))
+test(1613.562, all(is.character(all.equal(x, y, ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(x, y, ignore.row.order = TRUE, tolerance = 0))))
+test(1613.563, all(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = FALSE), all.equal(rbind(x,y), rbind(y,y), ignore.row.order = TRUE)))
+test(1613.564, all(is.character(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = TRUE, tolerance = 0))))
+test(1613.565, all(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE), is.character(r<-all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE)) && any(grepl("force 'tolerance' argument to 0", r)))) # no-match due factor force tolerance=0
+test(1613.566, all(all.equal(rbind(x,y,y), rbind(x,y,y), ignore.row.order = FALSE, tolerance = 0), all.equal(rbind(x,y,y), rbind(x,y,y), ignore.row.order = TRUE, tolerance = 0)))
+test(1613.567, all(is.character(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE, tolerance = 0))))
+test(1613.571, all(all.equal(cbind(x, list(factor(1))), cbind(y, list(factor(1))), ignore.row.order = FALSE), is.character(r<-all.equal(cbind(x, list(factor(1))), cbind(y, list(factor(1))), ignore.row.order = TRUE)) && any(grepl("force 'tolerance' argument to 0", r)))) # no-match due factor force tolerance=0
+test(1613.572, all(all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = FALSE), all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = TRUE))) # x to x with factor equality
 test(1613.573, all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = TRUE, tolerance = 1), error = "Factor columns and ignore.row.order cannot be used with non 0 tolerance argument") # error due to provided non zero tolerance
-test(1613.581, all.equal(x, y, ignore.row.order = FALSE, tolerance = 1), all.equal(x, y, ignore.row.order = TRUE, tolerance = 1))
-test(1613.582, identical(all.equal(x, y, ignore.row.order = FALSE, tolerance = sqrt(.Machine$double.eps)/2), all.equal(x, y, ignore.row.order = TRUE, tolerance = sqrt(.Machine$double.eps)/2)), warning = "Argument 'tolerance' was forced"
-)
+test(1613.581, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = 1), all.equal(x, y, ignore.row.order = TRUE, tolerance = 1)))
+test(1613.582, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = sqrt(.Machine$double.eps)/2), all.equal(x, y, ignore.row.order = TRUE, tolerance = sqrt(.Machine$double.eps)/2)), warning = "Argument 'tolerance' was forced")
 
 if ("package:bit64" %in% search()) {
     # fix for #1405, handles roll with -ve int64 values properly
