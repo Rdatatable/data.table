@@ -216,10 +216,13 @@ sudo apt-get -y install jags
 sudo R CMD javareconf
 # ENDIF
 
+sudo R
+update.packages(ask=FALSE)
+q()
+
 cd ~/build/revdeplib/
 export R_LIBS=~/build/revdeplib/
 R
-update.packages(ask=FALSE)
 
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
 source("http://bioconductor.org/biocLite.R")
@@ -234,6 +237,7 @@ for (p in deps) {
    fn = paste0(p, "_", avail[p,"Version"], ".tar.gz")
    if (!file.exists(fn)) {
      system(paste0("rm ", p, "*.tar.gz"))  # Remove previous *.tar.gz
+     system(paste0("rm -r ", p, ".Rcheck"))  # Remove last check (of previous version)
      if (!length(grep("bioc",avail[p,"Repository"]))) {
        install.packages(p)  # To install its dependencies really.
      } else {
@@ -274,18 +278,22 @@ status = function(which="both") {
        return(substring(v,9))
     }
     if (file.exists(paste0("./",x,".Rcheck"))) return("RUNNING")
+    return("NOT STARTED")
   }))
   e = grep("ERROR",x)
   w = setdiff( grep("WARNING",x), e)
   n = setdiff( grep("NOTE",x), c(e,w) )
   ok = setdiff( grep("OK",x), c(e,w,n) )
   r = grep("RUNNING",x)
+  ns = grep("NOT STARTED", x)
   cat(" ERROR   :",sprintf("%3d",length(e)),":",paste(sort(names(x)[e])),"\n",
       "WARNING :",sprintf("%3d",length(w)),":",paste(sort(names(x)[w])),"\n",
       "NOTE    :",sprintf("%3d",length(n)),"\n",  #":",paste(sort(names(x)[n])),"\n",
       "OK      :",sprintf("%3d",length(ok)),"\n",
       "TOTAL   :",length(e)+length(w)+length(n)+length(ok),"/",length(deps),"\n",
-      "RUNNING :",sprintf("%3d",length(r)),":",paste(sort(names(x)[r])),"\n")
+      "RUNNING :",sprintf("%3d",length(r)),":",paste(sort(names(x)[r])),"\n",
+      if (length(ns)==0) "\n" else paste0("NOT STARTED (first 5 of ",length(ns),") : ",paste(sort(names(x)[head(ns,5)]),collapse=" "),"\n")
+      )
   invisible()
 }
 
