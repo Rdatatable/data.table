@@ -3,7 +3,7 @@
 
 #### IMPORTANT HIGHLIGHTED CHANGES
 
-  1. By default all columns are now used by `unique()`, `duplicated()` and `uniqueN()` data.table methods, [#1284](https://github.com/Rdatatable/data.table/issues/1810) and [#1841](https://github.com/Rdatatable/data.table/issues/1841). To restore old behaviour: `options(datatable.old.unique.by.key=TRUE)`. In 1 year this option to restore the old default will be deprecated with warning. In 2 years the option will be removed. Please explicity pass `by=key(DT)` for clarity. Only those relying on the default are affected. 262 CRAN and Bioconductor packages using data.table were checked before release. 9 needed to change and were notified. Any lines of code without test coverage will have been missed by these checks. Any packages not on CRAN or Bioconductor were not checked.
+  1. By default all columns are now used by `unique()`, `duplicated()` and `uniqueN()` data.table methods, [#1284](https://github.com/Rdatatable/data.table/issues/1284) and [#1841](https://github.com/Rdatatable/data.table/issues/1841). To restore old behaviour: `options(datatable.old.unique.by.key=TRUE)`. In 1 year this option to restore the old default will be deprecated with warning. In 2 years the option will be removed. Please explicity pass `by=key(DT)` for clarity. Only those relying on the default are affected. 262 CRAN and Bioconductor packages using data.table were checked before release. 9 needed to change and were notified. Any lines of code without test coverage will have been missed by these checks. Any packages not on CRAN or Bioconductor were not checked.
 
   2. Added `setDTthreads()` and `getDTthreads()` to control the threads used in data.table functions that are now parallelized with OpenMP (subsetting, `fwrite()` and `fsort()`) on all architectures including Windows. When data.table is used from the parallel package (e.g. `mclapply` as done by 3 CRAN and Bioconductor packages) data.table automatically switches down to one thread to avoid a [deadlock/hang](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58378) when OpenMP is used with fork(); [#1745](https://github.com/Rdatatable/data.table/issues/1745), [#1727](https://github.com/Rdatatable/data.table/issues/1727) thanks to Kontstantinos Tsardounis, Ramon Diaz-Uriarte and Jan Gorecki for testing before release and providing reproducible examples. After `parallel::mclapply` has finished, data.table reverts to the prior `getDTthreads()` state. Tests added and therefore will run every day thanks to CRAN.
 
@@ -310,7 +310,7 @@
 
   24. Fixed an edge case and added tests for columns of type `function`, [#518](https://github.com/Rdatatable/data.table/issues/518).
   
-  25. `data.table`'s dependency has been moved forward from R 2.14.1 to R 2.15.0 (Mar 2012; i.e. 4 years old). We keep this dependency as old as possible for as long as possible as requested by users in managed environments. This bump allows `data.table` to use `paste0()` internally and in tests for the first time. Before release to CRAN [our procedures](https://github.com/Rdatatable/data.table/blob/master/CRAN_Release.cmd) include running the test suite using this stated dependency.
+  25. `data.table`'s dependency has been moved forward from R 2.14.1 to R 3.0.0 (Apr 2013; i.e. 3 years old). We keep this dependency as old as possible for as long as possible as requested by users in managed environments. This bump allows `data.table` internals to use `paste0()` for the first time and also allows `fsort()` to accept vectors of length over 2 billion items. Before release to CRAN [our procedures](https://github.com/Rdatatable/data.table/blob/master/CRAN_Release.cmd) include running the test suite using this stated dependency.
 
   26. New option `options(datatable.use.index = TRUE)` (default) gives better control over usage of indices, when combined with `options(datatable.auto.index = FALSE)` it allows to use only indices created manually with `setindex` or `setindexv`. Closes [#1422](https://github.com/Rdatatable/data.table/issues/1422).
   
@@ -324,15 +324,13 @@
 
   31. data.table's `setNumericRounding` has a default value of 0, which means ordering, joining and grouping of numeric values will be done at *full precision* by default. Handles [#1642](https://github.com/Rdatatable/data.table/issues/1642), [#1728](https://github.com/Rdatatable/data.table/issues/1728), [#1463](https://github.com/Rdatatable/data.table/issues/1463), [#485](https://github.com/Rdatatable/data.table/issues/485).
 
-  32. A message that default value of `by` will be changed from `key(x)` to `NULL` has been raised in this release if the data.table is keyed and `by` argument is missing. In the next release, `by=NULL` will be default. Partially handles [#1284](https://github.com/Rdatatable/data.table/issues/1284).
+  32. Subsets with S4 objects in `i` are now faster, [#1438](https://github.com/Rdatatable/data.table/issues/1438). Thanks @DCEmilberg.
 
-  33. Subsets with S4 objects in `i` are now faster, [#1438](https://github.com/Rdatatable/data.table/issues/1438). Thanks @DCEmilberg.
+  33. When formula RHS is `.` and multiple functions are provided to `fun.aggregate`, column names of the cast data.table columns don't have the `.` in them, as it doesn't add any useful information really, [#1821](https://github.com/Rdatatable/data.table/issues/1821). Thanks @franknarf1.
 
-  34. When formula RHS is `.` and multiple functions are provided to `fun.aggregate`, column names of the cast data.table columns don't have the `.` in them, as it doesn't add any useful information really, [#1821](https://github.com/Rdatatable/data.table/issues/1821). Thanks @franknarf1.
-
-  35. Function names are added to column names on cast data.tables only when more than one function is provided, [#1810](https://github.com/Rdatatable/data.table/issues/1810). Thanks @franknarf1.
+  34. Function names are added to column names on cast data.tables only when more than one function is provided, [#1810](https://github.com/Rdatatable/data.table/issues/1810). Thanks @franknarf1.
   
-  36. The option `datatable.old.bywithoutby` to restore the old default has been removed. As warned 2 years ago in release notes and explicitly warned about for 1 year when used. Search down this file for the text 'bywithoutby' to see previous notes on this topic.
+  35. The option `datatable.old.bywithoutby` to restore the old default has been removed. As warned 2 years ago in release notes and explicitly warned about for 1 year when used. Search down this file for the text 'bywithoutby' to see previous notes on this topic.
   
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
