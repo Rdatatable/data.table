@@ -552,11 +552,13 @@ test(205, x[y,list(d),mult="all"][,d], c(1,2,NA,NA))
 # be returned all NA (rarely useful and often confusing, but consistent
 # with data.frame).
 TESTDT = data.table(a=1:3,v=1:3,key="a")
-# following #1252, this should return 0-rows. This'll be even more consistent when nomatch=NULL is made default.
-# TODO: this needs to be extended when nomatch=NA etc. is set explicitly
-test(206, TESTDT[NA], data.table(a=integer(0),v=integer(0),key="a"))  # NA are now allowed in keys, so retains key
+test(206, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_,key="a"))  # NA are now allowed in keys, so retains key
+# TESTDT[NA] is expected to return a row of NA since nobody remembers that NA is different to NA_integer_
+# Then user tries TESTDT[c(1,NA,2)] and it feels consistent to them since they see that row of NA in the middle
+# But only the NA symbol is caught and replaced with NA_integer_, for this convenience.
+# Otherwise logical expressions returning a single NA logical will still return empty, for consistency, #1252.
 setkey(TESTDT,NULL)
-test(207, TESTDT[NA], data.table(a=integer(0),v=integer(0)))
+test(207, TESTDT[NA], data.table(a=NA_integer_,v=NA_integer_))
 
 # With inheritance, NROW and NCOL in base work nicely. No need for them in data.table.
 test(208, NROW(TESTDT), 3L)
@@ -856,20 +858,22 @@ test(297,DT[,list(A1=sum(A1),A2=sum(A2),A3=sum(A3)),by=grp], DT[,lapply(.SD,sum)
 
 DT = data.table(a=1:3,b=4:6)
 test(298, {DT$b<-NULL;DT}, data.table(a=1:3))  # delete column
-test(299, DT$c <- as.character(DT$c), error="zero length")  # to simulate RHS which could (due to user error) be non NULL but zero length. This copies DT too, so the next test checks that a subsequent := detects and fixes that.
-test(299.1, DT[,c:=42L], data.table(a=1:3,c=42L), warning="Invalid .internal.selfref detected and fixed")
-test(299.2, truelength(DT)>length(DT))   # the := over-allocated, by 100 by default, but user may have changed default so just check '>'
+test(299.01, {DT$c<-as.character(DT$c);DT}, data.table(a=1:3, c=NA_character_)) # Column c is missing, so DT$c is NULL.
+test(299.02, DT[,c:=""], data.table(a=1:3,c=""))
+test(299.03, truelength(DT)>length(DT))   # the := over-allocated, by 100 by default, but user may have changed default so just check '>'
 # FR #2551 - old 299.3 and 299.5 are changed to include length(RHS) > 1 to issue the warning
-test(299.3, DT[2:3,c:=c(42, 42)], data.table(a=1:3,c=42L), warning="Coerced 'double' RHS to 'integer' to match the column's type.*length 3 (nrows of entire table)")
+DT[,c:=rep(42L,.N)] # plonk
+test(299.04, DT, data.table(a=1:3, c=42L))
+test(299.05, DT[2:3,c:=c(42, 42)], data.table(a=1:3,c=42L), warning="Coerced 'double' RHS to 'integer' to match the column's type.*length 3 (nrows of entire table)")
 # FR #2551 - length(RHS) = 1 - no warning for type conversion
-test(299.7, DT[2,c:=42], data.table(a=1:3,c=42L))
+test(299.06, DT[2,c:=42], data.table(a=1:3,c=42L))
 # also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
-test(299.4, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
-test(299.5, DT[2:3,c:=c(42,0)], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
+test(299.07, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
+test(299.08, DT[2:3,c:=c(42,0)], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
 # FR #2551 is now changed to fit in / fix bug #5442. Stricter warnings are in place now. Check tests 1294.1-34 below.
-test(299.8, DT[2,c:=42], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match")
-test(299.9, DT[2,c:=42L], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'integer' RHS to 'logical' to match")
-test(299.6, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=FALSE), warning="Coerced 'integer' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
+test(299.09, DT[2,c:=42], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match")
+test(299.11, DT[2,c:=42L], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'integer' RHS to 'logical' to match")
+test(299.12, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=FALSE), warning="Coerced 'integer' RHS to 'logical' to match the column's type.*length 3 (nrows of entire table)")
 
 
 # Test bug fix #1468, combining i and by.
@@ -1117,7 +1121,8 @@ test(384, DT[,{mySD=copy(.SD);mySD[1,b:=99L];mySD},by=a], data.table(a=rep(1:3,1
 # somehow missed testing := on logical subset with mixed TRUE/FALSE, reported by Muhammad Waliji
 DT = data.table(x=1:2, y=1:6)
 test(385, DT[x==1, y := x], data.table(x=1:2,y=c(1L,2L,1L,4L,1L,6L)))
-test(386, DT[c(FALSE,TRUE),y:=99L], data.table(x=1:2,y=c(1L,99L,1L,99L,1L,99L)))
+test(386.1, DT[c(FALSE,TRUE)], error="i evaluates to.*Recycling of logical i is no longer allowed.*use rep.*[.]N")
+test(386.2, DT[rep(c(FALSE,TRUE),length=.N),y:=99L], data.table(x=1:2,y=c(1L,99L,1L,99L,1L,99L)))
 
 # test that column names have the appearance of being local in j (can assign to them ok), bug #1624
 DT = data.table(name=c(rep('a', 3), rep('b', 2), rep('c', 5)), flag=FALSE)
@@ -1384,8 +1389,10 @@ test(482, DT[, c("foo","baz"):=list(12L,15:18)], data.table(x=1:4,foo=12L,bar=11
 
 # Test that errors in := do not leave DT in bad state, #1711
 DT = data.table(x=1:4)
-test(483, DT[,c("foo","bar"):=list(20L,numeric())], error="RHS of assignment to new column.*bar.*is zero length but not empty list")
-test(484, DT, data.table(x=1:4))  # i.e. DT as it was before, without foo being added as it did in v1.7.7-
+test(483.1, DT[,c("foo","bar"):=list(20L,stop('user error'))], error="user error")
+test(483.2, DT, data.table(x=1:4))  # i.e. DT as it was before, without foo being added as it did in v1.7.7-
+# The test used to be as follows but as from v1.9.8, the empty numeric() now works and creates a NA_real_ column
+test(484, DT[,c("foo","bar"):=list(20L,numeric())], data.table(x=1:4, foo=20L, bar=NA_real_))
 
 # Test i's key longer than x's
 d1 <- data.table(a=1:2, b=11:14, key="a,b")
@@ -1731,13 +1738,17 @@ test(615, DT[J(2),z:=list(list(c(10L,11L)))]$z, rep(list(NULL, 10:11, NULL),each
 test(616, DT[a>1,p:=sum(b)]$p, rep(c(NA,3.3),c(3,6)))
 test(617, DT[a>1,q:=sum(b),by=a]$q, rep(c(NA,1.5,1.8),each=3))
 
-# Empty i clause, #2034. Thanks to Chris for testing, tests from him.
-test(618, copy(DT)[a>3,r:=sum(b), nomatch=0L], DT) # followng #759 fix
-test(619, copy(DT)[J(-1),r:=sum(b), nomatch=0L], DT) # followng #759 fix
-test(620, copy(DT)[J(-1),r:=sum(b),nomatch=0], DT)
+# Empty i clause, #2034. Thanks to Chris for testing, tests from him. Plus changes from #759
+ans = copy(DT)[,r:=NA_real_]
+test(618, copy(DT)[a>3,r:=sum(b)],     ans)
+test(619, copy(DT)[J(-1),r:=sum(b)],   ans)
+test(620.1, copy(DT)[NA,r:=sum(b)],    ans)
+test(620.2, copy(DT)[0,r:=sum(b)],     ans)
+test(620.3, copy(DT)[NULL,r:=sum(b)],  null.data.table())
+
 DT = data.table(x=letters, key="x")
 test(621, copy(DT)[J("bb"), x:="foo"], DT)  # when no update, key should be retained
-test(622, copy(DT)[J("bb"), x:="foo",nomatch=0], DT)
+test(622, copy(DT)[J("bb"), x:="foo",nomatch=0], DT, warning="ignoring nomatch")
 
 set.seed(2)
 DT = data.table(a=rnorm(5)*10, b=1:5)
@@ -1894,7 +1905,7 @@ test(667, DT[a<3,sum(b),by=paste("a")], error='Otherwise, by=eval(paste("a")) sh
 test(668, DT[a<3,sum(b),by=eval(paste("a"))], DT[a<3,sum(b),by=a])
 test(669, DT[a<3,sum(b),by=c(2)], error="must evaluate to 'character'")
 
-# Test := keyby does key, #2065
+# Test := keyby does setkey, #2065
 DT = data.table(x=1:2, y=1:6)
 ans = data.table(x=rep(1:2,each=3),y=c(1L,3L,5L,2L,4L,6L),z=rep(c(9L,12L),each=3),key="x")
 test(670, DT[,z:=sum(y),keyby=x], ans)
@@ -1905,7 +1916,7 @@ test(672, DT[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)), warnin
 DT = data.table(x=1:2, y=1:6)
 test(673, DT[,z:=sum(y),by=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)))
 DT = data.table(x=1:2, y=1:6)
-test(674, DT[x>1,z:=sum(y),keyby=x], error="When i is present, keyby := on a subset of rows doesn't make sense. Either change keyby to by, or remove i")
+test(674, DT[x>1,z:=sum(y),keyby=x], error=":= with keyby is only possible when i is not supplied since")
 
 # Test new .()
 DT = data.table(x=1:2, y=1:6, key="x")
@@ -2182,7 +2193,8 @@ test(788, DT[!J(2)], data.table(A=c(1L,1L,3L,3L),B=c(1L,2L,5L,6L),key="A"))
 test(789, DT[!(2:6)], DT[1])
 test(790, DT[!(2:6)], DT[!2:6])   # nicer than DT[-2:6] applying - to 2 first
 test(791, DT[!6], DT[1:5])
-test(792, DT[!c(TRUE,FALSE)], DT[c(FALSE,TRUE)])
+test(792.1, DT[!rep(c(TRUE,FALSE),length=.N)], DT[rep(c(FALSE,TRUE),length=.N)])
+test(792.2, DT[!A>=2], DT[A<2])
 test(793, setkey(DT[,A:=letters[A]],A)[!c("b","c")], DT["a"])
 test(794, DT[!"b"], DT[c("a","c")])
 test(795, DT[!0], DT)
@@ -4148,10 +4160,10 @@ test(1241.2, t1 < t2, TRUE)  # with optimisation must be faster
 # restore optimisation
 options(datatable.optimize=optim)
 
-# check no warning yet for with=FALSE and :=.  To be helpful warning, then helpful error.
 DT = data.table(a=1:3, b=4:6)
 myCol = "a"
-test(1242, DT[2,myCol:=6L,with=FALSE], data.table(a=INT(1,6,3), b=4:6))
+test(1242.1, DT[2,myCol:=6L,with=FALSE], data.table(a=INT(1,6,3), b=4:6), warning="with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. Please")
+test(1242.2, DT[2,(myCol):=7L], data.table(a=INT(1,7,3), b=4:6))
 
 # consistency of output type of mult, #5378
 DT = data.table(id=rep(1:2,each=2), var=rnorm(4), key="id")
@@ -4712,7 +4724,7 @@ test(1294.31, dt[, e := list("bla2")]$e, rep("bla2", 3))
 
 # FR #5357, when LHS evaluates to integer(0), provide warning and return dt, not an error.
 dt = data.table(a = 1:5, b1 = 1:5, b2 = 1:5)
-test(1295, dt[, grep("c", names(d)) := NULL], dt, warning="length(LHS) = 0, meaning no columns to delete or assign RHS to")
+test(1295, dt[, grep("c", names(d)) := NULL], dt, warning="length(LHS)==0; no columns to delete or assign RHS to")
 
 # Updating logical column in one-row DT (corruption of new R 3.1 internal globals for TRUE, FALSE and NA)
 DT = data.table(a=1:6, b=c(TRUE,FALSE))
@@ -5022,7 +5034,7 @@ test(1344, fread("A,B\n1,T\n2,NA\n3,"), data.table(A=1:3, B=c(TRUE,NA,NA)))
 DT = data.table(a=1:3,b=1:6)
 test(1348, DT[.N], DT[6])
 test(1349, DT[.N-1:3], DT[5:3])
-test(1350, DT[.N+1], DT[NA_integer_]) # following #1252, DT[NA] now returns 0-rows for consistency. This'll also be fixed eventually, when nomatch is made more consistent.
+test(1350, DT[.N+1], DT[NA])
 
 # Adding test to catch any future regressions - #734
 dt = data.table(id = rep(c('a','b'), each=2), val = rep(c(1,2,3), times=c(1,2,1)))
@@ -5404,14 +5416,30 @@ test(1376.11, list(DT[a==2L], indices(DT)), list(DT[9L],NULL))
 options(datatable.auto.index = TRUE)
 test(1376.12, list(DT[a==2L], indices(DT)), list(DT[9L],"a"))
 
-# When i is FALSE, it shouldn't matter if .SDcols is wrong. Package vardpoor relies on this in example(vardchanges).
-# as long as nomatch=0L (following #759 fix)
+# When i is FALSE and a column is being added by reference, for consistency with cases when i is not FALSE
+# we should still add the column. But we need to know what type it should be, so the user supplied RHS of :=
+# needs to work on empty input to tell us the column type. Package vardpoor in example(vardchanges) used to
+# rely on DT[FALSE,...] not adding the column and not evaluating RHS but it no longer does that so we can
+# make this consistent now. If that usage is required then user should use if(FALSE) DT[...] instead.
 DT = data.table(a=1:3, b=4:6)
-test(1377.1, DT[FALSE, foo:=7], DT)
-test(1377.2, DT[0, foo:=7], DT)
-test(1377.3, DT[, foo := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","b")], data.table(a=1:3, b=4:6, foo=c("1__4","2__5","3__6")))
-test(1377.4, DT[, bar := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","zz")], error="Some items of .SDcols are not column names")
-test(1377.5, DT[FALSE, bar := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","zz"), nomatch=0L], DT)
+ans = copy(DT)[, foo:=NA_real_]
+test(1377.1, copy(DT)[FALSE, foo:=7], ans)
+test(1377.2, copy(DT)[0, foo:=7], ans)
+test(1377.3, copy(DT)[, foo := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","b")],
+             data.table(a=1:3, b=4:6, foo=c("1__4","2__5","3__6")))
+err = "Some items of .SDcols are not column names"
+# .SDcols should always be checked even if RHS (which uses .SDcols) isn't eval'd due to i==FALSE
+test(1377.4, copy(DT)[, bar := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","zz")],
+             error=err)
+test(1377.5, copy(DT)[FALSE, bar := Reduce(function(x,y)paste(x,y,sep="__"), .SD), .SDcols=c("a","zz")],
+             error=err)        
+test(1377.6, DT, data.table(a=1:3, b=4:6))  # check that the original hasn't been changed by these tests
+test(1377.7, copy(DT)[FALSE, bar:=stop("eval'd")], error="eval'd")
+DT[,bar:=NA]   # create column so that RHS isn't needed to be eval'd to know type. We don't allow type changes anyway.
+               # Now no need to eval RHS (and therefore find error), as relied on by package treemap
+               # in example(random.hierarchical.data) in the do.call of fun=="addRange" where it's called on
+               # an empty subset and LB <- x[[1]][1] results in NA which causes seq(LB, UB, ...) to error.
+test(1377.8, copy(DT)[FALSE, bar:=stop("eval'd")], DT)
 
 #====================================
 # fread issue with http download on Windows, thanks to Steve Miller for highlighting.
@@ -5895,12 +5923,17 @@ test(1466.1, as.data.table(as.data.frame(ar)), as.data.table(ar)) # array type
 x <- rep(Sys.time(),3)
 test(1466.2, as.data.table(as.data.frame(x)), as.data.table(x)) # posix type
 
-# fix for #1001
-options(datatable.auto.index=TRUE)
-DT <- data.table(a=1:2)
-test(1467.1, DT[a==3, b:=d+1, nomatch=0L], DT) # following #759 fix, added nomatch=0L
-# restore
-options(datatable.auto.index=FALSE)
+# fix for #1001, #1002 and #759
+# When adding a column, even if i results in no rows, the RHS needs to evaluate so we can know the
+# column type to create. Always create the column for consistency that does not depend on the data in i
+for (bool in c(FALSE,TRUE)) {
+  options(datatable.auto.index=bool)
+  DT = data.table(a=1:2)
+  test(1467.01 + bool*0.03, copy(DT)[a==3, b:=notExist+1], error="notExist")
+  test(1467.02 + bool*0.03, copy(DT)[a==3, b:=a+5L], data.table(a=1:2, b=NA_integer_))
+  test(1467.03 + bool*0.03, copy(DT)[a==3, b:=a+5], data.table(a=1:2, b=NA_real_))
+}
+test(1467.07, getOption("datatable.auto.index"))  # ensure to leave TRUE
 
 # fix for first bug reported in #1006 on 'foverlaps()'
 x <- c(-0.1, 0, 0.1)
@@ -6376,7 +6409,7 @@ x = data.table(x=c(1,1,1,2), y=1:4, key="x")
 test(1519.1, x[.(2:3), .N, nomatch=0L], 1L)
 x = data.table(k = INT(0,2,3,7), o = "b", key = "k")
 y = data.table(k = 1:5, n = paste("n", 1:5, sep=""), key = "k")
-test(1519.2, x[y, o := n, nomatch = 0], data.table(k = INT(0,2,3,7), o = c("b","n2","n3","b"), key = "k"))
+test(1519.2, x[y, o := n], data.table(k = INT(0,2,3,7), o = c("b","n2","n3","b"), key = "k"))
 
 # Fix for #1141 (thanks to @yvanrichard)
 x <- data.table(zxc = 1:3, vbn = 4:6)
@@ -7853,15 +7886,20 @@ test(1629.17, dt[.(2:3), c(sum(v1), lapply(.SD, function(x) mean(x)*v1)), .SDcol
 
 # #759, add new cols on :=
 dt1 <- data.table(id = 1:2, x = 3:4)
-dt2 <- data.table(id = 3:4, y = 5:6)
-# nomatch=0 has no effect
-test(1630.1, dt1[id>5, z := 2, nomatch=0L], data.table(id = 1:2, x = 3:4))
-test(1630.2, dt1[dt2, z := 2, nomatch=0L, on="id"], data.table(id = 1:2, x = 3:4))
-test(1630.3, copy(dt1)[dt2, z := y, on="id", by=.EACHI, nomatch=0L], data.table(id = 1:2, x = 3:4))
-# nomatch=NA guarantees all-NA col
-test(1630.4, copy(dt1)[id>5, z := 2], data.table(id = 1:2, x = 3:4, z = NA_real_))
-test(1630.5, copy(dt1)[dt2, z := y, on="id"], data.table(id = 1:2, x = 3:4, z = NA_integer_))
-test(1630.6, copy(dt1)[dt2, z := y, on="id", by=.EACHI], data.table(id = 1:2, x = 3:4, z = NA_integer_))
+dt2 <- data.table(id = 3:4, y = c(5,6))
+# when updating using :=, nomatch = 0 or NA should make no difference i.e. new columns should always
+# be added. Otherwise there's an inconsistent number of columns in result that depends on data.
+ans = copy(dt1)[,z:=NA_real_]  # NA_real_ because :=2 below is type double
+test(1630.1,  copy(dt1)[id>5, z:=2,                      nomatch=0L], ans, warning="ignoring nomatch")
+test(1630.2,  copy(dt1)[dt2,  z:=2, on="id",             nomatch=0L], ans, warning="ignoring nomatch")
+test(1630.3,  copy(dt1)[dt2,  z:=y, on="id",             nomatch=0L], ans, warning="ignoring nomatch")
+test(1630.4,  copy(dt1)[dt2,  z:=y, on="id", by=.EACHI,  nomatch=0L], ans, warning="ignoring nomatch")
+test(1630.5,  copy(dt1)[id>5, z:=2,                      nomatch=NA], ans, warning="ignoring nomatch")
+test(1630.6,  copy(dt1)[dt2,  z:=2, on="id",             nomatch=NA], ans, warning="ignoring nomatch")
+test(1630.7,  copy(dt1)[dt2,  z:=y, on="id",             nomatch=NA], ans, warning="ignoring nomatch")
+test(1630.8,  copy(dt1)[dt2,  z:=y, on="id", by=.EACHI,  nomatch=NA], ans, warning="ignoring nomatch")
+test(1630.9,  copy(dt1)[id>5, z:=2L,                     nomatch=0L], copy(dt1)[,z:=NA_integer_], warning="ignoring nomatch")
+test(1630.11, copy(dt1)[id>5, z:=2L,                     nomatch=NA], copy(dt1)[,z:=NA_integer_], warning="ignoring nomatch")
 
 # fix for #1268, on= retains keys correctly.
 A = data.table(site=rep(c("A","B"), each=3), date=rep(1:3, times=2), x=rep(1:3*10, times=2), key="site,date")
@@ -9173,6 +9211,13 @@ test(1710.3, class(y[[1]]), c("hello","world"))
 test(1710.4, all.equal(x,y,check.attributes=TRUE),            # desired
              "Datasets have different column classes. First 3: a(numeric!=hello;world)")
 test(1710.5, isTRUE(all.equal(x,y,check.attributes=FALSE)))   # desired
+
+# Include tests as-is from #1252 (unexpected NA row from logical subsets with 1-row containing NA)
+DT = data.table(a=1, d=NA)
+test(1711, DT[!is.na(a) & d == "3"], DT[0]) 
+DT = data.table(a = c(1,2), d = c(NA,3))
+test(1712, DT[!is.na(a) & d == "3"], DT[2])
+test(1713, DT[d==3], DT[2])
 
 
 ##########################

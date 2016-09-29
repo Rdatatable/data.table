@@ -104,6 +104,8 @@
 
   46. `fread` gets new argument `file` which expect existing file on input, to ensure no shell commands will be executed when reading file. Closes [#1702](https://github.com/Rdatatable/data.table/issues/1702).
 
+  47. `:=` can now add new columns when its RHS is length 0. An all-NA column is created of the same type as the empty RHS.
+  
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).
@@ -188,7 +190,7 @@
 
   41. `by=.EACHI` works as expected along with `mult="first"` and `mult="last"`, [#1287](https://github.com/Rdatatable/data.table/issues/1287) and [#1271](https://github.com/Rdatatable/data.table/issues/1271).
 
-  42. Subsets using logical expressions in `i` never returns all-`NA` rows. Edge case `DT[NA]` is now fixed, [#1252](https://github.com/Rdatatable/data.table/issues/1252). Thanks to @sergiizaskaleta.
+  42. Subsets using logical expressions in `i` (e.g. `DT[someCol==3]`) no longer return an unintended all-NA row when `DT` consists of a single row and `someCol` contains `NA`, fixing [#1252](https://github.com/Rdatatable/data.table/issues/1252). Thanks to @sergiizaskaleta for reporting. If `i` is the reserved symbol `NA` though (i.e. `DT[NA]`) it is still auto converted to `DT[NA_integer_]` so that a single `NA` row is returned as almost surely expected. For consistency with past behaviour and to save confusion when comparing to `DT[c(NA,1)]`.
 
   43. `setattr()` catches logical input that points to R's global TRUE value and sets attributes on a copy instead, along with a warning, [#1281](https://github.com/Rdatatable/data.table/issues/1281). Thanks to @tdeenes.
 
@@ -332,6 +334,11 @@
   
   35. The option `datatable.old.bywithoutby` to restore the old default has been removed. As warned 2 years ago in release notes and explicitly warned about for 1 year when used. Search down this file for the text 'bywithoutby' to see previous notes on this topic.
   
+  36. Using `with=FALSE` together with `:=` was deprecated in v1.9.4 released 2 years ago (Oct 2014). As warned then in release notes (see below) this is now a warning with advice to wrap the LHS of `:=` with parenthesis; e.g. `myCols=c("colA","colB"); DT[,(myCols):=1]`.
+
+  37. Using `nomatch` together with `:=` now warns that it is ignored.
+  
+  38. Logical `i` is no longer recycled. Instead an error message if it isn't either length 1 or `nrow(DT)`. This was hiding more bugs than was worth the rare convenience. The error message suggests to recycle explcitly; i.e. `DT[rep(<logical>,length=.N),...]`.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 

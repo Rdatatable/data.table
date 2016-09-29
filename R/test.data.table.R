@@ -158,7 +158,8 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
             setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
             setattr(yc,"index",NULL)
             if (identical(xc,yc) && identical(key(x),key(y))) return()  # check key on original x and y because := above might have cleared it on xc or yc
-            if (isTRUE(all.equal(xc,yc)) && identical(key(x),key(y))) return()
+            if (isTRUE(all.equal(xc,yc)) && identical(key(x),key(y)) &&
+                identical(sapply(xc,typeof), sapply(yc,typeof))) return()
         }
         if (is.factor(x) && is.factor(y)) {
             x = factor(x)

@@ -243,10 +243,10 @@ DT[2]                          # 2nd row
 DT[3:2]                        # 3rd and 2nd row
 DT[order(x)]                   # no need for order(DT$x)
 DT[order(x), ]                 # same as above. The ',' is optional
-DT[c(FALSE,TRUE)]              # even rows (usual recycling)
 DT[y>2]                        # all rows where DT$y > 2
 DT[y>2 & v>5]                  # compound logical expressions
 DT[!2:4]                       # all rows other than 2:4
+DT[-(2:4)]                     # same
 
 # select|compute columns data.table way
 DT[, v]                        # v column (as vector)

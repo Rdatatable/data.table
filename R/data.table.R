@@ -389,7 +389,15 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 if (is.expression(jsub)) jsub = jsub[[1L]]    # if expression, convert it to call
                 # Note that the dynamic expression could now be := (new in v1.9.7)
             }
-            if (is.call(jsub) && jsub[[1L]] == ":=") allow.cartesian=TRUE   # (see #800)
+            if (is.call(jsub) && jsub[[1L]] == ":=") {
+                allow.cartesian=TRUE   # (see #800)
+                if (!missing(i) && !missing(keyby))
+                    stop(":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i")
+                if (!missingnomatch) {
+                    warning("nomatch isn't relevant together with :=, ignoring nomatch")
+                    nomatch=0L
+                }
+            }
         }
     }
     bysub=NULL
@@ -421,6 +429,18 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!missing(i)) {
         xo = NULL
         isub = substitute(i)
+        if (identical(isub, NA)) {
+            # only possibility *isub* can be NA (logical) is the symbol NA itself; i.e. DT[NA]
+            # replace NA in this case with NA_integer_ as that's almost surely what user intended to
+            # return a single row with NA in all columns. (DT[0] returns an empty table, with correct types.)
+            # Any expression (including length 1 vectors) that evaluates to a single NA logical will
+            # however be left as NA logical since that's important for consistency to return empty in that
+            # case; e.g. DT[Col==3] where DT is 1 row and Col contains NA.
+            # Replacing the NA symbol makes DT[NA] and DT[c(1,NA)] consistent and provides
+            # an easy way to achieve a single row of NA as users expect rather than requiring them
+            # to know and change to DT[NA_integer_].
+            isub=NA_integer_
+        }
         isnull_inames = FALSE
         nqgrp = integer(0)  # for non-equi join
         nqmaxgrp = 1L       # for non-equi join
@@ -751,14 +771,21 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
             if (is.logical(i)) {
-                if (isTRUE(i)) irows = i = NULL  # fixes #1249
-                else if (identical(i, NA)) irows=i=integer(0)  # DT[NA] thread recycling of NA logical exists,
-                                # but for #1252 and consistency, we need to return 0-rows
-                else if (length(i)==nrow(x)) irows = i = which(i)   # e.g. DT[colA>3,which=TRUE]
-                                                               # also replacing 'i' here - to save memory, #926.
-                else irows=seq_len(nrow(x))[i]  # e.g. recycling DT[c(TRUE,FALSE),which=TRUE], for completeness 
-                # it could also be DT[!TRUE, which=TRUE] (silly cases, yes). 
-                # replaced the "else if (!isTRUE(i))" to just "else". Fixes bug report #4930 
+                if (isTRUE(i)) irows=i=NULL
+                # NULL is efficient signal to avoid creating 1:nrow(x) but still return all rows, fixes #1249
+                
+                else if (length(i)<=1L) irows=i=integer(0)
+                # FALSE, NA and empty. All should return empty data.table. The NA here will be result of expression,
+                # where for consistency of edge case #1252 all NA to be removed. If NA is a single NA symbol, it
+                # was auto converted to NA_integer_ higher up for ease of use and convenience. We definitely
+                # don't want base R behaviour where DF[NA,] returns an entire copy filled with NA everywhere.
+                
+                else if (length(i)==nrow(x)) irows=i=which(i)
+                # The which() here auto removes NA for convenience so user doesn't need to remember "!is.na() & ..."
+                # Also this which() is for consistenty of DT[colA>3,which=TRUE] and which(DT[,colA>3])
+                # Assigning to 'i' here as well to save memory, #926.
+                
+                else stop("i evaluates to a logical vector length ", length(i), " but there are ", nrow(x), " rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle.")
             } else {
                 irows = as.integer(i)  # e.g. DT[c(1,3)] and DT[c(-1,-3)] ok but not DT[c(1,-3)] (caught as error)
                 irows = .Call(CconvertNegativeIdx, irows, nrow(x)) # simplifies logic from here on (can assume positive subscripts)
@@ -817,25 +844,18 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 
         # j was substituted before dealing with i so that := can set allow.cartesian=FALSE (#800) (used above in i logic)
         if (is.null(jsub)) return(NULL)
-        if (is.call(jsub) && jsub[[1L]]==":=") {
-            # short circuit do-nothing, don't do further checks on .SDcols for example
-            if (identical(irows, integer())) {
-                if (identical(nomatch, 0L)) {
-                    .global$print = address(x)
-                    return(invisible(x))          # irows=NULL means all rows at this stage
-                } else irows = rep(NA_integer_, nrow(x)) # fix for #759
+        
+        if (!with && is.call(jsub) && jsub[[1L]]==":=") {
+            # TODO: make these both errors in next release.  Then remove in release after that.
+            if (is.null(names(jsub)) && is.name(jsub[[2L]])) {
+                warning("with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples. As warned in 2014, this is now a warning.")
+                jsub[[2L]] = eval(jsub[[2L]], parent.frame(), parent.frame()) 
+            } else {
+                warning("with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples.")
             }
-            if (!with) {
-                if (is.null(names(jsub)) && is.name(jsub[[2L]])) {
-                    # TO DO: uncomment these warnings in next release. Later, make both errors.
-                    ## warning("with=FALSE is deprecated when using :=. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples.")
-                    jsub[[2L]] = eval(jsub[[2L]], parent.frame(), parent.frame()) 
-                } else {
-                    ## warning("with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples.")
-                }
-                with = TRUE
-            }
+            with = TRUE
         }
+        
         if (!with) {
             # missing(by)==TRUE was already checked above before dealing with i
             if (is.call(jsub) && deparse(jsub[[1]], 500L) %in% c("!", "-")) {  # TODO is deparse avoidable here?
@@ -878,7 +898,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 ansvars = names(x)[ if (notj) -j else j ]  # DT[,!"columntoexclude",with=FALSE], if a copy is needed, rather than :=NULL
                 # DT[, c(1,3), with=FALSE] should clearly provide both 'x' columns
                 ansvals = if (notj) setdiff(seq_along(x), as.integer(j)) else as.integer(j)
-        } else stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
+            } else stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
             if (!length(ansvals)) return(null.data.table())
         } else {   # with=TRUE and byjoin could be TRUE
             bynames = NULL
@@ -1137,26 +1157,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
                 # All appropriate returns following this point are wrapped; i.e. return(suppPrint(x)).
                 
-                # FR #4996 - verbose message and return when a join matches nothing with `:=` in j
-                if (byjoin & !notjoin) {
-                    # Note: !notjoin is here only until the notjoin is implemented as a "proper" byjoin
-                    if (identical(nomatch,0L) && all(f__ == 0L)) {
-                        if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")
-                        return(suppPrint(x))
-                    } else if (all(is.na(f__))) { # nomatch can't be 0 here
-                        # fix for #759
-                        irows = rep(NA_integer_, nrow(x))
-                        byjoin = FALSE
-                    }
-                }
-                if (!is.null(irows)) {
-                    if (!length(irows)) {
-                        if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")
-                        return(suppPrint(x))
-                    } else
-                        if (!with) irows <- irows[!is.na(irows)] # fixes 2445. TO DO: added a message if(verbose) or warning?
-                        if (!missing(keyby)) stop("When i is present, keyby := on a subset of rows doesn't make sense. Either change keyby to by, or remove i")
-                }
                 if (is.null(names(jsub))) {
                     # regular LHS:=RHS usage, or `:=`(...) with no named arguments (an error)
                     # `:=`(LHS,RHS) is valid though, but more because can't see how to detect that, than desire
@@ -1190,6 +1190,19 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     # updates by reference to existing columns
                     cols = as.integer(m)
                     newnames=NULL
+                    if (identical(irows, integer())) {
+                        # Empty integer() means no rows e.g. logical i with only FALSE and NA
+                        # got converted to empty integer() by the which() above
+                        # Short circuit and do-nothing since columns already exist. If some don't
+                        # exist then for consistency with cases where irows is non-empty, we need to create
+                        # them of the right type and populate with NA.  Which will happen via the regular
+                        # alternative branches below, to cover #759.
+                        # We need this short circuit at all just for convenience. Otherwise users may need to
+                        # fix errors in their RHS when called on empty edge cases, even when the result won't be
+                        # used anyway (so it would be annoying to have to fix it.)
+                        .global$print = address(x)
+                        return(invisible(x))
+                    }   
                 } else {
                     # Adding new column(s). TO DO: move after the first eval in case the jsub has an error.
                     newnames=setdiff(lhs,names(x))

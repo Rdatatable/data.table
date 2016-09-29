@@ -323,7 +323,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         targetlen = nrow;
         // fast way to assign to whole column, without creating 1:nrow(x) vector up in R, or here in C
     } else {
-        if (!LENGTH(rows)) return(dt);
         if (isReal(rows)) {
             rows = PROTECT(rows = coerceVector(rows, INTSXP));
             protecti++;
@@ -342,7 +341,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         if (!anyToDo && !length(newcolnames)) return(dt);  // all items of rows either 0 or NA, nothing to do.  
     }
     if (!length(cols)) {
-        warning("length(LHS) = 0, meaning no columns to delete or assign RHS to.");
+        warning("length(LHS)==0; no columns to delete or assign RHS to.");
         return(dt);
     }
     // FR #2077 - set able to add new cols by reference
@@ -419,7 +418,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                     warning("Adding new column '%s' then assigning NULL (deleting it).",CHAR(STRING_ELT(newcolnames,newcolnum)));
                     continue;
                 }
-                error("RHS of assignment to new column '%s' is zero length but not empty list(). For new columns the RHS must either be empty list() to create an empty list column, or, have length > 0; e.g. NA_integer_, 0L, etc.", CHAR(STRING_ELT(newcolnames,newcolnum)));
+                // RHS of assignment to new column is zero length but we'll use its type to create all-NA column of that type
             }
         }
         if (!(isVectorAtomic(thisvalue) || isNewList(thisvalue)))  // NULL had a continue earlier above
@@ -429,17 +428,17 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         if ((coln+1)<=oldncol && isFactor(VECTOR_ELT(dt,coln)) &&
             !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue) && !isNewList(thisvalue))  // !=INTSXP includes factor
             error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
-        if (nrow>0) {
+        if (nrow>0 && targetlen>0) {
             if (vlen>targetlen)
                 warning("Supplied %d items to be assigned to %d items of column '%s' (%d unused)", vlen, targetlen,CHAR(colnam),vlen-targetlen);  
             else if (vlen>0 && targetlen%vlen != 0)
                 warning("Supplied %d items to be assigned to %d items of column '%s' (recycled leaving remainder of %d items).",vlen,targetlen,CHAR(colnam),targetlen%vlen);
         }
     }
-    // having now checked the inputs, from this point there should be no errors,
-    // so we can now proceed to modify DT by reference.
+    // having now checked the inputs, from this point there should be no errors so we can now proceed to
+    // modify DT by reference. Other than if new columns are being added and the allocVec() fails with
+    // out-of-memory. In that case the user will receive hard halt and know to rerun.
     if (length(newcolnames)) {
-        //if (length(rows)!=0) error("Attempt to add new column(s) and set subset of rows at the same time. Create the new column(s) first, and then you'll be able to assign to a subset. If i is set to 1:nrow(x) then please remove that (no need, it's faster without).");
         oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
         
         if (oldtncol<oldncol) error("Internal error, please report (including result of sessionInfo()) to datatable-help: oldtncol (%d) < oldncol (%d) but tl of class is marked.", oldtncol, oldncol);
@@ -471,7 +470,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             continue;   // delete column(s) afterwards, below this loop
         }
         vlen = length(thisvalue);
-        if (length(rows)==0 && targetlen==vlen) {
+        if (length(rows)==0 && targetlen==vlen && (vlen>0 || nrow==0)) {
             if (  NAMED(thisvalue)==2 ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
                  (TYPEOF(values)==VECSXP && i>LENGTH(values)-1)) { // recycled RHS would have columns pointing to others, #2298.
                 if (verbose) {
@@ -489,10 +488,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             continue;
         }
         if (coln+1 > oldncol) {  // new column
-            if (length(rows)) 
+            if (targetlen < nrow || vlen<1)
                 newcol = allocNAVector(TYPEOF(thisvalue),nrow);  // fill with NAs first for where 'rows' (a subset) doesn't touch
             else              
-                newcol = allocVector(TYPEOF(thisvalue),nrow);    // PROTECT not needed, protected by SET_VECTOR_ELT on next line
+                newcol = allocVector(TYPEOF(thisvalue),nrow);    // save time by not NA filling since they'll all be written
             SET_VECTOR_ELT(dt,coln,newcol);
             if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,newcol);  // class etc but not names
             // else for lists (such as data.frame and data.table) treat them as raw lists and drop attribs
@@ -604,7 +603,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                 }
             }
         }
-        memrecycle(targetcol, rows, 0, length(rows) ? LENGTH(rows) : LENGTH(targetcol), RHS);  // also called from dogroups
+        memrecycle(targetcol, rows, 0, targetlen, RHS);  // also called from dogroups where these arguments are used more
     }
     key = getAttrib(dt,install("sorted"));
     if (length(key)) {
@@ -800,7 +799,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
 SEXP allocNAVector(SEXPTYPE type, R_len_t n)
 {
     // an allocVector following with initialization to NA since a subassign to a new column using :=
-    // routinely leaves untouched items (rather than 0 or "" as allocVector does with it's memset)
+    // routinely leaves untouched items (rather than 0 or "" as allocVector does with its memset)
     // We guess that author of allocVector would have liked to initialize with NA but was prevented since memset
     // is restricted to one byte.
     R_len_t i;
