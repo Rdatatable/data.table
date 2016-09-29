@@ -236,8 +236,8 @@ new = 0
 for (p in deps) {
    fn = paste0(p, "_", avail[p,"Version"], ".tar.gz")
    if (!file.exists(fn)) {
-     system(paste0("rm ", p, "*.tar.gz"))  # Remove previous *.tar.gz
-     system(paste0("rm -r ", p, ".Rcheck"))  # Remove last check (of previous version)
+     system(paste0("rm -f ", p, "*.tar.gz"))  # Remove previous *.tar.gz.  -f to be silent if not there (i.e. first time seeing this package)
+     system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version)
      if (!length(grep("bioc",avail[p,"Repository"]))) {
        install.packages(p)  # To install its dependencies really.
      } else {
@@ -255,12 +255,10 @@ for (p in deps) {
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 table(avail[deps,"Repository"])
 
-tocheck = deps
-cat(paste0(tocheck,"_", avail[deps,"Version"], ".tar.gz"),file="tocheck.txt",sep="\n")
-
 R CMD INSTALL ~/data.table_1.9.7.tar.gz   # ** ensure latest version installed **
-export _R_CHECK_FORCE_SUGGESTS_=false
-cat tocheck.txt | parallel R CMD check
+export _R_CHECK_FORCE_SUGGESTS_=false     # in my profile so always set
+ls -1 *.tar.gz | wc -l                    # check this equals the total deps above
+ls -1 *.tar.gz | parallel R CMD check
 
 status = function(which="both") {
   if (which=="both") {
@@ -305,7 +303,7 @@ more <failing_package>.Rcheck/00check.log
 R CMD check <failing_package>.tar.gz
 R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
 R CMD check <failing_package>.tar.gz
-ls *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check
+ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check
 
 
 
