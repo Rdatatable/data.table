@@ -9,20 +9,20 @@
    `fread` is for \emph{regular} delimited files; i.e., where every row has the same number of columns. In future, secondary separator (\code{sep2}) may be specified \emph{within} each column. Such columns will be read as type \code{list} where each cell is itself a vector.
 }
 \usage{
-fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA", file,
+fread(input, sep="auto", sep2="auto", nrows=-1L, header="auto", na.strings="NA", file=NULL,
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=1L,
 skip=0L, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
 dec=if (sep!=".") "." else ",", col.names, 
 check.names=FALSE, encoding="unknown", quote="\"", 
-strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, 
+strip.white = !identical(sep,"\n"), fill=FALSE, blank.lines.skip=FALSE, key=NULL, 
 showProgress=getOption("datatable.showProgress"),   # default: TRUE
 data.table=getOption("datatable.fread.datatable")   # default: TRUE
 )
 }
 \arguments{
   \item{input}{ Either the file name to read (containing no \\n character), a shell command that preprocesses the file (e.g. \code{fread("grep blah filename"))} or the input itself as a string (containing at least one \\n), see examples. In both cases, a length 1 character string. A filename input is passed through \code{\link[base]{path.expand}} for convenience and may be a URL starting http:// or file://. }
-  \item{sep}{ The separator between columns. Defaults to the first character in the set [\code{,\\t |;:}] that exists on line \code{autostart} outside quoted (\code{""}) regions, and separates the rows above \code{autostart} into a consistent number of fields, too. }
+  \item{sep}{ The separator between columns. Defaults to the first character in the set [\code{,\\t |;:}] that exists on line \code{autostart} outside quoted (\code{""}) regions, and separates the rows above \code{autostart} into a consistent number of fields, too. Use \code{"\n"} to read lines without splitting - faster alternative to \code{readLines()}.}
   \item{sep2}{ The separator \emph{within} columns. A \code{list} column will be returned where each cell is a vector of values. This is much faster using less working memory than \code{strsplit} afterwards or similar techniques. For each column \code{sep2} can be different and is the first character in the same set above [\code{,\\t |;:}], other than \code{sep}, that exists inside each field outside quoted regions on line \code{autostart}. NB: \code{sep2} is not yet implemented. }
   \item{nrows}{ The number of rows to read, by default -1 means all. Unlike \code{read.table}, it doesn't help speed to set this to the number of rows in the file (or an estimate), since the number of rows is automatically determined and is already fast. Only set \code{nrows} if you require the first 10 rows, for example. `nrows=0` is a special case that just returns the column names and types; e.g., a dry run for a large file or to quickly check format consistency of a set of files before starting to read any. }
   \item{header}{ Does the first data line contain column names? Defaults according to whether every non-empty field on the first data line is type character. If so, or TRUE is supplied, any empty column names are given a default name. }

@@ -1,6 +1,15 @@
-
-fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",file,stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=1L,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable")) {
-    if (!is.character(dec) || length(dec)!=1L || nchar(dec)!=1) stop("dec must be a single character e.g. '.' or ','")
+fread <- function(input = "", sep = "auto", sep2 = "auto", nrows = -1L, header = "auto",
+                  na.strings = "NA", file = NULL, 
+                  stringsAsFactors = FALSE, verbose = getOption("datatable.verbose"),
+                  autostart = 1L, skip = 0L, select = NULL, drop = NULL, colClasses = NULL,
+                  integer64 = getOption("datatable.integer64"), 
+                  dec=if (sep!=".") "." else ",", col.names,
+                  check.names = FALSE, encoding = "unknown", quote = "\"", 
+                  strip.white = !identical(sep,"\n"), 
+                  fill = FALSE, blank.lines.skip = FALSE, key = NULL, 
+                  showProgress = getOption("datatable.showProgress"),
+                  data.table = getOption("datatable.fread.datatable")) {
+    if (!is.character(dec) || length(dec) != 1L || nchar(dec) != 1) stop("dec must be a single character e.g. '.' or ','")
     # handle encoding, #563
     if (length(encoding) != 1L || !encoding %in% c("unknown", "UTF-8", "Latin-1")) {
         stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
@@ -52,7 +61,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         if (verbose) cat("This R session's locale is now '",tt,"' which provides the desired decimal point for reading numerics in the file - success! The locale will be restored to what it was ('",oldlocale,") even if the function fails for other reasons.\n")
     }
     # map file as input
-    if (!missing(file)) {
+    if (!is.null(file)) {
         if (!identical(input, "")) stop("You can provide 'input' or 'file', not both.")
         if (!file.exists(file)) stop(sprintf("Provided file '%s' does not exists.", file))
         input = file
@@ -99,7 +108,10 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         input = tt
     }
     if (identical(header,"auto")) header=NA
-    if (identical(sep,"auto")) sep=NULL
+    if (identical(sep, "auto")) sep = NA_character_
+    # do not split lines - faster replacement for base::readLines()
+    # "\r\n" will be detected automatically at C level
+    if (identical(sep, "\n")) sep = NULL
     if (is.atomic(colClasses) && !is.null(names(colClasses))) colClasses = tapply(names(colClasses),colClasses,c,simplify=FALSE)
     ans = .Call(Creadfile,input,sep,as.integer(nrows),header,na.strings,verbose,as.integer(autostart),skip,select,drop,colClasses,integer64,dec,encoding,quote,strip.white,blank.lines.skip,fill,as.integer(showProgress))
     nr = length(ans[[1]])

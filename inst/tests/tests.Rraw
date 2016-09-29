@@ -9174,6 +9174,12 @@ test(1710.4, all.equal(x,y,check.attributes=TRUE),            # desired
              "Datasets have different column classes. First 3: a(numeric!=hello;world)")
 test(1710.5, isTRUE(all.equal(x,y,check.attributes=FALSE)))   # desired
 
+# readLines with fread
+lines <- fread("a,b\n ab,cd,ce\n abcdef\n hjkli \n", sep = "\n", header = T)[[1]]
+test(1711.1, lines, c(" ab,cd,ce", " abcdef", " hjkli ") )
+lines <- fread("a,b\r\n ab,cd,ce\r\n abcdef\r\n hjkli \r\n", sep = "\n", header = T)[[1]]
+test(1711.2, lines, c(" ab,cd,ce", " abcdef", " hjkli ") )
+
 
 ##########################
 

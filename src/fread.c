@@ -590,8 +590,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (isNumeric(skip)) { skip = PROTECT(coerceVector(skip, INTSXP)); protecti++; }
     if (!( (isInteger(skip) && LENGTH(skip)==1 && INTEGER(skip)[0]>=0)  // NA_INTEGER is covered by >=0
          ||(isString(skip) && LENGTH(skip)==1))) error("'skip' must be a length 1 vector of type numeric or integer >=0, or single character search string");
-    if (!isNull(separg)) {
-        if (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1) error("'sep' must be 'auto' or a single character");
+    
+    if (isNull(separg)) { 
+      sep = eol;
+    } else
+    if (STRING_ELT(separg, 0) != NA_STRING) {
+        if (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0))) != 1) error("'sep' must be 'auto' or a single character");
         if (*CHAR(STRING_ELT(separg,0))==quote[0]) error("sep = '%c' = quote, is not an allowed separator.",quote[0]);
         if (*CHAR(STRING_ELT(separg,0)) == decChar) error("The two arguments to fread 'dec' and 'sep' are equal ('%c').", decChar);
     }
@@ -798,13 +802,16 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     //   Auto detect separator, number of fields, and location of first row
     // ********************************************************************************************
     const char *seps;
-    if (isNull(separg)) {
+    if (!isNull(separg)) {
+      if (STRING_ELT(separg, 0) == NA_STRING) {
         seps=",\t |;:";  // separators, in order of preference. See ?fread. (colon last as it can appear in time fields)
         if (verbose) Rprintf("Detecting sep ... ");
-    } else {
+      } else {
         seps = (const char *)CHAR(STRING_ELT(separg,0));  // length 1 string of 1 character, checked above
         if (verbose) Rprintf("Using supplied sep '%s' ... ", seps[0]=='\t'?"\\t":seps);
-    }
+      }
+    } else
+      seps = &eol;
     int nseps = strlen(seps);
     int *maxcols = Calloc(nseps, int); // if (fill) grab longest col stretch as topNcol
     if (maxcols == NULL) error("Error while allocating memory to store max column size of each separator.");
@@ -858,7 +865,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (!fill) { ch=pos=topStart; line=topLine; }
         else { ch=pos; line=1; }
         if (verbose) {
-            if (isNull(separg)) { if (sep=='\t') Rprintf("'\\t'\n"); else Rprintf("'%c'\n", sep); }
+            if (STRING_ELT(separg, 0) == NA_STRING) { if (sep=='\t') Rprintf("'\\t'\n"); else Rprintf("'%c'\n", sep); }
             else Rprintf("found ok\n");
         } 
     }
