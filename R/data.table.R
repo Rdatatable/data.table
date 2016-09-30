@@ -374,39 +374,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # or some kind of dynamic construction that has edge case of no contents inside [...]
         return(x)
     }
-    if (!with && missing(j)) stop("j must be provided when with=FALSE")
-    if (!missing(j)) {
-        jsub = replace_dot_alias(substitute(j))
-        if (is.call(jsub) && jsub[[1L]]=="{") {
-            if (length(jsub)==2) jsub = jsub[[2L]]  # to allow {} wrapping of := e.g. [,{`:=`(...)},] [#376]
-            else if (is.call(jsub[[2L]]) && jsub[[2L]][[1L]] == ":=")
-                stop("You have wrapped := with {} which is ok but then := must be the only thing inside {}. You have something else inside {} as well. Consider placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}")
-        }
-        if (is.call(jsub)) {
-            if (jsub[[1L]] == "eval" && !any(all.vars(jsub[[2]]) %in% names(x))) {
-                # Grab the dynamic expression from calling scope now to give the optimizer a chance to optimize it
-                # Only when top level is eval call.  Not nested like x:=eval(...) or `:=`(x=eval(...), y=eval(...))
-                jsub = eval(jsub[[2L]], parent.frame(), parent.frame())  # this evals the symbol to return the dynamic expression
-                if (is.expression(jsub)) jsub = jsub[[1L]]    # if expression, convert it to call
-                # Note that the dynamic expression could now be := (new in v1.9.7)
-            }
-            if (is.call(jsub) && jsub[[1L]] == ":=") {
-                allow.cartesian=TRUE   # (see #800)
-                if (!missing(i) && !missing(keyby))
-                    stop(":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i")
-                if (!missingnomatch) {
-                    warning("nomatch isn't relevant together with :=, ignoring nomatch")
-                    nomatch=0L
-                }
-            }
-        }
-    }
-    bysub=NULL
-    if (!missing(by)) bysub=substitute(by)
     if (!missing(keyby)) {
         if (!missing(by)) stop("Provide either 'by' or 'keyby' but not both")
         by=bysub=substitute(keyby)
         # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
+    } else {
+        bysub = if (missing(by)) NULL # and leave missing(by)==TRUE
+                else substitute(by)
     }
     byjoin = FALSE
     if (!missing(by)) {
@@ -416,6 +390,71 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
     notjoin = FALSE
     rightcols = leftcols = integer()
+    if (!with && missing(j)) stop("j must be provided when with=FALSE")
+    if (!missing(j)) {
+        jsub = replace_dot_alias(substitute(j))
+        root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
+        if (root %chin% c(":","-","!") ||
+            ( !length(all.vars(jsub)) &&
+              root %chin% c("","c","paste","paste0") &&
+              missing(by) )) {   # test 763. TODO: likely that !missing(by) iff with==TRUE (so, with can be removed)
+            # When no variable names occur in j, scope doesn't matter because there are no symbols to find.
+            # Auto set with=FALSE in this case so that DT[,1], DT[,2:3], DT[,"someCol"] and DT[,c("colB","colD")]
+            # work as expected.  As before, a vector will never be returned, but a single column data.table
+            # for type consistency with >1 cases. To return a single vector use DT[["someCol"]] or DT[[3]].
+            # The root==":" is to allow DT[,colC:colH] even though that contains two variable names
+            # root either "-" or "!" is for tests 1504.11 and 1504.13 (nested :)
+            # This change won't break anything because it didn't do anything anyway; i.e. used to return the
+            # j value straight back: DT[,1] == 1 which isn't possibly useful.  It was that was for consistency
+            # of learning, since it was simpler to state that j always gets eval'd within the scope of DT.
+            # We don't want to evaluate j at all in making this decision because i) evaluating itself could
+            # increment some variable and not intended to be evaluated a 2nd time later on and ii) we don't
+            # want decisions like this to depend on the data or vector lengths since that can introduce
+            # inconistency reminiscent of drop in [.data.table that we seek to avoid.
+            #if (verbose) cat("Auto with=FALSE because j  
+            with=FALSE
+        } else if (is.name(jsub) && isTRUE(getOption("datatable.WhenJisSymbolThenCallingScope"))) {
+            # Allow future behaviour to be turned on. Current default is FALSE.
+            # Use DT[["someCol"]] or DT$someCol to fetch that column as vector, regardless of this option.
+            if (!missingwith && isTRUE(with)) {
+                # unusual edge case only when future option has been turned on
+                stop('j is a single symbol, WhenJisSymbol is turned on but with=TRUE has been passed explicitly. Please instead use DT[,"someVar"], DT[,.(someVar)] or DT[["someVar"]]')
+            } else {
+                with=FALSE
+            }
+            jsubChar = as.character(jsub)
+            if (!exists(jsubChar, where=parent.frame()) && jsubChar %chin% names(x)) {
+                # Would fail anyway with 'object 'a' not found' but give a more helpful error. Thanks to Jan's suggestion.
+                stop("The option 'datatable.WhenJisSymbolThenCallingScope' is TRUE so looking for the variable '", jsubChar, "' in calling scope but it is not found there. It is a column name though. So, most likely, please wrap with quotes (i.e. DT[,'", jsubChar, "']) to return a 1-column data.table or if you need the column as a plain vector then DT[['",jsubChar,"']] or DT$",jsubChar)
+            }
+        }
+        if (root=="{") { 
+            if (length(jsub)==2) {
+                jsub = jsub[[2L]]  # to allow {} wrapping of := e.g. [,{`:=`(...)},] [#376]
+                root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
+            } else if (is.call(jsub[[2L]]) && jsub[[2L]][[1L]] == ":=") {
+                stop("You have wrapped := with {} which is ok but then := must be the only thing inside {}. You have something else inside {} as well. Consider placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}")
+            }
+        }
+        if (root=="eval" && !any(all.vars(jsub[[2]]) %chin% names(x))) {
+            # TODO: this && !any depends on data. Can we remove it?
+            # Grab the dynamic expression from calling scope now to give the optimizer a chance to optimize it
+            # Only when top level is eval call.  Not nested like x:=eval(...) or `:=`(x=eval(...), y=eval(...))
+            jsub = eval(jsub[[2L]], parent.frame(), parent.frame())  # this evals the symbol to return the dynamic expression
+            if (is.expression(jsub)) jsub = jsub[[1L]]    # if expression, convert it to call
+            # Note that the dynamic expression could now be := (new in v1.9.7)
+            root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""        
+        }
+        if (root == ":=") {
+            allow.cartesian=TRUE   # (see #800)
+            if (!missing(i) && !missing(keyby))
+                stop(":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i")
+            if (!missingnomatch) {
+                warning("nomatch isn't relevant together with :=, ignoring nomatch")
+                nomatch=0L
+            }
+        }
+    }
     
     # To take care of duplicate column names properly (see chmatch2 function above `[data.table`) for description
     dupmatch <- function(x, y, ...) {
@@ -847,7 +886,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (is.null(jsub)) return(NULL)
         
         if (!with && is.call(jsub) && jsub[[1L]]==":=") {
-            # TODO: make these both errors in next release.  Then remove in release after that.
+            # TODO: make these both errors (or single long error in both cases) in next release.
+            # i.e. using with=FALSE together with := at all will become an error. Eventually with will be removed.
             if (is.null(names(jsub)) && is.name(jsub[[2L]])) {
                 warning("with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples. As warned in 2014, this is now a warning.")
                 jsub[[2L]] = eval(jsub[[2L]], parent.frame(), parent.frame()) 
@@ -855,41 +895,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 warning("with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples.")
             }
             with = TRUE
-        }
-        
-        root = if (is.call(jsub)) as.character(jsub[[1L]]) else ""
-        if (root %chin% c(":","-","!") ||
-            ( !length(all.vars(jsub)) &&
-              root %chin% c("","c","paste","paste0") &&
-              missing(by) )) {   # test 763. TODO: likely that !missing(by) iff with==TRUE (so, with can be removed)
-            # When no variable names occur in j, scope doesn't matter because there are no symbols to find.
-            # Auto set with=FALSE in this case so that DT[,1], DT[,2:3], DT[,"someCol"] and DT[,c("colB","colD")]
-            # work as expected.  As before, a vector will never be returned, but a single column data.table
-            # for type consistency with >1 cases. To return a single vector use DT[["someCol"]] or DT[[3]].
-            # The root==":" is to allow DT[,colC:colH] even though that contains two variable names
-            # root either "-" or "!" is for tests 1504.11 and 1504.13 (nested :)
-            # This change won't break anything because it didn't do anything anyway; i.e. used to return the
-            # j value straight back: DT[,1] == 1 which isn't possibly useful.  It was that was for consistency
-            # of learning, since it was simpler to state that j always gets eval'd within the scope of DT.
-            # We don't want to evaluate j at all in making this decision because i) evaluating itself could
-            # increment some variable and not intended to be evaluated a 2nd time later on and ii) we don't
-            # want decisions like this to depend on the data or vector lengths since that can introduce
-            # inconistency reminiscent of drop in [.data.table that we seek to avoid.
-            with=FALSE
-        } else if (is.name(jsub) && isTRUE(getOption("datatable.WhenJisSymbolThenCallingScope"))) {
-            # Allow future behaviour to be turned on. Current default is FALSE.
-            # Use DT[["someCol"]] or DT$someCol to fetch that column as vector, regardless of this option.
-            if (!missingwith && isTRUE(with)) {
-                # unusual edge case only when future option has been turned on
-                stop('j is a single symbol, WhenJisSymbol is turned on but with=TRUE has been passed explicitly. Please instead use DT[,"someVar"], DT[,.(someVar)] or DT[["someVar"]]')
-            } else {
-                with=FALSE
-            }
-            jsubChar = as.character(jsub)
-            if (!exists(jsubChar, where=parent.frame()) && jsubChar %chin% names(x)) {
-                # Would fail anyway with 'object 'a' not found' but give a more helpful error. Thanks to Jan's suggestion.
-                stop("The option 'datatable.WhenJisSymbolThenCallingScope' is TRUE so looking for the variable '", jsubChar, "' in calling scope but it is not found there. It is a column name though. So, most likely, please wrap with quotes (i.e. DT[,'", jsubChar, "']) to return a 1-column data.table or if you need the column as a plain vector then DT[['",jsubChar,"']] or DT$",jsubChar)
-            }
         }
         
         if (!with) {
