@@ -885,6 +885,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             } else {
                 with=FALSE
             }
+            jsubChar = as.character(jsub)
+            if (!exists(jsubChar, where=parent.frame()) && jsubChar %chin% names(x)) {
+                # Would fail anyway with 'object 'a' not found' but give a more helpful error. Thanks to Jan's suggestion.
+                stop("The option 'datatable.WhenJisSymbolThenCallingScope' is TRUE so looking for the variable '", jsubChar, "' in calling scope but it is not found there. It is a column name though. So, most likely, please wrap with quotes (i.e. DT[,'", jsubChar, "']) to return a 1-column data.table or if you need the column as a plain vector then DT[['",jsubChar,"']] or DT$",jsubChar)
+            }
         }
         
         if (!with) {

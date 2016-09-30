@@ -9229,6 +9229,15 @@ DT = data.table(a = c(1,2), d = c(NA,3))
 test(1712, DT[!is.na(a) & d == "3"], DT[2])
 test(1713, DT[d==3], DT[2])
 
+# Test new helpful error message suggested by Jan
+test(1714, !exists("aColumnOfDT"))   # use a long column name to be sure not used before in this test script
+DT = data.table(a=1:3, aColumnOfDT=4:6)
+options(datatable.WhenJisSymbolThenCallingScope=FALSE)
+test(1715, DT[,aColumnOfDT], 4:6)    # old behaviour for sure tested before but here for context
+options(datatable.WhenJisSymbolThenCallingScope=TRUE)
+test(1716, DT[,aColumnOfDT], error=".*datatable.WhenJisSymbolThenCallingScope.*TRUE.*aColumnOfDT.*wrap with quotes.*aColumnOfDT.*aColumnOfDT.*aColumnOfDT")   # The .* are to check the salient points of the error (e.g. that it names the variable correctly 4 times), without getting too picky over the exact wording and punctuation of the full error
+options(datatable.WhenJisSymbolThenCallingScope=FALSE)
+
 
 ##########################
 
