@@ -255,10 +255,10 @@ for (p in deps) {
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 table(avail[deps,"Repository"])
 
-R CMD INSTALL ~/data.table_1.9.7.tar.gz   # ** ensure latest version installed **
-export _R_CHECK_FORCE_SUGGESTS_=false     # in my profile so always set
-ls -1 *.tar.gz | wc -l                    # check this equals the total deps above
-time ls -1 *.tar.gz | parallel R CMD check
+R CMD INSTALL ~/data.table_1.9.7.tar.gz       # ** ensure latest version installed **
+export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
+ls -1 *.tar.gz | wc -l                        # check this equals length(deps) above
+time ls -1 *.tar.gz | parallel R CMD check    # apx 2 hrs for 266 packages on my 4 cpu laptop with 8 threads
 
 status = function(which="both") {
   if (which=="both") {

@@ -6285,11 +6285,15 @@ test(1504.3, dt[, lapply(.SD, sum), by=V1, .SDcols=-(V8:V10)],
              dt[, lapply(.SD, sum), by=V1, .SDcols=-(8:10)])
 test(1504.4, dt[, lapply(.SD, sum), by=V1, .SDcols=!(V8:V10)], 
              dt[, lapply(.SD, sum), by=V1, .SDcols=!(8:10)])
-# with=FALSE
-test(1504.5, dt[, V8:V10, with=FALSE],    dt[, 8:10, with=FALSE])
-test(1504.6, dt[, V10:V8, with=FALSE],    dt[, 10:8, with=FALSE])
-test(1504.7, dt[, -(V8:V10), with=FALSE], dt[, -(8:10), with=FALSE])
-test(1504.8, dt[, !(V8:V10), with=FALSE], dt[, !(8:10), with=FALSE])
+# with=FALSE and auto with=FALSE tests as from v1.9.8
+test(1504.5, dt[, V8:V10, with=FALSE],     dt[, 8:10, with=FALSE])
+test(1504.6, dt[, V8:V10],                 dt[, 8:10, with=FALSE])
+test(1504.7, dt[, V10:V8, with=FALSE],     dt[, 10:8, with=FALSE])
+test(1504.8, dt[, V10:V8],                 dt[, 10:8, with=FALSE])
+test(1504.9, dt[, -(V8:V10), with=FALSE],  dt[, -(8:10), with=FALSE])
+test(1504.11, dt[, -(V8:V10)],             dt[, -(8:10), with=FALSE])
+test(1504.12, dt[, !(V8:V10), with=FALSE], dt[, !(8:10), with=FALSE])
+test(1504.13, dt[, !(V8:V10)],             dt[, !(8:10), with=FALSE])
 
 # Fix for #1083
 dt = data.table(x=1:4, y=c(TRUE,FALSE))
