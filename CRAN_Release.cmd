@@ -258,12 +258,14 @@ table(avail[deps,"Repository"])
 R CMD INSTALL ~/data.table_1.9.7.tar.gz   # ** ensure latest version installed **
 export _R_CHECK_FORCE_SUGGESTS_=false     # in my profile so always set
 ls -1 *.tar.gz | wc -l                    # check this equals the total deps above
-ls -1 *.tar.gz | parallel R CMD check
+time ls -1 *.tar.gz | parallel R CMD check
 
 status = function(which="both") {
   if (which=="both") {
      cat("CRAN:\n"); status("cran")
      cat("BIOC:\n"); status("bioc")
+     cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
+     system("find . -name '00check.log' | xargs ls -lt | tail -1")
      return(invisible())
   }
   if (which=="cran") deps = deps[grep("cran",avail[deps,"Repository"])]
@@ -296,9 +298,6 @@ status = function(which="both") {
 }
 
 status()
-
-# check all check logs were rerun in last 24hrs (i.e. no old stale ones somehow missed)
-find . -name "00check.log" -mtime +0
 
 # Investigate and fix the fails ...
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
