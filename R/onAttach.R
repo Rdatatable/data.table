@@ -12,13 +12,12 @@
     } else {
       d = d[1]
     }
-
-    dev = as.integer(v[1,3])%%2 == 1  # version number odd
+    dev = as.integer(v[1,3])%%2 == 1  # version number odd => dev
     packageStartupMessage("data.table ", v, if(dev) paste0(" IN DEVELOPMENT built ", d))
     if (dev && (Sys.Date() - as.Date(d))>28) packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update.\n**********")
     packageStartupMessage('  The fastest way to learn (by data.table authors): https://www.datacamp.com/courses/data-analysis-the-data-table-way')
-    packageStartupMessage('  Please type: ?data.table, example(data.table) and browseVignettes("data.table")')
-    packageStartupMessage('  Release notes and live news: http://r-datatable.com')
+    packageStartupMessage('  Documentation: ?data.table, example(data.table) and browseVignettes("data.table")')
+    packageStartupMessage('  Release notes, videos and slides: http://r-datatable.com')
   }
 }
 

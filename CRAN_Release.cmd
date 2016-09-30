@@ -297,6 +297,9 @@ status = function(which="both") {
 
 status()
 
+# check all check logs were rerun in last 24hrs (i.e. no old stale ones somehow missed)
+find . -name "00check.log" -mtime +0
+
 # Investigate and fix the fails ...
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 more <failing_package>.Rcheck/00check.log

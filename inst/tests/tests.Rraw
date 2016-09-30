@@ -38,6 +38,7 @@ whichfail = NULL
 .timingtests = FALSE
 started.at = Sys.time()
 oldalloccol = options(datatable.alloccol = quote(max(100L,ncol(DT)+64L)))   # use old default as tests in this file test 100 
+oldWhenJsymbol = options(datatable.WhenJisSymbolThenCallingScope=FALSE)
 
 if (!.devtesting) {
     test = data.table:::test
@@ -222,24 +223,29 @@ a = "d"
 test(70, TESTDT[eval(J(a)),v,by=.EACHI], data.table(a="d",v=3:6,key="a"))   # the eval() enabled you to use the 'a' in the calling scope, not 'a' in the TESTDT.  TO DO: document this.
 test(71, TESTDT[eval(SJ(a)),v,by=.EACHI], data.table(a="d",v=3:6,key="a"))
 test(72, TESTDT[eval(CJ(a)),v,by=.EACHI], data.table(a="d",v=3:6,key="a"))
-
-test(73, TESTDT[,v], 1:7)
-test(74, TESTDT[,3], 3)
-test(74.5, TESTDT[,3L], 3L)
-test(75, TESTDT[,"v"], "v")
-test(76, TESTDT[,2:3], 2:3)  # See ?[.data.table that with=FALSE is required for the likely intended result
+test(73, TESTDT[,v], 1:7)   # still old behaviour for 1 year. WhenJsymbol option was set to FALSE at the top of this file
+test(74, TESTDT[,3], data.table(v=1:7))
+test(74.1, TESTDT[,4], error="outside the column number range.*1,ncol=3")
+test(74.2, TESTDT[,3L], data.table(v=1:7))
+test(74.3, TESTDT[,0], null.data.table())
+test(75, TESTDT[,"v"], data.table(v=1:7))
+test(76, TESTDT[,2:3], TESTDT[,2:3,with=FALSE])
 test(77, TESTDT[,2:3,with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
-test(78, TESTDT[,c("b","v"),with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
+test(78, TESTDT[,c("b","v")], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
 colsVar = c("b","v")
-test(79, TESTDT[,colsVar], colsVar)
-test(80, TESTDT[,colsVar,with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
+test(79.1, TESTDT[,colsVar], colsVar)
+test(79.2, TESTDT[,colsVar,with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
+options(datatable.WhenJisSymbolThenCallingScope=TRUE)
+test(80.1, TESTDT[,colsVar], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
+test(80.2, TESTDT[,colsVar,with=TRUE], error="is turned on.*Please")
+options(datatable.WhenJisSymbolThenCallingScope=FALSE)
 
 # works in test.data.table, but not eval(body(test.data.table)) when in R CMD check ... test(81, TESTDT[1:2,c(a,b)], factor(c("a","c","e","e")))
 # It is expected the above to be common source of confusion. c(a,b) is evaluated within
 # the frame of TESTDT, and c() creates one vector, not 2 column subset as in data.frame's.
 # If 2 columns were required use list(a,b).  c() can be useful too, but is different.
 
-test(82, TESTDT[,c("a","b")], c("a","b"))
+test(82, TESTDT[,c("a","b")], data.table(a=TESTDT[[1]], b=TESTDT[[2]], key=c("a","b")))
 test(83, TESTDT[,list("a","b")], data.table(V1="a",V2="b"))
 test(83.1, TESTDT[,list("sum(a),sum(b)")], data.table("sum(a),sum(b)"))
 test(83.2, TESTDT[,list("sum(a),sum(b)"),by=a], {tt=data.table(a=c("a","c","d","g"),V1="sum(a),sum(b)",key="a");tt$V1=as.character(tt$V1);tt})
@@ -9252,6 +9258,7 @@ test(1713, DT[d==3], DT[2])
 options(warn=0)
 setDTthreads(0)
 options(oldalloccol)  # set at top of this file
+options(oldWhenJsymbol)
 plat = paste("endian=",.Platform$endian,", sizeof(long double)==",.Machine$sizeof.longdouble,sep="")
 if (nfail > 0) {
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}

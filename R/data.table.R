@@ -350,6 +350,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     }
     if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
     missingroll = missing(roll)
+    missingwith = missing(with)
     if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
     if (is.character(roll)) {
         if (roll!="nearest") stop("roll is '",roll,"' (type character). Only valid character value is 'nearest'.")
@@ -856,6 +857,28 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             with = TRUE
         }
         
+        if (!length(all.vars(jsub)) &&
+            (!is.call(jsub) || as.character(jsub[[1L]])%chin%c("c",":","paste","paste0")) &&
+            missing(by)   # test 763. TODO: likely that !missing(by) iff with==TRUE (so, with can be removed)
+            ) { 
+            # j contains no variable symbols.
+            # Therefore scope doesn't matter because there are no symbols to find.
+            # Auto set with=FALSE in this case so that DT[,1], DT[,2:3], DT[,"someCol"] and DT[,c("colB","colD")]
+            # work as expected.  As before, a vector will never be returned, but a single column data.table
+            # for type consistency with >1 cases. To return a single vector use DT[["someCol"]] or DT[[3]].
+            # This change won't break anything because it didn't do anything anyway; i.e. used to be DT[,1] == 1. 
+            with=FALSE
+        } else if (is.name(jsub) && isTRUE(getOption("datatable.WhenJisSymbolThenCallingScope"))) {
+            # Allow future behaviour to be turned on. Current default is FALSE.
+            # Use DT[["someCol"]] or DT$someCol to fetch that column as vector, regardless of this option.
+            if (!missingwith && isTRUE(with)) {
+                # unusual edge case only when future option has been turned on
+                stop('j is a single symbol, WhenJisSymbol is turned on but with=TRUE has been passed explicitly. Please instead use DT[,"someVar"], DT[,.(someVar)] or DT[["someVar"]]')
+            } else {
+                with=FALSE
+            }
+        }
+        
         if (!with) {
             # missing(by)==TRUE was already checked above before dealing with i
             if (is.call(jsub) && deparse(jsub[[1]], 500L) %in% c("!", "-")) {  # TODO is deparse avoidable here?
@@ -892,7 +915,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 }
             } else if (is.numeric(j)) {
                 if (all(j == 0L)) return (null.data.table())
-                if (any(abs(j) > ncol(x) | j==0L)) stop("j out of bounds")
+                if (any(w<-(abs(j) > ncol(x) | j==0L))) stop("Element ",which.first(w)," of j has magnitude ",abs(j[which.first(w)])," which is outside the column number range [1,ncol=", ncol(x),"]")
                 if (any(j<0L) && any(j>0L)) stop("j mixes positive and negative")
                 if (any(j<0L)) j = seq_len(ncol(x))[j]
                 ansvars = names(x)[ if (notj) -j else j ]  # DT[,!"columntoexclude",with=FALSE], if a copy is needed, rather than :=NULL
