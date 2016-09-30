@@ -866,7 +866,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # Auto set with=FALSE in this case so that DT[,1], DT[,2:3], DT[,"someCol"] and DT[,c("colB","colD")]
             # work as expected.  As before, a vector will never be returned, but a single column data.table
             # for type consistency with >1 cases. To return a single vector use DT[["someCol"]] or DT[[3]].
-            # This change won't break anything because it didn't do anything anyway; i.e. used to be DT[,1] == 1. 
+            # This change won't break anything because it didn't do anything anyway; i.e. used to return the
+            # j value straight back: DT[,1] == 1 which isn't possibly useful.  It was that was for consistency
+            # of learning, since it was simpler to state that j always gets eval'd within the scope of DT.
+            # We don't want to evaluate j at all in making this decision because i) evaluating itself could
+            # increment some variable and not intended to be evaluated a 2nd time later on and ii) we don't
+            # want decisions like this to depend on the data or vector lengths since that can introduce
+            # inconistency reminiscent of drop in [.data.table that we seek to avoid.
             with=FALSE
         } else if (is.name(jsub) && isTRUE(getOption("datatable.WhenJisSymbolThenCallingScope"))) {
             # Allow future behaviour to be turned on. Current default is FALSE.
