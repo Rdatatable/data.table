@@ -2,12 +2,9 @@
 title: "Frequently Asked Questions about data.table"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_document:
+  rmarkdown::html_vignette:
     toc: true
     number_sections: true
-    theme: spacelab
-    highlight: pygments
-    css : css/bootstrap.css
 vignette: >
   %\VignetteIndexEntry{Frequently asked questions}
   %\VignetteEngine{knitr::rmarkdown}

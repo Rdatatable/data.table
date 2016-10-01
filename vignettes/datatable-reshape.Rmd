@@ -2,10 +2,7 @@
 title: "Efficient reshaping using data.tables"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_document:
-    theme: spacelab
-    highlight: pygments
-    css : css/bootstrap.css
+  rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Efficient reshaping using data.tables}
   %\VignetteEngine{knitr::rmarkdown}
