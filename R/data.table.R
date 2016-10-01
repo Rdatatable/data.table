@@ -932,13 +932,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     ansvals = chmatch(ansvars, names(x))
                 }
             } else if (is.numeric(j)) {
-                if (all(j == 0L)) return (null.data.table())
-                if (any(w<-(abs(j) > ncol(x) | j==0L))) stop("Element ",which.first(w)," of j has magnitude ",abs(j[which.first(w)])," which is outside the column number range [1,ncol=", ncol(x),"]")
-                if (any(j<0L) && any(j>0L)) stop("j mixes positive and negative")
+                j = as.integer(j)
+                if (any(w<-(j>ncol(x)))) stop("Item ",which.first(w)," of j is ",j[which.first(w)]," which is outside the column number range [1,ncol=", ncol(x),"]")
+                j = j[j!=0L]
+                if (!length(j)) return(null.data.table())
+                if (any(j<0L) && any(j>0L)) stop("j mixes positives and negatives")
                 if (any(j<0L)) j = seq_len(ncol(x))[j]
-                ansvars = names(x)[ if (notj) -j else j ]  # DT[,!"columntoexclude",with=FALSE], if a copy is needed, rather than :=NULL
-                # DT[, c(1,3), with=FALSE] should clearly provide both 'x' columns
-                ansvals = if (notj) setdiff(seq_along(x), as.integer(j)) else as.integer(j)
+                ansvars = names(x)[ if (notj) -j else j ]  # DT[,!"columntoexclude",with=FALSE] if a copy is needed, rather than :=NULL
+                ansvals = if (notj) setdiff(seq_along(x), j) else j
             } else stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
             if (!length(ansvals)) return(null.data.table())
         } else {   # with=TRUE and byjoin could be TRUE
