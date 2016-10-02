@@ -11,103 +11,89 @@
 
 #### NEW FEATURES
 
-  1. `rowid()` and `rowidv()` - convenience functions for generating a unique row ids within each group, are implemented. `rowid()` is particularly useful along with `dcast()`. See `?rowid` for more, [#1353](https://github.com/Rdatatable/data.table/issues/1353).
+  1. `fwrite` - *parallel file writer*: 
+    * Thanks to Otto Seiskari for the initial PR [#580](https://github.com/Rdatatable/data.table/issues/580) that implements C code, R wrapper, manual page and extensive tests.
+    * Matt worked on top of Otto's contribution by reducing i/o overhead, parallelising and implementing internal functions for faster write of integer/numeric values. Updated documentation and tests.
 
-  2. `dt[, .N, by=cols]` now uses GForce as well, [#1251](https://github.com/Rdatatable/data.table/issues/1251).
+  2. `fread()`:
+    * gains `quote` argument. `quote = ""` disables quoting altogether which reads each field *as is*, [#1367](https://github.com/Rdatatable/data.table/issues/1367). Thanks @manimal.
+    * With [#1462](https://github.com/Rdatatable/data.table/issues/1462) fix, quotes are handled slightly better. Thanks  @Pascal for [posting on SO](http://stackoverflow.com/q/34144314/559784).
+    * gains `blank.lines.skip` argument that continues reading by skipping empty lines. Default is `FALSE` for backwards compatibility, [#530](https://github.com/Rdatatable/data.table/issues/530). Thanks @DirkJonker. Also closes [#1575](https://github.com/Rdatatable/data.table/issues/1575).
+    * gains `fill` argument with default `FALSE` for backwards compatibility. Closes [#536](https://github.com/Rdatatable/data.table/issues/536). Also, `fill=TRUE` prioritises maximum cols instead of longest run with identical columns when `fill=TRUE` which allows handle missing columns slightly more robustly, [#1573](https://github.com/Rdatatable/data.table/issues/1573).
+    * gains `key` argument, [#590](https://github.com/Rdatatable/data.table/issues/590).
+    * gains `file` argument which expects existing file on input, to ensure no shell commands will be executed when reading file. Closes [#1702](https://github.com/Rdatatable/data.table/issues/1702).
 
-  3. `tstrsplit` gains `give.names` argument, [#1379](https://github.com/Rdatatable/data.table/issues/1379). Thanks @franknarf1.
+  3. Joins:
+    * Non-equi (or conditional) joins are now possible using the familiar `on=` syntax. Possible binary operators include `>=`, `>`, `<=`, `<` and `==`. For e.g., `X[Y, on=.(a, b>b)]` looks for `X.a == Y.a` first and within those matching rows for rows where`X.b > Y.b`, [#1452](https://github.com/Rdatatable/data.table/issues/1452).
+    * x's columns can be referred to in `j` using the prefix `x.` at all times. This is particularly useful when it is necessary to x's column that is *also a join column*, [#1615](https://github.com/Rdatatable/data.table/issues/1615). Also closes [#1705](https://github.com/Rdatatable/data.table/issues/1705) (thanks @dbetebenner) and [#1761](https://github.com/Rdatatable/data.table/issues/1761).
+    * `on=.()` syntax is now posible, e.g., `X[Y, on=.(x==a, y==b)]`, [#1257](https://github.com/Rdatatable/data.table/issues/1257). Thanks @dselivanov.
+    * Joins using `on=` accepts unnamed columns on ad hoc joins, e.g., X[.(5), on="b"] joins "b" from `X` to "V1" from `i`, partly closes [#1375](https://github.com/Rdatatable/data.table/issues/1375).
+    * When joining with `on=`, `X[Y, on=c(A="A", b="c")]` can be now specified as `X[Y, on=c("A", b="c")]`, fully closes [#1375](https://github.com/Rdatatable/data.table/issues/1375).
+    * `on=` joins now provides more friendly error messages when columns aren't found, [#1376](https://github.com/Rdatatable/data.table/issues/1376).
+    * Joins (and binary search based subsets) using `on=` argument now reuses existing (secondary) indices, [#1439](https://github.com/Rdatatable/data.table/issues/1439). Thanks @jangorecki.
 
-  4. `fread` gains `quote` argument. `quote = ""` disables quoting altogether which reads each field *as is*, [#1367](https://github.com/Rdatatable/data.table/issues/1367). Thanks @manimal. A better fix for [#1462](https://github.com/Rdatatable/data.table/issues/1462) makes `fread()` slightly more robust in handling quotes.Thanks to @Pascal for [posting on SO](http://stackoverflow.com/q/34144314/559784).
+  4. `merge.data.table` by default also checks for common key columns between the two `data.table`s before resulting in error when `by` or `by.x, by.y` arguments are not provided, [#1517](https://github.com/Rdatatable/data.table/issues/1517). Thanks @DavidArenburg.
 
-  5. Joins using `on=` accepts unnamed columns on ad hoc joins, e.g., X[.(5), on="b"] joins "b" from `X` to "V1" from `i`, partly closes [#1375](https://github.com/Rdatatable/data.table/issues/1375).
+  5. Fast set operations `fsetdiff`, `fintersect`, `funion` and `fsetequal` for data.tables are now implemented, [#547](https://github.com/Rdatatable/data.table/issues/547).
 
-  6. When joining with `on=`, `X[Y, on=c(A="A", b="c")]` can be now specified as `X[Y, on=c("A", b="c")]`, fully closes [#1375](https://github.com/Rdatatable/data.table/issues/1375).
+  6. Updating by reference using `:=`:
+  * New column (of all-NA) is guaranteed even when there are no matches, [#759](https://github.com/Rdatatable/data.table/issues/759). Thanks @mchen402.
+  * `:=` also adds new columns when its RHS is length `0`. An all-NA column is created of the same type as the empty RHS.
 
-  7. `on=` joins now provides more friendly error messages when columns aren't found, [#1376](https://github.com/Rdatatable/data.table/issues/1376).
+  7. `GForce` (See ?\`datatable-optimize\` for more):
+    * `dt[, .N, by=cols]` is optimised internally as well, [#1251](https://github.com/Rdatatable/data.table/issues/1251).
+    * is now also optimised for `median`. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). Check that issue for benchmarks.
+    * GForce kicks in along with subsets in `i` as well, e.g., `DT[x > 2, mean(y), by=z]`. Partly addresses [#971](https://github.com/Rdatatable/data.table/issues/971).
+    * GForce is optimised for `head(., 1)` and `tail(., 1`), where `.` is a column name or `.SD`. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). Check the link for benchmarks.
+    * GForce is optimised for length-1 subsets, e.g., `.SD[2]`, `col[2]`. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523).
+    * `var`, `sd` and `prod` are all GForce optimised for speed and memory. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). See that post for benchmarks.
 
-  8. `fread()` gains `blank.lines.skip` argument that continues reading by skipping empty lines. Default is `FALSE` for backwards compatibility, [#530](https://github.com/Rdatatable/data.table/issues/530). Thanks to @DirkJonker. Also pushed another bug fix, [#1575](https://github.com/Rdatatable/data.table/issues/1575).
+  8. Reshaping:
+    * `dcast.data.table` now allows `drop = c(FALSE, TRUE)` and `drop = c(TRUE, FALSE)`. The former only fills all missing combinations of formula LHS, where as the latter fills only all missing combinations of formula RHS. Thanks to Ananda Mahto for [this SO post](http://stackoverflow.com/q/34830908/559784) and to Jaap for filing [#1512](https://github.com/Rdatatable/data.table/issues/1512).
+    * `melt.data.table` finds variables provided to `patterns()` when called from within user defined functions, [#1749](https://github.com/Rdatatable/data.table/issues/1749). Thanks to @kendonB for the report.
 
-  9. `print.data.table` now warns when `bit64` package isn't loaded but the `data.table` contains `integer64` columns, [#975](https://github.com/Rdatatable/data.table/issues/975). Thanks to @StephenMcInerney.
+  9. We can now refer to the columns that are not mentioned in `.SD` / `.SDcols` in `j` as well. For example, `DT[, .(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:v3]` works as expected, [#495](https://github.com/Rdatatable/data.table/issues/495). Thanks to @MattWeller for report and to others for linking various SO posts to be updated. Also closes [#484](https://github.com/Rdatatable/data.table/issues/484).
 
-  10. GForce is now also optimised for `median`. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). Check that issue for benchmarks.
+  10. New functions `inrange()` and `%inrange%` are exported. It performs a range join making use of the recently implemented *non-equi* joins ([#1452](https://github.com/Rdatatable/data.table/issues/1452)) [#679](https://github.com/Rdatatable/data.table/issues/679). Also thanks to @DavidArenburg for [#1819](https://github.com/Rdatatable/data.table/issues/1819).
 
-  11. GForce kicks in along with subsets in `i` as well, e.g., `DT[x > 2, mean(y), by=z]`. Partly addresses [#971](https://github.com/Rdatatable/data.table/issues/971). 
+  11. `%between%` is vectorised which means we can now do: `DT[x %between% list(y,z)]` where `y` and `z` are vectors, [#534](https://github.com/Rdatatable/data.table/issues/534). Thanks @MicheleCarriero for filing the issue and the idea.
 
-  12. GForce is optimised for `head(., 1)` and `tail(., 1`), where `.` is a column name or `.SD`. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). Check the link for benchmarks.
+  12. Most common use case for `between()`, i.e., `lower` and `upper` are length=1, is now implemented in C and parallelised. This results in ~7-10x speed improvement on vectors of length >= 1e6.
 
-  13. GForce is optimised for `.SD[val]` and `col[val]` where `val` is a positive length-1 value. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523).
+  13. Row subset operations of data.table is now parallelised with OpenMP, [#1660](https://github.com/Rdatatable/data.table/issues/1660). See the linked issue page for a rough benchmark on speedup.
 
-  14. `fread` gains `fill` argument with default `FALSE` for backwards compatibility. Closes [#536](https://github.com/Rdatatable/data.table/issues/536). Also, `fill=TRUE` prioritises maximum cols instead of longest run with identical columns when `fill=TRUE` which allows handle missing columns slightly more robustly, [#1573](https://github.com/Rdatatable/data.table/issues/1573).
+  14. `tstrsplit` gains argument `names`, [#1379](https://github.com/Rdatatable/data.table/issues/1379). A character vector of column names can be provided as well. Thanks @franknarf1.
 
-  15. `fread` gains `key` argument, [#590](https://github.com/Rdatatable/data.table/issues/590).
+  15. `tstrsplit` gains argument `keep` which corresponds to the indices of list elements to return from the transposed list.
 
-  16. `setnames` accepts negative indices in 'old' argument, [#1443](https://github.com/Rdatatable/data.table/issues/1443). Thanks @richierocks.
+  16. `rowid()` and `rowidv()` - convenience functions for generating a unique row ids within each group, are implemented. `rowid()` is particularly useful along with `dcast()`. See `?rowid` for more, [#1353](https://github.com/Rdatatable/data.table/issues/1353).
 
-  17. `var`, `sd` and `prod` are all GForce optimised for speed and memory efficiency. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). See that post for benchmarks.
+  17. `rleid()` gains `prefix` argument, similar to `rowid()`.
 
-  18. `merge.data.table` by default also checks for common key columns between the two `data.table`s before resulting in error when `by` or `by.x, by.y` arguments are not provided, [#1517](https://github.com/Rdatatable/data.table/issues/1517). Thanks @DavidArenburg.
+  18. `shift()` understands and operates on list-of-list inputs as well, [#1595](https://github.com/Rdatatable/data.table/issues/1595). Thanks to @enfascination and to @chris for [asking on SO](http://stackoverflow.com/q/38900293/559784).
 
-  19. `dcast.data.table` now allows `drop = c(FALSE, TRUE)` and `drop = c(TRUE, FALSE)`. The former only fills all missing combinations of formula LHS, where as the latter fills only all missing combinations of formula RHS. Thanks to Ananda Mahto for [this SO post](http://stackoverflow.com/q/34830908/559784) and to Jaap for filing [#1512](https://github.com/Rdatatable/data.table/issues/1512).
+  19. `uniqueN` gains `na.rm` argument, [#1455](https://github.com/Rdatatable/data.table/issues/1455).
 
-  20. `data.table()` function gains `stringsAsFactors` argument with default `FALSE`, [#643](https://github.com/Rdatatable/data.table/issues/643). Thanks to @Jan for reviving this issue.
+  20. `first()` is now exported to return the first element of vectors, data.frames and data.tables.
+
+  21. New `split.data.table` method. Faster, more flexible and consistent with data.frame method. Closes [#1389](https://github.com/Rdatatable/data.table/issues/1389).
+
+  22. `rbindlist` supports columns of type `complex`, [#1659](https://github.com/Rdatatable/data.table/issues/1659).
+
+  23. Added `second` and `minute` extraction functions which, like extant `hour`/`yday`/`week`/etc, always return an integer, [#874](https://github.com/Rdatatable/data.table/issues/874). Also added ISO 8601-consistent weeks in `isoweek`, [#1765](https://github.com/Rdatatable/data.table/issues/1765). Thanks to @bthieurmel and @STATWORX for the FRs and @MichaelChirico for the PRs. 
+
+  24. `setnames` accepts negative indices in `old` argument, [#1443](https://github.com/Rdatatable/data.table/issues/1443). Thanks @richierocks.
+
+  25. `by` understands `colA:colB` syntax now, like `.SDcols` does, [#1395](https://github.com/Rdatatable/data.table/issues/1395). Thanks @franknarf1.
+
+  26. `data.table()` function gains `stringsAsFactors` argument with default `FALSE`, [#643](https://github.com/Rdatatable/data.table/issues/643). Thanks to @Jan for reviving this issue.
   
-  21. New argument `print.class` for `print.data.table` allows for including column class under column names (as inspired by `tbl_df` in `dplyr`); default (adjustable via `"datatable.print.class"` option) is `FALSE`, the inherited behavior. Part of [#1523](https://github.com/Rdatatable/data.table/issues/1523); thanks to @MichaelChirico for the FR & PR.
+  27. `print.data.table` now warns when `bit64` package isn't loaded but the `data.table` contains `integer64` columns, [#975](https://github.com/Rdatatable/data.table/issues/975). Thanks to @StephenMcInerney.
+
+  28. New argument `print.class` for `print.data.table` allows for including column class under column names (as inspired by `tbl_df` in `dplyr`); default (adjustable via `"datatable.print.class"` option) is `FALSE`, the inherited behavior. Part of [#1523](https://github.com/Rdatatable/data.table/issues/1523); thanks to @MichaelChirico for the FR & PR.
   
-  22. `all.equal.data.table` gains `check.attributes`, `ignore.col.order`, `ignore.row.order` and `tolerance`.
+  29. `all.equal.data.table` gains `check.attributes`, `ignore.col.order`, `ignore.row.order` and `tolerance` arguments.
 
-  23. Fast set operations `fsetdiff`, `fintersect`, `funion` and `fsetequal` for data.tables is now implemented, [#547](https://github.com/Rdatatable/data.table/issues/547).
-
-  24. `uniqueN` gains `na.rm` argument, [#1455](https://github.com/Rdatatable/data.table/issues/1455).
-
-  25. Finally, we can now refer to the columns that are not mentioned in `.SD/.SDcols` in `j` as well. For example, `DT[, .(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:V3]` works fine, [#495](https://github.com/Rdatatable/data.table/issues/495). Thanks to @MattWeller for filing the report, and to all the others who linked various SO posts to be updated. Also closes [#484](https://github.com/Rdatatable/data.table/issues/484).
-
-  26. While updating by reference, adding a new column is guaranteed even if there are no matches when `nomatch=NA`, [#759](https://github.com/Rdatatable/data.table/issues/759). Thanks @mchen402.
-
-  27. `by` understands `colA:colB` syntax now, like `.SDcols` does, [#1395](https://github.com/Rdatatable/data.table/issues/1395). Thanks @franknarf1.
-
-  28. Joins (and binary search based subsets) using `on=` argument now reuses existing (secondary) indices, [#1439](https://github.com/Rdatatable/data.table/issues/1439). Thanks @jangorecki.
-  
-  29. New `split` method for data.table. Faster, more flexible and consistent with data.frame method. Closes [#1389](https://github.com/Rdatatable/data.table/issues/1389).
-
-  30. x's columns can be referred to in `j` using the prefix `x.` at all times. This is particularly useful when it is necessary to x's column that is *also a join column*. This is a patch addressing [#1615](https://github.com/Rdatatable/data.table/issues/1615). Also closes [#1705](https://github.com/Rdatatable/data.table/issues/1705) (thanks @dbetebenner) and [#1761](https://github.com/Rdatatable/data.table/issues/1761).
-  
-  31. New function `fwrite` implements [#580](https://github.com/Rdatatable/data.table/issues/580). Thanks to Otto Seiskari for C code, R wrapper, manual page and extensive tests.
-
-  Update: Matt has since then worked on top of this excellent contribution by reducing i/o overhead, parallelisation and internal functions for faster write of integer/numeric values.
-
-  32. `on=.()` syntax is now posible, e.g., `X[Y, on=.(x==a, y==b)]`, [#1257](https://github.com/Rdatatable/data.table/issues/1257). Thanks @dselivanov.
-
-  33. Non-equi joins are now possible using the familiar `on=` syntax. With this, the set of binary operators extend from just `==` to `>=`, `>`, `<=`, `<` and `==`. For e.g., `X[Y, on=.(a, b>b)]` looks for `X.a == Y.a` first and within those matching rows for rows where`X.b > Y.b`, [#1452](https://github.com/Rdatatable/data.table/issues/1452).
-
-  34. `%between%` is vectorised which means we can now do: `DT[x %between% list(y,z)]` which is equivalent to `DT[x >= y & x <= z]`, [#534](https://github.com/Rdatatable/data.table/issues/534). Thanks @MicheleCarriero for filing the issue and the idea.
-
-  35. New functions `inrange()` and `%inrange%` are exported. It performs a range join making use of the recently implemented `non-equi` joins ([#1452](https://github.com/Rdatatable/data.table/issues/1452)) [#679](https://github.com/Rdatatable/data.table/issues/679). Also thanks to @DavidArenburg for [#1819](https://github.com/Rdatatable/data.table/issues/1819).
-
-  36. `rbindlist` supports columns of type `complex`, [#1659](https://github.com/Rdatatable/data.table/issues/1659).
-
-  37. Row subset operations of data.table is now parallelised with OpenMP, [#1660](https://github.com/Rdatatable/data.table/issues/1660). See the linked issue page for a rough benchmark on speedup.
-
-  38. `rleid()` gains `prefix` argument, similar to `rowid()`.
-
-  39. `tstrsplit` gains argument `keep` which corresponds to the indices of list elements to return from the transposed list.
-
-  40. `give.names` argument in `tstrsplit` is renamed to simply `names`. It now accepts a character vector 
-  of column names as well.
-
-  41. `melt.data.table` finds variables provided to `patterns()` when called from within user defined functions, [#1749](https://github.com/Rdatatable/data.table/issues/1749). Thanks to @kendonB for the report.
-
-  42. `first()` is now exported to return the first element of vectors, data.frames and data.tables.
-  
-  43. Added `second` and `minute` extraction functions which, like extant `hour`/`yday`/`week`/etc, always return an integer, [#874](https://github.com/Rdatatable/data.table/issues/874). Also added ISO 8601-consistent weeks in `isoweek`, [#1765](https://github.com/Rdatatable/data.table/issues/1765). Thanks to @bthieurmel and @STATWORX for the FRs and @MichaelChirico for the PRs. 
-
-  44. `shift()` understands and operates on list-of-list inputs as well, [#1595](https://github.com/Rdatatable/data.table/issues/1595). Thanks to @enfascination and to @chris for [asking on SO](http://stackoverflow.com/q/38900293/559784).
-
-  45. Most common use case for `between()`, i.e., `lower` and `upper` are length=1, is now implemented in C and parallelised. This results in ~7-10x speed improvement on vectors of length >= 1e6.
-
-  46. `fread` gets new argument `file` which expect existing file on input, to ensure no shell commands will be executed when reading file. Closes [#1702](https://github.com/Rdatatable/data.table/issues/1702).
-
-  47. `:=` can now add new columns when its RHS is length 0. An all-NA column is created of the same type as the empty RHS.
-  
 #### BUG FIXES
 
   1. Now compiles and runs on IBM AIX gcc. Thanks to Vinh Nguyen for investigation and testing, [#1351](https://github.com/Rdatatable/data.table/issues/1351).
