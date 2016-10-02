@@ -13,7 +13,7 @@
 
   1. `fwrite` - *parallel file writer*: 
     * Thanks to Otto Seiskari for the initial PR [#580](https://github.com/Rdatatable/data.table/issues/580) that implements C code, R wrapper, manual page and extensive tests.
-    * Matt worked on top of Otto's contribution by reducing i/o overhead, parallelising and implementing internal functions for faster write of integer/numeric values. Updated documentation and tests.
+    * Matt worked on top of Otto's contribution by reducing i/o overhead, parallelising and implementing internal functions for faster write of integer/numeric values. Updated documentation and tests. See [this blog post](http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/) for implementation details and benchmarks.
 
   2. `fread()`:
     * gains `quote` argument. `quote = ""` disables quoting altogether which reads each field *as is*, [#1367](https://github.com/Rdatatable/data.table/issues/1367). Thanks @manimal.
