@@ -37,8 +37,8 @@
   5. Fast set operations `fsetdiff`, `fintersect`, `funion` and `fsetequal` for data.tables are now implemented, [#547](https://github.com/Rdatatable/data.table/issues/547).
 
   6. Updating by reference using `:=`:
-  * New column (of all-NA) is guaranteed even when there are no matches, [#759](https://github.com/Rdatatable/data.table/issues/759). Thanks @mchen402.
-  * `:=` also adds new columns when its RHS is length `0`. An all-NA column is created of the same type as the empty RHS.
+    * New column (of all-NA) is guaranteed even when there are no matches, [#759](https://github.com/Rdatatable/data.table/issues/759). Thanks @mchen402.
+    * `:=` also adds new columns when its RHS is length `0`. An all-NA column is created of the same type as the empty RHS.
 
   7. `GForce` (See ?\`datatable-optimize\` for more):
     * `dt[, .N, by=cols]` is optimised internally as well, [#1251](https://github.com/Rdatatable/data.table/issues/1251).
