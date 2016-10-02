@@ -244,7 +244,7 @@ second  <- function(x) as.integer(as.POSIXlt(x)$sec)
 minute  <- function(x) as.POSIXlt(x)$min
 hour    <- function(x) as.POSIXlt(x)$hour
 yday    <- function(x) as.POSIXlt(x)$yday + 1L
-wday    <- function(x) as.POSIXlt(x)$wday + 1L
+wday    <- function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L
 mday    <- function(x) as.POSIXlt(x)$mday
 week    <- function(x) yday(x) %/% 7L + 1L
 isoweek <- function(x) {
