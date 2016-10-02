@@ -44,7 +44,7 @@
     * `dt[, .N, by=cols]` is optimised internally as well, [#1251](https://github.com/Rdatatable/data.table/issues/1251).
     * is now also optimised for `median`. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). Check that issue for benchmarks.
     * GForce kicks in along with subsets in `i` as well, e.g., `DT[x > 2, mean(y), by=z]`. Partly addresses [#971](https://github.com/Rdatatable/data.table/issues/971).
-    * GForce is optimised for `head(., 1)` and `tail(., 1`), where `.` is a column name or `.SD`. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). Check the link for benchmarks.
+    * GForce is optimised for `head(., 1)` and `tail(., 1)`, where `.` is a column name or `.SD`. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). Check the link for benchmarks.
     * GForce is optimised for length-1 subsets, e.g., `.SD[2]`, `col[2]`. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523).
     * `var`, `sd` and `prod` are all GForce optimised for speed and memory. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). See that post for benchmarks.
 
@@ -86,7 +86,7 @@
 
   25. `by` understands `colA:colB` syntax now, like `.SDcols` does, [#1395](https://github.com/Rdatatable/data.table/issues/1395). Thanks @franknarf1.
 
-  26. `data.table()` function gains `stringsAsFactors` argument with default `FALSE`, [#643](https://github.com/Rdatatable/data.table/issues/643). Thanks to @Jan for reviving this issue.
+  26. `data.table()` function gains `stringsAsFactors` argument with default `FALSE`, [#643](https://github.com/Rdatatable/data.table/issues/643). Thanks to @jangorecki for reviving this issue.
   
   27. `print.data.table` now warns when `bit64` package isn't loaded but the `data.table` contains `integer64` columns, [#975](https://github.com/Rdatatable/data.table/issues/975). Thanks to @StephenMcInerney.
 
@@ -284,7 +284,7 @@
 
   18. Dependency on `chron` package has been changed to *suggested*. Closes [#1558](https://github.com/Rdatatable/data.table/issues/1558).
 
-  19. Rnw vignettes are converted to Rmd. The *10 minute quick introduction* Rnw vignette has been removed, since almost all of its contents are consolidated into the new intro Rmd vignette. Thanks to @MichaelChirico and @Jan. 
+  19. Rnw vignettes are converted to Rmd. The *10 minute quick introduction* Rnw vignette has been removed, since almost all of its contents are consolidated into the new intro Rmd vignette. Thanks to @MichaelChirico and @jangorecki. 
 
   A *quick tour of data.table* HTML vignette is in the works in the spirit of the previous *10 minute quick intro* PDF guide.
   
@@ -540,7 +540,7 @@
 
   51. `x[J(vals), .N, nomatch=0L]` also included no matches in result, [#1074](https://github.com/Rdatatable/data.table/issues/1074). And `x[J(...), col := val, nomatch=0L]` returned a warning with incorrect results when join resulted in no matches as well, even though `nomatch=0L` should have no effect in `:=`, [#1092](https://github.com/Rdatatable/data.table/issues/1092). Both issues are fixed now. Thanks to @riabusan and @cguill95 for #1092.
 
-  52. `.data.table.locked` attributes set to NULL in internal function `subsetDT`. Closes [#1154](https://github.com/Rdatatable/data.table/issues/1154). Thanks to @Jan.
+  52. `.data.table.locked` attributes set to NULL in internal function `subsetDT`. Closes [#1154](https://github.com/Rdatatable/data.table/issues/1154). Thanks to @jangorecki.
 
   53. Internal function `fastmean()` retains column attributes. Closes [#1160](https://github.com/Rdatatable/data.table/issues/1160). Thanks to @renkun-ken.
 
