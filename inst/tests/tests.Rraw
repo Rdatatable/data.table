@@ -9246,6 +9246,16 @@ test(1719, DT[,c(2,0,1)], data.table(b=4:6, a=1:3))
 test(1720, DT[,c(-2,2)], error="j mixes positives and negatives")
 test(1721, DT[,c(1,0,5)], error="Item 3 of j is 5 which.*ncol=3")  # to check it says Item 3 even though 0 gets removed internally
 
+# Tests to ensure auto with=FALSE of ! and - only allow symbols around : (i.e. DT[,!(colB:colE)] and not any other symbol usage inside ! and -.  Thanks to Mark L #1864 and confirmed by Michael C with both tests added as-is
+DT = data.table(FieldName = c(1,2,NA,4,NA,6), rowId=1:6, removalIndex=c(2,7,0,5,10,0)) 
+test(1722.1, DT[,!is.na(as.numeric(FieldName))],   c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE))
+test(1722.2, DT[,(!is.na(as.numeric(FieldName)))], c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE))
+test(1723.1, DT[removalIndex>0,rowId-(2*removalIndex-1)], c(-2,-11,-5,-14))
+test(1723.2, DT[removalIndex>0,(rowId-(2*removalIndex-1))], c(-2,-11,-5,-14))
+DT = data.table(FieldName = c("1", "2", "3", "four", "five", "6"))
+test(1724.1, DT[, is.na(as.numeric(FieldName))], c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE), warning="NAs introduced by coercion")
+test(1724.2, DT[, !is.na(as.numeric(FieldName))], c(TRUE,TRUE,TRUE,FALSE,FALSE,TRUE), warning="NAs introduced by coercion")
+
 
 ##########################
 

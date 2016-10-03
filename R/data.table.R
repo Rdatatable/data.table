@@ -394,16 +394,17 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!missing(j)) {
         jsub = replace_dot_alias(substitute(j))
         root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
-        if (root %chin% c(":","-","!") ||
+        if (root == ":" ||
+            (root %chin% c("-","!") && is.call(jsub[[2L]]) && jsub[[2L]][[1L]]=="(" && is.call(jsub[[2L]][[2L]]) && jsub[[2L]][[2L]][[1L]]==":") ||
             ( !length(all.vars(jsub)) &&
-              root %chin% c("","c","paste","paste0") &&
+              root %chin% c("","c","paste","paste0","-","!") &&
               missing(by) )) {   # test 763. TODO: likely that !missing(by) iff with==TRUE (so, with can be removed)
             # When no variable names occur in j, scope doesn't matter because there are no symbols to find.
             # Auto set with=FALSE in this case so that DT[,1], DT[,2:3], DT[,"someCol"] and DT[,c("colB","colD")]
             # work as expected.  As before, a vector will never be returned, but a single column data.table
             # for type consistency with >1 cases. To return a single vector use DT[["someCol"]] or DT[[3]].
             # The root==":" is to allow DT[,colC:colH] even though that contains two variable names
-            # root either "-" or "!" is for tests 1504.11 and 1504.13 (nested :)
+            # root either "-" or "!" is for tests 1504.11 and 1504.13 (a : with a ! or - modifier root)
             # This change won't break anything because it didn't do anything anyway; i.e. used to return the
             # j value straight back: DT[,1] == 1 which isn't possibly useful.  It was that was for consistency
             # of learning, since it was simpler to state that j always gets eval'd within the scope of DT.

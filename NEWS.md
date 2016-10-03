@@ -327,6 +327,8 @@
   37. Using `nomatch` together with `:=` now warns that it is ignored.
   
   38. Logical `i` is no longer recycled. Instead an error message if it isn't either length 1 or `nrow(DT)`. This was hiding more bugs than was worth the rare convenience. The error message suggests to recycle explcitly; i.e. `DT[rep(<logical>,length=.N),...]`.
+  
+  39. Thanks to Mark Landry and Michael Chirico for finding and reporting a problem in dev before release with auto `with=FALSE` (item 3 above) when `j` starts with with `!` or `-`, [#1864](https://github.com/Rdatatable/data.table/issues/1864). Fixed and tests added.
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 
