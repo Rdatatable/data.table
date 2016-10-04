@@ -10,6 +10,17 @@ init:
 install:
   ps: Bootstrap
 
+environment:
+  global:
+    WARNINGS_ARE_ERRORS: 1
+
+  matrix:
+  - R_VERSION: devel
+    R_ARCH: x64
+
+  - R_VERSION: release
+    R_ARCH: x64
+
 build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
 
