@@ -40,26 +40,26 @@ R CMD check --as-cran data.table_1.9.7.tar.gz
 
 
 ###############################################
-#  R 2.14.1 (stated dependency)
+#  R 3.0.0 (stated dependency)
 ###############################################
 
-### IF NOT ALREADY DONE
+### ONE TIME BUILD
 sudo apt-get -y build-dep r-base
 cd ~/build
-wget http://cran.stat.ucla.edu/src/base/R-2/R-2.14.1.tar.gz
-tar xvf R-2.14.1.tar.gz
-cd R-2.14.1
+wget http://cran.stat.ucla.edu/src/base/R-3/R-3.0.0.tar.gz
+tar xvf R-3.0.0.tar.gz
+cd R-3.0.0
 ./configure --without-recommended-packages
 make
-alias R2141=~/build/R-2.14.1/bin/R
+alias R300=~/build/R-3.0.0/bin/R
 cd ..
-R2141
+R300
 install.packages("chron")
-q()
-### ENDIF
+q("no")
+### END ONE TIME BUILD
 
-R2141 CMD INSTALL data.table_1.9.5.tar.gz
-R2141
+R300 CMD INSTALL ~/data.table_1.9.7.tar.gz
+R300
 require(data.table)
 test.data.table()
 test.data.table(verbose=TRUE)
