@@ -39,7 +39,7 @@ grep "nearest *=" data.table/src/*.c  # none
 grep "class *=" data.table/src/*.c    # quite a few but none global
 
 R CMD build data.table
-R CMD check --as-cran data.table_1.9.7.tar.gz
+R CMD check data.table_1.9.7.tar.gz --as-cran
 
 # Upload to win-builder, both release and dev
 
@@ -95,7 +95,7 @@ wget -N ftp://ftp.stat.math.ethz.ch/pub/Software/R/R-devel.tar.gz
 rm -rf R-devel
 tar xvf R-devel.tar.gz
 cd R-devel
-# Following R-exts#4.3.3   
+# Following R-exts#4.3.3
 # (clang 3.6.0 works but gcc 4.9.2 fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel)
 ./configure CC="clang -std=gnu99 -fsanitize=undefined,address" CFLAGS="-fno-omit-frame-pointer -O0 -g -Wall -pedantic -mtune=native" --without-recommended-packages --disable-byte-compiled-packages  
 make
