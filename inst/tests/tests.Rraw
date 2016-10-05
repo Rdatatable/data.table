@@ -3735,7 +3735,7 @@ DT = data.table(A=rep(1:2,c(100000,1)), B=runif(100001))
 before = gc()["Vcells",2]
 for (i in 1:50) DT[, sum(B), by=A]
 after = gc()["Vcells",2]
-test(1157, after < before+1)  # +1 = 1MB
+test(1157, after < before+3)  # +3 = 3MB
 # Before the patch, Vcells grew dramatically from 6MB to 60MB. Now stable at 6MB. Increase 50 to 1000 and it grew to over 1GB for this case.
 
 # Similar for when dogroups writes less rows than allocated, #2648.

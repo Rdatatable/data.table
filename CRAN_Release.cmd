@@ -4,7 +4,11 @@
 
 sudo apt-get update
 sudo apt-get upgrade
-sudo apt-get install pandoc  # but use .deb from pandoc homepage (v1.15) otherwise 'no header_extensions' with v1.12 on Ubuntu repo as of Sep-2015
+
+sudo apt-get install pandoc
+# v1.12 as on Ubuntu repo Sep-2015 had 'no header_extensions' problem. Needed manual update to v1.15
+# Ubuntu now has v1.16 which is fine.
+
 R
 update.packages()
 q()
@@ -29,7 +33,8 @@ grep "[.]Call(\"" data.table/R/*.R
 
 
 
-# workaround for IBM AIX - ensure no globals named 'nearest' or 'class'. See https://github.com/Rdatatable/data.table/issues/1351
+# workaround for IBM AIX - ensure no globals named 'nearest' or 'class'.
+# See https://github.com/Rdatatable/data.table/issues/1351
 grep "nearest *=" data.table/src/*.c  # none
 grep "class *=" data.table/src/*.c    # quite a few but none global
 
@@ -82,7 +87,7 @@ test.data.table(verbose=TRUE)
 
 
 ###############################################
-#  UBSAN and ASAN
+#  R-devel with UBSAN and ASAN on too
 ###############################################
 
 cd ~/build
@@ -96,18 +101,18 @@ cd R-devel
 make
 alias Rdevel=~/build/R-devel/bin/R
 Rdevel
-install.packages("chron")   # data.table imports (and thus depends on) this one recommended package (we excluded recommended above for speed of building)
+install.packages("chron")   # Not needed but include for tests with it
 install.packages("bit64")   # good to UBSAN/ASAN check with bit64 as well.
-                            # Skip tests using Suggests packages (CRAN will do that) - unlikely to be UBSAN/ASAN problems there.
+                            # Skip tests using Suggests packages (CRAN will do that); unlikely UBSAN/ASAN problems there.
 q("no")
-Rdevel CMD INSTALL ../data.table_1.9.5.tar.gz   # Check UBSAN and ASAN flags appear in compiler output here (Rdevel was compiled with them above so should be passed through to here)
+Rdevel CMD INSTALL ~/data.table_1.9.7.tar.gz   # Check UBSAN and ASAN flags appear in compiler output here (Rdevel was compiled with them above so should be passed through to here)
 Rdevel --vanilla
 require(data.table)
 require(bit64)
-test.data.table()
+test.data.table()           # slower than usual of course due to UBSAN and ASAN
 # Throws /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those: https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
 test.data.table(verbose=TRUE)
-q()
+q("no")
 
 
 ###############################################
