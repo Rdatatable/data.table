@@ -434,7 +434,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
     if (sizes[TypeSxp[oldtype]]<4) STOP("Internal error: SIZEOF oldtype %d < 4", oldtype);
     if (sizes[TypeSxp[newtype]]<4) STOP("Internal error: SIZEOF newtype %d < 4", newtype);
     if (sizes[TypeSxp[oldtype]] == sizes[TypeSxp[newtype]] && newtype != SXP_STR) {   // after && is quick fix. TO DO: revisit
-        TYPEOF(v) = TypeSxp[newtype];
+        SET_TYPEOF(v, TypeSxp[newtype]);  // SET_TYPEOF() not TYPEOF= for Karl Millar and rho.
         newv=v;
     } else {
         clock_t tCoerceAlloc0 = clock();
