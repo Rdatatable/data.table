@@ -781,7 +781,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 if (nqbyjoin) {
                     irows = if (length(xo)) xo[irows] else irows
                     xo = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
-                    ans = .Call("Cnqnewindices", xo, len__, indices__, max(indices__))
+                    ans = .Call(Cnqnewindices, xo, len__, indices__, max(indices__))
                     f__ = ans[[1L]]; len__ = ans[[2L]]
                     allLen1 = FALSE # TODO; should this always be FALSE?
                     irows = NULL # important to reset

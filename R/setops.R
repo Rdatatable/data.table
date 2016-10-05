@@ -40,7 +40,7 @@ setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE
     ux = unique(shallow(x, by.x))
     uy = unique(shallow(y, by.y))
     ix = duplicated(rbind(uy, ux, use.names=use.names, fill=FALSE))[-seq_len(nrow(uy))]
-    .Call("CsubsetDT", ux, which_(ix, FALSE), seq_along(ux)) # more memory efficient version of which(!ix)
+    .Call(CsubsetDT, ux, which_(ix, FALSE), seq_along(ux)) # more memory efficient version of which(!ix)
 }
 
 # set operators ----
@@ -48,7 +48,7 @@ setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE
 funique <- function(x) {
     stopifnot(is.data.table(x))
     dup = duplicated(x)
-    if (any(dup)) .Call("CsubsetDT", x, which_(dup, FALSE), seq_along(x)) else x
+    if (any(dup)) .Call(CsubsetDT, x, which_(dup, FALSE), seq_along(x)) else x
 }
 
 fintersect <- function(x, y, all=FALSE) {

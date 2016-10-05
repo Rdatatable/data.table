@@ -24,6 +24,9 @@ grep omp_set_num_threads data.table/src/*
 grep omp_get_max_threads data.table/src/*
 # Ensure all #pragama omp parallel directives include num_threads() clause
 grep "pragma omp parallel" data.table/src/*.c
+# Ensure all .Call's first argument are unquoted
+grep "[.]Call(\"" data.table/R/*.R
+
 
 
 # workaround for IBM AIX - ensure no globals named 'nearest' or 'class'. See https://github.com/Rdatatable/data.table/issues/1351

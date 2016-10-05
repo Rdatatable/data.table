@@ -200,7 +200,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
         }
         maplen = sapply(mapunique, length)
         idx = do.call("CJ", mapunique)[map, I := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
-        ans = .Call("Cfcast", lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call))
+        ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call))
         allcols = do.call("paste", c(rhs, sep=sep))
         if (length(valnames) > 1L)
             allcols = do.call("paste", if (identical(".", allcols)) list(valnames, sep=sep) 
@@ -222,7 +222,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
             lhs_ = cj_uniq(lhs)
             idx = lhs_[lhs, I := .I][["I"]]
             lhs_[, I := NULL]
-            ans = .Call("Cfcast", lhs_, val, nrow(lhs_), 1L, idx, fill, fill.default, is.null(fun.call))
+            ans = .Call(Cfcast, lhs_, val, nrow(lhs_), 1L, idx, fill, fill.default, is.null(fun.call))
             setDT(ans); setattr(ans, 'sorted', lhsnames)
             setnames(ans, c(lhsnames, valnames))
         }

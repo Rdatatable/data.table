@@ -34,7 +34,7 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
         if (length(value.name) == 1L)  
           value.name = paste(value.name, seq_along(measure.vars), sep="")
     }
-    ans <- .Call("Cfmelt", data, id.vars, measure.vars, 
+    ans <- .Call(Cfmelt, data, id.vars, measure.vars, 
             as.logical(variable.factor), as.logical(value.factor), 
             variable.name, value.name, as.logical(na.rm), 
             as.logical(verbose))

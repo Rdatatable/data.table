@@ -4,7 +4,7 @@ between <- function(x,lower,upper,incbounds=TRUE) {
     if (is_strictly_numeric(x) && is_strictly_numeric(lower) &&
         is_strictly_numeric(upper) && length(lower) == 1L && length(upper) == 1L) {
         # faster parallelised version for int/double for most common scenario
-        .Call("Cbetween", x, lower, upper, incbounds)
+        .Call(Cbetween, x, lower, upper, incbounds)
     } else {
         if(incbounds) x>=lower & x<=upper
         else x>lower & x<upper
