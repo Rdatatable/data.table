@@ -1254,7 +1254,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     if ((ok<-selfrefok(x,verbose))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
                         warning("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or been created manually using structure() or similar). Avoid key<-, names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. Also, in R<=v3.0.2, list(DT1,DT2) copied the entire DT1 and DT2 (R's list() used to copy named objects); please upgrade to R>v3.0.2 if that is biting. If this message doesn't help, please report to datatable-help so the root cause can be fixed.")
                     if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
-                        n = max(ncol(x)+100, ncol(x)+2*length(newnames))
+                        DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
+                        n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
+                        # i.e. reallocate at the size as if the new columns were added followed by alloc.col().
                         name = substitute(x)
                         if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
                             cat("Growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n")
@@ -2433,8 +2435,7 @@ alloc.col <- function(DT, n=getOption("datatable.alloccol"), verbose=getOption("
 {
     name = substitute(DT)
     if (identical(name,quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")
-    ans = .Call(Calloccolwrapper,DT,as.integer(eval(n)),verbose)
-
+    ans = .Call(Calloccolwrapper, DT, length(DT)+as.integer(eval(n)), verbose)
     if (is.name(name)) {
         name = as.character(name)
         assign(name,ans,parent.frame(),inherits=TRUE)
