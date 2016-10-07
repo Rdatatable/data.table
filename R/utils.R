@@ -47,3 +47,18 @@ UseMethod("%+%")
 
 "%+%.default" <- function(x,y) paste(paste(x,collapse=","),paste(y,collapse=","),sep="")
 # we often construct warning msgs with a msg followed by several items of a vector, so %+% is for convenience
+
+# vapply for return value character(1) 
+vcapply <- function (x, fun, ..., use.names = TRUE) {
+  vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_character_, USE.NAMES = use.names)
+}
+
+# vapply for return value logical(1)
+vlapply <- function (x, fun, ..., use.names = TRUE) {
+  vapply(X = x, FUN = fun, ..., FUN.VALUE = NA, USE.NAMES = use.names)
+}
+
+# vapply for return value integer(1)
+viapply <- function (x, fun, ..., use.names = TRUE) {
+  vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
+}
