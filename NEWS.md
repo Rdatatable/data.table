@@ -22,6 +22,7 @@
     * gains `fill` argument with default `FALSE` for backwards compatibility. Closes [#536](https://github.com/Rdatatable/data.table/issues/536). Also, `fill=TRUE` prioritises maximum cols instead of longest run with identical columns when `fill=TRUE` which allows handle missing columns slightly more robustly, [#1573](https://github.com/Rdatatable/data.table/issues/1573).
     * gains `key` argument, [#590](https://github.com/Rdatatable/data.table/issues/590).
     * gains `file` argument which expects existing file on input, to ensure no shell commands will be executed when reading file. Closes [#1702](https://github.com/Rdatatable/data.table/issues/1702).
+    * Column type guessing is improved by testing 100 rows at 10 points rather than 5 rows at 3 points. See point 3 of [convenience features of fread for small data](https://github.com/Rdatatable/data.table/wiki/Convenience-features-of-fread).
 
   3. Joins:
     * Non-equi (or conditional) joins are now possible using the familiar `on=` syntax. Possible binary operators include `>=`, `>`, `<=`, `<` and `==`. For e.g., `X[Y, on=.(a, b>b)]` looks for `X.a == Y.a` first and within those matching rows for rows where`X.b > Y.b`, [#1452](https://github.com/Rdatatable/data.table/issues/1452).

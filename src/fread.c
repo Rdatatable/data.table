@@ -26,7 +26,7 @@ And even more diagnostics to verbose=TRUE so we can see where crashes are.
 colClasses shouldn't be ignored but rather respected and then warn if data accuracy is lost. See first NOTE in NEWS.
 Detect and coerce dates and times. By searching for - and :, and dateTtime etc, or R's own method or fasttime. POSIXct default, for microseconds? : http://stackoverflow.com/questions/14056370/cast-string-to-idatetime
 Fill in too-short lines :  http://stackoverflow.com/questions/21124372/fread-doesnt-like-lines-with-less-fields-than-other-lines
-Allow to increase to top 500, middle 500 and bottom 500.
+Allow to increase from 100 rows at 10 points
 madvise is too eager when reading just the top 10 rows.
 Add as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
 Allow comment char to ignore. Important in format detection. But require valid line data before comment character in the read loop? See http://stackoverflow.com/a/18922269/403310
@@ -479,7 +479,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
         }
         break;
     case SXP_STR:
-        warning("Bumped column %d to type character on data row %d, field contains '%.*s'. Coercing previously read values in this column from logical, integer or numeric back to character which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too (if they occurred in this column before the bump). If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses the first 5 rows, the middle 5 rows and the last 5 rows, so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, sofar+1, lch-ch, ch);
+        warning("Bumped column %d to type character on data row %d, field contains '%.*s'. Coercing previously read values in this column from logical, integer or numeric back to character which may not be lossless; e.g., if '00' and '000' occurred before they will now be just '0', and there may be inconsistencies with treatment of ',,' and ',NA,' too (if they occurred in this column before the bump). If this matters please rerun and set 'colClasses' to 'character' for this column. Please note that column type detection uses a sample of 1,000 rows (100 rows at 10 points) so hopefully this message should be very rare. If reporting to datatable-help, please rerun and include the output from verbose=TRUE.\n", col+1, sofar+1, lch-ch, ch);
         static char buffer[129];  // 25 to hold [+-]2^63, with spare space to be safe and snprintf too
         switch(oldtype) {
         case SXP_LGL : case SXP_INT :
@@ -1018,16 +1018,20 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     clock_t tRowCount = clock();
     
-    // ********************************************************************************************
-    //   Make best guess at column types using first 5 rows, middle 5 rows and last 5 rows
-    // ********************************************************************************************
+    // *********************************************************************************************************
+    //   Make best guess at column types using 100 rows at 10 points, including the very first and very last row
+    // *********************************************************************************************************
     int type[ncol]; for (i=0; i<ncol; i++) type[i]=0;   // default type is lowest.
-    const char *str, *thispos;
-    for (j=0; j<(nrow>15?3:1); j++) {
-        switch(j) {
-        case 0: ch = pos;                  str=" first"; break; // str same width so the codes line up vertically
-        case 1: ch = pos + 1*(eof-pos)/3;  str="middle"; break;
-        case 2: ch = pos + 2*(eof-pos)/3;  str="  last"; break;  // 2/3 way through rather than end ... easier
+    const char *thispos;
+    int numPoints = nrow>1000 ? 11  : 1;
+    int eachNrows = nrow>1000 ? 100 : nrow;  // if nrow<=1000, test all the rows in a single iteration
+    for (j=0; j<numPoints; j++) {
+        if (j<10) {
+            ch = pos + j*(eof-pos)/10;
+        } else {
+            ch = eof - 50*(eof-pos)/nrow;
+            // include very last line by setting last point apx 50 lines from
+            // end and testing 100 lines from there until eof.
         }
         // detect types by starting at the first non-empty line
         if (fill || skipEmptyLines) while (ch<eof && *ch==eol) ch++;
@@ -1050,12 +1054,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             }
             // change warning to verbose, avoids confusion, see #1124
             if (i<5) {
-                if (verbose) Rprintf("Couldn't guess column types from %s 5 lines\n", str);
+                if (verbose) Rprintf("Couldn't guess column types from test point %d\n", j);
                 continue;
             }
         }
         i = 0;
-        while(i<5 && ch<eof && *ch!=eol) {
+        while(i<eachNrows && ch<eof && *ch!=eol) {  // Test 100 lines from each of the 10 points in the file
             i++;
             lineStart = ch;
             for (field=0;field<ncol;field++) {
@@ -1082,15 +1086,15 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 }
                 if (ch<eof && *ch==sep && field<ncol-1) {ch++; continue;}  // done, next field
                 if (field<ncol-1 && !fill) {
-                    if (*ch>31) STOP("Expected sep ('%c') but '%c' ends field %d when detecting types (%s): %.*s", sep, *ch, field, str, ch-lineStart+1, lineStart);
-                    else STOP("Expected sep ('%c') but new line, EOF (or other non printing character) ends field %d when detecting types (%s): %.*s", sep, field, str, ch-lineStart+1, lineStart);
+                    if (*ch>31) STOP("Expected sep ('%c') but '%c' ends field %d when detecting types from point %d: %.*s", sep, *ch, field, j, ch-lineStart+1, lineStart);
+                    else STOP("Expected sep ('%c') but new line, EOF (or other non printing character) ends field %d when detecting types from point %d: %.*s", sep, field, j, ch-lineStart+1, lineStart);
                 }
             }
             while (ch<eof && *ch!=eol) ch++;
             if (ch<eof && *ch==eol) ch+=eolLen;
             if (stripWhite) skip_spaces();
         }
-        if (verbose) { Rprintf("Type codes (%s 5 rows): ",str); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf("\n"); }
+        if (verbose) { Rprintf("Type codes (point %2d): ",j); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf("\n"); }
     }
     ch = pos;
     
