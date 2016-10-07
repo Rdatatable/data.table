@@ -23,21 +23,14 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
     envirs <- list()
     for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
         cat("Running",fn,"\n")
-        oldverbose = getOption("datatable.verbose")
-        if (verbose) options(datatable.verbose=TRUE)
+        oldverbose = options(datatable.verbose=verbose)
         envirs[[fn]] = new.env(parent=.GlobalEnv)
         if(isTRUE(silent)){
             try(sys.source(fn,envir=envirs[[fn]]), silent=silent)
         } else {
             sys.source(fn,envir=envirs[[fn]])
         }
-        options(data.table.verbose=oldverbose)
-        # As from v1.7.2, testthat doesn't run the tests.Rraw (hence file name change to .Rraw).
-        # There were environment issues with system.time() (when run by test_package) that only
-        # showed up when CRAN maintainers tested on 64bit. Matt spent a long time including
-        # testing on 64bit in Amazon EC2. Solution was simply to not run the tests.R from
-        # testthat, which probably makes sense anyway to speed it up a bit (was running twice
-        # before).
+        options(oldverbose)
     }
     options(encoding=oldenc)
     # Sys.setlocale("LC_CTYPE", oldlocale)

@@ -40,8 +40,14 @@ grep "class *=" data.table/src/*.c    # quite a few but none global
 
 R CMD build data.table
 R CMD check data.table_1.9.7.tar.gz --as-cran
+R CMD INSTALL data.table_1.9.7.tar.gz
+R
+require(data.table)
+test.data.table()
+test.data.table(verbose=TRUE)  # since main.R no longer tests verbose mode
 
 # Upload to win-builder, both release and dev
+
 
 
 ###############################################

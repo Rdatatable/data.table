@@ -8854,9 +8854,8 @@ options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
 
 #testing fix to #1654 (dcast should only error when _using_ duplicated names)
 DT <- data.table(a = 1:4, a = 1:4, id = rep(1:4, 2), V1 = 8:1)
-test(1667.1, capture.output(dcast(DT, id ~ rowid(id), value.var = "V1")), 
-     c("   id 1 2", "1:  1 8 4", "2:  2 7 3",
-       "3:  3 6 2", "4:  4 5 1"))
+test(1667.1, dcast(DT, id ~ rowid(id), value.var = "V1"), 
+     output = "   id 1 21:  1 8 42:  2 7 33:  3 6 24:  4 5 1")
 DT <- data.table(a = 1:4, id = 1:4, id = rep(1:4, 2), V1 = 8:1)
 test(1667.2, dcast(DT, id ~ rowid(id), value.var = "V1"), error = "data.table to cast")
 
@@ -8892,23 +8891,23 @@ test(1671, dt[, z := sd, by=x], error="invalid type/length (closure/1)")
 
 # 1683
 DT <- data.table(V1 = rep(1:2, 3), V2 = 1:6)
-test(1672.1, capture.output(DT[ , .(.I[1L], V2[1L]), by = V1]),
-     c("   V1 V1 V2", "1:  1  1  1", "2:  2  2  2"))
+test(1672.1, DT[ , .(.I[1L], V2[1L]), by = V1],
+     output = "   V1 V1 V21:  1  1  12:  2  2  2")
 #make sure GForce operating
 test(1672.2, DT[ , .(.I[1L], V2[1L]), by = V1, verbose = TRUE],
      output = "GForce optimized j")
 #make sure works on .I by itself
-test(1672.3, capture.output(DT[ , .I[1L], by = V1]),
-     c("   V1 V1", "1:  1  1", "2:  2  2"))
+test(1672.3, DT[ , .I[1L], by = V1],
+     output = "   V1 V11:  1  12:  2  2")
 #make sure GForce here as well
 test(1672.4, DT[ , .I[1L], by = V1, verbose = TRUE],
      output = "GForce optimized j")
 #make sure works with order
-test(1672.5, capture.output(DT[order(V1), .I[1L], by = V1]),
-     c("   V1 V1", "1:  1  1", "2:  2  2"))
+test(1672.5, DT[order(V1), .I[1L], by = V1],
+     output = "   V1 V11:  1  12:  2  2")
 # should also work with subsetting
-test(1672.6, capture.output(DT[1:5, .(.I[1L], V2[1L]), by = V1]),
-     c("   V1 V1 V2", "1:  1  1  1", "2:  2  2  2"))
+test(1672.6, DT[1:5, .(.I[1L], V2[1L]), by = V1],
+     output = "   V1 V1 V21:  1  1  12:  2  2  2")
      
 #tests for #1528
 TT <- as.IDate("2016-04-25")
@@ -9016,7 +9015,9 @@ foo <- function(annot=c("a", "b")) {
   suppressWarnings(ro$dt[, flag := TRUE])
   ro
 }
+old = options(datatable.verbose=FALSE)
 test(1685, grep("dtu", capture.output(foo())), 7L)
+options(old)
 
 # fix for #1771
 test(1686.1, uniqueN(1L), 1L)
