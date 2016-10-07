@@ -20,7 +20,7 @@ mimicsAutoPrint = c("knit_print.default")
 # add maybe repr_text.default.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
 
 shouldPrint = function(x) {
-  ret = (.global$print=="" ||   # to save address() calls and adding lots of address strings to R's global cache
+  ret = (!nzchar(.global$print) ||   # to save address() calls and adding lots of address strings to R's global cache
          address(x)!=.global$print)
   .global$print = ""
   ret
