@@ -30,28 +30,10 @@ as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ..
     as.data.table.list(x, FALSE)
 }
 
-R300_provideDimnames <- function (x, sep = "", base = list(LETTERS)) {
-    # backported from R3.0.0 so data.table can depend on R 2.14.0 
-    dx <- dim(x)
-    dnx <- dimnames(x)
-    if (new <- is.null(dnx)) 
-        dnx <- vector("list", length(dx))
-    k <- length(M <- vapply(base, length, 1L))
-    for (i in which(vapply(dnx, is.null, NA))) {
-        ii <- 1L + (i - 1L)%%k
-        dnx[[i]] <- make.unique(base[[ii]][1L + 0:(dx[i] - 1L)%%M[ii]], 
-            sep = sep)
-        new <- TRUE
-    }
-    if (new) 
-        dimnames(x) <- dnx
-    x
-}
-
 # as.data.table.table - FR #4848
 as.data.table.table <- function(x, keep.rownames=FALSE, ...) {
     # Fix for bug #5408 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
-    val = rev(dimnames(R300_provideDimnames(x)))
+    val = rev(dimnames(provideDimnames(x)))
     if (is.null(names(val)) || all(nchar(names(val)) == 0L)) 
         setattr(val, 'names', paste("V", rev(seq_along(val)), sep=""))
     ans <- data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x))
