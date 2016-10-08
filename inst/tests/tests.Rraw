@@ -1,7 +1,4 @@
 
-# This file should be clean of non-ASCII characters; e.g. CRAN Solaris
-# Use:  grep --color='auto' -P -n "[\x80-\xFF]" tests.Rraw
-
 if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
     options(warn=0)  # use require() so it warns but doesn't halt if not available
@@ -4164,16 +4161,15 @@ base_order <- function(..., na.last=TRUE, decreasing=FALSE, method="shell") {
 # Test for optimisation of 'order' to 'forder'
 set.seed(45L)
 DT <- data.table(x=sample(1e2, 1e6,TRUE), y=sample(1e2, 1e6,TRUE))
-# with optimisation -> order will be optimised to forder
-optim = getOption("datatable.optimize")
-options(datatable.optimize=Inf)
-t1 = unname(system.time(ans1 <- DT[order(x,-y)])['elapsed'])
-# without optimisation
-t2 = unname(system.time(ans2 <- DT[base_order(x,-y, method="shell")])['elapsed'])
+old = options(datatable.optimize=Inf)
+t1 = system.time(ans1 <- DT[order(x,-y)])[['elapsed']]   # optimized to forder()
+t2 = system.time(ans2 <- DT[base_order(x,-y, method="shell")])[['elapsed']]  # not optimized
 test(1241.1, ans1, ans2)
-test(1241.2, t1 < t2, TRUE)  # with optimisation must be faster
-# restore optimisation
-options(datatable.optimize=optim)
+if (.devtesting) test(1241.2, t1 < t2)
+# 0.2 < 3.8 on Matt's laptop seems safe enough to test.
+# Even so, 1241.2 has been known to fail, perhaps if system swaps and this R sessions pauses or something?
+# We shouldn't have timing tests here that run on CRAN for this reason.  Hence wrapping with .devtesting
+options(old)
 
 DT = data.table(a=1:3, b=4:6)
 myCol = "a"
