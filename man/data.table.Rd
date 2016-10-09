@@ -413,7 +413,6 @@ vignette("datatable-intro")
 vignette("datatable-reference-semantics")
 vignette("datatable-keys-fast-subset")
 vignette("datatable-secondary-indices-and-auto-indexing")
-vignette("datatable-extending-subsets-to-joins")
 vignette("datatable-reshape")
 vignette("datatable-faq")
 
