@@ -71,7 +71,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
         Support for \emph{non-equi} join was recently implemented, which allows for other binary operators \code{>=, >, <= and <}.
 
-        See \href{../doc/datatable-keys-fast-subset.html}{Keys and fast binary search based subset}, \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} and \href{../doc/datatable-extend-subsets-to-joins.html}{Extending subsets to joins} vignettes.
+        See \href{../doc/datatable-keys-fast-subset.html}{Keys and fast binary search based subset} and \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
 
         \emph{Advanced:} When \code{i} is a single variable name, it is not considered an expression of column names and is instead evaluated in calling scope.
     }
@@ -159,7 +159,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
             \item{For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.}
             \item{From v1.9.8, (non-equi) joins using binary operators \code{>=, >, <=, <} are also possible, e.g., \code{X[Y, on=c("x>=a", "y<=b")]}, or for interactive use as \code{X[Y, on=.(x>=a, y<=b)]}.}
         }
-        See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} and \href{../doc/datatable-extend-subsets-to-joins.html}{Extending subsets to joins} vignettes for more.
+        See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
     }
 }
 \details{
