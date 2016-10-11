@@ -488,10 +488,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             continue;
         }
         if (coln+1 > oldncol) {  // new column
-            if (targetlen < nrow || vlen<1)
-                newcol = allocNAVector(TYPEOF(thisvalue),nrow);  // fill with NAs first for where 'rows' (a subset) doesn't touch
-            else              
-                newcol = allocVector(TYPEOF(thisvalue),nrow);    // save time by not NA filling since they'll all be written
+            newcol = allocNAVector(TYPEOF(thisvalue),nrow);
+            // initialize with NAs for when 'rows' is a subset and it doesn't touch
+            // do not try to save the time to NA fill (contiguous branch free assign anyway) since being
+            // sure all items will be written to (isNull(rows), length(rows), vlen<1, targetlen) is not worth the risk.
             SET_VECTOR_ELT(dt,coln,newcol);
             if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,newcol);  // class etc but not names
             // else for lists (such as data.frame and data.table) treat them as raw lists and drop attribs
