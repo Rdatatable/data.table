@@ -16,7 +16,7 @@ fwrite(x, file.path, append = FALSE, quote = "auto", sep = ",",
   \item{append}{If \code{TRUE}, the file is opened in append mode and column names (header row) are not written.}
   \item{quote}{When \code{"auto"}, character and factor columns as well as all column names will only be surrounded by double quotes if the field contains the separator, a line ending or the quote itself, otherwise the quote characters are omitted. If \code{FALSE} the fields are never wrapped with quotes even if this would break the CSV due to the contents of the field. If \code{TRUE} quotes are always included for character and factor columns.}
   \item{sep}{The separator between columns. Default is \code{","}.}
-  \item{eol}{Line separator. Default is \code{"\r\n"} for windows and \code{"\n"} otherwise.}
+  \item{eol}{Line separator. Default is \code{"\r\n"} for Windows and \code{"\n"} otherwise.}
   \item{na}{The string to use for missing values in the data. Default is a blank string, \code{""}.}
   \item{col.names}{A logical value indicating if the column names (header row) should be written to file. If missing and \code{append} is \code{TRUE}, this is forced to \code{FALSE} to prevent mid-file deployment of column names unless \code{file.path} already exists.}
 \item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
