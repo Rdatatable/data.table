@@ -1538,32 +1538,49 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     } else {
         # Find the groups, using 'byval' ...
         if (missing(by)) stop("Internal error, by is missing")
-        if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}
+        
         if (length(byval) && length(byval[[1]])) {
             if (!bysameorder) {
+                if (verbose) {last.started.at=proc.time()[3];cat("Finding groups using forderv ... ");flush.console()}
                 o__ = forderv(byval, sort=FALSE, retGrp=TRUE)   # returns integer() (not NULL) if already ordered, to save 1:xnrow for efficiency
                 bysameorder = orderedirows && !length(o__)
+                if (verbose) {
+                    cat(round(proc.time()[3]-last.started.at, 3), "sec\n")
+                    last.started.at=proc.time()[3]
+                    cat("Finding group sizes from the positions (can be avoided to save RAM) ... ")
+                    flush.console()  # for windows
+                }
                 f__ = attr(o__, "starts")
                 len__ = uniqlengths(f__, xnrow)
+                if (verbose) { cat(round(proc.time()[3]-last.started.at, 3), "sec\n");flush.console()}
                 if (!bysameorder) {    # TO DO: lower this into forder.c
+                    if (verbose) {last.started.at=proc.time()[3];cat("Getting back original order ... ");flush.console()}
                     firstofeachgroup = o__[f__]    
                     if (length(origorder <- forderv(firstofeachgroup))) {
                         f__ = f__[origorder]
                         len__ = len__[origorder]
                     }
+                    if (verbose) {cat(round(proc.time()[3]-last.started.at, 3), "sec\n")}
                 }
                 if (!orderedirows && !length(o__)) o__ = 1:xnrow  # temp fix.  TO DO: revist orderedirows
             } else {
+                if (verbose) {last.started.at=proc.time()[3];cat("Finding groups using uniqlist ... ");flush.console()}
                 f__ = uniqlist(byval)
+                if (verbose) {
+                    cat(round(proc.time()[3]-last.started.at, 3), "sec\n")
+                    last.started.at=proc.time()[3]
+                    cat("Finding group sizes from the positions (can be avoided to save RAM) ... ")
+                    flush.console()  # for windows
+                }
                 len__ = uniqlengths(f__, xnrow)
                 # TO DO: combine uniqlist and uniquelengths into one call.  Or, just set len__ to NULL when dogroups infers that.
+                if (verbose) { cat(round(proc.time()[3]-last.started.at, 3), "sec\n");flush.console() }
             }
         } else {
             f__=NULL
             len__=0L
             bysameorder=TRUE   # for test 724
         }
-        if (verbose) {cat("done in ",round(proc.time()[3]-last.started.at,3),"secs. bysameorder=",bysameorder," and o__ is length ",length(o__),"\n",sep="");flush.console}
         # TO DO: allow secondary keys to be stored, then we see if our by matches one, if so use it, and no need to sort again. TO DO: document multiple keys.
     }
     alloc = if (length(len__)) seq_len(max(len__)) else 0L
@@ -1844,6 +1861,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # for consistency of empty case in test 184
         f__=len__=0L
     }
+    if (verbose) {last.started.at=proc.time()[3];cat("Making each group and running j (GForce ",GForce,") ... ",sep="");flush.console()}
     if (GForce) {
         thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
         for (ii in ansvars) assign(ii, x[[ii]], thisEnv)
@@ -1857,11 +1875,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         gi = if (length(o__)) o__[f__] else f__
         g = lapply(grpcols, function(i) groups[[i]][gi])
         ans = c(g, ans)
-    } else {
-        if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
+    } else {        
         ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)
-        if (verbose) {cat("done dogroups in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
     }
+    if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
     # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
     # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
     # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
@@ -1880,8 +1897,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         }
         if (!missing(keyby)) {
             cnames = as.character(bysubl)[-1]
-            if (all(cnames %chin% names(x)))
+            if (all(cnames %chin% names(x))) {
+                if (verbose) {last.started.at=proc.time()[3];cat("setkey() afterwards ... ");flush.console()}                    
                 setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.
+                if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
+            }
             else warning(":= keyby not straightforward character column names or list() of column names, treating as a by:",paste(cnames,collapse=","),"\n")
         }
         return(suppPrint(x))
@@ -1905,7 +1925,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         setnames(ans,seq_along(bynames),bynames)   # TO DO: reinvestigate bynames flowing from dogroups here and simplify
     }
     if (!missing(keyby)) {
+        if (verbose) {last.started.at=proc.time()[3];cat("setkey() afterwards ... ");flush.console()}
         setkeyv(ans,names(ans)[seq_along(byval)])
+        if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
         # but if 'bykey' and 'bysameorder' then the setattr in branch above will run instead for
         # speed (because !missing(by) when bykey, too)
     } else if (haskey(x) && bysameorder) {

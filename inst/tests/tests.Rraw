@@ -3908,8 +3908,8 @@ set(DT,c(5L,9L),"v",NA)
 set(DT,10:12,"y",NA)
 set(DT,10:12,"v",NA)
 options(datatable.optimize=1)  # turn off GForce
-test(1184.1, DT[, sum(v), by=x, verbose=TRUE], output="dogroups")
-test(1184.2, DT[, mean(v), by=x, verbose=TRUE], output="dogroups")
+test(1184.1, DT[, sum(v), by=x, verbose=TRUE], output="(GForce FALSE)")
+test(1184.2, DT[, mean(v), by=x, verbose=TRUE], output="(GForce FALSE)")
 test(1185.1, DT[, list(sum(y), sum(v), sum(y,na.rm=TRUE), sum(v,na.rm=TRUE)), by=x],
            data.table(x=c("a","b","c","d"), V1=c(NA,10L,NA,NA), V2=c(6,NA,NA,NA), V3=c(4L,10L,7L,0L), V4=c(6,10,15,0)))
 options(datatable.optimize=0)  # turn off fastmean optimization to get the answer to match to
@@ -7161,54 +7161,53 @@ test(1580, nx, names(x))
 # FR #971, partly addressed (only subsets in 'i')
 # make sure GForce kicks in and the results are identical
 dt = dt[, .(x, d1, d2)]
-optim = getOption("datatable.optimize")
+old = options(datatable.optimize=1L)
 
-options(datatable.optimize=1L)
-opt1 <- capture.output(ans1 <- dt[x %in% letters[15:20], 
-                               c(.N, lapply(.SD, sum, na.rm=TRUE), 
-                                     lapply(.SD, min, na.rm=TRUE), 
-                                     lapply(.SD, max, na.rm=TRUE), 
-                                     lapply(.SD, mean, na.rm=TRUE), 
-                                     lapply(.SD, median, na.rm=TRUE)
-                                ), by=x, verbose=TRUE])
+test(1581.1, ans1 <- dt[x %in% letters[15:20], 
+                        c(.N, lapply(.SD, sum, na.rm=TRUE), 
+                              lapply(.SD, min, na.rm=TRUE), 
+                              lapply(.SD, max, na.rm=TRUE), 
+                              lapply(.SD, mean, na.rm=TRUE), 
+                              lapply(.SD, median, na.rm=TRUE)
+                          ), by=x, verbose=TRUE],
+             output = "(GForce FALSE)")
 options(datatable.optimize=2L)
-opt2 <- capture.output(ans2 <- dt[x %in% letters[15:20], 
-                               c(.N, lapply(.SD, sum, na.rm=TRUE), 
-                                     lapply(.SD, min, na.rm=TRUE), 
-                                     lapply(.SD, max, na.rm=TRUE), 
-                                     lapply(.SD, mean, na.rm=TRUE), 
-                                     lapply(.SD, median, na.rm=TRUE)
-                                ), by=x, verbose=TRUE])
-test(1581.1, ans1, ans2)
-test(1581.2, any(grepl("^Starting dogroups", opt1)), TRUE)
-test(1581.3, any(grepl("^GForce optimized j", opt2)), TRUE)
+test(1581.2, ans2 <- dt[x %in% letters[15:20], 
+                        c(.N, lapply(.SD, sum, na.rm=TRUE), 
+                              lapply(.SD, min, na.rm=TRUE), 
+                              lapply(.SD, max, na.rm=TRUE), 
+                              lapply(.SD, mean, na.rm=TRUE), 
+                              lapply(.SD, median, na.rm=TRUE)
+                          ), by=x, verbose=TRUE],
+             output = "GForce optimized j")
+test(1581.3, ans1, ans2)
 
 # subsets in 'i' for head and tail
 options(datatable.optimize=1L)
-opt1 <- capture.output(ans1 <- dt[x %in% letters[15:20], head(.SD,1), by=x, verbose=TRUE])
+test(1581.4, ans1 <- dt[x %in% letters[15:20], head(.SD,1), by=x, verbose=TRUE],
+             output = "(GForce FALSE)")
 options(datatable.optimize=2L)
-opt2 <- capture.output(ans2 <- dt[x %in% letters[15:20], head(.SD,1), by=x, verbose=TRUE])
-test(1581.4, ans1, ans2)
-test(1581.5, any(grepl("^Starting dogroups", opt1)), TRUE)
-test(1581.6, any(grepl("^GForce optimized j", opt2)), TRUE)
+test(1581.5, ans2 <- dt[x %in% letters[15:20], head(.SD,1), by=x, verbose=TRUE],
+             output = "GForce optimized j")
+test(1581.6, ans1, ans2)
 
 options(datatable.optimize=1L)
-opt1 <- capture.output(ans1 <- dt[x %in% letters[15:20], tail(.SD,1), by=x, verbose=TRUE])
+test(1581.7, ans1 <- dt[x %in% letters[15:20], tail(.SD,1), by=x, verbose=TRUE],
+             output = "(GForce FALSE)")
 options(datatable.optimize=2L)
-opt2 <- capture.output(ans2 <- dt[x %in% letters[15:20], tail(.SD,1), by=x, verbose=TRUE])
-test(1581.7, ans1, ans2)
-test(1581.8, any(grepl("^Starting dogroups", opt1)), TRUE)
-test(1581.9, any(grepl("^GForce optimized j", opt2)), TRUE)
+test(1581.8, ans2 <- dt[x %in% letters[15:20], tail(.SD,1), by=x, verbose=TRUE],
+             output = "GForce optimized j")
+test(1581.9, ans1, ans2)
 
 options(datatable.optimize=1L)
-opt1 <- capture.output(ans1 <- dt[x %in% letters[15:20], .SD[2], by=x, verbose=TRUE])
+test(1581.10, ans1 <- dt[x %in% letters[15:20], .SD[2], by=x, verbose=TRUE],
+              output = "(GForce FALSE)")
 options(datatable.optimize=2L)
-opt2 <- capture.output(ans2 <- dt[x %in% letters[15:20], .SD[2], by=x, verbose=TRUE])
-test(1581.10, ans1, ans2)
-test(1581.11, any(grepl("^Starting dogroups", opt1)), TRUE)
-test(1581.12, any(grepl("^GForce optimized j", opt2)), TRUE)
+test(1581.11, ans2 <- dt[x %in% letters[15:20], .SD[2], by=x, verbose=TRUE],
+              output = "GForce optimized j")
+test(1581.12, ans1, ans2)
 
-options(datatable.optimize=optim)
+options(old)
 
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
@@ -7978,12 +7977,10 @@ test(1637.4, dt[, data.table(b, .SD), by = cumsum(a)], data.table(cumsum=1, b=1,
 test(1637.5, dt[, data.table(a, b), by = cumsum(a)], data.table(cumsum=1, a=1, b=1))
 
 # when datatable.optimize<1, no optimisation of j should take place:
-oldopt = getOption("datatable.optimize")
-options(datatable.optimize = 0L)
+old = options(datatable.optimize=0L)
 dt = data.table(x=1:5, y=6:10, z=c(1,1,1,2,2))
-out = capture.output(dt[, .SD, by=z, verbose=TRUE])
-test(1638, out[2], "All optimizations are turned off")
-options(datatable.optimize = oldopt)
+test(1638, dt[, .SD, by=z, verbose=TRUE], output="All optimizations are turned off")
+options(old)
 
 #1389 - split.data.table - big chunk of unit tests
 set.seed(123)
