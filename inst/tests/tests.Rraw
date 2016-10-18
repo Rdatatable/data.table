@@ -7694,10 +7694,10 @@ test(1618.4, fread("a,c,b\n1,2,3", select=c(2:3)), data.table(c=2L, b=3L))
 test(1618.5, fread("a,c,b\n1,2,3", select=c("b", "c"), col.names=c("q", "r")), data.table(q=3L, r=2L))
 test(1618.6, fread("a,c,b\n1,2,3", select=c("b", "z")), data.table(b=3L), warning="Column name 'z' not found.*skipping")
 
-# fix for #1270 - uncomment when #1270 re-fixed, so it can pass R 2.15.0
-#DT = data.table(x=1:2, y=5:6)
-#test(1619.1, DT[, .BY, by=x]$BY, as.list(1:2))
-#test(1619.2, DT[, bycol := .BY, by=x]$bycol, as.list(1:2))
+# fix for #1270. Have been problems with R before vs after 3.1.0 here. But now ok in all R versions.
+DT = data.table(x=1:2, y=5:6)
+test(1619.1, DT[, .BY, by=x]$BY, as.list(1:2))
+test(1619.2, DT[, bycol := .BY, by=x]$bycol, as.list(1:2))
 
 # fix for #473
 DT = data.frame(x=1, y=2)

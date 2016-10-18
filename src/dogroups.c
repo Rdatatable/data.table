@@ -30,10 +30,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, SDall, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source, tmp;
     SEXP *nameSyms, *xknameSyms;
     Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE, recycleWarn=TRUE;
-    #if defined(R_VERSION) && R_VERSION >= R_Version(3, 1, 0)
-        SEXP dupcol;
-        int named=0;
-    #endif
     size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
     clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
 
@@ -50,7 +46,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     SDall = findVar(install(".SDall"), env);
     
     defineVar(install(".BY"), BY = allocVector(VECSXP, ngrpcols), env);
-    SET_NAMED(BY, 2); // for #1270
     bynames = PROTECT(allocVector(STRSXP, ngrpcols));  protecti++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?
     for (i=0; i<ngrpcols; i++) {
         j = INTEGER(grpcols)[i]-1;
@@ -292,41 +287,18 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 // fix for #4990 - `:=` did not issue recycling warning during "by" operation.
                 if (vlen<grpn && vlen>0 && grpn%vlen != 0) 
                     warning("Supplied %d items to be assigned to group %d of size %d in column '%s' (recycled leaving remainder of %d items).",vlen,i+1,grpn,CHAR(STRING_ELT(dtnames,INTEGER(lhs)[j]-1)),grpn%vlen);
-                // fix for issues/481 for := case
-                // missed it in commit: https://github.com/Rdatatable/data.table/commit/86276f48798491d328caa72f6ebcce4d51649440
-                // see that link (or scroll down for the non := version) for comments
-                #if defined(R_VERSION) && R_VERSION >= R_Version(3, 1, 0)
-                named=0;
-                if (isNewList(RHS)) {
-                    if (NAMED(RHS) == 2) { named=2; RHS = PROTECT(duplicate(RHS)); } // for #1270
-                    else {
-                        dupcol = VECTOR_ELT(RHS, 0);
-                        named  = NAMED(dupcol);
-                        while(isNewList(dupcol)) {
-                            if (named == 2) break;
-                            else {
-                                dupcol = VECTOR_ELT(dupcol, 0);
-                                named = NAMED(dupcol);
-                            }
-                        }
-                        if (named == 2) RHS = PROTECT(duplicate(RHS));
-                    }
-                }
-                memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);
-                if (named == 2) UNPROTECT(1);
-                #else
-                memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);
-                #endif
                 
-                // fixes bug #2531. Got to set the class back. See comment below for explanation. This is the new fix. Works great!
-                // Also fix for #5437 (bug due to regression in 1.9.2+)
-                copyMostAttrib(RHS, target);  // not names, otherwise test 778 would fail
+                memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);
+                
+                copyMostAttrib(RHS, target);  // not names, otherwise test 778 would fail.  
                 /* OLD FIX: commented now. The fix below resulted in segfault on factor columns because I dint set the "levels"
                    Instead of fixing that, I just removed setting class if it's factor. Not appropriate fix.
                    Correct fix of copying all attributes (except names) added above. Now, everything should be alright.
                    Test 1144 (#5104) will provide the right output now. Modified accordingly.
                 OUTDATED: if (!isFactor(RHS)) setAttrib(target, R_ClassSymbol, getAttrib(RHS, R_ClassSymbol));
-                OUTDATED: // added !isFactor(RHS) to fix #5104 (side-effect of fixing #2531) */
+                OUTDATED: // added !isFactor(RHS) to fix #5104 (side-effect of fixing #2531)
+                   See also #155 and #36 */
+
             }
             UNPROTECT(1);
             continue;
@@ -444,36 +416,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                 warning("Column %d of result for group %d is length %d but the longest column in this result is %d. Recycled leaving remainder of %d items. This warning is once only for the first group with this issue.",j+1,i+1,thislen,maxn,maxn%thislen);
                 recycleWarn = FALSE;
             }
-            // fix for issues/481
-            #if defined(R_VERSION) && R_VERSION >= R_Version(3, 1, 0)
-            // added version because, for ex: DT[, list(list(unique(y))), by=x] gets duplicated
-            // because unique(y) returns NAMED(2). So, do it only if v>= 3.1.0. If <3.1.0,
-            // it gets duplicated anyway, so avoid copying twice!
-            named=0;
-            if (isNewList(source)) {
-                if (NAMED(source) == 2) { named=2; source = PROTECT(duplicate(source)); } // for #1270
-                else {
-                    dupcol = VECTOR_ELT(source, 0);
-                    named  = NAMED(dupcol);
-                    while(isNewList(dupcol)) {
-                        // while loop basically peels each list() layer one by one until there's no 
-                        // list() wrapped anymore. Ex: consider DT[, list(list(list(sum(y)))), by=x] - 
-                        // here, we don't need to duplicate, but we won't know that until we reach 
-                        // 'sum(y)' and know that it's NAMED() != 2.
-                        if (named == 2) break;
-                        else {
-                            dupcol = VECTOR_ELT(dupcol, 0);
-                            named = NAMED(dupcol);
-                        }
-                    }
-                    if (named == 2) source = PROTECT(duplicate(source));
-                }
-            }
             memrecycle(target, R_NilValue, thisansloc, maxn, source);
-            if (named == 2) UNPROTECT(1);
-            #else
-            memrecycle(target, R_NilValue, thisansloc, maxn, source);
-            #endif
         }
         ansloc += maxn;
         if (firstalloc) {

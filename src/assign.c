@@ -472,7 +472,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         vlen = length(thisvalue);
         if (length(rows)==0 && targetlen==vlen && (vlen>0 || nrow==0)) {
             if (  NAMED(thisvalue)==2 ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
-                 (TYPEOF(values)==VECSXP && i>LENGTH(values)-1)) { // recycled RHS would have columns pointing to others, #2298.
+                 (TYPEOF(values)==VECSXP && i>LENGTH(values)-1)) { // recycled RHS would have columns pointing to others, #185.
                 if (verbose) {
                     if (NAMED(thisvalue)==2) Rprintf("RHS for item %d has been duplicated because NAMED is %d, but then is being plonked.\n",i+1, NAMED(thisvalue));
                     else Rprintf("RHS for item %d has been duplicated because the list of RHS values (length %d) is being recycled, but then is being plonked.\n", i+1, length(values));
@@ -709,16 +709,41 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
 }
 
+static Rboolean anyNamed(SEXP x) {
+    if (NAMED(x)) return TRUE;
+    if (isNewList(x)) for (int i=0; i<LENGTH(x); i++)
+        if (anyNamed(VECTOR_ELT(x,i))) return TRUE;
+    return FALSE;
+}
+
 void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
 // like memcpy but recycles source and takes care of aging
 // 'where' a 1-based INTEGER vector subset of target to assign to,  or NULL or integer()
 // assigns to target[start:start+len-1] or target[where[start:start+len-1]]  where start is 0-based
 {
-    int r = 0, w;
+    int r=0, w, protecti=0;
     if (len<1) return;
     int slen = length(source) > len ? len : length(source); // fix for 5647. when length(source) > len, slen must be len.
     if (slen<1) return;
     if (TYPEOF(target) != TYPEOF(source)) error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s']", type2char(TYPEOF(target)),type2char(TYPEOF(source)));
+    if (isNewList(source)) {
+        // A list() column; i.e. target is a column of pointers to SEXPs rather than the much more common case
+        // where memrecycle copies the DATAPTR data to the atomic target from the atomic source.
+        // If any item within the list is NAMED then take a fresh copy. So far this has occurred from dogroups.c when
+        // j returns .BY or similar specials as-is within a list(). Those specials are static inside
+        // dogroups so if we don't copy now the last value written to them by dogroups becomes repeated in the result;
+        // i.e. the wrong result.
+        // If source is itself recycled later (many list() column items pointing to the same object) we are ok with that
+        // since we now have a fresh copy and := will not assign with a list() column's cell value; := only changes the
+        // SEXP pointed to.
+        // If source is already not named (because j already created a fresh unnamed vector within a list()) we don't want to
+        // duplicate unnecessarily, hence checking for named rather than duplicating always.
+        // See #481 and #1270
+        if (anyNamed(source)) {
+            source = PROTECT(duplicate(source));
+            protecti++;
+        }
+    }
     size_t size = SIZEOF(target);
     if (!length(where)) {
         switch (TYPEOF(target)) {
@@ -794,6 +819,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
         }
         // if slen>10 it may be worth memcpy, but we'd need to first know if 'where' was a contiguous subset
     }
+    UNPROTECT(protecti);
 }
 
 SEXP allocNAVector(SEXPTYPE type, R_len_t n)

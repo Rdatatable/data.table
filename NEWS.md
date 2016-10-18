@@ -185,7 +185,7 @@
 
   44. `fread` respects order of columns provided to argument `select` in result, and also warns if the column(s) provided is not present, [#1445](https://github.com/Rdatatable/data.table/issues/1445). 
 
-  45. `DT[, .BY, by=x]` and other variants of adding a column using `.BY` is handled correctly in R v3.1.0+, [#1270](https://github.com/Rdatatable/data.table/issues/1270). 
+  45. `DT[, .BY, by=x]` and other variants of adding a column using `.BY` are now handled correctly, [#1270](https://github.com/Rdatatable/data.table/issues/1270).
 
   46. `as.data.table.data.table()` method checks and restores over-allocation, [#473](https://github.com/Rdatatable/data.table/issues/473). 
 
@@ -838,7 +838,7 @@
 
   31.  Fixed an edge case in `DT[order(.)]` internal optimisation to be consistent with base. Closes [#696](https://github.com/Rdatatable/data.table/issues/696). Thanks to Michael Smith and Garrett See for reporting.
 
-  32.  `DT[, list(list(.)), by=.]` and `DT[, col := list(list(.)), by=.]` returns correct results in R >=3.1.0 as well. The bug was due to recent (welcoming) changes in R v3.1.0 where `list(.)` does not result in a *copy*. Closes [#481](https://github.com/Rdatatable/data.table/issues/481). Also thanks to KrishnaPG for filing [#728](https://github.com/Rdatatable/data.table/issues/728).
+  32.  `DT[, list(list(.)), by=.]` and `DT[, col := list(list(.)), by=.]` now return correct results in R >= 3.1.0. The bug was due to a welcome change in R 3.1.0 where `list(.)` no longer copies. Closes [#481](https://github.com/Rdatatable/data.table/issues/481). Also thanks to KrishnaPG for filing [#728](https://github.com/Rdatatable/data.table/issues/728).
 
   33.  `dcast.data.table` handles `fun.aggregate` argument properly when called from within a function that accepts `fun.aggregate` argument and passes to `dcast.data.table()`. Closes [#713](https://github.com/Rdatatable/data.table/issues/713). Thanks to mathematicalcoffee for reporting [here](http://stackoverflow.com/q/24542976/559784) on SO.
 
