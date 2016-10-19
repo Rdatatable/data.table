@@ -1542,7 +1542,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (length(byval) && length(byval[[1]])) {
             if (!bysameorder) {
                 if (verbose) {last.started.at=proc.time()[3];cat("Finding groups using forderv ... ");flush.console()}
-                o__ = forderv(byval, sort=FALSE, retGrp=TRUE)   # returns integer() (not NULL) if already ordered, to save 1:xnrow for efficiency
+                o__ = forderv(byval, sort=!missing(keyby), retGrp=TRUE)
+                # The sort= argument is called sortStr at C level. It's just about saving the sort of unique strings at
+                # C level for efficiency (cgroup vs csort) when by= not keyby=. All other types are always sorted. Getting 
+                # orginal order below is the part that retains original order. Passing sort=TRUE here always won't change any 
+                # result at all (tested and confirmed to double check), it'll just make by= slower when there's a large
+                # number of unique strings. It must be TRUE when keyby= though, since the key is just marked afterwards.
+                # forderv() returns empty integer() if already ordered to save allocating 1:xnrow
                 bysameorder = orderedirows && !length(o__)
                 if (verbose) {
                     cat(round(proc.time()[3]-last.started.at, 3), "sec\n")
@@ -1553,7 +1559,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 f__ = attr(o__, "starts")
                 len__ = uniqlengths(f__, xnrow)
                 if (verbose) { cat(round(proc.time()[3]-last.started.at, 3), "sec\n");flush.console()}
-                if (!bysameorder) {    # TO DO: lower this into forder.c
+                if (!bysameorder && missing(keyby)) {
+                    # TO DO: lower this into forder.c
                     if (verbose) {last.started.at=proc.time()[3];cat("Getting back original order ... ");flush.console()}
                     firstofeachgroup = o__[f__]    
                     if (length(origorder <- forderv(firstofeachgroup))) {
@@ -1562,7 +1569,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     }
                     if (verbose) {cat(round(proc.time()[3]-last.started.at, 3), "sec\n")}
                 }
-                if (!orderedirows && !length(o__)) o__ = 1:xnrow  # temp fix.  TO DO: revist orderedirows
+                if (!orderedirows && !length(o__)) o__ = 1:xnrow  # temp fix.  TODO: revist orderedirows
             } else {
                 if (verbose) {last.started.at=proc.time()[3];cat("Finding groups using uniqlist ... ");flush.console()}
                 f__ = uniqlist(byval)
@@ -1898,7 +1905,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (!missing(keyby)) {
             cnames = as.character(bysubl)[-1]
             if (all(cnames %chin% names(x))) {
-                if (verbose) {last.started.at=proc.time()[3];cat("setkey() afterwards ... ");flush.console()}                    
+                if (verbose) {last.started.at=proc.time()[3];cat("setkey() after the := with keyby= ... ");flush.console()}
                 setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.
                 if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
             }
@@ -1924,13 +1931,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     } else {
         setnames(ans,seq_along(bynames),bynames)   # TO DO: reinvestigate bynames flowing from dogroups here and simplify
     }
-    if (!missing(keyby)) {
-        if (verbose) {last.started.at=proc.time()[3];cat("setkey() afterwards ... ");flush.console()}
+    if (byjoin && !missing(keyby) && !bysameorder) {
+        if (verbose) {last.started.at=proc.time()[3];cat("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
         setkeyv(ans,names(ans)[seq_along(byval)])
         if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
-        # but if 'bykey' and 'bysameorder' then the setattr in branch above will run instead for
-        # speed (because !missing(by) when bykey, too)
-    } else if (haskey(x) && bysameorder) {
+    } else if (!missing(keyby) || (haskey(x) && bysameorder)) {
         setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
     }
     alloc.col(ans)   # TO DO: overallocate in dogroups in the first place and remove this line
