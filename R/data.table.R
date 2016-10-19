@@ -1243,9 +1243,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                         # We need this short circuit at all just for convenience. Otherwise users may need to
                         # fix errors in their RHS when called on empty edge cases, even when the result won't be
                         # used anyway (so it would be annoying to have to fix it.)
+                        if (verbose) {
+                            cat("No rows match i. No new columns to add so not evaluating RHS of :=\n")
+                            cat("Assigning to 0 row subset of",nrow(x),"rows\n")
+                        }
                         .global$print = address(x)
                         return(invisible(x))
-                    }   
+                    }
                 } else {
                     # Adding new column(s). TO DO: move after the first eval in case the jsub has an error.
                     newnames=setdiff(lhs,names(x))
@@ -1451,12 +1455,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 if (!truelength(jval)) alloc.col(jval)
             }
         }
-
-        if (!is.null(lhs)) {   # *** TO DO ***: use set() here now that it can add new column(s) and remove newnames and alloc logic above
-            if (verbose) cat("Assigning to ",if (is.null(irows)) "all " else paste(length(irows),"row subset of "), nrow(x)," rows\n",sep="")
+        if (!is.null(lhs)) {
+            # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
             .Call(Cassign,x,irows,cols,newnames,jval,verbose)
             return(suppPrint(x))
-        }        
+        }
         if ((is.call(jsub) && is.list(jval) && jsub[[1L]] != "get" && !is.object(jval)) || !missing(by)) {
             # is.call: selecting from a list column should return list
             # is.object: for test 168 and 168.1 (S4 object result from ggplot2::qplot). Just plain list results should result in data.table

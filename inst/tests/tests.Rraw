@@ -7060,8 +7060,8 @@ test(1575.2, X[Y, on=c(a="a")], error="not found in i")
 X = data.table(x=5:1, y=6:10)
 setattr(X, 'index', integer(0))
 setattr(attr(X, 'index'), 'x', 5:1) # auto indexed attribute as created from v1.9.4
-ans = capture.output(X[, z := 1:5, verbose=TRUE])
-test(1576, ans[4], "Dropping index 'x' as it doesn't have '__' at the beginning of index name. It is very likely created using v1.9.4 of data.table.")
+test(1576, X[, z := 1:5, verbose=TRUE],
+    output = "Dropping index 'x' as.*beginning of its name.*very likely created by v1.9.4 of data.table")
 
 # fix for #1408
 X = fread("a|b|c|d
@@ -9287,6 +9287,16 @@ test(1726.3, DT[, {ans=mean(val)+lastGrp; lastGrp<<-min(val); .(ans, .GRP)}, by=
            data.table(grp=3:1, V1=c(1,6,12), V2=1:3) )
 test(1726.4, lastGrp, 7L)
 rm(lastGrp)
+
+# better := verbose messages, #1808
+DT = data.table(a = 1:10)
+test(1727.1, DT[a < 5, a := 5L, verbose=TRUE], output="Assigning to 4 row subset of 10 rows")
+test(1727.2, DT[a < 5, a := 5L, verbose=TRUE], output="No rows match i.*Assigning to 0 row subset of 10 rows")
+test(1727.3, DT[0, d:=1, verbose=TRUE], data.table(a=c(rep(5L,5L),6:10), d=NA_real_),
+             output = "Assigning to 0 row subset of 10 rows.*Added 1 new column initialized with all-NA")            
+test(1727.4, DT[.(a=11L), on="a", c("f","g"):=.(1L,"dummy"), verbose=TRUE],
+             data.table(a=c(rep(5L,5L),6:10), d=NA_real_, f=NA_integer_, g=NA_character_),
+             output = "Assigning to 0 row subset of 10 rows.*Added 2 new columns initialized with all-NA")
 
 
 ##########################

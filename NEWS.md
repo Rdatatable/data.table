@@ -248,6 +248,8 @@
   73. Joins on key columns in the presence of `on=` argument were slightly slower as it was unnecesarily running a check to ensure orderedness. This is now fixed, [#1825](https://github.com/Rdatatable/data.table/issues/1825). Thanks @sz-cgt. See that post for updated benchmark.
   
   74. `keyby=` now runs j in the order that the groups appear in the sorted result rather than first appearance order, [#606](https://github.com/Rdatatable/data.table/issues/606). This only makes a difference in very rare usage where j does something depending on an earlier group's result, perhaps by using `<<-`. If j is required to be run in first appearance order, then use `by=` whose behaviour is unchanged. Now we have this option. No existing tests affected. New tests added.
+  
+  75. `:=` verbose messages have been corrected and improved, [#1808](https://github.com/Rdatatable/data.table/issues/1808). Thanks to @franknarf1 for reproducible examples. Tests added.
 
 #### NOTES
 

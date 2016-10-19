@@ -321,24 +321,30 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     nrow = length(VECTOR_ELT(dt,0));
     if (isNull(rows)) {
         targetlen = nrow;
+        if (verbose) Rprintf("Assigning to all %d rows\n", nrow);
         // fast way to assign to whole column, without creating 1:nrow(x) vector up in R, or here in C
     } else {
         if (isReal(rows)) {
             rows = PROTECT(rows = coerceVector(rows, INTSXP));
             protecti++;
             warning("Coerced i from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2");
-        }    
+        }
         if (!isInteger(rows))
             error("i is type '%s'. Must be integer, or numeric is coerced with warning. If i is a logical subset, simply wrap with which(), and take the which() outside the loop if possible for efficiency.", type2char(TYPEOF(rows)));
         targetlen = length(rows);
-        Rboolean anyToDo = FALSE;
-        for (i=0;i<targetlen;i++) {
+        int numToDo = 0;
+        for (i=0; i<targetlen; i++) {
             if ((INTEGER(rows)[i]<0 && INTEGER(rows)[i]!=NA_INTEGER) || INTEGER(rows)[i]>nrow)
                 error("i[%d] is %d which is out of range [1,nrow=%d].",i+1,INTEGER(rows)[i],nrow);
-            if (INTEGER(rows)[i]>=1) anyToDo = TRUE;
+            if (INTEGER(rows)[i]>=1) numToDo++;
         }
-        // added !length(newcolnames) for #759 fix
-        if (!anyToDo && !length(newcolnames)) return(dt);  // all items of rows either 0 or NA, nothing to do.  
+        if (verbose) Rprintf("Assigning to %d row subset of %d rows\n", numToDo, nrow);
+        // TODO: include in message if any rows are assigned several times (e.g. by=.EACHI with dups in i)
+        if (numToDo==0) {
+            if (!length(newcolnames)) return(dt); // all items of rows either 0 or NA. !length(newcolnames) for #759
+            if (verbose) Rprintf("Added %d new column%s initialized with all-NA\n",
+                                 length(newcolnames), (length(newcolnames)>1)?"s":"");
+        }
     }
     if (!length(cols)) {
         warning("length(LHS)==0; no columns to delete or assign RHS to.");
@@ -636,7 +642,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                     if (*tc1!='_' || *(tc1+1)!='_') {
                     	// fix for #1396
                     	if (verbose) {
-                    		Rprintf("Dropping index '%s' as it doesn't have '__' at the beginning of index name. It is very likely created using v1.9.4 of data.table.\n", c1);
+                    		Rprintf("Dropping index '%s' as it doesn't have '__' at the beginning of its name. It was very likely created by v1.9.4 of data.table.\n", c1);
                     	}
                     	setAttrib(index, a, R_NilValue);
                     	i = LENGTH(cols);
