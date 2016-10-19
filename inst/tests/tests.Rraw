@@ -9274,6 +9274,20 @@ DT[.(c(3,3,4)), add2:=1.1][]   # did break
 DT[.(2:4), add3:=1.1][]        # did break
 test(1725, DT, data.table(a=1:3, add0=NA_real_, add1=c(NA,NA,1.1), add2=c(NA,NA,1.1), add3=c(NA,1.1,1.1), key="a"))
 
+# keyby= runs groups in sorted order, #606. Only relevant when j does something that depends on previous group, perhaps
+# by using <<-. To run in appearance order use by=. See also #1880.
+# It wasn't useful to always run groups in appearance order. Now we have the option and it's consistent.
+DT = data.table(grp=rep(3:1,each=3), val=1:9)
+lastGrp = 0L
+test(1726.1, DT[, {ans=mean(val)+lastGrp; lastGrp<<-min(val); .(ans, .GRP)}, keyby=grp],
+           data.table(grp=1:3, V1=c(8,12,6), V2=1:3, key="grp") )
+test(1726.2, lastGrp, 1L)
+lastGrp = -1L
+test(1726.3, DT[, {ans=mean(val)+lastGrp; lastGrp<<-min(val); .(ans, .GRP)}, by=grp],
+           data.table(grp=3:1, V1=c(1,6,12), V2=1:3) )
+test(1726.4, lastGrp, 7L)
+rm(lastGrp)
+
 
 ##########################
 
