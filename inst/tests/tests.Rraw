@@ -9297,6 +9297,26 @@ test(1727.3, DT[0, d:=1, verbose=TRUE], data.table(a=c(rep(5L,5L),6:10), d=NA_re
 test(1727.4, DT[.(a=11L), on="a", c("f","g"):=.(1L,"dummy"), verbose=TRUE],
              data.table(a=c(rep(5L,5L),6:10), d=NA_real_, f=NA_integer_, g=NA_character_),
              output = "Assigning to 0 row subset of 10 rows.*Added 2 new columns initialized with all-NA")
+             
+# Add test for working and no problem na.last=NA with subgroup size 2 containing 1 NA
+# and 2 randomly not working cases with na.last=NA size 2 with 1 NA, due to using uninitialized memory 
+DT = data.table(x=INT(2,2,2,1,1), y=INT(1,NA,3,2,NA))
+test(1728.1, DT[order(x,y,na.last=TRUE)], data.table(x=INT(1,1,2,2,2), y=INT(2,NA,1,3,NA)))
+test(1728.2, DT[order(x,y,na.last=FALSE)], data.table(x=INT(1,1,2,2,2), y=INT(NA,2,NA,1,3)))
+test(1728.3, DT[order(x,y,na.last=NA)], data.table(x=INT(1,2,2), y=INT(2,1,3)))
+# 1 row
+DT = data.table(x=NA_integer_, y=1)
+test(1728.4, DT[order(x,y,na.last=TRUE)], DT)
+test(1728.5, DT[order(x,y,na.last=FALSE)], DT)
+test(1728.6, DT[order(x,y,na.last=NA)], DT[0])
+# 2 row with 1 NA 
+DT = data.table(x=as.integer(c(NA,1)), y=2:3)
+test(1728.7, DT[order(x,y,na.last=TRUE)], DT[c(2,1)])
+test(1728.8, DT[order(x,y,na.last=FALSE)], DT)
+test(1728.9, DT[order(x,y,na.last=NA)], DT[2]) # was randomly wrong
+test(1728.11, DT[order(x,na.last=TRUE)], DT[c(2,1)])
+test(1728.12, DT[order(x,na.last=FALSE)], DT)
+test(1728.13, DT[order(x,na.last=NA)], DT[2])  # was randomly wrong
 
 
 ##########################

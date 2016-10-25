@@ -250,6 +250,8 @@
   74. `keyby=` now runs j in the order that the groups appear in the sorted result rather than first appearance order, [#606](https://github.com/Rdatatable/data.table/issues/606). This only makes a difference in very rare usage where j does something depending on an earlier group's result, perhaps by using `<<-`. If j is required to be run in first appearance order, then use `by=` whose behaviour is unchanged. Now we have this option. No existing tests affected. New tests added.
   
   75. `:=` verbose messages have been corrected and improved, [#1808](https://github.com/Rdatatable/data.table/issues/1808). Thanks to @franknarf1 for reproducible examples. Tests added.
+  
+  76. `DT[order(colA,na.last=NA)]` on a 2-row `DT` with one NA in `colA` and `na.last=NA` (meaning to remove NA) could return a randomly wrong result due to using uninitialized memory. Tests added.
 
 #### NOTES
 

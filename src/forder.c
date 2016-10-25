@@ -1034,6 +1034,7 @@ static void isort(int *x, int *o, int n)
 {
     if (n<=2) {
         if (nalast == 0 && n == 2) {                        // nalast = 0 and n == 2 (check bottom of this file for explanation)
+            if (o[0]==-1) { o[0]=1; o[1]=2; }
             for (int i=0; i<n; i++) if (x[i] == NA_INTEGER) o[i] = 0; 
             push(1); push(1);
             return;
@@ -1065,6 +1066,7 @@ static void dsort(double *x, int *o, int n)
 {
     if (n <= 2) {                                           // nalast = 0 and n == 2 (check bottom of this file for explanation)
         if (nalast == 0 && n == 2) {                        // don't have to twiddle here.. at least one will be NA and 'n' WILL BE 2.
+            if (o[0]==-1) { o[0]=1; o[1]=2; }
             for (int i=0; i<n; i++) if (is_nan(x, i)) o[i] = 0;
             push(1); push(1);
             return;
