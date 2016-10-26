@@ -5,7 +5,7 @@
 As \code{write.csv} and but \emph{much} faster (e.g. 1 minute versus 2 seconds) and just as flexible. Machines with 16GB of RAM or more always have more than one core so \code{fwrite} uses them; on all operating systems including Linux, Mac and Windows.
 }
 \usage{
-fwrite(x, file.path, append = FALSE, quote = "auto", sep = ",",
+fwrite(x, file.path, append = FALSE, quote = TRUE, sep = ",",
        eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
        na = "", col.names = TRUE, qmethod = "double",
        verbose=FALSE, turbo=TRUE)
