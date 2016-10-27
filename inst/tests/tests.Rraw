@@ -3693,14 +3693,23 @@ if (.Machine$sizeof.longdouble == 16) {
   setNumericRounding(2)
   test(1147.3, sum(ans != forderv(x)), 2)
 
-  tol = .Machine$double.eps^0.8
+  tol = 3.000214e-13 
   x = c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.18909, NaN, 5.18909-1.2*tol, 5.18909-0.04*tol)
+  # cat(data.table:::binary(x[c(5,10,12,13)]),sep="\n")
+  # 0 10000000001 010011000001101000001100111100011000 00000000 11000000
+  # 0 10000000001 010011000001101000001100111100011000 00000000 10101000
+  # 0 10000000001 010011000001101000001100111100010111 11111111 00010011
+  # 0 10000000001 010011000001101000001100111100011000 00000000 10011010
+  
   setNumericRounding(0)
   test(1147.4, forderv(x), INT(6, 9, 2, 11, 8, 7, 4, 12, 13, 10, 5, 1, 3))
+  
   setNumericRounding(1)
   test(1147.5, forderv(x), INT(6, 9, 2, 11, 8, 7, 4, 12, 5, 10, 13, 1, 3))
+  
   setNumericRounding(2)
   test(1147.6, forderv(x), INT(6, 9, 2, 11, 8, 7, 4, 5, 10, 12, 13, 1, 3))
+  # rounds item 12 at bit 48 doesn't just truncate
   
   setNumericRounding(old)
 }
