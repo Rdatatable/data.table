@@ -3678,6 +3678,36 @@ DF <- as.data.frame(DT)
 test(1146.2, {set(DF, i=NULL, j=1L, value=seq_len(nrow(DF)));setattr(DF,"reference",NULL);DF}, data.frame(Time=1:nrow(BOD), demand=BOD$demand))
 test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="set() on a data.frame is for changing existing columns, not adding new ones. Please use a data.table for that.")
 
+if (.Machine$sizeof.longdouble == 16) {
+  # To not run on CRAN's solaris-sparc 32bit where sizeof.longdouble==0
+  
+  old = getNumericRounding()
+  
+  set.seed(6)
+  x = rnorm(1e6)*1e4
+  ans = base::sort.list(x, method="shell")
+  setNumericRounding(0)
+  test(1147.1, ans, forderv(x))
+  setNumericRounding(1)
+  test(1147.2, ans, forderv(x))
+  setNumericRounding(2)
+  test(1147.3, sum(ans != forderv(x)), 2)
+
+  tol = .Machine$double.eps^0.8
+  x = c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.18909, NaN, 5.18909-1.2*tol, 5.18909-0.04*tol)
+  setNumericRounding(0)
+  test(1147.4, forderv(x), INT(6, 9, 2, 11, 8, 7, 4, 12, 13, 10, 5, 1, 3))
+  setNumericRounding(1)
+  test(1147.5, forderv(x), INT(6, 9, 2, 11, 8, 7, 4, 12, 5, 10, 13, 1, 3))
+  setNumericRounding(2)
+  test(1147.6, forderv(x), INT(6, 9, 2, 11, 8, 7, 4, 5, 10, 12, 13, 1, 3))
+  
+  setNumericRounding(old)
+}
+
+test(1149.1, forderv(integer(0)), integer(0)) 
+test(1149.2, forderv(numeric(0)), integer(0)) 
+
 # test uniqlengths
 set.seed(45)
 x <- sample(c(NA_integer_, 1:1e5), 1e7, TRUE)
