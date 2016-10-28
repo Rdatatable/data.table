@@ -77,8 +77,9 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     xsub = substitute(x)
     ysub = substitute(y)
     if (is.null(output)) err <<- try(x,TRUE)
-    else out = gsub("NULL$","",paste(capture.output(print(err<<-try(x,TRUE))),collapse=""))
-    if (!is.null(output)) {
+    else {
+        out = gsub("NULL$","",paste(capture.output(print(err<<-try(x,TRUE))),collapse=""))
+        out = gsub("\n","",gsub("\r","",out))  # ensure no \r or \n pollution on windows
         # We use .* to shorten what we test for (so the grep below needs fixed=FALSE)
         # but other characters should be matched literally
         output = gsub("[","\\[",output,fixed=TRUE)
