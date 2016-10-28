@@ -279,7 +279,7 @@ Think of the subset as an environment where all the column names are variables. 
  4. Exercise for reader: does it then ripple up the calling frames, or go straight to `globalenv()`?
  5. The global environment
 
-This is _lexical scoping_ as explained in [R FAQ 3.3.1](http://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping). The environment in which the function was created is not relevant, though, because there is _no function_. No anonymous _function_ is passed to `j`. Instead, an anonymous _body_ is passed to `j`; for example,
+This is _lexical scoping_ as explained in [R FAQ 3.3.1](https://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping). The environment in which the function was created is not relevant, though, because there is _no function_. No anonymous _function_ is passed to `j`. Instead, an anonymous _body_ is passed to `j`; for example,
 
 ```{r}
 DT = data.table(x = rep(c("a", "b"), c(2, 3)), y = 1:5)
@@ -532,8 +532,8 @@ copied in bulk (`memcpy` in C) rather than looping in C.
 
 ## What are primary and secondary indexes in `data.table`?
 
-Manual: [`?setkey`](http://www.rdocumentation.org/packages/data.table/functions/setkey)
-S.O. : [What is the purpose of setting a key in data.table?](http://stackoverflow.com/questions/20039335/what-is-the-purpose-of-setting-a-key-in-data-table/20057411#20057411)
+Manual: [`?setkey`](https://www.rdocumentation.org/packages/data.table/functions/setkey)
+S.O. : [What is the purpose of setting a key in data.table?](https://stackoverflow.com/questions/20039335/what-is-the-purpose-of-setting-a-key-in-data-table/20057411#20057411)
 
 `setkey(DT, col1, col2)` orders the rows by column `col1` then within each group of `col1` it orders by `col2`. This is a _primary index_. The row order is changed _by reference_ in RAM. Subsequent joins and groups on those key columns then take advantage of the sort order for efficiency. (Imagine how difficult looking for a phone number in a printed telephone directory would be if it wasn't sorted by surname then forename. That's literally all `setkey` does. It sorts the rows by the columns you specify.) The index doesn't use any RAM. It simply changes the row order in RAM and marks the key columns. Analogous to a _clustered index_ in SQL.
 
@@ -635,7 +635,7 @@ changes internally and these took some time to test in development.
 Not currently.
 
  - A few core parts of the package are written in C and use internal *R* functions and *R* structures.
- - The package uses lexical scoping which is one of the differences between *R* and **S-plus** explained by [R FAQ 3.3.1](http://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping)
+ - The package uses lexical scoping which is one of the differences between *R* and **S-plus** explained by [R FAQ 3.3.1](https://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping)
 
 ## Is it available for Linux, Mac and Windows?
 Yes, for both 32-bit and 64-bit on all platforms. Thanks to CRAN. There are no special or OS-specific libraries used.
@@ -651,7 +651,7 @@ You can submit pull requests to change the code and/or documentation yourself; s
 Please put your vote and comments on [Crantastic](http://crantastic.org/packages/data-table). Please make it constructive so we have a chance to improve.
 
 ## I have a question. I know the r-help posting guide tells me to contact the maintainer (not r-help), but is there a larger group of people I can ask?
-Yes, there are two options. You can post to [datatable-help](mailto:datatable-help@lists.r-forge.r-project.org). It's like r-help, but just for this package. Or the [`[data.table]` tag](http://stackoverflow.com/tags/data.table/info) on [Stack Overflow](http://stackoverflow.com/). Feel free to answer questions in those places, too.
+Yes, there are two options. You can post to [datatable-help](mailto:datatable-help@lists.r-forge.r-project.org). It's like r-help, but just for this package. Or the [`[data.table]` tag](https://stackoverflow.com/tags/data.table/info) on [Stack Overflow](https://stackoverflow.com/). Feel free to answer questions in those places, too.
 
 ## Where are the datatable-help archives?
 The [homepage](https://github.com/Rdatatable/data.table/wiki) contains links to the archives in several formats.
