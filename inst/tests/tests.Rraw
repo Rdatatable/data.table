@@ -4189,22 +4189,39 @@ setnames(ans2, names(ans1))
 test(1240.1, ans1, setDT(as.data.frame(with(DT, table(XX, yy)), stringsAsFactors=FALSE)))
 test(1240.2, ans2, ans1)
 
-# r-devel (v3.3+) seems to use data.table's radix sort by default for order() on integer/factors.
-# also it has an additional argument 'method'. We've to use 'shell' to pass 1241, as well as for 
-# checking correctness. So creating order function depending on r-version
-base_order <- function(..., na.last=TRUE, decreasing=FALSE, method="shell") {
-    if (base::getRversion() < "3.3.0")
-        order(..., na.last=na.last, decreasing=decreasing) # ignore method
-    else order(..., na.last=na.last, decreasing=decreasing, method=method)
+# R 3.3.0 started to use data.table's radix sort by default for order() on integer/factors.
+# Therefore we check against the non-data.table method ('shell') for correctness (otherwise we'd be
+# checking data.table code against itself) as well as checking data.table's ported code in R;
+# i.e. a three-way match.
+if (base::getRversion() < "3.3.0") {
+    base_order <- base::order
+} else {
+    base_order <- function(..., na.last=TRUE, method=c("shell","radix")) {
+        ans1 = base::order(..., na.last=na.last, method="shell")
+        if (!is.na(na.last) || base::getRversion()>"3.3.2") {
+            ans2 = base::order(..., na.last=na.last, method="radix")
+            if (!identical(ans1,ans2)) stop("Base R's order(,method='shell') != order(,method='radix')")
+        } else {
+            # Only when na.last=NA in just R 3.3.0-3.3.2 we don't check shell==radix
+            # because there was a problem in base R's port of data.table code then when :
+            #     1) 2 or more vectors were passed to base::order(,method="radix")
+            # AND 2) na.last=NA
+            # AND 3) there is a subgroup of size exactly 2
+            # AND 4) one of those 2 items in the subgroup is NA and the other is not NA
+            # See tests 1728.3 and 1728.13.
+        }
+        ans1
+    }
 }
+
 # Test for optimisation of 'order' to 'forder'
 set.seed(45L)
 DT <- data.table(x=sample(1e2, 1e6,TRUE), y=sample(1e2, 1e6,TRUE))
 old = options(datatable.optimize=Inf)
 t1 = system.time(ans1 <- DT[order(x,-y)])[['elapsed']]   # optimized to forder()
-t2 = system.time(ans2 <- DT[base_order(x,-y, method="shell")])[['elapsed']]  # not optimized
+t2 = system.time(ans2 <- DT[base_order(x,-y)])[['elapsed']]  # not optimized
 test(1241.1, ans1, ans2)
-if (.devtesting) test(1241.2, t1 < t2)
+if (.devtesting) test(1241.2, t1 < t2+0.1)
 # 0.2 < 3.8 on Matt's laptop seems safe enough to test.
 # Even so, 1241.2 has been known to fail, perhaps if system swaps and this R sessions pauses or something?
 # We shouldn't have timing tests here that run on CRAN for this reason.  Hence wrapping with .devtesting
@@ -4350,13 +4367,12 @@ ans = vector("list", length(names(DT)))
 
 test_no = 1253.13
 oldnfail = nfail
-# explicitly setting to 'shell' method on v > 3.2.3 to check for correctness
 for (i in seq_along(names(DT))) {
     cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
     ans[[i]] = combn(names(DT), i, function(x) {
         tmp = apply(cj, 1, function(y) {
             test_no <<- signif(test_no+.001, 7)
-            ll = as.call(c(as.name("base_order"), # see 1241 test for what base_order is
+            ll = as.call(c(as.name("base_order"),
                     lapply(seq_along(x), function(j) {
                         if (y[j] == 1L) 
                             as.name(x[j]) 
@@ -4366,8 +4382,7 @@ for (i in seq_along(names(DT))) {
                             else 
                                 as.call(list(as.name("-"), as.name(x[j])))
                             }
-                        }),
-                        list(method = "shell")
+                        })
                     )
                 )
             ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
