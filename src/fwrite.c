@@ -97,10 +97,10 @@ static inline void writeNumeric(double x, char **thisCh)
   } else {
     if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign.  no need to pass back sign, already written to output
     int exp = (int)floor(log10(x));
-    long long l = (long long)(x * pow(10, NUM_SF-exp));
-    // TODO:                      ^^^ use lookup table like base R (here in fwrite it might make a difference
-    //                                whereas in base R other very significant write.table inefficiency dominates)
-    // NB: long long is for Windows.
+    unsigned long long l = (unsigned long long)(x * pow(10, NUM_SF-exp));
+    // TODO?: use lookup table like base R .......  ^^^       
+    //        here in fwrite it might make a difference wheras in base R other very
+    //        significant write.table inefficiency dominates
     // l now contains NUM_SF+1 digits. The last one is used to round.  
     if (l%10 >= 5) l+=10;
     l /= 10;
@@ -111,6 +111,7 @@ static inline void writeNumeric(double x, char **thisCh)
       int trailZero = 0;
       while (l%10 == 0) { l /= 10; trailZero++; }
       int sf = NUM_SF - trailZero;
+      if (sf==0) {sf=1; exp++;}  // e.g. l was 9999999[5-9] rounded to 10000000 which added 1 digit
       // TODO: Improve deciding what's shortest to write here.
       if (exp<0 && exp>-5) { sf-=exp; exp=0; }
       ch += sf;
@@ -122,8 +123,9 @@ static inline void writeNumeric(double x, char **thisCh)
       *ch = '0' + l;
       ch += sf + (sf>1);
       if (exp != 0) {
-        *ch++ = 'E';
+        *ch++ = 'e';  // lower case e to match base::write.csv
         if (exp < 0) { *ch++ = '-'; exp=-exp; }
+        else { *ch++ = '+'; }  // to match base::write.csv
         if (exp < 10) {
           *ch++ = '0' + exp;
         } else if (exp < 100) {
@@ -181,18 +183,22 @@ SEXP writefile(SEXP list_of_columns,
   const char *filename = CHAR(STRING_ELT(filenameArg, 0));
 
   errno = 0;   // clear flag possibly set by previous errors
+  int f;
+  if (*filename=='\0') f=-1;  // file="" means write to standard output
+  else { 
 #ifdef WIN32
-  int f = _open(filename, _O_WRONLY | _O_BINARY | _O_CREAT | (LOGICAL(append)[0] ? _O_APPEND : _O_TRUNC), _S_IWRITE);
-  // row_sep must be passed from R level as '\r\n' on Windows since write() only auto-converts \n to \r\n
-  // in _O_TEXT mode. We use O_BINARY for full control and perhaps speed since O_TEXT must have to deep branch an if('\n')
+    f = _open(filename, _O_WRONLY | _O_BINARY | _O_CREAT | (LOGICAL(append)[0] ? _O_APPEND : _O_TRUNC), _S_IWRITE);
+    // row_sep must be passed from R level as '\r\n' on Windows since write() only auto-converts \n to \r\n
+    // in _O_TEXT mode. We use O_BINARY for full control and perhaps speed since O_TEXT must have to deep branch an if('\n')
 #else
-  int f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
+    f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
 #endif
-  if (f == -1) {
-    if( access( filename, F_OK ) != -1 )
-      error("File exists and failed to open for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open? File: %s", filename);
-    else 
-      error("Unable to create new file for writing (it does not exist already). Do you have permission to write here and is there space on the disk? File: %s", filename); 
+    if (f == -1) {
+      if( access( filename, F_OK ) != -1 )
+        error("File exists and failed to open for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open? File: %s", filename);
+      else 
+        error("Unable to create new file for writing (it does not exist already). Do you have permission to write here and is there space on the disk? File: %s", filename); 
+    }
   }
   int true_false;
   
@@ -265,7 +271,8 @@ SEXP writefile(SEXP list_of_columns,
       ch--;  // backup onto the last col_sep after the last column
       memcpy(ch, row_sep, row_sep_len);  // replace it with the newline 
       ch += row_sep_len;
-      if (WRITE(f, buffer, (int)(ch-buffer)) == -1) { close(f); error("Error writing to file: %s", filename); }
+      if (f==-1) { *ch='\0'; Rprintf(buffer); }
+      else if (WRITE(f, buffer, (int)(ch-buffer))==-1) { close(f); error("Error writing to file: %s", filename); }
       free(buffer);
     }
   }
@@ -401,15 +408,17 @@ SEXP writefile(SEXP list_of_columns,
       }
       #pragma omp ordered
       {
-        WRITE(f, buffer, (int)(ch-buffer));
-        // TODO: safe way to throw  if ( == -1) { close(f); error("Error writing to file: %s", filename);
+        if (f==-1) { *ch='\0'; Rprintf(buffer); }
+        else WRITE(f, buffer, (int)(ch-buffer));
+        // TODO: safe way to throw error from this thread if write fails (e.g. out disk space)
+        //       { close(f); error("Error writing to file: %s", filename) };
         ch = buffer;
       }
     }
     free(buffer);
   }
   if (verbose) Rprintf("all %d threads done\n", nth);  // TO DO: report elapsed time since (clock()-t0)/NTH is only estimate
-  if (CLOSE(f)) error("Error closing file: %s", filename);
+  if (f!=-1 && CLOSE(f)) error("Error closing file: %s", filename);
   return(R_NilValue);  // must always return SEXP from C level otherwise hang on Windows
 }
 

@@ -1,4 +1,4 @@
-fwrite <- function(x, file.path, append=FALSE, quote="auto",
+fwrite <- function(x, file="", append=FALSE, quote="auto",
                    sep=",", eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
                    na="", col.names=TRUE, qmethod="double", verbose=FALSE, turbo=TRUE) {
 
@@ -12,14 +12,12 @@ fwrite <- function(x, file.path, append=FALSE, quote="auto",
         length(qmethod) == 1L && qmethod %in% c("double", "escape"), 
         isLOGICAL(col.names), isLOGICAL(append), isLOGICAL(verbose), 
         length(na) == 1L, #1725, handles NULL or character(0) input
-        isLOGICAL(turbo))
-    if (append && missing(col.names) && file.exists(file.path)) 
-    col.names = FALSE  # test 1658.16 checks this
-
-    # handle paths like "~/foo/bar"
-    file.path <- path.expand(file.path)
-
-    .Call(Cwritefile, x, file.path, sep, eol, na, quote, qmethod == "escape", append, col.names, verbose, turbo)
+        isLOGICAL(turbo),
+        is.character(file) && length(file)==1 && !is.na(file))
+    file <- path.expand(file)  # "~/foo/bar"
+    if (append && missing(col.names) && (file=="" || file.exists(file)))
+        col.names = FALSE  # test 1658.16 checks this  
+    .Call(Cwritefile, x, file, sep, eol, na, quote, qmethod == "escape", append, col.names, verbose, turbo)
     invisible()
 }
 

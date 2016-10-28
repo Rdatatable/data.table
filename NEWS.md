@@ -12,8 +12,9 @@
 #### NEW FEATURES
 
   1. `fwrite` - *parallel file writer*: 
-    * Thanks to Otto Seiskari for the initial PR [#580](https://github.com/Rdatatable/data.table/issues/580) that implements C code, R wrapper, manual page and extensive tests.
-    * Matt worked on top of Otto's contribution by reducing i/o overhead, parallelising and implementing internal functions for faster write of integer/numeric values. Updated documentation and tests. See [this blog post](http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/) for implementation details and benchmarks.
+    * Thanks to Otto Seiskari for the initial pull request [#580](https://github.com/Rdatatable/data.table/issues/580) that provided C code, R wrapper, manual page and extensive tests.
+    * From there Matt parallelized and specialized C functions for writing integer/numeric values. See [this blog post](http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/) for implementation details and benchmarks.
+    * Caught in development before release to CRAN: thanks to Francesco Grossetti for [#1725](https://github.com/Rdatatable/data.table/issues/1725) (NA handling) and Torsten Betz for [#1847](https://github.com/Rdatatable/data.table/issues/1847) (rounding of 9.999999999999998).
 
   2. `fread()`:
     * gains `quote` argument. `quote = ""` disables quoting altogether which reads each field *as is*, [#1367](https://github.com/Rdatatable/data.table/issues/1367). Thanks @manimal.
@@ -222,8 +223,6 @@
   60. Fixed test in `onAttach()` for when `Packaged` field is missing from `DESCRIPTION`, [#1706](https://github.com/Rdatatable/data.table/issues/1706); thanks @restonslacker for BR&PR.
 
   61. Adding missing factor levels are handled correctly in case of NAs. This affected a case of join+update operation as shown in [#1718](https://github.com/Rdatatable/data.table/issues/1718). Thanks to @daniellemccool.
-
-  62. `fwrite` handles `na` argument properly by internally converting it to character, closes [#1725](https://github.com/Rdatatable/data.table/issues/1725). Thanks @contefranz.
 
   63. `foverlaps` now raise a meaningful error for duplicate column names, closes [#1730](https://github.com/Rdatatable/data.table/issues/1730). Thanks @rodonn.
 

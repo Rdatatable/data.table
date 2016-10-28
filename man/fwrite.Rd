@@ -5,20 +5,20 @@
 As \code{write.csv} and but \emph{much} faster (e.g. 1 minute versus 2 seconds) and just as flexible. Machines with 16GB of RAM or more always have more than one core so \code{fwrite} uses them; on all operating systems including Linux, Mac and Windows.
 }
 \usage{
-fwrite(x, file.path, append = FALSE, quote = "auto", sep = ",",
+fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
        eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
        na = "", col.names = TRUE, qmethod = "double",
        verbose=FALSE, turbo=TRUE)
 }
 \arguments{
   \item{x}{A \code{data.table} or \code{data.frame} to write.}
-  \item{file.path}{Output file name.}
+  \item{file}{Output file name. \code{""} indicates output to the console. }
   \item{append}{If \code{TRUE}, the file is opened in append mode and column names (header row) are not written.}
   \item{quote}{When \code{"auto"}, character and factor columns as well as all column names will only be surrounded by double quotes if the field contains the separator, a line ending or the quote itself, otherwise the quote characters are omitted. If \code{FALSE} the fields are never wrapped with quotes even if this would break the CSV due to the contents of the field. If \code{TRUE} quotes are always included for character and factor columns.}
   \item{sep}{The separator between columns. Default is \code{","}.}
   \item{eol}{Line separator. Default is \code{"\r\n"} for windows and \code{"\n"} otherwise.}
   \item{na}{The string to use for missing values in the data. Default is a blank string, \code{""}.}
-  \item{col.names}{A logical value indicating if the column names (header row) should be written to file. If missing and \code{append} is \code{TRUE}, this is forced to \code{FALSE} to prevent mid-file deployment of column names unless \code{file.path} already exists.}
+  \item{col.names}{A logical value indicating if the column names (header row) should be written to file. If missing and \code{append} is \code{TRUE}, this is forced to \code{FALSE} to prevent mid-file deployment of column names unless \code{file} already exists.}
 \item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
       \itemize{
 	\item{"escape" - the quote character (as well as the backslash character) is escaped in C style by a backslash, or}

@@ -79,13 +79,14 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     if (is.null(output)) err <<- try(x,TRUE)
     else out = gsub("NULL$","",paste(capture.output(print(err<<-try(x,TRUE))),collapse=""))
     if (!is.null(output)) {
-        output = gsub("[[]","<LBRACKET>",output)
-        output = gsub("[]]","<RBRACKET>",output)
-        output = gsub("<LBRACKET>","[[]",output)
-        output = gsub("<RBRACKET>","[]]",output)
-        output = gsub("[(]","[(]",output)
-        output = gsub("[)]","[)]",output)
-        if (!length(grep(output,out))) {
+        # We use .* to shorten what we test for (so the grep below needs fixed=FALSE)
+        # but other characters should be matched literally
+        output = gsub("[","\\[",output,fixed=TRUE)
+        output = gsub("]","\\]",output,fixed=TRUE)
+        output = gsub("(","\\(",output,fixed=TRUE)
+        output = gsub(")","\\)",output,fixed=TRUE)
+        output = gsub("+","\\+",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
+        if (!length(grep(output,out))) {  
             cat("Test",num,"didn't produce correct output:\n")
             cat(">",deparse(xsub),"\n")
             cat("Expected: '",output,"'\n",sep="")

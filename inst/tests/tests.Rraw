@@ -8679,7 +8679,7 @@ local({
       a=c(NA, 1.2e-100, 3.01),
       "other \"column"=c('foo bar', NA, 'quote" and \\ bs')),
       f, quote=TRUE, qmethod="double")
-  }, '"a","other ""column"\n,"foo bar"\n1.2E-100,\n3.01,"quote"" and \\ bs"\n')
+  }, '"a","other ""column"\n,"foo bar"\n1.2e-100,\n3.01,"quote"" and \\ bs"\n')
 
   # changing sep
   fwrite_test(1658.4, function(f) { fwrite(data.table(a="foo", b="ba\"r"), f, sep=";", quote=TRUE) },
@@ -8761,7 +8761,7 @@ local({
 
   f <- tempfile()
   # wrong argument types
-  test(1658.18, fwrite(ok_dt, 1), error="invalid 'path' argument")
+  test(1658.18, fwrite(ok_dt, 1), error="is.character(file).*not TRUE")
   test(1658.19, fwrite(ok_dt, f, quote=123), error="isLOGICAL(quote)")
   test(1658.20, fwrite(ok_dt, f, sep="..."), error="nchar(sep)")
   test(1658.21, fwrite(ok_dt, f, qmethod=c("double", "double")), error="length(qmethod)")
@@ -9364,6 +9364,20 @@ test(1728.9, DT[order(x,y,na.last=NA)], DT[2]) # was randomly wrong
 test(1728.11, DT[order(x,na.last=TRUE)], DT[c(2,1)])
 test(1728.12, DT[order(x,na.last=FALSE)], DT)
 test(1728.13, DT[order(x,na.last=NA)], DT[2])  # was randomly wrong
+
+# fwrite wrong and crash on 9.9999999999999982236431605, #1847
+test(1729.1, fwrite(data.table(V1=c(1), V2=c(9.9999999999999982236431605997495353221893310546875))),
+             output="V1,V21,1e+1")
+test(1729.2, fwrite(data.table(V2=c(9.9999999999999982236431605997495353221893310546875), V1=c(1))),
+             output="V2,V11e+1,1")
+DT = data.table(data.table(c(9999999999.99, 0.00000000000000099, 0.0000000000000000000009, 0.9, 9.0, 9.1, 99.9,
+                                 0.000000000000000000000999999999999999999999999,
+                                 99999999999999999999999999999.999999)))
+ans1 = "V19.99999999999e+99.9e-169e-220.999.19.99e+11e-211e+29"
+ans2 = "V19999999999.999.9e-169e-220.999.199.91e-211e+29"
+# both ans1 and ans2 are correct.  TODO: make the same
+test(1729.3, fwrite(DT), output=ans1)
+test(1729.4, write.csv(DT,row.names=FALSE,quote=FALSE), output=ans2)
 
 
 ##########################
