@@ -8759,24 +8759,17 @@ local({
   ok_dt <- data.table(foo="bar")
   fwrite_test(1658.17, function(f) { fwrite(ok_dt, f, quote=TRUE) }, '"foo"\n"bar"\n')
 
-  # error cases
-  fwrite_expect_error <- function(test_number, writer) {
-    f <- tempfile()
-    was_error <- F
-    tryCatch(writer(f), error=function(e) { was_error <<- T })
-    test(test_number, TRUE, was_error)
-    stopifnot(!file.exists(f))
-  }
-
+  f <- tempfile()
   # wrong argument types
-  fwrite_expect_error(1658.18, function(f) {fwrite(ok_dt, 1)})
-  fwrite_expect_error(1658.19, function(f) {fwrite(ok_dt, f, quote=123)})
-  fwrite_expect_error(1658.20, function(f) {fwrite(ok_dt, f, sep="...")})
-  fwrite_expect_error(1658.21, function(f) {fwrite(ok_dt, f, qmethod=c("double", "double"))})
-  fwrite_expect_error(1658.22, function(f) {fwrite(ok_dt, f, col.names="foobar")})
+  test(1658.18, fwrite(ok_dt, 1), error="invalid 'path' argument")
+  test(1658.19, fwrite(ok_dt, f, quote=123), error="isLOGICAL(quote)")
+  test(1658.20, fwrite(ok_dt, f, sep="..."), error="nchar(sep)")
+  test(1658.21, fwrite(ok_dt, f, qmethod=c("double", "double")), error="length(qmethod)")
+  test(1658.22, fwrite(ok_dt, f, col.names="foobar"), error="isLOGICAL(col.names)")
 
   # null data table (no columns)
-  fwrite_expect_error(1658.24, function(f) {fwrite(data.table(a=1)[NULL,], f)})
+  test(1658.24, fwrite(data.table(a=1)[NULL,], f), error="ncol(x) > 0L is not TRUE")
+  unlink(f)
 })
 
 # tests for #679, inrange(), FR #707
