@@ -64,22 +64,11 @@ static inline void writeInteger(int x, char **thisCh)
   }
   *thisCh = ch;
 }
-/*
-typedef union {
-  double d;
-  struct {
-    unsigned long long fraction : 52;
-    unsigned int       exponent : 11;
-    unsigned int       signbit  :  1;
-  } parts;
-} double_cast;
-*/
 
 union {
   double d;
   unsigned long long ull;
 } u;
-
 
 static inline void writeNumeric(double x, char **thisCh)
 {
@@ -113,23 +102,13 @@ static inline void writeNumeric(double x, char **thisCh)
     u.d = x;
     unsigned long long fraction = u.ull & ((1ULL<<52)-1);
     unsigned int exponent = (u.ull>>52) & 0x7FF;
-    
-    /*
-    double_cast d;
-    d.d = x;
-    */
     long double y = 1.0 + fraction / 4503599627370496.0L;  // 2^52 as long double
-    //e2 = 0;
-    //int exp=0;
-    int e2 = exponent-1023;
-    //long double y = (long double)frexpl(x, &e2);
+    y = ldexpl(y, exponent-1023);
+    // long double y = (long double)frexpl(x, &e2);
     // int nd = (int)(e2 * 0.30102999566);  // * log10(2)
-    
-    // y *= (powl(2.0, e2) / powl(10.0, nd));  // TODO: easier/faster more accurate way?
-    // TODO: don't need this since y was 1.* above so surely we know
-    
-    y = ldexpl(y, e2);
-   
+    // y *= (powl(2.0, e2) / powl(10.0, nd));  // doesn't seem efficient or accurate
+    // since y was 1.* above so surely we know
+
     int exp = (int)floorl(log10l(y));
     unsigned long long l = (unsigned long long)(y * powl(10.0L, NUM_SF-exp));
     /*
