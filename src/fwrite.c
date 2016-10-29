@@ -88,8 +88,24 @@ static inline void writeNumeric(double x, char **thisCh)
     *ch++ = '0';   // and we're done.  so much easier rather than passing back special cases
   } else {
     if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign, already written. no need to pass back sign
+    
+    int e2;
+    long double y = (long double)frexp(x, &e2);
+    y *= (long double)powl((long double)2.0, (long double)e2);
+    int exp = (int)floor(log10(y));
+    /*
+    if (y<1) { y *= 1e15; exp++; }
+    else  
+    y *= 1e15;
+    unsigned long long l = (unsigned long long)y;
+    int exp = 
+    
+    int m = log10(2^e2)
+    y * powl(10.0, NUM_DF)
+    
     int exp = (int)floor(log10(x));
-    unsigned long long l = (unsigned long long)(((long double)x) *
+    */
+    unsigned long long l = (unsigned long long)(y *
                                                  (long double)powl((long double)10,(long double)(NUM_SF-exp)));
     // TODO?: use lookup table like base R? ................. ^^^^
     //        here in fwrite it might make a difference whereas in base R other very

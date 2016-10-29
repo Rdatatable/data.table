@@ -75,6 +75,7 @@ if (!.devtesting) {
     .shallow = data.table:::.shallow
     getdots = data.table:::getdots
     second = data.table::second # avoid S4Vectors::second
+    binary = data.table:::binary
 }
 
 # test for covering tables.R 100%, we need to run tables() before creating any data.tables to return null data.table
@@ -9424,9 +9425,19 @@ if (.Machine$sizeof.longdouble == 16) {
   # i) we can easily see intended results right here in future without needing to run
   # ii) we don't get a false pass if fwrite and write.csv agree but are both wrong because of
   #     a problem with the test mechanism itself or something else strange or unexpected
+  # Exactly the same binary representation on both linux and windows:
+  # > cat(binary(DT[[1]]),sep="\n")
+  # 0 11111100101 111010011010000100010111101110000100 11110100 00000100
+  # 1 11111100101 111010011010000100010111101110000100 11110100 00000100
+  # 0 00000001001 110000010110110001011100010100100101 00110101 01110101
+  # 0 11111110100 001000111010010100010110111010000010 11011001 10111010
+  # 0 00000001010 000011011010011101101010100101111100 10111001 10101101
+  # 0 11111110100 010111011111100101001110101100000011 01101011 10101100
+  # 0 00000001010 000101000110010100110011101010000110 00111110 01010001
+  # 0 11111110100 011001101011100100100011110110110000 01001110 01011101
   test(1729.9, fwrite(DT), output=paste(ans,collapse=""))
   test(1729.11, write.csv(DT,row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
-  cat(data.table:::binary(DT[[1]]),sep="\n")
+  
 }
 
 
