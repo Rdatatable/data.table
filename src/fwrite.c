@@ -64,7 +64,7 @@ static inline void writeInteger(int x, char **thisCh)
   }
   *thisCh = ch;
 }
-
+/*
 typedef union {
   double d;
   struct {
@@ -73,7 +73,7 @@ typedef union {
     unsigned int       signbit  :  1;
   } parts;
 } double_cast;
-
+*/
 static inline void writeNumeric(double x, char **thisCh)
 {
   // hand-rolled / specialized for speed
@@ -97,6 +97,9 @@ static inline void writeNumeric(double x, char **thisCh)
     *ch++ = '0';   // and we're done.  so much easier rather than passing back special cases
   } else {
     if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign, already written. no need to pass back sign
+    int exp = (int)floorl(log10l((long double)x));
+    unsigned long long l = (unsigned long long)((long double)x * powl(10.0L, NUM_SF-exp));
+    /*
     double_cast d;
     d.d = x;
     
@@ -114,7 +117,6 @@ static inline void writeNumeric(double x, char **thisCh)
    
     int exp = (int)floorl(log10l(y));  
    
-    /*
     if (y<1) { y *= 1e15; exp++; }
     else  
     y *= 1e15;
@@ -125,10 +127,12 @@ static inline void writeNumeric(double x, char **thisCh)
     y * powl(10.0, NUM_DF)
     
     int exp = (int)floor(log10(x));
-    */
+    
     unsigned long long l = (unsigned long long)(y *
                                                  (long double)powl((long double)10,(long double)(NUM_SF-exp)));
     //exp+=nd;
+    */
+    
     // TODO?: use lookup table like base R? ................. ^^^^
     //        here in fwrite it might make a difference whereas in base R other very
     //        significant write.table inefficiency dominates.
