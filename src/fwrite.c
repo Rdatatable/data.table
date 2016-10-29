@@ -74,6 +74,13 @@ typedef union {
   } parts;
 } double_cast;
 */
+
+union {
+  double d;
+  unsigned long long ull;
+} u;
+
+
 static inline void writeNumeric(double x, char **thisCh)
 {
   // hand-rolled / specialized for speed
@@ -97,16 +104,24 @@ static inline void writeNumeric(double x, char **thisCh)
     *ch++ = '0';   // and we're done.  so much easier rather than passing back special cases
   } else {
     if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign, already written. no need to pass back sign
+    
+    /*
     int exp = (int)floorl(log10l((long double)x));
     unsigned long long l = (unsigned long long)((long double)x * powl(10.0L, NUM_SF-exp));
+    */
+    
+    u.d = x;
+    unsigned long long fraction = u.ull & ((1ULL<<52)-1);
+    unsigned int exponent = (u.ull>>52) & 0x7FF;
+    
     /*
     double_cast d;
     d.d = x;
-    
-    long double y = 1.0 + d.parts.fraction / 4503599627370496.0L;  // 2^52 as long double
+    */
+    long double y = 1.0 + fraction / 4503599627370496.0L;  // 2^52 as long double
     //e2 = 0;
     //int exp=0;
-    int e2 = d.parts.exponent-1023;
+    int e2 = exponent-1023;
     //long double y = (long double)frexpl(x, &e2);
     // int nd = (int)(e2 * 0.30102999566);  // * log10(2)
     
@@ -115,8 +130,9 @@ static inline void writeNumeric(double x, char **thisCh)
     
     y = ldexpl(y, e2);
    
-    int exp = (int)floorl(log10l(y));  
-   
+    int exp = (int)floorl(log10l(y));
+    unsigned long long l = (unsigned long long)(y * powl(10.0L, NUM_SF-exp));
+    /*
     if (y<1) { y *= 1e15; exp++; }
     else  
     y *= 1e15;
