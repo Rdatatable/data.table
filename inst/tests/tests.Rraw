@@ -9391,8 +9391,8 @@ if (.Machine$sizeof.longdouble == 16) {
                        -7 * 10^((-20):20),
                        +7 * 10^((-20):20),
                        0, NA, NaN, Inf, -Inf,
-                       5.123456789e-290, -5.123456789e-290, 5.123456789e+307, -5.123456789e+307))
-  test(1729.5, nrow(DT), 505)
+                       5.123456789e-290, -5.123456789e-290))
+  test(1729.5, nrow(DT), 503)
   x = gsub("\r","",capture.output(fwrite(DT,na="NA")))[-1]   # -1 to remove the column name V1
   y = capture.output(write.csv(DT,row.names=FALSE,quote=FALSE))[-1]
   # One mismatch that seems to be accuracy in write.csv
@@ -9412,15 +9412,14 @@ if (.Machine$sizeof.longdouble == 16) {
   test(1729.6, x[c(177,238)], c("-1234567891234500000","1234567891234500000"))
   x = x[-c(177,238)]
   y = y[-c(177,238)]
-  test(1729.7, length(x), 503)
+  test(1729.7, length(x), 501)
   test(1729.8, x, y)  # ensure the remaining 338 character outputs match exactly
   if (!identical(x,y)) print(data.table(row=1:length(x), `fwrite`=x, `write.csv`=y)[x!=y])
 
-  DT = data.table(c(5.123456789e-325, 5.123456789e-320, 5.123456789e-315,
-                    5.123456789e+300, 5.123456789e+305, 5.123456789e+310,
+  DT = data.table(c(5.123456789e+300, -5.123456789e+300,
                     1e-305,1e+305, 1.2e-305,1.2e+305, 1.23e-305,1.23e+305))
-  ans = c("V1","0","5.12346074737373e-320","5.1234567899079e-315","5.123456789e+300","5.123456789e+305",
-          "Inf","1e-305","1e+305","1.2e-305","1.2e+305","1.23e-305","1.23e+305")
+  ans = c("V1","5.123456789e+300","-5.123456789e+300",
+          "1e-305","1e+305","1.2e-305","1.2e+305","1.23e-305","1.23e+305")
   # explicitly check against ans rather than just comparing fwrite to write.csv so that :
   # i) we can easily see intended results right here in future without needing to run
   # ii) we don't get a false pass if fwrite and write.csv agree but are both wrong because of

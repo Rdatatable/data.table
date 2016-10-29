@@ -101,7 +101,7 @@ static inline void writeNumeric(double x, char **thisCh)
     if (l%10 >= 5) l+=10; // use the last digit to round
     l /= 10;
     if (l == 0) {
-      if (*(ch-1)=='-') ch--; //
+      if (*(ch-1)=='-') ch--;
       *ch++ = '0';
     } else {
       // Count trailing zeros and therefore s.f. present in l
