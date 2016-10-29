@@ -65,6 +65,15 @@ static inline void writeInteger(int x, char **thisCh)
   *thisCh = ch;
 }
 
+typedef union {
+  double d;
+  struct {
+    unsigned long long fraction : 52;
+    unsigned int       exponent : 11;
+    unsigned int       signbit  :  1;
+  } parts;
+} double_cast;
+
 static inline void writeNumeric(double x, char **thisCh)
 {
   // hand-rolled / specialized for speed
@@ -88,14 +97,22 @@ static inline void writeNumeric(double x, char **thisCh)
     *ch++ = '0';   // and we're done.  so much easier rather than passing back special cases
   } else {
     if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign, already written. no need to pass back sign
+    double_cast d;
+    d.d = x;
     
-    int e2;
-    long double y = (long double)frexpl(x, &e2);
-    int nd = (int)(e2 * log10(2));  // TODO take into constant
+    long double y = 1.0 + d.parts.fraction / 4503599627370496.0L;  // 2^52 as long double
+    //e2 = 0;
+    //int exp=0;
+    int e2 = d.parts.exponent-1023;
+    //long double y = (long double)frexpl(x, &e2);
+    int nd = (int)(e2 * 0.30102999566);  // * log10(2)
+        
+    y *= (powl(2.0, e2) / powl(10.0, nd));  // TODO: easier/faster more accurate way?
     
-    y *= (ldexpl(1.0, e2) / powl(10.0, nd));
     //y *= ldexpl(y, e2);
-    int exp = (int)floor(log10(y));
+   
+    int exp = (int)floor(log10(y));  // TODO: don't need this since y was 1.* above so surely we know
+   
     /*
     if (y<1) { y *= 1e15; exp++; }
     else  
