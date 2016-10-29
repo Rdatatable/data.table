@@ -105,13 +105,14 @@ static inline void writeNumeric(double x, char **thisCh)
     //int exp=0;
     int e2 = d.parts.exponent-1023;
     //long double y = (long double)frexpl(x, &e2);
-    int nd = (int)(e2 * 0.30102999566);  // * log10(2)
+    // int nd = (int)(e2 * 0.30102999566);  // * log10(2)
     
-    y *= (powl(2.0, e2) / powl(10.0, nd));  // TODO: easier/faster more accurate way?
+    // y *= (powl(2.0, e2) / powl(10.0, nd));  // TODO: easier/faster more accurate way?
+    // TODO: don't need this since y was 1.* above so surely we know
     
-    //y *= ldexpl(y, e2);
+    y = ldexpl(y, e2);
    
-    int exp = (int)floor(log10(y));  // TODO: don't need this since y was 1.* above so surely we know
+    int exp = (int)floorl(log10l(y));  
    
     /*
     if (y<1) { y *= 1e15; exp++; }
@@ -127,7 +128,7 @@ static inline void writeNumeric(double x, char **thisCh)
     */
     unsigned long long l = (unsigned long long)(y *
                                                  (long double)powl((long double)10,(long double)(NUM_SF-exp)));
-    exp+=nd;
+    //exp+=nd;
     // TODO?: use lookup table like base R? ................. ^^^^
     //        here in fwrite it might make a difference whereas in base R other very
     //        significant write.table inefficiency dominates.
