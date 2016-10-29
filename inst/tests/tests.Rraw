@@ -9414,6 +9414,7 @@ if (.Machine$sizeof.longdouble == 16) {
   y = y[-c(177,238)]
   test(1729.7, length(x), 503)
   test(1729.8, x, y)  # ensure the remaining 338 character outputs match exactly
+  if (!identical(x,y)) print(data.table(row=1:length(x), `fwrite`=x, `write.csv`=y)[x!=y])
 
   DT = data.table(c(5.123456789e-325, 5.123456789e-320, 5.123456789e-315,
                     5.123456789e+300, 5.123456789e+305, 5.123456789e+310,
