@@ -89,11 +89,13 @@ static inline void writeNumeric(double x, char **thisCh)
   } else {
     if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign, already written. no need to pass back sign
     int exp = (int)floor(log10(x));
-    unsigned long long l = (unsigned long long)(((long double)x) * (long double)powl(10, NUM_SF-exp));
-    // TODO?: use lookup table like base R? ................................... ^^^^
+    unsigned long long l = (unsigned long long)(((long double)x) *
+                                                 (long double)powl((long double)10,(long double)(NUM_SF-exp)));
+    // TODO?: use lookup table like base R? ................. ^^^^
     //        here in fwrite it might make a difference whereas in base R other very
     //        significant write.table inefficiency dominates.
     // long double needed for 1729.9 to ensure 1e-310 doesn't write as 0.
+    // Peppered with long double as windows seems to need that
     // l now contains NUM_SF+1 digits.
     // ULL for compound accuracy. If double, the repeated base 10 ops below could compound errors
     if (l%10 >= 5) l+=10; // use the last digit to round
