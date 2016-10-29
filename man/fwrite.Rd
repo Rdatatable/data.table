@@ -40,7 +40,7 @@ With this, writing a \code{data.table} of approximately 23 million rows and 19 c
 
 }
 \seealso{
-  \code{\link{fread}}, \code{\link[utils]{write.csv}}, \code{\link[utils]{write.table}}
+  \code{\link{setDTthreads}}, \code{\link{fread}}, \code{\link[utils]{write.csv}}, \code{\link[utils]{write.table}}
 }
 \references{
   \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}

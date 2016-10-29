@@ -9393,7 +9393,7 @@ if (.Machine$sizeof.longdouble == 16) {
                        0, NA, NaN, Inf, -Inf,
                        5.123456789e-290, -5.123456789e-290, 5.123456789e+307, -5.123456789e+307))
   test(1729.5, nrow(DT), 505)
-  x = capture.output(fwrite(DT,na="NA"))[-1]   # -1 to remove the column name V1
+  x = gsub("\r","",capture.output(fwrite(DT,na="NA")))[-1]   # -1 to remove the column name V1
   y = capture.output(write.csv(DT,row.names=FALSE,quote=FALSE))[-1]
   # One mismatch that seems to be accuracy in write.csv
   # tmp = cbind(row=1:length(x), `fwrite`=x, `write.csv`=y)
@@ -9424,8 +9424,8 @@ if (.Machine$sizeof.longdouble == 16) {
   # i) we can easily see intended results right here in future without needing to run
   # ii) we don't get a false pass if fwrite and write.csv agree but are both wrong because of
   #     a problem with the test mechanism itself or something else strange or unexpected
-  test(1729.9, capture.output(fwrite(DT)), ans)
-  test(1729.11, capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)), ans)
+  test(1729.9, fwrite(DT), output=paste(ans,collapse=""))
+  test(1729.11, write.csv(DT,row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
 }
 
 
