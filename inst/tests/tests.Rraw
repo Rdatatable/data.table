@@ -8651,127 +8651,112 @@ dt = data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE), z=sample(5,10,TRUE))
 test(1657, dt[x %between% list(y,z)], dt[x>=y & x<=z])
 
 # fwrite tests
-local({
-  fwrite_test <- function(number, writer, expected_result) {
-    f <- tempfile()
-    writer(f)
-    result <- readChar(f, file.info(f)$size)
-    if (.Platform$OS.type=="windows") result <- gsub("\r\n", "\n", result)  # expected_result has \n endings
-    unlink(f)
-    test(number, result, expected_result)
-  }
+# without quoting
+test(1658.1, fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar'))),
+             output=paste(c("a,b",",foo","2,","3.01,bar"),collapse=""))
 
-  # without quoting
-  fwrite_test(1658.1, function(f) {
-    fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar')), f, quote=FALSE)
-  }, 'a,b\n,foo\n2,\n3.01,bar\n')
+# with quoting and qmethod="escape"
+test(1658.2, fwrite(data.table(
+    a=c(NA, 2, 3.01),
+    `other column`=c('foo bar', NA, 'quote" and \\ bs \n and newline')),
+    quote=TRUE, qmethod="escape"),
+    output='"a","other column","foo bar"2,3.01,"quote\\" and \\\\ bs  and newline"')
 
-  # with quoting and qmethod="escape"
-  fwrite_test(1658.2, function(f) {
-    fwrite(data.table(
-      a=c(NA, 2, 3.01),
-      `other column`=c('foo bar', NA, 'quote" and \\ bs \n and newline')),
-      f, quote=TRUE, qmethod="escape")
-  }, '"a","other column"\n,"foo bar"\n2,\n3.01,"quote\\" and \\\\ bs \n and newline"\n')
+# with quoting and qmethod="double" (default)
+test(1658.3, fwrite(data.table(
+    a=c(NA, 1.2e-100, 3.01),
+    "other \"column"=c('foo bar', NA, 'quote" and \\ bs')),
+    quote=TRUE, qmethod="double"),
+    output='"a","other ""column"\n,"foo bar"\n1.2e-100,\n3.01,"quote"" and \\ bs"\n')
 
-  # with quoting and qmethod="double" (default)
-  fwrite_test(1658.3, function(f) {
-    fwrite(data.table(
-      a=c(NA, 1.2e-100, 3.01),
-      "other \"column"=c('foo bar', NA, 'quote" and \\ bs')),
-      f, quote=TRUE, qmethod="double")
-  }, '"a","other ""column"\n,"foo bar"\n1.2e-100,\n3.01,"quote"" and \\ bs"\n')
+# changing sep
+test(1658.4, fwrite(data.table(a="foo", b="ba\"r"), sep=";", quote=TRUE),
+            output='"a";"b"\n"foo";"ba""r"\n')
 
-  # changing sep
-  fwrite_test(1658.4, function(f) { fwrite(data.table(a="foo", b="ba\"r"), f, sep=";", quote=TRUE) },
-              '"a";"b"\n"foo";"ba""r"\n')
+# changing eol
+if (.Platform$OS.type=="unix") {
+  # can change eol on windows too; the only reason for running this test on linux only
+  # is that inside fwrite_test() on windows it gsub's '\r\n' in the result to '\n'
+  # for the other tests which have a fixed \n endings to compare to
+  test(1658.5, fwrite(data.table(a="foo", b="bar"), eol="\r\n", quote=TRUE),
+               output = '"a","b""foo","bar"')
+}
 
-  # changing eol
-  if (.Platform$OS.type=="unix") {
-    # can change eol on windows too; the only reason for running this test on linux only
-    # is that inside fwrite_test() on windows it gsub's '\r\n' in the result to '\n'
-    # for the other tests which have a fixed \n endings to compare to
-    fwrite_test(1658.5, function(f) { fwrite(data.table(a="foo", b="bar"), f, eol="\r\n", quote=TRUE) },
-              '"a","b"\r\n"foo","bar"\r\n')
-  }
-  
-  # changing NA
-  fwrite_test(1658.51, function(f) { fwrite(data.table(a=c("foo", NA), b=c(1, NA)), f, na="NA", quote=TRUE) },
-              '"a","b"\n"foo",1\nNA,NA\n')
-  
-  # no col.names
-  fwrite_test(1658.6, function(f) { fwrite(data.table(a="foo", b="bar"), f, col.names=F, quote=TRUE) },
-              '"foo","bar"\n')
+# changing NA
+test(1658.51, fwrite(data.table(a=c("foo", NA), b=c(1, NA)), na="NA", quote=TRUE),
+            output='"a","b"\n"foo",1\nNA,NA\n')
 
-  fwrite_test(1658.7, function(f) { fwrite(data.table(a=c(1:5), b=c(1:5)), f, quote=TRUE) },
-              '"a","b"\n1,1\n2,2\n3,3\n4,4\n5,5\n')
+# no col.names
+test(1658.6, fwrite(data.table(a="foo", b="bar"), col.names=F, quote=TRUE),
+            output='"foo","bar"\n')
 
-  # block size equal to number of rows
-  fwrite_test(1658.8, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, quote=TRUE) },
-              '"a","b"\n1,1\n2,2\n3,3\n')
+test(1658.7, fwrite(data.table(a=c(1:5), b=c(1:5)), quote=TRUE),
+            output='"a","b"\n1,1\n2,2\n3,3\n4,4\n5,5\n')
 
-  # block size one bigger than number of rows
-  fwrite_test(1658.9, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, quote=TRUE) },
-              '"a","b"\n1,1\n2,2\n3,3\n')
+# block size equal to number of rows
+test(1658.8, fwrite(data.table(a=c(1:3), b=c(1:3)), quote=TRUE),
+            output='"a","b"\n1,1\n2,2\n3,3\n')
 
-  # block size one less than number of rows
-  fwrite_test(1658.10, function(f) { fwrite(data.table(a=c(1:3), b=c(1:3)), f, quote=TRUE) },
-              '"a","b"\n1,1\n2,2\n3,3\n')
+# block size one bigger than number of rows
+test(1658.9, fwrite(data.table(a=c(1:3), b=c(1:3)), quote=TRUE),
+            output='"a","b"\n1,1\n2,2\n3,3\n')
 
-  # writing a data.frame
-  fwrite_test(1658.11, function(f) { fwrite(data.frame(a="foo", b="bar"), f, quote=TRUE) },
-              '"a","b"\n"foo","bar"\n')
-  
-  # single-column data.table
-  fwrite_test(1658.12, function(f) { fwrite(data.table(a=c(1,2,3)), f, quote=TRUE) },
-              '"a"\n1\n2\n3\n')
-  
-  # single-column data.frame
-  fwrite_test(1658.13, function(f) { fwrite(data.frame(a=c(1,2,3)), f, quote=TRUE) },
-              '"a"\n1\n2\n3\n')
+# block size one less than number of rows
+test(1658.10, fwrite(data.table(a=c(1:3), b=c(1:3)), quote=TRUE),
+            output='"a","b"\n1,1\n2,2\n3,3\n')
 
-  # different column types
-  fwrite_test(1658.14, function(f) {
-    fwrite(data.table(
-      factor1=as.factor(c('foo', 'bar')),
-      factor2=as.factor(c(NA, "baz")),
-      bool=c(TRUE,NA),
-      ints=as.integer(c(NA, 5))), f, na='na', quote=TRUE)},
-    '"factor1","factor2","bool","ints"\n"foo",na,TRUE,na\n"bar","baz",na,5\n')
+# writing a data.frame
+test(1658.11, fwrite(data.frame(a="foo", b="bar"), quote=TRUE),
+            output='"a","b"\n"foo","bar"\n')
 
-  # empty data table (headers but no rows)
-  empty_dt <- data.table(a=1, b=2)[0,]
-  fwrite_test(1658.15, function(f) { fwrite(empty_dt, f, quote=TRUE) }, '"a","b"\n')
+# single-column data.table
+test(1658.12, fwrite(data.table(a=c(1,2,3)), quote=TRUE),
+            output='"a"\n1\n2\n3\n')
 
-  # data.table with duplicate column names
-  fwrite_test(1658.151, function(f) {fwrite(data.table(a=1, a=2), f, quote=TRUE)}, '"a","a"\n1,2\n')
-  
-  # number of significant digits = 15
-  fwrite_test(1658.152, function(f) {fwrite(data.table(a=1/0.9), f, quote=TRUE)},
-    '"a"\n1.11111111111111\n')
+# single-column data.frame
+test(1658.13, fwrite(data.frame(a=c(1,2,3)), quote=TRUE),
+            output='"a"\n1\n2\n3\n')
 
-  # test append
-  fwrite_test(1658.16, function(f) {
-    fwrite(data.table(a=c(1,2), b=c('a', 'b')), f, quote=TRUE)
-    fwrite(data.table(a=c(3,4), b=c('c', 'd')), f, append=TRUE, quote=TRUE)
-  }, '"a","b"\n1,"a"\n2,"b"\n3,"c"\n4,"d"\n')
+# different column types
+test(1658.14, fwrite(data.table(
+    factor1=as.factor(c('foo', 'bar')),
+    factor2=as.factor(c(NA, "baz")),
+    bool=c(TRUE,NA),
+    ints=as.integer(c(NA, 5))), na='na', quote=TRUE),
+  output='"factor1","factor2","bool","ints"\n"foo",na,TRUE,na\n"bar","baz",na,5\n')
 
-  # simple data table (reference for the error cases below)
-  ok_dt <- data.table(foo="bar")
-  fwrite_test(1658.17, function(f) { fwrite(ok_dt, f, quote=TRUE) }, '"foo"\n"bar"\n')
+# empty data table (headers but no rows)
+empty_dt <- data.table(a=1, b=2)[0,]
+test(1658.15, fwrite(empty_dt, quote=TRUE), output='"a","b"\n')
 
-  f <- tempfile()
-  # wrong argument types
-  test(1658.18, fwrite(ok_dt, 1), error="is.character(file).*not TRUE")
-  test(1658.19, fwrite(ok_dt, f, quote=123), error="isLOGICAL(quote)")
-  test(1658.20, fwrite(ok_dt, f, sep="..."), error="nchar(sep)")
-  test(1658.21, fwrite(ok_dt, f, qmethod=c("double", "double")), error="length(qmethod)")
-  test(1658.22, fwrite(ok_dt, f, col.names="foobar"), error="isLOGICAL(col.names)")
+# data.table with duplicate column names
+test(1658.151, fwrite(data.table(a=1, a=2), quote=TRUE), output='"a","a"\n1,2\n')
 
-  # null data table (no columns)
-  test(1658.24, fwrite(data.table(a=1)[NULL,], f), error="ncol(x) > 0L is not TRUE")
-  unlink(f)
-})
+# number of significant digits = 15
+test(1658.152, fwrite(data.table(a=1/0.9), quote=TRUE), output='"a"\n1.11111111111111\n')
+
+# test append
+f = tempfile()
+fwrite(data.table(a=c(1,2), b=c('a', 'b')), f, quote=TRUE)
+fwrite(data.table(a=c(3,4), b=c('c', 'd')), f, append=TRUE, quote=TRUE)
+test(1658.16, readLines(f), c('"a","b"','1,"a"','2,"b"','3,"c"','4,"d"'))
+unlink(f)
+
+# simple data table (reference for the error cases below)
+ok_dt <- data.table(foo="bar")
+test(1658.17, fwrite(ok_dt, quote=TRUE), output='"foo"\n"bar"\n')
+
+# wrong argument types
+test(1658.18, fwrite(ok_dt, 1), error="is.character(file).*not TRUE")
+test(1658.19, fwrite(ok_dt, quote=123), error="isLOGICAL(quote)")
+test(1658.20, fwrite(ok_dt, sep="..."), error="nchar(sep)")
+test(1658.21, fwrite(ok_dt, qmethod=c("double", "double")), error="length(qmethod)")
+test(1658.22, fwrite(ok_dt, col.names="foobar"), error="isLOGICAL(col.names)")
+
+# null data table (no columns)
+test(1658.24, fwrite(data.table(a=1)[NULL,]), error="ncol(x) > 0L is not TRUE")
+
+## End fwrite tests
 
 # tests for #679, inrange(), FR #707
 dt = data.table(a=c(8,3,10,7,-10), val=runif(5))

@@ -106,7 +106,7 @@ static inline void writeNumeric(double x, char **thisCh)
     int e2 = d.parts.exponent-1023;
     //long double y = (long double)frexpl(x, &e2);
     int nd = (int)(e2 * 0.30102999566);  // * log10(2)
-        
+    
     y *= (powl(2.0, e2) / powl(10.0, nd));  // TODO: easier/faster more accurate way?
     
     //y *= ldexpl(y, e2);
@@ -339,7 +339,7 @@ SEXP writefile(SEXP list_of_columns,
   if (verbose) Rprintf("done in %.3fs\n", 1.0*(clock()-t0)/CLOCKS_PER_SEC);
   if (nrows == 0) {
     if (verbose) Rprintf("No data rows present (nrow==0)\n");
-    if (CLOSE(f)) error("Error closing file: %s", filename);
+    if (f!=-1 && CLOSE(f)) error("Error closing file: %s", filename);
     return(R_NilValue);
   }
 
