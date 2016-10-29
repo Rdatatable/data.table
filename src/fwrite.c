@@ -77,10 +77,8 @@ static inline void writeNumeric(double x, char **thisCh)
   //  iv) shorter, easier to read and reason with. In one self contained place.
   char *ch = *thisCh;
   if (!R_FINITE(x)) {
-    if (ISNA(x)) {
+    if (ISNAN(x)) {
       if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }  // by default na_len==0 and the memcpy call will be skipped
-    } else if (ISNAN(x)) {
-      *ch++ = 'N'; *ch++ = 'a'; *ch++ = 'N';
     } else if (x>0) {
       *ch++ = 'I'; *ch++ = 'n'; *ch++ = 'f';
     } else {
@@ -88,47 +86,70 @@ static inline void writeNumeric(double x, char **thisCh)
     }
   } else if (x == 0.0) {
     *ch++ = '0';   // and we're done.  so much easier rather than passing back special cases
-  } else if (x==(int)x && x>=INT_MIN && x<=INT_MAX) {
-    // it's not really a real; users often end up with integers stored as type double
-    // use writeInteger instead for speed
-    // careful not to pass NA_INTEGER (<INT_MIN) to writeInteger otherwise it'd get written NA
-    writeInteger((int)x, thisCh);
-    return;
   } else {
-    if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign.  no need to pass back sign, already written to output
+    if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign, already written. no need to pass back sign
     int exp = (int)floor(log10(x));
-    unsigned long long l = (unsigned long long)(x * pow(10, NUM_SF-exp));
-    // TODO?: use lookup table like base R .......  ^^^       
-    //        here in fwrite it might make a difference wheras in base R other very
-    //        significant write.table inefficiency dominates
-    // l now contains NUM_SF+1 digits. The last one is used to round.  
-    if (l%10 >= 5) l+=10;
+    unsigned long long l = (unsigned long long)((long double)x * powl(10, NUM_SF-exp));
+    // TODO?: use lookup table like base R? .................... ^^^^
+    //        here in fwrite it might make a difference whereas in base R other very
+    //        significant write.table inefficiency dominates.
+    // long double needed for 1729.9 to ensure 1e-310 doesn't write as 0.
+    // l now contains NUM_SF+1 digits.
+    // ULL for compound accuracy. If double, the repeated base 10 ops below could compound errors
+    if (l%10 >= 5) l+=10; // use the last digit to round
     l /= 10;
     if (l == 0) {
+      if (*(ch-1)=='-') ch--; //
       *ch++ = '0';
     } else {
-      // Count trailing zeros and therefore s.f. present
+      // Count trailing zeros and therefore s.f. present in l
       int trailZero = 0;
       while (l%10 == 0) { l /= 10; trailZero++; }
       int sf = NUM_SF - trailZero;
       if (sf==0) {sf=1; exp++;}  // e.g. l was 9999999[5-9] rounded to 10000000 which added 1 digit
-      // TODO: Improve deciding what's shortest to write here.
-      if (exp<0 && exp>-5) { sf-=exp; exp=0; }
-      ch += sf;
-      for (int i=sf; i>1; i--) {
-        *ch-- = '0' + l%10;   // l is long for compound accuracy. If kept in double, repeated *=10. or /=10. could compound errors 
-        l /= 10;
+      
+      // l is now an unsigned long that doesn't start or end with 0
+      // sf is the number of digits now in l
+      // exp is e<exp> were l to be written with the decimal sep after the first digit
+      int dr = sf-exp-1; // how many characters to print to the right of the decimal place
+      int width=0;       // field width were it written decimal format. Used to decide whether to or not.
+      int dl0=0;         // how many 0's to add to the left of the decimal place before starting l
+      if (dr<=0) { dl0=-dr; dr=0; width=sf+dl0; }  // 1, 10, 100, 99000
+      else {
+        if (sf>dr) width=sf+1;                     // 1.234 and 123.4
+        else { dl0=1; width=dr+1+dl0; }            // 0.1234, 0.0001234
       }
-      if (sf == 1) ch--; else *ch-- = DECIMAL_SEP;
-      *ch = '0' + l;
-      ch += sf + (sf>1);
-      if (exp != 0) {
+      // So:  3.1416 => l=31416, sf=5, exp=0     dr=4; dl0=0; width=6
+      //      30460  => l=3046, sf=4, exp=4      dr=0; dl0=1; width=5
+      //      0.0072 => l=72, sf=2, exp=-3       dr=4; dl0=1; width=6
+      if (width <= sf + (sf>1) + 2 + (abs(exp)>99?3:2)) {
+         //              ^^^^ to not include 1 char for dec in -7e-04 where sf==1
+         //                      ^ 2 for 'e+'/'e-'
+         // decimal format ...
+         ch += width-1;
+         if (dr) {
+           while (dr && sf) { *ch--='0'+l%10; l/=10; dr--; sf--; }
+           while (dr) { *ch--='0'; dr--; }
+           *ch-- = DECIMAL_SEP;
+         }
+         while (dl0) { *ch--='0'; dl0--; }
+         while (sf) { *ch--='0'+l%10; l/=10; sf--; }
+         // ch is now 1 before the first char of the field so position it afterward again, and done
+         ch += width+1;
+      } else {
+        // scientific ...
+        ch += sf;  // sf-1 + 1 for dec
+        for (int i=sf; i>1; i--) {
+          *ch-- = '0' + l%10;   
+          l /= 10;
+        }
+        if (sf == 1) ch--; else *ch-- = DECIMAL_SEP;
+        *ch = '0' + l;
+        ch += sf + (sf>1);
         *ch++ = 'e';  // lower case e to match base::write.csv
         if (exp < 0) { *ch++ = '-'; exp=-exp; }
         else { *ch++ = '+'; }  // to match base::write.csv
-        if (exp < 10) {
-          *ch++ = '0' + exp;
-        } else if (exp < 100) {
+        if (exp < 100) {
           *ch++ = '0' + (exp / 10);
           *ch++ = '0' + (exp % 10);
         } else {
