@@ -9426,6 +9426,7 @@ if (.Machine$sizeof.longdouble == 16) {
   #     a problem with the test mechanism itself or something else strange or unexpected
   test(1729.9, fwrite(DT), output=paste(ans,collapse=""))
   test(1729.11, write.csv(DT,row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
+  cat(data.table:::binary(DT[[1]]),sep="\n")
 }
 
 
