@@ -9426,8 +9426,6 @@ if (.Machine$sizeof.longdouble == 16) {
   
 }
 
-cat("\n"); traceAccuracy()
-
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
