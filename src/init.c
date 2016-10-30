@@ -18,6 +18,7 @@ SEXP setcolorder();
 SEXP chmatchwrapper();
 SEXP readfile();
 SEXP writefile();
+SEXP traceAccuracy();
 SEXP reorder();
 SEXP rbindlist();
 SEXP vecseq();
@@ -96,6 +97,7 @@ R_CallMethodDef callMethods[] = {
 {"Cchmatchwrapper", (DL_FUNC) &chmatchwrapper, -1},
 {"Creadfile", (DL_FUNC) &readfile, -1},
 {"Cwritefile", (DL_FUNC) &writefile, -1},
+{"CtraceAccuracy", (DL_FUNC) &traceAccuracy, -1},
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},

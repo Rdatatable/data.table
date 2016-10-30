@@ -65,6 +65,31 @@ static inline void writeInteger(int x, char **thisCh)
   *thisCh = ch;
 }
 
+SEXP traceAccuracy() {
+  if (sizeof(long double)!=16) Rprintf("sizeof long double is %d not 16",sizeof(long double));
+  if (sizeof(unsigned long long)!=8) Rprintf("sizeof unsigned long long is %d not 8\n",sizeof(unsigned long long));  
+  if (ULLONG_MAX != 18446744073709551615ull)  // 2^64-1
+      Rprintf("Expected ULLONG_MAX=%llu but it is %llu\n",
+                             18446744073709551615ull, ULLONG_MAX);      
+  unsigned long long foo =    5000000000000000000ull;
+  //            when we add  10000000000000000000ull later,
+  //  careful to check acc <= 8446744073709551615ull
+  unsigned long long thresh = 1000000000000000000ull;
+  for (int i=1, dp=-19; i<=52; i++) {
+    long double ld1, ld2;
+    memset(&ld1, 0, 16);  // the compiler/machine may well not use all the bits e.g. 80 not 128.
+    memset(&ld2, 0, 16);  //    so clear that memory so that memcpy can work below
+    ld1 = 1.L/(1ull<<i);  
+    ld2 = (long double)ldexpl(1.0L,-i);
+    int cmp=memcmp(&ld1,&ld2,16);
+    const char *err = (cmp!=0) ? "**bits differ" : "";
+    Rprintf("{%llu, %d}, // 2^%03d = %.60Lf %.60Lf  %s\n",foo,dp,-i,ld1,ld2,err);
+    foo>>=1;
+    if (foo<thresh) { foo*=10; dp--; }
+  }
+  return(R_NilValue);
+}
+
 union {
   double d;
   unsigned long long ull;
