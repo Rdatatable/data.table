@@ -72,8 +72,6 @@ SEXP traceAccuracy() {
       Rprintf("Expected ULLONG_MAX=%llu but it is %llu\n",
                              18446744073709551615ull, ULLONG_MAX);      
   unsigned long long foo =    5000000000000000000ull;
-  //            when we add  10000000000000000000ull later,
-  //  careful to check acc <= 8446744073709551615ull
   unsigned long long thresh = 1000000000000000000ull;
   for (int i=1, dp=-19; i<=52; i++) {
     long double ld1, ld2;
@@ -89,7 +87,7 @@ SEXP traceAccuracy() {
   }
   return(R_NilValue);
 }
-/* same on linux and windows
+/* so far have seen precisely the same output on linux and windows :
 {5000000000000000000, -19}, // 2^-01 = 0.500000000000000000000000000000000000000000000000000000000000
 {2500000000000000000, -19}, // 2^-02 = 0.250000000000000000000000000000000000000000000000000000000000
 {1250000000000000000, -19}, // 2^-03 = 0.125000000000000000000000000000000000000000000000000000000000
@@ -149,6 +147,8 @@ union {
   unsigned long long ull;
 } u;
 
+Rboolean verbose=FALSE; // set by writefile
+
 static inline void writeNumeric(double x, char **thisCh)
 {
   // hand-rolled / specialized for speed
@@ -179,7 +179,7 @@ static inline void writeNumeric(double x, char **thisCh)
     */
     
     u.d = x;
-    unsigned long long fraction = u.ull & ((1ULL<<52)-1);  // TO const & 0x...
+    unsigned long long fraction = u.ull & ((1ULL<<52)-1);  // TODO const & 0x...
     int exponent = ((int)(u.ull>>52) & 0x7FF) - 1023;
     long double acc = 0;
     for (int i=0; i<52; i++) { 
@@ -199,6 +199,9 @@ static inline void writeNumeric(double x, char **thisCh)
     // since y was 1.* above so surely we know
     int exp = (int)floorl(log10l(y));
     unsigned long long l = (unsigned long long)(y * powl(10.0L, NUM_SF-exp));
+    
+    if (verbose) Rprintf("\nTRACE: y=%.60Le ; l=%llu ; e=%d     ", y, l, exp);
+    
     /*
     if (y<1) { y *= 1e15; exp++; }
     else  
@@ -314,7 +317,7 @@ SEXP writefile(SEXP list_of_columns,
   Rprintf("Your platform/environment has not detected OpenMP support. fwrite() will still work, but slower in single threaded mode.\n");
   // Rprintf rather than warning() because warning() would cause test.data.table() to error about the unexpected warnings
 #endif 
-  const Rboolean verbose = LOGICAL(verboseArg)[0];
+  verbose = LOGICAL(verboseArg)[0];
   const Rboolean quote = LOGICAL(quoteArg)[0];
   const Rboolean turbo = LOGICAL(turboArg)[0];
   
