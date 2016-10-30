@@ -16,8 +16,10 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         is.character(file) && length(file)==1 && !is.na(file))
     file <- path.expand(file)  # "~/foo/bar"
     if (append && missing(col.names) && (file=="" || file.exists(file)))
-        col.names = FALSE  # test 1658.16 checks this  
+        col.names = FALSE  # test 1658.16 checks this
+    if (verbose) old=setDTthreads(1)  # verbose messages (Rprintf) are not thread safe
     .Call(Cwritefile, x, file, sep, eol, na, quote, qmethod == "escape", append, col.names, verbose, turbo)
+    if (verbose) setDTthreads(old)
     invisible()
 }
 

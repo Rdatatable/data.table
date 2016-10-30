@@ -13,6 +13,7 @@ getDTthreads()
   \item{threads}{ An integer >= 0. Default 0 means use all CPU available and leave the operating system to multi task. }
 }
 \value{
-\code{NULL} in case of \code{setDTthreads} and a length 1 \code{integer} in case of \code{getDTthreads}.
+A length 1 \code{integer}. The old value is returned by \code{setDTthreads} so you can store that value and pass it to \code{setDTthreads} again after the section of your code where you, probably, limited to one thread.
 }
 \keyword{ data }
+
