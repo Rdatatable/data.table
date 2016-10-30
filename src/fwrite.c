@@ -200,7 +200,7 @@ static inline void writeNumeric(double x, char **thisCh)
     int exp = (int)floorl(log10l(y));
     unsigned long long l = (unsigned long long)(y * powl(10.0L, NUM_SF-exp));
     
-    if (verbose) Rprintf("\nTRACE: y=%.60Le ; l=%llu ; e=%d     ", y, l, exp);
+    if (verbose) Rprintf("\nTRACE: acc=%.20Le ; y=%.20Le ; l=%llu ; e=%d     ", acc, y, l, exp);
     
     /*
     if (y<1) { y *= 1e15; exp++; }
