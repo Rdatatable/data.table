@@ -9358,13 +9358,20 @@ if (.Machine$sizeof.longdouble == 16) {
   test(1729.1, fwrite(data.table(V1=c(1), V2=c(9.9999999999999982236431605997495353221893310546875))),
                output="V1,V21,10")
   test(1729.2, fwrite(data.table(V2=c(9.9999999999999982236431605997495353221893310546875), V1=c(1))),
-               output="V2,V110,1")
+               output="V2,V110,1")       
+  # temp to see if windows problem is somehow related
+  old=setDTthreads(1)  
+  f = tempfile()
   DT = data.table(V1=c(9999999999.99, 0.00000000000000099, 0.0000000000000000000009, 0.9, 9.0, 9.1, 99.9,
                        0.000000000000000000000999999999999999999999999,
                        99999999999999999999999999999.999999))
   ans = "V19999999999.999.9e-169e-220.999.199.91e-211e+29"
   test(1729.3, fwrite(DT), output=ans)
-  fwrite(DT,verbose=TRUE)  # to trace on windows. TODO fix and remove
+  fwrite(DT,f,verbose=TRUE)  # to trace on windows. TODO fix and remove
+  print(readLines(f))
+  setDTthreads(old)
+  unlink(f)
+  # end temp
   test(1729.4, write.csv(DT,row.names=FALSE,quote=FALSE), output=ans)
   # same decimal/scientific rule (shortest format) as write.csv
   DT = data.table(V1=c(-00000.00006, -123456789.123456789,

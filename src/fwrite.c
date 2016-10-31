@@ -559,7 +559,7 @@ SEXP writefile(SEXP list_of_columns,
       }
       #pragma omp ordered
       {
-        if (f==-1) { *ch='\0'; Rprintf(buffer); }
+        if (f==-1) { *ch='\0'; Rprintf(buffer); /*and for windows*/R_FlushConsole(); }
         else WRITE(f, buffer, (int)(ch-buffer));
         // TODO: safe way to throw error from this thread if write fails (e.g. out disk space)
         //       { close(f); error("Error writing to file: %s", filename) };
