@@ -559,10 +559,21 @@ SEXP writefile(SEXP list_of_columns,
       }
       #pragma omp ordered
       {
-        if (f==-1) { *ch='\0'; Rprintf(buffer); /*and for windows*/R_FlushConsole(); }
-        else WRITE(f, buffer, (int)(ch-buffer));
-        // TODO: safe way to throw error from this thread if write fails (e.g. out disk space)
-        //       { close(f); error("Error writing to file: %s", filename) };
+        if (f==-1) { 
+          *ch='\0';  // standard C string end marker so Rprintf knows where to stop
+          Rprintf(buffer);
+          // despite being within '#pragma omp ordered' it seems Rprintf() even with a R_FlushConsole() too
+          // still has some corruptions on Windows. Or it may be that test() uses a surrounding capture.output().
+          // Anyway, fwrite.R now calls setDTthreads(1) when file="" (f==-1) which has solved 1729.3 and 1729.9.
+        } else {
+          WRITE(f, buffer, (int)(ch-buffer));
+          // TODO: safe way to throw error from this thread if write fails (e.g. out disk space)
+          //       { close(f); error("Error writing to file: %s", filename) };
+          // Adding a progress bar here with Rprintf() or similar should be possible in theory, but see
+          // the comment above about corruptions observed on windows. Could try and see. If the progress bar
+          // corruputed then there's not too much harm. It could be delayed and flushed, or, best just have
+          // one thread handle its update.
+        }
         ch = buffer;
       }
     }

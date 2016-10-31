@@ -9353,7 +9353,8 @@ test(1728.12, DT[order(x,na.last=FALSE)], DT)
 test(1728.13, DT[order(x,na.last=NA)], DT[2])  # was randomly wrong
 
 if (.Machine$sizeof.longdouble == 16) {
-  # so as not to run on solaris-sparc 32bit; might well pass these accuracy tests but don't mind if it doesn't.
+  # so as not to run on solaris-sparc 32bit; might well pass there but not worrying if not
+
   # fwrite wrong and crash on 9.9999999999999982236431605, #1847
   test(1729.1, fwrite(data.table(V1=c(1), V2=c(9.9999999999999982236431605997495353221893310546875))),
                output="V1,V21,10")
@@ -9365,6 +9366,7 @@ if (.Machine$sizeof.longdouble == 16) {
   ans = "V19999999999.999.9e-169e-220.999.199.91e-211e+29"
   test(1729.3, fwrite(DT), output=ans)
   test(1729.4, write.csv(DT,row.names=FALSE,quote=FALSE), output=ans)
+  
   # same decimal/scientific rule (shortest format) as write.csv
   DT = data.table(V1=c(-00000.00006, -123456789.123456789,
                        seq.int(-1000,1000,17),
@@ -9411,7 +9413,8 @@ if (.Machine$sizeof.longdouble == 16) {
   # i) we can easily see intended results right here in future without needing to run
   # ii) we don't get a false pass if fwrite and write.csv agree but are both wrong because of
   #     a problem with the test mechanism itself or something else strange or unexpected
-  # Exactly the same binary representation on both linux and windows:
+  # Exactly the same binary representation on both linux and windows (so any differences in
+  # output are not because the value itself is stored differently) :
   # > cat(binary(DT[[1]]),sep="\n")
   # 0 11111100101 111010011010000100010111101110000100 11110100 00000100
   # 1 11111100101 111010011010000100010111101110000100 11110100 00000100
@@ -9422,7 +9425,6 @@ if (.Machine$sizeof.longdouble == 16) {
   # 0 00000001010 000101000110010100110011101010000110 00111110 01010001
   # 0 11111110100 011001101011100100100011110110110000 01001110 01011101
   test(1729.9, fwrite(DT), output=paste(ans,collapse=""))
-  fwrite(DT,verbose=TRUE)  # to trace on windows. TODO fix and remove
   test(1729.11, write.csv(DT,row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
 }
 
