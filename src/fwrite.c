@@ -367,7 +367,7 @@ SEXP writefile(SEXP list_of_columns,
       lineLenMax+=5;  // width of FALSE
       break;
     case REALSXP:
-      lineLenMax+=20;   // 15 (+ 5 for safety)
+      lineLenMax+=25;   // +- 15digits dec e +- nnn = 22 + 3 safety = 25
       break;
     case INTSXP:
       if (isFactor(column)) {
