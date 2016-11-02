@@ -252,7 +252,7 @@ SEXP writefile(SEXP list_of_columns,
                SEXP col_sep_Arg,
                SEXP row_sep_Arg,
                SEXP na_Arg,
-               SEXP quoteArg,           // TRUE|FALSE
+               SEXP quoteArg,           // 'auto'=NA_LOGICAL|TRUE|FALSE
                SEXP qmethod_escapeArg,  // TRUE|FALSE
                SEXP append,             // TRUE|FALSE
                SEXP col_names,          // TRUE|FALSE
@@ -474,7 +474,13 @@ SEXP writefile(SEXP list_of_columns,
                   if (turbo) {
                     writeInteger(i64, &ch);
                   } else {
-                    ch += sprintf(ch, "%lld", i64);
+                    ch += sprintf(ch,
+                    #ifdef WIN32
+                        "%I64d"
+                    #else
+                        "%lld"
+                    #endif
+                    , i64);
                   }
                 }
               } else {

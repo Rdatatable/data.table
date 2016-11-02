@@ -4,9 +4,9 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
 
     isLOGICAL <- function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
     na = as.character(na[1L]) # fix for #1725
-    if (identical(quote,"auto")) quote=FALSE # TODO to implement auto at C level per field/column
     # validate arguments
-    stopifnot(is.data.frame(x), ncol(x) > 0L, isLOGICAL(quote), 
+    stopifnot(is.data.frame(x), ncol(x) > 0L,
+        identical(quote,"auto") || identical(quote,FALSE) || identical(quote,TRUE),
         length(sep) == 1L && class(sep) == "character" && nchar(sep) == 1L, 
         length(eol) == 1L && class(eol) == "character", 
         length(qmethod) == 1L && qmethod %in% c("double", "escape"), 
@@ -18,6 +18,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     if (append && missing(col.names) && (file=="" || file.exists(file)))
         col.names = FALSE  # test 1658.16 checks this
     if (!..turbo) warning("The ..turbo=FALSE option will be removed in future. Please report any problems with ..turbo=TRUE.")
+    if (identical(quote,"auto")) quote=FALSE  # TODO NA  ... logical NA
     if (verbose || file=="") old=setDTthreads(1)  # console output isn't thread safe    
     .Call(Cwritefile, x, file, sep, eol, na, quote, qmethod == "escape", append, col.names, verbose, ..turbo)
     if (verbose) setDTthreads(old)
