@@ -9426,7 +9426,7 @@ DT = data.table(unlist(.Machine[c("double.eps","double.neg.eps","double.xmin","d
 #    double.eps double.neg.eps    double.xmin    double.xmax
 #  2.220446e-16   1.110223e-16  2.225074e-308  1.797693e+308
 test(1729.12, typeof(DT[[1L]]), "double")
-test(1729.13, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+test(1729.13, gsub("\r","",capture.output(fwrite(DT))), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 
 if ("package:bit64" %in% search()) {
   test(1730.1, typeof(-2147483647L), "integer")
