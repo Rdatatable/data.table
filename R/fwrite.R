@@ -23,5 +23,5 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     invisible()
 }
 
-traceAccuracy = function() .Call(CtraceAccuracy)
+genLookups = function() invisible(.Call(CgenLookups))
 

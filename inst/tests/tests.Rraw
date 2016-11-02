@@ -76,7 +76,6 @@ if (!.devtesting) {
     getdots = data.table:::getdots
     second = data.table::second # avoid S4Vectors::second
     binary = data.table:::binary
-    traceAccuracy = data.table:::traceAccuracy
 }
 
 # test for covering tables.R 100%, we need to run tables() before creating any data.tables to return null data.table
