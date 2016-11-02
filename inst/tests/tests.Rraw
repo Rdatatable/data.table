@@ -9351,81 +9351,78 @@ test(1728.11, DT[order(x,na.last=TRUE)], DT[c(2,1)])
 test(1728.12, DT[order(x,na.last=FALSE)], DT)
 test(1728.13, DT[order(x,na.last=NA)], DT[2])  # was randomly wrong
 
-if (.Machine$sizeof.longdouble == 16) {
-  # so as not to run on solaris-sparc 32bit; might well pass there but not worrying if not
+# fwrite wrong and crash on 9.9999999999999982236431605, #1847
+test(1729.1, fwrite(data.table(V1=c(1), V2=c(9.9999999999999982236431605997495353221893310546875))),
+             output="V1,V21,10")
+test(1729.2, fwrite(data.table(V2=c(9.9999999999999982236431605997495353221893310546875), V1=c(1))),
+             output="V2,V110,1")
+DT = data.table(V1=c(9999999999.99, 0.00000000000000099, 0.0000000000000000000009, 0.9, 9.0, 9.1, 99.9,
+                     0.000000000000000000000999999999999999999999999,
+                     99999999999999999999999999999.999999))
+ans = "V19999999999.999.9e-169e-220.999.199.91e-211e+29"
+test(1729.3, fwrite(DT), output=ans)
+test(1729.4, write.csv(DT,row.names=FALSE,quote=FALSE), output=ans)
 
-  # fwrite wrong and crash on 9.9999999999999982236431605, #1847
-  test(1729.1, fwrite(data.table(V1=c(1), V2=c(9.9999999999999982236431605997495353221893310546875))),
-               output="V1,V21,10")
-  test(1729.2, fwrite(data.table(V2=c(9.9999999999999982236431605997495353221893310546875), V1=c(1))),
-               output="V2,V110,1")
-  DT = data.table(V1=c(9999999999.99, 0.00000000000000099, 0.0000000000000000000009, 0.9, 9.0, 9.1, 99.9,
-                       0.000000000000000000000999999999999999999999999,
-                       99999999999999999999999999999.999999))
-  ans = "V19999999999.999.9e-169e-220.999.199.91e-211e+29"
-  test(1729.3, fwrite(DT), output=ans)
-  test(1729.4, write.csv(DT,row.names=FALSE,quote=FALSE), output=ans)
-  
-  # same decimal/scientific rule (shortest format) as write.csv
-  DT = data.table(V1=c(-00000.00006, -123456789.123456789,
-                       seq.int(-1000,1000,17),
-                       seq(-1000,1000,pi*87),
-                       -1.2345678912345 * 10^(c((-30):30)),
-                       +1.2345678912345 * 10^(c((-30):30)),
-                       -1.2345 * 10^((-20):20),
-                       +1.2345 * 10^((-20):20),
-                       -1.7 * 10^((-20):20),
-                       +1.7 * 10^((-20):20),
-                       -7 * 10^((-20):20),
-                       +7 * 10^((-20):20),
-                       0, NA, NaN, Inf, -Inf,
-                       5.123456789e-290, -5.123456789e-290))
-  test(1729.5, nrow(DT), 503)
-  x = gsub("\r","",capture.output(fwrite(DT,na="NA")))[-1]   # -1 to remove the column name V1
-  y = capture.output(write.csv(DT,row.names=FALSE,quote=FALSE))[-1]
-  # One mismatch that seems to be accuracy in base R's write.csv
-  # tmp = cbind(row=1:length(x), `fwrite`=x, `write.csv`=y)
-  # tmp[x!=y,]
-  # row  fwrite                  write.csv       
-  # 177  "-1234567891234500000"  "-1234567891234499840"
-  # 238  "1234567891234500000"   "1234567891234499840"
-  # looking in surrounding rows for the first one shows the switch point :
-  # tmp[175:179,]
-  # row  fwrite                  write.csv       
-  # 175  "-12345678912345000"    "-12345678912345000"     # ok
-  # 176  "-123456789123450000"   "-123456789123450000"    # ok
-  # 177  "-1234567891234500000"  "-1234567891234499840"   # e+18 last before switch to scientific
-  # 178  "-1.2345678912345e+19"  "-1.2345678912345e+19"   # ok
-  # 179  "-1.2345678912345e+20"  "-1.2345678912345e+20"   # ok
-  test(1729.6, x[c(177,238)], c("-1234567891234500000","1234567891234500000"))
-  x = x[-c(177,238)]
-  y = y[-c(177,238)]
-  test(1729.7, length(x), 501)
-  test(1729.8, x, y)
-  if (!identical(x,y)) print(data.table(row=1:length(x), `fwrite`=x, `write.csv`=y)[x!=y])
+# same decimal/scientific rule (shortest format) as write.csv
+DT = data.table(V1=c(-00000.00006, -123456789.123456789,
+                     seq.int(-1000,1000,17),
+                     seq(-1000,1000,pi*87),
+                     -1.2345678912345 * 10^(c((-30):30)),
+                     +1.2345678912345 * 10^(c((-30):30)),
+                     -1.2345 * 10^((-20):20),
+                     +1.2345 * 10^((-20):20),
+                     -1.7 * 10^((-20):20),
+                     +1.7 * 10^((-20):20),
+                     -7 * 10^((-20):20),
+                     +7 * 10^((-20):20),
+                     0, NA, NaN, Inf, -Inf,
+                     5.123456789e-290, -5.123456789e-290))
+test(1729.5, nrow(DT), 503)
+x = gsub("\r","",capture.output(fwrite(DT,na="NA")))[-1]   # -1 to remove the column name V1
+y = capture.output(write.csv(DT,row.names=FALSE,quote=FALSE))[-1]
+# One mismatch that seems to be accuracy in base R's write.csv
+# tmp = cbind(row=1:length(x), `fwrite`=x, `write.csv`=y)
+# tmp[x!=y,]
+# row  fwrite                  write.csv       
+# 177  "-1234567891234500000"  "-1234567891234499840"
+# 238  "1234567891234500000"   "1234567891234499840"
+# looking in surrounding rows for the first one shows the switch point :
+# tmp[175:179,]
+# row  fwrite                  write.csv       
+# 175  "-12345678912345000"    "-12345678912345000"     # ok
+# 176  "-123456789123450000"   "-123456789123450000"    # ok
+# 177  "-1234567891234500000"  "-1234567891234499840"   # e+18 last before switch to scientific
+# 178  "-1.2345678912345e+19"  "-1.2345678912345e+19"   # ok
+# 179  "-1.2345678912345e+20"  "-1.2345678912345e+20"   # ok
+test(1729.6, x[c(177,238)], c("-1234567891234500000","1234567891234500000"))
+x = x[-c(177,238)]
+y = y[-c(177,238)]
+test(1729.7, length(x), 501)
+test(1729.8, x, y)
+if (!identical(x,y)) print(data.table(row=1:length(x), `fwrite`=x, `write.csv`=y)[x!=y])
 
-  DT = data.table(c(5.123456789e+300, -5.123456789e+300,
-                    1e-305,1e+305, 1.2e-305,1.2e+305, 1.23e-305,1.23e+305))
-  ans = c("V1","5.123456789e+300","-5.123456789e+300",
-          "1e-305","1e+305","1.2e-305","1.2e+305","1.23e-305","1.23e+305")
-  # explicitly check against ans rather than just comparing fwrite to write.csv so that :
-  # i) we can easily see intended results right here in future without needing to run
-  # ii) we don't get a false pass if fwrite and write.csv agree but are both wrong because of
-  #     a problem with the test mechanism itself or something else strange or unexpected
-  # Exactly the same binary representation on both linux and windows (so any differences in
-  # output are not because the value itself is stored differently) :
-  # > cat(binary(DT[[1]]),sep="\n")
-  # 0 11111100101 111010011010000100010111101110000100 11110100 00000100
-  # 1 11111100101 111010011010000100010111101110000100 11110100 00000100
-  # 0 00000001001 110000010110110001011100010100100101 00110101 01110101
-  # 0 11111110100 001000111010010100010110111010000010 11011001 10111010
-  # 0 00000001010 000011011010011101101010100101111100 10111001 10101101
-  # 0 11111110100 010111011111100101001110101100000011 01101011 10101100
-  # 0 00000001010 000101000110010100110011101010000110 00111110 01010001
-  # 0 11111110100 011001101011100100100011110110110000 01001110 01011101
-  test(1729.9, fwrite(DT), output=paste(ans,collapse=""))
-  test(1729.11, write.csv(DT,row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
-}
+DT = data.table(c(5.123456789e+300, -5.123456789e+300,
+                  1e-305,1e+305, 1.2e-305,1.2e+305, 1.23e-305,1.23e+305))
+ans = c("V1","5.123456789e+300","-5.123456789e+300",
+        "1e-305","1e+305","1.2e-305","1.2e+305","1.23e-305","1.23e+305")
+# explicitly check against ans rather than just comparing fwrite to write.csv so that :
+# i) we can easily see intended results right here in future without needing to run
+# ii) we don't get a false pass if fwrite and write.csv agree but are both wrong because of
+#     a problem with the test mechanism itself or something else strange or unexpected
+# Exactly the same binary representation on both linux and windows (so any differences in
+# output are not because the value itself is stored differently) :
+# > cat(binary(DT[[1]]),sep="\n")
+# 0 11111100101 111010011010000100010111101110000100 11110100 00000100
+# 1 11111100101 111010011010000100010111101110000100 11110100 00000100
+# 0 00000001001 110000010110110001011100010100100101 00110101 01110101
+# 0 11111110100 001000111010010100010110111010000010 11011001 10111010
+# 0 00000001010 000011011010011101101010100101111100 10111001 10101101
+# 0 11111110100 010111011111100101001110101100000011 01101011 10101100
+# 0 00000001010 000101000110010100110011101010000110 00111110 01010001
+# 0 11111110100 011001101011100100100011110110110000 01001110 01011101
+test(1729.9, fwrite(DT), output=paste(ans,collapse=""))
+test(1729.11, write.csv(DT,row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
+
 
 ##########################
 
