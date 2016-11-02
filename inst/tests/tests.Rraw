@@ -9422,6 +9422,57 @@ ans = c("V1","5.123456789e+300","-5.123456789e+300",
 # 0 11111110100 011001101011100100100011110110110000 01001110 01011101
 test(1729.9, fwrite(DT), output=paste(ans,collapse=""))
 test(1729.11, write.csv(DT,row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
+DT = data.table(unlist(.Machine[c("double.eps","double.neg.eps","double.xmin","double.xmax")]))
+#    double.eps double.neg.eps    double.xmin    double.xmax
+#  2.220446e-16   1.110223e-16  2.225074e-308  1.797693e+308
+test(1729.12, typeof(DT[[1L]]), "double")
+test(1729.13, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+
+if ("package:bit64" %in% search()) {
+  test(1730.1, typeof(-2147483647L), "integer")
+  test(1730.2, as.integer(-2147483648), NA_integer_, warning="NAs introduced by coercion to integer range")
+  test(1730.3, as.integer("-2147483647"), -2147483647L)
+  test(1730.4, as.integer("-2147483648"), NA_integer_, warning="NAs introduced by coercion to integer range")
+  test(1730.5, as.integer64("-2147483648"), as.integer64(-2147483648))
+  test(1730.6, as.character((as.integer64(2^62)-1)*2+1), "9223372036854775807")
+  test(1730.7, as.character((as.integer64(2^62)-1)*2+2), NA_character_, warning="integer64 overflow")
+  test(1730.8, as.character(-(as.integer64(2^62)-1)*2-1), "-9223372036854775807")
+  test(1730.9, as.character(-(as.integer64(2^62)-1)*2-2), NA_character_, warning="integer64.*flow")
+  # Currently bit64 truncs to extremes in character coercion. Don't test that in case bit64 changes in future.
+  # as.integer64("-9223372036854775808") == NA
+  # as.integer64("-9223372036854775999") == NA
+  # as.integer64("+9223372036854775808") == 9223372036854775807
+  # as.integer64("+9223372036854775999") == 9223372036854775807  
+  DT = data.table( as.integer64(c(
+    "-9223372036854775807",  # integer64 min  2^63-1
+    "+9223372036854775807",  # integer64 max
+    "-9223372036854775806","+9223372036854775806",  # 1 below extreme just to check
+    "0","-1","1",
+    "NA",NA,
+    "-2147483646", # 1 below extreme to check
+    "-2147483647", # smallest integer in R
+    "-2147483648", # NA_INTEGER == INT_MIN but valid integer64
+    "-2147483649",
+    "+2147483646", # positives as well just in case
+    "+2147483647",
+    "+2147483648",
+    "+2147483649"
+  )))
+  ans = c("V1","-9223372036854775807","9223372036854775807","-9223372036854775806","9223372036854775806",
+          "0","-1","1","__NA__","__NA__",
+          "-2147483646","-2147483647","-2147483648","-2147483649",
+          "2147483646","2147483647","2147483648","2147483649")
+  test(1731.1, class(DT[[1L]]), "integer64")
+  test(1731.2, fwrite(DT,na="__NA__"), output=paste(ans,collapse=""))
+  f = tempfile()
+  test(1731.3, fwrite(DT,f, na="__NA__",..turbo=FALSE), NULL, warning="turbo.*will be removed")
+  test(1731.4, readLines(f), ans)
+  unlink(f)
+  test(1731.5, write.csv(DT,na="__NA__",row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
+  # write.csv works on integer64 because it calls bit64's as.character method
+} else {
+  cat("Tests 1730 & 1731 not run. If required call library(bit64) first.\n")
+}
 
 
 ##########################
@@ -9457,7 +9508,8 @@ options(warn=0)
 setDTthreads(0)
 options(oldalloccol)  # set at top of this file
 options(oldWhenJsymbol)
-plat = paste("endian=",.Platform$endian,", sizeof(long double)==",.Machine$sizeof.longdouble,sep="")
+plat = paste("endian=",.Platform$endian,", sizeof(long double)==",.Machine$sizeof.longdouble,
+             ", sizeof(pointer)==",.Machine$sizeof.pointer, sep="")
 if (nfail > 0) {
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
     cat("\r")

@@ -1,6 +1,6 @@
 fwrite <- function(x, file="", append=FALSE, quote="auto",
                    sep=",", eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
-                   na="", col.names=TRUE, qmethod="double", verbose=FALSE, turbo=TRUE) {
+                   na="", col.names=TRUE, qmethod="double", verbose=FALSE, ..turbo=TRUE) {
 
     isLOGICAL <- function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
     na = as.character(na[1L]) # fix for #1725
@@ -12,13 +12,14 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         length(qmethod) == 1L && qmethod %in% c("double", "escape"), 
         isLOGICAL(col.names), isLOGICAL(append), isLOGICAL(verbose), 
         length(na) == 1L, #1725, handles NULL or character(0) input
-        isLOGICAL(turbo),
+        isLOGICAL(..turbo),
         is.character(file) && length(file)==1 && !is.na(file))
     file <- path.expand(file)  # "~/foo/bar"
     if (append && missing(col.names) && (file=="" || file.exists(file)))
         col.names = FALSE  # test 1658.16 checks this
+    if (!..turbo) warning("The ..turbo=FALSE option will be removed in future. Please report any problems with ..turbo=TRUE.")
     if (verbose || file=="") old=setDTthreads(1)  # console output isn't thread safe    
-    .Call(Cwritefile, x, file, sep, eol, na, quote, qmethod == "escape", append, col.names, verbose, turbo)
+    .Call(Cwritefile, x, file, sep, eol, na, quote, qmethod == "escape", append, col.names, verbose, ..turbo)
     if (verbose) setDTthreads(old)
     invisible()
 }

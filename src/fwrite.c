@@ -43,15 +43,16 @@ static inline int maxStrLen(SEXP x, int na_len) {
 #define DECIMAL_SEP '.'  // TODO allow other decimal separator e.g. ','
 
 // Globals for this file only (written once to hold parameters passed from R level)
-static int na_len;
+static size_t na_len;
 static const char *na_str;
 
-static inline void writeInteger(int x, char **thisCh)
+static inline void writeInteger(long long x, char **thisCh)
 {
   char *ch = *thisCh;
-  if (x == NA_INTEGER) {
-    if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
-  } else if (x == 0) {
+  // both integer and integer64 are passed to this function so careful
+  // to test for NA_INTEGER in the calling code. INT_MIN (NA_INTEGER) is
+  // a valid non-NA in integer64
+  if (x == 0) {
     *ch++ = '0';
   } else {
     if (x<0) { *ch++ = '-'; x=-x; }
@@ -126,7 +127,7 @@ static inline void writeNumeric(double x, char **thisCh)
   char *ch = *thisCh;
   if (!R_FINITE(x)) {
     if (ISNAN(x)) {
-      if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }  // by default na_len==0 and the memcpy call will be skipped
+      memcpy(ch, na_str, na_len); ch += na_len; // by default na_len==0 and the memcpy call will be skipped
     } else if (x>0) {
       *ch++ = 'I'; *ch++ = 'n'; *ch++ = 'f';
     } else {
@@ -236,6 +237,16 @@ static inline void writeNumeric(double x, char **thisCh)
   *thisCh = ch;
 }
 
+inline Rboolean isInteger64(SEXP x) {
+  SEXP class = getAttrib(x, R_ClassSymbol);
+  if (isString(class)) {
+    for (int i=0; i<LENGTH(class); i++) {   // inherits()
+      if (STRING_ELT(class, i) == char_integer64) return TRUE;
+    }
+  }
+  return FALSE;
+}
+
 SEXP writefile(SEXP list_of_columns,
                SEXP filenameArg,
                SEXP col_sep_Arg,
@@ -302,15 +313,17 @@ SEXP writefile(SEXP list_of_columns,
   SEXP levels[ncols];  // on-stack vla
   int lineLenMax = 2;  // initialize with eol max width of \r\n on windows
   int sameType = TYPEOF(VECTOR_ELT(list_of_columns, 0));
+  Rboolean integer64[ncols]; // store result of isInteger64() per column for efficiency
   for (int col_i=0; col_i<ncols; col_i++) {
     SEXP column = VECTOR_ELT(list_of_columns, col_i);
-    if (TYPEOF(column) != sameType) sameType = 0;
+    integer64[col_i] = FALSE;
     switch(TYPEOF(column)) {
     case LGLSXP:
       lineLenMax+=5;  // width of FALSE
       break;
     case REALSXP:
-      lineLenMax+=25;   // +- 15digits dec e +- nnn = 22 + 3 safety = 25
+      integer64[col_i] = isInteger64(column);
+      lineLenMax+=25;   // +- 15digits dec e +- nnn = 22 + 3 safety = 25. That covers int64 too (20 digits).
       break;
     case INTSXP:
       if (isFactor(column)) {
@@ -329,6 +342,9 @@ SEXP writefile(SEXP list_of_columns,
     default:
       error("Column %d's type is '%s' - not yet implemented.", col_i+1,type2char(TYPEOF(column)) );
     }
+    if (TYPEOF(column) != sameType || integer64[col_i]) sameType = 0;
+    // we could code up all-integer64 case below as well but that seems even less
+    // likely in practice than all-int or all-double
     lineLenMax++;  // column separator
   }
   clock_t tlineLenMax=clock()-t0;
@@ -351,7 +367,7 @@ SEXP writefile(SEXP list_of_columns,
       for (int col_i=0; col_i<ncols; col_i++) {
         SEXP str = STRING_ELT(names, col_i);
         if (str==NA_STRING) {
-          if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
+          memcpy(ch, na_str, na_len); ch += na_len;
           break;
         }
         if (quote) {
@@ -404,7 +420,7 @@ SEXP writefile(SEXP list_of_columns,
       int upp = start_row + rowsPerBatch;
       if (upp > nrows) upp = nrows;
       if (turbo && sameType == REALSXP) {
-        // avoid deep switch. turbo switches on both sameType and specialized writeNumeric
+        // avoid deep switch() on type. turbo switches on both sameType and specialized writeNumeric
         for (RLEN row_i = start_row; row_i < upp; row_i++) {
           for (int col_i = 0; col_i < ncols; col_i++) {
             SEXP column = VECTOR_ELT(list_of_columns, col_i);
@@ -419,7 +435,11 @@ SEXP writefile(SEXP list_of_columns,
         for (RLEN row_i = start_row; row_i < upp; row_i++) {
           for (int col_i = 0; col_i < ncols; col_i++) {
             SEXP column = VECTOR_ELT(list_of_columns, col_i);
-            writeInteger(INTEGER(column)[row_i], &ch);
+            if (INTEGER(column)[row_i] == NA_INTEGER) {
+              memcpy(ch, na_str, na_len); ch += na_len;
+            } else {
+              writeInteger(INTEGER(column)[row_i], &ch);
+            }
             *ch++ = col_sep;
           }
           ch--;
@@ -427,15 +447,16 @@ SEXP writefile(SEXP list_of_columns,
           ch += row_sep_len;
         }
       } else {
+        // mixed types. switch() on every cell value since must write row-by-row
         for (RLEN row_i = start_row; row_i < upp; row_i++) {
           for (int col_i = 0; col_i < ncols; col_i++) {
             SEXP column = VECTOR_ELT(list_of_columns, col_i);
-            SEXP str;
+            SEXP str;  // no declare within switch() allowed by C, otherwise would do
             switch(TYPEOF(column)) {
             case LGLSXP:
               true_false = LOGICAL(column)[row_i];
               if (true_false == NA_LOGICAL) {
-                if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
+                memcpy(ch, na_str, na_len); ch += na_len;
               } else if (true_false) {
                 memcpy(ch,"TRUE",4);   // Other than strings, field widths are limited which we check elsewhere here to ensure
                 ch += 4;
@@ -445,22 +466,33 @@ SEXP writefile(SEXP list_of_columns,
               }
               break;
             case REALSXP:
-              if (ISNA(REAL(column)[row_i])) {
-                if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
+              if (integer64[col_i]) {
+                long long i64 = *(long long *)&REAL(column)[row_i];
+                if (i64 == NAINT64) {
+                  memcpy(ch, na_str, na_len); ch += na_len;
+                } else {
+                  if (turbo) {
+                    writeInteger(i64, &ch);
+                  } else {
+                    ch += sprintf(ch, "%lld", i64);
+                  }
+                }
               } else {
                 if (turbo) {
-                  // if there are any problems with the hand rolled double writing, then turbo=FALSE reverts to standard library
-                  writeNumeric(REAL(column)[row_i], &ch);
+                  writeNumeric(REAL(column)[row_i], &ch); // handles NA, Inf etc within it
                 } else {
-                  //tt0 = clock();
-                  ch += sprintf(ch, "%.15G", REAL(column)[row_i]);
-                  //tNUM += clock()-tt0;
+                  // if there are any problems with the specialized writeNumeric, user can revert to (slower) standard library
+                  if (ISNAN(REAL(column)[row_i])) {
+                    memcpy(ch, na_str, na_len); ch += na_len;
+                  } else {
+                    ch += sprintf(ch, "%.15g", REAL(column)[row_i]);
+                  }
                 }
               }
               break;
             case INTSXP:
               if (INTEGER(column)[row_i] == NA_INTEGER) {
-                if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
+                memcpy(ch, na_str, na_len); ch += na_len;
               } else if (levels[col_i] != NULL) {   // isFactor(column) == TRUE
                 str = STRING_ELT(levels[col_i], INTEGER(column)[row_i]-1);
                 if (quote) {
@@ -480,7 +512,7 @@ SEXP writefile(SEXP list_of_columns,
             case STRSXP:
               str = STRING_ELT(column, row_i);
               if (str==NA_STRING) {
-                if (na_len) { memcpy(ch, na_str, na_len); ch += na_len; }
+                memcpy(ch, na_str, na_len); ch += na_len;
               } else if (quote) {
                 QUOTE_FIELD;
               } else {

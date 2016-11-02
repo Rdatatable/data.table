@@ -8,7 +8,7 @@ As \code{write.csv} and but \emph{much} faster (e.g. 1 minute versus 2 seconds) 
 fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
        eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
        na = "", col.names = TRUE, qmethod = "double",
-       verbose=FALSE, turbo=TRUE)
+       verbose=FALSE, ..turbo=TRUE)
 }
 \arguments{
   \item{x}{A \code{data.table} or \code{data.frame} to write.}
@@ -25,18 +25,18 @@ fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
 	\item{"double" (default), in which case it is doubled.}
       }}
   \item{verbose}{Be chatty and report timings?}
-  \item{turbo}{Use specialized custom C code to format numeric and integer columns. This reduces call overhead to the C library and avoids any use of memory buffers (copies) at all. Try with and without to see the difference it makes on your machine and please report any significant differences in output.}
+  \item{..turbo}{Use specialized custom C code to format numeric, integer and integer64 columns. This reduces call overhead to the C library and avoids any use of memory buffers (copies) at all. Try with and without to see the difference it makes on your machine and please report any significant differences in output. If you do find cases where \code{..turbo=FALSE} is needed, please report them as bugs, since this option WILL BE REMOVED in future. Hence why it has the \code{__} prefix.}
 }
 \details{
 \code{fwrite} began as a community contribution with a \href{https://github.com/Rdatatable/data.table/pull/1613}{Pull Request PR#1613} by Otto Seiskari. Following that, Matt worked on reducing time spent on I/O with buffered write. This resulted in further speed enhancements.
 
 Since those improvements resulted in the time spent almost entirely on formatting, it meant that we could benefit a lot from parallelisation. This was also done, which improved performance even further (YMMV depending on the number of cores / threads per core in one's machine).
 
-Finally, with \code{turbo = TRUE}, the time spent on formatting (through calls to C libraries) itself was reduced by implementing native C-code for writing \code{integer} and \code{numeric} types.
+Finally, with \code{..turbo = TRUE}, the time spent on formatting (through calls to C libraries) itself was reduced by implementing native C-code for writing \code{integer} and \code{numeric} types.
 
 The logic for formatting \code{integer} columns is simpler (= faster) than \code{numeric} types. Therefore columns stored as \code{numeric} types, but in reality are \code{integers} are identified and formatted using integer logic for further improvement.
 
-With this, writing a \code{data.table} of approximately 23 million rows and 19 columns (~2.85GB on disk) takes ~5.9s with \code{turbo = TRUE} and ~20s with \code{turbo = FALSE} on a 13' Macbook Pro with 512GB SSD and an i7 processor with 2 cores containing one thread per core (and two virtual threads via hyperthreading).
+With this, writing a \code{data.table} of approximately 23 million rows and 19 columns (~2.85GB on disk) takes ~5.9s with \code{..turbo = TRUE} and ~20s with \code{..turbo = FALSE} on a 13' Macbook Pro with 512GB SSD and an i7 processor with 2 cores containing one thread per core (and two virtual threads via hyperthreading).
 
 }
 \seealso{
