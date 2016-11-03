@@ -7,14 +7,14 @@ As \code{write.csv} and but \emph{much} faster (e.g. 1 minute versus 2 seconds) 
 \usage{
 fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
        eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
-       na = "", col.names = TRUE, qmethod = "double",
+       na = "", col.names = TRUE, qmethod = c("double","escape"),
        verbose=FALSE, ..turbo=TRUE)
 }
 \arguments{
   \item{x}{A \code{data.table} or \code{data.frame} to write.}
   \item{file}{Output file name. \code{""} indicates output to the console. }
   \item{append}{If \code{TRUE}, the file is opened in append mode and column names (header row) are not written.}
-  \item{quote}{When \code{"auto"}, character and factor columns as well as all column names will only be surrounded by double quotes if the field contains the separator, a line ending or the quote itself, otherwise the quote characters are omitted. If \code{FALSE} the fields are never wrapped with quotes even if this would break the CSV due to the contents of the field. If \code{TRUE} quotes are always included for character and factor columns.}
+  \item{quote}{When \code{"auto"}, character columns, factor columns and column names will only be surrounded by double quotes if the field does contain the separator, a line ending or the quote itself. If \code{FALSE} the fields are never wrapped with quotes even if this would break the CSV due to the contents of the field. If \code{TRUE} quotes are always included for character and factor columns.}
   \item{sep}{The separator between columns. Default is \code{","}.}
   \item{eol}{Line separator. Default is \code{"\r\n"} for windows and \code{"\n"} otherwise.}
   \item{na}{The string to use for missing values in the data. Default is a blank string, \code{""}.}
@@ -22,7 +22,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
 \item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
       \itemize{
 	\item{"escape" - the quote character (as well as the backslash character) is escaped in C style by a backslash, or}
-	\item{"double" (default), in which case it is doubled.}
+	\item{"double" (default, same as \code{write.csv}), in which case the double quote is doubled with another one.}
       }}
   \item{verbose}{Be chatty and report timings?}
   \item{..turbo}{Use specialized custom C code to format numeric, integer and integer64 columns. This reduces call overhead to the C library and avoids any use of memory buffers (copies) at all. Try with and without to see the difference it makes on your machine and please report any significant differences in output. If you do find cases where \code{..turbo=FALSE} is needed, please report them as bugs, since this option WILL BE REMOVED in future. Hence why it has the \code{__} prefix.}
@@ -61,11 +61,11 @@ fwrite(data.table(first=c(1,2), second=c(NA, 'foo"bar')), "table.csv")
 
 set.seed(45L)
 dt = as.data.table(matrix(as.numeric(sample(5e6*10L)), ncol=10L)) # 381MB
-system.time(fwrite(dt, "~/tmp.tsv", quote=FALSE, sep="\t")) # 0.795s, file size=439MB
+system.time(fwrite(dt, "~/tmp.tsv", sep="\t")) # 0.795s, file size=439MB
 
 # append to file
 dt2 = as.data.table(matrix(runif(100), ncol=10L))
-fwrite(dt2, "~/tmp.tsv", quote=FALSE, sep="\t", append=TRUE)
+fwrite(dt2, "~/tmp.tsv", sep="\t", append=TRUE)
 }
 }
 \keyword{ data }

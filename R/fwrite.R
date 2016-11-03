@@ -1,9 +1,10 @@
 fwrite <- function(x, file="", append=FALSE, quote="auto",
                    sep=",", eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
-                   na="", col.names=TRUE, qmethod="double", verbose=FALSE, ..turbo=TRUE) {
-
-    isLOGICAL <- function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
+                   na="", col.names=TRUE, qmethod=c("double","escape"), verbose=FALSE, ..turbo=TRUE) {
+    isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
     na = as.character(na[1L]) # fix for #1725
+    if (missing(qmethod)) qmethod = qmethod[1L]
+    # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
     # validate arguments
     stopifnot(is.data.frame(x), ncol(x) > 0L,
         identical(quote,"auto") || identical(quote,FALSE) || identical(quote,TRUE),
@@ -18,9 +19,9 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     if (append && missing(col.names) && (file=="" || file.exists(file)))
         col.names = FALSE  # test 1658.16 checks this
     if (!..turbo) warning("The ..turbo=FALSE option will be removed in future. Please report any problems with ..turbo=TRUE.")
-    if (identical(quote,"auto")) quote=FALSE  # TODO NA  ... logical NA
+    if (identical(quote,"auto")) quote=NA  # logical NA
     if (verbose || file=="") old=setDTthreads(1)  # console output isn't thread safe    
-    .Call(Cwritefile, x, file, sep, eol, na, quote, qmethod == "escape", append, col.names, verbose, ..turbo)
+    .Call(Cwritefile, x, file, sep, eol, na, quote, qmethod=="escape", append, col.names, verbose, ..turbo)
     if (verbose) setDTthreads(old)
     invisible()
 }

@@ -8670,8 +8670,13 @@ test(1658.3, fwrite(data.table(
     output='"a","other ""column"\n,"foo bar"\n1.2e-100,\n3.01,"quote"" and \\ bs"\n')
 
 # changing sep
-test(1658.4, fwrite(data.table(a="foo", b="ba\"r"), sep=";", quote=TRUE),
-            output='"a";"b"\n"foo";"ba""r"\n')
+DT = data.table(a="foo", b="ba\"r")
+ans = '"a";"b"\n"foo";"ba""r"\n'
+test(1658.41, fwrite(DT, sep=";", quote=TRUE, qmethod="double"), output=ans)
+test(1658.42, write.table(DT, sep=";", qmethod="double", row.names=FALSE), output=ans)
+ans = '"a";"b"\n"foo";"ba\\"r"\n'
+test(1658.43, fwrite(DT, sep=";", quote=TRUE, qmethod="escape"), output=ans)
+test(1658.44, write.table(DT, sep=";", qmethod="escape", row.names=FALSE), output=ans)
 
 # changing eol
 if (.Platform$OS.type=="unix") {
@@ -9473,6 +9478,37 @@ if ("package:bit64" %in% search()) {
 } else {
   cat("Tests 1730 & 1731 not run. If required call library(bit64) first.\n")
 }
+
+# fwrite(,quote='auto' and qmethod)
+DT = data.table(x=c("fo,o", "foo", 'b"ar', NA, "", "NA"),
+                "ColName,WithComma"=1:6,
+                'Three\nLine\nColName'=c('bar\n', "noNeedToQuote", 'a\nlong\n"sentence"', "0000", " \n  ", '   "\n  '))
+x = gsub("\r","",capture.output(fwrite(DT,na="NA",quote=TRUE, qmethod='escape')))
+y = capture.output(write.table(DT,row.names=FALSE,quote=TRUE,sep=",",qmethod='escape'))
+test(1732.1, x, y)
+x = gsub("\r","",capture.output(fwrite(DT,na="NA",quote=TRUE,qmethod='double')))
+y = capture.output(write.table(DT,row.names=FALSE,quote=TRUE,sep=",",qmethod='double'))
+test(1732.2, x, y)
+x = gsub("\r","",capture.output(fwrite(DT,na="NA",quote=FALSE)))
+y = capture.output(write.csv(DT,row.names=FALSE,quote=FALSE))
+test(1732.3, x, y)
+f = tempfile()
+fwrite(DT,f,quote='auto',qmethod='escape')
+# write.csv / write.table don't do field-by-field quoting so can't compare to them.
+ans = c('x,"ColName,WithComma","Three', 'Line', 'ColName"',
+        '"fo,o",1,"bar','"',
+        'foo,2,noNeedToQuote',
+        'b"ar,3,"a',  'long', "\\\"sentence\\\"\"",
+        ',4,0000',
+        ',5," ','  "',
+        "NA,6,\"   \\\"", "  \"")
+test(1732.4, readLines(f), ans)
+fwrite(DT,f,quote='auto',qmethod='double')
+ans[9] = "\"\"sentence\"\"\""
+ans[13] = "NA,6,\"   \"\""
+test(1732.5, readLines(f), ans)
+DT = data.table(A=c("foo","ba,r","baz"), B=c("AA","BB","CC"), C=c("DD","E\nE","FF"))
+test(1732.6, fwrite(DT, quote='auto'), output='A,B,Cfoo,AA,DD"ba,r",BB,"EE"baz,CC,FF')
 
 
 ##########################

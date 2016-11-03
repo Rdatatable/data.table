@@ -15,29 +15,6 @@
 #define CLOSE close
 #endif
 
-static inline int maxStrLen(SEXP x, int na_len) {
-  // The max nchar of any string in a column or factor level
-  int max=na_len, nrow=length(x);
-  for (int i=0; i<nrow; i++) {
-    int l = LENGTH(STRING_ELT(x,i));
-    if (l>max) max=l;
-  }
-  // TODO if(quote) count them here (we hopped already to get LENGTH), add that quote count to max
-  //      exactly and remove the *(1+quote) later
-  //      if there are no quotes present in any string in a column save in quotePresent[ncol] lookup
-  //      and switch to memcpy when it's known no quotes are present to be escaped for that column
-  return max;
-}
-
-#define QUOTE_FIELD \
-  *ch++ = QUOTE; \
-  for (const char *ch2 = CHAR(str); *ch2 != '\0'; ch2++) { \
-    if (*ch2 == QUOTE) *ch++ = ESCAPE_QUOTE; \
-    if (qmethod_escape && *ch2 == ESCAPE) *ch++ = ESCAPE; \
-    *ch++ = *ch2; \
-  } \
-  *ch++ = QUOTE
-
 #define NUM_SF   15
 #define SIZE_SF  1000000000000000ULL  // 10^NUM_SF
 #define DECIMAL_SEP '.'  // TODO allow other decimal separator e.g. ','
@@ -45,6 +22,10 @@ static inline int maxStrLen(SEXP x, int na_len) {
 // Globals for this file only (written once to hold parameters passed from R level)
 static size_t na_len;
 static const char *na_str;
+static char col_sep;
+static Rboolean verbose=FALSE;
+static Rboolean quote=FALSE;
+static Rboolean qmethod_escape=TRUE;
 
 static inline void writeInteger(long long x, char **thisCh)
 {
@@ -107,12 +88,10 @@ SEXP genLookups() {
 }
 */
 
-union {
+static union {
   double d;
   unsigned long long ull;
 } u;
-
-Rboolean verbose=FALSE; // set by writefile
 
 static inline void writeNumeric(double x, char **thisCh)
 {
@@ -237,6 +216,60 @@ static inline void writeNumeric(double x, char **thisCh)
   *thisCh = ch;
 }
 
+static inline int maxStrLen(SEXP x, int na_len) {
+  // The max nchar of any string in a column or factor level
+  int max=na_len, nrow=length(x);
+  for (int i=0; i<nrow; i++) {
+    int l = LENGTH(STRING_ELT(x,i));  // just looks at header. no need for strlen scan
+    if (l>max) max=l;
+  }
+  return max;
+}
+
+static inline void writeString(SEXP x, char **thisCh)
+{
+  char *ch = *thisCh;
+  if (x == NA_STRING) {
+    // NA is not quoted by write.csv even when quote=TRUE to distinguish from "NA"
+    memcpy(ch, na_str, na_len); ch += na_len;
+  } else {
+    Rboolean q = quote;
+    if (q==NA_LOGICAL) { // quote="auto"
+      const char *tt = CHAR(x);
+      while (*tt!='\0' && *tt!=col_sep && *tt!='\n') *ch++ = *tt++;
+      // windows includes \n in its \r\n so looking for \n only is sufficient
+      if (*tt=='\0') {
+        // most common case: no sep or newline contained in string
+        *thisCh = ch;  // advance caller over the field already written
+        return;
+      }
+      ch = *thisCh; // rewind the field written since it contains some sep or \n
+      q = TRUE;
+    }
+    if (q==FALSE) {
+      memcpy(ch, CHAR(x), LENGTH(x));
+      ch += LENGTH(x);
+    } else {
+      *ch++ = '"';
+      const char *tt = CHAR(x);
+      if (qmethod_escape) {
+        while (*tt!='\0') {
+          if (*tt=='"' || *tt=='\\') *ch++ = '\\';
+          *ch++ = *tt++;
+        }
+      } else {
+        // qmethod='double'
+        while (*tt!='\0') {
+          if (*tt=='"') *ch++ = '"';
+          *ch++ = *tt++;
+        }
+      }
+      *ch++ = '"';
+    }
+  }
+  *thisCh = ch;
+}       
+
 inline Rboolean isInteger64(SEXP x) {
   SEXP class = getAttrib(x, R_ClassSymbol);
   if (isString(class)) {
@@ -272,19 +305,15 @@ SEXP writefile(SEXP list_of_columns,
   // Rprintf rather than warning() because warning() would cause test.data.table() to error about the unexpected warnings
 #endif 
   verbose = LOGICAL(verboseArg)[0];
-  const Rboolean quote = LOGICAL(quoteArg)[0];
   const Rboolean turbo = LOGICAL(turboArg)[0];
   
-  const char col_sep = *CHAR(STRING_ELT(col_sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
-  
+  col_sep = *CHAR(STRING_ELT(col_sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
   const char *row_sep = CHAR(STRING_ELT(row_sep_Arg, 0));
   const int row_sep_len = strlen(row_sep);  // someone somewhere might want a trailer on every line
   na_str = CHAR(STRING_ELT(na_Arg, 0));
   na_len = strlen(na_str);
-  const char QUOTE = '"';
-  const char ESCAPE = '\\';
-  const Rboolean qmethod_escape = LOGICAL(qmethod_escapeArg)[0];
-  const char ESCAPE_QUOTE = qmethod_escape ? ESCAPE : QUOTE;
+  quote = LOGICAL(quoteArg)[0];
+  qmethod_escape = LOGICAL(qmethod_escapeArg)[0];
   const char *filename = CHAR(STRING_ELT(filenameArg, 0));
 
   errno = 0;   // clear flag possibly set by previous errors
@@ -329,15 +358,16 @@ SEXP writefile(SEXP list_of_columns,
       if (isFactor(column)) {
         levels[col_i] = getAttrib(column, R_LevelsSymbol);
         sameType = 0; // TODO: enable deep-switch-avoidance for all columns factor
-        lineLenMax += maxStrLen(levels[col_i], na_len)*(1+quote) + quote*2;
-        //                                    ^^^^^^^^^^ in case every character in the field is a quote, each to be escaped (!)
+        lineLenMax += maxStrLen(levels[col_i], na_len)*2 +2;
+        //                                            ^^ every character in field could be quote, each to be escaped (!)
+        //                                               ^^ surround quotes counted always for safety 
       } else {
         levels[col_i] = NULL;
         lineLenMax+=11;   // 11 + sign
       }
       break;
     case STRSXP:
-      lineLenMax += maxStrLen(column, na_len)*(1+quote) + quote*2;
+      lineLenMax += maxStrLen(column, na_len)*2 + 2;
       break;
     default:
       error("Column %d's type is '%s' - not yet implemented.", col_i+1,type2char(TYPEOF(column)) );
@@ -359,23 +389,13 @@ SEXP writefile(SEXP list_of_columns,
       if (LENGTH(names) != ncols) error("Internal error: length of column names is not equal to the number of columns. Please report.");
       int bufSize = 0;
       for (int col_i=0; col_i<ncols; col_i++) bufSize += LENGTH(STRING_ELT(names, col_i));
-      bufSize *= 1+quote;  // in case every colname is filled with quotes to be escaped!
-      bufSize += ncols*(2*quote + 1) + 3;
+      bufSize *= 2;  // in case every column name is filled with quotes to be escaped (!)
+      bufSize += ncols*(2/*beginning and ending quote*/ + 1/*sep*/) + 2/*line ending (\r\n on windows)*/ + 1/*\0*/;
       char *buffer = malloc(bufSize);
       if (buffer == NULL) error("Unable to allocate %dMB buffer for column names", bufSize/(1024*1024));
       char *ch = buffer;
       for (int col_i=0; col_i<ncols; col_i++) {
-        SEXP str = STRING_ELT(names, col_i);
-        if (str==NA_STRING) {
-          memcpy(ch, na_str, na_len); ch += na_len;
-          break;
-        }
-        if (quote) {
-          QUOTE_FIELD;
-        } else {
-          memcpy(ch, CHAR(str), LENGTH(str));
-          ch += LENGTH(str);
-        }
+        writeString(STRING_ELT(names, col_i), &ch);
         *ch++ = col_sep;
       }
       ch--;  // backup onto the last col_sep after the last column
@@ -414,7 +434,7 @@ SEXP writefile(SEXP list_of_columns,
     #pragma omp single
     {
       nth = omp_get_num_threads();
-    }    
+    }
     #pragma omp for ordered schedule(dynamic)
     for(RLEN start_row = 0; start_row < nrows; start_row += rowsPerBatch) { 
       int upp = start_row + rowsPerBatch;
@@ -451,7 +471,6 @@ SEXP writefile(SEXP list_of_columns,
         for (RLEN row_i = start_row; row_i < upp; row_i++) {
           for (int col_i = 0; col_i < ncols; col_i++) {
             SEXP column = VECTOR_ELT(list_of_columns, col_i);
-            SEXP str;  // no declare within switch() allowed by C, otherwise would do
             switch(TYPEOF(column)) {
             case LGLSXP:
               true_false = LOGICAL(column)[row_i];
@@ -500,13 +519,7 @@ SEXP writefile(SEXP list_of_columns,
               if (INTEGER(column)[row_i] == NA_INTEGER) {
                 memcpy(ch, na_str, na_len); ch += na_len;
               } else if (levels[col_i] != NULL) {   // isFactor(column) == TRUE
-                str = STRING_ELT(levels[col_i], INTEGER(column)[row_i]-1);
-                if (quote) {
-                  QUOTE_FIELD;
-                } else {
-                  memcpy(ch, CHAR(str), LENGTH(str));
-                  ch += LENGTH(str);
-                }
+                writeString(STRING_ELT(levels[col_i], INTEGER(column)[row_i]-1), &ch);
               } else {
                 if (turbo) {
                   writeInteger(INTEGER(column)[row_i], &ch);
@@ -516,17 +529,7 @@ SEXP writefile(SEXP list_of_columns,
               }
               break;
             case STRSXP:
-              str = STRING_ELT(column, row_i);
-              if (str==NA_STRING) {
-                memcpy(ch, na_str, na_len); ch += na_len;
-              } else if (quote) {
-                QUOTE_FIELD;
-              } else {
-                //tt0 = clock();
-                memcpy(ch, CHAR(str), LENGTH(str));  // could have large fields. Doubt call overhead is much of an issue on small fields.
-                ch += LENGTH(str);
-                //tSTR += clock()-tt0;
-              }
+              writeString(STRING_ELT(column, row_i), &ch);
               break;
             // default:
             // An uncovered type would have already thrown above when calculating maxLineLen earlier
