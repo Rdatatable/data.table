@@ -293,6 +293,7 @@ SEXP writefile(SEXP list_of_columns,
                SEXP append,             // TRUE|FALSE
                SEXP row_names,          // TRUE|FALSE
                SEXP col_names,          // TRUE|FALSE
+               SEXP showProgressArg,
                SEXP verboseArg,
                SEXP turboArg)
 {
@@ -307,7 +308,12 @@ SEXP writefile(SEXP list_of_columns,
 #ifndef _OPENMP
   Rprintf("Your platform/environment has not detected OpenMP support. fwrite() will still work, but slower in single threaded mode.\n");
   // Rprintf rather than warning() because warning() would cause test.data.table() to error about the unexpected warnings
-#endif 
+#endif
+
+  const Rboolean showProgress = LOGICAL(showProgressArg)[0];
+  time_t start = time(NULL);
+  time_t nexttime = start+2; // start printing progress meter in 2 sec if not completed by then
+  
   verbose = LOGICAL(verboseArg)[0];
   const Rboolean turbo = LOGICAL(turboArg)[0];
   
@@ -444,12 +450,12 @@ SEXP writefile(SEXP list_of_columns,
   if (lineLenMax > bufSize) bufSize = lineLenMax;
   const int rowsPerBatch = bufSize/lineLenMax;
   const int numBatches = (nrows-1)/rowsPerBatch + 1;
-  if (verbose) Rprintf("Writing data rows in %d batches of %d rows (each buffer size %.3fMB, turbo=%d) ... ",
-    numBatches, rowsPerBatch, 1.0*bufSize/(1024*1024), turbo);
+  if (verbose) Rprintf("Writing data rows in %d batches of %d rows (each buffer size %.3fMB, turbo=%d, showProgress=%d) ... ",
+    numBatches, rowsPerBatch, 1.0*bufSize/(1024*1024), turbo, showProgress);
   t0 = clock();
   
   int nth;
-  Rboolean failed=FALSE;
+  Rboolean failed=FALSE, hasPrinted=FALSE;
   int failed_reason=0;  // -1 for malloc fail, else write's errno (>=1)
   #pragma omp parallel num_threads(getDTthreads())
   {
@@ -469,6 +475,8 @@ SEXP writefile(SEXP list_of_columns,
     {
       nth = omp_get_num_threads();
     }
+    int me = omp_get_thread_num();
+    
     #pragma omp for ordered schedule(dynamic)
     for(RLEN start_row = 0; start_row < nrows; start_row += rowsPerBatch) {
       if (failed) continue;  // Not break. See comments above about #omp cancel
@@ -595,7 +603,7 @@ SEXP writefile(SEXP list_of_columns,
           // Although this ordered section is one-at-a-time it seems that calling Rprintf() here, even with a
           // R_FlushConsole() too, causes corruptions on Windows but not on Linux. At least, as observed so
           // far using capture.output(). Perhaps Rprintf() updates some state or allocation that cannot be done
-          // by child threads, even when one-at-a-time. Anyway, made this single-threaded when output to console
+          // by slave threads, even when one-at-a-time. Anyway, made this single-threaded when output to console
           // to be safe (setDTthreads(1) in fwrite.R) since output to console doesn't need to be fast.
         } else {
           if (!failed && WRITE(f, buffer, (int)(ch-buffer)) == -1) {
@@ -604,6 +612,21 @@ SEXP writefile(SEXP list_of_columns,
           // The !failed is so the other threads that were waiting at this '#omp ordered' don't try
           // and write after the first fail.
           
+          time_t now;
+          if (me==0 && showProgress && (now=time(NULL))>=nexttime) {
+            // See comments above inside the f==-1 clause.
+            // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
+            // master thread (me==0) and hopefully this will work on Windows. If not, user should set
+            // showProgress=FALSE until this can be fixed or removed.
+            int eta = (int)((nrows-upp)*(((double)(now-start))/upp));
+            if (hasPrinted || eta >= 2) {
+              Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. ETA %d secs.",
+                       (100.0*upp)/nrows, nrows, (int)(now-start), nth, nth==1?"":"s", eta);
+              R_FlushConsole();    // for Windows
+              nexttime = now+1;
+              hasPrinted = TRUE;
+            }
+          }
           // TODO: Adding a progress bar here with Rprintf() or similar should be possible in theory, but see
           // the comment above about corruptions observed on windows. Could try and see. If the progress bar
           // corruputed then there's not too much harm. It could be delayed and flushed, or, best just have
@@ -617,6 +640,11 @@ SEXP writefile(SEXP list_of_columns,
     // If malloc() failed for me, free(NULL) is ok and does nothing.
   }
   // Finished parallel region and can call R API safely now.
+  if (hasPrinted) {
+    // clear the progress meter
+    Rprintf("\r                                                                                   \r");
+    R_FlushConsole();  // for Windows
+  }
   if (failed && failed_reason==-1)
     error("One or more threads failed to alloc or realloc their private buffer. Out of memory.\n");
   if (f!=-1 && CLOSE(f) && !failed) error("Error closing file '%s': %s", filename, strerror(errno));

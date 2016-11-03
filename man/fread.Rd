@@ -45,7 +45,7 @@ data.table=getOption("datatable.fread.datatable")   # default: TRUE
   \item{fill}{logical (default is \code{FALSE}). If \code{TRUE} then in case the rows have unequal length, blank fields are implicitly filled.}
   \item{blank.lines.skip}{\code{logical}, default is \code{FALSE}. If \code{TRUE} blank lines in the input are ignored.}
   \item{key}{Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. Only valid when argument \code{data.table=TRUE}.}
-  \item{showProgress}{ TRUE displays progress on the console using \code{\\r}. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
+  \item{showProgress}{ \code{TRUE} displays progress on the console using \code{\\r}. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. }
 }
 \details{

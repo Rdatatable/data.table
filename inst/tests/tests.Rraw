@@ -9534,6 +9534,27 @@ test(1734.6, capture.output(fwrite(DF,row.names=TRUE,quote=FALSE)),
              capture.output(write.csv(DF,quote=FALSE)))
 test(1734.7, capture.output(fwrite(DF,row.names=TRUE,quote=TRUE)),
              capture.output(write.csv(DF)))
+             
+# fwrite showProgress test. Turned off as too long for CRAN.
+if (FALSE) {
+  N = 6e8  # apx 6GB
+  DT = data.table(C1=sample(100000,N,replace=TRUE), C2=sample(paste0(LETTERS,LETTERS,LETTERS), N, replace=TRUE))
+  gc()
+  setDTthreads(1)  # to slow it down
+  system.time(fwrite(DT, "/tmp/test.txt"))
+  system("ls -lh /tmp/test.txt")
+  
+  # ensure progress meter itself isn't taking time; e.g. too many calls to time() or clock()
+  system.time(fwrite(DT, "/tmp/test.txt", showProgress=FALSE))
+  
+  setDTthreads(2)  # make sure it works with several threads
+  system.time(fwrite(DT, "/tmp/test.txt"))
+  setDTthreads(4)
+  system.time(fwrite(DT, "/tmp/test.txt"))
+  setDTthreads(0)
+  system.time(fwrite(DT, "/tmp/test.txt"))
+}
+
 
 ##########################
 

@@ -8,7 +8,9 @@ As \code{write.csv} and but \emph{much} faster (e.g. 1 minute versus 2 seconds) 
 fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
        eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
        na = "", dec = ".", row.names = FALSE, col.names = TRUE, qmethod = c("double","escape"),
-       verbose=FALSE, ..turbo=TRUE)
+       showProgress = getOption("datatable.showProgress"),
+       verbose = getOption("datatable.verbose"),
+       ..turbo=TRUE)
 }
 \arguments{
   \item{x}{A \code{data.table} or \code{data.frame} to write.}
@@ -26,6 +28,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
 	\item{"escape" - the quote character (as well as the backslash character) is escaped in C style by a backslash, or}
 	\item{"double" (default, same as \code{write.csv}), in which case the double quote is doubled with another one.}
       }}
+  \item{showProgress}{ Display a progress meter on the console when \code{file!=""}. }
   \item{verbose}{Be chatty and report timings?}
   \item{..turbo}{Use specialized custom C code to format numeric, integer and integer64 columns. This reduces call overhead to the C library and avoids any use of memory buffers (copies) at all. Try with and without to see the difference it makes on your machine and please report any significant differences in output. If you do find cases where \code{..turbo=FALSE} is needed, please report them as bugs, since this option WILL BE REMOVED in future. Hence why it has the \code{__} prefix.}
 }
