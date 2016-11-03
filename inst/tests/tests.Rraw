@@ -8678,11 +8678,8 @@ ans = '"a";"b"\n"foo";"ba\\"r"\n'
 test(1658.43, fwrite(DT, sep=";", quote=TRUE, qmethod="escape"), output=ans)
 test(1658.44, write.table(DT, sep=";", qmethod="escape", row.names=FALSE), output=ans)
 
-# changing eol
 if (.Platform$OS.type=="unix") {
-  # can change eol on windows too; the only reason for running this test on linux only
-  # is that inside fwrite_test() on windows it gsub's '\r\n' in the result to '\n'
-  # for the other tests which have a fixed \n endings to compare to
+  # on linux we can create windows format files if we want
   test(1658.5, fwrite(data.table(a="foo", b="bar"), eol="\r\n", quote=TRUE),
                output = '"a","b""foo","bar"')
 }
@@ -9381,9 +9378,11 @@ DT = data.table(V1=c(-00000.00006, -123456789.123456789,
                      -7 * 10^((-20):20),
                      +7 * 10^((-20):20),
                      0, NA, NaN, Inf, -Inf,
-                     5.123456789e-290, -5.123456789e-290))
-test(1729.5, nrow(DT), 503)
-x = gsub("\r","",capture.output(fwrite(DT,na="NA")))[-1]   # -1 to remove the column name V1
+                     5.123456789e-290, -5.123456789e-290,
+                     5.123456789e-307, -5.123456789e-307,
+                     5.123456789e+307, -5.123456789e+307))
+test(1729.5, nrow(DT), 507)
+x = capture.output(fwrite(DT,na="NA"))[-1]   # -1 to remove the column name V1
 y = capture.output(write.csv(DT,row.names=FALSE,quote=FALSE))[-1]
 # One mismatch that seems to be accuracy in base R's write.csv
 # tmp = cbind(row=1:length(x), `fwrite`=x, `write.csv`=y)
@@ -9402,7 +9401,7 @@ y = capture.output(write.csv(DT,row.names=FALSE,quote=FALSE))[-1]
 test(1729.6, x[c(177,238)], c("-1234567891234500000","1234567891234500000"))
 x = x[-c(177,238)]
 y = y[-c(177,238)]
-test(1729.7, length(x), 501)
+test(1729.7, length(x), 505)
 test(1729.8, x, y)
 if (!identical(x,y)) print(data.table(row=1:length(x), `fwrite`=x, `write.csv`=y)[x!=y])
 
@@ -9431,7 +9430,7 @@ DT = data.table(unlist(.Machine[c("double.eps","double.neg.eps","double.xmin","d
 #    double.eps double.neg.eps    double.xmin    double.xmax
 #  2.220446e-16   1.110223e-16  2.225074e-308  1.797693e+308
 test(1729.12, typeof(DT[[1L]]), "double")
-test(1729.13, gsub("\r","",capture.output(fwrite(DT))), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+test(1729.13, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 
 if ("package:bit64" %in% search()) {
   test(1730.1, typeof(-2147483647L), "integer")
@@ -9483,13 +9482,13 @@ if ("package:bit64" %in% search()) {
 DT = data.table(x=c("fo,o", "foo", 'b"ar', NA, "", "NA"),
                 "ColName,WithComma"=1:6,
                 'Three\nLine\nColName'=c('bar\n', "noNeedToQuote", 'a\nlong\n"sentence"', "0000", " \n  ", '   "\n  '))
-x = gsub("\r","",capture.output(fwrite(DT,na="NA",quote=TRUE, qmethod='escape')))
+x = capture.output(fwrite(DT,na="NA",quote=TRUE, qmethod='escape'))
 y = capture.output(write.table(DT,row.names=FALSE,quote=TRUE,sep=",",qmethod='escape'))
 test(1732.1, x, y)
-x = gsub("\r","",capture.output(fwrite(DT,na="NA",quote=TRUE,qmethod='double')))
+x = capture.output(fwrite(DT,na="NA",quote=TRUE,qmethod='double'))
 y = capture.output(write.table(DT,row.names=FALSE,quote=TRUE,sep=",",qmethod='double'))
 test(1732.2, x, y)
-x = gsub("\r","",capture.output(fwrite(DT,na="NA",quote=FALSE)))
+x = capture.output(fwrite(DT,na="NA",quote=FALSE))
 y = capture.output(write.csv(DT,row.names=FALSE,quote=FALSE))
 test(1732.3, x, y)
 f = tempfile()
@@ -9509,12 +9508,32 @@ ans[13] = "NA,6,\"   \"\""
 test(1732.5, readLines(f), ans)
 DT = data.table(A=c("foo","ba,r","baz"), B=c("AA","BB","CC"), C=c("DD","E\nE","FF"))
 test(1732.6, fwrite(DT, quote='auto'), output='A,B,Cfoo,AA,DD"ba,r",BB,"EE"baz,CC,FF')
+unlink(f)
 
 # dec=","
 test(1733.1, fwrite(data.table(pi),dec=","), error="dec != sep is not TRUE")
 test(1733.2, fwrite(data.table(c(1.2,-8.0,pi,67.99),1:4),dec=",",sep=";"),
            output="V1;V21,2;1-8;23,14159265358979;367,99;4")
 
+# fwrite implied and actual row.names
+DT = data.table(foo=1:3,bar=c(1.2,9.8,-6.0))
+test(1734.1, capture.output(fwrite(DT,row.names=TRUE,quote=FALSE)),
+             capture.output(write.csv(DT,quote=FALSE)))
+test(1734.2, capture.output(fwrite(DT,row.names=TRUE,quote=TRUE)),
+             capture.output(write.csv(DT)))
+test(1734.3, fwrite(DT,row.names=TRUE,quote='auto'),   # same other than 'foo' and 'bar' column names not quoted
+             output="\"\",foo,bar\"1\",1,1.2\"2\",2,9.8\"3\",3,-6")
+DF = as.data.frame(DT)
+test(1734.4, capture.output(fwrite(DF,row.names=TRUE,quote=FALSE)),
+             capture.output(write.csv(DF,quote=FALSE)))
+test(1734.5, capture.output(fwrite(DF,row.names=TRUE,quote=TRUE)),
+             capture.output(write.csv(DF)))
+rownames(DF)[2] = "someName"
+rownames(DF)[3] = "another"
+test(1734.6, capture.output(fwrite(DF,row.names=TRUE,quote=FALSE)),
+             capture.output(write.csv(DF,quote=FALSE)))
+test(1734.7, capture.output(fwrite(DF,row.names=TRUE,quote=TRUE)),
+             capture.output(write.csv(DF)))
 
 ##########################
 

@@ -216,14 +216,16 @@ static inline void writeNumeric(double x, char **thisCh)
   *thisCh = ch;
 }
 
-static inline int maxStrLen(SEXP x, int na_len) {
+static inline int maxStrLen(SEXP x) {
   // The max nchar of any string in a column or factor level
   int max=na_len, nrow=length(x);
   for (int i=0; i<nrow; i++) {
     int l = LENGTH(STRING_ELT(x,i));  // just looks at header. no need for strlen scan
     if (l>max) max=l;
   }
-  return max;
+  return max*2 +2;
+  //        ^^ every character in field could be a double quote, each to be escaped (!)
+  //           ^^ surround quotes counted always for safety e.g. every field could contain a \n
 }
 
 static inline void writeString(SEXP x, char **thisCh)
@@ -289,6 +291,7 @@ SEXP writefile(SEXP list_of_columns,
                SEXP quoteArg,           // 'auto'=NA_LOGICAL|TRUE|FALSE
                SEXP qmethod_escapeArg,  // TRUE|FALSE
                SEXP append,             // TRUE|FALSE
+               SEXP row_names,          // TRUE|FALSE
                SEXP col_names,          // TRUE|FALSE
                SEXP verboseArg,
                SEXP turboArg)
@@ -310,7 +313,7 @@ SEXP writefile(SEXP list_of_columns,
   
   col_sep = *CHAR(STRING_ELT(col_sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
   const char *row_sep = CHAR(STRING_ELT(row_sep_Arg, 0));
-  const int row_sep_len = strlen(row_sep);  // someone somewhere might want a trailer on every line
+  int row_sep_len = strlen(row_sep);  // someone somewhere might want a trailer on every line
   na_str = CHAR(STRING_ELT(na_Arg, 0));
   na_len = strlen(na_str);
   dec_sep = *CHAR(STRING_ELT(dec_Arg,0));
@@ -320,12 +323,15 @@ SEXP writefile(SEXP list_of_columns,
 
   errno = 0;   // clear flag possibly set by previous errors
   int f;
-  if (*filename=='\0') f=-1;  // file="" means write to standard output
-  else { 
+  if (*filename=='\0') {
+    f=-1;  // file="" means write to standard output
+    row_sep = "\n";  // We'll use Rprintf(); it knows itself about \r\n on Windows
+    row_sep_len = 1;
+  } else { 
 #ifdef WIN32
     f = _open(filename, _O_WRONLY | _O_BINARY | _O_CREAT | (LOGICAL(append)[0] ? _O_APPEND : _O_TRUNC), _S_IWRITE);
-    // row_sep must be passed from R level as '\r\n' on Windows since write() only auto-converts \n to \r\n
-    // in _O_TEXT mode. We use O_BINARY for full control and perhaps speed since O_TEXT must have to deep branch an if('\n')
+    // row_sep must be passed from R level as '\r\n' on Windows since write() only auto-converts \n to \r\n in
+    // _O_TEXT mode. We use O_BINARY for full control and perhaps speed since O_TEXT must have to deep branch an if('\n')
 #else
     f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
 #endif
@@ -345,6 +351,18 @@ SEXP writefile(SEXP list_of_columns,
   int lineLenMax = 2;  // initialize with eol max width of \r\n on windows
   int sameType = TYPEOF(VECTOR_ELT(list_of_columns, 0));
   Rboolean integer64[ncols]; // store result of isInteger64() per column for efficiency
+  SEXP rn = NULL;
+  if (LOGICAL(row_names)[0]) {
+    rn = getAttrib(list_of_columns, R_RowNamesSymbol);
+    if (isString(rn)) {
+      // for data.frame; data.table never has row.names
+      lineLenMax += maxStrLen(rn) +1/*first col_sep*/;
+    } else {
+      // implicit row.names
+      rn = NULL;
+      lineLenMax += (int)log10(nrows) +1 +2/*surrounding quotes if quote=TRUE*/ +1/*first col_sep*/;
+    }
+  }
   for (int col_i=0; col_i<ncols; col_i++) {
     SEXP column = VECTOR_ELT(list_of_columns, col_i);
     integer64[col_i] = FALSE;
@@ -360,16 +378,14 @@ SEXP writefile(SEXP list_of_columns,
       if (isFactor(column)) {
         levels[col_i] = getAttrib(column, R_LevelsSymbol);
         sameType = 0; // TODO: enable deep-switch-avoidance for all columns factor
-        lineLenMax += maxStrLen(levels[col_i], na_len)*2 +2;
-        //                                            ^^ every character in field could be quote, each to be escaped (!)
-        //                                               ^^ surround quotes counted always for safety 
+        lineLenMax += maxStrLen(levels[col_i]); 
       } else {
         levels[col_i] = NULL;
         lineLenMax+=11;   // 11 + sign
       }
       break;
     case STRSXP:
-      lineLenMax += maxStrLen(column, na_len)*2 + 2;
+      lineLenMax += maxStrLen(column);
       break;
     default:
       error("Column %d's type is '%s' - not yet implemented.", col_i+1,type2char(TYPEOF(column)) );
@@ -389,13 +405,17 @@ SEXP writefile(SEXP list_of_columns,
     SEXP names = getAttrib(list_of_columns, R_NamesSymbol);  
     if (names!=NULL) {
       if (LENGTH(names) != ncols) error("Internal error: length of column names is not equal to the number of columns. Please report.");
-      int bufSize = 0;
+      int bufSize = 1;  // if row.names then 1 for first col_sep
       for (int col_i=0; col_i<ncols; col_i++) bufSize += LENGTH(STRING_ELT(names, col_i));
       bufSize *= 2;  // in case every column name is filled with quotes to be escaped (!)
       bufSize += ncols*(2/*beginning and ending quote*/ + 1/*sep*/) + 2/*line ending (\r\n on windows)*/ + 1/*\0*/;
       char *buffer = malloc(bufSize);
       if (buffer == NULL) error("Unable to allocate %dMB buffer for column names", bufSize/(1024*1024));
       char *ch = buffer;
+      if (LOGICAL(row_names)[0]) {
+        if (quote!=FALSE) { *ch++='"'; *ch++='"'; } // to match write.csv
+        *ch++ = col_sep;
+      }
       for (int col_i=0; col_i<ncols; col_i++) {
         writeString(STRING_ELT(names, col_i), &ch);
         *ch++ = col_sep;
@@ -441,7 +461,7 @@ SEXP writefile(SEXP list_of_columns,
     for(RLEN start_row = 0; start_row < nrows; start_row += rowsPerBatch) { 
       int upp = start_row + rowsPerBatch;
       if (upp > nrows) upp = nrows;
-      if (turbo && sameType == REALSXP) {
+      if (turbo && sameType==REALSXP && !LOGICAL(row_names)[0]) {
         // avoid deep switch() on type. turbo switches on both sameType and specialized writeNumeric
         for (RLEN row_i = start_row; row_i < upp; row_i++) {
           for (int col_i = 0; col_i < ncols; col_i++) {
@@ -453,7 +473,7 @@ SEXP writefile(SEXP list_of_columns,
           memcpy(ch, row_sep, row_sep_len);  // replace it with the newline.
           ch += row_sep_len;
         }
-      } else if (turbo && sameType == INTSXP) {
+      } else if (turbo && sameType==INTSXP && !LOGICAL(row_names)[0]) {
         for (RLEN row_i = start_row; row_i < upp; row_i++) {
           for (int col_i = 0; col_i < ncols; col_i++) {
             SEXP column = VECTOR_ELT(list_of_columns, col_i);
@@ -471,6 +491,16 @@ SEXP writefile(SEXP list_of_columns,
       } else {
         // mixed types. switch() on every cell value since must write row-by-row
         for (RLEN row_i = start_row; row_i < upp; row_i++) {
+          if (LOGICAL(row_names)[0]) {
+            if (rn==NULL) {
+              if (quote!=FALSE) *ch++='"';  // default 'auto' will quote the row.name numbers
+              writeInteger(row_i+1, &ch);
+              if (quote!=FALSE) *ch++='"';
+            } else {
+              writeString(STRING_ELT(rn, row_i), &ch);
+            }
+            *ch++=col_sep;
+          }
           for (int col_i = 0; col_i < ncols; col_i++) {
             SEXP column = VECTOR_ELT(list_of_columns, col_i);
             switch(TYPEOF(column)) {
@@ -545,7 +575,7 @@ SEXP writefile(SEXP list_of_columns,
       }
       #pragma omp ordered
       {
-        if (f==-1) { 
+        if (f==-1) {
           *ch='\0';  // standard C string end marker so Rprintf knows where to stop
           Rprintf(buffer);
           // despite being within '#pragma omp ordered' it seems Rprintf() even with a R_FlushConsole() too
