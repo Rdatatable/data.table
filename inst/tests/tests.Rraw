@@ -9510,6 +9510,11 @@ test(1732.5, readLines(f), ans)
 DT = data.table(A=c("foo","ba,r","baz"), B=c("AA","BB","CC"), C=c("DD","E\nE","FF"))
 test(1732.6, fwrite(DT, quote='auto'), output='A,B,Cfoo,AA,DD"ba,r",BB,"EE"baz,CC,FF')
 
+# dec=","
+test(1733.1, fwrite(data.table(pi),dec=","), error="dec != sep is not TRUE")
+test(1733.2, fwrite(data.table(c(1.2,-8.0,pi,67.99),1:4),dec=",",sep=";"),
+           output="V1;V21,2;1-8;23,14159265358979;367,99;4")
+
 
 ##########################
 
@@ -9544,7 +9549,7 @@ options(warn=0)
 setDTthreads(0)
 options(oldalloccol)  # set at top of this file
 options(oldWhenJsymbol)
-plat = paste("endian=",.Platform$endian,", sizeof(long double)==",.Machine$sizeof.longdouble,
+plat = paste("endian==",.Platform$endian,", sizeof(long double)==",.Machine$sizeof.longdouble,
              ", sizeof(pointer)==",.Machine$sizeof.pointer, sep="")
 if (nfail > 0) {
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}

@@ -17,15 +17,15 @@
 
 #define NUM_SF   15
 #define SIZE_SF  1000000000000000ULL  // 10^NUM_SF
-#define DECIMAL_SEP '.'  // TODO allow other decimal separator e.g. ','
 
-// Globals for this file only (written once to hold parameters passed from R level)
-static size_t na_len;
-static const char *na_str;
-static char col_sep;
-static Rboolean verbose=FALSE;
-static Rboolean quote=FALSE;
-static Rboolean qmethod_escape=TRUE;
+// Globals for this file only (written once to hold parameters passed from R level)                   
+static const char *na_str;             // by default "" or if set then usually "NA"
+static size_t na_len;                  // nchar(na_str). So 0 for "", or 2 for "NA"
+static char col_sep;                   // comma in .csv files
+static char dec_sep;                   // the '.' in the number 3.1416. In Europe often: 3,1416
+static Rboolean verbose=FALSE;         // be chatty?
+static Rboolean quote=FALSE;           // whether to surround fields with double quote ". NA means 'auto' (default)
+static Rboolean qmethod_escape=TRUE;   // when quoting fields, how to manage double quote in the field contents
 
 static inline void writeInteger(long long x, char **thisCh)
 {
@@ -183,7 +183,7 @@ static inline void writeNumeric(double x, char **thisCh)
          if (dr) {
            while (dr && sf) { *ch--='0'+l%10; l/=10; dr--; sf--; }
            while (dr) { *ch--='0'; dr--; }
-           *ch-- = DECIMAL_SEP;
+           *ch-- = dec_sep;
          }
          while (dl0) { *ch--='0'; dl0--; }
          while (sf) { *ch--='0'+l%10; l/=10; sf--; }
@@ -196,7 +196,7 @@ static inline void writeNumeric(double x, char **thisCh)
           *ch-- = '0' + l%10;   
           l /= 10;
         }
-        if (sf == 1) ch--; else *ch-- = DECIMAL_SEP;
+        if (sf == 1) ch--; else *ch-- = dec_sep;
         *ch = '0' + l;
         ch += sf + (sf>1);
         *ch++ = 'e';  // lower case e to match base::write.csv
@@ -285,6 +285,7 @@ SEXP writefile(SEXP list_of_columns,
                SEXP col_sep_Arg,
                SEXP row_sep_Arg,
                SEXP na_Arg,
+               SEXP dec_Arg,
                SEXP quoteArg,           // 'auto'=NA_LOGICAL|TRUE|FALSE
                SEXP qmethod_escapeArg,  // TRUE|FALSE
                SEXP append,             // TRUE|FALSE
@@ -312,6 +313,7 @@ SEXP writefile(SEXP list_of_columns,
   const int row_sep_len = strlen(row_sep);  // someone somewhere might want a trailer on every line
   na_str = CHAR(STRING_ELT(na_Arg, 0));
   na_len = strlen(na_str);
+  dec_sep = *CHAR(STRING_ELT(dec_Arg,0));
   quote = LOGICAL(quoteArg)[0];
   qmethod_escape = LOGICAL(qmethod_escapeArg)[0];
   const char *filename = CHAR(STRING_ELT(filenameArg, 0));

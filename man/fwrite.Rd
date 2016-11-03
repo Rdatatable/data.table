@@ -7,7 +7,7 @@ As \code{write.csv} and but \emph{much} faster (e.g. 1 minute versus 2 seconds) 
 \usage{
 fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
        eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
-       na = "", col.names = TRUE, qmethod = c("double","escape"),
+       na = "", dec = ".", col.names = TRUE, qmethod = c("double","escape"),
        verbose=FALSE, ..turbo=TRUE)
 }
 \arguments{
@@ -18,6 +18,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
   \item{sep}{The separator between columns. Default is \code{","}.}
   \item{eol}{Line separator. Default is \code{"\r\n"} for windows and \code{"\n"} otherwise.}
   \item{na}{The string to use for missing values in the data. Default is a blank string, \code{""}.}
+  \item{dec}{The decimal separator, by default \code{"."}. See link in references. Cannot be the same as \code{sep}.}
   \item{col.names}{A logical value indicating if the column names (header row) should be written to file. If missing and \code{append} is \code{TRUE}, this is forced to \code{FALSE} to prevent mid-file deployment of column names unless \code{file} already exists.}
 \item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
       \itemize{
@@ -44,6 +45,7 @@ With this, writing a \code{data.table} of approximately 23 million rows and 19 c
 }
 \references{
   \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}
+  \url{https://en.wikipedia.org/wiki/Decimal_mark}
 }
 \examples{
 \dontrun{
