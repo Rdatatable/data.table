@@ -336,10 +336,11 @@ SEXP writefile(SEXP list_of_columns,
     f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
 #endif
     if (f == -1) {
+      char *err = strerror(errno);
       if( access( filename, F_OK ) != -1 )
-        error("File exists and failed to open for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open? File: %s", filename);
-      else 
-        error("Unable to create new file for writing (it does not exist already). Do you have permission to write here and is there space on the disk? File: %s", filename); 
+        error("'%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open? File: %s", err, filename);
+      else
+        error("'%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here and is there space on the disk? File: %s", err, filename); 
     }
   }
   int true_false;
@@ -448,17 +449,29 @@ SEXP writefile(SEXP list_of_columns,
   t0 = clock();
   
   int nth;
+  Rboolean failed=FALSE;
+  int failed_reason=0;  // -1 for malloc fail, else write's errno (>=1)
   #pragma omp parallel num_threads(getDTthreads())
   {
-    char *buffer = malloc(bufSize);  // one buffer per thread
-    // TODO Ask Norm how to error() safely ... if (buffer == NULL) error("Unable to allocate %dMB buffer", bufSize/(1024*1024)); 
-    char *ch = buffer;
+    char *ch, *buffer;              // local to each thread
+    ch = buffer = malloc(bufSize);  // each thread has its own buffer
+    // Don't use any R API alloc here (e.g. R_alloc); they are
+    // not thread-safe as per last sentence of R-exts 6.1.1. 
+    
+    if (buffer==NULL) {failed=TRUE; failed_reason=-1;}
+    // Do not rely on availability of '#omp cancel' new in OpenMP v4.0 (July 2013).
+    // OpenMP v4.0 is in gcc 4.9+ (https://gcc.gnu.org/wiki/openmp) but
+    // not yet in clang as of v3.8 (http://openmp.llvm.org/)
+    // If not-me failed, I'll see shared 'failed', fall through loop, free my buffer
+    // and after parallel section, single thread will call R API error() safely.
+    
     #pragma omp single
     {
       nth = omp_get_num_threads();
     }
     #pragma omp for ordered schedule(dynamic)
-    for(RLEN start_row = 0; start_row < nrows; start_row += rowsPerBatch) { 
+    for(RLEN start_row = 0; start_row < nrows; start_row += rowsPerBatch) {
+      if (failed) continue;  // Not break. See comments above about #omp cancel
       int upp = start_row + rowsPerBatch;
       if (upp > nrows) upp = nrows;
       if (turbo && sameType==REALSXP && !LOGICAL(row_names)[0]) {
@@ -578,14 +591,20 @@ SEXP writefile(SEXP list_of_columns,
         if (f==-1) {
           *ch='\0';  // standard C string end marker so Rprintf knows where to stop
           Rprintf(buffer);
-          // despite being within '#pragma omp ordered' it seems Rprintf() even with a R_FlushConsole() too
-          // still has some corruptions on Windows. Or it may be that test() uses a surrounding capture.output().
-          // Anyway, fwrite.R now calls setDTthreads(1) when file="" (f==-1) which has solved 1729.3 and 1729.9.
+          // nth==1 at this point since when file=="" (f==-1 here) fwrite.R calls setDTthreads(1)
+          // Although this ordered section is one-at-a-time it seems that calling Rprintf() here, even with a
+          // R_FlushConsole() too, causes corruptions on Windows but not on Linux. At least, as observed so
+          // far using capture.output(). Perhaps Rprintf() updates some state or allocation that cannot be done
+          // by child threads, even when one-at-a-time. Anyway, made this single-threaded when output to console
+          // to be safe (setDTthreads(1) in fwrite.R) since output to console doesn't need to be fast.
         } else {
-          WRITE(f, buffer, (int)(ch-buffer));
-          // TODO: safe way to throw error from this thread if write fails (e.g. out disk space)
-          //       { close(f); error("Error writing to file: %s", filename) };
-          // Adding a progress bar here with Rprintf() or similar should be possible in theory, but see
+          if (!failed && WRITE(f, buffer, (int)(ch-buffer)) == -1) {
+            failed=TRUE; failed_reason=errno;
+          }
+          // The !failed is so the other threads that were waiting at this '#omp ordered' don't try
+          // and write after the first fail.
+          
+          // TODO: Adding a progress bar here with Rprintf() or similar should be possible in theory, but see
           // the comment above about corruptions observed on windows. Could try and see. If the progress bar
           // corruputed then there's not too much harm. It could be delayed and flushed, or, best just have
           // one thread handle its update.
@@ -594,11 +613,19 @@ SEXP writefile(SEXP list_of_columns,
       }
     }
     free(buffer);
+    // all threads will call this free on their buffer, even if one or more threads had malloc fail.
+    // If malloc() failed for me, free(NULL) is ok and does nothing.
   }
+  // Finished parallel region and can call R API safely now.
+  if (failed && failed_reason==-1)
+    error("One or more threads failed to alloc or realloc their private buffer. Out of memory.\n");
+  if (f!=-1 && CLOSE(f) && !failed) error("Error closing file '%s': %s", filename, strerror(errno));
+  // quoted '%s' in case of trailing spaces in the filename
+  // If a write failed, the line above tries close() but that might fail as well. The && !failed is to not
+  // report the error as just 'closing file' but the next line for more detail from the original error on write.
+  if (failed) error("Failed write to '%s': %s. Out of disk space is most likely especially if /dev/shm or /tmp since they have smaller limits, or perhaps network issue if NFS. Your operating system reported that it opened the file ok in write mode but perhaps it only checks permissions when actually writing some data.", filename, strerror(failed_reason));
   if (verbose) Rprintf("all %d threads done\n", nth);  // TO DO: report elapsed time since (clock()-t0)/NTH is only estimate
-  if (f!=-1 && CLOSE(f)) error("Error closing file: %s", filename);
   return(R_NilValue);  // must always return SEXP from C level otherwise hang on Windows
 }
-
 
 

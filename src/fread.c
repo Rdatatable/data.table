@@ -1246,7 +1246,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     ERANGEwarning = TRUE;
     clock_t nexttime = t0+2*CLOCKS_PER_SEC;  // start printing % done after a few seconds. If doesn't appear then you know mmap is taking a while.
                                              // We don't want to be bothered by progress meter for quick tasks
-    int batchend; Rboolean hasPrinted=FALSE, whileBreak=FALSE;
+    Rboolean hasPrinted=FALSE, whileBreak=FALSE;
     i = 0;
     while (i<nrow && ch<eof) {
         if (showProgress==1 && clock()>nexttime) {
@@ -1256,7 +1256,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             hasPrinted = TRUE;
         }
         R_CheckUserInterrupt();
-        batchend = MIN(i+10000, nrow);    // batched into 10k rows to save (expensive) calls to clock()
+        int batchend = MIN(i+10000, nrow);    // batched into 10k rows to save (expensive) calls to clock()
         while(i<batchend && ch<eof) {
             //Rprintf("Row %d : %.10s\n", i+1, ch);
             if (stripWhite) skip_spaces(); // #1575 fix
