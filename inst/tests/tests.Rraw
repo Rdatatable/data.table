@@ -9534,13 +9534,16 @@ test(1734.6, capture.output(fwrite(DF,row.names=TRUE,quote=FALSE)),
              capture.output(write.csv(DF,quote=FALSE)))
 test(1734.7, capture.output(fwrite(DF,row.names=TRUE,quote=TRUE)),
              capture.output(write.csv(DF)))
-             
+
 # fwrite showProgress test. Turned off as too long/big for CRAN.
 if (FALSE) {
   N = 6e8  # apx 6GB
   DT = data.table(C1=sample(100000,N,replace=TRUE), C2=sample(paste0(LETTERS,LETTERS,LETTERS), N, replace=TRUE))
   gc()
-  f = "/dev/shm/test.txt"  # or "/tmp/test.txt"
+  d = "/dev/shm/"
+  # and
+  d = "/tmp/"
+  f = paste0("test.txt")
   setDTthreads(1)
   system.time(fwrite(DT, f))
   file.info(f)$size/1024^3
@@ -9552,10 +9555,13 @@ if (FALSE) {
   setDTthreads(4)
   system.time(fwrite(DT, f))
   setDTthreads(0)
-  system.time(fwrite(DT, f))
-  f2 = "/dev/shm/test2.txt"
+  system.time(fwrite(DT, f, verbose=TRUE))
+  f2 = paste0(d,"test2.txt")
   system.time(fwrite(DT, f2))  # test 'No space left on device'
   unlink(f)
+  unlink(f2)
+  system.time(fwrite(DT, f2))  # try again, should work now space free'd
+  file.info(f2)$size/1024^3
   unlink(f2)
 }
 

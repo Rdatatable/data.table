@@ -282,7 +282,7 @@ inline Rboolean isInteger64(SEXP x) {
   return FALSE;
 }
 
-SEXP writefile(SEXP list_of_columns,
+SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g. data.frame, data.table
                SEXP filenameArg,
                SEXP col_sep_Arg,
                SEXP row_sep_Arg,
@@ -297,17 +297,17 @@ SEXP writefile(SEXP list_of_columns,
                SEXP verboseArg,
                SEXP turboArg)
 {
-  if (!isNewList(list_of_columns)) error("fwrite must be passed an object of type list, data.table or data.frame");
-  RLEN ncols = length(list_of_columns);
-  if (ncols==0) error("fwrite must be passed a non-empty list");
-  RLEN nrows = length(VECTOR_ELT(list_of_columns, 0));
-  for (int i=1; i<ncols; i++) {
-    if (nrows != length(VECTOR_ELT(list_of_columns, i)))
-      error("Column %d's length (%d) is not the same as column 1's length (%d)", i+1, length(VECTOR_ELT(list_of_columns, i)), nrows);
+  if (!isNewList(DF)) error("fwrite must be passed an object of type list; e.g. data.frame, data.table");
+  RLEN ncol = length(DF);
+  if (ncol==0) error("fwrite must be passed a non-empty list");
+  RLEN nrow = length(VECTOR_ELT(DF, 0));
+  for (int i=1; i<ncol; i++) {
+    if (nrow != length(VECTOR_ELT(DF, i)))
+      error("Column %d's length (%d) is not the same as column 1's length (%d)", i+1, length(VECTOR_ELT(DF, i)), nrow);
   }
 #ifndef _OPENMP
-  Rprintf("Your platform/environment has not detected OpenMP support. fwrite() will still work, but slower in single threaded mode.\n");
-  // Rprintf rather than warning() because warning() would cause test.data.table() to error about the unexpected warnings
+  Rprintf("This installation has no OpenMP support. fwrite() will still work but slower in single threaded mode.\n");
+  // Not warning() because that would cause test.data.table() to error about the unexpected warnings
 #endif
 
   const Rboolean showProgress = LOGICAL(showProgressArg)[0];
@@ -350,28 +350,29 @@ SEXP writefile(SEXP list_of_columns,
     }
   }
   int true_false;
-  
   clock_t t0=clock();
-  // i) prefetch levels of factor columns (if any) to save getAttrib on every field on every row of any factor column
-  // ii) calculate certain upper bound of line length
-  SEXP levels[ncols];  // on-stack vla
+  
+  // Prefetch levels of factor columns (if any) to save getAttrib on every field on every row of any factor column
+  SEXP levels[ncol];  // VLA
   int lineLenMax = 2;  // initialize with eol max width of \r\n on windows
-  int sameType = TYPEOF(VECTOR_ELT(list_of_columns, 0));
-  Rboolean integer64[ncols]; // store result of isInteger64() per column for efficiency
+  int sameType = TYPEOF(VECTOR_ELT(DF, 0));
+  Rboolean integer64[ncol]; // store result of isInteger64() per column for efficiency
   SEXP rn = NULL;
   if (LOGICAL(row_names)[0]) {
-    rn = getAttrib(list_of_columns, R_RowNamesSymbol);
+    rn = getAttrib(DF, R_RowNamesSymbol);
     if (isString(rn)) {
       // for data.frame; data.table never has row.names
       lineLenMax += maxStrLen(rn) +1/*first col_sep*/;
     } else {
       // implicit row.names
       rn = NULL;
-      lineLenMax += (int)log10(nrows) +1 +2/*surrounding quotes if quote=TRUE*/ +1/*first col_sep*/;
+      lineLenMax += (int)log10(nrow) +1 +2/*surrounding quotes if quote=TRUE*/ +1/*first col_sep*/;
     }
   }
-  for (int col_i=0; col_i<ncols; col_i++) {
-    SEXP column = VECTOR_ELT(list_of_columns, col_i);
+  
+  // Calculate line length of a sample. Buffers will be resized later if not sufficient.
+  for (int col_i=0; col_i<ncol; col_i++) {
+    SEXP column = VECTOR_ELT(DF, col_i);
     integer64[col_i] = FALSE;
     switch(TYPEOF(column)) {
     case LGLSXP:
@@ -409,13 +410,13 @@ SEXP writefile(SEXP list_of_columns,
 
   if (verbose) Rprintf("Writing column names ... ");
   if (LOGICAL(col_names)[0]) {
-    SEXP names = getAttrib(list_of_columns, R_NamesSymbol);  
+    SEXP names = getAttrib(DF, R_NamesSymbol);  
     if (names!=NULL) {
-      if (LENGTH(names) != ncols) error("Internal error: length of column names is not equal to the number of columns. Please report.");
+      if (LENGTH(names) != ncol) error("Internal error: length of column names is not equal to the number of columns. Please report.");
       int bufSize = 1;  // if row.names then 1 for first col_sep
-      for (int col_i=0; col_i<ncols; col_i++) bufSize += LENGTH(STRING_ELT(names, col_i));
+      for (int col_i=0; col_i<ncol; col_i++) bufSize += LENGTH(STRING_ELT(names, col_i));
       bufSize *= 2;  // in case every column name is filled with quotes to be escaped (!)
-      bufSize += ncols*(2/*beginning and ending quote*/ + 1/*sep*/) + 2/*line ending (\r\n on windows)*/ + 1/*\0*/;
+      bufSize += ncol*(2/*beginning and ending quote*/ + 1/*sep*/) + 2/*line ending (\r\n on windows)*/ + 1/*\0*/;
       char *buffer = malloc(bufSize);
       if (buffer == NULL) error("Unable to allocate %dMB buffer for column names", bufSize/(1024*1024));
       char *ch = buffer;
@@ -423,7 +424,7 @@ SEXP writefile(SEXP list_of_columns,
         if (quote!=FALSE) { *ch++='"'; *ch++='"'; } // to match write.csv
         *ch++ = col_sep;
       }
-      for (int col_i=0; col_i<ncols; col_i++) {
+      for (int col_i=0; col_i<ncol; col_i++) {
         writeString(STRING_ELT(names, col_i), &ch);
         *ch++ = col_sep;
       }
@@ -436,7 +437,7 @@ SEXP writefile(SEXP list_of_columns,
     }
   }
   if (verbose) Rprintf("done in %.3fs\n", 1.0*(clock()-t0)/CLOCKS_PER_SEC);
-  if (nrows == 0) {
+  if (nrow == 0) {
     if (verbose) Rprintf("No data rows present (nrow==0)\n");
     if (f!=-1 && CLOSE(f)) error("%s: '%s'", strerror(errno), filename);
     return(R_NilValue);
@@ -449,7 +450,7 @@ SEXP writefile(SEXP list_of_columns,
   int bufSize = 1*1024*1024;  // 1MB  TODO: experiment / fetch cache size
   if (lineLenMax > bufSize) bufSize = lineLenMax;
   const int rowsPerBatch = bufSize/lineLenMax;
-  const int numBatches = (nrows-1)/rowsPerBatch + 1;
+  const int numBatches = (nrow-1)/rowsPerBatch + 1;
   if (verbose) Rprintf("Writing data rows in %d batches of %d rows (each buffer size %.3fMB, turbo=%d, showProgress=%d) ... ",
     numBatches, rowsPerBatch, 1.0*bufSize/(1024*1024), turbo, showProgress);
   t0 = clock();
@@ -478,15 +479,15 @@ SEXP writefile(SEXP list_of_columns,
     int me = omp_get_thread_num();
     
     #pragma omp for ordered schedule(dynamic)
-    for(RLEN start_row = 0; start_row < nrows; start_row += rowsPerBatch) {
+    for(RLEN start_row = 0; start_row < nrow; start_row += rowsPerBatch) {
       if (failed) continue;  // Not break. See comments above about #omp cancel
       int upp = start_row + rowsPerBatch;
-      if (upp > nrows) upp = nrows;
+      if (upp > nrow) upp = nrow;
       if (turbo && sameType==REALSXP && !LOGICAL(row_names)[0]) {
         // avoid deep switch() on type. turbo switches on both sameType and specialized writeNumeric
         for (RLEN row_i = start_row; row_i < upp; row_i++) {
-          for (int col_i = 0; col_i < ncols; col_i++) {
-            SEXP column = VECTOR_ELT(list_of_columns, col_i);
+          for (int col_i = 0; col_i < ncol; col_i++) {
+            SEXP column = VECTOR_ELT(DF, col_i);
             writeNumeric(REAL(column)[row_i], &ch);
             *ch++ = col_sep;
           }
@@ -496,8 +497,8 @@ SEXP writefile(SEXP list_of_columns,
         }
       } else if (turbo && sameType==INTSXP && !LOGICAL(row_names)[0]) {
         for (RLEN row_i = start_row; row_i < upp; row_i++) {
-          for (int col_i = 0; col_i < ncols; col_i++) {
-            SEXP column = VECTOR_ELT(list_of_columns, col_i);
+          for (int col_i = 0; col_i < ncol; col_i++) {
+            SEXP column = VECTOR_ELT(DF, col_i);
             if (INTEGER(column)[row_i] == NA_INTEGER) {
               memcpy(ch, na_str, na_len); ch += na_len;
             } else {
@@ -522,8 +523,8 @@ SEXP writefile(SEXP list_of_columns,
             }
             *ch++=col_sep;
           }
-          for (int col_i = 0; col_i < ncols; col_i++) {
-            SEXP column = VECTOR_ELT(list_of_columns, col_i);
+          for (int col_i = 0; col_i < ncol; col_i++) {
+            SEXP column = VECTOR_ELT(DF, col_i);
             switch(TYPEOF(column)) {
             case LGLSXP:
               true_false = LOGICAL(column)[row_i];
@@ -616,11 +617,11 @@ SEXP writefile(SEXP list_of_columns,
               // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
               // master thread (me==0) and hopefully this will work on Windows. If not, user should set
               // showProgress=FALSE until this can be fixed or removed.
-              int eta = (int)((nrows-upp)*(((double)(now-start))/upp));
+              int eta = (int)((nrow-upp)*(((double)(now-start))/upp));
               if (hasPrinted || eta >= 2) {
                 if (verbose && !hasPrinted) Rprintf("\n"); 
                 Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. ETA %d secs.    ",
-                         (100.0*upp)/nrows, nrows, (int)(now-start), nth, nth==1?"":"s", eta);
+                         (100.0*upp)/nrow, nrow, (int)(now-start), nth, nth==1?"":"s", eta);
                 R_FlushConsole();    // for Windows
                 nexttime = now+1;
                 hasPrinted = TRUE;
