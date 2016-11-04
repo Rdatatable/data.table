@@ -27,11 +27,15 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         col.names = FALSE  # test 1658.16 checks this
     if (!..turbo) warning("The ..turbo=FALSE option will be removed in future. Please report any problems with ..turbo=TRUE.")
     if (identical(quote,"auto")) quote=NA  # logical NA
-    if (verbose || file=="") old=setDTthreads(1)  # console output isn't thread safe
-    if (file=="") showProgress=FALSE
+    if (file=="") {
+        # console output (Rprintf) isn't thread safe.
+        # Perhaps more so on Windows (as experienced) than Linux
+        old=setDTthreads(1)
+        on.exit(setDTthreads(old))
+        showProgress=FALSE
+    }
     .Call(Cwritefile, x, file, sep, eol, na, dec, quote, qmethod=="escape", append,
                       row.names, col.names, showProgress, verbose, ..turbo)
-    if (verbose) setDTthreads(old)
     invisible()
 }
 

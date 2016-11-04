@@ -344,9 +344,9 @@ SEXP writefile(SEXP list_of_columns,
     if (f == -1) {
       char *err = strerror(errno);
       if( access( filename, F_OK ) != -1 )
-        error("'%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open? File: %s", err, filename);
+        error("%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?", err, filename);
       else
-        error("'%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here and is there space on the disk? File: %s", err, filename); 
+        error("%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?", err, filename); 
     }
   }
   int true_false;
@@ -431,14 +431,14 @@ SEXP writefile(SEXP list_of_columns,
       memcpy(ch, row_sep, row_sep_len);  // replace it with the newline 
       ch += row_sep_len;
       if (f==-1) { *ch='\0'; Rprintf(buffer); }
-      else if (WRITE(f, buffer, (int)(ch-buffer))==-1) { close(f); error("Error writing to file: %s", filename); }
+      else if (WRITE(f, buffer, (int)(ch-buffer))==-1) { close(f); error("%s: '%s'", strerror(errno), filename); }
       free(buffer);
     }
   }
   if (verbose) Rprintf("done in %.3fs\n", 1.0*(clock()-t0)/CLOCKS_PER_SEC);
   if (nrows == 0) {
     if (verbose) Rprintf("No data rows present (nrow==0)\n");
-    if (f!=-1 && CLOSE(f)) error("Error closing file: %s", filename);
+    if (f!=-1 && CLOSE(f)) error("%s: '%s'", strerror(errno), filename);
     return(R_NilValue);
   }
 
@@ -618,7 +618,8 @@ SEXP writefile(SEXP list_of_columns,
               // showProgress=FALSE until this can be fixed or removed.
               int eta = (int)((nrows-upp)*(((double)(now-start))/upp));
               if (hasPrinted || eta >= 2) {
-                Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. ETA %d secs.",
+                if (verbose && !hasPrinted) Rprintf("\n"); 
+                Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. ETA %d secs.    ",
                          (100.0*upp)/nrows, nrows, (int)(now-start), nth, nth==1?"":"s", eta);
                 R_FlushConsole();    // for Windows
                 nexttime = now+1;
@@ -655,7 +656,7 @@ SEXP writefile(SEXP list_of_columns,
     R_FlushConsole();  // for Windows
   }
   if (f!=-1 && CLOSE(f) && !failed)
-    error("Completed writing ok but error closing file '%s': %s", filename, strerror(errno));
+    error("%s: '%s'", strerror(errno), filename);
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. The
   // && !failed is to not report the error as just 'closing file' but the next line for more detail
@@ -664,11 +665,11 @@ SEXP writefile(SEXP list_of_columns,
     if (failed_reason==-1) {
       error("One or more threads failed to alloc or realloc their private buffer. Out of memory.\n");
     } else {
-      error("Failed write to '%s': %s. Out of disk space is most likely especially if /dev/shm or /tmp since they have smaller limits. Or perhaps network issue if NFS. Your operating system reported that it opened the file ok in write mode but perhaps it only checks permissions when actually writing some data.", filename, strerror(failed_reason));
+      error("%s: '%s'", strerror(failed_reason), filename);
     }
   }
-  if (verbose) Rprintf("all %d threads done\n", nth);  // TO DO: report elapsed time since (clock()-t0)/NTH is only estimate
-  return(R_NilValue);  // must always return SEXP from C level otherwise hang on Windows
+  if (verbose) Rprintf("done (nth=%d)\n", nth);
+  return(R_NilValue);
 }
 
 
