@@ -596,43 +596,52 @@ SEXP writefile(SEXP list_of_columns,
       }
       #pragma omp ordered
       {
-        if (f==-1) {
-          *ch='\0';  // standard C string end marker so Rprintf knows where to stop
-          Rprintf(buffer);
-          // nth==1 at this point since when file=="" (f==-1 here) fwrite.R calls setDTthreads(1)
-          // Although this ordered section is one-at-a-time it seems that calling Rprintf() here, even with a
-          // R_FlushConsole() too, causes corruptions on Windows but not on Linux. At least, as observed so
-          // far using capture.output(). Perhaps Rprintf() updates some state or allocation that cannot be done
-          // by slave threads, even when one-at-a-time. Anyway, made this single-threaded when output to console
-          // to be safe (setDTthreads(1) in fwrite.R) since output to console doesn't need to be fast.
-        } else {
-          if (!failed && WRITE(f, buffer, (int)(ch-buffer)) == -1) {
-            failed=TRUE; failed_reason=errno;
-          }
-          // The !failed is so the other threads that were waiting at this '#omp ordered' don't try
-          // and write after the first fail.
-          
-          time_t now;
-          if (me==0 && showProgress && (now=time(NULL))>=nexttime) {
-            // See comments above inside the f==-1 clause.
-            // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
-            // master thread (me==0) and hopefully this will work on Windows. If not, user should set
-            // showProgress=FALSE until this can be fixed or removed.
-            int eta = (int)((nrows-upp)*(((double)(now-start))/upp));
-            if (hasPrinted || eta >= 2) {
-              Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. ETA %d secs.",
-                       (100.0*upp)/nrows, nrows, (int)(now-start), nth, nth==1?"":"s", eta);
-              R_FlushConsole();    // for Windows
-              nexttime = now+1;
-              hasPrinted = TRUE;
+        if (!failed) { // a thread ahead of me could have failed below while I was working or waiting above
+          if (f==-1) {
+            *ch='\0';  // standard C string end marker so Rprintf knows where to stop
+            Rprintf(buffer);
+            // nth==1 at this point since when file=="" (f==-1 here) fwrite.R calls setDTthreads(1)
+            // Although this ordered section is one-at-a-time it seems that calling Rprintf() here, even with a
+            // R_FlushConsole() too, causes corruptions on Windows but not on Linux. At least, as observed so
+            // far using capture.output(). Perhaps Rprintf() updates some state or allocation that cannot be done
+            // by slave threads, even when one-at-a-time. Anyway, made this single-threaded when output to console
+            // to be safe (setDTthreads(1) in fwrite.R) since output to console doesn't need to be fast.
+          } else {
+            if (WRITE(f, buffer, (int)(ch-buffer)) == -1) {
+              failed=TRUE; failed_reason=errno;
             }
+            time_t now;
+            if (me==0 && showProgress && (now=time(NULL))>=nexttime && !failed) {
+              // See comments above inside the f==-1 clause.
+              // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
+              // master thread (me==0) and hopefully this will work on Windows. If not, user should set
+              // showProgress=FALSE until this can be fixed or removed.
+              int eta = (int)((nrows-upp)*(((double)(now-start))/upp));
+              if (hasPrinted || eta >= 2) {
+                Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. ETA %d secs.",
+                         (100.0*upp)/nrows, nrows, (int)(now-start), nth, nth==1?"":"s", eta);
+                R_FlushConsole();    // for Windows
+                nexttime = now+1;
+                hasPrinted = TRUE;
+              }
+            }
+            // May be possible for master thread (me==0) to call R_CheckUserInterrupt() here.
+            // Something like: 
+            // if (me==0) {
+            //   failed = TRUE;  // inside ordered here; the slaves are before ordered and not looking at 'failed'
+            //   R_CheckUserInterrupt();
+            //   failed = FALSE; // no user interrupt so return state
+            // }
+            // But I fear the slaves will hang waiting for the master (me==0) to complete the ordered
+            // section which may not happen if the master thread has been interrupted. Rather than
+            // seeing failed=TRUE and falling through to free() and close() as intended.
+            // Could register a finalizer to free() and close() perhaps :
+            // http://r.789695.n4.nabble.com/checking-user-interrupts-in-C-code-tp2717528p2717722.html
+            // Conclusion for now: do not provide ability to interrupt.
+            // write() errors and malloc() fails will be caught and cleaned up properly, however.
           }
-          // TODO: Adding a progress bar here with Rprintf() or similar should be possible in theory, but see
-          // the comment above about corruptions observed on windows. Could try and see. If the progress bar
-          // corruputed then there's not too much harm. It could be delayed and flushed, or, best just have
-          // one thread handle its update.
+          ch = buffer;  // back to the start of me's buffer ready to fill it up again
         }
-        ch = buffer;
       }
     }
     free(buffer);
@@ -645,13 +654,19 @@ SEXP writefile(SEXP list_of_columns,
     Rprintf("\r                                                                                   \r");
     R_FlushConsole();  // for Windows
   }
-  if (failed && failed_reason==-1)
-    error("One or more threads failed to alloc or realloc their private buffer. Out of memory.\n");
-  if (f!=-1 && CLOSE(f) && !failed) error("Error closing file '%s': %s", filename, strerror(errno));
+  if (f!=-1 && CLOSE(f) && !failed)
+    error("Completed writing ok but error closing file '%s': %s", filename, strerror(errno));
   // quoted '%s' in case of trailing spaces in the filename
-  // If a write failed, the line above tries close() but that might fail as well. The && !failed is to not
-  // report the error as just 'closing file' but the next line for more detail from the original error on write.
-  if (failed) error("Failed write to '%s': %s. Out of disk space is most likely especially if /dev/shm or /tmp since they have smaller limits, or perhaps network issue if NFS. Your operating system reported that it opened the file ok in write mode but perhaps it only checks permissions when actually writing some data.", filename, strerror(failed_reason));
+  // If a write failed, the line above tries close() to clean up, but that might fail as well. The
+  // && !failed is to not report the error as just 'closing file' but the next line for more detail
+  // from the original error on write.
+  if (failed) {
+    if (failed_reason==-1) {
+      error("One or more threads failed to alloc or realloc their private buffer. Out of memory.\n");
+    } else {
+      error("Failed write to '%s': %s. Out of disk space is most likely especially if /dev/shm or /tmp since they have smaller limits. Or perhaps network issue if NFS. Your operating system reported that it opened the file ok in write mode but perhaps it only checks permissions when actually writing some data.", filename, strerror(failed_reason));
+    }
+  }
   if (verbose) Rprintf("all %d threads done\n", nth);  // TO DO: report elapsed time since (clock()-t0)/NTH is only estimate
   return(R_NilValue);  // must always return SEXP from C level otherwise hang on Windows
 }
