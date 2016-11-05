@@ -270,6 +270,37 @@ static inline Rboolean isInteger64(SEXP x) {
   return FALSE;
 }
 
+static int failed = 0;
+static int rowsPerBatch;
+
+static inline void checkBuffer(
+  char **buffer,       // this thread's buffer
+  size_t *myAlloc,     // the size of this buffer
+  char **ch,           // the end of the last line written to the buffer by this thread
+  size_t myMaxLineLen  // the longest line seen so far by this thread
+  // Initial size for the thread's buffer is twice as big as needed for rowsPerBatch based on
+  // maxLineLen from the sample; i.e. only 50% of the buffer should be used.
+  // If we get to 75% used, we'll realloc.
+  // i.e. very cautious and grateful to the OS for not fetching untouched pages of buffer.
+  // Plus, more caution ... myMaxLineLine is tracked and if that grows we'll realloc too.
+  // Very long lines are caught up front and rowsPerBatch is set to 1 in that case.
+  // This checkBuffer() is called after every line.
+) {
+  if (failed) return;  // another thread already failed. Fall through and error().
+  size_t thresh = 0.75*(*myAlloc);
+  if ((*ch > (*buffer)+thresh) ||
+      (rowsPerBatch*myMaxLineLen > thresh )) {
+    size_t off = *ch-*buffer;
+    *myAlloc = 1.5*(*myAlloc);
+    *buffer = realloc(*buffer, *myAlloc);
+    if (*buffer==NULL) {
+      failed = -errno;    // - for malloc/realloc errno, + for write errno
+    } else {
+      *ch = *buffer+off;  // in case realloc moved the allocation
+    }
+  }
+}
+
 SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g. data.frame, data.table
                SEXP filenameArg,
                SEXP col_sep_Arg,
@@ -334,11 +365,11 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
     f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
 #endif
     if (f == -1) {
-      char *err = strerror(errno);
+      int erropen = errno;
       if( access( filename, F_OK ) != -1 )
-        error("%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?", err, filename);
+        error("%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?", strerror(erropen), filename);
       else
-        error("%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?", err, filename); 
+        error("%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?", strerror(erropen), filename); 
     }
   }
   clock_t t0=clock();
@@ -475,10 +506,11 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
   //   smaller than that though, to achieve some load balancing across threads since schedule(dynamic).
   int buffMB = INTEGER(buffMB_Arg)[0]; // checked at R level between 1 and 1024
   if (buffMB<1 || buffMB>1024) error("buffMB=%d outside [1,1024]", buffMB); // check it again even so
-  int buffSize = 1024*1024*buffMB;
-  int rowsPerBatch =
-    (10*maxLineLen > buffSize) ? 1 :  // very long lines > 100,000 characters if buffMB==1
-    0.9 * buffSize/maxLineLen;        // 10% overage
+  size_t buffSize = 1024*1024*buffMB;
+  if (maxLineLen > buffSize) buffSize=2*maxLineLen;  // A very long line; at least 1,048,576 characters
+  rowsPerBatch =
+    (10*maxLineLen > buffSize) ? 1 :  // very long lines (100,000 characters+) we'll just do one row at a time.
+    0.5 * buffSize/maxLineLen;        // Aim for 50% buffer usage. See checkBuffer for comments.
   if (rowsPerBatch > nrow) rowsPerBatch=nrow;
   int numBatches = (nrow-1)/rowsPerBatch + 1;
   if (numBatches < nth) nth = numBatches;
@@ -489,21 +521,30 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
   }
   t0 = clock();
   
-  Rboolean failed=FALSE, hasPrinted=FALSE;
-  int failed_reason=0;  // -1 for malloc fail, else write's errno (>=1)
+  failed=0;  // static global so checkBuffer can set it. -errno for malloc or realloc fails, +errno for write fail
+  Rboolean hasPrinted=FALSE;
+  Rboolean anyBufferGrown=FALSE;
+  int maxBuffUsedPC=0;
+  
   #pragma omp parallel num_threads(nth)
   {
-    char *ch, *buffer;              // local to each thread
+    char *ch, *buffer;               // local to each thread
     ch = buffer = malloc(buffSize);  // each thread has its own buffer
     // Don't use any R API alloc here (e.g. R_alloc); they are
-    // not thread-safe as per last sentence of R-exts 6.1.1. 
+    // not thread-safe as per last sentence of R-exts 6.1.1.
     
-    if (buffer==NULL) {failed=TRUE; failed_reason=-1;}
+    if (buffer==NULL) {failed=-errno;}
     // Do not rely on availability of '#omp cancel' new in OpenMP v4.0 (July 2013).
     // OpenMP v4.0 is in gcc 4.9+ (https://gcc.gnu.org/wiki/openmp) but
     // not yet in clang as of v3.8 (http://openmp.llvm.org/)
     // If not-me failed, I'll see shared 'failed', fall through loop, free my buffer
     // and after parallel section, single thread will call R API error() safely.
+    
+    size_t myAlloc = buffSize;
+    size_t myMaxLineLen = maxLineLen;
+    // so we can realloc(). Should only be needed if there are very long single CHARSXP
+    // much longer than occurred in the sample for maxLineLen. Or for list() columns 
+    // contain vectors which are much longer than occurred in the sample.
     
     #pragma omp single
     {
@@ -521,6 +562,7 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
       if (turbo && sameType==REALSXP && !doRowNames) {
         // avoid deep switch() on type. turbo switches on both sameType and specialized writeNumeric
         for (RLEN i=start; i<end; i++) {
+          char *lineStart = ch;
           for (int j=0; j<ncol; j++) {
             SEXP column = VECTOR_ELT(DF, j);
             writeNumeric(REAL(column)[i], &ch);
@@ -529,9 +571,15 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
           ch--;  // backup onto the last col_sep after the last column
           memcpy(ch, row_sep, row_sep_len);  // replace it with the newline.
           ch += row_sep_len;
+          
+          size_t thisLineLen = ch-lineStart;
+          if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
+          checkBuffer(&buffer, &myAlloc, &ch, myMaxLineLen);
+          if (failed) break;
         }
       } else if (turbo && sameType==INTSXP && !doRowNames) {
         for (RLEN i=start; i<end; i++) {
+          char *lineStart = ch;
           for (int j=0; j<ncol; j++) {
             SEXP column = VECTOR_ELT(DF, j);
             if (INTEGER(column)[i] == NA_INTEGER) {
@@ -544,10 +592,16 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
           ch--;
           memcpy(ch, row_sep, row_sep_len);
           ch += row_sep_len;
+          
+          size_t thisLineLen = ch-lineStart;
+          if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
+          checkBuffer(&buffer, &myAlloc, &ch, myMaxLineLen);
+          if (failed) break;
         }
       } else {
         // mixed types. switch() on every cell value since must write row-by-row
         for (RLEN i=start; i<end; i++) {
+          char *lineStart = ch;
           if (doRowNames) {
             if (rowNames==NULL) {
               if (quote!=FALSE) *ch++='"';  // default 'auto' will quote the row.name numbers
@@ -628,6 +682,15 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
           ch--;  // backup onto the last col_sep after the last column
           memcpy(ch, row_sep, row_sep_len);  // replace it with the newline. TODO: replace memcpy call with eol1 eol2 --eolLen 
           ch += row_sep_len;
+          
+          // Track longest line seen so far. If we start to see longer lines than we saw in the
+          // sample, we'll realloc the buffer. The rowsPerBatch chosen based on the (very good) sample,
+          // must fit in the buffer. Can't early write and reset buffer because the
+          // file output would be out-of-order. Can't change rowsPerBatch after the 'parallel for' started.
+          size_t thisLineLen = ch-lineStart;
+          if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
+          checkBuffer(&buffer, &myAlloc, &ch, myMaxLineLen);
+          if (failed) break; // don't write any more rows, fall through to clear up and error() below
         }
       }
       #pragma omp ordered
@@ -644,19 +707,24 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
             // to be safe (setDTthreads(1) in fwrite.R) since output to console doesn't need to be fast.
           } else {
             if (WRITE(f, buffer, (int)(ch-buffer)) == -1) {
-              failed=TRUE; failed_reason=errno;
+              failed=errno;
             }
+            if (myAlloc > buffSize) anyBufferGrown = TRUE;
+            int used = 100*((double)(ch-buffer))/buffSize;  // percentage of original buffMB
+            if (used > maxBuffUsedPC) maxBuffUsedPC = used;
             time_t now;
             if (me==0 && showProgress && (now=time(NULL))>=next_time && !failed) {
               // See comments above inside the f==-1 clause.
               // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
               // master thread (me==0) and hopefully this will work on Windows. If not, user should set
               // showProgress=FALSE until this can be fixed or removed.
-              int eta = (int)((nrow-end)*(((double)(now-start_time))/end));
-              if (hasPrinted || eta >= 2) {
+              int ETA = (int)((nrow-end)*(((double)(now-start_time))/end));
+              if (hasPrinted || ETA >= 2) {
                 if (verbose && !hasPrinted) Rprintf("\n"); 
-                Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. ETA %d secs.    ",
-                         (100.0*end)/nrow, nrow, (int)(now-start_time), nth, nth==1?"":"s", eta);
+                Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
+                        "anyBufferGrown=%s; maxBuffUsed=%d%%. Finished in %d secs.    ",
+                         (100.0*end)/nrow, nrow, (int)(now-start_time), nth, nth==1?"":"s", 
+                         anyBufferGrown?"yes":"no", maxBuffUsedPC, ETA);
                 R_FlushConsole();    // for Windows
                 next_time = now+1;
                 hasPrinted = TRUE;
@@ -677,34 +745,39 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
             // Conclusion for now: do not provide ability to interrupt.
             // write() errors and malloc() fails will be caught and cleaned up properly, however.
           }
-          ch = buffer;  // back to the start of me's buffer ready to fill it up again
+          ch = buffer;  // back to the start of my buffer ready to fill it up again
         }
       }
     }
     free(buffer);
-    // all threads will call this free on their buffer, even if one or more threads had malloc fail.
-    // If malloc() failed for me, free(NULL) is ok and does nothing.
+    // all threads will call this free on their buffer, even if one or more threads had malloc
+    // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
   }
   // Finished parallel region and can call R API safely now.
   if (hasPrinted) {
-    // clear the progress meter
-    Rprintf("\r                                                                                   \r");
-    R_FlushConsole();  // for Windows
+    if (!failed) {
+      // clear the progress meter
+      Rprintf("\r                                                   "
+              "                                                              \r");
+      R_FlushConsole();  // for Windows
+    } else {
+      // unless failed as we'd like to see anyBufferGrown and maxBuffUsedPC
+      Rprintf("\n");
+    }
   }
   if (f!=-1 && CLOSE(f) && !failed)
     error("%s: '%s'", strerror(errno), filename);
   // quoted '%s' in case of trailing spaces in the filename
-  // If a write failed, the line above tries close() to clean up, but that might fail as well. The
-  // && !failed is to not report the error as just 'closing file' but the next line for more detail
-  // from the original error on write.
-  if (failed) {
-    if (failed_reason==-1) {
-      error("One or more threads failed to alloc or realloc their private buffer. Out of memory.\n");
-    } else {
-      error("%s: '%s'", strerror(failed_reason), filename);
-    }
+  // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
+  // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
+  // from the original error.
+  if (failed<0) {
+    error("%s. One or more threads failed to malloc or realloc their private buffer. nThread=%d and initial buffMB per thread was %d.\n", strerror(-failed), nth, buffMB);
+  } else if (failed>0) {
+    error("%s: '%s'", strerror(failed), filename);
   }
-  if (verbose) Rprintf("done (actual nth=%d)\n", nth);
+  if (verbose) Rprintf("done (actual nth=%d, anyBufferGrown=%s, maxBuffUsed=%d%%)\n",
+                       nth, anyBufferGrown?"yes":"no", maxBuffUsedPC);
   return(R_NilValue);
 }
 

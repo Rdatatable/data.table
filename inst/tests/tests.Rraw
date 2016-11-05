@@ -9553,7 +9553,7 @@ if (FALSE) {
   system.time(fwrite(DT, f, nThread=4))
   system.time(fwrite(DT, f, verbose=TRUE))
   f2 = paste0(d,"test2.txt")
-  system.time(fwrite(DT, f2))  # test 'No space left on device'
+  system.time(fwrite(DT, f2, verbose=TRUE))  # test 'No space left on device'
   unlink(f)
   unlink(f2)
   system.time(fwrite(DT, f2))  # try again, should work now space free'd
