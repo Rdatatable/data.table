@@ -8,6 +8,7 @@ As \code{write.csv} and but \emph{much} faster (e.g. 1 minute versus 2 seconds) 
 fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
        eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
        na = "", dec = ".", row.names = FALSE, col.names = TRUE, qmethod = c("double","escape"),
+       logicalAsInt = FALSE, buffMB = 8L, nThread = getDTthreads(),
        showProgress = getOption("datatable.showProgress"),
        verbose = getOption("datatable.verbose"),
        ..turbo=TRUE)
@@ -23,11 +24,14 @@ fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
   \item{dec}{The decimal separator, by default \code{"."}. See link in references. Cannot be the same as \code{sep}.}
   \item{row.names}{Should row names be written? For compatibility with \code{data.frame} and \code{write.csv} since \code{data.table} never has row names. Hence default \code{FALSE} unlike \code{write.csv}.} 
   \item{col.names}{Should the column names (header row) be written? If missing, \code{append=TRUE} and the file already exists, the default is set to \code{FALSE} for convenience to prevent column names appearing again mid file.}
-\item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
+  \item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
       \itemize{
 	\item{"escape" - the quote character (as well as the backslash character) is escaped in C style by a backslash, or}
 	\item{"double" (default, same as \code{write.csv}), in which case the double quote is doubled with another one.}
       }}
+  \item{logicalAsInt}{Should \code{logical} values be written as \code{1} and \code{0} rather than \code{"TRUE"} and \code{"FALSE"}?}
+  \item{buffMB}{The buffer size per thread in the range 1 to 1024. Experiment to see what works best for your data on your hardware.}
+  \item{nThread}{The number of threads to use. For convenience of experimentation (perhaps in a loop) to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console when \code{file!=""}. }
   \item{verbose}{Be chatty and report timings?}
   \item{..turbo}{Use specialized custom C code to format numeric, integer and integer64 columns. This reduces call overhead to the C library and avoids any use of memory buffers (copies) at all. Try with and without to see the difference it makes on your machine and please report any significant differences in output. If you do find cases where \code{..turbo=FALSE} is needed, please report them as bugs, since this option WILL BE REMOVED in future. Hence why it has the \code{__} prefix.}

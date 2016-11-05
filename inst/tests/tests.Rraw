@@ -9543,18 +9543,14 @@ if (FALSE) {
   d = "/dev/shm/"
   # and
   d = "/tmp/"
-  f = paste0("test.txt")
-  setDTthreads(1)
-  system.time(fwrite(DT, f))
+  f = paste0(d,"test.txt")
+  system.time(fwrite(DT, f, nThread=1))
   file.info(f)$size/1024^3
   unlink(f)
   # ensure progress meter itself isn't taking time; e.g. too many calls to time() or clock()
-  system.time(fwrite(DT, f, showProgress=FALSE))
-  setDTthreads(2)  # make sure it works with several threads
-  system.time(fwrite(DT, f))   # no need to unlink(f), it'll overwrite
-  setDTthreads(4)
-  system.time(fwrite(DT, f))
-  setDTthreads(0)
+  system.time(fwrite(DT, f, showProgress=FALSE, nThread=1))
+  system.time(fwrite(DT, f, nThread=2))
+  system.time(fwrite(DT, f, nThread=4))
   system.time(fwrite(DT, f, verbose=TRUE))
   f2 = paste0(d,"test2.txt")
   system.time(fwrite(DT, f2))  # test 'No space left on device'

@@ -216,18 +216,6 @@ static inline void writeNumeric(double x, char **thisCh)
   *thisCh = ch;
 }
 
-static inline int maxStrLen(SEXP x) {
-  // The max nchar of any string in a column or factor level
-  int max=na_len, nrow=length(x);
-  for (int i=0; i<nrow; i++) {
-    int l = LENGTH(STRING_ELT(x,i));  // just looks at header. no need for strlen scan
-    if (l>max) max=l;
-  }
-  return max*2 +2;
-  //        ^^ every character in field could be a double quote, each to be escaped (!)
-  //           ^^ surround quotes counted always for safety e.g. every field could contain a \n
-}
-
 static inline void writeString(SEXP x, char **thisCh)
 {
   char *ch = *thisCh;
@@ -270,11 +258,11 @@ static inline void writeString(SEXP x, char **thisCh)
     }
   }
   *thisCh = ch;
-}       
+}
 
-inline Rboolean isInteger64(SEXP x) {
-  SEXP class = getAttrib(x, R_ClassSymbol);
-  if (isString(class)) {
+static inline Rboolean isInteger64(SEXP x) {
+  SEXP class;
+  if (TYPEOF(x)==REALSXP && isString(class = getAttrib(x, R_ClassSymbol))) {
     for (int i=0; i<LENGTH(class); i++) {   // inherits()
       if (STRING_ELT(class, i) == char_integer64) return TRUE;
     }
@@ -293,6 +281,9 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                SEXP append,             // TRUE|FALSE
                SEXP row_names,          // TRUE|FALSE
                SEXP col_names,          // TRUE|FALSE
+               SEXP logicalAsInt_Arg,   // TRUE|FALSE
+               SEXP buffMB_Arg,         // [1-1024] default 8MB
+               SEXP nThread,
                SEXP showProgressArg,
                SEXP verboseArg,
                SEXP turboArg)
@@ -311,8 +302,8 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
 #endif
 
   const Rboolean showProgress = LOGICAL(showProgressArg)[0];
-  time_t start = time(NULL);
-  time_t nexttime = start+2; // start printing progress meter in 2 sec if not completed by then
+  time_t start_time = time(NULL);
+  time_t next_time = start_time+2; // start printing progress meter in 2 sec if not completed by then
   
   verbose = LOGICAL(verboseArg)[0];
   const Rboolean turbo = LOGICAL(turboArg)[0];
@@ -326,8 +317,9 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
   quote = LOGICAL(quoteArg)[0];
   qmethod_escape = LOGICAL(qmethod_escapeArg)[0];
   const char *filename = CHAR(STRING_ELT(filenameArg, 0));
+  Rboolean logicalAsInt = LOGICAL(logicalAsInt_Arg)[0];
+  int nth = INTEGER(nThread)[0];
 
-  errno = 0;   // clear flag possibly set by previous errors
   int f;
   if (*filename=='\0') {
     f=-1;  // file="" means write to standard output
@@ -349,90 +341,120 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
         error("%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?", err, filename); 
     }
   }
-  int true_false;
   clock_t t0=clock();
   
-  // Prefetch levels of factor columns (if any) to save getAttrib on every field on every row of any factor column
-  SEXP levels[ncol];  // VLA
-  int lineLenMax = 2;  // initialize with eol max width of \r\n on windows
-  int sameType = TYPEOF(VECTOR_ELT(DF, 0));
-  Rboolean integer64[ncol]; // store result of isInteger64() per column for efficiency
-  SEXP rn = NULL;
-  if (LOGICAL(row_names)[0]) {
-    rn = getAttrib(DF, R_RowNamesSymbol);
-    if (isString(rn)) {
-      // for data.frame; data.table never has row.names
-      lineLenMax += maxStrLen(rn) +1/*first col_sep*/;
+  // Store column type tests in lookups for efficiency
+  int sameType = TYPEOF(VECTOR_ELT(DF, 0)); // to avoid deep switch later
+  SEXP levels[ncol];        // VLA. NULL means not-factor too, else the levels
+  Rboolean integer64[ncol]; // VLA
+  for (int j=0; j<ncol; j++) {
+    SEXP column = VECTOR_ELT(DF, j);
+    levels[j] = NULL;
+    integer64[j] = FALSE;
+    if (isFactor(column)) {
+      levels[j] = getAttrib(column, R_LevelsSymbol);
+      sameType = 0;
+    } else if (isInteger64(column)) {  // tests class() string vector
+      integer64[j] = TRUE;
+      sameType = 0;
     } else {
-      // implicit row.names
-      rn = NULL;
-      lineLenMax += (int)log10(nrow) +1 +2/*surrounding quotes if quote=TRUE*/ +1/*first col_sep*/;
+      if (TYPEOF(column) != sameType) sameType = 0;
     }
   }
   
-  // Calculate line length of a sample. Buffers will be resized later if not sufficient.
-  for (int col_i=0; col_i<ncol; col_i++) {
-    SEXP column = VECTOR_ELT(DF, col_i);
-    integer64[col_i] = FALSE;
-    switch(TYPEOF(column)) {
-    case LGLSXP:
-      lineLenMax+=5;  // width of FALSE
-      break;
-    case REALSXP:
-      integer64[col_i] = isInteger64(column);
-      lineLenMax+=25;   // +- 15digits dec e +- nnn = 22 + 3 safety = 25. That covers int64 too (20 digits).
-      break;
-    case INTSXP:
-      if (isFactor(column)) {
-        levels[col_i] = getAttrib(column, R_LevelsSymbol);
-        sameType = 0; // TODO: enable deep-switch-avoidance for all columns factor
-        lineLenMax += maxStrLen(levels[col_i]); 
-      } else {
-        levels[col_i] = NULL;
-        lineLenMax+=11;   // 11 + sign
-      }
-      break;
-    case STRSXP:
-      lineLenMax += maxStrLen(column);
-      break;
-    default:
-      error("Column %d's type is '%s' - not yet implemented.", col_i+1,type2char(TYPEOF(column)) );
-    }
-    if (TYPEOF(column) != sameType || integer64[col_i]) sameType = 0;
-    // we could code up all-integer64 case below as well but that seems even less
-    // likely in practice than all-int or all-double
-    lineLenMax++;  // column separator
+  // user may want row names even when they don't exist (implied row numbers as row names)
+  Rboolean doRowNames = LOGICAL(row_names)[0];
+  SEXP rowNames = NULL;
+  if (doRowNames) {
+    rowNames = getAttrib(DF, R_RowNamesSymbol);
+    if (!isString(rowNames)) rowNames=NULL;
   }
-  clock_t tlineLenMax=clock()-t0;
-  if (verbose) Rprintf("Maximum line length is %d calculated in %.3fs\n", lineLenMax, 1.0*tlineLenMax/CLOCKS_PER_SEC);
-  // TODO: could parallelize by column, but currently no need as insignificant time
-  t0=clock();
-
-  if (verbose) Rprintf("Writing column names ... ");
+  
+  // Estimate max line length of a 1000 row sample (100 rows in 10 places).
+  // Estimate even of this sample because quote='auto' may add quotes and escape embedded quotes.
+  // Buffers will be resized later if there are too many actual line lengths outside the sample estimate.
+  int maxLineLen = 0;
+  int step = nrow<1000 ? 100 : nrow/10;
+  for (int start=0; start<nrow; start+=step) {
+    int end = (nrow-start)<100 ? nrow : start+100;
+    for (int i=start; i<end; i++) {
+      int thisLineLen=0;
+      if (doRowNames) {
+        if (rowNames) thisLineLen += LENGTH(STRING_ELT(rowNames,i));
+        else thisLineLen += 1+(int)log10(nrow);
+        if (quote==TRUE) thisLineLen+=2;
+        thisLineLen++; // col_sep
+      }
+      for (int j=0; j<ncol; j++) {
+        SEXP column = VECTOR_ELT(DF, j);
+        static char tmp[32]; // +- 15digits dec e +- nnn \0 = 23 + 9 safety = 32. Covers integer64 too (20 digits).
+        char *ch=tmp;
+        switch(TYPEOF(column)) {
+        case LGLSXP:
+          thisLineLen = logicalAsInt ? 1/*0|1*/ : 5/*FALSE*/;  // na_len might be 2 (>1) but ok; this is estimate
+          break;
+        case INTSXP: {
+          int i32 = INTEGER(column)[i];
+          if (i32 == NA_INTEGER) thisLineLen += na_len;
+          else if (levels[j] != NULL) thisLineLen += LENGTH(STRING_ELT(levels[j], i32-1));
+          else { writeInteger(i32, &ch); thisLineLen += (int)(ch-tmp); } }
+          break;          
+        case REALSXP:
+          if (integer64[j]) {
+            long long i64 = *(long long *)&REAL(column)[i];
+            if (i64==NAINT64)                              thisLineLen += na_len;
+            else { writeInteger(i64,             &ch); thisLineLen += (int)(ch-tmp); }
+          } else { writeNumeric(REAL(column)[i], &ch); thisLineLen += (int)(ch-tmp); }
+          break;
+        case STRSXP:
+          thisLineLen += LENGTH(STRING_ELT(column, i));
+          break;
+        default:
+          error("Column %d's type is '%s' - not yet implemented.", j+1, type2char(TYPEOF(column)) );
+        }
+        thisLineLen++; // col_sep
+      }
+      thisLineLen += row_sep_len;
+      if (thisLineLen > maxLineLen) maxLineLen = thisLineLen;
+    }
+  }
+  if (verbose) Rprintf("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(clock()-t0)/CLOCKS_PER_SEC);
+  
+  t0=clock();  
+  if (verbose) {
+    Rprintf("Writing column names ... ");
+    if (f==-1) Rprintf("\n");
+  }
   if (LOGICAL(col_names)[0]) {
     SEXP names = getAttrib(DF, R_NamesSymbol);  
     if (names!=NULL) {
       if (LENGTH(names) != ncol) error("Internal error: length of column names is not equal to the number of columns. Please report.");
-      int bufSize = 1;  // if row.names then 1 for first col_sep
-      for (int col_i=0; col_i<ncol; col_i++) bufSize += LENGTH(STRING_ELT(names, col_i));
-      bufSize *= 2;  // in case every column name is filled with quotes to be escaped (!)
-      bufSize += ncol*(2/*beginning and ending quote*/ + 1/*sep*/) + 2/*line ending (\r\n on windows)*/ + 1/*\0*/;
-      char *buffer = malloc(bufSize);
-      if (buffer == NULL) error("Unable to allocate %dMB buffer for column names", bufSize/(1024*1024));
+      // allow for quoting even when not.
+      int buffSize = 2/*""*/ +1/*,*/;
+      for (int j=0; j<ncol; j++) buffSize += 1/*"*/ +2*LENGTH(STRING_ELT(names, j)) +1/*"*/ +1/*,*/;
+      //     in case every name full of quotes(!) to be escaped ^^
+      buffSize += row_sep_len +1/*\0*/;
+      char *buffer = malloc(buffSize);
+      if (buffer == NULL) error("Unable to allocate %d buffer for column names", buffSize);
       char *ch = buffer;
-      if (LOGICAL(row_names)[0]) {
+      if (doRowNames) {
         if (quote!=FALSE) { *ch++='"'; *ch++='"'; } // to match write.csv
         *ch++ = col_sep;
       }
-      for (int col_i=0; col_i<ncol; col_i++) {
-        writeString(STRING_ELT(names, col_i), &ch);
+      for (int j=0; j<ncol; j++) {
+        writeString(STRING_ELT(names, j), &ch);
         *ch++ = col_sep;
       }
       ch--;  // backup onto the last col_sep after the last column
       memcpy(ch, row_sep, row_sep_len);  // replace it with the newline 
       ch += row_sep_len;
       if (f==-1) { *ch='\0'; Rprintf(buffer); }
-      else if (WRITE(f, buffer, (int)(ch-buffer))==-1) { close(f); error("%s: '%s'", strerror(errno), filename); }
+      else if (WRITE(f, buffer, (int)(ch-buffer))==-1) {
+        int errwrite=errno;
+        close(f); // the close might fail too but we want to report the write error
+        free(buffer);
+        error("%s: '%s'", strerror(errwrite), filename);
+      }
       free(buffer);
     }
   }
@@ -443,25 +465,36 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
     return(R_NilValue);
   }
 
-  // Decide buffer size on each core
-  // Large enough to fit many lines (to reduce calls to write()). Small enough to fit in each core's cache.
-  // If the lines turn out smaller, that's ok. we just won't use all the buffer in that case. But we must be
-  // sure to allow for worst case; i.e. every row in the batch all being the maximum line length.
-  int bufSize = 1*1024*1024;  // 1MB  TODO: experiment / fetch cache size
-  if (lineLenMax > bufSize) bufSize = lineLenMax;
-  const int rowsPerBatch = bufSize/lineLenMax;
-  const int numBatches = (nrow-1)/rowsPerBatch + 1;
-  if (verbose) Rprintf("Writing data rows in %d batches of %d rows (each buffer size %.3fMB, turbo=%d, showProgress=%d) ... ",
-    numBatches, rowsPerBatch, 1.0*bufSize/(1024*1024), turbo, showProgress);
+  // Decide buffer size and rowsPerBatch for each thread
+  // Once rowsPerBatch is decided it can't be changed, but we can increase buffer size if the lines
+  // turn out to be longer than estimated from the sample.
+  // buffSize large enough to fit many lines to i) reduce calls to write() and ii) reduce thread sync points
+  // It doesn't need to be small in cache because it's written contiguously.
+  // If we don't use all the buffer for any reasons that's ok as OS will only page in the pages touched.
+  // So, generally the larger the better up to max filesize/nth to use all the threads. A few times
+  //   smaller than that though, to achieve some load balancing across threads since schedule(dynamic).
+  int buffMB = INTEGER(buffMB_Arg)[0]; // checked at R level between 1 and 1024
+  if (buffMB<1 || buffMB>1024) error("buffMB=%d outside [1,1024]", buffMB); // check it again even so
+  int buffSize = 1024*1024*buffMB;
+  int rowsPerBatch =
+    (10*maxLineLen > buffSize) ? 1 :  // very long lines > 100,000 characters if buffMB==1
+    0.9 * buffSize/maxLineLen;        // 10% overage
+  if (rowsPerBatch > nrow) rowsPerBatch=nrow;
+  int numBatches = (nrow-1)/rowsPerBatch + 1;
+  if (numBatches < nth) nth = numBatches;
+  if (verbose) {
+    Rprintf("Writing %d rows in %d batches of %d rows (each buffer size %dMB, turbo=%d, showProgress=%d, nth=%d) ... ",
+    nrow, numBatches, rowsPerBatch, buffMB, turbo, showProgress, nth);
+    if (f==-1) Rprintf("\n");
+  }
   t0 = clock();
   
-  int nth;
   Rboolean failed=FALSE, hasPrinted=FALSE;
   int failed_reason=0;  // -1 for malloc fail, else write's errno (>=1)
-  #pragma omp parallel num_threads(getDTthreads())
+  #pragma omp parallel num_threads(nth)
   {
     char *ch, *buffer;              // local to each thread
-    ch = buffer = malloc(bufSize);  // each thread has its own buffer
+    ch = buffer = malloc(buffSize);  // each thread has its own buffer
     // Don't use any R API alloc here (e.g. R_alloc); they are
     // not thread-safe as per last sentence of R-exts 6.1.1. 
     
@@ -474,35 +507,37 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
     
     #pragma omp single
     {
-      nth = omp_get_num_threads();
+      nth = omp_get_num_threads();  // update nth with the actual nth (might be different than requested)
     }
     int me = omp_get_thread_num();
     
     #pragma omp for ordered schedule(dynamic)
-    for(RLEN start_row = 0; start_row < nrow; start_row += rowsPerBatch) {
+    for(RLEN start=0; start<nrow; start+=rowsPerBatch) {
       if (failed) continue;  // Not break. See comments above about #omp cancel
-      int upp = start_row + rowsPerBatch;
-      if (upp > nrow) upp = nrow;
-      if (turbo && sameType==REALSXP && !LOGICAL(row_names)[0]) {
+      int end = ((nrow-start)<rowsPerBatch) ? nrow : start+rowsPerBatch;
+      
+      // all-integer and all-double deep switch() avoidance. We could code up all-integer64
+      // as well but that seems even less likely in practice than all-integer or all-double
+      if (turbo && sameType==REALSXP && !doRowNames) {
         // avoid deep switch() on type. turbo switches on both sameType and specialized writeNumeric
-        for (RLEN row_i = start_row; row_i < upp; row_i++) {
-          for (int col_i = 0; col_i < ncol; col_i++) {
-            SEXP column = VECTOR_ELT(DF, col_i);
-            writeNumeric(REAL(column)[row_i], &ch);
+        for (RLEN i=start; i<end; i++) {
+          for (int j=0; j<ncol; j++) {
+            SEXP column = VECTOR_ELT(DF, j);
+            writeNumeric(REAL(column)[i], &ch);
             *ch++ = col_sep;
           }
           ch--;  // backup onto the last col_sep after the last column
           memcpy(ch, row_sep, row_sep_len);  // replace it with the newline.
           ch += row_sep_len;
         }
-      } else if (turbo && sameType==INTSXP && !LOGICAL(row_names)[0]) {
-        for (RLEN row_i = start_row; row_i < upp; row_i++) {
-          for (int col_i = 0; col_i < ncol; col_i++) {
-            SEXP column = VECTOR_ELT(DF, col_i);
-            if (INTEGER(column)[row_i] == NA_INTEGER) {
+      } else if (turbo && sameType==INTSXP && !doRowNames) {
+        for (RLEN i=start; i<end; i++) {
+          for (int j=0; j<ncol; j++) {
+            SEXP column = VECTOR_ELT(DF, j);
+            if (INTEGER(column)[i] == NA_INTEGER) {
               memcpy(ch, na_str, na_len); ch += na_len;
             } else {
-              writeInteger(INTEGER(column)[row_i], &ch);
+              writeInteger(INTEGER(column)[i], &ch);
             }
             *ch++ = col_sep;
           }
@@ -512,35 +547,35 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
         }
       } else {
         // mixed types. switch() on every cell value since must write row-by-row
-        for (RLEN row_i = start_row; row_i < upp; row_i++) {
-          if (LOGICAL(row_names)[0]) {
-            if (rn==NULL) {
+        for (RLEN i=start; i<end; i++) {
+          if (doRowNames) {
+            if (rowNames==NULL) {
               if (quote!=FALSE) *ch++='"';  // default 'auto' will quote the row.name numbers
-              writeInteger(row_i+1, &ch);
+              writeInteger(i+1, &ch);
               if (quote!=FALSE) *ch++='"';
             } else {
-              writeString(STRING_ELT(rn, row_i), &ch);
+              writeString(STRING_ELT(rowNames, i), &ch);
             }
             *ch++=col_sep;
           }
-          for (int col_i = 0; col_i < ncol; col_i++) {
-            SEXP column = VECTOR_ELT(DF, col_i);
+          for (int j=0; j<ncol; j++) {
+            SEXP column = VECTOR_ELT(DF, j);
             switch(TYPEOF(column)) {
-            case LGLSXP:
-              true_false = LOGICAL(column)[row_i];
-              if (true_false == NA_LOGICAL) {
+            case LGLSXP: {
+              Rboolean bool = LOGICAL(column)[i];
+              if (bool == NA_LOGICAL) {
                 memcpy(ch, na_str, na_len); ch += na_len;
-              } else if (true_false) {
-                memcpy(ch,"TRUE",4);   // Other than strings, field widths are limited which we check elsewhere here to ensure
-                ch += 4;
+              } else if (logicalAsInt) {
+                *ch++ = '0'+bool;
+              } else if (bool) {
+                *ch++='T'; *ch++='R'; *ch++='U'; *ch++='E';
               } else {
-                memcpy(ch,"FALSE",5);
-                ch += 5;
-              }
+                *ch++='F'; *ch++='A'; *ch++='L'; *ch++='S'; *ch++='E';
+              } }
               break;
             case REALSXP:
-              if (integer64[col_i]) {
-                long long i64 = *(long long *)&REAL(column)[row_i];
+              if (integer64[j]) {
+                long long i64 = *(long long *)&REAL(column)[i];
                 if (i64 == NAINT64) {
                   memcpy(ch, na_str, na_len); ch += na_len;
                 } else {
@@ -558,32 +593,32 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                 }
               } else {
                 if (turbo) {
-                  writeNumeric(REAL(column)[row_i], &ch); // handles NA, Inf etc within it
+                  writeNumeric(REAL(column)[i], &ch); // handles NA, Inf etc within it
                 } else {
                   // if there are any problems with the specialized writeNumeric, user can revert to (slower) standard library
-                  if (ISNAN(REAL(column)[row_i])) {
+                  if (ISNAN(REAL(column)[i])) {
                     memcpy(ch, na_str, na_len); ch += na_len;
                   } else {
-                    ch += sprintf(ch, "%.15g", REAL(column)[row_i]);
+                    ch += sprintf(ch, "%.15g", REAL(column)[i]);
                   }
                 }
               }
               break;
             case INTSXP:
-              if (INTEGER(column)[row_i] == NA_INTEGER) {
+              if (INTEGER(column)[i] == NA_INTEGER) {
                 memcpy(ch, na_str, na_len); ch += na_len;
-              } else if (levels[col_i] != NULL) {   // isFactor(column) == TRUE
-                writeString(STRING_ELT(levels[col_i], INTEGER(column)[row_i]-1), &ch);
+              } else if (levels[j] != NULL) {   // isFactor(column) == TRUE
+                writeString(STRING_ELT(levels[j], INTEGER(column)[i]-1), &ch);
               } else {
                 if (turbo) {
-                  writeInteger(INTEGER(column)[row_i], &ch);
+                  writeInteger(INTEGER(column)[i], &ch);
                 } else {
-                  ch += sprintf(ch, "%d", INTEGER(column)[row_i]);
+                  ch += sprintf(ch, "%d", INTEGER(column)[i]);
                 }
               }
               break;
             case STRSXP:
-              writeString(STRING_ELT(column, row_i), &ch);
+              writeString(STRING_ELT(column, i), &ch);
               break;
             // default:
             // An uncovered type would have already thrown above when calculating maxLineLen earlier
@@ -612,18 +647,18 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
               failed=TRUE; failed_reason=errno;
             }
             time_t now;
-            if (me==0 && showProgress && (now=time(NULL))>=nexttime && !failed) {
+            if (me==0 && showProgress && (now=time(NULL))>=next_time && !failed) {
               // See comments above inside the f==-1 clause.
               // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
               // master thread (me==0) and hopefully this will work on Windows. If not, user should set
               // showProgress=FALSE until this can be fixed or removed.
-              int eta = (int)((nrow-upp)*(((double)(now-start))/upp));
+              int eta = (int)((nrow-end)*(((double)(now-start_time))/end));
               if (hasPrinted || eta >= 2) {
                 if (verbose && !hasPrinted) Rprintf("\n"); 
                 Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. ETA %d secs.    ",
-                         (100.0*upp)/nrow, nrow, (int)(now-start), nth, nth==1?"":"s", eta);
+                         (100.0*end)/nrow, nrow, (int)(now-start_time), nth, nth==1?"":"s", eta);
                 R_FlushConsole();    // for Windows
-                nexttime = now+1;
+                next_time = now+1;
                 hasPrinted = TRUE;
               }
             }
@@ -669,7 +704,7 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
       error("%s: '%s'", strerror(failed_reason), filename);
     }
   }
-  if (verbose) Rprintf("done (nth=%d)\n", nth);
+  if (verbose) Rprintf("done (actual nth=%d)\n", nth);
   return(R_NilValue);
 }
 
