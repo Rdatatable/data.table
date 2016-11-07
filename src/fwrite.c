@@ -860,7 +860,7 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
               if (hasPrinted || ETA >= 2) {
                 if (verbose && !hasPrinted) Rprintf("\n"); 
                 Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
-                        "anyBufferGrown=%s; maxBuffUsed=%d%%. Finished in %d secs.    ",
+                        "anyBufferGrown=%s; maxBuffUsed=%d%%. Finished in %d secs.      ",
                          (100.0*end)/nrow, nrow, (int)(now-start_time), nth, nth==1?"":"s", 
                          anyBufferGrown?"yes":"no", maxBuffUsedPC, ETA);
                 R_FlushConsole();    // for Windows
@@ -895,7 +895,7 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
   if (hasPrinted) {
     if (!failed) {
       // clear the progress meter
-      Rprintf("\r                                                   "
+      Rprintf("\r                                                                       "
               "                                                              \r");
       R_FlushConsole();  // for Windows
     } else {
