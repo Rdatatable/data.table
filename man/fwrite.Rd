@@ -5,7 +5,7 @@
 As \code{write.csv} and but \emph{much} faster (e.g. 1 minute versus 2 seconds) and just as flexible. Machines with 16GB of RAM or more always have more than one core so \code{fwrite} uses them; on all operating systems including Linux, Mac and Windows.
 }
 \usage{
-fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
+fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",", sep2 = c("",";",""),
        eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
        na = "", dec = ".", row.names = FALSE, col.names = TRUE, qmethod = c("double","escape"),
        logicalAsInt = FALSE, buffMB = 8L, nThread = getDTthreads(),
@@ -19,6 +19,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",",
   \item{append}{If \code{TRUE}, the file is opened in append mode and column names (header row) are not written.}
   \item{quote}{When \code{"auto"}, character columns, factor columns and column names will only be surrounded by double quotes if the field does contain the separator, a line ending or the quote itself. If \code{FALSE} the fields are never wrapped with quotes even if this would break the CSV due to the contents of the field. If \code{TRUE} quotes are always included for character and factor columns.}
   \item{sep}{The separator between columns. Default is \code{","}.}
+  \item{sep2}{For columns of type \code{list} where each item is an atomic vector, \code{sep2} controls how to separate items \emph{within} the column. The 1st item is placed at the start of the output field, the 2nd item is placed between each item and the 3rd at the end. The 1st and 3rd item may be any length character strings including \code{""} (default) for nothing. The 2nd item must be a single character and different from `sep` and `dec`.}  
   \item{eol}{Line separator. Default is \code{"\r\n"} for windows and \code{"\n"} otherwise.}
   \item{na}{The string to use for missing values in the data. Default is a blank string, \code{""}.}
   \item{dec}{The decimal separator, by default \code{"."}. See link in references. Cannot be the same as \code{sep}.}

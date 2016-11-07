@@ -19,13 +19,14 @@
 #define SIZE_SF  1000000000000000ULL  // 10^NUM_SF
 
 // Globals for this file only (written once to hold parameters passed from R level)                   
-static const char *na_str;             // by default "" or if set then usually "NA"
-static size_t na_len;                  // nchar(na_str). So 0 for "", or 2 for "NA"
-static char col_sep;                   // comma in .csv files
-static char dec_sep;                   // the '.' in the number 3.1416. In Europe often: 3,1416
+static const char *na;                 // by default "" or if set then usually "NA"
+static char sep;                       // comma in .csv files
+static char sep2;                      // ; in list column vectors
+static char dec;                       // the '.' in the number 3.1416. In Europe often: 3,1416
 static Rboolean verbose=FALSE;         // be chatty?
 static Rboolean quote=FALSE;           // whether to surround fields with double quote ". NA means 'auto' (default)
 static Rboolean qmethod_escape=TRUE;   // when quoting fields, how to manage double quote in the field contents
+static Rboolean logicalAsInt=FALSE;    // logical as 0/1 or "TRUE"/"FALSE"
 
 static inline void writeInteger(long long x, char **thisCh)
 {
@@ -45,6 +46,29 @@ static inline void writeInteger(long long x, char **thisCh)
       *(ch-i) = *(ch-width+i-1);
       *(ch-width+i-1) = tmp;
     }
+  }
+  *thisCh = ch;
+}
+
+static inline void writeChars(const char *x, char **thisCh)
+{
+  // similar to C's strcpy but i) doesn't copy \0 and ii) moves destination along
+  char *ch = *thisCh;
+  while (*x) *ch++=*x++;
+  *thisCh = ch;
+}
+
+static inline void writeLogical(Rboolean x, char **thisCh)
+{
+  char *ch = *thisCh;
+  if (x == NA_LOGICAL) {
+    writeChars(na, &ch);
+  } else if (logicalAsInt) {
+    *ch++ = '0'+x;
+  } else if (x) {
+    *ch++='T'; *ch++='R'; *ch++='U'; *ch++='E';
+  } else {
+    *ch++='F'; *ch++='A'; *ch++='L'; *ch++='S'; *ch++='E';
   }
   *thisCh = ch;
 }
@@ -106,7 +130,7 @@ static inline void writeNumeric(double x, char **thisCh)
   char *ch = *thisCh;
   if (!R_FINITE(x)) {
     if (ISNAN(x)) {
-      memcpy(ch, na_str, na_len); ch += na_len; // by default na_len==0 and the memcpy call will be skipped
+      writeChars(na, &ch);
     } else if (x>0) {
       *ch++ = 'I'; *ch++ = 'n'; *ch++ = 'f';
     } else {
@@ -183,7 +207,7 @@ static inline void writeNumeric(double x, char **thisCh)
          if (dr) {
            while (dr && sf) { *ch--='0'+l%10; l/=10; dr--; sf--; }
            while (dr) { *ch--='0'; dr--; }
-           *ch-- = dec_sep;
+           *ch-- = dec;
          }
          while (dl0) { *ch--='0'; dl0--; }
          while (sf) { *ch--='0'+l%10; l/=10; sf--; }
@@ -196,7 +220,7 @@ static inline void writeNumeric(double x, char **thisCh)
           *ch-- = '0' + l%10;   
           l /= 10;
         }
-        if (sf == 1) ch--; else *ch-- = dec_sep;
+        if (sf == 1) ch--; else *ch-- = dec;
         *ch = '0' + l;
         ch += sf + (sf>1);
         *ch++ = 'e';  // lower case e to match base::write.csv
@@ -221,24 +245,24 @@ static inline void writeString(SEXP x, char **thisCh)
   char *ch = *thisCh;
   if (x == NA_STRING) {
     // NA is not quoted by write.csv even when quote=TRUE to distinguish from "NA"
-    memcpy(ch, na_str, na_len); ch += na_len;
+    writeChars(na, &ch);
   } else {
     Rboolean q = quote;
     if (q==NA_LOGICAL) { // quote="auto"
       const char *tt = CHAR(x);
-      while (*tt!='\0' && *tt!=col_sep && *tt!='\n') *ch++ = *tt++;
+      while (*tt!='\0' && *tt!=sep && *tt!=sep2 && *tt!='\n') *ch++ = *tt++;
       // windows includes \n in its \r\n so looking for \n only is sufficient
+      // sep2 is set to '\0' when no list columns are present
       if (*tt=='\0') {
         // most common case: no sep or newline contained in string
         *thisCh = ch;  // advance caller over the field already written
         return;
       }
-      ch = *thisCh; // rewind the field written since it contains some sep or \n
+      ch = *thisCh; // rewind the field written since it contains some sep, sep2 or \n
       q = TRUE;
     }
     if (q==FALSE) {
-      memcpy(ch, CHAR(x), LENGTH(x));
-      ch += LENGTH(x);
+      writeChars(CHAR(x), &ch);
     } else {
       *ch++ = '"';
       const char *tt = CHAR(x);
@@ -302,12 +326,13 @@ static inline void checkBuffer(
 }
 
 SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g. data.frame, data.table
-               SEXP filenameArg,
-               SEXP col_sep_Arg,
-               SEXP row_sep_Arg,
+               SEXP filename_Arg,
+               SEXP sep_Arg,
+               SEXP sep2_Arg,
+               SEXP eol_Arg,
                SEXP na_Arg,
                SEXP dec_Arg,
-               SEXP quoteArg,           // 'auto'=NA_LOGICAL|TRUE|FALSE
+               SEXP quote_Arg,           // 'auto'=NA_LOGICAL|TRUE|FALSE
                SEXP qmethod_escapeArg,  // TRUE|FALSE
                SEXP append,             // TRUE|FALSE
                SEXP row_names,          // TRUE|FALSE
@@ -315,9 +340,9 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                SEXP logicalAsInt_Arg,   // TRUE|FALSE
                SEXP buffMB_Arg,         // [1-1024] default 8MB
                SEXP nThread,
-               SEXP showProgressArg,
-               SEXP verboseArg,
-               SEXP turboArg)
+               SEXP showProgress_Arg,
+               SEXP verbose_Arg,
+               SEXP turbo_Arg)
 {
   if (!isNewList(DF)) error("fwrite must be passed an object of type list; e.g. data.frame, data.table");
   RLEN ncol = length(DF);
@@ -332,48 +357,31 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
   // Not warning() because that would cause test.data.table() to error about the unexpected warnings
 #endif
 
-  const Rboolean showProgress = LOGICAL(showProgressArg)[0];
+  const Rboolean showProgress = LOGICAL(showProgress_Arg)[0];
   time_t start_time = time(NULL);
   time_t next_time = start_time+2; // start printing progress meter in 2 sec if not completed by then
   
-  verbose = LOGICAL(verboseArg)[0];
-  const Rboolean turbo = LOGICAL(turboArg)[0];
+  verbose = LOGICAL(verbose_Arg)[0];
+  const Rboolean turbo = LOGICAL(turbo_Arg)[0];
   
-  col_sep = *CHAR(STRING_ELT(col_sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
-  const char *row_sep = CHAR(STRING_ELT(row_sep_Arg, 0));
-  int row_sep_len = strlen(row_sep);  // someone somewhere might want a trailer on every line
-  na_str = CHAR(STRING_ELT(na_Arg, 0));
-  na_len = strlen(na_str);
-  dec_sep = *CHAR(STRING_ELT(dec_Arg,0));
-  quote = LOGICAL(quoteArg)[0];
+  sep = *CHAR(STRING_ELT(sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
+  const char *sep2start = CHAR(STRING_ELT(sep2_Arg, 0));
+  sep2 = *CHAR(STRING_ELT(sep2_Arg, 1));
+  const char *sep2end = CHAR(STRING_ELT(sep2_Arg, 2));
+  
+  const char *eol = CHAR(STRING_ELT(eol_Arg, 0));
+  // someone might want a trailer on every line so allow any length string as eol
+  
+  na = CHAR(STRING_ELT(na_Arg, 0));
+  dec = *CHAR(STRING_ELT(dec_Arg,0));
+  quote = LOGICAL(quote_Arg)[0];
   qmethod_escape = LOGICAL(qmethod_escapeArg)[0];
-  const char *filename = CHAR(STRING_ELT(filenameArg, 0));
-  Rboolean logicalAsInt = LOGICAL(logicalAsInt_Arg)[0];
+  const char *filename = CHAR(STRING_ELT(filename_Arg, 0));
+  logicalAsInt = LOGICAL(logicalAsInt_Arg)[0];
   int nth = INTEGER(nThread)[0];
-
-  int f;
-  if (*filename=='\0') {
-    f=-1;  // file="" means write to standard output
-    row_sep = "\n";  // We'll use Rprintf(); it knows itself about \r\n on Windows
-    row_sep_len = 1;
-  } else { 
-#ifdef WIN32
-    f = _open(filename, _O_WRONLY | _O_BINARY | _O_CREAT | (LOGICAL(append)[0] ? _O_APPEND : _O_TRUNC), _S_IWRITE);
-    // row_sep must be passed from R level as '\r\n' on Windows since write() only auto-converts \n to \r\n in
-    // _O_TEXT mode. We use O_BINARY for full control and perhaps speed since O_TEXT must have to deep branch an if('\n')
-#else
-    f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
-#endif
-    if (f == -1) {
-      int erropen = errno;
-      if( access( filename, F_OK ) != -1 )
-        error("%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?", strerror(erropen), filename);
-      else
-        error("%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?", strerror(erropen), filename); 
-    }
-  }
+  int firstListColumn = 0;
   clock_t t0=clock();
-  
+
   // Store column type tests in lookups for efficiency
   int sameType = TYPEOF(VECTOR_ELT(DF, 0)); // to avoid deep switch later
   SEXP levels[ncol];        // VLA. NULL means not-factor too, else the levels
@@ -391,6 +399,17 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
     } else {
       if (TYPEOF(column) != sameType) sameType = 0;
     }
+    if (firstListColumn==0 && TYPEOF(column)==VECSXP) firstListColumn = j+1;
+  }
+  
+  if (!firstListColumn) {
+    if (verbose) Rprintf("No list columns are present. Setting sep2='' otherwise quote='auto' would quote fields containing sep2.\n");
+    sep2='\0';
+  } else {
+    if (verbose) Rprintf("If quote='auto' all fields will be quoted if the field contains either sep ('%c') or sep2[2] ('%c'). Column %d is a list column.\n", sep, sep2, firstListColumn );
+    if (dec==sep) error("Internal error: dec != sep was checked at R level");
+    if (dec==sep2 || sep==sep2)
+      error("sep ('%c'), sep2[2L] ('%c') and dec ('%c') must all be different when list columns are present. Column %d is a list column.", sep, sep2, dec, firstListColumn); 
   }
   
   // user may want row names even when they don't exist (implied row numbers as row names)
@@ -402,9 +421,11 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
   }
   
   // Estimate max line length of a 1000 row sample (100 rows in 10 places).
-  // Estimate even of this sample because quote='auto' may add quotes and escape embedded quotes.
-  // Buffers will be resized later if there are too many actual line lengths outside the sample estimate.
+  // 'Estimate' even of this sample because quote='auto' may add quotes and escape embedded quotes.
+  // Buffers will be resized later if there are too many line lengths outside the sample, anyway.
+  // maxLineLen is just used to determine rowsPerBatch.
   int maxLineLen = 0;
+  int na_len = strlen(na);
   int step = nrow<1000 ? 100 : nrow/10;
   for (int start=0; start<nrow; start+=step) {
     int end = (nrow-start)<100 ? nrow : start+100;
@@ -414,7 +435,7 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
         if (rowNames) thisLineLen += LENGTH(STRING_ELT(rowNames,i));
         else thisLineLen += 1+(int)log10(nrow);
         if (quote==TRUE) thisLineLen+=2;
-        thisLineLen++; // col_sep
+        thisLineLen++; // sep
       }
       for (int j=0; j<ncol; j++) {
         SEXP column = VECTOR_ELT(DF, j);
@@ -440,18 +461,92 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
         case STRSXP:
           thisLineLen += LENGTH(STRING_ELT(column, i));
           break;
+        case VECSXP: {
+          // a list column containing atomic vectors in each cell
+          SEXP v = VECTOR_ELT(column,i);
+          thisLineLen += strlen(sep2start);
+          switch(TYPEOF(v)) {
+          case LGLSXP :
+            thisLineLen += LENGTH(v) * (logicalAsInt ? 1 : 5);
+            break;
+          case INTSXP: {
+            if (isFactor(v)) {
+              SEXP l = getAttrib(v, R_LevelsSymbol);
+              for (int k=0; k<LENGTH(v); k++) {
+                thisLineLen += INTEGER(v)[k]==NA_INTEGER ? na_len : LENGTH(STRING_ELT(l, INTEGER(v)[k]-1));
+              }
+            } else {
+              for (int k=0; k<LENGTH(v); k++) {
+                if ( INTEGER(v)[k]==NA_INTEGER ) thisLineLen += na_len;
+                else {
+                  writeInteger(INTEGER(v)[k], &ch);
+                  thisLineLen += (int)(ch-tmp);
+                  ch=tmp;
+                }
+              }
+            } }
+            break;
+          case REALSXP:
+            if (isInteger64(v)) {
+              for (int k=0; k<LENGTH(v); k++) {
+                long long i64 = *(long long *)&REAL(v)[k];
+                if (i64==NAINT64) thisLineLen += na_len;
+                else {
+                  writeInteger(i64, &ch);
+                  thisLineLen += (int)(ch-tmp);
+                  ch=tmp;
+                }
+              }
+            } else { 
+              for (int k=0; k<LENGTH(v); k++) {
+                writeNumeric(REAL(v)[k], &ch);
+                thisLineLen += (int)(ch-tmp);
+                ch=tmp;
+              }
+            }
+            break;
+          case STRSXP:
+            for (int k=0; k<LENGTH(v); k++) thisLineLen+=LENGTH(STRING_ELT(v, k))+1/*sep2*/;
+            thisLineLen--; /*last sep2*/
+            break;
+          default:
+            error("Column %d is a list column but on row %d is type '%s' - not yet implemented. fwrite() can write list columns containing atomic vectors of type logical, integer, integer64, double, character and factor, currently.", j+1, type2char(TYPEOF(v)));
+          }  // end switch on atomic vector type in a list column 
+          thisLineLen += LENGTH(v)/*sep2 after each field*/ +strlen(sep2end); }
+          break;  // from case VECSXP for list column
         default:
           error("Column %d's type is '%s' - not yet implemented.", j+1, type2char(TYPEOF(column)) );
         }
-        thisLineLen++; // col_sep
+        thisLineLen++; // sep
       }
-      thisLineLen += row_sep_len;
       if (thisLineLen > maxLineLen) maxLineLen = thisLineLen;
     }
   }
+  maxLineLen += strlen(eol);
   if (verbose) Rprintf("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(clock()-t0)/CLOCKS_PER_SEC);
   
-  t0=clock();  
+  int f;
+  if (*filename=='\0') {
+    f=-1;  // file="" means write to standard output
+    eol = "\n";  // We'll use Rprintf(); it knows itself about \r\n on Windows
+  } else { 
+#ifdef WIN32
+    f = _open(filename, _O_WRONLY | _O_BINARY | _O_CREAT | (LOGICAL(append)[0] ? _O_APPEND : _O_TRUNC), _S_IWRITE);
+    // eol must be passed from R level as '\r\n' on Windows since write() only auto-converts \n to \r\n in
+    // _O_TEXT mode. We use O_BINARY for full control and perhaps speed since O_TEXT must have to deep branch an if('\n')
+#else
+    f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
+#endif
+    if (f == -1) {
+      int erropen = errno;
+      if( access( filename, F_OK ) != -1 )
+        error("%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?", strerror(erropen), filename);
+      else
+        error("%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?", strerror(erropen), filename); 
+    }
+  }
+  t0=clock();
+    
   if (verbose) {
     Rprintf("Writing column names ... ");
     if (f==-1) Rprintf("\n");
@@ -464,21 +559,20 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
       int buffSize = 2/*""*/ +1/*,*/;
       for (int j=0; j<ncol; j++) buffSize += 1/*"*/ +2*LENGTH(STRING_ELT(names, j)) +1/*"*/ +1/*,*/;
       //     in case every name full of quotes(!) to be escaped ^^
-      buffSize += row_sep_len +1/*\0*/;
+      buffSize += strlen(eol) +1/*\0*/;
       char *buffer = malloc(buffSize);
       if (buffer == NULL) error("Unable to allocate %d buffer for column names", buffSize);
       char *ch = buffer;
       if (doRowNames) {
         if (quote!=FALSE) { *ch++='"'; *ch++='"'; } // to match write.csv
-        *ch++ = col_sep;
+        *ch++ = sep;
       }
       for (int j=0; j<ncol; j++) {
         writeString(STRING_ELT(names, j), &ch);
-        *ch++ = col_sep;
+        *ch++ = sep;
       }
-      ch--;  // backup onto the last col_sep after the last column
-      memcpy(ch, row_sep, row_sep_len);  // replace it with the newline 
-      ch += row_sep_len;
+      ch--;  // backup onto the last sep after the last column
+      writeChars(eol, &ch);  // replace it with the newline 
       if (f==-1) { *ch='\0'; Rprintf(buffer); }
       else if (WRITE(f, buffer, (int)(ch-buffer))==-1) {
         int errwrite=errno;
@@ -566,11 +660,10 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
           for (int j=0; j<ncol; j++) {
             SEXP column = VECTOR_ELT(DF, j);
             writeNumeric(REAL(column)[i], &ch);
-            *ch++ = col_sep;
+            *ch++ = sep;
           }
-          ch--;  // backup onto the last col_sep after the last column
-          memcpy(ch, row_sep, row_sep_len);  // replace it with the newline.
-          ch += row_sep_len;
+          ch--;  // backup onto the last sep after the last column
+          writeChars(eol, &ch);  // replace it with the newline.
           
           size_t thisLineLen = ch-lineStart;
           if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
@@ -583,15 +676,14 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
           for (int j=0; j<ncol; j++) {
             SEXP column = VECTOR_ELT(DF, j);
             if (INTEGER(column)[i] == NA_INTEGER) {
-              memcpy(ch, na_str, na_len); ch += na_len;
+              writeChars(na, &ch);
             } else {
               writeInteger(INTEGER(column)[i], &ch);
             }
-            *ch++ = col_sep;
+            *ch++ = sep;
           }
           ch--;
-          memcpy(ch, row_sep, row_sep_len);
-          ch += row_sep_len;
+          writeChars(eol, &ch);
           
           size_t thisLineLen = ch-lineStart;
           if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
@@ -610,28 +702,32 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
             } else {
               writeString(STRING_ELT(rowNames, i), &ch);
             }
-            *ch++=col_sep;
+            *ch++=sep;
           }
           for (int j=0; j<ncol; j++) {
             SEXP column = VECTOR_ELT(DF, j);
             switch(TYPEOF(column)) {
-            case LGLSXP: {
-              Rboolean bool = LOGICAL(column)[i];
-              if (bool == NA_LOGICAL) {
-                memcpy(ch, na_str, na_len); ch += na_len;
-              } else if (logicalAsInt) {
-                *ch++ = '0'+bool;
-              } else if (bool) {
-                *ch++='T'; *ch++='R'; *ch++='U'; *ch++='E';
+            case LGLSXP:
+              writeLogical(LOGICAL(column)[i], &ch);
+              break;
+            case INTSXP:
+              if (INTEGER(column)[i] == NA_INTEGER) {
+                writeChars(na, &ch);
+              } else if (levels[j] != NULL) {   // isFactor(column) == TRUE
+                writeString(STRING_ELT(levels[j], INTEGER(column)[i]-1), &ch);
               } else {
-                *ch++='F'; *ch++='A'; *ch++='L'; *ch++='S'; *ch++='E';
-              } }
+                if (turbo) {
+                  writeInteger(INTEGER(column)[i], &ch);
+                } else {
+                  ch += sprintf(ch, "%d", INTEGER(column)[i]);
+                }
+              }
               break;
             case REALSXP:
               if (integer64[j]) {
                 long long i64 = *(long long *)&REAL(column)[i];
                 if (i64 == NAINT64) {
-                  memcpy(ch, na_str, na_len); ch += na_len;
+                  writeChars(na, &ch);
                 } else {
                   if (turbo) {
                     writeInteger(i64, &ch);
@@ -651,37 +747,79 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                 } else {
                   // if there are any problems with the specialized writeNumeric, user can revert to (slower) standard library
                   if (ISNAN(REAL(column)[i])) {
-                    memcpy(ch, na_str, na_len); ch += na_len;
+                    writeChars(na, &ch);
                   } else {
                     ch += sprintf(ch, "%.15g", REAL(column)[i]);
                   }
                 }
               }
               break;
-            case INTSXP:
-              if (INTEGER(column)[i] == NA_INTEGER) {
-                memcpy(ch, na_str, na_len); ch += na_len;
-              } else if (levels[j] != NULL) {   // isFactor(column) == TRUE
-                writeString(STRING_ELT(levels[j], INTEGER(column)[i]-1), &ch);
-              } else {
-                if (turbo) {
-                  writeInteger(INTEGER(column)[i], &ch);
-                } else {
-                  ch += sprintf(ch, "%d", INTEGER(column)[i]);
-                }
-              }
-              break;
             case STRSXP:
               writeString(STRING_ELT(column, i), &ch);
               break;
-            // default:
-            // An uncovered type would have already thrown above when calculating maxLineLen earlier
+              
+            case VECSXP: {
+              // a list column containing atomic vectors in each cell
+              SEXP v = VECTOR_ELT(column,i);
+              writeChars(sep2start, &ch);
+              switch(TYPEOF(v)) {
+              case LGLSXP :
+                for (int k=0; k<LENGTH(v); k++) {
+                  writeLogical(LOGICAL(v)[k], &ch);
+                  *ch++ = sep2;
+                }
+                break;
+              case INTSXP:
+                if (isFactor(v)) {
+                  SEXP l = getAttrib(v, R_LevelsSymbol);
+                  for (int k=0; k<LENGTH(v); k++) {
+                    if (INTEGER(v)[k]==NA_INTEGER) writeChars(na, &ch);
+                    else writeString(STRING_ELT(l, INTEGER(v)[k]-1), &ch);
+                    *ch++ = sep2;
+                  }
+                } else {
+                  for (int k=0; k<LENGTH(v); k++) {
+                    if (INTEGER(v)[k]==NA_INTEGER ) writeChars(na, &ch);
+                    else writeInteger(INTEGER(v)[k], &ch);
+                    *ch++ = sep2;
+                  }
+                }
+                break;
+              case REALSXP:
+                if (isInteger64(v)) {
+                  for (int k=0; k<LENGTH(v); k++) {
+                    long long i64 = *(long long *)&REAL(v)[k];
+                    if (i64==NAINT64) writeChars(na, &ch);
+                    else writeInteger(i64, &ch);
+                    *ch++ = sep2;
+                  }
+                } else {
+                  for (int k=0; k<LENGTH(v); k++) {
+                    writeNumeric(REAL(v)[k], &ch);
+                    *ch++ = sep2;
+                  }
+                }
+                break;
+              case STRSXP:
+                for (int k=0; k<LENGTH(v); k++) {
+                  writeString(STRING_ELT(v, k), &ch);
+                  *ch++ = sep2;
+                }
+                break;
+              default:
+                error("Column %d is a list column but on row %d is type '%s' - not yet implemented. fwrite() can write list columns containing atomic vectors of type logical, integer, integer64, double, character and factor, currently.", j+1, type2char(TYPEOF(v)));
+              }  // end switch on atomic vector type in a list column
+              if (LENGTH(v)) ch--; // backup over the last sep2 after the last item
+              writeChars(sep2end, &ch); }
+              break;  // from case VECSXP for list column
+              
+            default:
+              error("Internal error: unsupported column type should have been thrown above when calculating maxLineLen");
             }
-            *ch++ = col_sep;
+            *ch++ = sep; // next column
           }
-          ch--;  // backup onto the last col_sep after the last column
-          memcpy(ch, row_sep, row_sep_len);  // replace it with the newline. TODO: replace memcpy call with eol1 eol2 --eolLen 
-          ch += row_sep_len;
+          ch--;  // backup onto the last sep after the last column. 0-columns was caught and returned earlier, so >=1 cols.
+          writeChars(eol, &ch);  // replace it with the newline.
           
           // Track longest line seen so far. If we start to see longer lines than we saw in the
           // sample, we'll realloc the buffer. The rowsPerBatch chosen based on the (very good) sample,
