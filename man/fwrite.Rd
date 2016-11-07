@@ -59,13 +59,9 @@ DF = data.frame(A=c(2.1,-1.234e-307,pi), B=c("foo","A,Name","bar"))
 fwrite(DF, quote='auto')        # Just DF[2,2] is auto quoted 
 write.csv(DF, row.names=FALSE)  # same numeric formatting
 
-DT = data.table(A=c(2,5.6,-3),B=list(1:3,letters[1:8],round(pi*1:3,2)))
-DT                              # auto printing list column; e.g. trailing comma on DT[2,2]
+DT = data.table(A=c(2,5.6,-3),B=list(1:3,c("foo","A,Name","bar"),round(pi*1:3,2)))
 fwrite(DT)
 fwrite(DT, sep="|", sep2=c("{",",","}"))
-DT[2,B:=list(list(c("foo", "A,Name", "bar")))]
-DT
-fwrite(DT)                      # auto quoted sub-field of list column
 
 \dontrun{
 
