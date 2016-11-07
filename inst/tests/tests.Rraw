@@ -9582,6 +9582,12 @@ DT = data.table(A=c("foo","ba|r","baz"), B=list(1:3,1:4,c("fo|o","ba,r","baz")))
 test(1736.8, capture.output(fwrite(DT)), c("A,B", "foo,1|2|3", "\"ba|r\",1|2|3|4", "baz,\"fo|o\"|\"ba,r\"|baz"))
 test(1736.9, capture.output(fwrite(DT,quote=TRUE)), c("\"A\",\"B\"", "\"foo\",1|2|3", "\"ba|r\",1|2|3|4", "\"baz\",\"fo|o\"|\"ba,r\"|\"baz\""))
 
+# any list of same length vector input
+test(1737.1, fwrite(list()), NULL, warning="fwrite was passed an empty list of no columns")
+test(1737.2, fwrite(list(1.2)), output="1.2")
+test(1737.3, fwrite(list(1.2,B="foo")), output=",B1.2,foo")
+test(1737.4, fwrite(list("A,Name"=1.2,B="fo,o")), output="\"A,Name\",B1.2,\"fo,o\"")
+test(1737.5, fwrite(list(1.2,B=c("foo","bar"))), error="Column 2's length (2) is not the same as column 1's length (1)") 
 
 ##########################
 

@@ -13,7 +13,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     nThread = as.integer(nThread)
     # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
     # validate arguments
-    stopifnot(is.data.frame(x), ncol(x) > 0L,
+    stopifnot(is.list(x), ncol(x) > 0L,
         identical(quote,"auto") || identical(quote,FALSE) || identical(quote,TRUE),
         is.character(sep) && length(sep)==1L && nchar(sep) == 1L,
         is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])==1L,

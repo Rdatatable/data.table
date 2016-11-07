@@ -346,12 +346,11 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
 {
   if (!isNewList(DF)) error("fwrite must be passed an object of type list; e.g. data.frame, data.table");
   RLEN ncol = length(DF);
-  if (ncol==0) error("fwrite must be passed a non-empty list");
-  RLEN nrow = length(VECTOR_ELT(DF, 0));
-  for (int i=1; i<ncol; i++) {
-    if (nrow != length(VECTOR_ELT(DF, i)))
-      error("Column %d's length (%d) is not the same as column 1's length (%d)", i+1, length(VECTOR_ELT(DF, i)), nrow);
+  if (ncol==0) {
+    warning("fwrite was passed an empty list of no columns. Nothing to write.");
+    return R_NilValue;
   }
+  RLEN nrow = length(VECTOR_ELT(DF, 0));
 #ifndef _OPENMP
   Rprintf("This installation has no OpenMP support. fwrite() will still work but slower in single threaded mode.\n");
   // Not warning() because that would cause test.data.table() to error about the unexpected warnings
@@ -388,6 +387,8 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
   Rboolean integer64[ncol]; // VLA
   for (int j=0; j<ncol; j++) {
     SEXP column = VECTOR_ELT(DF, j);
+    if (nrow != length(column))
+      error("Column %d's length (%d) is not the same as column 1's length (%d)", j+1, length(column), nrow);
     levels[j] = NULL;
     integer64[j] = FALSE;
     if (isFactor(column)) {
@@ -553,7 +554,7 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
   }
   if (LOGICAL(col_names)[0]) {
     SEXP names = getAttrib(DF, R_NamesSymbol);  
-    if (names!=NULL) {
+    if (names!=R_NilValue) {
       if (LENGTH(names) != ncol) error("Internal error: length of column names is not equal to the number of columns. Please report.");
       // allow for quoting even when not.
       int buffSize = 2/*""*/ +1/*,*/;
