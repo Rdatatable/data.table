@@ -204,6 +204,10 @@ void attribute_visible R_init_datatable(DllInfo *info)
     setNumericRounding(ScalarInteger(0)); // #1642, #1728, #1463, #485
     
     char_integer64 = mkChar("integer64");  // for speed, similar to R_*Symbol.
+    char_ITime = mkChar("ITime");
+    char_IDate = mkChar("IDate");
+    char_Date = mkChar("Date");
+    char_POSIXct = mkChar("POSIXct");
     
     avoid_openmp_hang_within_fork();
 }

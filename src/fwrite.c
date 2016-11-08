@@ -284,15 +284,44 @@ static inline void writeString(SEXP x, char **thisCh)
   *thisCh = ch;
 }
 
-static inline Rboolean isInteger64(SEXP x) {
+static inline Rboolean INHERITS(SEXP x, SEXP str) {
+  // Thread safe inherits() by pre-calling install() via mkChar() up front in init.c
+  // and passing those in here as 'str' for simple and fast non-API pointer compare.
+  // Not sure inherits() is in R API anyway
+  // The thread-safety aspect here is only really needed for list columns where the
+  // class of vector items is tested. Since the column classes themselves are pre-stored
+  // in (for example) isInteger64[] and isITime[].
   SEXP class;
-  if (TYPEOF(x)==REALSXP && isString(class = getAttrib(x, R_ClassSymbol))) {
-    for (int i=0; i<LENGTH(class); i++) {   // inherits()
-      if (STRING_ELT(class, i) == char_integer64) return TRUE;
+  if (isString(class = getAttrib(x, R_ClassSymbol))) {
+    for (int i=0; i<LENGTH(class); i++) {
+      if (STRING_ELT(class, i) == str) return TRUE;
     }
   }
   return FALSE;
 }
+
+// DATE/TIME
+static inline void writeITime(int x, char **thisCh)
+{
+  char *ch = *thisCh;
+  if (x==NA_INTEGER) writeChars(na, &ch);
+  else {
+    if (x<0) {*ch++='-'; x=-x;}  // following as.character.ITime
+    int hh = x/3600;
+    int mm = (x - hh*3600) / 60;
+    int ss = x%60;
+    *ch++ = '0'+hh/10;
+    *ch++ = '0'+hh%10;
+    *ch++ = ':';
+    *ch++ = '0'+mm/10;
+    *ch++ = '0'+mm%10;
+    *ch++ = ':';
+    *ch++ = '0'+ss/10;
+    *ch++ = '0'+ss%10;
+  }
+  *thisCh = ch;
+}
+
 
 static int failed = 0;
 static int rowsPerBatch;
@@ -383,22 +412,25 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
 
   // Store column type tests in lookups for efficiency
   int sameType = TYPEOF(VECTOR_ELT(DF, 0)); // to avoid deep switch later
-  SEXP levels[ncol];        // VLA. NULL means not-factor too, else the levels
-  Rboolean integer64[ncol]; // VLA
+  SEXP levels[ncol];          // VLA. NULL means not-factor too, else the levels
+  Rboolean isInteger64[ncol]; // VLA
+  Rboolean isITime[ncol];     // VLA
   for (int j=0; j<ncol; j++) {
     SEXP column = VECTOR_ELT(DF, j);
     if (nrow != length(column))
       error("Column %d's length (%d) is not the same as column 1's length (%d)", j+1, length(column), nrow);
     levels[j] = NULL;
-    integer64[j] = FALSE;
+    isInteger64[j] = isITime[j] = FALSE;
     if (isFactor(column)) {
       levels[j] = getAttrib(column, R_LevelsSymbol);
-      sameType = 0;
-    } else if (isInteger64(column)) {  // tests class() string vector
-      integer64[j] = TRUE;
-      sameType = 0;
-    } else {
-      if (TYPEOF(column) != sameType) sameType = 0;
+    } else if (INHERITS(column, char_integer64)) {
+      if (TYPEOF(column)!=REALSXP) error("Column %d inherits from 'integer64' but is type '%s' not REALSXP", j+1, type2char(TYPEOF(column)));
+      isInteger64[j] = TRUE;
+    } else if (INHERITS(column, char_ITime)) {
+      isITime[j] = TRUE;
+    }
+    if (TYPEOF(column)!=sameType || getAttrib(column,R_ClassSymbol)!=R_NilValue) {
+      sameType = 0;  // only all plain INTSXP or all plain REALSXP save the deep switch() below. 
     }
     if (firstListColumn==0 && TYPEOF(column)==VECSXP) firstListColumn = j+1;
   }
@@ -450,10 +482,11 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
           int i32 = INTEGER(column)[i];
           if (i32 == NA_INTEGER) thisLineLen += na_len;
           else if (levels[j] != NULL) thisLineLen += LENGTH(STRING_ELT(levels[j], i32-1));
+          else if (isITime[j]) thisLineLen += 8;
           else { writeInteger(i32, &ch); thisLineLen += (int)(ch-tmp); } }
           break;          
         case REALSXP:
-          if (integer64[j]) {
+          if (isInteger64[j]) {
             long long i64 = *(long long *)&REAL(column)[i];
             if (i64==NAINT64)                              thisLineLen += na_len;
             else { writeInteger(i64,             &ch); thisLineLen += (int)(ch-tmp); }
@@ -479,6 +512,7 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
             } else {
               for (int k=0; k<LENGTH(v); k++) {
                 if ( INTEGER(v)[k]==NA_INTEGER ) thisLineLen += na_len;
+                else if (INHERITS(v, char_ITime)) thisLineLen += 8;
                 else {
                   writeInteger(INTEGER(v)[k], &ch);
                   thisLineLen += (int)(ch-tmp);
@@ -488,7 +522,7 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
             } }
             break;
           case REALSXP:
-            if (isInteger64(v)) {
+            if (INHERITS(v, char_integer64)) {
               for (int k=0; k<LENGTH(v); k++) {
                 long long i64 = *(long long *)&REAL(v)[k];
                 if (i64==NAINT64) thisLineLen += na_len;
@@ -716,6 +750,8 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                 writeChars(na, &ch);
               } else if (levels[j] != NULL) {   // isFactor(column) == TRUE
                 writeString(STRING_ELT(levels[j], INTEGER(column)[i]-1), &ch);
+              } else if (isITime[j]) {
+                writeITime(INTEGER(column)[i], &ch);
               } else {
                 if (turbo) {
                   writeInteger(INTEGER(column)[i], &ch);
@@ -725,7 +761,7 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
               }
               break;
             case REALSXP:
-              if (integer64[j]) {
+              if (isInteger64[j]) {
                 long long i64 = *(long long *)&REAL(column)[i];
                 if (i64 == NAINT64) {
                   writeChars(na, &ch);
@@ -778,6 +814,11 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                     else writeString(STRING_ELT(l, INTEGER(v)[k]-1), &ch);
                     *ch++ = sep2;
                   }
+                } else if (INHERITS(v, char_ITime)) {
+                  for (int k=0; k<LENGTH(v); k++) {
+                    writeITime(INTEGER(v)[k], &ch);
+                    *ch++ = sep2;
+                  }
                 } else {
                   for (int k=0; k<LENGTH(v); k++) {
                     if (INTEGER(v)[k]==NA_INTEGER ) writeChars(na, &ch);
@@ -787,7 +828,7 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                 }
                 break;
               case REALSXP:
-                if (isInteger64(v)) {
+                if (INHERITS(v, char_integer64)) {
                   for (int k=0; k<LENGTH(v); k++) {
                     long long i64 = *(long long *)&REAL(v)[k];
                     if (i64==NAINT64) writeChars(na, &ch);

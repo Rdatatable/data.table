@@ -34,6 +34,10 @@
 // init.c
 void setSizes();
 SEXP char_integer64;
+SEXP char_ITime;
+SEXP char_IDate;
+SEXP char_Date;
+SEXP char_POSIXct;
 
 // dogroups.c
 SEXP keepattr(SEXP to, SEXP from);

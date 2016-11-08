@@ -9589,6 +9589,12 @@ test(1737.3, fwrite(list(1.2,B="foo")), output=",B1.2,foo")
 test(1737.4, fwrite(list("A,Name"=1.2,B="fo,o")), output="\"A,Name\",B1.2,\"fo,o\"")
 test(1737.5, fwrite(list(1.2,B=c("foo","bar"))), error="Column 2's length (2) is not the same as column 1's length (1)") 
 
+# fwrite ITime
+DT = data.table(A=as.ITime(c("23:59:58","23:59:59","12:00:00","00:00:01",NA,"00:00:00")))
+test(1738.1, capture.output(fwrite(DT)), c("A","23:59:58","23:59:59","12:00:00","00:00:01","","00:00:00"))
+test(1739.2, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE, na="")))
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
