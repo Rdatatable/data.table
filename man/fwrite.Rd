@@ -32,7 +32,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",", sep2 = c("","|",
 	\item{"double" (default, same as \code{write.csv}), in which case the double quote is doubled with another one.}
       }}
   \item{logicalAsInt}{Should \code{logical} values be written as \code{1} and \code{0} rather than \code{"TRUE"} and \code{"FALSE"}?}
-  \item{dateAs}{The default is \code{"yyyy-mm-dd"} to match \code{write.csv}. \code{"yyyymmdd"} drops the separator so that dates can be read as integers in human readable format (that choice allows fast extraction of \code{yyyy}, \code{mm} and \code{dd} parts using \code{\%/\%10000}, \code{\%/\%100 \%\%100} and \code{\%\%100} respectively. Finally, \code{"epoch"} writes the underlying integer as-is: the number of days since the 1970-01-01 epoch (negative before that; see \code{?Date}). All three options are very fast due to new specialized C code. You should not be able to notice any difference in write speed between these options. The date range supported and tested is [0000-03-01, 9999-12-31] (3,652,365 dates including 2,790 leap days).}
+  \item{dateAs}{How \code{Date} and \code{IDate} items are written. The default is \code{"yyyy-mm-dd"} to match \code{write.csv}. \code{"yyyymmdd"} drops the separator so that dates are represented as integers in human readable format. That choice allows fast and simple extraction of \code{yyyy}, \code{mm}, \code{dd} and (most commonly to group by) \code{yyyymm} parts directly using \code{\%/\%10000}, \code{\%/\%100\%\%100}, \code{\%\%100} and \code{\%/\%100} respectively. Finally, \code{"epoch"} writes the underlying integer as-is: the number of days since the 1970-01-01 epoch (negative before that; see \code{?Date}). All three options are very fast due to new specialized C code. You should not be able to notice any difference in write speed between these options. Fast conversion of epoch date to date parts is based on an article by Howard Hinnant (see references). The date range supported is [0000-03-01, 9999-12-31]. Every one of these 3,652,365 dates have been tested and compared to base R including 2,790 leap days.}
   \item{buffMB}{The buffer size (MB) per thread in the range 1 to 1024, default 8MB. Experiment to see what works best for your data on your hardware.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
@@ -46,7 +46,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",", sep2 = c("","|",
   \code{\link{setDTthreads}}, \code{\link{fread}}, \code{\link[utils]{write.csv}}, \code{\link[utils]{write.table}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
 }
 \references{
-  \url{http://howardhinnant.github.io/date_algorithms.html}
+  \url{http://howardhinnant.github.io/date_algorithms.html}\cr
   \url{https://en.wikipedia.org/wiki/Decimal_mark}
 }
 \examples{
