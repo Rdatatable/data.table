@@ -8,7 +8,8 @@ As \code{write.csv} but much faster (e.g. 2 seconds versus 1 minute) and just as
 fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",", sep2 = c("","|",""),
        eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
        na = "", dec = ".", row.names = FALSE, col.names = TRUE, qmethod = c("double","escape"),
-       logicalAsInt = FALSE, buffMB = 8L, nThread = getDTthreads(),
+       logicalAsInt = FALSE, dateAs = c("yyyy-mm-dd", "yyyymmdd", "epoch"),
+       buffMB = 8L, nThread = getDTthreads(),
        showProgress = getOption("datatable.showProgress"),
        verbose = getOption("datatable.verbose"),
        ..turbo=TRUE)
@@ -31,6 +32,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",", sep2 = c("","|",
 	\item{"double" (default, same as \code{write.csv}), in which case the double quote is doubled with another one.}
       }}
   \item{logicalAsInt}{Should \code{logical} values be written as \code{1} and \code{0} rather than \code{"TRUE"} and \code{"FALSE"}?}
+  \item{dateAs}{The default is \code{"yyyy-mm-dd"} to match \code{write.csv}. \code{"yyyymmdd"} drops the separator so that dates can be read as integers in human readable format (that choice allows fast extraction of \code{yyyy}, \code{mm} and \code{dd} parts using \code{\%/\%10000}, \code{\%/\%100 \%\%100} and \code{\%\%100} respectively. Finally, \code{"epoch"} writes the underlying integer as-is: the number of days since the 1970-01-01 epoch (negative before that; see \code{?Date}). All three options are very fast due to new specialized C code. You should not be able to notice any difference in write speed between these options. The date range supported and tested is [0000-03-01, 9999-12-31] (3,652,365 dates including 2,790 leap days).}
   \item{buffMB}{The buffer size (MB) per thread in the range 1 to 1024, default 8MB. Experiment to see what works best for your data on your hardware.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
@@ -38,12 +40,13 @@ fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",", sep2 = c("","|",
   \item{..turbo}{Use specialized custom C code to format numeric, integer and integer64 columns. This reduces call overhead to the C library and avoids copies. Try with and without to see the difference it makes on your machine and please report any differences in output. If you do find cases where \code{..turbo=FALSE} is needed, please report them as bugs, since this option WILL BE REMOVED in future. Hence why it has the \code{..} prefix.}
 }
 \details{
-\code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates, times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
+\code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
 }
 \seealso{
   \code{\link{setDTthreads}}, \code{\link{fread}}, \code{\link[utils]{write.csv}}, \code{\link[utils]{write.table}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
 }
 \references{
+  \url{http://howardhinnant.github.io/date_algorithms.html}
   \url{https://en.wikipedia.org/wiki/Decimal_mark}
 }
 \examples{

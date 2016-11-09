@@ -205,7 +205,6 @@ void attribute_visible R_init_datatable(DllInfo *info)
     
     char_integer64 = mkChar("integer64");  // for speed, similar to R_*Symbol.
     char_ITime = mkChar("ITime");
-    char_IDate = mkChar("IDate");
     char_Date = mkChar("Date");
     char_POSIXct = mkChar("POSIXct");
     

@@ -2,13 +2,15 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
                    sep=",", sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
                    na="", dec=".", row.names=FALSE, col.names=TRUE,
                    qmethod=c("double","escape"),
-                   logicalAsInt=FALSE, buffMB=8, nThread=getDTthreads(),
+                   logicalAsInt=FALSE, dateAs=c("yyyy-mm-dd","yyyymmdd","epoch"),
+                   buffMB=8, nThread=getDTthreads(),
                    showProgress = getOption("datatable.showProgress"),
                    verbose = getOption("datatable.verbose"),
                    ..turbo=TRUE) {
     isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
     na = as.character(na[1L]) # fix for #1725
     if (missing(qmethod)) qmethod = qmethod[1L]
+    if (missing(dateAs)) dateAs = dateAs[1L]
     buffMB = as.integer(buffMB)
     nThread = as.integer(nThread)
     # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
@@ -20,7 +22,8 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         is.character(dec) && length(dec)==1L && nchar(dec) == 1L,
         dec != sep,  # sep2!=dec and sep2!=sep checked at C level when we know if list columns are present 
         is.character(eol) && length(eol)==1L,
-        length(qmethod) == 1L && qmethod %in% c("double", "escape"), 
+        length(qmethod) == 1L && qmethod %in% c("double", "escape"),
+        length(dateAs) == 1L && dateAs %in% c("yyyy-mm-dd","yyyymmdd","epoch"),
         isLOGICAL(col.names), isLOGICAL(append), isLOGICAL(row.names),
         isLOGICAL(verbose), isLOGICAL(showProgress), isLOGICAL(logicalAsInt),
         length(na) == 1L, #1725, handles NULL or character(0) input
@@ -40,8 +43,9 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         nThread=1L
         showProgress=FALSE
     }
+    dateAs = chmatch(dateAs, c("yyyy-mm-dd","yyyymmdd","epoch"))-1L
     .Call(Cwritefile, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
-                      row.names, col.names, logicalAsInt, buffMB, nThread,
+                      row.names, col.names, logicalAsInt, dateAs, buffMB, nThread,
                       showProgress, verbose, ..turbo)
     invisible()
 }

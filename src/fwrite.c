@@ -27,6 +27,7 @@ static Rboolean verbose=FALSE;         // be chatty?
 static Rboolean quote=FALSE;           // whether to surround fields with double quote ". NA means 'auto' (default)
 static Rboolean qmethod_escape=TRUE;   // when quoting fields, how to manage double quote in the field contents
 static Rboolean logicalAsInt=FALSE;    // logical as 0/1 or "TRUE"/"FALSE"
+static int dateAs=0;                   // 0=yyyy-mm-dd, 1=yyyymmdd, 2=epoch
 
 static inline void writeInteger(long long x, char **thisCh)
 {
@@ -304,9 +305,8 @@ static inline Rboolean INHERITS(SEXP x, SEXP str) {
 static inline void writeITime(int x, char **thisCh)
 {
   char *ch = *thisCh;
-  if (x==NA_INTEGER) writeChars(na, &ch);
+  if (x<0) writeChars(na, &ch);  // <0 covers NA_INTEGER too
   else {
-    if (x<0) {*ch++='-'; x=-x;}  // following as.character.ITime
     int hh = x/3600;
     int mm = (x - hh*3600) / 60;
     int ss = x%60;
@@ -322,6 +322,56 @@ static inline void writeITime(int x, char **thisCh)
   *thisCh = ch;
 }
 
+static inline void writeDate(int x, char **thisCh)
+{
+  // From base ?Date :
+  //  "  Dates are represented as the number of days since 1970-01-01, with negative values
+  // for earlier dates. They are always printed following the rules of the current Gregorian calendar,
+  // even though that calendar was not in use long ago (it was adopted in 1752 in Great Britain and its
+  // colonies)  "
+
+  // The algorithm here was taken from civil_from_days() here :
+  //   http://howardhinnant.github.io/date_algorithms.html
+  // donated to the public domain thanks to Howard Hinnant, 2013.
+  // The rebase to 1 March 0000 is inspired; avoids needing isleap at all.
+  // The only small modifications here are :
+  //   1) no need for era
+  //   2) impose date range of [0000-03-01, 9999-12-31]. All 3,652,365 dates tested in test 1739
+  //   3) use direct lookup for mmdd rather than the math using 153, 2 and 5
+  //   4) use true/false value (md/100)<3 rather than ?: branch
+  // The end result is 5 lines of simple branch free integer math with no library calls.
+
+  char *ch = *thisCh;
+  if (x< -719468 || x>2932896) writeChars(na, &ch);
+  // covers NA_INTEGER (==INT_MIN checked in init.c)
+  // as.integer(as.Date(c("0000-03-01","9999-12-31"))) == c(-719468,+2932896)
+  else if (dateAs == 2) {
+    // dateAs == "epoch" where options are 0,1,2 == c("yyyy-mm-dd","yyyymmdd","raw")
+    writeInteger(x, &ch);
+  } else {
+    x += 719468;  // convert days from 1970-01-01 to days from 0000-03-01 (the day after 29 Feb 0000)
+    int y = (x - x/1461 + x/36525 - x/146097) / 365;  // year of the preceeding March 1st
+    int z =  x - y*365 - y/4 + y/100 - y/400 + 1;     // days from March 1st in year y
+    int md = monthday[z];  // See fwriteLookups.h for how the 366 item lookup 'monthday' is arranged
+    y += z && (md/100)<3;  // The +1 above turned z=-1 to 0 (meaning Feb29 of year y not Jan or Feb of y+1)
+    
+    ch += 7 + 2*!dateAs;
+    *ch-- = '0'+md%10; md/=10;
+    *ch-- = '0'+md%10; md/=10;
+    *ch-- = '-';
+    ch += dateAs;
+    *ch-- = '0'+md%10; md/=10;
+    *ch-- = '0'+md%10; md/=10;
+    *ch-- = '-';
+    ch += dateAs;
+    *ch-- = '0'+y%10; y/=10;
+    *ch-- = '0'+y%10; y/=10;
+    *ch-- = '0'+y%10; y/=10;
+    *ch   = '0'+y%10; y/=10;
+    ch += 8 + 2*!dateAs;
+  }
+  *thisCh = ch;
+}
 
 static int failed = 0;
 static int rowsPerBatch;
@@ -367,6 +417,7 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                SEXP row_names,          // TRUE|FALSE
                SEXP col_names,          // TRUE|FALSE
                SEXP logicalAsInt_Arg,   // TRUE|FALSE
+               SEXP dateAs_Arg,         // 0="yyyy-mm-dd",1="yyyymmdd",2="epoch"
                SEXP buffMB_Arg,         // [1-1024] default 8MB
                SEXP nThread,
                SEXP showProgress_Arg,
@@ -406,6 +457,7 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
   qmethod_escape = LOGICAL(qmethod_escapeArg)[0];
   const char *filename = CHAR(STRING_ELT(filename_Arg, 0));
   logicalAsInt = LOGICAL(logicalAsInt_Arg)[0];
+  dateAs = INTEGER(dateAs_Arg)[0];
   int nth = INTEGER(nThread)[0];
   int firstListColumn = 0;
   clock_t t0=clock();
@@ -413,14 +465,15 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
   // Store column type tests in lookups for efficiency
   int sameType = TYPEOF(VECTOR_ELT(DF, 0)); // to avoid deep switch later
   SEXP levels[ncol];          // VLA. NULL means not-factor too, else the levels
-  Rboolean isInteger64[ncol]; // VLA
-  Rboolean isITime[ncol];     // VLA
+  Rboolean isInteger64[ncol];
+  Rboolean isITime[ncol];
+  Rboolean isDate[ncol];
   for (int j=0; j<ncol; j++) {
     SEXP column = VECTOR_ELT(DF, j);
     if (nrow != length(column))
       error("Column %d's length (%d) is not the same as column 1's length (%d)", j+1, length(column), nrow);
     levels[j] = NULL;
-    isInteger64[j] = isITime[j] = FALSE;
+    isInteger64[j] = isITime[j] = isDate[j] = FALSE;
     if (isFactor(column)) {
       levels[j] = getAttrib(column, R_LevelsSymbol);
     } else if (INHERITS(column, char_integer64)) {
@@ -428,6 +481,8 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
       isInteger64[j] = TRUE;
     } else if (INHERITS(column, char_ITime)) {
       isITime[j] = TRUE;
+    } else if (INHERITS(column, char_Date)) {  // including IDate which inherits from Date
+      isDate[j] = TRUE;
     }
     if (TYPEOF(column)!=sameType || getAttrib(column,R_ClassSymbol)!=R_NilValue) {
       sameType = 0;  // only all plain INTSXP or all plain REALSXP save the deep switch() below. 
@@ -480,17 +535,22 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
           break;
         case INTSXP: {
           int i32 = INTEGER(column)[i];
-          if (i32 == NA_INTEGER) thisLineLen += na_len;
-          else if (levels[j] != NULL) thisLineLen += LENGTH(STRING_ELT(levels[j], i32-1));
-          else if (isITime[j]) thisLineLen += 8;
-          else { writeInteger(i32, &ch); thisLineLen += (int)(ch-tmp); } }
+          if (i32 == NA_INTEGER) ch += na_len;
+          else if (levels[j] != NULL) ch += LENGTH(STRING_ELT(levels[j], i32-1));
+          else if (isITime[j]) ch += 8;
+          else if (isDate[j]) writeDate(i32, &ch);
+          else writeInteger(i32, &ch); }
+          thisLineLen += (int)(ch-tmp);
           break;          
         case REALSXP:
           if (isInteger64[j]) {
             long long i64 = *(long long *)&REAL(column)[i];
-            if (i64==NAINT64)                              thisLineLen += na_len;
-            else { writeInteger(i64,             &ch); thisLineLen += (int)(ch-tmp); }
-          } else { writeNumeric(REAL(column)[i], &ch); thisLineLen += (int)(ch-tmp); }
+            if (i64==NAINT64) ch += na_len;
+            else writeInteger(i64, &ch);
+          }
+          else if (isDate[j]) writeDate((int)REAL(column)[i], &ch);
+          else writeNumeric(REAL(column)[i], &ch);
+          thisLineLen += (int)(ch-tmp);
           break;
         case STRSXP:
           thisLineLen += LENGTH(STRING_ELT(column, i));
@@ -509,10 +569,12 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
               for (int k=0; k<LENGTH(v); k++) {
                 thisLineLen += INTEGER(v)[k]==NA_INTEGER ? na_len : LENGTH(STRING_ELT(l, INTEGER(v)[k]-1));
               }
-            } else {
+            }
+            else if (INHERITS(v, char_ITime)) thisLineLen += LENGTH(v) * 8;
+            else if (INHERITS(v, char_IDate)) thisLineLen += LENGTH(v) * (8 + 2*(dateAs==0));
+            else {
               for (int k=0; k<LENGTH(v); k++) {
                 if ( INTEGER(v)[k]==NA_INTEGER ) thisLineLen += na_len;
-                else if (INHERITS(v, char_ITime)) thisLineLen += 8;
                 else {
                   writeInteger(INTEGER(v)[k], &ch);
                   thisLineLen += (int)(ch-tmp);
@@ -532,7 +594,9 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                   ch=tmp;
                 }
               }
-            } else { 
+            }
+            else if (INHERITS(v, char_Date)) thisLineLen += LENGTH(v) * (8 + 2*(dateAs==0));
+            else {
               for (int k=0; k<LENGTH(v); k++) {
                 writeNumeric(REAL(v)[k], &ch);
                 thisLineLen += (int)(ch-tmp);
@@ -541,19 +605,19 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
             }
             break;
           case STRSXP:
-            for (int k=0; k<LENGTH(v); k++) thisLineLen+=LENGTH(STRING_ELT(v, k))+1/*sep2*/;
-            thisLineLen--; /*last sep2*/
+            for (int k=0; k<LENGTH(v); k++) thisLineLen += LENGTH(STRING_ELT(v, k));
             break;
           default:
             error("Column %d is a list column but on row %d is type '%s' - not yet implemented. fwrite() can write list columns containing atomic vectors of type logical, integer, integer64, double, character and factor, currently.", j+1, type2char(TYPEOF(v)));
           }  // end switch on atomic vector type in a list column 
           thisLineLen += LENGTH(v)/*sep2 after each field*/ +strlen(sep2end); }
+          // LENGTH(v) could be 0 so we don't subtract one for the last sep2 (just an estimate anyway)
           break;  // from case VECSXP for list column
         default:
           error("Column %d's type is '%s' - not yet implemented.", j+1, type2char(TYPEOF(column)) );
         }
-        thisLineLen++; // sep
-      }
+        thisLineLen++; // column sep
+      } // next column
       if (thisLineLen > maxLineLen) maxLineLen = thisLineLen;
     }
   }
@@ -752,6 +816,8 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                 writeString(STRING_ELT(levels[j], INTEGER(column)[i]-1), &ch);
               } else if (isITime[j]) {
                 writeITime(INTEGER(column)[i], &ch);
+              } else if (isDate[j]) {
+                writeDate(INTEGER(column)[i], &ch);
               } else {
                 if (turbo) {
                   writeInteger(INTEGER(column)[i], &ch);
@@ -779,7 +845,9 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                   }
                 }
               } else {
-                if (turbo) {
+                if (isDate[j]) {
+                  writeDate( R_FINITE(REAL(column)[i]) ? (int)REAL(column)[i] : NA_INTEGER, &ch);
+                } else if (turbo) {
                   writeNumeric(REAL(column)[i], &ch); // handles NA, Inf etc within it
                 } else {
                   // if there are any problems with the specialized writeNumeric, user can revert to (slower) standard library
@@ -819,6 +887,11 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                     writeITime(INTEGER(v)[k], &ch);
                     *ch++ = sep2;
                   }
+                } else if (INHERITS(v, char_Date)) {
+                  for (int k=0; k<LENGTH(v); k++) {
+                    writeDate(INTEGER(v)[k], &ch);
+                    *ch++ = sep2;
+                  }
                 } else {
                   for (int k=0; k<LENGTH(v); k++) {
                     if (INTEGER(v)[k]==NA_INTEGER ) writeChars(na, &ch);
@@ -833,6 +906,11 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
                     long long i64 = *(long long *)&REAL(v)[k];
                     if (i64==NAINT64) writeChars(na, &ch);
                     else writeInteger(i64, &ch);
+                    *ch++ = sep2;
+                  }
+                } else if (INHERITS(v, char_Date)) {
+                  for (int k=0; k<LENGTH(v); k++) {
+                    writeDate(R_FINITE(REAL(v)[k]) ? (int)REAL(v)[k] : NA_INTEGER, &ch);
                     *ch++ = sep2;
                   }
                 } else {
