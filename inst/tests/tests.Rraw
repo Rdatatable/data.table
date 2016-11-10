@@ -8491,10 +8491,12 @@ test(1639.137, sort.by.names(ans), sort.by.names(unlist(split(setDT(df), by=c("p
 test(1639.138, ans, split(as.data.table(df), by=c("product","year")))
 test(1639.139, sort.by.names(ans), sort.by.names(unlist(split(as.data.table(df), by=c("product","year"), flatten=FALSE), recursive = FALSE)))
 # test if split preallocate columns in results #1908
-dt = data.table(x=rexp(100),y=rep(LETTERS[1:10], 10))
-dtL = split(dt, by = "y")
-test(1639.140, dim(dtL[[1]][, x2 := -x]), c(10L,3L))
-test(1639.141, all(sapply(dtL, truelength) > 1000))
+if (base::getRversion() > "3.0.0") {
+  dt = data.table(x=rexp(100),y=rep(LETTERS[1:10], 10))
+  dtL = split(dt, by = "y")
+  test(1639.140, dim(dtL[[1]][, x2 := -x]), c(10L,3L))
+  test(1639.141, all(sapply(dtL, truelength) > 1000))
+}
 
 # allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
 # patch for #1615. Note that I specifically have not implemented x[y, aa, on=c(aa="bb")] 
