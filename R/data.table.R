@@ -2403,7 +2403,7 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
             ))
     # handle nested split
     if (flatten || length(by) == 1L) return(
-        lapply(ll, setattr, '.data.table.locked', NULL)
+        lapply(lapply(ll, setattr, '.data.table.locked', NULL), setDT) # alloc.col could handle DT in list as done in: c9c4ff80bdd4c600b0c4eff23b207d53677176bd
     ) else if (length(by) > 1L) return(
         lapply(ll, split.data.table, drop=drop, by=by[-1L], sorted=sorted, keep.by=keep.by, flatten=flatten)
     )

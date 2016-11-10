@@ -77,7 +77,7 @@
 
   20. `first()` is now exported to return the first element of vectors, data.frames and data.tables.
 
-  21. New `split.data.table` method. Faster, more flexible and consistent with data.frame method. Closes [#1389](https://github.com/Rdatatable/data.table/issues/1389).
+  21. New `split.data.table` method. Faster, more flexible and consistent with data.frame method. Closes [#1389](https://github.com/Rdatatable/data.table/issues/1389). Now also properly preallocate columns, thanks @maverickg for reporting, closes [#1908](https://github.com/Rdatatable/data.table/issues/1908).
 
   22. `rbindlist` supports columns of type `complex`, [#1659](https://github.com/Rdatatable/data.table/issues/1659).
 
