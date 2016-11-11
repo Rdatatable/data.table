@@ -11,11 +11,12 @@
 
 #### NEW FEATURES
 
-  1. `fwrite` - *parallel file writer*: 
+  1. `fwrite` - *parallel .csv writer*:
     * Thanks to Otto Seiskari for the initial pull request [#580](https://github.com/Rdatatable/data.table/issues/580) that provided C code, R wrapper, manual page and extensive tests.
-    * From there Matt parallelized and specialized C functions for writing integer/numeric values. See [this blog post](http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/) for implementation details and benchmarks.
-    * Caught in development before release to CRAN: thanks to Francesco Grossetti for [#1725](https://github.com/Rdatatable/data.table/issues/1725) (NA handling) and Torsten Betz for [#1847](https://github.com/Rdatatable/data.table/issues/1847) (rounding of 9.999999999999998).
-    * `fwrite` status is being tracked here: [#1664](https://github.com/Rdatatable/data.table/issues/1664)
+    * From there Matt parallelized and specialized C functions for writing integer/numeric exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, dates (between 0000-03-01 and 9999-12-31), times down to microseconds in POSIXct, automatic quoting, `bit64::integer64`, \code{row.names} and \code{sep2} for \code{list} columns where each cell can itself be a vector. See [this blog post](http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/) for implementation details and benchmarks.
+    * Accepts any `list` of same length vectors; e.g. `data.frame` and `data.table`.
+    * Caught in development before release to CRAN: thanks to Francesco Grossetti for [#1725](https://github.com/Rdatatable/data.table/issues/1725) (NA handling), Torsten Betz for [#1847](https://github.com/Rdatatable/data.table/issues/1847) (rounding of 9.999999999999998) and @ambils for [#1903](https://github.com/Rdatatable/data.table/issues/1903) (> 1 million columns).
+    * `fwrite` status was tracked here: [#1664](https://github.com/Rdatatable/data.table/issues/1664)
 
   2. `fread()`:
     * gains `quote` argument. `quote = ""` disables quoting altogether which reads each field *as is*, [#1367](https://github.com/Rdatatable/data.table/issues/1367). Thanks @manimal.

@@ -35,6 +35,7 @@ static int dateTimeAs=0;               // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd), 
 #define ET_ITIME   2
 #define ET_INT64   3
 #define ET_POSIXCT 4
+#define ET_FACTOR  5
 
 static inline void writeInteger(long long x, char **thisCh)
 {
@@ -528,23 +529,44 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
   int firstListColumn = 0;
   clock_t t0=clock();
 
-  // Allocate a shallow copy place-holder. Solely for when dateTimeAs="write.csv" to hold
-  // the results of as.character(POSIXct). But saves switches to do it always. 
-  SEXP DF = PROTECT(allocVector(VECSXP, ncol));
+  SEXP DF = DFin;
+  int protecti = 0;
+  if (dateTimeAs == DATETIMEAS_WRITECSV) {
+    int j=0; while(j<ncol && !INHERITS(VECTOR_ELT(DFin,j), char_POSIXct)) j++;
+    if (j<ncol) {
+      // dateTimeAs=="write.csv" && there exist some POSIXct columns; coerce them
+      DF = PROTECT(allocVector(VECSXP, ncol));
+      protecti++;
+      // potentially large if ncol=1e6 as reported in #1903 where using large VLA caused stack overflow
+      SEXP s = PROTECT(allocList(2));
+      SET_TYPEOF(s, LANGSXP);
+      SETCAR(s, install("format.POSIXct"));
+      for (int j=0; j<ncol; j++) {
+        SEXP column = VECTOR_ELT(DFin, j);
+        if (INHERITS(column, char_POSIXct)) {
+          SETCAR(CDR(s), column);
+          SET_VECTOR_ELT(DF, j, eval(s, R_GlobalEnv));
+        } else {
+          SET_VECTOR_ELT(DF, j, column);
+        }
+      }
+      UNPROTECT(1);  // s, not DF
+    }
+  }
   
-  // Store column type tests in lookups for efficiency
   int sameType = TYPEOF(VECTOR_ELT(DFin, 0)); // to avoid deep switch later
-  SEXP levels[ncol];       // VLA. NULL means not-factor too, else the levels
-  int extraType[ncol];     // ET_INT64, ET_ITIME, ET_DATE, ET_POSIXCT
+
+  // Store column type tests in lookup for efficiency
+  // ET_INT64, ET_ITIME, ET_DATE, ET_POSIXCT, ET_FACTOR
+  char *extraType = (char *)R_alloc(ncol, sizeof(char)); // not a VLA as ncol could be > 1e6 columns
+  
   for (int j=0; j<ncol; j++) {
-    SEXP column = VECTOR_ELT(DFin, j);
-    SET_VECTOR_ELT(DF, j, column);
+    SEXP column = VECTOR_ELT(DF, j);
     if (nrow != length(column))
       error("Column %d's length (%d) is not the same as column 1's length (%d)", j+1, length(column), nrow);
-    levels[j] = NULL;
     extraType[j] = 0;
     if (isFactor(column)) {
-      levels[j] = getAttrib(column, R_LevelsSymbol);
+      extraType[j] = ET_FACTOR;
     } else if (INHERITS(column, char_integer64)) {
       if (TYPEOF(column)!=REALSXP) error("Column %d inherits from 'integer64' but is type '%s' not REALSXP", j+1, type2char(TYPEOF(column)));
       extraType[j] = ET_INT64;
@@ -553,16 +575,8 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
     } else if (INHERITS(column, char_Date)) {  // including IDate which inherits from Date
       extraType[j] = ET_DATE;
     } else if (INHERITS(column, char_POSIXct)) {
-      if (dateTimeAs == DATETIMEAS_WRITECSV) {
-        SEXP s = PROTECT(allocList(2));
-        SET_TYPEOF(s, LANGSXP);
-        SETCAR(s, install("format.POSIXct"));
-        SETCAR(CDR(s), column);
-        SET_VECTOR_ELT(DF, j, column = eval(s, R_GlobalEnv));
-        UNPROTECT(1);
-      } else {
-        extraType[j] = ET_POSIXCT;
-      }
+      if (dateTimeAs==DATETIMEAS_WRITECSV) error("Internal error: column should have already been coerced to character");
+      extraType[j] = ET_POSIXCT;
     }
     if (TYPEOF(column)!=sameType || getAttrib(column,R_ClassSymbol)!=R_NilValue) {
       sameType = 0;  // only all plain INTSXP or all plain REALSXP save the deep switch() below. 
@@ -616,7 +630,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
         case INTSXP: {
           int i32 = INTEGER(column)[i];
           if (i32 == NA_INTEGER) ch += na_len;
-          else if (levels[j] != NULL) ch += LENGTH(STRING_ELT(levels[j], i32-1));
+          else if (extraType[j] == ET_FACTOR) ch += LENGTH(STRING_ELT(getAttrib(column,R_LevelsSymbol), i32-1));
           else if (extraType[j] == ET_ITIME) ch += 8;
           else if (extraType[j] == ET_DATE) writeDate(i32, &ch);
           else writeInteger(i32, &ch); }
@@ -761,7 +775,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
   if (nrow == 0) {
     if (verbose) Rprintf("No data rows present (nrow==0)\n");
     if (f!=-1 && CLOSE(f)) error("%s: '%s'", strerror(errno), filename);
-    UNPROTECT(1); // DF
+    UNPROTECT(protecti);
     return(R_NilValue);
   }
 
@@ -888,8 +902,8 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
             case INTSXP:
               if (INTEGER(column)[i] == NA_INTEGER) {
                 writeChars(na, &ch);
-              } else if (levels[j] != NULL) {   // isFactor(column) == TRUE
-                writeString(STRING_ELT(levels[j], INTEGER(column)[i]-1), &ch);
+              } else if (extraType[j] == ET_FACTOR) {
+                writeString(STRING_ELT(getAttrib(column,R_LevelsSymbol), INTEGER(column)[i]-1), &ch);
               } else if (extraType[j] == ET_ITIME) {
                 writeITime(INTEGER(column)[i], &ch);
               } else if (extraType[j] == ET_DATE) {
@@ -1119,7 +1133,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
   }
   if (verbose) Rprintf("done (actual nth=%d, anyBufferGrown=%s, maxBuffUsed=%d%%)\n",
                        nth, anyBufferGrown?"yes":"no", maxBuffUsedPC);
-  UNPROTECT(1);  // DF; the shallow copy of DFin just for dateTimeAs="write.csv"
+  UNPROTECT(protecti);
   return(R_NilValue);
 }
 
