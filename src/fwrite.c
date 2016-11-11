@@ -500,10 +500,6 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
     return R_NilValue;
   }
   RLEN nrow = length(VECTOR_ELT(DFin, 0));
-#ifndef _OPENMP
-  Rprintf("This installation has no OpenMP support. fwrite() will still work but slower in single threaded mode.\n");
-  // Not warning() because that would cause test.data.table() to error about the unexpected warnings
-#endif
 
   const Rboolean showProgress = LOGICAL(showProgress_Arg)[0];
   time_t start_time = time(NULL);
