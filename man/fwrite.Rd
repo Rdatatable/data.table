@@ -3,12 +3,14 @@
 \title{Fast CSV writer}
 \description{
 As \code{write.csv} but much faster (e.g. 2 seconds versus 1 minute) and just as flexible. Modern machines almost surely have more than one CPU so \code{fwrite} uses them; on all operating systems including Linux, Mac and Windows.
+
+This is new functionality as of Nov 2016. We may need to refine argument names and defaults.
 }
 \usage{
 fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",", sep2 = c("","|",""),
        eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
        na = "", dec = ".", row.names = FALSE, col.names = TRUE, qmethod = c("double","escape"),
-       logicalAsInt = FALSE, dateAs = c("yyyy-mm-dd", "yyyymmdd", "epoch"),
+       logicalAsInt = FALSE, dateTimeAs = c("ISO","squash","epoch","write.csv"),
        buffMB = 8L, nThread = getDTthreads(),
        showProgress = getOption("datatable.showProgress"),
        verbose = getOption("datatable.verbose"),
@@ -32,7 +34,17 @@ fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",", sep2 = c("","|",
 	\item{"double" (default, same as \code{write.csv}), in which case the double quote is doubled with another one.}
       }}
   \item{logicalAsInt}{Should \code{logical} values be written as \code{1} and \code{0} rather than \code{"TRUE"} and \code{"FALSE"}?}
-  \item{dateAs}{How \code{Date} and \code{IDate} items are written. The default is \code{"yyyy-mm-dd"} to match \code{write.csv}. \code{"yyyymmdd"} drops the separator so that dates are represented as integers in human readable format. That choice allows fast and simple extraction of \code{yyyy}, \code{mm}, \code{dd} and (most commonly to group by) \code{yyyymm} parts directly using \code{\%/\%10000}, \code{\%/\%100\%\%100}, \code{\%\%100} and \code{\%/\%100} respectively. Finally, \code{"epoch"} writes the underlying integer as-is: the number of days since the 1970-01-01 epoch (negative before that; see \code{?Date}). All three options are very fast due to new specialized C code. You should not be able to notice any difference in write speed between these options. Fast conversion of epoch date to date parts is based on an article by Howard Hinnant (see references). The date range supported is [0000-03-01, 9999-12-31]. Every one of these 3,652,365 dates have been tested and compared to base R including 2,790 leap days.}
+  \item{dateTimeAs}{ How \code{Date}/\code{IDate}, \code{ITime} and \code{POSIXct} items are written. 
+      \itemize{
+	\item{"ISO" (default) - \code{2016-09-12}, \code{18:12:16} and \code{2016-09-12T18:12:16.999999Z}. 0, 3 or 6 digits of fractional seconds are printed if and when present for convenience, regardless of any R options such as \code{digits.secs}. The idea being that if milli and microseconds are present then you most likely want to retain them. R's internal UTC representation is written faithfully to encourage ISO standards, stymie timezone ambiguity and for speed. An option to consider is to start R in the UTC timezone simply with \code{"$ TZ='UTC' R"} at the shell (NB: it must be one or more spaces between \code{TZ='UTC'} and \code{R}, anything else will be silently ignored; this TZ setting applies just to that R process) or \code{Sys.setenv(TZ='UTC')} at the R prompt and then continue as if UTC were local time.}
+	\item{"squash" - \code{20160912}, \code{181216} and \code{20160912181216999}. This option allows fast and simple extraction of \code{yyyy}, \code{mm}, \code{dd} and (most commonly to group by) \code{yyyymm} parts directly using integer operations \code{\%/\%10000}, \code{\%/\%100\%\%100}, \code{\%\%100} and \code{\%/\%100} respectively. POSIXct UTC is squashed to 17 digits (including 3 digits of milliseconds always, even if \code{000}) which may be read comfortably as \code{integer64} (automatically by \code{fread()}).}
+	\item{"epoch" - \code{17056}, \code{65536} and \code{1473703936.999999}. The underlying number of days or seconds since the relevant epoch (1970-01-01, 00:00:00 and 1970-01-01T00:00:00Z respectively), negative before that (see \code{?Date}). 0, 3 or 6 digits of fractional seconds are printed if and when present.}
+	\item{"write.csv" - this currently affects \code{POSIXct} only. It is written as \code{write.csv} does by using the \code{as.character} method which heeds \code{digits.secs} and converts from R's internal UTC representation back to local time (or the \code{"tzone"} attribute) as of that historical date. Accordingly this can be slow. All other column types (including \code{Date}, \code{IDate} and \code{ITime} which are independent of timezone) are written as the "ISO" option using fast C code which is already consistent with \code{write.csv}.}
+      }
+  The first three options are fast due to new specialized C code. The epoch to date-part conversion uses a fast approach by Howard Hinnant (see references) using a day-of-year starting on 1 March. You should not be able to notice any difference in write speed between those three options. The date range supported for \code{Date} and \code{IDate} is [0000-03-01, 9999-12-31]. Every one of these 3,652,365 dates have been tested and compared to base R including all 2,790 leap days in this range. \cr \cr
+  This option applies to vectors of date/time in list column cells, too. \cr \cr
+  A fully flexible format string (such as \code{"\%m/\%d/\%Y"}) is not supported. This is to encourage use of ISO standards and because that flexibility is not known how to make fast at C level. We may be able to support one or two more specific options if required.
+  }
   \item{buffMB}{The buffer size (MB) per thread in the range 1 to 1024, default 8MB. Experiment to see what works best for your data on your hardware.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
@@ -73,7 +85,7 @@ DT = as.data.table(lapply(1:10, sample, x=as.numeric(1:5e7), size=5e6))  #  382M
 system.time(fwrite(DT, "/dev/shm/tmp1.csv"))                             #  0.8s
 system.time(write.csv(DT, "/dev/shm/tmp2.csv",                           # 60.6s
                       quote=FALSE, row.names=FALSE))         
-system("diff /dev/shm/tmp1.csv /dev/shm/tmp2.csv")
+system("diff /dev/shm/tmp1.csv /dev/shm/tmp2.csv")                       # identical
 
 set.seed(1)
 N = 1e7
@@ -91,7 +103,7 @@ DT = data.table(
 )                                                                        #  774MB
 system.time(fwrite(DT,"/dev/shm/tmp1.csv"))                              #  1.1s
 system.time(write.csv(DT,"/dev/shm/tmp2.csv",row.names=F,quote=F))       # 63.2s
-system("diff /dev/shm/tmp1.csv /dev/shm/tmp2.csv")
+system("diff /dev/shm/tmp1.csv /dev/shm/tmp2.csv")                       # identical
 
 unlink("/dev/shm/tmp1.csv")
 unlink("/dev/shm/tmp2.csv")
