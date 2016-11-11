@@ -172,7 +172,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
     R_registerRoutines(info, NULL, callMethods, NULL, externalMethods);
     R_useDynamicSymbols(info, FALSE);
     setSizes();
-    const char *msg = "... failed. Please forward this message to maintainer('data.table') or datatable-help.";
+    const char *msg = "... failed. Please forward this message to maintainer('data.table').";
     if (NA_INTEGER != INT_MIN) error("Checking NA_INTEGER [%d] == INT_MIN [%d] %s", NA_INTEGER, INT_MIN, msg);
     if (NA_INTEGER != NA_LOGICAL) error("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s", NA_INTEGER, NA_LOGICAL, msg);
     if (sizeof(int) != 4) error("Checking sizeof(int) [%d] is 4 %s", sizeof(int), msg);
@@ -209,6 +209,10 @@ void attribute_visible R_init_datatable(DllInfo *info)
     char_Date = mkChar("Date");   // including IDate which inherits from Date
     char_POSIXct = mkChar("POSIXct");
     
+    #ifndef _OPENMP
+    Rprintf("\nThis data.table install has not detected OpenMP support. It will work but slower in single threaded mode.\n\n");
+    #endif
+
     avoid_openmp_hang_within_fork();
 }
 

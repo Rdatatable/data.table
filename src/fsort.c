@@ -108,11 +108,6 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   Rboolean verbose = LOGICAL(verboseArg)[0];
   if (!isNumeric(x)) error("x must be a vector of type 'double' currently");
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
-  #ifndef _OPENMP
-  Rprintf("Your platform/environment has not detected OpenMP support. "
-          "fsort() will still work, but slower in single threaded mode.\n");
-  // Rprintf rather than warning() because warning() would cause test.data.table() to error about the unexpected warnings
-  #endif
   
   SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));
   double *ans = REAL(ansVec);
