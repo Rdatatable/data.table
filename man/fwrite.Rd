@@ -7,14 +7,16 @@ As \code{write.csv} but much faster (e.g. 2 seconds versus 1 minute) and just as
 This is new functionality as of Nov 2016. We may need to refine argument names and defaults.
 }
 \usage{
-fwrite(x, file = "", append = FALSE, quote = "auto", sep = ",", sep2 = c("","|",""),
-       eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
-       na = "", dec = ".", row.names = FALSE, col.names = TRUE, qmethod = c("double","escape"),
-       logicalAsInt = FALSE, dateTimeAs = c("ISO","squash","epoch","write.csv"),
-       buffMB = 8L, nThread = getDTthreads(),
-       showProgress = getOption("datatable.showProgress"),
-       verbose = getOption("datatable.verbose"),
-       ..turbo=TRUE)
+fwrite(x, file = "", append = FALSE, quote = "auto",
+  sep = ",", sep2 = c("","|",""),
+  eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
+  na = "", dec = ".", row.names = FALSE, col.names = TRUE,
+  qmethod = c("double","escape"),
+  logicalAsInt = FALSE, dateTimeAs = c("ISO","squash","epoch","write.csv"),
+  buffMB = 8L, nThread = getDTthreads(),
+  showProgress = getOption("datatable.showProgress"),
+  verbose = getOption("datatable.verbose"),
+  ..turbo=TRUE)
 }
 \arguments{
   \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}.}
@@ -81,18 +83,20 @@ fwrite(DT, sep="|", sep2=c("{",",","}"))
 \dontrun{
 
 set.seed(1)
-DT = as.data.table(lapply(1:10, sample, x=as.numeric(1:5e7), size=5e6))  #  382MB
-system.time(fwrite(DT, "/dev/shm/tmp1.csv"))                             #  0.8s
-system.time(write.csv(DT, "/dev/shm/tmp2.csv",                           # 60.6s
-                      quote=FALSE, row.names=FALSE))         
-system("diff /dev/shm/tmp1.csv /dev/shm/tmp2.csv")                       # identical
+DT = as.data.table( lapply(1:10, sample,
+         x=as.numeric(1:5e7), size=5e6))                            #     382MB
+system.time(fwrite(DT, "/dev/shm/tmp1.csv"))                        #      0.8s
+system.time(write.csv(DT, "/dev/shm/tmp2.csv",                      #     60.6s
+                      quote=FALSE, row.names=FALSE))
+system("diff /dev/shm/tmp1.csv /dev/shm/tmp2.csv")                  # identical
 
 set.seed(1)
 N = 1e7
 DT = data.table(
   str1=sample(sprintf("%010d",sample(N,1e5,replace=TRUE)), N, replace=TRUE),
   str2=sample(sprintf("%09d",sample(N,1e5,replace=TRUE)), N, replace=TRUE),
-  str3=sample(sapply(sample(2:30, 100, TRUE), function(n) paste0(sample(LETTERS, n, TRUE), collapse="")), N, TRUE),
+  str3=sample(sapply(sample(2:30, 100, TRUE), function(n)
+     paste0(sample(LETTERS, n, TRUE), collapse="")), N, TRUE),
   str4=sprintf("%05d",sample(sample(1e5,50),N,TRUE)),
   num1=sample(round(rnorm(1e6,mean=6.5,sd=15),2), N, replace=TRUE),
   num2=sample(round(rnorm(1e6,mean=6.5,sd=15),10), N, replace=TRUE),
@@ -100,10 +104,10 @@ DT = data.table(
   str6=sample(c("M","F"),N,TRUE),
   int1=sample(ceiling(rexp(1e6)), N, replace=TRUE),
   int2=sample(N,N,replace=TRUE)-N/2
-)                                                                        #  774MB
-system.time(fwrite(DT,"/dev/shm/tmp1.csv"))                              #  1.1s
-system.time(write.csv(DT,"/dev/shm/tmp2.csv",row.names=F,quote=F))       # 63.2s
-system("diff /dev/shm/tmp1.csv /dev/shm/tmp2.csv")                       # identical
+)                                                                   #     774MB
+system.time(fwrite(DT,"/dev/shm/tmp1.csv"))                         #      1.1s
+system.time(write.csv(DT,"/dev/shm/tmp2.csv",row.names=F,quote=F))  #     63.2s
+system("diff /dev/shm/tmp1.csv /dev/shm/tmp2.csv")                  # identical
 
 unlink("/dev/shm/tmp1.csv")
 unlink("/dev/shm/tmp2.csv")
