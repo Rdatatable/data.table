@@ -9441,9 +9441,9 @@ test(1729.13, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=
 
 if ("package:bit64" %in% search()) {
   test(1730.1, typeof(-2147483647L), "integer")
-  test(1730.2, as.integer(-2147483648), NA_integer_, warning="NAs introduced by coercion to integer range")
+  test(1730.2, as.integer(-2147483648), NA_integer_, warning="coercion")
   test(1730.3, as.integer("-2147483647"), -2147483647L)
-  test(1730.4, as.integer("-2147483648"), NA_integer_, warning="NAs introduced by coercion to integer range")
+  test(1730.4, as.integer("-2147483648"), NA_integer_, warning="coercion")
   test(1730.5, as.integer64("-2147483648"), as.integer64(-2147483648))
   test(1730.6, as.character((as.integer64(2^62)-1)*2+1), "9223372036854775807")
   test(1730.7, as.character((as.integer64(2^62)-1)*2+2), NA_character_, warning="integer64 overflow")
@@ -9636,7 +9636,7 @@ DT = data.table(
   A = as.Date(d<-c("1907-10-21","1907-10-22","1907-10-22","1969-12-31","1970-01-01","1970-01-01",
                    "1972-02-29","1999-12-31","2000-02-29","2016-09-12")),
   B = as.IDate(d),
-  C = as.ITime(t<-c("23:59:59","00:00:00","00:00:01", "23:59:59","00:00:00","00:00:01",
+  C = as.ITime(t<-c("23:59:59","00:00:00","00:00:01", "23:59:58", "00:00:00","00:00:01",
                    "12:00:00", "01:23:45", "23:59:59","01:30:30")),
   D = as.POSIXct(dt<-paste(d,t), tz="UTC"),
   E = as.POSIXct(paste0(dt,c(".999",".0",".5",".111112",".123456",".023",".0",".999999",".99",".0009")), tz="UTC"))
@@ -9647,7 +9647,7 @@ test(1740.2, capture.output(fwrite(DT,dateTimeAs="ISO")), c(
 "1907-10-21,1907-10-21,23:59:59,1907-10-21T23:59:59Z,1907-10-21T23:59:59.999Z",
 "1907-10-22,1907-10-22,00:00:00,1907-10-22T00:00:00Z,1907-10-22T00:00:00Z",
 "1907-10-22,1907-10-22,00:00:01,1907-10-22T00:00:01Z,1907-10-22T00:00:01.500Z",
-"1969-12-31,1969-12-31,23:59:59,1969-12-31T23:59:59Z,1969-12-31T23:59:59.111112Z",
+"1969-12-31,1969-12-31,23:59:58,1969-12-31T23:59:58Z,1969-12-31T23:59:58.111112Z",
 "1970-01-01,1970-01-01,00:00:00,1970-01-01T00:00:00Z,1970-01-01T00:00:00.123456Z",
 "1970-01-01,1970-01-01,00:00:01,1970-01-01T00:00:01Z,1970-01-01T00:00:01.023Z",
 "1972-02-29,1972-02-29,12:00:00,1972-02-29T12:00:00Z,1972-02-29T12:00:00Z",
@@ -9659,7 +9659,7 @@ test(1740.3, capture.output(fwrite(DT,dateTimeAs="squash")), c(
 "19071021,19071021,235959,19071021235959000,19071021235959999",
 "19071022,19071022,000000,19071022000000000,19071022000000000",
 "19071022,19071022,000001,19071022000001000,19071022000001500",
-"19691231,19691231,235959,19691231235959000,19691231235959111",
+"19691231,19691231,235958,19691231235958000,19691231235958111",
 "19700101,19700101,000000,19700101000000000,19700101000000123",
 "19700101,19700101,000001,19700101000001000,19700101000001023",
 "19720229,19720229,120000,19720229120000000,19720229120000000",
@@ -9671,7 +9671,7 @@ test(1740.4, capture.output(fwrite(DT,dateTimeAs="epoch")), c(
 "-22718,-22718,86399,-1962748801,-1962748800.001",
 "-22717,-22717,0,-1962748800,-1962748800",
 "-22717,-22717,1,-1962748799,-1962748798.5",
-"-1,-1,86399,-1,-0.888888000000002",
+"-1,-1,86398,-2,-1.888888",
 "0,0,0,0,0.123456",
 "0,0,1,1,1.023",
 "789,789,43200,68212800,68212800",
@@ -9687,18 +9687,22 @@ test(1741.2, attr(DT[[5]],"tzone"), "UTC")
 setattr(DT[[4]], "tzone", NULL)
 setattr(DT[[5]], "tzone", NULL)
 
-old = options(digits.secs=0)
-test(1741.3, x1<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-             capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
-options(digits.secs=3)
-test(1741.4, x2<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-             capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
-options(digits.secs=6)
-test(1741.5, x3<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-             capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
-options(old)
-# check that extra digits made it into output
-test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
+
+if (base::getRversion() >= "3.0.2") {
+  # "format() now supports digits = 0, to display nsmall decimal places."
+  old = options(digits.secs=0)
+  test(1741.3, x1<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
+               capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+  options(digits.secs=3)
+  test(1741.4, x2<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
+               capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+  options(digits.secs=6)
+  test(1741.5, x3<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
+               capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+  options(old)
+  # check that extra digits made it into output
+  test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
+}
 
 # > 1e6 columns (there used to be VLAs at C level that caused stack overflow), #1903
 set.seed(1)
