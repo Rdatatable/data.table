@@ -254,6 +254,8 @@
   
   76. `DT[order(colA,na.last=NA)]` on a 2-row `DT` with one NA in `colA` and `na.last=NA` (meaning to remove NA) could return a randomly wrong result due to using uninitialized memory. Tests added.
 
+  77. `fread` is now consistent to `read.table` on `colClasses` vector containing NA, also fixes mixed character and factor in `colClasses` vector. Closes [#1910](https://github.com/Rdatatable/data.table/issues/1910).
+
 #### NOTES
 
   1. Updated error message on invalid joins to reflect the new `on=` syntax, [#1368](https://github.com/Rdatatable/data.table/issues/1368). Thanks @MichaelChirico.

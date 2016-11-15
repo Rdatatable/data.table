@@ -9714,6 +9714,10 @@ test(1742.3, L[[1L]], c(27L,38L))
 test(1742.4, L[[1000000L]], c(76L, 40L))
 test(1742.5, substring(x,nchar(x)-10,nchar(x)), c("50,28,95,76","62,87,23,40"))
 
+# fread should properly handle NA in colClasses argument #1910
+test(1743.1, sapply(fread("a,b\n1,a", colClasses=c(NA, "factor")), class), c(a="integer", b="factor"))
+# also unknown issue in mixed character/factor output and colClasses vector
+test(1743.2, sapply(fread("a,b\n1,a", colClasses=c("character", "factor")), class), c(a="character", b="factor"))
 
 ##########################
 
