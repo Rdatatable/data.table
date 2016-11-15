@@ -100,7 +100,6 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     }
     if (identical(header,"auto")) header=NA
     if (identical(sep,"auto")) sep=NULL
-    if (is.atomic(colClasses) && all(sapply(colClasses, is.na))) colClasses = NULL # chmatch except character/NULL, not a potentially logical NA
     if (is.atomic(colClasses) && !is.null(names(colClasses))) colClasses = tapply(names(colClasses),colClasses,c,simplify=FALSE) # named vector handling
     ans = .Call(Creadfile,input,sep,as.integer(nrows),header,na.strings,verbose,as.integer(autostart),skip,select,drop,colClasses,integer64,dec,encoding,quote,strip.white,blank.lines.skip,fill,as.integer(showProgress))
     nr = length(ans[[1]])
@@ -124,7 +123,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     else if (length(colClasses)) {
         if (is.list(colClasses) && "factor" %in% names(colClasses))
             cols = colClasses[["factor"]]
-        else if (is.atomic(colClasses) && "factor" %chin% colClasses)
+        else if (is.character(colClasses) && "factor" %chin% colClasses)
             cols = which(colClasses=="factor")
     }
     setfactor(ans, cols, verbose)

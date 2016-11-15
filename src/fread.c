@@ -1104,7 +1104,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     int numNULL = 0;
     SEXP colTypeIndex, items, itemsInt, UserTypeNameSxp;
     int tmp[ncol]; for (i=0; i<ncol; i++) tmp[i]=0;  // used to detect ambiguities (dups) in user's input
-    if (length(colClasses)) {
+    if (isLogical(colClasses)) {
+        // allNA only valid logical input
+        for (int k=0; k<LENGTH(colClasses); k++) if (LOGICAL(colClasses)[k] != NA_LOGICAL) STOP("when colClasses is logical it must be all NA. Position %d contains non-NA: %d", k+1, LOGICAL(colClasses)[k]);
+        if (verbose) Rprintf("Argument colClasses is ignored as requested by provided NA values\n");
+    } else if (length(colClasses)) {
         UserTypeNameSxp = PROTECT(allocVector(STRSXP, NUT));
         protecti++;
         int thisType;
