@@ -1125,7 +1125,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     o[0] = -1;                                  // so [i|c|d]sort know they can populate o directly with no working memory needed to reorder existing order
                                                 // had to repace this from '0' to '-1' because 'nalast = 0' replace 'o[.]' with 0 values.
     xd = DATAPTR(x);
-    
+
+    // temp workaround for #1915
+    char_integer64 = mkChar("integer64");
+
     stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
     savetl_init();   // from now on use Error not error.
 
