@@ -204,10 +204,10 @@ void attribute_visible R_init_datatable(DllInfo *info)
     setNumericRounding(ScalarInteger(0)); // #1642, #1728, #1463, #485
     
     // create needed strings in advance for speed, same techique as R_*Symbol
-    char_integer64 = mkChar("integer64");
-    char_ITime = mkChar("ITime");
-    char_Date = mkChar("Date");   // including IDate which inherits from Date
-    char_POSIXct = mkChar("POSIXct");
+    R_PreserveObject(char_integer64 = mkChar("integer64"));
+    R_PreserveObject(char_ITime = mkChar("ITime"));
+    R_PreserveObject(char_Date = mkChar("Date"));   // including IDate which inherits from Date
+    R_PreserveObject(char_POSIXct = mkChar("POSIXct"));
     
     #ifndef _OPENMP
     Rprintf("\nThis data.table install has not detected OpenMP support. It will work but slower in single threaded mode.\n\n");
