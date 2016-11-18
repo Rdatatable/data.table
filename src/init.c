@@ -204,10 +204,17 @@ void attribute_visible R_init_datatable(DllInfo *info)
     setNumericRounding(ScalarInteger(0)); // #1642, #1728, #1463, #485
     
     // create needed strings in advance for speed, same techique as R_*Symbol
-    R_PreserveObject(char_integer64 = mkChar("integer64"));
-    R_PreserveObject(char_ITime = mkChar("ITime"));
-    R_PreserveObject(char_Date = mkChar("Date"));   // including IDate which inherits from Date
-    R_PreserveObject(char_POSIXct = mkChar("POSIXct"));
+    // Following R-exts 5.9.4; paragraph and example starting "Using install ..."
+    // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
+    char_integer64 = PRINTNAME(install("integer64"));
+    char_ITime =     PRINTNAME(install("ITime"));
+    char_Date =      PRINTNAME(install("Date"));   // used for IDate too since IDate inherits from Date
+    char_POSIXct =   PRINTNAME(install("POSIXct"));
+    if (TYPEOF(char_integer64) != CHARSXP) {
+      // checking one is enough in case of any R-devel changes
+      error("PRINTNAME(install(\"integer64\")) has returned %s not %s",
+            type2char(TYPEOF(char_integer64)), type2char(CHARSXP));
+    }
     
     #ifndef _OPENMP
     Rprintf("\nThis data.table install has not detected OpenMP support. It will work but slower in single threaded mode.\n\n");

@@ -107,11 +107,13 @@ cd R-devel
 make
 alias Rdevel=~/build/R-devel/bin/R
 Rdevel
-install.packages("chron")   # Not needed but include for tests with it
-install.packages("bit64")   # good to UBSAN/ASAN check with bit64 as well.
-                            # Skip tests using Suggests packages (CRAN will do that); unlikely UBSAN/ASAN problems there.
+install.packages("bit64")  # important to run tests using integer64
+install.packages("knitr")  # to run examples in vignettes
+# Skip compatibility tests with other Suggests packages; unlikely UBSAN/ASAN problems there.
 q("no")
-Rdevel CMD INSTALL ~/data.table_1.9.7.tar.gz   # Check UBSAN and ASAN flags appear in compiler output here (Rdevel was compiled with them above so should be passed through to here)
+Rdevel CMD INSTALL ~/data.table_1.9.7.tar.gz
+# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
+# them (above) so should be passed through to here
 Rdevel --vanilla
 require(data.table)
 require(bit64)
