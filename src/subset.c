@@ -16,64 +16,65 @@ static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
     if (INHERITS(x, char_integer64)) naval.ll = NAINT64;
     else naval.d = NA_REAL;
     
-    switch(TYPEOF(x)) {
+    if (l) switch(TYPEOF(x)) {
     case INTSXP :
         for (i=0; i<LENGTH(idx); i++) {
             this = INTEGER(idx)[i];
-            if (this==0) continue;
-            INTEGER(ans)[ansi++] = (this==NA_INTEGER || this>max) ? NA_INTEGER : INTEGER(x)[this-1];
+            INTEGER(ans)[ansi++] = (this<=0 || this>max) ? NA_INTEGER : INTEGER(x)[this-1];
+            ansi -= (this==0);
+            // skip over 0 without using branch.
+            // negatives are checked before (in check_idx()) not to have reached here
+            // this<=0 covers this==NA_INTEGER || this==0
         }
         break;
     case REALSXP :
         for (i=0; i<LENGTH(idx); i++) {
             this = INTEGER(idx)[i];
-            if (this==0) continue;
-            REAL(ans)[ansi++] = (this==NA_INTEGER || this>max) ? naval.d : REAL(x)[this-1];
+            REAL(ans)[ansi++] = (this<=0 || this>max) ? naval.d : REAL(x)[this-1];
+            ansi -= (this==0);
         }
         break;
     case LGLSXP :
         for (i=0; i<LENGTH(idx); i++) {
             this = INTEGER(idx)[i];
-            if (this==0) continue;
-            LOGICAL(ans)[ansi++] = (this==NA_INTEGER || this>max) ? NA_LOGICAL : LOGICAL(x)[this-1];
+            LOGICAL(ans)[ansi++] = (this<=0 || this>max) ? NA_LOGICAL : LOGICAL(x)[this-1];
+            ansi -= (this==0);
         }
         break;
     case STRSXP :
         for (i=0; i<LENGTH(idx); i++) {
             this = INTEGER(idx)[i];
-            if (this==0) continue;
-            SET_STRING_ELT(ans, ansi++, (this==NA_INTEGER || this>max) ? NA_STRING : STRING_ELT(x, this-1));
+            SET_STRING_ELT(ans, ansi++, (this<=0 || this>max) ? NA_STRING : STRING_ELT(x, this-1));
+            ansi -= (this==0);
         }
         break;
     case VECSXP :
         for (i=0; i<LENGTH(idx); i++) {
             this = INTEGER(idx)[i];
-            if (this==0) continue;
-            SET_VECTOR_ELT(ans, ansi++, (this==NA_INTEGER || this>max) ? R_NilValue : VECTOR_ELT(x, this-1));
+            SET_VECTOR_ELT(ans, ansi++, (this<=0 || this>max) ? R_NilValue : VECTOR_ELT(x, this-1));
+            ansi -= (this==0);
         }
         break;
     case CPLXSXP :
         for (i=0; i<LENGTH(idx); i++) {
             this = INTEGER(idx)[i];
-            if (this == 0) continue;
-            if (this == NA_INTEGER || this>max) {
+            if (this<=0 || this>max) {
                 COMPLEX(ans)[ansi].r = NA_REAL;
-                COMPLEX(ans)[ansi].i = NA_REAL;
-            } else COMPLEX(ans)[ansi] = COMPLEX(x)[this-1];
-            ansi++;
+                COMPLEX(ans)[ansi++].i = NA_REAL;
+            } else COMPLEX(ans)[ansi++] = COMPLEX(x)[this-1];
+            ansi -= (this==0);
         }
         break;
     case RAWSXP :
         for (i=0; i<LENGTH(idx); i++) {
             this = INTEGER(idx)[i];
-            if (this == 0) continue;
-            RAW(ans)[ansi++] = (this == NA_INTEGER || this>max) ? (Rbyte) 0 : RAW(x)[this-1];
+            RAW(ans)[ansi++] = (this<=0 || this>max) ? (Rbyte) 0 : RAW(x)[this-1];
         }
         break;
     default :
-        error("Unknown column type '%s'", type2char(TYPEOF(x)));
+        error("Unsupported column type '%s'", type2char(TYPEOF(x)));
     }
-    if (ansi != l) error("Internal error: ansi [%d] != l [%d] at the end of subsetVector", ansi, l);
+    if (ansi != l) error("Internal error: ansi [%d] != l [%d] at the end of subsetVectorRaw", ansi, l);
     copyMostAttrib(x, ans);
     UNPROTECT(1);
     return(ans);
