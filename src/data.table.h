@@ -38,6 +38,7 @@ SEXP char_ITime;
 SEXP char_IDate;
 SEXP char_Date;
 SEXP char_POSIXct;
+Rboolean INHERITS(SEXP x, SEXP char_); 
 
 // dogroups.c
 SEXP keepattr(SEXP to, SEXP from);

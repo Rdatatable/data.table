@@ -224,3 +224,21 @@ void attribute_visible R_init_datatable(DllInfo *info)
 }
 
 
+inline Rboolean INHERITS(SEXP x, SEXP char_) {
+  // Thread safe inherits() by pre-calling install() above in init first then
+  // passing those char_* in here for simple and fast non-API pointer compare.
+  // The thread-safety aspect here is only currently actually needed for list columns in
+  // fwrite() where the class of the cell's vector is tested; the class of the column
+  // itself is pre-stored by fwrite (for example in isInteger64[] and isITime[]).
+  // Thread safe in the limited sense of correct and intended usage :
+  // i) no API call such as install() or mkChar() must be passed in.
+  // ii) no attrib writes must be possible in other threads.
+  SEXP class;
+  if (isString(class = getAttrib(x, R_ClassSymbol))) {
+    for (int i=0; i<LENGTH(class); i++) {
+      if (STRING_ELT(class, i) == char_) return TRUE;
+    }
+  }
+  return FALSE;
+}
+

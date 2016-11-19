@@ -293,22 +293,6 @@ static inline void writeString(SEXP x, char **thisCh)
   *thisCh = ch;
 }
 
-static inline Rboolean INHERITS(SEXP x, SEXP str) {
-  // Thread safe inherits() by pre-calling install() via mkChar() up front in init.c
-  // and passing those in here as 'str' for simple and fast non-API pointer compare.
-  // Not sure inherits() is in R API anyway
-  // The thread-safety aspect here is only really needed for list columns where the
-  // class of vector items is tested. Since the column classes themselves are pre-stored
-  // in (for example) isInteger64[] and isITime[].
-  SEXP class;
-  if (isString(class = getAttrib(x, R_ClassSymbol))) {
-    for (int i=0; i<LENGTH(class); i++) {
-      if (STRING_ELT(class, i) == str) return TRUE;
-    }
-  }
-  return FALSE;
-}
-
 // DATE/TIME
 static inline void writeITime(int x, char **thisCh)
 {
