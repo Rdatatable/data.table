@@ -1,102 +1,146 @@
 #include "data.table.h"
 
-static SEXP subsetVectorRaw(SEXP x, SEXP idx, int l, int tl)
+static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orNA)
 // Only for use by subsetDT() or subsetVector() below, hence static
-// l is the count of non-zero (including NAs) in idx i.e. the length of the result
-// tl is the amount to be allocated,  tl>=l
-// TO DO: if no 0 or NA detected up front in subsetDT() below, could switch to a faster subsetVectorRawNo0orNA()
 {
-    int i, this, ansi=0, max=length(x);
-    if (tl<l) error("Internal error: tl<n passed to subsetVectorRaw");
-    SEXP ans = PROTECT(allocVector(TYPEOF(x), tl));
-    SETLENGTH(ans, l);
-    SET_TRUELENGTH(ans, tl);
-    
-    union { double d; long long ll; } naval;
-    if (INHERITS(x, char_integer64)) naval.ll = NAINT64;
-    else naval.d = NA_REAL;
-    
-    if (l) switch(TYPEOF(x)) {
+    if (!length(target)) return target;
+
+    const int max=length(source);
+    switch(TYPEOF(source)) {
     case INTSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
-            INTEGER(ans)[ansi++] = (this<=0 || this>max) ? NA_INTEGER : INTEGER(x)[this-1];
-            ansi -= (this==0);
-            // skip over 0 without using branch.
-            // negatives are checked before (in check_idx()) not to have reached here
-            // this<=0 covers this==NA_INTEGER || this==0
+        if (any0orNA) {
+          // any 0 or NA *in idx*; if there's 0 or NA in the data that's just regular data to be copied
+          for (int i=0, ansi=0; i<LENGTH(idx); i++) {
+              int this = INTEGER(idx)[i];
+              INTEGER(target)[ansi++] = (this<=0 || this>max) ? NA_INTEGER : INTEGER(source)[this-1];
+              ansi -= (this==0);
+              // skip over 0 without using branch.
+              // negatives are checked before (in check_idx()) not to have reached here
+              // this<=0 covers this==NA_INTEGER || this==0
+          }
+        } else {
+          // totally branch free to give optimizer/hardware best chance on all platforms
+          // typically very common from setkey() where idx is just a permutation of 1:n
+          // We keep the branchless version together here inside the same switch to keep
+          // the code together by type
+          for (int i=0; i<LENGTH(idx); i++)
+              INTEGER(target)[i] = INTEGER(source)[INTEGER(idx)[i]-1];
         }
         break;
     case REALSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
-            REAL(ans)[ansi++] = (this<=0 || this>max) ? naval.d : REAL(x)[this-1];
-            ansi -= (this==0);
+        if (any0orNA) {
+          // define needed vars just when we need them. To registerize and to limit scope related bugs 
+          union { double d; long long ll; } naval;
+          if (INHERITS(source, char_integer64)) naval.ll = NAINT64;
+          else naval.d = NA_REAL;
+          for (int i=0, ansi=0; i<LENGTH(idx); i++) {
+              int this = INTEGER(idx)[i];
+              REAL(target)[ansi++] = (this<=0 || this>max) ? naval.d : REAL(source)[this-1];
+              ansi -= (this==0);
+          }
+        } else {
+          for (int i=0; i<LENGTH(idx); i++)
+              REAL(target)[i] = REAL(source)[INTEGER(idx)[i]-1];
         }
         break;
     case LGLSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
-            LOGICAL(ans)[ansi++] = (this<=0 || this>max) ? NA_LOGICAL : LOGICAL(x)[this-1];
-            ansi -= (this==0);
+        if (any0orNA) {
+          for (int i=0, ansi=0; i<LENGTH(idx); i++) {
+              int this = INTEGER(idx)[i];
+              LOGICAL(target)[ansi++] = (this<=0 || this>max) ? NA_LOGICAL : LOGICAL(source)[this-1];
+              ansi -= (this==0);
+          }
+        } else {
+          for (int i=0; i<LENGTH(idx); i++)
+              LOGICAL(target)[i] = LOGICAL(source)[INTEGER(idx)[i]-1];
         }
         break;
     case STRSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
-            SET_STRING_ELT(ans, ansi++, (this<=0 || this>max) ? NA_STRING : STRING_ELT(x, this-1));
-            ansi -= (this==0);
+        if (any0orNA) {
+          for (int i=0, ansi=0; i<LENGTH(idx); i++) {
+              int this = INTEGER(idx)[i];
+              // 
+              // ** TODO **   thread-safe
+              //
+              SET_STRING_ELT(target, ansi++, (this<=0 || this>max) ? NA_STRING : STRING_ELT(source, this-1));
+              ansi -= (this==0);
+          }
+        } else {
+          for (int i=0; i<LENGTH(idx); i++)
+              SET_STRING_ELT(target, i, STRING_ELT(source, INTEGER(idx)[i]-1));
         }
         break;
     case VECSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
-            SET_VECTOR_ELT(ans, ansi++, (this<=0 || this>max) ? R_NilValue : VECTOR_ELT(x, this-1));
-            ansi -= (this==0);
+        if (any0orNA) {
+          for (int i=0, ansi=0; i<LENGTH(idx); i++) {
+              int this = INTEGER(idx)[i];
+              //
+              // ** TODO **   thread-safe
+              //
+              SET_VECTOR_ELT(target, ansi++, (this<=0 || this>max) ? R_NilValue : VECTOR_ELT(source, this-1));
+              ansi -= (this==0);
+          }
+        } else {
+          for (int i=0; i<LENGTH(idx); i++)
+              SET_VECTOR_ELT(target, i, VECTOR_ELT(source, INTEGER(idx)[i]-1));
         }
         break;
     case CPLXSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
-            if (this<=0 || this>max) {
-                COMPLEX(ans)[ansi].r = NA_REAL;
-                COMPLEX(ans)[ansi++].i = NA_REAL;
-            } else COMPLEX(ans)[ansi++] = COMPLEX(x)[this-1];
-            ansi -= (this==0);
+        if (any0orNA) {
+          for (int i=0, ansi=0; i<LENGTH(idx); i++) {
+              int this = INTEGER(idx)[i];
+              if (this<=0 || this>max) {
+                  COMPLEX(target)[ansi].r = NA_REAL;
+                  COMPLEX(target)[ansi++].i = NA_REAL;
+              } else COMPLEX(target)[ansi++] = COMPLEX(source)[this-1];
+              ansi -= (this==0);
+          }
+        } else {
+          for (int i=0; i<LENGTH(idx); i++)
+              COMPLEX(target)[i] = COMPLEX(source)[INTEGER(idx)[i]-1];
         }
         break;
     case RAWSXP :
-        for (i=0; i<LENGTH(idx); i++) {
-            this = INTEGER(idx)[i];
-            RAW(ans)[ansi++] = (this<=0 || this>max) ? (Rbyte) 0 : RAW(x)[this-1];
+        if (any0orNA) {
+          for (int i=0, ansi=0; i<LENGTH(idx); i++) {
+              int this = INTEGER(idx)[i];
+              RAW(target)[ansi++] = (this<=0 || this>max) ? (Rbyte) 0 : RAW(source)[this-1];
+          }
+        } else {
+          for (int i=0; i<LENGTH(idx); i++)
+              RAW(target)[i] = RAW(source)[INTEGER(idx)[i]-1];
         }
         break;
-    default :
-        error("Unsupported column type '%s'", type2char(TYPEOF(x)));
+    // default :
+    // no error() needed here as caught earlier when single threaded; error() here not thread-safe.
     }
-    if (ansi != l) error("Internal error: ansi [%d] != l [%d] at the end of subsetVectorRaw", ansi, l);
-    copyMostAttrib(x, ans);
-    UNPROTECT(1);
-    return(ans);
+    return target;
 }
 
-static int check_idx(SEXP idx, int n)
-// count non-0 in idx => the length of the subset result
-// checks no negatives too
+static void check_idx(SEXP idx, int max, /*outputs...*/int *ansLen, Rboolean *any0orNA)
+// count non-0 in idx => the length of the subset result stored in *ansLen
+// return whether any 0, NA (or >max) exist and set any0orNA if so, for branchless subsetVectorRaw
+// >max is treated as NA for consistency with [.data.frame and operations like cbind(DT[w],DT[w+1])
+// if any negatives then error since they should have been dealt with by convertNegativeIdx() called
+// from R level first. 
+// do this once up-front and reuse the result for each column
+// single cache efficient sweep so no need to go parallel (well, very low priority to go parallel)
 {
-    int ans=0;
-    Rboolean anyNeg = FALSE;
     if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx)));
+    Rboolean anyNeg=FALSE, anyNA=FALSE;
+    int ans=0;
     for (int i=0; i<LENGTH(idx); i++) {
         int this = INTEGER(idx)[i];
         ans += (this!=0);
-        // this>n is treated as NA for consistency with [.data.frame and operations like cbind(DT[w],DT[w+1])
         anyNeg |= this<0 && this!=NA_INTEGER;
+        anyNA |= this==NA_INTEGER || this>max;
     }
     if (anyNeg) error("Internal error: idx contains negatives. Should have been dealt with earlier.");
-    return ans;
+    *ansLen = ans;
+    *any0orNA = ans<LENGTH(idx) || anyNA;
 }
 
+// TODO - currently called from R level first. Can it be called from check_idx instead?
 SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
 {
     // + more precise and helpful error messages telling user exactly where the problem is (saving user debugging time)
@@ -165,7 +209,12 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows)));
     if (!length(x)) return(x);  // return empty list
-    R_len_t ansn = check_idx(rows, length(VECTOR_ELT(x,0)));  // check once up front before looping calls to subsetVectorRaw below
+    
+    // check index once up front for 0 or NA, for branchless subsetVectorRaw 
+    R_len_t ansn;
+    Rboolean any0orNA;
+    check_idx(rows, length(VECTOR_ELT(x,0)), &ansn, &any0orNA);  
+
     if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols)));
     for (int i=0; i<LENGTH(cols); i++) {
         int this = INTEGER(cols)[i];
@@ -177,13 +226,33 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     SET_TRUELENGTH(ans, LENGTH(ans));
     SETLENGTH(ans, LENGTH(cols));
     for (int i=0; i<LENGTH(cols); i++) {
-        SET_VECTOR_ELT(ans, i, subsetVectorRaw(VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, ansn, ansn));  // column vectors aren't over allocated yet
+        SEXP source, target;
+        target = PROTECT(allocVector(TYPEOF(source=VECTOR_ELT(x, INTEGER(cols)[i]-1)), ansn));
+        SETLENGTH(target, ansn);
+        SET_TRUELENGTH(target, ansn);
+        copyMostAttrib(source, target);
+        SET_VECTOR_ELT(ans, i, target);
+        UNPROTECT(1);
     }
-    setAttrib(ans, R_NamesSymbol, subsetVectorRaw( getAttrib(x, R_NamesSymbol), cols, LENGTH(cols), LENGTH(cols)+64 ));
-    SEXP tmp = PROTECT(allocVector(INTSXP, 2));
+    //
+    // TODO ... parallel
+    //
+    if (ansn) for (int i=0; i<LENGTH(cols); i++) {
+        subsetVectorRaw(VECTOR_ELT(ans, i), VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, any0orNA);
+    }
+    SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+64));
+    SET_TRUELENGTH(tmp, LENGTH(tmp));
+    SETLENGTH(tmp, LENGTH(cols));
+    setAttrib(ans, R_NamesSymbol, tmp);
+    subsetVectorRaw(tmp, getAttrib(x, R_NamesSymbol), cols, /*any0orNA=*/FALSE);
+    UNPROTECT(1);
+    
+    tmp = PROTECT(allocVector(INTSXP, 2));
     INTEGER(tmp)[0] = NA_INTEGER;
     INTEGER(tmp)[1] = -ansn;
     setAttrib(ans, R_RowNamesSymbol, tmp);  // The contents of tmp must be set before being passed to setAttrib(). setAttrib looks at tmp value and copies it in the case of R_RowNamesSymbol. Caused hard to track bug around 28 Sep 2014.
+    UNPROTECT(1);    
+
     // maintain key if ordered subset ...
     SEXP key = getAttrib(x, install("sorted"));
     if (length(key)) {
@@ -201,12 +270,21 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     }
     setAttrib(ans, install(".data.table.locked"), R_NilValue);
     setselfref(ans);
-    UNPROTECT(2);
+    UNPROTECT(1);
     return ans;
 }
 
 SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
-    int n = check_idx(idx, length(x));
-    return subsetVectorRaw(x, idx, n, n);
+    int ansn;
+    Rboolean any0orNA;
+    check_idx(idx, length(x), &ansn, &any0orNA);
+    SEXP ans = PROTECT(allocVector(TYPEOF(x), ansn));
+    SETLENGTH(ans, ansn);
+    SET_TRUELENGTH(ans, ansn);
+    copyMostAttrib(x, ans);
+    subsetVectorRaw(ans, x, idx, any0orNA);
+    UNPROTECT(1);
+    return ans;
 }
+
 
