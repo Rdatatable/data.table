@@ -7,7 +7,7 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
 
     const int max=length(source);
     switch(TYPEOF(source)) {
-    case INTSXP :
+    case INTSXP : case LGLSXP :
         if (any0orNA) {
           // any 0 or NA *in idx*; if there's 0 or NA in the data that's just regular data to be copied
           for (int i=0, ansi=0; i<LENGTH(idx); i++) {
@@ -17,14 +17,18 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
               // skip over 0 without using branch.
               // negatives are checked before (in check_idx()) not to have reached here
               // this<=0 covers this==NA_INTEGER || this==0
+              // NA_INTEGER == NA_LOGICAL is checked in init.c
           }
         } else {
           // totally branch free to give optimizer/hardware best chance on all platforms
-          // typically very common from setkey() where idx is just a permutation of 1:n
           // We keep the branchless version together here inside the same switch to keep
           // the code together by type
-          for (int i=0; i<LENGTH(idx); i++)
-              INTEGER(target)[i] = INTEGER(source)[INTEGER(idx)[i]-1];
+          // INTEGER and LENGTH are up front to isolate in preparation to stop using USE_RINTERNALS
+          int *vd = INTEGER(source);
+          int *vi = INTEGER(idx);
+          int *p =  INTEGER(target);
+          const int upp = LENGTH(idx);
+          for (int i=0; i<upp; i++) *p++ = vd[vi[i]-1];
         }
         break;
     case REALSXP :
@@ -39,51 +43,56 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
               ansi -= (this==0);
           }
         } else {
-          for (int i=0; i<LENGTH(idx); i++)
-              REAL(target)[i] = REAL(source)[INTEGER(idx)[i]-1];
+          double *vd = REAL(source);
+          int *vi =    INTEGER(idx);
+          double *p =  REAL(target);
+          const int upp = LENGTH(idx);
+          for (int i=0; i<upp; i++) *p++ = vd[vi[i]-1];
         }
         break;
-    case LGLSXP :
-        if (any0orNA) {
-          for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-              int this = INTEGER(idx)[i];
-              LOGICAL(target)[ansi++] = (this<=0 || this>max) ? NA_LOGICAL : LOGICAL(source)[this-1];
-              ansi -= (this==0);
+    case STRSXP : {
+        #pragma omp critical
+        // write barrier is not thread safe. We can and do do non-STRSXP at the same time, though.
+        // we don't strictly need the critical since subsetDT has been written to dispatch one-thread only to
+        // do all the STRSXP columns, but keep the critical here anyway for safety. So long as it's once at high
+        // level as it is here and not deep.
+        // We could go parallel here but would need access to NODE_IS_OLDER, at least. Given gcgen, mark and named
+        // are upper bounded and max 3, REFCNT==REFCNTMAX could be checked first and then critical SET_ if not.
+        // Inside that critical just before SET_ it could check REFCNT<REFCNTMAX still held. Similarly for gcgen.
+        // TODO - discuss with Luke Tierney. Produce benchmarks on integer/double to see if it's worth making a safe
+        // API interface for package use for STRSXP.
+        {
+          if (any0orNA) {
+            for (int i=0, ansi=0; i<LENGTH(idx); i++) {
+                int this = INTEGER(idx)[i];
+                SET_STRING_ELT(target, ansi++, (this<=0 || this>max) ? NA_STRING : STRING_ELT(source, this-1));
+                ansi -= (this==0);
+            }
+          } else {
+            SEXP *vd = (SEXP *)DATAPTR(source);
+            int *vi =    INTEGER(idx);
+            const int upp = LENGTH(idx);
+            for (int i=0; i<upp; i++) SET_STRING_ELT(target, i, vd[vi[i]-1]);
+            // Aside: setkey() knows it always receives a permutation (it does a shuffle in-place) and so doesn't
+            // need to use SET_*. setkey() can do its own parallelism therefore, including STRSXP and VECSXP.
           }
-        } else {
-          for (int i=0; i<LENGTH(idx); i++)
-              LOGICAL(target)[i] = LOGICAL(source)[INTEGER(idx)[i]-1];
-        }
+        }}
         break;
-    case STRSXP :
-        if (any0orNA) {
-          for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-              int this = INTEGER(idx)[i];
-              // 
-              // ** TODO **   thread-safe
-              //
-              SET_STRING_ELT(target, ansi++, (this<=0 || this>max) ? NA_STRING : STRING_ELT(source, this-1));
-              ansi -= (this==0);
+    case VECSXP : {
+        #pragma omp critical
+        {
+          if (any0orNA) {
+            for (int i=0, ansi=0; i<LENGTH(idx); i++) {
+                int this = INTEGER(idx)[i];
+                SET_VECTOR_ELT(target, ansi++, (this<=0 || this>max) ? R_NilValue : VECTOR_ELT(source, this-1));
+                ansi -= (this==0);
+            }
+          } else {
+            for (int i=0; i<LENGTH(idx); i++) {
+                SET_VECTOR_ELT(target, i, VECTOR_ELT(source, INTEGER(idx)[i]-1));
+            }
           }
-        } else {
-          for (int i=0; i<LENGTH(idx); i++)
-              SET_STRING_ELT(target, i, STRING_ELT(source, INTEGER(idx)[i]-1));
-        }
-        break;
-    case VECSXP :
-        if (any0orNA) {
-          for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-              int this = INTEGER(idx)[i];
-              //
-              // ** TODO **   thread-safe
-              //
-              SET_VECTOR_ELT(target, ansi++, (this<=0 || this>max) ? R_NilValue : VECTOR_ELT(source, this-1));
-              ansi -= (this==0);
-          }
-        } else {
-          for (int i=0; i<LENGTH(idx); i++)
-              SET_VECTOR_ELT(target, i, VECTOR_ELT(source, INTEGER(idx)[i]-1));
-        }
+        }}
         break;
     case CPLXSXP :
         if (any0orNA) {
@@ -211,9 +220,9 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     if (!length(x)) return(x);  // return empty list
     
     // check index once up front for 0 or NA, for branchless subsetVectorRaw 
-    R_len_t ansn;
-    Rboolean any0orNA;
-    check_idx(rows, length(VECTOR_ELT(x,0)), &ansn, &any0orNA);  
+    R_len_t ansn=0;
+    Rboolean any0orNA=FALSE;
+    check_idx(rows, length(VECTOR_ELT(x,0)), &ansn, &any0orNA);
 
     if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols)));
     for (int i=0; i<LENGTH(cols); i++) {
@@ -234,11 +243,24 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
         SET_VECTOR_ELT(ans, i, target);
         UNPROTECT(1);
     }
-    //
-    // TODO ... parallel
-    //
-    if (ansn) for (int i=0; i<LENGTH(cols); i++) {
-        subsetVectorRaw(VECTOR_ELT(ans, i), VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, any0orNA);
+    #pragma omp parallel num_threads(MIN(getDTthreads(),LENGTH(cols)))
+    {
+      #pragma omp master
+      // this thread and this thread only handles all the STRSXP and VECSXP columns, one by one
+      // it doesn't have to be master; the directive is just convenient.
+      for (int i=0; i<LENGTH(cols); i++) {
+        SEXP target = VECTOR_ELT(ans, i);
+        if (isString(target) || isNewList(target))
+          subsetVectorRaw(target, VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, any0orNA);
+      }
+      #pragma omp for schedule(dynamic)
+      // slaves get on with the other non-STRSXP non-VECSXP columns at the same time.
+      // master may join in when it's finished, straight away if there are no STRSXP or VECSXP columns
+      for (int i=0; i<LENGTH(cols); i++) {
+        SEXP target = VECTOR_ELT(ans, i);
+        if (!isString(target) && !isNewList(target))
+          subsetVectorRaw(target, VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, any0orNA);
+      }
     }
     SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+64));
     SET_TRUELENGTH(tmp, LENGTH(tmp));
