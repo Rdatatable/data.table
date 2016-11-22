@@ -43,7 +43,7 @@ SEXP reorder(SEXP x, SEXP order)
     // 'order' must strictly be a permutation of 1:n (i.e. no repeats, zeros or NAs)
     // If only a small subset is reordered, this is detected using start and end.
     // x may be a vector, or a list of vectors e.g. data.table
-    char *tmp, *tmpp, *vd;
+    char *tmp, *tmpp;
     SEXP v;
     R_len_t i, j, itmp, nrow, ncol, start, end;
     size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
@@ -82,7 +82,7 @@ SEXP reorder(SEXP x, SEXP order)
         size = SIZEOF(v);
         if (!size) error("don't know how to reorder type '%s' of column %d. Please send this message to datatable-help",type2char(TYPEOF(v)),i+1);
         tmpp=tmp;
-        vd = (char *)DATAPTR(v);
+        char *vd = (char *)DATAPTR(v);
         if (size==4) {
             for (j=start;j<=end;j++) {
                 *(int *)tmpp = ((int *)vd)[INTEGER(order)[j]-1];  // just copies 4 bytes (pointers on 32bit too)

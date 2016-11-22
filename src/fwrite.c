@@ -609,7 +609,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
         char *ch=tmp;
         switch(TYPEOF(column)) {
         case LGLSXP:
-          thisLineLen = logicalAsInt ? 1/*0|1*/ : 5/*FALSE*/;  // na_len might be 2 (>1) but ok; this is estimate
+          thisLineLen += logicalAsInt ? 1/*0|1*/ : 5/*FALSE*/;  // na_len might be 2 (>1) but ok; this is estimate
           break;
         case INTSXP: {
           int i32 = INTEGER(column)[i];
