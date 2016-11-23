@@ -9721,6 +9721,15 @@ test(1743.3, fread("a,b\n1,a", colClasses=c(NA, TRUE)), error="when colClasses i
 # also unknown issue in mixed character/factor output and colClasses vector
 test(1743.4, sapply(fread("a,b\n1,a", colClasses=c("character", "factor")), class), c(a="character", b="factor"))
 
+# rolling join stopped working for double with fractions, #1904
+DT = data.table(A=c(1999.917,2000.417,2000.917,2001.417,2001.917))
+setkey(DT,A)
+x = c(2000.167,2000.417,2000.667,2000.917,2001.167)
+test(1744.1, DT[.(x),roll=FALSE,which=TRUE], INT(NA,2,NA,3,NA))
+test(1744.2, DT[.(x),roll=TRUE, which=TRUE], INT(1,2,2,3,3))
+test(1744.3, DT[.(x),roll=1/12, which=TRUE], INT(NA,2,NA,3,NA))
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

@@ -117,7 +117,7 @@ Rdevel CMD INSTALL ~/data.table_1.9.7.tar.gz
 Rdevel --vanilla
 require(data.table)
 require(bit64)
-test.data.table()           # slower than usual of course due to UBSAN and ASAN
+test.data.table()     # slower than usual of course due to UBSAN and ASAN. Too slow to run R CMD check.
 # Throws /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those: https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
 test.data.table(verbose=TRUE)
 q("no")
