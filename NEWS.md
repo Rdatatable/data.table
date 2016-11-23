@@ -1,5 +1,15 @@
 
-### Changes in v1.9.7  ( in development on GitHub )
+### Changes in v1.9.9  ( in development on GitHub )
+
+#### NEW FEATURES
+
+#### BUG FIXES
+
+#### NOTES
+
+
+
+### Changes in v1.9.8  (on CRAN 24 Nov 2016)
 
 #### POTENTIALLY BREAKING CHANGES
 

@@ -234,15 +234,18 @@ sudo R CMD javareconf
 
 sudo R
 update.packages(ask=FALSE)
-q()
+q('no')
 
 cd ~/build/revdeplib/
 export R_LIBS=~/build/revdeplib/
+R CMD INSTALL ~/data.table_1.9.7.tar.gz       # ** ensure latest version installed **
 R
 
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
+# Ensure no library() call in .Rprofile, such as library(bit64)
 source("http://bioconductor.org/biocLite.R")
-biocLite()  # like update.packages() but for bioc
+biocLite()
+biocLite("BiocUpgrade")
 
 avail = available.packages(repos=c(getOption("repos"), BiocInstaller::biocinstallRepos()[["BioCsoft"]]))
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
@@ -257,7 +260,7 @@ for (p in deps) {
      if (!length(grep("bioc",avail[p,"Repository"]))) {
        install.packages(p)  # To install its dependencies really.
      } else {
-       biocLite(p)          # To install its dependencies really.
+       biocLite(p,suppressUpdates=TRUE)        # To install its dependencies really.
      }
      download.packages(p, destdir="~/build/revdeplib", contriburl=avail[p,"Repository"])   # So R CMD check can run on these
      if (!file.exists(fn)) stop("Still does not exist!:", fn)
@@ -274,7 +277,7 @@ table(avail[deps,"Repository"])
 R CMD INSTALL ~/data.table_1.9.7.tar.gz       # ** ensure latest version installed **
 export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
 ls -1 *.tar.gz | wc -l                        # check this equals length(deps) above
-time ls -1 *.tar.gz | parallel R CMD check    # apx 2 hrs for 266 packages on my 4 cpu laptop with 8 threads
+time ls -1 *.tar.gz | parallel R CMD check    # apx 2 hrs for 291 packages on my 4 cpu laptop with 8 threads
 
 status = function(which="both") {
   if (which=="both") {
@@ -330,14 +333,14 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CM
 #  Release to CRAN
 ###############################################
 
-Bump versions in README and DESCRIPTION to even release number
+Bump versions in DESCRIPTION and NEWS to even release number
 Do not push to GitHub. Prevents even a slim possibility of user getting premature version. install_github() should only ever fetch odd releases at all times. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build data.table
-R CMD check --as-cran data.table_1.9.6.tar.gz
+R CMD check --as-cran data.table_1.9.8.tar.gz
 Resubmit to winbuilder (both R-release and R-devel)
 Submit to CRAN
-Bump version in DESCRIPTION to next odd dev version
-Add new heading in README for the next dev version
+Bump version in DESCRIPTION to next ODD dev version
+Add new heading in NEWS for the next dev version
 Push to GitHub so dev can continue
 Cross fingers accepted first time. If not, push changes to devel and backport locally
 Close milestone
