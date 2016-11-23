@@ -70,7 +70,8 @@ static union {double d; long long l; int b;} u;   // b=boolean, can hold NA_LOGI
 static const char *fieldStart, *fieldEnd;
 static int fieldLen;
 #define NUT        8   // Number of User Types (just for colClasses where "numeric"/"double" are equivalent)
-static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "NULL", "double", "CLASS" };  // important that first 6 correspond to TypeName.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
+static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "NULL", "double", "CLASS" };
+// important that first 6 correspond to TypeName.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
 static int UserTypeNameMap[NUT] = { SXP_LGL, SXP_INT, SXP_INT64, SXP_REAL, SXP_STR, SXP_NULL, SXP_REAL, SXP_STR };
 // quote
 const char *quote;
@@ -534,9 +535,8 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
 SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastrings, SEXP verbosearg, SEXP autostart, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP quoteArg, SEXP stripWhiteArg, SEXP skipEmptyLinesArg, SEXP fillArg, SEXP showProgressArg)
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
-    SEXP thiscol, ans, thisstr;
-    R_len_t i, resi, j, resj, k, protecti=0, nrow=0, ncol=0;
-    int thistype;
+    SEXP ans, thisstr;
+    R_len_t i, resi, j, k, protecti=0, nrow=0, ncol=0;
     const char *pos, *ch2, *lineStart;
     Rboolean header, allchar, skipEmptyLines, fill;
     verbose=LOGICAL(verbosearg)[0];
@@ -1112,7 +1112,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     } else if (length(colClasses)) {
         UserTypeNameSxp = PROTECT(allocVector(STRSXP, NUT));
         protecti++;
-        int thisType;
         for (i=0; i<NUT; i++) SET_STRING_ELT(UserTypeNameSxp, i, mkChar(UserTypeName[i]));
         if (isString(colClasses)) {
             // this branch unusual for fread: column types for all columns in one long unamed character vector
@@ -1121,11 +1120,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             colTypeIndex = PROTECT(chmatch(colClasses, UserTypeNameSxp, NUT, FALSE));  // if type not found then read as character then as. at R level
             protecti++;
             for (int k=0; k<ncol; k++) {
-                if (STRING_ELT(colClasses,k) == NA_STRING) {
+                if (STRING_ELT(colClasses, LENGTH(colClasses)==1 ? 0 : k) == NA_STRING) {
                     if (verbose) Rprintf("Column %d ('%s') was detected as type '%s'. Argument colClasses is ignored as requested by provided NA value\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]] );
                     continue;
-                };
-                thisType = UserTypeNameMap[ INTEGER(colTypeIndex)[ LENGTH(colClasses)==1 ? 0 : k] -1 ];
+                }
+                int thisType = UserTypeNameMap[ INTEGER(colTypeIndex)[ LENGTH(colClasses)==1 ? 0 : k] -1 ];
                 if (type[k]<thisType) {
                     if (verbose) Rprintf("Column %d ('%s') was detected as type '%s' but bumped to '%s' as requested by colClasses\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType] );
                     type[k]=thisType;
@@ -1138,7 +1137,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             colTypeIndex = PROTECT(chmatch(getAttrib(colClasses, R_NamesSymbol), UserTypeNameSxp, NUT, FALSE));
             protecti++;
             for (i=0; i<LENGTH(colClasses); i++) {
-                thisType = UserTypeNameMap[INTEGER(colTypeIndex)[i]-1];
+                int thisType = UserTypeNameMap[INTEGER(colTypeIndex)[i]-1];
                 items = VECTOR_ELT(colClasses,i);
                 if (thisType == SXP_NULL) {
                     if (!isNull(drop) || !isNull(select)) STOP("Can't use NULL in colClasses when select or drop is used as well.");
@@ -1239,8 +1238,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     for (i=0,resi=0; i<ncol; i++) {
         if (type[i] == SXP_NULL) continue;
-        thistype = TypeSxp[ type[i] ];
-        thiscol = allocVector(thistype,nrow);
+        SEXP thiscol = allocVector(TypeSxp[ type[i] ], nrow);
         SET_VECTOR_ELT(ans,resi++,thiscol);  // no need to PROTECT thiscol, see R-exts 5.9.1
         if (type[i]==SXP_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(mkChar("integer64")));
         SET_TRUELENGTH(thiscol, nrow);
@@ -1276,11 +1274,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     break;              // break this while
                 }
             }
-            for (j=0,resj=0; j<ncol; resj+=(type[j]!=SXP_NULL),j++) {
+            for (int j=0, resj=-1; j<ncol; j++) {
                 // Rprintf("Field %d: '%.10s' as type %d\n", j+1, ch, type[j]);
                 // TODO: fill="auto" to automatically fill when end of line/file and != ncol?
                 if (stripWhite) skip_spaces();
-                thiscol = VECTOR_ELT(ans, resj);
+                SEXP thiscol = (type[j]!=SXP_NULL) ? VECTOR_ELT(ans, ++resj) : NULL;
                 switch (type[j]) {
                 case SXP_LGL:
                     if (fill && (*ch==eol || ch==eof)) { LOGICAL(thiscol)[i] = NA_LOGICAL; break; }
@@ -1379,7 +1377,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     for (k=0; k<length(nastrings); k++) {
         thisstr = STRING_ELT(nastrings,k);
         for (j=0; j<ncol-numNULL; j++) {
-            thiscol = VECTOR_ELT(ans,j);
+            SEXP thiscol = VECTOR_ELT(ans,j);
             if (TYPEOF(thiscol)==STRSXP) {
                 for (i=0; i<nrow; i++)
                     if (STRING_ELT(thiscol,i)==thisstr) SET_STRING_ELT(thiscol, i, NA_STRING);
@@ -1392,7 +1390,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         Rprintf("%8.3fs (%3.0f%%) Memory map (rerun may be quicker)\n", 1.0*(tMap-t0)/CLOCKS_PER_SEC, 100.0*(tMap-t0)/tot);
         Rprintf("%8.3fs (%3.0f%%) sep and header detection\n", 1.0*(tLayout-tMap)/CLOCKS_PER_SEC, 100.0*(tLayout-tMap)/tot);
         Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", 1.0*(tRowCount-tLayout)/CLOCKS_PER_SEC, 100.0*(tRowCount-tLayout)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Column type detection (first, middle and last 5 rows)\n", 1.0*(tColType-tRowCount)/CLOCKS_PER_SEC, 100.0*(tColType-tRowCount)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Column type detection (100 rows at 10 points)\n", 1.0*(tColType-tRowCount)/CLOCKS_PER_SEC, 100.0*(tColType-tRowCount)/tot);
         Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (xMB) in RAM\n", 1.0*(tAlloc-tColType)/CLOCKS_PER_SEC, 100.0*(tAlloc-tColType)/tot, nrow, ncol);
         Rprintf("%8.3fs (%3.0f%%) Reading data\n", 1.0*(tRead-tAlloc-tCoerce)/CLOCKS_PER_SEC, 100.0*(tRead-tAlloc-tCoerce)/tot);
         Rprintf("%8.3fs (%3.0f%%) Allocation for type bumps (if any), including gc time if triggered\n", 1.0*tCoerceAlloc/CLOCKS_PER_SEC, 100.0*tCoerceAlloc/tot);
