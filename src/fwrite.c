@@ -5,6 +5,9 @@
 #include <fcntl.h>
 #include <time.h>
 #ifdef WIN32
+#include <windows.h>
+#include <stdio.h>
+#include <tchar.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <io.h>

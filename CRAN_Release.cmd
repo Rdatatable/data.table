@@ -23,14 +23,13 @@ grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P 
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" data.table/
 
 # Ensure no calls to omp_set_num_threads() [to avoid affecting other packages and base R]
-grep omp_set_num_threads data.table/src/*
+grep --exclude="data.table/src/openmp-utils.c" omp_set_num_threads data.table/src/*
 # Endure no calls to omp_get_max_threads() also since access should be via getDTthreads()
-grep omp_get_max_threads data.table/src/*
-# Ensure all #pragama omp parallel directives include num_threads() clause
+grep --exclude="data.table/src/openmp-utils.c" omp_get_max_threads data.table/src/*
+# Ensure all #pragama omp parallel directives include a num_threads() clause
 grep "pragma omp parallel" data.table/src/*.c
-# Ensure all .Call's first argument are unquoted
+# Ensure all .Call's first argument are unquoted.  TODO - change to use INHERITS()
 grep "[.]Call(\"" data.table/R/*.R
-
 
 
 # workaround for IBM AIX - ensure no globals named 'nearest' or 'class'.
