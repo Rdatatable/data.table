@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <tchar.h>
+#include <inttypes.h>  // for PRId64
 #else
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -501,7 +502,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
                     #ifdef WIN32
                         snprintf(buffer,128,"%" PRId64,*(long long *)&REAL(v)[i]);
                     #else
-                       snprintf(buffer,128,"%lld",*(long long *)&REAL(v)[i]);
+                        snprintf(buffer,128,"%lld",    *(long long *)&REAL(v)[i]);
                     #endif
                     SET_STRING_ELT(newv, i, mkChar(buffer));
                 }
@@ -1119,7 +1120,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (LENGTH(colClasses)!=1 && LENGTH(colClasses)!=ncol) STOP("colClasses is unnamed and length %d but there are %d columns. See ?data.table for colClasses usage.", LENGTH(colClasses), ncol);
             colTypeIndex = PROTECT(chmatch(colClasses, UserTypeNameSxp, NUT, FALSE));  // if type not found then read as character then as. at R level
             protecti++;
-            for (k=0; k<ncol; k++) {
+            for (int k=0; k<ncol; k++) {
                 if (STRING_ELT(colClasses,k) == NA_STRING) {
                     if (verbose) Rprintf("Column %d ('%s') was detected as type '%s'. Argument colClasses is ignored as requested by provided NA value\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]] );
                     continue;

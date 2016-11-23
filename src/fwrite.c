@@ -893,11 +893,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
               } else if (extraType[j] == ET_DATE) {
                 writeDate(INTEGER(column)[i], &ch);
               } else {
-                if (turbo) {
-                  writeInteger(INTEGER(column)[i], &ch);
-                } else {
-                  ch += sprintf(ch, "%d", INTEGER(column)[i]);
-                }
+                writeInteger(INTEGER(column)[i], &ch);
               }
               break;
             case REALSXP:
@@ -906,17 +902,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
                 if (i64 == NAINT64) {
                   writeChars(na, &ch);
                 } else {
-                  if (turbo) {
-                    writeInteger(i64, &ch);
-                  } else {
-                    ch += sprintf(ch,
-                    #ifdef WIN32
-                        "%" PRId64
-                    #else
-                        "%lld"
-                    #endif
-                    , i64);
-                  }
+                  writeInteger(i64, &ch);
                 }
               } else {
                 if (extraType[j] == ET_DATE) {

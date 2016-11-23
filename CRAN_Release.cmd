@@ -79,7 +79,8 @@ test.data.table(verbose=TRUE)
 #  valgrind
 ###############################################
 
-R --vanilla CMD INSTALL data.table_1.9.5.tar.gz     # ensure compiles with -g here for info on source lines with any problems
+vi .R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
+R --vanilla CMD INSTALL data.table_1.9.7.tar.gz
 R -d "valgrind --tool=memcheck --leak-check=full" --vanilla
 require(data.table)
 require(bit64)
