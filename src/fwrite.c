@@ -5,9 +5,6 @@
 #include <fcntl.h>
 #include <time.h>
 #ifdef WIN32
-#include <windows.h>
-#include <stdio.h>
-#include <tchar.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <io.h>
@@ -914,7 +911,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
                   } else {
                     ch += sprintf(ch,
                     #ifdef WIN32
-                        "%I64d"
+                        "%" PRId64
                     #else
                         "%lld"
                     #endif

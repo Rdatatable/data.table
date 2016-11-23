@@ -8626,6 +8626,8 @@ set.seed(1L)
 dt = data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE), z=sample(5,10,TRUE))
 test(1657, dt[x %between% list(y,z)], dt[x>=y & x<=z])
 
+oldverbose = options(datatable.verbose=FALSE)
+
 # fwrite tests
 # without quoting
 test(1658.1, fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar'))),
@@ -8723,6 +8725,8 @@ unlink(f)
 # simple data table (reference for the error cases below)
 ok_dt <- data.table(foo="bar")
 test(1658.22, fwrite(ok_dt, quote=TRUE), output='"foo"\n"bar"\n')
+
+options(oldverbose)
 
 # wrong argument types
 test(1658.23, fwrite(ok_dt, 1), error="is.character(file).*not TRUE")
@@ -9330,6 +9334,7 @@ test(1728.12, DT[order(x,na.last=FALSE)], DT)
 test(1728.13, DT[order(x,na.last=NA)], DT[2])  # was randomly wrong
 
 # fwrite wrong and crash on 9.9999999999999982236431605, #1847
+oldverbose=options(datatable.verbose=FALSE)
 test(1729.1, fwrite(data.table(V1=c(1), V2=c(9.9999999999999982236431605997495353221893310546875))),
              output="V1,V21,10")
 test(1729.2, fwrite(data.table(V2=c(9.9999999999999982236431605997495353221893310546875), V1=c(1))),
@@ -9340,6 +9345,7 @@ DT = data.table(V1=c(9999999999.99, 0.00000000000000099, 0.000000000000000000000
 ans = "V19999999999.999.9e-169e-220.999.199.91e-211e+29"
 test(1729.3, fwrite(DT), output=ans)
 test(1729.4, write.csv(DT,row.names=FALSE,quote=FALSE), output=ans)
+options(oldverbose)
 
 # same decimal/scientific rule (shortest format) as write.csv
 DT = data.table(V1=c(-00000.00006, -123456789.123456789,
@@ -9358,6 +9364,10 @@ DT = data.table(V1=c(-00000.00006, -123456789.123456789,
                      5.123456789e-307, -5.123456789e-307,
                      5.123456789e+307, -5.123456789e+307))
 test(1729.5, nrow(DT), 507)
+
+oldverbose=options(datatable.verbose=FALSE)
+# capture.output() exact tests must not be polluted with verbosity
+
 x = capture.output(fwrite(DT,na="NA"))[-1]   # -1 to remove the column name V1
 y = capture.output(write.csv(DT,row.names=FALSE,quote=FALSE))[-1]
 # One mismatch that seems to be accuracy in base R's write.csv
@@ -9682,6 +9692,8 @@ test(1742.2, substring(x,1,10), c("27,58,21,9","38,91,90,6"))
 test(1742.3, L[[1L]], c(27L,38L))
 test(1742.4, L[[1000000L]], c(76L, 40L))
 test(1742.5, substring(x,nchar(x)-10,nchar(x)), c("50,28,95,76","62,87,23,40"))
+
+options(oldverbose)  # last capture.output(fwrite()) has happened now. TODO: tidy up and remove.
 
 # fread should properly handle NA in colClasses argument #1910
 test(1743.1, sapply(fread("a,b\n1,a", colClasses=c(NA, "factor"), verbose=TRUE), class), c(a="integer", b="factor"), output="Argument colClasses is ignored as requested by provided NA value")

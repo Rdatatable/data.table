@@ -499,7 +499,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
                     SET_STRING_ELT(newv,i,R_BlankString);
                 else {
                     #ifdef WIN32
-                        snprintf(buffer,128,"%I64d",*(long long *)&REAL(v)[i]);
+                        snprintf(buffer,128,"%" PRId64,*(long long *)&REAL(v)[i]);
                     #else
                        snprintf(buffer,128,"%lld",*(long long *)&REAL(v)[i]);
                     #endif
