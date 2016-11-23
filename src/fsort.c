@@ -114,11 +114,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // allocate early in case fails if not enough RAM
   // TODO: document this is much cheaper than a copy followed by in-place.
   
-  int nth;
-  #pragma omp parallel num_threads(getDTthreads())
-  {
-    nth = omp_get_num_threads();  // each thread overwrites the same value to nth, ok
-  }
+  int nth = getDTthreads();
   int nBatch=nth*2;  // at least nth; more to reduce last-man-home; but not too large to keep counts small in cache
   if (verbose) Rprintf("nth=%d, nBatch=%d\n",nth,nBatch);
   
@@ -130,7 +126,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // and ii) for small vectors with just one batch 
   
   double mins[nBatch], maxs[nBatch];
-  #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
+  #pragma omp parallel for schedule(dynamic) num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     double *d = &REAL(x)[batchSize * batch];
@@ -167,7 +163,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   int MSBsize = 1<<MSBNbits;                        // the number of possible MSB values (16 bits => 65,536)
   if (verbose) Rprintf("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n", maxBit, MSBNbits, shift, MSBsize);
   
-  R_xlen_t *counts = calloc(nBatch*MSBsize, sizeof(R_xlen_t));
+  R_xlen_t *counts = calloc(nBatch*(size_t)MSBsize, sizeof(R_xlen_t));
+  if (counts==NULL) error("Unable to allocate working memory");
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
   // TODO: change all calloc, malloc and free to Calloc and Free to be robust to error() and catch ooms. 
   
@@ -175,11 +172,11 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
                        nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024), nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch),
                        nBatch, batchSize, lastBatchSize);
   
-  #pragma omp parallel for num_threads(getDTthreads())
+  #pragma omp parallel for num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
-    double *tmp = &REAL(x)[batchSize * batch];
-    R_xlen_t *thisCounts = counts + batch*MSBsize;
+    double *tmp = &REAL(x)[batchSize * (size_t)batch];
+    R_xlen_t *thisCounts = counts + batch*(size_t)MSBsize;
     for (R_xlen_t j=0; j<thisLen; j++) {
       thisCounts[(*(unsigned long long *)tmp - minULL) >> shift]++;
       tmp++;
@@ -198,7 +195,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     }
   }  // leaves msb cumSum in the last batch i.e. last row of the matrix
   
-  #pragma omp parallel for num_threads(getDTthreads())
+  #pragma omp parallel for num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     double *source = &REAL(x)[batchSize * batch];
@@ -221,7 +218,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     int fromBit = toBit>7 ? toBit-7 : 0;
 
     // sort bins by size, largest first to minimise last-man-home
-    R_xlen_t *msbCounts = counts + (nBatch-1)*MSBsize;
+    R_xlen_t *msbCounts = counts + (nBatch-1)*(size_t)MSBsize;
     // msbCounts currently contains the ending position of each MSB (the starting location of the next) even across empty
     if (msbCounts[MSBsize-1] != xlength(x)) error("Internal error: counts[nBatch-1][MSBsize-1] != length(x)");
     R_xlen_t *msbFrom = malloc(MSBsize*sizeof(R_xlen_t));

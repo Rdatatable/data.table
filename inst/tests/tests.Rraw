@@ -9208,7 +9208,7 @@ if (.Platform$OS.type!="windows") {
   if ("package:parallel" %in% search()) {   #1745 and #1727
     test(1705, getDTthreads()<=2) # this was set at the top of tests.Rraw.  CRAN's policy is max two.
                                   # not 1, to pass on Rdevel clag UBSAN and ASAN without OpenMP
-    lx <- replicate(4, runif(1e6), simplify=FALSE)
+    lx <- replicate(4, runif(1e5), simplify=FALSE)
     f <- function(mc.cores = 2, threads = 2) {
       setDTthreads(threads)
       invisible(mclapply(lx, function(x) fsort(x), mc.cores = mc.cores))
