@@ -45,10 +45,16 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
 # .devtesting = TRUE
 
 compactprint <- function(DT, topn=2) {
-    cn = paste(" [Key=",paste(key(DT),collapse=",")," Types=",paste(substring(gsub("integer64","i64",sapply(DT,class)),1,3),collapse=","),"]",sep="")
+    tt = sapply(DT,function(x)class(x)[1L])
+    tt[tt=="integer64"] = "i64"
+    cn = paste(" [Key=",paste(key(DT),collapse=","),
+                " Types=",paste(substring(sapply(DT,typeof),1,3),collapse=","),
+                " Classes=",paste(substring(tt,1,3),collapse=","),
+                "]",sep="")
     print(copy(DT)[,(cn):=""], topn=topn)
     invisible()
 }
+
 test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # Usage:
     # i) tests that x equals y when both x and y are supplied, the most common usage
@@ -66,6 +72,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # 3) each test has a unique id which we refer to in commit messages, emails etc.
     nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
     whichfail = get("whichfail", parent.frame())
+    all.equal.result = TRUE
     assign("ntest", get("ntest", parent.frame()) + 1, parent.frame(), inherits=TRUE)   # bump number of tests run
     assign("lastnum", num, parent.frame(), inherits=TRUE)
     v = getOption("datatable.verbose")
@@ -155,7 +162,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
             setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
             setattr(yc,"index",NULL)
             if (identical(xc,yc) && identical(key(x),key(y))) return()  # check key on original x and y because := above might have cleared it on xc or yc
-            if (isTRUE(all.equal(xc,yc)) && identical(key(x),key(y)) &&
+            if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
                 identical(sapply(xc,typeof), sapply(yc,typeof))) return()
         }
         if (is.factor(x) && is.factor(y)) {
@@ -163,13 +170,15 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
             y = factor(y)
             if (identical(x,y)) return()
         }
-        if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal(x,y))) return()   # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
+        if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y))) return()
+        # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     }
     cat("Test",num,"ran without errors but failed check that x equals y:\n")
     cat("> x =",deparse(xsub),"\n")
     if (is.data.table(x)) compactprint(x) else if (length(x)>6) {cat("First 6 of", length(x),":");print(head(x))} else print(x)
     cat("> y =",deparse(ysub),"\n")
     if (is.data.table(y)) compactprint(y) else if (length(y)>6) {cat("First 6 of", length(y),":");print(head(y))} else print(y)
+    if (!isTRUE(all.equal.result)) cat(all.equal.result,sep="\n")
     assign("nfail", nfail+1, parent.frame(), inherits=TRUE)
     assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
     invisible()
