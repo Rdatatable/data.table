@@ -176,7 +176,7 @@ static inline void writeNumeric(double x, char **thisCh)
     // By design we can just lookup the power from the tables
     double y = (1.0+acc) * expsig[exponent];  // low magnitude mult
     int exp = exppow[exponent];
-    if (y>=10.0) { y /= 10; exp++; }
+    if (y>=9.99999999999999) { y /= 10; exp++; }
     unsigned long long l = y * SIZE_SF;  // low magnitude mult 10^NUM_SF
     // l now contains NUM_SF+1 digits as integer where repeated /10 below is accurate
 

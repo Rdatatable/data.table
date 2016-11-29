@@ -43,8 +43,8 @@ grep "nearest *=" data.table/src/*.c  # none
 grep "class *=" data.table/src/*.c    # quite a few but none global
 
 R CMD build data.table
-R CMD check data.table_1.9.7.tar.gz --as-cran
-R CMD INSTALL data.table_1.9.7.tar.gz
+R CMD check data.table_1.9.9.tar.gz --as-cran
+R CMD INSTALL data.table_1.9.9.tar.gz
 R
 require(data.table)
 test.data.table()
@@ -110,7 +110,7 @@ cd R-devel
 # (clang 3.6.0 works but gcc 4.9.2 fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel)
 ./configure CC="clang -std=gnu99 -fsanitize=undefined,address" CFLAGS="-fno-omit-frame-pointer -O0 -g -Wall -pedantic -mtune=native" --without-recommended-packages --disable-byte-compiled-packages  
 make
-alias Rdevel=~/build/R-devel/bin/R
+alias Rdevel='~/build/R-devel/bin/R --vanilla'
 Rdevel
 install.packages("bit64")  # important to run tests using integer64
 install.packages("knitr")  # to run examples in vignettes
@@ -119,7 +119,7 @@ q("no")
 Rdevel CMD INSTALL ~/data.table_1.9.7.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
 # them (above) so should be passed through to here
-Rdevel --vanilla
+Rdevel
 require(data.table)
 require(bit64)
 test.data.table()     # slower than usual of course due to UBSAN and ASAN. Too slow to run R CMD check.
@@ -141,17 +141,15 @@ cd R-devel
 ./configure CC="gcc -std=gnu99" CFLAGS="-O0 -g -Wall -pedantic -ffloat-store -fexcess-precision=standard" --without-recommended-packages --disable-byte-compiled-packages --disable-long-double
 make
 Rdevel
-install.packages("chron")
 install.packages("bit64")
 q("no")
-Rdevel CMD INSTALL ../data.table_1.9.5.tar.gz
-Rdevel --vanilla
+Rdevel CMD INSTALL ~/data.table_1.9.9.tar.gz
+Rdevel
 .Machine$sizeof.longdouble   # check 0
 require(data.table)
 require(bit64)
 test.data.table()
-test.data.table(verbose=TRUE)
-q()
+q("no")
 
 
 ###############################################
