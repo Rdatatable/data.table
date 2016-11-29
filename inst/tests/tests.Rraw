@@ -8647,6 +8647,13 @@ test(1658.3, fwrite(data.table(
     quote=TRUE, qmethod="double"),
     output='"a","other ""column"\n,"foo bar"\n1.2e-100,\n3.01,"quote"" and \\ bs"\n')
 
+# presence of " triggers auto quoting as well, #1925
+test(1658.4, fwrite(data.table(a=1:4, b=c('"foo','ba"r','baz"','a "quoted" region'))),
+    output='a,b\n1,"""foo"\n2,"ba""r"\n3,"baz"""\n4,"a ""quoted"" region"')
+test(1658.5, fwrite(data.table(a=1:4, b=c('"foo','ba"r','baz"','a "quoted" region')), qmethod='escape'),
+    output='a,b\n1,"\\"foo"\n2,"ba\\"r"\n3,"baz\\""\n4,"a \\"quoted\\" region"')
+# NB: sep2[2] triggering quoting when list columns are present is tested in test 1736
+
 # changing sep
 DT = data.table(a="foo", b="ba\"r")
 ans = '"a";"b"\n"foo";"ba""r"\n'
@@ -9483,12 +9490,13 @@ fwrite(DT,f,quote='auto',qmethod='escape')
 ans = c('x,"ColName,WithComma","Three', 'Line', 'ColName"',
         '"fo,o",1,"bar','"',
         'foo,2,noNeedToQuote',
-        'b"ar,3,"a',  'long', "\\\"sentence\\\"\"",
+        '"b\\"ar",3,"a',  'long', "\\\"sentence\\\"\"",
         ',4,0000',
         ',5," ','  "',
         "NA,6,\"   \\\"", "  \"")
 test(1732.4, readLines(f), ans)
 fwrite(DT,f,quote='auto',qmethod='double')
+ans[7] = '"b""ar",3,"a'
 ans[9] = "\"\"sentence\"\"\""
 ans[13] = "NA,6,\"   \"\""
 test(1732.5, readLines(f), ans)
