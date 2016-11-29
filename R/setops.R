@@ -136,8 +136,8 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     if (ignore.col.order && diff.colorder) current = setcolorder(shallow(current), names(target))
     
     # Always check modes equal, like base::all.equal
-    targetModes = sapply(target, mode)
-    currentModes = sapply(current,  mode)
+    targetModes = vcapply(target, mode)
+    currentModes = vcapply(current,  mode)
     if (any( d<-(targetModes!=currentModes) )) {
         w = head(which(d),3)
         return(paste0("Datasets have different column modes. First 3: ",paste(
@@ -148,8 +148,8 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     if (check.attributes) {
         squashClass = function(x) if (is.object(x)) paste(class(x),collapse=";") else mode(x)
         # else mode() is so that integer==numeric, like base all.equal does.
-        targetTypes = sapply(target, squashClass)
-        currentTypes = sapply(current, squashClass)
+        targetTypes = vcapply(target, squashClass)
+        currentTypes = vcapply(current, squashClass)
         if (length(targetTypes) != length(currentTypes))
             stop("Internal error: ncol(current)==ncol(target) was checked above")
         if (any( d<-(targetTypes != currentTypes))) {
@@ -204,7 +204,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
         tolerance.msg = if (identical(tolerance, 0)) ", be aware you are using `tolerance=0` which may result into visually equal data" else ""
         if (target_dup || current_dup) {
             # handling 'tolerance' for duplicate rows - those `msg` will be returned only when equality with tolerance will fail
-            if (any(sapply(target,typeof)=="double") && !identical(tolerance, 0)) {
+            if (any(vcapply(target,typeof)=="double") && !identical(tolerance, 0)) {
                 if (target_dup && !current_dup) msg = c(msg, "Dataset 'target' has duplicate rows while 'current' doesn't")
                 else if (!target_dup && current_dup) msg = c(msg, "Dataset 'current' has duplicate rows while 'target' doesn't")
                 else { # both
@@ -226,7 +226,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
             c(".seqn", setdiff(names(target), ".seqn"))
         } else names(target)
         # handling 'tolerance' for factor cols - those `msg` will be returned only when equality with tolerance will fail
-        if (any(sapply(target,is.factor)) && !identical(tolerance, 0)) {
+        if (any(vlapply(target,is.factor)) && !identical(tolerance, 0)) {
             if (!identical(tolerance, sqrt(.Machine$double.eps))) # non-default will raise error
                 stop("Factor columns and ignore.row.order cannot be used with non 0 tolerance argument")
             msg = c(msg, "Using factor columns together together with ignore.row.order, this force 'tolerance' argument to 0")
