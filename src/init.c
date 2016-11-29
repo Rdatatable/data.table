@@ -77,6 +77,7 @@ SEXP nqnewindices();
 SEXP fsort();
 SEXP inrange();
 SEXP between();
+SEXP hasOpenMP();
 
 // .Externals
 SEXP fastmean();
@@ -156,6 +157,7 @@ R_CallMethodDef callMethods[] = {
 {"Cfsort", (DL_FUNC) &fsort, -1},
 {"Cinrange", (DL_FUNC) &inrange, -1},
 {"Cbetween", (DL_FUNC) &between, -1},
+{"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
 {NULL, NULL, 0}
 };
 
@@ -216,10 +218,6 @@ void attribute_visible R_init_datatable(DllInfo *info)
             type2char(TYPEOF(char_integer64)), type2char(CHARSXP));
     }
     
-    #ifndef _OPENMP
-    Rprintf("\nThis data.table install has not detected OpenMP support. It will work but slower in single threaded mode.\n\n");
-    #endif
-
     avoid_openmp_hang_within_fork();
 }
 
@@ -241,4 +239,17 @@ inline Rboolean INHERITS(SEXP x, SEXP char_) {
   }
   return FALSE;
 }
+
+SEXP hasOpenMP() {
+  // Just for use by onAttach to avoid an RPRINTF from C level which isn't suppressable by CRAN
+  // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
+  // why RPRINTF is capitalized in this comment to avoid that grep.
+  // TODO: perhaps .Platform or .Machine in R itself could contain whether OpenMP is available.
+  #ifdef _OPENMP
+  return ScalarLogical(TRUE);
+  #else
+  return ScalarLogical(FALSE);
+  #endif
+}
+
 

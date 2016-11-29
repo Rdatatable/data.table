@@ -14,7 +14,10 @@
     }
     dev = as.integer(v[1,3])%%2 == 1  # version number odd => dev
     packageStartupMessage("data.table ", v, if(dev) paste0(" IN DEVELOPMENT built ", d))
-    if (dev && (Sys.Date() - as.Date(d))>28) packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update.\n**********")
+    if (dev && (Sys.Date() - as.Date(d))>28)
+        packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update.\n**********")
+    if (!.Call(ChasOpenMP))
+        packageStartupMessage("**********\nThis installation of data.table has not detected OpenMP support. It will still work but in single-threaded mode.\n**********")
     packageStartupMessage('  The fastest way to learn (by data.table authors): https://www.datacamp.com/courses/data-analysis-the-data-table-way')
     packageStartupMessage('  Documentation: ?data.table, example(data.table) and browseVignettes("data.table")')
     packageStartupMessage('  Release notes, videos and slides: http://r-datatable.com')

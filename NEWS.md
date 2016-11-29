@@ -7,6 +7,7 @@
 
 #### NOTES
 
+1. It seems OpenMP is not available on CRAN's Mac platform; NOTEs have appeared in [CRAN checks](https://cran.r-project.org/web/checks/check_results_data.table.html). Moved unsuppressable Rprintf from init.c to packageStartupMessage(). People have reported success with data.table's use of OpenMP on Mac, though. If you have a Mac and run macOS or OS X on it (I run Ubuntu on mine) please contact CRAN maintainers and/or Apple if you'd like CRAN's Mac binary to support OpenMP. Otherwise, please follow [these instructions](https://github.com/Rdatatable/data.table/wiki/Installation).
 
 
 ### Changes in v1.9.8  (on CRAN 24 Nov 2016)
