@@ -9,11 +9,11 @@
 \title{ Determine Duplicate Rows }
 \description{
 \code{duplicated} returns a logical vector indicating which rows of a 
-\code{data.table} (by key columns or when no key all columns) are duplicates 
-of a row with smaller subscripts.
+\code{data.table} are duplicates of a row with smaller subscripts.
 
-\code{unique} returns a \code{data.table} with duplicated rows (by key) removed, 
-or (when no key) duplicated rows by all columns removed.
+\code{unique} returns a \code{data.table} with duplicated rows removed, by 
+columns specified in \code{by} argument. When no \code{by} then duplicated
+rows by all columns are removed.
 
 \code{anyDuplicated} returns the \emph{index} \code{i} of the first duplicated 
 entry if there is one, and 0 otherwise. 
@@ -43,9 +43,9 @@ as well.}
 the reverse side, i.e., the last (or rightmost) of identical elements would 
 correspond to \code{duplicated = FALSE}.}
 \item{by}{\code{character} or \code{integer} vector indicating which combinations 
-of columns form \code{x} to use for uniqueness checks. Defaults to \code{key(x))} 
-which, by default, only uses the keyed columns. \code{by=NULL} uses all columns 
-and acts like the analogous \code{data.frame} methods.}
+of columns from \code{x} to use for uniqueness checks. By default all columns are
+are being used. The was changed recently for consistency to data.frame methods.
+In version \code{< 1.9.8} default was \code{key(x)}.}
 \item{na.rm}{Logical (default is \code{FALSE}). Should missing values (including 
 \code{NaN}) be removed?}
 }
@@ -60,10 +60,6 @@ handle cases where limitations in floating point representation is undesirable.
 \code{v1.9.4} introduces \code{anyDuplicated} method for data.tables and is 
 similar to base in functionality. It also implements the logical argument 
 \code{fromLast} for all three functions, with default value \code{FALSE}. 
-
-Any combination of columns can be used to test for uniqueness (not just the
-key columns) and are specified via the \code{by} parameter. To get
-the analagous \code{data.frame} functionality, set \code{by} to \code{NULL}.
 }
 \value{
 \code{duplicated} returns a logical vector of length \code{nrow(x)}
@@ -110,7 +106,7 @@ identical(unique(DT),DT[10]) # FALSE
 
 # fromLast=TRUE
 DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), 
-                    C = rep(1:2, 6), key = "A,B")
+                 C = rep(1:2, 6), key = "A,B")
 duplicated(DT, by="B", fromLast=TRUE)
 unique(DT, by="B", fromLast=TRUE)
 
@@ -119,9 +115,9 @@ anyDuplicated(DT, by=c("A", "B"))    # 3L
 any(duplicated(DT, by=c("A", "B")))  # TRUE
 
 # uniqueN, unique rows on key columns
+uniqueN(DT, by = key(DT))
+# uniqueN, unique rows on all columns
 uniqueN(DT)
-# uniqueN, unique rows on all all columns
-uniqueN(DT, by=NULL)
 # uniqueN while grouped by "A"
 DT[, .(uN=uniqueN(.SD)), by=A]
 
@@ -131,4 +127,3 @@ uniqueN(x, na.rm = FALSE) # 5, default
 uniqueN(x, na.rm=TRUE) # 3
 }
 \keyword{ data }
-
