@@ -11,6 +11,8 @@
 
 4. Fixed newly reported crash that also occurred in old v1.9.6 when `by=.EACHI`, `nomatch=0`, the first item in `i` has no match AND `j` has a function call that is passed a key column, [#1933](https://github.com/Rdatatable/data.table/issues/1933). Many thanks to Reino Bruner for finding and reporting with a reproducible example. Tests added.
 
+5. Fixed `fread()` error occurring for a subset of Windows users: `showProgress is not type integer but type 'logical'.`, [#1944](https://github.com/Rdatatable/data.table/issues/1944). Seemingly due to inaccurate coercion of `1` to `TRUE` on that platform, perhaps. All our tests passed on AppVeyor, win-builder and CRAN so perhaps it only occurs on a specific version of Windows. Thanks to @demydd for reporting. It occurred last year as well and never fully got to the bottom of it, [#1111](https://github.com/Rdatatable/data.table/issues/1111). Should be fixed now by using logical type consistently at C level.
+
 #### NOTES
 
 1. It seems OpenMP is not available on CRAN's Mac platform; NOTEs have appeared in [CRAN checks](https://cran.r-project.org/web/checks/check_results_data.table.html). Moved `Rprintf` from `init.c` to `packageStartupMessage` to avoid the NOTE as requested urgently by Professor Ripley. Also fixed the bad grammar of the message: 'single threaded' now 'single-threaded'. If you have a Mac and run macOS or OS X on it (I run Ubuntu on mine) please contact CRAN maintainers and/or Apple if you'd like CRAN's Mac binary to support OpenMP. Otherwise, please follow [these instructions for OpenMP on Mac](https://github.com/Rdatatable/data.table/wiki/Installation) which people have reported success with.

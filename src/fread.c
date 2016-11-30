@@ -561,12 +561,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         error("quote must either be empty or a single character");
     quote = CHAR(STRING_ELT(quoteArg,0));
 
-    // Extra tracing for apparent 32bit Windows problem: https://github.com/Rdatatable/data.table/issues/1111
-    if (!isInteger(showProgressArg)) error("showProgress is not type integer but type '%s'. Please report.", type2char(TYPEOF(showProgressArg)));
-    if (LENGTH(showProgressArg)!=1) error("showProgress is not length 1 but length %d. Please report.", LENGTH(showProgressArg));
-    int showProgress = INTEGER(showProgressArg)[0];
-    if (showProgress!=0 && showProgress!=1)
-        error("showProgress is not 0 or 1 but %d. Please report.", showProgress);    
+    if (!isLogical(showProgressArg) || LENGTH(showProgressArg)!=1 || LOGICAL(showProgressArg)[0]==NA_LOGICAL)
+        error("Internal error: showProgress is not TRUE or FALSE. Please report.");
+    const Rboolean showProgress = LOGICAL(showProgressArg)[0];
     
     if (!isString(dec) || LENGTH(dec)!=1 || strlen(CHAR(STRING_ELT(dec,0))) != 1)
         error("dec must be a single character");
@@ -1256,7 +1253,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     Rboolean hasPrinted=FALSE, whileBreak=FALSE;
     i = 0;
     while (i<nrow && ch<eof) {
-        if (showProgress==1 && clock()>nexttime) {
+        if (showProgress && clock()>nexttime) {
             Rprintf("\rRead %.1f%% of %d rows", (100.0*i)/nrow, nrow);   // prints straight away if the mmap above took a while, is the idea
             R_FlushConsole();    // for Windows
             nexttime = clock()+CLOCKS_PER_SEC;
@@ -1338,7 +1335,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
         if (whileBreak) break;
     }
-    if (showProgress==1 && hasPrinted) {
+    if (showProgress && hasPrinted) {
         j = 1+(clock()-t0)/CLOCKS_PER_SEC;
         Rprintf("\rRead %d rows and %d (of %d) columns from %.3f GB file in %02d:%02d:%02d\n", i, ncol-numNULL, ncol, 1.0*filesize/(1024*1024*1024), j/3600, (j%3600)/60, j%60);
         R_FlushConsole();

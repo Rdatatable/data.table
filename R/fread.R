@@ -1,19 +1,15 @@
 
-fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",file,stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=1L,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable")) {
+fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",file,stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=1L,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable"))
+{    
     if (!is.character(dec) || length(dec)!=1L || nchar(dec)!=1) stop("dec must be a single character e.g. '.' or ','")
     # handle encoding, #563
     if (length(encoding) != 1L || !encoding %in% c("unknown", "UTF-8", "Latin-1")) {
         stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
     }
-    if (length(strip.white) != 1L || !strip.white %in% c(TRUE, FALSE)) {
-        stop("Argument 'strip.white' must be logical TRUE/FALSE")
-    }
-    if (length(blank.lines.skip) != 1L || !blank.lines.skip %in% c(TRUE, FALSE)) {
-        stop("Argument 'blank.lines.skip' must be logical TRUE/FALSE")
-    }
-    if (length(fill) != 1L || !fill %in% c(TRUE, FALSE)) {
-        stop("Argument 'fill' must be logical TRUE/FALSE")
-    }
+    isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)
+    stopifnot( isLOGICAL(strip.white), isLOGICAL(blank.lines.skip), isLOGICAL(fill), isLOGICAL(showProgress),
+               isLOGICAL(stringsAsFactors), isLOGICAL(verbose), isLOGICAL(check.names) )
+    
     if (getOption("datatable.fread.dec.experiment") && Sys.localeconv()["decimal_point"] != dec) {
         oldlocale = Sys.getlocale("LC_NUMERIC")
         if (verbose) cat("dec='",dec,"' but current locale ('",oldlocale,"') has dec='",Sys.localeconv()["decimal_point"],"'. Attempting to change locale to one that has the desired decimal point.\n",sep="")
@@ -101,7 +97,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     if (identical(header,"auto")) header=NA
     if (identical(sep,"auto")) sep=NULL
     if (is.atomic(colClasses) && !is.null(names(colClasses))) colClasses = tapply(names(colClasses),colClasses,c,simplify=FALSE) # named vector handling
-    ans = .Call(Creadfile,input,sep,as.integer(nrows),header,na.strings,verbose,as.integer(autostart),skip,select,drop,colClasses,integer64,dec,encoding,quote,strip.white,blank.lines.skip,fill,as.integer(showProgress))
+    ans = .Call(Creadfile,input,sep,as.integer(nrows),header,na.strings,verbose,as.integer(autostart),skip,select,drop,colClasses,integer64,dec,encoding,quote,strip.white,blank.lines.skip,fill,showProgress)
     nr = length(ans[[1]])
     if ( integer64=="integer64" && !exists("print.integer64") && any(sapply(ans,inherits,"integer64")) )
         warning("Some columns have been read as type 'integer64' but package bit64 isn't loaded. Those columns will display as strange looking floating point data. There is no need to reload the data. Just require(bit64) to obtain the integer64 print method and print the data again.")
@@ -114,11 +110,11 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         setattr(ans, "class", "data.frame")
     }
     # #1027, make.unique -> make.names as spotted by @DavidArenberg
-    if (isTRUE(as.logical(check.names))) {
+    if (check.names) {
         setattr(ans, 'names', make.names(names(ans), unique=TRUE))
     }
     cols = NULL
-    if (isTRUE(as.logical(stringsAsFactors)))
+    if (stringsAsFactors)
         cols = which(vapply(ans, is.character, TRUE))
     else if (length(colClasses)) {
         if (is.list(colClasses) && "factor" %in% names(colClasses))
