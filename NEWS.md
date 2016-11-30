@@ -23,6 +23,8 @@
 
 4. The FAQ vignette has been revised given the changes in v1.9.8. In particular, the very first FAQ.
 
+5. With hindsight, the last release v1.9.8 should have been named v1.10.0 to convey it wasn't just a patch release from .6 to .8 owing to the potentially breaking changes at the top. Thanks to @neomantic for correctly pointing out. The best we can do now is now bump to 1.10.0.
+
 
 ### Changes in v1.9.8  (on CRAN 25 Nov 2016)
 
