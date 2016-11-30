@@ -9435,10 +9435,13 @@ if ("package:bit64" %in% search()) {
   test(1730.3, as.integer("-2147483647"), -2147483647L)
   test(1730.4, as.integer("-2147483648"), NA_integer_, warning="coercion")
   test(1730.5, as.integer64("-2147483648"), as.integer64(-2147483648))
-  test(1730.6, as.character((as.integer64(2^62)-1)*2+1), "9223372036854775807")
-  test(1730.7, as.character((as.integer64(2^62)-1)*2+2), NA_character_, warning="integer64 overflow")
-  test(1730.8, as.character(-(as.integer64(2^62)-1)*2-1), "-9223372036854775807")
-  test(1730.9, as.character(-(as.integer64(2^62)-1)*2-2), NA_character_, warning="integer64.*flow")
+  if (.devtesting) {
+    # these don't pass valgrind and UBSAN/USAN, so just in dev not on CRAN
+    test(1730.6, as.character((as.integer64(2^62)-1)*2+1), "9223372036854775807")
+    test(1730.7, as.character((as.integer64(2^62)-1)*2+2), NA_character_, warning="integer64 overflow")
+    test(1730.8, as.character(-(as.integer64(2^62)-1)*2-1), "-9223372036854775807")
+    test(1730.9, as.character(-(as.integer64(2^62)-1)*2-2), NA_character_, warning="integer64.*flow")
+  }
   # Currently bit64 truncs to extremes in character coercion. Don't test that in case bit64 changes in future.
   # as.integer64("-9223372036854775808") == NA
   # as.integer64("-9223372036854775999") == NA
