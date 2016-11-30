@@ -115,7 +115,13 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     
     ansloc = 0;
     for(i=0; i<ngrp; i++) {   // even for an empty i table, ngroup is length 1 (starts is value 0), for consistency of empty cases
-        if (INTEGER(starts)[i] == 0 && i>0) continue; // replaced (i>0 || !isNull(lhs)) with i>0 to fix #5376
+
+        if (INTEGER(starts)[i]==0 && (i<ngrp-1 || estn>-1)) continue;
+        // Previously had replaced (i>0 || !isNull(lhs)) with i>0 to fix #5376
+        // The above is now to fix #1993, see test 1746.
+        // In cases were no i rows match, '|| estn>-1' ensures that the last empty group creates an empty result.
+        // TODO: revisit and tidy
+        
         if (!isNull(lhs) &&
                (INTEGER(starts)[i] == NA_INTEGER ||
                 (LENGTH(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)))
@@ -313,7 +319,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (ansloc + maxn > estn) {
             if (estn == -1) {
                 // Given first group and j's result on it, make a good guess for size of result required.
-                // This was 'byretn' in R in v1.8.0, now here in C from v1.8.1 onwards.
                 if (grpn==0)
                     estn = maxn = 0;   // empty case e.g. test 184. maxn is 1 here due to sum(integer()) == 0L
                 else if (maxn==1) // including when grpn==1 we default to assuming it's an aggregate

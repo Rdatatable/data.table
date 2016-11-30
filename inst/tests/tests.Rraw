@@ -9727,6 +9727,16 @@ test(1745.1, data.table(a=character(0))[c(1,0)], data.table(a=NA_character_))
 test(1745.2, data.table(a=numeric(0))[c(1,0)], data.table(a=NA_real_))
 test(1745.3, data.table(a=integer(0))[c(1,0)], data.table(a=NA_integer_))
 
+# Long standing crash when by=.EACHI, nomatch=0, the first item in i has no match
+# AND j has function call that is passed a key column, #1933.
+DT = data.table(A=letters[1:5],B=1:5,key="A")
+ids = c("p","q","r","c","s","d")
+test(1746.1, DT[ids, A, by=.EACHI, nomatch=0], data.table(A=c("c","d"),A=c("c","d")))   # was always ok
+test(1746.2, DT[ids, print(A), by=.EACHI, nomatch=0],                                   # reliable crash in v1.9.6 and v1.9.8
+             data.table(A=character(0)), output="\"c\".*\"d\"")
+test(1746.3, DT[ids, {print(A);A}, by=.EACHI, nomatch=0],                               # reliable crash in v1.9.6 and v1.9.8
+             data.table(A=c("c","d"),V1=c("c","d")), output="\"c\".*\"d\"")
+
 
 ##########################
 

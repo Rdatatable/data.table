@@ -1,8 +1,6 @@
 
 ### Changes in v1.9.9  ( in development on GitHub )
 
-#### NEW FEATURES
-
 #### BUG FIXES
 
 1. `fwrite(..., quote='auto')` already quoted a field if it contained a `sep` or `\n`, or `sep2[2]` when `list` columns are present. Now it also quotes a field if it contains a double quote (`"`) as documented, [#1925](https://github.com/Rdatatable/data.table/issues/1925). Thanks to Aki Matsuo for reporting. Tests added. The `qmethod` tests did test escaping embedded double quotes, but only when `sep` or `\n` was present in the field as well to trigger the quoting of the field.
@@ -10,6 +8,8 @@
 2. Fixed 3 test failures on Solaris only, [#1934](https://github.com/Rdatatable/data.table/issues/1934). Two were on both sparc and x86 and related to a `tzone` attribute difference between `as.POSIXct` and `as.POSIXlt` even when passed the default `tz=""`. The third was on sparc only: a minor rounding issue in `fwrite()` of 1e-305.
 
 3. Regression crash fixed when 0's occur at the end of a non-empty subset of an empty table, [#1937](https://github.com/Rdatatable/data.table/issues/1937). Thanks Arun for tracking down. Tests added. For example, subsetting the empty `DT=data.table(a=character())` with `DT[c(1,0)]` should return a 1 row result with one `NA` since 1 is past the end of `nrow(DT)==0`, the same result as `DT[1]`.
+
+4. Fixed newly reported crash that also occurred in old v1.9.6 when `by=.EACHI`, `nomatch=0`, the first item in `i` has no match AND `j` has a function call that is passed a key column, [#1933](https://github.com/Rdatatable/data.table/issues/1933). Many thanks to Reino Bruner for finding and reporting with a reproducible example. Tests added.
 
 #### NOTES
 
