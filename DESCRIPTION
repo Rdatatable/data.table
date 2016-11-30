@@ -1,6 +1,6 @@
 Package: data.table
 Version: 1.9.9
-Title: Extension of data.frame
+Title: Extension of `data.frame`
 Authors@R: c(
   person("Matt","Dowle",      role=c("aut","cre"), email="mattjdowle@gmail.com"),
   person("Arun","Srinivasan", role="aut", email="arunkumar.sriniv@gmail.com"),
