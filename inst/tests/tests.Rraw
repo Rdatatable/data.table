@@ -9737,6 +9737,15 @@ test(1746.2, DT[ids, print(A), by=.EACHI, nomatch=0],                           
 test(1746.3, DT[ids, {print(A);A}, by=.EACHI, nomatch=0],                               # reliable crash in v1.9.6 and v1.9.8
              data.table(A=c("c","d"),V1=c("c","d")), output="\"c\".*\"d\"")
 
+# indices() can return list of vectors, #1589
+DT = data.table(A=5:1,B=letters[5:1])
+setindex(DT)
+setindex(DT, A)
+setindex(DT, B)
+indices(DT, vectors = TRUE)
+test(1747.1, indices(DT), c("A__B","A","B"))
+test(1747.2, indices(DT, vectors = TRUE), list(c("A","B"),"A","B"))
+
 
 ##########################
 

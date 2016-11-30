@@ -86,10 +86,13 @@ key2 <- function(x) {
     if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
     gsub("^__","",ans)
 }
-indices <- function(x) {
+indices <- function(x, vectors = FALSE) {
     ans = names(attributes(attr(x,"index",exact=TRUE)))
     if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
-    gsub("^__","",ans)
+    ans <- gsub("^__","",ans)
+    if (isTRUE(vectors))
+        ans <- strsplit(ans, "__", fixed = TRUE)
+    ans
 }
 
 get2key <- function(x, col) attr(attr(x,"index",exact=TRUE),paste("__",col,sep=""),exact=TRUE)   # work in progress, not yet exported

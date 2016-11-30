@@ -1,6 +1,10 @@
 
 ### Changes in v1.9.9  ( in development on GitHub )
 
+#### NEW FEATURES
+
+1. `indices()` function gain new argument `vectors` default `FALSE`, when `TRUE` provided then list of vector is returned, single vector refers to single index. Closes #1589.
+
 #### BUG FIXES
 
 1. `fwrite(..., quote='auto')` already quoted a field if it contained a `sep` or `\n`, or `sep2[2]` when `list` columns are present. Now it also quotes a field if it contains a double quote (`"`) as documented, [#1925](https://github.com/Rdatatable/data.table/issues/1925). Thanks to Aki Matsuo for reporting. Tests added. The `qmethod` tests did test escaping embedded double quotes, but only when `sep` or `\n` was present in the field as well to trigger the quoting of the field.
