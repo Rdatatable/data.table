@@ -36,7 +36,7 @@ setkeyv(x, cols, verbose=getOption("datatable.verbose"), physical = TRUE)
 setindex(...)
 setindexv(...)
 key(x)
-indices(x)
+indices(x, vectors = FALSE)
 haskey(x)
 key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 }
@@ -51,6 +51,8 @@ names.}
 \item{verbose}{ Output status and information. }
 \item{physical}{ TRUE changes the order of the data in RAM. FALSE adds a 
 secondary key a.k.a. index. }
+\item{vectors}{ logical scalar default \code{FALSE}, when set to \code{TRUE}
+then list of character vectors is returned, each vector refers to one index. }
 }
 \details{
 \code{setkey} reorders (or sorts) the rows of a data.table by the columns 
@@ -155,6 +157,13 @@ DT = data.table(A=5:1,B=letters[5:1])
 DT2 = copy(DT)        # explicit copy() needed to copy a data.table
 setkey(DT2,B)         # now just changes DT2
 identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
+
+DT = data.table(A=5:1,B=letters[5:1])
+setindex(DT)          # set indices
+setindex(DT, A)
+setindex(DT, B)
+indices(DT)           # get indices single vector
+indices(DT, vectors = TRUE) # get indices list
 }
 \keyword{ data }
 
