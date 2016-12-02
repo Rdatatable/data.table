@@ -11,6 +11,7 @@ sudo apt-get install pandoc
 
 R
 update.packages()
+# See here for getting R.oo to install: https://github.com/HenrikBengtsson/R.utils/issues/29
 q()
 
 # Ensure latest version of R otherwise problems with CRAN not finding dependents that depend on latest R
@@ -73,11 +74,10 @@ install.packages("chron")
 q("no")
 ### END ONE TIME BUILD
 
-R300 CMD INSTALL ~/data.table_1.9.7.tar.gz
+R300 CMD INSTALL ~/data.table_1.9.9.tar.gz
 R300
 require(data.table)
 test.data.table()
-test.data.table(verbose=TRUE)
 
 
 ###############################################
@@ -85,16 +85,16 @@ test.data.table(verbose=TRUE)
 ###############################################
 
 vi .R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-R --vanilla CMD INSTALL data.table_1.9.7.tar.gz
+R --vanilla CMD INSTALL data.table_1.9.9.tar.gz
 R -d "valgrind --tool=memcheck --leak-check=full" --vanilla
 require(data.table)
 require(bit64)
 test.data.table()
-test.data.table(verbose=TRUE)
 
 # Tests 648 and 1262 have single precision issues under valgrind. See comments next to those tests.
 # Ignore 'set address range perms' warnings :
 #   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
+# Tests 1729.4, 1929.8, 1729.11, 1729.13 have precision issues. Ok.
 
 
 ###############################################
@@ -113,10 +113,9 @@ make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 Rdevel
 install.packages("bit64")  # important to run tests using integer64
-install.packages("knitr")  # to run examples in vignettes
 # Skip compatibility tests with other Suggests packages; unlikely UBSAN/ASAN problems there.
 q("no")
-Rdevel CMD INSTALL ~/data.table_1.9.7.tar.gz
+Rdevel CMD INSTALL ~/data.table_1.9.9.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
 # them (above) so should be passed through to here
 Rdevel
@@ -124,7 +123,6 @@ require(data.table)
 require(bit64)
 test.data.table()     # slower than usual of course due to UBSAN and ASAN. Too slow to run R CMD check.
 # Throws /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those: https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
-test.data.table(verbose=TRUE)
 q("no")
 
 
@@ -241,7 +239,7 @@ q('no')
 
 cd ~/build/revdeplib/
 export R_LIBS=~/build/revdeplib/
-R CMD INSTALL ~/data.table_1.9.7.tar.gz       # ** ensure latest version installed **
+R CMD INSTALL ~/data.table_1.9.9.tar.gz       # ** ensure latest version installed **
 R
 
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
@@ -257,7 +255,7 @@ old = 0
 new = 0
 for (p in deps) {
    fn = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-   if (!file.exists(fn)) {
+   if (!file.exists(fn) || identical(tryCatch(packageVersion(p), error=function(e)FALSE), FALSE)) {
      system(paste0("rm -f ", p, "*.tar.gz"))  # Remove previous *.tar.gz.  -f to be silent if not there (i.e. first time seeing this package)
      system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version)
      if (!length(grep("bioc",avail[p,"Repository"]))) {
@@ -277,8 +275,16 @@ for (p in deps) {
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 table(avail[deps,"Repository"])
 
-R CMD INSTALL ~/data.table_1.9.7.tar.gz       # ** ensure latest version installed **
+# To identify and remove the tar.gz no longer needed :
+for (p in deps) {
+   f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
+   # system(paste0("mv ",f," ",f,"_TEMP"))
+   system(paste0("mv ",f,"_TEMP ",f))
+}
+
+R CMD INSTALL ~/data.table_1.9.9.tar.gz       # ** ensure latest version installed **
 export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
+rm -rf *.Rcheck                               # delete all previous .Rcheck directories
 ls -1 *.tar.gz | wc -l                        # check this equals length(deps) above
 time ls -1 *.tar.gz | parallel R CMD check    # apx 2 hrs for 291 packages on my 4 cpu laptop with 8 threads
 
