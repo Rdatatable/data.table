@@ -211,9 +211,10 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
     SEXP finalLevels = PROTECT(allocVector(STRSXP, uniqlen));
     R_len_t counter = 0;
     if (*factorType == 2) {
-        int * locs = malloc(sizeof(int) * len);
-        if (locs == NULL) error("malloc failed in rbindlist.c. This part of the code will be reworked.");
-        for (i = 0; i < len; ++i) locs[i] = 0;
+        int *locs = (int *)R_alloc(len, sizeof(int));
+        for (int i=0; i<len; i++) locs[i] = 0;
+        // note there's a goto (!!) normalFactor below. When locs was allocated with malloc, the goto jumped over the
+        // old free() and caused leak. Now uses the safer R_alloc.  TODO - review all this logic.
 
         R_len_t k;
         SEXP tmp;
@@ -289,7 +290,6 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
                 if (h[idx] == NULL) error("internal hash error, please report to datatable-help");
             }
         }
-        free (locs);
     }
 
  normalFactor:
