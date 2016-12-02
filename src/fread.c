@@ -606,10 +606,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if( ! isNull(nastrings)) {
       FLAG_NA_STRINGS_NULL = 0;
       NASTRINGS_LEN = LENGTH(nastrings);
-      NA_MASK = R_alloc(NASTRINGS_LEN, sizeof(int));
+      NA_MASK = (int *)R_alloc(NASTRINGS_LEN, sizeof(int));
       NA_MAX_NCHAR = get_maxlen(nastrings);
-      NA_STRINGS = R_alloc(NASTRINGS_LEN, sizeof(char *));
-      EACH_NA_STRING_LEN = R_alloc(NASTRINGS_LEN, sizeof(int));
+      NA_STRINGS = (const char **)R_alloc(NASTRINGS_LEN, sizeof(char *));
+      EACH_NA_STRING_LEN = (int *)R_alloc(NASTRINGS_LEN, sizeof(int));
       for (int i = 0; i < NASTRINGS_LEN; i++) {
         NA_STRINGS[i] = CHAR(STRING_ELT(nastrings, i));
         EACH_NA_STRING_LEN[i] = strlen(CHAR(STRING_ELT(nastrings, i)));
@@ -804,7 +804,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (verbose) Rprintf("Using supplied sep '%s' ... ", seps[0]=='\t'?"\\t":seps);
     }
     int nseps = strlen(seps);
-    int *maxcols = R_alloc(nseps, sizeof(int)); // if (fill) grab longest col stretch as topNcol
+    int *maxcols = (int *)R_alloc(nseps, sizeof(int)); // if (fill) grab longest col stretch as topNcol
     const char *topStart=ch, *thisStart=ch;
     char topSep=seps[0];
     int topLine=0, topLen=0, topNcol=-1;

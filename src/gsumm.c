@@ -216,45 +216,33 @@ SEXP gmin(SEXP x, SEXP narm)
     //clock_t start = clock();
     SEXP ans;
     if (grpn != n) error("grpn [%d] != length(x) [%d] in gmin", grpn, n);
-    char *update = Calloc(ngrp, char);
-    if (update == NULL) error("Unable to allocate %d * %d bytes for gmin", ngrp, sizeof(char));
     switch(TYPEOF(x)) {
     case LGLSXP: case INTSXP:
         ans = PROTECT(allocVector(INTSXP, ngrp));
-        for (i=0; i<ngrp; i++) INTEGER(ans)[i] = 0;
         if (!LOGICAL(narm)[0]) {
+            for (i=0; i<ngrp; i++) INTEGER(ans)[i] = INT_MAX;
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
-                if (INTEGER(x)[ix] != NA_INTEGER && INTEGER(ans)[thisgrp] != NA_INTEGER) {
-                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] > INTEGER(x)[ix] ) {
-                        INTEGER(ans)[thisgrp] = INTEGER(x)[ix];
-                        if (update[thisgrp] != 1) update[thisgrp] = 1;
-                    }
-                } else INTEGER(ans)[thisgrp] = NA_INTEGER;
+                if (INTEGER(x)[ix] < INTEGER(ans)[thisgrp])   // NA_INTEGER==INT_MIN checked in init.c
+                    INTEGER(ans)[thisgrp] = INTEGER(x)[ix];
             }
         } else {
+            for (i=0; i<ngrp; i++) INTEGER(ans)[i] = NA_INTEGER;
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
-                if (INTEGER(x)[ix] != NA_INTEGER) {
-                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] > INTEGER(x)[ix] ) {
-                        INTEGER(ans)[thisgrp] = INTEGER(x)[ix];
-                        if (update[thisgrp] != 1) update[thisgrp] = 1;
-                    }
-                } else {
-                    if (update[thisgrp] != 1) {
-                        INTEGER(ans)[thisgrp] = NA_INTEGER;
-                    }
-                }
+                if (INTEGER(x)[ix] == NA_INTEGER) continue;
+                if (INTEGER(ans)[thisgrp] == NA_INTEGER || INTEGER(x)[ix] < INTEGER(ans)[thisgrp])
+                    INTEGER(ans)[thisgrp] = INTEGER(x)[ix];
             }
             for (i=0; i<ngrp; i++) {
-                if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
+                if (INTEGER(ans)[i] == NA_INTEGER) {
                     warning("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base");
                     UNPROTECT(1);
                     ans = PROTECT(coerceVector(ans, REALSXP));
                     for (i=0; i<ngrp; i++) {
-                        if (update[i] != 1) REAL(ans)[i] = R_PosInf;
+                        if (ISNA(REAL(ans)[i])) REAL(ans)[i] = R_PosInf;
                     }
                     break;
                 }
@@ -263,35 +251,33 @@ SEXP gmin(SEXP x, SEXP narm)
         break;
     case STRSXP:
         ans = PROTECT(allocVector(STRSXP, ngrp));
-        for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, mkChar(""));
         if (!LOGICAL(narm)[0]) {
+            for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, R_BlankString);
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
-                if (STRING_ELT(x, ix) != NA_STRING && STRING_ELT(ans, thisgrp) != NA_STRING) {
-                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, ix))) > 0 ) {
-                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
-                        if (update[thisgrp] != 1) update[thisgrp] = 1;
-                    }
-                } else SET_STRING_ELT(ans, thisgrp, NA_STRING);
-            }
-        } else {
-            for (i=0; i<n; i++) {
-                thisgrp = grp[i];
-                ix = (irowslen == -1) ? i : irows[i]-1;
-                if (STRING_ELT(x, ix) != NA_STRING) {
-                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, ix))) > 0 ) {
-                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
-                        if (update[thisgrp] != 1) update[thisgrp] = 1;
-                    }
+                if (STRING_ELT(x, ix) == NA_STRING) {
+                    SET_STRING_ELT(ans, thisgrp, NA_STRING);
                 } else {
-                    if (update[thisgrp] != 1) {
-                        SET_STRING_ELT(ans, thisgrp, NA_STRING);
+                    if (STRING_ELT(ans, thisgrp) == R_BlankString ||
+                        (STRING_ELT(ans, thisgrp) != NA_STRING && strcmp(CHAR(STRING_ELT(x, ix)), CHAR(STRING_ELT(ans, thisgrp))) < 0 )) {
+                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
                     }
                 }
             }
+        } else {
+            for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, NA_STRING);
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if (STRING_ELT(x, ix) == NA_STRING) continue;
+                if (STRING_ELT(ans, thisgrp) == NA_STRING || 
+                    strcmp(CHAR(STRING_ELT(x, ix)), CHAR(STRING_ELT(ans, thisgrp))) < 0) {
+                    SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
+                }
+            }
             for (i=0; i<ngrp; i++) {
-                if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
+                if (STRING_ELT(ans, i)==NA_STRING) {
                     warning("No non-missing values found in at least one group. Returning 'NA' for such groups to be consistent with base");
                     break;
                 }
@@ -300,38 +286,27 @@ SEXP gmin(SEXP x, SEXP narm)
         break;
     case REALSXP:
         ans = PROTECT(allocVector(REALSXP, ngrp));
-        for (i=0; i<ngrp; i++) REAL(ans)[i] = 0;
-        if (!LOGICAL(narm)[0]) {
+        if (!LOGICAL(narm)[0]) {    
+            for (i=0; i<ngrp; i++) REAL(ans)[i] = R_PosInf;
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
-                if ( !ISNA(REAL(x)[ix]) && !ISNA(REAL(ans)[thisgrp]) ) {
-                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[ix] || 
-                         (ISNAN(REAL(x)[ix]) && !ISNAN(REAL(ans)[thisgrp])) ) { // #1461
-                        REAL(ans)[thisgrp] = REAL(x)[ix];
-                        if (update[thisgrp] != 1) update[thisgrp] = 1;
-                    }
-                } else REAL(ans)[thisgrp] = NA_REAL;
+                if (ISNAN(REAL(x)[ix]) || REAL(x)[ix] < REAL(ans)[thisgrp])
+                    REAL(ans)[thisgrp] = REAL(x)[ix];
             }
         } else {
+            for (i=0; i<ngrp; i++) REAL(ans)[i] = NA_REAL;
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
-                if ( !ISNAN(REAL(x)[ix]) ) { // #1461
-                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[ix] ) {
-                        REAL(ans)[thisgrp] = REAL(x)[ix];
-                        if (update[thisgrp] != 1) update[thisgrp] = 1;
-                    }
-                } else {
-                    if (update[thisgrp] != 1) {
-                        REAL(ans)[thisgrp] = R_PosInf;
-                    }
-                }
+                if (ISNAN(REAL(x)[ix])) continue;
+                if (ISNAN(REAL(ans)[thisgrp]) || REAL(x)[ix] < REAL(ans)[thisgrp])
+                    REAL(ans)[thisgrp] = REAL(x)[ix];
             }
-            // everything taken care of already. Just warn if all NA groups have occurred at least once
             for (i=0; i<ngrp; i++) {
-                if (update[i] != 1)  {// equivalent of REAL(ans)[thisgrp] == R_PosInf
+                if (ISNAN(REAL(ans)[i])) {
                     warning("No non-missing values found in at least one group. Returning 'Inf' for such groups to be consistent with base");
+                    for (; i<ngrp; i++) if (ISNAN(REAL(ans)[i])) REAL(ans)[i] = R_PosInf;
                     break;
                 }
             }
@@ -342,7 +317,6 @@ SEXP gmin(SEXP x, SEXP narm)
     }
     copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     UNPROTECT(1);
-    Free(update);
     // Rprintf("this gmin took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
     return(ans);
 }
@@ -359,7 +333,6 @@ SEXP gmax(SEXP x, SEXP narm)
     SEXP ans;
     if (grpn != n) error("grpn [%d] != length(x) [%d] in gmax", grpn, n);
     char *update = Calloc(ngrp, char);
-    if (update == NULL) error("Unable to allocate %d * %d bytes for gmax", ngrp, sizeof(char));
     switch(TYPEOF(x)) {
     case LGLSXP: case INTSXP:
         ans = PROTECT(allocVector(INTSXP, ngrp));

@@ -28,7 +28,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, vlen, origIlen=0, origSDnrow=0;
     int protecti=0;
     SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, SDall, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source, tmp;
-    SEXP *nameSyms, *xknameSyms;
     Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE, recycleWarn=TRUE;
     size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
     clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
@@ -82,7 +81,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     // using <- in j (which is valid, useful and tested), they are repointed to the .SD cols for each group.
     names = getAttrib(SDall, R_NamesSymbol);
     if (length(names) != length(SDall)) error("length(names)!=length(SD)");
-    nameSyms = R_alloc(length(names), sizeof(SEXP));
+    SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
     for(i = 0; i < length(SDall); i++) {
         if (SIZEOF(VECTOR_ELT(SDall, i))==0)
             error("Type %d in .SD column %d", TYPEOF(VECTOR_ELT(SDall, i)), i);
@@ -96,7 +95,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 
     xknames = getAttrib(xSD, R_NamesSymbol);
     if (length(xknames) != length(xSD)) error("length(xknames)!=length(xSD)");
-    xknameSyms = R_alloc(length(xknames), sizeof(SEXP));
+    SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
     for(i = 0; i < length(xSD); i++) {
         if (SIZEOF(VECTOR_ELT(xSD, i))==0)
             error("Type %d in .xSD column %d", TYPEOF(VECTOR_ELT(xSD, i)), i);

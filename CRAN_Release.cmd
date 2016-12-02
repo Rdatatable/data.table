@@ -43,6 +43,7 @@ grep "Rprintf" data.table/src/init.c
 grep "nearest *=" data.table/src/*.c  # none
 grep "class *=" data.table/src/*.c    # quite a few but none global
 
+cc(clean=TRUE)  # to compile with -pedandic
 R CMD build data.table
 R CMD check data.table_1.9.9.tar.gz --as-cran
 R CMD INSTALL data.table_1.9.9.tar.gz
