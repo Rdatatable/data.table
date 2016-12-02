@@ -35,8 +35,7 @@ SEXP gstart(SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     grpsize = INTEGER(l);  // l will be protected in calling R scope until gend(), too
     for (i=0; i<ngrp; i++) grpn+=grpsize[i];
     if (LENGTH(o) && LENGTH(o)!=grpn) error("o has length %d but sum(l)=%d", LENGTH(o), grpn);
-    grp = malloc(grpn * sizeof(int));
-    if (!grp) error("Unable to allocate %d * %d bytes in gstart", grpn, sizeof(int));
+    grp = (int *)R_alloc(grpn, sizeof(int));
     if (LENGTH(o)) {
         isunsorted = 1; // for gmedian
         for (g=0; g<ngrp; g++) {
@@ -63,7 +62,7 @@ SEXP gstart(SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
 }
 
 SEXP gend() {
-    free(grp); grp = NULL; ngrp = 0; maxgrpn = 0; irowslen = -1; isunsorted = 0;
+    ngrp = 0; maxgrpn = 0; irowslen = -1; isunsorted = 0;
     return(R_NilValue);
 }
 
@@ -332,7 +331,11 @@ SEXP gmax(SEXP x, SEXP narm)
     //clock_t start = clock();
     SEXP ans;
     if (grpn != n) error("grpn [%d] != length(x) [%d] in gmax", grpn, n);
-    char *update = Calloc(ngrp, char);
+    
+    // TODO rework gmax in the same way as gmin and remove this *update
+    char *update = (char *)R_alloc(ngrp, sizeof(char));
+    for (int i=0; i<ngrp; i++) update[i] = 0;
+    
     switch(TYPEOF(x)) {
     case LGLSXP: case INTSXP:
         ans = PROTECT(allocVector(INTSXP, ngrp));
@@ -457,7 +460,6 @@ SEXP gmax(SEXP x, SEXP narm)
     }
     copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     UNPROTECT(1);
-    Free(update);
     // Rprintf("this gmax took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
     return(ans);
 }

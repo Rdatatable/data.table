@@ -4,10 +4,10 @@
 
 SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
 
-    R_len_t i, j, k=0, ln, *len, maxlen=0, zerolen=0, anslen;
+    R_len_t i, j, k=0, maxlen=0, zerolen=0, anslen;
     SEXP li, thisi, ans;
     SEXPTYPE type, maxtype=0;
-    Rboolean ignore, coerce = FALSE;
+    Rboolean coerce = FALSE;
 
     if (!isNewList(l)) 
         error("l must be a list.");
@@ -17,11 +17,11 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
         error("ignore.empty should be logical TRUE/FALSE.");
     if (length(fill) != 1)
         error("fill must be NULL or length=1 vector.");
-    ln = LENGTH(l);
-    ignore = LOGICAL(ignoreArg)[0];
+    R_len_t ln = LENGTH(l);
+    Rboolean ignore = LOGICAL(ignoreArg)[0];
 
     // preprocessing
-    len  = Calloc(ln, R_len_t);
+    R_len_t *len  = (R_len_t *)R_alloc(ln, sizeof(R_len_t));
     for (i=0; i<ln; i++) {
         li = VECTOR_ELT(l, i);
         if (!isVectorAtomic(li) && !isNull(li)) 
@@ -92,7 +92,6 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
         }
         k++;
     }
-    Free(len);
     UNPROTECT(2);
     return(ans);
 }

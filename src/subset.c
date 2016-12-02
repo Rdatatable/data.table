@@ -174,7 +174,10 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
 
     // idx is all negative without any NA but perhaps 0 present (num0) ...
 
-    char *tmp = Calloc(max, char);    // 4 times less memory that INTSXP in src/main/subscript.c
+    char *tmp = (char *)R_alloc(max, sizeof(char));    // 4 times less memory that INTSXP in src/main/subscript.c
+    for (int i=0; i<max; i++) tmp[i] = 0;
+    // Not using Calloc as valgrind shows it leaking (I don't see why) - just changed to R_alloc to be done with it.
+    // Maybe R needs to be rebuilt with valgrind before Calloc's Free can be matched up by valgrind?
     int firstDup = 0, numDup = 0, firstBeyond = 0, numBeyond = 0;
     for (int i=0; i<LENGTH(idx); i++) {
         int this = -INTEGER(idx)[i];
@@ -197,7 +200,6 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
     SEXP ans = PROTECT(allocVector(INTSXP, max-LENGTH(idx)+num0+numDup+numBeyond));
     int ansi = 0;
     for (int i=0; i<max; i++) if (tmp[i]==0) INTEGER(ans)[ansi++] = i+1;
-    Free(tmp);
     UNPROTECT(1);
     if (ansi != max-LENGTH(idx)+num0+numDup+numBeyond) error("Internal error: ansi[%d] != max[%d]-LENGTH(idx)[%d]+num0[%d]+numDup[%d]+numBeyond[%d] in convertNegativeIdx",ansi,max,LENGTH(idx),num0,numDup,numBeyond);
     return(ans);
