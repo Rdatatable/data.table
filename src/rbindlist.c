@@ -585,6 +585,15 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
     }
 }
 
+static void preprocess_Free(struct preprocessData *data) {
+  // TODO - revisit this preprocessing business.
+  // For now just bring the Free's together because it already happened that Free() was forgotten
+  // and a leak happened. There's now two calls to preprocess_Free()
+  Free(data->max_type);
+  Free(data->is_factor);
+  Free(data->fn_rows);
+}
+
 // function does c(idcol, nm), where length(idcol)=1
 // fix for #1432, + more efficient to move the logic to C
 SEXP add_idcol(SEXP nm, SEXP idcol, int cols) {
@@ -627,8 +636,9 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
     preprocess(l, usenames, fill, &data);
     fnames   = VECTOR_ELT(data.ans_ptr, 0);
     findices = VECTOR_ELT(data.ans_ptr, 1);
-    protecti = data.protecti;
+    protecti = data.protecti;   // TODO very ugly and doesn't seem right. Assign items to list instead, perhaps.
     if (data.n_rows == 0 && data.n_cols == 0) {
+        preprocess_Free(&data);
         UNPROTECT(protecti);
         return(R_NilValue);
     }
@@ -774,9 +784,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
         }
     }
 
-    Free(data.max_type);
-    Free(data.is_factor);
-    Free(data.fn_rows);
+    preprocess_Free(&data);
     Free(isRowOrdered);
     UNPROTECT(protecti);
     return(ans);

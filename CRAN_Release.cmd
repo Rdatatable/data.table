@@ -91,11 +91,14 @@ require(data.table)
 require(bit64)
 test.data.table()
 
-# Tests 648 and 1262 have single precision issues under valgrind. See comments next to those tests.
-# Ignore 'set address range perms' warnings :
+# Investigated and ignore :
+# Tests 648 and 1262 (see their comments) have single precision issues under valgrind that don't occur on CRAN, even Solaris.
+# Ignore all "set address range perms" warnings :
 #   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
-# Tests 1729.4, 1929.8, 1729.11, 1729.13 have precision issues. Ok.
+# Ignore heap summaries around test 1705 and 1707/1708 due to the fork() test opening/closing, I guess.
+# Tests 1729.4, 1729.8, 1729.11, 1729.13 again have precision issues under valgrind only.
 
+vi .R/Makevars  # make the -O3 line active again
 
 ###############################################
 #  R-devel with UBSAN and ASAN on too
