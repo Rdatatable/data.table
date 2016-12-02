@@ -7976,8 +7976,8 @@ dt = data.table(x=sample(3, 10, TRUE), y=1:10)
 v1 = capture.output(ans1 <- dt[.(3:2), on="x", verbose=TRUE])
 setindex(dt, x)
 v2 = capture.output(ans2 <- dt[.(3:2), on="x", verbose=TRUE])
-test(1634.1, any(grepl("not found", v1)), TRUE)
-test(1634.2, any(grepl("Reusing index", v2)), TRUE)
+test(1634.1, any(grepl("ad hoc", v1)), TRUE)
+test(1634.2, any(grepl("existing index", v2)), TRUE)
 
 # fread's fill argument detects separator better in complex cases as well, #1573
 text = "a	b	c	d	e	f	g	h	i	j	k	l\n1	P	P;A;E;	Y	YW;	H().	1-3 pro\n2	Q9	a;a;a;a;	YB	YH;	M().	13 pn ba\n1	P3	P;	Y	Y;	R().	14 p\n53	P	P6;B;D;0;5;a;X;a;4R;	Y	Y;	H().	13 pe e\n1	P	P;O;O;a;a;a;	HLA-A	HLA-A;;	H().	HcIha,A-n\n102	P	P;O;P;P;P;P;P;P;a;a;a;a;a;a;a;a;a;a;	H-A	H-A;;	H().	HcIha,A"
@@ -8849,24 +8849,25 @@ test(1666.8, grep("Using existing index", capture.output(d[k==1L, verbose=TRUE])
 d1 = data.table(k=3:1) # join - no index
 d2 = data.table(k=2:4)
 options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
-test(1666.9, d1[d2, on="k", verbose=TRUE], d1[d2, on="k"], output="not found.")
+test(1666.9, d1[d2, on="k", verbose=TRUE], d1[d2, on="k"], output="ad hoc")
 options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
-test(1666.10, d1[d2, on="k", verbose=TRUE], d1[d2, on="k"], output="not found.")
+test(1666.11, d1[d2, on="k", verbose=TRUE], d1[d2, on="k"], output="ad hoc")
 options("datatable.use.index"=FALSE, "datatable.auto.index"=FALSE)
-test(1666.11, grep("Looking for existing (secondary) index", capture.output(d1[d2, on="k", verbose=TRUE])), integer(0)) # not looking for index
+test(1666.12, grep("Looking for existing (secondary) index", capture.output(d1[d2, on="k", verbose=TRUE])), integer(0)) # not looking for index
 options("datatable.use.index"=FALSE, "datatable.auto.index"=TRUE)
-test(1666.12, grep("Looking for existing (secondary) index", capture.output(d1[d2, on="k", verbose=TRUE])), integer(0))
-d1 = data.table(k=3:1) # join - index
-d2 = data.table(k=2:4)
+test(1666.13, grep("Looking for existing (secondary) index", capture.output(d1[d2, on="k", verbose=TRUE])), integer(0))
+d1 = data.table(k=3:1,v1=10:12) # join - index
+d2 = data.table(k=2:4,v2=20:22)
 setindex(d1, k)
+ans = data.table(k=2:4, v1=c(11L,10L,NA), v2=20:22)
 options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
-test(1666.13, d1[d2, on="k", verbose=TRUE], d1[d2, on="k"], output="found. Reusing index.")
+test(1666.14, d1[d2, on="k", verbose=TRUE], ans, output="existing index")
 options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
-test(1666.14, d1[d2, on="k", verbose=TRUE], d1[d2, on="k"], output="found. Reusing index.")
+test(1666.15, d1[d2, on="k", verbose=TRUE], ans, output="existing index")
 options("datatable.use.index"=FALSE, "datatable.auto.index"=FALSE)
-test(1666.15, grep("Looking for existing (secondary) index", capture.output(d1[d2, on="k", verbose=TRUE])), integer(0)) # not looking for index
+test(1666.16, d1[d2, on="k", verbose=TRUE], ans, output='ad hoc')
 options("datatable.use.index"=FALSE, "datatable.auto.index"=TRUE)
-test(1666.16, grep("Looking for existing (secondary) index", capture.output(d1[d2, on="k", verbose=TRUE])), integer(0))
+test(1666.17, d1[d2, on="k", verbose=TRUE], ans, output='ad hoc')
 # reset defaults
 options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
 
@@ -9739,6 +9740,32 @@ test(1746.2, DT[ids, print(A), by=.EACHI, nomatch=0],                           
              data.table(A=character(0)), output="\"c\".*\"d\"")
 test(1746.3, DT[ids, {print(A);A}, by=.EACHI, nomatch=0],                               # reliable crash in v1.9.6 and v1.9.8
              data.table(A=c("c","d"),V1=c("c","d")), output="\"c\".*\"d\"")
+
+# combining on= with by= and keyby=, #1943
+freshDT = data.table(x = rep(c("a", "b"), each = 4), y = 1:0, z = c(3L, 6L, 8L, 5L, 4L, 1L, 2L, 7L))
+DT = copy(freshDT)
+test(1747.1, DT["b", max(z), by    = y, on = "x"], ans1<-data.table(y=1:0, V1=c(4L,7L)))
+test(1747.2, DT["b", max(z), keyby = y, on = "x"], ans2<-data.table(y=0:1, V1=c(7L,4L), key="y"))
+test(1747.3, DT[x=="b", max(z), by = y], ans1)
+test(1747.4, DT[x=="b", max(z), keyby = y], ans2)
+DT = copy(freshDT)  # to clear any auto indexes
+test(1747.5, DT[x=="b", max(z), by = y], ans1)
+test(1747.6, DT[x=="b", max(z), keyby = y], ans2)
+setkey(DT, x)
+test(1747.7, DT["b", max(z), by = y], ans1)
+test(1747.8, DT["b", max(z), keyby = y], ans2)
+DT = copy(freshDT)  # and agin without the == having run before the setkey
+setkey(DT, x)
+test(1747.9,  DT["b", max(z), by = y], ans1)
+test(1747.11, DT["b", max(z), keyby = y], ans2)
+
+DT = as.data.table(mtcars[mtcars$cyl %in% c(6, 8), c("am", "vs", "hp")])
+test(1748.1, DT[.(0), max(hp), by    = vs, on = "am"], ans1<-data.table(vs=c(1,0), V1=c(123,245)))
+test(1748.2, DT[.(0), max(hp), keyby = vs, on = "am"], ans2<-data.table(vs=c(0,1), V1=c(245,123), key="vs"))
+DT = as.data.table(mtcars[mtcars$cyl %in% c(6, 8), c("am", "vs", "hp")])
+test(1748.3, DT[am==0, max(hp), by=vs], ans1)
+test(1748.4, DT[am==0, max(hp), keyby=vs], ans2)
+
 
 
 ##########################

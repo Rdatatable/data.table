@@ -702,18 +702,18 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     # equi join. use existing key (#1825) or existing secondary index (#1439)
                     if ( identical(head(key(x), length(on)), names(on)) ) {
                         xo = integer(0)
-                    } else if (isTRUE(getOption("datatable.use.index"))) {
-                        if (verbose) cat("Looking for existing (secondary) index... ")
-                        xo =  attr(attr(x, 'index'), paste("__", names(on), sep="", collapse=""))
+                        if (verbose) cat("on= matches existing key, using key\n")
+                    } else {
+                        if (isTRUE(getOption("datatable.use.index"))) {
+                            idxName = paste0("__", names(on), sep="", collapse="")  # TODO: wrong, no sep!
+                            xo = attr(attr(x, 'index'), idxName)
+                            if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
+                        }
                         if (is.null(xo)) {
-                            if (verbose) {
-                                if (isTRUE(getOption("datatable.use.index"))) cat("not found.\n")
-                                last.started.at=proc.time()[3];cat("forder took... \n");flush.console()
-                                xo = forderv(x, by=rightcols)
-                                cat("",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console
-                            } else xo = forderv(x, by = rightcols)
-                        } else {
-                            if (verbose) cat("found. Reusing index.\n")
+                            last.started.at=proc.time()[3]
+                            xo = forderv(x, by = rightcols)
+                            if (verbose) cat("Calculated ad hoc index in", round(proc.time()[3]-last.started.at,3), "secs\n")
+                            # TODO: use setindex() instead, so it's cached for future reuse
                         }
                     }
                 }

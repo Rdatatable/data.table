@@ -137,7 +137,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                    (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(jiscols)[j]-1))+i*size,
                    size);  
         }
-        igrp = (length(grporder) && !LOGICAL(on)[0]) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
+        if (LOGICAL(on)[0])
+            igrp = (length(grporder) && isNull(jiscols)) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : i;
+        else
+            igrp = (length(grporder)) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
         if (igrp >= 0) for (j=0; j<length(BY); j++) {    // igrp can be -1 so 'if' is important, otherwise memcpy crash
             size = SIZEOF(VECTOR_ELT(BY,j));
             memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),  // ok use of memcpy size 1. Loop'd through columns not rows
