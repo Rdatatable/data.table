@@ -82,8 +82,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     // using <- in j (which is valid, useful and tested), they are repointed to the .SD cols for each group.
     names = getAttrib(SDall, R_NamesSymbol);
     if (length(names) != length(SDall)) error("length(names)!=length(SD)");
-    nameSyms = Calloc(length(names), SEXP);
-    if (!nameSyms) error("Calloc failed to allocate %d nameSyms in dogroups",length(names));
+    nameSyms = R_alloc(length(names), sizeof(SEXP));
     for(i = 0; i < length(SDall); i++) {
         if (SIZEOF(VECTOR_ELT(SDall, i))==0)
             error("Type %d in .SD column %d", TYPEOF(VECTOR_ELT(SDall, i)), i);
@@ -97,8 +96,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 
     xknames = getAttrib(xSD, R_NamesSymbol);
     if (length(xknames) != length(xSD)) error("length(xknames)!=length(xSD)");
-    xknameSyms = Calloc(length(xknames), SEXP);
-    if (!xknameSyms) error("Calloc failed to allocate %d xknameSyms in dogroups",length(xknames));
+    xknameSyms = R_alloc(length(xknames), sizeof(SEXP));
     for(i = 0; i < length(xSD); i++) {
         if (SIZEOF(VECTOR_ELT(xSD, i))==0)
             error("Type %d in .xSD column %d", TYPEOF(VECTOR_ELT(xSD, i)), i);
@@ -453,8 +451,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         Rprintf("  eval(j) took %.3fs for %d calls\n", 1.0*tblock[2]/CLOCKS_PER_SEC, nblock[2]);
     }
     UNPROTECT(protecti);
-    Free(nameSyms);
-    Free(xknameSyms);
     return(ans);
 }
 
