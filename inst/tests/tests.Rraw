@@ -42,6 +42,7 @@ oldWhenJsymbol = options(datatable.WhenJisSymbolThenCallingScope=FALSE)
 
 if (!.devtesting) {
     test = data.table:::test
+    INT = data.table:::INT
     compactprint = data.table:::compactprint
     is.sorted = data.table:::is.sorted
     forderv = data.table:::forderv
@@ -91,7 +92,7 @@ setkey(TESTDT,a,b)
 #       [5,] 4 9 5
 #       [6,] 4 9 6
 #       [7,] 7 2 7
-INT = function(...) { as.integer(c(...)) }
+
 ##########################
 
 test(1, TESTDT[SJ(4,6),v,mult="first"], 3L)
@@ -5953,7 +5954,8 @@ setattr(ans, 'names', nm)
 test(1463.27, shift(x, 1:2, give.names=TRUE), ans)
 
 # FR #686
-DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)))
+DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
+# Seemingly superfluous 'foo' is needed to test fix for #1942
 DT[, b := as.integer(factor(a))][, c := as.numeric(factor(a))]
 test(1464.1, rleidv(DT, "a"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.2, rleid(DT$a), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
@@ -5962,6 +5964,15 @@ test(1464.4, rleid(DT$b), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.5, rleidv(DT, "c"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.6, rleid(DT$c), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.7, rleid(as.complex(c(1,0+5i,0+5i,1))), error="Type 'complex' not supported")
+test(1464.8, rleidv(DT, 0), error="outside range")
+test(1464.9, rleidv(DT, 5), error="outside range")
+test(1464.11, rleidv(DT, 1:4), 1:nrow(DT))
+set.seed(1)
+DT = data.table( sample(1:2,20,replace=TRUE), sample(1:2,20,replace=TRUE), sample(1:2,20, replace=TRUE))
+test(1464.12, rleidv(DT, 1:4), error="outside range")
+test(1464.13, rleidv(DT, 1:2), ans<-INT(1,2,3,4,5,6,6,6,7,8,8,9,10,11,12,13,14,15,16,17))
+test(1464.14, rleidv(DT, 2:1), ans)
+test(1464.15, rleidv(DT, c(3,1)), INT(1,1,2,2,3,4,5,5,6,7,8,9,10,11,12,13,14,15,16,17))
 
 # data.table-xts conversion #882
 

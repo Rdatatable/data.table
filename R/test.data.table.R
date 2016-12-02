@@ -55,6 +55,8 @@ compactprint <- function(DT, topn=2) {
     invisible()
 }
 
+INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
+
 test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # Usage:
     # i) tests that x equals y when both x and y are supplied, the most common usage

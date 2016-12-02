@@ -2841,7 +2841,7 @@ rleidv <- function(x, cols=seq_along(x), prefix=NULL) {
             cols = chmatch(cols, names(x))
         cols = as.integer(cols)
     }
-    ids = .Call(Crleid, x, -1L)
+    ids = .Call(Crleid, x, cols)
     if (!is.null(prefix)) ids = paste0(prefix, ids)
     ids
 }
