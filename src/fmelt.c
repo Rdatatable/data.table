@@ -317,14 +317,16 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
     }
     if (length(varnames) != 1)
         error("'variable.name' must be a character/integer vector of length=1.");
-    data->leach = malloc(sizeof(int) * data->lvalues);
-    data->isidentical = malloc(sizeof(int) * data->lvalues);
-    data->isfactor = calloc(sizeof(int), data->lvalues);
-    data->maxtype = calloc(sizeof(SEXPTYPE), data->lvalues);
+    data->leach = R_alloc(data->lvalues, sizeof(int));
+    data->isidentical = R_alloc(data->lvalues, sizeof(int));
+    data->isfactor = R_alloc(data->lvalues, sizeof(int));
+    data->maxtype = R_alloc(data->lvalues, sizeof(SEXPTYPE));
     for (i=0; i<data->lvalues; i++) {
         tmp = VECTOR_ELT(data->valuecols, i);
         data->leach[i] = length(tmp);
-        data->isidentical[i] = 1;
+        data->isidentical[i] = 1;  // TODO - why 1 and not Rboolean TRUE?
+        data->isfactor[i] = 0;  // seems to hold 2 below, so not an Rboolean FALSE here. TODO - better name for variable?
+        data->maxtype[i] = 0;   // R_alloc doesn't initialize so careful to here, relied on below
         data->lmax = (data->lmax > data->leach[i]) ? data->lmax : data->leach[i];
         data->lmin = (data->lmin < data->leach[i]) ? data->lmin : data->leach[i];
         for (j=0; j<data->leach[i]; j++) {
@@ -385,7 +387,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         }
     } else data->totlen = data->nrow * data->lmax;
     flevels = PROTECT(allocVector(VECSXP, data->lmax)); protecti++;
-    isordered = malloc(sizeof(Rboolean) * data->lmax);
+    isordered = R_alloc(data->lmax, sizeof(Rboolean));
     ansvals = PROTECT(allocVector(VECSXP, data->lvalues)); protecti++;
     for (i=0; i<data->lvalues; i++) {
         thisvalfactor = (data->maxtype[i] == VECSXP) ? FALSE : valfactor;
@@ -476,7 +478,6 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         }
     }
     UNPROTECT(protecti);
-    free(isordered);
     return(ansvals);
 }
 
@@ -693,11 +694,6 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
         }
         setAttrib(ans, R_NamesSymbol, ansnames);
     }
-    // should be 'free', not 'Free'. Fixes #1059
-    free(data.isfactor);
-    free(data.maxtype);
-    free(data.leach);
-    free(data.isidentical);
     UNPROTECT(protecti);
     return(ans);
 }
