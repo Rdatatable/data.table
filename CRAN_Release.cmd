@@ -243,7 +243,7 @@ q('no')
 
 cd ~/build/revdeplib/
 export R_LIBS=~/build/revdeplib/
-R CMD INSTALL ~/data.table_1.9.9.tar.gz       # ** ensure latest version installed **
+R CMD INSTALL ~/data.table_1.9.9.tar.gz       # ** ensure latest version installed into revdeplib **
 R
 
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
@@ -286,7 +286,7 @@ for (p in deps) {
    system(paste0("mv ",f,"_TEMP ",f))
 }
 
-R CMD INSTALL ~/data.table_1.9.9.tar.gz       # ** ensure latest version installed **
+R CMD INSTALL ~/data.table_1.9.9.tar.gz       # ** ensure latest version installed into revdeplib **
 export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
 rm -rf *.Rcheck                               # delete all previous .Rcheck directories
 ls -1 *.tar.gz | wc -l                        # check this equals length(deps) above
