@@ -5,6 +5,8 @@
 
 1. `indices()` function gain new argument `vectors` default `FALSE`, when `TRUE` provided then list of vectors is returned, single vector refers to single index. Closes #1589.
 
+2. `as.data.table()` gains new method for `array`s, it will now return useful data.table. Closes #1418.
+
 #### BUG FIXES
 
 #### NOTES

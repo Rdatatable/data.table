@@ -93,6 +93,37 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
     alloc.col(value)
 }
 
+# as.data.table.array - #1418
+as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name="value", na.rm=TRUE, ...) {
+    dx = dim(x)
+    if (length(dx) <= 2L)
+        stop("as.data.table.array method should be only called for arrays with 3+ dimensions, for 2 dimensions matrix method should be used")
+    if (!is.character(value.name) || length(value.name)!=1L || is.na(value.name) || !nzchar(value.name))
+        stop("Argument 'value.name' must be scalar character, non-NA and non zero char")
+    if (!is.logical(sorted) || length(sorted)!=1L || is.na(sorted))
+        stop("Argument 'sorted' must be scalar logical and non-NA")
+    if (!is.logical(na.rm) || length(na.rm)!=1L || is.na(na.rm))
+        stop("Argument 'na.rm' must be scalar logical and non-NA")
+    
+    dnx = dimnames(x)
+    # NULL dimnames will create integer keys, not character as in table method
+    val = rev(if (is.null(dnx)) lapply(dim(x), seq.int) else dnx)
+    if (is.null(names(val)) || all(!nzchar(names(val))))
+        setattr(val, 'names', paste("V", rev(seq_along(val)), sep=""))
+    if (value.name %in% names(val))
+        stop(sprintf("Argument 'value.name' should not overlap with column names in result: %s.", paste(rev(names(val)), collapse=", ")))
+    N = NULL
+    ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N=as.vector(x))
+    if (isTRUE(na.rm))
+        ans = ans[!is.na(N)]
+    setnames(ans, "N", value.name)
+    dims = rev(head(names(ans), -1))
+    setcolorder(ans, c(dims, value.name))
+    if (isTRUE(sorted))
+        setkeyv(ans, dims)
+    ans[]
+}
+
 as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
     if (!length(x)) return( null.data.table() )
     # fix for #833, as.data.table.list with matrix/data.frame/data.table as a list element..
