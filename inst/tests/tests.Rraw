@@ -9780,6 +9780,14 @@ DT = as.data.table(mtcars[mtcars$cyl %in% c(6, 8), c("am", "vs", "hp")])
 test(1748.3, DT[am==0, max(hp), by=vs], ans1)
 test(1748.4, DT[am==0, max(hp), keyby=vs], ans2)
 
+# indices() can return list of vectors, #1589
+DT = data.table(A=5:1,B=letters[5:1])
+setindex(DT)
+setindex(DT, A)
+setindex(DT, B)
+indices(DT, vectors = TRUE)
+test(1749.1, indices(DT), c("A__B","A","B"))
+test(1749.2, indices(DT, vectors = TRUE), list(c("A","B"),"A","B"))
 
 
 ##########################
