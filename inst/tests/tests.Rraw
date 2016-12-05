@@ -9484,7 +9484,7 @@ if ("package:bit64" %in% search()) {
   test(1731.1, class(DT[[1L]]), "integer64")
   test(1731.2, fwrite(DT,na="__NA__"), output=paste(ans,collapse=""))
   f = tempfile()
-  test(1731.3, fwrite(DT,f, na="__NA__",..turbo=FALSE), NULL, warning="turbo.*will be removed")
+  test(1731.3, fwrite(DT, f, na="__NA__"), NULL)
   test(1731.4, readLines(f), ans)
   unlink(f)
   test(1731.5, write.csv(DT,na="__NA__",row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))

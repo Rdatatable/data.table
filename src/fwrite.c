@@ -475,8 +475,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
                SEXP buffMB_Arg,         // [1-1024] default 8MB
                SEXP nThread,
                SEXP showProgress_Arg,
-               SEXP verbose_Arg,
-               SEXP turbo_Arg)
+               SEXP verbose_Arg)
 {
   if (!isNewList(DFin)) error("fwrite must be passed an object of type list; e.g. data.frame, data.table");
   RLEN ncol = length(DFin);
@@ -491,7 +490,6 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
   time_t next_time = start_time+2; // start printing progress meter in 2 sec if not completed by then
   
   verbose = LOGICAL(verbose_Arg)[0];
-  const Rboolean turbo = LOGICAL(turbo_Arg)[0];
   
   sep = *CHAR(STRING_ELT(sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
   const char *sep2start = CHAR(STRING_ELT(sep2_Arg, 0));
@@ -782,8 +780,8 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
   int numBatches = (nrow-1)/rowsPerBatch + 1;
   if (numBatches < nth) nth = numBatches;
   if (verbose) {
-    Rprintf("Writing %d rows in %d batches of %d rows (each buffer size %dMB, turbo=%d, showProgress=%d, nth=%d) ... ",
-    nrow, numBatches, rowsPerBatch, buffMB, turbo, showProgress, nth);
+    Rprintf("Writing %d rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d) ... ",
+    nrow, numBatches, rowsPerBatch, buffMB, showProgress, nth);
     if (f==-1) Rprintf("\n");
   }
   t0 = clock();
@@ -826,8 +824,8 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
       
       // all-integer and all-double deep switch() avoidance. We could code up all-integer64
       // as well but that seems even less likely in practice than all-integer or all-double
-      if (turbo && sameType==REALSXP && !doRowNames) {
-        // avoid deep switch() on type. turbo switches on both sameType and specialized writeNumeric
+      if (sameType==REALSXP && !doRowNames) {
+        // avoid deep switch() on type.
         for (RLEN i=start; i<end; i++) {
           char *lineStart = ch;
           for (int j=0; j<ncol; j++) {
@@ -843,7 +841,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
           checkBuffer(&buffer, &myAlloc, &ch, myMaxLineLen);
           if (failed) break;
         }
-      } else if (turbo && sameType==INTSXP && !doRowNames) {
+      } else if (sameType==INTSXP && !doRowNames) {
         for (RLEN i=start; i<end; i++) {
           char *lineStart = ch;
           for (int j=0; j<ncol; j++) {
@@ -909,15 +907,8 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
                   writeDate( R_FINITE(REAL(column)[i]) ? (int)REAL(column)[i] : NA_INTEGER, &ch);
                 } else if (extraType[j] == ET_POSIXCT) {
                   writePOSIXct(REAL(column)[i], &ch);
-                } else if (turbo) {
-                  writeNumeric(REAL(column)[i], &ch); // handles NA, Inf etc within it
                 } else {
-                  // if there are any problems with the specialized writeNumeric, user can revert to (slower) standard library
-                  if (ISNAN(REAL(column)[i])) {
-                    writeChars(na, &ch);
-                  } else {
-                    ch += sprintf(ch, "%.15g", REAL(column)[i]);
-                  }
+                  writeNumeric(REAL(column)[i], &ch); // handles NA, Inf etc within it
                 }
               }
               break;

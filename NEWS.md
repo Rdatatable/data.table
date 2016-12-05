@@ -9,6 +9,8 @@
 
 #### NOTES
 
+1. `fwrite()`'s `..turbo` option has been removed as the warning message warned. We don't think there are any problems with `..turbo=TRUE` so there is no need to fall back to `FALSE`. If you've found a problem, please [report it](https://github.com/Rdatatable/data.table/issues).
+
 
 ### Changes in v1.10.0  (on CRAN 3 Dec 2016)
 

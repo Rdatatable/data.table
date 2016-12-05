@@ -15,8 +15,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   logicalAsInt = FALSE, dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(),
   showProgress = getOption("datatable.showProgress"),
-  verbose = getOption("datatable.verbose"),
-  ..turbo=TRUE)
+  verbose = getOption("datatable.verbose"))
 }
 \arguments{
   \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}.}
@@ -51,7 +50,6 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
   \item{verbose}{Be chatty and report timings?}
-  \item{..turbo}{Use specialized custom C code to format numeric, integer and integer64 columns. This reduces call overhead to the C library and avoids copies. Try with and without to see the difference it makes on your machine and please report any differences in output. If you do find cases where \code{..turbo=FALSE} is needed, please report them as bugs, since this option WILL BE REMOVED in future. Hence why it has the \code{..} prefix.}
 }
 \details{
 \code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
