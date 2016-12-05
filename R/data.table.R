@@ -2569,22 +2569,30 @@ setnames <- function(x,old,new) {
     invisible(x)
 }
 
-setcolorder <- function(x,neworder)
+setcolorder <- function(x, neworder)
 {
+    if (any(duplicated(neworder))) stop("neworder contains duplicates")
     # if (!is.data.table(x)) stop("x is not a data.table")
-    if (length(neworder)!=length(x)) stop("neworder is length ",length(neworder)," but x has ",length(x)," columns.")
+    if (length(neworder) != length(x)) {
+      if (length(neworder) > length(x)) 
+        stop("neworder is length ", length(neworder), 
+             " but x has only ", length(x), " columns.")
+      #if shorter than length(x), pad by the missing
+      #  elements (checks below will catch other mistakes)
+      neworder = c(neworder, setdiff(if (is.character(neworder)) names(x)
+                                     else seq_along(x), neworder))
+    }
     if (is.character(neworder)) {
-        if (any(duplicated(neworder))) stop("neworder contains duplicate column names")
-        if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
-        o = as.integer(chmatch(neworder,names(x)))
-        if (any(is.na(o))) stop("Names in neworder not found in x: ",paste(neworder[is.na(o)],collapse=","))
+        if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ", paste(names(x)[duplicated(names(x))], collapse=","), ". Please remove or rename the duplicate(s) and try again.")
+        o = as.integer(chmatch(neworder, names(x)))
+        if (any(is.na(o))) stop("Names in neworder not found in x: ", paste(neworder[is.na(o)], collapse=","))
     } else {
         if (!is.numeric(neworder)) stop("neworder is not a character or numeric vector")
         o = as.integer(neworder)
         m = !(o %in% seq_len(length(x)))
-        if (any(m)) stop("Column numbers in neworder out of bounds: ",paste(o[m],collapse=","))
+        if (any(m)) stop("Column numbers in neworder out of bounds: ", paste(o[m], collapse=","))
     }
-    .Call(Csetcolorder,x,o)
+    .Call(Csetcolorder, x, o)
     invisible(x)
 }
 

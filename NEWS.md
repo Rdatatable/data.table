@@ -5,6 +5,8 @@
 
 1. `indices()` function gain new argument `vectors` default `FALSE`, when `TRUE` provided then list of vectors is returned, single vector refers to single index. Closes #1589.
 
+2. `setcolorder` allows incomplete specification of new order (chosen columns are moved to the front), [#592](https://github.com/Rdatatable/data.table/issues/592). Thanks @MichaelChirico for the PR. 
+
 #### BUG FIXES
 
 #### NOTES
