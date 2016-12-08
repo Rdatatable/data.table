@@ -218,7 +218,7 @@ sudo apt-get -y build-dep r-cran-cairodevice
 sudo apt-get -y build-dep r-cran-tkrplot
 sudo apt-get -y install libcurl4-openssl-dev    # needed by devtools
 sudo apt-get -y install xorg-dev x11-common libgdal-dev libproj-dev mysql-client libcairo2-dev libglpk-dev
-sudo apt-get -y install texlive texlive-latex-extra texlive-bibtex-extra texinfo fonts-inconsolata latex-xcolor
+sudo apt-get -y install texlive texlive-latex-extra texlive-bibtex-extra texlive-science texinfo fonts-inconsolata latex-xcolor
 sudo apt-get -y install libv8-dev
 sudo apt-get -y install gsl-bin libgsl0-dev
 sudo apt-get -y install libgtk2.0-dev netcdf-bin
@@ -234,23 +234,24 @@ sudo apt-get -y install libfftw3-dev  # for package fftwtools
 sudo apt-get -y install libgsl-dev
 sudo apt-get -y install octave liboctave-dev
 sudo apt-get -y install jags
+sudo apt-get -y install libmpfr-dev
+sudo apt-get -y install bwidget
 sudo R CMD javareconf
 # ENDIF
 
-sudo R
-update.packages(ask=FALSE)
-q('no')
-
 cd ~/build/revdeplib/
 export R_LIBS=~/build/revdeplib/
-R CMD INSTALL ~/data.table_1.9.9.tar.gz       # ** ensure latest version installed into revdeplib **
+export R_LIBS_SITE=none
 R
+.libPaths()   # should be just 2 items: revdeplib and the base R package library
+update.packages(ask=FALSE)
 
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
 # Ensure no library() call in .Rprofile, such as library(bit64)
 source("http://bioconductor.org/biocLite.R")
 biocLite()
-biocLite("BiocUpgrade")
+# biocLite("BiocUpgrade")
+# This error means it's up to date: "Bioconductor version 3.4 cannot be upgraded with R version 3.3.2"
 
 avail = available.packages(repos=c(getOption("repos"), BiocInstaller::biocinstallRepos()[["BioCsoft"]]))
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
@@ -263,7 +264,7 @@ for (p in deps) {
      system(paste0("rm -f ", p, "*.tar.gz"))  # Remove previous *.tar.gz.  -f to be silent if not there (i.e. first time seeing this package)
      system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version)
      if (!length(grep("bioc",avail[p,"Repository"]))) {
-       install.packages(p)  # To install its dependencies really.
+       install.packages(p, dependencies=TRUE)  # To install its dependencies really.
      } else {
        biocLite(p,suppressUpdates=TRUE)        # To install its dependencies really.
      }
@@ -282,15 +283,22 @@ table(avail[deps,"Repository"])
 # To identify and remove the tar.gz no longer needed :
 for (p in deps) {
    f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-   # system(paste0("mv ",f," ",f,"_TEMP"))
+   system(paste0("mv ",f," ",f,"_TEMP"))
+}
+system("rm *.tar.gz")
+for (p in deps) {
+   f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
    system(paste0("mv ",f,"_TEMP ",f))
 }
 
-R CMD INSTALL ~/data.table_1.9.9.tar.gz       # ** ensure latest version installed into revdeplib **
+cd ~/build/revdeplib/
+export R_LIBS=~/build/revdeplib/
+export R_LIBS_SITE=none
 export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
+R CMD INSTALL ~/data.table_1.10.1.tar.gz      # ** ensure latest version installed into revdeplib **
 rm -rf *.Rcheck                               # delete all previous .Rcheck directories
 ls -1 *.tar.gz | wc -l                        # check this equals length(deps) above
-time ls -1 *.tar.gz | parallel R CMD check    # apx 2 hrs for 291 packages on my 4 cpu laptop with 8 threads
+time ls -1 *.tar.gz | parallel R CMD check    # apx 2.5 hrs for 313 packages on my 4 cpu laptop with 8 threads
 
 status = function(which="both") {
   if (which=="both") {
@@ -339,6 +347,8 @@ R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails a
 R CMD check <failing_package>.tar.gz
 ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check
 
+# Warning: replacing previous import robustbase::sigma by stats::sigma when loading VIM
+# Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
 
 
 

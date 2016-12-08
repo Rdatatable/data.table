@@ -399,34 +399,33 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             ( !length(all.vars(jsub)) &&
               root %chin% c("","c","paste","paste0","-","!") &&
               missing(by) )) {   # test 763. TODO: likely that !missing(by) iff with==TRUE (so, with can be removed)
-            # When no variable names occur in j, scope doesn't matter because there are no symbols to find.
-            # Auto set with=FALSE in this case so that DT[,1], DT[,2:3], DT[,"someCol"] and DT[,c("colB","colD")]
+            # When no variable names (i.e. symbols) occur in j, scope doesn't matter because there are no symbols to find.
+            # Automatically set with=FALSE in this case so that DT[,1], DT[,2:3], DT[,"someCol"] and DT[,c("colB","colD")]
             # work as expected.  As before, a vector will never be returned, but a single column data.table
             # for type consistency with >1 cases. To return a single vector use DT[["someCol"]] or DT[[3]].
-            # The root==":" is to allow DT[,colC:colH] even though that contains two variable names
-            # root either "-" or "!" is for tests 1504.11 and 1504.13 (a : with a ! or - modifier root)
+            # The root==":" is to allow DT[,colC:colH] even though that contains two variable names.
+            # root == "-" or "!" is for tests 1504.11 and 1504.13 (a : with a ! or - modifier root)
             # This change won't break anything because it didn't do anything anyway; i.e. used to return the
-            # j value straight back: DT[,1] == 1 which isn't possibly useful.  It was that was for consistency
-            # of learning, since it was simpler to state that j always gets eval'd within the scope of DT.
+            # j value straight back: DT[,1] == 1 which isn't possibly useful.  It was that for consistency
+            # of learning since it was simpler to state that j always gets eval'd within the scope of DT.
             # We don't want to evaluate j at all in making this decision because i) evaluating itself could
             # increment some variable and not intended to be evaluated a 2nd time later on and ii) we don't
             # want decisions like this to depend on the data or vector lengths since that can introduce
             # inconistency reminiscent of drop in [.data.table that we seek to avoid.
-            #if (verbose) cat("Auto with=FALSE because j  
             with=FALSE
-        } else if (is.name(jsub) && isTRUE(getOption("datatable.WhenJisSymbolThenCallingScope"))) {
-            # Allow future behaviour to be turned on. Current default is FALSE.
-            # Use DT[["someCol"]] or DT$someCol to fetch that column as vector, regardless of this option.
-            if (!missingwith && isTRUE(with)) {
-                # unusual edge case only when future option has been turned on
-                stop('j is a single symbol, WhenJisSymbol is turned on but with=TRUE has been passed explicitly. Please instead use DT[,"someVar"], DT[,.(someVar)] or DT[["someVar"]]')
-            } else {
-                with=FALSE
-            }
+        } else if (is.name(jsub)) {
             jsubChar = as.character(jsub)
-            if (!exists(jsubChar, where=parent.frame()) && jsubChar %chin% names(x)) {
-                # Would fail anyway with 'object 'a' not found' but give a more helpful error. Thanks to Jan's suggestion.
-                stop("The option 'datatable.WhenJisSymbolThenCallingScope' is TRUE so looking for the variable '", jsubChar, "' in calling scope but it is not found there. It is a column name though. So, most likely, please wrap with quotes (i.e. DT[,'", jsubChar, "']) to return a 1-column data.table or if you need the column as a plain vector then DT[['",jsubChar,"']] or DT$",jsubChar)
+            if (substring(jsubChar,1,2) == "..") {
+              if (nchar(jsubChar)==2) stop("The symbol .. is invalid. The .. prefix must be followed by at least one character.")
+              if (!exists(jsubChar, where=parent.frame())) {
+                # We have recommended manual ".." prefix in the past so that needs to keep working and take precedence
+                jsub = as.name(jsubChar<-substring(jsubChar,3))
+              }
+              with = FALSE
+            }
+            if (!with && !exists(jsubChar, where=parent.frame())) {
+              # Would fail anyway with 'object 'a' not found' but give a more helpful error. Thanks to Jan's suggestion.
+              stop("Variable '",jsubChar,"' is not found in calling scope. Looking in calling scope because either you used the .. prefix or set with=FALSE")
             }
         }
         if (root=="{") { 
@@ -1434,10 +1433,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # Since .SD is inside SDenv, alongside its columns as variables, R finds .SD symbol more quickly, if used.
         # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
 
-        # Temp fix for #921 - check address and copy *after* evaluating 'jval'
+        if (is.name(jsub) && is.null(lhs) && !exists(jsubChar<-as.character(jsub), SDenv, inherits=FALSE)) {
+            stop("j (the 2nd argument inside [...]) is a single symbol but column name '",jsubChar,"' is not found. Perhaps you intended DT[,..",jsubChar,"] or DT[,",jsubChar,",with=FALSE]. This difference to data.frame is deliberate and explained in FAQ 1.1.")
+        }
+
         jval = eval(jsub, SDenv, parent.frame())
         # copy 'jval' when required
         # More speedup - only check + copy if irows is NULL
+        # Temp fix for #921 - check address and copy *after* evaluating 'jval'
         if (is.null(irows)) {
             if (!is.list(jval)) { # performance improvement when i-arg is S4, but not list, #1438, Thanks @DCEmilberg.
                 jcpy = address(jval) %in% sapply(SDenv$.SD, address) # %chin% errors when RHS is list()

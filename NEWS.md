@@ -3,13 +3,31 @@
 
 #### NEW FEATURES
 
-1. `indices()` function gain new argument `vectors` default `FALSE`, when `TRUE` provided then list of vectors is returned, single vector refers to single index. Closes #1589.
+1. `indices()` function gains new argument `vectors` default `FALSE`, when `TRUE` provided then list of vectors is returned, single vector refers to single index. Closes #1589.
+
+2. When `j` is a symbol prefixed with `..`, it will be looked up in calling scope and its value taken to be column names or numbers.
+```R
+    myCols = c("colA","colB")
+    DT[, myCols, with=FALSE]
+    DT[, ..myCols]              # same
+```
+When you see the `..` prefix think _one-level-up_ like the directory `..` in all operating systems mean the parent directory, `..` means the parent scope. In future the `..` prefix could be made to work on all symbols apearing anywhere inside `DT[...]`. It is intended to be a convenient way to protect your code from accidentally picking up a column name. Similar to how `x.` and `i.` prefixes can already be used to disambiguate the same column name in `x` and `i`; analogous to SQL table aliases. A symbol prefix rather than a `..()` _function_ will be easier for us to optimize internally and will be more convenient if you have many variables in calling scope that you wish to use in your expressions safely. This feature was first raised in 2012 and long wished for, [#633](https://github.com/Rdatatable/data.table/issues/633). It is experimental.
 
 #### BUG FIXES
 
 #### NOTES
 
-1. `fwrite()`'s `..turbo` option has been removed as the warning message warned. We don't think there are any problems with `..turbo=TRUE` so there is no need to fall back to `FALSE`. If you've found a problem, please [report it](https://github.com/Rdatatable/data.table/issues).
+1. `fwrite()`'s `..turbo` option has been removed as the warning message warned. We aren't aware of any problems with `..turbo=TRUE` so there is no need to fall back to `FALSE`. If you've found a problem, please [report it](https://github.com/Rdatatable/data.table/issues).
+
+2. No known issues have arisen due to `DT[,1]`, `DT[,c("colA","colB")]` etc now returning columns as in introduced in v1.9.8. However, as we've moved forward by setting `options('datatable.WhenJisSymbolThenCallingScope'=TRUE)` introduced then too, it has become clear a better solution is needed. All 313 CRAN and Bioconductor packages that use data.table have been checked with this option on. 331 lines would need to be changed in 59 packages. Their usage is elegant, correct and recommended, though. Examples are `DT[1, encoding]` in quanteda and `DT[winner=="first", freq]` in xgboost. These are looking up the columns `encoding` and `freq` respectively and returning them as vectors. But if, for some reason, those columns are removed from `DT` but `encoding` or `freq` are still in calling scope, their values in calling scope would be returned. Which cannot be what was intended and could lead to silent bugs. That was the risk we are trying to avoid.
+
+The new strategy needs no code changes and has no breakage. It was proposed and discussed in point 2 here [here](https://github.com/Rdatatable/data.table/issues/1188#issuecomment-127824969), as follows.
+
+options(`datatable.WhenJisSymbolThenCallingScope`) is now removed. A migration timeline is no longer needed.
+
+When `j` is a symbol (as in the quanteda and xgboost examples above) it will continue to be looked up as a column name and returned as a vector, as has always been the case.  If it's not a column name however, it is now a helpful error explaining that data.table is different to data.frame and what to do instead (use `..` prefix or `with=FALSE`).  The old behaviour of returning the symbol's value in calling scope can never have been useful to anybody and therefore not depended on. Just as the `DT[,1]` change could be made in v1.9.8, this change can be made now. This change increases robustness with no downside. Rerunning all 313 CRAN and Bioconductor package checks reveal 2 packages now throwing this error: partool and simcausal. Their maintainers have been informed that there is a likely bug on those lines due to data.table's weakness. This is exactly what we wanted to reveal and improve.
+
+3. As before, and as we can see is in common use in CRAN and Bioconductor packages using data.table, `DT[,myCols,with=FALSE]` continues to lookup `myCols` in calling scope and take its value as column names or numbers.  You can move to the new experimental convenience feature `DT[, ..myCols]` if you wish at leisure.
 
 
 ### Changes in v1.10.0  (on CRAN 3 Dec 2016)
