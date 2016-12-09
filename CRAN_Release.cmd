@@ -296,9 +296,10 @@ export R_LIBS=~/build/revdeplib/
 export R_LIBS_SITE=none
 export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
 R CMD INSTALL ~/data.table_1.10.1.tar.gz      # ** ensure latest version installed into revdeplib **
-rm -rf *.Rcheck                               # delete all previous .Rcheck directories
+rm -rf *.Rcheck                               # [optional] delete all previous .Rcheck directories
 ls -1 *.tar.gz | wc -l                        # check this equals length(deps) above
 time ls -1 *.tar.gz | parallel R CMD check    # apx 2.5 hrs for 313 packages on my 4 cpu laptop with 8 threads
+ls -1 *.tar.gz | grep -E 'pk1|pk2|...' | parallel R CMD check
 
 status = function(which="both") {
   if (which=="both") {
