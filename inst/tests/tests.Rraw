@@ -8882,7 +8882,6 @@ test(1666.17, d1[d2, on="k", verbose=TRUE], ans, output='ad hoc')
 # reset defaults
 options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
 
-
 #testing fix to #1654 (dcast should only error when _using_ duplicated names)
 DT <- data.table(a = 1:4, a = 1:4, id = rep(1:4, 2), V1 = 8:1)
 test(1667.1, dcast(DT, id ~ rowid(id), value.var = "V1"), 
@@ -9787,6 +9786,211 @@ indices(DT, vectors = TRUE)
 test(1749.1, indices(DT), c("A__B","A","B"))
 test(1749.2, indices(DT, vectors = TRUE), list(c("A","B"),"A","B"))
 
+# Grouping Sets #1377
+n = 24L
+set.seed(25)
+dt <- data.table(
+    color = sample(c("green","yellow","red"), n, TRUE),
+    year = as.Date(sample(paste0(2011:2015,"-01-01"), n, TRUE)),
+    status = as.factor(sample(c("removed","active","inactive","archived"), n, TRUE)),
+    amount = sample(1:5, n, TRUE),
+    value = sample(c(3, 3.5, 2.5, 2), n, TRUE)
+)
+test(1750.1, # empty input gets grand total only when asked in `sets` with `character()`
+    groupingsets(dt[0L], j = sum(value), by = c("color","year","status"), sets=list(c("color"))),
+    data.table(color=character(), year=as.Date(NA)[-1L], status=factor(), V1=numeric())
+)
+if (base::getRversion()>"3.0.0") { # affected by as.factor(NA) on 2.15.0
+    test(1750.2, # empty input gets grand total non-NA, if asked
+        groupingsets(dt[0L], j = sum(value), by = c("color","year","status"), sets=list(c("color"), character())),
+        data.table(color=NA_character_, year=as.Date(NA), status=as.factor(NA), V1=0)
+    )
+    test(1750.3, # empty input non-NA grand total, also retain classes and aggregation level
+        groupingsets(dt[0L], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE),
+        data.table(grouping=7L, color=NA_character_, year=as.Date(NA), status=as.factor(NA), amount=0L, value=0)
+    )
+}
+test(1750.4, # `sets=list()` produces 0 nrow, for grand total use `set=list(character())` - test at top
+    nrow(groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=list(), id=TRUE)),
+    0L
+)
+test(1750.5, # `by` must have unique column names
+    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status","year"), .SDcols=c("amount","value"), sets=list("year"), id=TRUE),
+    error = "Argument 'by' must have unique column names"
+)
+test(1750.6, # 0 ncol `x`
+    groupingsets(data.table(), j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=list(c("year")), id=TRUE),
+    error = "Argument 'x' is 0 column data.table, no measure to apply grouping over."
+)
+test(1750.7, # 0 length `by`, must also use `sets=list()`, so 0L rows result
+    nrow(groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = character(), .SDcols=c("amount","value"), sets=list(), id=TRUE)),
+    0L
+)
+test(1750.8, all( # for any single value from dataset there should be always same aggregate result on any level of grouping
+    sapply(seq_len(nrow(dt)), function(i) uniqueN(
+        groupingsets(dt[i], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character())),
+        by=c("amount","value")
+    )) == 1L
+), TRUE)
+# all grouping id matches in all totals
+r = groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character()), id=TRUE)
+test(1750.9, uniqueN(
+    r[, lapply(.SD, sum), by = "grouping", .SDcols = c("cnt","amount","value")],
+    by = c("cnt","amount","value")
+), 1L)
+# groupingsets grouping by 'value' still possible
+r = groupingsets(dt, j = sum(amount), by = c("color","year","status","value"), sets=list(c("color","year","status"), c("year"), c("status"), character()))
+test(1750.10,
+    sapply(r, class),
+    c("color"="character","year"="Date","status"="factor","value"="numeric","V1"="integer")
+)
+# groupingsets on aggregate using grouping col char type and sum - error
+test(1750.11,
+    groupingsets(dt, j = lapply(.SD, sum), by = c("status","year"), sets=list(character()), .SDcols="color"),
+    error = "invalid 'type' (character) of argument"
+)
+# groupingsets on aggregate using grouping col factor type and sum - error
+test(1750.12,
+    groupingsets(dt, j = lapply(.SD, sum), by = c("color","year"), sets=list(character()), .SDcols="status"),
+    error = "not meaningful for factors"
+)
+# groupingsets on aggregate using grouping col char type and length, match on all subtotals
+r = groupingsets(dt, j = lapply(.SD, length), by = c("status","year"), sets=list(c("year"), c("status","year"), character()), .SDcols="color", id=TRUE)
+test(1750.13, uniqueN(
+    r[, lapply(.SD, sum), by = "grouping", .SDcols = c("color")],
+    by = c("color")
+), 1L)
+# groupingsets double listing column, to measure and grouping
+test(1750.14,
+    groupingsets(dt, j = lapply(.SD, sum), by = c("color","amount"), sets=list(c("color"), c("color","amount")), .SDcols="amount", id=TRUE),
+    error = "There exists duplicated column names in the results"
+)
+test(1750.15,
+    groupingsets(dt, j = .(color = sum(value)), by = c("color","amount"), sets=list(c("color"), c("color","amount")), id=TRUE),
+    error = "There exists duplicated column names in the results"
+)
+# set equals to `character(0)` should return grand total
+if (base::getRversion()>"3.0.0") { # affected by as.factor(NA) on 2.15.0
+    sets = list(character())
+    test(1750.16,
+        groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE),
+        dt[, c(list(cnt=.N), lapply(.SD, sum)), .(grouping=rep(7L,n), color=rep(NA_character_,n), year=rep(as.Date(NA),n), status=as.factor(rep(NA_character_,n)))]
+    )
+}
+# duplicate entries in `sets` vector-wise
+sets = list("color", c("color","year","status","year","status"), "year", character())
+test(1750.17,
+    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE),
+    error = "Character vectors in 'sets' list must not have duplicated column names within single grouping set."
+)
+# duplicate entries in `sets` - double counting - actually aggregate `grouping!=5L` (not double counted) to compare to double counted values on `grouping==5L`, as double counting is expected results for this unexpected usage
+sets = list("year", c("color","year"), "year", character())
+test(1750.18, uniqueN({
+    r <- groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
+    r[, lapply(.SD, sum), by = .(double_counting = grouping==5L, double_counting = grouping!=5L), .SDcols = c("cnt","amount","value")]
+}, by = c("cnt","amount","value")
+), 1L, warning = "Double counting is going to happen")
+# duplicate entries in `sets` but reorderd - double counting on `grouping==1L`
+sets = list(c("color","year"), "year", c("year","color"), character())
+test(1750.19, uniqueN({
+    r <- groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
+    r[, lapply(.SD, sum), by = .(double_counting = grouping==1L, double_counting = grouping!=1L), .SDcols = c("cnt","amount","value")]
+}, by = c("cnt","amount","value")
+), 1L, warning = "Double counting is going to happen")
+# entries in `by` / `sets` not exists in data.table
+test(1750.20, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","stat"), sets=list(c("color"), character()), id=TRUE), error = "object 'stat' not found")
+test(1750.21, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color"), "stat"), id=TRUE), error = "Columns used in 'sets' but not present in 'by': stat")
+test(1750.22, groupingsets(dt, j = .(a=sum(a)), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE), error = "object 'a' not found")
+# update by ref `:=` forbidden
+test(1750.23,
+    groupingsets(dt, j = sum_value := sum(value), by = c("color","year","status"), sets=list(c("color"), character())),
+    error = "Expression passed to grouping sets function must not update by reference."
+)
+# rollup
+sets = local({
+    by=c("color","year","status")
+    lapply(length(by):0, function(i) by[0:i])
+})
+test(1750.31, 
+    rollup(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE),
+    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
+)
+sets = local({
+    by=c("year","status")
+    lapply(length(by):0, function(i) by[0:i])
+})
+test(1750.32, 
+    rollup(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), id=TRUE),
+    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
+)
+# cube
+sets = local({
+    by=c("color","year","status")
+    n = length(by)
+    keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+    lapply((2L^n):1, function(j) by[keepBool[j, ]])
+})
+test(1750.33, 
+    cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE),
+    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
+)
+sets = local({
+    by=c("year","status")
+    n = length(by)
+    keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+    lapply((2L^n):1, function(j) by[keepBool[j, ]])
+})
+test(1750.34, 
+    cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), id=TRUE),
+    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
+)
+# grouping sets with integer64
+if ("package:bit64" %in% search()) {
+    set.seed(26)
+    dt[, c("id1","id2") := list(as.integer64(sample(sample(n, n/4), n, TRUE)), as.integer64(sample(sample(n, n/2), n, TRUE)))]
+    # int64 as grouping cols
+    r = groupingsets(dt, j = lapply(.SD, sum), by = c("color","id1","id2"), sets=list(c("color","id1"), c("color","id1","id2"), "id2", c("id1","id2"), "color", character()), .SDcols=c("amount","value"), id=TRUE)
+    test(1750.41, # grand total
+        r[grouping==7L, .(color, id1, id2, amount, value)],
+        dt[, lapply(.SD, sum), .(color=rep(NA_character_, n), id1=as.integer64(rep(NA,n)), id2=as.integer64(rep(NA,n))), .SDcols=c("amount","value")]
+    )
+    test(1750.42, # by color
+        r[grouping==3L, .(color, id1, id2, amount, value)],
+        dt[, lapply(.SD, sum), .(color, id1=as.integer64(rep(NA,n)), id2=as.integer64(rep(NA,n))), .SDcols=c("amount","value")]
+    )
+    test(1750.43, # by id2
+        r[grouping==6L, .(color, id1, id2, amount, value)],
+        dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1=as.integer64(rep(NA,n)), id2), .SDcols=c("amount","value")]
+    )
+    test(1750.44, # by id1, id2
+        r[grouping==4L, .(color, id1, id2, amount, value)],
+        dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1, id2), .SDcols=c("amount","value")]
+    )
+    # int64 as measure cols
+    r = groupingsets(dt, j = lapply(.SD, sum), by = c("color","status"), sets=list(c("color","status"), "status", character()), .SDcols=c("amount","value","id1","id2"), id=TRUE)
+    if (base::getRversion()>"3.0.0") { # affected by as.factor(NA) on 2.15.0
+        test(1750.45, # grand total
+            r[grouping==3L, .(color, status, amount, value, id1, id2)],
+            dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), status=as.factor(rep(NA_character_,n))), .SDcols=c("amount","value","id1","id2")]
+        )
+    }
+    test(1750.46, # by status
+        r[grouping==2L, .(color, status, amount, value, id1, id2)],
+        dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), status), .SDcols=c("amount","value","id1","id2")]
+    )
+    # int64 as grouping and measure cols
+    r = groupingsets(dt, j = lapply(.SD, sum), by = c("color","id1"), sets=list(c("color","id1"), "id1", character()), .SDcols=c("amount","value","id2"), id=TRUE)
+    test(1750.47, # grand total
+        r[grouping==3L, .(color, id1, amount, value, id2)],
+        dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1=as.integer64(rep(NA,n))), .SDcols=c("amount","value","id2")]
+    )
+    test(1750.48, # by id1
+        r[grouping==2L, .(color, id1, amount, value, id2)],
+        dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1), .SDcols=c("amount","value","id2")]
+    )
+} else {
+    cat("Test 1750.[41-48] not run. If required call library(bit64) first.\n")
+}
 
 ##########################
 
