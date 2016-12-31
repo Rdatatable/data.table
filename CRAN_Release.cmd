@@ -236,6 +236,7 @@ sudo apt-get -y install octave liboctave-dev
 sudo apt-get -y install jags
 sudo apt-get -y install libmpfr-dev
 sudo apt-get -y install bwidget
+sudo apt-get -y install librsvg2-dev  # for rsvg
 sudo R CMD javareconf
 # ENDIF
 
@@ -260,7 +261,9 @@ old = 0
 new = 0
 for (p in deps) {
    fn = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-   if (!file.exists(fn) || identical(tryCatch(packageVersion(p), error=function(e)FALSE), FALSE)) {
+   if (!file.exists(fn) || 
+       identical(tryCatch(packageVersion(p), error=function(e)FALSE), FALSE) ||
+       packageVersion(p) != avail[p,"Version"]) {
      system(paste0("rm -f ", p, "*.tar.gz"))  # Remove previous *.tar.gz.  -f to be silent if not there (i.e. first time seeing this package)
      system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version)
      if (!length(grep("bioc",avail[p,"Repository"]))) {
@@ -274,8 +277,6 @@ for (p in deps) {
    } else {
      old = old+1
    }
-   if (packageVersion(p) != avail[p,"Version"])
-       stop("Installed version of ",p," doesn't equal the previously downloaded tar.gz")
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 table(avail[deps,"Repository"])
@@ -309,7 +310,7 @@ status = function(which="both") {
      system("find . -name '00check.log' | xargs ls -lt | tail -1")
      return(invisible())
   }
-  if (which=="cran") deps = deps[grep("cran",avail[deps,"Repository"])]
+  if (which=="cran") deps = deps[-grep("bioc",avail[deps,"Repository"])]
   if (which=="bioc") deps = deps[grep("bioc",avail[deps,"Repository"])]
   x = unlist(sapply(deps, function(x) {
     fn = paste0("./",x,".Rcheck/00check.log")
@@ -333,7 +334,7 @@ status = function(which="both") {
       "OK      :",sprintf("%3d",length(ok)),"\n",
       "TOTAL   :",length(e)+length(w)+length(n)+length(ok),"/",length(deps),"\n",
       "RUNNING :",sprintf("%3d",length(r)),":",paste(sort(names(x)[r])),"\n",
-      if (length(ns)==0) "\n" else paste0("NOT STARTED (first 5 of ",length(ns),") : ",paste(sort(names(x)[head(ns,5)]),collapse=" "),"\n")
+      if (length(ns)==0) "\n" else paste0("NOT STARTED (first 20 of ",length(ns),") : ",paste(sort(names(x)[head(ns,20)]),collapse="|"),"\n")
       )
   invisible()
 }
