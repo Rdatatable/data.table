@@ -15,7 +15,9 @@ When you see the `..` prefix think _one-level-up_ like the directory `..` in all
 
 #### BUG FIXES
 
-1. Some instability has been discovered and resolved many thanks to a detailed report from Bill Dunlap and Michael Sannella. At C level any call of the form `setAttrib(x, install(), allocVector())` can be unstable in any R package. Despite `setAttrib()` PROTECTing its inputs, the 3rd argument (`allocVector`) can be executed first only for its result to to be released by install()'s potential GC, before reaching `setAttrib`'s PROTECTion of its inputs. Fixed by either PROTECTing or pre-install()ing. Added to quality procedures: i) `grep`s to prevent usage of this idiom in future and ii) running data.table's test suite with `gctorture(TRUE)`.
+1. Some long-standing potential instability has been discovered and resolved many thanks to a detailed report from Bill Dunlap and Michael Sannella. At C level any call of the form `setAttrib(x, install(), allocVector())` can be unstable in any R package. Despite `setAttrib()` PROTECTing its inputs, the 3rd argument (`allocVector`) can be executed first, only for its result to to be released by install()'s potential GC, before reaching `setAttrib`'s PROTECTion of its inputs. Fixed by either PROTECTing or pre-install()ing. Added to CRAN_Release.cmd procedures: i) `grep`s to prevent usage of this idiom in future and ii) running data.table's test suite with `gctorture(TRUE)`.
+
+2. A new potential instability introduced in the last release (v1.10.0) in GForce optimized grouping has been fixed by reverting one change from malloc to R_alloc. Thanks again to Michael Sannella for the detailed report.
 
 #### NOTES
 

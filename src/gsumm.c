@@ -35,7 +35,12 @@ SEXP gstart(SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     grpsize = INTEGER(l);  // l will be protected in calling R scope until gend(), too
     for (i=0; i<ngrp; i++) grpn+=grpsize[i];
     if (LENGTH(o) && LENGTH(o)!=grpn) error("o has length %d but sum(l)=%d", LENGTH(o), grpn);
-    grp = (int *)R_alloc(grpn, sizeof(int));
+    
+    grp = (int *)malloc(grpn * sizeof(int));  // assign to global
+    if (!grp) error("Unable to allocate %d * %d bytes in gstart for grp", grpn, sizeof(int));
+    // malloc() not R_alloc() because it needs to persist across calls in this case, until free'd by gend().
+    // Could use Calloc() to save the return-check but this way allows for this nicer msg which includes context
+    
     if (LENGTH(o)) {
         isunsorted = 1; // for gmedian
         for (g=0; g<ngrp; g++) {
@@ -62,7 +67,7 @@ SEXP gstart(SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
 }
 
 SEXP gend() {
-    ngrp = 0; maxgrpn = 0; irowslen = -1; isunsorted = 0;
+    free(grp); grp = NULL; ngrp = 0; maxgrpn = 0; irowslen = -1; isunsorted = 0;
     return(R_NilValue);
 }
 
