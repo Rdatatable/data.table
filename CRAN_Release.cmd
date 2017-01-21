@@ -43,6 +43,33 @@ grep "Rprintf" data.table/src/init.c
 grep "nearest *=" data.table/src/*.c  # none
 grep "class *=" data.table/src/*.c    # quite a few but none global
 
+# seal leak potential where two unprotected API calls are passed to the same
+# function call, usually involving install() or mkChar()
+# Greppable thanks to single lines and wide screens
+# See comments in init.c
+grep install.*alloc *.c   --exclude init.c
+grep install.*Scalar *.c
+grep alloc.*install *.c   --exclude init.c
+grep Scalar.*install *.c
+grep mkChar.*alloc *.c
+grep mkChar.*Scalar *.c
+grep alloc.*mkChar *.c
+grep Scalar.*mkChar *.c
+grep "getAttrib.*mk" *.c   # use sym_* in getAttrib calls
+grep "PROTECT *( *getAttrib" *.c  # attributes are already protected
+grep "\"starts\"" *.c     --exclude init.c
+grep "setAttrib(" *.c      # scan all setAttrib calls manually as a double-check
+grep "install(" *.c       --exclude init.c   # TODO: perhaps in future pre-install all constants
+
+# ScalarInteger and ScalarString allocate and must be PROTECTed unless i) returned (which protects),
+# or ii) passed to setAttrib (which protects, providing leak-seals above are ok)
+# ScalarLogical in R now returns R's global TRUE but from R 3.1.0; Apr 2014. Before that it allocates.
+# Aside: ScalarInteger may return globals for small integers in future version of R.
+grep ScalarInteger *.c   # Check all Scalar* either PROTECTed, return-ed or passed to setAttrib.
+grep ScalarLogical *.c   # When we move R dependency to 3.1.0+, no need to protect ScalarLogical
+grep ScalarString *.c
+
+
 cc(clean=TRUE)  # to compile with -pedandic
 R CMD build data.table
 R CMD check data.table_1.9.9.tar.gz --as-cran
@@ -90,6 +117,9 @@ R --vanilla CMD INSTALL data.table_1.9.9.tar.gz
 R -d "valgrind --tool=memcheck --leak-check=full --show-leak-kinds=definite" --vanilla
 require(data.table)
 require(bit64)
+test.data.table()
+
+gctorture(TRUE)   # very very slow, though. Don't run with suggests tests.
 test.data.table()
 
 # Investigated and ignore :
@@ -237,6 +267,7 @@ sudo apt-get -y install jags
 sudo apt-get -y install libmpfr-dev
 sudo apt-get -y install bwidget
 sudo apt-get -y install librsvg2-dev  # for rsvg
+sudo apt-get -y install libboost-all-dev libboost-locale-dev  # for textTinyR
 sudo R CMD javareconf
 # ENDIF
 
@@ -246,17 +277,20 @@ export R_LIBS_SITE=none
 R
 .libPaths()   # should be just 2 items: revdeplib and the base R package library
 update.packages(ask=FALSE)
+update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating until none
 
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
 # Ensure no library() call in .Rprofile, such as library(bit64)
 source("http://bioconductor.org/biocLite.R")
 biocLite()
+biocLite()   # keep repeating until returns with nothing left to do
 # biocLite("BiocUpgrade")
 # This error means it's up to date: "Bioconductor version 3.4 cannot be upgraded with R version 3.3.2"
 
 avail = available.packages(repos=c(getOption("repos"), BiocInstaller::biocinstallRepos()[["BioCsoft"]]))
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
 table(avail[deps,"Repository"])
+length(deps)
 old = 0
 new = 0
 for (p in deps) {

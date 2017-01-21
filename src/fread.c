@@ -446,7 +446,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
         // This was 1.3s (all of tCoerce) when testing on 2008.csv; might have triggered a gc, included.
         // Happily, mid read bumps are very rarely needed, due to testing types at the start, middle and end of the file, first.
     }
-    setAttrib(newv, R_ClassSymbol, newtype==SXP_INT64 ? ScalarString(mkChar("integer64")) : R_NilValue);
+    setAttrib(newv, R_ClassSymbol, newtype==SXP_INT64 ? ScalarString(char_integer64) : R_NilValue);
     switch(newtype) {
     case SXP_INT :
         switch(oldtype) {
@@ -1236,7 +1236,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (type[i] == SXP_NULL) continue;
         SEXP thiscol = allocVector(TypeSxp[ type[i] ], nrow);
         SET_VECTOR_ELT(ans,resi++,thiscol);  // no need to PROTECT thiscol, see R-exts 5.9.1
-        if (type[i]==SXP_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(mkChar("integer64")));
+        if (type[i]==SXP_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(char_integer64));
         SET_TRUELENGTH(thiscol, nrow);
     }
     clock_t tAlloc = clock();

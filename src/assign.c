@@ -611,7 +611,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         }
         memrecycle(targetcol, rows, 0, targetlen, RHS);  // also called from dogroups where these arguments are used more
     }
-    key = getAttrib(dt,install("sorted"));
+    key = getAttrib(dt, sym_sorted);
     if (length(key)) {
         // if assigning to any key column, then drop the key. any() and subsetVector() don't seem to be
         // exposed by R API at C level, so this is done here long hand.
@@ -624,7 +624,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             for (i=0;i<LENGTH(tmp);i++) if (LOGICAL(tmp)[i]) {
                 // If a key column is being assigned to, clear the key, since it may change the row ordering.
                 // More likely that users will assign to non-key columns, though, most of the time.
-                setAttrib(dt, install("sorted"), R_NilValue);
+                setAttrib(dt, sym_sorted, R_NilValue);
                 break;
             }
         }

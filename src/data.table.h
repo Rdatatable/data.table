@@ -38,6 +38,10 @@ SEXP char_ITime;
 SEXP char_IDate;
 SEXP char_Date;
 SEXP char_POSIXct;
+SEXP sym_sorted;
+SEXP sym_BY;
+SEXP sym_starts, char_starts;
+SEXP sym_maxgrpn;
 Rboolean INHERITS(SEXP x, SEXP char_); 
 
 // dogroups.c
@@ -62,7 +66,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 SEXP reorder(SEXP x, SEXP order);
 
 // fcast.c
-SEXP vec_init(R_len_t n, SEXP val);
+SEXP int_vec_init(R_len_t n, int val);
 
 // vecseq.c
 SEXP vecseq(SEXP x, SEXP len, SEXP clamp);

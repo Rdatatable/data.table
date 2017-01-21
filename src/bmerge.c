@@ -142,9 +142,11 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     // isorted arg
     o = NULL;
     if (!LOGICAL(isorted)[0]) {
-        SEXP order = PROTECT(vec_init(length(icolsArg), ScalarInteger(1))); // rep(1, length(icolsArg))
-        SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
-        protecti += 2;
+        SEXP order = PROTECT(int_vec_init(length(icolsArg), 1)); // rep(1L, length(icolsArg))
+        SEXP oSxp = PROTECT(forder(i, icolsArg, PROTECT(ScalarLogical(FALSE)),
+                            PROTECT(ScalarLogical(TRUE)), order, PROTECT(ScalarLogical(FALSE))));
+        UNPROTECT(3); // The 3 logicals in line above. TODO - split head of forder into C-level callable
+        protecti += 2;   // order and oSxp
         if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
     }
 
@@ -180,7 +182,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     SET_VECTOR_ELT(ans, 2, retIndexArg);
     SET_VECTOR_ELT(ans, 3, allLen1Arg);
     SET_VECTOR_ELT(ans, 4, allGrp1Arg);
-    SET_STRING_ELT(ansnames, 0, mkChar("starts"));
+    SET_STRING_ELT(ansnames, 0, char_starts);  // changed from mkChar to char_ to pass the grep in CRAN_Release.cmd
     SET_STRING_ELT(ansnames, 1, mkChar("lens"));
     SET_STRING_ELT(ansnames, 2, mkChar("indices"));
     SET_STRING_ELT(ansnames, 3, mkChar("allLen1"));

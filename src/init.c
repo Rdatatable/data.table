@@ -203,7 +203,8 @@ void attribute_visible R_init_datatable(DllInfo *info)
     memset(&ld, 0, sizeof(long double));
     if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
     
-    setNumericRounding(ScalarInteger(0)); // #1642, #1728, #1463, #485
+    setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
+    UNPROTECT(1);
     
     // create needed strings in advance for speed, same techique as R_*Symbol
     // Following R-exts 5.9.4; paragraph and example starting "Using install ..."
@@ -212,11 +213,23 @@ void attribute_visible R_init_datatable(DllInfo *info)
     char_ITime =     PRINTNAME(install("ITime"));
     char_Date =      PRINTNAME(install("Date"));   // used for IDate too since IDate inherits from Date
     char_POSIXct =   PRINTNAME(install("POSIXct"));
+    char_starts =    PRINTNAME(sym_starts = install("starts"));
     if (TYPEOF(char_integer64) != CHARSXP) {
       // checking one is enough in case of any R-devel changes
       error("PRINTNAME(install(\"integer64\")) has returned %s not %s",
             type2char(TYPEOF(char_integer64)), type2char(CHARSXP));
     }
+    
+    // create commonly used symbols, same as R_*Symbol but internal to DT
+    // Not really for speed but to avoid leak in situations like setAttrib(DT, install(), allocVector()) where
+    // the allocVector() can happen first and then the install() could gc and free it before it is protected
+    // within setAttrib. Thanks to Bill Dunlap finding and reporting. Using these symbols instead of install()
+    // avoids the gc without needing an extra PROTECT and immediate UNPROTECT after the setAttrib which would
+    // look odd (and devs in future might be tempted to remove them). Avoiding passing install() to API calls
+    // keeps the code neat and readable. Also see grep's added to CRAN_Release.cmd to find such calls. 
+    sym_sorted  = install("sorted");
+    sym_BY      = install(".BY");
+    sym_maxgrpn = install("maxgrpn");
     
     avoid_openmp_hang_within_fork();
 }

@@ -404,11 +404,12 @@ static SEXP fast_order(SEXP dt, R_len_t byArg, R_len_t handleSorted) {
     }    
     ans = PROTECT(forder(dt, by, retGrp, sortStr, order, na)); protecti++;
     if (!length(ans) && handleSorted != 0) {
-        starts = PROTECT(getAttrib(ans, mkString("starts"))); protecti++;
+        starts = getAttrib(ans, sym_starts);
         // if cols are already sorted, 'forder' gives integer(0), got to replace it with 1:.N
         ans = PROTECT(allocVector(INTSXP, length(VECTOR_ELT(dt, 0)))); protecti++;
         for (i=0; i<length(ans); i++) INTEGER(ans)[i] = i+1;
-        setAttrib(ans, install("starts"), starts);
+        // TODO: for loop appears redundant because length(ans)==0 due to if (!length(ans)) above
+        setAttrib(ans, sym_starts, starts);
     }
     UNPROTECT(protecti); // ans
     return(ans);
@@ -441,7 +442,7 @@ static SEXP match_names(SEXP v) {
     runid  = VECTOR_ELT(dt, 2);
     
     uorder = PROTECT(fast_order(dt, 2, 1));  protecti++; // byArg alone is set, everything else is set inside fast_order
-    starts = PROTECT(getAttrib(uorder, mkString("starts"))); protecti++;
+    starts = getAttrib(uorder, sym_starts);
     ulens  = PROTECT(uniq_lengths(starts, length(lnames))); protecti++;
     
     // seq_len(.N) for each group
@@ -452,7 +453,7 @@ static SEXP match_names(SEXP v) {
     }
     // order again
     uorder = PROTECT(fast_order(dt, 2, 1));  protecti++; // byArg alone is set, everything else is set inside fast_order
-    starts = PROTECT(getAttrib(uorder, mkString("starts"))); protecti++;
+    starts = getAttrib(uorder, sym_starts);
     ulens  = PROTECT(uniq_lengths(starts, length(lnames))); protecti++;    
     ncols  = length(starts);
     // check if order has to be changed (bysameorder = FALSE here by default - in `[.data.table` parlance)
@@ -827,7 +828,7 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
 
     // order - first time
     order = PROTECT(fast_order(dt, 2, 1));
-    start = PROTECT(getAttrib(order, mkString("starts")));
+    start = getAttrib(order, sym_starts);
     lens  = PROTECT(uniq_lengths(start, length(order))); // length(order) = nrow(dt)
     grpid = VECTOR_ELT(dt, 1);
     index = VECTOR_ELT(dt, 2);
@@ -841,9 +842,9 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
         k += j;
     }
     // order - again
-    UNPROTECT(3); // order, start, lens
+    UNPROTECT(2); // order, lens
     order = PROTECT(fast_order(dt, 2, 1)); 
-    start = PROTECT(getAttrib(order, mkString("starts")));
+    start = getAttrib(order, sym_starts);
     lens  = PROTECT(uniq_lengths(start, length(order)));
     
     ans = PROTECT(allocVector(INTSXP, nx));
@@ -855,7 +856,7 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
         if (oi > nx-1) continue;
         INTEGER(ans)[oi] = (li == 2) ? INTEGER(index)[INTEGER(order)[si+1]-1]+1 : INTEGER(nomatch)[0];
     }
-    UNPROTECT(5); // order, start, lens, ans
+    UNPROTECT(4); // order, lens, ans
     return(ans);
 }
 
@@ -868,7 +869,7 @@ static SEXP listlist(SEXP x) {
     lx = PROTECT(allocVector(VECSXP, 1));
     SET_VECTOR_ELT(lx, 0, x);
     xo = PROTECT(fast_order(lx, 1, 1));
-    xs = PROTECT(getAttrib(xo, mkString("starts")));
+    xs = getAttrib(xo, sym_starts);
     xl = PROTECT(uniq_lengths(xs, length(x)));
     
     ans0 = PROTECT(allocVector(STRSXP, length(xs)));
@@ -887,7 +888,7 @@ static SEXP listlist(SEXP x) {
     ans = PROTECT(allocVector(VECSXP, 2));
     SET_VECTOR_ELT(ans, 0, ans0);
     SET_VECTOR_ELT(ans, 1, ans1);
-    UNPROTECT(7);
+    UNPROTECT(6);
     return(ans);
 }
 
