@@ -121,11 +121,6 @@ SEXP genLookups() {
 }
 */
 
-static union {
-  double d;
-  unsigned long long ull;
-} u;
-
 static inline void writeNumeric(double x, char **thisCh)
 {
   // hand-rolled / specialized for speed
@@ -149,6 +144,7 @@ static inline void writeNumeric(double x, char **thisCh)
     *ch++ = '0';   // and we're done.  so much easier rather than passing back special cases
   } else {
     if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign, already written. no need to pass back sign
+    union { double d; unsigned long long ull; } u;
     u.d = x;
     unsigned long long fraction = u.ull & 0xFFFFFFFFFFFFF;  // (1ULL<<52)-1;
     int exponent = (int)((u.ull>>52) & 0x7FF);              // [0,2047]
