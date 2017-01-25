@@ -9787,6 +9787,9 @@ indices(DT, vectors = TRUE)
 test(1749.1, indices(DT), c("A__B","A","B"))
 test(1749.2, indices(DT, vectors = TRUE), list(c("A","B"),"A","B"))
 
+# for completeness, added test for NA problem to close #1837. Fixed long ago before release to CRAN.
+test(1750, capture.output(fwrite(data.table(x=NA_integer_),verbose=FALSE)), c("x",""))
+
 
 ##########################
 
