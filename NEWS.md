@@ -6,12 +6,12 @@
 1. `indices()` function gains new argument `vectors` default `FALSE`, when `TRUE` provided then list of vectors is returned, single vector refers to single index. Closes #1589.
 
 2. When `j` is a symbol prefixed with `..` it will be looked up in calling scope and its value taken to be column names or numbers.
-```R
-    myCols = c("colA","colB")
-    DT[, myCols, with=FALSE]
-    DT[, ..myCols]              # same
-```
-When you see the `..` prefix think _one-level-up_ like the directory `..` in all operating systems meaning the parent directory. In future the `..` prefix could be made to work on all symbols apearing anywhere inside `DT[...]`. It is intended to be a convenient way to protect your code from accidentally picking up a column name. Similar to how `x.` and `i.` prefixes (analogous to SQL table aliases) can already be used to disambiguate the same column name present in both `x` and `i`. A symbol prefix rather than a `..()` _function_ will be easier for us to optimize internally and more convenient if you have many variables in calling scope that you wish to use in your expressions safely. This feature was first raised in 2012 and long wished for, [#633](https://github.com/Rdatatable/data.table/issues/633). It is experimental.
+   ```R
+     myCols = c("colA","colB")
+     DT[, myCols, with=FALSE]
+     DT[, ..myCols]              # same
+   ```
+   When you see the `..` prefix think _one-level-up_ like the directory `..` in all operating systems meaning the parent directory. In future the `..` prefix could be made to work on all symbols apearing anywhere inside `DT[...]`. It is intended to be a convenient way to protect your code from accidentally picking up a column name. Similar to how `x.` and `i.` prefixes (analogous to SQL table aliases) can already be used to disambiguate the same column name present in both `x` and `i`. A symbol prefix rather than a `..()` _function_ will be easier for us to optimize internally and more convenient if you have many variables in calling scope that you wish to use in your expressions safely. This feature was first raised in 2012 and long wished for, [#633](https://github.com/Rdatatable/data.table/issues/633). It is experimental.
 
 3. When `fread()` or `print()` see `integer64` columns are present, `bit64`'s namespace is now automatically loaded for convenience.
 
