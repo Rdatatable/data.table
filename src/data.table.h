@@ -38,6 +38,7 @@ SEXP char_ITime;
 SEXP char_IDate;
 SEXP char_Date;
 SEXP char_POSIXct;
+SEXP char_nanotime;
 SEXP sym_sorted;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;

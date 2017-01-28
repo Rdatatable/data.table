@@ -213,6 +213,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
     char_ITime =     PRINTNAME(install("ITime"));
     char_Date =      PRINTNAME(install("Date"));   // used for IDate too since IDate inherits from Date
     char_POSIXct =   PRINTNAME(install("POSIXct"));
+    char_nanotime =  PRINTNAME(install("nanotime"));
     char_starts =    PRINTNAME(sym_starts = install("starts"));
     if (TYPEOF(char_integer64) != CHARSXP) {
       // checking one is enough in case of any R-devel changes
