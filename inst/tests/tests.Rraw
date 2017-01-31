@@ -9803,7 +9803,7 @@ if ("package:nanotime" %in% search()) {
                                    "1969-12-31T12:13:14.000000001Z",
                                    "1967-03-15T00:00:00.300000002Z",
                                    "1967-03-15T23:59:59.300000002Z")))
-  test(1751, capture.output(fwrite(DT))[-1], tt)
+  test(1751, capture.output(fwrite(DT, verbose=FALSE))[-1], tt)
 } else {
   cat("Test 1751 not run. If required call library(nanotime) first.\n")
 }

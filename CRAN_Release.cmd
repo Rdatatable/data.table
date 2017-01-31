@@ -12,7 +12,7 @@ sudo apt-get install pandoc
 R
 update.packages()
 # See here for getting R.oo to install: https://github.com/HenrikBengtsson/R.utils/issues/29
-q()
+q("no")
 
 # Ensure latest version of R otherwise problems with CRAN not finding dependents that depend on latest R
 # e.g. mirror may have been disabled in sources.list when upgrading ubuntu
@@ -47,6 +47,7 @@ grep "class *=" data.table/src/*.c    # quite a few but none global
 # function call, usually involving install() or mkChar()
 # Greppable thanks to single lines and wide screens
 # See comments in init.c
+cd data.table/src
 grep install.*alloc *.c   --exclude init.c
 grep install.*Scalar *.c
 grep alloc.*install *.c   --exclude init.c
@@ -68,12 +69,13 @@ grep "install(" *.c       --exclude init.c   # TODO: perhaps in future pre-insta
 grep ScalarInteger *.c   # Check all Scalar* either PROTECTed, return-ed or passed to setAttrib.
 grep ScalarLogical *.c   # When we move R dependency to 3.1.0+, no need to protect ScalarLogical
 grep ScalarString *.c
-
-
+cd
+R
 cc(clean=TRUE)  # to compile with -pedandic
+q("no")
 R CMD build data.table
-R CMD check data.table_1.9.9.tar.gz --as-cran
-R CMD INSTALL data.table_1.9.9.tar.gz
+R CMD check data.table_1.10.1.tar.gz --as-cran
+R CMD INSTALL data.table_1.10.1.tar.gz
 R
 require(data.table)
 test.data.table()
@@ -102,7 +104,7 @@ install.packages("chron")
 q("no")
 ### END ONE TIME BUILD
 
-R300 CMD INSTALL ~/data.table_1.9.9.tar.gz
+R300 CMD INSTALL ~/data.table_1.10.1.tar.gz
 R300
 require(data.table)
 test.data.table()
