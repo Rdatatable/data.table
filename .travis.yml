@@ -42,7 +42,7 @@ notifications:
 
 env:
   global:
-    - PKG_CFLAGS="-g -O3 -Wall -pedantic"
+    - PKG_CFLAGS="-O3 -Wall -pedantic"
     - WARNINGS_ARE_ERRORS=1
     # drat using @jangorecki token
     - secure: "CxDW++rsQApQWos+h1z/F76odysyD6AtXJrDwlCHlgqXeKJNRATR4wZDDR18SK+85jUqjoqOvpyrq+5kKuyg6AnA/zduaX2uYE5mcntEUiyzlG/jJUKbcJqt22nyAvFXP3VS60T2u4H6IIhVmr7dArdxLkv8W+pJvf2Tg6kx8Ws="
