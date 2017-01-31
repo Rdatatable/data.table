@@ -23,23 +23,24 @@ static union {double d;
 # define SQRTL sqrt
 #endif
 
-SEXP gstart(SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
+SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int i, j, g, *this;
     // clock_t start = clock();
-    if (!isInteger(o)) error("o is not integer vector");
-    if (!isInteger(f)) error("f is not integer vector");
-    if (!isInteger(l)) error("l is not integer vector");
+    if (TYPEOF(env) != ENVSXP) error("env is not an environment");
+    // The type of jsub is pretty flexbile in R, so leave checking to eval() below.
+    if (!isInteger(o)) error("o is not an integer vector");
+    if (!isInteger(f)) error("f is not an integer vector");
+    if (!isInteger(l)) error("l is not an integer vector");
+    if (!isInteger(irowsArg) && !isNull(irowsArg)) error("irowsArg is not an integer vector");
     ngrp = LENGTH(l);
     if (LENGTH(f) != ngrp) error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp);
     grpn=0;
-    grpsize = INTEGER(l);  // l will be protected in calling R scope until gend(), too
+    grpsize = INTEGER(l);
     for (i=0; i<ngrp; i++) grpn+=grpsize[i];
     if (LENGTH(o) && LENGTH(o)!=grpn) error("o has length %d but sum(l)=%d", LENGTH(o), grpn);
     
-    grp = (int *)malloc(grpn * sizeof(int));  // assign to global
-    if (!grp) error("Unable to allocate %d * %d bytes in gstart for grp", grpn, sizeof(int));
-    // malloc() not R_alloc() because it needs to persist across calls in this case, until free'd by gend().
-    // Could use Calloc() to save the return-check but this way allows for this nicer msg which includes context
+    grp = (int *)R_alloc(grpn, sizeof(int));
+    // global grp because the g* functions (inside jsub) share this common memory
     
     if (LENGTH(o)) {
         isunsorted = 1; // for gmedian
@@ -61,14 +62,20 @@ SEXP gstart(SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
 
     irows = INTEGER(irowsArg);
     if (!isNull(irowsArg)) irowslen = length(irowsArg);
+    
+    SEXP ans = PROTECT( eval(jsub, env) );
+    // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
+    if (isVectorAtomic(ans)) {
+      SEXP tt = ans;
+      ans = PROTECT(allocVector(VECSXP, 1));
+      SET_VECTOR_ELT(ans, 0, tt);
+      UNPROTECT(1);
+    }
+    ngrp = 0; maxgrpn = 0; irowslen = -1; isunsorted = 0;
 
-    // Rprintf("gstart took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
-    return(R_NilValue);
-}
-
-SEXP gend() {
-    free(grp); grp = NULL; ngrp = 0; maxgrpn = 0; irowslen = -1; isunsorted = 0;
-    return(R_NilValue);
+    // Rprintf("gforce took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+    UNPROTECT(1);
+    return(ans);
 }
 
 // long double usage here results in test 648 being failed when running with valgrind

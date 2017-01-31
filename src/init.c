@@ -34,8 +34,7 @@ SEXP uniqlengths();
 SEXP setrev();
 SEXP forder();
 SEXP fsorted();
-SEXP gstart();
-SEXP gend();
+SEXP gforce();
 SEXP gsum();
 SEXP gmean();
 SEXP gmin();
@@ -114,8 +113,7 @@ R_CallMethodDef callMethods[] = {
 {"Csetrev", (DL_FUNC) &setrev, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
 {"Cfsorted", (DL_FUNC) &fsorted, -1},
-{"Cgstart", (DL_FUNC) &gstart, -1},
-{"Cgend", (DL_FUNC) &gend, -1},
+{"Cgforce", (DL_FUNC) &gforce, -1},
 {"Cgsum", (DL_FUNC) &gsum, -1},
 {"Cgmean", (DL_FUNC) &gmean, -1},
 {"Cgmin", (DL_FUNC) &gmin, -1},

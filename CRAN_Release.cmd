@@ -114,8 +114,8 @@ test.data.table()
 #  valgrind
 ###############################################
 
-vi .R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-R --vanilla CMD INSTALL data.table_1.9.9.tar.gz
+vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
+R --vanilla CMD INSTALL data.table_1.10.1.tar.gz
 R -d "valgrind --tool=memcheck --leak-check=full --show-leak-kinds=definite" --vanilla
 require(data.table)
 require(bit64)
