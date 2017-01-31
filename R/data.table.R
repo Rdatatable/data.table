@@ -72,7 +72,8 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
         printdots = FALSE
     }
     toprint=format.data.table(toprint, ...)
-    if (!isNamespaceLoaded("bit64") && any(sapply(x,inherits,"integer64"))) require_bit64()
+    if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(x,inherits,"integer64"))) require_bit64()
+    # When we depend on R 3.2.0 (Apr 2015) we can use isNamespaceLoaded() added then, instead of %chin% above
     # FR #5020 - add row.names = logical argument to print.data.table
     if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE,scientific=FALSE),":",sep="") else rownames(toprint)=rep.int("", nrow(toprint))
     if (is.null(names(x)) | all(names(x) == "")) colnames(toprint)=rep("", ncol(toprint)) # fixes bug #97 (RF#4934) and #545 (RF#5253)
