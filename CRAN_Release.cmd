@@ -130,8 +130,10 @@ test.data.table()
 #   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
 # Ignore heap summaries around test 1705 and 1707/1708 due to the fork() test opening/closing, I guess.
 # Tests 1729.4, 1729.8, 1729.11, 1729.13 again have precision issues under valgrind only.
+# Leaks for tests 1738.5, 1739.3 but no data.table .c lines are flagged, rather libcairo.so
+#   and libfontconfig.so via GEMetricInfo and GEStrWidth in libR.so
 
-vi .R/Makevars  # make the -O3 line active again
+vi ~/.R/Makevars  # make the -O3 line active again
 
 ###############################################
 #  R-devel with UBSAN and ASAN on too
@@ -151,7 +153,7 @@ Rdevel
 install.packages("bit64")  # important to run tests using integer64
 # Skip compatibility tests with other Suggests packages; unlikely UBSAN/ASAN problems there.
 q("no")
-Rdevel CMD INSTALL ~/data.table_1.9.9.tar.gz
+Rdevel CMD INSTALL ~/data.table_1.10.1.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
 # them (above) so should be passed through to here
 Rdevel
