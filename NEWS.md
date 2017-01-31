@@ -1,5 +1,14 @@
 
-### Changes in v1.10.1  ( in development on GitHub )
+### Changes in v1.10.3  ( in development on GitHub )
+
+#### NEW FEATURES
+
+#### BUG FIXES
+
+#### NOTES
+
+
+### Changes in v1.10.2  (on CRAN 31 Jan 2017)
 
 #### NEW FEATURES
 

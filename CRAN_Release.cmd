@@ -399,7 +399,7 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CM
 Bump versions in DESCRIPTION and NEWS to even release number
 Do not push to GitHub. Prevents even a slim possibility of user getting premature version. install_github() should only ever fetch odd releases at all times. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build data.table
-R CMD check --as-cran data.table_1.10.0.tar.gz
+R CMD check --as-cran data.table_1.10.2.tar.gz
 Resubmit to winbuilder (both R-release and R-devel)
 Submit to CRAN
 Bump version in DESCRIPTION to next ODD dev version
@@ -410,7 +410,7 @@ Close milestone
 ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
 
 Submit message template:
-Have rechecked the 229 CRAN packages using data.table.
+Have rechecked the 339 CRAN packages using data.table.
 Either ok or have liaised with maintainers in advance.
 
 
