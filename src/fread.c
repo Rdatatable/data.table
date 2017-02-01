@@ -474,7 +474,7 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
             for (i=0; i<sofar; i++) REAL(newv)[i] = (INTEGER(v)[i]==NA_INTEGER ? NA_REAL : (double)INTEGER(v)[i]);
             break;
         case SXP_INT64 :
-            for (i=0; i<sofar; i++) REAL(newv)[i] = ((*(long long *)&REAL(v)[i] == NAINT64) ? NA_REAL : (double)(*(long long *)&REAL(v)[i]));
+            for (i=0; i<sofar; i++) REAL(newv)[i] = (I64(REAL(v)[i]) == NAINT64) ? NA_REAL : (double)(I64(REAL(v)[i]));
             break;
         default :
             STOP("Internal error: attempt to bump from type %d to type %d. Please report to datatable-help.", oldtype, newtype);
@@ -501,9 +501,9 @@ static SEXP coerceVectorSoFar(SEXP v, int oldtype, int newtype, R_len_t sofar, R
                     SET_STRING_ELT(newv,i,R_BlankString);
                 else {
                     #ifdef WIN32
-                        snprintf(buffer,128,"%" PRId64,*(long long *)&REAL(v)[i]);
+                        snprintf(buffer,128,"%" PRId64, I64(REAL(v)[i]));
                     #else
-                        snprintf(buffer,128,"%lld",    *(long long *)&REAL(v)[i]);
+                        snprintf(buffer,128,"%lld",     I64(REAL(v)[i]));
                     #endif
                     SET_STRING_ELT(newv, i, mkChar(buffer));
                 }

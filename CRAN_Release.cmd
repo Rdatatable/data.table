@@ -43,6 +43,10 @@ grep "Rprintf" data.table/src/init.c
 grep "nearest *=" data.table/src/*.c  # none
 grep "class *=" data.table/src/*.c    # quite a few but none global
 
+# No undefined type punning of the form:  *(long long *)&REAL(column)[i]
+# Failed clang 3.9.1 -O3 due to this, I think.
+grep "&REAL" data.table/src/*.c
+
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
 # Greppable thanks to single lines and wide screens
@@ -69,6 +73,7 @@ grep "install(" *.c       --exclude init.c   # TODO: perhaps in future pre-insta
 grep ScalarInteger *.c   # Check all Scalar* either PROTECTed, return-ed or passed to setAttrib.
 grep ScalarLogical *.c   # When we move R dependency to 3.1.0+, no need to protect ScalarLogical
 grep ScalarString *.c
+
 cd
 R
 cc(clean=TRUE)  # to compile with -pedandic

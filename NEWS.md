@@ -1,11 +1,9 @@
 
 ### Changes in v1.10.3  ( in development on GitHub )
 
-#### NEW FEATURES
-
 #### BUG FIXES
 
-#### NOTES
+1. The new specialized `nanotime` writer in `fwrite()` type punned using `*(long long *)&REAL(column)[i]` which, strictly, is undefined behavour under C standards. It passed a plethora of tests on linux (gcc 5.4 and clang 3.8), win-builder and 6 out 10 CRAN flavours using gcc. But failed (wrong data written) with the newest version of clang (3.9.1) as used by CRAN on the failing flavors, and solaris-sparc. Replaced with the union method and added a grep to CRAN_Release.cmd.
 
 
 ### Changes in v1.10.2  (on CRAN 31 Jan 2017)

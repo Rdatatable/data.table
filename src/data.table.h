@@ -43,7 +43,8 @@ SEXP sym_sorted;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
-Rboolean INHERITS(SEXP x, SEXP char_); 
+Rboolean INHERITS(SEXP x, SEXP char_);
+long long I64(double x); 
 
 // dogroups.c
 SEXP keepattr(SEXP to, SEXP from);

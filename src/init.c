@@ -233,7 +233,6 @@ void attribute_visible R_init_datatable(DllInfo *info)
     avoid_openmp_hang_within_fork();
 }
 
-
 inline Rboolean INHERITS(SEXP x, SEXP char_) {
   // Thread safe inherits() by pre-calling install() above in init first then
   // passing those char_* in here for simple and fast non-API pointer compare.
@@ -250,6 +249,15 @@ inline Rboolean INHERITS(SEXP x, SEXP char_) {
     }
   }
   return FALSE;
+}
+
+inline long long I64(double x) {
+  // type punning such as  *(long long *)&REAL(column)[i] is undefined and I think was the
+  // cause of 1.10.2 failing on 31 Jan 2017 under clang 3.9.1 -O3 and solaris-sparc but
+  // not solaris-x86 or gcc. There is now a grep in CRAN_Release.cmd; use this union method instead.  
+  union {double d; long long ll;} u;
+  u.d = x;
+  return u.ll;
 }
 
 SEXP hasOpenMP() {
