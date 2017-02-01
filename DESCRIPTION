@@ -1,5 +1,5 @@
 Package: data.table
-Version: 1.10.3
+Version: 1.10.5
 Title: Extension of `data.frame`
 Authors@R: c(
   person("Matt","Dowle",      role=c("aut","cre"), email="mattjdowle@gmail.com"),
