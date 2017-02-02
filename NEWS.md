@@ -1,4 +1,6 @@
 
+**If you are viewing this file on CRAN, please check latest news on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).**
+
 ### Changes in v1.10.5  ( in development )
 
 #### NEW FEATURES
@@ -22,11 +24,11 @@
 #### NEW FEATURES
 
 1. When `j` is a symbol prefixed with `..` it will be looked up in calling scope and its value taken to be column names or numbers.
-   ```R
-     myCols = c("colA","colB")
-     DT[, myCols, with=FALSE]
-     DT[, ..myCols]              # same
-   ```
+    ```R
+    myCols = c("colA","colB")
+    DT[, myCols, with=FALSE]
+    DT[, ..myCols]              # same
+    ```
    When you see the `..` prefix think _one-level-up_ like the directory `..` in all operating systems meaning the parent directory. In future the `..` prefix could be made to work on all symbols apearing anywhere inside `DT[...]`. It is intended to be a convenient way to protect your code from accidentally picking up a column name. Similar to how `x.` and `i.` prefixes (analogous to SQL table aliases) can already be used to disambiguate the same column name present in both `x` and `i`. A symbol prefix rather than a `..()` _function_ will be easier for us to optimize internally and more convenient if you have many variables in calling scope that you wish to use in your expressions safely. This feature was first raised in 2012 and long wished for, [#633](https://github.com/Rdatatable/data.table/issues/633). It is experimental.
 
 2. When `fread()` or `print()` see `integer64` columns are present, `bit64`'s namespace is now automatically loaded for convenience.
@@ -34,18 +36,18 @@
 3. `fwrite()` now supports the new [`nanotime`](https://cran.r-project.org/package=nanotime) type by Dirk Eddelbuettel, [#1982](https://github.com/Rdatatable/data.table/issues/1982). Aside: `data.table` already automatically supported `nanotime` in grouping and joining operations via longstanding support of its underlying `integer64` type.
 
 4. `indices()` gains a new argument `vectors`, default `FALSE`. This strsplits the index names by `__` for you, [#1589](https://github.com/Rdatatable/data.table/issues/1589).
-   ```R
-     DT = data.table(A=1:3, B=6:4)
-     setindex(DT, B)
-     setindex(DT, B, A)
-     indices(DT)
-     [1] "B"    "B__A"
-     indices(DT, vectors=TRUE)
-     [[1]]
-     [1] "B"
-     [[2]]
-     [1] "B" "A"
-   ```
+    ```R
+    DT = data.table(A=1:3, B=6:4)
+    setindex(DT, B)
+    setindex(DT, B, A)
+    indices(DT)
+    [1] "B"    "B__A"
+    indices(DT, vectors=TRUE)
+    [[1]]
+    [1] "B"
+    [[2]]
+    [1] "B" "A"
+    ```
 
 #### BUG FIXES
 
