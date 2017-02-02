@@ -252,12 +252,26 @@ inline Rboolean INHERITS(SEXP x, SEXP char_) {
 }
 
 inline long long I64(double x) {
-  // type punning such as  *(long long *)&REAL(column)[i] is undefined and I think was the
-  // cause of 1.10.2 failing on 31 Jan 2017 under clang 3.9.1 -O3 and solaris-sparc but
-  // not solaris-x86 or gcc. There is now a grep in CRAN_Release.cmd; use this union method instead.  
-  union {double d; long long ll;} u;
-  u.d = x;
-  return u.ll;
+  // Type punning such as 
+  //     *(long long *)&REAL(column)[i]
+  // is undefined by C standards. This was the cause of v1.10.2 failing on 31 Jan 2017
+  // under clang 3.9.1 -O3 and solaris-sparc but was ok on solaris-x86 and gcc.
+  // Then the union method :
+  //     union {double d; long long ll;} u;
+  //     u.d = x;
+  //     return u.ll; 
+  // passed on some of those but still failed on MacOS with latest clang from latest
+  // Xcode 8.2 and -O2. It seems that memcpy is the safest way, is clear, and compilers
+  // will optimize away the call overhead.
+  // There is a grep in CRAN_Release.cmd to detect type punning; use this I64 instead.
+  //
+  // The two types must be the same size. That is checked in R_init_datatable (above)
+  // where sizeof(long long)==sizeof(double)==8 is checked.
+  // Endianness should not matter because whether big or little, endianness is the same
+  // inside this process, and the two types are the same size.
+  long long ll;
+  memcpy(&ll, &x, 8);
+  return ll;
 }
 
 SEXP hasOpenMP() {
@@ -271,5 +285,4 @@ SEXP hasOpenMP() {
   return ScalarLogical(FALSE);
   #endif
 }
-
 
