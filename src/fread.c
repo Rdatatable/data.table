@@ -28,7 +28,6 @@ colClasses shouldn't be ignored but rather respected and then warn if data accur
 Detect and coerce dates and times. By searching for - and :, and dateTtime etc, or R's own method or fasttime. POSIXct default, for microseconds? : http://stackoverflow.com/questions/14056370/cast-string-to-idatetime
 Fill in too-short lines :  http://stackoverflow.com/questions/21124372/fread-doesnt-like-lines-with-less-fields-than-other-lines
 Allow to increase from 100 rows at 10 points
-madvise is too eager when reading just the top 10 rows.
 Add as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
 Allow comment char to ignore. Important in format detection. But require valid line data before comment character in the read loop? See http://stackoverflow.com/a/18922269/403310
 Jim Holtman requested column names be stipped of whitespace.  On datatable-help 22 Jan 2014.
@@ -43,7 +42,6 @@ Save repeated ch<eof checking in main read step. Last line might still be tricky
 test using at least "grep read.table ...Rtrunk/tests/
 ---
 Secondary separator for list() columns, such as columns 11 and 12 in BED (no need for strsplit).
-If nrow is small, say 20, then it shouldn't mmap the entire file (that's probably *why* user just wants to look at head). Try MMAP_DONTNEED in that case to save needing to map the file in chunks.
 Add LaF comparison.
 as.read.table=TRUE/FALSE option.  Or fread.table and fread.csv (see http://r.789695.n4.nabble.com/New-function-fread-in-v1-8-7-tp4653745p4654194.html).
 
@@ -638,15 +636,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         filesize = stat_buf.st_size;
         if (filesize<=0) {close(fd); error("File is empty: %s", fnam);}
         if (verbose) Rprintf("File opened, filesize is %.6f GB.\nMemory mapping ... ", 1.0*filesize/(1024*1024*1024));
-        // Would be nice to print 'Memory mapping' when not verbose, but then it would also print for small files
-        // which would be annoying. If we could estimate if the mmap was likely to take more than 2 seconds (and thus
-        // the % meter to kick in) then that'd be ideal. A simple size check isn't enough because it might already
-        // be cached from a previous run. Perhaps spawn an event, which is cancelled if mmap returns within 2 secs.
-#ifdef MAP_POPULATE
-        mmp = (const char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);    // TO DO?: MAP_HUGETLB
-#else
-        mmp = (const char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);    // for Mac
-#endif
+        
+        // No MAP_POPULATE for faster nrow=10 and to make possible earlier progress bar in row count stage
+        // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
+        // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
+        //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
+        mmp = (const char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);
         if (mmp == MAP_FAILED) {
             close(fd);
 #else

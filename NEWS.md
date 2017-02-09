@@ -5,6 +5,8 @@
 
 #### NEW FEATURES
 
+1. `fread(...,nrow=10)` down to 0.01s from 12s for a 9GB file. It now memory maps lazily. Large files close to your RAM limit may work more reliably now.
+
 #### BUG FIXES
 
 1. The type pun fix (using union) in 1.10.4 resolved some CRAN flavors but still failed the new fwrite nanotime test with R-devel on MacOS using latest clang from latest Xcode 8.2. It seems that clang optimizations in Xcode 8 require even stricter adherence to C standards. The type pun was already centralized and now uses memcpy which is ok by C standards and compilers know to optimize to avoid call overhead.
