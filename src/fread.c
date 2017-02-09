@@ -73,8 +73,7 @@ static int fieldLen;
 static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "NULL", "double", "CLASS" };
 // important that first 6 correspond to TypeName.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
 static int UserTypeNameMap[NUT] = { SXP_LGL, SXP_INT, SXP_INT64, SXP_REAL, SXP_STR, SXP_NULL, SXP_REAL, SXP_STR };
-// quote
-const char *quote;
+static char quote;
 static int quoteStatus, stripWhite;
 
 const char *fnam=NULL, *mmp;
@@ -212,13 +211,13 @@ static inline void skip_spaces() {
 static inline void Field()
 {
     quoteStatus=0;
-    if (*ch==quote[0]) { // protected, now look for the next ", so long as it doesn't leave unbalanced unquoted regions
+    if (*ch==quote) { // protected, now look for the next ", so long as it doesn't leave unbalanced unquoted regions
         quoteStatus=1;
         fieldStart = ch+1;
         int eolCount=0;  // just >0 is used currently but may as well count
         Rboolean noEmbeddedEOL=FALSE, quoteProblem=FALSE;
         while(++ch<eof) {
-            if (*ch!=quote[0]) {
+            if (*ch!=quote) {
                 if (noEmbeddedEOL && *ch==eol) { quoteProblem=TRUE; break; }
                 eolCount+=(*ch==eol);
                 continue;  // fast return in most cases of characters
@@ -227,14 +226,14 @@ static inline void Field()
             // " followed by sep|eol|eof dominates a field ending with \" (for support of Windows style paths)
             
             if (*(ch-1)!='\\') {
-                if (ch+1<eof && *(ch+1)==quote[0]) { ch++; continue; }  // skip doubled-quote
+                if (ch+1<eof && *(ch+1)==quote) { ch++; continue; }  // skip doubled-quote
                 // unescaped subregion
                 if (eolCount) {ch++; quoteProblem=TRUE; break;}
                 // *ch!=sep needed for detecting cases mentioned in SO post under #1462
-                while (++ch<eof && (*ch!=quote[0] || *(ch-1)=='\\') && *ch!=eol && *ch!=sep);
+                while (++ch<eof && (*ch!=quote || *(ch-1)=='\\') && *ch!=eol && *ch!=sep);
                 if (ch==eof || *ch==eol || *ch==sep) {quoteProblem=TRUE; break;}
                 noEmbeddedEOL = 1;
-            } else if (ch+1<eof && *(ch+1)==quote[0] && ch+2<eof && *(ch+2)!=sep) { ch++; continue; }
+            } else if (ch+1<eof && *(ch+1)==quote && ch+2<eof && *(ch+2)!=sep) { ch++; continue; }
             // above else if is necessary for #1164. ch+2 condition is to take care of cases like <"blabla \"",> where sep=',' (test 1336.1)
         }
         if (quoteProblem || ch==eof) {
@@ -559,7 +558,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // quoteArg for those rare cases when default scenario doesn't cut it.., FR #568
     if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
         error("quote must either be empty or a single character");
-    quote = CHAR(STRING_ELT(quoteArg,0));
+    quote = CHAR(STRING_ELT(quoteArg,0))[0];
 
     if (!isLogical(showProgressArg) || LENGTH(showProgressArg)!=1 || LOGICAL(showProgressArg)[0]==NA_LOGICAL)
         error("Internal error: showProgress is not TRUE or FALSE. Please report.");
@@ -590,7 +589,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
          ||(isString(skip) && LENGTH(skip)==1))) error("'skip' must be a length 1 vector of type numeric or integer >=0, or single character search string");
     if (!isNull(separg)) {
         if (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1) error("'sep' must be 'auto' or a single character");
-        if (*CHAR(STRING_ELT(separg,0))==quote[0]) error("sep = '%c' = quote, is not an allowed separator.",quote[0]);
+        if (*CHAR(STRING_ELT(separg,0))==quote) error("sep = '%c' = quote, is not an allowed separator.",quote);
         if (*CHAR(STRING_ELT(separg,0)) == decChar) error("The two arguments to fread 'dec' and 'sep' are equal ('%c').", decChar);
     }
     if (!isString(integer64) || LENGTH(integer64)!=1) error("'integer64' must be a single character string");
@@ -685,10 +684,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             else
                 error("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. Size of pointer is %d on this machine. Probably failing because this is neither a 32bit or 64bit machine. Please report to datatable-help.", filesize/1024^2, sizeof(char *));
         }
-#ifndef WIN32
-        // if (madvise((char *)mmp, filesize+1, MADV_SEQUENTIAL | MADV_WILLNEED) == -1) warning("Mapped file ok but madvise failed");
-        // TO DO: commented this out for the case of nrow=100, more testing to do.
-#endif
         if (EOF > -1) error("Internal error. EOF is not -1 or less\n");
         if (mmp[filesize-1] < 0) error("mmap'd region has EOF at the end");
         eof = mmp+filesize;  // byte after last byte of file.  Never dereference eof as it's not mapped.
@@ -704,7 +699,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (!memcmp(mmp, "\xef\xbb\xbf", 3)) mmp += 3;
     ch = mmp;
     while (ch<eof && *ch!='\n' && *ch!='\r') {
-        if (*ch==quote[0]) while(++ch<eof && *ch!=quote[0]) {};  // allows protection of \n and \r inside column names
+        if (*ch==quote) while(++ch<eof && *ch!=quote) {};  // allows protection of \n and \r inside column names
         ch++;                                            // this 'if' needed in case opening protection is not closed before eof
     }
     if (ch>=eof) {
@@ -890,9 +885,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     allchar=TRUE;
     for (i=0; i<ncol; i++) {
         skip_spaces(); // remove trailing spaces
-        if (ch<eof && *ch==quote[0]) {
-            while(++ch<eof && (*ch!=quote[0] || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
-            if (ch<eof && *ch++!=quote[0]) STOP("Internal error: quoted field ends before EOF but not with \"sep");
+        if (ch<eof && *ch==quote) {
+            while(++ch<eof && (*ch!=quote || (ch+1<eof && *(ch+1)!=sep && *(ch+1)!=eol))) {};
+            if (ch<eof && *ch++!=quote) STOP("Internal error: quoted field ends before EOF but not with \"sep");
         } else {                              // if field reads as double ok then it's INT/INT64/REAL; i.e., not character (and so not a column name)
             if (*ch!=sep && *ch!=eol && Strtod())  // blank column names (,,) considered character and will get default names
                 allchar=FALSE;                     // considered testing at least one isalpha, but we want 1E9 to be a value not a column name
@@ -964,14 +959,14 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             // don't rely on 'sep' because it'll provide an underestimate
             if (!skipEmptyLines) {
                 while (ch<eof) {
-                    if (*ch!=quote[0]) neol += (*ch==eol);
-                    else while(ch+1<eof && *(++ch)!=quote[0]); // quits at next quote
+                    if (*ch!=quote) neol += (*ch==eol);
+                    else while(ch+1<eof && *(++ch)!=quote); // quits at next quote
                     ch++;
                 }
             } else {
                 while (ch<eof) {
-                    if (*ch!=quote[0]) neol += (*ch==eol && *(ch-1)!=eol);
-                    else while(ch+1<eof && *(++ch)!=quote[0]); // quits at next quote
+                    if (*ch!=quote) neol += (*ch==eol && *(ch-1)!=eol);
+                    else while(ch+1<eof && *(++ch)!=quote); // quits at next quote
                     ch++;
                 }                
             }
@@ -1379,7 +1374,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         clock_t tn = clock(), tot=tn-t0;
         if (tot<1) tot=1;  // to avoid nan% output in some trivial tests where tot==0
         Rprintf("%8.3fs (%3.0f%%) Memory map (rerun may be quicker)\n", 1.0*(tMap-t0)/CLOCKS_PER_SEC, 100.0*(tMap-t0)/tot);
-        Rprintf("%8.3fs (%3.0f%%) sep and header detection\n", 1.0*(tLayout-tMap)/CLOCKS_PER_SEC, 100.0*(tLayout-tMap)/tot);
+        Rprintf("%8.3fs (%3.0f%%) sep, ncol and header detection\n", 1.0*(tLayout-tMap)/CLOCKS_PER_SEC, 100.0*(tLayout-tMap)/tot);
         Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", 1.0*(tRowCount-tLayout)/CLOCKS_PER_SEC, 100.0*(tRowCount-tLayout)/tot);
         Rprintf("%8.3fs (%3.0f%%) Column type detection (100 rows at 10 points)\n", 1.0*(tColType-tRowCount)/CLOCKS_PER_SEC, 100.0*(tColType-tRowCount)/tot);
         Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (xMB) in RAM\n", 1.0*(tAlloc-tColType)/CLOCKS_PER_SEC, 100.0*(tAlloc-tColType)/tot, nrow, ncol);
