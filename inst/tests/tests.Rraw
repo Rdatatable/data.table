@@ -9808,6 +9808,9 @@ if ("package:nanotime" %in% search()) {
   cat("Test 1751 not run. If required call library(nanotime) first.\n")
 }
 
+# Fix for #2032
+test(1752, capture.output(format(as.ITime(character(0)))), "character(0)")
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

@@ -11,6 +11,8 @@
 
 1. The type pun fix (using union) in 1.10.4 resolved some CRAN flavors but still failed the new fwrite nanotime test with R-devel on MacOS using latest clang from latest Xcode 8.2. It seems that clang optimizations in Xcode 8 require even stricter adherence to C standards. The type pun was already centralized and now uses memcpy which is ok by C standards and compilers know to optimize to avoid call overhead.
 
+2. Fixed an error in `format.ITime` that was preventing printing of 0-length `ITime` objects, [#2032](https://github.com/Rdatatable/data.table/issues/2032). Thanks @MichaelChirico.
+
 #### NOTES
 
 
