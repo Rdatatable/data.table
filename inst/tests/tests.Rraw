@@ -2869,7 +2869,7 @@ test(1016.1, fread(f) ,output="Column 1.*A.*integer.*row 115.*<<123456789123456>
 test(1016.2, fread(f, colClasses = c(A="numeric")), copy(DT)[,A:=as.numeric(A)])
 DT[90, A:="321456789123456"]   # inside the sample
 write.table(DT,f,sep=",",row.names=FALSE,quote=FALSE)
-test(1017.1, fread(f), copy(DT)[,A:=as.integer64(A)])
+if ("package:bit64" %in% search()) test(1017.1, fread(f), copy(DT)[,A:=as.integer64(A)])
 test(1017.2, fread(f, integer64="character"), DT)
 unlink(f)
 
