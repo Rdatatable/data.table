@@ -1,6 +1,6 @@
 
-fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",file,stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=1L,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable"))
-{    
+fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",file,stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=NA,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable"))
+{
     if (!is.character(dec) || length(dec)!=1L || nchar(dec)!=1) stop("dec must be a single character e.g. '.' or ','")
     # handle encoding, #563
     if (length(encoding) != 1L || !encoding %in% c("unknown", "UTF-8", "Latin-1")) {
@@ -53,7 +53,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
         if (!file.exists(file)) stop(sprintf("Provided file '%s' does not exists.", file))
         input = file
     }
-
+    if (!missing(autostart)) warning("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");
     is_url <- function(x) grepl("^(http|ftp)s?://", x)
     is_secureurl <- function(x) grepl("^(http|ftp)s://", x)
     is_file <- function(x) grepl("^file://", x)
@@ -81,7 +81,10 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     } else if (isTRUE(file.info(input)$isdir)) { # fix for #989, dir.exists() requires v3.2+
         stop("'input' can not be a directory name, but must be a single character string containing a file name, a command, full path to a file, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or the input data itself.")
     } else if (!file.exists(input)) {
-        if (length(grep(' ', input)) == 0) stop("File '",input,"' does not exist. Include one or more spaces to consider the input a system command.")
+        if (!length(grep(' ', input))) {
+            stop("File '",input,"' does not exist; getwd()=='", getwd(), "'",
+              ". Include correct full path, or one or more spaces to consider the input a system command.")
+        }
         tt = tempfile()
         on.exit(unlink(tt), add = TRUE)
         if (.Platform$OS.type == "unix") {
@@ -97,7 +100,8 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     if (identical(header,"auto")) header=NA
     if (identical(sep,"auto")) sep=NULL
     if (is.atomic(colClasses) && !is.null(names(colClasses))) colClasses = tapply(names(colClasses),colClasses,c,simplify=FALSE) # named vector handling
-    ans = .Call(Creadfile,input,sep,as.integer(nrows),header,na.strings,verbose,as.integer(autostart),skip,select,drop,colClasses,integer64,dec,encoding,quote,strip.white,blank.lines.skip,fill,showProgress)
+    if (is.numeric(skip)) skip = as.integer(skip)
+    ans = .Call(Creadfile,input,sep,as.integer(nrows),header,na.strings,verbose,skip,select,drop,colClasses,integer64,dec,encoding,quote,strip.white,blank.lines.skip,fill,showProgress)
     nr = length(ans[[1]])
     if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(ans,inherits,"integer64"))) require_bit64()
     setattr(ans,"row.names",.set_row_names(nr))

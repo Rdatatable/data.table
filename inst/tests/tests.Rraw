@@ -2017,7 +2017,7 @@ setnames(DT,c("A","B"))
 test(714, DT[,z:=6:10], data.table(A=1:5,B=5,z=6:10))
 
 # Test J alias is now removed outside DT[...] from v1.8.7 (to resolve rJava::J conflict)
-test(715, J(a=1:3,b=4), data.table(a=1:3,b=4), error="could not find function.*J")
+test(715, J(a=1:3,b=4), error="could not find function.*J")
 
 # Test get in j
 DT = data.table(a=1:3,b=4:6)
@@ -2531,7 +2531,9 @@ if ("package:bit64" %in% search()) {
     DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
     DT[117, r2:="3.14A"]
     write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
-    test(899, fread(f), DT, warning="Bumped column.*to type character.*may not be lossless")
+    test(899.1, fread(f), output="Column 4.*a2.*integer.*112.*<<12345678901234>>.*Column 10.*r2.*numeric.*117.*<<3.14A>>",
+                          error="guessed column type was insufficient for 6 values in 6 columns")
+    test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2"))), DT)
     unlink(f)
 } else {
     cat("Tests 897-899 not run. If required call library(bit64) first.\n")
@@ -2550,7 +2552,7 @@ test(901.2, DT<-fread(f), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.
 f = "2008head.csv"
 test(902, fread(f), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
 test(903, fread("A,B\n1,3,foo,5\n2,4,barbaz,6"), data.table(1:2,3:4,c("foo","barbaz"),5:6),
-          warning="Starting data input on line 2 and discarding line 1 because.*: A,B")  # invalid colnames (too short)
+          warning="Starting.*on line 2 <<1,3,foo,5>> with 4 fields.*discarding line 1 <<A,B>>.*fields.*2")  # invalid colnames (too short)
 test(904, fread("A,B,C,D\n1,3,foo,5\n2,4,barbaz,6"), DT<-data.table(A=1:2,B=3:4,C=c("foo","barbaz"),D=5:6))  # ok
 test(905, fread('A,B,C,D\n1,3,foo,5\n2,4,"barbaz",6'), DT)
 test(906, fread('A,B,C,D\n1,3,foo,5\n2,4,"ba,r,baz",6'), DT[2,C:="ba,r,baz"])
@@ -2562,7 +2564,7 @@ Date and Time,Open,High,Low,Close,Volume
 2007/01/01 22:51:00,5683,5683,5673,5673,64
 2007/01/01 22:52:00,5675,5676,5674,5674,17
 2007/01/01 22:53:00,5674,5674,5673,5674,42
-")$Open, c(5683L,5675L,5674L))   # , is higher than ' ' in the hierarchy of separators, so ',' is auto detected here.
+")$Open, c(5683L,5675L,5674L))   # , splits all rows consistently and is also higher precedence than ' '
 
 # blanks when testing if header row is all character
 test(910, fread("
@@ -2577,8 +2579,9 @@ test(911, fread("02-FEB-2009,09:55:04:962,26022009,2500,PE,36,500,44,200,11850,1
 
 # Check manually setting separator
 txt = "A;B;C|D,E\n1;3;4|5,6\n2;4;6|8,10\n"
-test(912, names(fread(txt)), c("A;B;C|D","E"))
-test(913, fread(txt,sep=";"), data.table(A=1:2,B=3:4,"C|D,E"=c("4|5,6","6|8,10")))
+test(912, names(fread(txt)), c("A","B","C|D,E"))  # ; separates it more
+test(913.1, fread(txt,sep=";"), data.table(A=1:2,B=3:4,"C|D,E"=c("4|5,6","6|8,10")))
+test(913.2, fread(txt,sep=","), data.table("A;B;C|D"=c("1;3;4|5","2;4;6|8"), "E"=c(6L,10L)))
 test(914, fread(txt,sep="*"), data.table("A;B;C|D,E"=c("1;3;4|5,6","2;4;6|8,10")))
 test(915, fread(txt,sep="\n"), data.table("A;B;C|D,E"=c("1;3;4|5,6","2;4;6|8,10"))) # like a fast readLines
 
@@ -2709,8 +2712,10 @@ test(974, fread(input, skip=2, header=TRUE), data.table("1"=2L,"3"=4L,"5"=6L))
 test(975, fread(input, skip="B"), data.table(A=1:2,B=3:4,C=5:6))
 input = "\n\nA,B\n1,3\n2,4\n\nC,D\n5,7\n6,8\n\nE,F\n9,11\n10,12\n"   # 3 tables in one file
 test(976, fread(input), data.table(A=1:2,B=3:4), warning="Stopped reading at empty line 6.*discarded.*C,D")
-test(977, fread(input, autostart=8), data.table(C=5:6,D=7:8), warning="Stopped reading at empty line 10.*discarded.*E,F")
-test(978, fread(input, skip="D"), data.table(C=5:6,D=7:8), warning="Stopped reading at empty line 10.*discarded.*E,F")
+test(977, fread(input, skip="C"), data.table(C=5:6,D=7:8), warning="Stopped reading at empty line 10.*discarded.*E,F")
+test(978.1, fread(input, skip="D"), data.table(C=5:6,D=7:8), warning="Stopped reading at empty line 10.*discarded.*E,F")
+test(978.2, fread(input, skip=",F"), data.table(E=9:10,F=11:12))
+test(978.3, fread(input, skip=3), data.table(V1=1:2, V2=3:4), warning="Stopped reading at empty line 6.*discarded.*C,D")
 
 # mixed add and update in same `:=` bug/crash, #2528 and #2778
 DT = data.table(x=rep(1:2, c(3,2)), y=6:10)
@@ -2833,15 +2838,22 @@ test(1008.2, rbindlist(list(DT1, DT3)), data.table(a = c(1L,2L), b = c(2, 2.5)))
 DT = data.table(a=c(NA,NA,FALSE,FALSE), b=c(1,1,2,2))
 test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(NA_integer_,0L))) # sum(logical()) should be integer, not real
 
-# an fread error shouldn't hold a lock on the file on Windows.
+# an fread error shouldn't hold a lock on the file on Windows
 f = tempfile()
-cat('A,B\n"aa",2\n"bb,2\n"cc",3\n', file=f)  # NB: deliberate missing quote after bb.
-test(1010, fread(f), data.table(A=c("aa", "\"bb", "cc"), B=c(2L,2L,3L)))
-cat('dd",4\n',file=f,append=TRUE)   # tests file lock on Windows after error
-test(1011, fread(f), data.table(A=c("aa", "\"bb", "cc", "dd\""), B=c(2L,2L,3L,4L)))
-cat('A,B\n"aa",1\n"bb",2\n"cc",3\n', file=f)   # testing overwrite
-test(1012, fread(f), data.table(A=c("aa","bb","cc"),B=1:3))
-unlink(f)  # testing file can be removed after error
+cat('A,B\n1,2\n3\n5,6\n', file=f)
+test(1010.1, fread(f), error="Line has finished early.*Try.*fill.*TRUE")
+cat('7\n8,9',file=f,append=TRUE)   # that append works after error
+test(1010.2, fread(f,fill=TRUE), data.table(A=INT(1,3,5,7,8), B=INT(2,NA,6,NA,9)))
+test(1010.3, fread(f), error="Line has finished early.*Try.*fill.*TRUE")
+cat('A,B\n1,2\n3\n5,6\n', file=f)  # that overwrite works after error
+test(1010.4, fread(f,fill=TRUE), data.table(A=INT(1,3,5), B=INT(2,NA,6)))
+test(1010.5, fread(f), error="Line has finished early.*Try.*fill.*TRUE")
+unlink(f)                          # that file can be removed after error
+test(1010.6, !file.exists(f))
+
+# detection of unescaped quotes, quote rule 3
+test(1011, fread('A,B\n"aa",1\n"bb,2\n"cc",3\n'), data.table(A=c('aa', '"bb', 'cc'), B=1:3))
+test(1012, fread('A,B\n"aa",1\n"bb"",2\n"cc",3\n'), data.table(A=c("aa", "bb\"", "cc"), B=1:3))
 
 # integer64 control to fread
 test(1013, fread("A,B\n123,123\n", integer64="integer"), error="integer64='%s' which isn't 'integer64'|'double'|'numeric'|'character'")
@@ -2852,8 +2864,13 @@ x = sample(1:1000,2000,replace=TRUE)
 DT = data.table( A=as.character(x), B=1:100)
 DT[115, A:="123456789123456"]  # row 115 is outside the 100 rows at 10 points.
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
-test(1016, fread(f,integer64="numeric"), copy(DT)[,A:=as.numeric(A)])
-test(1017, fread(f,integer64="character"), DT, warning="Bumped column.*to type character.*may not be lossless")
+test(1016.1, fread(f) ,output="Column 1.*A.*integer.*row 115.*<<123456789123456>>",
+                      error="guess.*insufficient.*1 value.*1 column")
+test(1016.2, fread(f, colClasses = c(A="numeric")), copy(DT)[,A:=as.numeric(A)])
+DT[90, A:="321456789123456"]   # inside the sample
+write.table(DT,f,sep=",",row.names=FALSE,quote=FALSE)
+test(1017.1, fread(f), copy(DT)[,A:=as.integer64(A)])
+test(1017.2, fread(f, integer64="character"), DT)
 unlink(f)
 
 # ERANGE warning, #4879
@@ -4046,12 +4063,14 @@ test(1215,
    fread('N_ID VISIT_DATE REQ_URL REQType\n175931 2013-03-08T23:40:30 http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU 1'),
    data.table(N_ID=175931L, VISIT_DATE="2013-03-08T23:40:30", REQ_URL='http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU', REQType=1L)
 )
-test(1216.1, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n'), data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("\"a\"b\"c\"d\"", "\"b")), error="Expecting 3 cols, but line 3 contains")
-test(1216.2, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,az""\n'), data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("a\"b\"c\"d\"", "\"b")), error="Expecting 3 cols, but line 3 contains")
+test(1216.1, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n'),
+         data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("a\"b\"c\"d", "b,az\"")))
+test(1216.2, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,az""\n'),
+         data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("a\"b\"c\"d\"", "b,az\"")))
 test(1216.3, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,"az""\n'), 
-           data.table(A=c('1.2','fo"o'), B=c('Foo"Bar','bar'),C=c('a"b"c"d"','b,"az"')))
+         data.table(A=c('1.2','fo"o'), B=c('Foo"Bar','bar'),C=c('a"b"c"d"','b,"az"')))
 test(1217, fread('"One,Two","Three",Four\n12,3,4\n56,7,8\n'),  # quoted column names including the separator
-           data.table("One,Two"=c(12L,56L),Three=c(3L,7L),Four=c(4L,8L)))
+         data.table("One,Two"=c(12L,56L),Three=c(3L,7L),Four=c(4L,8L)))
 
 # joining from empty character, #5387
 DT = data.table(a=1:3, b=c("a","b","c"), key="b")
@@ -4197,11 +4216,11 @@ if (base::getRversion() < "3.3.0") {
 } else {
     base_order <- function(..., na.last=TRUE, method=c("shell","radix")) {
         ans1 = base::order(..., na.last=na.last, method="shell")
-        if (!is.na(na.last) || base::getRversion()>"3.3.2") {
+        if (!is.na(na.last) || base::getRversion()>"3.3.3") {
             ans2 = base::order(..., na.last=na.last, method="radix")
             if (!identical(ans1,ans2)) stop("Base R's order(,method='shell') != order(,method='radix')")
         } else {
-            # Only when na.last=NA in just R 3.3.0-3.3.2 we don't check shell==radix
+            # Only when na.last=NA in just R 3.3.0-3.3.3 we don't check shell==radix
             # because there was a problem in base R's port of data.table code then when :
             #     1) 2 or more vectors were passed to base::order(,method="radix")
             # AND 2) na.last=NA
@@ -5001,22 +5020,23 @@ test(1321, fread('A,B,C\n1,"foo\nbar",3\n4,baz,6'), data.table(A=c(1L,4L), B=c("
 test(1322, fread('A,B,C\n1,"foo
 bar",3\n4,baz,6'), data.table(A=c(1L,4L), B=c("foo\nbar","baz"), C=c(3L,6L)))
 # NB: don't remove the newline after foo in test 1322 above, that's what's being tested.
-test(1323, fread('col1,col2\n5,"4\n3"'), data.table(col1=5L, col2="4\n3"))
-test(1324, fread('A,B,C\n1,4,"foo"\n2,5,"bar'), data.table(A=1:2,B=4:5,C=c("foo", "\"bar")))
+test(1323, fread('col1,col2\n5,"4\n3"'), data.table(col1=5L, col2="4\n3"))  # no warning as last field is finished ok
+test(1324, fread('A,B,C\n1,4,"foo"\n2,5,"bar'), data.table(A=1:2,B=4:5,C=c('foo','"bar')), 
+           warning="Last field of last line starts with a quote but is not finished with a quote before end of file")
 test(1325, fread('A,B,C\n1,4,"foo"\n2,5,"bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar')))
 test(1326, fread('A,B,C\n1,4,"foo"\n2,5,bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar"')))
 test(1327, fread('A,B,C\n1,4,"foo"\n2,5,""bar""'), data.table(A=1:2,B=4:5,C=c("foo",'"bar"')))
 cat('A,B\n1,"Joe \\",Bloggs"', file = f<-tempfile())
-test(1328, fread(f), data.table(V1=1L, V2='Joe \\', V3='Bloggs"'), warning="Starting data input on line 2 and discarding line 1 because.*: A,B")
+test(1328, fread(f), data.table(A=1L, B='Joe \\",Bloggs'))
 unlink(f)
-test(1329, fread(), error="Input is either empty or fully whitespace after the skip or autostart")
+test(1329, fread(), error="empty")
 # add test that that escaped escapes at the end of a quoted field
 test(1330, fread('A,B\nfoo,1\nAnalyst\\,2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3))
 test(1331.1, fread('A,B\nfoo,1\nAnalyst\\ ,2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3)) # strip.white=TRUE
 test(1331.2, fread('A,B\nfoo,1\nAnalyst\\ ,2\nbar,3', strip.white=FALSE), data.table(A=c('foo','Analyst\\ ','bar'), B=1:3))
 test(1332, fread('A,B\nfoo,1\n"Analyst\\",2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3))
 # double \\ in this file means one in the input, so the above " is escaped by a single '\' but still read ok
-test(1333.1, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3'), data.table(A = c("foo", "\"Analyst\\\"", "bar"), B = 1:3))
+test(1333.1, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3'), data.table(A = c("foo", "Analyst\\", "bar"), B = 1:3))
 test(1333.2, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3', strip.white=FALSE), data.table(A = c("foo", "\"Analyst\\\" ", "bar"), B = 1:3))
 test(1334, fread('A,B\nfoo,1\n"Analyst\\" ,",2\nbar,3'), data.table(A=c('foo', 'Analyst\\" ,', 'bar'), B=1:3))
 test(1335, fread('A,B\nfoo,1\n"Analyst\\\\",2\nbar,3'), data.table(A=c('foo','Analyst\\\\','bar'), B=1:3))
@@ -5028,7 +5048,7 @@ cat('A,B,C,D,E,F
 "TX",77406,"business analyst\\\\\\\\\\\\\\","the boeing co","",""
 "CA",94116,"na\\none","retired","",""
 ', file = f<-tempfile())   # aside: notice the \\ before n of none as well
-test(1336.1, fread(f), data.table(A = c("12", "TX", "CA"), B = c(0L, 77406L, 94116L), C = c("teacher private nfp\\\\\\\\\"", "business analyst\\\\\\\\\\\\\\", "na\\none"), D = c("\"\"jacoleman high school\"", "the boeing co", "retired"), E = c("", "", ""), F = c("", "", "")))
+test(1336.1, fread(f), data.table(A = c("12", "TX", "CA"), B = c(0L, 77406L, 94116L), C = c("teacher private nfp\\\\\\\\\"", "business analyst\\\\\\\\\\\\\\", "na\\none"), D = c("\"jacoleman high school", "the boeing co", "retired"), E = c("", "", ""), F = c("", "", "")))
 cat('A,B,C,D,E,F
 "12",0,"teacher private nfp\\\\\\\\"","jacoleman high school","",""
 "TX",77406,"business analyst\\\\\\\\\\\\\\","the boeing co","",""
@@ -5815,10 +5835,11 @@ test(1451.6, ans1[c(3,3)], fans2(DT, c("V3", "V3")))        # using duplicate co
 test(1451.7, shallow(DT, integer(0)), null.data.table())    # length-0 input work as intended as well.
 test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input work as intended as well.
 
-test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist. Include one or more spaces to consider the input a system command.")
+test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist; getwd()==")
 
 # Test for #802
-test(1453, fread("fread_line_error.csv"), error="Expecting 24 cols, but line 12 contains")
+test(1453, fread("fread_line_error.csv"), error="Line 12 starting <<31,3-0-7 4>>.*more than.*24 fields.*position 61.*character 3")
+# TODO: add comment=="#".   Ensure only after last field is observed. 
 
 # no-sep-found => sep="\n", use case for this in #738
 test(1454.1, fread('"Foo"`"Bar"\n1`2\n',sep="`"), data.table(Foo=1L,Bar=2L))
@@ -6332,7 +6353,6 @@ if ("package:bit64" %in% search()) {
     y = sample(letters, length(x), TRUE)
     ll = paste(x,y, sep=",", collapse="\n")
     test(1500.4, fread(ll), data.table(V1=suppressWarnings(as.numeric(x)), V2=y))
-
 }
 
 # fix for #1082
@@ -6867,7 +6887,7 @@ for(k in seq_along(nastrings)) {
 
 # FR #568
 str = "a,b\n1.5,\"at the 5\" end of the gene.\""
-test(1551.1, fread(str), data.table(a = 1.5, b = "\"at the 5\" end of the gene.\""))
+test(1551.1, fread(str), data.table(a = 1.5, b = "at the 5\" end of the gene."))
 #1256
 str = "x,y\nx1,\"oops\" y1\n"
 test(1551.2, fread(str), data.table(x = "x1", y = "\"oops\" y1"))
@@ -6875,8 +6895,8 @@ test(1551.2, fread(str), data.table(x = "x1", y = "\"oops\" y1"))
 str = '2,3\n""foo,bar'
 test(1551.3, fread(str), data.table(V1 = c("2", "\"\"foo"), V2 = c("3", "bar")))
 #1079
-str = 'L1\tsome\tunquoted\tstuff\nL2\tsome\t"half" quoted\tstuff\nL3\tthis\t"should work"\tok thought'
-test(1551.4, fread(str), data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok thought")))
+str = 'L1\tsome\tunquoted\tstuff\nL2\tsome\t"half" quoted\tstuff\nL3\tthis\t"should work"\tok though'
+test(1551.4, fread(str), data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok though")))
 #1095
 rhs = read.table("issue_1095_fread.txt", sep=",", comment.char="", stringsAsFactors=FALSE, quote="", strip.white=TRUE)
 test(1551.5, fread("issue_1095_fread.txt"), setDT(rhs))
@@ -6890,7 +6910,7 @@ test(1552.1, fread(str, na.strings="#N/A"), read_table(str, na.strings="#N/A"))
 test(1552.2, fread(str, na.strings=c("#N/A", "-999")), read_table(str, na.strings=c("#N/A", "-999")))
 test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.strings=c("#N/A", "-999", "+1")))
 test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1")))
-test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), read_table(str, na.strings=c("#N/A", "-999", "FALSE")))
+test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), error="na.strings.3.=='FALSE'.*boolean.*not permitted")
 
 # FR #1177: 'quote' option of 'print.data.table'
 DT1 <- data.table(s1=paste(" ",LETTERS[1:5],sep=""),s2=LETTERS[1:5])
@@ -6933,14 +6953,14 @@ str5=" ITERATION  ,  THETA1   ,    THETA2
 test(1555.2, fread(str1), data.table(ITERATION=0L, THETA1=39.5527, THETA2=21.0651))
 test(1555.3, fread(str2), data.table(ITERATION=0L, THETA1=39.5527, THETA2=21.0651))
 test(1555.4, fread(str3), data.table(ITERATION=0L, THETA1=39.5527, THETA2=21.0651))
-test(1555.5, fread(str4), data.table(ITERATION=0L, THETA1=39.5527, `"THETA2"`=21.0651))
+test(1555.5, fread(str4), data.table(ITERATION=0L, THETA1=39.5527, THETA2=21.0651))
 test(1555.6, fread(str5), data.table(ITERATION="bla", THETA1=39.5527, THETA2=21.0651))
 # without strip.white
-# header col spaces are dealt properly irrespective of strip.white
-test(1555.7, fread(str1, strip.white=FALSE), error="Expecting 4 cols, but line 2 contains") 
-test(1555.8, names(fread(str2, strip.white=FALSE)), c("ITERATION","THETA1","THETA2                "))
-test(1555.9, names(fread(str3, strip.white=FALSE)), c("ITERATION  ","THETA1   ","THETA2                "))
-test(1555.10, names(fread(str4, strip.white=FALSE)), c("ITERATION  ","THETA1   ","\"THETA2\"                "))
+# when sep==' ' as in str1, header col spaces should still be stripped even when strip.white=FALSE
+test(1555.7, fread(str1, strip.white=FALSE), data.table(ITERATION=0L, THETA1=39.5527, THETA2=21.0651)) 
+test(1555.8, names(fread(str2, strip.white=FALSE)),  c(" ITERATION","    THETA1","       THETA2                "))
+test(1555.9, names(fread(str3, strip.white=FALSE)),  c(" ITERATION  ","  THETA1   ","    THETA2                "))
+test(1555.10, names(fread(str4, strip.white=FALSE)), c(" ITERATION  ","  THETA1   ","    \"THETA2\"                "))
 
 # bug #1035, reply to the post from another user
 str1="  22 4 6 4\n  34 22 34 5\n  6 2 1 4\n"
@@ -7142,16 +7162,19 @@ X = fread("a|b|c|d
 test(1577.3, levels(X$b), character(0))
 
 # FR #530, skip blank lines
+input = "Header not 2 columns\n\n1,3\n2,4"
+test(1578.0, fread(input), data.table(V1=1:2, V2=3:4))
 input = "a,b\n\n1,3\n2,4"
-test(1578.1, fread(input), data.table(V1=1:2, V2=3:4))
+test(1578.1, fread(input), data.table(a=logical(), b=logical()), warning="empty line")
 test(1578.2, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 input = "a,b\n\n\n1,3\n2,4"
 test(1578.3, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 input = "a,b\n\n\n1,3\n\n2,4\n\n"
 test(1578.4, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 
-test(1578.5, fread("530_fread.txt", skip=47L), data.table(V1=1:2, V2=3:4))
-test(1578.6, fread("530_fread.txt", skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
+test(1578.5, fread("530_fread.txt", skip=47L), data.table(a=logical(), b=logical()), warning="Stopped.*line 49.*discarded.*<<1,3>>")
+test(1578.6, fread("530_fread.txt", skip=49L), data.table(V1=1:2, V2=3:4))
+test(1578.7, fread("530_fread.txt", skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
 
 # gforce optimisations
 dt = data.table(x  = sample(letters, 300, TRUE), 
@@ -7988,6 +8011,7 @@ test(1634.1, any(grepl("ad hoc", v1)), TRUE)
 test(1634.2, any(grepl("existing index", v2)), TRUE)
 
 # fread's fill argument detects separator better in complex cases as well, #1573
+# if pasted to the console, these tests won't work. But do work when sourced as these are tabs not spaces in text
 text = "a	b	c	d	e	f	g	h	i	j	k	l\n1	P	P;A;E;	Y	YW;	H().	1-3 pro\n2	Q9	a;a;a;a;	YB	YH;	M().	13 pn ba\n1	P3	P;	Y	Y;	R().	14 p\n53	P	P6;B;D;0;5;a;X;a;4R;	Y	Y;	H().	13 pe e\n1	P	P;O;O;a;a;a;	HLA-A	HLA-A;;	H().	HcIha,A-n\n102	P	P;O;P;P;P;P;P;P;a;a;a;a;a;a;a;a;a;a;	H-A	H-A;;	H().	HcIha,A"
 test(1635.1, ans1 <- fread(text, fill=TRUE), setDT(read.table(text=text, stringsAsFactors=FALSE, fill=TRUE, sep="\t", header=TRUE)))
 text = "a	b	c	d	e\n1	P	P;A;E;	Y	YW;	H().	1-3 pro\n2	Q9	a;a;a;a;	YB	YH;	M().	13 pn ba\n1	P3	P;	Y	Y;	R().	14 p\n53	P	P6;B;D;0;5;a;X;a;4R;	Y	Y;	H().	13 pe e\n1	P	P;O;O;a;a;a;	HLA-A	HLA-A;;	H().	HcIha,A-n\n102	P	P;O;P;P;P;P;P;P;a;a;a;a;a;a;a;a;a;a;	H-A	H-A;;	H().	HcIha,A"

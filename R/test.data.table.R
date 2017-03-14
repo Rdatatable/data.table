@@ -110,6 +110,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     }
     if (!is.null(error) || !is.null(warning)) {
         type = ifelse(!is.null(error),"error","warning")
+        if (type=="error" && !missing(y)) stop("Test ",num," is invalid: when error= is provided it doesn't make sense to pass y as well")
         patt = txt = ifelse(!is.null(error),error,warning)
         patt = gsub("[(]","[(]",patt)
         patt = gsub("[)]","[)]",patt)

@@ -4,13 +4,8 @@
 
 sudo apt-get update
 sudo apt-get upgrade
-
-sudo apt-get install pandoc
-# v1.12 as on Ubuntu repo Sep-2015 had 'no header_extensions' problem. Needed manual update to v1.15
-# Ubuntu now has v1.16 which is fine.
-
 R
-update.packages()
+update.packages(ask=FALSE)
 # See here for getting R.oo to install: https://github.com/HenrikBengtsson/R.utils/issues/29
 q("no")
 
@@ -283,9 +278,12 @@ sudo R CMD javareconf
 cd ~/build/revdeplib/
 export R_LIBS=~/build/revdeplib/
 export R_LIBS_SITE=none
+export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
 R
 .libPaths()   # should be just 2 items: revdeplib and the base R package library
 update.packages(ask=FALSE)
+# if package not found on mirror, try manually a different one:
+install.packages("MIAmaxent", repos="http://cloud.r-project.org/")
 update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating until none
 
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
@@ -335,22 +333,19 @@ for (p in deps) {
    system(paste0("mv ",f,"_TEMP ",f))
 }
 
-cd ~/build/revdeplib/
-export R_LIBS=~/build/revdeplib/
-export R_LIBS_SITE=none
-export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
-R CMD INSTALL ~/data.table_1.10.1.tar.gz      # ** ensure latest version installed into revdeplib **
-rm -rf *.Rcheck                               # [optional] delete all previous .Rcheck directories
-ls -1 *.tar.gz | wc -l                        # check this equals length(deps) above
-time ls -1 *.tar.gz | parallel R CMD check    # apx 2.5 hrs for 313 packages on my 4 cpu laptop with 8 threads
-ls -1 *.tar.gz | grep -E 'pk1|pk2|...' | parallel R CMD check
-
 status = function(which="both") {
   if (which=="both") {
      cat("CRAN:\n"); status("cran")
      cat("BIOC:\n"); status("bioc")
      cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
      system("find . -name '00check.log' | xargs ls -lt | tail -1")
+     cat("\n")
+     if (file.exists("/tmp/started.flag")) {
+       system("ls -lrt /tmp/*.flag")
+       tt = as.POSIXct(file.info(c("/tmp/started.flag","/tmp/finished.flag"))$ctime)
+       if (is.na(tt[2])) tt[2] = Sys.time()
+       print(diff(tt))
+     }
      return(invisible())
   }
   if (which=="cran") deps = deps[-grep("bioc",avail[deps,"Repository"])]
@@ -383,6 +378,33 @@ status = function(which="both") {
 }
 
 status()
+
+run = function(all=FALSE) {
+  numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
+  stopifnot(numtgz==length(deps))
+  cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
+  if (!all) {
+    x = sapply(paste0("./",deps,".Rcheck"), file.exists)
+    x = deps[!x]
+    if (!length(x)) { cat("All package checks have already run. To rerun all: run(all=TRUE).\n"); return(); }
+    cat("Running checks for",length(x),"packages\n")
+    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel R CMD check") 
+  } else {
+    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | parallel R CMD check"
+    # apx 2.5 hrs for 313 packages on my 4 cpu laptop with 8 threads
+  }
+  cat("Command:",cmd,"\n")
+  if (as.integer(system("ps -a | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
+  cat("Proceed? (ctrl-c or enter)\n")
+  scan(quiet=TRUE)
+  system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
+  system(paste(cmd,">/dev/null 2>&1 && touch /tmp/finished.flag"),wait=FALSE)
+  #                                 ^^ must be && and not ; otherwise wait doesn't wait
+}
+
+run()
+system("R CMD INSTALL ~/data.table_1.10.4.tar.gz")      # ** ensure latest version installed into revdeplib **
+
 
 # Investigate and fix the fails ...
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle

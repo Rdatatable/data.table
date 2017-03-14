@@ -515,7 +515,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
                         }
                     } else {
                         u.d = REAL(x)[k];
-                        if (u.ll != NAINT64) {
+                        if (u.ll != NA_INT64_LL) {
                             REAL(sub)[j] = (double)u.ll;
                         } else {
                             REAL(ans)[i] = NA_REAL;
@@ -551,7 +551,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
                         } else { nacount++; continue; }
                     } else {
                         u.d = REAL(x)[k];
-                        if (u.ll != NAINT64) {
+                        if (u.ll != NA_INT64_LL) {
                             REAL(sub)[j-nacount] = (double)u.ll;
                         } else { nacount++; continue; }
                     }

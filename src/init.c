@@ -201,6 +201,18 @@ void attribute_visible R_init_datatable(DllInfo *info)
     memset(&ld, 0, sizeof(long double));
     if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
     
+    // Variables rather than #define for NA_INT64 to ensure correct usage; i.e. not casted
+    NA_INT64_LL = LLONG_MIN;
+    NA_INT64_D = LLtoD(NA_INT64_LL);
+    if (NA_INT64_LL != DtoLL(NA_INT64_D)) error("Conversion of NA_INT64 via double failed %lld!=%lld", NA_INT64_LL, DtoLL(NA_INT64_D));
+    // LLONG_MIN when punned to double is the sign bit set and then all zeros in exponent and significand i.e. -0.0
+    //   That's why we must never test for NA_INT64_D using == in double type. Must always DtoLL and compare long long types.
+    //   Assigning NA_INT64_D to a REAL is ok however. 
+    if (NA_INT64_D != 0.0)  error("NA_INT64_D (negative -0.0) is not == 0.0.");
+    if (NA_INT64_D != -0.0) error("NA_INT64_D (negative -0.0) is not ==-0.0.");
+    if (ISNAN(NA_INT64_D)) error("ISNAN(NA_INT64_D) is TRUE but should not be");
+    if (isnan(NA_INT64_D)) error("isnan(NA_INT64_D) is TRUE but should not be");
+        
     setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
     UNPROTECT(1);
     
@@ -251,7 +263,7 @@ inline Rboolean INHERITS(SEXP x, SEXP char_) {
   return FALSE;
 }
 
-inline long long I64(double x) {
+inline long long DtoLL(double x) {
   // Type punning such as 
   //     *(long long *)&REAL(column)[i]
   // is undefined by C standards. This was the cause of v1.10.2 failing on 31 Jan 2017
@@ -273,6 +285,13 @@ inline long long I64(double x) {
   memcpy(&ll, &x, 8);
   return ll;
 }
+
+inline double LLtoD(long long x) {
+  double d;
+  memcpy(&d, &x, 8);
+  return d;
+}
+
 
 SEXP hasOpenMP() {
   // Just for use by onAttach to avoid an RPRINTF from C level which isn't suppressable by CRAN

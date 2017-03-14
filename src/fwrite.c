@@ -76,12 +76,12 @@ static inline void write_positive_int(long long x, char **thisCh)
 
 static void writeInteger(SEXP column, int i, char **thisCh)
 {
-  long long x = (TYPEOF(column)!=REALSXP) ? INTEGER(column)[i] : I64(REAL(column)[i]);
+  long long x = (TYPEOF(column)!=REALSXP) ? INTEGER(column)[i] : DtoLL(REAL(column)[i]);
   // != REALSXP rather than ==INTSXP to cover LGLSXP when logicalAsInt==TRUE
   char *ch = *thisCh;
   if (x == 0) {
     *ch++ = '0';
-  } else if (x == ((TYPEOF(column)==INTSXP) ? NA_INTEGER : NAINT64)) {
+  } else if (x == ((TYPEOF(column)==INTSXP) ? NA_INTEGER : NA_INT64_LL)) {
     write_chars(na, &ch);
   } else {
     if (x<0) { *ch++ = '-'; x=-x; }
@@ -450,9 +450,9 @@ static void writePOSIXct(SEXP column, int i, char **thisCh)
 
 static void writeNanotime(SEXP column, int i, char **thisCh)
 {
-  long long x = I64(REAL(column)[i]);
+  long long x = DtoLL(REAL(column)[i]);
   char *ch = *thisCh;
-  if (x == NAINT64) {
+  if (x == NA_INT64_LL) {
     write_chars(na, &ch);
   } else {
     int d/*days*/, s/*secs*/, n/*nanos*/;

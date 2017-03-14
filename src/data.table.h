@@ -29,7 +29,6 @@
 #undef MIN
 #endif
 #define MIN(a,b) (((a)<(b))?(a):(b))
-#define NAINT64 LLONG_MIN
 
 // init.c
 void setSizes();
@@ -44,7 +43,10 @@ SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
 Rboolean INHERITS(SEXP x, SEXP char_);
-long long I64(double x); 
+long long DtoLL(double x); 
+double LLtoD(long long x);
+double NA_INT64_D;
+long long NA_INT64_LL;
 
 // dogroups.c
 SEXP keepattr(SEXP to, SEXP from);
