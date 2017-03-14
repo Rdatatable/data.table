@@ -503,18 +503,18 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
 #else
         // Following: http://msdn.microsoft.com/en-gb/library/windows/desktop/aa366548(v=vs.85).aspx
         hFile = INVALID_HANDLE_VALUE;
-        i = 0;
-        while(hFile==INVALID_HANDLE_VALUE && i<5) {
+        int attempts = 0;
+        while(hFile==INVALID_HANDLE_VALUE && attempts<5) {
             hFile = CreateFile(fnam, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
             // FILE_SHARE_WRITE is required otherwise if the file is open in Excel, CreateFile fails. Should be ok now.
             if (hFile==INVALID_HANDLE_VALUE) {
                 if (GetLastError()==ERROR_FILE_NOT_FOUND) error("File not found: %s",fnam);
-                if (i<4) Sleep(250);  // 250ms
+                if (attempts<4) Sleep(250);  // 250ms
             }
-            i++;
+            attempts++;
             // Looped retry to avoid ephemeral locks by system utilities as recommended here : http://support.microsoft.com/kb/316609
         }
-        if (hFile==INVALID_HANDLE_VALUE) error("Unable to open file after %d attempts (error %d): %s", i, GetLastError(), fnam);
+        if (hFile==INVALID_HANDLE_VALUE) error("Unable to open file after %d attempts (error %d): %s", attempts, GetLastError(), fnam);
         LARGE_INTEGER liFileSize;
         if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); error("GetFileSizeEx failed (returned 0) on file: %s", fnam); }
         filesize = (size_t)liFileSize.QuadPart;
