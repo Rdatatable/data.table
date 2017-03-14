@@ -9832,6 +9832,10 @@ if ("package:nanotime" %in% search()) {
   cat("Test 1751 not run. If required call library(nanotime) first.\n")
 }
 
+# issue 2051 where a quoted field contains ",  New quote rule detection handles it.
+test(1752, fread("issue_2051.csv")[2,grep("^Our.*tool$",COLUMN50)], 1L)
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

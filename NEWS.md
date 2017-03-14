@@ -17,6 +17,10 @@
 
 1. The type pun fix (using union) in 1.10.4 resolved some CRAN flavors but still failed the new `fwrite` nanotime test with R-devel on MacOS using latest clang from latest Xcode 8.2. It seems that clang optimizations in Xcode 8 are particularly aggressive and require even stricter adherence to C standards. The type pun was already centralized and now uses `memcpy` which is ok by C standards and compilers apparently know to optimize to avoid call overhead.
 
+2. The new quote rules handles this single field \code{"Our Stock Screen Delivers an Israeli Software Company (MNDO, CTCH)<\/a> SmallCapInvestor.com - Thu, May 19, 2011 10:02 AM EDT<\/cite><\/div>Yesterday in \""Google, But for Finding
+ Great Stocks\"", I discussed the value of stock screeners as a powerful tool"}, [#2051](https://github.com/Rdatatable/data.table/issues/2051). Thanks to @scarrascoso for reporting. Example file added to test suite.
+
+
 #### NOTES
 
 
