@@ -738,7 +738,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
     // eol must be passed from R level as '\r\n' on Windows since write() only auto-converts \n to \r\n in
     // _O_TEXT mode. We use O_BINARY for full control and perhaps speed since O_TEXT must have to deep branch an if('\n')
 #else
-    f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
+    f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0666);
 #endif
     if (f == -1) {
       int erropen = errno;
