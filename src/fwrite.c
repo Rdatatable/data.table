@@ -910,10 +910,10 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
               // showProgress=FALSE until this can be fixed or removed.
               int ETA = (int)((nrow-end)*(((double)(now-start_time))/end));
               if (hasPrinted || ETA >= 2) {
-                if (verbose && !hasPrinted) Rprintf("\n"); 
+                if (verbose && !hasPrinted) Rprintf("\n");
                 Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
-                        "anyBufferGrown=%s; maxBuffUsed=%d%%. Finished in %d secs.      ",
-                         (100.0*end)/nrow, nrow, (int)(now-start_time), nth, nth==1?"":"s", 
+                        "anyBufferGrown=%s; maxBuffUsed=%d%%. ETA %d secs.      ",
+                         (100.0*end)/nrow, nrow, (int)(now-start_time), nth, nth==1?"":"s",
                          anyBufferGrown?"yes":"no", maxBuffUsedPC, ETA);
                 R_FlushConsole();    // for Windows
                 next_time = now+1;
