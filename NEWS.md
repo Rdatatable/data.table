@@ -24,6 +24,7 @@
 
 4. `fread()` no longer holds an open lock on the file when a line outside the large sample has too many fields and generates an error, [#2044](https://github.com/Rdatatable/data.table/issues/2044). Thanks to Hugh Parsonage for reporting.
 
+5. `as.IDate.POSIXct` passes the usual default `"UTC"` instead of `NULL` timezone to `as.Date`'s `tz` argument, [#1973](https://github.com/Rdatatable/data.table/issues/1973). Thanks @lbilli for reporting and @MichaelChirico for a solution.
 
 #### NOTES
 
