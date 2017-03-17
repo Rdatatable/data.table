@@ -10,15 +10,15 @@
     * If the file does not exist, the current working directory is now included in the error message; useful in logs files.
     * The increased sample size in v1.9.8 (1000 rows at 10 jump points, including the middle and very end as always) greatly improved column type guessing. Accordingly mid-read type bumping is removed. In the event of an out-of-sample field's type different to the guess, fread will report the first such value from all such columns and be helpful in suggesting how to set `colClasses` in a single rerun. This change is to ensure accuracy too as a mid-read bump from integer to character was always unable to know that a previously read integer `1` actually came from a character field `0001`, which it used to warn about.
     * Quoting rules are more robust and flexible. See point 10 on the wiki page [here](https://github.com/Rdatatable/data.table/wiki/Convenience-features-of-fread#10-automatic-quote-escape-method-detection-including-no-escape).
-    * Various efficiency savings and simplification at C level. 
+    * Various efficiency savings and simplification at C level.
     * The ability to position `autostart` anywhere inside one of multiple tables in a single file is removed with warning. It used to search upwards from that line to find the start of the table based on a consistent number of columns. People appear to be using `skip="string"` or `skip=nrow` to find the header row exactly, which is retained and simpler. It was too difficult to retain search-upwards-autostart together with skipping blank lines and filling incomplete rows.
 
 #### BUG FIXES
 
 1. The type pun fix (using union) in 1.10.4 resolved some CRAN flavors but still failed the new `fwrite` nanotime test with R-devel on MacOS using latest clang from latest Xcode 8.2. It seems that clang optimizations in Xcode 8 are particularly aggressive and require even stricter adherence to C standards. The type pun was already centralized and now uses `memcpy` which is ok by C standards and compilers apparently know to optimize to avoid call overhead.
 
-2. The new quote rules handles this single field \code{"Our Stock Screen Delivers an Israeli Software Company (MNDO, CTCH)<\/a> SmallCapInvestor.com - Thu, May 19, 2011 10:02 AM EDT<\/cite><\/div>Yesterday in \""Google, But for Finding
- Great Stocks\"", I discussed the value of stock screeners as a powerful tool"}, [#2051](https://github.com/Rdatatable/data.table/issues/2051). Thanks to @scarrascoso for reporting. Example file added to test suite.
+2. The new quote rules handles this single field `"Our Stock Screen Delivers an Israeli Software Company (MNDO, CTCH)<\/a> SmallCapInvestor.com - Thu, May 19, 2011 10:02 AM EDT<\/cite><\/div>Yesterday in \""Google, But for Finding
+ Great Stocks\"", I discussed the value of stock screeners as a powerful tool"`, [#2051](https://github.com/Rdatatable/data.table/issues/2051). Thanks to @scarrascoso for reporting. Example file added to test suite.
 
 3. `fwrite()` creates a file with permissions that now play correctly with `Sys.umask()`, [#2049](https://github.com/Rdatatable/data.table/issues/2049). Thanks to @gnguy for reporting.
 

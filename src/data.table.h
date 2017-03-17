@@ -25,10 +25,16 @@
 #define IS_LATIN(x) (LEVELS(x) & 4)
 
 #define SIZEOF(x) sizes[TYPEOF(x)]
+
 #ifdef MIN
 #undef MIN
 #endif
 #define MIN(a,b) (((a)<(b))?(a):(b))
+
+#ifdef MAX
+#undef MAX
+#endif
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 // init.c
 void setSizes();

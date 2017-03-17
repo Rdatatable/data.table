@@ -47,7 +47,6 @@ static int eolLen, line;
 static SEXP nastrings;
 static Rboolean verbose, ERANGEwarning, any_number_like_nastrings;
 static Rboolean stripWhite;  // only applies to unquoted character columns; numeric fields always stripped 
-static clock_t tCoerce, tCoerceAlloc;
 static cetype_t ienc;
 
 // Define our own fread type codes, different to R's SEXPTYPE :
@@ -72,9 +71,8 @@ static char quote;
 typedef Rboolean (*reader_fun_t)(SEXP, int);
 
 // Not sure how these will end up. So not exposed to user, yet.
-#define SEPLINES  30      // how many lines (from line skip) to use to guess sep and quote rule
-#define NJUMPS    10      // how many points to jump to
-#define JUMPLINES 100     // at each jump point how many lines to use to guess column types
+#define NJUMPS      10     // how many points to jump to
+#define NJUMPLINES  100    // at each jump point how many lines to use to guess column types
 
 const char *fnam=NULL, *origmmp, *mmp;   // origmmp just needed to pass to munmap when BOM is skipped over using mmp+=3.
 size_t filesize;
@@ -386,8 +384,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP ans, thisstr;
-    R_len_t j, k, protecti=0, nrow=0, ncol=0;
-    const char *pos, *ch2, *lineStart;
+    R_len_t j, k, protecti=0;
+    const char *pos, *ch2;
     Rboolean header, allchar, skipEmptyLines, fill;
     verbose=LOGICAL(verbosearg)[0];
     clock_t t0 = clock();
@@ -602,7 +600,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     
     // skip blank input at the start
-    lineStart = ch;
+    const char *lineStart = ch;
     while (ch<eof && isspace(*ch)) {   // isspace matches ' ', \t, \n and \r
       if (*ch==eol) { ch+=eolLen; lineStart=ch; line++; } else ch++;
     }
@@ -613,9 +611,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     ch = pos = lineStart;
     
-    // ********************************************************************************************
+    // *********************************************************************************************************
     //   Auto detect separator, quoting rule, first line and ncol, simply.
-    // ********************************************************************************************
+    // *********************************************************************************************************
     const char *seps;
     int nseps=0;
     if (isNull(separg)) {
@@ -628,39 +626,42 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       if (verbose) Rprintf("Using supplied sep '%s'\n", seps[0]=='\t' ? "\\t" : seps);
     }
     
-    int topNumLines=0;   // the most number of lines with the same number of fields, so far
-    int topNumFields=1;  // how many fields that was, to resolve ties
-    int topNmax=0;       // for that sep and quote rule, what was the max number of columns (just for fill=TRUE)
-    char topSep=eol;     // which sep that was, by default \n to mean single-column input (1 field)
-    int topQuoteRule=0;  // which quote rule that was
+    int topNumLines=0;        // the most number of lines with the same number of fields, so far
+    int topNumFields=1;       // how many fields that was, to resolve ties
+    int topNmax=0;            // for that sep and quote rule, what was the max number of columns (just for fill=TRUE)
+    char topSep=eol;          // which sep that was, by default \n to mean single-column input (1 field)
+    int topQuoteRule=0;       // which quote rule that was
+    const char *firstEnd=eof; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
     
-    int numFields[SEPLINES];
-    int numLines[SEPLINES];
-    for (int i=0; i<SEPLINES; i++) { numFields[i]=0; numLines[i]=0; } // initialize VLAs
+    int nJumpLines = INTEGER(nrowsarg)[0]>0 ? MIN(NJUMPLINES, INTEGER(nrowsarg)[0]) : NJUMPLINES;
+    int numFields[nJumpLines+1];   // +1 to cover the likely header row. Don't know at this stage whether it is present or not.
+    int numLines[nJumpLines+1];
+    
     for (int s=0; s<nseps; s++) {
       sep = seps[s];
       for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
         ch = pos;
         // Rprintf("Trying sep='%c' with quoteRule %d ...", sep, quoteRule);
-        int i=0; while (numFields[i]) { numFields[i]=0; numLines[i]=0; i++; }  // reset used slots
-        int thisLine = 0;
-        while (ch<eof && ++thisLine<=SEPLINES) {
-          ncol = countfields();   // using this sep and quote rule; moves ch to start of next line
-          // if (verbose) Rprintf("sep=%c  quoteRule=%d  Line %d has %d cols ending %.5s\n", sep, quoteRule, thisLine, ncol, ch-eolLen-5);
-          if (ncol<0) { numFields[0]=-1; break; } // invalid file with this sep and quote rule; abort this rule
-          if (ncol<=1) continue;  // skip blank lines and sep-not-found when counting
-          int i=0; while (numFields[i]!=0 && numFields[i]!=ncol) i++;  // find matching slot, or first free one
-          numFields[i] = ncol;    // just for the first time; harmless overwrite after that since numFields[i] already == ncol
-          numLines[i]++;          // increment count of this number of fields
+        for (int i=0; i<=nJumpLines; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
+        int i=-1; // The slot we're counting the currently contiguous consistent ncol
+        int thisLine=0, lastncol=0;
+        while (ch<eof && ++thisLine<=nJumpLines+1) {
+          int thisncol = countfields();   // using this sep and quote rule; moves ch to start of next line
+          if (thisncol<0) { numFields[0]=-1; break; }  // invalid file with this sep and quote rule; abort this rule
+          if (lastncol!=thisncol) { numFields[++i]=thisncol; lastncol=thisncol; } // new contiguous consistent ncol started
+          numLines[i]++;
         }
         if (numFields[0]==-1) continue;
         _Bool updated=FALSE;
         int nmax=0;
+        
         i=-1; while (numLines[++i]) {
           if (numFields[i] > nmax) nmax=numFields[i];  // for fill=TRUE to know max number of columns
-          if (numLines[i]>topNumLines ||
-             (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=' ')) {
+          if (numFields[i]>1 &&    // the default sep='\n' (whole lines, single column) shuld take precedence 
+              ( numLines[i]>topNumLines ||
+               (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=' '))) {
             topNumLines=numLines[i]; topNumFields=numFields[i]; topSep=sep; topQuoteRule=quoteRule; topNmax=nmax;
+            firstEnd = ch;  // So that after the header we know how many bytes jump point 0 is
             updated = TRUE;
             // Two updates can happen for the same sep and quoteRule (e.g. issue_1113_fread.txt where sep=' ') so the
             // updated flag is just to print once.
@@ -673,6 +674,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       }
     }
     
+    int ncol;
     quoteRule = topQuoteRule;
     sep = topSep;
     ch = pos;
@@ -683,7 +685,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       // find the top line with the consistent number of fields.  There might be irregular header lines above it.
       //int nmax=0, thisLine=-1, whichmax=0;
       ncol = topNumFields;
-      int thisLine=-1; while (ch<eof && ++thisLine<SEPLINES) {
+      int thisLine=-1; while (ch<eof && ++thisLine<nJumpLines) {
         const char *lineStart = ch;
         if (countfields()==ncol) { ch=pos=lineStart; line+=thisLine; break; }
       }
@@ -695,8 +697,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     ch = pos; // move back to start of line since countfields() moved to next
     if (!fill && tt!=ncol) STOP("Internal error: first line has field count %d but expecting %d", tt, ncol);
     if (verbose) {
-      Rprintf("Detected %d columns on line %d. This line will be taken as either column names or first data row (first 30 chars): <<%.*s>>\n",
-              tt, line, STRLIM(pos, 30), pos);
+      Rprintf("Detected %d columns on line %d. This line is either column names or first data row (first 30 chars): <<%.*s>>\n",
+               tt, line, STRLIM(pos, 30), pos);
       if (fill) Rprintf("fill=TRUE and the most number of columns found is %d\n", ncol);
     }
         
@@ -763,101 +765,35 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     clock_t tLayout = clock();
     
-    // ********************************************************************************************
-    //   Count number of rows
-    // ********************************************************************************************    
-    ch = pos;
-    nrow = INTEGER(nrowsarg)[0];
-    if (pos>=eof || (*pos==eol && !fill && !skipEmptyLines)) {
-        nrow=0;
-        if (verbose) Rprintf("Byte after header row is eof or eol, 0 data rows present.\n");
-    } else if (nrow>-1) {
-        if (verbose) Rprintf("nrow set to nrows passed in (%d)\n", nrow);
-        // Intended for nrow=10 to see top 10 rows quickly without touching remaining pages
-    } else {
-        long long neol=1, nsep=0, tmp;
-        // handle most frequent case first
-        if (!fill) {
-            // goal: quick row count with no branches and cope with embedded sep and \n
-            while (ch<eof) {
-                neol+=(*ch==eol);
-                nsep+=(*ch++==sep);
-            }
-        } else {
-            // goal: don't count newlines within quotes, 
-            // don't rely on 'sep' because it'll provide an underestimate
-            if (!skipEmptyLines) {
-                while (ch<eof) {
-                    if (*ch!=quote) neol += (*ch==eol);
-                    else while(ch+1<eof && *(++ch)!=quote); // quits at next quote
-                    ch++;
-                }
-            } else {
-                while (ch<eof) {
-                    if (*ch!=quote) neol += (*ch==eol && *(ch-1)!=eol);
-                    else while(ch+1<eof && *(++ch)!=quote); // quits at next quote
-                    ch++;
-                }                
-            }
-        }
-        if (ch!=eof) STOP("Internal error: ch!=eof after counting sep and eol");
-        int i=0; int endblanks=0;
-        if (!fill) {
-            while (i==0 && ch>pos) {
-                // count blank lines at the end
-                i=0; while (ch>pos && *--ch!=eol2) i += !isspace(*ch);
-                endblanks += (i==0);
-                ch -= eolLen-1;
-            }
-        } else if (fill && !skipEmptyLines) endblanks = (*(ch-1) == eol);
-
-        // if (endblanks==0) There is non white after the last eol. Ok and dealt with. TO DO: reference test id here in comment
-        if (ncol==1 || fill) tmp = neol-endblanks;
-        else tmp = MIN( nsep/(ncol-1),  neol-endblanks );   // good quick estimate with embedded sep and eol in mind
-        if (verbose || tmp>INT_MAX) {
-            if (!fill) {
-                Rprintf("Count of eol: %lld (including %d at the end)\n",neol,endblanks);
-                if (ncol==1) Rprintf("ncol==1 so sep count ignored\n");
-                else {
-                    Rprintf("Count of sep: %lld\n",nsep);
-                    Rprintf("nrow = MIN( nsep [%lld] / (ncol [%d] -1), neol [%lld] - endblanks [%d] ) = %lld\n", nsep, ncol, neol, endblanks, tmp);
-                }
-            } else {
-                if (!skipEmptyLines) 
-                    Rprintf("nrow = neol [%lld] - endblanks [%d] = %lld\n", neol, endblanks, tmp);
-                else Rprintf("nrow = neol (after discarding blank lines) = %lld\n", tmp);
-            }
-            if (tmp > INT_MAX) STOP("nrow larger than current 2^31 limit");
-        }
-        nrow = tmp;
-        // Advantages of exact count: i) no need to slightly over allocate (by 5%, say) so no need to clear up on heap during gc(),
-        // and ii) no need to implement realloc if estimate doesn't turn out to be large enough (e.g. if sample rows are wider than file average).
-        // TO DO: goes away if we allow over-allocated columns.
-        // The old estimate method based on size of first 10 rows :
-        // estn = (R_len_t)ceil(1.05 * 10 * (filesize-(pos-mmp)) / (pos2-pos1)) +5;  // +5 for small files
-        // if (verbose) Rprintf("Estimated nrows: %d ( 1.05*%d*(%ld-(%ld-%ld))/(%ld-%ld) )\n",estn,10,filesize,pos,mmp,pos2,pos1);
-    }
-    clock_t tRowCount = clock();
-    
     // *****************************************************************************************************************
-    //   Make best guess at column types using 100 rows at 10 points, including the very first, middle and very last row
+    //   Make best guess at column types using 100 rows at 10 points, including the very first, middle and very last row.
+    //   At the same time, calc mean and sd of row lengths in sample. Use for very good estimate of nrow.
     // *****************************************************************************************************************
-    int   type[ncol];
+    unsigned char type[ncol];
     _Bool typeOk[ncol];
     for (int i=0; i<ncol; i++) { 
       type[i]   =0;   // 0 because it's the lowest type ('logical')
       typeOk[i] =1;   // set to 0 later to output one message per column if the guessed type is not sufficient
-    }   
-    int numPoints = nrow>1000 ? 11  : 1;
-    int eachNrows = nrow>1000 ? 100 : nrow;  // if nrow<=1000, test all the rows in a single iteration
-    for (j=0; j<numPoints; j++) {
-        if (j<10) {
-            ch = pos + j*(eof-pos)/10;
-        } else {
-            ch = eof - 50*(eof-pos)/nrow;
-            // include very last line by setting last point apx 50 lines from
-            // end and testing 100 lines from there until eof.
-        }
+    }
+    
+    size_t startSize=(size_t)(firstEnd-pos);  // the size in bytes of the first NJUMPLINES from the start (jump point 0)
+    int numJumps=(INTEGER(nrowsarg)[0]<1 && startSize && startSize*NJUMPS*2 < (eof-pos)) ? NJUMPS : 0;
+    // 0 means all rows (or nrows= passed in) tested from the start with no jumping
+    // *2 so there's a good gap between the end of one sample and the start of the next, to ensure no overlap
+    
+    if (verbose) {
+      Rprintf("Number of jump points = %d because ",numJumps);
+      if (INTEGER(nrowsarg)[0]>0) Rprintf("nrows=%d passed in\n", INTEGER(nrowsarg)[0]);
+      else if (startSize==0) Rprintf("startSize=0 (small number of single column input)\n");
+      else Rprintf("%lld startSize * %d NJUMPS * 2 %s %lld bytes from skip to eof\n", startSize, NJUMPS, numJumps==0 ? ">=" : "<", (size_t)(eof-pos));
+    }
+
+    int sampleLines=0;
+    size_t sampleBytes=0;
+    double sumLen=0.0, sumLenSq=0.0;
+    int minLen=INT_MAX;   // int_max so the first if(thisLen<minLen) is always true
+    for (int j=0; j<=numJumps; j++) {   // <= (not <) to get +1 jump for the very end
+        ch = ( j==0 ? pos : (j<numJumps ? pos + j*(eof-pos)/numJumps : eof-startSize) );
         if (j>0) {
             // we may have landed inside quoted field containing embedded sep and/or embedded \n
             // find next \n and see if 5 good lines follow. If not try next \n, and so on, until we find the real \n
@@ -876,18 +812,26 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 if (verbose) Rprintf("Couldn't find 5 good lines from jump point %d. Not using it.\n", j);
                 continue;
             }
+            // ch now the first good start of line after the jump point
         }
+        
+        const char *thisStart = ch;
+        const char *thisEnd = (j<numJumps || INTEGER(nrowsarg)[0]>0) ? ch+startSize : eof;
+        // numJumps=0  =>  j==0, nrows<2000, ch==pos and thisEnd==eof i.e. all lines will be tested from jump point 0 (the start)
+        // numJumps>0  =>  nrows>2000, NJUMPLINES at NJUMPS+1 will kick in, each for firstSize with the last one up to eof
+        // when nrows= passing in, it may be to avoid format errors, so just look at those rows to test format and coltypes
+        
         int i = 0;
-        while(i<eachNrows && ch<eof) {  // Test 100 lines from each of the 10 points in the file
+        while(ch<thisEnd) {
+            const char *lineStart = ch;
             if (sep==' ') while (ch<eof && *ch==' ') ch++;  // special for sep==' '. Correct not to be skip_white().
-            skip_white(&ch);
-            if (ch<eof && *ch==eol) {
+            skip_white(&ch);  // solely to detect blank lines, otherwise could leave to field processors which handle leading white
+            if (ch>=eof || *ch==eol) {
               ch += eolLen;
               if (skipEmptyLines || fill) continue;
               else break;
             }
             i++;
-            lineStart = ch;
             int field=0;
             const char *fieldStart=ch;  // Needed outside loop for error messages below
             while (ch<eof && *ch!=eol && field<ncol) {
@@ -934,14 +878,48 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                           STRLIM(fieldStart, 200), fieldStart);
                 }
             }
+            int thisLineLen = (int)(ch-lineStart);  // ch is now on start of next line so this includes eolLen already
+            sampleLines++;
+            sumLen += thisLineLen;
+            sumLenSq += pow(thisLineLen,2);
+            if (thisLineLen<minLen) minLen=thisLineLen;
         }
-        if (verbose) { Rprintf("Type codes (point %2d): ",j); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf("\n"); }
+        sampleBytes += (size_t)(ch-thisStart);  // ch not thisEnd because last line could have gone past thisEnd (which is fine)
+        if (verbose) { Rprintf("Type codes (jump %02d): ",j); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf("\n"); }
     }
-    ch = pos;
+    
+    int estnrow=sampleLines;
+    if (sampleLines>0) {
+      double m = sumLen/sampleLines;
+      double sd = sqrt( (sumLenSq - pow(sumLen,2)/sampleLines)/(sampleLines-1) );
+      int estnrow1 = (int)ceil((double)(eof-pos)/MAX((m-sd),(double)minLen))+1;
+      int estnrow2 = startSize ? 1.05*sampleLines*(eof-pos)/(startSize*(numJumps+1))+1 : 0;
+      estnrow = MAX(estnrow1, estnrow2);
+      if (verbose) {
+        Rprintf("Sampled %d rows at %d jump points including the very beginning and very end\n", sampleLines, numJumps);
+        Rprintf("Estimate1 nrow = %d = %lld bytes row 1 start to eof / max((%.1f mean - %.1f sd), %d minLen)\n",
+                 estnrow1, (size_t)(eof-pos), m, sd, minLen);
+        Rprintf("Estimate2 nrow = %d = 1.05 * %d sample lines * %lld bytes / %lld sample bytes\n",
+                 estnrow2, sampleLines, (size_t)(eof-pos), sampleBytes);
+        Rprintf("Using largest, Estimate%d==%d\n", 1+(estnrow2>estnrow1), estnrow);
+      }
+    }
+    if (numJumps==0 && !fill && sampleLines<nJumpLines) {
+      if (sampleLines > estnrow) STOP("Internal error: numJumps==0, sampleLines(%d) > estnrow(%d)", sampleLines, estnrow);
+      estnrow = sampleLines;
+      if (verbose) Rprintf("All rows were sampled since nrow is small so we know nrow=%d exactly\n", estnrow); 
+    }
+    int nrow = INTEGER(nrowsarg)[0];
+    if (nrow>-1 && nrow<estnrow) {
+      if (verbose) Rprintf("nrow limited to lower nrows=%d passed in\n", nrow);
+    } else {
+      nrow = estnrow;
+    }
     
     // ********************************************************************************************
     //   Apply colClasses, select and integer64
     // ********************************************************************************************
+    ch = pos;
     int numNULL = 0;
     SEXP colTypeIndex, items, itemsInt, UserTypeNameSxp;
     int tmp[ncol]; for (int i=0; i<ncol; i++) tmp[i]=0;  // used to detect ambiguities (dups) in user's input
@@ -1090,12 +1068,18 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     //   Read the data
     // ********************************************************************************************
-    tCoerce = tCoerceAlloc = 0;
     ch = pos;   // back to start of first data row
+#ifdef MADV_SEQUENTIAL
+    int ret = madvise((void *)origmmp, (size_t)filesize, MADV_SEQUENTIAL);
+    if (verbose) Rprintf("madvise sequential: %s\n", ret ? strerror(errno) : "ok");
+#else
+    if (verbose) Rprintf("madvise sequential: not available on Windows\n");
+    // Maybe try PrefetchVirtualMemory from Windows 8+ it seems
+#endif
     ERANGEwarning = TRUE;
-    clock_t nexttime = t0+2*CLOCKS_PER_SEC;  // start printing % done after a few seconds. If doesn't appear then you know mmap is taking a while.
-                                             // We don't want to be bothered by progress meter for quick tasks
-    Rboolean hasPrinted=FALSE, whileBreak=FALSE;
+    clock_t nexttime = t0+2*CLOCKS_PER_SEC;
+    // start printing progress meter after a few seconds. We don't want to be bothered by progress meter for quick tasks.
+    _Bool hasPrinted=FALSE, whileBreak=FALSE;
     int numTypeFails=0, numTypeFailCols=0;
     int i = 0;
     while (i<nrow && ch<eof) {
@@ -1109,6 +1093,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         int batchend = MIN(i+10000, nrow);    // batched into 10k rows to save (expensive) calls to clock()
         while(i<batchend && ch<eof) {
             //Rprintf("Row %d : %.10s\n", i+1, ch);
+            const char *lineStart = ch;
             if (sep==' ') while (ch<eof && *ch==' ') ch++;  // correct not to be skip_white()
             if (ch>=eof || *ch==eol) {
                 if (skipEmptyLines) { ch+=eolLen; continue; }
@@ -1180,15 +1165,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (ch<eof) {
         ch2 = ch;
         while (ch2<eof && *ch2!=eol) ch2++;
-        if (INTEGER(nrowsarg)[0] == -1 || i < nrow) warning("Stopped reading at empty line %d but text exists afterwards (discarded): <<%.*s>>", line, ch2-ch, ch);
+        if (INTEGER(nrowsarg)[0] == -1 || i < INTEGER(nrowsarg)[0])
+          warning("Stopped reading at line %d (likely blank) but text exists afterwards (discarded): <<%.*s>>", line, ch2-ch, ch);
     }
     if (i<nrow) {
-        // the condition above happens usually when the file contains many newlines. This is not necesarily something to be worried about. I've therefore commented the warning part, and retained the verbose message. If there are cases where lines don't get read in, we can revisit this warning. Fixes #1116.
-        // if (nrow-i > 100 && (double)i/nrow < 0.95)
-            // warning("Read less rows (%d) than were allocated (%d). Run again with verbose=TRUE and please report.",i,nrow);
-        // else if (verbose)
-        if (verbose)
-            Rprintf("Read fewer rows (%d) than were allocated (%d).\n", i, nrow);
+        if (verbose) Rprintf("Read fewer rows (%d) than were allocated (%d).\n", i, nrow);
         nrow = i;
     } else {
         if (i!=nrow) STOP("Internal error: i [%d] > nrow [%d]", i, nrow);
@@ -1210,15 +1191,14 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
     }
     if (verbose) {
-        clock_t tn = clock(), tot=tn-t0;
-        if (tot<1) tot=1;  // to avoid nan% output in some trivial tests where tot==0
-        Rprintf("%8.3fs (%3.0f%%) Memory map (rerun may be quicker)\n", 1.0*(tMap-t0)/CLOCKS_PER_SEC, 100.0*(tMap-t0)/tot);
+        clock_t tEnd = clock(), tot=tEnd-t0;
+        if (tot<1) tot=1;  // to avoid nan% output in some trivially small tests where tot==0.000s
+        Rprintf("%8.3fs (%3.0f%%) Memory map\n", 1.0*(tMap-t0)/CLOCKS_PER_SEC, 100.0*(tMap-t0)/tot);
         Rprintf("%8.3fs (%3.0f%%) sep, ncol and header detection\n", 1.0*(tLayout-tMap)/CLOCKS_PER_SEC, 100.0*(tLayout-tMap)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Count rows (wc -l)\n", 1.0*(tRowCount-tLayout)/CLOCKS_PER_SEC, 100.0*(tRowCount-tLayout)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Column type detection (100 rows at 10 points)\n", 1.0*(tColType-tRowCount)/CLOCKS_PER_SEC, 100.0*(tColType-tRowCount)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Column type detection using %d rows at %d jump points\n", 1.0*(tColType-tLayout)/CLOCKS_PER_SEC, 100.0*(tColType-tLayout)/tot, sampleLines, numJumps);
         Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (%.3fGB) in RAM\n", 1.0*(tAlloc-tColType)/CLOCKS_PER_SEC, 100.0*(tAlloc-tColType)/tot, nrow, ncol, (double)ansSize/(1024*1024*1024));
-        Rprintf("%8.3fs (%3.0f%%) Reading data\n", 1.0*(tRead-tAlloc-tCoerce)/CLOCKS_PER_SEC, 100.0*(tRead-tAlloc-tCoerce)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Changing na.strings to NA\n", 1.0*(tn-tRead)/CLOCKS_PER_SEC, 100.0*(tn-tRead)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Reading data\n", 1.0*(tRead-tAlloc)/CLOCKS_PER_SEC, 100.0*(tRead-tAlloc)/tot);
+        Rprintf("%8.3fs (%3.0f%%) Changing na.strings to NA\n", 1.0*(tEnd-tRead)/CLOCKS_PER_SEC, 100.0*(tEnd-tRead)/tot);
         Rprintf("%8.3fs        Total\n", 1.0*tot/CLOCKS_PER_SEC);
     }
     UNPROTECT(protecti);

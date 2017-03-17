@@ -2512,26 +2512,26 @@ for (eol in if (.Platform$OS.type=="unix") c("\n","\r\n") else "\n") {
     unlink(f3)
 }}}
 if ("package:bit64" %in% search()) {
-    n = 2000
+    n = 100000
+    # To test out-of-sample type diffs, nrow needs to be more than 2*NJUMPS(10)*NJUMPLINES(100)=2000. Under 2000, all rows are sampled. Over 2000, 1000 rows are sampled (with a comfortable gap between the jump batches).
     DT = data.table( a=sample(1:1000,n,replace=TRUE),
                      b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
                      c=sample(c("foo","bar","baz"),n,replace=TRUE) )
-    write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
+    fwrite(DT,f<-tempfile())
     test(897, class(DT$b), "integer64")
     test(898, fread(f), DT)
     unlink(f)
-    # Test all mid read bump coercions
     DT[,a2:=as.integer64(a)][,a3:=as.double(a)][,a4:=gsub(" ","",format(a))]
     DT[,b2:=as.double(b)][,b3:=gsub(" ","",format(b))]
     DT[,r:=a/100][,r2:=gsub(" ","",format(r))]
-    DT[112, a2:=as.integer64(12345678901234)]   # start on row 112 to avoid the first 100 
-    DT[113, a3:=3.14]
-    DT[114, a4:="123A"]
-    DT[115, b2:=1234567890123.45]
-    DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
-    DT[117, r2:="3.14A"]
-    write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
-    test(899.1, fread(f), output="Column 4.*a2.*integer.*112.*<<12345678901234>>.*Column 10.*r2.*numeric.*117.*<<3.14A>>",
+    DT[5012, a2:=as.integer64(12345678901234)]   # start on row 112 to avoid the first 100 
+    DT[5013, a3:=3.14]
+    DT[5014, a4:="123A"]
+    DT[5015, b2:=1234567890123.45]
+    DT[5016, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
+    DT[5017, r2:="3.14A"]
+    fwrite(DT,f<-tempfile())
+    test(899.1, fread(f), output="Column 4.*a2.*integer.*5012.*<<12345678901234>>.*Column 10.*r2.*numeric.*5017.*<<3.14A>>",
                           error="guessed column type was insufficient for 6 values in 6 columns")
     test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2"))), DT)
     unlink(f)
@@ -2699,9 +2699,9 @@ test(966, fread(input, colClasses=list(character=2:4)), error="Column number 4 (
 test(967, nrow(fread( paste( rep('a\tb\n', 10000), collapse=''), header=FALSE)), 10000L)
 
 # Test fread warns about removal of any footer (and autostart skips up over it)
-test(968, fread("A,B\n1,3\n2,4\n\nRowcount: 2\n"), data.table(A=1:2,B=3:4), warning="Stopped reading at empty line 4.*discarded.*Rowcount: 2")
-test(969, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2"), data.table(A=1:2,B=3:4), warning="Stopped reading at empty line 4.*discarded.*Rowcount: 2")
-test(970, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2\n\n"), data.table(A=1:2,B=3:4), warning="Stopped reading at empty line 4.*discarded.*Rowcount: 2")
+test(968, fread("A,B\n1,3\n2,4\n\nRowcount: 2\n"), data.table(A=1:2,B=3:4), warning="Stopped reading at line 4.*discarded.*Rowcount: 2")
+test(969, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2"), data.table(A=1:2,B=3:4), warning="Stopped reading at line 4.*discarded.*Rowcount: 2")
+test(970, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2\n\n"), data.table(A=1:2,B=3:4), warning="Stopped reading at line 4.*discarded.*Rowcount: 2")
 
 # fread skip override
 input = "some,bad,data\nA,B,C\n1,3,5\n2,4,6\n"
@@ -2711,11 +2711,11 @@ test(973, fread(input, skip=2), data.table(V1=1:2,V2=3:4,V3=5:6))
 test(974, fread(input, skip=2, header=TRUE), data.table("1"=2L,"3"=4L,"5"=6L))
 test(975, fread(input, skip="B"), data.table(A=1:2,B=3:4,C=5:6))
 input = "\n\nA,B\n1,3\n2,4\n\nC,D\n5,7\n6,8\n\nE,F\n9,11\n10,12\n"   # 3 tables in one file
-test(976, fread(input), data.table(A=1:2,B=3:4), warning="Stopped reading at empty line 6.*discarded.*C,D")
-test(977, fread(input, skip="C"), data.table(C=5:6,D=7:8), warning="Stopped reading at empty line 10.*discarded.*E,F")
-test(978.1, fread(input, skip="D"), data.table(C=5:6,D=7:8), warning="Stopped reading at empty line 10.*discarded.*E,F")
+test(976, fread(input), data.table(A=1:2,B=3:4), warning="Stopped reading at line 6.*discarded.*C,D")
+test(977, fread(input, skip="C"), data.table(C=5:6,D=7:8), warning="Stopped reading at line 10.*discarded.*E,F")
+test(978.1, fread(input, skip="D"), data.table(C=5:6,D=7:8), warning="Stopped reading at line 10.*discarded.*E,F")
 test(978.2, fread(input, skip=",F"), data.table(E=9:10,F=11:12))
-test(978.3, fread(input, skip=3), data.table(V1=1:2, V2=3:4), warning="Stopped reading at empty line 6.*discarded.*C,D")
+test(978.3, fread(input, skip=3), data.table(V1=1:2, V2=3:4), warning="Stopped reading at line 6.*discarded.*C,D")
 
 # mixed add and update in same `:=` bug/crash, #2528 and #2778
 DT = data.table(x=rep(1:2, c(3,2)), y=6:10)
@@ -6980,7 +6980,7 @@ test(1555.13, fread(str1), fread(str2))
 
 # fix for #1330
 test(1556.1, fread("issue_1330_fread.txt", nrow=2), data.table(a=1:2, b=1:2))
-test(1556.2, fread("issue_1330_fread.txt", nrow=4), data.table(a=1:2, b=1:2), warning="Stopped reading at empty line 4")
+test(1556.2, fread("issue_1330_fread.txt", nrow=4), data.table(a=1:2, b=1:2), warning="Stopped reading at line 4")
 
 # FR #768
 str="1,2\n3,4\n"
@@ -6995,7 +6995,10 @@ f = "issue_773_fread.txt"
 ans = data.table(AAA=as.integer(c(4,7,rep(1,17),31,21)),
                  BBB=as.integer(c(5,8,rep(2,17),32,22)),
                  CCC=as.integer(c(6,9,rep(3,17),33,23)))
-test(1558, fread(f, nrow=21L), ans) # no warning
+test(1558.1, fread(f, nrow=21L), ans) # no warning
+test(1558.2, fread(f, nrow=22L), error="finished early")
+test(1558.3, fread(f, nrow=22L, fill=TRUE), rbind(ans, list("ZZZ","YYY",NA)))
+
 
 # FR # 1338 -- check.names argument of setDT
 ans=data.table(X=1:3,"X.1"=1:3)
@@ -7165,7 +7168,7 @@ test(1577.3, levels(X$b), character(0))
 input = "Header not 2 columns\n\n1,3\n2,4"
 test(1578.0, fread(input), data.table(V1=1:2, V2=3:4))
 input = "a,b\n\n1,3\n2,4"
-test(1578.1, fread(input), data.table(a=logical(), b=logical()), warning="empty line")
+test(1578.1, fread(input), data.table(a=logical(), b=logical()), warning="Stopped reading at line 2")
 test(1578.2, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 input = "a,b\n\n\n1,3\n2,4"
 test(1578.3, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
