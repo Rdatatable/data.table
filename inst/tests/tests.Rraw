@@ -2860,13 +2860,10 @@ test(1013, fread("A,B\n123,123\n", integer64="integer"), error="integer64='%s' w
 test(1014, fread("A,B\n123456789123456,21\n", integer64="character"), data.table(A="123456789123456",B=21L))
 test(1015, fread("A,B\n123456789123456,21\n", integer64="double"), data.table(A=as.double("123456789123456"),B=21L))
 # and that mid read bumps respect integer64 control too ..
-x = sample(1:1000,2000,replace=TRUE)
+x = sample(1:1000,5000,replace=TRUE)
 DT = data.table( A=as.character(x), B=1:100)
 DT[115, A:="123456789123456"]  # row 115 is outside the 100 rows at 10 points.
-write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
-fread(f,verbose=TRUE)
-print(sapply(DT,class))
-print(sapply(DT,storage.mode))
+fwrite(DT,f<-tempfile())
 test(1016.1, fread(f) ,output="Column 1.*A.*integer.*row 115.*<<123456789123456>>",
                       error="guess.*insufficient.*1 value.*1 column")
 test(1016.2, fread(f, colClasses = c(A="numeric")), copy(DT)[,A:=as.numeric(A)])
