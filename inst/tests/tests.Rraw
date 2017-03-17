@@ -2864,6 +2864,9 @@ x = sample(1:1000,2000,replace=TRUE)
 DT = data.table( A=as.character(x), B=1:100)
 DT[115, A:="123456789123456"]  # row 115 is outside the 100 rows at 10 points.
 write.table(DT,f<-tempfile(),sep=",",row.names=FALSE,quote=FALSE)
+fread(f,verbose=TRUE)
+print(sapply(DT,class))
+print(sapply(DT,storage.mode))
 test(1016.1, fread(f) ,output="Column 1.*A.*integer.*row 115.*<<123456789123456>>",
                       error="guess.*insufficient.*1 value.*1 column")
 test(1016.2, fread(f, colClasses = c(A="numeric")), copy(DT)[,A:=as.numeric(A)])

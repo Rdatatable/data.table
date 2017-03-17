@@ -1152,7 +1152,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
         if (whileBreak) break;
     }
-    if (numTypeFails) STOP("The guessed column type was insufficient for %d values in %d columns. The first in each column was printed to the console. Use colClasses to set these column classes manually.", numTypeFails, numTypeFailCols);
+    if (numTypeFails) {
+        R_FlushConsole();
+        STOP("The guessed column type was insufficient for %d values in %d columns. The first in each column was printed to the console. Use colClasses to set these column classes manually.", numTypeFails, numTypeFailCols);
+    }
     if (showProgress && hasPrinted) {
         j = 1+(clock()-t0)/CLOCKS_PER_SEC;
         Rprintf("\rRead %d rows and %d (of %d) columns from %.3f GB file in %02d:%02d:%02d\n", i, ncol-numNULL, ncol, 1.0*filesize/(1024*1024*1024), j/3600, (j%3600)/60, j%60);
