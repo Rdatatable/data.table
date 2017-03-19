@@ -651,6 +651,9 @@ SEXP gmedian(SEXP x, SEXP narm) {
 }
 
 SEXP glast(SEXP x, SEXP narm) {
+    if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) {
+        error("na.rm must be TRUE or FALSE");
+    }
     if (!isVectorAtomic(x)) error("GForce tail can only be applied to columns, \
             not .SD or similar. To get tail of all items in a list such as .SD, \
             either add the prefix utils::tail(.SD) \
@@ -793,6 +796,9 @@ SEXP glast(SEXP x, SEXP narm) {
 }
 
 SEXP gfirst(SEXP x, SEXP narm) {
+    if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) {
+        error("na.rm must be TRUE or FALSE");
+    }
     if (!isVectorAtomic(x)) error("GForce head can only be applied to columns, \
             not .SD or similar. To get head of all items in a list such as .SD, \
             either add the prefix utils::head(.SD) \
