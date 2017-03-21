@@ -2512,7 +2512,7 @@ for (eol in if (.Platform$OS.type=="unix") c("\n","\r\n") else "\n") {
     unlink(f3)
 }}}
 if ("package:bit64" %in% search()) {
-    n = 100000
+    n = 5000
     # To test out-of-sample type diffs, nrow needs to be more than 2*NJUMPS(10)*NJUMPLINES(100)=2000. Under 2000, all rows are sampled. Over 2000, 1000 rows are sampled (with a comfortable gap between the jump batches).
     DT = data.table( a=sample(1:1000,n,replace=TRUE),
                      b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
@@ -2524,14 +2524,14 @@ if ("package:bit64" %in% search()) {
     DT[,a2:=as.integer64(a)][,a3:=as.double(a)][,a4:=gsub(" ","",format(a))]
     DT[,b2:=as.double(b)][,b3:=gsub(" ","",format(b))]
     DT[,r:=a/100][,r2:=gsub(" ","",format(r))]
-    DT[5012, a2:=as.integer64(12345678901234)]   # start on row 112 to avoid the first 100 
-    DT[5013, a3:=3.14]
-    DT[5014, a4:="123A"]
-    DT[5015, b2:=1234567890123.45]
-    DT[5016, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
-    DT[5017, r2:="3.14A"]
+    DT[112, a2:=as.integer64(12345678901234)]   # start on row 112 to avoid the first 100 
+    DT[113, a3:=3.14]
+    DT[114, a4:="123A"]
+    DT[115, b2:=1234567890123.45]
+    DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
+    DT[117, r2:="3.14A"]
     fwrite(DT,f<-tempfile())
-    test(899.1, fread(f), output="Column 4.*a2.*integer.*5012.*<<12345678901234>>.*Column 10.*r2.*numeric.*5017.*<<3.14A>>",
+    test(899.1, fread(f), output="Column 4.*a2.*integer.*<<12345678901234>>.*Column 10.*r2.*numeric.*<<3.14A>>",
                           error="guessed column type was insufficient for 6 values in 6 columns")
     test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2"))), DT)
     unlink(f)
@@ -2864,7 +2864,7 @@ x = sample(1:1000,5000,replace=TRUE)
 DT = data.table( A=as.character(x), B=1:100)
 DT[115, A:="123456789123456"]  # row 115 is outside the 100 rows at 10 points.
 fwrite(DT,f<-tempfile())
-test(1016.1, fread(f) ,output="Column 1.*A.*integer.*row 115.*<<123456789123456>>",
+test(1016.1, fread(f) ,output="Column 1.*A.*integer.*<<123456789123456>>",
                       error="guess.*insufficient.*1 value.*1 column")
 test(1016.2, fread(f, colClasses = c(A="numeric")), copy(DT)[,A:=as.numeric(A)])
 DT[90, A:="321456789123456"]   # inside the sample
@@ -2873,16 +2873,10 @@ if ("package:bit64" %in% search()) test(1017.1, fread(f), copy(DT)[,A:=as.intege
 test(1017.2, fread(f, integer64="character"), DT)
 unlink(f)
 
-# ERANGE warning, #4879
-tt = try(fread("1.46761e-313\n"), silent=TRUE)   # options(warn=2) while this test file runs
-if (inherits(tt,"try-error")) {
-    # All CRAN machines including SPARC
-    test(1018, fread("1.46761e-313\n"), data.table(V1=as.numeric("1.46761e-313")), warning="strtod() returned ERANGE")
-} else {
-    # on PowerPC only via QEMU emulation :
-    test(1018, fread("1.46761e-313\n"), data.table("1.46761e-313"=logical()))
-}
-test(1019, fread("1.23456789123456789123456789\n"), data.table(V1=as.numeric("1.23456789123456789123456789"))) # no warning, as standard
+# ERANGE errno handled, #4879
+test(1018, identical(fread("1.46761e-313\n"), data.table(V1=1.46761e-313)))
+test(1019, identical(fread("1.23456789123456789123456999\n"), data.table(V1=as.numeric("1.23456789123456789123456789"))))
+# no warning as is standard about loss of occuracy (compare 999 to 789)
 
 # crash assigning to row 0, #2754
 DT = data.table(A=1:5,B=6:10)

@@ -126,4 +126,7 @@ double iquickselect(int *x, int n, int k);
 int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
+// wrappers.c
+double wallclock();
+ 
 
