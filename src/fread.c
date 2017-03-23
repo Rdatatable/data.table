@@ -225,27 +225,27 @@ static inline Rboolean Field(const char **this, SEXP targetCol, int targetRow)
   }
   if (quoted) { ch++; if (stripWhite) skip_white(&ch); }
   if (!on_sep(&ch)) return FALSE;
-  if (targetCol && (fieldLen>0 || blank_is_a_nastring)) {
-    if (fieldLen==0) {
-      // blank_is_a_nastring must be true
-      // R already initialized the column on creation with R_BlankString. Assigning NA_STRING over a R_BlankString
-      // doesn't need SET_STRING_ELT as both are global in R and never gc'd.
-      // This saves entering a critical region wastefully on files with many blanks
-      ((SEXP *)DATAPTR(targetCol))[targetRow] = NA_STRING;
-    } else {
-      SEXP thisStr;
-      #pragma omp critical
-      thisStr = mkCharLenCE(fieldStart, fieldLen, ienc);
-      // Thinking here is that it's faster and easier to mkChar first and then == pointer, than it is to do an expensive
-      // strcmp first when vast majority of time that strcmp would be wasted. Best check nastrings now while page is hot
-      // rather than resweep afterwards as it used to do.
+  if (targetCol && fieldLen>0) {
+    #pragma omp critical
+    // correct not be named as it's the only critical; other than the one on type error which normally doesn't happen at all
+    {
+      SEXP thisStr = mkCharLenCE(fieldStart, fieldLen, ienc);
+      // Check nastrings now while page is hot. Just one "NA" current default but empty in future when numerics
+      // handle NA string variants directly. Faster to go ahead with mkChar and then do == on pointer, than always
+      // do a strcmp first.
       for (int k=0; k<length(nastrings); k++) {
         if (thisStr == STRING_ELT(nastrings,k)) { thisStr = NA_STRING; break; }
       }
-      #pragma omp critical
       SET_STRING_ELT(targetCol, targetRow, thisStr);
     }
-  } // else blank string and blank isn't in nastrings (default), so nothing to do
+  } else if (targetCol && fieldLen==0 && blank_is_a_nastring) {
+    // R already initialized the column on creation with R_BlankString. Assigning NA_STRING over a R_BlankString
+    // doesn't need SET_STRING_ELT as both are global in R and never gc'd.
+    // This saves entering a critical region wastefully on files with many blanks
+    ((SEXP *)DATAPTR(targetCol))[targetRow] = NA_STRING;
+  } else {
+    // blank string and blank isn't in nastrings so nothing to do; just leave R_BlankString that's there already
+  }
   *this = ch; // Update caller's ch. This may be after fieldStart+fieldLen due to quotes and/or whitespace
   return TRUE;
 }
