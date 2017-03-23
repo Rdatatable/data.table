@@ -44,8 +44,8 @@ static char sep, eol, eol2;  // sep2 TO DO
 static int quoteRule;
 static int eolLen;
 static SEXP nastrings;
-static Rboolean verbose, ERANGEwarning, any_number_like_nastrings;
-static Rboolean stripWhite;  // only applies to unquoted character columns; numeric fields always stripped 
+static _Bool verbose, ERANGEwarning, any_number_like_nastrings, blank_is_a_nastring;
+static _Bool stripWhite;  // only applies to unquoted character columns; numeric fields always stripped 
 static cetype_t ienc;
 
 // Define our own fread type codes, different to R's SEXPTYPE :
@@ -66,7 +66,7 @@ static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "n
 // important that first 6 correspond to TypeSxp.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
 static int UserTypeNameMap[NUT] = { SXP_LGL, SXP_INT, SXP_INT64, SXP_REAL, SXP_STR, SXP_NULL, SXP_REAL, SXP_STR };
 static char quote;
-typedef Rboolean (*reader_fun_t)(const char **, SEXP, int, const char **, int *);
+typedef Rboolean (*reader_fun_t)(const char **, SEXP, int);
 
 #define NJUMPS    10     // at least this many jumps: nThread * NJUMPS
 #define JUMPLINES 100    // at each and every jump point how many lines to use to guess column types
@@ -151,7 +151,7 @@ static inline _Bool is_nastring(const char *lch) {
   return FALSE;
 }
 
-static inline Rboolean Field(const char **this, SEXP targetCol, int targetRow, const char **startOut, int *lenOut)
+static inline Rboolean Field(const char **this, SEXP targetCol, int targetRow)
 {
   const char *ch = *this;
   if (stripWhite) skip_white(&ch);  // before and after quoted field's quotes too (e.g. test 1609) but never inside quoted fields
@@ -225,21 +225,36 @@ static inline Rboolean Field(const char **this, SEXP targetCol, int targetRow, c
   }
   if (quoted) { ch++; if (stripWhite) skip_white(&ch); }
   if (!on_sep(&ch)) return FALSE;
-  if (targetCol) {
-    // Return startOut and startLen because caller has to SET_STRING_ELT inside a critical
-    *startOut = fieldStart;
-    *lenOut = fieldLen;
-  }
-  // Update caller's position (ch). This may be after fieldStart+fieldLen due to quotes and/or whitespace 
-  *this = ch;
+  if (targetCol && (fieldLen>0 || blank_is_a_nastring)) {
+    if (fieldLen==0) {
+      // blank_is_a_nastring must be true
+      // R already initialized the column on creation with R_BlankString. Assigning NA_STRING over a R_BlankString
+      // doesn't need SET_STRING_ELT as both are global in R and never gc'd.
+      // This saves entering a critical region wastefully on files with many blanks
+      ((SEXP *)DATAPTR(targetCol))[targetRow] = NA_STRING;
+    } else {
+      SEXP thisStr;
+      #pragma omp critical
+      thisStr = mkCharLenCE(fieldStart, fieldLen, ienc);
+      // Thinking here is that it's faster and easier to mkChar first and then == pointer, than it is to do an expensive
+      // strcmp first when vast majority of time that strcmp would be wasted. Best check nastrings now while page is hot
+      // rather than resweep afterwards as it used to do.
+      for (int k=0; k<length(nastrings); k++) {
+        if (thisStr == STRING_ELT(nastrings,k)) { thisStr = NA_STRING; break; }
+      }
+      #pragma omp critical
+      SET_STRING_ELT(targetCol, targetRow, thisStr);
+    }
+  } // else blank string and blank isn't in nastrings (default), so nothing to do
+  *this = ch; // Update caller's ch. This may be after fieldStart+fieldLen due to quotes and/or whitespace
   return TRUE;
 }
 
-static inline Rboolean SkipField(const char **this, SEXP targetCol, int targetRow, const char **startOut, int *lenOut)
+static inline Rboolean SkipField(const char **this, SEXP targetCol, int targetRow)
 {
    // wrapper around Field for SXP_NULL to save a branch in the main data reader loop and
    // to make the *fun[] lookup a bit clearer
-   return Field(this,NULL,0,NULL,NULL);
+   return Field(this,NULL,0);
 }
 
 static int countfields(const char **this)
@@ -248,7 +263,7 @@ static int countfields(const char **this)
   if (sep==' ') while (ch<eof && *ch==' ') ch++;  // Correct to be sep==' ' only and not skip_white(). 
   int ncol = 1;
   while (ch<eof && *ch!=eol) {
-    if (!Field(&ch,NULL,0,NULL,NULL)) return -1;   // -1 means this line not valid for this sep and quote rule
+    if (!Field(&ch,NULL,0)) return -1;   // -1 means this line not valid for this sep and quote rule
     // Field() leaves *ch resting on sep, eol or >=eof.  (Checked inside Field())
     if (ch<eof && *ch!=sep && *ch!=eol)  return -1; // Internal error: field didn't stop on sep, eol or eof
     if (ch<eof && *ch!=eol) { ncol++; ch++; } // move over sep (which will already be last ' ' if sep=' ').
@@ -259,7 +274,7 @@ static int countfields(const char **this)
   return ncol;
 }
 
-static inline Rboolean StrtoI64(const char **this, SEXP targetCol, int targetRow, const char **startOut, int *lenOut)
+static inline Rboolean StrtoI64(const char **this, SEXP targetCol, int targetRow)
 {
     // Specialized clib strtoll that :
     // i) skips leading isspace() too but other than field separator and eol (e.g. '\t' and ' \t' in FUT1206.txt)
@@ -301,7 +316,7 @@ static inline Rboolean StrtoI64(const char **this, SEXP targetCol, int targetRow
     return na;
 }    
 
-static inline Rboolean StrtoI32(const char **this, SEXP targetCol, int targetRow, const char **startOut, int *lenOut)
+static inline Rboolean StrtoI32(const char **this, SEXP targetCol, int targetRow)
 {
     // Very similar to StrtoI64 (see it for comments). We can't make a single function and switch on TYPEOF(targetCol) to
     // know I64 or I32 because targetCol is NULL when testing types and when dropping columns.
@@ -336,7 +351,7 @@ static inline Rboolean StrtoI32(const char **this, SEXP targetCol, int targetRow
     return na;
 }
 
-static inline Rboolean StrtoD(const char **this, SEXP targetCol, int targetRow, const char **startOut, int *lenOut)
+static inline Rboolean StrtoD(const char **this, SEXP targetCol, int targetRow)
 {
     // Specialized strtod for same reasons as Strtoll (leading \t dealt with), but still uses stdlib:strtod
     // R's R_Strtod5 uses strlen() on input, so we can't use that here unless we copy field to a buffer (slow)
@@ -380,7 +395,7 @@ static inline Rboolean StrtoD(const char **this, SEXP targetCol, int targetRow, 
     return na;
 }
 
-static inline Rboolean StrtoB(const char **this, SEXP targetCol, int targetRow, const char **startOut, int *lenOut)
+static inline Rboolean StrtoB(const char **this, SEXP targetCol, int targetRow)
 {
     // These usually come from R when it writes out.
     const char *ch = *this;
@@ -463,20 +478,21 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (!isNull(nastringsarg) && !isString(nastringsarg)) error("'na.strings' is type '%s'.  Must be a character vector.", type2char(TYPEOF(nastrings)));
     nastrings = nastringsarg;  // static global so we can use it in field processors
     any_number_like_nastrings = FALSE;
+    blank_is_a_nastring = FALSE;
     // if we know there are no nastrings which are numbers (like -999999) then in the number
     // field processors we can save an expensive step in checking the nastrings. Since if the field parses as a number,
     // we then know it can't be NA provided any_number_like_nastrings==FALSE.
     for (int i=0; i<length(nastrings); i++) {
       int nchar = LENGTH(STRING_ELT(nastrings,i));
-      if (nchar==0) continue;  // otherwise "" is considered numeric by strtod
+      if (nchar==0) { blank_is_a_nastring=TRUE; continue; }
       const char *start=CHAR(STRING_ELT(nastrings,i));
       if (isspace(start[0]) || isspace(start[nchar-1])) error("na.strings[%d]=='%s' has whitespace at the beginning or end", i+1, start);
-      if (!strcmp(start,"T") || !strcmp(start,"F") ||
-          !strcmp(start,"TRUE") || !strcmp(start,"FALSE") ||
-          !strcmp(start,"True") || !strcmp(start,"False")) error("na.strings[%d]=='%s' is recognized as type boolean. This string is not permitted in 'na.strings'.", i+1, start);
+      if (strcmp(start,"T")==0    || strcmp(start,"F")==0 ||
+          strcmp(start,"TRUE")==0 || strcmp(start,"FALSE")==0 ||
+          strcmp(start,"True")==0 || strcmp(start,"False")==0) error("na.strings[%d]=='%s' is recognized as type boolean. This string is not permitted in 'na.strings'.", i+1, start);
       char *end;
       errno = 0;
-      strtod(start, &end);
+      strtod(start, &end);  // careful not to let "" (R_BlankString) to get to here as strtod considers that numeric
       if (errno==0 && (int)(end-start)==nchar) {
         any_number_like_nastrings = TRUE;
         if (verbose) Rprintf("na.strings[%d]=='%s' is numeric so all numeric fields will have to check na.strings\n", i+1, start); 
@@ -746,9 +762,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         const char *this = ch;
         //Rprintf("Field %d <<%.*s>>\n", i, STRLIM(ch,20), ch);
         skip_white(&ch);
-        if (allchar && !on_sep(&ch) && StrtoD(&ch,NULL,0,NULL,NULL)) allchar=FALSE;  // considered testing at least one isalpha, but we want 1E9 to be considered a value for this purpose not a column name
+        if (allchar && !on_sep(&ch) && StrtoD(&ch,NULL,0)) allchar=FALSE;  // considered testing at least one isalpha, but we want 1E9 to be considered a value for this purpose not a column name
         ch = this;  // rewind to the start of this field
-        Field(&ch,NULL,0,NULL,NULL);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
+        Field(&ch,NULL,0);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
         if (ch<eof && *ch!=eol) { ch++; field++; }
       }
       //if (fill && field<ncol-1) { allchar=FALSE; }
@@ -783,10 +799,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         for (int i=0; i<ncol; i++) {
             // Skip trailing spaces and call 'Field()' here as it's already designed to handle quote vs non-quote cases.
             // Also Fiedl() it takes care of leading spaces. Easier to understand the logic.
-            const char *start=NULL;
-            int len=0;
-            Field(&ch,names,i,&start,&len);  // look at comments in main data read loop to see why Field is like this
-            SET_STRING_ELT(names, i, len==0 ? R_BlankString : mkCharLenCE(start, len, ienc));
+            Field(&ch,names,i);
             if (STRING_ELT(names,i)==NA_STRING || STRING_ELT(names,i)==R_BlankString) {
                 char buff[10];
                 sprintf(buff,"V%d",i+1);
@@ -824,7 +837,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       Rprintf("Number of jump points = %d because ",numJumps);
       if (INTEGER(nrowsarg)[0]>0) Rprintf("nrows=%d passed in\n", INTEGER(nrowsarg)[0]);
       else if (startSize==0) Rprintf("startSize=0 (small number of single column input)\n");
-      else Rprintf("%lld startSize * %d NJUMPS * %d threads * 2 %s %lld bytes from line 1 to eof\n", startSize, NJUMPS, getDTthreads(), numJumps==1 ? ">=" : "<", (size_t)(eof-pos));
+      else Rprintf("%lld startSize * %d NJUMPS * %d threads * 2 = %d %s %d bytes from line 1 to eof\n", startSize, NJUMPS, getDTthreads(), startSize*NJUMPS*getDTthreads()*2, numJumps==1 ? ">=" : "<", (size_t)(eof-pos));
     }
 
     int sampleLines=0;
@@ -876,7 +889,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             while (ch<eof && *ch!=eol && field<ncol) {
                 //Rprintf("Field %d: <<%.*s>>\n", field+1, STRLIM(ch,20), ch);
                 fieldStart=ch;
-                while (type[field]<=SXP_STR && !(*fun[type[field]])(&ch,NULL,0,NULL,NULL)) {
+                while (type[field]<=SXP_STR && !(*fun[type[field]])(&ch,NULL,0)) {
                   ch=fieldStart;
                   if (type[field]<SXP_STR) { type[field]++; bumped=TRUE; }
                   else {
@@ -1169,11 +1182,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
           while (++j<ncol) {
             // Rprintf("Field %d: '%.10s' as type %d\n", j+1, ch, type[j]);
             const char *start = ch;
-            int len;
             SEXP thiscol = VECTOR_ELT(ans, resj);
-            if (!(*fun[type[j]])(&ch,thiscol,i,&start,&len)) {
-              // Normally *fun returns success (1) and thiscol[i] is assigned inside *fun. But for STR, &start and &len are
-              // returned and (non-thread-safe) SET_STRING_ELT and mkCharLen are done further below in critical
+            if (!(*fun[type[j]])(&ch,thiscol,i)) {  // normally returns success(1) and thiscol[i] is assigned inside *fun.
               #pragma omp atomic
               numTypeErr++;  // if seen a type fail before in this column, just atomic inc and move on
               if (typeOk[j]) {
@@ -1193,18 +1203,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                   strcpy(typeErr+typeErrSize, buff);
                   typeErrSize += len;
                 }
-              }
-            }
-            if (type[j]==SXP_STR) {
-              #pragma omp critical
-              {
-                SEXP thisStr = (len==0) ? R_BlankString : mkCharLenCE(start, len, ienc);
-                // Thinking here is that it's faster to mkChar first and then == pointer, than it is to do an expensive
-                // strcmp first and many times. Best do it now while page is hot rather then resweep afterwards as it used to do.
-                for (int k=0; k<length(nastrings); k++) {
-                  if (thisStr == STRING_ELT(nastrings,k)) { thisStr = NA_STRING; break; }
-                }
-                SET_STRING_ELT(thiscol, i, thisStr);
               }
             }
             ch += (ch<eof && *ch!=eol);
@@ -1230,8 +1228,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 REAL(thiscol)[i] = NA_REAL;
                 break;
               case SXP_STR:
-                #pragma omp critical   // needs to not named to be shared with other SET_STRING_ELT critical above
-                SET_STRING_ELT(thiscol, i, NA_STRING);   // or R_BlankString? or put the ternary right here depending on nastrings
+                // R already initialized the column on creation with R_BlankString. Assigning NA_STRING over a R_BlankString
+                // doesn't need SET_STRING_ELT as both are global in R and never gc'd.
+                if (blank_is_a_nastring) ((SEXP *)DATAPTR(thiscol))[i] = NA_STRING;
               }
             }
           }

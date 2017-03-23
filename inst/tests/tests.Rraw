@@ -9837,6 +9837,20 @@ test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
 test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), error="Line 3 starting <<3,4,>> has more than.*2 fields")
 test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 3 starting <<3,4,7>> has more than.*2 fields")
 
+# check omp critical around SET_STRING_ELT
+# minimal construction big enough for parallelism with 8 or less threads. On a machine with more, do setDTthreads(8) first otherwise
+# it'll switch back to single threaded. In dev I have 8 threads and on CRAN there are 2 which will run this test nicely.
+# Without the critical in fread.c, this test will crash R consistently which is correct (tested).
+# Needs to be run in a fresh R session, otherwise it will work just because these strings have been seen before and added to
+# the global character cache already.
+# Created with:
+# x = unlist(outer(outer(LETTERS,LETTERS,paste0),LETTERS,paste0))
+# dt = as.data.table(matrix(x, ncol=2))
+# setnames(dt,paste0("col",1:2))
+# fwrite(dt,"allchar.csv")
+# fwrite(dt,"allchar.csv",append=TRUE)
+test(1754, fread("allchar.csv")[c(1,2,17575,17576),col2], c("AAN","BAN","YZZ","ZZZ"))
+
 
 ##########################
 
