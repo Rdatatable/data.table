@@ -9851,6 +9851,12 @@ test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 3 starting <<3,4,7>> has
 # fwrite(dt,"allchar.csv",append=TRUE)
 test(1754, fread("allchar.csv")[c(1,2,17575,17576),col2], c("AAN","BAN","YZZ","ZZZ"))
 
+# unescaped embedded quotes from here: http://stackoverflow.com/questions/42939866/fread-multiple-separators-in-a-string
+test(1755, fread("unescaped.csv"),
+  data.table(No     =c('0','1'),   # should in future be integer as all columns are quoted blindly
+             Comment=c('he said:"wonderful."', 'The problem is: reading table, and also "a problem, yes." keep going on.'),
+             Type   =c('A','A')))
+
 
 ##########################
 
