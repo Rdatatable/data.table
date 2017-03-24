@@ -502,7 +502,6 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
     // And warning that it'll be matched by names is not necessary, I think, as that's the default for 'rbind'. We 
     // should instead document it.
     for (i=0; i<LENGTH(l); i++) { // isNull is checked already in rbindlist
-        data->fn_rows[i] = 0;  // careful to initialize before continues as R_alloc above doesn't initialize
         li = VECTOR_ELT(l, i);
         if (isNull(li)) continue;
         if (TYPEOF(li) != VECSXP) error("Item %d of list input is not a data.frame, data.table or list",i+1);
@@ -513,6 +512,7 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
     if (!isNull(col_name)) { data->colname = PROTECT(col_name); data->protecti++; }
     if (usenames) { lnames = PROTECT(allocVector(VECSXP, LENGTH(l))); data->protecti++;}
     for (i=0; i<LENGTH(l); i++) {
+        data->fn_rows[i] = 0;  // careful to initialize before continues as R_alloc above doesn't initialize
         li = VECTOR_ELT(l, i);
         if (isNull(li)) continue;
         if (TYPEOF(li) != VECSXP) error("Item %d of list input is not a data.frame, data.table or list",i+1);
