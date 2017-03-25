@@ -13,7 +13,7 @@ fread(input, sep="auto", sep2="auto", nrows=Inf, header="auto", na.strings="NA",
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=NA,
 skip=0, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
-dec=".", col.names, 
+dec=if (sep!=".") "." else ",", col.names, 
 check.names=FALSE, encoding="unknown", quote="\"", 
 strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, 
 showProgress=interactive(),
