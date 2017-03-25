@@ -39,7 +39,6 @@
              "datatable.warnredundantby"="TRUE",                  # not a function argument
              "datatable.alloccol"="1024L",           # argument 'n' of alloc.col. Over-allocate 1024 spare column slots
              "datatable.integer64"="'integer64'",    # datatable.<argument name>    integer64|double|character
-             "datatable.showProgress"="TRUE",        # in fread and fwrite
              "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
              "datatable.use.index"="TRUE",           # global switch to address #1422
              "datatable.fread.datatable"="TRUE",

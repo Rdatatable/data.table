@@ -1,5 +1,5 @@
 
-fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.strings="NA",file,stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=NA,skip=0L,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=getOption("datatable.showProgress"),data.table=getOption("datatable.fread.datatable"))
+fread <- function(input="",sep="auto",sep2="auto",nrows=Inf,header="auto",na.strings="NA",file,stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=NA,skip=0,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=".", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=interactive(),data.table=getOption("datatable.fread.datatable"))
 {
     if (!is.character(dec) || length(dec)!=1L || nchar(dec)!=1) stop("dec must be a single character e.g. '.' or ','")
     # handle encoding, #563
@@ -9,6 +9,8 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)
     stopifnot( isLOGICAL(strip.white), isLOGICAL(blank.lines.skip), isLOGICAL(fill), isLOGICAL(showProgress),
                isLOGICAL(stringsAsFactors), isLOGICAL(verbose), isLOGICAL(check.names) )
+    stopifnot( is.numeric(nrows), length(nrows)==1 )
+    if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
     
     if (getOption("datatable.fread.dec.experiment") && Sys.localeconv()["decimal_point"] != dec) {
         oldlocale = Sys.getlocale("LC_NUMERIC")
@@ -101,7 +103,8 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=-1L,header="auto",na.str
     if (identical(sep,"auto")) sep=NULL
     if (is.atomic(colClasses) && !is.null(names(colClasses))) colClasses = tapply(names(colClasses),colClasses,c,simplify=FALSE) # named vector handling
     if (is.numeric(skip)) skip = as.integer(skip)
-    ans = .Call(Creadfile,input,sep,as.integer(nrows),header,na.strings,verbose,skip,select,drop,colClasses,integer64,dec,encoding,quote,strip.white,blank.lines.skip,fill,showProgress)
+    ans = .Call(Creadfile,input,sep,nrows,header,na.strings,verbose,skip,select,drop,
+                          colClasses,integer64,dec,encoding,quote,strip.white,blank.lines.skip,fill,showProgress)
     nr = length(ans[[1]])
     if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(ans,inherits,"integer64"))) require_bit64()
     setattr(ans,"row.names",.set_row_names(nr))

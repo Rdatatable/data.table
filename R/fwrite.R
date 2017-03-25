@@ -4,8 +4,8 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
                    qmethod=c("double","escape"),
                    logicalAsInt=FALSE, dateTimeAs = c("ISO","squash","epoch","write.csv"),
                    buffMB=8, nThread=getDTthreads(),
-                   showProgress = getOption("datatable.showProgress"),
-                   verbose = getOption("datatable.verbose")) {
+                   showProgress=interactive(),
+                   verbose=getOption("datatable.verbose")) {
     isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
     na = as.character(na[1L]) # fix for #1725
     if (missing(qmethod)) qmethod = qmethod[1L]
@@ -42,7 +42,6 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         nThread=1L
         showProgress=FALSE
     }
-   
     .Call(Cwritefile, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
                       row.names, col.names, logicalAsInt, dateTimeAs, buffMB, nThread,
                       showProgress, verbose)
