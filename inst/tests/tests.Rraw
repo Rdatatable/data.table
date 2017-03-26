@@ -2512,10 +2512,8 @@ for (eol in if (.Platform$OS.type=="unix") c("\n","\r\n") else "\n") {
     unlink(f3)
 }}}
 if ("package:bit64" %in% search()) {
-    n = 21000
-    # To test out-of-sample type diffs, nrow needs to be more than (50 waves * 2th + 1) * 100 * 2 spacing = 20,200.
-    # Under that, all rows are sampled.
-    # setDTthreads(2) is set for test 899.1 to keep the intended out-of-sample rows actually out-of-sample
+    n = 2100
+    # To test out-of-sample type diffs, nrow needs to be more than 100*10*2.  Under that, all rows are sampled.
     DT = data.table( a=sample(1:1000,n,replace=TRUE),
                      b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
                      c=sample(c("foo","bar","baz"),n,replace=TRUE) )
@@ -2533,10 +2531,8 @@ if ("package:bit64" %in% search()) {
     DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
     DT[117, r2:="3.14A"]
     fwrite(DT,f<-tempfile())
-    old = setDTthreads(2)  # see comment above by n=11000 for why
     test(899.1, fread(f), output="Column 4.*a2.*integer.*<<12345678901234>>.*Column 10.*r2.*numeric.*<<3.14A>>",
                           error="guessed column type was insufficient for 6 values in 6 columns")
-    setDTthreads(old)
     test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2"))), DT)
     unlink(f)
 } else {
@@ -2864,14 +2860,12 @@ test(1013, fread("A,B\n123,123\n", integer64="integer"), error="integer64='%s' w
 test(1014, fread("A,B\n123456789123456,21\n", integer64="character"), data.table(A="123456789123456",B=21L))
 test(1015, fread("A,B\n123456789123456,21\n", integer64="double"), data.table(A=as.double("123456789123456"),B=21L))
 # and that mid read bumps respect integer64 control too ..
-x = sample(1:1000,21000,replace=TRUE)
+x = sample(1:1000,2100,replace=TRUE)  # 2100 > 100 JUMPLINES * 10 NJUMP * 2 spacing
 DT = data.table( A=as.character(x), B=1:100)
 DT[115, A:="123456789123456"]  # row 115 is outside the 100 rows at 10 points.
 fwrite(DT,f<-tempfile())
-old = setDTthreads(2)  # see comments for test 899.1 as to why 21000 rows and 2th
 test(1016.1, fread(f) ,output="Column 1.*A.*integer.*<<123456789123456>>",
                       error="guess.*insufficient.*1 value.*1 column")
-setDTthreads(old)
 test(1016.2, fread(f, colClasses = c(A="numeric")), copy(DT)[,A:=as.numeric(A)])
 DT[90, A:="321456789123456"]   # inside the sample
 write.table(DT,f,sep=",",row.names=FALSE,quote=FALSE)
