@@ -463,7 +463,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     Rboolean header, allchar;
     verbose=LOGICAL(verbosearg)[0];
     double t0 = wallclock();
-    PROTECT_INDEX pi;
     
     // Encoding, #563: Borrowed from do_setencoding from base R
     // https://github.com/wch/r-source/blob/ca5348f0b5e3f3c2b24851d7aff02de5217465eb/src/main/util.c#L1115
@@ -1095,26 +1094,24 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
     }
     if (length(select)) {
-        if (any_duplicated(select,FALSE)) STOP("Duplicates detected in select");
+        SEXP tt;
         if (isString(select)) {
             // invalid cols check part of #1445 moved here (makes sense before reading the file)
-            itemsInt = PROTECT(chmatch(select, names, NA_INTEGER, FALSE));
-            for (int i=0; i<length(select); i++) if (INTEGER(itemsInt)[i]==NA_INTEGER) 
+            tt = PROTECT(chmatch(select, names, NA_INTEGER, FALSE));
+            for (int i=0; i<length(select); i++) if (INTEGER(tt)[i]==NA_INTEGER) 
                 warning("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(select, i)));
-            UNPROTECT(1);
-            PROTECT_WITH_INDEX(itemsInt, &pi);
-            REPROTECT(itemsInt = chmatch(names, select, NA_INTEGER, FALSE), pi); protecti++;
-            for (int i=0; i<ncol; i++) if (INTEGER(itemsInt)[i]==NA_INTEGER) { type[i]=SXP_NULL; numNULL++; }
-        } else {
-            itemsInt = PROTECT(coerceVector(select, INTSXP)); protecti++;
-            for (int i=0; i<ncol; i++) tmp[i]=SXP_NULL;
-            for (int i=0; i<LENGTH(itemsInt); i++) {
-                k = INTEGER(itemsInt)[i];
-                if (k<1 || k>ncol) STOP("Column number %d (select[%d]) is out of range [1,ncol=%d]",k,i+1,ncol);
-                tmp[k-1] = type[k-1];
-            }
-            for (int i=0; i<ncol; i++) type[i] = tmp[i];
-            numNULL = ncol - LENGTH(itemsInt);
+        } else tt = PROTECT(select);  // harmless to needlessly protect; done for simple UNPROTECT(1) below.
+        for (int i=0; i<LENGTH(tt); i++) {
+            int k = isInteger(tt) ? INTEGER(tt)[i] : (int)REAL(tt)[i];
+            if (k == NA_INTEGER) continue;
+            if (k<1 || k>ncol) STOP("Column number %d (select[%d]) is out of range [1,ncol=%d]",k,i+1,ncol);
+            if (type[k-1]>=100) STOP("Column number %d ('%s') has been selected twice by select=", k, STRING_ELT(names,k-1));
+            type[k-1] += 100; // detect and error on duplicates on all types without calling duplicated() at all
+        }
+        UNPROTECT(1);
+        for (int i=0; i<ncol; i++) {
+          if (type[i]>=100) type[i] -= 100;
+          else { type[i]=SXP_NULL; numNULL++; }
         }
     }
     if (verbose) { Rprintf("Type codes (drop|select): "); printTypes(type, ncol); Rprintf("\n"); }
