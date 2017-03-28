@@ -1177,7 +1177,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     char stopErr[stopErrSize+1]="";  // must be compile time size: the message is generated and we can't free before STOP
     int ansi=0;   // the current row number in ans that we are writing to
     const char *prevThreadEnd = pos;  // the position after the last line the last thread processed (for checking)
-    SEXP *buff;
     size_t workSize=0;
     int buffGrown=0;
     int nth = getDTthreads();   // TODO add nThread function argument
@@ -1193,6 +1192,35 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       chunkBytes = (size_t)(lastRowEnd-pos)/nJumps;
     } else nJumps=1;
     nth = MIN(nJumps, nth);
+    SEXP buff;
+    if (nth==1) {
+      // Most likely a small file, we've sampled all of it and so we know nrow exactly already.
+      // Or, nth has been limited.
+      // Point buffer directly to the result to save alloc and time copying
+      if (nJumps!=1) STOP("Internal error: nth==1 but nJumps(%d)>1", nJumps);
+      buff = ans;
+    } else {
+      buff = PROTECT(allocVector(VECSXP, nth*LENGTH(ans)));
+      protecti++;
+      // ncols can be many thousands so we can't rely on a VLA (C stack overflow). Using R memory instead of
+      // realloc because we need to SET_STRING_ELT for the benefits of the global character cache. We can't call
+      // allocVector from within parallel region because even though fine inside master section at the start if
+      // it works, in event of failure to allocate thread team wouldn't be cleaned up since R itself throws inside 
+      // allocVector. Therefore, alloc before parallel region and then check carefully inside. Using a VECSXP for
+      // nested PROTECTion, otherwise 12,000 PROTECTs fails with R level protection stack overflow.
+      int initialBuffSize = MAX(orig_allocnrow/nJumps,128);
+      // minimum 128 to avoid lots of tiny growing on small files; e.g. if fread is ever highly iterated on
+      // flag/status files orig_allocnrow typically 10-20% bigger than estimated final nrow, so the buffers are
+      // small with the same overage % buffers will be grown if i) we observe a lot of out-of-sample short lines
+      // or ii) the lines are shorter in the first half of the file than the second half (for example)
+      for (int i=0; i<LENGTH(ans); i++) {   // LENGTH(ans) not ncol because LENGTH(ans)<ncol when numNULL>0
+        SEXP this = VECTOR_ELT(ans,i);
+        for (int j=0; j<nth; j++) {
+          SET_VECTOR_ELT(buff, j*LENGTH(ans)+i, allocVector(TYPEOF(this), initialBuffSize));
+          workSize += SIZEOF(this)*initialBuffSize;
+        }
+      }
+    }
     
     #pragma omp parallel num_threads(nth)
     {
@@ -1204,37 +1232,14 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
           snprintf(stopErr, stopErrSize, "OpenMP error: omp_get_num_threads()=%d > num_threads(nth=%d) directive",
                                          nth_actual, nth);
           stopTeam=TRUE;
-        } else if (nth_actual < nth) {
-          if (verbose) Rprintf("Team started with %d threads despite num_threads(nth=%d) directive. Likely limited at system level.\n", 
-                               nth_actual, nth);
-          nth = nth_actual;
-        }
-        if (!stopTeam) {
+        } else {
+          if (nth_actual < nth) {
+            warning("Team started with %d threads despite num_threads(nth=%d) directive. Please file an issue on GitHub. This should never happen because nth was already limited by omp_get_max_threads() which should reflect system level limiting. It should still work but using more time and space than is necessary.\n", nth_actual, nth);
+            nth = nth_actual;
+            // don't do ... if (nth==1) buff=ans;  because nJumps>1 to rewrite to the buffer and we don't want to rewrite to ans
+          }
           if (verbose) Rprintf("Reading %d chunks of %.3fMB (%d rows) using %d threads\n",
                                 nJumps, (double)chunkBytes/(1024*1024), (int)(chunkBytes/meanLineLen), nth);
-          if (!(buff = malloc(nth*LENGTH(ans)*sizeof(SEXP *)))) {
-            snprintf(stopErr, stopErrSize, "Failed to allocate buffer pointers, size %d*%d*%d", nth, LENGTH(ans), (int)sizeof(SEXP *));
-            // ncols can be many thousands so we can't rely on a VLA
-            stopTeam = TRUE;
-          } else if (nJumps==1) {
-            // most likely a small file, we've sampled all of it and so we know nrow exactly already. Or nth has been limited.
-            // point buffers directly to the result to save alloc and time copying
-            for (int i=0; i<LENGTH(ans); i++) buff[i] = VECTOR_ELT(ans,i);
-          } else {
-            int initialBuffSize = MAX(orig_allocnrow/nJumps,128);
-            // minimum 128 to avoid lots of tiny growing on small files; e.g. if fread is ever highly iterated on flag/status files
-            // orig_allocnrow typically 10-20% bigger than estimated final nrow, so the buffers are small with the same overage %
-            // buffers will be grown if i) we observe a lot of out-of-sample short lines or ii) the lines are shorter in the
-            // first half of the file than the second half (for example)
-            for (int i=0; i<LENGTH(ans); i++) {   // LENGTH(ans) not ncol because LENGTH(ans)<ncol when numNULL>0
-              SEXP this = VECTOR_ELT(ans,i);
-              for (int j=0; j<nth; j++) {
-                buff[j*LENGTH(ans)+i] = PROTECT(allocVector(TYPEOF(this), initialBuffSize));
-                protecti++;
-                workSize += SIZEOF(this)*initialBuffSize;
-              }
-            }
-          }
         }
       }
       #pragma omp barrier
@@ -1246,19 +1251,34 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         const char *ch = pos+jump*chunkBytes;
         const char *nextJump = jump<nJumps-1 ? ch+chunkBytes : lastRowEnd-1;
         int buffi=0;  // the row read so far from this jump point. We don't know how many rows exactly this will be yet
-        SEXP *mybuff = buff + me*LENGTH(ans);
-        if (jump>0 && !nextGoodLine(&ch, ncol)) { stopTeam=TRUE; Rprintf("yes %d\n",jump); continue; }  // TODO add error message 
+        SEXP *mybuff = (SEXP *)DATAPTR(buff) + me*LENGTH(ans);
+        if (jump>0 && !nextGoodLine(&ch, ncol)) {
+          stopTeam=TRUE;
+          Rprintf("no good line could be found from jump point %d\n",jump); // TODO: change to stopErr
+          continue;
+        }
         const char *thisThreadStart=ch;
         const char *lineStart=ch;
-        while (ch<=nextJump) {     // including = for when nextJump happens to fall exactly on a line start 
+        while (ch<=nextJump && buffi<nrowLimit) {
+        //       ^^ including = for when nextJump happens to fall exactly on a line start (the next thread will
+        //          start one line later in that case because nextGoodLine() starts by fiding next eol
+        // buffi<nrowLimit doesn't make sense when nth>1 since it's always true then (buffi is within buffer while
+        // nrowLimit applies to final ans). It's only there for when nth=1 and nrows= is provided (e.g. tests 1558.1
+        // and 1558.3). In that case we know we can stop when we've read the required number of rows. Otherwise it
+        // would grow ans wastefully.
           if (buffi==LENGTH(mybuff[0])) {
             // buffer full due to unusually short lines in this chunk vs the sample; e.g. #2070
             #pragma omp critical
-            for (int i=0; i<LENGTH(ans); i++) {
-              mybuff[i] = PROTECT(growVector(mybuff[i], buffi*2));
-              protecti++;
+            {
+              for (int i=0; i<LENGTH(ans); i++) {
+                int w = me*LENGTH(ans)+i;
+                SET_VECTOR_ELT(buff, w, growVector(VECTOR_ELT(buff, w), buffi*2));
+              }
+              buffGrown++;  // just for verbose message afterwards
+              if (nth==1) allocnrow = buffi*2;
+              // if nth==1, buff==ans, and the ans will be grown. Which is correct and desired. Either nrows= wasn't
+              // provided, or it was but larger than allocnrow estimate and that turned out to be too small.
             }
-            buffGrown++;  // just for verbose message afterwards
           }
           lineStart = ch;  // for error message
           if (sep==' ') while (ch<eof && *ch==' ') ch++;  // multiple sep=' ' at the lineStart does not mean sep(!)
@@ -1430,7 +1450,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
       }
     }  // end OpenMP parallel
-    free(buff);
     double tRead = wallclock();
     double tot=tRead-t0;
     if (hasPrinted || verbose) {
@@ -1439,7 +1458,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         Rprintf("wall clock time (can be slowed down by any other open apps even if seemingly idle)\n");
         // since parallel, clock() cycles is parallel too: so wall clock will have to do
     }
-    if (verbose) Rprintf("Thread buffers were grown %d times (if all %d threads each grew once, this figure would be %d)\n", buffGrown, nth, nth);
+    if (verbose) {
+      if (nth==1) Rprintf("Buffer pointing to ans was grown %d times", buffGrown);
+      else Rprintf("Thread buffers were grown %d times (if all %d threads each grew once, this figure would be %d)\n",
+                   buffGrown, nth, nth);
+    }
     if (numTypeErr) {
         Rprintf(typeErr);
         R_FlushConsole();
