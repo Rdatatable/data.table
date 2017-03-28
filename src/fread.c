@@ -458,7 +458,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP ans;
-    R_len_t j, k, protecti=0;
+    R_len_t j, protecti=0;
     const char *pos;
     Rboolean header, allchar;
     verbose=LOGICAL(verbosearg)[0];
@@ -998,12 +998,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     
     // ********************************************************************************************
-    //   Apply colClasses, select and integer64
+    //   Apply colClasses, select, drop and integer64
     // ********************************************************************************************
     ch = pos;
-    int numNULL = 0;
     SEXP colTypeIndex, items, itemsInt, UserTypeNameSxp;
-    int tmp[ncol]; for (int i=0; i<ncol; i++) tmp[i]=0;  // used to detect ambiguities (dups) in user's input
     if (isLogical(colClasses)) {
         // allNA only valid logical input
         for (int k=0; k<LENGTH(colClasses); k++) if (LOGICAL(colClasses)[k] != NA_LOGICAL) STOP("when colClasses is logical it must be all NA. Position %d contains non-NA: %d", k+1, LOGICAL(colClasses)[k]);
@@ -1014,6 +1012,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         for (int i=0; i<NUT; i++) SET_STRING_ELT(UserTypeNameSxp, i, mkChar(UserTypeName[i]));
         if (isString(colClasses)) {
             // this branch unusual for fread: column types for all columns in one long unamed character vector
+            // there is no possibility of specifying a column twice in this usage
             if (length(getAttrib(colClasses, R_NamesSymbol))) STOP("Internal error: colClasses has names, but these should have been converted to list format at R level");
             if (LENGTH(colClasses)!=1 && LENGTH(colClasses)!=ncol) STOP("colClasses is unnamed and length %d but there are %d columns. See ?data.table for colClasses usage.", LENGTH(colClasses), ncol);
             colTypeIndex = PROTECT(chmatch(colClasses, UserTypeNameSxp, NUT, FALSE));  // if type not found then read as character then as. at R level
@@ -1027,7 +1026,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 if (type[k]<thisType) {
                     if (verbose) Rprintf("Column %d ('%s') was detected as type '%s' but bumped to '%s' as requested by colClasses\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType] );
                     type[k]=thisType;
-                    if (thisType == SXP_NULL) numNULL++;
                 } else if (verbose && type[k]>thisType) warning("Column %d ('%s') has been detected as type '%s'. Ignoring request from colClasses to read as '%s' (a lower type) since NAs (or loss of precision) may result.\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType]);
             }
         } else {  // normal branch here
@@ -1047,22 +1045,22 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 else itemsInt = PROTECT(coerceVector(items, INTSXP));
                 protecti++;
                 for (j=0; j<LENGTH(items); j++) {
-                    k = INTEGER(itemsInt)[j];
+                    int k = INTEGER(itemsInt)[j];
                     if (k==NA_INTEGER) {
                         if (isString(items)) STOP("Column name '%s' in colClasses[[%d]] not found", CHAR(STRING_ELT(items, j)),i+1);
                         else STOP("colClasses[[%d]][%d] is NA", i+1, j+1);
                     } else {
                         if (k<1 || k>ncol) STOP("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]",k,i+1,j+1,ncol);
                         k--;
-                        if (tmp[k]++) STOP("Column '%s' appears more than once in colClasses", CHAR(STRING_ELT(names,k)));
+                        if (type[k]>=100) STOP("Column '%s' appears more than once in colClasses", CHAR(STRING_ELT(names,k)));
                         if (type[k]<thisType) {
                             if (verbose) Rprintf("Column %d ('%s') was detected as type '%s' but bumped to '%s' as requested by colClasses[[%d]]\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType], i+1 );
-                            type[k]=thisType;
-                            if (thisType == SXP_NULL) numNULL++;
+                            type[k]=100+thisType;
                         } else if (verbose && type[k]>thisType) Rprintf("Column %d ('%s') has been detected as type '%s'. Ignoring request from colClasses[[%d]] to read as '%s' (a lower type) since NAs would result.\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], i+1, UserTypeName[thisType]);
                     }
                 }
             }
+            for (int i=0; i<ncol; i++) if (type[i]>=100) type[i]-=100;
         }
     }
     int readInt64As = SXP_INT64;
@@ -1083,13 +1081,13 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         else itemsInt = PROTECT(coerceVector(drop, INTSXP));
         protecti++;
         for (j=0; j<LENGTH(drop); j++) {
-            k = INTEGER(itemsInt)[j];
+            int k = INTEGER(itemsInt)[j];
             if (k==NA_INTEGER) {
                 if (isString(drop)) warning("Column name '%s' in 'drop' not found", CHAR(STRING_ELT(drop, j)));
                 else warning("drop[%d] is NA", j+1);
             } else {
                 if (k<1 || k>ncol) warning("Column number %d (drop[%d]) is out of range [1,ncol=%d]",k,j+1,ncol);
-                else { type[k-1] = SXP_NULL; numNULL++; }
+                else type[k-1] = SXP_NULL;
             }
         }
     }
@@ -1111,9 +1109,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         UNPROTECT(1);
         for (int i=0; i<ncol; i++) {
           if (type[i]>=100) type[i] -= 100;
-          else { type[i]=SXP_NULL; numNULL++; }
+          else type[i]=SXP_NULL;
         }
     }
+    int numNULL=0; for (int i=0; i<ncol; i++) if (type[i]==SXP_NULL) numNULL++;
     if (verbose) { Rprintf("Type codes (drop|select): "); printTypes(type, ncol); Rprintf("\n"); }
     double tColType = wallclock();
     
