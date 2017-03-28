@@ -52,20 +52,24 @@ static cetype_t ienc;
 // Define our own fread type codes, different to R's SEXPTYPE :
 // i) INTEGER64 is not in R but an add on packages using REAL, we need to make a distinction here, without using
 // class (for speed)
-// ii) 0:n codes makes it easier to bump through types in this order using ++.
-#define SXP_LGL    0   // LGLSXP    String values T,F,TRUE,FALSE,True,False
-#define SXP_INT    1   // INTSXP
-#define SXP_INT64  2   // REALSXP
-#define SXP_REAL   3   // REALSXP
-#define SXP_STR    4   // STRSXP
-#define SXP_NULL   5   // NILSXP i.e. skip column (last so that all types can be bumped up to it by user)
+// ii) 0:n enum makes it easier to bump through types in this order using ++.
+typedef enum {
+  NEGATIVE=-1, // dummy to force signed int (sign bit is used as flag to save space when >10,000 columns)
+  SXP_BOOL,   // LGLSXP
+  SXP_INT32,  // INTSXP
+  SXP_INT64,  // REALSXP class "integer64" using package bit64
+  SXP_DOUBLE, // REALSXP
+  SXP_STRING, // STRSXP
+  SXP_NULL    // NILSXP i.e. skip column (highest type so that all types can be bumped up to it by user)
+} colType;
 
 #define NUMTYPE    6
 static int TypeSxp[NUMTYPE] = {LGLSXP,INTSXP,REALSXP,REALSXP,STRSXP,NILSXP};
 #define NUT        8   // Number of User Types (just for colClasses where "numeric"/"double" are equivalent)
 static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "NULL", "double", "CLASS" };
 // important that first 6 correspond to TypeSxp.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
-static int UserTypeNameMap[NUT] = { SXP_LGL, SXP_INT, SXP_INT64, SXP_REAL, SXP_STR, SXP_NULL, SXP_REAL, SXP_STR };
+static int UserTypeNameMap[NUT] =
+           { SXP_BOOL, SXP_INT32, SXP_INT64, SXP_DOUBLE, SXP_STRING, SXP_NULL, SXP_DOUBLE, SXP_STRING };
 static char quote;
 typedef _Bool (*reader_fun_t)(const char **, SEXP, int);
 
@@ -113,7 +117,7 @@ int STRLIM(const char *ch, int limit) {
   return (newline==NULL ? maxwidth : (int)(newline-ch));
 }
 
-void printTypes(unsigned char *type, int ncol) {
+void printTypes(colType *type, int ncol) {
   // e.g. files with 10,000 columns, don't print all of it to verbose output.
   int tt=(ncol<=110?ncol:90); for (int i=0; i<tt; i++) Rprintf("%d",type[i]);
   if (ncol>110) { Rprintf("..."); for (int i=ncol-10; i<ncol; i++) Rprintf("%d",type[i]); }
@@ -853,7 +857,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     //   Make best guess at column types using 100 rows at 10 points, including the very first, middle and very last row.
     //   At the same time, calc mean and sd of row lengths in sample. Use for very good estimate of nrow.
     // *****************************************************************************************************************
-    unsigned char type[ncol];
+    colType type[ncol];
     _Bool typeOk[ncol];
     for (int i=0; i<ncol; i++) { 
       type[i]   =0;   // 0 because it's the lowest type ('logical')
@@ -900,9 +904,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             while (ch<eof && *ch!=eol && field<ncol) {
                 //Rprintf("Field %d: <<%.*s>>\n", field+1, STRLIM(ch,20), ch);
                 fieldStart=ch;
-                while (type[field]<=SXP_STR && !(*fun[type[field]])(&ch,NULL,0)) {
+                while (type[field]<=SXP_STRING && !(*fun[type[field]])(&ch,NULL,0)) {
                   ch=fieldStart;
-                  if (type[field]<SXP_STR) { type[field]++; bumped=TRUE; }
+                  if (type[field]<SXP_STRING) { type[field]++; bumped=TRUE; }
                   else {
                     // the field couldn't be read with this quote rule, try again with next one
                     // Trying the next rule will only be successful if the number of fields is consistent with it
@@ -936,7 +940,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 // not necessarily a problem (especially if we detected no quoting), but we test it and nice to have
                 // a warning regardless of quoting rule just incase file has been inadvertently truncated
                 // This warning is early at type skipping around stage before reading starts, so user can cancel early
-                if (type[ncol-1]==SXP_STR && *fieldStart==quote && *(ch-1)!=quote) {
+                if (type[ncol-1]==SXP_STRING && *fieldStart==quote && *(ch-1)!=quote) {
                   if (quoteRule<2) STOP("Internal error: Last field of last field should select quote rule 2"); 
                   warning("Last field of last line starts with a quote but is not finished with a quote before end of file: <<%.*s>>", 
                           STRLIM(fieldStart, 200), fieldStart);
@@ -1052,23 +1056,23 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     } else {
                         if (k<1 || k>ncol) STOP("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]",k,i+1,j+1,ncol);
                         k--;
-                        if (type[k]>=100) STOP("Column '%s' appears more than once in colClasses", CHAR(STRING_ELT(names,k)));
+                        if (type[k]<0) STOP("Column '%s' appears more than once in colClasses", CHAR(STRING_ELT(names,k)));
                         if (type[k]<thisType) {
                             if (verbose) Rprintf("Column %d ('%s') was detected as type '%s' but bumped to '%s' as requested by colClasses[[%d]]\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType], i+1 );
-                            type[k]=100+thisType;
+                            type[k]=-thisType;
                         } else if (verbose && type[k]>thisType) Rprintf("Column %d ('%s') has been detected as type '%s'. Ignoring request from colClasses[[%d]] to read as '%s' (a lower type) since NAs would result.\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], i+1, UserTypeName[thisType]);
                     }
                 }
             }
-            for (int i=0; i<ncol; i++) if (type[i]>=100) type[i]-=100;
+            for (int i=0; i<ncol; i++) if (type[i]<0) type[i]*=-1;
         }
     }
     int readInt64As = SXP_INT64;
     if (strcmp(CHAR(STRING_ELT(integer64,0)), "integer64")!=0) {
         if (strcmp(CHAR(STRING_ELT(integer64,0)), "character")==0)
-            readInt64As = SXP_STR;
+            readInt64As = SXP_STRING;
         else // either 'double' or 'numeric' as checked above in input checks
-            readInt64As = SXP_REAL;
+            readInt64As = SXP_DOUBLE;
         for (int i=0; i<ncol; i++) if (type[i]==SXP_INT64) {
             type[i] = readInt64As;
             if (verbose) Rprintf("Column %d ('%s') has been detected as type 'integer64'. But reading this as '%s' according to the integer64 parameter.\n", i+1, CHAR(STRING_ELT(names,i)), CHAR(STRING_ELT(integer64,0)));
@@ -1103,12 +1107,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             int k = isInteger(tt) ? INTEGER(tt)[i] : (int)REAL(tt)[i];
             if (k == NA_INTEGER) continue;
             if (k<1 || k>ncol) STOP("Column number %d (select[%d]) is out of range [1,ncol=%d]",k,i+1,ncol);
-            if (type[k-1]>=100) STOP("Column number %d ('%s') has been selected twice by select=", k, STRING_ELT(names,k-1));
-            type[k-1] += 100; // detect and error on duplicates on all types without calling duplicated() at all
+            if (type[k-1]<0) STOP("Column number %d ('%s') has been selected twice by select=", k, STRING_ELT(names,k-1));
+            type[k-1]*=-1; // detect and error on duplicates on all types without calling duplicated() at all
         }
         UNPROTECT(1);
         for (int i=0; i<ncol; i++) {
-          if (type[i]>=100) type[i] -= 100;
+          if (type[i]<0) type[i]*=-1;
           else type[i]=SXP_NULL;
         }
     }
@@ -1321,25 +1325,30 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (!fill) { myStopReason = 2; break; }
             while (j<ncol) {
               SEXP buffcol = mybuff[resj];
-              switch (type[j]) {  // TODO: make type an enum to ensure switch uses jump table here
-              case SXP_LGL:
+              switch (type[j]) {
+              case SXP_BOOL:
                 LOGICAL(buffcol)[buffi] = NA_LOGICAL;
                 break;
-              case SXP_INT:
+              case SXP_INT32:
                 INTEGER(buffcol)[buffi] = NA_INTEGER;
                 break;
               case SXP_INT64:
                 REAL(buffcol)[buffi] = NA_INT64_D;
                 break;
-              case SXP_REAL:
+              case SXP_DOUBLE:
                 REAL(buffcol)[buffi] = NA_REAL;
                 break;
-              case SXP_STR:
+              case SXP_STRING:
                 #pragma omp critical
                 SET_STRING_ELT(buffcol, buffi, blank_is_a_nastring ? NA_STRING : R_BlankString);
                 // Yes, R's allocVector already initialized with R_BlankString so we could potential just assign NA_STRING
                 // directly. However, here we are rewriting buff many times (not the final ans once). CHARSXP from me's last
                 // chunk will be in this buffer so that CHARSXP's refs will need to be decremented by SET_STRING_ELT.
+                break;
+              case NEGATIVE:
+              case SXP_NULL:
+                // nothing
+                break;
               }
               resj += (type[j++]!=SXP_NULL);
             }
