@@ -13,6 +13,7 @@
     * Quoting rules are more robust and flexible. See point 10 on the wiki page [here](https://github.com/Rdatatable/data.table/wiki/Convenience-features-of-fread#10-automatic-quote-escape-method-detection-including-no-escape).
     * The ability to position `autostart` anywhere inside one of multiple tables in a single file is removed with warning. It used to search upwards from that line to find the start of the table based on a consistent number of columns. People appear to be using `skip="string"` or `skip=nrow` to find the header row exactly, which is retained and simpler. It was too difficult to retain search-upwards-autostart together with skipping blank lines, filling incomplete rows and parallelization. Varying format and height messy header info above the column names are still auto detected and auto skipped.
     * Many thanks to @yaakovfeldman, Guillermo Ponce and more to add for testing before release to CRAN: [#2070](https://github.com/Rdatatable/data.table/issues/2070), [#2073](https://github.com/Rdatatable/data.table/issues/2073)
+    * Detect BOM mark in GB-18030 and UTF-16 encodings, in verbose mode print a message about BOM detection. 
 
 #### BUG FIXES
 

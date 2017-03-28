@@ -623,10 +623,29 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // From now use STOP() wrapper instead of error(), for Windows to close file so as not to lock the file after an error.
     
     // ********************************************************************************************
+    //   Check whether the file contains BOM (Byte Order Mark), and if yes strip it, modifying 
+    //   `mmp`. Also, presence of BOM allows us to reliably detect the file's encoding.
+    //   See: https://en.wikipedia.org/wiki/Byte_order_mark
+    //   See: issues #1087 and #1465
+    // ********************************************************************************************
+    if (filesize >= 3 && memcmp(mmp, "\xEF\xBB\xBF", 3) == 0) {
+      mmp += 3;
+      ienc = CE_UTF8;
+      if (verbose) Rprintf("UTF-8 byte order mark EF BB BF found at the start of the file and skipped.\n");
+    }
+    else if (filesize >= 4 && memcmp(mmp, "\x84\x31\x95\x33", 4) == 0) {
+      mmp += 4;
+      // ienc = CE_GB18030;
+      if (verbose) Rprintf("GB-18030 byte order mark 84 31 95 33 found at the start of the file and skipped.\n");
+      warning("GB-18030 encoding detected, however fread() is unable to decode it. Some character fields may be garbled.\n");
+    }
+    else if (filesize >= 2 && mmp[0] + mmp[1] == '\xFE' + '\xFF') {  // either 0xFE 0xFF or 0xFF 0xFE
+      STOP("File is encoded in UTF-16, this encoding is not supported by fread(). Please recode the file to UTF-8.");
+    }
+
+    // ********************************************************************************************
     //   Auto detect eol, first eol where there are two (i.e. CRLF)
     // ********************************************************************************************
-    // take care of UTF8 BOM, #1087 and #1465
-    if (!memcmp(mmp, "\xef\xbb\xbf", 3)) mmp += 3;   // this is why we need 'origmmp'
     ch = mmp;
     while (ch<eof && *ch!='\n' && *ch!='\r') {
         if (*ch==quote) while(++ch<eof && *ch!=quote) {};  // allows protection of \n and \r inside column names

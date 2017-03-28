@@ -20,3 +20,4 @@ vignettes/*.pdf
 
 *~
 .DS_Store
+.idea
