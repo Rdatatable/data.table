@@ -2531,8 +2531,8 @@ if ("package:bit64" %in% search()) {
     DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
     DT[117, r2:="3.14A"]
     fwrite(DT,f<-tempfile())
-    test(899.1, fread(f), output="Column 4.*a2.*integer.*<<12345678901234>>.*Column 10.*r2.*numeric.*<<3.14A>>",
-                          error="guessed column type was insufficient for 6 values in 6 columns")
+    test(899.1, fread(f), output="Column 4.*a2.*integer.*integer64.*<<12345678901234>>.*Column 10.*r2.*numeric.*character.*<<3.14A>>",
+                          error="bumped.*6 points across 6 columns")
     test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2"))), DT)
     unlink(f)
 } else {
@@ -2864,8 +2864,8 @@ x = sample(1:1000,2100,replace=TRUE)  # 2100 > 100 JUMPLINES * 10 NJUMP * 2 spac
 DT = data.table( A=as.character(x), B=1:100)
 DT[115, A:="123456789123456"]  # row 115 is outside the 100 rows at 10 points.
 fwrite(DT,f<-tempfile())
-test(1016.1, fread(f) ,output="Column 1.*A.*integer.*<<123456789123456>>",
-                      error="guess.*insufficient.*1 value.*1 column")
+test(1016.1, fread(f), output="Column 1.*A.*integer.*integer64.*<<123456789123456>>",
+                       error="bumped.*1 points across 1 columns")
 test(1016.2, fread(f, colClasses = c(A="numeric")), copy(DT)[,A:=as.numeric(A)])
 DT[90, A:="321456789123456"]   # inside the sample
 write.table(DT,f,sep=",",row.names=FALSE,quote=FALSE)

@@ -54,7 +54,7 @@ static cetype_t ienc;
 // class (for speed)
 // ii) 0:n enum makes it easier to bump through types in this order using ++.
 typedef enum {
-  NEGATIVE=-1, // dummy to force signed int (sign bit is used as flag to save space when >10,000 columns)
+  NEGATIVE=-1,// dummy to force signed type; sign bit i) saves space when ncol>10,000 ii) out-of-sample type bump management
   SXP_BOOL,   // LGLSXP
   SXP_INT32,  // INTSXP
   SXP_INT64,  // REALSXP class "integer64" using package bit64
@@ -528,7 +528,15 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (verbose) Rprintf("na.strings[%d]=='%s' is numeric so all numeric fields will have to check na.strings\n", i+1, start); 
       }
     }
-    if (verbose && !any_number_like_nastrings) Rprintf("None of the %d 'na.strings' are numeric (such as '-9999') which is normal and best for performance.\n", LENGTH(nastrings));
+    if (verbose) {
+      Rprintf("Parameter na.strings == ");
+      if (!length(nastrings)) Rprintf("None\n");
+      else {
+        for (int i=0; i<LENGTH(nastrings); i++) Rprintf(i==0 ? "<<%s>>" : ", <<%s>>", CHAR(STRING_ELT(nastrings,i)));
+        Rprintf("\n");
+      }
+      Rprintf("%s of the %d na.strings are numeric (such as '-9999').", any_number_like_nastrings ? "One or more" : "None");
+    }
     int nrowLimit = INT_MAX;
     if (isReal(nrowsarg)) {
       if (R_FINITE(REAL(nrowsarg)[0])) nrowLimit = (int)(REAL(nrowsarg)[0]);
@@ -857,12 +865,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     //   Make best guess at column types using 100 rows at 10 points, including the very first, middle and very last row.
     //   At the same time, calc mean and sd of row lengths in sample. Use for very good estimate of nrow.
     // *****************************************************************************************************************
-    colType type[ncol];
-    _Bool typeOk[ncol];
-    for (int i=0; i<ncol; i++) { 
-      type[i]   =0;   // 0 because it's the lowest type ('logical')
-      typeOk[i] =TRUE;   // set to 0 later to output one message per column if the guessed type is not sufficient
-    }
+    colType *type = (colType *)R_alloc(ncol, sizeof(colType));  // not VLA for when ncol>10,000
+    for (int i=0; i<ncol; i++) type[i] = 0; // 0 start with lowest type ('logical')
     
     size_t startSize=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
     int nJumps = NJUMPS+1;
@@ -1005,13 +1009,13 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     //   Apply colClasses, select, drop and integer64
     // ********************************************************************************************
     ch = pos;
-    SEXP colTypeIndex, items, itemsInt, UserTypeNameSxp;
+    SEXP items, itemsInt;
     if (isLogical(colClasses)) {
         // allNA only valid logical input
         for (int k=0; k<LENGTH(colClasses); k++) if (LOGICAL(colClasses)[k] != NA_LOGICAL) STOP("when colClasses is logical it must be all NA. Position %d contains non-NA: %d", k+1, LOGICAL(colClasses)[k]);
         if (verbose) Rprintf("Argument colClasses is ignored as requested by provided NA values\n");
     } else if (length(colClasses)) {
-        UserTypeNameSxp = PROTECT(allocVector(STRSXP, NUT));
+        SEXP UserTypeNameSxp = PROTECT(allocVector(STRSXP, NUT));
         protecti++;
         for (int i=0; i<NUT; i++) SET_STRING_ELT(UserTypeNameSxp, i, mkChar(UserTypeName[i]));
         if (isString(colClasses)) {
@@ -1019,7 +1023,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             // there is no possibility of specifying a column twice in this usage
             if (length(getAttrib(colClasses, R_NamesSymbol))) STOP("Internal error: colClasses has names, but these should have been converted to list format at R level");
             if (LENGTH(colClasses)!=1 && LENGTH(colClasses)!=ncol) STOP("colClasses is unnamed and length %d but there are %d columns. See ?data.table for colClasses usage.", LENGTH(colClasses), ncol);
-            colTypeIndex = PROTECT(chmatch(colClasses, UserTypeNameSxp, NUT, FALSE));  // if type not found then read as character then as. at R level
+            SEXP colTypeIndex = PROTECT(chmatch(colClasses, UserTypeNameSxp, NUT, FALSE));  // if type not found then read as character then as. at R level
             protecti++;
             for (int k=0; k<ncol; k++) {
                 if (STRING_ELT(colClasses, LENGTH(colClasses)==1 ? 0 : k) == NA_STRING) {
@@ -1029,13 +1033,13 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 int thisType = UserTypeNameMap[ INTEGER(colTypeIndex)[ LENGTH(colClasses)==1 ? 0 : k] -1 ];
                 if (type[k]<thisType) {
                     if (verbose) Rprintf("Column %d ('%s') was detected as type '%s' but bumped to '%s' as requested by colClasses\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType] );
-                    type[k]=thisType;
+                    type[k] = thisType;
                 } else if (verbose && type[k]>thisType) warning("Column %d ('%s') has been detected as type '%s'. Ignoring request from colClasses to read as '%s' (a lower type) since NAs (or loss of precision) may result.\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType]);
             }
         } else {  // normal branch here
             if (!isNewList(colClasses)) STOP("colClasses is not type list or character vector");
             if (!length(getAttrib(colClasses, R_NamesSymbol))) STOP("colClasses is type list but has no names");
-            colTypeIndex = PROTECT(chmatch(getAttrib(colClasses, R_NamesSymbol), UserTypeNameSxp, NUT, FALSE));
+            SEXP colTypeIndex = PROTECT(chmatch(getAttrib(colClasses, R_NamesSymbol), UserTypeNameSxp, NUT, FALSE));
             protecti++;
             for (int i=0; i<LENGTH(colClasses); i++) {
                 int thisType = UserTypeNameMap[INTEGER(colTypeIndex)[i]-1];
@@ -1059,12 +1063,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                         if (type[k]<0) STOP("Column '%s' appears more than once in colClasses", CHAR(STRING_ELT(names,k)));
                         if (type[k]<thisType) {
                             if (verbose) Rprintf("Column %d ('%s') was detected as type '%s' but bumped to '%s' as requested by colClasses[[%d]]\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType], i+1 );
-                            type[k]=-thisType;
+                            type[k] = -thisType;
                         } else if (verbose && type[k]>thisType) Rprintf("Column %d ('%s') has been detected as type '%s'. Ignoring request from colClasses[[%d]] to read as '%s' (a lower type) since NAs would result.\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], i+1, UserTypeName[thisType]);
                     }
                 }
             }
-            for (int i=0; i<ncol; i++) if (type[i]<0) type[i]*=-1;
+            for (int i=0; i<ncol; i++) if (type[i]<0) type[i] *= -1;
         }
     }
     int readInt64As = SXP_INT64;
@@ -1108,11 +1112,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (k == NA_INTEGER) continue;
             if (k<1 || k>ncol) STOP("Column number %d (select[%d]) is out of range [1,ncol=%d]",k,i+1,ncol);
             if (type[k-1]<0) STOP("Column number %d ('%s') has been selected twice by select=", k, STRING_ELT(names,k-1));
-            type[k-1]*=-1; // detect and error on duplicates on all types without calling duplicated() at all
+            type[k-1] *= -1; // detect and error on duplicates on all types without calling duplicated() at all
         }
         UNPROTECT(1);
         for (int i=0; i<ncol; i++) {
-          if (type[i]<0) type[i]*=-1;
+          if (type[i]<0) type[i] *= -1;
           else type[i]=SXP_NULL;
         }
     }
@@ -1171,14 +1175,14 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     ch = pos;   // back to start of first data row
     int hasPrinted=0;  // the percentage last printed so it prints every 2% without many calls to wallclock()
     _Bool stopTeam=FALSE;
-    int numTypeErr=0, numTypeErrCols=0;
-    char *typeErr=NULL;  size_t typeErrSize=0;
+    int nTypeBump=0, nTypeBumpCols=0;
+    char *typeBumpMsg=NULL;  size_t typeBumpMsgSize=0;
     #define stopErrSize 1000
     char stopErr[stopErrSize+1]="";  // must be compile time size: the message is generated and we can't free before STOP
     int ansi=0;   // the current row number in ans that we are writing to
     const char *prevThreadEnd = pos;  // the position after the last line the last thread processed (for checking)
     size_t workSize=0;
-    int buffGrown=0;
+    int initialBuffSize=0, buffGrown=0;
     int nth = getDTthreads();   // TODO add nThread function argument
     int chunkMB=1;
     // 1MB chunks for each thread.  Thinking that ideal is nth*chunkMB*3 < total cache (untested)
@@ -1208,7 +1212,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       // it works, in event of failure to allocate thread team wouldn't be cleaned up since R itself throws inside 
       // allocVector. Therefore, alloc before parallel region and then check carefully inside. Using a VECSXP for
       // nested PROTECTion, otherwise 12,000 PROTECTs fails with R level protection stack overflow.
-      int initialBuffSize = MAX(orig_allocnrow/nJumps,128);
+      initialBuffSize = MAX(orig_allocnrow/nJumps,128);
       // minimum 128 to avoid lots of tiny growing on small files; e.g. if fread is ever highly iterated on
       // flag/status files orig_allocnrow typically 10-20% bigger than estimated final nrow, so the buffers are
       // small with the same overage % buffers will be grown if i) we observe a lot of out-of-sample short lines
@@ -1293,30 +1297,48 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
           while (j<ncol) {
             // Rprintf("Field %d: '%.10s' as type %d\n", j+1, ch, type[j]);
             const char *fieldStart = ch;
-            SEXP buffcol = mybuff[resj];
-            if (!(*fun[type[j]])(&ch,buffcol,buffi)) {  // normally returns success(1) and buffcol[buffi] is assigned inside *fun.
-              #pragma omp atomic
-              numTypeErr++;  // if seen a type fail before in this column, just atomic inc and move on
-              if (typeOk[j]) {
-                #pragma omp critical
-                // happens rarely and when it does only once per column, so shared critical (unnamed) with other critical below
-                // is ok to give openMP the best chance to save managing separate criticals
-                {
-                  typeOk[j] = FALSE;  // don't do this section again for any more fails in this column
-                  numTypeErrCols++;   // == sum(typeOk==0)
-                  // Can't Rprintf because we're likely not master. So accumulate message and print afterwards.
-                  // We don't know row number yet, as we jumped here
-                  // TODO - auto rerun with right classes rather than worry about getting row number in here; still put this into verbose
+            colType thisType, oldType;
+
+            #pragma omp atomic read
+            oldType = type[j];  // fetch shared type once
+            
+            thisType = oldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
+            SEXP buffcol = thisType>=0 ? mybuff[resj] : NULL;
+            // when a guess is insufficient out-of-sample, type is changed to negative sign and then bumped negative. This
+            // checks that the bump is fully sufficient for the rest of the column so only a single re-read will be needed. When
+            // the type is negative the field processor will still process and check, but won't assign when it's passed NULL.
+            
+            while (!fun[abs(thisType)](&ch, buffcol, buffi)) {
+              // normally returns success(1) and buffcol[buffi] is assigned inside *fun.
+              buffcol = NULL;   // on next call to *fun don't write the result to the column, as this col now in type exception
+              thisType = thisType<0 ? thisType-1 : -thisType-1;
+              ch = fieldStart;
+            }
+            
+            if (thisType != oldType) {  // rare out-of-sample type exception
+              #pragma omp critical
+              {
+                oldType = type[j];  // fetch shared value again in case another thread just bumped it while I was waiting.
+                // Can't Rprintf because we're likely not master. So accumulate message and print afterwards.
+                // We don't know row number yet, as we jumped here in parallel; have a good guess at the range of row number though.
+                if (thisType < oldType) {   // thisType<0 (type-exception)
                   char temp[1001];
-                  int len = snprintf(temp, 1000, "Column %d ('%s') guessed '%s' but contains <<%.*s>>\n",
-                          j+1, CHAR(STRING_ELT(names,j)), UserTypeName[type[j]], (int)(ch-fieldStart), fieldStart);
-                  typeErr = realloc(typeErr, typeErrSize+len+1);
-                  strcpy(typeErr+typeErrSize, temp);
-                  typeErrSize += len;
-                }
+                  int len = snprintf(temp, 1000,
+                    "Column %d (\"%s\") bumped from '%s' to '%s' due to <<%.*s>> ",
+                    j+1, CHAR(STRING_ELT(names,j)), UserTypeName[abs(oldType)], UserTypeName[abs(thisType)],
+                    (int)(ch-fieldStart), fieldStart);
+                  if (nth==1) len += snprintf(temp+len, 1000-len, "on row %d\n", buffi);
+                  else len += snprintf(temp+len, 1000-len, "somewhere between row %d and row %d\n", ansi, ansi+nth*initialBuffSize);
+                  typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize+len+1);
+                  strcpy(typeBumpMsg+typeBumpMsgSize, temp);
+                  typeBumpMsgSize += len;
+                  nTypeBump++;
+                  if (oldType>0) nTypeBumpCols++;
+                } // else other thread bumped to a (negative) higher or equal type, so do nothing
               }
             }
-            resj += (type[j++]!=SXP_NULL);
+            resj += (thisType!=SXP_NULL);
+            j++;
             if (ch>=eof || *ch==eol) break;
             ch++;
           }
@@ -1468,11 +1490,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       else Rprintf("Thread buffers were grown %d times (if all %d threads each grew once, this figure would be %d)\n",
                    buffGrown, nth, nth);
     }
-    if (numTypeErr) {
-        Rprintf(typeErr);
+    if (nTypeBump) {
+        Rprintf(typeBumpMsg);
         R_FlushConsole();
-        free(typeErr);
-        STOP("The guessed column type was insufficient for %d values in %d columns. The first in each column was printed to the console. Use colClasses to set these column classes manually.", numTypeErr, numTypeErrCols);
+        free(typeBumpMsg);
+        STOP("The column type was bumped at %d points across %d columns. These have been printed to the console. Use colClasses to set these column classes manually.", nTypeBump, nTypeBumpCols);
     }
     if (stopTeam && stopErr[0]!='\0') STOP(stopErr); // else nrowLimit applied and stopped early normally
     if (ansi > allocnrow) {
