@@ -7,7 +7,7 @@
 
 1. `fread()`:
     * Efficiency savings at C level including **parallelization**; e.g. a 9GB 2 column integer csv input is **50s down to 12s** to cold load on a 4 core laptop with 16GB RAM and SSD. Run `echo 3 >/proc/sys/vm/drop_caches` first to measure cold load time. Subsequent load time (after file has been cached by OS on the first run) **40s down to 6s**.
-    * Memory maps lazily; e.g. `nrow=10` now takes 0.01s from cold, down from 12s for a 9GB file. Large files close to your RAM limit may work more reliably too. The progress meter will commence sooner and more consistently.
+    * Memory maps lazily; e.g. `nrow=10` is **12s down to 0.01s** from cold for the 9GB file. Large files close to your RAM limit may work more reliably too. The progress meter will commence sooner and more consistently.
     * `fread` has always jumped to the middle and to the end of the file for a much improved column type guess. This sample size is unchanged: 1,000 rows at 10 jump points. But it now **automatically rereads any columns with out-of-sample type exceptions** so you don't have to use `colClasses` yourself.
     * Large number of columns support; e.g. **12,000 columns** tested.
     * **Quoting rules** are more robust and flexible. See point 10 on the wiki page [here](https://github.com/Rdatatable/data.table/wiki/Convenience-features-of-fread#10-automatic-quote-escape-method-detection-including-no-escape).
