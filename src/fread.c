@@ -1174,8 +1174,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // ********************************************************************************************
     ch = pos;   // back to start of first data row
     int hasPrinted=0;  // the percentage last printed so it prints every 2% without many calls to wallclock()
-    _Bool stopTeam=FALSE;
+    _Bool stopTeam=FALSE, firstTime=TRUE;
     int nTypeBump=0, nTypeBumpCols=0;
+    double tRead=0, tReread=0, tTot=0;
     char *typeBumpMsg=NULL;  size_t typeBumpMsgSize=0;
     #define stopErrSize 1000
     char stopErr[stopErrSize+1]="";  // must be compile time size: the message is generated and we can't free before STOP
@@ -1226,6 +1227,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       }
     }
     
+    read:  // we'll return here to reread any columns with out-of-sample type exceptions
     #pragma omp parallel num_threads(nth)
     {
       int me = omp_get_thread_num();
@@ -1476,30 +1478,36 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
       }
     }  // end OpenMP parallel
-    double tRead = wallclock();
-    double tot=tRead-t0;
-    if (hasPrinted || verbose) {
+    if (firstTime) {
+      tReread = tRead = wallclock();
+      tTot = tRead-t0;
+      if (hasPrinted || verbose) {
         Rprintf("\rRead %d rows x %d columns from %.3fGB file in ", ansi, ncol-numNULL, 1.0*filesize/(1024*1024*1024));
-        Rprintf("%02d:%06.3f ", (int)tot/60, fmod(tot,60.0));
+        Rprintf("%02d:%06.3f ", (int)tTot/60, fmod(tTot,60.0));
         Rprintf("wall clock time (can be slowed down by any other open apps even if seemingly idle)\n");
         // since parallel, clock() cycles is parallel too: so wall clock will have to do
-    }
-    if (verbose) {
-      if (nth==1) Rprintf("Buffer pointing to ans was grown %d times", buffGrown);
-      else Rprintf("Thread buffers were grown %d times (if all %d threads each grew once, this figure would be %d)\n",
-                   buffGrown, nth, nth);
-      int typeCounts[CT_STRING+1];  // CT_STRING must always be the last
-      for (int i=0; i<=CT_STRING; i++) typeCounts[i] = 0;
-      for (int i=0; i<ncol; i++) typeCounts[ abs(type[i]) ]++;
-      Rprintf("===== Final type counts =====\n");
-      for (int i=0; i<=CT_STRING; i++) Rprintf("%10d : %-9s\n", typeCounts[i], UserTypeName[i]);
-      Rprintf("=============================\n");
-    }
-    if (nTypeBump) {
-        Rprintf(typeBumpMsg);
-        R_FlushConsole();
+      }
+      // not-bumped columns are assigned type -CT_STRING in the rerun, so we have to count types now
+      if (verbose) {
+        int typeCounts[CT_STRING+1];  // CT_STRING must always be the last
+        for (int i=0; i<=CT_STRING; i++) typeCounts[i] = 0;
+        for (int i=0; i<ncol; i++) typeCounts[ abs(type[i]) ]++;
+        Rprintf("Final type counts\n");
+        for (int i=0; i<=CT_STRING; i++) Rprintf("%10d : %-9s\n", typeCounts[i], UserTypeName[i]);
+      }
+      if (nTypeBump) {
+        if (hasPrinted || verbose) Rprintf("Rereading %d columns due to out-of-sample type exceptions.\n", nTypeBumpCols);
+        if (verbose) Rprintf(typeBumpMsg);
+        // TODO - construct and output the copy and pastable colClasses argument to use to avoid the reread in future.
         free(typeBumpMsg);
-        STOP("The column type was bumped at %d points across %d columns. These have been printed to the console. Use colClasses to set these column classes manually.", nTypeBump, nTypeBumpCols);
+      }
+    } else {
+      tReread = wallclock();
+      tTot = tReread-t0;
+      if (hasPrinted || verbose) {
+        Rprintf("\rReread %d rows x %d columns in ", ansi, nTypeBumpCols);
+        Rprintf("%02d:%06.3f\n", (int)(tReread-tRead)/60, fmod(tReread-tRead,60.0));
+      }
     }
     if (stopTeam && stopErr[0]!='\0') STOP(stopErr); // else nrowLimit applied and stopped early normally
     if (ansi > allocnrow) {
@@ -1509,15 +1517,49 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       if (verbose) Rprintf("Read %d rows. Exactly what was estimated and allocated up front\n", ansi);
     } else {
       for (int i=0; i<LENGTH(ans); i++) SETLENGTH(VECTOR_ELT(ans,i), ansi);
+      allocnrow = ansi;
+    }
+    if (firstTime && nTypeBump) {
+      for (int i=0, resi=0; i<ncol; i++) {
+        if (type[i] == CT_DROP) continue;
+        if (type[i]<0) {
+          // just for the bumped columns ...
+          int newType = TypeSxp[ type[i] *= -1 ];   // final type for this column
+          SEXP newcol = allocVector(newType, allocnrow);
+          SET_VECTOR_ELT(ans, resi, newcol);  // change type in ans
+          if (type[i]==CT_INT64) setAttrib(newcol, R_ClassSymbol, ScalarString(char_integer64));
+          if (nth>1) for (int j=0; j<nth; j++) {  // change type in all buff. But not when buff points to ans (nth==1)
+            int w = j*LENGTH(ans)+resi;
+            int len = LENGTH(VECTOR_ELT(buff, w));
+            SET_VECTOR_ELT(buff, w, allocVector(newType, len));
+            // no need to inc workSize because the old vectors are now free
+          }
+        } else if (type[i]>=1) {
+          // all non-bumped columns we'll skip over in the rerun, whilst still incrementing resi (hence not CT_DROP)
+          // not -type[i] either because that would reprocess the contents of not-bumped columns wastefully
+          type[i] = -CT_STRING;
+        }
+        resi++;  // don't resi++ when CT_DROP
+      }
+      // reread from the beginning
+      ansi = 0;
+      prevThreadEnd = ch = pos;
+      firstTime = FALSE;
+      goto read;
     }
     if (verbose) {
-        if (tot<0.000001) tot=0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
-        Rprintf("%8.3fs (%3.0f%%) Memory map\n", tMap-t0, 100.0*(tMap-t0)/tot);
-        Rprintf("%8.3fs (%3.0f%%) sep, ncol and header detection\n", tLayout-tMap, 100.0*(tLayout-tMap)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Column type detection using %d sample rows from %d jump points\n", tColType-tLayout, 100.0*(tColType-tLayout)/tot, sampleLines, nJumps);
-        Rprintf("%8.3fs (%3.0f%%) Allocation of %d rows x %d cols (%.3fGB) plus %.3fGB of temporary buffers\n", tAlloc-tColType, 100.0*(tAlloc-tColType)/tot, allocnrow, ncol, (double)ansSize/(1024*1024*1024), (double)workSize/(1024*1024*1024));
-        Rprintf("%8.3fs (%3.0f%%) Reading data\n", tRead-tAlloc, 100.0*(tRead-tAlloc)/tot);
-        Rprintf("%8.3fs        Total\n", tot);
+      if (nth==1) Rprintf("Buffer pointing to ans was grown %d times\n", buffGrown);
+      else Rprintf("Thread buffers were grown %d times (if all %d threads each grew once, this figure would be %d)\n",
+                   buffGrown, nth, nth);
+      Rprintf("=============================\n");
+      if (tTot<0.000001) tTot=0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
+      Rprintf("%8.3fs (%3.0f%%) Memory map\n", tMap-t0, 100.0*(tMap-t0)/tTot);
+      Rprintf("%8.3fs (%3.0f%%) sep, ncol and header detection\n", tLayout-tMap, 100.0*(tLayout-tMap)/tTot);
+      Rprintf("%8.3fs (%3.0f%%) Column type detection using %d sample rows from %d jump points\n", tColType-tLayout, 100.0*(tColType-tLayout)/tTot, sampleLines, nJumps);
+      Rprintf("%8.3fs (%3.0f%%) Allocation of %d rows x %d cols (%.3fGB) plus %.3fGB of temporary buffers\n", tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, allocnrow, ncol, (double)ansSize/(1024*1024*1024), (double)workSize/(1024*1024*1024));
+      Rprintf("%8.3fs (%3.0f%%) Reading data\n", tRead-tAlloc, 100.0*(tRead-tAlloc)/tTot);
+      Rprintf("%8.3fs (%3.0f%%) Rereading %d columns due to out-of-sample type exceptions\n", tReread-tRead, 100.0*(tReread-tRead)/tTot, nTypeBumpCols);
+      Rprintf("%8.3fs        Total\n", tTot);
     }
     UNPROTECT(protecti);
     closeFile();
