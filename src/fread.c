@@ -60,16 +60,16 @@ typedef enum {
   SXP_INT64,  // REALSXP class "integer64" using package bit64
   SXP_DOUBLE, // REALSXP
   SXP_STRING, // STRSXP
-  SXP_NULL    // NILSXP i.e. skip column (highest type so that all types can be bumped up to it by user)
+  SXP_DROP    // NILSXP i.e. skip column (highest type so that all types can be bumped up to it by user)
 } colType;
 
 #define NUMTYPE    6
 static int TypeSxp[NUMTYPE] = {LGLSXP,INTSXP,REALSXP,REALSXP,STRSXP,NILSXP};
 #define NUT        8   // Number of User Types (just for colClasses where "numeric"/"double" are equivalent)
-static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "NULL", "double", "CLASS" };
+static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "drop", "double", "CLASS" };
 // important that first 6 correspond to TypeSxp.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
 static int UserTypeNameMap[NUT] =
-           { SXP_BOOL, SXP_INT32, SXP_INT64, SXP_DOUBLE, SXP_STRING, SXP_NULL, SXP_DOUBLE, SXP_STRING };
+           { SXP_BOOL, SXP_INT32, SXP_INT64, SXP_DOUBLE, SXP_STRING, SXP_DROP, SXP_DOUBLE, SXP_STRING };
 static char quote;
 typedef _Bool (*reader_fun_t)(const char **, SEXP, int);
 
@@ -265,7 +265,7 @@ static _Bool Field(const char **this, SEXP targetCol, int targetRow)
 
 static _Bool SkipField(const char **this, SEXP targetCol, int targetRow)
 {
-   // wrapper around Field for SXP_NULL to save a branch in the main data reader loop and
+   // wrapper around Field for SXP_DROP to save a branch in the main data reader loop and
    // to make the *fun[] lookup a bit clearer
    return Field(this,NULL,0);
 }
@@ -1044,7 +1044,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             for (int i=0; i<LENGTH(colClasses); i++) {
                 int thisType = UserTypeNameMap[INTEGER(colTypeIndex)[i]-1];
                 items = VECTOR_ELT(colClasses,i);
-                if (thisType == SXP_NULL) {
+                if (thisType == SXP_DROP) {
                     if (!isNull(drop) || !isNull(select)) STOP("Can't use NULL in colClasses when select or drop is used as well.");
                     drop = items;
                     continue;
@@ -1095,7 +1095,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 else warning("drop[%d] is NA", j+1);
             } else {
                 if (k<1 || k>ncol) warning("Column number %d (drop[%d]) is out of range [1,ncol=%d]",k,j+1,ncol);
-                else type[k-1] = SXP_NULL;
+                else type[k-1] = SXP_DROP;
             }
         }
     }
@@ -1117,10 +1117,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         UNPROTECT(1);
         for (int i=0; i<ncol; i++) {
           if (type[i]<0) type[i] *= -1;
-          else type[i]=SXP_NULL;
+          else type[i]=SXP_DROP;
         }
     }
-    int numNULL=0; for (int i=0; i<ncol; i++) if (type[i]==SXP_NULL) numNULL++;
+    int numNULL=0; for (int i=0; i<ncol; i++) if (type[i]==SXP_DROP) numNULL++;
     if (verbose) { Rprintf("Type codes (drop|select): "); printTypes(type, ncol); Rprintf("\n"); }
     double tColType = wallclock();
     
@@ -1136,13 +1136,13 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     } else {
         SEXP resnames;
         resnames = PROTECT(allocVector(STRSXP, ncol-numNULL));  protecti++;
-        for (int i=0,resi=0; i<ncol; i++) if (type[i]!=SXP_NULL) {
+        for (int i=0,resi=0; i<ncol; i++) if (type[i]!=SXP_DROP) {
             SET_STRING_ELT(resnames,resi++,STRING_ELT(names,i));
         }
         setAttrib(ans, R_NamesSymbol, resnames);
     }
     for (int i=0,resi=0; i<ncol; i++) {
-        if (type[i] == SXP_NULL) continue;
+        if (type[i] == SXP_DROP) continue;
         SEXP thiscol = allocVector(TypeSxp[ type[i] ], allocnrow);
         SET_VECTOR_ELT(ans,resi++,thiscol);  // no need to PROTECT thiscol, see R-exts 5.9.1
         if (type[i]==SXP_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(char_integer64));
@@ -1337,7 +1337,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 } // else other thread bumped to a (negative) higher or equal type, so do nothing
               }
             }
-            resj += (thisType!=SXP_NULL);
+            resj += (thisType!=SXP_DROP);
             j++;
             if (ch>=eof || *ch==eol) break;
             ch++;
@@ -1368,11 +1368,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 // chunk will be in this buffer so that CHARSXP's refs will need to be decremented by SET_STRING_ELT.
                 break;
               case NEGATIVE:
-              case SXP_NULL:
+              case SXP_DROP:
                 // nothing
                 break;
               }
-              resj += (type[j++]!=SXP_NULL);
+              resj += (type[j++]!=SXP_DROP);
             }
           }
           if (ch<eof && *ch!=eol) { myStopReason = 3; break; }
@@ -1489,6 +1489,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       if (nth==1) Rprintf("Buffer pointing to ans was grown %d times", buffGrown);
       else Rprintf("Thread buffers were grown %d times (if all %d threads each grew once, this figure would be %d)\n",
                    buffGrown, nth, nth);
+      int typeCounts[SXP_DROP+1];  // SXP_DROP must always be the last
+      for (int i=0; i<=SXP_DROP; i++) typeCounts[i] = 0;
+      for (int i=0; i<ncol; i++) typeCounts[ abs(type[i]) ]++;
+      Rprintf("===== Final type counts =====\n");
+      for (int i=0; i<=SXP_DROP; i++) Rprintf("%10d : %-9s\n", typeCounts[i], UserTypeName[i]);
+      Rprintf("=============================\n");
     }
     if (nTypeBump) {
         Rprintf(typeBumpMsg);
