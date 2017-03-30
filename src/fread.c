@@ -1206,10 +1206,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     size_t workSize=0;
     int initialBuffSize=0, buffGrown=0;
     int nth = getDTthreads();   // TODO add nThread function argument
-    int chunkMB=1;
-    // 1MB chunks for each thread.  Thinking that ideal is nth*chunkMB*3 < total cache (untested)
-    //   Where 3 =  1) file pages 2) buffers 3) final result
-    size_t chunkBytes = MAX(5*maxLen, chunkMB*1024*1024);  // chunk size given to each thread. 1MB * nth should fit in cache
+    
+    size_t chunkBytes = MAX(1000*maxLen, 1/*MB*/ *1024*1024);  // 100 was 5
+    // Decides number of jumps and size of buffers; chunkBytes is the distance between each jump point
+    // For the 44GB file with 12875 columns, the max line len is 108,497. As each column has its own buffer per thread,
+    // that buffer allocation should be at least one page (4k). Hence 1000 rows of the smallest type (4 byte int) is just
+    // under 4096 to leave space for R's header + malloc's header. Around 50MB of buffer in this extreme case.
     if (nJumps/*from sampling*/>1 && nth>1) {
       // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
       nJumps = (int)((size_t)(lastRowEnd-pos)/chunkBytes);  // (int) rounds down
