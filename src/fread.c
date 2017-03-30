@@ -546,7 +546,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         for (int i=0; i<LENGTH(nastrings); i++) Rprintf(i==0 ? "<<%s>>" : ", <<%s>>", CHAR(STRING_ELT(nastrings,i)));
         Rprintf("\n");
       }
-      Rprintf("%s of the %d na.strings are numeric (such as '-9999').", any_number_like_nastrings ? "One or more" : "None");
+      Rprintf("%s of the %d na.strings are numeric (such as '-9999').\n", any_number_like_nastrings ? "One or more" : "None");
     }
     int nrowLimit = INT_MAX;
     if (isReal(nrowsarg)) {
