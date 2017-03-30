@@ -44,7 +44,7 @@ static char sep, eol, eol2;  // sep2 TO DO
 static int quoteRule;
 static int eolLen;
 static SEXP nastrings;
-static _Bool verbose, any_number_like_nastrings, blank_is_a_nastring;
+static _Bool any_number_like_nastrings, blank_is_a_nastring;
 static _Bool stripWhite;  // only applies to unquoted character columns; numeric fields always stripped
 static _Bool skipEmptyLines, fill;
 static cetype_t ienc;
@@ -324,6 +324,8 @@ static _Bool StrtoI64(const char **this, SEXP targetCol, int targetRow)
     }
     const char *start=ch;
     int sign=1;
+    _Bool quoted = FALSE;
+    if (ch<eof && (*ch==quote)) { quoted=TRUE; ch++; }
     if (ch<eof && (*ch=='-' || *ch=='+')) sign -= 2*(*ch++=='-');
     _Bool ok = ch<eof && '0'<=*ch && *ch<='9';  // a single - or + with no [0-9] is !ok and considered type character
     long long acc = 0;
@@ -334,6 +336,7 @@ static _Bool StrtoI64(const char **this, SEXP targetCol, int targetRow)
       acc += *ch-'0';
       ch++;
     }
+    if (quoted) { if (ch>=eof || *ch!=quote) return FALSE; else ch++; } 
     if (targetCol) REAL(targetCol)[targetRow] = LLtoD(sign * acc);
     skip_white(&ch);
     ok = ok && on_sep(&ch);
@@ -361,6 +364,8 @@ static _Bool StrtoI32(const char **this, SEXP targetCol, int targetRow)
     }
     const char *start=ch;
     int sign=1;
+    _Bool quoted = FALSE;
+    if (ch<eof && (*ch==quote)) { quoted=TRUE; ch++; }
     if (ch<eof && (*ch=='-' || *ch=='+')) sign -= 2*(*ch++=='-');
     _Bool ok = ch<eof && '0'<=*ch && *ch<='9';
     int acc = 0;
@@ -369,6 +374,7 @@ static _Bool StrtoI32(const char **this, SEXP targetCol, int targetRow)
       acc += *ch-'0';
       ch++;
     }
+    if (quoted) { if (ch>=eof || *ch!=quote) return FALSE; else ch++; }
     if (targetCol) INTEGER(targetCol)[targetRow] = sign * acc;
     skip_white(&ch);
     ok = ok && on_sep(&ch);
@@ -397,6 +403,8 @@ static _Bool StrtoD(const char **this, SEXP targetCol, int targetRow)
       *this = ch;
       return TRUE;
     }
+    _Bool quoted = FALSE;
+    if (ch<eof && (*ch==quote)) { quoted=TRUE; ch++; }
     const char *start=ch;
     errno = 0;
     double d = strtod(start, (char **)&ch);
@@ -414,6 +422,7 @@ static _Bool StrtoD(const char **this, SEXP targetCol, int targetRow)
         // as that will be read fine by the first strtod() with silent loss of precision. IIUC.
       }
     }*/
+    if (quoted) { if (ch>=eof || *ch!=quote) return FALSE; else ch++; }
     skip_white(&ch);
     Rboolean ok = (errno==0 || errno==ERANGE) && ch>start && on_sep(&ch);
     if (targetCol) REAL(targetCol)[targetRow]=d;
@@ -433,24 +442,26 @@ static _Bool StrtoB(const char **this, SEXP targetCol, int targetRow)
     const char *ch = *this;
     skip_white(&ch);
     if (targetCol) LOGICAL(targetCol)[targetRow]=NA_LOGICAL;
-    if (on_sep(&ch)) { *this = ch; return TRUE; }  // empty field most commonly ',,' 
+    if (on_sep(&ch)) { *this=ch; return TRUE; }  // empty field ',,'
     const char *start=ch;
-    if (*ch=='T') {
+    _Bool quoted = FALSE;
+    if (ch<eof && (*ch==quote)) { quoted=TRUE; ch++; }
+    if (quoted && *ch==quote) { ch++; if (on_sep(&ch)) {*this=ch; return TRUE;} else return FALSE; }  // empty quoted field ',"",'
+    _Bool logical01 = FALSE;  // expose to user and should default be TRUE?
+    if ( ((*ch=='0' || *ch=='1') && logical01) || (*ch=='N' && ch+1<eof && *(ch+1)=='A' && ch++)) {
+        if (targetCol) LOGICAL(targetCol)[targetRow] = (*ch=='1' ? TRUE : (*ch=='0' ? FALSE : NA_LOGICAL));
+        ch++;
+    } else if (*ch=='T') {
         if (targetCol) LOGICAL(targetCol)[targetRow] = TRUE;
-        ch++;
-        if (on_sep(&ch)) { *this=ch; return TRUE; }
-        if (ch+2<eof && *ch=='R' && *++ch=='U' && *++ch=='E' && ++ch && on_sep(&ch)) { *this=ch; return TRUE; }
-        ch = start+1;
-        if (ch+2<eof && *ch=='r' && *++ch=='u' && *++ch=='e' && ++ch && on_sep(&ch)) { *this=ch; return TRUE; }
-    }
-    else if (*ch=='F') {
+        if (++ch+2<eof && ((*ch=='R' && *(ch+1)=='U' && *(ch+2)=='E') ||
+                           (*ch=='r' && *(ch+1)=='u' && *(ch+2)=='e'))) ch+=3;
+    } else if (*ch=='F') {
         if (targetCol) LOGICAL(targetCol)[targetRow] = FALSE;
-        ch++;
-        if (on_sep(&ch)) { *this=ch; return TRUE; }
-        if (ch+3<eof && *ch=='A' && *++ch=='L' && *++ch=='S' && *++ch=='E' && ++ch && on_sep(&ch)) { *this=ch; return TRUE; }
-        ch = start+1;
-        if (ch+3<eof && *ch=='a' && *++ch=='l' && *++ch=='s' && *++ch=='e' && ++ch && on_sep(&ch)) { *this=ch; return TRUE; }
+        if (++ch+3<eof && ((*ch=='A' && *(ch+1)=='L' && *(ch+2)=='S' && *(ch+3)=='E') ||
+                           (*ch=='a' && *(ch+1)=='l' && *(ch+2)=='s' && *(ch+3)=='e'))) ch+=4;
     }
+    if (quoted) { if (ch>=eof || *ch!=quote) return FALSE; else ch++; }
+    if (on_sep(&ch)) { *this=ch; return TRUE; }
     if (targetCol) LOGICAL(targetCol)[targetRow] = NA_LOGICAL;
     next_sep(&ch);
     *this=ch;
@@ -465,7 +476,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     R_len_t j, protecti=0;
     const char *pos;
     Rboolean header, allchar;
-    verbose=LOGICAL(verbosearg)[0];
+    _Bool verbose=LOGICAL(verbosearg)[0];
     double t0 = wallclock();
     
     // Encoding, #563: Borrowed from do_setencoding from base R
@@ -1255,7 +1266,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         int myStopReason=0;
         int j=-1;  // in this scope to be used in error message in ordered
         const char *ch = pos+jump*chunkBytes;
-        const char *nextJump = jump<nJumps-1 ? ch+chunkBytes : lastRowEnd-1;
+        const char *nextJump = jump<nJumps-1 ? ch+chunkBytes : lastRowEnd-eolLen;
         int buffi=0;  // the row read so far from this jump point. We don't know how many rows exactly this will be yet
         SEXP *mybuff = (SEXP *)DATAPTR(buff) + me*LENGTH(ans);
         if (jump>0 && !nextGoodLine(&ch, ncol)) {
@@ -1265,9 +1276,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
         const char *thisThreadStart=ch;
         const char *lineStart=ch;
-        while (ch<=nextJump && buffi<nrowLimit) {
-        //       ^^ including = for when nextJump happens to fall exactly on a line start (the next thread will
-        //          start one line later in that case because nextGoodLine() starts by fiding next eol
+        nextJump+=eolLen;  // for when nextJump happens to fall exactly on a line start (or on eol2 on Windows). The
+        //                 // next thread will start one line later because nextGoodLine() starts by finding next eol
+        //                 // Easier to imagine eolLen==1 and ch<=nextJump in the while condition
+        while (ch<nextJump && buffi<nrowLimit) {
         // buffi<nrowLimit doesn't make sense when nth>1 since it's always true then (buffi is within buffer while
         // nrowLimit applies to final ans). It's only there for when nth=1 and nrows= is provided (e.g. tests 1558.1
         // and 1558.3). In that case we know we can stop when we've read the required number of rows. Otherwise it
@@ -1389,8 +1401,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             // Normal branch
             if (prevThreadEnd != thisThreadStart) {
               snprintf(stopErr, stopErrSize,
-                "Jump %d did not end exactly where jump %d found its first good line start. "
-                "end(%p)<<%.*s>> != start(prev%+d)<<%.*s>>",
+                "Jump %d did not end exactly where jump %d found its first good line start: "
+                "prevEnd(%p)<<%.*s>> != thisStart(prevEnd%+d)<<%.*s>>",
                 jump-1, jump, prevThreadEnd, STRLIM(prevThreadEnd,50), prevThreadEnd,
                 (int)(thisThreadStart-prevThreadEnd), STRLIM(thisThreadStart,50), thisThreadStart);
               stopTeam=TRUE;
