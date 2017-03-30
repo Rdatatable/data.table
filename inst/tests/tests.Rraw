@@ -2531,7 +2531,7 @@ if ("package:bit64" %in% search()) {
     DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
     DT[117, r2:="3.14A"]
     fwrite(DT,f<-tempfile())
-    test(899.1, fread(f,verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*integer.*integer64.*<<12345678901234>>.*Column 10.*r2.*numeric.*character.*<<3.14A>>")
+    test(899.1, fread(f,verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*integer.*integer64.*<<12345678901234>>.*Column 10.*r2.*double.*character.*<<3.14A>>")
     test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2")), verbose=TRUE),
                 DT, output="Rereading 0 columns due to out-of-sample type exceptions")
     unlink(f)
@@ -2683,7 +2683,7 @@ test(956, fread(input, colClasses=list(character=2:3,double="A")), data.table(A=
 test(957, fread(input, colClasses=list(character=1:3)), data.table(A=c("01","002"),B=c("foo","bar"),C=c("3.140","6.28000")))
 test(958, fread(input, colClasses="character"), data.table(A=c("01","002"),B=c("foo","bar"),C=c("3.140","6.28000")))
 test(959, fread(input, colClasses=c("character","double","numeric"), verbose=TRUE),
-          warning = "Column 2 ('B') has been detected as type 'character'. Ignoring request from colClasses to read as 'numeric' (a lower type) since NAs (or loss of precision) may result",
+          warning = "Column 2 ('B') has been detected as type 'character'. Ignoring request from colClasses to read as 'double' (a lower type) since NAs (or loss of precision) may result",
           output = "Detected 3 columns",  # including output= just so that verbose output is captured, just the warning will be checked.
           data.table(A=c("01","002"),B=c("foo","bar"),C=c(3.14,6.28)))
 
@@ -5833,7 +5833,7 @@ test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input wor
 test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist; getwd()==")
 
 # Test for #802
-test(1453, fread("fread_line_error.csv"), error="Line 12 starting <<31,3-0-7 4>>.*more than.*24 fields.*position 61.*character 3")
+test(1453, fread("fread_line_error.csv"), error="Line 12 from sampling jump 0 starting <<31,3-0-7 4>>.*more than.*24 fields.*position 61.*character 3")
 # TODO: add comment=="#".   Ensure only after last field is observed. 
 
 # no-sep-found => sep="\n", use case for this in #738
@@ -9838,8 +9838,8 @@ test(1752, fread("issue_2051.csv")[2,grep("^Our.*tool$",COLUMN50)], 1L)
 
 # check too many fields error from ,\n line ending highlighted in #2044
 test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
-test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), error="Line 3 starting <<3,4,>> has more than.*2 fields")
-test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 3 starting <<3,4,7>> has more than.*2 fields")
+test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), error="Line 2 from sampling jump 0 starting <<3,4,>> has more than.*2 fields")
+test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 2 from sampling jump 0 starting <<3,4,7>> has more than.*2 fields")
 
 # check omp critical around SET_STRING_ELT
 # minimal construction big enough for parallelism with 8 or less threads. On a machine with more, do setDTthreads(8) first otherwise

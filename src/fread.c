@@ -66,16 +66,14 @@ typedef enum {
 #define NUMTYPE    6
 static int TypeSxp[NUMTYPE] = {NILSXP,LGLSXP,INTSXP,REALSXP,REALSXP,STRSXP};
 #define NUT        8   // Number of User Types (just for colClasses where "numeric"/"double" are equivalent)
-static const char UserTypeName[NUT][10] = {"drop", "logical", "integer", "integer64", "numeric", "character", "double", "CLASS" };
+static const char UserTypeName[NUT][10] = {"drop", "logical", "integer", "integer64", "double", "character", "numeric", "CLASS" };
 // important that first 6 correspond to TypeSxp.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
 static int UserTypeNameMap[NUT] =
            { CT_DROP, CT_BOOL, CT_INT32, CT_INT64, CT_DOUBLE, CT_STRING, CT_DOUBLE, CT_STRING };
 static char quote;
 typedef _Bool (*reader_fun_t)(const char **, SEXP, int);
 
-#define NJUMPS     10    // how many places in the file to jump to and test types there (the very end is added as 11th)
-                         // not too many though so as not to slow down wide files; e.g. 10,000 columns
-#define JUMPLINES 100    // at each jump, how many lines to guess column types
+#define JUMPLINES 100    // at each jump (10 or 100 jumps), how many lines to guess column types (1,000 or 10,000 sample lines)
 
 const char *fnam=NULL, *origmmp, *mmp;   // origmmp just needed to pass to munmap when BOM is skipped over using mmp+=3.
 size_t filesize;
@@ -546,7 +544,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         for (int i=0; i<LENGTH(nastrings); i++) Rprintf(i==0 ? "<<%s>>" : ", <<%s>>", CHAR(STRING_ELT(nastrings,i)));
         Rprintf("\n");
       }
-      Rprintf("%s of the %d na.strings are numeric (such as '-9999').\n", any_number_like_nastrings ? "One or more" : "None");
+      Rprintf("%s of the %d na.strings are numeric (such as '-9999').\n",
+              any_number_like_nastrings ? "One or more" : "None", length(nastrings));
     }
     int nrowLimit = INT_MAX;
     if (isReal(nrowsarg)) {
@@ -557,7 +556,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     if (nrowLimit<0) error("nrows must be >=0", nrowLimit);
     
     if (!( (isInteger(skip) && LENGTH(skip)==1 && INTEGER(skip)[0]>=0)  // NA_INTEGER is covered by >=0
-         ||(isString(skip) && LENGTH(skip)==1))) error("'skip' must be a length 1 vector of type numeric or integer >=0, or single character search string");
+         ||(isString(skip) && LENGTH(skip)==1))) error("'skip' must be a length 1 vector of type double or integer >=0, or single character search string");
     if (!isNull(separg)) {
         if (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1) error("'sep' must be 'auto' or a single character");
         if (*CHAR(STRING_ELT(separg,0))==quote) error("sep = '%c' = quote, is not an allowed separator.",quote);
@@ -736,22 +735,21 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     char topSep=eol;          // which sep that was, by default \n to mean single-column input (1 field)
     int topQuoteRule=0;       // which quote rule that was
     const char *firstJumpEnd=eof; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
-    
-    int nJumpLines = JUMPLINES;
-    // Always sample as if nrows= wasn't supplied. That's probably *why* they are setting nrow=0 to get the column names
+
+    // Always sample as if nrows= wasn't supplied. That's probably *why* user is setting nrow=0 to get the column names
     // and types, without actually reading the data yet. Most likely to check consistency across a set of files.
-    int numFields[nJumpLines+1];   // +1 to cover the likely header row. Don't know at this stage whether it is present or not.
-    int numLines[nJumpLines+1];
+    int numFields[JUMPLINES+1];   // +1 to cover header row. Don't know at this stage whether it is present or not.
+    int numLines[JUMPLINES+1];
     
     for (int s=0; s<nseps; s++) {
       sep = seps[s];
       for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
         ch = pos;
         // Rprintf("Trying sep='%c' with quoteRule %d ...", sep, quoteRule);
-        for (int i=0; i<=nJumpLines; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
+        for (int i=0; i<=JUMPLINES; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
         int i=-1; // The slot we're counting the currently contiguous consistent ncol
         int thisLine=0, lastncol=0;
-        while (ch<eof && ++thisLine<=nJumpLines+1) {
+        while (ch<eof && thisLine++<=JUMPLINES) {
           int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
           if (thisncol<0) { numFields[0]=-1; break; }  // invalid file with this sep and quote rule; abort this rule
           if (lastncol!=thisncol) { numFields[++i]=thisncol; lastncol=thisncol; } // new contiguous consistent ncol started
@@ -791,7 +789,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       // find the top line with the consistent number of fields.  There might be irregular header lines above it.
       //int nmax=0, thisLine=-1, whichmax=0;
       ncol = topNumFields;
-      int thisLine=-1; while (ch<eof && ++thisLine<nJumpLines) {
+      int thisLine=-1; while (ch<eof && ++thisLine<JUMPLINES) {
         const char *lineStart = ch;
         if (countfields(&ch)==ncol) { ch=pos=lineStart; line+=thisLine; break; }
       }
@@ -879,17 +877,23 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     colType *type = (colType *)R_alloc(ncol, sizeof(colType));  // not VLA for when ncol>10,000
     for (int i=0; i<ncol; i++) type[i] = CT_BOOL; // start with lowest type ('logical')
     
-    size_t startSize=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
-    int nJumps = NJUMPS+1;
-    // +1 for the extra sample at the very end (this is sampled and format checked but not jumped to when reading)
-    if (startSize==0 || startSize*NJUMPS*2 > (eof-pos)) { nJumps=1; }
-    // *2 to get a good spacing. We don't want overlaps resulting in double counting.
-    // nJumps==1 means the whole (small) file will be sampled with one thread
+    size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
+    int nJumps = 0;
+    // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
+    // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
+    // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
+    if (jump0size>0) {
+      if (jump0size*100*2 < (size_t)(eof-pos)) nJumps=100;  // 100 jumps * 100 lines = 10,000 line sample
+      else if (jump0size*10*2 < (size_t)(eof-pos)) nJumps=10;
+      // *2 to get a good spacing. We don't want overlaps resulting in double counting.
+      // nJumps==1 means the whole (small) file will be sampled with one thread
+    }
+    nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
     if (verbose) {
       Rprintf("Number of sampling jump points  = %d because ",nJumps);
-      if (startSize==0) Rprintf("startSize=0\n");
-      else Rprintf("%lld startSize * %d NJUMPS * 2 = %d %s %d bytes from line %d to eof\n",
-                   startSize, NJUMPS, startSize*NJUMPS*2, nJumps==1 ? ">" : "<=", (size_t)(eof-pos), row1Line);
+      if (jump0size==0) Rprintf("jump0size==0\n");
+      else Rprintf("%lld bytes from row 1 to eof / (2 * %lld jump0size) == %d\n",
+                   (size_t)(eof-pos), jump0size, (size_t)(eof-pos)/(2*jump0size));
     }
 
     int sampleLines=0;
@@ -898,22 +902,23 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     int minLen=INT_MAX, maxLen=-1;   // int_max so the first if(thisLen<minLen) is always true; similarly for max
     const char *lastRowEnd=pos;
     for (int j=0; j<nJumps; j++) {
-        ch = ( j==0 ? pos : (j==nJumps-1 ? eof-(size_t)(0.5*startSize) : pos + j*((size_t)(eof-pos)/NJUMPS)));
-        if (j>0 && !nextGoodLine(&ch, ncol)) STOP("Could not find first good line start after jump point %d when sampling.", j);
-        _Bool bumped = 0;   // whether this jump found any different types; used just in verbose mode to limit output to relevant
+        ch = ( j==0 ? pos : (j==nJumps-1 ? eof-(size_t)(0.5*jump0size) : pos + j*((size_t)(eof-pos)/(nJumps-1))));
+        if (j>0 && !nextGoodLine(&ch, ncol))
+          STOP("Could not find first good line start after jump point %d when sampling.", j);
+        if (ch<lastRowEnd) // otherwise an overlap would lead to double counting and a wrong estimate
+          STOP("Internal error: Sampling jump point %d is before the last jump ended", j);
+        _Bool bumped = 0;  // did this jump find any different types; to reduce verbose output to relevant lines
         const char *thisStart = ch;
-        const char *thisEnd = (nJumps==1 ? eof : MIN(ch+startSize,eof));  // MIN is needed for the last extra jump for very end
-        
-        int i = 0;
-        while(ch<thisEnd) {
+        int line = 0;  // line from this jump point
+        while(ch<eof && (line<JUMPLINES || j==nJumps-1)) {  // nJumps==1 implies sample all of input to eof; last jump to eof too
             const char *lineStart = ch;
             if (sep==' ') while (ch<eof && *ch==' ') ch++;  // multiple sep=' ' at the lineStart does not mean sep(!)
-            skip_white(&ch);  // solely to detect blank lines, otherwise could leave to field processors which handle leading white
+            skip_white(&ch);  // solely to detect blank lines, otherwise could leave to field processors
             if (ch>=eof || *ch==eol) {
               if (!skipEmptyLines && !fill) break;
               lineStart = ch;  // to avoid 'Line finished early' below and get to the sampleLines++ block at the end of this while
             }
-            i++;
+            line++;
             int field=0;
             const char *fieldStart=ch;  // Needed outside loop for error messages below
             while (ch<eof && *ch!=eol && field<ncol) {
@@ -926,8 +931,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     // the field couldn't be read with this quote rule, try again with next one
                     // Trying the next rule will only be successful if the number of fields is consistent with it
                     if (quoteRule<3) {
-                      if (verbose) Rprintf("Bumping quote rule from %d to %d due to field %d on line %d starting <<%.*s>>\n",
-                                   quoteRule, quoteRule+1, field+1, line+i-1, STRLIM(fieldStart,200), fieldStart);
+                      if (verbose)
+                        Rprintf("Bumping quote rule from %d to %d due to field %d on line %d of sampling jump %d starting <<%.*s>>\n",
+                                 quoteRule, quoteRule+1, field+1, line, j, STRLIM(fieldStart,200), fieldStart);
                       quoteRule++;
                       bumped=TRUE;
                       ch = lineStart;  // Try whole line again, in case it's a hangover from previous field
@@ -946,8 +952,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (ch<eof) {
                 if (*ch!=eol || field>=ncol) {   // the || >=ncol is for when a comma ends the line with eol straight after 
                   if (field!=ncol) STOP("Internal error: Line has too many fields but field(%d)!=ncol(%d)", field, ncol);
-                  STOP("Line %d starting <<%.*s>> has more than the expected %d fields. Separator %d occurs at position %d which is character %d of the last field: <<%.*s>>. Consider setting 'comment.char=' if there is a trailing comment to be ignored.",
-                      line+i-1, STRLIM(lineStart,10), lineStart, ncol, ncol, (int)(ch-lineStart), (int)(ch-fieldStart), STRLIM(fieldStart,200), fieldStart);
+                  STOP("Line %d from sampling jump %d starting <<%.*s>> has more than the expected %d fields. " \
+                       "Separator %d occurs at position %d which is character %d of the last field: <<%.*s>>. " \
+                       "Consider setting 'comment.char=' if there is a trailing comment to be ignored.",
+                      line, j, STRLIM(lineStart,10), lineStart, ncol, ncol, (int)(ch-lineStart), (int)(ch-fieldStart),
+                      STRLIM(fieldStart,200), fieldStart);
                 }
                 ch += eolLen;
             } else {
@@ -961,7 +970,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                           STRLIM(fieldStart, 200), fieldStart);
                 }
             }
-            lastRowEnd = ch; // just to get the end position of the very last good row, before whitespace or footer before eof
+            lastRowEnd = ch; // Two reasons:  1) to get the end of the very last good row before whitespace or footer before eof
+                             //               2) to check sample jumps don't overlap, otherwise double count and bad estimate
             int thisLineLen = (int)(ch-lineStart);  // ch is now on start of next line so this includes eolLen already
             sampleLines++;
             sumLen += thisLineLen;
@@ -969,9 +979,9 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (thisLineLen<minLen) minLen=thisLineLen;
             if (thisLineLen>maxLen) maxLen=thisLineLen;
         }
-        sampleBytes += (size_t)(ch-thisStart);  // ch not thisEnd because last line could have gone past thisEnd (which is fine)
+        sampleBytes += (size_t)(ch-thisStart);
         if (verbose && (bumped || j==0 || j==nJumps-1)) {
-          Rprintf("Type codes (jump %02d)    : ",j); printTypes(type, ncol);
+          Rprintf("Type codes (jump %03d)    : ",j); printTypes(type, ncol);
           Rprintf("  Quote rule %d\n", quoteRule);
         }
     }
@@ -1093,7 +1103,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             if (verbose) Rprintf("Column %d ('%s') has been detected as type 'integer64'. But reading this as '%s' according to the integer64 parameter.\n", i+1, CHAR(STRING_ELT(names,i)), CHAR(STRING_ELT(integer64,0)));
         }
     }
-    if (verbose) { Rprintf("Type codes (colClasses) : "); printTypes(type, ncol); Rprintf("\n"); }
+    if (verbose) { Rprintf("Type codes (colClasses)  : "); printTypes(type, ncol); Rprintf("\n"); }
     if (length(drop)) {
         if (any_duplicated(drop,FALSE)) STOP("Duplicates detected in drop");
         if (isString(drop)) itemsInt = PROTECT(chmatch(drop, names, NA_INTEGER, FALSE));
@@ -1132,7 +1142,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
     }
     int numNULL=0; for (int i=0; i<ncol; i++) if (type[i]==CT_DROP) numNULL++;
-    if (verbose) { Rprintf("Type codes (drop|select): "); printTypes(type, ncol); Rprintf("\n"); }
+    if (verbose) { Rprintf("Type codes (drop|select) : "); printTypes(type, ncol); Rprintf("\n"); }
     double tColType = wallclock();
     
     // ********************************************************************************************
@@ -1567,7 +1577,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       if (tTot<0.000001) tTot=0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
       Rprintf("%8.3fs (%3.0f%%) Memory map\n", tMap-t0, 100.0*(tMap-t0)/tTot);
       Rprintf("%8.3fs (%3.0f%%) sep, ncol and header detection\n", tLayout-tMap, 100.0*(tLayout-tMap)/tTot);
-      Rprintf("%8.3fs (%3.0f%%) Column type detection using %d sample rows from %d jump points\n", tColType-tLayout, 100.0*(tColType-tLayout)/tTot, sampleLines, nJumps);
+      Rprintf("%8.3fs (%3.0f%%) Column type detection using %d sample rows\n", tColType-tLayout, 100.0*(tColType-tLayout)/tTot, sampleLines);
       Rprintf("%8.3fs (%3.0f%%) Allocation of %d rows x %d cols (%.3fGB) plus %.3fGB of temporary buffers\n", tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, allocnrow, ncol, (double)ansSize/(1024*1024*1024), (double)workSize/(1024*1024*1024));
       Rprintf("%8.3fs (%3.0f%%) Reading data\n", tRead-tAlloc, 100.0*(tRead-tAlloc)/tTot);
       Rprintf("%8.3fs (%3.0f%%) Rereading %d columns due to out-of-sample type exceptions\n", tReread-tRead, 100.0*(tReread-tRead)/tTot, nTypeBumpCols);
