@@ -42,7 +42,7 @@ notifications:
 
 env:
   global:
-    - CRAN http://cloud.r-project.org/
+    - CRAN="http://cloud.r-project.org/"
     - PKG_CFLAGS="-O3 -Wall -pedantic"
     - WARNINGS_ARE_ERRORS=1
     # drat using @jangorecki token
