@@ -9877,6 +9877,13 @@ test(1757, fread("winallquoted.csv")[c(1,2,4998,4999)],
 
 test(1758, sapply(fread("A,B\n,"),class), c(A="logical",B="logical"))
 
+# split.data.table should respect non-alphabetic order if passed a factor in by, #2082
+DT = data.table(a = factor(c('a', 'b'), levels = c('b', 'a')))
+split(DT, by = 'a', sorted = TRUE)
+test(1759, split(DT, by = 'a', sorted = TRUE),
+     list(b = data.table(a = structure(1L, .Label = c("b", "a"), class = "factor")), 
+          a = data.table(a = structure(2L, .Label = c("b", "a"), class = "factor"))))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
