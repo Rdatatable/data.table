@@ -7,7 +7,6 @@
 #include <windows.h>
 #include <stdio.h>
 #include <tchar.h>
-#include <inttypes.h>  // for PRId64
 #else
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -47,7 +46,6 @@ static SEXP nastrings;
 static _Bool any_number_like_nastrings, blank_is_a_nastring;
 static _Bool stripWhite;  // only applies to unquoted character columns; numeric fields always stripped
 static _Bool skipEmptyLines, fill;
-static cetype_t ienc;
 
 // Define our own fread type codes, different to R's SEXPTYPE :
 // i) INTEGER64 is not in R but an add on packages using REAL, we need to make a distinction here, without using
@@ -70,8 +68,9 @@ static const char UserTypeName[NUT][10] = {"drop", "logical", "integer", "intege
 // important that first 6 correspond to TypeSxp.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
 static int UserTypeNameMap[NUT] =
            { CT_DROP, CT_BOOL, CT_INT32, CT_INT64, CT_DOUBLE, CT_STRING, CT_DOUBLE, CT_STRING };
+static size_t typeSize[NUT] = { 0, 4, 4, 8, 8, 8, 8, 8 };  // checked in init.c
 static char quote;
-typedef _Bool (*reader_fun_t)(const char **, SEXP, int);
+typedef _Bool (*reader_fun_t)(const char **, void *, int);
 
 #define JUMPLINES 100    // at each jump (10 or 100 jumps), how many lines to guess column types (1,000 or 10,000 sample lines)
 
@@ -161,7 +160,7 @@ static inline _Bool is_nastring(const char *lch) {
   return FALSE;
 }
 
-static _Bool Field(const char **this, SEXP targetCol, int targetRow)
+static _Bool Field(const char **this, void *targetCol, int targetRow)
 {
   const char *ch = *this;
   if (stripWhite) skip_white(&ch);  // before and after quoted field's quotes too (e.g. test 1609) but never inside quoted fields
@@ -235,33 +234,12 @@ static _Bool Field(const char **this, SEXP targetCol, int targetRow)
   }
   if (quoted) { ch++; if (stripWhite) skip_white(&ch); }
   if (!on_sep(&ch)) return FALSE;
-  if (targetCol) {
-    #pragma omp critical
-    // shared critical (not named) important since the buff to ans copy has a critical on SET_* too and we don't
-    // want one thread over there calling SET_* when we are here calling SET_*. Shared critical means only one thread can be
-    // in any of the criticals at once, which is exactly what we want.
-    // This is an 'orphan' directive as we're in a function called from the parallel region.
-    {
-      SEXP thisStr;
-      if (fieldLen==0) {
-        thisStr = blank_is_a_nastring ? NA_STRING : R_BlankString;
-      } else {
-        thisStr = mkCharLenCE(fieldStart, fieldLen, ienc);
-        // Check nastrings now while page is hot. Just one "NA" current default but empty in future when numerics
-        // handle NA string variants directly. Faster to go ahead with mkChar and then do == on pointer, than always
-        // do a strcmp first.
-        for (int k=0; k<length(nastrings); k++) {
-          if (thisStr == STRING_ELT(nastrings,k)) { thisStr = NA_STRING; break; }
-        }
-      }
-      SET_STRING_ELT(targetCol, targetRow, thisStr);
-    }
-  }
-  *this = ch; // Update caller's ch. This may be after fieldStart+fieldLen due to quotes and/or whitespace
+  if (targetCol) ((uint64_t *)targetCol)[targetRow] = ((uint64_t)fieldLen<<32) + (int)(fieldStart-*this);  // agnostic & thread-safe
+  *this = ch; // Update caller's ch. This may be greater than fieldStart+fieldLen due to quotes and/or whitespace
   return TRUE;
 }
 
-static _Bool SkipField(const char **this, SEXP targetCol, int targetRow)
+static _Bool SkipField(const char **this, void *targetCol, int targetRow)
 {
    // wrapper around Field for CT_DROP to save a branch in the main data reader loop and
    // to make the *fun[] lookup a bit clearer
@@ -304,7 +282,7 @@ static inline _Bool nextGoodLine(const char **this, int ncol)
   return FALSE;
 }
 
-static _Bool StrtoI64(const char **this, SEXP targetCol, int targetRow)
+static _Bool StrtoI64(const char **this, void *targetCol, int targetRow)
 {
     // Specialized clib strtoll that :
     // i) skips leading isspace() too but other than field separator and eol (e.g. '\t' and ' \t' in FUT1206.txt)
@@ -316,7 +294,7 @@ static _Bool StrtoI64(const char **this, SEXP targetCol, int targetRow)
     const char *ch = *this;
     skip_white(&ch);  //  ',,' or ',   ,' or '\t\t' or '\t   \t' etc => NA
     if (on_sep(&ch)) {  // most often ',,' 
-      if (targetCol) REAL(targetCol)[targetRow]=NA_INT64_D;
+      if (targetCol) ((int64_t *)targetCol)[targetRow]=NA_INT64_LL;
       *this = ch;
       return TRUE;
     }
@@ -326,7 +304,7 @@ static _Bool StrtoI64(const char **this, SEXP targetCol, int targetRow)
     if (ch<eof && (*ch==quote)) { quoted=TRUE; ch++; }
     if (ch<eof && (*ch=='-' || *ch=='+')) sign -= 2*(*ch++=='-');
     _Bool ok = ch<eof && '0'<=*ch && *ch<='9';  // a single - or + with no [0-9] is !ok and considered type character
-    long long acc = 0;
+    int64_t acc = 0;
     while (ch<eof && '0'<=*ch && *ch<='9' && acc<(LLONG_MAX-10)/10) { // compiler should optimize last constant expression
       // Conveniently, LLONG_MIN  = -9223372036854775808 and LLONG_MAX  = +9223372036854775807
       // so the full valid range is [-LLONG_MAX,+LLONG_MAX] and NA==LLONG_MIN==-LLONG_MAX-1
@@ -335,7 +313,7 @@ static _Bool StrtoI64(const char **this, SEXP targetCol, int targetRow)
       ch++;
     }
     if (quoted) { if (ch>=eof || *ch!=quote) return FALSE; else ch++; } 
-    if (targetCol) REAL(targetCol)[targetRow] = LLtoD(sign * acc);
+    if (targetCol) ((int64_t *)targetCol)[targetRow] = sign * acc;
     skip_white(&ch);
     ok = ok && on_sep(&ch);
     //Rprintf("StrtoI64 field '%.*s' has len %d\n", lch-ch+1, ch, len);
@@ -343,20 +321,20 @@ static _Bool StrtoI64(const char **this, SEXP targetCol, int targetRow)
     if (ok && !any_number_like_nastrings) return TRUE;  // most common case, return 
     _Bool na = is_nastring(start);
     if (ok && !na) return TRUE;
-    if (targetCol) REAL(targetCol)[targetRow] = NA_INT64_D;
+    if (targetCol) ((int64_t *)targetCol)[targetRow] = NA_INT64_LL;
     next_sep(&ch);  // consume the remainder of field, if any
     *this = ch;
     return na;
 }    
 
-static _Bool StrtoI32(const char **this, SEXP targetCol, int targetRow)
+static _Bool StrtoI32(const char **this, void *targetCol, int targetRow)
 {
     // Very similar to StrtoI64 (see it for comments). We can't make a single function and switch on TYPEOF(targetCol) to
     // know I64 or I32 because targetCol is NULL when testing types and when dropping columns.
     const char *ch = *this;
     skip_white(&ch);
     if (on_sep(&ch)) {  // most often ',,' 
-      if (targetCol) INTEGER(targetCol)[targetRow]=NA_INTEGER;
+      if (targetCol) ((int32_t *)targetCol)[targetRow] = NA_INTEGER;
       *this = ch;
       return TRUE;
     }
@@ -373,7 +351,7 @@ static _Bool StrtoI32(const char **this, SEXP targetCol, int targetRow)
       ch++;
     }
     if (quoted) { if (ch>=eof || *ch!=quote) return FALSE; else ch++; }
-    if (targetCol) INTEGER(targetCol)[targetRow] = sign * acc;
+    if (targetCol) ((int32_t *)targetCol)[targetRow] = sign * acc;
     skip_white(&ch);
     ok = ok && on_sep(&ch);
     //Rprintf("StrtoI32 field '%.*s' has len %d\n", lch-ch+1, ch, len);
@@ -381,13 +359,13 @@ static _Bool StrtoI32(const char **this, SEXP targetCol, int targetRow)
     if (ok && !any_number_like_nastrings) return TRUE;
     _Bool na = is_nastring(start);
     if (ok && !na) return TRUE;
-    if (targetCol) INTEGER(targetCol)[targetRow] = NA_INTEGER;
+    if (targetCol) ((int32_t *)targetCol)[targetRow] = NA_INTEGER;
     next_sep(&ch);
     *this = ch;
     return na;
 }
 
-static _Bool StrtoD(const char **this, SEXP targetCol, int targetRow)
+static _Bool StrtoD(const char **this, void *targetCol, int targetRow)
 {
     // Specialized strtod for same reasons as Strtoll (leading \t dealt with), but still uses stdlib:strtod
     // R's R_Strtod5 uses strlen() on input, so we can't use that here unless we copy field to a buffer (slow)
@@ -397,7 +375,7 @@ static _Bool StrtoD(const char **this, SEXP targetCol, int targetRow)
     const char *ch = *this;
     skip_white(&ch);
     if (on_sep(&ch)) {
-      if (targetCol) REAL(targetCol)[targetRow]=NA_REAL;
+      if (targetCol) ((double *)targetCol)[targetRow] = NA_REAL;
       *this = ch;
       return TRUE;
     }
@@ -423,23 +401,23 @@ static _Bool StrtoD(const char **this, SEXP targetCol, int targetRow)
     if (quoted) { if (ch>=eof || *ch!=quote) return FALSE; else ch++; }
     skip_white(&ch);
     Rboolean ok = (errno==0 || errno==ERANGE) && ch>start && on_sep(&ch);
-    if (targetCol) REAL(targetCol)[targetRow]=d;
+    if (targetCol) ((double *)targetCol)[targetRow] = d;
     *this = ch;
     if (ok && !any_number_like_nastrings) return TRUE;
     Rboolean na = is_nastring(start);
     if (ok && !na) return TRUE;
-    if (targetCol) REAL(targetCol)[targetRow] = NA_REAL;
+    if (targetCol) ((double *)targetCol)[targetRow] = NA_REAL;
     next_sep(&ch);
     *this = ch;
     return na;
 }
 
-static _Bool StrtoB(const char **this, SEXP targetCol, int targetRow)
+static _Bool StrtoB(const char **this, void *targetCol, int targetRow)
 {
     // These usually come from R when it writes out.
     const char *ch = *this;
     skip_white(&ch);
-    if (targetCol) LOGICAL(targetCol)[targetRow]=NA_LOGICAL;
+    if (targetCol) ((int32_t *)targetCol)[targetRow] = NA_LOGICAL;
     if (on_sep(&ch)) { *this=ch; return TRUE; }  // empty field ',,'
     const char *start=ch;
     _Bool quoted = FALSE;
@@ -447,20 +425,20 @@ static _Bool StrtoB(const char **this, SEXP targetCol, int targetRow)
     if (quoted && *ch==quote) { ch++; if (on_sep(&ch)) {*this=ch; return TRUE;} else return FALSE; }  // empty quoted field ',"",'
     _Bool logical01 = FALSE;  // expose to user and should default be TRUE?
     if ( ((*ch=='0' || *ch=='1') && logical01) || (*ch=='N' && ch+1<eof && *(ch+1)=='A' && ch++)) {
-        if (targetCol) LOGICAL(targetCol)[targetRow] = (*ch=='1' ? TRUE : (*ch=='0' ? FALSE : NA_LOGICAL));
+        if (targetCol) ((int32_t *)targetCol)[targetRow] = (*ch=='1' ? TRUE : (*ch=='0' ? FALSE : NA_LOGICAL));
         ch++;
     } else if (*ch=='T') {
-        if (targetCol) LOGICAL(targetCol)[targetRow] = TRUE;
+        if (targetCol) ((int32_t *)targetCol)[targetRow] = TRUE;
         if (++ch+2<eof && ((*ch=='R' && *(ch+1)=='U' && *(ch+2)=='E') ||
                            (*ch=='r' && *(ch+1)=='u' && *(ch+2)=='e'))) ch+=3;
     } else if (*ch=='F') {
-        if (targetCol) LOGICAL(targetCol)[targetRow] = FALSE;
+        if (targetCol) ((int32_t *)targetCol)[targetRow] = FALSE;
         if (++ch+3<eof && ((*ch=='A' && *(ch+1)=='L' && *(ch+2)=='S' && *(ch+3)=='E') ||
                            (*ch=='a' && *(ch+1)=='l' && *(ch+2)=='s' && *(ch+3)=='e'))) ch+=4;
     }
     if (quoted) { if (ch>=eof || *ch!=quote) return FALSE; else ch++; }
     if (on_sep(&ch)) { *this=ch; return TRUE; }
-    if (targetCol) LOGICAL(targetCol)[targetRow] = NA_LOGICAL;
+    if (targetCol) ((int32_t *)targetCol)[targetRow] = NA_LOGICAL;
     next_sep(&ch);
     *this=ch;
     return is_nastring(start);
@@ -471,7 +449,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
 // can't be named fread here because that's already a C function (from which the R level fread function took its name)
 {
     SEXP ans;
-    R_len_t j, protecti=0;
+    R_len_t protecti=0;
     const char *pos;
     Rboolean header, allchar;
     _Bool verbose=LOGICAL(verbosearg)[0];
@@ -481,10 +459,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     // https://github.com/wch/r-source/blob/ca5348f0b5e3f3c2b24851d7aff02de5217465eb/src/main/util.c#L1115
     // Check for mkCharLenCE function to locate as to where where this is implemented.
     // cetype_t ienc;
+    cetype_t ienc = CE_NATIVE;
     if (!strcmp(CHAR(STRING_ELT(encoding, 0)), "Latin-1")) ienc = CE_LATIN1;
     else if (!strcmp(CHAR(STRING_ELT(encoding, 0)), "UTF-8")) ienc = CE_UTF8;
-    else ienc = CE_NATIVE;
-
+    
     stripWhite = LOGICAL(stripWhiteArg)[0];
     skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
     fill = LOGICAL(fillArg)[0];
@@ -853,13 +831,16 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         line++;
         if (sep==' ') while (ch<eof && *ch==' ') ch++;
         for (int i=0; i<ncol; i++) {
-            // Skip trailing spaces and call 'Field()' here as it's already designed to handle quote vs non-quote cases.
-            // Also Fiedl() it takes care of leading spaces. Easier to understand the logic.
-            Field(&ch,names,i);
-            if (STRING_ELT(names,i)==NA_STRING || STRING_ELT(names,i)==R_BlankString) {
+            // Skip trailing spaces and call 'Field()' here as it's already designed to handle quotes, leading space etc.
+            uint64_t lenoff;
+            const char *start = ch;
+            Field(&ch, &lenoff, 0);  // returns the string length and offset as <int,int> in &lenoff
+            if ((lenoff>>32) == 0) {
                 char buff[10];
                 sprintf(buff,"V%d",i+1);
                 SET_STRING_ELT(names, i, mkChar(buff));
+            } else {
+                SET_STRING_ELT(names, i, mkCharLenCE(start+(lenoff & 0xFFFFFFFF), lenoff>>32, ienc));
             }
             if (ch<eof && *ch!=eol && i<ncol-1) ch++; // move the beginning char of next field
         }
@@ -1073,7 +1054,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 if (isString(items)) itemsInt = PROTECT(chmatch(items, names, NA_INTEGER, FALSE));
                 else itemsInt = PROTECT(coerceVector(items, INTSXP));
                 protecti++;
-                for (j=0; j<LENGTH(items); j++) {
+                for (int j=0; j<LENGTH(items); j++) {
                     int k = INTEGER(itemsInt)[j];
                     if (k==NA_INTEGER) {
                         if (isString(items)) STOP("Column name '%s' in colClasses[[%d]] not found", CHAR(STRING_ELT(items, j)),i+1);
@@ -1109,7 +1090,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (isString(drop)) itemsInt = PROTECT(chmatch(drop, names, NA_INTEGER, FALSE));
         else itemsInt = PROTECT(coerceVector(drop, INTSXP));
         protecti++;
-        for (j=0; j<LENGTH(drop); j++) {
+        for (int j=0; j<LENGTH(drop); j++) {
             int k = INTEGER(itemsInt)[j];
             if (k==NA_INTEGER) {
                 if (isString(drop)) warning("Column name '%s' in 'drop' not found", CHAR(STRING_ELT(drop, j)));
@@ -1141,27 +1122,28 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
           else type[i]=CT_DROP;
         }
     }
-    int numNULL=0; for (int i=0; i<ncol; i++) if (type[i]==CT_DROP) numNULL++;
+    int ndrop=0; for (int i=0; i<ncol; i++) if (type[i]==CT_DROP) ndrop++;
     if (verbose) { Rprintf("Type codes (drop|select) : "); printTypes(type, ncol); Rprintf("\n"); }
     double tColType = wallclock();
     
     // ********************************************************************************************
     //   Allocate the result columns
     // ********************************************************************************************
-    if (verbose) Rprintf("Allocating %d column slots (%d - %d dropped)\n", ncol-numNULL, ncol, numNULL);
-    ans=PROTECT(allocVector(VECSXP,ncol-numNULL));  // safer to leave over allocation to alloc.col on return in fread.R
+    if (verbose) Rprintf("Allocating %d column slots (%d - %d dropped)\n", ncol-ndrop, ncol, ndrop);
+    ans=PROTECT(allocVector(VECSXP,ncol-ndrop));  // safer to leave over allocation to alloc.col on return in fread.R
     protecti++;
-    size_t ansSize = SIZEOF(ans)*(ncol-numNULL)*2;  // the VECSXP and its column names  (exclude global character cache usage)
-    if (numNULL==0) {
+    if (ndrop==0) {
         setAttrib(ans,R_NamesSymbol,names);
     } else {
         SEXP resnames;
-        resnames = PROTECT(allocVector(STRSXP, ncol-numNULL));  protecti++;
+        resnames = PROTECT(allocVector(STRSXP, ncol-ndrop));  protecti++;
         for (int i=0,resi=0; i<ncol; i++) if (type[i]!=CT_DROP) {
             SET_STRING_ELT(resnames,resi++,STRING_ELT(names,i));
         }
         setAttrib(ans, R_NamesSymbol, resnames);
     }
+    size_t ansSize = SIZEOF(ans)*(ncol-ndrop)*2;  // the VECSXP and its column names  (exclude global character cache usage)
+    int nStringCols = 0, nNonStringCols = 0;
     for (int i=0,resi=0; i<ncol; i++) {
         if (type[i] == CT_DROP) continue;
         SEXP thiscol = allocVector(TypeSxp[ type[i] ], allocnrow);
@@ -1169,26 +1151,22 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (type[i]==CT_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(char_integer64));
         SET_TRUELENGTH(thiscol, allocnrow);
         ansSize += SIZEOF(thiscol)*allocnrow;
+        nStringCols += type[i]==CT_STRING;
+        nNonStringCols += type[i]!=CT_STRING;
     }
     double tAlloc = wallclock();
     
     // ********************************************************************************************
     //   madvise sequential
     // ********************************************************************************************
-    // Off by default as not sure we can rely on n threads _each_ sequential counting as sequential, on
-    // all platforms. It could hurt performance if not.
-    // TODO: add function argument to allow users to try it out.
-    if (fnam!=NULL) {
-      #ifdef MADV_SEQUENTIAL
-        //int ret = madvise((void *)origmmp, (size_t)filesize, MADV_SEQUENTIAL);
-        // read ahead and drop behind each read point as they move through
-        //if (verbose) Rprintf("madvise sequential: %s\n", ret ? strerror(errno) : "ok");
-      #else
-        // if (verbose) Rprintf("madvise sequential: not available on Windows\n");
-        // Maybe try PrefetchVirtualMemory from Windows 8+ it seems
-      #endif
-      // madvise is just a request, does nothing otherwise and returns instantly. No need to time it.
-    }
+    // Read ahead and drop behind each point as they move through. Assuming that's on a per thread basis.
+    // Considered it but when processing string columns the buffers point to offsets in the mmp'd pages
+    // which are revisited when writing the finished buffer to ans. So it isn't sequential.
+    // if (fnam!=NULL) {
+    //   #ifdef MADV_SEQUENTIAL  // not on Windows. PrefetchVirtualMemory from Windows 8+ ?  
+    //   int ret = madvise((void *)origmmp, (size_t)filesize, MADV_SEQUENTIAL); 
+    //   #endif
+    // }
     
     // ********************************************************************************************
     //   Read the data
@@ -1204,10 +1182,10 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     int ansi=0;   // the current row number in ans that we are writing to
     const char *prevThreadEnd = pos;  // the position after the last line the last thread processed (for checking)
     size_t workSize=0;
-    int initialBuffSize=0, buffGrown=0;
+    int initialBuffRows=0, buffGrown=0;
     int nth = getDTthreads();   // TODO add nThread function argument
     
-    size_t chunkBytes = MAX(1000*maxLen, 1/*MB*/ *1024*1024);  // 100 was 5
+    size_t chunkBytes = MAX(1000*maxLen, 1/*MB*/ *1024*1024);  // 1000 was 5
     // Decides number of jumps and size of buffers; chunkBytes is the distance between each jump point
     // For the 44GB file with 12875 columns, the max line len is 108,497. As each column has its own buffer per thread,
     // that buffer allocation should be at least one page (4k). Hence 1000 rows of the smallest type (4 byte int) is just
@@ -1220,35 +1198,12 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       chunkBytes = (size_t)(lastRowEnd-pos)/nJumps;
     } else nJumps=1;
     nth = MIN(nJumps, nth);
-    SEXP buff;
-    if (nth==1) {
-      // Most likely a small file, we've sampled all of it and so we know nrow exactly already.
-      // Or, nth has been limited.
-      // Point buffer directly to the result to save alloc and time copying
-      if (nJumps!=1) STOP("Internal error: nth==1 but nJumps(%d)>1", nJumps);
-      buff = ans;
-    } else {
-      buff = PROTECT(allocVector(VECSXP, nth*LENGTH(ans)));
-      protecti++;
-      // ncols can be many thousands so we can't rely on a VLA (C stack overflow). Using R memory instead of
-      // realloc because we need to SET_STRING_ELT for the benefits of the global character cache. We can't call
-      // allocVector from within parallel region because even though fine inside master section at the start if
-      // it works, in event of failure to allocate thread team wouldn't be cleaned up since R itself throws inside 
-      // allocVector. Therefore, alloc before parallel region and then check carefully inside. Using a VECSXP for
-      // nested PROTECTion, otherwise 12,000 PROTECTs fails with R level protection stack overflow.
-      initialBuffSize = MAX(orig_allocnrow/nJumps,128);
-      // minimum 128 to avoid lots of tiny growing on small files; e.g. if fread is ever highly iterated on
-      // flag/status files orig_allocnrow typically 10-20% bigger than estimated final nrow, so the buffers are
-      // small with the same overage % buffers will be grown if i) we observe a lot of out-of-sample short lines
-      // or ii) the lines are shorter in the first half of the file than the second half (for example)
-      for (int i=0; i<LENGTH(ans); i++) {   // LENGTH(ans) not ncol because LENGTH(ans)<ncol when numNULL>0
-        SEXP this = VECTOR_ELT(ans,i);
-        for (int j=0; j<nth; j++) {
-          SET_VECTOR_ELT(buff, j*LENGTH(ans)+i, allocVector(TYPEOF(this), initialBuffSize));
-          workSize += SIZEOF(this)*initialBuffSize;
-        }
-      }
-    }
+    initialBuffRows = MAX(orig_allocnrow/nJumps,500);
+    // minimum of any malloc is one page (4k). 4096/8 = 512. Use 500 to leave room for malloc's internal header to fit on 1 page.
+    // However, chunkBytes MAX should have already been reflected in nJumps, so the 500 doesn't matter really.
+    // orig_allocnrow typically 10-20% bigger than estimated final nrow, so the buffers have the same initial overage %.
+    // buffers will be grown if i) we observe a lot of out-of-sample short lines
+    // or ii) the lines are shorter in the first half of the file than the second half, for example
     
     read:  // we'll return here to reread any columns with out-of-sample type exceptions
     #pragma omp parallel num_threads(nth)
@@ -1272,6 +1227,29 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         }
       }
       #pragma omp barrier
+      void **mybuff = NULL;
+      // When nth=1 we could point mybuff directly to ans, were it not for character columns and wanted to keep SET_ out of Field
+      // Allocate mybuff here inside parallel region so that OpenMP/OS knows it doesn't need to sync the buffers between threads
+      int myBuffRows = initialBuffRows;
+      if (!stopTeam) {
+        mybuff = (void **)calloc(ncol-ndrop,sizeof(void *));  // not VLA for when ncol>10,000. calloc for free(NULL) later
+        if (!mybuff) stopTeam=TRUE;
+        for (int j=0, resj=-1; !stopTeam && j<ncol; j++) {   // LENGTH(ans) not ncol because LENGTH(ans)<ncol when ndrop>0
+          if (type[j] == CT_DROP) continue;
+          resj++;
+          if (type[j] < 0) continue;  // on the reread there might be -CT_STRING to skip column already read in source and destination
+          size_t size = typeSize[type[j]];
+          if (!(mybuff[resj] = (void *)malloc(myBuffRows * size))) stopTeam=TRUE;
+          #pragma omp atomic
+          workSize += myBuffRows * size;
+        }
+      }
+      #pragma omp barrier
+      #pragma omp master
+      if (stopTeam) {
+        //TODO set flag for STOP("Unable to allocate thread buffers");   // should never happen as buffers are small
+        // free of any that worked is done after for drops through
+      }
       #pragma omp for ordered schedule(dynamic)
       for (int jump=0; jump<nJumps; jump++) {
         if (stopTeam) continue;
@@ -1280,7 +1258,6 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         const char *ch = pos+jump*chunkBytes;
         const char *nextJump = jump<nJumps-1 ? ch+chunkBytes : lastRowEnd-eolLen;
         int buffi=0;  // the row read so far from this jump point. We don't know how many rows exactly this will be yet
-        SEXP *mybuff = (SEXP *)DATAPTR(buff) + me*LENGTH(ans);
         if (jump>0 && !nextGoodLine(&ch, ncol)) {
           stopTeam=TRUE;
           Rprintf("no good line could be found from jump point %d\n",jump); // TODO: change to stopErr
@@ -1296,19 +1273,19 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         // nrowLimit applies to final ans). It's only there for when nth=1 and nrows= is provided (e.g. tests 1558.1
         // and 1558.3). In that case we know we can stop when we've read the required number of rows. Otherwise it
         // would grow ans wastefully.
-          if (buffi==LENGTH(mybuff[0])) {
+          if (buffi==myBuffRows) {
             // buffer full due to unusually short lines in this chunk vs the sample; e.g. #2070
-            #pragma omp critical
-            {
-              for (int i=0; i<LENGTH(ans); i++) {
-                int w = me*LENGTH(ans)+i;
-                SET_VECTOR_ELT(buff, w, growVector(VECTOR_ELT(buff, w), buffi*2));
-              }
-              buffGrown++;  // just for verbose message afterwards
-              if (nth==1) allocnrow = buffi*2;
-              // if nth==1, buff==ans, and the ans will be grown. Which is correct and desired. Either nrows= wasn't
-              // provided, or it was but larger than allocnrow estimate and that turned out to be too small.
+            myBuffRows*=1.5;
+            for (int j=0, resj=-1; !stopTeam && j<ncol; j++) {
+              if (type[j] == CT_DROP) continue;
+              resj++;
+              if (type[j] < 0) continue;
+              size_t size = typeSize[type[j]];
+              if (!(mybuff[resj] = (void *)realloc(mybuff[resj], myBuffRows * size))) stopTeam=TRUE;
             }
+            if (stopTeam) break;
+            #pragma omp atomic
+            buffGrown++;  // just for verbose message afterwards
           }
           lineStart = ch;  // for error message
           if (sep==' ') while (ch<eof && *ch==' ') ch++;  // multiple sep=' ' at the lineStart does not mean sep(!)
@@ -1329,7 +1306,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             oldType = type[j];  // fetch shared type once
             
             thisType = oldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
-            SEXP buffcol = thisType>0 ? mybuff[resj] : NULL;
+            void *buffcol = thisType>0 ? mybuff[resj] : NULL;
             // when a guess is insufficient out-of-sample, type is changed to negative sign and then bumped negative. This
             // checks that the bump is fully sufficient for the rest of the column so only a single re-read will be needed. When
             // the type is negative the field processor will still process and check, but won't assign when it's passed NULL.
@@ -1340,8 +1317,8 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
               thisType = thisType<0 ? thisType-1 : -thisType-1;
               ch = fieldStart;
             }
-            
-            if (thisType != oldType) {  // rare out-of-sample type exception
+            if (oldType == CT_STRING) ((uint64_t *)buffcol)[buffi] += (uint64_t)(fieldStart-thisThreadStart); // string len is in lower 32 bits
+            else if (thisType != oldType) {  // rare out-of-sample type exception
               #pragma omp critical
               {
                 oldType = type[j];  // fetch shared value again in case another thread just bumped it while I was waiting.
@@ -1354,7 +1331,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                     j+1, CHAR(STRING_ELT(names,j)), UserTypeName[abs(oldType)], UserTypeName[abs(thisType)],
                     (int)(ch-fieldStart), fieldStart);
                   if (nth==1) len += snprintf(temp+len, 1000-len, "on row %d\n", buffi);
-                  else len += snprintf(temp+len, 1000-len, "somewhere between row %d and row %d\n", ansi, ansi+nth*initialBuffSize);
+                  else len += snprintf(temp+len, 1000-len, "somewhere between row %d and row %d\n", ansi, ansi+nth*initialBuffRows);
                   typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize+len+1);
                   strcpy(typeBumpMsg+typeBumpMsgSize, temp);
                   typeBumpMsgSize += len;
@@ -1373,26 +1350,22 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
             // not enough columns observed
             if (!fill) { myStopReason = 2; break; }
             while (j<ncol) {
-              SEXP buffcol = mybuff[resj];
+              void *buffcol = mybuff[resj];
               switch (type[j]) {
               case CT_BOOL:
-                LOGICAL(buffcol)[buffi] = NA_LOGICAL;
+                ((int32_t *)buffcol)[buffi] = NA_LOGICAL;
                 break;
               case CT_INT32:
-                INTEGER(buffcol)[buffi] = NA_INTEGER;
+                ((int32_t *)buffcol)[buffi] = NA_INTEGER;
                 break;
               case CT_INT64:
-                REAL(buffcol)[buffi] = NA_INT64_D;
+                ((int64_t *)buffcol)[buffi] = NA_INT64_LL;
                 break;
               case CT_DOUBLE:
-                REAL(buffcol)[buffi] = NA_REAL;
+                ((double *)buffcol)[buffi] = NA_REAL;
                 break;
               case CT_STRING:
-                #pragma omp critical
-                SET_STRING_ELT(buffcol, buffi, blank_is_a_nastring ? NA_STRING : R_BlankString);
-                // Yes, R's allocVector already initialized with R_BlankString so we could potential just assign NA_STRING
-                // directly. However, here we are rewriting buff many times (not the final ans once). CHARSXP from me's last
-                // chunk will be in this buffer so that CHARSXP's refs will need to be decremented by SET_STRING_ELT.
+                ((uint64_t *)buffcol)[buffi] = 0;
                 break;
               default:
                 break;
@@ -1461,30 +1434,58 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         } // end ordered
         if (stopTeam) continue;
         
-        // Copy my buffer to ans now while these pages are hot in my core
-        // All threads do this at the same time, as soon as the previous thread knows the number of rows, in ordered above
-        if (nJumps==1) {
-          // buffers were pointed directly to ans (small file or we were thread limited) so nothing left to do
-        } else {
-          if (howMany < buffi) {
-            // nrows was set by user (a limit of rows to read) and this is the last jump that fills up the required nrows
-            stopTeam=TRUE; // otherwise this thread would pick up the next jump and read that wastefully before stopping at ordered
-          }
-          for (int j=0; j<LENGTH(ans); j++) {
-            SEXP col = VECTOR_ELT(ans, j);
-            if (TYPEOF(col)!=STRSXP) {
-              size_t size = SIZEOF(col);
-              memcpy((char *)DATAPTR(col)+myansi*size, (char *)DATAPTR(mybuff[j]), howMany*size);
-            } else {
-              #pragma omp critical
-              // SET_STRING_ELT decs old and incs new. old will be R_BlankString (global in R, never gc'd) initialized
-              // by allocVector but new is shared within this column and others and not thread safe. Hence shared critical.
-              {
-                int dest=myansi;
-                SEXP *val = (SEXP *)DATAPTR(mybuff[j]);
-                for (int i=0; i<howMany; i++) SET_STRING_ELT(col, dest++, *val++);
+        // Assign my buffer to ans now while these pages are hot in my core. I've just this millisecond found out
+        // which row to put them on. All threads do this at the same time, as soon as the previous thread knows their
+        // number of rows, in ordered above.
+        if (howMany < buffi) {
+          // nrows was set by user (a limit of rows to read) and this is the last jump that fills up the required nrows
+          stopTeam=TRUE;
+          // otherwise this thread would pick up the next jump and read that wastefully before stopping at ordered
+        }
+        if (nStringCols) {
+          // do all the string columns first in a single critical. While this is happening other threads before me can be
+          // be copying their non-string buffers to the ans and other threads after me can be filling their buffers.
+          #pragma omp critical
+          {
+            // SET_STRING_ELT decs old and incs new. Although old in the ans will be R_BlankString (global in R, never gc'd) 
+            // as initialized by allocVector, new is shared within this column and others and its ref count is not thread safe,
+            // plus mkChar can allocate which isn't thread safe. By doing this column-wise and dense in one critical, we
+            // get the benefits of the global character cache while minimising the single-threaded access to it. We already
+            // processed the string fields in parallel in the processor.
+            for (int j=0, resj=-1, done=0; done<nStringCols && j<ncol; j++) {
+              if (type[j] == CT_DROP) continue;
+              resj++;
+              if (type[j] != CT_STRING) continue;
+              SEXP col = VECTOR_ELT(ans, resj);
+              uint64_t *lenoff = (uint64_t *)(mybuff[resj]);
+              for (int i=0; i<howMany; i++) {
+                int stringLen = (int)(lenoff[i] >> 32);
+                SEXP thisStr = NA_STRING;
+                if (stringLen>0) {
+                  thisStr = mkCharLenCE(thisThreadStart + (lenoff[i] & 0xFFFFFFFF), stringLen, ienc);
+                  // Check nastrings now while page is hot. Just one "NA" current default but empty in future (TODO) when 
+                  // numerics handle NA string variants directly. Faster to go ahead with mkChar and then do == on pointer,
+                  // than always do a strcmp first.
+                  for (int k=0; k<length(nastrings); k++) {
+                    if (thisStr == STRING_ELT(nastrings,k)) { thisStr = NA_STRING; break; }
+                  }
+                } else if (!blank_is_a_nastring) continue;  // R_BlankString already initialized by allocVector
+                SET_STRING_ELT(col, myansi+i, thisStr);
               }
+              done++;
             }
+          }  // end of critical. all this buffer's string columns written to ans
+        }
+        if (nNonStringCols) {
+          // copy all the non-string columns to answer at the same time as other threads
+          for (int j=0, resj=-1, done=0; done<nNonStringCols && j<ncol; j++) {
+            if (type[j]==CT_DROP) continue;
+            resj++;
+            if (type[j]==CT_STRING || type[j]<0) continue;
+            SEXP col = VECTOR_ELT(ans, resj);
+            size_t size = typeSize[type[j]];
+            memcpy((char *)DATAPTR(col)+myansi*size, (char *)(mybuff[resj]), howMany*size);
+            done++;
           }
         }
         if (me==0 && (hasPrinted || (showProgress && jump<nth && (nJumps/nth-1)*(wallclock()-tAlloc)>3.0))) {
@@ -1501,12 +1502,15 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
           #endif
         }
       }
+      // Each thread to free its buffers. In event of any alloc errors, this will free the parts that worked
+      if (mybuff) for (int j=0; j<ncol-ndrop; j++) { free(mybuff[j]); mybuff[j]=NULL; }
+      free(mybuff); mybuff=NULL;
     }  // end OpenMP parallel
     if (firstTime) {
       tReread = tRead = wallclock();
       tTot = tRead-t0;
       if (hasPrinted || verbose) {
-        Rprintf("\rRead %d rows x %d columns from %.3fGB file in ", ansi, ncol-numNULL, 1.0*filesize/(1024*1024*1024));
+        Rprintf("\rRead %d rows x %d columns from %.3fGB file in ", ansi, ncol-ndrop, 1.0*filesize/(1024*1024*1024));
         Rprintf("%02d:%06.3f ", (int)tTot/60, fmod(tTot,60.0));
         Rprintf("wall clock time (can be slowed down by any other open apps even if seemingly idle)\n");
         // since parallel, clock() cycles is parallel too: so wall clock will have to do
@@ -1544,26 +1548,22 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       allocnrow = ansi;
     }
     if (firstTime && nTypeBump) {
-      for (int i=0, resi=0; i<ncol; i++) {
-        if (type[i] == CT_DROP) continue;
-        if (type[i]<0) {
+      nStringCols = nNonStringCols = 0;
+      for (int j=0, resj=-1; j<ncol; j++) {
+        if (type[j] == CT_DROP) continue;
+        resj++;
+        if (type[j]<0) {
           // just for the bumped columns ...
-          int newType = TypeSxp[ type[i] *= -1 ];   // final type for this column
+          int newType = TypeSxp[ type[j] *= -1 ];   // final type for this column
           SEXP newcol = allocVector(newType, allocnrow);
-          SET_VECTOR_ELT(ans, resi, newcol);  // change type in ans
-          if (type[i]==CT_INT64) setAttrib(newcol, R_ClassSymbol, ScalarString(char_integer64));
-          if (nth>1) for (int j=0; j<nth; j++) {  // change type in all buff. But not when buff points to ans (nth==1)
-            int w = j*LENGTH(ans)+resi;
-            int len = LENGTH(VECTOR_ELT(buff, w));
-            SET_VECTOR_ELT(buff, w, allocVector(newType, len));
-            // no need to inc workSize because the old vectors are now free
-          }
-        } else if (type[i]>=1) {
-          // all non-bumped columns we'll skip over in the rerun, whilst still incrementing resi (hence not CT_DROP)
+          SET_VECTOR_ELT(ans, resj, newcol);  // change type in ans
+          if (type[j]==CT_INT64) setAttrib(newcol, R_ClassSymbol, ScalarString(char_integer64));
+          if (type[j]==CT_STRING) nStringCols++; else nNonStringCols++;
+        } else if (type[j]>=1) {
+          // we'll skip over non-bumped columns in the rerun, whilst still incrementing resi (hence not CT_DROP)
           // not -type[i] either because that would reprocess the contents of not-bumped columns wastefully
-          type[i] = -CT_STRING;
+          type[j] = -CT_STRING;
         }
-        resi++;  // don't resi++ when CT_DROP
       }
       // reread from the beginning
       ansi = 0;

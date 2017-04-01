@@ -9877,6 +9877,21 @@ test(1757, fread("winallquoted.csv")[c(1,2,4998,4999)],
 
 test(1758, sapply(fread("A,B\n,"),class), c(A="logical",B="logical"))
 
+# Slowdown when parallel and all columns are character, #2091. This test tests the data loads ok but we need a
+# performance test environment to make sure the slowdown doesn't come back.  Fix was to delay call to SET_.
+test(1759, fread("alluniquechar.csv")[c(1,2,4999,5000)],
+           data.table(A=c("jptokakysooopwtmlkeimzbgpeinhy","bchguwmynjhecsxpxldyzlemavmwvz",
+                          "avlyclruzkazfqhyxnppaafwcveolb","dkmyfqhltlwzwwxyvshwrzrdmfyqdm"),
+                      B=c("jptokakysooopwtmlkei","bchguwmynjhecsxpxldy","avlyclruzkazfqhyxnpp","dkmyfqhltlwzwwxyvshw"),
+                      C=c("kakysooopwt","uwmynjhecsx","clruzkazfqh","fqhltlwzwwx"),
+                      D=c("pt","ch","vl","km"),
+                      E=c("i","y","p","w"),
+                      F=c("kyso","mynj","ruzk","hltl"),
+                      G=c("ptokakysooopwtmlkeimz","chguwmynjhecsxpxldyzl","vlyclruzkazfqhyxnppaa","kmyfqhltlwzwwxyvshwrz"),
+                      H=c("tokakysooopwtmlkeimzbgpein","hguwmynjhecsxpxldyzlemavmw",
+                          "lyclruzkazfqhyxnppaafwcveo","myfqhltlwzwwxyvshwrzrdmfyq")))
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

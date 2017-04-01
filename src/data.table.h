@@ -10,6 +10,7 @@
 #endif
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
+#include <stdint.h> // for uint64_t rather than unsigned long long
 
 // Fixes R-Forge #5150, and #1641
 // a simple check for R version to decide if the type should be R_len_t or 
