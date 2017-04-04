@@ -77,20 +77,16 @@ typedef _Bool (*reader_fun_t)(const char **, void *, int);
 const char *fnam=NULL, *origmmp, *mmp;   // origmmp just needed to pass to munmap when BOM is skipped over using mmp+=3.
 size_t filesize;
 #ifdef WIN32
-HANDLE hFile=0;
-HANDLE hMap=0;
-void closeFile() {
+void unmapFile() {
     if (fnam!=NULL) {
         UnmapViewOfFile(origmmp);
-        CloseHandle(hMap);
-        CloseHandle(hFile);
     }
 }
 #else
 int fd=-1;
-void closeFile() {    
+void unmapFile() {
     if (fnam!=NULL) {
-      if (munmap((char *)origmmp, filesize) || close(fd)) error("%s: '%s'", strerror(errno), fnam);
+      if (munmap((char *)origmmp, filesize)) error("%s: '%s'", strerror(errno), fnam);
     }
 }
 #endif
@@ -102,7 +98,7 @@ void STOP(const char *format, ...) {
     char msg[2000];
     vsnprintf(msg, 2000, format, args);
     va_end(args);
-    closeFile();  // some errors point to data in the file, hence via msg buffer first
+    unmapFile();  // the process is not exiting so we do need to unmap on Linux, Mac and Windows
     error(msg);
 }
 
@@ -480,7 +476,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         error("dec must be a single character");
     const char decChar = *CHAR(STRING_ELT(dec,0));
     
-    fnam = NULL;  // reset global, so STOP() can call closeFile() which sees fnam
+    fnam = NULL;  // reset global, so STOP() can call unmapFile() which sees fnam
 
     reader_fun_t fun[NUMTYPE] = {&SkipField, &StrtoB, &StrtoI32, &StrtoI64, &StrtoD, &Field};
     
@@ -577,11 +573,11 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
         //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
         mmp = origmmp = (const char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);
+        close(fd);  // we don't need to keep file handle open
         if (mmp == MAP_FAILED) {
-            close(fd);
 #else
         // Following: http://msdn.microsoft.com/en-gb/library/windows/desktop/aa366548(v=vs.85).aspx
-        hFile = INVALID_HANDLE_VALUE;
+        HANDLE hFile = INVALID_HANDLE_VALUE;
         int attempts = 0;
         while(hFile==INVALID_HANDLE_VALUE && attempts<5) {
             hFile = CreateFile(fnam, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
@@ -598,13 +594,13 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
         if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); error("GetFileSizeEx failed (returned 0) on file: %s", fnam); }
         filesize = (size_t)liFileSize.QuadPart;
         if (filesize<=0) { CloseHandle(hFile); error("File is empty: %s", fnam); }
-        hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL); // filesize+1 not allowed here, unlike mmap where +1 is zero'd
+        HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL); // filesize+1 not allowed here, unlike mmap where +1 is zero'd
         if (hMap==NULL) { CloseHandle(hFile); error("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
         if (verbose) Rprintf("File opened, filesize is %.6f GB.\nMemory mapping ... ", 1.0*filesize/(1024*1024*1024));
         mmp = origmmp = (const char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,filesize);
+        CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
+        CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
         if (mmp == NULL) {
-            CloseHandle(hMap);
-            CloseHandle(hFile);
 #endif
             if (sizeof(char *)==4)
                 error("Opened file ok, obtained its size on disk (%.1fMB) but couldn't memory map it. This is a 32bit machine. You don't need more RAM per se but this fread function is tuned for 64bit addressability at the expense of large file support on 32bit machines. You probably need more RAM to store the resulting data.table, anyway. And most speed benefits of data.table are on 64bit with large RAM, too. Please upgrade to 64bit.", filesize/(1024.0*1024));
@@ -1586,7 +1582,7 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       Rprintf("%8.3fs        Total\n", tTot);
     }
     UNPROTECT(protecti);
-    closeFile();
+    unmapFile();
     return(ans);
 }
 
