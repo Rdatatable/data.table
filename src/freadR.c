@@ -1,6 +1,5 @@
 #include "fread.h"
 #include "data.table.h"
-#include <alloca.h>
 
 /*****    TO DO    *****
 Restore test 1339 (balanced embedded quotes, see ?fread already updated).
