@@ -95,7 +95,7 @@ void setselfref(SEXP);
 // fmelt.c
 SEXP seq_int(int n, int start);
 SEXP set_diff(SEXP x, int n);
-SEXP which(SEXP x, Rboolean bool);
+SEXP which(SEXP x, Rboolean val);
 
 // frank.c
 SEXP dt_na(SEXP x, SEXP cols);
@@ -127,7 +127,4 @@ double iquickselect(int *x, int n, int k);
 int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
-// wrappers.c
-double wallclock();
- 
 
