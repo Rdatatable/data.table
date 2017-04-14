@@ -1,6 +1,7 @@
 #ifdef WIN32             // means WIN64, too, oddly
   #include <windows.h>
   #include <sys/time.h>  // gettimeofday for wallclock()
+  #include <stdbool.h>   // true and false
 #else
   #include <sys/mman.h>  // mmap
   #include <sys/stat.h>  // fstat for filesize

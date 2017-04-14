@@ -5772,16 +5772,16 @@ if (.Platform$OS.type=="windows" ||
     oldlocale = Sys.getlocale("LC_NUMERIC")
     test(1441, fread("A;B\n1;2,34\n", dec=",", verbose=TRUE), data.table(A=1L, B=2.34), output="success!")
     test(1442, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after success
-    test(1443.1, fread("A;B\n1;2,34\n", dec=",", sep=",", verbose=TRUE), error="'dec' and 'sep' are equal", output="success!")
+    test(1443.1, fread("A;B\n1;2,34\n", dec=",", sep=",", verbose=TRUE), error="sep == dec (',') is not allowed")
     test(1443.2, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after error. [ouput check in 1443.1 ensures it was changed]
     
     # sep=".", issue #502
     input = paste( paste("192.168.1.", 1:10, sep=""), collapse="\n")
     test(1444.1, fread(input, sep=".", dec="*"), error="Unable to change to a locale which provides the desired dec")
-    test(1444.2, fread(input, sep="."), ans<-data.table(V1=192L,V2=168L,V3=1L,V4=1:10))   # by default, dec="," when sep="."
-    test(1444.3, fread(paste(paste("192. 168. 1. ", 1:10, sep = ""), collapse="\n"), sep="."), ans)
-    test(1444.4, fread(paste(paste("Hz.BB.GHG.", 1:10, sep = ""), collapse="\n"), sep="."), data.table(V1="Hz",V2="BB",V3="GHG",V4=1:10))
-
+    test(1444.2, fread(input, sep=".", dec=","), ans<-data.table(V1=192L,V2=168L,V3=1L,V4=1:10))
+    test(1444.3, fread(paste(paste("192. 168. 1. ", 1:10, sep = ""), collapse="\n"), sep=".", dec=","), ans)
+    test(1444.4, fread(paste(paste("Hz.BB.GHG.", 1:10, sep = ""), collapse="\n"), sep=".", dec=","),
+                 data.table(V1="Hz",V2="BB",V3="GHG",V4=1:10))
     options(old)  # return to default set it .onLoad
 } else {
     cat("Tests 1441-1444 not run. If required install the 'fr_FR.utf8' locale.\n")
