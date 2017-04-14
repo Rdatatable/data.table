@@ -57,6 +57,7 @@ void STOP(const char *format, ...);
 void progress(double percent/*[0,1]*/, double ETA/*secs*/);
 void pushAllStringCols(int8_t *type, int ncol, void **buff, const char *anchor, int howManyStringCols, int howManyRows, uint64_t ansi);
 
+#define STRICT_R_HEADERS   // https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Error-handling
 #include <R.h>
 #define DTERROR error
 #define DTWARN  warning
