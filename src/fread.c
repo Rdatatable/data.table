@@ -1000,9 +1000,7 @@ void freadMain(
     //   Allocate the result columns
     // ********************************************************************************************
     if (verbose) DTPRINT("Allocating %d column slots (%d - %d dropped)\n", ncol-ndrop, ncol, ndrop);
-    double ansGB=0;
-    size_t colHeaderBytes=0;
-    void **ans = (void **)allocateDT(type, ncol, ndrop, allocnrow, &ansGB, &colHeaderBytes);
+    double ansGB = allocateDT(type, ncol, ndrop, allocnrow);
     double tAlloc = wallclock();
     
     // ********************************************************************************************
@@ -1285,36 +1283,18 @@ void freadMain(
         } // end ordered
         if (stopTeam) continue;
         
-        // Assign my buffer to ans now while these pages are hot in my core. I've just this millisecond found out
-        // which row to put them on. All threads do this at the same time, as soon as the previous thread knows their
-        // number of rows, in ordered above.
         if (howMany < buffi) {
           // nrows was set by user (a limit of rows to read) and this is the last jump that fills up the required nrows
           stopTeam=true;
           // otherwise this thread would pick up the next jump and read that wastefully before stopping at ordered
         }
-        if (nStringCols) {
-          // do all the string columns first. It's up to the caller whether to do this inside critical.
-          // While this is happening other threads before me can be copying their non-string buffers to the
-          // final DT and other threads after me can be filling their buffers too.
-          pushAllStringCols(type, ncol, mybuff, thisThreadStart, nStringCols, howMany, myansi);
-        }
-        for (int j=0, resj=-1, done=0; done<nNonStringCols && j<ncol; j++) {
-          if (type[j]==CT_DROP) continue;
-          resj++;
-          if (type[j]==CT_STRING || type[j]<0) continue;
-          char *col = (char *)ans[resj] + colHeaderBytes;
-          if (type[j]!=CT_BOOL8) {
-            size_t size = typeSize[type[j]];
-            memcpy(col+myansi*size, (char *)(mybuff[resj]), howMany*size);
-          } else {
-            for (int k=0; k<howMany; k++) {  // TODO move out to freadR()
-              int8_t v = ((int8_t *)(mybuff[resj]))[k];
-              ((int32_t *)col)[k] = (v==INT8_MIN ? INT32_MIN : v);
-            }
-          }
-          done++;
-        }
+        
+        // Assign my buffer to ans now while these pages are hot in my core. I've just this millisecond found out
+        // which row to put them on (myansi). All threads do this at the same time, as soon as the previous thread
+        // knows its number of rows, in ordered above. Up to impl whether it can push its string columns to ans
+        // in parallel. It can have an orphan critical directive if it needs to.
+        pushBuffer(type, ncol, mybuff, thisThreadStart, nStringCols, nNonStringCols, howMany, myansi);
+        
         if (me==0 && (hasPrinted || (showProgress && jump/nth==4 && ((double)nJumps/(nth*4)-1.0)*(wallclock()-tAlloc)>3.0))) {
           // Important for thread safety inside progess() that this is called not just from critical but that
           // it's the master thread too, hence me==0.

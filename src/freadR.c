@@ -286,7 +286,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 }
 
 
-void **allocateDT(int8_t *type, int ncol, int ndrop, uint64_t allocNrow, double *GiB, size_t *colHeaderBytes) {
+double allocateDT(int8_t *type, int ncol, int ndrop, uint64_t allocNrow) {
   DT=PROTECT(allocVector(VECSXP,ncol-ndrop));  // safer to leave over allocation to alloc.col on return in fread.R
   protecti++;
   if (ndrop==0) {
@@ -307,10 +307,7 @@ void **allocateDT(int8_t *type, int ncol, int ndrop, uint64_t allocNrow, double 
     SET_TRUELENGTH(thiscol, allocNrow);
     size += SIZEOF(thiscol)*allocNrow;
   }
-  *GiB = (double)size/(1024*1024*1024);
-  SEXP tt = VECTOR_ELT(DT,0);
-  *colHeaderBytes = (size_t)((char *)DATAPTR(tt)-(char *)tt);  // the header size (if any) before the data for each column. Fixed size.
-  return (void **)DATAPTR(DT);
+  return ((double)size/(1024*1024*1024));
 }
 
 
@@ -332,28 +329,51 @@ void setFinalNrow(uint64_t nrow) {
 }
 
 
-void pushAllStringCols(int8_t *type, int ncol, void **buff, const char *anchor, int howManyStringCols, int howManyRows, uint64_t ansi)
+void pushBuffer(int8_t *type, int ncol, void **buff, const char *anchor,
+                int nStringCols, int nNonStringCols, int nRows, uint64_t ansi)
 {
   // By doing this column-wise and dense in one critical, we aim to receive the benefits of R's global
   // character cache while concentrating the single-threaded access to it; we did all the processing we
   // could in parallel previously.
-  #pragma omp critical
-  {
-    for (int j=0, resj=-1, done=0; done<howManyStringCols && j<ncol; j++) {
-      if (type[j] == CT_DROP) continue;
-      resj++;
-      if (type[j] != CT_STRING) continue;
-      SEXP dest = VECTOR_ELT(DT, resj);
-      lenOff *source = buff[resj];
-      for (int i=0; i<howManyRows; i++) {
-        int strLen = source[i].len;
-        if (strLen==0) continue;  // R_BlankString already initialized with R_BlankString by allocVector()
-        SEXP thisStr = strLen<0 ? NA_STRING : mkCharLenCE(anchor + source[i].off, strLen, ienc);
-        // stringLen == INT_MIN => NA, otherwise not a NAstring (checked inside fread_mean)
-        SET_STRING_ELT(dest, ansi+i, thisStr);
+  // Do all the string columns first so as to minimize and concentrate the time inside this critical.
+  // While this is happening other threads before me can be copying their non-string buffers to the
+  // final DT and other threads after me can be filling their buffers too.
+  
+  if (nStringCols) {
+    #pragma omp critical
+    {
+      for (int j=0, resj=-1, done=0; done<nStringCols && j<ncol; j++) {
+        if (type[j] == CT_DROP) continue;
+        resj++;
+        if (type[j] != CT_STRING) continue;
+        SEXP dest = VECTOR_ELT(DT, resj);
+        lenOff *source = buff[resj];
+        for (int i=0; i<nRows; i++) {
+          int strLen = source[i].len;
+          if (strLen==0) continue;  // R_BlankString already initialized with R_BlankString by allocVector()
+          SEXP thisStr = strLen<0 ? NA_STRING : mkCharLenCE(anchor + source[i].off, strLen, ienc);
+          // stringLen == INT_MIN => NA, otherwise not a NAstring was checked inside fread_mean
+          SET_STRING_ELT(dest, ansi+i, thisStr);
+        }
+        done++; // if just one string col near the start, don't loop over the other 10,000 cols. TODO start on first too
       }
-      done++; // if just one string col near the start, don't loop over the other 10,000 cols. TODO start on first too
     }
+  }
+  for (int j=0, resj=-1, done=0; done<nNonStringCols && j<ncol; j++) {
+    if (type[j]==CT_DROP) continue;
+    resj++;
+    if (type[j]==CT_STRING || type[j]<0) continue;
+    char *col = (char *)DATAPTR(VECTOR_ELT(DT, resj));
+    if (type[j]!=CT_BOOL8) {
+      size_t size = typeSize[type[j]];
+      memcpy(col+ansi*size, buff[resj], nRows*size);
+    } else {
+      for (int k=0; k<nRows; k++) {
+        int8_t v = ((int8_t *)(buff[resj]))[k];
+        ((int32_t *)col)[ansi+k] = (v==INT8_MIN ? NA_INTEGER : /*0|1*/v);
+      }
+    }
+    done++;
   }
 }
 

@@ -50,7 +50,7 @@ void freadMain(
 
 // Called from freadMain; implemented in freadR.c
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol);
-void **allocateDT(int8_t *type, int ncol, int ndrop, uint64_t allocNrow, double *GiB, size_t *colHeaderBytes);
+double allocateDT(int8_t *type, int ncol, int ndrop, uint64_t allocNrow);
 void setFinalNrow(uint64_t nrow);
 void reallocColType(int col, colType newType);
 void STOP(const char *format, ...);
