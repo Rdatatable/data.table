@@ -30,23 +30,26 @@ typedef struct {
 #define NA_FLOAT64_I64   0x7FF00000000007A2
 #define NA_LENOFF        INT32_MIN  // lenOff.len only; lenOff.off undefined for NA
 
-void freadMain(
-    const char *input,
-    char sepIn,
-    char decIn,
-    char quoteIn,
-    int8_t header,
-    uint64_t nrowLimit,
-    uint64_t skipNrow,
-    const char *skipString,
-    const char **NAstringsIn,
-    uint32_t nNAstringsIn,
-    _Bool stripWhite,
-    _Bool skipEmptyLines,
-    _Bool fill,
-    _Bool showProgress,
-    uint32_t nth,
-    _Bool verbose );
+typedef struct {
+  const char *input;
+  char sep;
+  char dec;
+  char quote;
+  int8_t header;          // true|false|NA_BOOL8
+  uint64_t nrowLimit;     // UINT64_MAX represents no limit
+  uint64_t skipNrow;
+  const char *skipString;
+  const char **NAstrings;
+  uint32_t nNAstrings;
+  _Bool stripWhite;
+  _Bool skipEmptyLines;
+  _Bool fill;
+  _Bool showProgress;
+  uint32_t nth;        // number of threads >= 1
+  _Bool verbose;
+} freadMainArgs;
+
+void freadMain(freadMainArgs args);
 
 // Called from freadMain; implemented in freadR.c
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol);
@@ -55,7 +58,8 @@ void setFinalNrow(uint64_t nrow);
 void reallocColType(int col, colType newType);
 void STOP(const char *format, ...);
 void progress(double percent/*[0,1]*/, double ETA/*secs*/);
-void pushAllStringCols(int8_t *type, int ncol, void **buff, const char *anchor, int howManyStringCols, int howManyRows, uint64_t ansi);
+void pushBuffer(int8_t *type, int ncol, void **buff, const char *anchor,
+                int nStringCols, int nNonStringCols, int nRows, uint64_t ansi);
 
 #define STRICT_R_HEADERS   // https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Error-handling
 #include <R.h>

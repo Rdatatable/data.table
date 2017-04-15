@@ -65,69 +65,70 @@ SEXP freadR(
   SEXP encodingArg
 ) {
 
+  freadMainArgs args;  
   protecti=0;
   const char *ch, *ch2;
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
     error("fread input must be a single character string: a filename or the data itself");
   ch = ch2 = (const char *)CHAR(STRING_ELT(inputArg,0));
   while (*ch2!='\n' && *ch2!='\0') ch2++;
-  const char *input = (*ch2=='\n') ? ch : R_ExpandFileName(ch); // for convenience so user doesn't have to call path.expand()
+  args.input = (*ch2=='\n') ? ch : R_ExpandFileName(ch); // for convenience so user doesn't have to call path.expand()
 
   if (!isString(sepArg) || LENGTH(sepArg)!=1 || strlen(CHAR(STRING_ELT(sepArg,0)))>1)
     error("CfreadR: sep must be 'auto' or a single character ('\\n' is an acceptable single character)");
-  char sep = CHAR(STRING_ELT(sepArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
+  args.sep = CHAR(STRING_ELT(sepArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
   
   if (!(isString(decArg) && LENGTH(decArg)==1 && strlen(CHAR(STRING_ELT(decArg,0)))==1))
     error("CfreadR: dec must be a single character such as '.' or ','");
-  char dec = CHAR(STRING_ELT(decArg,0))[0];
+  args.dec = CHAR(STRING_ELT(decArg,0))[0];
   
   if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
     error("CfreadR: quote must be a single character or empty \"\"");
-  char quote = CHAR(STRING_ELT(quoteArg,0))[0];
+  args.quote = CHAR(STRING_ELT(quoteArg,0))[0];
   
   // header is the only boolean where NA is valid and means 'auto'.
   // LOGICAL in R is signed 32 bits with NA_LOGICAL==INT_MIN, currently.
-  int8_t header = FALSE;
-  if (LOGICAL(headerArg)[0]==NA_LOGICAL) header = NA_BOOL8;
-  else if (LOGICAL(headerArg)[0]==TRUE) header = TRUE;
+  args.header = FALSE;
+  if (LOGICAL(headerArg)[0]==NA_LOGICAL) args.header = NA_BOOL8;
+  else if (LOGICAL(headerArg)[0]==TRUE) args.header = TRUE;
   
-  uint64_t nrowLimit = UINT64_MAX;
+  args.nrowLimit = UINT64_MAX;
   // checked at R level
   if (isReal(nrowLimitArg)) {
-    if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0) nrowLimit = (uint64_t)(REAL(nrowLimitArg)[0]);
+    if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0) args.nrowLimit = (uint64_t)(REAL(nrowLimitArg)[0]);
   } else {
-    if (INTEGER(nrowLimitArg)[0]>=0) nrowLimit = (uint64_t)INTEGER(nrowLimitArg)[0];
+    if (INTEGER(nrowLimitArg)[0]>=0) args.nrowLimit = (uint64_t)INTEGER(nrowLimitArg)[0];
   }
   
-  uint64_t skipNrow=0;
-  const char *skipString=NULL;
+  args.skipNrow=0;
+  args.skipString=NULL;
   if (isString(skipArg)) {
-    skipString = CHAR(STRING_ELT(skipArg,0));  // LENGTH==1 was checked at R level
+    args.skipString = CHAR(STRING_ELT(skipArg,0));  // LENGTH==1 was checked at R level
   } else if (isReal(skipArg)) {
-    if (R_FINITE(REAL(skipArg)[0]) && REAL(skipArg)[0]>0.0) skipNrow = (uint64_t)REAL(skipArg)[0];
+    if (R_FINITE(REAL(skipArg)[0]) && REAL(skipArg)[0]>0.0) args.skipNrow = (uint64_t)REAL(skipArg)[0];
   } else if (isInteger(skipArg)) {
-    if (INTEGER(skipArg)[0]>0) skipNrow = (uint64_t)INTEGER(skipArg)[0];
+    if (INTEGER(skipArg)[0]>0) args.skipNrow = (uint64_t)INTEGER(skipArg)[0];
   } else error("skip must be a single positive numeric (integer or double), or a string to search for");
   
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
     error("'na.strings' is type '%s'.  Must be either NULL or a character vector.", type2char(TYPEOF(NAstringsArg)));  
-  uint32_t nNAstrings = length(NAstringsArg);
-  const char **NAstrings = NULL;
-  if (nNAstrings) {
-    if (nNAstrings>100)  // very conservative limit
-      error("length(na.strings)==%d. This is too many to allocate pointers for on stack", nNAstrings);
-    NAstrings = alloca(nNAstrings * sizeof(char *));
-    for (int i=0; i<nNAstrings; i++) NAstrings[i] = CHAR(STRING_ELT(NAstringsArg,i));
+  args.nNAstrings = length(NAstringsArg);
+  args.NAstrings = NULL;
+  if (args.nNAstrings) {
+    if (args.nNAstrings>100)  // very conservative limit
+      error("length(na.strings)==%d. This is too many to allocate pointers for on stack", args.nNAstrings);
+    args.NAstrings = alloca(args.nNAstrings * sizeof(char *));
+    for (int i=0; i<args.nNAstrings; i++) args.NAstrings[i] = CHAR(STRING_ELT(NAstringsArg,i));
   }
 
   // here we use _Bool and rely on fread at R level to check these do not contain NA_LOGICAL
-  _Bool stripWhite = LOGICAL(stripWhiteArg)[0];
-  _Bool skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
-  _Bool fill = LOGICAL(fillArg)[0];
-  _Bool showProgress = LOGICAL(showProgressArg)[0];
+  args.stripWhite = LOGICAL(stripWhiteArg)[0];
+  args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
+  args.fill = LOGICAL(fillArg)[0];
+  args.showProgress = LOGICAL(showProgressArg)[0];
   if (INTEGER(nThreadArg)[0]<1) error("nThread(%d)<1", INTEGER(nThreadArg)[0]);
-  uint32_t nThread = (uint32_t)INTEGER(nThreadArg)[0];
-  _Bool verbose = LOGICAL(verboseArg)[0];
+  args.nth = (uint32_t)INTEGER(nThreadArg)[0];
+  args.verbose = LOGICAL(verboseArg)[0];
 
   // === extras used for callbacks ===
   if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1) error("'integer64' must be a single character string");
@@ -157,8 +158,7 @@ SEXP freadR(
   // === end extras ===
   
   DT = R_NilValue; // created by callback
-  freadMain(input,sep,dec,quote,header,nrowLimit,skipNrow,skipString,NAstrings,nNAstrings,
-            stripWhite,skipEmptyLines,fill,showProgress,nThread,verbose);
+  freadMain(args);
   UNPROTECT(protecti);
   return DT;
 }
