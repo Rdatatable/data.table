@@ -1131,28 +1131,22 @@ void freadMain(freadMainArgs args) {
           while (j<ncol) {
             // DTPRINT("Field %d: '%.10s' as type %d\n", j+1, ch, type[j]);
             const char *fieldStart = ch;
-            colType thisType, oldType;
-
-            #pragma omp atomic read
-            oldType = type[j];  // fetch shared type once
-            
-            thisType = oldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
+            int8_t oldType = type[j];   // fetch shared type once. Cannot read half-written byte.
+            int8_t thisType = oldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
             void *buffcol = thisType>0 ? mybuff[resj] : NULL;
-            // when a guess is insufficient out-of-sample, type is changed to negative sign and then bumped negative. This
-            // checks that the bump is fully sufficient for the rest of the column so only a single re-read will be needed. When
-            // the type is negative the field processor will still process and check, but won't assign when it's passed NULL.
-            
             while (!fun[abs(thisType)](&ch, buffcol, buffi)) {
               // normally returns success(1) and buffcol[buffi] is assigned inside *fun.
               buffcol = NULL;   // on next call to *fun don't write the result to the column, as this col now in type exception
               thisType = thisType<0 ? thisType-1 : -thisType-1;
+              // guess is insufficient out-of-sample, type is changed to negative sign and then bumped. Continue to
+              // check that the new type is sufficient for the rest of the column to be sure a single re-read will work.
               ch = fieldStart;
             }
             if (oldType == CT_STRING) ((lenOff *)buffcol)[buffi].off += (size_t)(fieldStart-thisThreadStart);
             else if (thisType != oldType) {  // rare out-of-sample type exception
               #pragma omp critical
               {
-                oldType = type[j];  // fetch shared value again in case another thread just bumped it while I was waiting.
+                oldType = type[j];  // fetch shared value again in case another thread bumped it while I was waiting.
                 // Can't PRINT because we're likely not master. So accumulate message and print afterwards.
                 // We don't know row number yet, as we jumped here in parallel; have a good guess at the range of row number though.
                 if (thisType < oldType) {   // thisType<0 (type-exception)
