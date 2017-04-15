@@ -18,6 +18,7 @@
 #endif
 #include <omp.h>
 #include "fread.h"
+#include "freadLookups.h"
 
 // Private globals to save passing all of them through to highly iterated field processors
 static const char *eof;
@@ -341,13 +342,20 @@ static _Bool StrtoI32(const char **this, void *targetCol, int targetRow)
     return na;
 }
 
+
+// generate freadLookups.h
+// TODO: review ERANGE checks and tests; that range outside [1.7e-308,1.7e+308] coerces to [0.0,Inf]
+/*
+f = "~/data.table/src/freadLookups.h"
+cat("const long double pow10lookup[701] = {\n", file=f, append=FALSE)
+for (i in (-350):(349)) cat("1.0E",i,"L,\n", sep="", file=f, append=TRUE)
+cat("1.0E350L\n};\n", file=f, append=TRUE)
+*/
+
 static _Bool StrtoD(const char **this, void *targetCol, int targetRow)
 {
-    // Specialized strtod for same reasons as Strtoll (leading \t dealt with), but still uses stdlib:strtod
-    // R's R_Strtod5 uses strlen() on input, so we can't use that here unless we copy field to a buffer (slow)
-    // Could fork glibc's strtod and change it to pass in dec rather than via locale but see :
-    //    http://www.exploringbinary.com/how-glibc-strtod-works/
-    // i.e. feel more comfortable relying on glibc for speed and robustness (and more eyes have been on it)
+    // [+|-]N.M[E|e][+|-]E or Inf or NAN
+    
     const char *ch = *this;
     skip_white(&ch);
     if (on_sep(&ch)) {
@@ -357,27 +365,49 @@ static _Bool StrtoD(const char **this, void *targetCol, int targetRow)
     }
     _Bool quoted = false;
     if (ch<eof && (*ch==quote)) { quoted=true; ch++; }
+    int sign=1;
+    double d=NAN;
+    if (ch<eof && (*ch=='-' || *ch=='+')) sign -= 2*(*ch++=='-');
     const char *start=ch;
-    errno = 0;
-    double d = strtod(start, (char **)&ch);
-    /*if (errno==ERANGE && ch>start) {
-      ch = start;
-      errno = 0;
-      d = (double)strtold(start, (char **)&ch);
-      // errno is checked further below where ok= is set
-      if (ERANGEwarning) {  // false initially when detecting types then its set true just before reading data.
-        #pragma omp critical
-        DTWARN("C function strtod() returned ERANGE for one or more fields. The first was string input '%.*s'. It was read using (double)strtold() as numeric value %.16E (displayed here using %%.16E); loss of accuracy likely occurred. This message is designed to tell you exactly what has been done by fread's C code, so you can search yourself online for many references about double precision accuracy and these specific C functions. You may wish to use colClasses to read the column as character instead and then coerce that column using the Rmpfr package for greater accuracy.", ch-start, start, d);
-        ERANGEwarning = false;   // once only warning
-        // This is carefully worded as an ERANGE warning because that's precisely what it is.  Calling it a 'precision' warning
-        // might lead the user to think they'll get a precision warning on "1.23456789123456789123456789123456789" too, but they won't
-        // as that will be read fine by the first strtod() with silent loss of precision. IIUC.
+    _Bool ok = ch<eof && (('0'<=*ch && *ch<='9') || *ch==dec);  // a single - or + with no [0-9] is !ok and considered type character
+    if (!ok) {
+      if      (ch<eof && *ch=='I' && *(ch+1)=='n' && *(ch+2)=='f') { ch+=3; d=sign*INFINITY; ok=true; }
+      else if (ch<eof && *ch=='N' && *(ch+1)=='A' && *(ch+2)=='N') { ch+=3; d=NAN; ok=true; }
+    } else {
+      uint64_t acc = 0;
+      while (ch<eof && '0'<=*ch && *ch<='9' && acc<(UINT64_MAX-10)/10) { // compiler should optimize last constant expression
+        // UNIT64_MAX == 18446744073709551615
+        acc *= 10;
+        acc += *ch-'0';
+        ch++;
       }
-    }*/
+      const char *decCh = (ch<eof && *ch==dec) ? ++ch : NULL;
+      while (ch<eof && '0'<=*ch && *ch<='9' && acc<(UINT64_MAX-10)/10) {
+        acc *= 10;
+        acc += *ch-'0';
+        ch++;
+      }
+      int e = decCh ? -(int)(ch-decCh) : 0;
+      if (decCh) while (ch<eof && '0'<=*ch && *ch<='9') ch++; // lose precision
+      else       while (ch<eof && '0'<=*ch && *ch<='9') { e--; ch++; }  // lose precision but retain scale
+      if (ch<eof && (*ch=='E' || *ch=='e')) {
+        ch++;
+        int esign=1;
+        if (ch<eof && (*ch=='-' || *ch=='+')) esign -= 2*(*ch++=='-');
+        int eacc = 0;
+        while (ch<eof && '0'<=*ch && *ch<='9' && eacc<(INT32_MAX-10)/10) {
+          eacc *= 10;
+          eacc += *ch-'0';
+          ch++;
+        }
+        e += esign * eacc;
+      }
+      d = (double)(sign * (long double)acc * pow10lookup[350+e]);
+    }
     if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
-    skip_white(&ch);
-    _Bool ok = (errno==0 || errno==ERANGE) && ch>start && on_sep(&ch);
     if (targetCol) ((double *)targetCol)[targetRow] = d;
+    skip_white(&ch);
+    ok = ok && on_sep(&ch); 
     *this = ch;
     if (ok && !any_number_like_NAstrings) return true;
     _Bool na = is_NAstring(start);
