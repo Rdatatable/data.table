@@ -109,17 +109,17 @@ SEXP genLookups() {
 // these at runtime; libraries and hardware vary.\n\
 // These small lookup tables are used for speed.\n\
 //\n\n");
-  fprintf(f, "double sigparts[53] = {\n0.0,\n");
+  fprintf(f, "const double sigparts[53] = {\n0.0,\n");
   for (int i=1; i<=52; i++) {
     fprintf(f, "%.40Le%s\n",ldexpl(1.0L,-i), i==52?"":",");
   }
-  fprintf(f, "};\n\ndouble expsig[2048] = {\n");
+  fprintf(f, "};\n\nconst double expsig[2048] = {\n");
   char x[2048][60];
   for (int i=0; i<2048; i++) {
     sprintf(x[i], "%.40Le", ldexpl(1.0L, i-1023));
     fprintf(f, "%.*s%s\n", (int)(strchr(x[i],'e')-x[i]), x[i], (i==2047?"":",") );
   }
-  fprintf(f, "};\n\nint exppow[2048] = {\n");
+  fprintf(f, "};\n\nconst int exppow[2048] = {\n");
   for (int i=0; i<2048; i++) {
     fprintf(f, "%d%s", atoi(strchr(x[i],'e')+1), (i==2047?"":",") );
   }
