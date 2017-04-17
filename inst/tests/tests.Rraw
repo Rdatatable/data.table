@@ -5761,31 +5761,18 @@ test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new ind
 
 # fread dec=',' e.g. France
 test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1 is not TRUE")
+test(1439, fread("A;B\n1;2,34\n", dec="1"), data.table(A=1L, B="2,34"))
+test(1440, fread("A;B\n1;2,34\n", dec=","), data.table(A=1L, B=2.34))
+test(1441, fread("A;B\n1;2,34\n", sep=".", dec="."), error="sep == dec ('.') is not allowed")
+test(1442, fread("A;B\n1;2,34\n", dec=",", sep=","), error="sep == dec (',') is not allowed")
 
-test(1439, (if (base::getRversion()<"3.3.0") suppressWarnings else identity)(fread("A;B\n1;2,34\n", dec="1")),
-     error="Unable to change to a locale which provides the desired dec")  # this test runs on many machines so chose a dec for this test which is sure not to be valid in any locale
-test(1440, fread("A;B\n1;2,34\n", sep=".", dec="."), error="sep == dec ('.') is not allowed")
-if (.Platform$OS.type=="windows" ||
-    (!inherits(tt <- try(system("locale -a", intern=TRUE)), "try-error") && "fr_FR.utf8" %in% tt )) {
-    # e.g. on Matt's machine where I've installed fr_FR.utf8 which has dec=","
-    old = options(datatable.fread.dec.locale=if (.Platform$OS.type=="unix") "fr_FR.utf8" else "French_France.1252")
-    oldlocale = Sys.getlocale("LC_NUMERIC")
-    test(1441, fread("A;B\n1;2,34\n", dec=",", verbose=TRUE), data.table(A=1L, B=2.34), output="success!")
-    test(1442, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after success
-    test(1443.1, fread("A;B\n1;2,34\n", dec=",", sep=",", verbose=TRUE), error="sep == dec (',') is not allowed")
-    test(1443.2, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after error. [ouput check in 1443.1 ensures it was changed]
-    
-    # sep=".", issue #502
-    input = paste( paste("192.168.1.", 1:10, sep=""), collapse="\n")
-    test(1444.1, fread(input, sep=".", dec="*"), error="Unable to change to a locale which provides the desired dec")
-    test(1444.2, fread(input, sep=".", dec=","), ans<-data.table(V1=192L,V2=168L,V3=1L,V4=1:10))
-    test(1444.3, fread(paste(paste("192. 168. 1. ", 1:10, sep = ""), collapse="\n"), sep=".", dec=","), ans)
-    test(1444.4, fread(paste(paste("Hz.BB.GHG.", 1:10, sep = ""), collapse="\n"), sep=".", dec=","),
-                 data.table(V1="Hz",V2="BB",V3="GHG",V4=1:10))
-    options(old)  # return to default set it .onLoad
-} else {
-    cat("Tests 1441-1444 not run. If required install the 'fr_FR.utf8' locale.\n")
-}
+# sep=".", issue #502
+input = paste( paste("192.168.1.", 1:10, sep=""), collapse="\n")
+test(1444.1, fread(input, sep=".", dec="*"), ans<-data.table(V1=192L,V2=168L,V3=1L,V4=1:10))
+test(1444.2, fread(input, sep=".", dec=","), ans)
+test(1444.3, fread(paste(paste("192. 168. 1. ", 1:10, sep = ""), collapse="\n"), sep=".", dec=","), ans)
+test(1444.4, fread(paste(paste("Hz.BB.GHG.", 1:10, sep = ""), collapse="\n"), sep=".", dec=","),
+             data.table(V1="Hz",V2="BB",V3="GHG",V4=1:10))
 
 # doubled quote inside a quoted field followed by an embedded newline
 test(1445, fread("doublequote_newline.csv")[7:10], data.table(A=c(1L,1L,2L,1L), B=c("a","embedded \"\"field\"\"\nwith some embedded new\nlines as well","not this one","a")))
