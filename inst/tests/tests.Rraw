@@ -9894,6 +9894,15 @@ test(1759, fread("alluniquechar.csv")[c(1,2,4999,5000)],
                           "lyclruzkazfqhyxnppaafwcveo","myfqhltlwzwwxyvshwrzrdmfyq")))
 
 
+# test unsetkey()
+dt1 = data.table(id=101:105, type = c("a", "b", "b", "a", "a"), x = sample(5))
+dt1[, y := 3 * x + 2]
+dt2 = copy(dt1)
+setkey(dt1, type, id)
+setkey(dt2, id)
+unsetkey(dt2, type)
+test(1555, dt1, dt2[order(type)])
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

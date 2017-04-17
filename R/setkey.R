@@ -20,6 +20,34 @@ set2keyv <- function(...) {
     setkeyv(..., physical=FALSE)
 }
 
+unsetkey <- function(x, ..., verbose = getOption("datatable.verbose"), physical = TRUE)
+{
+  if (is.character(x)) 
+    stop("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
+  if (is.null(key(x))) {
+    warning("x has no keys. No action was taken.")
+    return(NULL)
+  }
+  cols <- as.character(substitute(list(...))[-1])
+  if (!length(cols)) 
+      cols <- key(x)
+  else if (identical(cols, "NULL")) 
+      cols <- NULL
+  unsetkeyv(x, cols, verbose = verbose, physical = physical)
+}
+
+unsetkeyv <- function(x, cols, ...)
+{
+  keys <- key(x)
+  bad_keys <- cols %!in% keys
+  if (any(bad_keys))
+    stop(paste(bad_keys, collapse = ", "), " are not keys in x.")
+  new_keys <- keys[keys %!in% cols]
+  if (!length(new_keys))
+    new_keys <- NULL
+  setkeyv(x, new_keys, ...)
+}
+
 setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
 {
     if (is.null(cols)) {   # this is done on a data.frame when !cedta at top of [.data.table
