@@ -469,18 +469,18 @@ static double wallclock()
 
 
 
-int freadMain(freadMainArgs *args) {
+int freadMain(freadMainArgs args) {
     double t0 = wallclock();
-    _Bool verbose = args->verbose;
+    _Bool verbose = args.verbose;
 
-    if (args->nth <= 0) STOP("nThreads must be a positive number, got %d", args->nth);
+    if (args.nth <= 0) STOP("nThreads must be a positive number, got %d", args.nth);
     typeOnStack = false;
     type = NULL;
     uint64_t ui64 = NA_FLOAT64_I64;
     memcpy(&NA_FLOAT64, &ui64, 8);
 
-    NAstrings = args->NAstrings;
-    nNAstrings = args->nNAstrings;
+    NAstrings = args.NAstrings;
+    nNAstrings = args.nNAstrings;
     any_number_like_NAstrings = false;
     blank_is_a_NAstring = false;
     // if we know there are no nastrings which are numbers (like -999999) then in the number
@@ -510,11 +510,11 @@ int freadMain(freadMainArgs *args) {
             any_number_like_NAstrings ? "One or more" : "None", nNAstrings);
     }
 
-    stripWhite = args->stripWhite;
-    skipEmptyLines = args->skipEmptyLines;
-    fill = args->fill;
-    dec = args->dec;
-    quote = args->quote;
+    stripWhite = args.stripWhite;
+    skipEmptyLines = args.skipEmptyLines;
+    fill = args.fill;
+    dec = args.dec;
+    quote = args.quote;
 
     // ********************************************************************************************
     //   Point to text input if it contains \n, or open and mmap file if not
@@ -522,16 +522,16 @@ int freadMain(freadMainArgs *args) {
     const char *ch, *sof;
     fnam = NULL;
     mmp = NULL;
-    if (args->input != NULL) {
+    if (args.input != NULL) {
         if (verbose) DTPRINT("`input` argument is given, interpreting as raw text to read\n");
         fnam = "<input>";
-        fileSize = strlen(args->input);
-        sof = args->input;
+        fileSize = strlen(args.input);
+        sof = args.input;
         eof = sof+fileSize;
         if (*eof!='\0') STOP("Internal error: last byte of character input isn't \\0");
-    } else if (args->filename != NULL) {
+    } else if (args.filename != NULL) {
         if (verbose) DTPRINT("`filename` argument given, attempting to open a file with such name\n");
-        fnam = args->filename;
+        fnam = args.filename;
 #ifndef WIN32
         int fd = open(fnam, O_RDONLY);
         if (fd==-1) STOP("file not found: %s",fnam);
@@ -642,20 +642,20 @@ int freadMain(freadMainArgs *args) {
     // like wc -l, head -n and tail -n
     const char *pos = sof;
     ch = pos;
-    if (args->skipString!=NULL) {
-        ch = strstr(sof, args->skipString);
+    if (args.skipString!=NULL) {
+        ch = strstr(sof, args.skipString);
         if (!ch) STOP("skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)",
-                      args->skipString);
+                      args.skipString);
         while (ch>sof && *(ch-1)!=eol2) ch--;  // move to beginning of line
         pos = ch;
         ch = sof;
         while (ch<pos) line+=(*ch++==eol);
         if (verbose) DTPRINT("Found skip='%s' on line %d. Taking this to be header row or first row of data.\n",
-                                  args->skipString, line);
+                                  args.skipString, line);
         ch = pos;
-    } else if (args->skipNrow>0) {
-        while (ch<eof && line<=args->skipNrow) line+=(*ch++==eol);
-        if (ch>=eof) STOP("skip=%d but the input only has %d line%s", args->skipNrow, line, line>1?"s":"");
+    } else if (args.skipNrow>0) {
+        while (ch<eof && line<=args.skipNrow) line+=(*ch++==eol);
+        if (ch>=eof) STOP("skip=%d but the input only has %d line%s", args.skipNrow, line, line>1?"s":"");
         ch += (eolLen-1); // move over eol2 on Windows to be on start of desired line
         pos = ch;
     }
@@ -683,15 +683,15 @@ int freadMain(freadMainArgs *args) {
     // using seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
     int nseps=strlen(seps);
 
-    if (args->sep == quote && quote!='\0') STOP("sep == quote ('%c') is not allowed", quote);
+    if (args.sep == quote && quote!='\0') STOP("sep == quote ('%c') is not allowed", quote);
     if (dec=='\0') STOP("dec='' not allowed. Should be '.' or ','");
-    if (args->sep == dec) STOP("sep == dec ('%c') is not allowed", dec);
+    if (args.sep == dec) STOP("sep == dec ('%c') is not allowed", dec);
     if (quote == dec) STOP("quote == dec ('%c') is not allowed", dec);
-    if (args->sep == '\0') {  // default is '\0' meaning 'auto'
+    if (args.sep == '\0') {  // default is '\0' meaning 'auto'
       if (verbose) DTPRINT("Detecting sep ...\n");
     } else {
-      seps[0]=args->sep; seps[1]='\0'; nseps=1;
-      if (verbose) DTPRINT("Using supplied sep '%s'\n", args->sep=='\t' ? "\\t" : seps);
+      seps[0]=args.sep; seps[1]='\0'; nseps=1;
+      if (verbose) DTPRINT("Using supplied sep '%s'\n", args.sep=='\t' ? "\\t" : seps);
     }
 
     int topNumLines=0;        // the most number of lines with the same number of fields, so far
@@ -800,13 +800,13 @@ int freadMain(freadMainArgs *args) {
       STOP("Read %d expected fields in the header row (fill=%d) but finished on <<%.*s>>'",tt,fill,STRLIM(ch,30),ch);
     // already checked above that tt==ncol unless fill=TRUE
     // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
-    if (verbose && args->header!=NA_BOOL8) DTPRINT("'header' changed by user from 'auto' to %s\n", args->header?"true":"false");
-    if (args->header==false || (args->header==NA_BOOL8 && !allchar)) {
-        if (verbose && args->header==NA_BOOL8) DTPRINT("Some fields on line %d are not type character. Treating as a data row and using default column names.\n", line);
+    if (verbose && args.header!=NA_BOOL8) DTPRINT("'header' changed by user from 'auto' to %s\n", args.header?"true":"false");
+    if (args.header==false || (args.header==NA_BOOL8 && !allchar)) {
+        if (verbose && args.header==NA_BOOL8) DTPRINT("Some fields on line %d are not type character. Treating as a data row and using default column names.\n", line);
         // colNames was calloc'd so nothing to do; all len=off=0 already
         ch = pos;  // back to start of first row. Treat as first data row, no column names present.
         // now check previous line which is being discarded and give helpful msg to user ...
-        if (ch>sof && args->skipNrow==0) {
+        if (ch>sof && args.skipNrow==0) {
           ch -= (eolLen+1);
           if (ch<sof) ch=sof;  // for when sof[0]=='\n'
           while (ch>sof && *ch!=eol2) ch--;
@@ -818,7 +818,7 @@ int freadMain(freadMainArgs *args) {
         }
         if (ch!=pos) STOP("Internal error. ch!=pos after prevBlank check");
     } else {
-        if (verbose && args->header==NA_BOOL8) DTPRINT("All the fields on line %d are character fields. Treating as the column names.\n", line);
+        if (verbose && args.header==NA_BOOL8) DTPRINT("All the fields on line %d are character fields. Treating as the column names.\n", line);
         ch = pos;
         line++;
         if (sep==' ') while (ch<eof && *ch==' ') ch++;
@@ -960,7 +960,7 @@ int freadMain(freadMainArgs *args) {
         }
         sampleBytes += (size_t)(ch-thisStart);
         if (verbose && (bumped || j==0 || j==nJumps-1)) {
-          DTPRINT("Type codes (jump %03d)    : ",j); printTypes(args, type, ncol);
+          DTPRINT("Type codes (jump %03d)    : ",j); printTypes(&args, type, ncol);
           DTPRINT("  Quote rule %d\n", quoteRule);
         }
     }
@@ -997,9 +997,9 @@ int freadMain(freadMainArgs *args) {
       } else {
         if (sampleLines > allocnrow) STOP("Internal error: sampleLines(%d) > allocnrow(%d)", sampleLines, allocnrow);
       }
-      if (args->nrowLimit<allocnrow) {
-        if (verbose) DTPRINT(" Alloc limited to lower nrows=%d passed in.\n", args->nrowLimit);
-        estnrow = allocnrow = args->nrowLimit;
+      if (args.nrowLimit<allocnrow) {
+        if (verbose) DTPRINT(" Alloc limited to lower nrows=%d passed in.\n", args.nrowLimit);
+        estnrow = allocnrow = args.nrowLimit;
       }
       if (verbose) DTPRINT("=====\n");
     }
@@ -1030,7 +1030,7 @@ int freadMain(freadMainArgs *args) {
     free(oldType);
     if (verbose) {
       DTPRINT("After %d type and %d drop user overrides : ", nUserBumped, ndrop);
-      printTypes(args, type, ncol); DTPRINT("\n");
+      printTypes(&args, type, ncol); DTPRINT("\n");
     }
     double tColType = wallclock();
 
@@ -1074,14 +1074,14 @@ int freadMain(freadMainArgs *args) {
     // For the 44GB file with 12875 columns, the max line len is 108,497. As each column has its own buffer per thread,
     // that buffer allocation should be at least one page (4k). Hence 1000 rows of the smallest type (4 byte int) is just
     // under 4096 to leave space for R's header + malloc's header. Around 50MB of buffer in this extreme case.
-    if (nJumps/*from sampling*/>1 && args->nth>1) {
+    if (nJumps/*from sampling*/>1 && args.nth>1) {
       // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
       nJumps = (int)((size_t)(lastRowEnd-pos)/chunkBytes);  // (int) rounds down
       if (nJumps==0) nJumps=1;
-      else if (nJumps>args->nth) nJumps = args->nth*(1+(nJumps-1)/args->nth);
+      else if (nJumps>args.nth) nJumps = args.nth*(1+(nJumps-1)/args.nth);
       chunkBytes = (size_t)(lastRowEnd-pos)/nJumps;
     } else nJumps=1;
-    int nth = umin(nJumps, args->nth);
+    int nth = umin(nJumps, args.nth);
     initialBuffRows = umax(orig_allocnrow/nJumps,500);
     // minimum of any malloc is one page (4k). 4096/8 = 512. Use 500 to leave room for malloc's internal header to fit on 1 page.
     // However, chunkBytes MAX should have already been reflected in nJumps, so the 500 doesn't matter really.
@@ -1153,7 +1153,7 @@ int freadMain(freadMainArgs *args) {
         nextJump+=eolLen;  // for when nextJump happens to fall exactly on a line start (or on eol2 on Windows). The
         //                 // next thread will start one line later because nextGoodLine() starts by finding next eol
         //                 // Easier to imagine eolLen==1 and ch<=nextJump in the while condition
-        while (ch<nextJump && buffi<args->nrowLimit) {
+        while (ch<nextJump && buffi<args.nrowLimit) {
         // buffi<nrowLimit doesn't make sense when nth>1 since it's always true then (buffi is within buffer while
         // nrowLimit applies to final ans). It's only there for when nth=1 and nrows= is provided (e.g. tests 1558.1
         // and 1558.3). In that case we know we can stop when we've read the required number of rows. Otherwise it
@@ -1275,9 +1275,9 @@ int freadMain(freadMainArgs *args) {
             } else {
               myansi = ansi;  // fetch shared ansi -- where to write my results to the answer.
               prevThreadEnd = ch; // tell the next thread where I finished so it can check it started exactly there
-              if (myansi<args->nrowLimit) {
+              if (myansi<args.nrowLimit) {
                 // Normal branch
-                howMany = umin(buffi, args->nrowLimit-myansi);
+                howMany = umin(buffi, args.nrowLimit-myansi);
                 ansi += howMany;  // update shared ansi to tell the next thread which row I am going to finish on
                 // The next thread can now go ahead and copy its results to ans at the same time as I copy my results to ans
               } else {
@@ -1327,7 +1327,7 @@ int freadMain(freadMainArgs *args) {
         // in parallel. It can have an orphan critical directive if it needs to.
         pushBuffer(type, ncol, mybuff, thisThreadStart, nStringCols, nNonStringCols, howMany, myansi);
 
-        if (me==0 && (hasPrinted || (args->showProgress && jump/nth==4 &&
+        if (me==0 && (hasPrinted || (args.showProgress && jump/nth==4 &&
                                     ((double)nJumps/(nth*4)-1.0)*(wallclock()-tAlloc)>3.0))) {
           // Important for thread safety inside progess() that this is called not just from critical but that
           // it's the master thread too, hence me==0.
@@ -1380,8 +1380,8 @@ int freadMain(freadMainArgs *args) {
     }
     if (stopTeam && stopErr[0]!='\0') STOP(stopErr); // else nrowLimit applied and stopped early normally
     if (ansi > allocnrow) {
-      if (args->nrowLimit>allocnrow) STOP("Internal error: ansi(%d)>allocnrow(%d) but nrows=%d (not limited)",
-                                         ansi, allocnrow, args->nrowLimit);
+      if (args.nrowLimit>allocnrow) STOP("Internal error: ansi(%d)>allocnrow(%d) but nrows=%d (not limited)",
+                                         ansi, allocnrow, args.nrowLimit);
       // for the last jump that fills nrow limit, then ansi is +=buffi which is >allocnrow and correct
     } else if (ansi == allocnrow) {
       if (verbose) DTPRINT("Read %d rows. Exactly what was estimated and allocated up front\n", ansi);

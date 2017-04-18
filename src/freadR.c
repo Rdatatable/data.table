@@ -170,7 +170,7 @@ SEXP freadR(
   // === end extras ===
 
   DT = R_NilValue; // created by callback
-  freadMain(&args);
+  freadMain(args);
   UNPROTECT(protecti);
   return DT;
 }
