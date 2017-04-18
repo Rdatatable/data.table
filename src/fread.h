@@ -1,3 +1,5 @@
+#ifndef dt_FREAD_H
+#define dt_FREAD_H
 #include <stdint.h>  // uint32_t
 #include <stdlib.h>  // size_t
 
@@ -13,9 +15,8 @@ typedef enum {
   NUMTYPE      // placeholder for the number of types including drop; used for allocation and loop bounds
 } colType;
 
-static const char typeName[NUMTYPE][10] = {"drop", "bool8", "int32", "int64", "float64", "string"};
-static size_t     typeSize[NUMTYPE]     = { 0,      1,       4,       8,       8,         8      };
-// size_t to prevent potential overflow of n*typeSize[i] (standard practice)
+extern size_t typeSize[NUMTYPE];
+extern const char typeName[NUMTYPE][10];
 
 // Strings are pushed by fread_main using an offset from an anchor address plus string length
 // freadR.c then manages strings appropriately
@@ -31,6 +32,7 @@ typedef struct {
 #define NA_LENOFF        INT32_MIN  // lenOff.len only; lenOff.off undefined for NA
 
 typedef struct {
+  const char *filename;
   const char *input;
   char sep;
   char dec;
@@ -49,17 +51,18 @@ typedef struct {
   _Bool verbose;
 } freadMainArgs;
 
-void freadMain(freadMainArgs args);
+int freadMain(freadMainArgs *args);
 
 // Called from freadMain; implemented in freadR.c
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol);
 double allocateDT(int8_t *type, int ncol, int ndrop, uint64_t allocNrow);
 void setFinalNrow(uint64_t nrow);
 void reallocColType(int col, colType newType);
-void STOP(const char *format, ...);
 void progress(double percent/*[0,1]*/, double ETA/*secs*/);
 void pushBuffer(int8_t *type, int ncol, void **buff, const char *anchor,
                 int nStringCols, int nNonStringCols, int nRows, uint64_t ansi);
+void STOP(const char *format, ...);
+void freadCleanup();
 
 #define STRICT_R_HEADERS   // https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Error-handling
 #include <R.h>
@@ -68,3 +71,4 @@ void pushBuffer(int8_t *type, int ncol, void **buff, const char *anchor,
 #define DTPRINT Rprintf
 
 
+#endif
