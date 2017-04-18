@@ -83,7 +83,7 @@ static int STRLIM(const char *ch, size_t limit) {
   return (newline==NULL ? maxwidth : (size_t)(newline-ch));
 }
 
-static void printTypes(freadMainArgs *args, signed char *type, int ncol) {
+static void printTypes(freadMainArgs args, signed char *type, int ncol) {
   // e.g. files with 10,000 columns, don't print all of it to verbose output.
   int tt=(ncol<=110?ncol:90); for (int i=0; i<tt; i++) DTPRINT("%d",type[i]);
   if (ncol>110) { DTPRINT("..."); for (int i=ncol-10; i<ncol; i++) DTPRINT("%d",type[i]); }
@@ -960,7 +960,7 @@ int freadMain(freadMainArgs args) {
         }
         sampleBytes += (size_t)(ch-thisStart);
         if (verbose && (bumped || j==0 || j==nJumps-1)) {
-          DTPRINT("Type codes (jump %03d)    : ",j); printTypes(&args, type, ncol);
+          DTPRINT("Type codes (jump %03d)    : ",j); printTypes(args, type, ncol);
           DTPRINT("  Quote rule %d\n", quoteRule);
         }
     }
@@ -1030,7 +1030,7 @@ int freadMain(freadMainArgs args) {
     free(oldType);
     if (verbose) {
       DTPRINT("After %d type and %d drop user overrides : ", nUserBumped, ndrop);
-      printTypes(&args, type, ncol); DTPRINT("\n");
+      printTypes(args, type, ncol); DTPRINT("\n");
     }
     double tColType = wallclock();
 
