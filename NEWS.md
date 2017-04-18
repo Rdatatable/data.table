@@ -151,7 +151,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
   3. Joins:
     * Non-equi (or conditional) joins are now possible using the familiar `on=` syntax. Possible binary operators include `>=`, `>`, `<=`, `<` and `==`. For e.g., `X[Y, on=.(a, b>b)]` looks for `X.a == Y.a` first and within those matching rows for rows where`X.b > Y.b`, [#1452](https://github.com/Rdatatable/data.table/issues/1452).
     * x's columns can be referred to in `j` using the prefix `x.` at all times. This is particularly useful when it is necessary to x's column that is *also a join column*, [#1615](https://github.com/Rdatatable/data.table/issues/1615). Also closes [#1705](https://github.com/Rdatatable/data.table/issues/1705) (thanks @dbetebenner) and [#1761](https://github.com/Rdatatable/data.table/issues/1761).
-    * `on=.()` syntax is now posible, e.g., `X[Y, on=.(x==a, y==b)]`, [#1257](https://github.com/Rdatatable/data.table/issues/1257). Thanks @dselivanov.
+    * `on=.()` syntax is now possible, e.g., `X[Y, on=.(x==a, y==b)]`, [#1257](https://github.com/Rdatatable/data.table/issues/1257). Thanks @dselivanov.
     * Joins using `on=` accepts unnamed columns on ad hoc joins, e.g., X[.(5), on="b"] joins "b" from `X` to "V1" from `i`, partly closes [#1375](https://github.com/Rdatatable/data.table/issues/1375).
     * When joining with `on=`, `X[Y, on=c(A="A", b="c")]` can be now specified as `X[Y, on=c("A", b="c")]`, fully closes [#1375](https://github.com/Rdatatable/data.table/issues/1375).
     * `on=` joins now provides more friendly error messages when columns aren't found, [#1376](https://github.com/Rdatatable/data.table/issues/1376).
