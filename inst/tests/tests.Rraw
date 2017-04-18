@@ -6983,9 +6983,9 @@ test(1558.1, fread(f, nrow=21L), error="Line has too few fields.*<<ZZZ.*YYY>>")
 # Even though nrow=21 finished on the line before the problem, we still require a good sample of the whole file by setting fill=TRUE
 # This ensures consistency of types of the subset with other subsets. The types of AAA and BBB are character due to the sample
 # rows even though those columns only become character on row 22
-test(1558.1, fread(f, nrow=21L, fill=TRUE), ans)
-test(1558.2, fread(f, nrow=22L), error="Line has too few fields.*<<ZZZ.*YYY>>")
-test(1558.3, fread(f, nrow=22L, fill=TRUE), rbind(ans, list("ZZZ","YYY",NA)))
+test(1558.2, fread(f, nrow=21L, fill=TRUE), ans)
+test(1558.3, fread(f, nrow=22L), error="Line has too few fields.*<<ZZZ.*YYY>>")
+test(1558.4, fread(f, nrow=22L, fill=TRUE), rbind(ans, list("ZZZ","YYY",NA)))
 
 # FR # 1338 -- check.names argument of setDT
 ans=data.table(X=1:3,"X.1"=1:3)
@@ -9880,6 +9880,14 @@ test(1759, fread("alluniquechar.csv")[c(1,2,4999,5000)],
                       H=c("tokakysooopwtmlkeimzbgpein","hguwmynjhecsxpxldyzlemavmw",
                           "lyclruzkazfqhyxnppaafwcveo","myfqhltlwzwwxyvshwrzrdmfyq")))
 
+# fread should use multiple threads on single column input.
+# tests 2 threads; the very reasonable limit on CRAN
+# file needs to be reasonably large for threads to kick in (minimum chunkSize is 1MB currently)
+N = if (TRUE) 2e6 else 1e9   # offline speed check
+fwrite(data.table(A=sample(10,N,replace=TRUE)), f<-tempfile())
+test(1760.1, file.info(f)$size > 4*1024*1024)
+test(1760.2, fread(f, verbose=TRUE, nThread=2), output="using 2 threads")
+unlink(f)
 
 ##########################
 
