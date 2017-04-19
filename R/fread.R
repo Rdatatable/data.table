@@ -19,7 +19,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
     stopifnot(length(skip)==1)
     stopifnot(is.numeric(nThread) && length(nThread)==1)
     nThread=as.integer(nThread)
-    stopifnot(nThread>=1)    
+    stopifnot(nThread>=1)
     if (!missing(file)) {
         if (!identical(input, "")) stop("You can provide 'input' or 'file', not both.")
         if (!file.exists(file)) stop(sprintf("Provided file '%s' does not exists.", file))
@@ -38,7 +38,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
         if (!is_secureurl(input)) {
             #1668 - force "auto" when is_file to
             #  ensure we don't use an invalid option, e.g. wget
-            method <- if (is_file(input)) "auto" else 
+            method <- if (is_file(input)) "auto" else
                 getOption("download.file.method", default = "auto")
             download.file(input, tt, method = method,
                           mode = "wb", quiet = !showProgress)
@@ -81,8 +81,9 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
         }
     }
     if (is.numeric(skip)) skip = as.integer(skip)
+    warnings2errors = getOption("warn") >= 2
     ans = .Call(CfreadR,input,sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
-                        fill,showProgress,nThread,verbose,select,drop,colClasses,integer64,encoding)
+                        fill,showProgress,nThread,verbose,warnings2errors,select,drop,colClasses,integer64,encoding)
     nr = length(ans[[1]])
     if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(ans,inherits,"integer64"))) require_bit64()
     setattr(ans,"row.names",.set_row_names(nr))
@@ -121,7 +122,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
     if (!missing(col.names))
         setnames(ans, col.names) # setnames checks and errors automatically
     if (!is.null(key) && data.table) {
-        if (!is.character(key)) 
+        if (!is.character(key))
             stop("key argument of data.table() must be character")
         if (length(key) == 1L) {
             key = strsplit(key, split = ",")[[1L]]

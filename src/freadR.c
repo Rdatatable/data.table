@@ -39,6 +39,9 @@ static SEXP colClassesSxp;
 static cetype_t ienc = CE_NATIVE;
 static SEXP DT;
 static int protecti=0;
+static _Bool verbose = 0;
+static _Bool warningsAreErrors = 0;
+
 
 SEXP freadR(
   // params passed to freadMain
@@ -56,6 +59,7 @@ SEXP freadR(
   SEXP showProgressArg,
   SEXP nThreadArg,
   SEXP verboseArg,
+  SEXP warnings2errorsArg,
 
   // extras needed by callbacks from freadMain
   SEXP selectArg,
@@ -64,7 +68,8 @@ SEXP freadR(
   SEXP integer64Arg,
   SEXP encodingArg
 ) {
-  _Bool verbose = LOGICAL(verboseArg)[0];
+  verbose = LOGICAL(verboseArg)[0];
+  warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
 
   freadMainArgs args;
   protecti=0;
@@ -104,12 +109,12 @@ SEXP freadR(
   if (LOGICAL(headerArg)[0]==NA_LOGICAL) args.header = NA_BOOL8;
   else if (LOGICAL(headerArg)[0]==TRUE) args.header = TRUE;
 
-  args.nrowLimit = UINT64_MAX;
+  args.nrowLimit = INT64_MAX;
   // checked at R level
   if (isReal(nrowLimitArg)) {
-    if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0) args.nrowLimit = (uint64_t)(REAL(nrowLimitArg)[0]);
+    if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0) args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
   } else {
-    if (INTEGER(nrowLimitArg)[0]>=0) args.nrowLimit = (uint64_t)INTEGER(nrowLimitArg)[0];
+    if (INTEGER(nrowLimitArg)[0]>=0) args.nrowLimit = (int64_t)INTEGER(nrowLimitArg)[0];
   }
 
   args.skipNrow=0;
@@ -141,6 +146,7 @@ SEXP freadR(
   if (INTEGER(nThreadArg)[0]<1) error("nThread(%d)<1", INTEGER(nThreadArg)[0]);
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
   args.verbose = verbose;
+  args.warningsAreErrors = warningsAreErrors;
 
   // === extras used for callbacks ===
   if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1) error("'integer64' must be a single character string");
@@ -263,11 +269,15 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     for (int j=0; j<LENGTH(itemsInt); j++) {
       int k = INTEGER(itemsInt)[j];
       if (k==NA_INTEGER) {
-        if (isString(dropSxp)) warning("Column name '%s' in 'drop' not found", CHAR(STRING_ELT(dropSxp, j)));
-        else warning("drop[%d] is NA", j+1);
+        if (isString(dropSxp)) {
+          DTWARN("Column name '%s' in 'drop' not found", CHAR(STRING_ELT(dropSxp, j)));
+        } else {
+          DTWARN("drop[%d] is NA", j+1);
+        }
       } else {
-        if (k<1 || k>ncol) warning("Column number %d (drop[%d]) is out of range [1,ncol=%d]",k,j+1,ncol);
-        else {
+        if (k<1 || k>ncol) {
+          DTWARN("Column number %d (drop[%d]) is out of range [1,ncol=%d]",k,j+1,ncol);
+        } else {
           if (type[k-1] == CT_DROP) STOP("Duplicates detected in drop");
           type[k-1] = CT_DROP;
         }
@@ -280,7 +290,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER, FALSE));
       protecti++;
       for (int i=0; i<length(selectSxp); i++) if (INTEGER(tt)[i]==NA_INTEGER)
-        warning("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
+        DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
     } else tt = selectSxp;
     for (int i=0; i<LENGTH(tt); i++) {
       int k = isInteger(tt) ? INTEGER(tt)[i] : (int)REAL(tt)[i];
@@ -403,14 +413,23 @@ void progress(double p, double eta) {
 
 
 void STOP(const char *format, ...) {
-    // Solves: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
-    // TODO: always include fnam in the STOP message. For log files etc.
-    va_list args;
-    va_start(args, format);
-    char msg[2000];
-    vsnprintf(msg, 2000, format, args);
-    va_end(args);
-    freadCleanup();
-    error(msg);
+  // Solves: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
+  // TODO: always include fnam in the STOP message. For log files etc.
+  va_list args;
+  va_start(args, format);
+  char msg[2000];
+  vsnprintf(msg, 2000, format, args);
+  va_end(args);
+  freadCleanup();
+  error(msg);
 }
 
+void freadLastWarning(const char *format, ...) {
+  va_list args;
+  va_start(args, format);
+  static char msg[2000];
+  vsnprintf(msg, 2000, format, args);
+  va_end(args);
+  freadCleanup();
+  warning(msg);
+}
