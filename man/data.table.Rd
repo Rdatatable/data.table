@@ -7,7 +7,7 @@
 \alias{[.data.table}
 \title{ Enhanced data.frame }
 \description{
-   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast and nemory efficient: file reader and writer, aggregations, updates, equi, non-equi, rolling, range and interval joins, in a short and flexible syntax, for faster development. 
+   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast and memory efficient: file reader and writer, aggregations, updates, equi, non-equi, rolling, range and interval joins, in a short and flexible syntax, for faster development. 
 
    It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that accept \emph{only} \code{data.frame}s.
    

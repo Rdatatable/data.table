@@ -217,23 +217,26 @@ static _Bool Field(const char **this, void *targetCol, int targetRow)
 
 static _Bool SkipField(const char **this, void *targetCol, int targetRow)
 {
-   // wrapper around Field for CT_DROP to save a branch in the main data reader loop and
-   // to make the *fun[] lookup a bit clearer
-   return Field(this,NULL,0);
+  // wrapper around Field for CT_DROP to save a branch in the main data reader loop and
+  // to make the *fun[] lookup a bit clearer
+  return Field(this,NULL,0);
 }
 
 static inline int countfields(const char **this)
 {
   const char *ch = *this;
-  if (sep==' ') while (ch<eof && *ch==' ') ch++;  // Correct to be sep==' ' only and not skip_white().
-  int ncol = 1;
-  while (ch<eof && *ch!=eol) {
+  if (sep==' ') while (ch<eof && *ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
+  skip_white(&ch);
+  int ncol = 0;
+  if (ch<eof && *ch==eol) {
+    ch+=eolLen;
+  } else while (ch<eof) {
     if (!Field(&ch,NULL,0)) return -1;   // -1 means this line not valid for this sep and quote rule
-    // Field() leaves *ch resting on sep, eol or >=eof.  (Checked inside Field())
-    if (ch<eof && *ch!=eol) { ncol++; ch++; } // move over sep (which will already be last ' ' if sep=' '). TODO. Can be removed this line?
-                //   ^^  Not *ch==sep because sep==eol when readLines
+    // Field() leaves *ch resting on sep, eol or >=eof. Checked inside Field().
+    ncol++;
+    if (ch<eof && *ch==eol) { ch+=eolLen; break; }
+    ch++;  // move over sep (which will already be last ' ' if sep=' ').
   }
-  ch += eolLen; // may step past eof but that's ok as we never use ==eof in this file, always >=eof or <eof.
   *this = ch;
   return ncol;
 }
@@ -696,10 +699,12 @@ int freadMain(freadMainArgs args) {
 
     int topNumLines=0;        // the most number of lines with the same number of fields, so far
     int topNumFields=1;       // how many fields that was, to resolve ties
-    int topNmax=0;            // for that sep and quote rule, what was the max number of columns (just for fill=true)
     char topSep=eol;          // which sep that was, by default \n to mean single-column input (1 field)
-    int topQuoteRule=0;       // which quote rule that was
-    const char *firstJumpEnd=eof; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
+    int topQuoteRule=0;       // which quote rule that was    
+    int topNmax=0;            // for that sep and quote rule, what was the max number of columns (just for fill=true)
+                              //   (when fill=true, the max is usually the header row and is the longest but there are more
+                              //    lines of fewer)
+    const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
 
     // We will scan the input line-by-line (at most `JUMPLINES + 1` lines; "+1"
     // covers the header row, at this stage we don't know if it's present), and
@@ -711,30 +716,32 @@ int freadMain(freadMainArgs args) {
     // group, and `numLines` has the number of lines in each group.
     int numFields[JUMPLINES+1];
     int numLines[JUMPLINES+1];
-
     for (int s=0; s<nseps; s++) {
       sep = seps[s];
       for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
         ch = pos;
-        // DTPRINT("Trying sep='%c' with quoteRule %d ...", sep, quoteRule);
+        // if (args.verbose) DTPRINT("Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
         for (int i=0; i<=JUMPLINES; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
         int i=-1; // The slot we're counting the currently contiguous consistent ncol
-        int thisLine=0, lastncol=0;
-        while (ch<eof && thisLine++<=JUMPLINES) {
+        int thisLine=0, lastncol=-1;
+        while (ch<eof && thisLine++<JUMPLINES) {
           int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
-          if (thisncol<0) { numFields[0]=-1; break; }  // invalid file with this sep and quote rule; abort this rule
-          if (lastncol!=thisncol) { numFields[++i]=thisncol; lastncol=thisncol; } // new contiguous consistent ncol started
+          if (thisncol<0) { numFields[0]=-1; break; }  // invalid file with this sep and quote rule; abort
+          if (thisncol!=lastncol) { numFields[++i]=thisncol; lastncol=thisncol; } // new contiguous consistent ncol started
           numLines[i]++;
         }
         if (numFields[0]==-1) continue;
+        if (firstJumpEnd==NULL) firstJumpEnd=ch;  // if this wins (doesn't get updated), it'll be single column input
         _Bool updated=false;
         int nmax=0;
 
         i=-1; while (numLines[++i]) {
           if (numFields[i] > nmax) nmax=numFields[i];  // for fill=true to know max number of columns
-          if (numFields[i]>1 &&    // the default sep='\n' (whole lines, single column) shuld take precedence
-              ( numLines[i]>topNumLines ||
-               (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=' '))) {
+          //if (args.verbose) DTPRINT("numLines[i]=%d, topNumLines=%d, numFields[i]=%d, topNumFields=%d\n",
+          //                           numLines[i], topNumLines, numFields[i], topNumFields);
+          if (numFields[i]>1 &&
+              ( numLines[i]>topNumLines ||   // most number of consistent ncol wins
+               (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=' '))) {  // ties resolved by numFields
             topNumLines=numLines[i]; topNumFields=numFields[i]; topSep=sep; topQuoteRule=quoteRule; topNmax=nmax;
             firstJumpEnd = ch;  // So that after the header we know how many bytes jump point 0 is
             updated = true;
@@ -748,7 +755,8 @@ int freadMain(freadMainArgs args) {
         }
       }
     }
-
+    if (!firstJumpEnd) STOP("Internal error: no sep won");    
+    
     int ncol;
     quoteRule = topQuoteRule;
     sep = topSep;
@@ -1013,6 +1021,7 @@ int freadMain(freadMainArgs args) {
     memcpy(oldType, type, ncol);
     if (!userOverride(type, colNames, colNamesAnchor, ncol)) { // colNames must not be changed but type[] can be
       if (verbose) DTPRINT("Cancelled by user. userOverride() returned false.");
+      freadCleanup();
       return 1;
     }
     int ndrop=0, nUserBumped=0;
@@ -1068,8 +1077,7 @@ int freadMain(freadMainArgs args) {
     const char *prevThreadEnd = pos;  // the position after the last line the last thread processed (for checking)
     size_t workSize=0;
     int initialBuffRows=0, buffGrown=0;
-
-    size_t chunkBytes = umax(1000*maxLen, 1/*MB*/ *1024*1024);  // 1000 was 5
+    size_t chunkBytes = umax(1000*maxLen, 1/*MB*/ *1024*1024);
     // Decides number of jumps and size of buffers; chunkBytes is the distance between each jump point
     // For the 44GB file with 12875 columns, the max line len is 108,497. As each column has its own buffer per thread,
     // that buffer allocation should be at least one page (4k). Hence 1000 rows of the smallest type (4 byte int) is just
