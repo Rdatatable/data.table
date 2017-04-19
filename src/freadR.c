@@ -49,14 +49,14 @@ SEXP freadR(
   SEXP headerArg,
   SEXP nrowLimitArg,
   SEXP skipArg,
-  SEXP NAstringsArg, 
+  SEXP NAstringsArg,
   SEXP stripWhiteArg,
   SEXP skipEmptyLinesArg,
   SEXP fillArg,
   SEXP showProgressArg,
   SEXP nThreadArg,
   SEXP verboseArg,
-  
+
   // extras needed by callbacks from freadMain
   SEXP selectArg,
   SEXP dropArg,
@@ -64,8 +64,9 @@ SEXP freadR(
   SEXP integer64Arg,
   SEXP encodingArg
 ) {
+  _Bool verbose = LOGICAL(verboseArg)[0];
 
-  freadMainArgs args;  
+  freadMainArgs args;
   protecti=0;
   const char *ch, *ch2;
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
@@ -74,24 +75,35 @@ SEXP freadR(
   while (*ch2!='\n' && *ch2!='\0') ch2++;
   args.input = (*ch2=='\n') ? ch : R_ExpandFileName(ch); // for convenience so user doesn't have to call path.expand()
 
+  ch = args.input;
+  while (*ch!='\0' && *ch!='\n') ch++;
+  if (*ch=='\n' || args.input[0]=='\0') {
+    if (verbose) DTPRINT("Input contains a \\n (or is \"\"). Taking this to be text input (not a filename)\n");
+    args.filename = NULL;
+  } else {
+    if (verbose) DTPRINT("Input contains no \\n. Taking this to be a filename to open\n");
+    args.filename = args.input;
+    args.input = NULL;
+  }
+
   if (!isString(sepArg) || LENGTH(sepArg)!=1 || strlen(CHAR(STRING_ELT(sepArg,0)))>1)
     error("CfreadR: sep must be 'auto' or a single character ('\\n' is an acceptable single character)");
   args.sep = CHAR(STRING_ELT(sepArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
-  
+
   if (!(isString(decArg) && LENGTH(decArg)==1 && strlen(CHAR(STRING_ELT(decArg,0)))==1))
     error("CfreadR: dec must be a single character such as '.' or ','");
   args.dec = CHAR(STRING_ELT(decArg,0))[0];
-  
+
   if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
     error("CfreadR: quote must be a single character or empty \"\"");
   args.quote = CHAR(STRING_ELT(quoteArg,0))[0];
-  
+
   // header is the only boolean where NA is valid and means 'auto'.
   // LOGICAL in R is signed 32 bits with NA_LOGICAL==INT_MIN, currently.
   args.header = FALSE;
   if (LOGICAL(headerArg)[0]==NA_LOGICAL) args.header = NA_BOOL8;
   else if (LOGICAL(headerArg)[0]==TRUE) args.header = TRUE;
-  
+
   args.nrowLimit = UINT64_MAX;
   // checked at R level
   if (isReal(nrowLimitArg)) {
@@ -99,7 +111,7 @@ SEXP freadR(
   } else {
     if (INTEGER(nrowLimitArg)[0]>=0) args.nrowLimit = (uint64_t)INTEGER(nrowLimitArg)[0];
   }
-  
+
   args.skipNrow=0;
   args.skipString=NULL;
   if (isString(skipArg)) {
@@ -109,9 +121,9 @@ SEXP freadR(
   } else if (isInteger(skipArg)) {
     if (INTEGER(skipArg)[0]>0) args.skipNrow = (uint64_t)INTEGER(skipArg)[0];
   } else error("skip must be a single positive numeric (integer or double), or a string to search for");
-  
+
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
-    error("'na.strings' is type '%s'.  Must be either NULL or a character vector.", type2char(TYPEOF(NAstringsArg)));  
+    error("'na.strings' is type '%s'.  Must be either NULL or a character vector.", type2char(TYPEOF(NAstringsArg)));
   args.nNAstrings = length(NAstringsArg);
   args.NAstrings = NULL;
   if (args.nNAstrings) {
@@ -128,7 +140,7 @@ SEXP freadR(
   args.showProgress = LOGICAL(showProgressArg)[0];
   if (INTEGER(nThreadArg)[0]<1) error("nThread(%d)<1", INTEGER(nThreadArg)[0]);
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
-  args.verbose = LOGICAL(verboseArg)[0];
+  args.verbose = verbose;
 
   // === extras used for callbacks ===
   if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1) error("'integer64' must be a single character string");
@@ -140,13 +152,13 @@ SEXP freadR(
   } else if (strcmp(tt,"double")==0 || strcmp(tt,"numeric")==0) {
     readInt64As = CT_FLOAT64;
   } else STOP("Invalid value integer64='%s'. Must be 'integer64', 'character', 'double' or 'numeric'", tt);
-  
+
   colClassesSxp = colClassesArg;   // checked inside userOverride where it is used.
-  
+
   if (!isNull(selectArg) && !isNull(dropArg)) STOP("Use either select= or drop= but not both.");
   selectSxp = selectArg;
   dropSxp = dropArg;
-  
+
   // Encoding, #563: Borrowed from do_setencoding from base R
   // https://github.com/wch/r-source/blob/ca5348f0b5e3f3c2b24851d7aff02de5217465eb/src/main/util.c#L1115
   // Check for mkCharLenCE function to locate as to where where this is implemented.
@@ -156,7 +168,7 @@ SEXP freadR(
   else if (strcmp(tt, "UTF-8")==0) ienc = CE_UTF8;
   else STOP("encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'", tt);
   // === end extras ===
-  
+
   DT = R_NilValue; // created by callback
   freadMain(args);
   UNPROTECT(protecti);
@@ -338,7 +350,7 @@ void pushBuffer(int8_t *type, int ncol, void **buff, const char *anchor,
   // Do all the string columns first so as to minimize and concentrate the time inside this critical.
   // While this is happening other threads before me can be copying their non-string buffers to the
   // final DT and other threads after me can be filling their buffers too.
-  
+
   if (nStringCols) {
     #pragma omp critical
     {
@@ -384,9 +396,21 @@ void progress(double p, double eta) {
   //   ( Had crashes with R_CheckUserInterrupt() even when called only from master thread, to overcome. )
   #ifdef WIN32
   R_FlushConsole();
-  // Could try R_ProcessEvents() too as per 
+  // Could try R_ProcessEvents() too as per
   // https://cran.r-project.org/bin/windows/base/rw-FAQ.html#The-console-freezes-when-my-compiled-code-is-running
   #endif
 }
 
+
+void STOP(const char *format, ...) {
+    // Solves: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
+    // TODO: always include fnam in the STOP message. For log files etc.
+    va_list args;
+    va_start(args, format);
+    char msg[2000];
+    vsnprintf(msg, 2000, format, args);
+    va_end(args);
+    freadCleanup();
+    error(msg);
+}
 

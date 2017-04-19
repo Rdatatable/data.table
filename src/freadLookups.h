@@ -1,3 +1,6 @@
+#ifndef dt_FREAD_LOOKUPS_H
+#define dt_FREAD_LOOKUPS_H
+
 const long double pow10lookup[701] = {
 1.0E-350L,
 1.0E-349L,
@@ -701,3 +704,5 @@ const long double pow10lookup[701] = {
 1.0E349L,
 1.0E350L
 };
+
+#endif
