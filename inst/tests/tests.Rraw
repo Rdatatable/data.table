@@ -7906,6 +7906,10 @@ if ("package:bit64" %in% search()) {
 
 # fix for #1087 and #1465
 test(1627, charToRaw(names(fread("issue_1087_utf8_bom.csv"))[1L]), as.raw(97L))
+test(1627.1, names(fread("issue_1087_utf8_bom.csv", verbose=T))[1L], "a", output="UTF-8 byte order mark EF BB BF found")
+test(1627.2, names(fread("gb18030.txt", verbose=T))[1L], "x", output="GB-18030 byte order mark 84 31 95 33 found", warning="GB-18030 encoding detected")
+test(1627.3, fread("utf16le.txt"), error="File is encoded in UTF-16")
+test(1627.4, fread("utf16be.txt"), error="File is encoded in UTF-16")
 
 # uniqueN gains na.rm argument, #1455
 set.seed(1L)

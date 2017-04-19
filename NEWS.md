@@ -15,6 +15,7 @@
     * The ability to position `autostart` anywhere inside one of multiple tables in a single file is removed with warning. It used to search upwards from that line to find the start of the table based on a consistent number of columns. People appear to be using `skip="string"` or `skip=nrow` to find the header row exactly, which is retained and simpler. It was too difficult to retain search-upwards-autostart together with skipping blank lines, filling incomplete rows and parallelization. Varying format and height messy header info above the column names is still auto detected and auto skipped.
     * `dec=','` is now implemented directly so there is no dependency on locale. The options `datatable.fread.dec.experiment` and `datatable.fread.dec.locale` have been removed.
     * Many thanks to @yaakovfeldman, Guillermo Ponce, Arun Srinivasan, Hugh Parsonage, Mark Klik and more to add for testing before release to CRAN: [#2070](https://github.com/Rdatatable/data.table/issues/2070), [#2073](https://github.com/Rdatatable/data.table/issues/2073), [#2087](https://github.com/Rdatatable/data.table/issues/2087), [#2091](https://github.com/Rdatatable/data.table/issues/2091), [#2107](https://github.com/Rdatatable/data.table/issues/2107), [fst#50](https://github.com/fstpackage/fst/issues/50#issuecomment-294287846)
+    * Detect BOM mark in GB-18030 and UTF-16 encodings, in verbose mode print a message about BOM detection. 
 
 #### BUG FIXES
 
