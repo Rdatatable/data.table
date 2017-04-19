@@ -1101,8 +1101,10 @@ int freadMain(freadMainArgs args) {
     // For the 44GB file with 12875 columns, the max line len is 108,497. As each column has its own buffer per thread,
     // that buffer allocation should be at least one page (4k). Hence 1000 rows of the smallest type (4 byte int) is just
     // under 4096 to leave space for R's header + malloc's header. Around 50MB of buffer in this extreme case.
-    if (nJumps/*from sampling*/>1 && args.nth>1) {
+    if (nJumps/*from sampling*/>1) {
       // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
+      // when nth==1 we still split by chunk and go via buffers for consistency (testing) and code sanity, even though
+      // a single thread could write directly to the final DT and skip buffers.
       nJumps = (int)((size_t)(lastRowEnd-pos)/chunkBytes);  // (int) rounds down
       if (nJumps==0) nJumps=1;
       else if (nJumps>args.nth) nJumps = args.nth*(1+(nJumps-1)/args.nth);
@@ -1191,7 +1193,7 @@ int freadMain(freadMainArgs args) {
             for (int j=0, resj=-1; !stopTeam && j<ncol; j++) {
               if (type[j] == CT_DROP) continue;
               resj++;
-              if (type[j] < 0) continue;
+              if (type[j] < 0) continue;  // this out-of-sample type exception column will be alloc'd new at the end for reread
               size_t size = typeSize[type[j]];
               if (!(mybuff[resj] = (void *)realloc(mybuff[resj], myBuffRows * size))) stopTeam=true;
             }
