@@ -19,46 +19,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
     stopifnot(length(skip)==1)
     stopifnot(is.numeric(nThread) && length(nThread)==1)
     nThread=as.integer(nThread)
-    stopifnot(nThread>=1)
-    
-    if (getOption("datatable.fread.dec.experiment") && Sys.localeconv()["decimal_point"] != dec) {
-        oldlocale = Sys.getlocale("LC_NUMERIC")
-        if (verbose) cat("dec='",dec,"' but current locale ('",oldlocale,"') has dec='",Sys.localeconv()["decimal_point"],"'. Attempting to change locale to one that has the desired decimal point.\n",sep="")
-        on.exit(Sys.setlocale("LC_NUMERIC", oldlocale))
-        if (dec==".") {
-            tt <- Sys.setlocale("LC_NUMERIC", "C")
-            if (!identical(tt,"C")) stop("It is supposed to be guaranteed that Sys.setlocale('LC_NUMERIC', 'C') will always work!")
-        }
-        else suppressWarnings(tt <- Sys.setlocale("LC_NUMERIC", ""))   # hope get lucky with system locale; i.e. France in France
-        if (Sys.localeconv()["decimal_point"] != dec) {
-            if (verbose) cat("Changing to system locale ('",tt,"') did not provide the desired dec. Now trying any provided in getOption('datatable.fread.dec.locale')\n", sep="")
-            for (i in getOption("datatable.fread.dec.locale")) {
-                if (i=="") {
-                    if (verbose) cat("Ignoring ''\n")
-                    next
-                } else {
-                    if (verbose) cat("Trying '",i,"'\n", sep="")
-                }
-                suppressWarnings(tt <- Sys.setlocale("LC_NUMERIC", i))
-                cmd = paste("Sys.setlocale('LC_NUMERIC','",i,"')",sep="")
-                if (is.null(tt)) stop(cmd," returned NULL (locale information is unavailable). See ?Sys.setlocale.")
-                if (tt=="") {
-                    if (verbose) cat(cmd, ' returned ""; i.e., this locale name is not valid on your system. It was provided by you in getOption("datatable.fread.dec.locale"). See ?Sys.setlocale and ?fread.')
-                    next
-                }
-                if (toupper(tt)!=toupper(i)) {
-                    warning(cmd, " returned '",tt,"' != '",i,"' (not NULL not '' and allowing for case differences). This may not be a problem but please report.")
-                }
-                if (Sys.localeconv()["decimal_point"] == dec) break
-                if (verbose) cat("Successfully changed locale but it provides dec='",Sys.localeconv()["decimal_point"],"' not the desired dec", sep="")
-            }
-        }
-        if (Sys.localeconv()["decimal_point"] != dec) {
-            stop('Unable to change to a locale which provides the desired dec. You will need to add a valid locale name to getOption("datatable.fread.dec.locale"). See the long paragraph in ?fread.', if(verbose)'' else ' Run again with verbose=TRUE to inspect.')   # see issue #502
-        }
-        if (verbose) cat("This R session's locale is now '",tt,"' which provides the desired decimal point for reading numerics in the file - success! The locale will be restored to what it was ('",oldlocale,") even if the function fails for other reasons.\n")
-    }
-    # map file as input
+    stopifnot(nThread>=1)    
     if (!missing(file)) {
         if (!identical(input, "")) stop("You can provide 'input' or 'file', not both.")
         if (!file.exists(file)) stop(sprintf("Provided file '%s' does not exists.", file))
