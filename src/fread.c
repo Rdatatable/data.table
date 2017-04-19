@@ -720,7 +720,7 @@ int freadMain(freadMainArgs args) {
     int topNumFields=1;       // how many fields that was, to resolve ties
     char topSep=eol;          // which sep that was, by default \n to mean single-column input (1 field)
     int topQuoteRule=0;       // which quote rule that was    
-    int topNmax=0;            // for that sep and quote rule, what was the max number of columns (just for fill=true)
+    int topNmax=1;            // for that sep and quote rule, what was the max number of columns (just for fill=true)
                               //   (when fill=true, the max is usually the header row and is the longest but there are more
                               //    lines of fewer)
     const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header

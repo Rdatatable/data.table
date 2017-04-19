@@ -9893,6 +9893,10 @@ test(1760.1, file.info(f)$size > 4*1024*1024)
 test(1760.2, fread(f, verbose=TRUE, nThread=2), output="using 2 threads")
 unlink(f)
 
+# fread single column with superfluous fill=TRUE, #2118
+test(1761.1, fread("1\n2\n3", fill=TRUE), data.table(V1=1:3))
+test(1761.2, fread("1\n2\n3", fill=FALSE), data.table(V1=1:3))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
