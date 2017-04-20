@@ -43,32 +43,61 @@ static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 
 // Private globals so they can be cleaned up both on error and on successful return
 static const char *fnam = NULL;
-static const char *mmp = NULL;
+static void *mmp = NULL;
 static size_t fileSize;
 static _Bool typeOnStack = true;
 static int8_t *type = NULL;
 static lenOff *colNames = NULL;
+static signed char *oldType = NULL;
 
 const char typeName[NUMTYPE][10] = {"drop", "bool8", "int32", "int64", "float64", "string"};
 size_t     typeSize[NUMTYPE]     = { 0,      1,       4,       8,       8,         8      };
 // size_t to prevent potential overflow of n*typeSize[i] (standard practice)
 
 
-void freadCleanup() {
+/**
+ * Free any resources / memory buffers allocated by the fread() function, and
+ * bring all global variables to a "clean slate". This function must always be
+ * executed when fread() exits, either successfully or not.
+ */
+void freadCleanup(void)
+{
+  // If typeOnStack is true, then `type` was `alloca`-ed, and therefore must not be freed!
   if (!typeOnStack) free(type);
-  typeOnStack=true; type=NULL;
-  free(colNames); colNames=NULL;
-  if (mmp!=NULL) {
+  type = NULL;
+  free(colNames); colNames = NULL;
+  free(oldType); oldType = NULL;
+  if (mmp != NULL) {
     // Important to unmap as OS keeps internal reference open on file. Process is not exiting as
     // we're a .so/.dll here. If this was a process exiting we wouldn't need to unmap.
-#ifdef WIN32
-    UnmapViewOfFile(mmp);   // TODO - check for error here.
-#else
-    munmap((void *)mmp, fileSize);
-    // if (ret) DTERROR("%s: '%s'", strerror(errno), fnam);
-#endif
+    //
+    // Note that if there was an error unmapping the view of file, then we should not attempt
+    // to call STOP() for 2 reasons: 1) freadCleanup() may have itself been called from STOP(),
+    // and we would not want to overwrite the original error message; and 2) STOP() function
+    // may call freadCleanup(), thus resulting in an infinite loop.
+    #ifdef WIN32
+      int ret = UnmapViewOfFile(mmp);
+      if (!ret) printf("Internal error unmapping view of file\n");
+    #else
+      int ret = munmap(mmp, fileSize);
+      if (ret) printf("Internal error: errno=%d when unmapping the file\n", errno);
+    #endif
+    mmp = NULL;
   }
-  fnam=NULL; mmp=NULL; fileSize=0;
+  fileSize = 0;
+  sep = eol = eol2 = quote = dec = '\0';
+  eolLen = 0;
+  quoteRule = -1;
+  nNAstrings = 0;
+  any_number_like_NAstrings = false;
+  blank_is_a_NAstring = false;
+  stripWhite = true;
+  skipEmptyLines = false;
+  fill = false;
+  // following are borrowed references: do not free
+  fnam = NULL;
+  eof = NULL;
+  NAstrings = NULL;
 }
 
 
@@ -475,6 +504,11 @@ static double wallclock()
 int freadMain(freadMainArgs args) {
     double t0 = wallclock();
     _Bool verbose = args.verbose;
+    _Bool warningsAreErrors = args.warningsAreErrors;
+
+    if (fnam != NULL || mmp != NULL || colNames != NULL || oldType != NULL) {
+      STOP("Internal error: Previous fread() session was not cleaned up properly");
+    }
 
     if (args.nth <= 0) STOP("nThreads must be a positive number, got %d", args.nth);
     typeOnStack = false;
@@ -551,7 +585,7 @@ int freadMain(freadMainArgs args) {
         // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
         // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
         //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
-        mmp = (const char *)mmap(NULL, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
+        mmp = mmap(NULL, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
         close(fd);  // we don't need to keep file handle open
         if (mmp == MAP_FAILED) {
 #else
@@ -579,7 +613,7 @@ int freadMain(freadMainArgs args) {
             DTPRINT("File opened, size %.6f GB.\n", 1.0*fileSize/(1024*1024*1024));
             DTPRINT("Memory mapping ... ");
         }
-        mmp = (const char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,fileSize);
+        mmp = MapViewOfFile(hMap,FILE_MAP_READ,0,0,fileSize);
         CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
         CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
         if (mmp == NULL) {
@@ -593,7 +627,7 @@ int freadMain(freadMainArgs args) {
                 STOP("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. Size of pointer is %d on this machine. Probably failing because this is neither a 32bit or 64bit machine. Please report to datatable-help.", fileSize/1024^2, sizeof(char *));
             }
         }
-        sof = mmp;
+        sof = (const char*) mmp;
         eof = sof+fileSize;  // byte after last byte of file.  Never dereference eof as it's not mapped.
         if (verbose) DTPRINT("ok\n");  // to end 'Memory mapping ... '
     } else {
@@ -1035,9 +1069,9 @@ int freadMain(freadMainArgs args) {
     //   Apply colClasses, select, drop and integer64
     // ********************************************************************************************
     ch = pos;
-    signed char *oldType = (signed char *)malloc(ncol*sizeof(signed char));
+    oldType = (signed char *)malloc(ncol*sizeof(signed char));
     if (!oldType) STOP("Unable to allocate %d bytes to check user overrides of column types", ncol);
-    memcpy(oldType, type, ncol);
+    memcpy(oldType, type, ncol) ;
     if (!userOverride(type, colNames, colNamesAnchor, ncol)) { // colNames must not be changed but type[] can be
       if (verbose) DTPRINT("Cancelled by user. userOverride() returned false.");
       freadCleanup();
@@ -1055,7 +1089,6 @@ int freadMain(freadMainArgs args) {
       nStringCols += type[i]==CT_STRING;
       nNonStringCols += type[i]!=CT_STRING;
     }
-    free(oldType);
     if (verbose) {
       DTPRINT("After %d type and %d drop user overrides : ", nUserBumped, ndrop);
       printTypes(args, type, ncol); DTPRINT("\n");
