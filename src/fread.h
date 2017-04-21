@@ -6,11 +6,11 @@
 // Ordered hierarchy of types
 typedef enum {
   NEG=-1,      // dummy to force signed type; sign bit used for out-of-sample type bump management
-  CT_DROP,     // skip column requested by user; it is navigated as a string column with the prevailing quoteRule
+  CT_DROP = 0, // skip column requested by user; it is navigated as a string column with the prevailing quoteRule
   CT_BOOL8,    // signed char; first type enum value must be 1 not 0 so that it can be negated to -1.
   CT_INT32,    // signed int32_t
   CT_INT64,    // signed int64_t
-  CT_FLOAT64,  // double
+  CT_FLOAT64,  // double (64-bit IEEE 754 float)
   CT_STRING,   // lenOff typedef below
   NUMTYPE      // placeholder for the number of types including drop; used for allocation and loop bounds
 } colType;
@@ -82,11 +82,10 @@ typedef struct freadMainArgs
   // with `skipLines`.
   const char *skipString;
 
-  // List of strings that should be converted into NA values.
-  const char **NAstrings;
-
-  // Number of entries in the `NAstrings` array.
-  int32_t nNAstrings;
+  // NULL-terminated list of strings that should be converted into NA values.
+  // The last entry in this array is NULL (sentinel), which lets us know where
+  // the array ends.
+  const char * const* NAstrings;
 
   // Strip the whitespace from fields (usually True).
   _Bool stripWhite;
@@ -108,8 +107,12 @@ typedef struct freadMainArgs
   // Emit extra debug-level information.
   _Bool verbose;
 
-  // If true, then warnings should be treated as errors. (This field is
-  // checked from the DTWARN macro).
+  // If true, then this field instructs `fread` to treat warnings as errors. In
+  // particular in R this setting is turned on whenever `option(warn=2)` is set,
+  // in which case calling the standard `warning()` raises an exception.
+  // However `fread` still needs to know that the exception will be raised, so
+  // that it can do proper cleanup / resource deallocation -- otherwise memory
+  // leaks would occur.
   _Bool warningsAreErrors;
 
 } freadMainArgs;

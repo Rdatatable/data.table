@@ -129,14 +129,15 @@ SEXP freadR(
 
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
     error("'na.strings' is type '%s'.  Must be either NULL or a character vector.", type2char(TYPEOF(NAstringsArg)));
-  args.nNAstrings = length(NAstringsArg);
-  args.NAstrings = NULL;
-  if (args.nNAstrings) {
-    if (args.nNAstrings>100)  // very conservative limit
-      error("length(na.strings)==%d. This is too many to allocate pointers for on stack", args.nNAstrings);
-    args.NAstrings = alloca(args.nNAstrings * sizeof(char *));
-    for (int i=0; i<args.nNAstrings; i++) args.NAstrings[i] = CHAR(STRING_ELT(NAstringsArg,i));
-  }
+  int nnas = length(NAstringsArg);
+  if (nnas>100)  // very conservative limit
+    error("length(na.strings)==%d. This is too many to allocate pointers for on stack", nnas);
+  const char **NAstrings = alloca((nnas + 1) * sizeof(char*));
+  for (int i=0; i<nnas; i++)
+    NAstrings[i] = CHAR(STRING_ELT(NAstringsArg,i));
+  NAstrings[nnas] = NULL;
+  args.NAstrings = NAstrings;
+
 
   // here we use _Bool and rely on fread at R level to check these do not contain NA_LOGICAL
   args.stripWhite = LOGICAL(stripWhiteArg)[0];
