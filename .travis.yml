@@ -8,7 +8,7 @@ dist: trusty
 sudo: required
 cache: packages
 warnings_are_errors: true
-r_check_args: 
+r_check_args: ""
 # empty r_check_args to turn off --as-cran (on by default) as that can be slow
 
 bioc_packages:
