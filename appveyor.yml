@@ -12,13 +12,15 @@ install:
 
 environment:
   global:
+    CRAN: http://cloud.r-project.org/
     WARNINGS_ARE_ERRORS: 1
-    R_CHECK_ARGS: "--no-manual"
-# R_CHECK_ARGS specified in order to turn off --as-cran as that seems to have problems under R-devel on Windows currently
+    R_CHECK_ARGS: --no-manual
+# R_CHECK_ARGS specified in order to turn off --as-cran as that can be slow
 
   matrix:
-  - R_VERSION: devel
-    R_ARCH: x64
+#  - R_VERSION: devel
+#    R_ARCH: x64
+# Temporarily off to avoid current problems with just R-devel on Windows after R 3.4.0 release on 21 Apri 2017
 
   - R_VERSION: release
     R_ARCH: x64
