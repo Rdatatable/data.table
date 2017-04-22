@@ -3,7 +3,7 @@
 # See README.md for instructions, or for more configuration options,
 # see the wiki:
 #   https://github.com/craigcitro/r-travis/wiki
-# 
+#
 # Hack for 'error on warning' except when the warning is about vignette pdfs/html
 # Thanks to csgillespie for https://github.com/csgillespie/travis-examples/tree/master/bioconductor
 language: c
@@ -13,15 +13,15 @@ dist: trusty
 before_install:
   - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
   - chmod 755 ./travis-tool.sh
-  - sed "s/grep -q WARNING/grep WARNING \| grep -v inst\/doc \| grep -v 'Status:.*WARNING'/" travis-tool.sh > ./tmp.sh
+  - sed "s/\-\-no\-build\-vignettes//" travis-tool.sh > ./tmp.sh
   - mv tmp.sh travis-tool.sh
-  - chmod 755 ./travis-tool.sh  
+  - chmod 755 ./travis-tool.sh
   - ./travis-tool.sh bootstrap
 install:
   - ./travis-tool.sh bioc_install IRanges
   - ./travis-tool.sh bioc_install GenomicRanges
   - ./travis-tool.sh install_deps
-  
+
 script:
   - echo "Commit:" $TRAVIS_COMMIT >> ./DESCRIPTION
   - ./travis-tool.sh run_tests
