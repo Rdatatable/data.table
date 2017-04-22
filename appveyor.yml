@@ -23,9 +23,9 @@ environment:
   matrix:
   - R_VERSION: release
     R_ARCH: x64
-# - R_VERSION: devel
-#   R_ARCH: x64
-# Temporarily off to avoid current problems with just R-devel on Windows after R 3.4.0 release on 21 Apri 2017
+
+- R_VERSION: devel
+    R_ARCH: x64
 
 build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
