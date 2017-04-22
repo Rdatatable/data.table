@@ -4,7 +4,8 @@
 #   https://github.com/craigcitro/r-travis/wiki/Porting-to-native-R-support-in-Travis
 #
 language: r
-sudo: false
+dist: trusty
+sudo: required
 cache: packages
 warnings_are_errors: true
 
