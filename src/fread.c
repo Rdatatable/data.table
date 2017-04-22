@@ -29,8 +29,7 @@ static char sep, eol, eol2;
 static int eolLen;
 static char quote, dec;
 static int quoteRule;
-static const char **NAstrings;
-static int nNAstrings;
+static const char* const* NAstrings;
 static _Bool any_number_like_NAstrings=false;
 static _Bool blank_is_a_NAstring=false;
 static _Bool stripWhite=true;  // only applies to character columns; numeric fields always stripped
@@ -88,7 +87,6 @@ void freadCleanup(void)
   sep = eol = eol2 = quote = dec = '\0';
   eolLen = 0;
   quoteRule = -1;
-  nNAstrings = 0;
   any_number_like_NAstrings = false;
   blank_is_a_NAstring = false;
   stripWhite = true;
@@ -144,15 +142,17 @@ static inline void next_sep(const char **this) {
 
 static inline _Bool is_NAstring(const char *fieldStart) {
   skip_white(&fieldStart);  // updates local fieldStart
-  for (int i=0; i<nNAstrings; i++) {
+  const char* const* nastr = NAstrings;
+  while (*nastr) {
     const char *ch1 = fieldStart;
-    const char *ch2 = NAstrings[i];
-    while (ch1<eof && *ch1==*ch2) { ch1++; ch2++; }  // not using strncmp due to eof not being '\0'
+    const char *ch2 = *nastr;
+    while (ch1<eof && *ch1 == *ch2) { ch1++; ch2++; }  // not using strncmp due to eof not being '\0'
     if (*ch2=='\0') {
       skip_white(&ch1);
       if (ch1>=eof || *ch1==sep || *ch1==eol) return true;
       // if "" is in NAstrings then true will be returned as intended
     }
+    nastr++;
   }
   return false;
 }
@@ -517,34 +517,44 @@ int freadMain(freadMainArgs args) {
     memcpy(&NA_FLOAT64, &ui64, 8);
 
     NAstrings = args.NAstrings;
-    nNAstrings = args.nNAstrings;
     any_number_like_NAstrings = false;
     blank_is_a_NAstring = false;
     // if we know there are no nastrings which are numbers (like -999999) then in the number
     // field processors we can save an expensive step in checking the NAstrings. If the field parses as a number,
     // we then when any_number_like_nastrings==FALSE we know it can't be NA.
-    for (int i=0; i<nNAstrings; i++) {
-      if (NAstrings[i][0]=='\0') {blank_is_a_NAstring=true; continue; }
-      const char *ch=NAstrings[i];
+    const char * const* nastr = NAstrings;
+    while (*nastr) {
+      if (**nastr == '\0') {
+        blank_is_a_NAstring = true;
+        nastr++;
+        continue;
+      }
+      const char *ch = *nastr;
       int nchar = strlen(ch);
       if (isspace(ch[0]) || isspace(ch[nchar-1]))
-        STOP("fread_main: NAstrings[%d]==<<%s>> has whitespace at the beginning or end", i+1, ch);
+        STOP("freadMain: NAstring <<%s>> has whitespace at the beginning or end", ch);
       if (strcmp(ch,"T")==0    || strcmp(ch,"F")==0 ||
           strcmp(ch,"TRUE")==0 || strcmp(ch,"FALSE")==0 ||
           strcmp(ch,"True")==0 || strcmp(ch,"False")==0 ||
           strcmp(ch,"1")==0    || strcmp(ch,"0")==0)
-        STOP("fread_main: NAstrings[%d]==<<%s>> is recognized as type boolean. This is not permitted.", i+1, ch);
+        STOP("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted.", ch);
       char *end;
       errno = 0;
       strtod(ch, &end);  // careful not to let "" get to here (see continue above) as strtod considers "" numeric
       if (errno==0 && (int)(end-ch)==nchar) any_number_like_NAstrings = true;
+      nastr++;
     }
     if (verbose) {
-      DTPRINT("Parameter NAstrings == ");
-      if (nNAstrings==0) DTPRINT("None\n");
-      else { for (int i=0; i<nNAstrings; i++) { DTPRINT(i==0 ? "<<%s>>" : ", <<%s>>", NAstrings[i]); }; DTPRINT("\n"); }
-      DTPRINT("%s of the %d na.strings are numeric (such as '-9999').\n",
-            any_number_like_NAstrings ? "One or more" : "None", nNAstrings);
+      if (*NAstrings == NULL) {
+        DTPRINT("No NAstrings provided.\n");
+      } else {
+        DTPRINT("NAstrings = [");
+        const char * const* nastr = NAstrings;
+        while (*nastr++) DTPRINT(*nastr? "<<%s>>, " : "<<%s>>", *(nastr-1));
+        DTPRINT("]\n");
+      }
+      DTPRINT("%s of the NAstrings are numeric (such as '-9999').\n",
+              any_number_like_NAstrings ? "One or more" : "None");
     }
 
     stripWhite = args.stripWhite;
@@ -637,7 +647,7 @@ int freadMain(freadMainArgs args) {
     double tMap = wallclock();
 
     // ********************************************************************************************
-    //   Check whether the file contains BOM (Byte Order Mark), and if yes strip it, modifying 
+    //   Check whether the file contains BOM (Byte Order Mark), and if yes strip it, modifying
     //   `mmp`. Also, presence of BOM allows us to reliably detect the file's encoding.
     //   See: https://en.wikipedia.org/wiki/Byte_order_mark
     //   See: issues #1087 and #1465
@@ -753,7 +763,7 @@ int freadMain(freadMainArgs args) {
     int topNumLines=0;        // the most number of lines with the same number of fields, so far
     int topNumFields=1;       // how many fields that was, to resolve ties
     char topSep=eol;          // which sep that was, by default \n to mean single-column input (1 field)
-    int topQuoteRule=0;       // which quote rule that was    
+    int topQuoteRule=0;       // which quote rule that was
     int topNmax=1;            // for that sep and quote rule, what was the max number of columns (just for fill=true)
                               //   (when fill=true, the max is usually the header row and is the longest but there are more
                               //    lines of fewer)
@@ -808,8 +818,8 @@ int freadMain(freadMainArgs args) {
         }
       }
     }
-    if (!firstJumpEnd) STOP("Internal error: no sep won");    
-    
+    if (!firstJumpEnd) STOP("Internal error: no sep won");
+
     int ncol;
     quoteRule = topQuoteRule;
     sep = topSep;
