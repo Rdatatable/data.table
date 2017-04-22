@@ -14,16 +14,18 @@ environment:
   global:
     CRAN: http://cloud.r-project.org/
     WARNINGS_ARE_ERRORS: 1
+    USE_RTOOLS: true
+    GCC_PATH: mingw_64
+# Default GCC_PATH appears to be gcc-4.6.3 which is now unsupported as from Rtools.exe v3.4
     R_CHECK_ARGS: --no-manual
 # R_CHECK_ARGS specified in order to turn off --as-cran as that can be slow
 
   matrix:
-#  - R_VERSION: devel
-#    R_ARCH: x64
-# Temporarily off to avoid current problems with just R-devel on Windows after R 3.4.0 release on 21 Apri 2017
-
   - R_VERSION: release
     R_ARCH: x64
+# - R_VERSION: devel
+#   R_ARCH: x64
+# Temporarily off to avoid current problems with just R-devel on Windows after R 3.4.0 release on 21 Apri 2017
 
 build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
