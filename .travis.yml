@@ -1,38 +1,26 @@
-# Sample .travis.yml for R projects.
 #
-# See README.md for instructions, or for more configuration options,
-# see the wiki:
-#   https://github.com/craigcitro/r-travis/wiki
-# 
-# Hack for 'error on warning' except when the warning is about vignette pdfs/html
-# Thanks to csgillespie for https://github.com/csgillespie/travis-examples/tree/master/bioconductor
-language: c
-sudo: required
+# Travis configuration guide for R language:
+#   https://docs.travis-ci.com/user/languages/r/
+#   https://github.com/craigcitro/r-travis/wiki/Porting-to-native-R-support-in-Travis
+#
+language: r
 dist: trusty
+sudo: required
+cache: packages
+warnings_are_errors: true
+r_check_args: ""
+# empty r_check_args to turn off --as-cran (on by default) as that can be slow
 
-before_install:
-  - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
-  - chmod 755 ./travis-tool.sh
-  - sed "s/grep -q WARNING/grep WARNING \| grep -v inst\/doc \| grep -v 'Status:.*WARNING'/" travis-tool.sh > ./tmp.sh
-  - mv tmp.sh travis-tool.sh
-  - chmod 755 ./travis-tool.sh  
-  - ./travis-tool.sh bootstrap
-install:
-  - ./travis-tool.sh bioc_install IRanges
-  - ./travis-tool.sh bioc_install GenomicRanges
-  - ./travis-tool.sh install_deps
-  
-script:
-  - echo "Commit:" $TRAVIS_COMMIT >> ./DESCRIPTION
-  - ./travis-tool.sh run_tests
+bioc_packages:
+  - IRanges
+  - GenomicRanges
 
-after_failure:
-  - ./travis-tool.sh dump_logs
+r_packages:
+  - covr
+  - drat
 
 after_success:
-  - ./travis-tool.sh install_github jimhester/covr
   - travis_wait Rscript -e 'library(covr);codecov()'
-  - ./travis-tool.sh install_github eddelbuettel/drat
   - test $TRAVIS_REPO_SLUG == "Rdatatable/data.table" && test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && bash deploy.sh
 
 notifications:
@@ -42,8 +30,6 @@ notifications:
 
 env:
   global:
-    - CRAN="http://cloud.r-project.org/"
     - PKG_CFLAGS="-O3 -Wall -pedantic"
-    - WARNINGS_ARE_ERRORS=1
     # drat using @jangorecki token
     - secure: "CxDW++rsQApQWos+h1z/F76odysyD6AtXJrDwlCHlgqXeKJNRATR4wZDDR18SK+85jUqjoqOvpyrq+5kKuyg6AnA/zduaX2uYE5mcntEUiyzlG/jJUKbcJqt22nyAvFXP3VS60T2u4H6IIhVmr7dArdxLkv8W+pJvf2Tg6kx8Ws="
