@@ -13,6 +13,8 @@ install:
 environment:
   global:
     WARNINGS_ARE_ERRORS: 1
+    R_CHECK_ARGS: "--no-manual"
+# R_CHECK_ARGS specified in order to turn off --as-cran as that seems to have problems under R-devel on Windows currently
 
   matrix:
   - R_VERSION: devel
