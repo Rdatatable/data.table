@@ -8,14 +8,15 @@ dist: trusty
 sudo: required
 cache: packages
 warnings_are_errors: true
+cran: http://cloud.r-project.org/
 
 bioc_packages:
   - IRanges
   - GenomicRanges
 
-r_github_packages:
-  - jimhester/covr
-  - eddelbuettel/drat
+r_packages:
+  - covr
+  - drat
 
 after_success:
   - travis_wait Rscript -e 'library(covr);codecov()'
