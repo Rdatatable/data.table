@@ -1458,9 +1458,9 @@ int freadMain(freadMainArgs args) {
     } else if (ansi == allocnrow) {
       if (verbose) DTPRINT("Read %d rows. Exactly what was estimated and allocated up front\n", ansi);
     } else {
-      setFinalNrow(ansi);
       allocnrow = ansi;
     }
+    setFinalNrow(ansi);
     if (firstTime && nTypeBump) {
       nStringCols = nNonStringCols = 0;
       for (int j=0, resj=-1; j<ncol; j++) {
