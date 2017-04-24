@@ -6895,6 +6895,7 @@ test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.
 test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")),
              error="NAstring <<1>> is recognized as type boolean.*not permitted")
 test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), error="NAstring <<FALSE>>.*boolean.*not permitted")
+test(1552.6, fread("A\n1.0\n2\n-", na.strings=c("-")), data.table(A=c(1.0, 2.0, NA)))
 
 # FR #1177: 'quote' option of 'print.data.table'
 DT1 <- data.table(s1=paste(" ",LETTERS[1:5],sep=""),s2=LETTERS[1:5])
