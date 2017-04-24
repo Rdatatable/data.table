@@ -345,9 +345,13 @@ void reallocColType(int col,  // which column of the result, not of type[]. (the
 
 void setFinalNrow(uint64_t nrow) {
   // TODO realloc
-  if (length(DT)) for (int i=0; i<LENGTH(DT); i++) {
-    SETLENGTH(VECTOR_ELT(DT,i), nrow);
-    SET_TRUELENGTH(VECTOR_ELT(DT,i), nrow);
+  if (length(DT)) {
+    if (nrow == length(VECTOR_ELT(DT, 0)))
+      return;
+    for (int i=0; i<LENGTH(DT); i++) {
+      SETLENGTH(VECTOR_ELT(DT,i), nrow);
+      SET_TRUELENGTH(VECTOR_ELT(DT,i), nrow);
+    }
   }
 }
 
