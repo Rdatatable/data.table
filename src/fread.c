@@ -399,8 +399,8 @@ static _Bool StrtoD(const char **this, void *targetCol, int targetRow)
     if (ch<eof && (*ch==quote)) { quoted=true; ch++; }
     int sign=1;
     double d=NAN;
-    if (ch<eof && (*ch=='-' || *ch=='+')) sign -= 2*(*ch++=='-');
     const char *start=ch;
+    if (ch<eof && (*ch=='-' || *ch=='+')) sign -= 2*(*ch++=='-');
     _Bool ok = ch<eof && (('0'<=*ch && *ch<='9') || *ch==dec);  // a single - or + with no [0-9] is !ok and considered type character
     if (!ok) {
       if      (ch<eof && *ch=='I' && *(ch+1)=='n' && *(ch+2)=='f') { ch+=3; d=sign*INFINITY; ok=true; }
