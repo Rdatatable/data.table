@@ -231,28 +231,20 @@ static _Bool Field(const char **this, void *target)
   }
   if (quoted) { ch++; if (stripWhite) skip_white(&ch); }
   if (!on_sep(&ch)) return false;
-  if (target) {
-    if (fieldLen==0) {
-      if (blank_is_a_NAstring) fieldLen=INT32_MIN;
-    } else {
-      if (is_NAstring(fieldStart)) fieldLen=INT32_MIN;
-    }
-    ((lenOff *)target)->len = fieldLen;
-    ((lenOff *)target)->off = (uint32_t)(fieldStart-*this);  // agnostic & thread-safe
+  if (fieldLen==0) {
+    if (blank_is_a_NAstring) fieldLen=INT32_MIN;
+  } else {
+    if (is_NAstring(fieldStart)) fieldLen=INT32_MIN;
   }
+  ((lenOff *)target)->len = fieldLen;
+  ((lenOff *)target)->off = (uint32_t)(fieldStart-*this);  // agnostic & thread-safe
   *this = ch; // Update caller's ch. This may be after fieldStart+fieldLen due to quotes and/or whitespace
   return true;
 }
 
-static _Bool SkipField(const char **this, void *target)
-{
-  // wrapper around Field for CT_DROP to save a branch in the main data reader loop and
-  // to make the *fun[] lookup a bit clearer
-  return Field(this,NULL);
-}
-
 static inline int countfields(const char **this)
 {
+  static char trash[8];  // see comment on other trash declaration
   const char *ch = *this;
   if (sep==' ') while (ch<eof && *ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
   skip_white(&ch);
@@ -260,7 +252,7 @@ static inline int countfields(const char **this)
   if (ch<eof && *ch==eol) {
     ch+=eolLen;
   } else while (ch<eof) {
-    if (!Field(&ch,NULL)) return -1;   // -1 means this line not valid for this sep and quote rule
+    if (!Field(&ch,trash)) return -1;   // -1 means this line not valid for this sep and quote rule
     // Field() leaves *ch resting on sep, eol or >=eof. Checked inside Field().
     ncol++;
     if (ch<eof && *ch==eol) { ch+=eolLen; break; }
@@ -302,7 +294,7 @@ static _Bool StrtoI64(const char **this, void *target)
     const char *ch = *this;
     skip_white(&ch);  //  ',,' or ',   ,' or '\t\t' or '\t   \t' etc => NA
     if (on_sep(&ch)) {  // most often ',,'
-      if (target) *(int64_t *)target = NA_INT64;
+      *(int64_t *)target = NA_INT64;
       *this = ch;
       return true;
     }
@@ -322,7 +314,7 @@ static _Bool StrtoI64(const char **this, void *target)
     }
     if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
     // TODO: if (!targetCol) return early?  Most of the time, not though.
-    if (target) *(int64_t *)target = sign * acc;
+    *(int64_t *)target = sign * acc;
     skip_white(&ch);
     ok = ok && on_sep(&ch);
     //DTPRINT("StrtoI64 field '%.*s' has len %d\n", lch-ch+1, ch, len);
@@ -330,7 +322,7 @@ static _Bool StrtoI64(const char **this, void *target)
     if (ok && !any_number_like_NAstrings) return true;  // most common case, return
     _Bool na = is_NAstring(start);
     if (ok && !na) return true;
-    if (target) *(int64_t *)target = NA_INT64;
+    *(int64_t *)target = NA_INT64;
     next_sep(&ch);  // TODO: can we delete this? consume the remainder of field, if any
     *this = ch;
     return na;
@@ -343,7 +335,7 @@ static _Bool StrtoI32(const char **this, void *target)
     const char *ch = *this;
     skip_white(&ch);
     if (on_sep(&ch)) {  // most often ',,'
-      if (target) *(int32_t *)target = NA_INT32;
+      *(int32_t *)target = NA_INT32;
       *this = ch;
       return true;
     }
@@ -360,7 +352,7 @@ static _Bool StrtoI32(const char **this, void *target)
       ch++;
     }
     if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
-    if (target) *(int32_t *)target = sign * acc;
+    *(int32_t *)target = sign * acc;
     skip_white(&ch);
     ok = ok && on_sep(&ch);
     //DTPRINT("StrtoI32 field '%.*s' has len %d\n", lch-ch+1, ch, len);
@@ -368,7 +360,7 @@ static _Bool StrtoI32(const char **this, void *target)
     if (ok && !any_number_like_NAstrings) return true;
     _Bool na = is_NAstring(start);
     if (ok && !na) return true;
-    if (target) *(int32_t *)target = NA_INT32;
+    *(int32_t *)target = NA_INT32;
     next_sep(&ch);
     *this = ch;
     return na;
@@ -391,7 +383,7 @@ static _Bool StrtoD(const char **this, void *target)
     const char *ch = *this;
     skip_white(&ch);
     if (on_sep(&ch)) {
-      if (target) *(double *)target = NA_FLOAT64;
+      *(double *)target = NA_FLOAT64;
       *this = ch;
       return true;
     }
@@ -437,14 +429,14 @@ static _Bool StrtoD(const char **this, void *target)
       d = (double)(sign * (long double)acc * pow10lookup[350+e]);
     }
     if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
-    if (target) *(double *)target = d;
+    *(double *)target = d;
     skip_white(&ch);
     ok = ok && on_sep(&ch);
     *this = ch;
     if (ok && !any_number_like_NAstrings) return true;
     _Bool na = is_NAstring(start);
     if (ok && !na) return true;
-    if (target) *(double *)target = NA_FLOAT64;
+    *(double *)target = NA_FLOAT64;
     next_sep(&ch);
     *this = ch;
     return na;
@@ -455,7 +447,7 @@ static _Bool StrtoB(const char **this, void *target)
     // These usually come from R when it writes out.
     const char *ch = *this;
     skip_white(&ch);
-    if (target) *(int8_t *)target = NA_BOOL8;
+    *(int8_t *)target = NA_BOOL8;
     if (on_sep(&ch)) { *this=ch; return true; }  // empty field ',,'
     const char *start=ch;
     _Bool quoted = false;
@@ -463,26 +455,26 @@ static _Bool StrtoB(const char **this, void *target)
     if (quoted && *ch==quote) { ch++; if (on_sep(&ch)) {*this=ch; return true;} else return false; }  // empty quoted field ',"",'
     _Bool logical01 = false;  // expose to user and should default be true?
     if ( ((*ch=='0' || *ch=='1') && logical01) || (*ch=='N' && ch+1<eof && *(ch+1)=='A' && ch++)) {
-        if (target) *(int8_t *)target = (*ch=='1' ? true : (*ch=='0' ? false : NA_BOOL8));
+        *(int8_t *)target = (*ch=='1' ? true : (*ch=='0' ? false : NA_BOOL8));
         ch++;
     } else if (*ch=='T') {
-        if (target) *(int8_t *)target = true;
+        *(int8_t *)target = true;
         if (++ch+2<eof && ((*ch=='R' && *(ch+1)=='U' && *(ch+2)=='E') ||
                            (*ch=='r' && *(ch+1)=='u' && *(ch+2)=='e'))) ch+=3;
     } else if (*ch=='F') {
-        if (target) *(int8_t *)target = false;
+        *(int8_t *)target = false;
         if (++ch+3<eof && ((*ch=='A' && *(ch+1)=='L' && *(ch+2)=='S' && *(ch+3)=='E') ||
                            (*ch=='a' && *(ch+1)=='l' && *(ch+2)=='s' && *(ch+3)=='e'))) ch+=4;
     }
     if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
     if (on_sep(&ch)) { *this=ch; return true; }
-    if (target) *(int8_t *)target = NA_BOOL8;
+    *(int8_t *)target = NA_BOOL8;
     next_sep(&ch);
     *this=ch;
     return is_NAstring(start);
 }
 
-static reader_fun_t fun[NUMTYPE] = {&SkipField, &StrtoB, &StrtoI32, &StrtoI64, &StrtoD, &Field};
+static reader_fun_t fun[NUMTYPE] = {&Field, &StrtoB, &StrtoI32, &StrtoI64, &StrtoD, &Field};
 
 static double wallclock()
 {
@@ -856,6 +848,7 @@ int freadMain(freadMainArgs args) {
     // ********************************************************************************************
     //   Detect and assign column names (if present)
     // ********************************************************************************************
+    char trash[8]; // throw-away storage for processors to write to in this preamble. Saves deep 'if (target)' inside processors.
     const char *colNamesAnchor = ch;
     colNames = calloc(ncol, sizeof(lenOff));
     if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
@@ -866,10 +859,10 @@ int freadMain(freadMainArgs args) {
       const char *this = ++ch;
       //DTPRINT("Field %d <<%.*s>>\n", i, STRLIM(ch,20), ch);
       skip_white(&ch);
-      if (allchar && !on_sep(&ch) && StrtoD(&ch,NULL)) allchar=false;  // don't stop early as we want to check all columns to eol here
+      if (allchar && !on_sep(&ch) && StrtoD(&ch,trash)) allchar=false;  // don't stop early as we want to check all columns to eol here
       // considered looking for one isalpha present but we want 1E9 to be considered a value not a column name
       ch = this;  // rewind to the start of this field
-      Field(&ch,NULL);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
+      Field(&ch,trash);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
       // countfields() above already validated the line so no need to check again now.
     }
     if (ch<eof && *ch!=eol)
@@ -979,7 +972,7 @@ int freadMain(freadMainArgs args) {
             while (ch<eof && *ch!=eol && field<ncol) {
                 //DTPRINT("<<%.*s>>", STRLIM(ch,20), ch);
                 fieldStart=ch;
-                while (type[field]<=CT_STRING && !(*fun[type[field]])(&ch,NULL)) {
+                while (type[field]<=CT_STRING && !(*fun[type[field]])(&ch,trash)) {
                   ch=fieldStart;
                   if (type[field]<CT_STRING) { type[field]++; bumped=true; }
                   else {
