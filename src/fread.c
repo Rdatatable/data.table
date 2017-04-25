@@ -1160,17 +1160,6 @@ int freadMain(freadMainArgs args) {
     int64_t initialBuffRows = allocnrow / nJumps;
     nth = umin(nJumps, nth);
     
-    //#define TRACEON
-    #ifdef TRACEON
-      FILE *traceFile = fopen("/tmp/freadtrace.txt", "w+");
-      setbuf(traceFile, NULL);
-      #define TRACE(...) fprintf(traceFile, __VA_ARGS__)
-      #define TRACECLOSE() fclose(traceFile)
-    #else
-      #define TRACE(...)
-      #define TRACECLOSE()
-    #endif
-    
     read:  // we'll return here to reread any columns with out-of-sample type exceptions
     #pragma omp parallel num_threads(nth)
     {
@@ -1193,7 +1182,6 @@ int freadMain(freadMainArgs args) {
         if (stopTeam) continue;
         double t0=0, t1=0;
         if (verbose) { t1 = t0 = wallclock(); }
-        TRACE("%d %d %.6f 1\n", me, jump, wallclock());
         
         if (myNrow) {
           // On the 2nd iteration onwards for this thread, push the data from the previous jump
@@ -1225,7 +1213,6 @@ int freadMain(freadMainArgs args) {
           myNrow = 0;
         }
         if (jump>=nJumps) continue;  // nothing left to do. This jump was the dummy extra one.
-        TRACE("%d %d %.6f 2\n", me, jump, wallclock());
 
         const char *ch = pos+jump*chunkBytes;
         const char *nextJump = jump<nJumps-1 ? ch+chunkBytes+eolLen : lastRowEnd;
@@ -1239,7 +1226,6 @@ int freadMain(freadMainArgs args) {
         }
         thisJumpStart=ch;
         if (verbose) { t1=wallclock(); thNextGoodLine+=t1-t0; t0=t1; }
-        TRACE("%d %d %.6f 3\n", me, jump, wallclock());
         
         char *myBuffPos = myBuff;
         while (ch<nextJump) {
@@ -1363,12 +1349,10 @@ int freadMain(freadMainArgs args) {
           ch+=eolLen;
           myNrow++;
         }
-        if (verbose) { t1=wallclock(); thRead+=t1-t0; t0=t1; } 
-        TRACE("%d %d %.6f 4\n", me, jump, wallclock());
+        if (verbose) { t1=wallclock(); thRead+=t1-t0; t0=t1; }
 
         #pragma omp ordered
         {
-          TRACE("%d %d %.6f 5\n", me, jump, wallclock());
           // stopTeam could be true if a previous thread already stopped while I was waiting my turn
           if (!stopTeam && prevJumpEnd != thisJumpStart) {
             snprintf(stopErr, stopErrSize,
@@ -1466,7 +1450,6 @@ int freadMain(freadMainArgs args) {
       firstTime = false;
       goto read;
     }
-    TRACECLOSE();
     if (verbose) {
       DTPRINT("=============================\n");
       if (tTot<0.000001) tTot=0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
@@ -1482,10 +1465,10 @@ int freadMain(freadMainArgs args) {
       double thWaiting = tRead-tAlloc-thNextGoodLine-thRead-thPush;
       DTPRINT("%8.3fs (%3.0f%%) Reading %d chunks of %.3fMB (%d rows) using %d threads\n",
         tRead-tAlloc, 100.0*(tRead-tAlloc)/tTot, nJumps, (double)chunkBytes/(1024*1024), (int)(chunkBytes/meanLineLen), nth);
-      DTPRINT("  %8.3fs (%3.0f%%) Finding first non-embedded \\n after each jump\n", thNextGoodLine, 100.0*thNextGoodLine/tTot);
-      DTPRINT("  %8.3fs (%3.0f%%) Parse to row-major thread buffers\n", thRead, 100.0*thRead/tTot);
-      DTPRINT("  %8.3fs (%3.0f%%) Transpose\n", thPush, 100.0*thPush/tTot);
-      DTPRINT("  %8.3fs (%3.0f%%) Waiting\n", thWaiting, 100.0*thWaiting/tTot);
+      DTPRINT("   = %8.3fs (%3.0f%%) Finding first non-embedded \\n after each jump\n", thNextGoodLine, 100.0*thNextGoodLine/tTot);
+      DTPRINT("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers\n", thRead, 100.0*thRead/tTot);
+      DTPRINT("   + %8.3fs (%3.0f%%) Transpose\n", thPush, 100.0*thPush/tTot);
+      DTPRINT("   + %8.3fs (%3.0f%%) Waiting\n", thWaiting, 100.0*thWaiting/tTot);
       DTPRINT("%8.3fs (%3.0f%%) Rereading %d columns due to out-of-sample type exceptions\n",
         tReread-tRead, 100.0*(tReread-tRead)/tTot, nTypeBumpCols);
       DTPRINT("%8.3fs        Total\n", tTot);
