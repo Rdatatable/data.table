@@ -124,12 +124,11 @@ int freadMain(freadMainArgs args);
 
 // Called from freadMain; implemented in freadR.c
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol);
-double allocateDT(int8_t *type, int ncol, int ndrop, uint64_t allocNrow);
+size_t allocateDT(int8_t *type, int8_t *size, int ncol, int ndrop, uint64_t allocNrow);
 void setFinalNrow(uint64_t nrow);
 void reallocColType(int col, colType newType);
 void progress(double percent/*[0,1]*/, double ETA/*secs*/);
-void pushBuffer(int8_t *type, int ncol, void **buff, const char *anchor,
-                int nStringCols, int nNonStringCols, int nRows, uint64_t ansi);
+void pushBuffer(const void *buff, const char *anchor, int nRows, int64_t DTi, int rowSize, int nStringCols, int nNonStringCols);
 void STOP(const char *format, ...);
 void freadCleanup(void);
 void freadLastWarning(const char *format, ...);

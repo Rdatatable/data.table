@@ -38,6 +38,9 @@ static SEXP colNamesSxp;
 static SEXP colClassesSxp;
 static cetype_t ienc = CE_NATIVE;
 static SEXP DT;
+static int8_t *type;
+static int8_t *size;
+static int ncol;
 static int protecti=0;
 static _Bool verbose = 0;
 static _Bool warningsAreErrors = 0;
@@ -309,7 +312,11 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 }
 
 
-double allocateDT(int8_t *type, int ncol, int ndrop, uint64_t allocNrow) {
+size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, uint64_t allocNrow) {
+  // save inputs for use by pushBuffer
+  ncol = ncolArg;
+  size = sizeArg;
+  type = typeArg;
   DT=PROTECT(allocVector(VECSXP,ncol-ndrop));  // safer to leave over allocation to alloc.col on return in fread.R
   protecti++;
   if (ndrop==0) {
@@ -321,16 +328,16 @@ double allocateDT(int8_t *type, int ncol, int ndrop, uint64_t allocNrow) {
       SET_STRING_ELT(tt,resi++,STRING_ELT(colNamesSxp,i));
     }
   }
-  size_t size = SIZEOF(DT)*(ncol-ndrop)*2; // the VECSXP and its column names (exclude global character cache usage)
+  size_t DTbytes = SIZEOF(DT)*(ncol-ndrop)*2; // the VECSXP and its column names (exclude global character cache usage)
   for (int i=0,resi=0; i<ncol; i++) {
     if (type[i] == CT_DROP) continue;
     SEXP thiscol = allocVector(typeSxp[ type[i] ], allocNrow);
     SET_VECTOR_ELT(DT,resi++,thiscol);     // no need to PROTECT thiscol, see R-exts 5.9.1
     if (type[i]==CT_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(char_integer64));
     SET_TRUELENGTH(thiscol, allocNrow);
-    size += SIZEOF(thiscol)*allocNrow;
+    DTbytes += SIZEOF(thiscol)*allocNrow;
   }
-  return ((double)size/(1024*1024*1024));
+  return DTbytes;
 }
 
 
@@ -356,51 +363,66 @@ void setFinalNrow(uint64_t nrow) {
 }
 
 
-void pushBuffer(int8_t *type, int ncol, void **buff, const char *anchor,
-                int nStringCols, int nNonStringCols, int nRows, uint64_t ansi)
+void pushBuffer(const void *buff, const char *anchor, int nRows, int64_t DTi,
+                int rowSize, int nStringCols, int nNonStringCols)
 {
-  // By doing this column-wise and dense in one critical, we aim to receive the benefits of R's global
-  // character cache while concentrating the single-threaded access to it; we did all the processing we
-  // could in parallel previously.
-  // Do all the string columns first so as to minimize and concentrate the time inside this critical.
-  // While this is happening other threads before me can be copying their non-string buffers to the
+  // Do all the string columns first so as to minimize and concentrate the time inside the single critical.
+  // While the string columns are happening other threads before me can be copying their non-string buffers to the
   // final DT and other threads after me can be filling their buffers too.
-
+  // rowSize is passed in because it will be different (much smaller) on the reread covering any type exception columns
+  // locals passed in on stack so openmp knows that no synchonization is required
+  
+  int off = 0;   // the byte position of this column in the first row of the row-major buffer
   if (nStringCols) {
     #pragma omp critical
     {
       for (int j=0, resj=-1, done=0; done<nStringCols && j<ncol; j++) {
         if (type[j] == CT_DROP) continue;
         resj++;
-        if (type[j] != CT_STRING) continue;
-        SEXP dest = VECTOR_ELT(DT, resj);
-        lenOff *source = buff[resj];
-        for (int i=0; i<nRows; i++) {
-          int strLen = source[i].len;
-          if (strLen==0) continue;  // R_BlankString already initialized with R_BlankString by allocVector()
-          SEXP thisStr = strLen<0 ? NA_STRING : mkCharLenCE(anchor + source[i].off, strLen, ienc);
-          // stringLen == INT_MIN => NA, otherwise not a NAstring was checked inside fread_mean
-          SET_STRING_ELT(dest, ansi+i, thisStr);
+        if (type[j] == CT_STRING) {
+          SEXP dest = VECTOR_ELT(DT, resj);
+          lenOff *source = (lenOff *)((char *)buff + off);
+          for (int i=0; i<nRows; i++) {
+            int strLen = source->len;
+            if (strLen) {
+              SEXP thisStr = strLen<0 ? NA_STRING : mkCharLenCE(anchor + source->off, strLen, ienc);
+              // stringLen == INT_MIN => NA, otherwise not a NAstring was checked inside fread_mean
+              SET_STRING_ELT(dest, DTi+i, thisStr);
+            } // else dest was already initialized with R_BlankString by allocVector()
+            source = (lenOff *)((char *)source + rowSize);
+          }
+          done++; // if just one string col near the start, don't loop over the other 10,000 cols. TODO? start on first too
         }
-        done++; // if just one string col near the start, don't loop over the other 10,000 cols. TODO start on first too
+        off += size[j];
       }
     }
   }
+  off = 0;
   for (int j=0, resj=-1, done=0; done<nNonStringCols && j<ncol; j++) {
     if (type[j]==CT_DROP) continue;
     resj++;
-    if (type[j]==CT_STRING || type[j]<0) continue;
-    char *col = (char *)DATAPTR(VECTOR_ELT(DT, resj));
-    if (type[j]!=CT_BOOL8) {
-      size_t size = typeSize[type[j]];
-      memcpy(col+ansi*size, buff[resj], nRows*size);
-    } else {
-      for (int k=0; k<nRows; k++) {
-        int8_t v = ((int8_t *)(buff[resj]))[k];
-        ((int32_t *)col)[ansi+k] = (v==INT8_MIN ? NA_INTEGER : /*0|1*/v);
+    if (type[j]!=CT_STRING && type[j]>0) {
+      char *source = (char *)buff + off;      
+      if (type[j]!=CT_BOOL8) {
+        int thisSize = size[j];
+        char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*thisSize;
+        for (int i=0; i<nRows; i++) {
+          memcpy(dest, source, thisSize);
+          source += rowSize;
+          dest += thisSize;
+        }
+      } else {
+        Rboolean *dest = (Rboolean *)((char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*sizeof(Rboolean));
+        for (int i=0; i<nRows; i++) {
+          int8_t v = *(int8_t *)source;
+          *dest = (v==INT8_MIN ? NA_INTEGER : v);
+          source += rowSize;
+          dest++;
+        }
       }
+      done++;
     }
-    done++;
+    off += size[j];
   }
 }
 
