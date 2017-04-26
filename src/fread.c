@@ -59,6 +59,10 @@ size_t     typeSize[NUMTYPE]     = { 0,      1,       4,       8,       8,      
  * bring all global variables to a "clean slate". This function must always be
  * executed when fread() exits, either successfully or not.
  */
+#ifdef WIN32
+HANDLE hFile, hMap;
+#endif
+
 void freadCleanup(void)
 {
   // If typeOnStack is true, then `type` was `alloca`-ed, and therefore must not be freed!
@@ -77,6 +81,8 @@ void freadCleanup(void)
     #ifdef WIN32
       int ret = UnmapViewOfFile(mmp);
       if (!ret) printf("Internal error unmapping view of file\n");
+      CloseHandle(hMap);
+      CloseHandle(hFile);
     #else
       int ret = munmap(mmp, fileSize);
       if (ret) printf("Internal error: errno=%d when unmapping the file\n", errno);
@@ -597,7 +603,7 @@ int freadMain(freadMainArgs args) {
         if (mmp == MAP_FAILED) {
 #else
         // Following: http://msdn.microsoft.com/en-gb/library/windows/desktop/aa366548(v=vs.85).aspx
-        HANDLE hFile = INVALID_HANDLE_VALUE;
+        hFile = INVALID_HANDLE_VALUE;
         int attempts = 0;
         while(hFile==INVALID_HANDLE_VALUE && attempts<5) {
             hFile = CreateFile(fnam, GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
@@ -616,7 +622,7 @@ int freadMain(freadMainArgs args) {
         if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
         DWORD hi = (fileSize+2) >> 32;
         DWORD lo = (fileSize+2) & 0xFFFFFFFFull;
-        HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_READWRITE, hi, lo, NULL);
+        hMap=CreateFileMapping(hFile, NULL, PAGE_READWRITE, hi, lo, NULL);
         if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d with hi=%d and lo=%d for file %s", GetLastError(), hi, lo, fnam); }
         if (1) { //verbose) {
             DTPRINT("File opened, size %.6f GB.\n", (double)fileSize/(1024*1024*1024));
@@ -624,8 +630,8 @@ int freadMain(freadMainArgs args) {
         }
         mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize+2);
         DTPRINT("Returned from MapViewOfFile\n");
-        CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
-        CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
+        //CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
+        //CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
         if (mmp == NULL) {
 #endif
             if (sizeof(char *)==4) {
