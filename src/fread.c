@@ -600,7 +600,7 @@ int freadMain(freadMainArgs args) {
         HANDLE hFile = INVALID_HANDLE_VALUE;
         int attempts = 0;
         while(hFile==INVALID_HANDLE_VALUE && attempts<5) {
-            hFile = CreateFile(fnam, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+            hFile = CreateFile(fnam, GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
             // FILE_SHARE_WRITE is required otherwise if the file is open in Excel, CreateFile fails. Should be ok now.
             if (hFile==INVALID_HANDLE_VALUE) {
                 if (GetLastError()==ERROR_FILE_NOT_FOUND) STOP("File not found: %s",fnam);
