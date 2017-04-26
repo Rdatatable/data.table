@@ -619,22 +619,23 @@ int freadMain(freadMainArgs args) {
         DWORD lo = (fileSize) & 0xFFFFFFFFul;
         HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, hi, lo, NULL);
         if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d with hi=%d and lo=%d for file %s", GetLastError(), hi, lo, fnam); }
-        if (verbose) {
+        if (1) { //verbose) {
             DTPRINT("File opened, size %.6f GB.\n", 1.0*fileSize/(1024*1024*1024));
             DTPRINT("Memory mapping ... ");
         }
         mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);
+        DTPRINT("Returned from MapViewOfFile\n");
         CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
         CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
         if (mmp == NULL) {
 #endif
             if (sizeof(char *)==4) {
-                STOP("Opened file ok, obtained its size on disk (%.1fMB) but couldn't memory map it. This is a 32bit machine. You don't need more RAM per se but this fread function is tuned for 64bit addressability at the expense of large file support on 32bit machines. You probably need more RAM to store the resulting data.table, anyway. And most speed benefits of data.table are on 64bit with large RAM, too. Please upgrade to 64bit.", fileSize/(1024.0*1024));
+                STOP("Opened file ok, obtained its size on disk (%.1fMB) but couldn't memory map it. This is a 32bit machine. You don't need more RAM per se but this fread function is tuned for 64bit addressability at the expense of large file support on 32bit machines. You probably need more RAM to store the resulting data.table, anyway. And most speed benefits of data.table are on 64bit with large RAM, too. Please upgrade to 64bit.", (double)fileSize/(1024*1024));
                 // if we support this on 32bit, we may need to use stat64 instead, as R does
             } else if (sizeof(char *)==8) {
-                STOP("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. This is a 64bit machine so this is surprising. Please report to datatable-help.", fileSize/1024^2);
+                STOP("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. This is a 64bit machine so this is surprising. Please report.", (double)fileSize/(1024*1024));
             } else {
-                STOP("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. Size of pointer is %d on this machine. Probably failing because this is neither a 32bit or 64bit machine. Please report to datatable-help.", fileSize/1024^2, sizeof(char *));
+                STOP("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. Size of pointer is %d on this machine. Probably failing because this is neither a 32bit or 64bit machine. Please report.", (double)fileSize/(1024*1024), sizeof(char *));
             }
         }
         sof = (const char*) mmp;
