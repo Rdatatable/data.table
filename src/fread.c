@@ -615,8 +615,10 @@ int freadMain(freadMainArgs args) {
         fileSize = (size_t)liFileSize.QuadPart;
         if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
         liFileSize.QuadPart += 2;
-        HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, liFileSize.HighPart, liFileSize.LowPart, NULL);
-        if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
+        DWORD hi = (filesize+2) >> 32;
+        DWORD lo = (filesize+2) & 0xFFFFFFFFul;
+        HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, hi, lo, NULL);
+        if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d with hi=%d and lo=%d for file %s", GetLastError(), hi, lo, fnam); }
         if (verbose) {
             DTPRINT("File opened, size %.6f GB.\n", 1.0*fileSize/(1024*1024*1024));
             DTPRINT("Memory mapping ... ");
