@@ -616,7 +616,7 @@ int freadMain(freadMainArgs args) {
         if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
         DWORD hi = (fileSize+2) >> 32;
         DWORD lo = (fileSize+2) & 0xFFFFFFFFull;
-        HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, hi, lo, NULL);
+        HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_READWRITE, hi, lo, NULL);
         if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d with hi=%d and lo=%d for file %s", GetLastError(), hi, lo, fnam); }
         if (1) { //verbose) {
             DTPRINT("File opened, size %.6f GB.\n", (double)fileSize/(1024*1024*1024));
