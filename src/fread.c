@@ -615,8 +615,8 @@ int freadMain(freadMainArgs args) {
         fileSize = (size_t)liFileSize.QuadPart;
         if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
         liFileSize.QuadPart += 2;
-        DWORD hi = (fileSize+2) >> 32;
-        DWORD lo = (fileSize+2) & 0xFFFFFFFFul;
+        DWORD hi = (fileSize) >> 32;
+        DWORD lo = (fileSize) & 0xFFFFFFFFul;
         HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, hi, lo, NULL);
         if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d with hi=%d and lo=%d for file %s", GetLastError(), hi, lo, fnam); }
         if (verbose) {
