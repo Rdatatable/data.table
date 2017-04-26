@@ -617,13 +617,13 @@ int freadMain(freadMainArgs args) {
         liFileSize.QuadPart += 2;
         DWORD hi = (fileSize) >> 32;
         DWORD lo = (fileSize) & 0xFFFFFFFFul;
-        HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, hi, lo, NULL);
+        HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, hi, lo, NULL);
         if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d with hi=%d and lo=%d for file %s", GetLastError(), hi, lo, fnam); }
         if (verbose) {
             DTPRINT("File opened, size %.6f GB.\n", 1.0*fileSize/(1024*1024*1024));
             DTPRINT("Memory mapping ... ");
         }
-        mmp = MapViewOfFile(hMap,FILE_MAP_READ,0,0,fileSize+2);
+        mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);
         CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
         CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
         if (mmp == NULL) {
