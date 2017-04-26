@@ -614,16 +614,15 @@ int freadMain(freadMainArgs args) {
         if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP("GetFileSizeEx failed (returned 0) on file: %s", fnam); }
         fileSize = (size_t)liFileSize.QuadPart;
         if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
-        liFileSize.QuadPart += 2;
-        DWORD hi = (fileSize) >> 32;
-        DWORD lo = (fileSize) & 0xFFFFFFFFul;
+        DWORD hi = (fileSize+2) >> 32;
+        DWORD lo = (fileSize+2) & 0xFFFFFFFFull;
         HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, hi, lo, NULL);
         if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d with hi=%d and lo=%d for file %s", GetLastError(), hi, lo, fnam); }
         if (1) { //verbose) {
-            DTPRINT("File opened, size %.6f GB.\n", 1.0*fileSize/(1024*1024*1024));
+            DTPRINT("File opened, size %.6f GB.\n", (double)fileSize/(1024*1024*1024));
             DTPRINT("Memory mapping ... ");
         }
-        mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);
+        mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize+2);
         DTPRINT("Returned from MapViewOfFile\n");
         CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
         CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
