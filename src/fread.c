@@ -48,6 +48,7 @@ static _Bool typeOnStack = true;
 static int8_t *type = NULL, *size = NULL;
 static lenOff *colNames = NULL;
 static signed char *oldType = NULL;
+static freadMainArgs args;  // global for use by DTPRINT
 
 const char typeName[NUMTYPE][10] = {"drop", "bool8", "int32", "int64", "float64", "string"};
 size_t     typeSize[NUMTYPE]     = { 0,      1,       4,       8,       8,         8      };
@@ -76,10 +77,10 @@ void freadCleanup(void)
     // may call freadCleanup(), thus resulting in an infinite loop.
     #ifdef WIN32
       int ret = UnmapViewOfFile(mmp);
-      if (!ret) printf("Internal error unmapping view of file\n");
+      if (!ret) DTPRINT("System error %d unmapping view of file\n", GetLastError());
     #else
       int ret = munmap(mmp, fileSize);
-      if (ret) printf("Internal error: errno=%d when unmapping the file\n", errno);
+      if (ret) DTPRINT("System errno %d unmapping file\n", errno);
     #endif
     mmp = NULL;
   }
@@ -110,7 +111,7 @@ static int STRLIM(const char *ch, size_t limit) {
   return (newline==NULL ? maxwidth : (size_t)(newline-ch));
 }
 
-static void printTypes(freadMainArgs args, signed char *type, int ncol) {
+static void printTypes(signed char *type, int ncol) {
   // e.g. files with 10,000 columns, don't print all of it to verbose output.
   int tt=(ncol<=110?ncol:90); for (int i=0; i<tt; i++) DTPRINT("%d",type[i]);
   if (ncol>110) { DTPRINT("..."); for (int i=ncol-10; i<ncol; i++) DTPRINT("%d",type[i]); }
@@ -493,7 +494,8 @@ static double wallclock()
 
 
 
-int freadMain(freadMainArgs args) {
+int freadMain(freadMainArgs __args) {
+    args = __args;  // assign to global for use by DTPRINT() in other functions
     double t0 = wallclock();
     _Bool verbose = args.verbose;
     _Bool warningsAreErrors = args.warningsAreErrors;
@@ -1034,7 +1036,7 @@ int freadMain(freadMainArgs args) {
         }
         sampleBytes += (size_t)(ch-thisStart);
         if (verbose && (bumped || j==0 || j==nJumps-1)) {
-          DTPRINT("Type codes (jump %03d)    : ",j); printTypes(args, type, ncol);
+          DTPRINT("Type codes (jump %03d)    : ",j); printTypes(type, ncol);
           DTPRINT("  Quote rule %d\n", quoteRule);
         }
     }
@@ -1104,7 +1106,7 @@ int freadMain(freadMainArgs args) {
     }
     if (verbose) {
       DTPRINT("After %d type and %d drop user overrides : ", nUserBumped, ndrop);
-      printTypes(args, type, ncol); DTPRINT("\n");
+      printTypes(type, ncol); DTPRINT("\n");
     }
     double tColType = wallclock();
 

@@ -120,7 +120,7 @@ typedef struct freadMainArgs
 
 // *****************************************************************************
 
-int freadMain(freadMainArgs args);
+int freadMain(freadMainArgs __args);
 
 // Called from freadMain; implemented in freadR.c
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol);
