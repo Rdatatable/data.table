@@ -31,6 +31,8 @@ environment:
 
 build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
+  - travis-tool.sh r_install bit64
+  - travis-tool.sh r_install fastmatch
 
 test_script:
   - travis-tool.sh run_tests
