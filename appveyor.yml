@@ -33,6 +33,8 @@ build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
   - travis-tool.sh r_install bit64
   - travis-tool.sh r_install fastmatch
+  - travis-tool.sh r_install knitr
+  - travis-tool.sh r_install nanotime
 
 test_script:
   - travis-tool.sh run_tests
