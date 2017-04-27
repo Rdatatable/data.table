@@ -1,5 +1,5 @@
 require(data.table)
-test.data.table()  # runs the main test suite of 5,000+ tests in /inst/tests/tests.Rraw
+test.data.table(verbose=TRUE)  # runs the main test suite of 5,000+ tests in /inst/tests/tests.Rraw
 
 # Turn off verbose repeat to save time (particularly Travis, but also CRAN) :
 # test.data.table(verbose=TRUE)
