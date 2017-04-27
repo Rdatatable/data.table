@@ -23,11 +23,9 @@ environment:
   matrix:
   - R_VERSION: release
     R_ARCH: x64
-
-#  - R_VERSION: devel
-#    R_ARCH: x64
-# Windows r-devel temporarily off due to 'The process cannot access the file because it is being used by another process'
-# which started after R 3.4.0 being released.
+    
+  - R_VERSION: devel
+    R_ARCH: x64
 
 build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
