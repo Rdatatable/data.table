@@ -4,8 +4,8 @@
   #include <sys/time.h>  // gettimeofday for wallclock()
 #endif
 #ifdef WIN32             // means WIN64, too, oddly
-  #define WINVER Windows2000
   #include <windows.h>
+  #include <ddk/winddk.h>
   #include <stdbool.h>   // true and false
 #else
   #include <sys/mman.h>  // mmap
