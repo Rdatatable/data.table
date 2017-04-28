@@ -644,8 +644,8 @@ int freadMain(freadMainArgs __args) {
         if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP("GetFileSizeEx failed (returned 0) on file: %s", fnam); }
         fileSize = (size_t)liFileSize.QuadPart;
         if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
-        DWORD hi = (fileSize+2) >> 32;
-        DWORD lo = (fileSize+2) & 0xFFFFFFFFull;
+        DWORD hi = (fileSize) >> 32;
+        DWORD lo = (fileSize) & 0xFFFFFFFFull;
         HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, hi, lo, NULL);  // tried very hard again on 26 April 2017 to over-map file on Windows
         if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
         if (verbose) {
