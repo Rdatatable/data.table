@@ -4,7 +4,6 @@
   #include <sys/time.h>  // gettimeofday for wallclock()
 #endif
 #ifdef WIN32             // means WIN64, too, oddly
-  #include <ddk/wdm.h>
   #include <windows.h>
   #include <stdbool.h>   // true and false
 #else
