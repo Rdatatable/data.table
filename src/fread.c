@@ -4,7 +4,8 @@
   #include <sys/time.h>  // gettimeofday for wallclock()
 #endif
 #ifdef WIN32             // means WIN64, too, oddly
-  #define WINVER Windows2000
+  #define WINVER 0x602
+  #define _WIN32_WINNT 0x0602
   #include <windows.h>
   #include <stdbool.h>   // true and false
 #else
