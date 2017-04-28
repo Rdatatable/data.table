@@ -5,7 +5,7 @@
 #endif
 #ifdef WIN32             // means WIN64, too, oddly
   #include <windows.h>
-  #include <ddk/ntddk.h>
+  #include <ddk/wdm.h>
   #include <stdbool.h>   // true and false
 #else
   #include <sys/mman.h>  // mmap
