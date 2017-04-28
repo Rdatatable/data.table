@@ -630,7 +630,7 @@ int freadMain(freadMainArgs __args) {
         HANDLE hFile = INVALID_HANDLE_VALUE;
         int attempts = 0;
         while(hFile==INVALID_HANDLE_VALUE && attempts<5) {
-            hFile = CreateFile(fnam, GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+            hFile = CreateFile(fnam, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
             // FILE_SHARE_WRITE is required otherwise if the file is open in Excel, CreateFile fails. Should be ok now.
             if (hFile==INVALID_HANDLE_VALUE) {
                 if (GetLastError()==ERROR_FILE_NOT_FOUND) STOP("File not found: %s",fnam);
@@ -644,28 +644,16 @@ int freadMain(freadMainArgs __args) {
         if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP("GetFileSizeEx failed (returned 0) on file: %s", fnam); }
         fileSize = (size_t)liFileSize.QuadPart;
         if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
-        if (verbose) {
-            DTPRINT("File opened, size %.6f GB.\n", (double)fileSize/(1024*1024*1024));
-            DTPRINT("Memory mapping ... ");
-        }
-        
-        HANDLE hSection = INVALID_HANDLE_VALUE;
-        NTSTATUS status = NtCreateSection(&hSection, SECTION_ALL_ACCESS, NULL, NULL, PAGE_WRITECOPY, SEC_COMMIT, hFile);
-        if (status != STATUS_SUCCESS) { STOP("This is Windows, NtCreateSection returned error %d for file %s", status, fnam); }
-        
-        status = NtMapViewOfSection(hSection, NtCurrentProcess(), &mmp, 0, 
-                    0, 0, /*view size*/&filesize, ViewUnmap, MEM_RESERVE/*or 0?*/, PAGE_WRITECOPY);
-        if (status != STATUS_SUCCESS) { STOP("This is Windows, NtMapViewOfSection returned error %d for file %s", status, fnam); }
-        
-        /*
         DWORD hi = (fileSize+2) >> 32;
         DWORD lo = (fileSize+2) & 0xFFFFFFFFull;
         HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, hi, lo, NULL);  // tried very hard again on 26 April 2017 to over-map file on Windows
         if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
-        
+        if (verbose) {
+            DTPRINT("File opened, size %.6f GB.\n", (double)fileSize/(1024*1024*1024));
+            DTPRINT("Memory mapping ... ");
+        }
         mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);
-        */
-        //CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
+        CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
         CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
         if (mmp == NULL) {
 #endif
