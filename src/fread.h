@@ -8,7 +8,8 @@ typedef enum {
   NEG=-1,      // dummy to force signed type; sign bit used for out-of-sample type bump management
   CT_DROP = 0, // skip column requested by user; it is navigated as a string column with the prevailing quoteRule
   CT_BOOL8,    // signed char; first type enum value must be 1 not 0 so that it can be negated to -1.
-  CT_INT32,    // signed int32_t
+  CT_INT32_BARE,   // signed int32_t bare bones fast
+  CT_INT32_FULL,   // signed int32_t if spaces or quotes can surround the value
   CT_INT64,    // signed int64_t
   CT_FLOAT64,  // double (64-bit IEEE 754 float)
   CT_STRING,   // lenOff typedef below

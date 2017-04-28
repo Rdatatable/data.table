@@ -50,8 +50,8 @@ static lenOff *colNames = NULL;
 static signed char *oldType = NULL;
 static freadMainArgs args;  // global for use by DTPRINT
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "int32", "int64", "float64", "string"};
-size_t     typeSize[NUMTYPE]     = { 0,      1,       4,       8,       8,         8      };
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "int32", "int32", "int64", "float64", "string"};
+size_t     typeSize[NUMTYPE]     = { 0,      1,       4,       4,       8,       8,         8      };
 // size_t to prevent potential overflow of n*typeSize[i] (standard practice)
 
 
@@ -329,7 +329,35 @@ static _Bool StrtoI64(const char **this, void *target)
     return na;
 }
 
-static _Bool StrtoI32(const char **this, void *target)
+
+static _Bool StrtoI32_bare(const char **this, void *target)
+{
+    const char *ch = *this;
+    if (ch>=eof || *ch==sep || *ch==eol) { *(int32_t *)target = NA_INT32; return true; }
+    if (sep==' ') return false;  // bare doesn't do sep=' '. TODO - remove
+    _Bool neg = *ch=='-';
+    ch += (neg || *ch=='+');
+    const char *start = ch;  // for overflow guard using field width
+    int64_t acc = 0;
+    unsigned digit;
+    while (ch<eof && (digit=(unsigned)(*ch-'0'))<10) {
+      acc *= 10;
+      acc += digit;
+      ch++;
+    }
+    *(int32_t *)target = neg ? -acc : acc;
+    *this = ch;
+    return (ch>=eof || *ch==sep || *ch==eol) &&
+           (acc ? *start!='0' && acc<=INT32_MAX && (ch-start)<=10 : ch-start==1);
+    // If false, both *target and where *this is moved on to, are undefined.
+    // INT32 range is NA==-2147483648(INT32_MIN) then symmetric [-2147483647,+2147483647] so we can just test INT32_MAX
+    // The max (2147483647) is 10 digits long, hence <=10.
+    // Leading 0 (such as 001 and 099 but not 0, +0 or -0) will return false and cause bump to _padded which has the
+    // option to treat as integer or string with further cost. Otherwise width would not be sufficient check here in _bare.
+} 
+
+
+static _Bool StrtoI32_full(const char **this, void *target)
 {
     // Very similar to StrtoI64 (see it for comments). We can't make a single function and switch on TYPEOF(targetCol) to
     // know I64 or I32 because targetCol is NULL when testing types and when dropping columns.
@@ -475,7 +503,7 @@ static _Bool StrtoB(const char **this, void *target)
     return is_NAstring(start);
 }
 
-static reader_fun_t fun[NUMTYPE] = {&Field, &StrtoB, &StrtoI32, &StrtoI64, &StrtoD, &Field};
+static reader_fun_t fun[NUMTYPE] = {&Field, &StrtoB, &StrtoI32_bare, &StrtoI32_full, &StrtoI64, &StrtoD, &Field};
 
 static double wallclock()
 {
@@ -1319,7 +1347,8 @@ int freadMain(freadMainArgs __args) {
               case CT_BOOL8:
                 *(int8_t *)myBuffPos = NA_BOOL8;
                 break;
-              case CT_INT32:
+              case CT_INT32_BARE:
+              case CT_INT32_FULL:
                 *(int32_t *)myBuffPos = NA_INT32;
                 break;
               case CT_INT64:

@@ -27,10 +27,9 @@ as.read.table=true/false option.  Or fread.table and fread.csv (see http://r.789
 
 #define NUT  NUMTYPE+2  // +1 for "numeric" alias for "double"; +1 for CLASS fallback using as.class() at R level afterwards
 
-static int  typeSxp[NUT] =     { NILSXP, LGLSXP,   INTSXP,   REALSXP,    REALSXP,   STRSXP,     REALSXP,   STRSXP   };
-static char typeRName[NUT][10]={"drop", "logical","integer","integer64","double",  "character","numeric", "CLASS"   };
-static int  typeEnum[NUT] =    { CT_DROP,CT_BOOL8, CT_INT32, CT_INT64,   CT_FLOAT64,CT_STRING,  CT_FLOAT64,CT_STRING};
-
+static int  typeSxp[NUT] =     { NILSXP, LGLSXP,   INTSXP,        INTSXP,        REALSXP,    REALSXP,   STRSXP,     REALSXP,   STRSXP   };
+static char typeRName[NUT][10]={"drop", "logical","integer",     "integer",     "integer64","double",  "character","numeric", "CLASS"   };
+static int  typeEnum[NUT] =    { CT_DROP,CT_BOOL8, CT_INT32_BARE, CT_INT32_FULL, CT_INT64,   CT_FLOAT64,CT_STRING,  CT_FLOAT64,CT_STRING};
 static colType readInt64As=CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
