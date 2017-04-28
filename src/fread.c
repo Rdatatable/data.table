@@ -622,7 +622,7 @@ int freadMain(freadMainArgs __args) {
         // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
         // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
         //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
-        mmp = mmap(NULL, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
+        mmp = mmap(NULL, fileSize+1, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW pages. +1 for '\0' we'll add
         close(fd);  // we don't need to keep file handle open
         if (mmp == MAP_FAILED) {
 #else
@@ -644,15 +644,15 @@ int freadMain(freadMainArgs __args) {
         if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP("GetFileSizeEx failed (returned 0) on file: %s", fnam); }
         fileSize = (size_t)liFileSize.QuadPart;
         if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
-        DWORD hi = (fileSize) >> 32;
-        DWORD lo = (fileSize) & 0xFFFFFFFFull;
-        HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, hi, lo, NULL);  // tried very hard again on 26 April 2017 to over-map file on Windows
-        if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
         if (verbose) {
             DTPRINT("File opened, size %.6f GB.\n", (double)fileSize/(1024*1024*1024));
             DTPRINT("Memory mapping ... ");
         }
-        mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);
+        DWORD hi = (fileSize) >> 32;            // tried very very hard again on 26 & 27th April 2017 to over-map file by 1 byte
+        DWORD lo = (fileSize) & 0xFFFFFFFFull;  // on Windows for COW/FILE_MAP_COPY on read-only file, with no joy.
+        HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, hi, lo, NULL); 
+        if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
+        mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);  // fileSize must be <= hilo passed to CreateFileMapping above.
         CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
         CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
         if (mmp == NULL) {
@@ -667,7 +667,18 @@ int freadMain(freadMainArgs __args) {
             }
         }
         sof = (const char*) mmp;
-        eof = sof+fileSize;  // byte after last byte of file.  Never dereference eof as it's not mapped.
+        eof = sof+fileSize;  // byte after last byte of file.
+        
+        // Add extra '\0' at the end so we don't need to check 'ch<eof && *ch...' everywhere in deep loops just because
+        // the very last field in the file might finish abrubtly with no final \n (or \r\n on Windows).
+        // The file was opened readonly and mapped with page level copy-on-write so this won't write to file.
+        // On Windows we may only have a problem if the file i) does not end with newline already AND ii) it is an exact multiple
+        // of the VirtualAlloc block size (64k) -- for such rare cases we could ask the Windows user to add an ending newline.
+        // TODO - only need to do this *eof write if final data line does end abrubtly. This is a first step for now to see if it works.
+        // On Linux and Mac it's safe where mmap() accepts fileSize+1. On Windows, it writes into the last page MAP_COMMIT'd for this
+        // file which is ok I think as VirtualAlloc() allocates on boundaries (64k on Windows). 
+        *(char *)eof = '\0';
+        
         if (verbose) DTPRINT("ok\n");  // to end 'Memory mapping ... '
     } else {
         sof = NULL;
