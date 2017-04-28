@@ -1174,7 +1174,7 @@ int freadMain(freadMainArgs __args) {
 
       // Allocate thread-private row-major myBuff
       int myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
-      char *myBuff = malloc(rowSize * myBuffRows);
+      char *myBuff = malloc(rowSize*myBuffRows + 8); // +8 for Field() to write to when CT_DROP is at the end and buffer is full
       if (!myBuff) stopTeam=true;
       #pragma omp master
       workSize += nth*rowSize*myBuffRows;
@@ -1237,7 +1237,7 @@ int freadMain(freadMainArgs __args) {
             #pragma omp atomic
             buffGrown++;
             size_t diff = (size_t)(myBuffPos - myBuff);
-            if (!(myBuff = realloc(myBuff, myBuffRows*rowSize))) {
+            if (!(myBuff = realloc(myBuff, myBuffRows*rowSize + 8))) {
               stopTeam=true;
               break;
             } else {
