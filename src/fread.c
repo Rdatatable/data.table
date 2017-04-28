@@ -5,7 +5,6 @@
 #endif
 #ifdef WIN32             // means WIN64, too, oddly
   #include <windows.h>
-  #include <wdm.h>
   #include <stdbool.h>   // true and false
 #else
   #include <sys/mman.h>  // mmap
@@ -651,12 +650,12 @@ int freadMain(freadMainArgs __args) {
         }
         
         HANDLE hSection = INVALID_HANDLE_VALUE;
-        NTSTATUS status = NtCreateSection(&hSection, SECTION_ALL_ACCESS, NULL, NULL, PAGE_WRITECOPY, SEC_COMMIT, hFile);
+        NTSTATUS status = ZwCreateSection(&hSection, SECTION_ALL_ACCESS, NULL, NULL, PAGE_WRITECOPY, SEC_COMMIT, hFile);
         if (status != STATUS_SUCCESS) { STOP("This is Windows, NtCreateSection returned error %d for file %s", status, fnam); }
         
-        status = NtMapViewOfSection(hSection, NtCurrentProcess(), &mmp, 0, 
+        status = ZwMapViewOfSection(hSection, ZwCurrentProcess(), &mmp, 0, 
                     0, 0, /*view size*/&filesize, ViewUnmap, MEM_RESERVE/*or 0?*/, PAGE_WRITECOPY);
-        if (status != STATUS_SUCCESS) { STOP("This is Windows, NtMapViewOfSection returned error %d for file %s", status, fnam); }
+        if (status != STATUS_SUCCESS) { STOP("This is Windows, ZwMapViewOfSection returned error %d for file %s", status, fnam); }
         
         /*
         DWORD hi = (fileSize+2) >> 32;
