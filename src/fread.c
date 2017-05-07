@@ -83,6 +83,10 @@ void freadCleanup(void)
       if (ret) DTPRINT("System errno %d unmapping file\n", errno);
     #endif
     mmp = NULL;
+  } else {
+    if (eof) *(char *)eof = '\0';
+    // for direct char * input (e.g. tests) we temporarily put eol there so restore '\0'
+    // if (eof) for when file is empty and STOP() is called before eof has been set (test 885)
   }
   fileSize = 0;
   sep = eol = eol2 = quote = dec = '\0';
@@ -333,28 +337,28 @@ static _Bool StrtoI64(const char **this, void *target)
 static _Bool StrtoI32_bare(const char **this, void *target)
 {
     const char *ch = *this;
-    if (ch>=eof || *ch==sep || *ch==eol) { *(int32_t *)target = NA_INT32; return true; }
+    if (*ch==sep || *ch==eol) { *(int32_t *)target = NA_INT32; return true; }
     if (sep==' ') return false;  // bare doesn't do sep=' '. TODO - remove
     _Bool neg = *ch=='-';
     ch += (neg || *ch=='+');
     const char *start = ch;  // for overflow guard using field width
-    int64_t acc = 0;
-    unsigned digit;
-    while (ch<eof && (digit=(unsigned)(*ch-'0'))<10) {
-      acc *= 10;
+    uint_fast64_t acc = 0;   // using unsigned to be clear that acc will never be negative
+    uint_fast8_t digit;
+    while ( (digit=(unsigned)(*ch-'0'))<10 ) {  // see init.c for checks of unsigned cast
+      acc *= 10;     // optimizer has best chance here; e.g. (x<<2 + x)<<2 or x<<3 + x<<2
       acc += digit;
       ch++;
     }
     *(int32_t *)target = neg ? -acc : acc;
     *this = ch;
-    return (ch>=eof || *ch==sep || *ch==eol) &&
+    return (*ch==sep || *ch==eol) &&
            (acc ? *start!='0' && acc<=INT32_MAX && (ch-start)<=10 : ch-start==1);
     // If false, both *target and where *this is moved on to, are undefined.
     // INT32 range is NA==-2147483648(INT32_MIN) then symmetric [-2147483647,+2147483647] so we can just test INT32_MAX
-    // The max (2147483647) is 10 digits long, hence <=10.
+    // The max (2147483647) happens to be 10 digits long, hence <=10.
     // Leading 0 (such as 001 and 099 but not 0, +0 or -0) will return false and cause bump to _padded which has the
     // option to treat as integer or string with further cost. Otherwise width would not be sufficient check here in _bare.
-} 
+}
 
 
 static _Bool StrtoI32_full(const char **this, void *target)
@@ -668,17 +672,6 @@ int freadMain(freadMainArgs __args) {
         }
         sof = (const char*) mmp;
         eof = sof+fileSize;  // byte after last byte of file.
-        
-        // Add extra '\0' at the end so we don't need to check 'ch<eof && *ch...' everywhere in deep loops just because
-        // the very last field in the file might finish abrubtly with no final \n (or \r\n on Windows).
-        // The file was opened readonly and mapped with page level copy-on-write so this won't write to file.
-        // On Windows we may only have a problem if the file i) does not end with newline already AND ii) it is an exact multiple
-        // of the VirtualAlloc block size (64k) -- for such rare cases we could ask the Windows user to add an ending newline.
-        // TODO - only need to do this *eof write if final data line does end abrubtly. This is a first step for now to see if it works.
-        // On Linux and Mac it's safe where mmap() accepts fileSize+1. On Windows, it writes into the last page MAP_COMMIT'd for this
-        // file which is ok I think as VirtualAlloc() allocates on boundaries (64k on Windows). 
-        *(char *)eof = '\0';
-        
         if (verbose) DTPRINT("ok\n");  // to end 'Memory mapping ... '
     } else {
         sof = NULL;
@@ -739,6 +732,16 @@ int freadMain(freadMainArgs __args) {
         } else
             STOP("Internal error: if no \\r or \\n found then ch should be eof");
     }
+    // Ensure file ends with eol so we don't need to check 'ch<eof && *ch...' everywhere in deep loops just because
+    // the very last field in the file might finish abrubtly with no final \n (or \r\n on Windows).
+    // The file was opened readonly and mapped with page level copy-on-write so this won't write to file.
+    // On Windows we may only have a problem if the file i) does not end with newline already AND ii) it is an exact multiple
+    // of the VirtualAlloc block size (64k) -- for such rare cases we could ask the Windows user to add an ending newline.
+    // TODO - only need to do this *eof write if final data line does end abrubtly. This is a first step for now to see if it works.
+    // On Linux and Mac it's safe since mmap() there accepts fileSize+1. On Windows, it writes into the last page MAP_COMMIT'd for this
+    // file which is ok I think as VirtualAlloc() allocates on boundaries (64k on Windows). There may be a way on Windows
+    // using Zw* lower level but I haven't yet managed to include headers correctly (I asked on r-package-devel on 28 Apr).
+    *(char *)eof = eol;
 
     // ********************************************************************************************
     //   Position to line skip+1 or line containing skip="string"

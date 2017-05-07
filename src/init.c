@@ -203,6 +203,12 @@ void attribute_visible R_init_datatable(DllInfo *info)
     memset(&ld, 0, sizeof(long double));
     if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
     
+    // Check unsigned cast used in fread.c. This isn't overflow/underflow, just cast.
+    if ((unsigned)('0'-'/') != 1) error("The ascii character '/' is not just before '0'"); 
+    if ((unsigned)('/'-'0') < 10) error("The C expression (unsigned)('/'-'0')<10 is true. Should be false.");
+    if ((unsigned)(':'-'9') != 1) error("The ascii character ':' is not just after '9'"); 
+    if ((unsigned)('9'-':') < 10) error("The C expression (unsigned)('9'-':')<10 is true. Should be false.");
+    
     // Variables rather than #define for NA_INT64 to ensure correct usage; i.e. not casted
     NA_INT64_LL = LLONG_MIN;
     NA_INT64_D = LLtoD(NA_INT64_LL);
