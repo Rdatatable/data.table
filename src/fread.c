@@ -54,6 +54,7 @@ const char typeName[NUMTYPE][10] = {"drop", "bool8", "int32", "int32", "int64", 
 int8_t     typeSize[NUMTYPE]     = { 0,      1,       4,       4,       8,       8,         8      };
 // size_t to prevent potential overflow of n*typeSize[i] (standard practice)
 
+// NAN and INFINITY constants are float, so cast to double once up front.
 static const double NAND = (double)NAN;
 static const double INFD = (double)INFINITY;
 
