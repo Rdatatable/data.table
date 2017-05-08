@@ -30,6 +30,7 @@
 
 5. When `fread()` and `print()` see `integer64` columns are present but package `bit64` is not installed, the warning is now displayed as intended. Thanks to a question by Santosh on r-help and forwarded by Bill Dunlap.
 
+6. `CJ()` no longer loses the timezone information in `POSIXct` vectors, [#2029](https://github.com/Rdatatable/data.table/issues/2029). Thanks to @MarkusBonsch for reporting and to @royalts for the fix.
 
 #### NOTES
 

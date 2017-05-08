@@ -9898,6 +9898,10 @@ unlink(f)
 test(1761.1, fread("1\n2\n3", fill=TRUE), data.table(V1=1:3))
 test(1761.2, fread("1\n2\n3", fill=FALSE), data.table(V1=1:3))
 
+# CJ should retain timezone information, #2029
+df <- CJ(week=as.POSIXct('2016-01-01', tz = 'UTC'), id=1:10)
+test(1762, attr(df$week, 'tzone'), 'UTC')
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
