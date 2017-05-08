@@ -16,7 +16,7 @@ typedef enum {
   NUMTYPE      // placeholder for the number of types including drop; used for allocation and loop bounds
 } colType;
 
-extern size_t typeSize[NUMTYPE];
+extern int8_t typeSize[NUMTYPE];
 extern const char typeName[NUMTYPE][10];
 extern const long double pow10lookup[701];
 
@@ -125,8 +125,8 @@ int freadMain(freadMainArgs __args);
 
 // Called from freadMain; implemented in freadR.c
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol);
-size_t allocateDT(int8_t *type, int8_t *size, int ncol, int ndrop, uint64_t allocNrow);
-void setFinalNrow(uint64_t nrow);
+size_t allocateDT(int8_t *type, int8_t *size, int ncol, int ndrop, int64_t allocNrow);
+void setFinalNrow(int64_t nrow);
 void reallocColType(int col, colType newType);
 void progress(double percent/*[0,1]*/, double ETA/*secs*/);
 void pushBuffer(const void *buff, const char *anchor, int nRows, int64_t DTi, int rowSize, int nStringCols, int nNonStringCols);
