@@ -332,6 +332,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
     dups = FALSE # fix for #1513
     # using rep.int instead of rep speeds things up considerably (but attributes are dropped).
     j = lapply(l, class)  # changed "vapply" to avoid errors with "ordered" "factor" input
+    tzones = lapply(l, function(col) attr(col, 'tzone'))
     if (length(l)==1L && sorted && length(o <- forderv(l[[1L]])))
         l[[1L]] = l[[1L]][o]
     else if (length(l) > 1L) {
@@ -353,6 +354,9 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
                 l[[i]] = rep.int(rep.int(y, times = rep.int(x[i], n[i])), times = nrow/(x[i]*n[i]))
             if (any(class(l[[i]]) != j[[i]]))
                 setattr(l[[i]], 'class', j[[i]]) # reset "Date" class - rep.int coerces to integer
+            if (any(!sapply(tzones, is.null))) {
+                setattr(l[[i]], 'tzone', tzones[[i]]) # reset tzone for POSIX* columns - rep.int coerces to integer
+            }
         }
     }
     setattr(l, "row.names", .set_row_names(length(l[[1L]])))
