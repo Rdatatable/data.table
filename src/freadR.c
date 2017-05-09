@@ -311,7 +311,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 }
 
 
-size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, uint64_t allocNrow) {
+size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, int64_t allocNrow) {
   // save inputs for use by pushBuffer
   ncol = ncolArg;
   size = sizeArg;
@@ -349,7 +349,7 @@ void reallocColType(int col,  // which column of the result, not of type[]. (the
 }
 
 
-void setFinalNrow(uint64_t nrow) {
+void setFinalNrow(int64_t nrow) {
   // TODO realloc
   if (length(DT)) {
     if (nrow == length(VECTOR_ELT(DT, 0)))
@@ -370,7 +370,7 @@ void pushBuffer(const void *buff, const char *anchor, int nRows, int64_t DTi,
   // final DT and other threads after me can be filling their buffers too.
   // rowSize is passed in because it will be different (much smaller) on the reread covering any type exception columns
   // locals passed in on stack so openmp knows that no synchonization is required
-  
+
   int off = 0;   // the byte position of this column in the first row of the row-major buffer
   if (nStringCols) {
     #pragma omp critical
@@ -401,7 +401,7 @@ void pushBuffer(const void *buff, const char *anchor, int nRows, int64_t DTi,
     if (type[j]==CT_DROP) continue;
     resj++;
     if (type[j]!=CT_STRING && type[j]>0) {
-      char *source = (char *)buff + off;      
+      char *source = (char *)buff + off;
       if (type[j]!=CT_BOOL8) {
         int thisSize = size[j];
         char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*thisSize;
