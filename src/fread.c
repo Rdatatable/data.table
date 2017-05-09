@@ -47,7 +47,7 @@ static size_t fileSize;
 static _Bool typeOnStack = true;
 static int8_t *type = NULL, *size = NULL;
 static lenOff *colNames = NULL;
-static signed char *oldType = NULL;
+static int8_t *oldType = NULL;
 static freadMainArgs args;  // global for use by DTPRINT
 
 const char typeName[NUMTYPE][10] = {"drop", "bool8", "int32", "int32", "int64", "float64", "string"};
@@ -364,12 +364,12 @@ static _Bool StrtoI32_bare(const char **this, void *target)
     const char *start = ch;  // for overflow guard using field width
     uint_fast64_t acc = 0;   // using unsigned to be clear that acc will never be negative
     uint_fast8_t digit;
-    while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {  // see init.c for checks of unsigned cast
+    while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {  // see init.c for checks of unsigned uint_fast8_t) cast
       acc *= 10;     // optimizer has best chance here; e.g. (x<<2 + x)<<1 or x<<3 + x<<1
       acc += digit;
       ch++;
     }
-    *(int32_t *)target = neg ? -(int32_t)acc : (int32_t)acc;
+    *(int32_t *)target = neg ? -(int32_t)acc : (int32_t)acc;   // cast 64bit acc to 32bit; range checked in return below
     *this = ch;
     return (*ch==sep || *ch==eol) &&
            (acc ? *start!='0' && acc<=INT32_MAX && (ch-start)<=10 : ch-start==1);
@@ -529,7 +529,7 @@ static _Bool StrtoB(const char **this, void *target)
 
 static reader_fun_t fun[NUMTYPE] = {&Field, &StrtoB, &StrtoI32_bare, &StrtoI32_full, &StrtoI64, &StrtoD, &Field};
 
-static double wallclock()
+double wallclock()
 {
     double ans = 0;
 #ifdef CLOCK_REALTIME
@@ -899,8 +899,8 @@ int freadMain(freadMainArgs __args) {
       ncol = topNumFields;
       int thisLine=-1;
       while (ch<eof && ++thisLine<JUMPLINES) {
-        const char *ch0 = ch;
-        if (countfields(&ch)==ncol) { ch=pos=ch0; line+=thisLine; break; }
+        const char *ch2 = ch;   // lineStart
+        if (countfields(&ch)==ncol) { ch=pos=ch2; line+=thisLine; break; }
       }
     }
     // For standard regular separated files, we're now on the first byte of the file.
@@ -982,16 +982,16 @@ int freadMain(freadMainArgs __args) {
     // *****************************************************************************************************************
     typeOnStack = ncol<10000;
     if (typeOnStack) {
-      type = (signed char *)alloca((size_t)ncol * sizeof(int8_t));  //TODO: combine?
-      size = (signed char *)alloca((size_t)ncol * sizeof(int8_t));
+      type = (int8_t *)alloca((size_t)ncol * sizeof(int8_t));  //TODO: combine?
+      size = (int8_t *)alloca((size_t)ncol * sizeof(int8_t));
     } else {
-      type = (signed char *)malloc((size_t)ncol * sizeof(int8_t));
-      size = (signed char *)malloc((size_t)ncol * sizeof(int8_t));
+      type = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
+      size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
     }
     // (...?alloca:malloc)(...) doesn't compile as alloca is special.
 
     // 9.8KB is for sure fine on stack. Almost went for 1MB (1 million columns) but decided to be uber safe.
-    // sizeof(signed char) == 1 checked in init.c. To free or not to free is in cleanup() based on typeOnStack
+    // sizeof(int8_t) == 1 checked in init.c. To free or not to free is in cleanup() based on typeOnStack
     if (!type) STOP("Failed to allocate %dx%d bytes for type: %s", ncol, sizeof(int8_t), strerror(errno));
     for (int j=0; j<ncol; j++) { size[j] = type[j] = 1; } // lowest enum is 1 (CT_BOOL8 at the time of writing). 0==CT_DROP
 
@@ -1153,7 +1153,7 @@ int freadMain(freadMainArgs __args) {
     //   Apply colClasses, select, drop and integer64
     // ********************************************************************************************
     ch = pos;
-    oldType = (signed char *)malloc((size_t)ncol * sizeof(signed char));
+    oldType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
     if (!oldType) STOP("Unable to allocate %d bytes to check user overrides of column types", ncol);
     memcpy(oldType, type, ncol) ;
     if (!userOverride(type, colNames, colNamesAnchor, ncol)) { // colNames must not be changed but type[] can be
@@ -1162,7 +1162,7 @@ int freadMain(freadMainArgs __args) {
       return 1;
     }
     int ndrop=0, nUserBumped=0;
-    int rowSize = 0;
+    size_t rowSize = 0;
     int nStringCols = 0;
     int nNonStringCols = 0;
     for (int j=0; j<ncol; j++) {
@@ -1247,11 +1247,12 @@ int freadMain(freadMainArgs __args) {
       int myNrow=0; // the number of rows in my chunk
 
       // Allocate thread-private row-major myBuff
-      int myBuffRows = (int) initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
-      char *myBuff = malloc((size_t)(rowSize*myBuffRows + 8)); // +8 for Field() to write to when CT_DROP is at the end and buffer is full
+      int myBuffRows = (int)initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
+      char *myBuff = malloc((size_t)rowSize*(size_t)myBuffRows + 8);
+      // +8 for Field() to write to when CT_DROP is at the end and buffer is full
       if (!myBuff) stopTeam=true;
       #pragma omp master
-      workSize += (size_t)(nth * rowSize * myBuffRows);
+      workSize += (size_t)nth * rowSize * myBuffRows;
 
       #pragma omp for ordered schedule(dynamic) reduction(+:thNextGoodLine,thRead,thPush)
       for (int jump=0; jump<nJumps+nth; jump++) {
@@ -1311,7 +1312,7 @@ int freadMain(freadMainArgs __args) {
             #pragma omp atomic
             buffGrown++;
             size_t diff = (size_t)(myBuffPos - myBuff);
-            if (!(myBuff = realloc(myBuff, (size_t)(myBuffRows*rowSize + 8)))) {
+            if (!(myBuff = realloc(myBuff, (size_t)myBuffRows*rowSize + 8))) {
               stopTeam=true;
               break;
             } else {
