@@ -76,12 +76,12 @@ static inline void write_positive_int(long long x, char **thisCh)
 
 static void writeInteger(SEXP column, int i, char **thisCh)
 {
-  long long x = (TYPEOF(column)!=REALSXP) ? INTEGER(column)[i] : I64(REAL(column)[i]);
+  long long x = (TYPEOF(column)!=REALSXP) ? INTEGER(column)[i] : DtoLL(REAL(column)[i]);
   // != REALSXP rather than ==INTSXP to cover LGLSXP when logicalAsInt==TRUE
   char *ch = *thisCh;
   if (x == 0) {
     *ch++ = '0';
-  } else if (x == ((TYPEOF(column)==INTSXP) ? NA_INTEGER : NAINT64)) {
+  } else if (x == ((TYPEOF(column)==INTSXP) ? NA_INTEGER : NA_INT64_LL)) {
     write_chars(na, &ch);
   } else {
     if (x<0) { *ch++ = '-'; x=-x; }
@@ -109,17 +109,17 @@ SEXP genLookups() {
 // these at runtime; libraries and hardware vary.\n\
 // These small lookup tables are used for speed.\n\
 //\n\n");
-  fprintf(f, "double sigparts[53] = {\n0.0,\n");
+  fprintf(f, "const double sigparts[53] = {\n0.0,\n");
   for (int i=1; i<=52; i++) {
     fprintf(f, "%.40Le%s\n",ldexpl(1.0L,-i), i==52?"":",");
   }
-  fprintf(f, "};\n\ndouble expsig[2048] = {\n");
+  fprintf(f, "};\n\nconst double expsig[2048] = {\n");
   char x[2048][60];
   for (int i=0; i<2048; i++) {
     sprintf(x[i], "%.40Le", ldexpl(1.0L, i-1023));
     fprintf(f, "%.*s%s\n", (int)(strchr(x[i],'e')-x[i]), x[i], (i==2047?"":",") );
   }
-  fprintf(f, "};\n\nint exppow[2048] = {\n");
+  fprintf(f, "};\n\nconst int exppow[2048] = {\n");
   for (int i=0; i<2048; i++) {
     fprintf(f, "%d%s", atoi(strchr(x[i],'e')+1), (i==2047?"":",") );
   }
@@ -450,9 +450,9 @@ static void writePOSIXct(SEXP column, int i, char **thisCh)
 
 static void writeNanotime(SEXP column, int i, char **thisCh)
 {
-  long long x = I64(REAL(column)[i]);
+  long long x = DtoLL(REAL(column)[i]);
   char *ch = *thisCh;
-  if (x == NAINT64) {
+  if (x == NA_INT64_LL) {
     write_chars(na, &ch);
   } else {
     int d/*days*/, s/*secs*/, n/*nanos*/;
@@ -738,7 +738,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
     // eol must be passed from R level as '\r\n' on Windows since write() only auto-converts \n to \r\n in
     // _O_TEXT mode. We use O_BINARY for full control and perhaps speed since O_TEXT must have to deep branch an if('\n')
 #else
-    f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
+    f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0666);
 #endif
     if (f == -1) {
       int erropen = errno;
@@ -910,10 +910,10 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
               // showProgress=FALSE until this can be fixed or removed.
               int ETA = (int)((nrow-end)*(((double)(now-start_time))/end));
               if (hasPrinted || ETA >= 2) {
-                if (verbose && !hasPrinted) Rprintf("\n"); 
+                if (verbose && !hasPrinted) Rprintf("\n");
                 Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
-                        "anyBufferGrown=%s; maxBuffUsed=%d%%. Finished in %d secs.      ",
-                         (100.0*end)/nrow, nrow, (int)(now-start_time), nth, nth==1?"":"s", 
+                        "anyBufferGrown=%s; maxBuffUsed=%d%%. ETA %d secs.      ",
+                         (100.0*end)/nrow, nrow, (int)(now-start_time), nth, nth==1?"":"s",
                          anyBufferGrown?"yes":"no", maxBuffUsedPC, ETA);
                 R_FlushConsole();    // for Windows
                 next_time = now+1;

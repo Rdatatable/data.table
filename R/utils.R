@@ -50,8 +50,7 @@ UseMethod("%+%")
 
 require_bit64 = function() {
   # called in fread and print when they see integer64 columns are present 
-  tt = try(requireNamespace("bit64",quietly=TRUE))
-  if (inherits(tt,"try-error"))
+  if (!requireNamespace("bit64",quietly=TRUE))
     warning("Some columns are type 'integer64' but package bit64 is not installed. Those columns will print as strange looking floating point data. There is no need to reload the data. Simply install.packages('bit64') to obtain the integer64 print method and print the data again.")
 }
 

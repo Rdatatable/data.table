@@ -366,7 +366,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
             }
         }
         if (col>-1 && op[col] != EQ) {
-            Rboolean isivalNA = !isInt64 ? ISNAN(REAL(ic)[ir]) : (I64(REAL(ic)[ir]) == NAINT64);
+            Rboolean isivalNA = !isInt64 ? ISNAN(REAL(ic)[ir]) : (DtoLL(REAL(ic)[ir]) == NA_INT64_LL);
             switch (op[col]) {
             case LE : if (!isivalNA) xlow = xlowIn; break;
             case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
@@ -374,12 +374,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
             case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
             }
             // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
-            if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(REAL(xc)[XIND(xlow+1)]) : (I64(REAL(xc)[XIND(xlow+1)]) == NAINT64))) {
+            if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(REAL(xc)[XIND(xlow+1)]) : (DtoLL(REAL(xc)[XIND(xlow+1)]) == NA_INT64_LL))) {
                 tmplow = xlow; tmpupp = xupp;
                 while (tmplow < tmpupp-1) {
                     mid = tmplow + (tmpupp-tmplow)/2;
                     xval.d = REAL(xc)[XIND(mid)];
-                    if (!isInt64 ? ISNAN(xval.d) : xval.ll == NAINT64) tmplow = mid; else tmpupp = mid;
+                    if (!isInt64 ? ISNAN(xval.d) : xval.ll == NA_INT64_LL) tmplow = mid; else tmpupp = mid;
                 }
                 xlow = tmplow; // tmplow is the index of last NA value
             }

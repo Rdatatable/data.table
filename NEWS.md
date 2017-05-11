@@ -5,11 +5,34 @@
 
 #### NEW FEATURES
 
-1. `fread(...,nrow=10)` down to 0.01s from 12s for a 9GB file. It now memory maps lazily. Large files close to your RAM limit may work more reliably now.
+1. `fread()`:
+    * Efficiency savings at C level including **parallelization**; e.g. a 9GB 2 column integer csv input is **50s down to 12s** to cold load on a 4 core laptop with 16GB RAM and SSD. Run `echo 3 >/proc/sys/vm/drop_caches` first to measure cold load time. Subsequent load time (after file has been cached by OS on the first run) **40s down to 6s**.
+    * Memory maps lazily; e.g. `nrow=10` is **12s down to 0.01s** from cold for the 9GB file. Large files close to your RAM limit may work more reliably too. The progress meter will commence sooner and more consistently.
+    * `fread` has always jumped to the middle and to the end of the file for a much improved column type guess. The sample size is increased from 100 rows at 10 jump jump points (1,000 rows) to 100 rows at 100 jumps points (10,000 row sample). In the rare case of there still being out-of-sample type exceptions, those columns are now **automatically reread* so you don't have to use `colClasses` yourself.
+    * Large number of columns support; e.g. **12,000 columns** tested.
+    * **Quoting rules** are more robust and flexible. See point 10 on the wiki page [here](https://github.com/Rdatatable/data.table/wiki/Convenience-features-of-fread#10-automatic-quote-escape-method-detection-including-no-escape).
+    * Numeric data that has been quoted is now detected and read as numeric.
+    * The ability to position `autostart` anywhere inside one of multiple tables in a single file is removed with warning. It used to search upwards from that line to find the start of the table based on a consistent number of columns. People appear to be using `skip="string"` or `skip=nrow` to find the header row exactly, which is retained and simpler. It was too difficult to retain search-upwards-autostart together with skipping blank lines, filling incomplete rows and parallelization. Varying format and height messy header info above the column names is still auto detected and auto skipped.
+    * `dec=','` is now implemented directly so there is no dependency on locale. The options `datatable.fread.dec.experiment` and `datatable.fread.dec.locale` have been removed.
+    * Many thanks to @yaakovfeldman, Guillermo Ponce, Arun Srinivasan, Hugh Parsonage, Mark Klik, Pasha Stetsenko, Mahyar K for testing before release to CRAN: [#2070](https://github.com/Rdatatable/data.table/issues/2070), [#2073](https://github.com/Rdatatable/data.table/issues/2073), [#2087](https://github.com/Rdatatable/data.table/issues/2087), [#2091](https://github.com/Rdatatable/data.table/issues/2091), [#2107](https://github.com/Rdatatable/data.table/issues/2107), [fst#50](https://github.com/fstpackage/fst/issues/50#issuecomment-294287846), [#2118](https://github.com/Rdatatable/data.table/issues/2118), [#2092](https://github.com/Rdatatable/data.table/issues/2092), [#1888](https://github.com/Rdatatable/data.table/issues/1888), [#2123](https://github.com/Rdatatable/data.table/issues/2123)
+    * Now detects GB-18030 and UTF-16 encodings and in verbose mode prints a message about BOM detection.
 
 #### BUG FIXES
 
-1. The type pun fix (using union) in 1.10.4 resolved some CRAN flavors but still failed the new fwrite nanotime test with R-devel on MacOS using latest clang from latest Xcode 8.2. It seems that clang optimizations in Xcode 8 require even stricter adherence to C standards. The type pun was already centralized and now uses memcpy which is ok by C standards and compilers know to optimize to avoid call overhead.
+1. The type pun fix (using union) in 1.10.4 resolved some CRAN flavors but still failed the new `fwrite` nanotime test with R-devel on MacOS using latest clang from latest Xcode 8.2. It seems that clang optimizations in Xcode 8 are particularly aggressive and require even stricter adherence to C standards. The type pun was already centralized and now uses `memcpy` which is ok by C standards and compilers apparently know to optimize to avoid call overhead.
+
+2. The new quote rules handles this single field `"Our Stock Screen Delivers an Israeli Software Company (MNDO, CTCH)<\/a> SmallCapInvestor.com - Thu, May 19, 2011 10:02 AM EDT<\/cite><\/div>Yesterday in \""Google, But for Finding
+ Great Stocks\"", I discussed the value of stock screeners as a powerful tool"`, [#2051](https://github.com/Rdatatable/data.table/issues/2051). Thanks to @scarrascoso for reporting. Example file added to test suite.
+
+3. `fwrite()` creates a file with permissions that now play correctly with `Sys.umask()`, [#2049](https://github.com/Rdatatable/data.table/issues/2049). Thanks to @gnguy for reporting.
+
+4. `fread()` no longer holds an open lock on the file when a line outside the large sample has too many fields and generates an error, [#2044](https://github.com/Rdatatable/data.table/issues/2044). Thanks to Hugh Parsonage for reporting.
+
+5. When `fread()` and `print()` see `integer64` columns are present but package `bit64` is not installed, the warning is now displayed as intended. Thanks to a question by Santosh on r-help and forwarded by Bill Dunlap.
+
+6. Setting `j = {}` no longer results in an error, [#2142](https://github.com/Rdatatable/data.table/issues/2142). Thanks Michael Chirico for the pull request.
+
+7. Seg fault in `rbindlist()` when one or more items are empty, [#2019](https://github.com/Rdatatable/data.table/issues/2019). Thanks Michael Lang for the pull request.
 
 2. Fixed an error in `format.ITime` that was preventing printing of 0-length `ITime` objects, [#2032](https://github.com/Rdatatable/data.table/issues/2032). Thanks @MichaelChirico.
 
@@ -134,7 +157,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
   3. Joins:
     * Non-equi (or conditional) joins are now possible using the familiar `on=` syntax. Possible binary operators include `>=`, `>`, `<=`, `<` and `==`. For e.g., `X[Y, on=.(a, b>b)]` looks for `X.a == Y.a` first and within those matching rows for rows where`X.b > Y.b`, [#1452](https://github.com/Rdatatable/data.table/issues/1452).
     * x's columns can be referred to in `j` using the prefix `x.` at all times. This is particularly useful when it is necessary to x's column that is *also a join column*, [#1615](https://github.com/Rdatatable/data.table/issues/1615). Also closes [#1705](https://github.com/Rdatatable/data.table/issues/1705) (thanks @dbetebenner) and [#1761](https://github.com/Rdatatable/data.table/issues/1761).
-    * `on=.()` syntax is now posible, e.g., `X[Y, on=.(x==a, y==b)]`, [#1257](https://github.com/Rdatatable/data.table/issues/1257). Thanks @dselivanov.
+    * `on=.()` syntax is now possible, e.g., `X[Y, on=.(x==a, y==b)]`, [#1257](https://github.com/Rdatatable/data.table/issues/1257). Thanks @dselivanov.
     * Joins using `on=` accepts unnamed columns on ad hoc joins, e.g., X[.(5), on="b"] joins "b" from `X` to "V1" from `i`, partly closes [#1375](https://github.com/Rdatatable/data.table/issues/1375).
     * When joining with `on=`, `X[Y, on=c(A="A", b="c")]` can be now specified as `X[Y, on=c("A", b="c")]`, fully closes [#1375](https://github.com/Rdatatable/data.table/issues/1375).
     * `on=` joins now provides more friendly error messages when columns aren't found, [#1376](https://github.com/Rdatatable/data.table/issues/1376).

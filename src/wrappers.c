@@ -102,8 +102,6 @@ SEXP copyNamedInList(SEXP x)
 	return R_NilValue;
 }
 
-
-
 SEXP dim(SEXP x)
 {
     // fast implementation of dim.data.table
@@ -125,3 +123,5 @@ SEXP dim(SEXP x)
 
     return ans;
 }
+
+

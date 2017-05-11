@@ -33,7 +33,7 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
         if (any0orNA) {
           // define needed vars just when we need them. To registerize and to limit scope related bugs 
           union { double d; long long ll; } naval;
-          if (INHERITS(source, char_integer64)) naval.ll = NAINT64;
+          if (INHERITS(source, char_integer64)) naval.ll = NA_INT64_LL;
           else naval.d = NA_REAL;
           for (int i=0, ansi=0; i<LENGTH(idx); i++) {
               int this = INTEGER(idx)[i];

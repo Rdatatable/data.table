@@ -90,9 +90,8 @@ SEXP gsum(SEXP x, SEXP narm)
     //clock_t start = clock();
     SEXP ans;
     if (grpn != n) error("grpn [%d] != length(x) [%d] in gsum", grpn, n);
-    long double *s = malloc(ngrp * sizeof(long double));
+    long double *s = calloc(ngrp, sizeof(long double));
     if (!s) error("Unable to allocate %d * %d bytes for gsum", ngrp, sizeof(long double));
-    memset(s, 0, ngrp * sizeof(long double)); // all-0 bits == (long double)0, checked in init.c
     switch(TYPEOF(x)) {
     case LGLSXP: case INTSXP:
         for (i=0; i<n; i++) {
@@ -170,14 +169,12 @@ SEXP gmean(SEXP x, SEXP narm)
     n = (irowslen == -1) ? length(x) : irowslen;
     if (grpn != n) error("grpn [%d] != length(x) [%d] in gsum", grpn, n);
 
-    long double *s = malloc(ngrp * sizeof(long double));
+    long double *s = calloc(ngrp, sizeof(long double));
     if (!s) error("Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE", ngrp, sizeof(long double));
-    memset(s, 0, ngrp * sizeof(long double)); // all-0 bits == (long double)0, checked in init.c
 
-    int *c = malloc(ngrp * sizeof(int));
+    int *c = calloc(ngrp, sizeof(int));
     if (!c) error("Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE", ngrp, sizeof(int));
-    memset(c, 0, ngrp * sizeof(int)); // all-0 bits == (int)0, checked in init.c
-        
+
     switch(TYPEOF(x)) {
     case LGLSXP: case INTSXP:
         for (i=0; i<n; i++) {
@@ -515,7 +512,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
                         }
                     } else {
                         u.d = REAL(x)[k];
-                        if (u.ll != NAINT64) {
+                        if (u.ll != NA_INT64_LL) {
                             REAL(sub)[j] = (double)u.ll;
                         } else {
                             REAL(ans)[i] = NA_REAL;
@@ -551,7 +548,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
                         } else { nacount++; continue; }
                     } else {
                         u.d = REAL(x)[k];
-                        if (u.ll != NAINT64) {
+                        if (u.ll != NA_INT64_LL) {
                             REAL(sub)[j-nacount] = (double)u.ll;
                         } else { nacount++; continue; }
                     }

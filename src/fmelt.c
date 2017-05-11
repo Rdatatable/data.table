@@ -75,14 +75,14 @@ SEXP which_notNA(SEXP x) {
     return(ans);
 }
 
-SEXP which(SEXP x, Rboolean bool) {
+SEXP which(SEXP x, Rboolean val) {
     
     int i, j=0, n = length(x);
     SEXP ans;
     if (!isLogical(x)) error("Argument to 'which' must be logical");
     int *buf = (int *) R_alloc(n, sizeof(int));
     for (i = 0; i < n; i++) {
-        if (LOGICAL(x)[i] == bool) {
+        if (LOGICAL(x)[i] == val) {
             buf[j] = i + 1;
             j++;
         }
@@ -96,10 +96,10 @@ SEXP which(SEXP x, Rboolean bool) {
 }
 
 // whichwrapper for R
-SEXP whichwrapper(SEXP x, SEXP bool) {
-    // if (LOGICAL(bool)[0] == NA_LOGICAL)
-    //     error("bool should be logical TRUE/FALSE");
-    return which(x, LOGICAL(bool)[0]);
+SEXP whichwrapper(SEXP x, SEXP val) {
+    // if (LOGICAL(val)[0] == NA_LOGICAL)
+    //     error("val should be logical TRUE/FALSE");
+    return which(x, LOGICAL(val)[0]);
 }
 
 // hack by calling paste using eval. could change this to strcat, but not sure about buffer size for large data.tables... Any ideas Matthew?
