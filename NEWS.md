@@ -36,6 +36,9 @@
 
 8. Error printing 0-length `ITime` objects, [#2032](https://github.com/Rdatatable/data.table/issues/2032). Thanks Michael Chirico for the pull request.
 
+9. `as.IDate.POSIXct` error with `NULL` timezone, [#1973](https://github.com/Rdatatable/data.table/issues/1973). Thanks @lbilli for reporting and Michael Chirico for the pull request.
+
+
 #### NOTES
 
 
