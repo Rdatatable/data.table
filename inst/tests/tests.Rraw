@@ -9846,7 +9846,7 @@ test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 3 starting <<3,4,7>> has
 # #1973 -- trippy lazy evaluation bug causing IDateTime error when tzone is NULL
 x = as.POSIXct('2017-03-17')
 attr(x, 'tzone') = NULL
-test(1754, capture.output(IDateTime(x)), c("        idate    itime", "1: 2017-03-17 00:00:00"))
+test(1754, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17 00:00:00")
 
 
 ##########################
