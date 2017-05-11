@@ -16,7 +16,7 @@ SEXP truelength();
 SEXP setcharvec();
 SEXP setcolorder();
 SEXP chmatchwrapper();
-SEXP readfile();
+SEXP freadR();
 SEXP writefile();
 SEXP genLookups();
 SEXP reorder();
@@ -95,7 +95,7 @@ R_CallMethodDef callMethods[] = {
 {"Csetcharvec", (DL_FUNC) &setcharvec, -1},
 {"Csetcolorder", (DL_FUNC) &setcolorder, -1},
 {"Cchmatchwrapper", (DL_FUNC) &chmatchwrapper, -1},
-{"Creadfile", (DL_FUNC) &readfile, -1},
+{"CfreadR", (DL_FUNC) &freadR, -1},
 {"Cwritefile", (DL_FUNC) &writefile, -1},
 {"CgenLookups", (DL_FUNC) &genLookups, -1},
 {"Creorder", (DL_FUNC) &reorder, -1},
@@ -180,6 +180,9 @@ void attribute_visible R_init_datatable(DllInfo *info)
     if (sizeof(long long) != 8) error("Checking sizeof(long long) [%d] is 8 %s", sizeof(long long), msg);
     if (sizeof(char *) != 4 && sizeof(char *) != 8) error("Checking sizeof(pointer) [%d] is 4 or 8 %s", sizeof(char *), msg);
     if (sizeof(SEXP) != sizeof(char *)) error("Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s", sizeof(SEXP), sizeof(char *), msg);
+    if (sizeof(uint64_t) != 8) error("Checking sizeof(uint64_t) [%d] is 8 %s", sizeof(uint64_t), msg);
+    if (sizeof(signed char) != 1) error("Checking sizeof(signed char) [%d] is 1 %s", sizeof(signed char), msg);
+    if (sizeof(int8_t) != 1) error("Checking sizeof(int8_t) [%d] is 1 %s", sizeof(int8_t), msg);
     
     SEXP tmp = PROTECT(allocVector(INTSXP,2));
     if (LENGTH(tmp)!=2) error("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s", LENGTH(tmp), msg);
@@ -200,6 +203,12 @@ void attribute_visible R_init_datatable(DllInfo *info)
     long double ld = 3.14;
     memset(&ld, 0, sizeof(long double));
     if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
+    
+    // Check unsigned cast used in fread.c. This isn't overflow/underflow, just cast.
+    if ((uint_fast8_t)('0'-'/') != 1) error("The ascii character '/' is not just before '0'"); 
+    if ((uint_fast8_t)('/'-'0') < 10) error("The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false.");
+    if ((uint_fast8_t)(':'-'9') != 1) error("The ascii character ':' is not just after '9'"); 
+    if ((uint_fast8_t)('9'-':') < 10) error("The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false.");
     
     // Variables rather than #define for NA_INT64 to ensure correct usage; i.e. not casted
     NA_INT64_LL = LLONG_MIN;

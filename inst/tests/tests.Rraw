@@ -2512,8 +2512,8 @@ for (eol in if (.Platform$OS.type=="unix") c("\n","\r\n") else "\n") {
     unlink(f3)
 }}}
 if ("package:bit64" %in% search()) {
-    n = 100000
-    # To test out-of-sample type diffs, nrow needs to be more than 2*NJUMPS(10)*NJUMPLINES(100)=2000. Under 2000, all rows are sampled. Over 2000, 1000 rows are sampled (with a comfortable gap between the jump batches).
+    n = 2100
+    # To test out-of-sample type diffs, nrow needs to be more than 100*10*2.  Under that, all rows are sampled.
     DT = data.table( a=sample(1:1000,n,replace=TRUE),
                      b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
                      c=sample(c("foo","bar","baz"),n,replace=TRUE) )
@@ -2524,16 +2524,16 @@ if ("package:bit64" %in% search()) {
     DT[,a2:=as.integer64(a)][,a3:=as.double(a)][,a4:=gsub(" ","",format(a))]
     DT[,b2:=as.double(b)][,b3:=gsub(" ","",format(b))]
     DT[,r:=a/100][,r2:=gsub(" ","",format(r))]
-    DT[5012, a2:=as.integer64(12345678901234)]   # start on row 112 to avoid the first 100 
-    DT[5013, a3:=3.14]
-    DT[5014, a4:="123A"]
-    DT[5015, b2:=1234567890123.45]
-    DT[5016, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
-    DT[5017, r2:="3.14A"]
+    DT[112, a2:=as.integer64(12345678901234)]   # start on row 112 to avoid the first 100 
+    DT[113, a3:=3.14]
+    DT[114, a4:="123A"]
+    DT[115, b2:=1234567890123.45]
+    DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
+    DT[117, r2:="3.14A"]
     fwrite(DT,f<-tempfile())
-    test(899.1, fread(f), output="Column 4.*a2.*integer.*5012.*<<12345678901234>>.*Column 10.*r2.*numeric.*5017.*<<3.14A>>",
-                          error="guessed column type was insufficient for 6 values in 6 columns")
-    test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2"))), DT)
+    test(899.1, fread(f,verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
+    test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2")), verbose=TRUE),
+                DT, output="Rereading 0 columns due to out-of-sample type exceptions")
     unlink(f)
 } else {
     cat("Tests 897-899 not run. If required call library(bit64) first.\n")
@@ -2682,12 +2682,12 @@ test(955, fread(input, colClasses=list(character="C",double="A")), data.table(A=
 test(956, fread(input, colClasses=list(character=2:3,double="A")), data.table(A=c(1.0,2.0),B=c("foo","bar"),C=c("3.140","6.28000")))
 test(957, fread(input, colClasses=list(character=1:3)), data.table(A=c("01","002"),B=c("foo","bar"),C=c("3.140","6.28000")))
 test(958, fread(input, colClasses="character"), data.table(A=c("01","002"),B=c("foo","bar"),C=c("3.140","6.28000")))
-test(959, fread(input, colClasses=c("character","double","numeric"), verbose=TRUE),
-          warning = "Column 2 ('B') has been detected as type 'character'. Ignoring request from colClasses to read as 'numeric' (a lower type) since NAs (or loss of precision) may result",
-          output = "Detected 3 columns",  # including output= just so that verbose output is captured, just the warning will be checked.
-          data.table(A=c("01","002"),B=c("foo","bar"),C=c(3.14,6.28)))
-
-test(960, fread(input, colClasses=c("character","double")), error="colClasses is unnamed and length 2 but there are 3 columns. See")
+test(959.1, fread(input, colClasses=c("character","double","numeric")),
+            error = "Attempt.*column 2 <<B>>.*inherent.*'string'.*down to.*'float64'")
+test(959.2, fread(input, colClasses=c("character",NA,"numeric")),
+            data.table(A=c("01","002"),B=c("foo","bar"),C=c(3.14,6.28)))
+test(960, fread(input, colClasses=c("character","double")),
+          error="colClasses.*unnamed character vector.*length is 2. Must be length 1 or ncol (3 in this case) when unnamed")
 test(961, fread(input, colClasses=1:3), error="colClasses is not type list or character vector")
 test(962, fread(input, colClasses=list(1:3)), error="colClasses is type list but has no names")
 test(963, fread(input, colClasses=list(character="D")), error="Column name 'D' in colClasses..1.. not found")
@@ -2699,9 +2699,9 @@ test(966, fread(input, colClasses=list(character=2:4)), error="Column number 4 (
 test(967, nrow(fread( paste( rep('a\tb\n', 10000), collapse=''), header=FALSE)), 10000L)
 
 # Test fread warns about removal of any footer (and autostart skips up over it)
-test(968, fread("A,B\n1,3\n2,4\n\nRowcount: 2\n"), data.table(A=1:2,B=3:4), warning="Stopped reading at line 4.*discarded.*Rowcount: 2")
-test(969, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2"), data.table(A=1:2,B=3:4), warning="Stopped reading at line 4.*discarded.*Rowcount: 2")
-test(970, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2\n\n"), data.table(A=1:2,B=3:4), warning="Stopped reading at line 4.*discarded.*Rowcount: 2")
+test(968, fread("A,B\n1,3\n2,4\n\nRowcount: 2\n"), data.table(A=1:2,B=3:4), warning="Found the last.*discarded.*Rowcount: 2")
+test(969, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2"), data.table(A=1:2,B=3:4), warning="Found the last.*discarded.*Rowcount: 2")
+test(970, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2\n\n"), data.table(A=1:2,B=3:4), warning="Found the last.*discarded.*Rowcount: 2")
 
 # fread skip override
 input = "some,bad,data\nA,B,C\n1,3,5\n2,4,6\n"
@@ -2711,11 +2711,11 @@ test(973, fread(input, skip=2), data.table(V1=1:2,V2=3:4,V3=5:6))
 test(974, fread(input, skip=2, header=TRUE), data.table("1"=2L,"3"=4L,"5"=6L))
 test(975, fread(input, skip="B"), data.table(A=1:2,B=3:4,C=5:6))
 input = "\n\nA,B\n1,3\n2,4\n\nC,D\n5,7\n6,8\n\nE,F\n9,11\n10,12\n"   # 3 tables in one file
-test(976, fread(input), data.table(A=1:2,B=3:4), warning="Stopped reading at line 6.*discarded.*C,D")
-test(977, fread(input, skip="C"), data.table(C=5:6,D=7:8), warning="Stopped reading at line 10.*discarded.*E,F")
-test(978.1, fread(input, skip="D"), data.table(C=5:6,D=7:8), warning="Stopped reading at line 10.*discarded.*E,F")
+test(976, fread(input), data.table(A=1:2,B=3:4), warning="Found the last.*discarded.*C,D")
+test(977, fread(input, skip="C"), data.table(C=5:6,D=7:8), warning="Found the last.*discarded.*E,F")
+test(978.1, fread(input, skip="D"), data.table(C=5:6,D=7:8), warning="Found the last.*discarded.*E,F")
 test(978.2, fread(input, skip=",F"), data.table(E=9:10,F=11:12))
-test(978.3, fread(input, skip=3), data.table(V1=1:2, V2=3:4), warning="Stopped reading at line 6.*discarded.*C,D")
+test(978.3, fread(input, skip=3), data.table(V1=1:2, V2=3:4), warning="Found the last.*discarded.*C,D")
 
 # mixed add and update in same `:=` bug/crash, #2528 and #2778
 DT = data.table(x=rep(1:2, c(3,2)), y=6:10)
@@ -2841,13 +2841,13 @@ test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(
 # an fread error shouldn't hold a lock on the file on Windows
 f = tempfile()
 cat('A,B\n1,2\n3\n5,6\n', file=f)
-test(1010.1, fread(f), error="Line has finished early.*Try.*fill.*TRUE")
+test(1010.1, fread(f), error="Line has too few fields.*fill.*TRUE")
 cat('7\n8,9',file=f,append=TRUE)   # that append works after error
 test(1010.2, fread(f,fill=TRUE), data.table(A=INT(1,3,5,7,8), B=INT(2,NA,6,NA,9)))
-test(1010.3, fread(f), error="Line has finished early.*Try.*fill.*TRUE")
+test(1010.3, fread(f), error="Line has too few fields.*fill.*TRUE")
 cat('A,B\n1,2\n3\n5,6\n', file=f)  # that overwrite works after error
 test(1010.4, fread(f,fill=TRUE), data.table(A=INT(1,3,5), B=INT(2,NA,6)))
-test(1010.5, fread(f), error="Line has finished early.*Try.*fill.*TRUE")
+test(1010.5, fread(f), error="Line has too few fields.*fill.*TRUE")
 unlink(f)                          # that file can be removed after error
 test(1010.6, !file.exists(f))
 
@@ -2860,29 +2860,24 @@ test(1013, fread("A,B\n123,123\n", integer64="integer"), error="integer64='%s' w
 test(1014, fread("A,B\n123456789123456,21\n", integer64="character"), data.table(A="123456789123456",B=21L))
 test(1015, fread("A,B\n123456789123456,21\n", integer64="double"), data.table(A=as.double("123456789123456"),B=21L))
 # and that mid read bumps respect integer64 control too ..
-x = sample(1:1000,5000,replace=TRUE)
+x = sample(1:1000,2100,replace=TRUE)  # 2100 > 100 JUMPLINES * 10 NJUMP * 2 spacing
 DT = data.table( A=as.character(x), B=1:100)
 DT[115, A:="123456789123456"]  # row 115 is outside the 100 rows at 10 points.
 fwrite(DT,f<-tempfile())
-test(1016.1, fread(f) ,output="Column 1.*A.*integer.*row 115.*<<123456789123456>>",
-                      error="guess.*insufficient.*1 value.*1 column")
-test(1016.2, fread(f, colClasses = c(A="numeric")), copy(DT)[,A:=as.numeric(A)])
+test(1016.1, sapply(suppressWarnings(fread(f,verbose=TRUE)),"class"), c(A="integer64", B="integer"),
+             output="Column 1.*A.*bumped.*int32.*int64.*<<123456789123456>>.*Rereading 1 columns")
+# suppressWarnings for 'bit64 is not installed' warning on AppVeyor where we (correctly) don't install Suggests
+test(1016.2, fread(f, colClasses = c(A="numeric"), verbose=TRUE), copy(DT)[,A:=as.numeric(A)], output="Rereading 0 columns")
 DT[90, A:="321456789123456"]   # inside the sample
 write.table(DT,f,sep=",",row.names=FALSE,quote=FALSE)
 if ("package:bit64" %in% search()) test(1017.1, fread(f), copy(DT)[,A:=as.integer64(A)])
 test(1017.2, fread(f, integer64="character"), DT)
 unlink(f)
 
-# ERANGE warning, #4879
-tt = try(fread("1.46761e-313\n"), silent=TRUE)   # options(warn=2) while this test file runs
-if (inherits(tt,"try-error")) {
-    # All CRAN machines including SPARC
-    test(1018, fread("1.46761e-313\n"), data.table(V1=as.numeric("1.46761e-313")), warning="strtod() returned ERANGE")
-} else {
-    # on PowerPC only via QEMU emulation :
-    test(1018, fread("1.46761e-313\n"), data.table("1.46761e-313"=logical()))
-}
-test(1019, fread("1.23456789123456789123456789\n"), data.table(V1=as.numeric("1.23456789123456789123456789"))) # no warning, as standard
+# ERANGE errno handled, #4879
+test(1018, identical(fread("1.46761e-313\n"), data.table(V1=1.46761e-313)))
+test(1019, identical(fread("1.23456789123456789123456999\n"), data.table(V1=as.numeric("1.23456789123456789123456789"))))
+# no warning as is standard about loss of occuracy (compare 999 to 789)
 
 # crash assigning to row 0, #2754
 DT = data.table(A=1:5,B=6:10)
@@ -3084,7 +3079,8 @@ test(1065, X[J(2:5), (var):=22L], data.table(A=rep(1:3, each=2), B=c(1L,4L,rep(2
 
 # fread single unnamed colClasses
 f = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
-test(1066, fread(f,colClasses=c("integer","integer","character")), error="colClasses is unnamed and length 3 but there are 4 columns")
+test(1066, fread(f,colClasses=c("integer","integer","character")),
+           error="colClasses is an unnamed character vector but its length is 3. Must be.*1 or ncol.*4")
 test(1067, fread(f,colClasses=c("integer","numeric","character","character")), data.table(A=1:2,B=c(3,4),C=c("5","6"),D=c("7","8")))
 test(1068, fread(f,colClasses="character"), data.table(A=c("1","2"),B=c("3","4"),C=c("5","6"),D=c("7","8")))
 
@@ -5048,13 +5044,13 @@ cat('A,B,C,D,E,F
 "TX",77406,"business analyst\\\\\\\\\\\\\\","the boeing co","",""
 "CA",94116,"na\\none","retired","",""
 ', file = f<-tempfile())   # aside: notice the \\ before n of none as well
-test(1336.1, fread(f), data.table(A = c("12", "TX", "CA"), B = c(0L, 77406L, 94116L), C = c("teacher private nfp\\\\\\\\\"", "business analyst\\\\\\\\\\\\\\", "na\\none"), D = c("\"jacoleman high school", "the boeing co", "retired"), E = c("", "", ""), F = c("", "", "")))
+test(1336.1, fread(f), data.table(A = c("12", "TX", "CA"), B = c(0L, 77406L, 94116L), C = c("teacher private nfp\\\\\\\\\"", "business analyst\\\\\\\\\\\\\\", "na\\none"), D = c("\"jacoleman high school", "the boeing co", "retired"), E = NA, F = NA))
 cat('A,B,C,D,E,F
 "12",0,"teacher private nfp\\\\\\\\"","jacoleman high school","",""
 "TX",77406,"business analyst\\\\\\\\\\\\\\","the boeing co","",""
 "CA",94116,"na\\none","retired","",""
 ', file = f)
-test(1336.2, fread(f), data.table(A=c("12","TX","CA"), B=c(0L,77406L,94116L),C=c('teacher private nfp\\\\\\\\"','business analyst\\\\\\\\\\\\\\','na\\none'), D=c('jacoleman high school','the boeing co','retired'),E="",F=""))
+test(1336.2, fread(f), data.table(A=c("12","TX","CA"), B=c(0L,77406L,94116L),C=c('teacher private nfp\\\\\\\\"','business analyst\\\\\\\\\\\\\\','na\\none'), D=c('jacoleman high school','the boeing co','retired'),E=NA,F=NA))
 unlink(f)
 
 # file names ending with \ (quite common)
@@ -5764,32 +5760,19 @@ DT[,a:=factor(letters[a])]
 test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index 'a'")
 
 # fread dec=',' e.g. France
-test(1438, fread("A;B\n1;2,34\n", dec="12"), error="dec must be a single character")
+test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1 is not TRUE")
+test(1439, fread("A;B\n1;2,34\n", dec="1"), data.table(A=1L, B="2,34"))
+test(1440, fread("A;B\n1;2,34\n", dec=","), data.table(A=1L, B=2.34))
+test(1441, fread("A;B\n1;2,34\n", sep=".", dec="."), error="sep == dec ('.') is not allowed")
+test(1442, fread("A;B\n1;2,34\n", dec=",", sep=","), error="sep == dec (',') is not allowed")
 
-test(1439, (if (base::getRversion()<"3.3.0") suppressWarnings else identity)(fread("A;B\n1;2,34\n", dec="1")),
-     error="Unable to change to a locale which provides the desired dec")  # this test runs on many machines so chose a dec for this test which is sure not to be valid in any locale
-test(1440, fread("A;B\n1;2,34\n", sep=".", dec="."), error="The two arguments to fread 'dec' and 'sep' are equal ('.')")
-if (.Platform$OS.type=="windows" ||
-    (!inherits(tt <- try(system("locale -a", intern=TRUE)), "try-error") && "fr_FR.utf8" %in% tt )) {
-    # e.g. on Matt's machine where I've installed fr_FR.utf8 which has dec=","
-    old = options(datatable.fread.dec.locale=if (.Platform$OS.type=="unix") "fr_FR.utf8" else "French_France.1252")
-    oldlocale = Sys.getlocale("LC_NUMERIC")
-    test(1441, fread("A;B\n1;2,34\n", dec=",", verbose=TRUE), data.table(A=1L, B=2.34), output="success!")
-    test(1442, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after success
-    test(1443.1, fread("A;B\n1;2,34\n", dec=",", sep=",", verbose=TRUE), error="'dec' and 'sep' are equal", output="success!")
-    test(1443.2, Sys.getlocale("LC_NUMERIC"), oldlocale)  # locale restored after error. [ouput check in 1443.1 ensures it was changed]
-    
-    # sep=".", issue #502
-    input = paste( paste("192.168.1.", 1:10, sep=""), collapse="\n")
-    test(1444.1, fread(input, sep=".", dec="*"), error="Unable to change to a locale which provides the desired dec")
-    test(1444.2, fread(input, sep="."), ans<-data.table(V1=192L,V2=168L,V3=1L,V4=1:10))   # by default, dec="," when sep="."
-    test(1444.3, fread(paste(paste("192. 168. 1. ", 1:10, sep = ""), collapse="\n"), sep="."), ans)
-    test(1444.4, fread(paste(paste("Hz.BB.GHG.", 1:10, sep = ""), collapse="\n"), sep="."), data.table(V1="Hz",V2="BB",V3="GHG",V4=1:10))
-
-    options(old)  # return to default set it .onLoad
-} else {
-    cat("Tests 1441-1444 not run. If required install the 'fr_FR.utf8' locale.\n")
-}
+# sep=".", issue #502
+input = paste( paste("192.168.1.", 1:10, sep=""), collapse="\n")
+test(1444.1, fread(input, sep=".", dec="*"), ans<-data.table(V1=192L,V2=168L,V3=1L,V4=1:10))
+test(1444.2, fread(input, sep=".", dec=","), ans)
+test(1444.3, fread(paste(paste("192. 168. 1. ", 1:10, sep = ""), collapse="\n"), sep=".", dec=","), ans)
+test(1444.4, fread(paste(paste("Hz.BB.GHG.", 1:10, sep = ""), collapse="\n"), sep=".", dec=","),
+             data.table(V1="Hz",V2="BB",V3="GHG",V4=1:10))
 
 # doubled quote inside a quoted field followed by an embedded newline
 test(1445, fread("doublequote_newline.csv")[7:10], data.table(A=c(1L,1L,2L,1L), B=c("a","embedded \"\"field\"\"\nwith some embedded new\nlines as well","not this one","a")))
@@ -5838,7 +5821,7 @@ test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input wor
 test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist; getwd()==")
 
 # Test for #802
-test(1453, fread("fread_line_error.csv"), error="Line 12 starting <<31,3-0-7 4>>.*more than.*24 fields.*position 61.*character 3")
+test(1453, fread("fread_line_error.csv"), error="Line 12 from sampling jump 0 starting <<31,3-0-7 4>>.*more than.*24 fields.*position 61.*character 3")
 # TODO: add comment=="#".   Ensure only after last field is observed. 
 
 # no-sep-found => sep="\n", use case for this in #738
@@ -6909,8 +6892,10 @@ read_table = function(str, ...) {
 test(1552.1, fread(str, na.strings="#N/A"), read_table(str, na.strings="#N/A"))
 test(1552.2, fread(str, na.strings=c("#N/A", "-999")), read_table(str, na.strings=c("#N/A", "-999")))
 test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.strings=c("#N/A", "-999", "+1")))
-test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1")))
-test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), error="na.strings.3.=='FALSE'.*boolean.*not permitted")
+test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")),
+             error="NAstring <<1>> is recognized as type boolean.*not permitted")
+test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), error="NAstring <<FALSE>>.*boolean.*not permitted")
+test(1552.6, fread("A\n1.0\n2\n-", na.strings=c("-")), data.table(A=c(1.0, 2.0, NA)))
 
 # FR #1177: 'quote' option of 'print.data.table'
 DT1 <- data.table(s1=paste(" ",LETTERS[1:5],sep=""),s2=LETTERS[1:5])
@@ -6979,8 +6964,8 @@ str2="YYYY MM DD HH mm             19490             40790
 test(1555.13, fread(str1), fread(str2))
 
 # fix for #1330
-test(1556.1, fread("issue_1330_fread.txt", nrow=2), data.table(a=1:2, b=1:2))
-test(1556.2, fread("issue_1330_fread.txt", nrow=4), data.table(a=1:2, b=1:2), warning="Stopped reading at line 4")
+test(1556.1, fread("issue_1330_fread.txt", nrow=2), data.table(a=1:2, b=1:2), warning="Found.*discarded.*<<3.*3>>")
+test(1556.2, fread("issue_1330_fread.txt", nrow=4), data.table(a=1:2, b=1:2), warning="Found.*discarded.*<<3.*3>>")
 
 # FR #768
 str="1,2\n3,4\n"
@@ -6992,13 +6977,16 @@ test(1557.5, names(fread(str, col.names=1:2)), error="Passed a vector of type")
 
 # Fix for #773
 f = "issue_773_fread.txt"
-ans = data.table(AAA=as.integer(c(4,7,rep(1,17),31,21)),
-                 BBB=as.integer(c(5,8,rep(2,17),32,22)),
+ans = data.table(AAA=as.character(c(4,7,rep(1,17),31,21)),
+                 BBB=as.character(c(5,8,rep(2,17),32,22)),
                  CCC=as.integer(c(6,9,rep(3,17),33,23)))
-test(1558.1, fread(f, nrow=21L), ans) # no warning
-test(1558.2, fread(f, nrow=22L), error="finished early")
-test(1558.3, fread(f, nrow=22L, fill=TRUE), rbind(ans, list("ZZZ","YYY",NA)))
-
+test(1558.1, fread(f, nrow=21L), error="Line has too few fields.*<<ZZZ.*YYY>>")
+# Even though nrow=21 finished on the line before the problem, we still require a good sample of the whole file by setting fill=TRUE
+# This ensures consistency of types of the subset with other subsets. The types of AAA and BBB are character due to the sample
+# rows even though those columns only become character on row 22
+test(1558.2, fread(f, nrow=21L, fill=TRUE), ans)
+test(1558.3, fread(f, nrow=22L), error="Line has too few fields.*<<ZZZ.*YYY>>")
+test(1558.4, fread(f, nrow=22L, fill=TRUE), rbind(ans, list("ZZZ","YYY",NA)))
 
 # FR # 1338 -- check.names argument of setDT
 ans=data.table(X=1:3,"X.1"=1:3)
@@ -7168,14 +7156,14 @@ test(1577.3, levels(X$b), character(0))
 input = "Header not 2 columns\n\n1,3\n2,4"
 test(1578.0, fread(input), data.table(V1=1:2, V2=3:4))
 input = "a,b\n\n1,3\n2,4"
-test(1578.1, fread(input), data.table(a=logical(), b=logical()), warning="Stopped reading at line 2")
+test(1578.1, fread(input), data.table(a=logical(), b=logical()), warning="Found.*discarded.*<<1,3>>")
 test(1578.2, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 input = "a,b\n\n\n1,3\n2,4"
 test(1578.3, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 input = "a,b\n\n\n1,3\n\n2,4\n\n"
 test(1578.4, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 
-test(1578.5, fread("530_fread.txt", skip=47L), data.table(a=logical(), b=logical()), warning="Stopped.*line 49.*discarded.*<<1,3>>")
+test(1578.5, fread("530_fread.txt", skip=47L), data.table(a=logical(), b=logical()), warning="Found.*discarded.*<<1,3>>")
 test(1578.6, fread("530_fread.txt", skip=49L), data.table(V1=1:2, V2=3:4))
 test(1578.7, fread("530_fread.txt", skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
 
@@ -7919,6 +7907,10 @@ if ("package:bit64" %in% search()) {
 
 # fix for #1087 and #1465
 test(1627, charToRaw(names(fread("issue_1087_utf8_bom.csv"))[1L]), as.raw(97L))
+test(1627.1, names(fread("issue_1087_utf8_bom.csv", verbose=T))[1L], "a", output="UTF-8 byte order mark EF BB BF found")
+test(1627.2, names(fread("gb18030.txt", verbose=T))[1L], "x", output="GB-18030 byte order mark 84 31 95 33 found", warning="GB-18030 encoding detected")
+test(1627.3, fread("utf16le.txt"), error="File is encoded in UTF-16")
+test(1627.4, fread("utf16be.txt"), error="File is encoded in UTF-16")
 
 # uniqueN gains na.rm argument, #1455
 set.seed(1L)
@@ -8018,7 +8010,7 @@ test(1634.2, any(grepl("existing index", v2)), TRUE)
 text = "a	b	c	d	e	f	g	h	i	j	k	l\n1	P	P;A;E;	Y	YW;	H().	1-3 pro\n2	Q9	a;a;a;a;	YB	YH;	M().	13 pn ba\n1	P3	P;	Y	Y;	R().	14 p\n53	P	P6;B;D;0;5;a;X;a;4R;	Y	Y;	H().	13 pe e\n1	P	P;O;O;a;a;a;	HLA-A	HLA-A;;	H().	HcIha,A-n\n102	P	P;O;P;P;P;P;P;P;a;a;a;a;a;a;a;a;a;a;	H-A	H-A;;	H().	HcIha,A"
 test(1635.1, ans1 <- fread(text, fill=TRUE), setDT(read.table(text=text, stringsAsFactors=FALSE, fill=TRUE, sep="\t", header=TRUE)))
 text = "a	b	c	d	e\n1	P	P;A;E;	Y	YW;	H().	1-3 pro\n2	Q9	a;a;a;a;	YB	YH;	M().	13 pn ba\n1	P3	P;	Y	Y;	R().	14 p\n53	P	P6;B;D;0;5;a;X;a;4R;	Y	Y;	H().	13 pe e\n1	P	P;O;O;a;a;a;	HLA-A	HLA-A;;	H().	HcIha,A-n\n102	P	P;O;P;P;P;P;P;P;a;a;a;a;a;a;a;a;a;a;	H-A	H-A;;	H().	HcIha,A"
-test(1635.2, fread(text, fill=TRUE), setnames(ans1[, 1:7, with=FALSE], c(letters[1:5], paste("V", 6:7, sep=""))))
+test(1635.2, fread(text, fill=TRUE), setnames(ans1[, 1:7], c(letters[1:5], paste("V", 6:7, sep=""))))
 
 # testing function type in dt, #518
 dt = data.table(x=1, y=sum)
@@ -9751,9 +9743,9 @@ test(1742.5, substring(x,nchar(x)-10,nchar(x)), c("50,28,95,76","62,87,23,40"))
 options(oldverbose)  # last capture.output(fwrite()) has happened now. TODO: tidy up and remove.
 
 # fread should properly handle NA in colClasses argument #1910
-test(1743.1, sapply(fread("a,b\n1,a", colClasses=c(NA, "factor"), verbose=TRUE), class), c(a="integer", b="factor"), output="Argument colClasses is ignored as requested by provided NA value")
-test(1743.2, sapply(fread("a,b\n1,a", colClasses=c(NA, NA), verbose=TRUE), class), c(a="integer", b="character"), output="Argument colClasses is ignored as requested by provided NA values")
-test(1743.3, fread("a,b\n1,a", colClasses=c(NA, TRUE)), error="when colClasses is logical it must be all NA")
+test(1743.1, sapply(fread("a,b\n1,a", colClasses=c(NA, "factor")), class), c(a="integer", b="factor"))
+test(1743.2, sapply(fread("a,b\n1,a", colClasses=c(NA, NA)), class), c(a="integer", b="character"))
+test(1743.3, fread("a,b\n1,a", colClasses=c(NA, TRUE)), error="colClasses is.*logical.*but it has some TRUE or FALSE.*not allowed")
 # also unknown issue in mixed character/factor output and colClasses vector
 test(1743.4, sapply(fread("a,b\n1,a", colClasses=c("character", "factor")), class), c(a="character", b="factor"))
 
@@ -9840,14 +9832,88 @@ test(1752, fread("issue_2051.csv")[2,grep("^Our.*tool$",COLUMN50)], 1L)
 
 # check too many fields error from ,\n line ending highlighted in #2044
 test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
-test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), error="Line 3 starting <<3,4,>> has more than.*2 fields")
-test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 3 starting <<3,4,7>> has more than.*2 fields")
+test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), error="Line 2 from sampling jump 0 starting <<3,4,>> has more than.*2 fields")
+test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 2 from sampling jump 0 starting <<3,4,7>> has more than.*2 fields")
 
-# #1973 -- trippy lazy evaluation bug causing IDateTime error when tzone is NULL
+# check omp critical around SET_STRING_ELT
+# minimal construction big enough for parallelism with 8 or less threads. On a machine with more, do setDTthreads(8) first otherwise
+# it'll switch back to single threaded. In dev I have 8 threads and on CRAN there are 2 which will run this test nicely.
+# Without the critical in fread.c, this test will crash R consistently which is correct (tested).
+# Needs to be run in a fresh R session, otherwise it will work just because these strings have been seen before and added to
+# the global character cache already.
+# Created with:
+# x = unlist(outer(outer(LETTERS,LETTERS,paste0),LETTERS,paste0))
+# dt = as.data.table(matrix(x, ncol=2))
+# setnames(dt,paste0("col",1:2))
+# fwrite(dt,"allchar.csv")
+# fwrite(dt,"allchar.csv",append=TRUE)
+test(1754, fread("allchar.csv")[c(1,2,17575,17576),col2], c("AAN","BAN","YZZ","ZZZ"))
+
+# unescaped embedded quotes from here: http://stackoverflow.com/questions/42939866/fread-multiple-separators-in-a-string
+test(1755, fread("unescaped.csv"),
+  data.table(No     =c(0L,1L),
+             Comment=c('he said:"wonderful."', 'The problem is: reading table, and also "a problem, yes." keep going on.'),
+             Type   =c('A','A')))
+
+# test duplicated colClasses
+txt = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
+test(1756.1, fread(txt), data.table(A=1:2, B=3:4, C=5:6, D=7:8))
+test(1756.2, fread(txt, colClasses=list('numeric'=c(1,3))), data.table(A=as.double(1:2), B=3:4, C=as.double(5:6), D=7:8))
+test(1756.3, fread(txt, colClasses=list('numeric'=c(1,3,1))), error="Column 'A' appears more than once in colClasses")
+test(1756.4, fread(txt, colClasses=list('numeric'=c(1,3),'character'=2)),
+             data.table(A=as.double(1:2), B=c("3","4"), C=as.double(5:6), D=7:8))
+test(1756.5, fread(txt, colClasses=list('numeric'=c(1,2),'character'=2)), error="Column 'B' appears more than once")
+
+# Windows \r\n line endings when using multiple threads and detecting type within quoted fields, #2087
+test(1757, fread("winallquoted.csv")[c(1,2,4998,4999)],
+           data.table(station_id=2L, bikes_available=c(2L,2L,11L,11L), docks_available=c(25L,25L,16L,16L),
+           time=c("2013/08/29 12:06:01","2013/08/29 12:07:01","2013/09/02 08:48:01","2013/09/02 08:50:01")))
+
+test(1758, sapply(fread("A,B\n,"),class), c(A="logical",B="logical"))
+
+# Slowdown when parallel and all columns are character, #2091. This test tests the data loads ok but we need a
+# performance test environment to make sure the slowdown doesn't come back.  Fix was to delay call to SET_.
+test(1759, fread("alluniquechar.csv")[c(1,2,4999,5000)],
+           data.table(A=c("jptokakysooopwtmlkeimzbgpeinhy","bchguwmynjhecsxpxldyzlemavmwvz",
+                          "avlyclruzkazfqhyxnppaafwcveolb","dkmyfqhltlwzwwxyvshwrzrdmfyqdm"),
+                      B=c("jptokakysooopwtmlkei","bchguwmynjhecsxpxldy","avlyclruzkazfqhyxnpp","dkmyfqhltlwzwwxyvshw"),
+                      C=c("kakysooopwt","uwmynjhecsx","clruzkazfqh","fqhltlwzwwx"),
+                      D=c("pt","ch","vl","km"),
+                      E=c("i","y","p","w"),
+                      F=c("kyso","mynj","ruzk","hltl"),
+                      G=c("ptokakysooopwtmlkeimz","chguwmynjhecsxpxldyzl","vlyclruzkazfqhyxnppaa","kmyfqhltlwzwwxyvshwrz"),
+                      H=c("tokakysooopwtmlkeimzbgpein","hguwmynjhecsxpxldyzlemavmw",
+                          "lyclruzkazfqhyxnppaafwcveo","myfqhltlwzwwxyvshwrzrdmfyq")))
+
+# fread should use multiple threads on single column input.
+# tests 2 threads; the very reasonable limit on CRAN
+# file needs to be reasonably large for threads to kick in (minimum chunkSize is 1MB currently)
+N = if (TRUE) 2e6 else 1e9   # offline speed check
+fwrite(data.table(A=sample(10,N,replace=TRUE)), f<-tempfile())
+test(1760.1, file.info(f)$size > 4*1024*1024)
+test(1760.2, fread(f, verbose=TRUE, nThread=2), output="using 2 threads")
+unlink(f)
+
+# fread single column with superfluous fill=TRUE, #2118
+test(1761.1, fread("1\n2\n3", fill=TRUE), data.table(V1=1:3))
+test(1761.2, fread("1\n2\n3", fill=FALSE), data.table(V1=1:3))
+
+# non-error with non-empty empty j, #2142
+DT = data.table(a = 1:5)
+test(1762, DT[ , {}], NULL)
+
+# rbindlist empty items segfault, #2019
+x = list(list(a = 1), list(), list(a = 2))
+ans = data.table(id=c(1L,3L),a=c(1,2))
+for (i in 1:100) test(1763, rbindlist(x, idcol="id"), ans)
+
+# as.ITime(character(0)) used to fail, #2032
+test(1764, capture.output(format(as.ITime(character(0)))), "character(0)")
+
+# IDateTime error when tzone is NULL, #1973
 x = as.POSIXct('2017-03-17')
 attr(x, 'tzone') = NULL
-test(1754, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17 00:00:00")
-
+test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17 00:00:00")
 
 ##########################
 

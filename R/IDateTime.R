@@ -122,9 +122,7 @@ as.character.ITime <- format.ITime <- function(x, ...) {
     hh <- x %/% 3600L
     mm <- (x - hh * 3600L) %/% 60L
     ss <- trunc(x - hh * 3600L - 60L * mm)
-    res = paste(substring(paste("0", hh, sep = ""), nchar(paste(hh))), 
-              substring(paste("0", mm, sep = ""), nchar(paste(mm))), 
-              substring(paste("0", ss, sep = ""), nchar(paste(ss))), sep = ":")
+    res = sprintf('%02d:%02d:%02d', hh, mm, ss)
     # Fix for #1354, so that "NA" input is handled correctly.
     if (is.na(any(neg))) res[is.na(x)] = NA
     neg = which(neg)

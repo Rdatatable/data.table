@@ -22,7 +22,8 @@ static int DTthreads = 0;
 
 int getDTthreads() {
 #ifdef _OPENMP
-    return DTthreads == 0 ? omp_get_max_threads() : DTthreads;  
+    int ans = DTthreads == 0 ? omp_get_max_threads() : MIN(DTthreads, omp_get_max_threads());
+    return MAX(1, ans);
 #else
     return 1;
 #endif

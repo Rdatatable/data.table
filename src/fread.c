@@ -1,161 +1,193 @@
-#include "data.table.h"
-#include <Rdefines.h>
-#include <ctype.h>
-#include <errno.h>
-#include <time.h>
-
-#ifdef WIN32         // means WIN64, too
-#include <windows.h>
-#include <stdio.h>
-#include <tchar.h>
-#include <inttypes.h>  // for PRId64
+#ifdef CLOCK_REALTIME
+  #include <time.h>      // clock_gettime for wallclock()
 #else
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <fcntl.h>   // for open()
-#include <unistd.h>  // for close()
+  #include <sys/time.h>  // gettimeofday for wallclock()
 #endif
-#include <signal.h> // the debugging machinery + breakpoint aidee
+#ifdef WIN32             // means WIN64, too, oddly
+  #include <windows.h>
+  #include <stdbool.h>   // true and false
+#else
+  #include <sys/mman.h>  // mmap
+  #include <sys/stat.h>  // fstat for filesize
+  #include <fcntl.h>     // open
+  #include <unistd.h>    // close
+  #include <stdbool.h>   // true and false
+  #include <ctype.h>     // isspace
+  #include <errno.h>     // errno
+  #include <string.h>    // strerror
+  #include <stdarg.h>    // va_list, va_start
+  #include <stdio.h>     // vsnprintf
+  #include <math.h>      // ceil, sqrt, isfinite
+#endif
+#include <omp.h>
+#include "fread.h"
+#include "freadLookups.h"
 
-/*****    TO DO    *****
-Restore test 1339 (balanced embedded quotes, see ?fread already updated).
-Confirm: http://stackoverflow.com/questions/23833294/data-tablefread-doesnt-like-missing-values-in-first-column
-construct test and investigate skip for completeness here: http://stackoverflow.com/questions/22086780/data-table-fread-error
-http://stackoverflow.com/questions/22229109/r-data-table-fread-command-how-to-read-large-files-with-irregular-separators
-http://r.789695.n4.nabble.com/Odd-problem-using-fread-to-read-in-a-csv-file-no-data-just-headers-tp4686302.html
-And even more diagnostics to verbose=TRUE so we can see where crashes are.
-Detect and coerce dates and times. By searching for - and :, and dateTtime etc, or R's own method or fasttime. POSIXct default, for microseconds? : http://stackoverflow.com/questions/14056370/cast-string-to-idatetime
-Add as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
-Allow comment char to ignore. Important in format detection. But require valid line data before comment character in the read loop? See http://stackoverflow.com/a/18922269/403310
-Deal with row.names e.g. http://stackoverflow.com/questions/15448732/reading-csv-with-row-names-by-fread
-Test Garrett's two files again (wrap around ,,,,,, and different row lengths that the wc -l now fixes)
-Post from patricknik on 5 Jan re ""b"" in a field. And Aykut Firat on email.
-Save repeated ch<eof checking in main read step. Last line might still be tricky if last line has no eol.
-Test using at least "grep read.table ...Rtrunk/tests/
-Look for any non-alpha-numeric characters in the output and try each of them. That way can handle bell character as well and save testing separators which aren't there.
-Column all 0 and 1 treated as logical?
----
-Secondary separator for list() columns, such as columns 11 and 12 in BED (no need for strsplit).
-Add LaF comparison.
-as.read.table=TRUE/FALSE option.  Or fread.table and fread.csv (see http://r.789695.n4.nabble.com/New-function-fread-in-v1-8-7-tp4653745p4654194.html).
-*****/
-
-static const char *ch, *eof; 
-static char sep, eol, eol2;  // sep2 TO DO
+// Private globals to save passing all of them through to highly iterated field processors
+static const char *eof;
+static char sep, eol, eol2;
+static int eolLen;
+static char quote, dec;
 static int quoteRule;
-static int eolLen, line;
-static SEXP nastrings;
-static Rboolean verbose, ERANGEwarning, any_number_like_nastrings;
-static Rboolean stripWhite;  // only applies to unquoted character columns; numeric fields always stripped 
-static cetype_t ienc;
+static const char* const* NAstrings;
+static _Bool any_number_like_NAstrings=false;
+static _Bool blank_is_a_NAstring=false;
+static _Bool stripWhite=true;  // only applies to character columns; numeric fields always stripped
+static _Bool skipEmptyLines=false, fill=false;
 
-// Define our own fread type codes, different to R's SEXPTYPE :
-// i) INTEGER64 is not in R but an add on packages using REAL, we need to make a distinction here, without using
-// class (for speed)
-// ii) 0:n codes makes it easier to bump through types in this order using ++.
-#define SXP_LGL    0   // LGLSXP    String values T,F,TRUE,FALSE,True,False
-#define SXP_INT    1   // INTSXP
-#define SXP_INT64  2   // REALSXP
-#define SXP_REAL   3   // REALSXP
-#define SXP_STR    4   // STRSXP
-#define SXP_NULL   5   // NILSXP i.e. skip column (last so that all types can be bumped up to it by user)
+typedef _Bool (*reader_fun_t)(const char **, void *);
+static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 
-#define NUMTYPE    6
-static const char TypeName[NUMTYPE][10] = {"LGL","INT","INT64","REAL","STR","NULL"};  // for messages and errors
-static int TypeSxp[NUMTYPE] = {LGLSXP,INTSXP,REALSXP,REALSXP,STRSXP,NILSXP};
-#define NUT        8   // Number of User Types (just for colClasses where "numeric"/"double" are equivalent)
-static const char UserTypeName[NUT][10] = {"logical", "integer", "integer64", "numeric", "character", "NULL", "double", "CLASS" };
-// important that first 6 correspond to TypeName.  "CLASS" is the fall back to character then as.class at R level ("CLASS" string is just a placeholder).
-static int UserTypeNameMap[NUT] = { SXP_LGL, SXP_INT, SXP_INT64, SXP_REAL, SXP_STR, SXP_NULL, SXP_REAL, SXP_STR };
-static char quote;
-typedef Rboolean (*reader_fun_t)(SEXP, int);
+#define JUMPLINES 100    // at each of the 100 jumps how many lines to guess column types (10,000 sample lines)
 
-// Not sure how these will end up. So not exposed to user, yet.
-#define NJUMPS      10     // how many points to jump to
-#define NJUMPLINES  100    // at each jump point how many lines to use to guess column types
+// Private globals so they can be cleaned up both on error and on successful return
+static const char *fnam = NULL;
+static void *mmp = NULL;
+static size_t fileSize;
+static _Bool typeOnStack = true;
+static int8_t *type = NULL, *size = NULL;
+static lenOff *colNames = NULL;
+static int8_t *oldType = NULL;
+static freadMainArgs args;  // global for use by DTPRINT
 
-const char *fnam=NULL, *origmmp, *mmp;   // origmmp just needed to pass to munmap when BOM is skipped over using mmp+=3.
-size_t filesize;
-#ifdef WIN32
-HANDLE hFile=0;
-HANDLE hMap=0;
-void closeFile() {
-    if (fnam!=NULL) {
-        UnmapViewOfFile(origmmp);
-        CloseHandle(hMap);
-        CloseHandle(hFile);
-    }
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "int32", "int32", "int64", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       4,       4,       8,       8,         8      };
+// size_t to prevent potential overflow of n*typeSize[i] (standard practice)
+
+// NAN and INFINITY constants are float, so cast to double once up front.
+static const double NAND = (double)NAN;
+static const double INFD = (double)INFINITY;
+
+/**
+ * Drops `const` qualifier from a `const char*` variable, equivalent of
+ * `const_cast<char*>` in C++.
+ */
+static char* _const_cast(const char *ptr) {
+  union { const char *a; char *b; } tmp = { ptr };
+  return tmp.b;
 }
-#else
-int fd=-1;
-void closeFile() {    
-    if (fnam!=NULL) {
-      if (munmap((char *)origmmp, filesize) || close(fd)) error("%s: '%s'", strerror(errno), fnam);
-    }
-}
-#endif
 
-void STOP(const char *format, ...) {
-    // Solves: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
-    va_list args;
-    va_start(args, format);
-    char msg[2000];
-    vsnprintf(msg, 2000, format, args);
-    va_end(args);
-    closeFile();  // some errors point to data in the file, hence via msg buffer first
-    error(msg);
+/**
+ * Free any resources / memory buffers allocated by the fread() function, and
+ * bring all global variables to a "clean slate". This function must always be
+ * executed when fread() exits, either successfully or not.
+ */
+void freadCleanup(void)
+{
+  // If typeOnStack is true, then `type` was `alloca`-ed, and therefore must not be freed!
+  if (!typeOnStack) { free(type); free(size); }
+  type = NULL; size = NULL;
+  free(colNames); colNames = NULL;
+  free(oldType); oldType = NULL;
+  if (mmp != NULL) {
+    // Important to unmap as OS keeps internal reference open on file. Process is not exiting as
+    // we're a .so/.dll here. If this was a process exiting we wouldn't need to unmap.
+    //
+    // Note that if there was an error unmapping the view of file, then we should not attempt
+    // to call STOP() for 2 reasons: 1) freadCleanup() may have itself been called from STOP(),
+    // and we would not want to overwrite the original error message; and 2) STOP() function
+    // may call freadCleanup(), thus resulting in an infinite loop.
+    #ifdef WIN32
+      int ret = UnmapViewOfFile(mmp);
+      if (!ret) DTPRINT("System error %d unmapping view of file\n", GetLastError());
+    #else
+      int ret = munmap(mmp, fileSize);
+      if (ret) DTPRINT("System errno %d unmapping file\n", errno);
+    #endif
+    mmp = NULL;
+  } else {
+    if (eof) *_const_cast(eof) = '\0';
+    // for direct char * input (e.g. tests) we temporarily put eol there so restore '\0'
+    // if (eof) for when file is empty and STOP() is called before eof has been set (test 885)
+  }
+  fileSize = 0;
+  sep = eol = eol2 = quote = dec = '\0';
+  eolLen = 0;
+  quoteRule = -1;
+  any_number_like_NAstrings = false;
+  blank_is_a_NAstring = false;
+  stripWhite = true;
+  skipEmptyLines = false;
+  fill = false;
+  // following are borrowed references: do not free
+  fnam = NULL;
+  eof = NULL;
+  NAstrings = NULL;
 }
+
+
+#define CEIL(x)  ((int)(double)ceil(x))
+static inline size_t umax(size_t a, size_t b) { return a > b ? a : b; }
+static inline size_t umin(size_t a, size_t b) { return a < b ? a : b; }
+static inline int imin(int a, int b) { return a < b ? a : b; }
+
+/** Return value of `x` clamped to the range [upper, lower] */
+static inline int64_t clamp_i64(int64_t x, int64_t lower, int64_t upper) {
+  return x < lower ? lower : x > upper? upper : x;
+}
+
 
 // Helper for error and warning messages to extract next 10 chars or \n if occurs first
 // Used exclusively together with "%.*s"
-int STRLIM(const char *ch, int limit) {
-  int maxwidth = MIN(limit, (int)(eof-ch));
+static int STRLIM(const char *ch, int limit) {
+  size_t maxwidth = umin((size_t)limit, (size_t)(eof-ch));
   char *newline = memchr(ch, eol, maxwidth);
-  return (newline==NULL ? maxwidth : (int)(newline-ch));
+  return (newline==NULL ? (int)maxwidth : (int)(newline - ch));
+}
+
+static void printTypes(int ncol) {
+  // e.g. files with 10,000 columns, don't print all of it to verbose output.
+  int tt=(ncol<=110?ncol:90); for (int i=0; i<tt; i++) DTPRINT("%d",type[i]);
+  if (ncol>110) { DTPRINT("..."); for (int i=ncol-10; i<ncol; i++) DTPRINT("%d",type[i]); }
 }
 
 static inline void skip_white(const char **this) {
   // skip space so long as sep isn't space and skip tab so long as sep isn't tab
-  const char *lch = *this;
-  while(lch<eof && (*lch==' ' || *lch== '\t') && *lch!=sep) lch++;
-  *this = lch;
+  const char *ch = *this;
+  while(ch<eof && (*ch==' ' || *ch== '\t') && *ch!=sep) ch++;
+  *this = ch;
 }
 
-static inline _Bool on_sep() {
+static inline _Bool on_sep(const char **this) {
+  const char *ch = *this;
   if (sep==' ' && ch<eof && *ch==' ') {
     while (ch+1<eof && *(ch+1)==' ') ch++;  // move to last of this sequence of spaces
     if (ch+1==eof || *(ch+1)==eol) ch++;    // if that's followed by eol or eof then move onto those
   }
+  *this = ch;
   return ch>=eof || *ch==sep || *ch==eol;
 }
 
-static inline void next_sep() {
+static inline void next_sep(const char **this) {
+  const char *ch = *this;
   while (ch<eof && *ch!=sep && *ch!=eol) ch++;
-  on_sep(); // to deal with multiple spaces when sep==' '
+  on_sep(&ch); // to deal with multiple spaces when sep==' '
+  *this = ch;
 }
 
-static inline _Bool is_nastring(const char *lch) {
-  skip_white(&lch);
-  const char *start = lch;
-  for (int i=0; i<length(nastrings); i++) {
-    SEXP this = STRING_ELT(nastrings,i);   // these (if any) fixed constants will be hot so no fetch concerns
-    int nchar = LENGTH(this);
-    if (lch+nchar-1<eof && strncmp(lch, CHAR(this), nchar)==0) {
-      lch += nchar;
-      skip_white(&lch);
-      if (lch>=eof || *lch==sep || *lch==eol) return TRUE;
-      lch = start;
+static inline _Bool is_NAstring(const char *fieldStart) {
+  skip_white(&fieldStart);  // updates local fieldStart
+  const char* const* nastr = NAstrings;
+  while (*nastr) {
+    const char *ch1 = fieldStart;
+    const char *ch2 = *nastr;
+    while (ch1<eof && *ch1 == *ch2) { ch1++; ch2++; }  // not using strncmp due to eof not being '\0'
+    if (*ch2=='\0') {
+      skip_white(&ch1);
+      if (ch1>=eof || *ch1==sep || *ch1==eol) return true;
+      // if "" is in NAstrings then true will be returned as intended
     }
+    nastr++;
   }
-  return FALSE;
+  return false;
 }
 
-static Rboolean Field(SEXP targetCol, int targetRow)
+static _Bool Field(const char **this, void *target)
 {
-  if (ch>=eof) STOP("Internal error: ch>=eof when Field() called");
+  const char *ch = *this;
   if (stripWhite) skip_white(&ch);  // before and after quoted field's quotes too (e.g. test 1609) but never inside quoted fields
   const char *fieldStart=ch;
-  Rboolean quoted = FALSE;
+  _Bool quoted = false;
   if (*ch!=quote || quoteRule==3) {
     // unambiguously not quoted. simply search for sep|eol. If field contains sep|eol then it must be quoted instead.
     while(ch<eof && *ch!=sep && *ch!=eol) ch++;
@@ -164,10 +196,10 @@ static Rboolean Field(SEXP targetCol, int targetRow)
     // or the field is quoted but quotes are not escaped (quoteRule 2)
     // or the field is not quoted but the data contains a quote at the start (quoteRule 2 too)
     int eolCount = 0;
-    quoted = TRUE;
+    quoted = true;
     fieldStart = ch+1; // step over opening quote
     switch(quoteRule) {
-    case 0:  // quoted with embedded quotes doubled; the final unescaped " must be followed by sep|eol 
+    case 0:  // quoted with embedded quotes doubled; the final unescaped " must be followed by sep|eol
       while (++ch<eof && eolCount<100) {  // TODO: expose this 100 to user to allow them to increase
         eolCount += (*ch==eol);
         // 100 prevents runaway opening fields by limiting eols. Otherwise the whole file would be read in the sep and
@@ -177,14 +209,14 @@ static Rboolean Field(SEXP targetCol, int targetRow)
           break;  // found undoubled closing quote
         }
       }
-      if (ch>=eof || *ch!=quote) return FALSE;
+      if (ch>=eof || *ch!=quote) return false;
       break;
     case 1:  // quoted with embedded quotes escaped; the final unescaped " must be followed by sep|eol
       while (++ch<eof && *ch!=quote && eolCount<100) {
         eolCount += (*ch==eol);
         ch += (*ch=='\\');
       }
-      if (ch>=eof || *ch!=quote) return FALSE;
+      if (ch>=eof || *ch!=quote) return false;
       break;
     case 2:  // (i) quoted (perhaps because the source system knows sep is present) but any quotes were not escaped at all,
              // so look for ", to define the end.   (There might not be any quotes present to worry about, anyway).
@@ -193,7 +225,7 @@ static Rboolean Field(SEXP targetCol, int targetRow)
              // since we look for ", and the source system quoted when , is present, looking for ", should work well.
              // No eol may occur inside fields, under this rule.
       {
-        const char *ch2 = ch;  
+        const char *ch2 = ch;
         while (++ch<eof && *ch!=eol) {
           if (*ch==quote && (ch+1>=eof || *(ch+1)==sep || *(ch+1)==eol)) {ch2=ch; break;}   // (*1) regular ", ending
           if (*ch==sep) {
@@ -210,11 +242,11 @@ static Rboolean Field(SEXP targetCol, int targetRow)
             break;
           }
         }
-        if (ch!=ch2) { fieldStart--; quoted=FALSE; } // field ending is this sep (neither (*1) or (*2) happened)
+        if (ch!=ch2) { fieldStart--; quoted=false; } // field ending is this sep (neither (*1) or (*2) happened)
       }
       break;
     default:
-      STOP("Internal error: undefined quote rule %d", quoteRule);
+      return false;  // Internal error: undefined quote rule
     }
   }
   int fieldLen = (int)(ch-fieldStart);
@@ -223,27 +255,59 @@ static Rboolean Field(SEXP targetCol, int targetRow)
     // this white space (' ' or '\t') can't be sep otherwise it would have stopped the field earlier at the first sep
   }
   if (quoted) { ch++; if (stripWhite) skip_white(&ch); }
-  if (!on_sep()) return FALSE;
-  if (targetCol) SET_STRING_ELT(targetCol, targetRow, fieldLen==0 ? R_BlankString : mkCharLenCE(fieldStart, fieldLen, ienc));
-  return TRUE;
+  if (!on_sep(&ch)) return false;
+  if (fieldLen==0) {
+    if (blank_is_a_NAstring) fieldLen=INT32_MIN;
+  } else {
+    if (is_NAstring(fieldStart)) fieldLen=INT32_MIN;
+  }
+  ((lenOff *)target)->len = fieldLen;
+  ((lenOff *)target)->off = (uint32_t)(fieldStart-*this);  // agnostic & thread-safe
+  *this = ch; // Update caller's ch. This may be after fieldStart+fieldLen due to quotes and/or whitespace
+  return true;
 }
 
-static int countfields()
+static inline int countfields(const char **this)
 {
-  if (sep==' ') while (ch<eof && *ch==' ') ch++;  // Correct to be sep==' ' only and not skip_white(). 
-  int ncol = 1;
-  while (ch<eof && *ch!=eol) {
-    if (!Field(NULL,0)) return -1;   // -1 means this line not valid for this sep and quote rule
-    // Field() leaves *ch resting on sep, eol or >=eof.  (Checked inside Field())
-    if (ch<eof && *ch!=sep && *ch!=eol) STOP("Internal error: Field didn't stop on sep, eol or eof");
-    if (ch<eof && *ch!=eol) { ncol++; ch++; } // move over sep (which will already be last ' ' if sep=' ').
-                //   ^^  Not *ch==sep because sep==eol when readLines
+  static char trash[8];  // see comment on other trash declaration
+  const char *ch = *this;
+  if (sep==' ') while (ch<eof && *ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
+  skip_white(&ch);
+  int ncol = 0;
+  if (ch<eof && *ch==eol) {
+    ch+=eolLen;
+  } else while (ch<eof) {
+    if (!Field(&ch,trash)) return -1;   // -1 means this line not valid for this sep and quote rule
+    // Field() leaves *ch resting on sep, eol or >=eof. Checked inside Field().
+    ncol++;
+    if (ch<eof && *ch==eol) { ch+=eolLen; break; }
+    ch++;  // move over sep (which will already be last ' ' if sep=' ').
   }
-  ch+=eolLen; // may step past eof but that's ok as we never use ==eof in this file, always >=eof or <eof.
+  *this = ch;
   return ncol;
 }
 
-static inline Rboolean StrtoI64(SEXP targetCol, int targetRow)
+static inline _Bool nextGoodLine(const char **this, int ncol)
+{
+  const char *ch = *this;
+  // we may have landed inside quoted field containing embedded sep and/or embedded \n
+  // find next \n and see if 5 good lines follow. If not try next \n, and so on, until we find the real \n
+  // We don't know which line number this is, either, because we jumped straight to it. So return true/false for
+  // the line number and error message to be worked out up there.
+  int attempts=0;
+  while (ch<eof && attempts++<30) {
+    while (ch<eof && *ch!=eol) ch++;
+    if (ch<eof) ch+=eolLen;
+    int i = 0, thisNcol=0;
+    const char *ch2 = ch;
+    while (ch2<eof && i<5 && ( (thisNcol=countfields(&ch2))==ncol || (thisNcol==0 && (skipEmptyLines || fill)))) i++;
+    if (i==5 || ch2>=eof) break;
+  }
+  if (ch<eof && attempts<30) { *this = ch; return true; }
+  return false;
+}
+
+static _Bool StrtoI64(const char **this, void *target)
 {
     // Specialized clib strtoll that :
     // i) skips leading isspace() too but other than field separator and eol (e.g. '\t' and ' \t' in FUT1206.txt)
@@ -252,353 +316,482 @@ static inline Rboolean StrtoI64(SEXP targetCol, int targetRow)
     // iv) safe for mmap which can't be \0 terminated on Windows (but can be on unix and mac)
     // v) fails if whole field isn't consumed such as "3.14" (strtol consumes the 3 and stops)
     // ... all without needing to read into a buffer at all (reads the mmap directly)
+    const char *ch = *this;
     skip_white(&ch);  //  ',,' or ',   ,' or '\t\t' or '\t   \t' etc => NA
-    if (on_sep()) {  // most often ',,' 
-      if (targetCol) REAL(targetCol)[targetRow]=NA_INT64_D;
-      return TRUE;
+    if (on_sep(&ch)) {  // most often ',,'
+      *(int64_t *)target = NA_INT64;
+      *this = ch;
+      return true;
     }
     const char *start=ch;
     int sign=1;
+    _Bool quoted = false;
+    if (ch<eof && (*ch==quote)) { quoted=true; ch++; }
     if (ch<eof && (*ch=='-' || *ch=='+')) sign -= 2*(*ch++=='-');
-    Rboolean ok = ch<eof && '0'<=*ch && *ch<='9';  // a single - or + with no [0-9] is !ok and considered type character
-    long long acc = 0;
-    while (ch<eof && '0'<=*ch && *ch<='9' && acc<(LLONG_MAX-10)/10) { // compiler should optimize last constant expression
-      // Conveniently, LLONG_MIN  = -9223372036854775808 and LLONG_MAX  = +9223372036854775807
-      // so the full valid range is [-LLONG_MAX,+LLONG_MAX] and NA==LLONG_MIN==-LLONG_MAX-1
+    _Bool ok = ch<eof && '0'<=*ch && *ch<='9';  // a single - or + with no [0-9] is !ok and considered type character
+    int64_t acc = 0;
+    while (ch<eof && '0'<=*ch && *ch<='9' && acc<(INT64_MAX-10)/10) { // compiler should optimize last constant expression
+      // Conveniently, INT64_MIN == -9223372036854775808 and INT64_MAX == +9223372036854775807
+      // so the full valid range is now symetric [-INT64_MAX,+INT64_MAX] and NA==INT64_MIN==-INT64_MAX-1
       acc *= 10;
       acc += *ch-'0';
       ch++;
     }
-    if (targetCol) REAL(targetCol)[targetRow] = LLtoD(sign * acc);
+    if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
+    // TODO: if (!targetCol) return early?  Most of the time, not though.
+    *(int64_t *)target = sign * acc;
     skip_white(&ch);
-    ok = ok && on_sep();
-    //Rprintf("StrtoI64 field '%.*s' has len %d\n", lch-ch+1, ch, len);
-    if (ok && !any_number_like_nastrings) return TRUE;  // most common case, return 
-    _Bool na = is_nastring(start);
-    if (ok && !na) return TRUE;
-    if (targetCol) REAL(targetCol)[targetRow] = NA_INT64_D;
-    next_sep();  // consume the remainder of field, if any
+    ok = ok && on_sep(&ch);
+    //DTPRINT("StrtoI64 field '%.*s' has len %d\n", lch-ch+1, ch, len);
+    *this = ch;
+    if (ok && !any_number_like_NAstrings) return true;  // most common case, return
+    _Bool na = is_NAstring(start);
+    if (ok && !na) return true;
+    *(int64_t *)target = NA_INT64;
+    next_sep(&ch);  // TODO: can we delete this? consume the remainder of field, if any
+    *this = ch;
     return na;
-}    
+}
 
-static inline Rboolean StrtoI32(SEXP targetCol, int targetRow)
+
+static _Bool StrtoI32_bare(const char **this, void *target)
+{
+    const char *ch = *this;
+    if (*ch==sep || *ch==eol) { *(int32_t *)target = NA_INT32; return true; }
+    if (sep==' ') return false;  // bare doesn't do sep=' '. TODO - remove
+    _Bool neg = *ch=='-';
+    ch += (neg || *ch=='+');
+    const char *start = ch;  // for overflow guard using field width
+    uint_fast64_t acc = 0;   // using unsigned to be clear that acc will never be negative
+    uint_fast8_t digit;
+    while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {  // see init.c for checks of unsigned uint_fast8_t) cast
+      acc *= 10;     // optimizer has best chance here; e.g. (x<<2 + x)<<1 or x<<3 + x<<1
+      acc += digit;
+      ch++;
+    }
+    *(int32_t *)target = neg ? -(int32_t)acc : (int32_t)acc;   // cast 64bit acc to 32bit; range checked in return below
+    *this = ch;
+    return (*ch==sep || *ch==eol) &&
+           (acc ? *start!='0' && acc<=INT32_MAX && (ch-start)<=10 : ch-start==1);
+    // If false, both *target and where *this is moved on to, are undefined.
+    // INT32 range is NA==-2147483648(INT32_MIN) then symmetric [-2147483647,+2147483647] so we can just test INT32_MAX
+    // The max (2147483647) happens to be 10 digits long, hence <=10.
+    // Leading 0 (such as 001 and 099 but not 0, +0 or -0) will return false and cause bump to _padded which has the
+    // option to treat as integer or string with further cost. Otherwise width would not be sufficient check here in _bare.
+}
+
+
+static _Bool StrtoI32_full(const char **this, void *target)
 {
     // Very similar to StrtoI64 (see it for comments). We can't make a single function and switch on TYPEOF(targetCol) to
     // know I64 or I32 because targetCol is NULL when testing types and when dropping columns.
+    const char *ch = *this;
     skip_white(&ch);
-    if (on_sep()) {  // most often ',,' 
-      if (targetCol) INTEGER(targetCol)[targetRow]=NA_INTEGER;
-      return TRUE;
+    if (on_sep(&ch)) {  // most often ',,'
+      *(int32_t *)target = NA_INT32;
+      *this = ch;
+      return true;
     }
     const char *start=ch;
     int sign=1;
+    _Bool quoted = false;
+    if (ch<eof && (*ch==quote)) { quoted=true; ch++; }
     if (ch<eof && (*ch=='-' || *ch=='+')) sign -= 2*(*ch++=='-');
-    Rboolean ok = ch<eof && '0'<=*ch && *ch<='9';
+    _Bool ok = ch<eof && '0'<=*ch && *ch<='9';
     int acc = 0;
-    while (ch<eof && '0'<=*ch && *ch<='9' && acc<(INT_MAX-10)/10) {  // NA_INTEGER==INT_MIN==-2147483648==-INT_MAX(+2147483647)-1
+    while (ch<eof && '0'<=*ch && *ch<='9' && acc<(INT32_MAX-10)/10) {  // NA==INT_MIN==-2147483648==-INT_MAX(+2147483647)-1
       acc *= 10;
       acc += *ch-'0';
       ch++;
     }
-    if (targetCol) INTEGER(targetCol)[targetRow] = sign * acc;
+    if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
+    *(int32_t *)target = sign * acc;
     skip_white(&ch);
-    ok = ok && on_sep();
-    //Rprintf("StrtoI32 field '%.*s' has len %d\n", lch-ch+1, ch, len);
-    if (ok && !any_number_like_nastrings) return TRUE;
-    Rboolean na = is_nastring(start);
-    if (ok && !na) return TRUE;
-    if (targetCol) INTEGER(targetCol)[targetRow] = NA_INTEGER;
-    next_sep();
+    ok = ok && on_sep(&ch);
+    //DTPRINT("StrtoI32 field '%.*s' has len %d\n", lch-ch+1, ch, len);
+    *this = ch;
+    if (ok && !any_number_like_NAstrings) return true;
+    _Bool na = is_NAstring(start);
+    if (ok && !na) return true;
+    *(int32_t *)target = NA_INT32;
+    next_sep(&ch);
+    *this = ch;
     return na;
 }
 
-static inline Rboolean StrtoD(SEXP targetCol, int targetRow)
+
+// generate freadLookups.h
+// TODO: review ERANGE checks and tests; that range outside [1.7e-308,1.7e+308] coerces to [0.0,Inf]
+/*
+f = "~/data.table/src/freadLookups.h"
+cat("const long double pow10lookup[701] = {\n", file=f, append=FALSE)
+for (i in (-350):(349)) cat("1.0E",i,"L,\n", sep="", file=f, append=TRUE)
+cat("1.0E350L\n};\n", file=f, append=TRUE)
+*/
+
+static _Bool StrtoD(const char **this, void *target)
 {
-    // Specialized strtod for same reasons as Strtoll (leading \t dealt with), but still uses stdlib:strtod
-    // R's R_Strtod5 uses strlen() on input, so we can't use that here unless we copy field to a buffer (slow)
-    // Could fork glibc's strtod and change it to pass in dec rather than via locale but see :
-    //    http://www.exploringbinary.com/how-glibc-strtod-works/
-    // i.e. feel more comfortable relying on glibc for speed and robustness (and more eyes have been on it)
+    // [+|-]N.M[E|e][+|-]E or Inf or NAN
+
+    const char *ch = *this;
     skip_white(&ch);
-    if (on_sep()) {
-      if (targetCol) REAL(targetCol)[targetRow]=NA_REAL;
-      return TRUE;
+    if (on_sep(&ch)) {
+      *(double *)target = NA_FLOAT64;
+      *this = ch;
+      return true;
     }
+    _Bool quoted = false;
+    if (ch<eof && (*ch==quote)) { quoted=true; ch++; }
+    int sign=1;
+    double d = NAND;
     const char *start=ch;
-    errno = 0;
-    double d = strtod(start, (char **)&ch);
-    if (errno==ERANGE && ch>start) {
-      ch = start;
-      errno = 0;
-      d = (double)strtold(start, (char **)&ch);
-      // errno is checked further below where ok= is set
-      if (ERANGEwarning) {  // FALSE initially when detecting types then its set TRUE just before reading data.
-        warning("C function strtod() returned ERANGE for one or more fields. The first was string input '%.*s'. It was read using (double)strtold() as numeric value %.16E (displayed here using %%.16E); loss of accuracy likely occurred. This message is designed to tell you exactly what has been done by fread's C code, so you can search yourself online for many references about double precision accuracy and these specific C functions. You may wish to use colClasses to read the column as character instead and then coerce that column using the Rmpfr package for greater accuracy.", ch-start, start, d);
-        ERANGEwarning = FALSE;   // once only warning
-        // This is carefully worded as an ERANGE warning because that's precisely what it is.  Calling it a 'precision' warning
-        // might lead the user to think they'll get a precision warning on "1.23456789123456789123456789123456789" too, but they won't
-        // as that will be read fine by the first strtod() with silent loss of precision. IIUC.
+    if (ch<eof && (*ch=='-' || *ch=='+')) sign -= 2*(*ch++=='-');
+    _Bool ok = ch<eof && (('0'<=*ch && *ch<='9') || *ch==dec);  // a single - or + with no [0-9] is !ok and considered type character
+    if (!ok) {
+      if      (ch<eof && *ch=='I' && *(ch+1)=='n' && *(ch+2)=='f') { ch+=3; d = sign*INFD; ok=true; }
+      else if (ch<eof && *ch=='N' && *(ch+1)=='A' && *(ch+2)=='N') { ch+=3; d = NAND; ok=true; }
+    } else {
+      uint64_t acc = 0;
+      while (ch<eof && '0'<=*ch && *ch<='9' && acc<(UINT64_MAX-10)/10) { // compiler should optimize last constant expression
+        // UNIT64_MAX == 18446744073709551615
+        acc *= 10;
+        acc += (uint64_t)(*ch - '0');
+        ch++;
       }
+      const char *decCh = (ch<eof && *ch==dec) ? ++ch : NULL;
+      while (ch<eof && '0'<=*ch && *ch<='9' && acc<(UINT64_MAX-10)/10) {
+        acc *= 10;
+        acc += (uint64_t)(*ch - '0');
+        ch++;
+      }
+      int e = decCh ? -(int)(ch-decCh) : 0;
+      if (decCh) while (ch<eof && '0'<=*ch && *ch<='9') ch++; // lose precision
+      else       while (ch<eof && '0'<=*ch && *ch<='9') { e--; ch++; }  // lose precision but retain scale
+      if (ch<eof && (*ch=='E' || *ch=='e')) {
+        ch++;
+        int esign=1;
+        if (ch<eof && (*ch=='-' || *ch=='+')) esign -= 2*(*ch++=='-');
+        int eacc = 0;
+        while (ch<eof && '0'<=*ch && *ch<='9' && eacc<(INT32_MAX-10)/10) {
+          eacc *= 10;
+          eacc += *ch-'0';
+          ch++;
+        }
+        e += esign * eacc;
+      }
+      d = (double)(sign * (long double)acc * pow10lookup[350+e]);
     }
+    if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
+    *(double *)target = d;
     skip_white(&ch);
-    Rboolean ok = errno==0 && ch>start && on_sep();
-    if (targetCol) REAL(targetCol)[targetRow]=d;
-    if (ok && !any_number_like_nastrings) return TRUE;
-    Rboolean na = is_nastring(start);
-    if (ok && !na) return TRUE;
-    if (targetCol) REAL(targetCol)[targetRow] = NA_REAL;
-    next_sep();
+    ok = ok && on_sep(&ch);
+    *this = ch;
+    if (ok && !any_number_like_NAstrings) return true;
+    _Bool na = is_NAstring(start);
+    if (ok && !na) return true;
+    *(double *)target = NA_FLOAT64;
+    next_sep(&ch);
+    *this = ch;
     return na;
 }
 
-static inline Rboolean StrtoB(SEXP targetCol, int targetRow)
+static _Bool StrtoB(const char **this, void *target)
 {
     // These usually come from R when it writes out.
+    const char *ch = *this;
     skip_white(&ch);
-    if (targetCol) LOGICAL(targetCol)[targetRow]=NA_LOGICAL;
-    if (on_sep()) return TRUE;  // empty field most commonly ',,' 
+    *(int8_t *)target = NA_BOOL8;
+    if (on_sep(&ch)) { *this=ch; return true; }  // empty field ',,'
     const char *start=ch;
-    if (*ch=='T') {
-        if (targetCol) LOGICAL(targetCol)[targetRow] = TRUE;
+    _Bool quoted = false;
+    if (ch<eof && (*ch==quote)) { quoted=true; ch++; }
+    if (quoted && *ch==quote) { ch++; if (on_sep(&ch)) {*this=ch; return true;} else return false; }  // empty quoted field ',"",'
+    _Bool logical01 = false;  // expose to user and should default be true?
+    if ( ((*ch=='0' || *ch=='1') && logical01) || (*ch=='N' && ch+1<eof && *(ch+1)=='A' && ch++)) {
+        *(int8_t *)target = (*ch=='1' ? true : (*ch=='0' ? false : NA_BOOL8));
         ch++;
-        if (on_sep()) return TRUE;
-        if (ch+2<eof && *ch=='R' && *++ch=='U' && *++ch=='E' && ++ch && on_sep()) return TRUE;
-        ch = start+1;
-        if (ch+2<eof && *ch=='r' && *++ch=='u' && *++ch=='e' && ++ch && on_sep()) return TRUE;
+    } else if (*ch=='T') {
+        *(int8_t *)target = true;
+        if (++ch+2<eof && ((*ch=='R' && *(ch+1)=='U' && *(ch+2)=='E') ||
+                           (*ch=='r' && *(ch+1)=='u' && *(ch+2)=='e'))) ch+=3;
+    } else if (*ch=='F') {
+        *(int8_t *)target = false;
+        if (++ch+3<eof && ((*ch=='A' && *(ch+1)=='L' && *(ch+2)=='S' && *(ch+3)=='E') ||
+                           (*ch=='a' && *(ch+1)=='l' && *(ch+2)=='s' && *(ch+3)=='e'))) ch+=4;
     }
-    else if (*ch=='F') {
-        if (targetCol) LOGICAL(targetCol)[targetRow] = FALSE;
-        ch++;
-        if (on_sep()) return TRUE;
-        if (ch+3<eof && *ch=='A' && *++ch=='L' && *++ch=='S' && *++ch=='E' && ++ch && on_sep()) return TRUE;
-        ch = start+1;
-        if (ch+3<eof && *ch=='a' && *++ch=='l' && *++ch=='s' && *++ch=='e' && ++ch && on_sep()) return TRUE;
-    }
-    if (targetCol) LOGICAL(targetCol)[targetRow] = NA_LOGICAL;
-    next_sep();
-    return is_nastring(start);
+    if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
+    if (on_sep(&ch)) { *this=ch; return true; }
+    *(int8_t *)target = NA_BOOL8;
+    next_sep(&ch);
+    *this=ch;
+    return is_NAstring(start);
+}
+
+static reader_fun_t fun[NUMTYPE] = {&Field, &StrtoB, &StrtoI32_bare, &StrtoI32_full, &StrtoI64, &StrtoD, &Field};
+
+double wallclock()
+{
+    double ans = 0;
+#ifdef CLOCK_REALTIME
+    struct timespec tp;
+    if (0==clock_gettime(CLOCK_REALTIME, &tp))
+        ans = (double) tp.tv_sec + 1e-9 * (double) tp.tv_nsec;
+#else
+    struct timeval tv;
+    if (0==gettimeofday(&tv, NULL))
+        ans = (double) tv.tv_sec + 1e-6 * (double) tv.tv_usec;
+#endif
+    return ans;
 }
 
 
-SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastringsarg, SEXP verbosearg, SEXP skip, SEXP select, SEXP drop, SEXP colClasses, SEXP integer64, SEXP dec, SEXP encoding, SEXP quoteArg, SEXP stripWhiteArg, SEXP skipEmptyLinesArg, SEXP fillArg, SEXP showProgressArg)
-// can't be named fread here because that's already a C function (from which the R level fread function took its name)
-{
-    SEXP ans, thisstr;
-    R_len_t j, k, protecti=0;
-    const char *pos, *ch2;
-    Rboolean header, allchar, skipEmptyLines, fill;
-    verbose=LOGICAL(verbosearg)[0];
-    clock_t t0 = clock();
-    ERANGEwarning = FALSE;  // just while detecting types, then TRUE before the read data loop
-    PROTECT_INDEX pi;
-    
-    // Encoding, #563: Borrowed from do_setencoding from base R
-    // https://github.com/wch/r-source/blob/ca5348f0b5e3f3c2b24851d7aff02de5217465eb/src/main/util.c#L1115
-    // Check for mkCharLenCE function to locate as to where where this is implemented.
-    // cetype_t ienc;
-    if (!strcmp(CHAR(STRING_ELT(encoding, 0)), "Latin-1")) ienc = CE_LATIN1;
-    else if (!strcmp(CHAR(STRING_ELT(encoding, 0)), "UTF-8")) ienc = CE_UTF8;
-    else ienc = CE_NATIVE;
 
-    stripWhite = LOGICAL(stripWhiteArg)[0];
-    skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
-    fill = LOGICAL(fillArg)[0];
+int freadMain(freadMainArgs __args) {
+    args = __args;  // assign to global for use by DTPRINT() in other functions
+    double t0 = wallclock();
+    _Bool verbose = args.verbose;
+    _Bool warningsAreErrors = args.warningsAreErrors;
 
-    // quoteArg for those rare cases when default scenario doesn't cut it.., FR #568
-    if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
-        error("quote must either be empty or a single character");
-    quote = CHAR(STRING_ELT(quoteArg,0))[0];
+    if (fnam != NULL || mmp != NULL || colNames != NULL || oldType != NULL) {
+      STOP("Internal error: Previous fread() session was not cleaned up properly");
+    }
 
-    if (!isLogical(showProgressArg) || LENGTH(showProgressArg)!=1 || LOGICAL(showProgressArg)[0]==NA_LOGICAL)
-        error("Internal error: showProgress is not TRUE or FALSE. Please report.");
-    const Rboolean showProgress = LOGICAL(showProgressArg)[0];
-    
-    if (!isString(dec) || LENGTH(dec)!=1 || strlen(CHAR(STRING_ELT(dec,0))) != 1)
-        error("dec must be a single character");
-    const char decChar = *CHAR(STRING_ELT(dec,0));
-    
-    fnam = NULL;  // reset global, so STOP() can call closeFile() which sees fnam
+    int nth = args.nth;
+    if (nth <= 0) STOP("nThreads must be >= 1, received %d", nth);
+    if (nth > omp_get_max_threads()) {
+      nth = omp_get_max_threads();
+      DTPRINT("Limited nth=%d to omp_get_max_threads()=%d\n", args.nth, nth);
+    }
 
-    reader_fun_t fun[NUMTYPE] = {&StrtoB, &StrtoI32, &StrtoI64, &StrtoD, &Field, &Field};
-    
-    // raise(SIGINT);
-    // ********************************************************************************************
-    //   Check inputs.
-    // ********************************************************************************************
-    
-    if (!isLogical(headerarg) || LENGTH(headerarg)!=1) error("'header' must be 'auto', TRUE or FALSE");
-    // 'auto' was converted to NA at R level
-    header = LOGICAL(headerarg)[0];
-    if (!isNull(nastringsarg) && !isString(nastringsarg)) error("'na.strings' is type '%s'.  Must be a character vector.", type2char(TYPEOF(nastrings)));
-    nastrings = nastringsarg;  // static global so we can use it in field processors
-    any_number_like_nastrings = FALSE;
+    typeOnStack = false;
+    type = NULL;
+    size = NULL;
+    uint64_t ui64 = NA_FLOAT64_I64;
+    memcpy(&NA_FLOAT64, &ui64, 8);
+
+    NAstrings = args.NAstrings;
+    any_number_like_NAstrings = false;
+    blank_is_a_NAstring = false;
     // if we know there are no nastrings which are numbers (like -999999) then in the number
-    // field processors we can save an expensive step in checking the nastrings. Since if the field parses as a number,
-    // we then know it can't be NA provided any_number_like_nastrings==FALSE.
-    for (int i=0; i<length(nastrings); i++) {
-      int nchar = LENGTH(STRING_ELT(nastrings,i));
-      if (nchar==0) continue;  // otherwise "" is considered numeric by strtod
-      const char *start=CHAR(STRING_ELT(nastrings,i));
-      if (isspace(start[0]) || isspace(start[nchar-1])) error("na.strings[%d]=='%s' has whitespace at the beginning or end", i+1, start);
-      if (!strcmp(start,"T") || !strcmp(start,"F") ||
-          !strcmp(start,"TRUE") || !strcmp(start,"FALSE") ||
-          !strcmp(start,"True") || !strcmp(start,"False")) error("na.strings[%d]=='%s' is recognized as type boolean. This string is not permitted in 'na.strings'.", i+1, start);
+    // field processors we can save an expensive step in checking the NAstrings. If the field parses as a number,
+    // we then when any_number_like_nastrings==FALSE we know it can't be NA.
+    const char * const* nastr = NAstrings;
+    while (*nastr) {
+      if (**nastr == '\0') {
+        blank_is_a_NAstring = true;
+        nastr++;
+        continue;
+      }
+      const char *ch = *nastr;
+      size_t nchar = strlen(ch);
+      if (isspace(ch[0]) || isspace(ch[nchar-1]))
+        STOP("freadMain: NAstring <<%s>> has whitespace at the beginning or end", ch);
+      if (strcmp(ch,"T")==0    || strcmp(ch,"F")==0 ||
+          strcmp(ch,"TRUE")==0 || strcmp(ch,"FALSE")==0 ||
+          strcmp(ch,"True")==0 || strcmp(ch,"False")==0 ||
+          strcmp(ch,"1")==0    || strcmp(ch,"0")==0)
+        STOP("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted.", ch);
       char *end;
       errno = 0;
-      strtod(start, &end);
-      if (errno==0 && (int)(end-start)==nchar) {
-        any_number_like_nastrings = TRUE;
-        if (verbose) Rprintf("na.strings[%d]=='%s' is numeric so all numeric fields will have to check na.strings\n", i+1, start); 
+      strtod(ch, &end);  // careful not to let "" get to here (see continue above) as strtod considers "" numeric
+      if (errno==0 && (size_t)(end - ch) == nchar) any_number_like_NAstrings = true;
+      nastr++;
+    }
+    if (verbose) {
+      if (*NAstrings == NULL) {
+        DTPRINT("No NAstrings provided.\n");
+      } else {
+        DTPRINT("NAstrings = [");
+        const char * const* s = NAstrings;
+        while (*s++) DTPRINT(*s? "<<%s>>, " : "<<%s>>", *(s-1));
+        DTPRINT("]\n");
+        DTPRINT("%s of the NAstrings are numeric (such as '-9999').\n",
+                any_number_like_NAstrings ? "One or more" : "None");
       }
     }
-    if (verbose && !any_number_like_nastrings) Rprintf("None of the %d 'na.strings' are numeric (such as '-9999') which is normal and best for performance.\n", LENGTH(nastrings)); 
-    if (!isInteger(nrowsarg) || LENGTH(nrowsarg)!=1 || INTEGER(nrowsarg)[0]==NA_INTEGER) error("'nrows' must be a single non-NA number of type numeric or integer");
-    if (!( (isInteger(skip) && LENGTH(skip)==1 && INTEGER(skip)[0]>=0)  // NA_INTEGER is covered by >=0
-         ||(isString(skip) && LENGTH(skip)==1))) error("'skip' must be a length 1 vector of type numeric or integer >=0, or single character search string");
-    if (!isNull(separg)) {
-        if (!isString(separg) || LENGTH(separg)!=1 || strlen(CHAR(STRING_ELT(separg,0)))!=1) error("'sep' must be 'auto' or a single character");
-        if (*CHAR(STRING_ELT(separg,0))==quote) error("sep = '%c' = quote, is not an allowed separator.",quote);
-        if (*CHAR(STRING_ELT(separg,0)) == decChar) error("The two arguments to fread 'dec' and 'sep' are equal ('%c').", decChar);
-    }
-    if (!isString(integer64) || LENGTH(integer64)!=1) error("'integer64' must be a single character string");
-    if (strcmp(CHAR(STRING_ELT(integer64,0)), "integer64")!=0 &&
-        strcmp(CHAR(STRING_ELT(integer64,0)), "double")!=0 &&
-        strcmp(CHAR(STRING_ELT(integer64,0)), "numeric")!=0 &&
-        strcmp(CHAR(STRING_ELT(integer64,0)), "character")!=0)
-        error("integer64='%s' which isn't 'integer64'|'double'|'numeric'|'character'", CHAR(STRING_ELT(integer64,0)));
-    if (!isNull(select) && !isNull(drop)) error("Supply either 'select' or 'drop' but not both");
-    
+
+    stripWhite = args.stripWhite;
+    skipEmptyLines = args.skipEmptyLines;
+    fill = args.fill;
+    dec = args.dec;
+    quote = args.quote;
+
     // ********************************************************************************************
-    //   Point to text input, or open and mmap file
+    //   Point to text input if it contains \n, or open and mmap file if not
     // ********************************************************************************************
-    ch = ch2 = (const char *)CHAR(STRING_ELT(input,0));
-    while (*ch2!='\n' && *ch2) ch2++;
-    if (*ch2=='\n' || !*ch) {
-        if (verbose) Rprintf("Input contains a \\n (or is \"\"). Taking this to be text input (not a filename)\n");
-        filesize = strlen(ch);
-        mmp = ch;
-        eof = mmp+filesize;
-        if (*eof!='\0') error("Internal error: last byte of character input isn't \\0");
-    } else {
-        if (verbose) Rprintf("Input contains no \\n. Taking this to be a filename to open\n");
-        fnam = R_ExpandFileName(ch);  // for convenience so user doesn't have to call path.expand() themselves
+    const char *sof;  // start-of-file
+    const char *ch;
+    fnam = NULL;
+    mmp = NULL;
+    if (args.input != NULL) {
+        if (verbose) DTPRINT("`input` argument is given, interpreting as raw text to read\n");
+        fnam = "<input>";
+        fileSize = strlen(args.input);
+        sof = args.input;
+        eof = sof+fileSize;
+        if (*eof!='\0') STOP("Internal error: last byte of character input isn't \\0");
+    } else if (args.filename != NULL) {
+        if (verbose) DTPRINT("`filename` argument given, attempting to open a file with such name\n");
+        fnam = args.filename;
 #ifndef WIN32
-        fd = open(fnam, O_RDONLY);
-        if (fd==-1) error("file not found: %s",fnam);
+        int fd = open(fnam, O_RDONLY);
+        if (fd==-1) STOP("file not found: %s",fnam);
         struct stat stat_buf;
-        if (fstat(fd,&stat_buf) == -1) {close(fd); error("Opened file ok but couldn't obtain file size: %s", fnam);}
-        filesize = stat_buf.st_size;
-        if (filesize<=0) {close(fd); error("File is empty: %s", fnam);}
-        if (verbose) Rprintf("File opened, filesize is %.6f GB.\nMemory mapping ... ", 1.0*filesize/(1024*1024*1024));
-        
-        // No MAP_POPULATE for faster nrow=10 and to make possible earlier progress bar in row count stage
+        if (fstat(fd,&stat_buf) == -1) {close(fd); STOP("Opened file ok but couldn't obtain file size: %s", fnam);}
+        fileSize = (size_t) stat_buf.st_size;
+        if (fileSize == 0) {close(fd); STOP("File is empty: %s", fnam);}
+        if (verbose) {
+            DTPRINT("File opened, size %.6f GB.\n", 1.0*fileSize/(1024*1024*1024));
+            DTPRINT("Memory mapping ... ");
+        }
+
+        // No MAP_POPULATE for faster nrows=10 and to make possible earlier progress bar in row count stage
         // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
         // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
         //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
-        mmp = origmmp = (const char *)mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);
+        mmp = mmap(NULL, fileSize+1, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW pages. +1 for '\0' we'll add
+        close(fd);  // we don't need to keep file handle open
         if (mmp == MAP_FAILED) {
-            close(fd);
 #else
         // Following: http://msdn.microsoft.com/en-gb/library/windows/desktop/aa366548(v=vs.85).aspx
-        hFile = INVALID_HANDLE_VALUE;
+        HANDLE hFile = INVALID_HANDLE_VALUE;
         int attempts = 0;
         while(hFile==INVALID_HANDLE_VALUE && attempts<5) {
             hFile = CreateFile(fnam, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
             // FILE_SHARE_WRITE is required otherwise if the file is open in Excel, CreateFile fails. Should be ok now.
             if (hFile==INVALID_HANDLE_VALUE) {
-                if (GetLastError()==ERROR_FILE_NOT_FOUND) error("File not found: %s",fnam);
+                if (GetLastError()==ERROR_FILE_NOT_FOUND) STOP("File not found: %s",fnam);
                 if (attempts<4) Sleep(250);  // 250ms
             }
             attempts++;
             // Looped retry to avoid ephemeral locks by system utilities as recommended here : http://support.microsoft.com/kb/316609
         }
-        if (hFile==INVALID_HANDLE_VALUE) error("Unable to open file after %d attempts (error %d): %s", attempts, GetLastError(), fnam);
+        if (hFile==INVALID_HANDLE_VALUE) STOP("Unable to open file after %d attempts (error %d): %s", attempts, GetLastError(), fnam);
         LARGE_INTEGER liFileSize;
-        if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); error("GetFileSizeEx failed (returned 0) on file: %s", fnam); }
-        filesize = (size_t)liFileSize.QuadPart;
-        if (filesize<=0) { CloseHandle(hFile); error("File is empty: %s", fnam); }
-        hMap=CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL); // filesize+1 not allowed here, unlike mmap where +1 is zero'd
-        if (hMap==NULL) { CloseHandle(hFile); error("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
-        if (verbose) Rprintf("File opened, filesize is %.6f GB.\nMemory mapping ... ", 1.0*filesize/(1024*1024*1024));
-        mmp = origmmp = (const char *)MapViewOfFile(hMap,FILE_MAP_READ,0,0,filesize);
-        if (mmp == NULL) {
-            CloseHandle(hMap);
-            CloseHandle(hFile);
-#endif
-            if (sizeof(char *)==4)
-                error("Opened file ok, obtained its size on disk (%.1fMB) but couldn't memory map it. This is a 32bit machine. You don't need more RAM per se but this fread function is tuned for 64bit addressability at the expense of large file support on 32bit machines. You probably need more RAM to store the resulting data.table, anyway. And most speed benefits of data.table are on 64bit with large RAM, too. Please upgrade to 64bit.", filesize/(1024.0*1024));
-                // if we support this on 32bit, we may need to use stat64 instead, as R does
-            else if (sizeof(char *)==8)
-                error("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. This is a 64bit machine so this is surprising. Please report to datatable-help.", filesize/1024^2);
-            else
-                error("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. Size of pointer is %d on this machine. Probably failing because this is neither a 32bit or 64bit machine. Please report to datatable-help.", filesize/1024^2, sizeof(char *));
+        if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP("GetFileSizeEx failed (returned 0) on file: %s", fnam); }
+        fileSize = (size_t)liFileSize.QuadPart;
+        if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
+        if (verbose) {
+            DTPRINT("File opened, size %.6f GB.\n", (double)fileSize/(1024*1024*1024));
+            DTPRINT("Memory mapping ... ");
         }
-        if (EOF > -1) error("Internal error. EOF is not -1 or less\n");
-        if (mmp[filesize-1] < 0) error("mmap'd region has EOF at the end");
-        eof = mmp+filesize;  // byte after last byte of file.  Never dereference eof as it's not mapped.
-        if (verbose) Rprintf("ok\n");  // to end 'Memory mapping ... '
+        DWORD hi = (fileSize) >> 32;            // tried very very hard again on 26 & 27th April 2017 to over-map file by 1 byte
+        DWORD lo = (fileSize) & 0xFFFFFFFFull;  // on Windows for COW/FILE_MAP_COPY on read-only file, with no joy.
+        HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, hi, lo, NULL);
+        if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
+        mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);  // fileSize must be <= hilo passed to CreateFileMapping above.
+        CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
+        CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
+        if (mmp == NULL) {
+#endif
+            if (sizeof(char *)==4) {
+                STOP("Opened file ok, obtained its size on disk (%.1fMB) but couldn't memory map it. This is a 32bit machine. You don't need more RAM per se but this fread function is tuned for 64bit addressability at the expense of large file support on 32bit machines. You probably need more RAM to store the resulting data.table, anyway. And most speed benefits of data.table are on 64bit with large RAM, too. Please upgrade to 64bit.", (double)fileSize/(1024*1024));
+                // if we support this on 32bit, we may need to use stat64 instead, as R does
+            } else if (sizeof(char *)==8) {
+                STOP("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. This is a 64bit machine so this is surprising. Please report.", (double)fileSize/(1024*1024));
+            } else {
+                STOP("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. Size of pointer is %d on this machine. Probably failing because this is neither a 32bit or 64bit machine. Please report.", (double)fileSize/(1024*1024), sizeof(char *));
+            }
+        }
+        sof = (const char*) mmp;
+        eof = sof+fileSize;  // byte after last byte of file.
+        if (verbose) DTPRINT("ok\n");  // to end 'Memory mapping ... '
+    } else {
+        sof = NULL;
+        STOP("Neither `input` nor `filename` are given, nothing to read.");
     }
-    clock_t tMap = clock();
-    // From now use STOP() wrapper instead of error(), for Windows to close file so as not to lock the file after an error.
-    
+    double tMap = wallclock();
+
+    // ********************************************************************************************
+    //   Check whether the file contains BOM (Byte Order Mark), and if yes strip it, modifying
+    //   `mmp`. Also, presence of BOM allows us to reliably detect the file's encoding.
+    //   See: https://en.wikipedia.org/wiki/Byte_order_mark
+    //   See: issues #1087 and #1465
+    // ********************************************************************************************
+    if (fileSize >= 3 && memcmp(sof, "\xEF\xBB\xBF", 3) == 0) {
+      sof += 3;
+      // ienc = CE_UTF8;
+      if (args.verbose) DTPRINT("UTF-8 byte order mark EF BB BF found at the start of the file and skipped.\n");
+    }
+    else if (fileSize >= 4 && memcmp(sof, "\x84\x31\x95\x33", 4) == 0) {
+      sof += 4;
+      // ienc = CE_GB18030;
+      if (args.verbose) DTPRINT("GB-18030 byte order mark 84 31 95 33 found at the start of the file and skipped.\n");
+      DTWARN("GB-18030 encoding detected, however fread() is unable to decode it. Some character fields may be garbled.\n");
+    }
+    else if (fileSize >= 2 && sof[0] + sof[1] == '\xFE' + '\xFF') {  // either 0xFE 0xFF or 0xFF 0xFE
+      STOP("File is encoded in UTF-16, this encoding is not supported by fread(). Please recode the file to UTF-8.");
+    }
+
     // ********************************************************************************************
     //   Auto detect eol, first eol where there are two (i.e. CRLF)
     // ********************************************************************************************
-    // take care of UTF8 BOM, #1087 and #1465
-    if (!memcmp(mmp, "\xef\xbb\xbf", 3)) mmp += 3;   // this is why we need 'origmmp'
-    ch = mmp;
+    ch = sof;
     while (ch<eof && *ch!='\n' && *ch!='\r') {
-        if (*ch==quote) while(++ch<eof && *ch!=quote) {};  // allows protection of \n and \r inside column names
-        ch++;                                            // this 'if' needed in case opening protection is not closed before eof
+        if (*ch==quote) while(++ch<eof && *ch!=quote) {}; // (TODO unbounded to fix) allows protection of \n and \r inside column names
+        ch++;                                             // this 'if' needed in case opening protection is not closed before eof
     }
     if (ch>=eof) {
         if (ch>eof) STOP("Internal error: ch>eof when detecting eol");
-        if (verbose) Rprintf("Input ends before any \\r or \\n observed. Input will be treated as a single row.\n");
+        if (verbose) DTPRINT("Input ends before any \\r or \\n observed. Input will be treated as a single row.\n");
         eol=eol2='\n'; eolLen=1;
     } else {
         eol=eol2=*ch; eolLen=1;
         if (eol=='\r') {
             if (ch+1<eof && *(ch+1)=='\n') {
-                if (verbose) Rprintf("Detected eol as \\r\\n (CRLF) in that order, the Windows standard.\n");
+                if (verbose) DTPRINT("Detected eol as \\r\\n (CRLF) in that order, the Windows standard.\n");
                 eol2='\n'; eolLen=2;
             } else {
                 if (ch+1<eof && *(ch+1)=='\r')
                     STOP("Line ending is \\r\\r\\n. R's download.file() appears to add the extra \\r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.");
-                    // NB: on Windows, download.file from file: seems to condense \r\r too. So 
-                if (verbose) Rprintf("Detected eol as \\r only (no \\n or \\r afterwards). An old Mac 9 standard, discontinued in 2002 according to Wikipedia.\n");
+                    // NB: on Windows, download.file from file: seems to condense \r\r too. So
+                if (verbose) DTPRINT("Detected eol as \\r only (no \\n or \\r afterwards). An old Mac 9 standard, discontinued in 2002 according to Wikipedia.\n");
             }
         } else if (eol=='\n') {
             if (ch+1<eof && *(ch+1)=='\r') {
-                warning("Detected eol as \\n\\r, a highly unusual line ending. According to Wikipedia the Acorn BBC used this. If it is intended that the first column on the next row is a character column where the first character of the field value is \\r (why?) then the first column should start with a quote (i.e. 'protected'). Proceeding with attempt to read the file.\n");
+                DTWARN("Detected eol as \\n\\r, a highly unusual line ending. According to Wikipedia the Acorn BBC used this. If it is intended that the first column on the next row is a character column where the first character of the field value is \\r (why?) then the first column should start with a quote (i.e. 'protected'). Proceeding with attempt to read the file.\n");
                 eol2='\r'; eolLen=2;
-            } else if (verbose) Rprintf("Detected eol as \\n only (no \\r afterwards), the UNIX and Mac standard.\n");
+            } else if (verbose) DTPRINT("Detected eol as \\n only (no \\r afterwards), the UNIX and Mac standard.\n");
         } else
             STOP("Internal error: if no \\r or \\n found then ch should be eof");
     }
+    // Ensure file ends with eol so we don't need to check 'ch<eof && *ch...' everywhere in deep loops just because
+    // the very last field in the file might finish abrubtly with no final \n (or \r\n on Windows).
+    // The file was opened readonly and mapped with page level copy-on-write so this won't write to file.
+    // On Windows we may only have a problem if the file i) does not end with newline already AND ii) it is an exact multiple
+    // of the VirtualAlloc block size (64k) -- for such rare cases we could ask the Windows user to add an ending newline.
+    // TODO - only need to do this *eof write if final data line does end abrubtly. This is a first step for now to see if it works.
+    // On Linux and Mac it's safe since mmap() there accepts fileSize+1. On Windows, it writes into the last page MAP_COMMIT'd for this
+    // file which is ok I think as VirtualAlloc() allocates on boundaries (64k on Windows). There may be a way on Windows
+    // using Zw* lower level but I haven't yet managed to include headers correctly (I asked on r-package-devel on 28 Apr).
+    *_const_cast(eof) = eol;
 
     // ********************************************************************************************
     //   Position to line skip+1 or line containing skip="string"
     // ********************************************************************************************
-    line = 1;
+    int line = 1;
     // line is for error and warning messages so considers raw \n whether inside quoted fields or not, just
     // like wc -l, head -n and tail -n
-    ch = pos = mmp;
-    if (isString(skip)) {
-        ch = strstr(mmp, CHAR(STRING_ELT(skip,0)));
-        if (!ch) STOP("skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)", CHAR(STRING_ELT(skip,0)));
-        while (ch>mmp && *(ch-1)!=eol2) ch--;  // move to beginning of line
+    const char *pos = sof;
+    ch = pos;
+    if (args.skipString!=NULL) {
+        ch = strstr(sof, args.skipString);
+        if (!ch) STOP("skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)",
+                      args.skipString);
+        while (ch>sof && *(ch-1)!=eol2) ch--;  // move to beginning of line
         pos = ch;
-        ch = mmp;
+        ch = sof;
         while (ch<pos) line+=(*ch++==eol);
-        if (verbose) Rprintf("Found skip='%s' on line %d. Taking this to be header row or first row of data.\n", CHAR(STRING_ELT(skip,0)), line);
+        if (verbose) DTPRINT("Found skip='%s' on line %d. Taking this to be header row or first row of data.\n",
+                                  args.skipString, line);
         ch = pos;
-    } else if (INTEGER(skip)[0]>0) {
-        while (ch<eof && line<=INTEGER(skip)[0]) line+=(*ch++==eol);
-        if (ch>=eof) STOP("skip=%d but the input only has %d line%s", INTEGER(skip)[0], line, line>1?"s":"");
+    } else if (args.skipNrow>0) {
+        while (ch<eof && line<=args.skipNrow) line+=(*ch++==eol);
+        if (ch>=eof) STOP("skip=%d but the input only has %d line%s", args.skipNrow, line, line>1?"s":"");
         ch += (eolLen-1); // move over eol2 on Windows to be on start of desired line
         pos = ch;
     }
-    
+
     // skip blank input at the start
     const char *lineStart = ch;
     while (ch<eof && isspace(*ch)) {   // isspace matches ' ', \t, \n and \r
@@ -606,74 +799,93 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
     }
     if (ch>=eof) STOP("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace.");
     if (verbose) {
-      if (lineStart>ch) Rprintf("Moved forward to first non-blank line (%d)\n", line);
-      Rprintf("Positioned on line %d starting: <<%.*s>>\n", line, STRLIM(lineStart, 30), lineStart);
+      if (lineStart>ch) DTPRINT("Moved forward to first non-blank line (%d)\n", line);
+      DTPRINT("Positioned on line %d starting: <<%.*s>>\n", line, STRLIM(lineStart, 30), lineStart);
     }
     ch = pos = lineStart;
-    
+
     // *********************************************************************************************************
-    //   Auto detect separator, quoting rule, first line and ncol, simply.
+    //   Auto detect separator, quoting rule, first line and ncol, simply, using jump 0 only
+    //
+    //   Always sample as if nrows= wasn't supplied. That's probably *why* user is setting nrow=0 to get the
+    //   column names and types, without actually reading the data yet. Most likely to check consistency across
+    //   a set of files.
     // *********************************************************************************************************
-    const char *seps;
-    int nseps=0;
-    if (isNull(separg)) {
-      seps=",|;\t ";  // separators, in order of preference. See ?fread.
-      if (verbose) Rprintf("Detecting sep ...\n");
-      nseps = strlen(seps);
+    char seps[]=",|;\t ";  // default seps in order of preference. See ?fread.
+    // using seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
+    int nseps = (int) strlen(seps);
+
+    if (args.sep == quote && quote!='\0') STOP("sep == quote ('%c') is not allowed", quote);
+    if (dec=='\0') STOP("dec='' not allowed. Should be '.' or ','");
+    if (args.sep == dec) STOP("sep == dec ('%c') is not allowed", dec);
+    if (quote == dec) STOP("quote == dec ('%c') is not allowed", dec);
+    if (args.sep == '\0') {  // default is '\0' meaning 'auto'
+      if (verbose) DTPRINT("Detecting sep ...\n");
     } else {
-      seps = CHAR(STRING_ELT(separg,0));  // length 1 string of 1 character was checked above
-      nseps = 1;
-      if (verbose) Rprintf("Using supplied sep '%s'\n", seps[0]=='\t' ? "\\t" : seps);
+      seps[0]=args.sep; seps[1]='\0'; nseps=1;
+      if (verbose) DTPRINT("Using supplied sep '%s'\n", args.sep=='\t' ? "\\t" : seps);
     }
-    
+
     int topNumLines=0;        // the most number of lines with the same number of fields, so far
     int topNumFields=1;       // how many fields that was, to resolve ties
-    int topNmax=0;            // for that sep and quote rule, what was the max number of columns (just for fill=TRUE)
     char topSep=eol;          // which sep that was, by default \n to mean single-column input (1 field)
     int topQuoteRule=0;       // which quote rule that was
-    const char *firstEnd=eof; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
-    
-    int nJumpLines = INTEGER(nrowsarg)[0]>0 ? MIN(NJUMPLINES, INTEGER(nrowsarg)[0]) : NJUMPLINES;
-    int numFields[nJumpLines+1];   // +1 to cover the likely header row. Don't know at this stage whether it is present or not.
-    int numLines[nJumpLines+1];
-    
+    int topNmax=1;            // for that sep and quote rule, what was the max number of columns (just for fill=true)
+                              //   (when fill=true, the max is usually the header row and is the longest but there are more
+                              //    lines of fewer)
+    const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
+
+    // We will scan the input line-by-line (at most `JUMPLINES + 1` lines; "+1"
+    // covers the header row, at this stage we don't know if it's present), and
+    // detect the number of fields on each line. If several consecutive lines
+    // have the same number of fields, we'll call them a "contiguous group of
+    // lines". Arrays `numFields` and `numLines` contain information about each
+    // contiguous group of lines encountered while scanning the first JUMPLINES
+    // + 1 lines: 'numFields` gives the number the count of fields in each
+    // group, and `numLines` has the number of lines in each group.
+    int numFields[JUMPLINES+1];
+    int numLines[JUMPLINES+1];
     for (int s=0; s<nseps; s++) {
       sep = seps[s];
       for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
         ch = pos;
-        // Rprintf("Trying sep='%c' with quoteRule %d ...", sep, quoteRule);
-        for (int i=0; i<=nJumpLines; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
+        // if (args.verbose) DTPRINT("Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
+        for (int i=0; i<=JUMPLINES; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
         int i=-1; // The slot we're counting the currently contiguous consistent ncol
-        int thisLine=0, lastncol=0;
-        while (ch<eof && ++thisLine<=nJumpLines+1) {
-          int thisncol = countfields();   // using this sep and quote rule; moves ch to start of next line
-          if (thisncol<0) { numFields[0]=-1; break; }  // invalid file with this sep and quote rule; abort this rule
-          if (lastncol!=thisncol) { numFields[++i]=thisncol; lastncol=thisncol; } // new contiguous consistent ncol started
+        int thisLine=0, lastncol=-1;
+        while (ch<eof && thisLine++<JUMPLINES) {
+          int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
+          if (thisncol<0) { numFields[0]=-1; break; }  // invalid file with this sep and quote rule; abort
+          if (thisncol!=lastncol) { numFields[++i]=thisncol; lastncol=thisncol; } // new contiguous consistent ncol started
           numLines[i]++;
         }
         if (numFields[0]==-1) continue;
-        _Bool updated=FALSE;
+        if (firstJumpEnd==NULL) firstJumpEnd=ch;  // if this wins (doesn't get updated), it'll be single column input
+        _Bool updated=false;
         int nmax=0;
-        
+
         i=-1; while (numLines[++i]) {
-          if (numFields[i] > nmax) nmax=numFields[i];  // for fill=TRUE to know max number of columns
-          if (numFields[i]>1 &&    // the default sep='\n' (whole lines, single column) shuld take precedence 
-              ( numLines[i]>topNumLines ||
-               (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=' '))) {
+          if (numFields[i] > nmax) nmax=numFields[i];  // for fill=true to know max number of columns
+          //if (args.verbose) DTPRINT("numLines[i]=%d, topNumLines=%d, numFields[i]=%d, topNumFields=%d\n",
+          //                           numLines[i], topNumLines, numFields[i], topNumFields);
+          if (numFields[i]>1 &&
+              ( numLines[i]>topNumLines ||   // most number of consistent ncol wins
+               (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=' '))) {  // ties resolved by numFields
             topNumLines=numLines[i]; topNumFields=numFields[i]; topSep=sep; topQuoteRule=quoteRule; topNmax=nmax;
-            firstEnd = ch;  // So that after the header we know how many bytes jump point 0 is
-            updated = TRUE;
+            firstJumpEnd = ch;  // So that after the header we know how many bytes jump point 0 is
+            updated = true;
             // Two updates can happen for the same sep and quoteRule (e.g. issue_1113_fread.txt where sep=' ') so the
             // updated flag is just to print once.
           }
         }
         if (verbose && updated) {
-          Rprintf("  sep=="); Rprintf(sep=='\t' ? "'\\t'" : "'%c'(ascii %d)", sep, sep);
-          Rprintf("  with %d lines of %d fields using quote rule %d\n", topNumLines, topNumFields, topQuoteRule);
+          DTPRINT("  sep=="); DTPRINT(sep=='\t' ? "'\\t'" : "'%c'(ascii %d)", sep, sep);
+          DTPRINT("  with %d lines of %d fields using quote rule %d\n", topNumLines, topNumFields, topQuoteRule);
         }
       }
     }
-    
+    if (!firstJumpEnd) STOP("Internal error: no sep won");
+
     int ncol;
     quoteRule = topQuoteRule;
     sep = topSep;
@@ -685,186 +897,190 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
       // find the top line with the consistent number of fields.  There might be irregular header lines above it.
       //int nmax=0, thisLine=-1, whichmax=0;
       ncol = topNumFields;
-      int thisLine=-1; while (ch<eof && ++thisLine<nJumpLines) {
-        const char *lineStart = ch;
-        if (countfields()==ncol) { ch=pos=lineStart; line+=thisLine; break; }
+      int thisLine=-1;
+      while (ch<eof && ++thisLine<JUMPLINES) {
+        const char *ch2 = ch;   // lineStart
+        if (countfields(&ch)==ncol) { ch=pos=ch2; line+=thisLine; break; }
       }
     }
     // For standard regular separated files, we're now on the first byte of the file.
-    
-    if (ncol<1 || line<1) STOP("Internal error: ncol==%d line==%d after detecting sep, ncol and first line");
-    int tt = countfields();
+
+    if (ncol<1 || line<1) STOP("Internal error: ncol==%d line==%d after detecting sep, ncol and first line", ncol, line);
+    int tt = countfields(&ch);
     ch = pos; // move back to start of line since countfields() moved to next
     if (!fill && tt!=ncol) STOP("Internal error: first line has field count %d but expecting %d", tt, ncol);
     if (verbose) {
-      Rprintf("Detected %d columns on line %d. This line is either column names or first data row (first 30 chars): <<%.*s>>\n",
+      DTPRINT("Detected %d columns on line %d. This line is either column names or first data row (first 30 chars): <<%.*s>>\n",
                tt, line, STRLIM(pos, 30), pos);
-      if (fill) Rprintf("fill=TRUE and the most number of columns found is %d\n", ncol);
+      if (fill) DTPRINT("fill=true and the most number of columns found is %d\n", ncol);
     }
-        
+
     // ********************************************************************************************
     //   Detect and assign column names (if present)
     // ********************************************************************************************
-    SEXP names = PROTECT(allocVector(STRSXP, ncol));
-    protecti++;
-    allchar=TRUE;
-    {
-      if (sep==' ') while (ch<eof && *ch==' ') ch++;
-      int field=0; while(ch<eof && *ch!=eol && field<ncol) {
-        const char *this = ch;
-        //Rprintf("Field %d <<%.*s>>\n", i, STRLIM(ch,20), ch);
-        skip_white(&ch);
-        if (allchar && !on_sep() && StrtoD(NULL, 0)) allchar=FALSE;  // considered testing at least one isalpha, but we want 1E9 to be considered a value for this purpose not a column name
-        ch = this;  // rewind to the start of this field
-        Field(NULL,0);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
-        if (ch<eof && *ch!=eol) { ch++; field++; }
-      }
-      //if (fill && field<ncol-1) { allchar=FALSE; }
-      if ((!fill && field<ncol-1) || (ch<eof && *ch!=eol)) STOP("Not positioned correctly after testing format of header row. Read %d fields out of expected %d and finished on <<%.*s>>'",field+1,ncol,STRLIM(ch,30),ch);
+    char trash[8]; // throw-away storage for processors to write to in this preamble. Saves deep 'if (target)' inside processors.
+    const char *colNamesAnchor = ch;
+    colNames = calloc((size_t)ncol, sizeof(lenOff));
+    if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
+    _Bool allchar=true;
+    if (sep==' ') while (ch<eof && *ch==' ') ch++;
+    ch--;  // so we can ++ at the beginning inside loop.
+    for (int field=0; field<tt; field++) {
+      const char *this = ++ch;
+      //DTPRINT("Field %d <<%.*s>>\n", i, STRLIM(ch,20), ch);
+      skip_white(&ch);
+      if (allchar && !on_sep(&ch) && StrtoD(&ch,trash)) allchar=false;  // don't stop early as we want to check all columns to eol here
+      // considered looking for one isalpha present but we want 1E9 to be considered a value not a column name
+      ch = this;  // rewind to the start of this field
+      Field(&ch,trash);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
+      // countfields() above already validated the line so no need to check again now.
     }
-    if (verbose && header!=NA_LOGICAL) Rprintf("'header' changed by user from 'auto' to %s\n", header?"TRUE":"FALSE");
-    if (header==FALSE || (header==NA_LOGICAL && !allchar)) {
-        if (verbose && header==NA_LOGICAL) Rprintf("Some fields on line %d are not type character. Treating as a data row and using default column names.\n", line);
-        for (int i=0; i<ncol; i++) {
-            char buff[10];
-            sprintf(buff,"V%d",i+1);
-            SET_STRING_ELT(names, i, mkChar(buff));
-        }
+    if (ch<eof && *ch!=eol)
+      STOP("Read %d expected fields in the header row (fill=%d) but finished on <<%.*s>>'",tt,fill,STRLIM(ch,30),ch);
+    // already checked above that tt==ncol unless fill=TRUE
+    // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
+    if (verbose && args.header!=NA_BOOL8) DTPRINT("'header' changed by user from 'auto' to %s\n", args.header?"true":"false");
+    if (args.header==false || (args.header==NA_BOOL8 && !allchar)) {
+        if (verbose && args.header==NA_BOOL8) DTPRINT("Some fields on line %d are not type character. Treating as a data row and using default column names.\n", line);
+        // colNames was calloc'd so nothing to do; all len=off=0 already
         ch = pos;  // back to start of first row. Treat as first data row, no column names present.
         // now check previous line which is being discarded and give helpful msg to user ...
-        if (ch>mmp && INTEGER(skip)[0]==0) {
+        if (ch>sof && args.skipNrow==0) {
           ch -= (eolLen+1);
-          if (ch<mmp) ch=mmp;  // for when mmp[0]=='\n'
-          while (ch>mmp && *ch!=eol2) ch--;
-          if (ch>mmp) ch++;
+          if (ch<sof) ch=sof;  // for when sof[0]=='\n'
+          while (ch>sof && *ch!=eol2) ch--;
+          if (ch>sof) ch++;
           const char *prevStart = ch;
-          int tmp = countfields();
+          int tmp = countfields(&ch);
           if (tmp==ncol) STOP("Internal error: row before first data row has the same number of fields but we're not using it.");
-          if (tmp>1) warning("Starting data input on line %d <<%.*s>> with %d fields and discarding line %d <<%.*s>> before it because it has a different number of fields (%d).", line, STRLIM(pos, 30), pos, ncol, line-1, STRLIM(prevStart, 30), prevStart, tmp);
+          if (tmp>1) DTWARN("Starting data input on line %d <<%.*s>> with %d fields and discarding line %d <<%.*s>> before it because it has a different number of fields (%d).", line, STRLIM(pos, 30), pos, ncol, line-1, STRLIM(prevStart, 30), prevStart, tmp);
         }
-        if (ch!=pos) STOP("Internal error. ch!=pos after prevBlank check");     
+        if (ch!=pos) STOP("Internal error. ch!=pos after prevBlank check");
     } else {
-        if (verbose && header==NA_LOGICAL) Rprintf("All the fields on line %d are character fields. Treating as the column names.\n", line);
+        if (verbose && args.header==NA_BOOL8) DTPRINT("All the fields on line %d are character fields. Treating as the column names.\n", line);
         ch = pos;
         line++;
         if (sep==' ') while (ch<eof && *ch==' ') ch++;
+        ch--;
         for (int i=0; i<ncol; i++) {
-            // Skip trailing spaces and call 'Field()' here as it's already designed to handle quote vs non-quote cases.
-            // Also Fiedl() it takes care of leading spaces. Easier to understand the logic.
-            Field(names,i);
-            if (STRING_ELT(names,i)==NA_STRING || STRING_ELT(names,i)==R_BlankString) {
-                char buff[10];
-                sprintf(buff,"V%d",i+1);
-                SET_STRING_ELT(names, i, mkChar(buff));
-            }
-            if (ch<eof && *ch!=eol && i<ncol-1) ch++; // move the beginning char of next field
+            // Use Field() here as it's already designed to handle quotes, leading space etc.
+            const char *start = ++ch;
+            Field(&ch, colNames+i);  // stores the string length and offset as <uint,uint> in colnames[i]
+            colNames[i].off += (size_t)(start-colNamesAnchor);
+            if (ch>=eof || *ch==eol) break;   // already checked number of fields previously above
         }
-        while (ch<eof && *ch!=eol) ch++; // no need for skip_white() here
-        if (ch<eof && *ch==eol) ch+=eolLen;  // now on first data row (row after column names)
-        pos = ch;
+        if (ch<eof && *ch!=eol) STOP("Internal error: reading colnames did not end on eol");
+        if (ch<eof) ch+=eolLen;
+        pos=ch;    // now on first data row (row after column names)
     }
-    clock_t tLayout = clock();
-    
+    int row1Line = line;
+    double tLayout = wallclock();
+
     // *****************************************************************************************************************
-    //   Make best guess at column types using 100 rows at 10 points, including the very first, middle and very last row.
-    //   At the same time, calc mean and sd of row lengths in sample. Use for very good estimate of nrow.
+    //   Make best guess at column types using 100 rows at 100 points, including the very first, middle and very last row.
+    //   At the same time, calc mean and sd of row lengths in sample for very good nrow estimate.
     // *****************************************************************************************************************
-    unsigned char type[ncol];
-    _Bool typeOk[ncol];
-    for (int i=0; i<ncol; i++) { 
-      type[i]   =0;   // 0 because it's the lowest type ('logical')
-      typeOk[i] =1;   // set to 0 later to output one message per column if the guessed type is not sufficient
+    typeOnStack = ncol<10000;
+    if (typeOnStack) {
+      type = (int8_t *)alloca((size_t)ncol * sizeof(int8_t));  //TODO: combine?
+      size = (int8_t *)alloca((size_t)ncol * sizeof(int8_t));
+    } else {
+      type = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
+      size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
     }
-    
-    size_t startSize=(size_t)(firstEnd-pos);  // the size in bytes of the first NJUMPLINES from the start (jump point 0)
-    int numJumps=(INTEGER(nrowsarg)[0]<1 && startSize && startSize*NJUMPS*2 < (eof-pos)) ? NJUMPS : 0;
-    // 0 means all rows (or nrows= passed in) tested from the start with no jumping
-    // *2 so there's a good gap between the end of one sample and the start of the next, to ensure no overlap
-    
+    // (...?alloca:malloc)(...) doesn't compile as alloca is special.
+
+    // 9.8KB is for sure fine on stack. Almost went for 1MB (1 million columns) but decided to be uber safe.
+    // sizeof(int8_t) == 1 checked in init.c. To free or not to free is in cleanup() based on typeOnStack
+    if (!type) STOP("Failed to allocate %dx%d bytes for type: %s", ncol, sizeof(int8_t), strerror(errno));
+    for (int j=0; j<ncol; j++) { size[j] = type[j] = 1; } // lowest enum is 1 (CT_BOOL8 at the time of writing). 0==CT_DROP
+
+    size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
+    int nJumps = 0;
+    // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
+    // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
+    // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
+    if (jump0size>0) {
+      if (jump0size*100*2 < (size_t)(eof-pos)) nJumps=100;  // 100 jumps * 100 lines = 10,000 line sample
+      else if (jump0size*10*2 < (size_t)(eof-pos)) nJumps=10;
+      // *2 to get a good spacing. We don't want overlaps resulting in double counting.
+      // nJumps==1 means the whole (small) file will be sampled with one thread
+    }
+    nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
     if (verbose) {
-      Rprintf("Number of jump points = %d because ",numJumps);
-      if (INTEGER(nrowsarg)[0]>0) Rprintf("nrows=%d passed in\n", INTEGER(nrowsarg)[0]);
-      else if (startSize==0) Rprintf("startSize=0 (small number of single column input)\n");
-      else Rprintf("%lld startSize * %d NJUMPS * 2 %s %lld bytes from skip to eof\n", startSize, NJUMPS, numJumps==0 ? ">=" : "<", (size_t)(eof-pos));
+      DTPRINT("Number of sampling jump points = %d because ",nJumps);
+      if (jump0size==0) DTPRINT("jump0size==0\n");
+      else DTPRINT("%zd bytes from row 1 to eof / (2 * %zd jump0size) == %zd\n",
+                   (size_t)(eof-pos), jump0size, (size_t)(eof-pos)/(2*jump0size));
     }
 
     int sampleLines=0;
     size_t sampleBytes=0;
     double sumLen=0.0, sumLenSq=0.0;
-    int minLen=INT_MAX;   // int_max so the first if(thisLen<minLen) is always true
-    for (int j=0; j<=numJumps; j++) {   // <= (not <) to get +1 jump for the very end
-        ch = ( j==0 ? pos : (j<numJumps ? pos + j*(eof-pos)/numJumps : eof-startSize) );
-        if (j>0) {
-            // we may have landed inside quoted field containing embedded sep and/or embedded \n
-            // find next \n and see if 5 good lines follow. If not try next \n, and so on, until we find the real \n
-            // We don't know which line number this is because we jumped straight to it
-            int attempts=0;
-            while (ch<eof && attempts++<30) {
-                while (ch<eof && *ch!=eol) ch++;
-                if (ch<eof) ch+=eolLen;
-                const char *thisStart = ch;
-                int i = 0, thisNcol=0;
-                while (ch<eof && i<5 && ( (thisNcol=countfields())==ncol || (thisNcol==0 && (skipEmptyLines || fill)))) i++;
-                ch = thisStart;
-                if (i==5) break;
-            }
-            if (ch>=eof || attempts>=30) {
-                if (verbose) Rprintf("Couldn't find 5 good lines from jump point %d. Not using it.\n", j);
-                continue;
-            }
-            // ch now the first good start of line after the jump point
-        }
-        
+    int minLen=INT32_MAX, maxLen=-1;   // int_max so the first if(thisLen<minLen) is always true; similarly for max
+    const char *lastRowEnd=pos;
+    for (int j=0; j<nJumps; j++) {
+        ch = (j == 0) ? pos :
+             (j == nJumps-1) ? eof - (size_t)(0.5*jump0size) :
+                               pos + (size_t)j*((size_t)(eof-pos)/(size_t)(nJumps-1));
+        if (j>0 && !nextGoodLine(&ch, ncol))
+          STOP("Could not find first good line start after jump point %d when sampling.", j);
+        if (ch<lastRowEnd) // otherwise an overlap would lead to double counting and a wrong estimate
+          STOP("Internal error: Sampling jump point %d is before the last jump ended", j);
+        _Bool bumped = 0;  // did this jump find any different types; to reduce verbose output to relevant lines
         const char *thisStart = ch;
-        const char *thisEnd = (j<numJumps || INTEGER(nrowsarg)[0]>0) ? ch+startSize : eof;
-        // numJumps=0  =>  j==0, nrows<2000, ch==pos and thisEnd==eof i.e. all lines will be tested from jump point 0 (the start)
-        // numJumps>0  =>  nrows>2000, NJUMPLINES at NJUMPS+1 will kick in, each for firstSize with the last one up to eof
-        // when nrows= passing in, it may be to avoid format errors, so just look at those rows to test format and coltypes
-        
-        int i = 0;
-        while(ch<thisEnd) {
-            const char *lineStart = ch;
-            if (sep==' ') while (ch<eof && *ch==' ') ch++;  // special for sep==' '. Correct not to be skip_white().
-            skip_white(&ch);  // solely to detect blank lines, otherwise could leave to field processors which handle leading white
+        int jline = 0;  // line from this jump point
+        while(ch<eof && (jline<JUMPLINES || j==nJumps-1)) {  // nJumps==1 implies sample all of input to eof; last jump to eof too
+            const char *jlineStart = ch;
+            if (sep==' ') while (ch<eof && *ch==' ') ch++;  // multiple sep=' ' at the jlineStart does not mean sep(!)
+            skip_white(&ch);  // solely to detect blank lines, otherwise could leave to field processors
             if (ch>=eof || *ch==eol) {
-              ch += eolLen;
-              if (skipEmptyLines || fill) continue;
-              else break;
+              if (!skipEmptyLines && !fill) break;
+              jlineStart = ch;  // to avoid 'Line finished early' below and get to the sampleLines++ block at the end of this while
             }
-            i++;
+            jline++;
             int field=0;
             const char *fieldStart=ch;  // Needed outside loop for error messages below
             while (ch<eof && *ch!=eol && field<ncol) {
-                //Rprintf("Field %d: <<%.*s>>\n", field+1, STRLIM(ch,20), ch);
+                //DTPRINT("<<%.*s>>", STRLIM(ch,20), ch);
                 fieldStart=ch;
-                while (type[field]<=SXP_STR && !(*fun[type[field]])(NULL,0)) {
+                while (type[field]<=CT_STRING && !(*fun[type[field]])(&ch,trash)) {
                   ch=fieldStart;
-                  if (type[field]<SXP_STR) type[field]++;
+                  if (type[field]<CT_STRING) { type[field]++; bumped=true; }
                   else {
-                    // the field couldn't be read with this quote rule, try again with next one
+                    // the field could not be read with this quote rule, try again with next one
                     // Trying the next rule will only be successful if the number of fields is consistent with it
                     if (quoteRule<3) {
-                      if (verbose) Rprintf("Bumping quote rule from %d to %d due to field %d on line %d starting <<%.*s>>\n",
-                                   quoteRule, quoteRule+1, field+1, line+i-1, STRLIM(fieldStart,200), fieldStart);
+                      if (verbose)
+                        DTPRINT("Bumping quote rule from %d to %d due to field %d on line %d of sampling jump %d starting <<%.*s>>\n",
+                                 quoteRule, quoteRule+1, field+1, jline, j, STRLIM(fieldStart,200), fieldStart);
                       quoteRule++;
-                      ch = lineStart;  // Try whole line again, in case it's a hangover from previous field
+                      bumped=true;
+                      ch = jlineStart;  // Try whole line again, in case it's a hangover from previous field
                       field=0;
                       continue;
                     }
                     STOP("Even quoteRule 3 was insufficient!");
                   }
                 }
+                //DTPRINT("%d", type[field]);
                 if (ch<eof && *ch!=eol) {ch++; field++;}
             }
             if (field<ncol-1 && !fill) {
-                if (ch<eof && *ch!=eol) STOP("Internal error: line has finished early but not on an eol or eof (fill=FALSE). Please report as bug.");
-                else STOP("Line has finished early when detecting types. Try fill=TRUE to pad with NA. Expecting %d fields but found %d: <<%.*s>>", ncol, field+1, STRLIM(lineStart,200), lineStart);
+                if (ch<eof && *ch!=eol) {
+                    STOP("Internal error: line has finished early but not on an eol or eof (fill=false). Please report as bug.");
+                } else if (ch>jlineStart) {
+                    STOP("Line has too few fields when detecting types. Use fill=TRUE to pad with NA. Expecting %d fields but found %d: <<%.*s>>", ncol, field+1, STRLIM(jlineStart,200), jlineStart);
+                }
             }
             if (ch<eof) {
-                if (*ch!=eol || field>=ncol) {   // the || >=ncol is for when a comma ends the line with eol straight after 
+                if (*ch!=eol || field>=ncol) {   // the || >=ncol is for when a comma ends the line with eol straight after
                   if (field!=ncol) STOP("Internal error: Line has too many fields but field(%d)!=ncol(%d)", field, ncol);
-                  STOP("Line %d starting <<%.*s>> has more than the expected %d fields. Separator %d occurs at position %d which is character %d of the last field: <<%.*s>>. Consider setting 'comment.char=' if there is a trailing comment to be ignored.",
-                      line+i-1, STRLIM(lineStart,10), lineStart, ncol, ncol, (int)(ch-lineStart), (int)(ch-fieldStart), STRLIM(fieldStart,200), fieldStart);
+                  STOP("Line %d from sampling jump %d starting <<%.*s>> has more than the expected %d fields. " \
+                       "Separator %d occurs at position %d which is character %d of the last field: <<%.*s>>. " \
+                       "Consider setting 'comment.char=' if there is a trailing comment to be ignored.",
+                      jline, j, STRLIM(jlineStart,10), jlineStart, ncol, ncol, (int)(ch-jlineStart), (int)(ch-fieldStart),
+                      STRLIM(fieldStart,200), fieldStart);
                 }
                 ch += eolLen;
             } else {
@@ -872,340 +1088,471 @@ SEXP readfile(SEXP input, SEXP separg, SEXP nrowsarg, SEXP headerarg, SEXP nastr
                 // not necessarily a problem (especially if we detected no quoting), but we test it and nice to have
                 // a warning regardless of quoting rule just incase file has been inadvertently truncated
                 // This warning is early at type skipping around stage before reading starts, so user can cancel early
-                if (type[ncol-1]==SXP_STR && *fieldStart==quote && *(ch-1)!=quote) {
-                  if (quoteRule<2) STOP("Internal error: Last field of last field should select quote rule 2"); 
-                  warning("Last field of last line starts with a quote but is not finished with a quote before end of file: <<%.*s>>", 
+                if (type[ncol-1]==CT_STRING && *fieldStart==quote && *(ch-1)!=quote) {
+                  if (quoteRule<2) STOP("Internal error: Last field of last field should select quote rule 2");
+                  DTWARN("Last field of last line starts with a quote but is not finished with a quote before end of file: <<%.*s>>",
                           STRLIM(fieldStart, 200), fieldStart);
                 }
             }
-            int thisLineLen = (int)(ch-lineStart);  // ch is now on start of next line so this includes eolLen already
+            //DTPRINT("\n");
+            lastRowEnd = ch; // Two reasons:  1) to get the end of the very last good row before whitespace or footer before eof
+                             //               2) to check sample jumps don't overlap, otherwise double count and bad estimate
+            int thisLineLen = (int)(ch-jlineStart);  // ch is now on start of next line so this includes eolLen already
             sampleLines++;
             sumLen += thisLineLen;
-            sumLenSq += pow(thisLineLen,2);
+            sumLenSq += thisLineLen*thisLineLen;
             if (thisLineLen<minLen) minLen=thisLineLen;
+            if (thisLineLen>maxLen) maxLen=thisLineLen;
         }
-        sampleBytes += (size_t)(ch-thisStart);  // ch not thisEnd because last line could have gone past thisEnd (which is fine)
-        if (verbose) { Rprintf("Type codes (jump %02d): ",j); for (i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf("\n"); }
+        sampleBytes += (size_t)(ch-thisStart);
+        if (verbose && (bumped || j==0 || j==nJumps-1)) {
+          DTPRINT("Type codes (jump %03d)    : ",j); printTypes(ncol);
+          DTPRINT("  Quote rule %d\n", quoteRule);
+        }
     }
-    
-    int estnrow=sampleLines;
-    if (sampleLines>0) {
-      double m = sumLen/sampleLines;
-      double sd = sqrt( (sumLenSq - pow(sumLen,2)/sampleLines)/(sampleLines-1) );
-      int estnrow1 = (int)ceil((double)(eof-pos)/MAX((m-sd),(double)minLen))+1;
-      int estnrow2 = startSize ? 1.05*sampleLines*(eof-pos)/(startSize*(numJumps+1))+1 : 0;
-      estnrow = MAX(estnrow1, estnrow2);
-      if (verbose) {
-        Rprintf("Sampled %d rows at %d jump points including the very beginning and very end\n", sampleLines, numJumps);
-        Rprintf("Estimate1 nrow = %d = %lld bytes row 1 start to eof / max((%.1f mean - %.1f sd), %d minLen)\n",
-                 estnrow1, (size_t)(eof-pos), m, sd, minLen);
-        Rprintf("Estimate2 nrow = %d = 1.05 * %d sample lines * %lld bytes / %lld sample bytes\n",
-                 estnrow2, sampleLines, (size_t)(eof-pos), sampleBytes);
-        Rprintf("Using largest, Estimate%d==%d\n", 1+(estnrow2>estnrow1), estnrow);
-      }
+    while (ch<eof && isspace(*ch)) ch++;
+    if (ch<eof) {
+      DTWARN("Found the last consistent line but text exists afterwards (discarded): <<%.*s>>", STRLIM(ch,200), ch);
     }
-    if (numJumps==0 && !fill && sampleLines<nJumpLines) {
-      if (sampleLines > estnrow) STOP("Internal error: numJumps==0, sampleLines(%d) > estnrow(%d)", sampleLines, estnrow);
-      estnrow = sampleLines;
-      if (verbose) Rprintf("All rows were sampled since nrow is small so we know nrow=%d exactly\n", estnrow); 
-    }
-    int nrow = INTEGER(nrowsarg)[0];
-    if (nrow>-1 && nrow<estnrow) {
-      if (verbose) Rprintf("nrow limited to lower nrows=%d passed in\n", nrow);
+
+    int64_t estnrow=1, allocnrow=1;
+    double meanLineLen=0;
+    if (sampleLines<=1) {
+      // column names only are present; e.g. fread("A\n")
     } else {
-      nrow = estnrow;
+      size_t bytesRead = (size_t)(lastRowEnd - pos);
+      meanLineLen = (double)sumLen/sampleLines;
+      estnrow = CEIL(bytesRead/meanLineLen);  // only used for progress meter and verbose line below
+      double sd = sqrt( (sumLenSq - (sumLen*sumLen)/sampleLines)/(sampleLines-1) );
+      allocnrow = clamp_i64((int64_t)(bytesRead / fmax(meanLineLen - 2*sd, minLen)),
+                            (int64_t)(1.1*estnrow), 2*estnrow);
+      // sd can be very close to 0.0 sometimes, so apply a +10% minimum
+      // blank lines have length 1 so for fill=true apply a +100% maximum. It'll be grown if needed.
+      if (verbose) {
+        DTPRINT("=====\n Sampled %d rows (handled \\n inside quoted fields) at %d jump points including middle and very end\n", sampleLines, nJumps);
+        DTPRINT(" Bytes from first data row on line %d to the end of last row: %zd\n", row1Line, bytesRead);
+        DTPRINT(" Line length: mean=%.2f sd=%.2f min=%d max=%d\n", meanLineLen, sd, minLen, maxLen);
+        DTPRINT(" Estimated nrow: %zd / %.2f = %lld\n", bytesRead, meanLineLen, estnrow);
+        DTPRINT(" Initial alloc = %lld rows (%lld + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n",
+                 allocnrow, estnrow, (int)(100.0*allocnrow/estnrow-100.0));
+      }
+      if (nJumps==1) {
+        if (verbose) DTPRINT(" All rows were sampled since file is small so we know nrow=%d exactly\n", sampleLines);
+        estnrow = allocnrow = sampleLines;
+      } else {
+        if (sampleLines > allocnrow) STOP("Internal error: sampleLines(%ld) > allocnrow(%ld)", sampleLines, allocnrow);
+      }
+      if (args.nrowLimit<allocnrow) {
+        if (verbose) DTPRINT(" Alloc limited to lower nrows=%lld passed in.\n", args.nrowLimit);
+        estnrow = allocnrow = args.nrowLimit;
+      }
+      if (verbose) DTPRINT("=====\n");
     }
-    
+
     // ********************************************************************************************
-    //   Apply colClasses, select and integer64
+    //   Apply colClasses, select, drop and integer64
     // ********************************************************************************************
     ch = pos;
-    int numNULL = 0;
-    SEXP colTypeIndex, items, itemsInt, UserTypeNameSxp;
-    int tmp[ncol]; for (int i=0; i<ncol; i++) tmp[i]=0;  // used to detect ambiguities (dups) in user's input
-    if (isLogical(colClasses)) {
-        // allNA only valid logical input
-        for (int k=0; k<LENGTH(colClasses); k++) if (LOGICAL(colClasses)[k] != NA_LOGICAL) STOP("when colClasses is logical it must be all NA. Position %d contains non-NA: %d", k+1, LOGICAL(colClasses)[k]);
-        if (verbose) Rprintf("Argument colClasses is ignored as requested by provided NA values\n");
-    } else if (length(colClasses)) {
-        UserTypeNameSxp = PROTECT(allocVector(STRSXP, NUT));
-        protecti++;
-        for (int i=0; i<NUT; i++) SET_STRING_ELT(UserTypeNameSxp, i, mkChar(UserTypeName[i]));
-        if (isString(colClasses)) {
-            // this branch unusual for fread: column types for all columns in one long unamed character vector
-            if (length(getAttrib(colClasses, R_NamesSymbol))) STOP("Internal error: colClasses has names, but these should have been converted to list format at R level");
-            if (LENGTH(colClasses)!=1 && LENGTH(colClasses)!=ncol) STOP("colClasses is unnamed and length %d but there are %d columns. See ?data.table for colClasses usage.", LENGTH(colClasses), ncol);
-            colTypeIndex = PROTECT(chmatch(colClasses, UserTypeNameSxp, NUT, FALSE));  // if type not found then read as character then as. at R level
-            protecti++;
-            for (int k=0; k<ncol; k++) {
-                if (STRING_ELT(colClasses, LENGTH(colClasses)==1 ? 0 : k) == NA_STRING) {
-                    if (verbose) Rprintf("Column %d ('%s') was detected as type '%s'. Argument colClasses is ignored as requested by provided NA value\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]] );
-                    continue;
-                }
-                int thisType = UserTypeNameMap[ INTEGER(colTypeIndex)[ LENGTH(colClasses)==1 ? 0 : k] -1 ];
-                if (type[k]<thisType) {
-                    if (verbose) Rprintf("Column %d ('%s') was detected as type '%s' but bumped to '%s' as requested by colClasses\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType] );
-                    type[k]=thisType;
-                    if (thisType == SXP_NULL) numNULL++;
-                } else if (verbose && type[k]>thisType) warning("Column %d ('%s') has been detected as type '%s'. Ignoring request from colClasses to read as '%s' (a lower type) since NAs (or loss of precision) may result.\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType]);
-            }
-        } else {  // normal branch here
-            if (!isNewList(colClasses)) STOP("colClasses is not type list or character vector");
-            if (!length(getAttrib(colClasses, R_NamesSymbol))) STOP("colClasses is type list but has no names");
-            colTypeIndex = PROTECT(chmatch(getAttrib(colClasses, R_NamesSymbol), UserTypeNameSxp, NUT, FALSE));
-            protecti++;
-            for (int i=0; i<LENGTH(colClasses); i++) {
-                int thisType = UserTypeNameMap[INTEGER(colTypeIndex)[i]-1];
-                items = VECTOR_ELT(colClasses,i);
-                if (thisType == SXP_NULL) {
-                    if (!isNull(drop) || !isNull(select)) STOP("Can't use NULL in colClasses when select or drop is used as well.");
-                    drop = items;
-                    continue;
-                }
-                if (isString(items)) itemsInt = PROTECT(chmatch(items, names, NA_INTEGER, FALSE));
-                else itemsInt = PROTECT(coerceVector(items, INTSXP));
-                protecti++;
-                for (j=0; j<LENGTH(items); j++) {
-                    k = INTEGER(itemsInt)[j];
-                    if (k==NA_INTEGER) {
-                        if (isString(items)) STOP("Column name '%s' in colClasses[[%d]] not found", CHAR(STRING_ELT(items, j)),i+1);
-                        else STOP("colClasses[[%d]][%d] is NA", i+1, j+1);
-                    } else {
-                        if (k<1 || k>ncol) STOP("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]",k,i+1,j+1,ncol);
-                        k--;
-                        if (tmp[k]++) STOP("Column '%s' appears more than once in colClasses", CHAR(STRING_ELT(names,k)));
-                        if (type[k]<thisType) {
-                            if (verbose) Rprintf("Column %d ('%s') was detected as type '%s' but bumped to '%s' as requested by colClasses[[%d]]\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], UserTypeName[thisType], i+1 );
-                            type[k]=thisType;
-                            if (thisType == SXP_NULL) numNULL++;
-                        } else if (verbose && type[k]>thisType) Rprintf("Column %d ('%s') has been detected as type '%s'. Ignoring request from colClasses[[%d]] to read as '%s' (a lower type) since NAs would result.\n", k+1, CHAR(STRING_ELT(names,k)), UserTypeName[type[k]], i+1, UserTypeName[thisType]);
-                    }
-                }
-            }
-        }
+    oldType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
+    if (!oldType) STOP("Unable to allocate %d bytes to check user overrides of column types", ncol);
+    memcpy(oldType, type, ncol) ;
+    if (!userOverride(type, colNames, colNamesAnchor, ncol)) { // colNames must not be changed but type[] can be
+      if (verbose) DTPRINT("Cancelled by user. userOverride() returned false.");
+      freadCleanup();
+      return 1;
     }
-    int readInt64As = SXP_INT64;
-    if (strcmp(CHAR(STRING_ELT(integer64,0)), "integer64")!=0) {
-        if (strcmp(CHAR(STRING_ELT(integer64,0)), "character")==0)
-            readInt64As = SXP_STR;
-        else // either 'double' or 'numeric' as checked above in input checks
-            readInt64As = SXP_REAL;
-        for (int i=0; i<ncol; i++) if (type[i]==SXP_INT64) {
-            type[i] = readInt64As;
-            if (verbose) Rprintf("Column %d ('%s') has been detected as type 'integer64'. But reading this as '%s' according to the integer64 parameter.\n", i+1, CHAR(STRING_ELT(names,i)), CHAR(STRING_ELT(integer64,0)));
-        }
+    int ndrop=0, nUserBumped=0;
+    size_t rowSize = 0;
+    int nStringCols = 0;
+    int nNonStringCols = 0;
+    for (int j=0; j<ncol; j++) {
+      rowSize += (size[j] = typeSize[type[j]]);
+      if (type[j]==CT_DROP) { ndrop++; continue; }
+      if (type[j]<oldType[j])
+        STOP("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' which will lose accuracy. " \
+             "If this was intended, please coerce to the lower type afterwards. Only overrides to a higher type are permitted.",
+             j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[oldType[j]], typeName[type[j]]);
+      nUserBumped += type[j]>oldType[j];
+      if (type[j] == CT_STRING) nStringCols++; else nNonStringCols++;
     }
-    if (verbose) { Rprintf("Type codes: "); for (int i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf(" (after applying colClasses and integer64)\n"); }
-    if (length(drop)) {
-        if (any_duplicated(drop,FALSE)) STOP("Duplicates detected in drop");
-        if (isString(drop)) itemsInt = PROTECT(chmatch(drop, names, NA_INTEGER, FALSE));
-        else itemsInt = PROTECT(coerceVector(drop, INTSXP));
-        protecti++;
-        for (j=0; j<LENGTH(drop); j++) {
-            k = INTEGER(itemsInt)[j];
-            if (k==NA_INTEGER) {
-                if (isString(drop)) warning("Column name '%s' in 'drop' not found", CHAR(STRING_ELT(drop, j)));
-                else warning("drop[%d] is NA", j+1);
-            } else {
-                if (k<1 || k>ncol) warning("Column number %d (drop[%d]) is out of range [1,ncol=%d]",k,j+1,ncol);
-                else { type[k-1] = SXP_NULL; numNULL++; }
-            }
-        }
+    if (verbose) {
+      DTPRINT("After %d type and %d drop user overrides : ", nUserBumped, ndrop);
+      printTypes(ncol); DTPRINT("\n");
     }
-    if (length(select)) {
-        if (any_duplicated(select,FALSE)) STOP("Duplicates detected in select");
-        if (isString(select)) {
-            // invalid cols check part of #1445 moved here (makes sense before reading the file)
-            itemsInt = PROTECT(chmatch(select, names, NA_INTEGER, FALSE));
-            for (int i=0; i<length(select); i++) if (INTEGER(itemsInt)[i]==NA_INTEGER) 
-                warning("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(select, i)));
-            UNPROTECT(1);
-            PROTECT_WITH_INDEX(itemsInt, &pi);
-            REPROTECT(itemsInt = chmatch(names, select, NA_INTEGER, FALSE), pi); protecti++;
-            for (int i=0; i<ncol; i++) if (INTEGER(itemsInt)[i]==NA_INTEGER) { type[i]=SXP_NULL; numNULL++; }
-        } else {
-            itemsInt = PROTECT(coerceVector(select, INTSXP)); protecti++;
-            for (int i=0; i<ncol; i++) tmp[i]=SXP_NULL;
-            for (int i=0; i<LENGTH(itemsInt); i++) {
-                k = INTEGER(itemsInt)[i];
-                if (k<1 || k>ncol) STOP("Column number %d (select[%d]) is out of range [1,ncol=%d]",k,i+1,ncol);
-                tmp[k-1] = type[k-1];
-            }
-            for (int i=0; i<ncol; i++) type[i] = tmp[i];
-            numNULL = ncol - LENGTH(itemsInt);
-        }
-    }
-    if (verbose) { Rprintf("Type codes: "); for (int i=0; i<ncol; i++) Rprintf("%d",type[i]); Rprintf(" (after applying drop or select, if supplied)\n"); }
-    clock_t tColType = clock();
-    
+    double tColType = wallclock();
+
     // ********************************************************************************************
-    // Allocate columns for known nrow
+    //   Allocate the result columns
     // ********************************************************************************************
-    if (verbose) Rprintf("Allocating %d column slots (%d - %d dropped)\n", ncol-numNULL, ncol, numNULL);
-    ans=PROTECT(allocVector(VECSXP,ncol-numNULL));  // safer to leave over allocation to alloc.col on return in fread.R
-    protecti++;
-    size_t ansSize = SIZEOF(ans)*(ncol-numNULL)*2;  // the VECSXP and its column names  (exclude global character cache usage)
-    if (numNULL==0) {
-        setAttrib(ans,R_NamesSymbol,names);
-    } else {
-        SEXP resnames;
-        resnames = PROTECT(allocVector(STRSXP, ncol-numNULL));  protecti++;
-        for (int i=0,resi=0; i<ncol; i++) if (type[i]!=SXP_NULL) {
-            SET_STRING_ELT(resnames,resi++,STRING_ELT(names,i));
-        }
-        setAttrib(ans, R_NamesSymbol, resnames);
-    }
-    for (int i=0,resi=0; i<ncol; i++) {
-        if (type[i] == SXP_NULL) continue;
-        SEXP thiscol = allocVector(TypeSxp[ type[i] ], nrow);
-        SET_VECTOR_ELT(ans,resi++,thiscol);  // no need to PROTECT thiscol, see R-exts 5.9.1
-        if (type[i]==SXP_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(char_integer64));
-        SET_TRUELENGTH(thiscol, nrow);
-        ansSize += SIZEOF(thiscol)*nrow;
-    }
-    clock_t tAlloc = clock();
-    
+    if (verbose) DTPRINT("Allocating %d column slots (%d - %d dropped)\n", ncol-ndrop, ncol, ndrop);
+    size_t DTbytes = allocateDT(type, size, ncol, ndrop, allocnrow);
+    double tAlloc = wallclock();
+
+    // ********************************************************************************************
+    //   madvise sequential
+    // ********************************************************************************************
+    // Read ahead and drop behind each point as they move through (assuming it's on a per thread basis).
+    // Considered it but when processing string columns the buffers point to offsets in the mmp'd pages
+    // which are revisited when writing the finished buffer to DT. So, it isn't sequential.
+    // if (fnam!=NULL) {
+    //   #ifdef MADV_SEQUENTIAL  // not on Windows. PrefetchVirtualMemory from Windows 8+ ?
+    //   int ret = madvise((void *)mmp, (size_t)fileSize, MADV_SEQUENTIAL);
+    //   #endif
+    // }
+
     // ********************************************************************************************
     //   Read the data
     // ********************************************************************************************
     ch = pos;   // back to start of first data row
-#ifdef MADV_SEQUENTIAL
-    int ret = madvise((void *)origmmp, (size_t)filesize, MADV_SEQUENTIAL);
-    if (verbose) Rprintf("madvise sequential: %s\n", ret ? strerror(errno) : "ok");
-#else
-    if (verbose) Rprintf("madvise sequential: not available on Windows\n");
-    // Maybe try PrefetchVirtualMemory from Windows 8+ it seems
-#endif
-    ERANGEwarning = TRUE;
-    clock_t nexttime = t0+2*CLOCKS_PER_SEC;
-    // start printing progress meter after a few seconds. We don't want to be bothered by progress meter for quick tasks.
-    _Bool hasPrinted=FALSE, whileBreak=FALSE;
-    int numTypeFails=0, numTypeFailCols=0;
-    int i = 0;
-    while (i<nrow && ch<eof) {
-        if (showProgress && clock()>nexttime) {
-            Rprintf("\rRead %.1f%% of %d rows", (100.0*i)/nrow, nrow);   // prints straight away if the mmap above took a while, is the idea
-            R_FlushConsole();    // for Windows
-            nexttime = clock()+CLOCKS_PER_SEC;
-            hasPrinted = TRUE;
+    int hasPrinted=0;  // the percentage last printed so it prints every 2% without many calls to wallclock()
+    _Bool stopTeam=false, firstTime=true;  // _Bool for MT-safey (cannot ever read half written _Bool value)
+    int nTypeBump=0, nTypeBumpCols=0;
+    double tRead=0, tReread=0, tTot=0;  // overall timings outside the parallel region
+    double thNextGoodLine=0, thRead=0, thPush=0;  // reductions of timings within the parallel region
+    char *typeBumpMsg=NULL;  size_t typeBumpMsgSize=0;
+    #define stopErrSize 1000
+    char stopErr[stopErrSize+1]="";  // must be compile time size: the message is generated and we can't free before STOP
+    int64_t DTi=0;   // the current row number in DT that we are writing to
+    const char *prevJumpEnd = pos;  // the position after the last line the last thread processed (for checking)
+    size_t workSize = 0;
+    int buffGrown=0;
+    size_t chunkBytes = umax((size_t)(1000*meanLineLen), 1ULL/*MB*/ *1024*1024);
+    // chunkBytes is the distance between each jump point; it decides the number of jumps
+    // We may want each chunk to write to its own page of the final column, hence 1000*maxLen
+    // For the 44GB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
+    // own page (4k) of the final column, hence 1000 rows of the smallest type (4 byte int) is just
+    // under 4096 to leave space for R's header + malloc's header.
+    if (nJumps/*from sampling*/>1) {
+      // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
+      // when nth==1 we still split by chunk for consistency (testing) and code sanity
+      nJumps = (int)((size_t)(lastRowEnd-pos)/chunkBytes);  // (int) rounds down
+      if (nJumps==0) nJumps=1;
+      else if (nJumps>nth) nJumps = nth*(1+(nJumps-1)/nth);
+      chunkBytes = (size_t)((lastRowEnd-pos)/nJumps);
+    } else {
+      nJumps = 1;
+    }
+    int64_t initialBuffRows = allocnrow / nJumps;
+    if (initialBuffRows > INT32_MAX) STOP("Buffer size %lld is too large\n", initialBuffRows);
+    nth = imin(nJumps, nth);
+
+    read:  // we'll return here to reread any columns with out-of-sample type exceptions
+    #pragma omp parallel num_threads(nth)
+    {
+      int me = omp_get_thread_num();
+      #pragma omp master
+      nth = omp_get_num_threads();
+      const char *thisJumpStart=NULL;  // The first good start-of-line after the jump point
+      int64_t myDTi=0;  // which row in the final DT result I should start writing my chunk to
+      int myNrow=0; // the number of rows in my chunk
+
+      // Allocate thread-private row-major myBuff
+      int myBuffRows = (int)initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
+      char *myBuff = malloc((size_t)rowSize*(size_t)myBuffRows + 8);
+      // +8 for Field() to write to when CT_DROP is at the end and buffer is full
+      if (!myBuff) stopTeam=true;
+      #pragma omp master
+      workSize += (size_t)nth * rowSize * myBuffRows;
+
+      #pragma omp for ordered schedule(dynamic) reduction(+:thNextGoodLine,thRead,thPush)
+      for (int jump=0; jump<nJumps+nth; jump++) {
+        if (stopTeam) continue;
+        double tt0 = 0, tt1 = 0;
+        if (verbose) { tt1 = tt0 = wallclock(); }
+
+        if (myNrow) {
+          // On the 2nd iteration onwards for this thread, push the data from the previous jump
+          // Convoluted because the ordered section has to be last in some OpenMP implementations :
+          // http://stackoverflow.com/questions/43540605/must-ordered-be-at-the-end
+          // Hence why loop goes to nJumps+nth. Logically, this clause belongs after the ordered section.
+
+          // Push buffer now to impl so that :
+          //   i) lenoff.off can be "just" 32bit int from a local anchor rather than a 64bit offset from a global anchor
+          //  ii) impl can do it in parallel if it wishes, otherwise it can have an orphan critical directive
+          // iii) myBuff is hot, so this is the best time to transpose it to result, and first time possible as soon
+          //      as we know the previous jump's number of rows.
+          //  iv) so that myBuff can be small
+          pushBuffer(myBuff, /*anchor=*/thisJumpStart, myNrow, myDTi, rowSize, nStringCols, nNonStringCols);
+          if (verbose) { tt1 = wallclock(); thPush += tt1 - tt0; tt0 = tt1; }
+
+          if (me==0 && (hasPrinted || (args.showProgress && jump/nth==4 &&
+                                      ((double)nJumps/(nth*3)-1.0)*(wallclock()-tAlloc)>3.0))) {
+            // Important for thread safety inside progess() that this is called not just from critical but that
+            // it's the master thread too, hence me==0.
+            // Jump 0 might not be assigned to thread 0; jump/nth==4 to wait for 4 waves to complete then decide once.
+            int p = (int)(100.0*jump/nJumps);
+            if (p>=hasPrinted) {
+              // ETA TODO. Ok to call wallclock() now.
+              progress(p, /*eta*/0);
+              hasPrinted = p+2;  // update every 2%
+            }
+          }
+          myNrow = 0;
         }
-        R_CheckUserInterrupt();
-        int batchend = MIN(i+10000, nrow);    // batched into 10k rows to save (expensive) calls to clock()
-        while(i<batchend && ch<eof) {
-            //Rprintf("Row %d : %.10s\n", i+1, ch);
-            const char *lineStart = ch;
-            if (sep==' ') while (ch<eof && *ch==' ') ch++;  // correct not to be skip_white()
-            if (ch>=eof || *ch==eol) {
-                if (skipEmptyLines) { ch+=eolLen; continue; }
-                else if (!fill) {
-                    whileBreak = TRUE;  // break the enclosing while too, without changing i
-                    break;              // break this while
-                }
+        if (jump>=nJumps) continue;  // nothing left to do. This jump was the dummy extra one.
+
+        const char *tch = pos + (size_t)jump*chunkBytes;
+        const char *nextJump = jump<nJumps-1 ? tch+chunkBytes+eolLen : lastRowEnd;
+        // +eolLen is for when nextJump happens to fall exactly on a line start (or on eol2 on Windows). The
+        // next thread will start one line later because nextGoodLine() starts by finding next eol
+        // Easier to imagine eolLen==1 and tch<=nextJump in the while() below
+        if (jump>0 && !nextGoodLine(&tch, ncol)) {
+          stopTeam=true;
+          DTPRINT("No good line could be found from jump point %d\n",jump); // TODO: change to stopErr
+          continue;
+        }
+        thisJumpStart=tch;
+        if (verbose) { tt1 = wallclock(); thNextGoodLine += tt1 - tt0; tt0 = tt1; }
+
+        char *myBuffPos = myBuff;
+        while (tch<nextJump) {
+          if (myNrow == myBuffRows) {
+            // buffer full due to unusually short lines in this chunk vs the sample; e.g. #2070
+            myBuffRows *= 1.5;
+            #pragma omp atomic
+            buffGrown++;
+            size_t diff = (size_t)(myBuffPos - myBuff);
+            if (!(myBuff = realloc(myBuff, (size_t)myBuffRows*rowSize + 8))) {
+              stopTeam=true;
+              break;
+            } else {
+              myBuffPos = myBuff + diff;  // restore myBuffPos in case myBuff was moved by realloc
             }
-            int j=-1, resj=-1;
-            while (++j<ncol) {
-                // Rprintf("Field %d: '%.10s' as type %d\n", j+1, ch, type[j]);
-                const char *start = ch;
-                SEXP thiscol = (type[j]==SXP_NULL) ? NULL : VECTOR_ELT(ans, ++resj);
-                if (!(*fun[type[j]])(thiscol, i)) {
-                  numTypeFails++;
-                  if (typeOk[j]) {
-                    numTypeFailCols++;
-                    if (hasPrinted) Rprintf("\n");
-                    Rprintf("Column %d ('%s') was guessed at type '%s' but row %d contains <<%.*s>>.\n",
-                            j+1, CHAR(STRING_ELT(names,j)), UserTypeName[type[j]], i+1, (int)(ch-start), start);
-                    typeOk[j] = 0;
-                  }
-                }
-                ch += (ch<eof && *ch!=eol);
+          }
+          const char *tlineStart = tch;  // for error message
+          if (sep==' ') while (tch<eof && *tch==' ') tch++;  // multiple sep=' ' at the tlineStart does not mean sep(!)
+          skip_white(&tch);  // solely for blank lines otherwise could leave to field processors which handle leading white
+          if (tch>=eof || *tch==eol) {
+            if (skipEmptyLines) { tch+=eolLen; continue; }
+            else if (!fill) {
+              #pragma omp critical
+              if (!stopTeam) {
+                stopTeam = true;
+                snprintf(stopErr, stopErrSize,
+                  "Row %lld is empty. It is outside the sample rows. "
+                  "Set fill=true to treat it as an NA row, or blank.lines.skip=true to skip it",
+                  myDTi + myNrow);
+                  // TODO - include a few (numbered) lines before and after in the message.
+              }
+              break;
             }
-            
-            if (j<ncol)  {
-              // not enough columns observed
-              if (!fill) STOP("Expecting %d cols but line %d contains only %d cols (sep='%c'). Consider fill=TRUE or perhaps quote=''. Line %d starts: <<%.*s>>",
-                              ncol, line, j, sep, line, STRLIM(lineStart, 500), lineStart);
-              for (; resj<LENGTH(ans); resj++) {
-                SEXP thiscol = VECTOR_ELT(ans, resj);
-                switch (type[j]) {
-                case SXP_LGL:
-                  LOGICAL(thiscol)[i] = NA_LOGICAL;
-                  break;
-                case SXP_INT:
-                  INTEGER(thiscol)[i] = NA_INTEGER;
-                  break;
-                case SXP_INT64:
-                  REAL(thiscol)[i] = NA_INT64_D;
-                  break;
-                case SXP_REAL:
-                  REAL(thiscol)[i] = NA_REAL;
-                  break;
-                case SXP_STR:
-                  SET_STRING_ELT(thiscol, i, NA_STRING);   // or R_BlankString? or put the ternary right here depending on nastrings
-                }
+          }
+          int j=0;
+          while (j<ncol) {
+            // DTPRINT("Field %d: '%.10s' as type %d\n", j+1, tch, type[j]);
+            const char *fieldStart = tch;
+            int8_t joldType = type[j];   // fetch shared type once. Cannot read half-written byte.
+            int8_t thisType = joldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
+            // always write to buffPos even when CT_DROP. It'll just overwrite on next non-CT_DROP
+            while (!fun[abs(thisType)](&tch, myBuffPos)) {
+              // normally returns success(1) and myBuffPos is assigned inside *fun.
+              thisType = thisType<0 ? thisType-1 : -thisType-1;
+              // guess is insufficient out-of-sample, type is changed to negative sign and then bumped. Continue to
+              // check that the new type is sufficient for the rest of the column to be sure a single re-read will work.
+              tch = fieldStart;
+            }
+            if (joldType == CT_STRING) ((lenOff *)myBuffPos)->off += (size_t)(fieldStart-thisJumpStart);
+            else if (thisType != joldType) {  // rare out-of-sample type exception
+              #pragma omp critical
+              {
+                joldType = type[j];  // fetch shared value again in case another thread bumped it while I was waiting.
+                // Can't PRINT because we're likely not master. So accumulate message and print afterwards.
+                if (thisType < joldType) {   // thisType<0 (type-exception)
+                  char temp[1001];
+                  int len = snprintf(temp, 1000,
+                    "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %lld\n",
+                    j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
+                    typeName[abs(joldType)], typeName[abs(thisType)],
+                    (int)(tch-fieldStart), fieldStart, myDTi+myNrow);
+                  typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + (size_t)len + 1);
+                  strcpy(typeBumpMsg+typeBumpMsgSize, temp);
+                  typeBumpMsgSize += (size_t)len;
+                  nTypeBump++;
+                  if (joldType>0) nTypeBumpCols++;
+                  type[j] = thisType;
+                } // else other thread bumped to a (negative) higher or equal type, so do nothing
               }
             }
-            if (ch<eof && *ch!=eol) STOP("Too many fields on line XXXX when reading");
-            ch+=eolLen;
-            pos = ch;  // start of line position only needed to include the whole line in any error message
-            line++;
-            i++;
-        }
-        if (whileBreak) break;
-    }
-    if (numTypeFails) {
-        R_FlushConsole();
-        STOP("The guessed column type was insufficient for %d values in %d columns. The first in each column was printed to the console. Use colClasses to set these column classes manually.", numTypeFails, numTypeFailCols);
-    }
-    if (showProgress && hasPrinted) {
-        j = 1+(clock()-t0)/CLOCKS_PER_SEC;
-        Rprintf("\rRead %d rows and %d (of %d) columns from %.3f GB file in %02d:%02d:%02d\n", i, ncol-numNULL, ncol, 1.0*filesize/(1024*1024*1024), j/3600, (j%3600)/60, j%60);
-        R_FlushConsole();
-    }
-    clock_t tRead = clock();
-    
-    // Warn about any non-whitespace not read at the end
-    while (ch<eof && isspace(*ch)) ch++;
-    if (ch<eof) {
-        ch2 = ch;
-        while (ch2<eof && *ch2!=eol) ch2++;
-        if (INTEGER(nrowsarg)[0] == -1 || i < INTEGER(nrowsarg)[0])
-          warning("Stopped reading at line %d (likely blank) but text exists afterwards (discarded): <<%.*s>>", line, ch2-ch, ch);
-    }
-    if (i<nrow) {
-        if (verbose) Rprintf("Read fewer rows (%d) than were allocated (%d).\n", i, nrow);
-        nrow = i;
-    } else {
-        if (i!=nrow) STOP("Internal error: i [%d] > nrow [%d]", i, nrow);
-        if (verbose) Rprintf("Read %d rows. Exactly what was estimated and allocated up front\n", i);
-    }
-    for (j=0; j<ncol-numNULL; j++) SETLENGTH(VECTOR_ELT(ans,j), nrow);
-    
-    // ********************************************************************************************
-    //   Convert na.strings to NA for character columns
-    // ********************************************************************************************
-    for (k=0; k<length(nastrings); k++) {
-        thisstr = STRING_ELT(nastrings,k);
-        for (j=0; j<ncol-numNULL; j++) {
-            SEXP thiscol = VECTOR_ELT(ans,j);
-            if (TYPEOF(thiscol)==STRSXP) {
-                for (i=0; i<nrow; i++)
-                    if (STRING_ELT(thiscol,i)==thisstr) SET_STRING_ELT(thiscol, i, NA_STRING);
+            myBuffPos += size[j++];
+            if (tch>=eof || *tch==eol) break;
+            tch++;
+          }
+          if (j<ncol)  {
+            // not enough columns observed
+            if (!fill) {
+              #pragma omp critical
+              if (!stopTeam) {
+                stopTeam = true;
+                snprintf(stopErr, stopErrSize,
+                  "Expecting %d cols but row %lld contains only %d cols (sep='%c'). " \
+                  "Consider fill=true. <<%.*s>>",
+                  ncol, myDTi, j, sep, STRLIM(tlineStart, 500), tlineStart);
+              }
+              break;
             }
+            while (j<ncol) {
+              switch (type[j]) {
+              case CT_BOOL8:
+                *(int8_t *)myBuffPos = NA_BOOL8;
+                break;
+              case CT_INT32_BARE:
+              case CT_INT32_FULL:
+                *(int32_t *)myBuffPos = NA_INT32;
+                break;
+              case CT_INT64:
+                *(int64_t *)myBuffPos = NA_INT64;
+                break;
+              case CT_FLOAT64:
+                *(double *)myBuffPos = NA_FLOAT64;
+                break;
+              case CT_STRING:
+                ((lenOff *)myBuffPos)->len = blank_is_a_NAstring ? INT8_MIN : 0;
+                ((lenOff *)myBuffPos)->off = 0;
+                break;
+              default:
+                break;
+              }
+              myBuffPos += size[j++];
+            }
+          }
+          if (tch<eof && *tch!=eol) {
+            #pragma omp critical
+            if (!stopTeam) {
+              stopTeam = true;
+              snprintf(stopErr, stopErrSize,
+                "Too many fields on out-of-sample row %lld. Read all %d expected columns but more are present. <<%.*s>>",
+                myDTi, ncol, STRLIM(tlineStart, 500), tlineStart);
+            }
+            break;
+          }
+          tch+=eolLen;
+          myNrow++;
         }
+        if (verbose) { tt1 = wallclock(); thRead += tt1 - tt0; tt0 = tt1; }
+
+        #pragma omp ordered
+        {
+          // stopTeam could be true if a previous thread already stopped while I was waiting my turn
+          if (!stopTeam && prevJumpEnd != thisJumpStart) {
+            snprintf(stopErr, stopErrSize,
+              "Jump %d did not finish counting rows exactly where jump %d found its first good line start: "
+              "prevEnd(%p)<<%.*s>> != thisStart(prevEnd%+d)<<%.*s>>",
+              jump-1, jump, (const void*)prevJumpEnd, STRLIM(prevJumpEnd,50), prevJumpEnd,
+              (int)(thisJumpStart-prevJumpEnd), STRLIM(thisJumpStart,50), thisJumpStart);
+            stopTeam=true;
+          }
+          myDTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
+          if (myDTi>=args.nrowLimit) {
+            // nrowLimit was supplied and a previous thread reached that limit while I was counting my rows
+            stopTeam=true;
+          }
+          myNrow = (int) umin((size_t)myNrow, (size_t)(args.nrowLimit-myDTi)); // for the last jump that reaches nrowLimit
+          // tell next thread 2 things :
+          prevJumpEnd = tch; // i) the \n I finished on so it can check (above) it started exactly on that \n good line start
+          DTi += myNrow;     // ii) which row in the final result it should start writing to. As soon as I know myNrow.
+        }
+        // END ORDERED.
+        // Next thread can now start its ordered section and write its results to the final DT at the same time as me.
+        // Ordered has to be last in some OpenMP implementations currently. Logically though, pushBuffer happens now.
+      }
+      // Each thread to free its own buffer.
+      free(myBuff); myBuff=NULL;
+    }
+    // end parallel
+    if (firstTime) {
+      tReread = tRead = wallclock();
+      tTot = tRead-t0;
+      if (hasPrinted || verbose) {
+        DTPRINT("\rRead %lld rows x %d columns from %.3fGB file in ", DTi, ncol-ndrop, 1.0*fileSize/(1024*1024*1024));
+        DTPRINT("%02d:%06.3f ", (int)tTot/60, fmod(tTot,60.0));
+        DTPRINT("wall clock time (can be slowed down by any other open apps even if seemingly idle)\n");
+        // since parallel, clock() cycles is parallel too: so wall clock will have to do
+      }
+      // not-bumped columns are assigned type -CT_STRING in the rerun, so we have to count types now
+      if (verbose) {
+        DTPRINT("Thread buffers were grown %d times (if all %d threads each grew once, this figure would be %d)\n",
+                 buffGrown, nth, nth);
+        int typeCounts[NUMTYPE];
+        for (int i=0; i<NUMTYPE; i++) typeCounts[i] = 0;
+        for (int i=0; i<ncol; i++) typeCounts[ abs(type[i]) ]++;
+        DTPRINT("Final type counts\n");
+        for (int i=0; i<NUMTYPE; i++) DTPRINT("%10d : %-9s\n", typeCounts[i], typeName[i]);
+      }
+      if (nTypeBump) {
+        if (hasPrinted || verbose) DTPRINT("Rereading %d columns due to out-of-sample type exceptions.\n", nTypeBumpCols);
+        if (verbose) DTPRINT("%s", typeBumpMsg);
+        // TODO - construct and output the copy and pastable colClasses argument so user can avoid the reread time in future.
+        free(typeBumpMsg);
+      }
+    } else {
+      tReread = wallclock();
+      tTot = tReread-t0;
+      if (hasPrinted || verbose) {
+        DTPRINT("\rReread %lld rows x %d columns in ", DTi, nTypeBumpCols);
+        DTPRINT("%02d:%06.3f\n", (int)(tReread-tRead)/60, fmod(tReread-tRead,60.0));
+      }
+    }
+    if (stopTeam && stopErr[0]!='\0') STOP(stopErr); // else nrowLimit applied and stopped early normally
+    if (DTi > allocnrow) {
+      if (args.nrowLimit>allocnrow) STOP("Internal error: DTi(%lld)>allocnrow(%lld) but nrows=%lld (not limited)",
+                                         DTi, allocnrow, args.nrowLimit);
+      // for the last jump that fills nrow limit, then ansi is +=buffi which is >allocnrow and correct
+    } else if (DTi == allocnrow) {
+      if (verbose) DTPRINT("Read %lld rows. Exactly what was estimated and allocated up front\n", DTi);
+    } else {
+      allocnrow = DTi;
+    }
+    setFinalNrow(DTi);
+    if (firstTime && nTypeBump) {
+      rowSize = 0;
+      nStringCols = 0;
+      nNonStringCols = 0;
+      for (int j=0, resj=-1; j<ncol; j++) {
+        size[j] = 0;
+        if (type[j] == CT_DROP) continue;
+        resj++;
+        if (type[j]<0) {
+          // column was bumped due to out-of-sample type exception
+          int newType = type[j] *= -1;   // final type for this column
+          reallocColType(resj, newType);
+          rowSize += (size[j] = typeSize[newType]);
+          if (type[j] == CT_STRING) nStringCols++; else nNonStringCols++;
+        } else if (type[j]>=1) {
+          // we'll skip over non-bumped columns in the rerun, whilst still incrementing resi (hence not CT_DROP)
+          // not -type[i] either because that would reprocess the contents of not-bumped columns wastefully
+          type[j] = -CT_STRING;
+        }
+      }
+      // reread from the beginning
+      DTi = 0;
+      prevJumpEnd = ch = pos;
+      firstTime = false;
+      goto read;
     }
     if (verbose) {
-        clock_t tEnd = clock(), tot=tEnd-t0;
-        if (tot<1) tot=1;  // to avoid nan% output in some trivially small tests where tot==0.000s
-        Rprintf("%8.3fs (%3.0f%%) Memory map\n", 1.0*(tMap-t0)/CLOCKS_PER_SEC, 100.0*(tMap-t0)/tot);
-        Rprintf("%8.3fs (%3.0f%%) sep, ncol and header detection\n", 1.0*(tLayout-tMap)/CLOCKS_PER_SEC, 100.0*(tLayout-tMap)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Column type detection using %d rows at %d jump points\n", 1.0*(tColType-tLayout)/CLOCKS_PER_SEC, 100.0*(tColType-tLayout)/tot, sampleLines, numJumps);
-        Rprintf("%8.3fs (%3.0f%%) Allocation of %dx%d result (%.3fGB) in RAM\n", 1.0*(tAlloc-tColType)/CLOCKS_PER_SEC, 100.0*(tAlloc-tColType)/tot, nrow, ncol, (double)ansSize/(1024*1024*1024));
-        Rprintf("%8.3fs (%3.0f%%) Reading data\n", 1.0*(tRead-tAlloc)/CLOCKS_PER_SEC, 100.0*(tRead-tAlloc)/tot);
-        Rprintf("%8.3fs (%3.0f%%) Changing na.strings to NA\n", 1.0*(tEnd-tRead)/CLOCKS_PER_SEC, 100.0*(tEnd-tRead)/tot);
-        Rprintf("%8.3fs        Total\n", 1.0*tot/CLOCKS_PER_SEC);
+      DTPRINT("=============================\n");
+      if (tTot<0.000001) tTot=0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
+      DTPRINT("%8.3fs (%3.0f%%) Memory map %.3fGB file\n", tMap-t0, 100.0*(tMap-t0)/tTot, 1.0*fileSize/(1024*1024*1024));
+      DTPRINT("%8.3fs (%3.0f%%) sep=", tLayout-tMap, 100.0*(tLayout-tMap)/tTot);
+        DTPRINT(sep=='\t' ? "'\\t'" : (sep=='\n' ? "'\\n'" : "'%c'"), sep);
+        DTPRINT(" ncol=%d and header detection\n", ncol);
+      DTPRINT("%8.3fs (%3.0f%%) Column type detection using %d sample rows\n",
+        tColType-tLayout, 100.0*(tColType-tLayout)/tTot, sampleLines);
+      DTPRINT("%8.3fs (%3.0f%%) Allocation of %lld rows x %d cols (%.3fGB)\n",
+        tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, allocnrow, ncol, DTbytes/(1024.0*1024*1024));
+      thNextGoodLine/=nth; thRead/=nth; thPush/=nth;
+      double thWaiting = tRead-tAlloc-thNextGoodLine-thRead-thPush;
+      DTPRINT("%8.3fs (%3.0f%%) Reading %d chunks of %.3fMB (%d rows) using %d threads\n",
+        tRead-tAlloc, 100.0*(tRead-tAlloc)/tTot, nJumps, (double)chunkBytes/(1024*1024), (int)(chunkBytes/meanLineLen), nth);
+      DTPRINT("   = %8.3fs (%3.0f%%) Finding first non-embedded \\n after each jump\n", thNextGoodLine, 100.0*thNextGoodLine/tTot);
+      DTPRINT("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers\n", thRead, 100.0*thRead/tTot);
+      DTPRINT("   + %8.3fs (%3.0f%%) Transpose\n", thPush, 100.0*thPush/tTot);
+      DTPRINT("   + %8.3fs (%3.0f%%) Waiting\n", thWaiting, 100.0*thWaiting/tTot);
+      DTPRINT("%8.3fs (%3.0f%%) Rereading %d columns due to out-of-sample type exceptions\n",
+        tReread-tRead, 100.0*(tReread-tRead)/tTot, nTypeBumpCols);
+      DTPRINT("%8.3fs        Total\n", tTot);
     }
-    UNPROTECT(protecti);
-    closeFile();
-    return(ans);
+    freadCleanup();
+    return 1;
 }
 
