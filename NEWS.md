@@ -34,7 +34,7 @@
 
 7. Seg fault in `rbindlist()` when one or more items are empty, [#2019](https://github.com/Rdatatable/data.table/issues/2019). Thanks Michael Lang for the pull request.
 
-2. Fixed an error in `format.ITime` that was preventing printing of 0-length `ITime` objects, [#2032](https://github.com/Rdatatable/data.table/issues/2032). Thanks @MichaelChirico.
+8. Error printing 0-length `ITime` objects, [#2032](https://github.com/Rdatatable/data.table/issues/2032). Thanks Michael Chirico for the pull request.
 
 #### NOTES
 
