@@ -9907,6 +9907,9 @@ x = list(list(a = 1), list(), list(a = 2))
 ans = data.table(id=c(1L,3L),a=c(1,2))
 for (i in 1:100) test(1763, rbindlist(x, idcol="id"), ans)
 
+# as.ITime(character(0)) used to fail, #2032
+test(1764, capture.output(format(as.ITime(character(0)))), "character(0)")
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
