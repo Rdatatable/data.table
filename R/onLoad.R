@@ -42,8 +42,6 @@
              "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
              "datatable.use.index"="TRUE",           # global switch to address #1422
              "datatable.fread.datatable"="TRUE",
-             "datatable.fread.dec.experiment"="TRUE", # temp.  will remove once stable
-             "datatable.fread.dec.locale"=if (.Platform$OS.type=="unix") "'fr_FR.utf8'" else "'French_France.1252'",
              "datatable.prettyprint.char" = NULL,     # FR #1091
              "datatable.old.unique.by.key" = "FALSE"  # TODO: warn 1 year, remove after 2 years
              )

@@ -125,24 +125,3 @@ SEXP dim(SEXP x)
 }
 
 
-
-// based on R's src/main/times.c currentTime as that isn't exposed in R's API
-
-#include <time.h>      // clock_gettime on Linux & Mac
-#include <sys/time.h>  // gettimeoday on Windows
-
-double wallclock()
-{
-    double ans = NA_REAL;
-#ifdef CLOCK_REALTIME
-    struct timespec tp;
-    if (0==clock_gettime(CLOCK_REALTIME, &tp))
-        ans = (double) tp.tv_sec + 1e-9 * (double) tp.tv_nsec;
-#else
-    struct timeval tv;
-    if (0==gettimeofday(&tv, NULL))
-        ans = (double) tv.tv_sec + 1e-6 * (double) tv.tv_usec;
-#endif
-    return ans;
-}
-

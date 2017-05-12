@@ -1,55 +1,25 @@
 
-fread <- function(input="",sep="auto",sep2="auto",nrows=Inf,header="auto",na.strings="NA",file,stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=NA,skip=0,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"),dec=if (sep!=".") "." else ",", col.names, check.names=FALSE, encoding="unknown", quote="\"", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=interactive(),data.table=getOption("datatable.fread.datatable"))
+fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=NA,skip=0,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=interactive(),data.table=getOption("datatable.fread.datatable"),nThread=getDTthreads())
 {
-    if (!is.character(dec) || length(dec)!=1L || nchar(dec)!=1) stop("dec must be a single character e.g. '.' or ','")
+    stopifnot( is.character(sep), length(sep)==1, sep=="auto" || nchar(sep)==1 )
+    if (sep == "auto") sep=""
+    stopifnot( is.character(dec), length(dec)==1, nchar(dec)==1 )
     # handle encoding, #563
     if (length(encoding) != 1L || !encoding %in% c("unknown", "UTF-8", "Latin-1")) {
         stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
     }
-    isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)
-    stopifnot( isLOGICAL(strip.white), isLOGICAL(blank.lines.skip), isLOGICAL(fill), isLOGICAL(showProgress),
-               isLOGICAL(stringsAsFactors), isLOGICAL(verbose), isLOGICAL(check.names) )
+    isTrueFalse = function(x) isTRUE(x) || identical(FALSE, x)
+    isTrueFalseNA = function(x) isTRUE(x) || identical(FALSE, x) || identical(NA, x)
+    stopifnot( isTrueFalse(strip.white), isTrueFalse(blank.lines.skip), isTrueFalse(fill), isTrueFalse(showProgress),
+               isTrueFalse(stringsAsFactors), isTrueFalse(verbose), isTrueFalse(check.names) )
     stopifnot( is.numeric(nrows), length(nrows)==1 )
     if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
-    
-    if (getOption("datatable.fread.dec.experiment") && Sys.localeconv()["decimal_point"] != dec) {
-        oldlocale = Sys.getlocale("LC_NUMERIC")
-        if (verbose) cat("dec='",dec,"' but current locale ('",oldlocale,"') has dec='",Sys.localeconv()["decimal_point"],"'. Attempting to change locale to one that has the desired decimal point.\n",sep="")
-        on.exit(Sys.setlocale("LC_NUMERIC", oldlocale))
-        if (dec==".") {
-            tt <- Sys.setlocale("LC_NUMERIC", "C")
-            if (!identical(tt,"C")) stop("It is supposed to be guaranteed that Sys.setlocale('LC_NUMERIC', 'C') will always work!")
-        }
-        else suppressWarnings(tt <- Sys.setlocale("LC_NUMERIC", ""))   # hope get lucky with system locale; i.e. France in France
-        if (Sys.localeconv()["decimal_point"] != dec) {
-            if (verbose) cat("Changing to system locale ('",tt,"') did not provide the desired dec. Now trying any provided in getOption('datatable.fread.dec.locale')\n", sep="")
-            for (i in getOption("datatable.fread.dec.locale")) {
-                if (i=="") {
-                    if (verbose) cat("Ignoring ''\n")
-                    next
-                } else {
-                    if (verbose) cat("Trying '",i,"'\n", sep="")
-                }
-                suppressWarnings(tt <- Sys.setlocale("LC_NUMERIC", i))
-                cmd = paste("Sys.setlocale('LC_NUMERIC','",i,"')",sep="")
-                if (is.null(tt)) stop(cmd," returned NULL (locale information is unavailable). See ?Sys.setlocale.")
-                if (tt=="") {
-                    if (verbose) cat(cmd, ' returned ""; i.e., this locale name is not valid on your system. It was provided by you in getOption("datatable.fread.dec.locale"). See ?Sys.setlocale and ?fread.')
-                    next
-                }
-                if (toupper(tt)!=toupper(i)) {
-                    warning(cmd, " returned '",tt,"' != '",i,"' (not NULL not '' and allowing for case differences). This may not be a problem but please report.")
-                }
-                if (Sys.localeconv()["decimal_point"] == dec) break
-                if (verbose) cat("Successfully changed locale but it provides dec='",Sys.localeconv()["decimal_point"],"' not the desired dec", sep="")
-            }
-        }
-        if (Sys.localeconv()["decimal_point"] != dec) {
-            stop('Unable to change to a locale which provides the desired dec. You will need to add a valid locale name to getOption("datatable.fread.dec.locale"). See the long paragraph in ?fread.', if(verbose)'' else ' Run again with verbose=TRUE to inspect.')   # see issue #502
-        }
-        if (verbose) cat("This R session's locale is now '",tt,"' which provides the desired decimal point for reading numerics in the file - success! The locale will be restored to what it was ('",oldlocale,") even if the function fails for other reasons.\n")
-    }
-    # map file as input
+    if (identical(header,"auto")) header=NA
+    stopifnot(isTrueFalseNA(header))
+    stopifnot(length(skip)==1)
+    stopifnot(is.numeric(nThread) && length(nThread)==1)
+    nThread=as.integer(nThread)
+    stopifnot(nThread>=1)
     if (!missing(file)) {
         if (!identical(input, "")) stop("You can provide 'input' or 'file', not both.")
         if (!file.exists(file)) stop(sprintf("Provided file '%s' does not exists.", file))
@@ -68,7 +38,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=Inf,header="auto",na.str
         if (!is_secureurl(input)) {
             #1668 - force "auto" when is_file to
             #  ensure we don't use an invalid option, e.g. wget
-            method <- if (is_file(input)) "auto" else 
+            method <- if (is_file(input)) "auto" else
                 getOption("download.file.method", default = "auto")
             download.file(input, tt, method = method,
                           mode = "wb", quiet = !showProgress)
@@ -99,12 +69,21 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=Inf,header="auto",na.str
         }
         input = tt
     }
-    if (identical(header,"auto")) header=NA
-    if (identical(sep,"auto")) sep=NULL
-    if (is.atomic(colClasses) && !is.null(names(colClasses))) colClasses = tapply(names(colClasses),colClasses,c,simplify=FALSE) # named vector handling
+    if (is.logical(colClasses)) {
+        if (!all(is.na(colClasses))) stop("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
+        colClasses = NULL
+    }
+    if (!is.null(colClasses) && is.atomic(colClasses)) {
+        if (!is.character(colClasses)) stop("colClasses is not type list or character vector")
+        if (!length(colClasses)) stop("colClasses is character vector ok but has 0 length")
+        if (!is.null(names(colClasses))) {   # names are column names; convert to list approach
+            colClasses = tapply(names(colClasses), colClasses, c, simplify=FALSE)
+        }
+    }
     if (is.numeric(skip)) skip = as.integer(skip)
-    ans = .Call(Creadfile,input,sep,nrows,header,na.strings,verbose,skip,select,drop,
-                          colClasses,integer64,dec,encoding,quote,strip.white,blank.lines.skip,fill,showProgress)
+    warnings2errors = getOption("warn") >= 2
+    ans = .Call(CfreadR,input,sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
+                        fill,showProgress,nThread,verbose,warnings2errors,select,drop,colClasses,integer64,encoding)
     nr = length(ans[[1]])
     if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(ans,inherits,"integer64"))) require_bit64()
     setattr(ans,"row.names",.set_row_names(nr))
@@ -143,7 +122,7 @@ fread <- function(input="",sep="auto",sep2="auto",nrows=Inf,header="auto",na.str
     if (!missing(col.names))
         setnames(ans, col.names) # setnames checks and errors automatically
     if (!is.null(key) && data.table) {
-        if (!is.character(key)) 
+        if (!is.character(key))
             stop("key argument of data.table() must be character")
         if (length(key) == 1L) {
             key = strsplit(key, split = ",")[[1L]]

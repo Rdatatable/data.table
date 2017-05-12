@@ -10,6 +10,7 @@
 #endif
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
+#include <stdint.h> // for uint64_t rather than unsigned long long
 
 // Fixes R-Forge #5150, and #1641
 // a simple check for R version to decide if the type should be R_len_t or 
@@ -94,7 +95,7 @@ void setselfref(SEXP);
 // fmelt.c
 SEXP seq_int(int n, int start);
 SEXP set_diff(SEXP x, int n);
-SEXP which(SEXP x, Rboolean bool);
+SEXP which(SEXP x, Rboolean val);
 
 // frank.c
 SEXP dt_na(SEXP x, SEXP cols);
@@ -122,11 +123,11 @@ SEXP combineFactorLevels(SEXP factorLevels, int *factorType, Rboolean *isRowOrde
 double dquickselect(double *x, int n, int k);
 double iquickselect(int *x, int n, int k);
 
+// fread.c
+double wallclock();
+
 // openmp-utils.c
 int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
-// wrappers.c
-double wallclock();
- 
 

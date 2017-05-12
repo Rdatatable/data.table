@@ -426,11 +426,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
               stop("Variable '",jsubChar,"' is not found in calling scope. Looking in calling scope because either you used the .. prefix or set with=FALSE")
             }
         }
-        if (root=="{") { 
-            if (length(jsub)==2) {
+        if (root=="{") {
+            if (length(jsub) == 2L) {
                 jsub = jsub[[2L]]  # to allow {} wrapping of := e.g. [,{`:=`(...)},] [#376]
                 root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
-            } else if (is.call(jsub[[2L]]) && jsub[[2L]][[1L]] == ":=") {
+            } else if (length(jsub) > 2L && is.call(jsub[[2L]]) && jsub[[2L]][[1L]] == ":=") {
+                #2142 -- j can be {} and have length 1
                 stop("You have wrapped := with {} which is ok but then := must be the only thing inside {}. You have something else inside {} as well. Consider placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}")
             }
         }
