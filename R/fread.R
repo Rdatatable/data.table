@@ -1,5 +1,5 @@
 
-fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=NA,skip=0,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=interactive(),data.table=getOption("datatable.fread.datatable"),nThread=getDTthreads())
+fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=NA,skip=0,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=interactive(),data.table=getOption("datatable.fread.datatable"),nThread=getDTthreads(),nSamplingPoints=0)
 {
     stopifnot( is.character(sep), length(sep)==1, sep=="auto" || nchar(sep)==1 )
     if (sep == "auto") sep=""
@@ -20,6 +20,9 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
     stopifnot(is.numeric(nThread) && length(nThread)==1)
     nThread=as.integer(nThread)
     stopifnot(nThread>=1)
+    stopifnot(is.numeric(nSamplingPoints) && length(nSamplingPoints)==1)
+    nSamplingPoints=as.integer(nSamplingPoints)
+    stopifnot(nSamplingPoints>=0)
     if (!missing(file)) {
         if (!identical(input, "")) stop("You can provide 'input' or 'file', not both.")
         if (!file.exists(file)) stop(sprintf("Provided file '%s' does not exists.", file))
@@ -82,8 +85,13 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
     }
     if (is.numeric(skip)) skip = as.integer(skip)
     warnings2errors = getOption("warn") >= 2
+
+
     ans = .Call(CfreadR,input,sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
-                        fill,showProgress,nThread,verbose,warnings2errors,select,drop,colClasses,integer64,encoding)
+                        fill,showProgress,nThread,verbose,warnings2errors,nSamplingPoints,select,drop,
+                        colClasses,integer64,encoding)
+    
+
     nr = length(ans[[1]])
     if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(ans,inherits,"integer64"))) require_bit64()
     setattr(ans,"row.names",.set_row_names(nr))

@@ -9915,6 +9915,9 @@ x = as.POSIXct('2017-03-17')
 attr(x, 'tzone') = NULL
 test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17 00:00:00")
 
+test(1766.1, fread("issue_2157.txt"), error="Sampling jump point 9 is before the last jump ended")
+test(1766.2, dim(fread("issue_2157.txt", nSamplingPoints=2)), c(1314, 8))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

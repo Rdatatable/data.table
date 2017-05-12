@@ -62,6 +62,7 @@ SEXP freadR(
   SEXP nThreadArg,
   SEXP verboseArg,
   SEXP warnings2errorsArg,
+  SEXP nSamplingPointsArg,
 
   // extras needed by callbacks from freadMain
   SEXP selectArg,
@@ -150,6 +151,8 @@ SEXP freadR(
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
+  args.nSamplingPoints = (int32_t) INTEGER(nSamplingPointsArg)[0];
+  if (args.nSamplingPoints < 0) error("nSamplingPoints(%d) < 0", args.nSamplingPoints);
 
   // === extras used for callbacks ===
   if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1) error("'integer64' must be a single character string");

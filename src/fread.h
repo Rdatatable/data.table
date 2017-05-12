@@ -116,6 +116,12 @@ typedef struct freadMainArgs
   // leaks would occur.
   _Bool warningsAreErrors;
 
+  // Number of "sampling jump points" that fread will attempt to scan initially
+  // for the purpose of type detection. The beginning and the end of the file
+  // are always scanned. If this is set to 0, then fread will select the
+  // number of sampling points automatically.
+  int32_t nSamplingPoints;
+
 } freadMainArgs;
 
 
