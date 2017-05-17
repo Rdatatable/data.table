@@ -13,7 +13,9 @@ as.IDate.Date <- function(x, ...) {
 }    
 
 as.IDate.POSIXct <- function(x, ...) {
-  as.IDate(as.Date(x, tz = attr(x, "tzone"), ...))
+  tz = attr(x, "tzone")
+  if (is.null(tz)) tz = "UTC"
+  as.IDate(as.Date(x, tz = tz, ...))
 }
 
 as.IDate.IDate <- function(x, ...) x
@@ -120,9 +122,7 @@ as.character.ITime <- format.ITime <- function(x, ...) {
     hh <- x %/% 3600L
     mm <- (x - hh * 3600L) %/% 60L
     ss <- trunc(x - hh * 3600L - 60L * mm)
-    res = paste(substring(paste("0", hh, sep = ""), nchar(paste(hh))), 
-              substring(paste("0", mm, sep = ""), nchar(paste(mm))), 
-              substring(paste("0", ss, sep = ""), nchar(paste(ss))), sep = ":")
+    res = sprintf('%02d:%02d:%02d', hh, mm, ss)
     # Fix for #1354, so that "NA" input is handled correctly.
     if (is.na(any(neg))) res[is.na(x)] = NA
     neg = which(neg)
@@ -244,7 +244,7 @@ second  <- function(x) as.integer(as.POSIXlt(x)$sec)
 minute  <- function(x) as.POSIXlt(x)$min
 hour    <- function(x) as.POSIXlt(x)$hour
 yday    <- function(x) as.POSIXlt(x)$yday + 1L
-wday    <- function(x) as.POSIXlt(x)$wday + 1L
+wday    <- function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L
 mday    <- function(x) as.POSIXlt(x)$mday
 week    <- function(x) yday(x) %/% 7L + 1L
 isoweek <- function(x) {

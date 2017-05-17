@@ -3,7 +3,7 @@
 \alias{set}
 \title{ Assignment by reference }
 \description{
-    Fast add, remove and update subsets of columns, by reference. \code{:=} opertor can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
+    Fast add, remove and update subsets of columns, by reference. \code{:=} operator can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
 
     \code{set} is a low overhead loopable version of \code{:=}. It is particularly useful for repetitively updating rows of certain columns by reference (using a for-loop). See \code{Examples}. It can not perform grouping operations.
 

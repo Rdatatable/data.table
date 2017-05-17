@@ -23,21 +23,14 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
     envirs <- list()
     for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
         cat("Running",fn,"\n")
-        oldverbose = getOption("datatable.verbose")
-        if (verbose) options(datatable.verbose=TRUE)
+        oldverbose = options(datatable.verbose=verbose)
         envirs[[fn]] = new.env(parent=.GlobalEnv)
         if(isTRUE(silent)){
             try(sys.source(fn,envir=envirs[[fn]]), silent=silent)
         } else {
             sys.source(fn,envir=envirs[[fn]])
         }
-        options(data.table.verbose=oldverbose)
-        # As from v1.7.2, testthat doesn't run the tests.Rraw (hence file name change to .Rraw).
-        # There were environment issues with system.time() (when run by test_package) that only
-        # showed up when CRAN maintainers tested on 64bit. Matt spent a long time including
-        # testing on 64bit in Amazon EC2. Solution was simply to not run the tests.R from
-        # testthat, which probably makes sense anyway to speed it up a bit (was running twice
-        # before).
+        options(oldverbose)
     }
     options(encoding=oldenc)
     # Sys.setlocale("LC_CTYPE", oldlocale)
@@ -52,10 +45,18 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
 # .devtesting = TRUE
 
 compactprint <- function(DT, topn=2) {
-    cn = paste(" [Key=",paste(key(DT),collapse=",")," Types=",paste(substring(gsub("integer64","i64",sapply(DT,class)),1,3),collapse=","),"]",sep="")
+    tt = vapply_1c(DT,function(x)class(x)[1L])
+    tt[tt=="integer64"] = "i64"
+    cn = paste(" [Key=",paste(key(DT),collapse=","),
+                " Types=",paste(substring(sapply(DT,typeof),1,3),collapse=","),
+                " Classes=",paste(substring(tt,1,3),collapse=","),
+                "]",sep="")
     print(copy(DT)[,(cn):=""], topn=topn)
     invisible()
 }
+
+INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
+
 test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # Usage:
     # i) tests that x equals y when both x and y are supplied, the most common usage
@@ -73,6 +74,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     # 3) each test has a unique id which we refer to in commit messages, emails etc.
     nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
     whichfail = get("whichfail", parent.frame())
+    all.equal.result = TRUE
     assign("ntest", get("ntest", parent.frame()) + 1, parent.frame(), inherits=TRUE)   # bump number of tests run
     assign("lastnum", num, parent.frame(), inherits=TRUE)
     v = getOption("datatable.verbose")
@@ -84,14 +86,18 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     xsub = substitute(x)
     ysub = substitute(y)
     if (is.null(output)) err <<- try(x,TRUE)
-    else out = gsub("NULL$","",paste(capture.output(print(err<<-try(x,TRUE))),collapse=""))
-    if (!is.null(output)) {
-        output = gsub("[[]","<LBRACKET>",output)
-        output = gsub("[]]","<RBRACKET>",output)
-        output = gsub("<LBRACKET>","[[]",output)
-        output = gsub("<RBRACKET>","[]]",output)
-        output = gsub("[(]","[(]",output)
-        output = gsub("[)]","[)]",output)
+    else {
+        out = gsub("NULL$","",paste(capture.output(print(err<<-try(x,TRUE))),collapse=""))
+        out = gsub("\n","",gsub("\r","",out))  # ensure no \r or \n pollution on windows
+        # We use .* to shorten what we test for (so the grep below needs fixed=FALSE)
+        # but other characters should be matched literally
+        output = gsub("\\","\\\\",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
+        output = gsub("[","\\[",output,fixed=TRUE)
+        output = gsub("]","\\]",output,fixed=TRUE)
+        output = gsub("(","\\(",output,fixed=TRUE)
+        output = gsub(")","\\)",output,fixed=TRUE)
+        output = gsub("+","\\+",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
+        output = gsub("\n","",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
         if (!length(grep(output,out))) {
             cat("Test",num,"didn't produce correct output:\n")
             cat(">",deparse(xsub),"\n")
@@ -104,6 +110,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     }
     if (!is.null(error) || !is.null(warning)) {
         type = ifelse(!is.null(error),"error","warning")
+        if (type=="error" && !missing(y)) stop("Test ",num," is invalid: when error= is provided it doesn't make sense to pass y as well")
         patt = txt = ifelse(!is.null(error),error,warning)
         patt = gsub("[(]","[(]",patt)
         patt = gsub("[)]","[)]",patt)
@@ -151,27 +158,30 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
             xc=copy(x)
             yc=copy(y)  # so we don't affect the original data which may be used in the next test
             # drop unused levels in factors
-            if (length(x)) for (i in which(sapply(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
-            if (length(y)) for (i in which(sapply(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
+            if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
+            if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
             setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
             setattr(yc,"row.names",NULL)
             setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
             setattr(yc,"index",NULL)
             if (identical(xc,yc) && identical(key(x),key(y))) return()  # check key on original x and y because := above might have cleared it on xc or yc
-            if (isTRUE(all.equal(xc,yc)) && identical(key(x),key(y))) return()
+            if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
+                identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return()
         }
         if (is.factor(x) && is.factor(y)) {
             x = factor(x)
             y = factor(y)
             if (identical(x,y)) return()
         }
-        if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal(x,y))) return()   # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
+        if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y))) return()
+        # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     }
     cat("Test",num,"ran without errors but failed check that x equals y:\n")
     cat("> x =",deparse(xsub),"\n")
     if (is.data.table(x)) compactprint(x) else if (length(x)>6) {cat("First 6 of", length(x),":");print(head(x))} else print(x)
     cat("> y =",deparse(ysub),"\n")
     if (is.data.table(y)) compactprint(y) else if (length(y)>6) {cat("First 6 of", length(y),":");print(head(y))} else print(y)
+    if (!isTRUE(all.equal.result)) cat(all.equal.result,sep="\n")
     assign("nfail", nfail+1, parent.frame(), inherits=TRUE)
     assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
     invisible()

@@ -40,7 +40,7 @@ setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE
     ux = unique(shallow(x, by.x))
     uy = unique(shallow(y, by.y))
     ix = duplicated(rbind(uy, ux, use.names=use.names, fill=FALSE))[-seq_len(nrow(uy))]
-    .Call("CsubsetDT", ux, which_(ix, FALSE), seq_along(ux)) # more memory efficient version of which(!ix)
+    .Call(CsubsetDT, ux, which_(ix, FALSE), seq_along(ux)) # more memory efficient version of which(!ix)
 }
 
 # set operators ----
@@ -48,7 +48,7 @@ setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE
 funique <- function(x) {
     stopifnot(is.data.table(x))
     dup = duplicated(x)
-    if (any(dup)) .Call("CsubsetDT", x, which_(dup, FALSE), seq_along(x)) else x
+    if (any(dup)) .Call(CsubsetDT, x, which_(dup, FALSE), seq_along(x)) else x
 }
 
 fintersect <- function(x, y, all=FALSE) {
@@ -135,11 +135,31 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     # ignore.col.order
     if (ignore.col.order && diff.colorder) current = setcolorder(shallow(current), names(target))
     
-    # check column classes match. Remove column names with unname() as they're checked separately
-    if (!identical(colClasses<-unname(lapply(target, class)),
-                   unname(lapply(current, class)))) return("Datasets have different column classes")
+    # Always check modes equal, like base::all.equal
+    targetModes = vapply_1c(target, mode)
+    currentModes = vapply_1c(current,  mode)
+    if (any( d<-(targetModes!=currentModes) )) {
+        w = head(which(d),3)
+        return(paste0("Datasets have different column modes. First 3: ",paste(
+         paste(names(targetModes)[w],"(",paste(targetModes[w],currentModes[w],sep="!="),")",sep="")
+                      ,collapse=" ")))
+    }
     
-    # check attributes
+    if (check.attributes) {
+        squashClass = function(x) if (is.object(x)) paste(class(x),collapse=";") else mode(x)
+        # else mode() is so that integer==numeric, like base all.equal does.
+        targetTypes = vapply_1c(target, squashClass)
+        currentTypes = vapply_1c(current, squashClass)
+        if (length(targetTypes) != length(currentTypes))
+            stop("Internal error: ncol(current)==ncol(target) was checked above")
+        if (any( d<-(targetTypes != currentTypes))) {
+            w = head(which(d),3)
+            return(paste0("Datasets have different column classes. First 3: ",paste(
+         paste(names(targetTypes)[w],"(",paste(targetTypes[w],currentTypes[w],sep="!="),")",sep="")
+                      ,collapse=" ")))
+        }
+    }
+    
     if (check.attributes) {
         # check key
         k1 = key(target)
@@ -169,7 +189,6 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
         if (is.character(attrs.r)) return(paste("Attributes: <", attrs.r, ">")) # skip further heavy processing
     }
     
-    # ignore.row.order
     if (ignore.row.order) {
         if (".seqn" %in% names(target))
             stop("None of the datasets to compare should contain a column named '.seqn'")
@@ -185,7 +204,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
         tolerance.msg = if (identical(tolerance, 0)) ", be aware you are using `tolerance=0` which may result into visually equal data" else ""
         if (target_dup || current_dup) {
             # handling 'tolerance' for duplicate rows - those `msg` will be returned only when equality with tolerance will fail
-            if ("numeric" %chin% unlist(colClasses) && !identical(tolerance, 0)) {
+            if (any(vapply_1c(target,typeof)=="double") && !identical(tolerance, 0)) {
                 if (target_dup && !current_dup) msg = c(msg, "Dataset 'target' has duplicate rows while 'current' doesn't")
                 else if (!target_dup && current_dup) msg = c(msg, "Dataset 'current' has duplicate rows while 'target' doesn't")
                 else { # both
@@ -207,7 +226,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
             c(".seqn", setdiff(names(target), ".seqn"))
         } else names(target)
         # handling 'tolerance' for factor cols - those `msg` will be returned only when equality with tolerance will fail
-        if ("factor" %chin% unlist(colClasses) && !identical(tolerance, 0)) {
+        if (any(vapply_1b(target,is.factor)) && !identical(tolerance, 0)) {
             if (!identical(tolerance, sqrt(.Machine$double.eps))) # non-default will raise error
                 stop("Factor columns and ignore.row.order cannot be used with non 0 tolerance argument")
             msg = c(msg, "Using factor columns together together with ignore.row.order, this force 'tolerance' argument to 0")
@@ -235,10 +254,34 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     } else {
         for (i in seq_along(target)) {
             # trim.levels moved here
-            if.trim = function(x) if (check.attributes && trim.levels && is.factor(x)) factor(x) else x
-            cols.r = all.equal(if.trim(target[[i]]), if.trim(current[[i]]), tolerance=tolerance, ..., check.attributes=check.attributes)
-            if (is.character(cols.r)) return(paste0("Column '", names(target)[i], "': ", cols.r))
+            x = target[[i]]
+            y = current[[i]]
+            if (xor(is.factor(x),is.factor(y)))
+                return("Internal error: factor type mismatch should have been caught earlier")
+            cols.r = TRUE
+            if (is.factor(x)) {
+                if (!identical(levels(x),levels(y))) {
+                    if (trim.levels) {
+                      # do this regardless of check.attributes (that's more about classes, checked above)
+                      x = factor(x)
+                      y = factor(y)
+                      if (!identical(levels(x),levels(y)))
+                        cols.r = "Levels not identical even after refactoring since trim.levels is TRUE"
+                    } else {
+                        cols.r = "Levels not identical. No attempt to refactor because trim.levels is FALSE"
+                    }    
+                } else {
+                    cols.r = all.equal(x, y, check.attributes=check.attributes)
+                    # the check.attributes here refers to everything other than the levels, which are always
+                    # dealt with according to trim.levels
+                }
+            } else {
+                cols.r = all.equal(unclass(x), unclass(y), tolerance=tolerance, ..., check.attributes=check.attributes)
+                # classes were explicitly checked earlier above, so ignore classes here.
+            }
+            if (!isTRUE(cols.r)) return(paste0("Column '", names(target)[i], "': ", paste(cols.r,collapse=" ")))
         }
     }
     TRUE
 }
+

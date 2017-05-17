@@ -22,7 +22,8 @@ static int DTthreads = 0;
 
 int getDTthreads() {
 #ifdef _OPENMP
-    return DTthreads == 0 ? omp_get_max_threads() : DTthreads;  
+    int ans = DTthreads == 0 ? omp_get_max_threads() : MIN(DTthreads, omp_get_max_threads());
+    return MAX(1, ans);
 #else
     return 1;
 #endif
@@ -39,9 +40,10 @@ SEXP setDTthreads(SEXP threads) {
             Default 0 is recommended to use all CPU.");
     }
     // do not call omp_set_num_threads() here as that affects other openMP 
-    // packages and base R as well potentially. 
+    // packages and base R as well potentially.
+    int old = DTthreads;
     DTthreads = INTEGER(threads)[0];
-    return (R_NilValue);
+    return ScalarInteger(old);
 }
 
 // auto avoid deadlock when data.table called from parallel::mclapply

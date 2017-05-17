@@ -32,7 +32,7 @@ cedta <- function(n=2L) {
         "data.table" %chin% tryCatch(get(".Depends",paste("package",nsname,sep=":"),inherits=FALSE),error=function(e)NULL) ||
         (nsname == "utils" && exists("debugger.look",parent.frame(n+1L))) || 
         (nsname == "base"  && all(c("FUN", "X") %in% ls(parent.frame(n)))  ) || # lapply
-        (nsname %chin% cedta.pkgEvalsUserCode && any(sapply(sys.calls(), "[[", 1L)=="eval")) ||
+        (nsname %chin% cedta.pkgEvalsUserCode && any(vapply_1c(sys.calls(), "[[", 1L)=="eval")) ||
         nsname %chin% cedta.override ||
         identical(TRUE, tryCatch(get(".datatable.aware",asNamespace(nsname),inherits=FALSE),error=function(e)NULL))
     if (!ans && getOption("datatable.verbose"))

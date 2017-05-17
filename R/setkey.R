@@ -36,7 +36,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
         return(invisible(x))
     }
     if (identical(cols,"")) stop("cols is the empty string. Use NULL to remove the key.")
-    if (any(nchar(cols)==0)) stop("cols contains some blanks.")
+    if (!all(nzchar(cols))) stop("cols contains some blanks.")
     if (!length(cols)) {
         cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
     } else {
@@ -86,10 +86,13 @@ key2 <- function(x) {
     if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
     gsub("^__","",ans)
 }
-indices <- function(x) {
+indices <- function(x, vectors = FALSE) {
     ans = names(attributes(attr(x,"index",exact=TRUE)))
     if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
-    gsub("^__","",ans)
+    ans <- gsub("^__","",ans)
+    if (isTRUE(vectors))
+        ans <- strsplit(ans, "__", fixed = TRUE)
+    ans
 }
 
 get2key <- function(x, col) attr(attr(x,"index",exact=TRUE),paste("__",col,sep=""),exact=TRUE)   # work in progress, not yet exported
@@ -276,7 +279,7 @@ setorderv <- function(x, cols, order=1L, na.last=FALSE)
         warning("cols is a character vector of zero length. Use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
         return(x)
     }
-    if (any(nchar(cols)==0)) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
+    if (!all(nzchar(cols))) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
     if (!length(cols)) {
         cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
     } else {

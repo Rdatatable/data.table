@@ -10,6 +10,7 @@
 #endif
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
+#include <stdint.h> // for uint64_t rather than unsigned long long
 
 // Fixes R-Forge #5150, and #1641
 // a simple check for R version to decide if the type should be R_len_t or 
@@ -25,15 +26,34 @@
 #define IS_LATIN(x) (LEVELS(x) & 4)
 
 #define SIZEOF(x) sizes[TYPEOF(x)]
+
 #ifdef MIN
 #undef MIN
 #endif
 #define MIN(a,b) (((a)<(b))?(a):(b))
-#define NAINT64 LLONG_MIN
+
+#ifdef MAX
+#undef MAX
+#endif
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 // init.c
 void setSizes();
 SEXP char_integer64;
+SEXP char_ITime;
+SEXP char_IDate;
+SEXP char_Date;
+SEXP char_POSIXct;
+SEXP char_nanotime;
+SEXP sym_sorted;
+SEXP sym_BY;
+SEXP sym_starts, char_starts;
+SEXP sym_maxgrpn;
+Rboolean INHERITS(SEXP x, SEXP char_);
+long long DtoLL(double x); 
+double LLtoD(long long x);
+double NA_INT64_D;
+long long NA_INT64_LL;
 
 // dogroups.c
 SEXP keepattr(SEXP to, SEXP from);
@@ -57,7 +77,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 SEXP reorder(SEXP x, SEXP order);
 
 // fcast.c
-SEXP vec_init(R_len_t n, SEXP val);
+SEXP int_vec_init(R_len_t n, int val);
 
 // vecseq.c
 SEXP vecseq(SEXP x, SEXP len, SEXP clamp);
@@ -75,7 +95,7 @@ void setselfref(SEXP);
 // fmelt.c
 SEXP seq_int(int n, int start);
 SEXP set_diff(SEXP x, int n);
-SEXP which(SEXP x, Rboolean bool);
+SEXP which(SEXP x, Rboolean val);
 
 // frank.c
 SEXP dt_na(SEXP x, SEXP cols);
@@ -102,6 +122,9 @@ SEXP combineFactorLevels(SEXP factorLevels, int *factorType, Rboolean *isRowOrde
 // quickselect
 double dquickselect(double *x, int n, int k);
 double iquickselect(int *x, int n, int k);
+
+// fread.c
+double wallclock();
 
 // openmp-utils.c
 int getDTthreads();

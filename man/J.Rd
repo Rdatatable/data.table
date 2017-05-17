@@ -14,7 +14,8 @@ CJ(..., sorted = TRUE, unique = FALSE)  # DT[CJ(...)]
 }
 
 \arguments{
-  \item{\dots}{ Each argument is a vector. Generally each vector is the same length but if they are not then usual silent repitition is applied. }
+  \item{\dots}{ Each argument is a vector. Generally each vector is the
+  same length but if they are not then the usual silent repetition is applied. }
   \item{sorted}{ logical. Should the input order be retained?}
   \item{unique}{ logical. When \code{TRUE}, only unique values of each vectors are used (automatically). }
 }
@@ -45,7 +46,7 @@ DT[list("b")]   # same
 # CJ usage examples
 CJ(c(5,NA,1), c(1,3,2)) # sorted and keyed data.table
 do.call(CJ, list(c(5,NA,1), c(1,3,2))) # same as above
-CJ(c(5,NA,1), c(1,3,2), sorted=FALSE) # same order as input, unkeyed 
+CJ(c(5,NA,1), c(1,3,2), sorted=FALSE) # same order as input, unkeyed
 # use for 'unique=' argument
 x = c(1,1,2)
 y = c(4,6,4)

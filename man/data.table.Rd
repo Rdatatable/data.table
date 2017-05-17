@@ -7,7 +7,7 @@
 \alias{[.data.table}
 \title{ Enhanced data.frame }
 \description{
-   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast and nemory efficient: file reader and writer, aggregations, updates, equi, non-equi, rolling, range and interval joins, in a short and flexible syntax, for faster development. 
+   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast and memory efficient: file reader and writer, aggregations, updates, equi, non-equi, rolling, range and interval joins, in a short and flexible syntax, for faster development. 
 
    It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that accept \emph{only} \code{data.frame}s.
    
@@ -71,7 +71,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
         Support for \emph{non-equi} join was recently implemented, which allows for other binary operators \code{>=, >, <= and <}.
 
-        See \href{../doc/datatable-keys-fast-subset.html}{Keys and fast binary search based subset}, \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} and \href{../doc/datatable-extend-subsets-to-joins.html}{Extending subsets to joins} vignettes.
+        See \href{../doc/datatable-keys-fast-subset.html}{Keys and fast binary search based subset} and \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
 
         \emph{Advanced:} When \code{i} is a single variable name, it is not considered an expression of column names and is instead evaluated in calling scope.
     }
@@ -159,7 +159,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
             \item{For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.}
             \item{From v1.9.8, (non-equi) joins using binary operators \code{>=, >, <=, <} are also possible, e.g., \code{X[Y, on=c("x>=a", "y<=b")]}, or for interactive use as \code{X[Y, on=.(x>=a, y<=b)]}.}
         }
-        See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} and \href{../doc/datatable-extend-subsets-to-joins.html}{Extending subsets to joins} vignettes for more.
+        See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
     }
 }
 \details{
@@ -243,10 +243,10 @@ DT[2]                          # 2nd row
 DT[3:2]                        # 3rd and 2nd row
 DT[order(x)]                   # no need for order(DT$x)
 DT[order(x), ]                 # same as above. The ',' is optional
-DT[c(FALSE,TRUE)]              # even rows (usual recycling)
 DT[y>2]                        # all rows where DT$y > 2
 DT[y>2 & v>5]                  # compound logical expressions
 DT[!2:4]                       # all rows other than 2:4
+DT[-(2:4)]                     # same
 
 # select|compute columns data.table way
 DT[, v]                        # v column (as vector)
@@ -413,7 +413,6 @@ vignette("datatable-intro")
 vignette("datatable-reference-semantics")
 vignette("datatable-keys-fast-subset")
 vignette("datatable-secondary-indices-and-auto-indexing")
-vignette("datatable-extending-subsets-to-joins")
 vignette("datatable-reshape")
 vignette("datatable-faq")
 
