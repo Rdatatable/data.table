@@ -20,7 +20,7 @@ mimicsAutoPrint = c("knit_print.default")
 # add maybe repr_text.default.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
 
 shouldPrint = function(x) {
-  ret = (!nzchar(.global$print) ||   # to save address() calls and adding lots of address strings to R's global cache
+  ret = (.global$print=="" ||   # to save address() calls and adding lots of address strings to R's global cache
          address(x)!=.global$print)
   .global$print = ""
   ret
@@ -130,7 +130,7 @@ format.data.table <- function (x, ..., justify="none") {
     }
     do.call("cbind",lapply(x,function(col,...){
         if (!is.null(dim(col))) stop("Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
-        if (is.list(col)) col = vcapply(col, format.item)
+        if (is.list(col)) col = vapply_1c(col, format.item)
         else col = format(char.trunc(col), justify=justify, ...) # added an else here to fix #5435
         col
     },...))
@@ -995,7 +995,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 
                 orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause)
                 # orderedirows = is.sorted(f__)
-                bysameorder = orderedirows && haskey(x) && all(vlapply(bysubl,is.name)) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
+                bysameorder = orderedirows && haskey(x) && all(vapply_1b(bysubl,is.name)) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
                 if (is.null(irows))
                     if (is.call(bysub) && length(bysub) == 3L && bysub[[1L]] == ":" && is.name(bysub[[2L]]) && is.name(bysub[[3L]])) {
                         byval = eval(bysub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame())
@@ -1051,7 +1051,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 for (jj in seq_len(length(byval))) {
                     if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
                 }
-                tt = viapply(byval,length)
+                tt = vapply_1i(byval,length)
                 if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be same length as rows in x or number of rows returned by i (",xnrow,").")
                 if (is.null(bynames)) bynames = rep.int("",length(byval))
                 if (any(bynames=="")) {
@@ -1444,11 +1444,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # Temp fix for #921 - check address and copy *after* evaluating 'jval'
         if (is.null(irows)) {
             if (!is.list(jval)) { # performance improvement when i-arg is S4, but not list, #1438, Thanks @DCEmilberg.
-                jcpy = address(jval) %in% vcapply(SDenv$.SD, address) # %chin% errors when RHS is list()
+                jcpy = address(jval) %in% vapply_1c(SDenv$.SD, address) # %chin% errors when RHS is list()
                 if (jcpy) jval = copy(jval)
             } else if (address(jval) == address(SDenv$.SD)) {
                 jval = copy(jval)
-            } else if ( length(jcpy <- which(vcapply(jval, address) %in% vcapply(SDenv, address))) ) {
+            } else if ( length(jcpy <- which(vapply_1c(jval, address) %in% vapply_1c(SDenv, address))) ) {
                 for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
             } else if (is.call(jsub) && jsub[[1L]] == "get" && is.list(jval)) {
                 jval = copy(jval) # fix for #1212
@@ -2208,7 +2208,7 @@ within.data.table <- function (data, expr, ...)
     e <- evalq(environment(), data, parent)
     eval(substitute(expr), e)  # might (and it's known that some user code does) contain rm()
     l <- as.list(e)
-    l <- l[!vlapply(l, is.null)]
+    l <- l[!vapply_1b(l, is.null)]
     nD <- length(del <- setdiff(names(data), (nl <- names(l))))
     ans = copy(data)
     if (length(nl)) ans[,nl] <- l
@@ -2357,7 +2357,7 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
     if (".ll.tech.split" %in% names(x)) stop("column '.ll.tech.split' is reserved for split.data.table processing")
     if (".nm.tech.split" %in% by) stop("column '.nm.tech.split' is reserved for split.data.table processing")
     if (!all(by %in% names(x))) stop("argument 'by' must refer to data.table column names")
-    if (!all(by.atomic <- vlapply(by, function(.by) is.atomic(x[[.by]])))) stop(sprintf("argument 'by' must refer only to atomic type columns, classes of '%s' columns are not atomic type", paste(by[!by.atomic], collapse=", ")))
+    if (!all(by.atomic <- vapply_1b(by, function(.by) is.atomic(x[[.by]])))) stop(sprintf("argument 'by' must refer only to atomic type columns, classes of '%s' columns are not atomic type", paste(by[!by.atomic], collapse=", ")))
     # list of data.tables (flatten) or list of lists of ... data.tables
     make.levels = function(x, cols, sorted) {
         by.order = if (!sorted) x[, funique(.SD), .SDcols=cols] # remember order of data, only when not sorted=FALSE
@@ -2376,7 +2376,7 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
     # this builds data.table call - is much more cleaner than handling each case one by one
     dtq = as.list(call("[", as.name("x")))
     join = FALSE
-    flatten_any = flatten && any(vlapply(by, function(col) is.factor(x[[col]])))
+    flatten_any = flatten && any(vapply_1b(by, function(col) is.factor(x[[col]])))
     nested_current = !flatten && is.factor(x[[.by]])
     if (!drop && (flatten_any || nested_current)) {
         dtq[["i"]] = substitute(make.levels(x, cols=.cols, sorted=.sorted), list(.cols=if (flatten) by else .by, .sorted=sorted))

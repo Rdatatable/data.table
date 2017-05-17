@@ -34,7 +34,7 @@ as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ..
 as.data.table.table <- function(x, keep.rownames=FALSE, ...) {
     # Fix for bug #5408 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
     val = rev(dimnames(provideDimnames(x)))
-    if (is.null(names(val)) || all(!nzchar(names(val))))
+    if (is.null(names(val)) || !any(nzchar(names(val))))
         setattr(val, 'names', paste("V", rev(seq_along(val)), sep=""))
     ans <- data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x))
     setcolorder(ans, c(rev(head(names(ans), -1)), "N"))

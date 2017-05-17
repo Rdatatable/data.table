@@ -55,17 +55,17 @@ require_bit64 = function() {
 }
 
 # vapply for return value character(1) 
-vcapply <- function (x, fun, ..., use.names = TRUE) {
+vapply_1c <- function (x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_character_, USE.NAMES = use.names)
 }
 
 # vapply for return value logical(1)
-vlapply <- function (x, fun, ..., use.names = TRUE) {
+vapply_1b <- function (x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA, USE.NAMES = use.names)
 }
 
 # vapply for return value integer(1)
-viapply <- function (x, fun, ..., use.names = TRUE) {
+vapply_1i <- function (x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
 
