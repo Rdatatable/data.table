@@ -364,7 +364,7 @@ static _Bool StrtoI32_bare(const char **this, void *target)
     const char *start = ch;  // for overflow guard using field width
     uint_fast64_t acc = 0;   // using unsigned to be clear that acc will never be negative
     uint_fast8_t digit;
-    while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {  // see init.c for checks of unsigned uint_fast8_t) cast
+    while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {  // see init.c for checks of unsigned uint_fast8_t cast
       acc *= 10;     // optimizer has best chance here; e.g. (x<<2 + x)<<1 or x<<3 + x<<1
       acc += digit;
       ch++;
@@ -996,21 +996,24 @@ int freadMain(freadMainArgs __args) {
     for (int j=0; j<ncol; j++) { size[j] = type[j] = 1; } // lowest enum is 1 (CT_BOOL8 at the time of writing). 0==CT_DROP
 
     size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
-    int nJumps = 0;
+    int nJumps = args.nSamplingPoints;
     // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
     // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
     // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
-    if (jump0size>0) {
+    if (jump0size > 0 && nJumps == 0) {
       if (jump0size*100*2 < (size_t)(eof-pos)) nJumps=100;  // 100 jumps * 100 lines = 10,000 line sample
       else if (jump0size*10*2 < (size_t)(eof-pos)) nJumps=10;
       // *2 to get a good spacing. We don't want overlaps resulting in double counting.
       // nJumps==1 means the whole (small) file will be sampled with one thread
     }
-    nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
+    if (nJumps == 0) {
+      nJumps = 1; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
+    }
     if (verbose) {
-      DTPRINT("Number of sampling jump points = %d because ",nJumps);
-      if (jump0size==0) DTPRINT("jump0size==0\n");
-      else DTPRINT("%zd bytes from row 1 to eof / (2 * %zd jump0size) == %zd\n",
+      DTPRINT("Number of sampling jump points = %d because ", nJumps);
+      if (args.nSamplingPoints) DTPRINT("provided explicitly\n");
+      else if (jump0size==0) DTPRINT("jump0size==0\n");
+      else DTPRINT("(%zd bytes from row 1 to eof) / (2 * %zd jump0size) == %zd\n",
                    (size_t)(eof-pos), jump0size, (size_t)(eof-pos)/(2*jump0size));
     }
 
