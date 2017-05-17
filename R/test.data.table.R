@@ -45,7 +45,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
 # .devtesting = TRUE
 
 compactprint <- function(DT, topn=2) {
-    tt = sapply(DT,function(x)class(x)[1L])
+    tt = vcapply(DT,function(x)class(x)[1L])
     tt[tt=="integer64"] = "i64"
     cn = paste(" [Key=",paste(key(DT),collapse=","),
                 " Types=",paste(substring(sapply(DT,typeof),1,3),collapse=","),
@@ -158,15 +158,15 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
             xc=copy(x)
             yc=copy(y)  # so we don't affect the original data which may be used in the next test
             # drop unused levels in factors
-            if (length(x)) for (i in which(sapply(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
-            if (length(y)) for (i in which(sapply(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
+            if (length(x)) for (i in which(vlapply(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
+            if (length(y)) for (i in which(vlapply(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
             setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
             setattr(yc,"row.names",NULL)
             setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
             setattr(yc,"index",NULL)
             if (identical(xc,yc) && identical(key(x),key(y))) return()  # check key on original x and y because := above might have cleared it on xc or yc
             if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
-                identical(sapply(xc,typeof), sapply(yc,typeof))) return()
+                identical(vcapply(xc,typeof), vcapply(yc,typeof))) return()
         }
         if (is.factor(x) && is.factor(y)) {
             x = factor(x)
