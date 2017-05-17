@@ -93,7 +93,8 @@ setkey(TESTDT,a,b)
 #       [7,] 7 2 7
 
 ##########################
-
+if (.devtesting && (tt<-compiler::enableJIT(-1))>0)
+  cat("\nThis is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause after 'Running test id 1' prints\n", sep="")
 test(1, TESTDT[SJ(4,6),v,mult="first"], 3L)
 test(2, TESTDT[SJ(4,6),v,mult="last"], 4L)
 test(3, TESTDT[SJ(c(4,4,4),c(6,6,7)),v,mult="last",roll=TRUE], INT(4,4,4))
