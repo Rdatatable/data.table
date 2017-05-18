@@ -9916,6 +9916,10 @@ x = as.POSIXct('2017-03-17')
 attr(x, 'tzone') = NULL
 test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17 00:00:00")
 
+# print(null.data.table()) should not output NULL as well, #1852
+# use capture.output() in this case rather than output= to ensure NULL is not output
+test(1766, capture.output(print(data.table(NULL))), "Null data.table (0 rows and 0 cols)")
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

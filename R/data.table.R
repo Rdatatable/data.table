@@ -60,7 +60,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
            cat("Null data.table (0 rows and 0 cols)\n")  # See FAQ 2.5 and NEWS item in v1.8.9
         else
            cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6),collapse=","),if(ncol(x)>6)"...","\n",sep="")
-        return()
+        return(invisible())
     }
     if (topn*2<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
         toprint = rbind(head(x, topn), tail(x, topn))
