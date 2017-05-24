@@ -80,7 +80,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
     The expression `.()` is a \emph{shorthand} alias to \code{list()}; they both mean the same. As long as \code{j} returns a \code{list}, each element of the list becomes a column in the resulting \code{data.table}. This is the default \emph{enhanced} mode.
 
-    When \code{with=FALSE}, \code{j} can only be a vector of column names or positions to select (as in \code{data.frame}). 
+    When \code{with=FALSE}, \code{j} can be a vector of column names or positions to select (as in \code{data.frame}), or a logical vector with length \code{ncol(x)} defining columns to select. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled. 
 
     \emph{Advanced:} \code{j} also allows the use of special \emph{read-only} symbols: \code{\link{.SD}}, \code{\link{.N}}, \code{\link{.I}}, \code{\link{.GRP}}, \code{\link{.BY}}.
 
@@ -112,7 +112,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
     \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. 
 
-        When \code{with=FALSE} \code{j} is a character vector of column names, a numeric vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is often useful in \code{data.table} to select columns dynamically. Note that \code{x[, cols, with=FALSE]} is equivalent to \code{x[, .SD, .SDcols=cols]}.}
+        When \code{with=FALSE} \code{j} is a character vector of column names, a numeric/logical vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is often useful in \code{data.table} to select columns dynamically. Note that \code{x[, cols, with=FALSE]} is equivalent to \code{x[, .SD, .SDcols=cols]}.}
 
     \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{0} means no rows will be returned for that row of \code{i}. Use \code{options(datatable.nomatch=0)} to change the default value (used when \code{nomatch} is not supplied).}
 
