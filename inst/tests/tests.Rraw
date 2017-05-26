@@ -93,7 +93,8 @@ setkey(TESTDT,a,b)
 #       [7,] 7 2 7
 
 ##########################
-
+if (.devtesting && (tt<-compiler::enableJIT(-1))>0)
+  cat("\nThis is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause after 'Running test id 1' prints\n", sep="")
 test(1, TESTDT[SJ(4,6),v,mult="first"], 3L)
 test(2, TESTDT[SJ(4,6),v,mult="last"], 4L)
 test(3, TESTDT[SJ(c(4,4,4),c(6,6,7)),v,mult="last",roll=TRUE], INT(4,4,4))
@@ -9944,6 +9945,29 @@ l <- list(a = NA,
 
 test(1762.7, lapply(l, attributes), lapply(do.call(CJ, l), attributes))
 test(1762.8, lapply(l, class), lapply(do.call(CJ, l), class))
+
+# non-error with non-empty empty j, #2142
+DT = data.table(a = 1:5)
+test(1763, DT[ , {}], NULL)
+
+# rbindlist empty items segfault, #2019
+x = list(list(a = 1), list(), list(a = 2))
+ans = data.table(id=c(1L,3L),a=c(1,2))
+for (i in 1:100) test(1764, rbindlist(x, idcol="id"), ans)
+
+# as.ITime(character(0)) used to fail, #2032
+test(1765.1, format(as.ITime(character(0))), character(0))
+# Edge case from #2171
+test(1765.2, format(structure(NA_integer_, class = "ITime")), NA_character_)
+
+# IDateTime error when tzone is NULL, #1973
+x = as.POSIXct('2017-03-17')
+attr(x, 'tzone') = NULL
+test(1766, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17 00:00:00")
+
+# print(null.data.table()) should not output NULL as well, #1852
+# use capture.output() in this case rather than output= to ensure NULL is not output
+test(1767, capture.output(print(data.table(NULL))), "Null data.table (0 rows and 0 cols)")
 
 ##########################
 

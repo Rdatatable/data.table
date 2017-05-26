@@ -114,7 +114,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
     }
     setattr(lvars, 'names', c("lhs", "rhs"))
     # Have to take care of duplicate names, and provide names for expression columns properly.
-    varnames = make.unique(sapply(unlist(lvars), all.vars, max.names=1L), sep=sep)
+    varnames = make.unique(vapply_1c(unlist(lvars), all.vars, max.names=1L), sep=sep)
     dupidx = which(valnames %in% varnames)
     if (length(dupidx)) {
         dups = valnames[dupidx]
@@ -125,7 +125,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
     rhsnames = tail(varnames, -length(lvars$lhs))
     setattr(dat, 'names', c(varnames, valnames))
     setDT(dat)
-    if (any(sapply(as.list(dat)[varnames], is.list))) {
+    if (any(vapply_1b(as.list(dat)[varnames], is.list))) {
         stop("Columns specified in formula can not be of type list")
     }
     m <- as.list(match.call()[-1L])
@@ -198,7 +198,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
             .Call(Csetlistelt, mapunique, 2L, seq_len(nrow(rhs_)))
             lhs = lhs_; rhs = rhs_
         }
-        maplen = sapply(mapunique, length)
+        maplen = vapply_1i(mapunique, length)
         idx = do.call("CJ", mapunique)[map, I := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
         ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call))
         allcols = do.call("paste", c(rhs, sep=sep))

@@ -233,7 +233,7 @@ Now, let's check if `24` is replaced with `0` in the `hour` column.
 flights[, sort(unique(hour))]
 ```
 
-* This is particularly a huge advantage of secondary indices. Previously, just to update a few rows of `hour`, we had to `setkey()` on it, which inevitablly reorders the entire data.table. With `on`, the order is preserved, and the operation is much faster! Looking at the code, the task we wanted to perform is also quite clear.
+* This is particularly a huge advantage of secondary indices. Previously, just to update a few rows of `hour`, we had to `setkey()` on it, which inevitably reorders the entire data.table. With `on`, the order is preserved, and the operation is much faster! Looking at the code, the task we wanted to perform is also quite clear.
 
 ### f) Aggregation using `by`
 

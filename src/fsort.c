@@ -103,6 +103,8 @@ int qsort_cmp(const void *a, const void *b) {
 }
 
 SEXP fsort(SEXP x, SEXP verboseArg) {
+  double t[10];
+  t[0] = wallclock();
   if (!isLogical(verboseArg) || LENGTH(verboseArg)!=1 || LOGICAL(verboseArg)[0]==NA_LOGICAL)
     error("verbose must be TRUE or FALSE");
   Rboolean verbose = LOGICAL(verboseArg)[0];
@@ -125,6 +127,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // could be that lastBatchSize == batchSize when i) xlength(x) is multiple of nBatch
   // and ii) for small vectors with just one batch 
   
+  t[1] = wallclock();
   double mins[nBatch], maxs[nBatch];
   #pragma omp parallel for schedule(dynamic) num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {
@@ -141,6 +144,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     mins[batch] = myMin;
     maxs[batch] = myMax;
   }
+  t[2] = wallclock();
   double min=mins[0], max=maxs[0];
   for (int i=1; i<nBatch; i++) {
     // TODO: if boundaries are sorted then we only need sort the unsorted batches known above
@@ -171,7 +175,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   if (verbose) Rprintf("counts is %dMB (%d pages per nBatch=%d, batchSize=%lld, lastBatchSize=%lld)\n",
                        nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024), nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch),
                        nBatch, batchSize, lastBatchSize);
-  
+  t[3] = wallclock();
   #pragma omp parallel for num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
@@ -195,6 +199,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     }
   }  // leaves msb cumSum in the last batch i.e. last row of the matrix
   
+  t[4] = wallclock();
   #pragma omp parallel for num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
@@ -210,8 +215,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     }
   }
   // Done with batches now. Will not use batch dimension again.
-  
-  // TODO: add a timing point up to here
+  t[5] = wallclock();
   
   if (shift > 0) { // otherwise, no more bits left to resolve ties and we're done  
     int toBit = shift-1;
@@ -244,6 +248,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
       Rprintf("%d by excluding 0 and 1 counts\n", MSBsize);
     }
     
+    t[6] = wallclock();
     #pragma omp parallel num_threads(getDTthreads())
     {
       R_xlen_t *counts = calloc((toBit/8 + 1)*256, sizeof(R_xlen_t));
@@ -288,12 +293,17 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     free(msbFrom);
     free(order);
   }
-  
+  t[7] = wallclock();
   free(counts);
   
   // TODO: parallel sweep to check sorted using <= on original input. Feasible that twiddling messed up.
   //       After a few years of heavy use remove this check for speed, and move into unit tests.
   //       It's a perfectly contiguous and cache efficient parallel scan so should be relatively negligible.
+  
+  double tot = t[7]-t[0];
+  if (verbose) for (int i=1; i<=7; i++) {
+    Rprintf("%d: %.3f (%4.1f%%)\n", i, t[i]-t[i-1], 100.*(t[i]-t[i-1])/tot);
+  }
   
   UNPROTECT(1);
   return(ansVec);

@@ -182,6 +182,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
     if (sizeof(SEXP) != sizeof(char *)) error("Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s", sizeof(SEXP), sizeof(char *), msg);
     if (sizeof(uint64_t) != 8) error("Checking sizeof(uint64_t) [%d] is 8 %s", sizeof(uint64_t), msg);
     if (sizeof(signed char) != 1) error("Checking sizeof(signed char) [%d] is 1 %s", sizeof(signed char), msg);
+    if (sizeof(int8_t) != 1) error("Checking sizeof(int8_t) [%d] is 1 %s", sizeof(int8_t), msg);
     
     SEXP tmp = PROTECT(allocVector(INTSXP,2));
     if (LENGTH(tmp)!=2) error("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s", LENGTH(tmp), msg);
@@ -204,10 +205,10 @@ void attribute_visible R_init_datatable(DllInfo *info)
     if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
     
     // Check unsigned cast used in fread.c. This isn't overflow/underflow, just cast.
-    if ((unsigned)('0'-'/') != 1) error("The ascii character '/' is not just before '0'"); 
-    if ((unsigned)('/'-'0') < 10) error("The C expression (unsigned)('/'-'0')<10 is true. Should be false.");
-    if ((unsigned)(':'-'9') != 1) error("The ascii character ':' is not just after '9'"); 
-    if ((unsigned)('9'-':') < 10) error("The C expression (unsigned)('9'-':')<10 is true. Should be false.");
+    if ((uint_fast8_t)('0'-'/') != 1) error("The ascii character '/' is not just before '0'"); 
+    if ((uint_fast8_t)('/'-'0') < 10) error("The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false.");
+    if ((uint_fast8_t)(':'-'9') != 1) error("The ascii character ':' is not just after '9'"); 
+    if ((uint_fast8_t)('9'-':') < 10) error("The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false.");
     
     // Variables rather than #define for NA_INT64 to ensure correct usage; i.e. not casted
     NA_INT64_LL = LLONG_MIN;

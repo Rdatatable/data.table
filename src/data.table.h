@@ -123,6 +123,9 @@ SEXP combineFactorLevels(SEXP factorLevels, int *factorType, Rboolean *isRowOrde
 double dquickselect(double *x, int n, int k);
 double iquickselect(int *x, int n, int k);
 
+// fread.c
+double wallclock();
+
 // openmp-utils.c
 int getDTthreads();
 void avoid_openmp_hang_within_fork();

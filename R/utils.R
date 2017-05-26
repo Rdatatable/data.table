@@ -54,4 +54,18 @@ require_bit64 = function() {
     warning("Some columns are type 'integer64' but package bit64 is not installed. Those columns will print as strange looking floating point data. There is no need to reload the data. Simply install.packages('bit64') to obtain the integer64 print method and print the data again.")
 }
 
+# vapply for return value character(1) 
+vapply_1c <- function (x, fun, ..., use.names = TRUE) {
+  vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_character_, USE.NAMES = use.names)
+}
+
+# vapply for return value logical(1)
+vapply_1b <- function (x, fun, ..., use.names = TRUE) {
+  vapply(X = x, FUN = fun, ..., FUN.VALUE = NA, USE.NAMES = use.names)
+}
+
+# vapply for return value integer(1)
+vapply_1i <- function (x, fun, ..., use.names = TRUE) {
+  vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
+}
 
