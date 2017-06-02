@@ -9094,8 +9094,13 @@ if ("package:bit64" %in% search()) {
     test(1688.2, merge(x1, x2, all=TRUE, by="x")$y, as.integer64(c(0, NA)))
 }
 
-test(1689, capture.output(IDateTime(as.POSIXct("2016/01/13 17:00", tz = "America/Los_Angeles"))),
-     c("        idate    itime", "1: 2016-01-13 17:00:00"))
+# Check that tz is passed though to as.Date(), #1498
+date_tz = as.POSIXct("2016/01/13 17:00", tz = "America/Los_Angeles")
+test(1689.1, capture.output(IDateTime(date_tz)), c("        idate    itime", "1: 2016-01-13 17:00:00"))
+# and that as.IDate.POSIXct is exported too
+test(1689.2, as.IDate(date_tz), output="2016-01-13")
+date_tz = structure(1496275200.11903, class = c("POSIXct", "POSIXt"), tzone = "America/Los_Angeles")
+test(1689.3, as.character(as.IDate(date_tz)), "2017-05-31")
 
 # fix for #1766 and #1704
 A = data.table(i = 1:6, j = rep(1:2, 3), x = letters[1:6], key = "i")
