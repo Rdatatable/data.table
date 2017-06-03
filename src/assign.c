@@ -603,7 +603,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                             s1 = (char *)type2char(TYPEOF(targetcol));
                             s2 = (char *)type2char(TYPEOF(thisvalue));
                             if (isReal(thisvalue)) s3="; may have truncated precision"; else s3="";
-                            warning("Coerced '%s' RHS to '%s' to match the column's type%s. Either change the target column to '%s' first (by creating a new '%s' vector length %d (nrows of entire table) and assign that; i.e. 'replace' column), or coerce RHS to '%s' (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your intent clear and for speed. Or, set the column type correctly up front when you create the table and stick to it, please.", s2, s1, s3, s2, s2, LENGTH(VECTOR_ELT(dt,0)), s1);
+                            warning("Coerced '%s' RHS to '%s' to match the column's type%s. Either change the target column ['%s'] to '%s' first (by creating a new '%s' vector length %d (nrows of entire table) and assign that; i.e. 'replace' column), or coerce RHS to '%s' (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your intent clear and for speed. Or, set the column type correctly up front when you create the table and stick to it, please.", s2, s1, s3, CHAR(STRING_ELT(names, coln)), s2, s2, LENGTH(VECTOR_ELT(dt,0)), s1);
                         }
                     }
                 }
