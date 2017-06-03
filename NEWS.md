@@ -46,6 +46,7 @@
 
 #### NOTES
 
+1. `?data.table` makes explicit the option of using a `logical` vector in `j` to select columns, [#1978](https://github.com/Rdatatable/data.table/issues/1978). Thanks @Henrik-P for the note and @MichaelChirico for filing.
 
 ### Changes in v1.10.4  (on CRAN 01 Feb 2017)
 
