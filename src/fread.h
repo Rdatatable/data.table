@@ -129,7 +129,9 @@ size_t allocateDT(int8_t *type, int8_t *size, int ncol, int ndrop, int64_t alloc
 void setFinalNrow(int64_t nrow);
 void reallocColType(int col, colType newType);
 void progress(double percent/*[0,1]*/, double ETA/*secs*/);
-void pushBuffer(const void *buff, const char *anchor, int nRows, int64_t DTi, int rowSize, int nStringCols, int nNonStringCols);
+void pushBuffer(const void *buff8, const void *buff4, const void *buff1, const char *anchor,
+                int nRows, int64_t DTi, int rowSize8, int rowSize4, int rowSize1,
+                int nStringCols, int nNonStringCols);
 void STOP(const char *format, ...);
 void freadCleanup(void);
 void freadLastWarning(const char *format, ...);

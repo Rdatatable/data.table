@@ -362,8 +362,10 @@ void setFinalNrow(int64_t nrow) {
 }
 
 
-void pushBuffer(const void *buff, const char *anchor, int nRows, int64_t DTi,
-                int rowSize, int nStringCols, int nNonStringCols)
+void pushBuffer(const void *buff8, const void *buff4, const void *buff1,
+                const char *anchor, int nRows, int64_t DTi,
+                int rowSize8, int rowSize4, int rowSize1,
+                int nStringCols, int nNonStringCols)
 {
   // Do all the string columns first so as to minimize and concentrate the time inside the single critical.
   // While the string columns are happening other threads before me can be copying their non-string buffers to the
@@ -371,16 +373,19 @@ void pushBuffer(const void *buff, const char *anchor, int nRows, int64_t DTi,
   // rowSize is passed in because it will be different (much smaller) on the reread covering any type exception columns
   // locals passed in on stack so openmp knows that no synchonization is required
 
-  int off = 0;   // the byte position of this column in the first row of the row-major buffer
+  // the byte position of this column in the first row of the row-major buffer
   if (nStringCols) {
     #pragma omp critical
     {
+      int off8 = 0;
+      int cnt8 = rowSize8 / 8;
+      lenOff *buff8_lenoffs = (lenOff*) buff8;
       for (int j=0, resj=-1, done=0; done<nStringCols && j<ncol; j++) {
         if (type[j] == CT_DROP) continue;
         resj++;
         if (type[j] == CT_STRING) {
           SEXP dest = VECTOR_ELT(DT, resj);
-          lenOff *source = (lenOff *)((char *)buff + off);
+          lenOff *source = buff8_lenoffs + off8;
           for (int i=0; i<nRows; i++) {
             int strLen = source->len;
             if (strLen) {
@@ -388,40 +393,55 @@ void pushBuffer(const void *buff, const char *anchor, int nRows, int64_t DTi,
               // stringLen == INT_MIN => NA, otherwise not a NAstring was checked inside fread_mean
               SET_STRING_ELT(dest, DTi+i, thisStr);
             } // else dest was already initialized with R_BlankString by allocVector()
-            source = (lenOff *)((char *)source + rowSize);
+            source += cnt8;
           }
           done++; // if just one string col near the start, don't loop over the other 10,000 cols. TODO? start on first too
         }
-        off += size[j];
+        off8 += (size[j] == 8);
       }
     }
   }
-  off = 0;
+
+  int off1 = 0, off4 = 0, off8 = 0;
   for (int j=0, resj=-1, done=0; done<nNonStringCols && j<ncol; j++) {
     if (type[j]==CT_DROP) continue;
+    int thisSize = size[j];
     resj++;
     if (type[j]!=CT_STRING && type[j]>0) {
-      char *source = (char *)buff + off;
-      if (type[j]!=CT_BOOL8) {
-        int thisSize = size[j];
-        char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*thisSize;
+      if (thisSize == 8) {
+        char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*8;
+        char *src8 = (char*)buff8 + off8;
         for (int i=0; i<nRows; i++) {
-          memcpy(dest, source, thisSize);
-          source += rowSize;
-          dest += thisSize;
+          memcpy(dest, src8, 8);
+          src8 += rowSize8;
+          dest += 8;
         }
-      } else {
-        Rboolean *dest = (Rboolean *)((char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*sizeof(Rboolean));
+      } else
+      if (thisSize == 4) {
+        char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*4;
+        char *src4 = (char*)buff4 + off4;
         for (int i=0; i<nRows; i++) {
-          int8_t v = *(int8_t *)source;
+          memcpy(dest, src4, 4);
+          src4 += rowSize4;
+          dest += 4;
+        }
+      } else
+      if (thisSize == 1) {
+        if (type[j] != CT_BOOL8) STOP("Field size is 1 but the field is of type %d\n", type[j]);
+        Rboolean *dest = (Rboolean *)((char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*sizeof(Rboolean));
+        char *src1 = (char*)buff1 + off1;
+        for (int i=0; i<nRows; i++) {
+          int8_t v = *(int8_t *)src1;
           *dest = (v==INT8_MIN ? NA_INTEGER : v);
-          source += rowSize;
+          src1 += rowSize1;
           dest++;
         }
-      }
+      } else STOP("Runtime error: unexpected field of size %d\n", thisSize);
       done++;
     }
-    off += size[j];
+    off8 += (size[j] & 8);
+    off4 += (size[j] & 4);
+    off1 += (size[j] & 1);
   }
 }
 
