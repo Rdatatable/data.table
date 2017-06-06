@@ -311,7 +311,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 }
 
 
-size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, int64_t allocNrow) {
+size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size_t allocNrow) {
   // save inputs for use by pushBuffer
   ncol = ncolArg;
   size = sizeArg;
@@ -349,7 +349,7 @@ void reallocColType(int col,  // which column of the result, not of type[]. (the
 }
 
 
-void setFinalNrow(int64_t nrow) {
+void setFinalNrow(size_t nrow) {
   // TODO realloc
   if (length(DT)) {
     if (nrow == length(VECTOR_ELT(DT, 0)))
@@ -363,7 +363,7 @@ void setFinalNrow(int64_t nrow) {
 
 
 void pushBuffer(const void *buff8, const void *buff4, const void *buff1,
-                const char *anchor, int nRows, int64_t DTi,
+                const char *anchor, int nRows, size_t DTi,
                 int rowSize8, int rowSize4, int rowSize1,
                 int nStringCols, int nNonStringCols)
 {
