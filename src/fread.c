@@ -1257,11 +1257,12 @@ int freadMain(freadMainArgs __args) {
       void *myBuff4 = malloc(rowSize4 * myBuffRows);
       void *myBuff1 = malloc(rowSize1 * myBuffRows);
       void *myBuff0 = malloc(8);  // for CT_DROP columns
-      if (!myBuff8 || !myBuff4 || !myBuff1 || !myBuff0) stopTeam = true;
+      if ((rowSize8 && !myBuff8) ||
+          (rowSize4 && !myBuff4) ||
+          (rowSize1 && !myBuff1) || !myBuff0) stopTeam = true;
 
       #pragma omp for ordered schedule(dynamic) reduction(+:thNextGoodLine,thRead,thPush)
       for (int jump=0; jump<nJumps+nth; jump++) {
-        if (stopTeam) continue;
         double tt0 = 0, tt1 = 0;
         if (verbose) { tt1 = tt0 = wallclock(); }
 
@@ -1296,7 +1297,7 @@ int freadMain(freadMainArgs __args) {
           }
           myNrow = 0;
         }
-        if (jump>=nJumps) continue;  // nothing left to do. This jump was the dummy extra one.
+        if (jump>=nJumps || stopTeam) continue;  // nothing left to do. This jump was the dummy extra one.
 
         const char *tch = pos + (size_t)jump*chunkBytes;
         const char *nextJump = jump<nJumps-1 ? tch+chunkBytes+eolLen : lastRowEnd;
@@ -1330,7 +1331,9 @@ int freadMain(freadMainArgs __args) {
             myBuff8 = realloc(myBuff8, rowSize8 * myBuffRows);
             myBuff4 = realloc(myBuff4, rowSize4 * myBuffRows);
             myBuff1 = realloc(myBuff1, rowSize1 * myBuffRows);
-            if (!myBuff8 || !myBuff4 || !myBuff1) {
+            if ((rowSize8 && !myBuff8) ||
+                (rowSize4 && !myBuff4) ||
+                (rowSize1 && !myBuff1)) {
               stopTeam = true;
               break;
             }
@@ -1369,7 +1372,8 @@ int freadMain(freadMainArgs __args) {
             // always write to buffPos even when CT_DROP. It'll just overwrite on next non-CT_DROP
             while (absType < NUMTYPE) {
               // normally returns success=1, and myBuffPos is assigned inside *fun.
-              int success = fun[absType](&tch, *(allBuffPos[size[j]]));
+              void *target = thisType > 0? *(allBuffPos[size[j]]) : myBuff0;
+              int success = fun[absType](&tch, target);
               if (success) break;
               // guess is insufficient out-of-sample, type is changed to negative sign and then bumped. Continue to
               // check that the new type is sufficient for the rest of the column to be sure a single re-read will work.
@@ -1476,8 +1480,10 @@ int freadMain(freadMainArgs __args) {
           if (myDTi >= nrowLimit) {
             // nrowLimit was supplied and a previous thread reached that limit while I was counting my rows
             stopTeam=true;
+            myNrow = 0;
+          } else {
+            myNrow = umin(myNrow, nrowLimit - myDTi); // for the last jump that reaches nrowLimit
           }
-          myNrow = umin(myNrow, nrowLimit - myDTi); // for the last jump that reaches nrowLimit
           // tell next thread 2 things :
           prevJumpEnd = tch; // i) the \n I finished on so it can check (above) it started exactly on that \n good line start
           DTi += myNrow;     // ii) which row in the final result it should start writing to. As soon as I know myNrow.
@@ -1592,4 +1598,3 @@ int freadMain(freadMainArgs __args) {
     freadCleanup();
     return 1;
 }
-
