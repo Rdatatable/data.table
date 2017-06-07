@@ -479,7 +479,8 @@ static _Bool StrtoD(const char **this, void *target)
         }
         e += esign * eacc;
       }
-      d = (double)(sign * (long double)acc * pow10lookup[350+e]);
+      d = (unsigned)(e + 350) <= 700 ? (double)(sign * (long double)acc * pow10lookup[350+e])
+          : e < -350 ? 0 : sign * INFD;
     }
     if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
     *(double *)target = d;

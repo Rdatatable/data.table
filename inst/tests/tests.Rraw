@@ -9930,6 +9930,11 @@ test(1766, capture.output(print(data.table(NULL))), "Null data.table (0 rows and
 
 ##########################
 
+test(1800, fread("A\n6e55693457e549ecfce0\n"), data.table(A=c("6e55693457e549ecfce0")))
+test(1800.1, fread("A\n1e55555555\n-1e+234056\n2e-59745"), data.table(A=c(Inf, -Inf, 0)))
+
+##########################
+
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
 
 # TO DO: Add test for fixed bug #5519 - dcast returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.
