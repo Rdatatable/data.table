@@ -11,6 +11,10 @@ warnings_are_errors: true
 r_check_args: ""
 # empty r_check_args to turn off --as-cran (on by default) as that can be slow
 
+# added on 6 Jun 2016 as workaround for https://github.com/travis-ci/travis-ci/issues/7863
+before_install:
+  - tlmgr install xkeyval
+
 bioc_packages:
   - IRanges
   - GenomicRanges
