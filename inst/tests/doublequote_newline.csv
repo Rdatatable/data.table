@@ -8,7 +8,8 @@ A,B
 1,a
 1,"embedded ""field""
 with some embedded new
-lines as well"
+lines as well
+(or as unwell)"
 2,"not this one"
 1,a
 1,a
