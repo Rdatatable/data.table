@@ -307,8 +307,7 @@ static int advance_sof_to(const char *newsof, const char **sof,
     *sof = newsof;
     *eof = *eoh;
     *soh = *eoh = NULL;
-  } else STOP("Illegal offset %p with ranges [%p .. %p] + [%p .. %p]\n",
-              newsof, *sof, *eof, *soh, *eoh);
+  }
   if (d && args.verbose)
     DTPRINT("  Start-of-file pointer moved %zd bytes forward\n", d);
   return 1;
@@ -329,8 +328,7 @@ static int retreat_eof_to(const char *neweof, const char **sof,
     d = (*eof - neweof) + (*eoh - *soh);
     *eof = neweof;
     *soh = *eoh = NULL;
-  } else STOP("Illegal offset %p with ranges [%p .. %p] + [%p .. %p]\n",
-              neweof, *sof, *eof, *soh, *eoh);
+  }
   if (d && args.verbose)
     DTPRINT("  End-of-file pointer moved %zd bytes backward\n", d);
   return 1;
@@ -1119,7 +1117,7 @@ int freadMain(freadMainArgs _args)
           }
       } else {
           if (ch+1<eof && *(ch+1)=='\r') {
-              DTWARN("  Detected eol as \\n\\r, a highly unusual line ending. According to Wikipedia the Acorn BBC used this. If it is intended that the first column on the next row is a character column where the first character of the field value is \\r (why?) then the first column should start with a quote (i.e. 'protected'). Proceeding with attempt to read the file.\n");
+              DTWARN("Detected eol as \\n\\r, a highly unusual line ending. According to Wikipedia the Acorn BBC used this. If it is intended that the first column on the next row is a character column where the first character of the field value is \\r (why?) then the first column should start with a quote (i.e. 'protected'). Proceeding with attempt to read the file.\n");
               eol2='\r'; eolLen=2;
           } else if (verbose) DTPRINT("  Detected eol as \\n only (no \\r afterwards), the UNIX and Mac standard.\n");
       }
@@ -1237,7 +1235,7 @@ int freadMain(freadMainArgs _args)
         advance_sof_to(ch, &sof, &eof, &soh, &eoh);
         if (verbose) DTPRINT("  Skipped %d line(s) of input.\n", line);
       } else {
-        STOP("skip=%d but the input has only %d line(s)\n", args.skipNrow, line);
+        STOP("skip=%d but the input has only %d line(s)\n", args.skipNrow, line-1);
       }
     }
 

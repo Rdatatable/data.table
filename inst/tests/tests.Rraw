@@ -9942,6 +9942,20 @@ test(1802, fread("4ka.txt"), data.table(V1=rep(1234L, 128), V2=5678L, V3=9012L, 
 test(1803, fread("512.txt"), data.table(V1=rep(1234L, 16), V2=5678L, V3=9012L, V4=3456L, V5=7890L, V6="abcd", V7=1L))
 test(1804, fread("64k.txt"), data.table(V1=rep(1234L, 2048), V2=5678L, V3=9012L, V4=3456L, V5=7890L, V6="abcd", V7=1L))
 
+test(1805.1, fread("A,B\n", na.strings=" NA"), error="NAstring .* has whitespace")
+test(1805.2, fread("A,B\n", na.strings="NA\t"), error="NAstring .* has whitespace")
+test(1806, fread("A\n", verbose=T), output="Input is passed as raw text")
+test(1807, fread('"A,B,C\n1,2,3\n4,5,6'), data.table('"A'=c(1L,4L), B=c(2L,5L), C=c(3L,6L)))
+test(1808, dim(fread('A,B,"C\nD",E', verbose=T)), c(0L, 4L), output="Input ends before any \\r or \\n observed")
+cat("A,B\r1,2\r3,4",file=f<-tempfile())
+test(1809, fread(f, verbose=T), data.table(A=c(1L,3L), B=c(2L,4L)), output="Detected eol as \\r only")
+# test(1810, fread("A,B\n\r1,2\n\r3,4\n\r5,6"), data.table(A=c(1L,3L,5L), B=c(2L,4L,6L)), warn="Detected eol as \\n\\r, a highly unusual line ending. According to Wikipedia the Acorn BBC used this. If it is intended that the first column on the next row is a character column where the first character of the field value is \\r (why?) then the first column should start with a quote (i.e. 'protected'). Proceeding with attempt to read the file.")
+test(1811, fread("A,B\n1,q\n2,w\n3,xyz", verbose=T), data.table(A=c(1L,2L,3L), B=c("q","w","xyz")), output="Last character in the file is not a newline")
+test(1812, fread("A,B\n1,2\n3,4", skip="boo"), error="skip='boo' not found in input")
+test(1813, fread("A,B\n1,2\n3,4", skip="4", verbose=T), output="Found skip='4' on the last line")
+test(1814, fread("A,B\n1,2\n3,4", skip=10L), error="skip=10 but the input has only 3 line(s)")
+test(1814, fread("A,B\n1,2\n3,4\n   \n\t", skip=3L), error="All input has been skipped")
+
 
 ##########################
 
