@@ -9937,13 +9937,17 @@ test(1800.1, fread("A\n1e55555555\n-1e+234056\n2e-59745"), data.table(A=c(Inf, -
 
 # Test files with "round" sizes (different multiples of 2, from 512B to 64KB)
 for (mul in c(16, 128, 512, 1024, 2048)) {
-    cat(paste(rep("1234,5678,9012,3456,7890,abcd,1\x0A", mul), collapse=""), file=file(f<-tempfile(), open="wb"))
+    ff = file(f<-tempfile(), open="wb")
+    cat(paste(rep("1234,5678,9012,3456,7890,abcd,1\x0A", mul), collapse=""), file=ff)
+    close(ff)
     DT = data.table(V1=rep(1234L, mul), V2=5678L, V3=9012L, V4=3456L, V5=7890L, V6="abcd", V7=1L)
     test(1801 + log2(mul)/100, file.size(f), mul*32)
     test(1802 + log2(mul)/100, fread(f), DT)
 }
 # Test without the newline
-cat(paste("1", paste(rep("1234,5678,9012,3456,7890,zyxw,0", 128), collapse="\x0A"), sep=""), file=file(f<-tempfile(), open="wb"))
+ff = file(f<-tempfile(), open="wb")
+cat(paste("1", paste(rep("1234,5678,9012,3456,7890,zyxw,0", 128), collapse="\x0A"), sep=""), file=ff)
+close(ff)
 test(1803.1, file.size(f), 4096)
 DT = data.table(V1=rep(1234L, 128), V2=5678L, V3=9012L, V4=3456L, V5=7890L, V6="zyxw", V7=0L)
 DT[1, 1] = 11234L
