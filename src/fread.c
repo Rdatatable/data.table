@@ -1754,7 +1754,6 @@ int freadMain(freadMainArgs _args)
     // [12] Read the data
     //*********************************************************************************************
     if (verbose) DTPRINT("[12] Read the data\n");
-    ch = sof;   // back to start of first data row
     int hasPrinted=0;  // the percentage last printed so it prints every 2% without many calls to wallclock()
     _Bool stopTeam=false, firstTime=true;  // _Bool for MT-safey (cannot ever read half written _Bool value)
     int nTypeBump=0, nTypeBumpCols=0;

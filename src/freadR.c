@@ -1,3 +1,4 @@
+#include "freadR.h"
 #include "fread.h"
 #include "data.table.h"
 
