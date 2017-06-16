@@ -17,8 +17,6 @@ SEXP uniqlist(SEXP l, SEXP order)
 
     int *iidx = Calloc(isize, int); // for 'idx'
     int *n_iidx; // to catch allocation errors using Realloc!
-    if (NA_INTEGER != NA_LOGICAL || sizeof(NA_INTEGER)!=sizeof(NA_LOGICAL)) 
-        error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
     ncol = length(l);
     nrow = length(VECTOR_ELT(l,0));
     len = 1;
@@ -34,7 +32,7 @@ SEXP uniqlist(SEXP l, SEXP order)
         while (--j>=0 && b) {
             v=VECTOR_ELT(l,j);
             switch (TYPEOF(v)) {
-            case INTSXP : case LGLSXP :
+            case INTSXP : case LGLSXP :  // NA_INTEGER==NA_LOGICAL checked in init.c
                 b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
             case STRSXP :
                 // fix for #469, when key is set, duplicated calls uniqlist, where encoding 
