@@ -9928,6 +9928,13 @@ test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17 00:00:00")
 # use capture.output() in this case rather than output= to ensure NULL is not output
 test(1766, capture.output(print(data.table(NULL))), "Null data.table (0 rows and 0 cols)")
 
+# Bug on subset of 1-row data.table when expr returns a named logical vector #2152
+op = options(datatable.auto.index=FALSE)
+dt = data.table(x=1, y="a")
+val = c(foo=1L)
+test(1767, dt[x == val], data.table(x=1, y="a"))
+options(op)
+
 ##########################
 
 test(1800, fread("A\n6e55693457e549ecfce0\n"), data.table(A=c("6e55693457e549ecfce0")))

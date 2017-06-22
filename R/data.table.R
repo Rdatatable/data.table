@@ -812,7 +812,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
             if (is.logical(i)) {
-                if (isTRUE(i)) irows=i=NULL
+                if (isTRUE(unname(i))) irows=i=NULL # unname() required for #2152 - length 1 named logical vector
                 # NULL is efficient signal to avoid creating 1:nrow(x) but still return all rows, fixes #1249
                 
                 else if (length(i)<=1L) irows=i=integer(0)
