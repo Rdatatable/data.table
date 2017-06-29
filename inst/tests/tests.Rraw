@@ -8976,10 +8976,11 @@ test(1673.5, as.IDate("2016-04-28") - as.IDate("2016-04-20"), 8L)
 test(1674, forderv(c(2147483645L, 2147483646L, 2147483647L, 2147483644L), order=-1L), c(3,2,1,4))
 
 # fix for #1718
+# In R-devel somwhere between 12 June 2017 (r72786) and 27 June 2017 (r72859), the behaviour of factor() changed.
+# Test updated minimally to create the previous representation directly instead of going via factor().
 A = data.table(foo = c(1, 2, 3), bar = c(4, 5, 6))
-B = data.table(foo = c(1, 2, 3, 4, 5, 6), bar = c(NA, NA, NA, 4, 5, 6))
 A[, bar := factor(bar, levels = c(4, 5), labels = c("Boop", "Beep"), exclude = 6)]
-B[, bar := factor(bar, levels = c(4, 5, NA), labels = c("Boop", "Beep", NA), exclude = NULL)]
+B = data.table(foo = c(1, 2, 3, 4, 5, 6), bar = structure(c(3L, 3L, 3L, 1L, 2L, NA), .Label=c("Boop","Beep",NA), class="factor"))
 test(1675.1, as.integer(B[A, bar := i.bar, on="foo"]$bar), c(1:3,1:2,NA))
 A = data.table(foo = c(1, 2, 3), bar = c(4, 5, 6))
 B = data.table(foo = c(1, 2, 3, 4, 5, 6), bar = c(NA, NA, NA, 4, 5, 6))
