@@ -2492,6 +2492,7 @@ if (.Platform$OS.type=="unix") test(893.5, fread("A,B\r\n\r\n"), data.table(A=lo
 for (nc in c(0,1,2)) {   # 0 means all cols here
 for (nr in c(0,1,2,3,5,10,18,19,20,21,22,28,29,30,31,32,38,39,40,41,42)) {  # 30 and 40 are trigger points for auto skip
 for (eol in if (.Platform$OS.type=="unix") c("\n","\r\n") else "\n") {
+    ne = if (eol == "\n") 1 else 2
     headDT = head(DT,nr)[,seq_len(if (nc==0) ncol(DT) else nc),with=FALSE]
     if (nr==0) for (j in seq_len(ncol(headDT))) set(headDT,j=j,value=logical())  # when read back in empty cols are the lowest type (logical)
     f = tempfile()
@@ -2501,13 +2502,14 @@ for (eol in if (.Platform$OS.type=="unix") c("\n","\r\n") else "\n") {
         write.table(headDT[i],file=f,quote=FALSE,sep=",",eol="",row.names=FALSE,col.names=FALSE,append=TRUE)
         # loop approach is to get no \n after last line
     }
-    test(894+nr/100+nc/1000, fread(f), headDT)
+    testIDtail = nr/100 + nc/1000 + ne/10000;
+    test(894+testIDtail, fread(f), headDT)
     file.copy(f,f2<-tempfile()); unlink(f)    # again trying to work around apparent issue on Windows
     cat(eol,file=f2,append=TRUE)   # now a 'normal' file ending with \n
-    test(895+nr/100+nc/1000, fread(f2), headDT)
+    test(895+testIDtail, fread(f2), headDT)
     file.copy(f2,f3<-tempfile()); unlink(f2)
     cat(eol,file=f3,append=TRUE)   # extra \n should be ignored
-    test(896+nr/100+nc/1000, fread(f3), headDT)
+    test(896+testIDtail, fread(f3), headDT)
     unlink(f)
     unlink(f2)
     unlink(f3)
