@@ -6875,8 +6875,10 @@ for(k in seq_along(nastrings)) {
 str = "a,b\n1.5,\"at the 5\" end of the gene.\""
 test(1551.1, fread(str), data.table(a = 1.5, b = "at the 5\" end of the gene."))
 #1256
-test(1551.2, fread("x,y\nx1,\"oops\" y1\n"), data.table(x = "x1", y = "\"oops\" y1"))
-test(1551.21, fread("x,y\nx1,\"oops\" y1"), data.table(x = "x1", y = "\"oops\" y1"), warning="Last field of last line starts with a quote")
+str = "x,y\nx1,\"oops\" y1\n"
+test(1551.2, fread(str), data.table(x = "x1", y = "\"oops\" y1"))
+str = "x,y\nx1,\"oops\" y1"
+test(1551.21, fread(str), data.table(x = "x1", y = "\"oops\" y1"), warning="Last field of last line starts with a quote")
 #1077
 str = '2,3\n""foo,bar'
 test(1551.3, fread(str), data.table(V1 = c("2", "\"\"foo"), V2 = c("3", "bar")))
@@ -9504,7 +9506,7 @@ if ("package:bit64" %in% search()) {
     "+2147483648",
     "+2147483649"
   )))
-  ans = c("V1","-9223372036854775807","9223372036854775807","-9223372036854775806","9223372036854775806",
+  ans = c('"V1"',"-9223372036854775807","9223372036854775807","-9223372036854775806","9223372036854775806",
           "0","-1","1","__NA__","__NA__",
           "-2147483646","-2147483647","-2147483648","-2147483649",
           "2147483646","2147483647","2147483648","2147483649")
@@ -9514,6 +9516,7 @@ if ("package:bit64" %in% search()) {
   test(1731.3, fwrite(DT, f, na="__NA__"), NULL)
   test(1731.4, readLines(f), ans)
   unlink(f)
+  ans[1] = "V1"  # the field is unquoted under `quote=FALSE`
   test(1731.5, write.csv(DT,na="__NA__",row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
   # write.csv works on integer64 because it calls bit64's as.character method
 } else {
@@ -9541,7 +9544,7 @@ ans = c('x,"ColName,WithComma","Three', 'Line', 'ColName"',
         'foo,2,noNeedToQuote',
         '"b\\"ar",3,"a',  'long', "\\\"sentence\\\"\"",
         ',4,0000',
-        ',5," ','  "',
+        '"",5," ','  "',
         "NA,6,\"   \\\"", "  \"")
 test(1732.4, readLines(f), ans)
 fwrite(DT,f,quote='auto',qmethod='double')
@@ -9552,6 +9555,10 @@ test(1732.5, readLines(f), ans)
 DT = data.table(A=c("foo","ba,r","baz"), B=c("AA","BB","CC"), C=c("DD","E\nE","FF"))
 test(1732.6, fwrite(DT, quote='auto'), output='A,B,Cfoo,AA,DD"ba,r",BB,"EE"baz,CC,FF')
 unlink(f)
+
+DT = data.table(A=c(NA, "NA", "", "monty"), B=c(5, 7, 0, NA))
+test(1732.7, fwrite(DT, quote='auto'), output='A,B,5NA,7"",0monty,')
+test(1732.8, fwrite(DT, quote='auto', na="NA"), output='"A","B"NA,5"NA",7"",0"monty",NA')
 
 # dec=","
 test(1733.1, fwrite(data.table(pi),dec=","), error="dec != sep is not TRUE")
