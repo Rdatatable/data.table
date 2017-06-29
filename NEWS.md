@@ -1117,7 +1117,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
   15.  `as.data.table` method for `table()` implemented, #4848. Thanks to Frank Pinter for suggesting [here on SO](http://stackoverflow.com/questions/18390947/data-table-of-table-is-very-different-from-data-frame-of-table).
   
   16.  `as.data.table` methods added for integer, numeric, character, logical, factor, ordered and Date.
-     
+	 
   17.  `DT[i,:=,]` now accepts negative indices in `i`. Thanks to Eduard Antonyan. See also bug fix #2697.
 
   18.  `set()` is now able to add new columns by reference, #2077.
@@ -1449,7 +1449,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
   *  rbind, cbind and merge on data.table should now work in packages that Import but do not
      Depend on data.table. Many thanks to a patch to .onLoad from Ken Williams, and related
      posts from Victor Kryukov :
-       http://r.789695.n4.nabble.com/Import-problem-with-data-table-in-packages-tp4665958.html
+	   http://r.789695.n4.nabble.com/Import-problem-with-data-table-in-packages-tp4665958.html
 
   *  Mixing adding and updating into one DT[, `:=`(existingCol=...,newCol=...), by=...] now works
      without error or segfault, #2778 and #2528. Many thanks to Arunkumar Srinivasan for reporting
@@ -1464,7 +1464,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
   *  Writing FUN= in DT[,lapply(.SD,FUN=...),] now works, #4893. Thanks to Jan Wijffels for
      reporting and Arun for suggesting and testing a fix. Committed and test added.
        http://stackoverflow.com/questions/18314757/why-cant-i-used-fun-in-lapply-when-grouping-by-using-data-table
-    
+	
   *  The slowness of transform() on data.table has been fixed, #2599. But, please use :=.
   
   *  setkey(DT,`Colname with spaces`) now works, #2452.
@@ -1492,8 +1492,8 @@ USER VISIBLE CHANGES
        http://stackoverflow.com/questions/15317536/is-null-does-not-work-on-null-data-table-in-r-possible-bug
 
   *  The braces {} have been removed from rollends's default, to solve a trace() problem. Thanks
-     to Josh O'Brien's investigation :
-       http://stackoverflow.com/questions/15931801/why-does-trace-edit-true-not-work-when-data-table
+	 to Josh O'Brien's investigation :
+	   http://stackoverflow.com/questions/15931801/why-does-trace-edit-true-not-work-when-data-table
 
 #### NOTES
 
