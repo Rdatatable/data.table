@@ -9504,7 +9504,7 @@ if ("package:bit64" %in% search()) {
     "+2147483648",
     "+2147483649"
   )))
-  ans = c("V1","-9223372036854775807","9223372036854775807","-9223372036854775806","9223372036854775806",
+  ans = c('"V1"',"-9223372036854775807","9223372036854775807","-9223372036854775806","9223372036854775806",
           "0","-1","1","__NA__","__NA__",
           "-2147483646","-2147483647","-2147483648","-2147483649",
           "2147483646","2147483647","2147483648","2147483649")
@@ -9514,6 +9514,7 @@ if ("package:bit64" %in% search()) {
   test(1731.3, fwrite(DT, f, na="__NA__"), NULL)
   test(1731.4, readLines(f), ans)
   unlink(f)
+  ans[1] = "V1"  # the field is unquoted under `quote=FALSE`
   test(1731.5, write.csv(DT,na="__NA__",row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
   # write.csv works on integer64 because it calls bit64's as.character method
 } else {
@@ -9541,7 +9542,7 @@ ans = c('x,"ColName,WithComma","Three', 'Line', 'ColName"',
         'foo,2,noNeedToQuote',
         '"b\\"ar",3,"a',  'long', "\\\"sentence\\\"\"",
         ',4,0000',
-        ',5," ','  "',
+        '"",5," ','  "',
         "NA,6,\"   \\\"", "  \"")
 test(1732.4, readLines(f), ans)
 fwrite(DT,f,quote='auto',qmethod='double')
@@ -9552,6 +9553,10 @@ test(1732.5, readLines(f), ans)
 DT = data.table(A=c("foo","ba,r","baz"), B=c("AA","BB","CC"), C=c("DD","E\nE","FF"))
 test(1732.6, fwrite(DT, quote='auto'), output='A,B,Cfoo,AA,DD"ba,r",BB,"EE"baz,CC,FF')
 unlink(f)
+
+DT = data.table(A=c(NA, "NA", "", "monty"), B=c(5, 7, 0, NA))
+test(1732.7, fwrite(DT, quote='auto'), output='A,B,5NA,7"",0monty,')
+test(1732.8, fwrite(DT, quote='auto', na="NA"), output='"A","B"NA,5"NA",7"",0"monty",NA')
 
 # dec=","
 test(1733.1, fwrite(data.table(pi),dec=","), error="dec != sep is not TRUE")
