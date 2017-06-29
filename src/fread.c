@@ -1508,7 +1508,7 @@ int freadMain(freadMainArgs _args)
     for (int j = 0; j < ncol; j++) {
       // initialize with the first (lowest) type, 1==CT_BOOL8 at the time of writing. If we add CT_BOOL1 or CT_BOOL2 in
       /// future, using 1 here means this line won't need to be changed. CT_DROP is 0 and 1 is the first type.
-      type[j] = 1;  
+      type[j] = 1;
       size[j] = typeSize[type[j]];
     }
 
@@ -1546,102 +1546,100 @@ int freadMain(freadMainArgs _args)
         int jline = 0;  // line from this jump point
         while((ch < end || (soh && (end != eoh) && (end=eoh) && (ch=soh))) &&
               (jline<JUMPLINES || j==nJumps-1)) {  // nJumps==1 implies sample all of input to eof; last jump to eof too
-          const char *jlineStart = ch;
-          if (sep==' ') {
-            while (*ch == ' ') ch++;  // multiple sep=' ' at the jlineStart does not mean sep(!)
-          }
-          // detect blank lines
-          skip_white(&ch);
-          if (*ch == eol) {
-            if (!skipEmptyLines && !fill) break;
-            jlineStart = ch;  // to avoid 'Line finished early' below and get to the sampleLines++ block at the end of this while
-          }
-          jline++;
-          // DTPRINT("  Line %d: <<%.*s>>  (ch=%p)\n", jline, STRLIM(ch,80,end), ch, (const void*)ch);
-          int field=0;
-          const char *fieldStart = ch;  // Needed outside loop for error messages below
-          while (*ch != eol && field < ncol) {
-            // DTPRINT("<<%.*s>>(%d)", STRLIM(ch,20,end), ch, quoteRule);
-            fieldStart=ch;
-            int res;
-            while (type[field]<=CT_STRING && (res = fun[type[field]](&ch, trash_any))) {
-              // DTPRINT("=");
-              int neols = 0;
-              while (res == 2 && neols++ < 100) {
-                // DTPRINT("~(%p)", ch);
-                if (ch == end) {
-                  if (eoh && end != eoh) { ch = soh; end = eoh; }
-                  else { res = 1; break; }
+            const char *jlineStart = ch;
+            if (sep==' ') while (*ch == ' ') ch++;  // multiple sep=' ' at the jlineStart does not mean sep(!)
+            // detect blank lines
+            skip_white(&ch);
+            if (*ch == eol) {
+              if (!skipEmptyLines && !fill) break;
+              jlineStart = ch;  // to avoid 'Line finished early' below and get to the sampleLines++ block at the end of this while
+            }
+            jline++;
+            // DTPRINT("  Line %d: <<%.*s>>  (ch=%p)\n", jline, STRLIM(ch,80,end), ch, (const void*)ch);
+            int field=0;
+            const char *fieldStart = ch;  // Needed outside loop for error messages below
+            while (*ch != eol && field < ncol) {
+                // DTPRINT("<<%.*s>>(%d)", STRLIM(ch,20,end), ch, quoteRule);
+                fieldStart=ch;
+                int res;
+                while (type[field]<=CT_STRING && (res = fun[type[field]](&ch, trash_any))) {
+                  // DTPRINT("=");
+                  int neols = 0;
+                  while (res == 2 && neols++ < 100) {
+                    // DTPRINT("~(%p)", ch);
+                    if (ch == end) {
+                      if (eoh && end != eoh) { ch = soh; end = eoh; }
+                      else { res = 1; break; }
+                    }
+                    res = parse_string_continue(&ch, trash_any);
+                  }
+                  if (res == 0) break;
+                  ch = fieldStart;
+                  if (type[field] < CT_STRING) {
+                    type[field]++;
+                    bumped = true;
+                  } else {
+                    // the field could not be read with this quote rule, try again with next one
+                    // Trying the next rule will only be successful if the number of fields is consistent with it
+                    ASSERT(quoteRule < 3);
+                    if (verbose)
+                      DTPRINT("Bumping quote rule from %d to %d due to field %d on line %d of sampling jump %d starting <<%.*s>>\n",
+                               quoteRule, quoteRule+1, field+1, jline, j, STRLIM(fieldStart, 200, end), fieldStart);
+                    quoteRule++;
+                    bumped=true;
+                    ch = jlineStart;  // Try whole line again, in case it's a hangover from previous field
+                    field=0;
+                    continue;
+                  }
                 }
-                res = parse_string_continue(&ch, trash_any);
-              }
-              if (res == 0) break;
-              ch = fieldStart;
-              if (type[field] < CT_STRING) {
-                type[field]++;
-                bumped = true;
-              } else {
-                // the field could not be read with this quote rule, try again with next one
-                // Trying the next rule will only be successful if the number of fields is consistent with it
-                ASSERT(quoteRule < 3);
-                if (verbose)
-                  DTPRINT("Bumping quote rule from %d to %d due to field %d on line %d of sampling jump %d starting <<%.*s>>\n",
-                           quoteRule, quoteRule+1, field+1, jline, j, STRLIM(fieldStart, 200, end), fieldStart);
-                quoteRule++;
-                bumped=true;
-                ch = jlineStart;  // Try whole line again, in case it's a hangover from previous field
-                field=0;
-                continue;
-              }
+                // DTPRINT("%d  (ch = %p)\n", type[field], ch);
+                if (*ch == eol && ch[eolLen-1] == eol2) {
+                  break;
+                } else {
+                  // skip over the field separator
+                  if (*ch != sep) STOP("Unexpected: field ended without a separator present: <<%.*s>>",
+                                       STRLIM(fieldStart,30,end),fieldStart);
+                  ch++;
+                  field++;
+                }
             }
-            // DTPRINT("%d  (ch = %p)\n", type[field], ch);
-            if (*ch == eol && ch[eolLen-1] == eol2) {
-              break;
-            } else {
-              // skip over the field separator
-              if (*ch != sep) STOP("Unexpected: field ended without a separator present: <<%.*s>>",
-                                   STRLIM(fieldStart,30,end),fieldStart);
-              ch++;
-              field++;
+            if (field<ncol-1 && !fill) {
+                if (ch<end && *ch!=eol) {
+                    STOP("Internal error: line has finished early but not on an eol or eof (fill=false). Please report as bug.");
+                } else if (ch>jlineStart) {
+                    STOP("Line %d has too few fields when detecting types. Use fill=TRUE to pad with NA. Expecting %d fields but found %d: <<%.*s>>", jline, ncol, field+1, STRLIM(jlineStart,200,end), jlineStart);
+                }
             }
-          }
-          if (field<ncol-1 && !fill) {
-              if (ch<end && *ch!=eol) {
-                  STOP("Internal error: line has finished early but not on an eol or eof (fill=false). Please report as bug.");
-              } else if (ch>jlineStart) {
-                  STOP("Line %d has too few fields when detecting types. Use fill=TRUE to pad with NA. Expecting %d fields but found %d: <<%.*s>>", jline, ncol, field+1, STRLIM(jlineStart,200,end), jlineStart);
-              }
-          }
-          ASSERT(ch < end);
-          if (*ch!=eol || field>=ncol) {   // the || >=ncol is for when a comma ends the line with eol straight after
-            if (field!=ncol) STOP("Internal error: Line has too many fields but field(%d)!=ncol(%d)", field, ncol);
-            STOP("Line %d from sampling jump %d starting <<%.*s>> has more than the expected %d fields. " \
-                 "Separator %d occurs at position %d which is character %d of the last field: <<%.*s>>. " \
-                 "Consider setting 'comment.char=' if there is a trailing comment to be ignored.",
-                jline, j, STRLIM(jlineStart,10,end), jlineStart, ncol, ncol, (int)(ch-jlineStart), (int)(ch-fieldStart),
-                STRLIM(fieldStart,200,end), fieldStart);
-          }
-          // if very last field was quoted, check if it was completed with an ending quote ok.
-          // not necessarily a problem (especially if we detected no quoting), but we test it and nice to have
-          // a warning regardless of quoting rule just in case file has been inadvertently truncated.
-          // The warning is only issued if the file didn't have the newline on the last line.
-          // This warning is early at type skipping around stage before reading starts, so user can cancel early
-          if (type[ncol-1]==CT_STRING && *fieldStart==quote && *(ch-1)!=quote && trailing_newline_added) {
-            if (quoteRule<2) STOP("Internal error: Last field of last line should select quote rule 2");
-            DTWARN("Last field of last line starts with a quote but is not finished with a quote before end of file: <<%.*s>>",
-                    STRLIM(fieldStart, 200, end), fieldStart);
-          }
-          ch += eolLen;
-          // Two reasons:  1) to get the end of the very last good row before whitespace or footer before eof
-          //               2) to check sample jumps don't overlap, otherwise double count and bad estimate
-          lastRowEnd = ch;
-          //DTPRINT("\n");
-          int thisLineLen = (int)(ch-jlineStart);  // ch is now on start of next line so this includes eolLen already
-          sampleLines++;
-          sumLen += thisLineLen;
-          sumLenSq += thisLineLen*thisLineLen;
-          if (thisLineLen<minLen) minLen=thisLineLen;
-          if (thisLineLen>maxLen) maxLen=thisLineLen;
+            ASSERT(ch < end);
+            if (*ch!=eol || field>=ncol) {   // the || >=ncol is for when a comma ends the line with eol straight after
+              if (field!=ncol) STOP("Internal error: Line has too many fields but field(%d)!=ncol(%d)", field, ncol);
+              STOP("Line %d from sampling jump %d starting <<%.*s>> has more than the expected %d fields. " \
+                   "Separator %d occurs at position %d which is character %d of the last field: <<%.*s>>. " \
+                   "Consider setting 'comment.char=' if there is a trailing comment to be ignored.",
+                  jline, j, STRLIM(jlineStart,10,end), jlineStart, ncol, ncol, (int)(ch-jlineStart), (int)(ch-fieldStart),
+                  STRLIM(fieldStart,200,end), fieldStart);
+            }
+            // if very last field was quoted, check if it was completed with an ending quote ok.
+            // not necessarily a problem (especially if we detected no quoting), but we test it and nice to have
+            // a warning regardless of quoting rule just in case file has been inadvertently truncated.
+            // The warning is only issued if the file didn't have the newline on the last line.
+            // This warning is early at type skipping around stage before reading starts, so user can cancel early
+            if (type[ncol-1]==CT_STRING && *fieldStart==quote && *(ch-1)!=quote && trailing_newline_added) {
+              if (quoteRule<2) STOP("Internal error: Last field of last line should select quote rule 2");
+              DTWARN("Last field of last line starts with a quote but is not finished with a quote before end of file: <<%.*s>>",
+                      STRLIM(fieldStart, 200, end), fieldStart);
+            }
+            ch += eolLen;
+            // Two reasons:  1) to get the end of the very last good row before whitespace or footer before eof
+            //               2) to check sample jumps don't overlap, otherwise double count and bad estimate
+            lastRowEnd = ch;
+            //DTPRINT("\n");
+            int thisLineLen = (int)(ch-jlineStart);  // ch is now on start of next line so this includes eolLen already
+            sampleLines++;
+            sumLen += thisLineLen;
+            sumLenSq += thisLineLen*thisLineLen;
+            if (thisLineLen<minLen) minLen=thisLineLen;
+            if (thisLineLen>maxLen) maxLen=thisLineLen;
         }
         if (verbose && (bumped || j==0 || j==nJumps-1)) {
           DTPRINT("  Type codes (jump %03d)    : ",j); printTypes(ncol);
