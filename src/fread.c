@@ -44,7 +44,6 @@ static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 static const char *fnam = NULL;
 static void *mmp = NULL;
 static size_t fileSize;
-static _Bool typeOnStack = true;
 static int8_t *type = NULL, *size = NULL;
 static lenOff *colNames = NULL;
 static int8_t *oldType = NULL;
@@ -74,9 +73,8 @@ static char* _const_cast(const char *ptr) {
  */
 void freadCleanup(void)
 {
-  // If typeOnStack is true, then `type` was `alloca`-ed, and therefore must not be freed!
-  if (!typeOnStack) { free(type); free(size); }
-  type = NULL; size = NULL;
+  free(type); type = NULL;
+  free(size); size = NULL;
   free(colNames); colNames = NULL;
   free(oldType); oldType = NULL;
   if (mmp != NULL) {
@@ -553,7 +551,7 @@ int freadMain(freadMainArgs __args) {
     _Bool verbose = args.verbose;
     _Bool warningsAreErrors = args.warningsAreErrors;
 
-    if (fnam != NULL || mmp != NULL || colNames != NULL || oldType != NULL) {
+    if (fnam || mmp || colNames || oldType || type || size) {
       STOP("Internal error: Previous fread() session was not cleaned up properly");
     }
 
@@ -564,9 +562,6 @@ int freadMain(freadMainArgs __args) {
       DTPRINT("Limited nth=%d to omp_get_max_threads()=%d\n", args.nth, nth);
     }
 
-    typeOnStack = false;
-    type = NULL;
-    size = NULL;
     uint64_t ui64 = NA_FLOAT64_I64;
     memcpy(&NA_FLOAT64, &ui64, 8);
 
@@ -982,20 +977,15 @@ int freadMain(freadMainArgs __args) {
     //   Make best guess at column types using 100 rows at 100 points, including the very first, middle and very last row.
     //   At the same time, calc mean and sd of row lengths in sample for very good nrow estimate.
     // *****************************************************************************************************************
-    typeOnStack = ncol<10000;
-    if (typeOnStack) {
-      type = (int8_t *)alloca((size_t)ncol * sizeof(int8_t));  //TODO: combine?
-      size = (int8_t *)alloca((size_t)ncol * sizeof(int8_t));
-    } else {
-      type = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
-      size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
+    type = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
+    size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
+    if (!type || !size) STOP("Failed to allocate %d x 2 bytes for type/size: %s", ncol, strerror(errno));
+    for (int j = 0; j < ncol; j++) {
+      // initialize with the first (lowest) type, 1==CT_BOOL8 at the time of writing. If we add CT_BOOL1 or CT_BOOL2 in
+      /// future, using 1 here means this line won't need to be changed. CT_DROP is 0 and 1 is the first type.
+      type[j] = 1;  
+      size[j] = typeSize[type[j]];
     }
-    // (...?alloca:malloc)(...) doesn't compile as alloca is special.
-
-    // 9.8KB is for sure fine on stack. Almost went for 1MB (1 million columns) but decided to be uber safe.
-    // sizeof(int8_t) == 1 checked in init.c. To free or not to free is in cleanup() based on typeOnStack
-    if (!type) STOP("Failed to allocate %dx%d bytes for type: %s", ncol, sizeof(int8_t), strerror(errno));
-    for (int j=0; j<ncol; j++) { size[j] = type[j] = 1; } // lowest enum is 1 (CT_BOOL8 at the time of writing). 0==CT_DROP
 
     size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
     int nJumps = 0;
