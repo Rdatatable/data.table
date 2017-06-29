@@ -26,7 +26,7 @@
 // Private globals to save passing all of them through to highly iterated field processors
 static const char *eof;
 static char sep, eol, eol2;
-static char antisep;
+static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static int eolLen;
 static char quote, dec;
 static int quoteRule;
@@ -100,7 +100,7 @@ void freadCleanup(void)
     // if (eof) for when file is empty and STOP() is called before eof has been set (test 885)
   }
   fileSize = 0;
-  sep = antisep = eol = eol2 = quote = dec = '\0';
+  sep = whiteChar = eol = eol2 = quote = dec = '\0';
   eolLen = 0;
   quoteRule = -1;
   any_number_like_NAstrings = false;
@@ -143,10 +143,10 @@ static void printTypes(int ncol) {
 static inline void skip_white(const char **this) {
   // skip space so long as sep isn't space and skip tab so long as sep isn't tab
   const char *ch = *this;
-  if (antisep == 0) {
+  if (whiteChar == 0) {   // whiteChar==0 means skip both ' ' and '\t';  sep is neither ' ' nor '\t'.
     while (*ch == ' ' || *ch == '\t') ch++;
   } else {
-    while (*ch == antisep) ch++;
+    while (*ch == whiteChar) ch++;  // sep is ' ' or '\t' so just skip the other one.
   }
   *this = ch;
 }
@@ -849,7 +849,7 @@ int freadMain(freadMainArgs __args) {
     int numLines[JUMPLINES+1];
     for (int s=0; s<nseps; s++) {
       sep = seps[s];
-      antisep = (sep == ' ')? '\t' : (sep == '\t')? ' ' : 0;
+      whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));  // 0 means both ' ' and '\t' to be skipped
       for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
         ch = pos;
         // if (args.verbose) DTPRINT("Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
@@ -892,7 +892,7 @@ int freadMain(freadMainArgs __args) {
     int ncol;
     quoteRule = topQuoteRule;
     sep = topSep;
-    antisep = (sep == ' ')? '\t' : (sep == '\t')? ' ' : 0;
+    whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
     ch = pos;
     if (fill) {
       // start input from first populated line, already pos.
