@@ -50,7 +50,7 @@
 
 2. The `nanotime` v0.2.0 update on CRAN 22 June 2017 changed from `integer64` to `S4` and broke `fwrite` of `nanotime` columns. The onus is on package maintainers to check downstream packages before release to CRAN. `fwrite` updated to work with `nanotime` both before and after v0.2.0.
 
-3. Test 1675.1 updated to cope with a change in R-devel related to `factor()` and `NA` levels.
+3. Test 1675.1 updated to cope with a change in R-devel in June 2017 related to `factor()` and `NA` levels.
 
 ### Changes in v1.10.4  (on CRAN 01 Feb 2017)
 
