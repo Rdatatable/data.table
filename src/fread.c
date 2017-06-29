@@ -990,7 +990,7 @@ int freadMain(freadMainArgs __args) {
     for (int j = 0; j < ncol; j++) {
       // initialize with the first (lowest) type, 1==CT_BOOL8 at the time of writing. If we add CT_BOOL1 or CT_BOOL2 in
       /// future, using 1 here means this line won't need to be changed. CT_DROP is 0 and 1 is the first type.
-      type[j] = 1;  
+      type[j] = 1;
       size[j] = typeSize[type[j]];
     }
 
@@ -1069,7 +1069,7 @@ int freadMain(freadMainArgs __args) {
                 if (ch<eof && *ch!=eol) {
                     STOP("Internal error: line has finished early but not on an eol or eof (fill=false). Please report as bug.");
                 } else if (ch>jlineStart) {
-                    STOP("Line has too few fields when detecting types. Use fill=TRUE to pad with NA. Expecting %d fields but found %d: <<%.*s>>", ncol, field+1, STRLIM(jlineStart,200), jlineStart);
+                    STOP("Line %d has too few fields when detecting types. Use fill=TRUE to pad with NA. Expecting %d fields but found %d: <<%.*s>>", jline, ncol, field+1, STRLIM(jlineStart,200), jlineStart);
                 }
             }
             if (ch<eof) {

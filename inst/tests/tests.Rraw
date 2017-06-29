@@ -2844,13 +2844,13 @@ test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(
 # an fread error shouldn't hold a lock on the file on Windows
 f = tempfile()
 cat('A,B\n1,2\n3\n5,6\n', file=f)
-test(1010.1, fread(f), error="Line has too few fields.*fill.*TRUE")
+test(1010.1, fread(f), error="Line 2 has too few fields.*fill.*TRUE")
 cat('7\n8,9',file=f,append=TRUE)   # that append works after error
 test(1010.2, fread(f,fill=TRUE), data.table(A=INT(1,3,5,7,8), B=INT(2,NA,6,NA,9)))
-test(1010.3, fread(f), error="Line has too few fields.*fill.*TRUE")
+test(1010.3, fread(f), error="Line 2 has too few fields.*fill.*TRUE")
 cat('A,B\n1,2\n3\n5,6\n', file=f)  # that overwrite works after error
 test(1010.4, fread(f,fill=TRUE), data.table(A=INT(1,3,5), B=INT(2,NA,6)))
-test(1010.5, fread(f), error="Line has too few fields.*fill.*TRUE")
+test(1010.5, fread(f), error="Line 2 has too few fields.*fill.*TRUE")
 unlink(f)                          # that file can be removed after error
 test(1010.6, !file.exists(f))
 
@@ -6877,6 +6877,8 @@ test(1551.1, fread(str), data.table(a = 1.5, b = "at the 5\" end of the gene."))
 #1256
 str = "x,y\nx1,\"oops\" y1\n"
 test(1551.2, fread(str), data.table(x = "x1", y = "\"oops\" y1"))
+str = "x,y\nx1,\"oops\" y1"
+test(1551.21, fread(str), data.table(x = "x1", y = "\"oops\" y1"), warning="Last field of last line starts with a quote")
 #1077
 str = '2,3\n""foo,bar'
 test(1551.3, fread(str), data.table(V1 = c("2", "\"\"foo"), V2 = c("3", "bar")))
@@ -6983,12 +6985,12 @@ f = "issue_773_fread.txt"
 ans = data.table(AAA=as.character(c(4,7,rep(1,17),31,21)),
                  BBB=as.character(c(5,8,rep(2,17),32,22)),
                  CCC=as.integer(c(6,9,rep(3,17),33,23)))
-test(1558.1, fread(f, nrow=21L), error="Line has too few fields.*<<ZZZ.*YYY>>")
+test(1558.1, fread(f, nrow=21L), error="Line 22 has too few fields.*<<ZZZ.*YYY>>")
 # Even though nrow=21 finished on the line before the problem, we still require a good sample of the whole file by setting fill=TRUE
 # This ensures consistency of types of the subset with other subsets. The types of AAA and BBB are character due to the sample
 # rows even though those columns only become character on row 22
 test(1558.2, fread(f, nrow=21L, fill=TRUE), ans)
-test(1558.3, fread(f, nrow=22L), error="Line has too few fields.*<<ZZZ.*YYY>>")
+test(1558.3, fread(f, nrow=22L), error="Line 22 has too few fields.*<<ZZZ.*YYY>>")
 test(1558.4, fread(f, nrow=22L, fill=TRUE), rbind(ans, list("ZZZ","YYY",NA)))
 
 # FR # 1338 -- check.names argument of setDT
