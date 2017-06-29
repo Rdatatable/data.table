@@ -854,7 +854,7 @@ int freadMain(freadMainArgs _args)
     _Bool warningsAreErrors = args.warningsAreErrors;
     if (verbose) DTPRINT("[1] Check arguments\n");
 
-    if (fnam || mmp || colNames || oldType || lineCopy || type || size) {
+    if (mmp || colNames || oldType || lineCopy || type || size) {
       STOP("Internal error: Previous fread() session was not cleaned up properly");
     }
 
