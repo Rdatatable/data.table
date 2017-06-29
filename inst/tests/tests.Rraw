@@ -5778,7 +5778,7 @@ test(1444.4, fread(paste(paste("Hz.BB.GHG.", 1:10, sep = ""), collapse="\n"), se
              data.table(V1="Hz",V2="BB",V3="GHG",V4=1:10))
 
 # doubled quote inside a quoted field followed by an embedded newline
-test(1445, fread("doublequote_newline.csv")[7:10], data.table(A=c(1L,1L,2L,1L), B=c("a","embedded \"\"field\"\"\nwith some embedded new\nlines as well\n(or as unwell)","not this one","a")))
+test(1445, fread("doublequote_newline.csv")[7:10], data.table(A=c(1L,1L,2L,1L), B=c("a","embedded \"\"field\"\"\nwith some embedded new\nlines as well","not this one","a")))
 # the example from #489 directly :
 test(1446, fread('A,B,C\n233,"AN ""EMBEDDED"" QUOTE FIELD",morechars\n'), data.table(A=233L, B='AN ""EMBEDDED"" QUOTE FIELD', C='morechars'))
 
