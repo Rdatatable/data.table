@@ -85,7 +85,6 @@ static int parse_string_continue(const char **ptr, lenOff *target);
  */
 void freadCleanup(void)
 {
-  // If typeOnStack is true, then `type` was `alloca`-ed, and therefore must not be freed!
   free(type); type = NULL;
   free(size); size = NULL;
   free(lineCopy); lineCopy = NULL;
@@ -855,7 +854,7 @@ int freadMain(freadMainArgs _args)
     _Bool warningsAreErrors = args.warningsAreErrors;
     if (verbose) DTPRINT("[1] Check arguments\n");
 
-    if (mmp || colNames || oldType || lineCopy || type || size) {
+    if (fnam || mmp || colNames || oldType || lineCopy || type || size) {
       STOP("Internal error: Previous fread() session was not cleaned up properly");
     }
 
@@ -1507,8 +1506,10 @@ int freadMain(freadMainArgs _args)
     if (!type || !size) STOP("Failed to allocate %d x 2 bytes for type/size: %s", ncol, strerror(errno));
 
     for (int j = 0; j < ncol; j++) {
-      type[j] = CT_BOOL8;
-      size[j] = typeSize[CT_BOOL8];
+      // initialize with the first (lowest) type, 1==CT_BOOL8 at the time of writing. If we add CT_BOOL1 or CT_BOOL2 in
+      /// future, using 1 here means this line won't need to be changed. CT_DROP is 0 and 1 is the first type.
+      type[j] = 1;  
+      size[j] = typeSize[type[j]];
     }
 
     int nJumps = 0;

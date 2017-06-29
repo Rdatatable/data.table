@@ -494,8 +494,8 @@ static writer_fun_t whichWriter(SEXP column) {
     if (INHERITS(column, char_Date))     return writeDateInt;
     return writeInteger;
   case REALSXP:
-    if (INHERITS(column, char_integer64))
-      return (INHERITS(column, char_nanotime) && dateTimeAs!=DATETIMEAS_EPOCH) ? writeNanotime : writeInteger;
+    if (INHERITS(column, char_nanotime) && dateTimeAs!=DATETIMEAS_EPOCH) return writeNanotime;
+    if (INHERITS(column, char_integer64))return writeInteger;
     if (dateTimeAs==DATETIMEAS_EPOCH)    return writeNumeric;
     if (INHERITS(column, char_Date))     return writeDateReal;
     if (INHERITS(column, char_POSIXct))  return writePOSIXct;
