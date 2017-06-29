@@ -981,8 +981,10 @@ int freadMain(freadMainArgs __args) {
     size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
     if (!type || !size) STOP("Failed to allocate %d x 2 bytes for type/size: %s", ncol, strerror(errno));
     for (int j = 0; j < ncol; j++) {
-      type[j] = CT_BOOL8;
-      size[j] = typeSize[CT_BOOL8];
+      // initialize with the first (lowest) type, 1==CT_BOOL8 at the time of writing. If we add CT_BOOL1 or CT_BOOL2 in
+      /// future, using 1 here means this line won't need to be changed. CT_DROP is 0 and 1 is the first type.
+      type[j] = 1;  
+      size[j] = typeSize[type[j]];
     }
 
     size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
