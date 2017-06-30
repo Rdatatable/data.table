@@ -867,7 +867,7 @@ int freadMain(freadMainArgs _args)
       if (nth > maxth) nth = maxth;
       if (nth <= 0) nth += maxth;
       if (nth <= 0) nth = 1;
-      if (verbose) DTPRINT("  Num threads = %d (system allows up to %d threads)\n", nth, maxth);
+      if (verbose) DTPRINT("  Using %d threads (omp_get_max_threads()=%d, nth=%d)\n", nth, maxth, args.nth);
     }
 
     uint64_t ui64 = NA_FLOAT64_I64;
