@@ -73,7 +73,7 @@ static const double NAND = (double)NAN;
 static const double INFD = (double)INFINITY;
 
 // Forward declarations
-static _Bool Field(const char **this, void *target);
+static int Field(const char **this, lenOff *target);
 // static int parse_string(const char **ptr, lenOff *target);
 // static int parse_string_continue(const char **ptr, lenOff *target);
 
@@ -219,7 +219,7 @@ static inline _Bool is_NAstring(const char *fieldStart) {
  */
 static inline int countfields(const char **this)
 {
-  static char trash[8];  // see comment on other trash declaration
+  static lenOff trash;  // see comment on other trash declarations
   const char *ch = *this;
   if (sep==' ') while (ch<eof && *ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
   skip_white(&ch);
@@ -227,7 +227,7 @@ static inline int countfields(const char **this)
   if (ch<eof && *ch==eol) {
     ch+=eolLen;
   } else while (ch<eof) {
-    if (!Field(&ch,trash)) return -1;   // -1 means this line not valid for this sep and quote rule
+    if (Field(&ch, &trash)) return -1;   // -1 means this line not valid for this sep and quote rule
     // Field() leaves *ch resting on sep, eol or >=eof. Checked inside Field().
     ncol++;
     if (ch<eof && *ch==eol) { ch+=eolLen; break; }
@@ -282,7 +282,7 @@ double wallclock(void)
 //
 //=================================================================================================
 
-static _Bool Field(const char **this, void *target)
+static int Field(const char **this, lenOff *target)
 {
   const char *ch = *this;
   if (stripWhite) skip_white(&ch);  // before and after quoted field's quotes too (e.g. test 1609) but never inside quoted fields
@@ -309,14 +309,14 @@ static _Bool Field(const char **this, void *target)
           break;  // found undoubled closing quote
         }
       }
-      if (ch>=eof || *ch!=quote) return false;
+      if (ch>=eof || *ch!=quote) return 1;
       break;
     case 1:  // quoted with embedded quotes escaped; the final unescaped " must be followed by sep|eol
       while (++ch<eof && *ch!=quote && eolCount<100) {
         eolCount += (*ch==eol);
         ch += (*ch=='\\');
       }
-      if (ch>=eof || *ch!=quote) return false;
+      if (ch>=eof || *ch!=quote) return 1;
       break;
     case 2:  // (i) quoted (perhaps because the source system knows sep is present) but any quotes were not escaped at all,
              // so look for ", to define the end.   (There might not be any quotes present to worry about, anyway).
@@ -346,7 +346,7 @@ static _Bool Field(const char **this, void *target)
       }
       break;
     default:
-      return false;  // Internal error: undefined quote rule
+      return 1;  // Internal error: undefined quote rule
     }
   }
   int fieldLen = (int)(ch-fieldStart);
@@ -355,20 +355,20 @@ static _Bool Field(const char **this, void *target)
     // this white space (' ' or '\t') can't be sep otherwise it would have stopped the field earlier at the first sep
   }
   if (quoted) { ch++; if (stripWhite) skip_white(&ch); }
-  if (!on_sep(&ch)) return false;
+  if (!on_sep(&ch)) return 1;
   if (fieldLen==0) {
     if (blank_is_a_NAstring) fieldLen=INT32_MIN;
   } else {
     if (is_NAstring(fieldStart)) fieldLen=INT32_MIN;
   }
-  ((lenOff *)target)->len = fieldLen;
-  ((lenOff *)target)->off = (uint32_t)(fieldStart-*this);  // agnostic & thread-safe
+  target->len = fieldLen;
+  target->off = (uint32_t)(fieldStart-*this);  // agnostic & thread-safe
   *this = ch; // Update caller's ch. This may be after fieldStart+fieldLen due to quotes and/or whitespace
-  return true;
+  return 0;
 }
 
 
-static _Bool StrtoI64(const char **this, void *target)
+static int StrtoI64(const char **this, int64_t *target)
 {
     // Specialized clib strtoll that :
     // i) skips leading isspace() too but other than field separator and eol (e.g. '\t' and ' \t' in FUT1206.txt)
@@ -380,9 +380,9 @@ static _Bool StrtoI64(const char **this, void *target)
     const char *ch = *this;
     skip_white(&ch);  //  ',,' or ',   ,' or '\t\t' or '\t   \t' etc => NA
     if (on_sep(&ch)) {  // most often ',,'
-      *(int64_t *)target = NA_INT64;
+      *target = NA_INT64;
       *this = ch;
-      return true;
+      return 0;
     }
     const char *start=ch;
     int sign=1;
@@ -398,28 +398,28 @@ static _Bool StrtoI64(const char **this, void *target)
       acc += *ch-'0';
       ch++;
     }
-    if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
+    if (quoted) { if (ch>=eof || *ch!=quote) return 1; else ch++; }
     // TODO: if (!targetCol) return early?  Most of the time, not though.
-    *(int64_t *)target = sign * acc;
+    *target = sign * acc;
     skip_white(&ch);
     ok = ok && on_sep(&ch);
     //DTPRINT("StrtoI64 field '%.*s' has len %d\n", lch-ch+1, ch, len);
     *this = ch;
-    if (ok && !any_number_like_NAstrings) return true;  // most common case, return
+    if (ok && !any_number_like_NAstrings) return 0;  // most common case, return
     _Bool na = is_NAstring(start);
-    if (ok && !na) return true;
-    *(int64_t *)target = NA_INT64;
+    if (ok && !na) return 0;
+    *target = NA_INT64;
     next_sep(&ch);  // TODO: can we delete this? consume the remainder of field, if any
     *this = ch;
-    return na;
+    return !na;
 }
 
 
-static _Bool StrtoI32_bare(const char **this, void *target)
+static int StrtoI32_bare(const char **this, int32_t *target)
 {
     const char *ch = *this;
-    if (*ch==sep || *ch==eol) { *(int32_t *)target = NA_INT32; return true; }
-    if (sep==' ') return false;  // bare doesn't do sep=' '. TODO - remove
+    if (*ch==sep || *ch==eol) { *target = NA_INT32; return 0; }
+    if (sep==' ') return 1;  // bare doesn't do sep=' '. TODO - remove
     _Bool neg = *ch=='-';
     ch += (neg || *ch=='+');
     const char *start = ch;  // for overflow guard using field width
@@ -430,10 +430,10 @@ static _Bool StrtoI32_bare(const char **this, void *target)
       acc += digit;
       ch++;
     }
-    *(int32_t *)target = neg ? -(int32_t)acc : (int32_t)acc;   // cast 64bit acc to 32bit; range checked in return below
+    *target = neg ? -(int32_t)acc : (int32_t)acc;   // cast 64bit acc to 32bit; range checked in return below
     *this = ch;
-    return (*ch==sep || *ch==eol) &&
-           (acc ? *start!='0' && acc<=INT32_MAX && (ch-start)<=10 : ch-start==1);
+    return (*ch!=sep && *ch!=eol) ||
+           (acc ? *start=='0' || acc>INT32_MAX || (ch-start)>10 : ch-start!=1);
     // If false, both *target and where *this is moved on to, are undefined.
     // INT32 range is NA==-2147483648(INT32_MIN) then symmetric [-2147483647,+2147483647] so we can just test INT32_MAX
     // The max (2147483647) happens to be 10 digits long, hence <=10.
@@ -442,16 +442,16 @@ static _Bool StrtoI32_bare(const char **this, void *target)
 }
 
 
-static _Bool StrtoI32_full(const char **this, void *target)
+static int StrtoI32_full(const char **this, int32_t *target)
 {
     // Very similar to StrtoI64 (see it for comments). We can't make a single function and switch on TYPEOF(targetCol) to
     // know I64 or I32 because targetCol is NULL when testing types and when dropping columns.
     const char *ch = *this;
     skip_white(&ch);
     if (on_sep(&ch)) {  // most often ',,'
-      *(int32_t *)target = NA_INT32;
+      *target = NA_INT32;
       *this = ch;
-      return true;
+      return 0;
     }
     const char *start=ch;
     int sign=1;
@@ -465,19 +465,19 @@ static _Bool StrtoI32_full(const char **this, void *target)
       acc += *ch-'0';
       ch++;
     }
-    if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
-    *(int32_t *)target = sign * acc;
+    if (quoted) { if (ch>=eof || *ch!=quote) return 1; else ch++; }
+    *target = sign * acc;
     skip_white(&ch);
     ok = ok && on_sep(&ch);
     //DTPRINT("StrtoI32 field '%.*s' has len %d\n", lch-ch+1, ch, len);
     *this = ch;
-    if (ok && !any_number_like_NAstrings) return true;
+    if (ok && !any_number_like_NAstrings) return 0;
     _Bool na = is_NAstring(start);
-    if (ok && !na) return true;
-    *(int32_t *)target = NA_INT32;
+    if (ok && !na) return 0;
+    *target = NA_INT32;
     next_sep(&ch);
     *this = ch;
-    return na;
+    return !na;
 }
 
 
@@ -490,16 +490,16 @@ for (i in (-350):(349)) cat("1.0E",i,"L,\n", sep="", file=f, append=TRUE)
 cat("1.0E350L\n};\n", file=f, append=TRUE)
 */
 
-static _Bool StrtoD(const char **this, void *target)
+static int StrtoD(const char **this, double *target)
 {
     // [+|-]N.M[E|e][+|-]E or Inf or NAN
 
     const char *ch = *this;
     skip_white(&ch);
     if (on_sep(&ch)) {
-      *(double *)target = NA_FLOAT64;
+      *target = NA_FLOAT64;
       *this = ch;
-      return true;
+      return 0;
     }
     _Bool quoted = false;
     if (ch<eof && (*ch==quote)) { quoted=true; ch++; }
@@ -543,31 +543,31 @@ static _Bool StrtoD(const char **this, void *target)
       d = (unsigned)(e + 350) <= 700 ? (double)(sign * (long double)acc * pow10lookup[350+e])
           : e < -350 ? 0 : sign * INFD;
     }
-    if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
-    *(double *)target = d;
+    if (quoted) { if (ch>=eof || *ch!=quote) return 1; else ch++; }
+    *target = d;
     skip_white(&ch);
     ok = ok && on_sep(&ch);
     *this = ch;
-    if (ok && !any_number_like_NAstrings) return true;
+    if (ok && !any_number_like_NAstrings) return 0;
     _Bool na = is_NAstring(start);
-    if (ok && !na) return true;
-    *(double *)target = NA_FLOAT64;
+    if (ok && !na) return 0;
+    *target = NA_FLOAT64;
     next_sep(&ch);
     *this = ch;
-    return na;
+    return !na;
 }
 
-static _Bool StrtoB(const char **this, int8_t *target)
+static int StrtoB(const char **this, int8_t *target)
 {
     // These usually come from R when it writes out.
     const char *ch = *this;
     skip_white(&ch);
     *target = NA_BOOL8;
-    if (on_sep(&ch)) { *this=ch; return true; }  // empty field ',,'
+    if (on_sep(&ch)) { *this=ch; return 0; }  // empty field ',,'
     const char *start=ch;
     _Bool quoted = false;
     if (ch<eof && (*ch==quote)) { quoted=true; ch++; }
-    if (quoted && *ch==quote) { ch++; if (on_sep(&ch)) {*this=ch; return true;} else return false; }  // empty quoted field ',"",'
+    if (quoted && *ch==quote) { ch++; if (on_sep(&ch)) {*this=ch; return 0;} else return 1; }  // empty quoted field ',"",'
     _Bool logical01 = false;  // expose to user and should default be true?
     if ( ((*ch=='0' || *ch=='1') && logical01) || (*ch=='N' && ch+1<eof && *(ch+1)=='A' && ch++)) {
         *target = (*ch=='1' ? 1 : (*ch=='0' ? 0 : NA_BOOL8));
@@ -581,15 +581,15 @@ static _Bool StrtoB(const char **this, int8_t *target)
         if ((ch+4<eof && ch[1] == 'A' && ch[2] == 'L' && ch[3] == 'S' && ch[4] == 'E') ||
             (ch+4<eof && ch[1] == 'a' && ch[2] == 'l' && ch[3] == 's' && ch[4] == 'e')) ch += 5;
     }
-    if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
-    if (on_sep(&ch)) { *this=ch; return true; }
+    if (quoted) { if (ch>=eof || *ch!=quote) return 1; else ch++; }
+    if (on_sep(&ch)) { *this=ch; return 0; }
     *target = NA_BOOL8;
     next_sep(&ch);
     *this=ch;
-    return is_NAstring(start);
+    return !is_NAstring(start);
 }
 
-typedef _Bool (*reader_fun_t)(const char **ptr, void *target);
+typedef int (*reader_fun_t)(const char **ptr, void *target);
 static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &Field,
   (reader_fun_t) &StrtoB,
@@ -1061,7 +1061,9 @@ int freadMain(freadMainArgs _args) {
 
     // throw-away storage for processors to write to in this preamble.
     // Saves deep 'if (target)' inside processors.
-    char trash[8];
+    double trash_val; // double so that this storage is aligned. char trash[8] would not be aligned.
+    void *trash = (void*)&trash_val;
+
     const char *colNamesAnchor = ch;
     colNames = calloc((size_t)ncol, sizeof(lenOff));
     if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
@@ -1072,10 +1074,10 @@ int freadMain(freadMainArgs _args) {
       const char *this = ++ch;
       // DTPRINT("Field %d <<%.*s>>\n", field, STRLIM(ch, 20), ch);
       skip_white(&ch);
-      if (allchar && !on_sep(&ch) && StrtoD(&ch,trash)) allchar=false;  // don't stop early as we want to check all columns to eol here
+      if (allchar && !on_sep(&ch) && !StrtoD(&ch, (double *)trash)) allchar=false;  // don't stop early as we want to check all columns to eol here
       // considered looking for one isalpha present but we want 1E9 to be considered a value not a column name
       ch = this;  // rewind to the start of this field
-      Field(&ch,trash);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
+      Field(&ch, (lenOff *)trash);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
       // countfields() above already validated the line so no need to check again now.
     }
     if (ch<eof && *ch!=eol)
@@ -1191,7 +1193,7 @@ int freadMain(freadMainArgs _args) {
             while (ch<eof && *ch!=eol && field<ncol) {
                 // DTPRINT("<<%.*s>>(%d)", STRLIM(ch,20,end), ch, quoteRule);
                 fieldStart=ch;
-                while (type[field]<=CT_STRING && !(*fun[type[field]])(&ch,trash)) {
+                while (type[field]<=CT_STRING && fun[type[field]](&ch, trash)) {
                   ch=fieldStart;
                   if (type[field]<CT_STRING) { type[field]++; bumped=true; }
                   else {
@@ -1404,7 +1406,7 @@ int freadMain(freadMainArgs _args) {
       size_t myNrow = 0; // the number of rows in my chunk
 
       // Allocate thread-private row-major myBuff
-      // Do not reuse &trash for myBuff0 as that might create write conflicts
+      // Do not reuse trash for myBuff0 as that might create write conflicts
       // between threads, causing slowdown of the process.
       size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
       void *myBuff8 = malloc(rowSize8 * myBuffRows);
@@ -1527,8 +1529,8 @@ int freadMain(freadMainArgs _args) {
             while (absType < NUMTYPE) {
               // normally returns success=1, and myBuffPos is assigned inside *fun.
               void *target = thisType > 0? *(allBuffPos[size[j]]) : myBuff0;
-              int success = fun[absType](&tch, target);
-              if (success) break;
+              int ret = fun[absType](&tch, target);
+              if (ret == 0) break;
               // guess is insufficient out-of-sample, type is changed to negative sign and then bumped. Continue to
               // check that the new type is sufficient for the rest of the column to be sure a single re-read will work.
               absType++;
