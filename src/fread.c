@@ -74,7 +74,6 @@ static const double INFD = (double)INFINITY;
 
 // Forward declarations
 static int Field(const char **this, lenOff *target);
-static int parse_string(const char **ptr, lenOff *target);
 static int parse_string_continue(const char **ptr, lenOff *target);
 
 
@@ -226,7 +225,7 @@ static inline int countfields(const char **this, const char **end, const char *s
     return 0;
   }
   while (1) {
-    int res = parse_string(&ch, &trash);
+    int res = Field(&ch, &trash);
     if (res == 1) return -1;
     if (res == 2) {
       int linesCount = 0;
@@ -351,6 +350,7 @@ static int Field(const char **this, lenOff *target)
   if (stripWhite) skip_white(&ch);  // before and after quoted field's quotes too (e.g. test 1609) but never inside quoted fields
   const char *fieldStart=ch;
   _Bool quoted = false;
+
   if (*ch!=quote || quoteRule==3) {
     // unambiguously not quoted. simply search for sep|eol. If field contains sep|eol then it must be quoted instead.
     while(*ch!=sep && *ch!=eol) ch++;
@@ -358,37 +358,52 @@ static int Field(const char **this, lenOff *target)
     // the field is quoted and quotes are correctly escaped (quoteRule 0 and 1)
     // or the field is quoted but quotes are not escaped (quoteRule 2)
     // or the field is not quoted but the data contains a quote at the start (quoteRule 2 too)
-    int eolCount = 0;
     quoted = true;
     fieldStart = ch+1; // step over opening quote
     switch(quoteRule) {
-    case 0:  // quoted with embedded quotes doubled; the final unescaped " must be followed by sep|eol
-      while (eolCount<100) {  // TODO: expose this 100 to user to allow them to increase
-        ch++;
-        eolCount += (*ch==eol);
-        // 100 prevents runaway opening fields by limiting eols. Otherwise the whole file would be read in the sep and
-        // quote rule testing step.
-        if (*ch==quote) {
-          if (*(ch+1)==quote) { ch++; continue; }
-          break;  // found undoubled closing quote
+      case 0: {
+        // Rule 0: the field is quoted and all internal quotes are doubled.
+        // The field may have embedded newlines. The field ends when the first
+        // undoubled quote character is encountered.
+        ch = fieldStart;
+        while (*ch!=eol) {
+          if (*ch==quote) {
+            if (ch[1] == quote) ch++;
+            else break;
+          }
+          ch++;
         }
+        if (*ch==eol) {
+          target->len = (int32_t)(ch - fieldStart) + eolLen;
+          target->off = (uint32_t)(fieldStart - *this);
+          *this = ch + eolLen;
+          return 2;
+        }
+        break;
       }
-      if (*ch!=quote) return 1;
-      break;
-    case 1:  // quoted with embedded quotes escaped; the final unescaped " must be followed by sep|eol
-      while (*(++ch)!=quote && eolCount<100) {
-        eolCount += (*ch==eol);
-        ch += (*ch=='\\');
+      case 1: {
+        // Rule 1: the field is quoted and all internal quotes are escaped with
+        // the backslash character. The field is allowed to have embedded
+        // newlines. The field ends when the first unescaped quote is found.
+        ch = fieldStart;
+        while (*ch!=eol && *ch!=quote) {
+          ch += 1 + (*ch == '\\' && ch[1] != eol);
+        }
+        if (*ch==eol) {
+          target->len = (int32_t)(ch - fieldStart) + eolLen;
+          target->off = (uint32_t)(fieldStart - *this);
+          *this = ch + eolLen;
+          return 2;
+        }
+        break;
       }
-      if (*ch!=quote) return 1;
-      break;
-    case 2:  // (i) quoted (perhaps because the source system knows sep is present) but any quotes were not escaped at all,
-             // so look for ", to define the end.   (There might not be any quotes present to worry about, anyway).
-             // (ii) not-quoted but there is a quote at the beginning so it should have been, look for , at the end
-             // If no eol are present in the data (i.e. rows are rows), then this should work ok e.g. test 1453
-             // since we look for ", and the source system quoted when , is present, looking for ", should work well.
-             // No eol may occur inside fields, under this rule.
-      {
+      case 2: {
+        // Rule 2: the field is either unquoted (no quotes inside are allowed), or
+        // it was quoted but any internal quotation marks were not escaped. This
+        // is a "sloppy" rule: it does not allow to parse input unambiguously. We
+        // will assume that a quoted field ends when we see a quote character
+        // followed by a separator. This rule doesn't allow embedded newlines
+        // inside fields.
         const char *ch2 = ch;
         while (*(++ch)!=eol) {
           if (*ch==quote && (*(ch+1)==sep || *(ch+1)==eol)) {ch2=ch; break;}   // (*1) regular ", ending
@@ -407,164 +422,30 @@ static int Field(const char **this, lenOff *target)
           }
         }
         if (ch!=ch2) { fieldStart--; quoted=false; } // field ending is this sep (neither (*1) or (*2) happened)
+        break;
       }
-      break;
-    default:
-      return 1;  // Internal error: undefined quote rule
     }
   }
   int fieldLen = (int)(ch-fieldStart);
-  if (stripWhite && !quoted) {
+  if (quoted) {
+    ch++;
+    if (stripWhite) skip_white(&ch);
+  } else if (stripWhite) {
+    // Remove trailing whitespace: note that we don't move ch pointer, merely
+    // adjust the field length.
+    // This white space (' ' or '\t') can't be sep otherwise it would have
+    // stopped the field earlier at the first sep.
     while(fieldLen>0 && (fieldStart[fieldLen-1]==' ' || fieldStart[fieldLen-1]=='\t')) fieldLen--;
-    // this white space (' ' or '\t') can't be sep otherwise it would have stopped the field earlier at the first sep
   }
-  if (quoted) { ch++; if (stripWhite) skip_white(&ch); }
-  if (!on_sep(&ch)) return 1;
+  if (!on_sep(&ch)) return 1;  // Field ended unexpectedly: cannot happen under quoteRule 3
   if (fieldLen==0) {
     if (blank_is_a_NAstring) fieldLen=INT32_MIN;
   } else {
     if (is_NAstring(fieldStart)) fieldLen=INT32_MIN;
   }
   target->len = fieldLen;
-  target->off = (uint32_t)(fieldStart-*this);  // agnostic & thread-safe
+  target->off = (uint32_t)(fieldStart - *this);
   *this = ch; // Update caller's ch. This may be after fieldStart+fieldLen due to quotes and/or whitespace
-  return 0;
-}
-
-
-static int parse_string(const char **ptr, lenOff *target)
-{
-  const char *ch = *ptr;
-  if (stripWhite) skip_white(&ch);
-  const char *start = ch;
-  _Bool quoted = false;
-
-  // consume the field: this section will move the pointer after the last
-  // character within the field. If the field was quoted then it will be the
-  // quote character; otherwise it should be the separator.
-  switch (quoteRule) {
-    case 0: {
-      // Rule 0: the field is either unquoted; or it is quoted and then the
-      // internal quotes are doubled. The field may have embedded newlines.
-      if (*ch == quote) {
-        quoted = true;
-        start = ch = ch + 1;
-        while (*ch != eol) {
-          if (*ch == quote) {
-            if (ch[1] == quote) ch++;
-            else break;
-          }
-          ch++;
-        }
-        if (*ch == eol) {
-          target->len = (int32_t)(ch - start) + eolLen;
-          target->off = (uint32_t)(start - *ptr);
-          *ptr = ch + eolLen;
-          return 2;
-        }
-      } else {
-        while (*ch != sep && *ch != eol) ch++;
-      }
-      break;
-    }
-
-    case 1: {
-      // Rule 1: the field is either unquoted; or it is quoted and then the
-      // internal quotes are escaped with the backslash character. The field
-      // is allowed to have embedded newlines.
-      if (*ch == quote) {
-        quoted = true;
-        start = ch = ch + 1;
-        while (*ch != eol && *ch != quote) {
-          ch += 1 + (*ch == '\\' && ch[1] != eol);
-        }
-        if (*ch == eol) {
-          target->len = (int32_t)(ch - start) + eolLen;
-          target->off = (uint32_t)(start - *ptr);
-          *ptr = ch + eolLen;
-          return 2;
-        }
-      } else {
-        while (*ch != sep && *ch != eol) ch++;
-      }
-      break;
-    }
-
-    case 2: {
-      // Rule 2: the field is either unquoted (no quotes inside are allowed), or
-      // it was quoted but any internal quotation marks were not escaped. This
-      // is a "sloppy" rule: it does not allow to parse input unambiguously. We
-      // will assume that a quoted field ends when we see a quote character
-      // followed by a separator. This rule doesn't allow embedded newlines
-      // inside fields.
-      if (*ch == quote) {
-        quoted = true;
-        start = ch + 1;
-        /*
-        while (*ch != eol) {
-          if (*ch == quote && (ch[1] == sep || ch[1] == eol)) break;
-          ch++;
-        }
-        if (*ch != quote) {
-          // Invalid field: finished at newline without the closing quote.
-          return 1;
-        }
-        */
-        const char *ch2 = ch;
-        while (*(++ch) != eol) {
-          if (*ch==quote && (ch[1] == sep || ch[1] == eol)) {ch2=ch; break;}   // (*1) regular ", ending
-          if (*ch==sep) {
-            // first sep in this field
-            // if there is a ", afterwards but before the next \n, use that; the field was quoted and it's still case (i) above.
-            // Otherwise break here at this first sep as it's case (ii) above (the data contains a quote at the start and no sep)
-            ch2 = ch;
-            while (*(++ch2) != eol) {
-              if (*ch2==quote && (ch2[1] == sep || ch2[1] == eol)) {
-                ch = ch2; // (*2) move on to that first ", -- that's this field's ending
-                break;
-              }
-            }
-            break;
-          }
-        }
-        if (ch!=ch2) { start--; quoted=false; }
-      } else {
-        while (*ch != sep && *ch != eol) ch++;
-      }
-      break;
-    }
-
-    case 3: {
-      // Rule 3: fields are not quoted, any quote characters are interpreted
-      // literally. This rule always succeeds.
-      while (*ch != sep && *ch != eol) {
-        ch++;
-      }
-      break;
-    }
-  }
-
-  int32_t fieldLength = (int)(ch - start);
-  if (quoted) {
-    ch++;
-    if (stripWhite) skip_white(&ch);
-  } else if (stripWhite) {
-    // Remove trailing whitespace: note that we don't move ch pointer, merely
-    // adjust the field length
-    while (fieldLength && (start[fieldLength-1] == ' ' || start[fieldLength-1] == '\t'))
-      fieldLength--;
-  }
-  if (!on_sep(&ch)) {
-    return 1;  // Field ended unexpectedly: cannot happen under quoteRule 3
-  }
-  if (fieldLength == 0) {
-    if (blank_is_a_NAstring) fieldLength = INT32_MIN;
-  } else {
-    if (is_NAstring(start)) fieldLength = INT32_MIN;
-  }
-  target->len = fieldLength;
-  target->off = (uint32_t)(start - *ptr);
-  *ptr = ch;
   return 0;
 }
 
@@ -827,13 +708,13 @@ static int StrtoB(const char **this, int8_t *target)
 
 typedef int (*reader_fun_t)(const char **ptr, void *target);
 static reader_fun_t fun[NUMTYPE] = {
-  (reader_fun_t) &parse_string,   // CT_DROP
+  (reader_fun_t) &Field,   // CT_DROP
   (reader_fun_t) &StrtoB,
   (reader_fun_t) &StrtoI32_bare,
   (reader_fun_t) &StrtoI32_full,
   (reader_fun_t) &StrtoI64,
   (reader_fun_t) &StrtoD,
-  (reader_fun_t) &parse_string
+  (reader_fun_t) &Field
 };
 
 
@@ -1451,7 +1332,7 @@ int freadMain(freadMainArgs _args)
       // considered looking for one isalpha present but we want 1E9 to be considered a value not a column name
       // StrtoD does not consume quoted fields according to the quote rule, so need to reparse using Field()
       ch = this;  // rewind to the start of this field
-      int res = parse_string(&ch, (lenOff *)trash);
+      int res = Field(&ch, (lenOff *)trash);
       ASSERT(res != 1);
       while (res == 2) {
         if (ch == end) {
@@ -1496,7 +1377,7 @@ int freadMain(freadMainArgs _args)
         ch--;
         for (int i=0; i<ncol; i++) {
             const char *start = ++ch;
-            int ret = parse_string(&ch, colNames + i);
+            int ret = Field(&ch, colNames + i);
             ASSERT(ret != 1);
             while (ret == 2) {
               line++;
