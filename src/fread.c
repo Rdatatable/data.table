@@ -219,7 +219,7 @@ static inline _Bool is_NAstring(const char *fieldStart) {
  */
 static inline int countfields(const char **this)
 {
-  static lenOff nowhere;  // see comment on other trash declarations
+  static lenOff trash;  // see comment on other trash declarations
   const char *ch = *this;
   if (sep==' ') while (ch<eof && *ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
   skip_white(&ch);
@@ -227,7 +227,7 @@ static inline int countfields(const char **this)
   if (ch<eof && *ch==eol) {
     ch+=eolLen;
   } else while (ch<eof) {
-    if (Field(&ch, &nowhere)) return -1;   // -1 means this line not valid for this sep and quote rule
+    if (Field(&ch, &trash)) return -1;   // -1 means this line not valid for this sep and quote rule
     // Field() leaves *ch resting on sep, eol or >=eof. Checked inside Field().
     ncol++;
     if (ch<eof && *ch==eol) { ch+=eolLen; break; }
