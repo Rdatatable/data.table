@@ -172,17 +172,17 @@ static inline void skip_white(const char **this) {
 
 static inline _Bool on_sep(const char **this) {
   const char *ch = *this;
-  if (sep == ' ' && *ch == ' ') {
-    while (ch[1] == ' ') ch++;  // move to last of this sequence of spaces
-    if (ch[1] == eol) ch++;    // if that's followed by eol then move over
+  if (sep==' ' && *ch==' ') {
+    while (*(ch+1)==' ') ch++;  // move to last of this sequence of spaces
+    if (*(ch+1)==eol) ch++;    // if that's followed by eol then move over
   }
   *this = ch;
-  return (*ch == sep) || (*ch == eol);
+  return *ch==sep || *ch==eol;
 }
 
 static inline void next_sep(const char **this) {
   const char *ch = *this;
-  while (*ch != sep && *ch != eol) ch++;
+  while (*ch!=sep && *ch!=eol) ch++;
   on_sep(&ch); // to deal with multiple spaces when sep==' '
   *this = ch;
 }
@@ -212,48 +212,44 @@ static inline _Bool is_NAstring(const char *fieldStart) {
  * Returns the number of fields on the current line, or -1 if the line cannot
  * be parsed using current settings.
  */
-static int countfields(const char **ptr, const char **end, const char *soh, const char *eoh)
+static int countfields(const char **this, const char **end, const char *soh, const char *eoh)
 {
-  static int64_t tmp;
-  void *nowhere = (void *) &tmp;  // target for writing out parsed fields
-  const char *ch = *ptr;
+  static lenOff trash;  // target for writing out parsed fields
+  const char *ch = *this;
   const char *tend = *end;
-  if (sep==' ') {
-    while (*ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
-  }
+  if (sep==' ') while (*ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
   skip_white(&ch);
 
-  if (*ch == eol && ch[eolLen-1] == eol2) {
-    *ptr = ch + eolLen;
+  if (*ch==eol) {
+    *this = ch + eolLen;
     return 0;
-  } else {
-    int ncol = 0;
-    while (1) {
-      int res = parse_string(&ch, nowhere);
-      if (res == 1) return -1;
-      if (res == 2) {
-        int linesCount = 0;
-        while (res == 2 && linesCount++ < 100) {
-          if (ch == tend) {
-            if (eoh && tend != eoh) {
-              ch = soh;
-              tend = eoh;
-            } else {
-              return -1;
-            }
-          }
-          res = parse_string_continue(&ch, nowhere);
-        }
-      }
-      // Field() leaves *ch resting on sep or eol. Checked inside Field().
-      ncol++;
-      if (*ch==eol) { ch+=eolLen; break; }
-      ch++;  // move over sep (which will already be last ' ' if sep=' ').
-    }
-    *ptr = ch;
-    *end = tend;
-    return ncol;
   }
+  int ncol = 0;
+  while (1) {
+    int res = parse_string(&ch, &trash);
+    if (res == 1) return -1;
+    if (res == 2) {
+      int linesCount = 0;
+      while (res == 2 && linesCount++ < 100) {
+        if (ch == tend) {
+          if (eoh && tend != eoh) {
+            ch = soh;
+            tend = eoh;
+          } else {
+            return -1;
+          }
+        }
+        res = parse_string_continue(&ch, &trash);
+      }
+    }
+    // Field() leaves *ch resting on sep or eol. Checked inside Field().
+    ncol++;
+    if (*ch==eol) { ch+=eolLen; break; }
+    ch++;  // move over sep (which will already be last ' ' if sep=' ').
+  }
+  *this = ch;
+  *end = tend;
+  return ncol;
 }
 
 
