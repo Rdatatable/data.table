@@ -604,7 +604,7 @@ static int parse_string_continue(const char **ptr, lenOff *target)
 }
 
 
-static int StrtoI64(const char **this, void *target)
+static int StrtoI64(const char **this, int64_t *target)
 {
     // Specialized clib strtoll that :
     // i) skips leading isspace() too but other than field separator and eol (e.g. '\t' and ' \t' in FUT1206.txt)
@@ -616,7 +616,7 @@ static int StrtoI64(const char **this, void *target)
     const char *ch = *this;
     skip_white(&ch);  //  ',,' or ',   ,' or '\t\t' or '\t   \t' etc => NA
     if (on_sep(&ch)) {  // most often ',,'
-      *(int64_t *)target = NA_INT64;
+      *target = NA_INT64;
       *this = ch;
       return 0;
     }
@@ -636,7 +636,7 @@ static int StrtoI64(const char **this, void *target)
     }
     if (quoted) { if (*ch!=quote) return 1; else ch++; }
     // TODO: if (!targetCol) return early?  Most of the time, not though.
-    *(int64_t *)target = sign * acc;
+    *target = sign * acc;
     skip_white(&ch);
     ok = ok && on_sep(&ch);
     //DTPRINT("StrtoI64 field '%.*s' has len %d\n", lch-ch+1, ch, len);
@@ -644,7 +644,7 @@ static int StrtoI64(const char **this, void *target)
     if (ok && !any_number_like_NAstrings) return 0;  // most common case, return
     _Bool na = is_NAstring(start);
     if (ok && !na) return 0;
-    *(int64_t *)target = NA_INT64;
+    *target = NA_INT64;
     next_sep(&ch);  // TODO: can we delete this? consume the remainder of field, if any
     *this = ch;
     return !na;
@@ -1432,10 +1432,8 @@ int freadMain(freadMainArgs _args)
     if (verbose) DTPRINT("[8] Determine column names\n");
     // throw-away storage for processors to write to in this preamble.
     // Saves deep 'if (target)' inside processors.
-    double trash_val;
-    double *trash_dbl = &trash_val;
-    void *trash_any = (void*) &trash_val;
-    lenOff *trash_lenoff = (lenOff*) &trash_val;
+    double trash_val; // double so that this storage is aligned. char trash[8] would not be aligned.
+    void *trash = (void*)&trash_val;
 
     const char *colNamesAnchor = sof;
     colNames = calloc((size_t)ncol, sizeof(lenOff));
@@ -1448,10 +1446,10 @@ int freadMain(freadMainArgs _args)
       const char *this = ++ch;
       // DTPRINT("Field %d <<%.*s>>\n", field, STRLIM(ch, 20, eof), ch);
       skip_white(&ch);
-      if (allchar && !on_sep(&ch) && !StrtoD(&ch,trash_dbl)) allchar=false;  // don't stop early as we want to check all columns to eol here
+      if (allchar && !on_sep(&ch) && !StrtoD(&ch, (double *)trash)) allchar=false;  // don't stop early as we want to check all columns to eol here
       // considered looking for one isalpha present but we want 1E9 to be considered a value not a column name
       ch = this;  // rewind to the start of this field
-      Field(&ch, trash_lenoff);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
+      Field(&ch, (lenOff *)trash);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
       // countfields() above already validated the line so no need to check again now.
     }
     if (*ch!=eol)
@@ -1566,7 +1564,7 @@ int freadMain(freadMainArgs _args)
                 // DTPRINT("<<%.*s>>(%d)", STRLIM(ch,20,end), ch, quoteRule);
                 fieldStart=ch;
                 int res;
-                while (type[field]<=CT_STRING && (res = fun[type[field]](&ch, trash_any))) {
+                while (type[field]<=CT_STRING && (res = fun[type[field]](&ch, trash))) {
                   int neols = 0;
                   while (res == 2 && neols++ < 100) {
                     if (ch == end) {
@@ -1928,7 +1926,6 @@ int freadMain(freadMainArgs _args)
               int ret = fun[absType](&tch, target);
               if (ret == 0) break;
               while (ret == 2) {
-                // DTPRINT("...cont: tch=%p, end=%p\n");
                 if (tch == eof) {
                   if (eoh) { tch = soh; nextJump = eoh; }
                   else break;
