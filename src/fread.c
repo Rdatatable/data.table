@@ -559,12 +559,12 @@ static _Bool StrtoD(const char **this, void *target)
     return na;
 }
 
-static _Bool StrtoB(const char **this, void *target)
+static _Bool StrtoB(const char **this, int8_t *target)
 {
     // These usually come from R when it writes out.
     const char *ch = *this;
     skip_white(&ch);
-    *(int8_t *)target = NA_BOOL8;
+    *target = NA_BOOL8;
     if (on_sep(&ch)) { *this=ch; return true; }  // empty field ',,'
     const char *start=ch;
     _Bool quoted = false;
@@ -572,20 +572,20 @@ static _Bool StrtoB(const char **this, void *target)
     if (quoted && *ch==quote) { ch++; if (on_sep(&ch)) {*this=ch; return true;} else return false; }  // empty quoted field ',"",'
     _Bool logical01 = false;  // expose to user and should default be true?
     if ( ((*ch=='0' || *ch=='1') && logical01) || (*ch=='N' && ch+1<eof && *(ch+1)=='A' && ch++)) {
-        *(int8_t *)target = (*ch=='1' ? true : (*ch=='0' ? false : NA_BOOL8));
+        *target = (*ch=='1' ? 1 : (*ch=='0' ? 0 : NA_BOOL8));
         ch++;
-    } else if (*ch=='T') {
-        *(int8_t *)target = true;
-        if (++ch+2<eof && ((*ch=='R' && *(ch+1)=='U' && *(ch+2)=='E') ||
-                           (*ch=='r' && *(ch+1)=='u' && *(ch+2)=='e'))) ch+=3;
+    } else if (*ch=='T' || *ch=='t') {
+        *target = 1;
+        if ((ch+3<eof && ch[1]=='R' && ch[2]=='U' && ch[3]=='E') ||
+            (ch+3<eof && ch[1]=='r' && ch[2]=='u' && ch[3]=='e')) ch += 4;
     } else if (*ch=='F') {
-        *(int8_t *)target = false;
-        if (++ch+3<eof && ((*ch=='A' && *(ch+1)=='L' && *(ch+2)=='S' && *(ch+3)=='E') ||
-                           (*ch=='a' && *(ch+1)=='l' && *(ch+2)=='s' && *(ch+3)=='e'))) ch+=4;
+        *target = 0;
+        if ((ch+4<eof && ch[1] == 'A' && ch[2] == 'L' && ch[3] == 'S' && ch[4] == 'E') ||
+            (ch+4<eof && ch[1] == 'a' && ch[2] == 'l' && ch[3] == 's' && ch[4] == 'e')) ch += 5;
     }
     if (quoted) { if (ch>=eof || *ch!=quote) return false; else ch++; }
     if (on_sep(&ch)) { *this=ch; return true; }
-    *(int8_t *)target = NA_BOOL8;
+    *target = NA_BOOL8;
     next_sep(&ch);
     *this=ch;
     return is_NAstring(start);
