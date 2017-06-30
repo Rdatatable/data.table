@@ -578,7 +578,7 @@ static _Bool StrtoB(const char **this, int8_t *target)
         *target = 1;
         if ((ch+3<eof && ch[1]=='R' && ch[2]=='U' && ch[3]=='E') ||
             (ch+3<eof && ch[1]=='r' && ch[2]=='u' && ch[3]=='e')) ch += 4;
-    } else if (*ch=='F') {
+    } else if (*ch=='F' || *ch=='f') {
         *target = 0;
         if ((ch+4<eof && ch[1] == 'A' && ch[2] == 'L' && ch[3] == 'S' && ch[4] == 'E') ||
             (ch+4<eof && ch[1] == 'a' && ch[2] == 'l' && ch[3] == 's' && ch[4] == 'e')) ch += 5;
