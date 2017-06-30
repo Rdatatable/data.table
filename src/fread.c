@@ -78,6 +78,13 @@ static int parse_string(const char **ptr, lenOff *target);
 static int parse_string_continue(const char **ptr, lenOff *target);
 
 
+
+//=================================================================================================
+//
+//   Utility functions
+//
+//=================================================================================================
+
 /**
  * Free any resources / memory buffers allocated by the fread() function, and
  * bring all global variables to a "clean slate". This function must always be
@@ -821,7 +828,6 @@ static int StrtoB(const char **this, int8_t *target)
     return !is_NAstring(start);
 }
 
-
 typedef int (*reader_fun_t)(const char **ptr, void *target);
 static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &parse_string,   // CT_DROP
@@ -903,10 +909,12 @@ int freadMain(freadMainArgs _args)
       } else {
         DTPRINT("  NAstrings = [");
         const char * const* s = NAstrings;
-        while (*s++) DTPRINT(*s? "\"%s\", " : "\"%s\"", s[-1]);
+        while (*s++) DTPRINT(*s? "<<%s>>, " : "<<%s>>", s[-1]);
         DTPRINT("]\n");
-        DTPRINT("  %s of the NAstrings look like numbers.\n",
-                any_number_like_NAstrings ? "One or more" : "None");
+        if (any_number_like_NAstrings)
+          DTPRINT("  One or more of the NAstrings looks like a number.\n");
+        else
+          DTPRINT("  None of the NAstrings look like numbers.\n");
       }
     }
 
@@ -939,6 +947,7 @@ int freadMain(freadMainArgs _args)
     //     (sof, eof, ch).
     //*********************************************************************************************
     if (verbose) DTPRINT("[2] Opening the file\n");
+
     mmp = NULL;
     if (args.input) {
         sof = args.input;
@@ -956,7 +965,10 @@ int freadMain(freadMainArgs _args)
         int fd = open(fnam, O_RDONLY);
         if (fd==-1) STOP("file not found: %s",fnam);
         struct stat stat_buf;
-        if (fstat(fd,&stat_buf) == -1) {close(fd); STOP("Opened file ok but couldn't obtain its size: %s", fnam);}
+        if (fstat(fd, &stat_buf) == -1) {
+          close(fd);
+          STOP("Opened file ok but couldn't obtain its size: %s", fnam);
+        }
         fileSize = (size_t) stat_buf.st_size;
         if (fileSize == 0) {close(fd); STOP("File is empty: %s", fnam);}
         if (verbose) {
@@ -1275,6 +1287,7 @@ int freadMain(freadMainArgs _args)
     //     across a set of files.
     //*********************************************************************************************
     if (verbose) DTPRINT("[7] Detect separator, quoting rule, and ncolumns\n");
+
     int nseps;
     char seps[]=",|;\t ";  // default seps in order of preference. See ?fread.
     // using seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
@@ -1380,7 +1393,6 @@ int freadMain(freadMainArgs _args)
     // Save the `sof` pointer before moving it. We might need to come back to it
     // later when reporting an error in next section.
     const char *headerPtr = sof;
-    ch = pos;
     if (fill) {
       // start input from first populated line; do not alter sof.
       ncol = topNmax;
