@@ -809,7 +809,7 @@ static int StrtoB(const char **this, int8_t *target)
     if (quoted && *ch==quote) { ch++; if (on_sep(&ch)) {*this=ch; return 0;} else return 1; }  // empty quoted field ',"",'
     _Bool logical01 = false;  // expose to user and should default be true?
     if ( ((*ch=='0' || *ch=='1') && logical01) || (*ch=='N' && ch[1]=='A' && ch++)) {
-        *target = (*ch=='1' ? true : (*ch=='0' ? false : NA_BOOL8));
+        *target = (*ch=='1' ? 1 : (*ch=='0' ? 0 : NA_BOOL8));
         ch++;
     } else if (*ch=='T' || *ch == 't') {
         *target = 1;
