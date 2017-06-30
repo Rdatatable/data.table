@@ -57,7 +57,6 @@ static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 #define JUMPLINES 100    // at each of the 100 jumps how many lines to guess column types (10,000 sample lines)
 
 // Private globals so they can be cleaned up both on error and on successful return
-static const char *fnam = NULL;
 static void *mmp = NULL;
 static size_t fileSize;
 static int8_t *type = NULL, *size = NULL;
@@ -136,7 +135,6 @@ void freadCleanup(void)
   skipEmptyLines = false;
   fill = false;
   // following are borrowed references: do not free
-  fnam = NULL;
   eof = NULL;
   NAstrings = NULL;
 }
@@ -622,7 +620,7 @@ int freadMain(freadMainArgs _args) {
     _Bool warningsAreErrors = args.warningsAreErrors;
     if (verbose) DTPRINT("[1] Check arguments\n");
 
-    if (fnam || mmp || colNames || oldType || type || size) {
+    if (mmp || colNames || oldType || type || size) {
       STOP("Internal error: Previous fread() session was not cleaned up properly");
     }
 
@@ -706,11 +704,9 @@ int freadMain(freadMainArgs _args) {
     //     (sof, eof, ch).
     //*********************************************************************************************
     if (verbose) DTPRINT("[2] Opening the file\n");
-    fnam = NULL;
     mmp = NULL;
     if (args.input) {
         if (verbose) DTPRINT("`input` argument is given, interpreting as raw text to read\n");
-        fnam = "<input>";
         sof = args.input;
         fileSize = strlen(sof);
         eof = sof+fileSize;
@@ -718,7 +714,7 @@ int freadMain(freadMainArgs _args) {
     } else
     if (args.filename) {
         if (verbose) DTPRINT("  Opening file %s\n", args.filename);
-        fnam = args.filename;
+        const char* fnam = args.filename;
 #ifndef WIN32
         int fd = open(fnam, O_RDONLY);
         if (fd==-1) STOP("file not found: %s",fnam);
