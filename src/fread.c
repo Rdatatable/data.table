@@ -623,7 +623,7 @@ static int StrtoI64(const char **this, void *target)
     const char *start=ch;
     int sign=1;
     _Bool quoted = false;
-    if (*ch == quote) { quoted=true; ch++; }
+    if (*ch==quote) { quoted=true; ch++; }
     if (*ch=='-' || *ch=='+') sign -= 2*(*ch++=='-');
     _Bool ok = '0'<=*ch && *ch<='9';  // a single - or + with no [0-9] is !ok and considered type character
     int64_t acc = 0;
@@ -634,7 +634,7 @@ static int StrtoI64(const char **this, void *target)
       acc += *ch-'0';
       ch++;
     }
-    if (quoted) { if (*ch != quote) return 1; else ch++; }
+    if (quoted) { if (*ch!=quote) return 1; else ch++; }
     // TODO: if (!targetCol) return early?  Most of the time, not though.
     *(int64_t *)target = sign * acc;
     skip_white(&ch);
@@ -805,14 +805,14 @@ static int StrtoB(const char **this, int8_t *target)
     if (*ch==quote) { quoted=true; ch++; }
     if (quoted && *ch==quote) { ch++; if (on_sep(&ch)) {*this=ch; return 0;} else return 1; }  // empty quoted field ',"",'
     _Bool logical01 = false;  // expose to user and should default be true?
-    if ( ((*ch=='0' || *ch=='1') && logical01) || (*ch=='N' && ch[1]=='A' && ch++)) {
+    if ( ((*ch=='0' || *ch=='1') && logical01) || (*ch=='N' && *(ch+1)=='A' && ch++)) {
         *target = (*ch=='1' ? 1 : (*ch=='0' ? 0 : NA_BOOL8));
         ch++;
-    } else if (*ch=='T' || *ch == 't') {
+    } else if (*ch=='T' || *ch=='t') {
         *target = 1;
         if ((ch[1]=='R' && ch[2]=='U' && ch[3]=='E') ||
             (ch[1]=='r' && ch[2]=='u' && ch[3]=='e')) ch += 4;
-    } else if (*ch=='F' || *ch == 'f') {
+    } else if (*ch=='F' || *ch=='f') {
         *target = 0;
         if ((ch[1] == 'A' && ch[2] == 'L' && ch[3] == 'S' && ch[4] == 'E') ||
             (ch[1] == 'a' && ch[2] == 'l' && ch[3] == 's' && ch[4] == 'e')) ch += 5;
@@ -957,7 +957,7 @@ int freadMain(freadMainArgs _args)
     } else
     if (args.filename) {
         if (verbose) DTPRINT("  Opening file %s\n", args.filename);
-        const char *fnam = args.filename;
+        const char* fnam = args.filename;
 #ifndef WIN32
         int fd = open(fnam, O_RDONLY);
         if (fd==-1) STOP("file not found: %s",fnam);
@@ -1093,7 +1093,7 @@ int freadMain(freadMainArgs _args)
     }
 
     // No newlines were found
-    if (ch == eof) {
+    if (ch==eof) {
         if (verbose) {
           DTPRINT("  Input ends before any \\r or \\n observed. It will be "
                   "treated as a single row and copied to temporary buffer.\n");
@@ -1414,7 +1414,7 @@ int freadMain(freadMainArgs _args)
     if (verbose) {
       DTPRINT("  Detected %d columns on line %d. This line is either column "
               "names or first data row. Line starts as: <<%.*s>>\n",
-               tt, line, STRLIM(sof, 30, eof), sof);
+              tt, line, STRLIM(sof, 30, eof), sof);
       DTPRINT("  Quote rule picked = %d\n", quoteRule);
       if (fill) DTPRINT("  fill=true and the most number of columns found is %d\n", ncol);
     }
@@ -1440,9 +1440,7 @@ int freadMain(freadMainArgs _args)
     if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
     _Bool allchar=true;
     ch = sof; // move back to start of line since countfields() moved to next
-    if (sep==' ') {
-      while (*ch==' ') ch++;
-    }
+    if (sep==' ') while (*ch==' ') ch++;
     ch--;  // so we can ++ at the beginning inside loop.
     for (int field=0; field<tt; field++) {
       const char *this = ++ch;
@@ -1454,7 +1452,7 @@ int freadMain(freadMainArgs _args)
       Field(&ch, trash_lenoff);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
       // countfields() above already validated the line so no need to check again now.
     }
-    if (*ch != eol)
+    if (*ch!=eol)
       STOP("Read %d expected fields in the header row (fill=%d) but finished on <<%.*s>>'",tt,fill,STRLIM(ch,30,eof),ch);
     // already checked above that tt==ncol unless fill=TRUE
     // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
@@ -1482,9 +1480,7 @@ int freadMain(freadMainArgs _args)
         }
         ch = sof;
         line++;
-        if (sep==' ') {
-          while (*ch==' ') ch++;
-        }
+        if (sep==' ') while (*ch==' ') ch++;
         ch--;
         for (int i=0; i<ncol; i++) {
             // Use Field() here as it's already designed to handle quotes, leading space etc.
@@ -1518,10 +1514,10 @@ int freadMain(freadMainArgs _args)
       size[j] = typeSize[type[j]];
     }
 
-    int nJumps = 0;
     // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
     // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
     // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
+    int nJumps = 0;
     size_t sz = (size_t)(eof - sof + (eoh ? eoh - soh : 0));
     if (jump0size>0) {
       if (jump0size*100*2 < sz) nJumps=100;  // 100 jumps * 100 lines = 10,000 line sample
@@ -1553,10 +1549,10 @@ int freadMain(freadMainArgs _args)
         while((ch < end || (soh && (end != eoh) && (end=eoh) && (ch=soh))) &&
               (jline<JUMPLINES || j==nJumps-1)) {  // nJumps==1 implies sample all of input to eof; last jump to eof too
             const char *jlineStart = ch;
-            if (sep==' ') while (*ch == ' ') ch++;  // multiple sep=' ' at the jlineStart does not mean sep(!)
+            if (sep==' ') while (*ch==' ') ch++;  // multiple sep=' ' at the jlineStart does not mean sep(!)
             // detect blank lines
             skip_white(&ch);
-            if (*ch == eol) {
+            if (*ch==eol) {
               if (!skipEmptyLines && !fill) break;
               jlineStart = ch;  // to avoid 'Line finished early' below and get to the sampleLines++ block at the end of this while
             }
@@ -1564,15 +1560,13 @@ int freadMain(freadMainArgs _args)
             // DTPRINT("  Line %d: <<%.*s>>  (ch=%p)\n", jline, STRLIM(ch,80,end), ch, (const void*)ch);
             int field=0;
             const char *fieldStart = ch;  // Needed outside loop for error messages below
-            while (*ch != eol && field < ncol) {
+            while (*ch!=eol && field<ncol) {
                 // DTPRINT("<<%.*s>>(%d)", STRLIM(ch,20,end), ch, quoteRule);
                 fieldStart=ch;
                 int res;
                 while (type[field]<=CT_STRING && (res = fun[type[field]](&ch, trash_any))) {
-                  // DTPRINT("=");
                   int neols = 0;
                   while (res == 2 && neols++ < 100) {
-                    // DTPRINT("~(%p)", ch);
                     if (ch == end) {
                       if (eoh && end != eoh) { ch = soh; end = eoh; }
                       else { res = 1; break; }
@@ -1603,8 +1597,7 @@ int freadMain(freadMainArgs _args)
                   break;
                 } else {
                   // skip over the field separator
-                  if (*ch != sep) STOP("Unexpected: field ended without a separator present: <<%.*s>>",
-                                       STRLIM(fieldStart,30,end),fieldStart);
+                  ASSER(*ch==sep);
                   ch++;
                   field++;
                 }
@@ -1619,8 +1612,8 @@ int freadMain(freadMainArgs _args)
             ASSERT(ch < end);
             if (*ch!=eol || field>=ncol) {   // the || >=ncol is for when a comma ends the line with eol straight after
               if (field!=ncol) STOP("Internal error: Line has too many fields but field(%d)!=ncol(%d)", field, ncol);
-              STOP("Line %d from sampling jump %d starting <<%.*s>> has more than the expected %d fields. " \
-                   "Separator %d occurs at position %d which is character %d of the last field: <<%.*s>>. " \
+              STOP("Line %d from sampling jump %d starting <<%.*s>> has more than the expected %d fields. "
+                   "Separator %d occurs at position %d which is character %d of the last field: <<%.*s>>. "
                    "Consider setting 'comment.char=' if there is a trailing comment to be ignored.",
                   jline, j, STRLIM(jlineStart,10,end), jlineStart, ncol, ncol, (int)(ch-jlineStart), (int)(ch-fieldStart),
                   STRLIM(fieldStart,200,end), fieldStart);
@@ -1652,8 +1645,7 @@ int freadMain(freadMainArgs _args)
           DTPRINT("  Quote rule %d\n", quoteRule);
         }
     }
-    while ((ch < end || (soh && (end != eoh) && (end=eoh) && (ch=soh)))
-           && isspace(*ch)) ch++;
+    while ((ch < end || (soh && (end != eoh) && (end=eoh) && (ch=soh))) && isspace(*ch)) ch++;
     if (ch < end) {
       DTWARN("Found the last consistent line but text exists afterwards (discarded): <<%.*s>>", STRLIM(ch,200,end), ch);
     }
@@ -1677,7 +1669,7 @@ int freadMain(freadMainArgs _args)
         DTPRINT("  Sampled %zd rows (handled \\n inside quoted fields) at %d jump point(s)\n", sampleLines, nJumps);
         DTPRINT("  Bytes from first data row on line %d to the end of last row: %zd\n", row1Line, bytesRead);
         DTPRINT("  Line length: mean=%.2f sd=%.2f min=%d max=%d\n", meanLineLen, sd, minLen, maxLen);
-        DTPRINT("  Estimated nrow: %zd / %.2f = %zd\n", bytesRead, meanLineLen, estnrow);
+        DTPRINT("  Estimated number of rows: %zd / %.2f = %zd\n", bytesRead, meanLineLen, estnrow);
         DTPRINT("  Initial alloc = %zd rows (%zd + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n",
                  allocnrow, estnrow, (int)(100.0*allocnrow/estnrow-100.0));
       }
@@ -1735,7 +1727,7 @@ int freadMain(freadMainArgs _args)
 
 
     //*********************************************************************************************
-    // [11]  Allocate the result columns
+    // [11] Allocate the result columns
     //*********************************************************************************************
     if (verbose) DTPRINT("[11] Allocate memory for the datatable\n");
     if (verbose) {
@@ -1801,7 +1793,7 @@ int freadMain(freadMainArgs _args)
       int me = omp_get_thread_num();
       #pragma omp master
       nth = omp_get_num_threads();
-      const char *thisJumpStart = NULL;  // The first good start-of-line after the jump point
+      const char *thisJumpStart=NULL;  // The first good start-of-line after the jump point
       size_t myDTi = 0;  // which row in the final DT result I should start writing my chunk to
       size_t myNrow = 0; // the number of rows in my chunk
 
@@ -1902,11 +1894,8 @@ int freadMain(freadMainArgs _args)
           const char *tlineStart = tch;  // for error message
           if (sep==' ') while (*tch==' ') tch++;  // multiple sep=' ' at the tlineStart does not mean sep(!)
           skip_white(&tch);  // solely for blank lines otherwise could leave to field processors which handle leading white
-          if (*tch == eol && tch[eolLen-1] == eol2) {
-            if (skipEmptyLines) {
-              tch += eolLen;
-              continue;
-            }
+          if (*tch==eol) {
+            if (skipEmptyLines) { tch+=eolLen; continue; }
             else if (!fill) {
               #pragma omp critical
               if (!stopTeam) {
@@ -1977,7 +1966,7 @@ int freadMain(freadMainArgs _args)
             }
             *((char**) allBuffPos[size[j]]) += size[j];
             j++;
-            if (*tch==eol && tch[eolLen-1] == eol2) {
+            if (*tch==eol) {
               tch += eolLen;
               if (tch == eof && soh) {
                 fake_anchor += soh - tch;
@@ -2148,6 +2137,7 @@ int freadMain(freadMainArgs _args)
       // reread from the beginning
       DTi = 0;
       firstTime = false;
+      prevJumpEnd = ch = sof;
       goto read;
     }
     if (verbose) {
