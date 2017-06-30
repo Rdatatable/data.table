@@ -589,7 +589,7 @@ static int StrtoB(const char **this, int8_t *target)
     return !is_NAstring(start);
 }
 
-typedef _Bool (*reader_fun_t)(const char **ptr, void *target);
+typedef int (*reader_fun_t)(const char **ptr, void *target);
 static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &Field,
   (reader_fun_t) &StrtoB,
@@ -1061,10 +1061,8 @@ int freadMain(freadMainArgs _args) {
 
     // throw-away storage for processors to write to in this preamble.
     // Saves deep 'if (target)' inside processors.
-    double trash_val;
-    double *trash_dbl = &trash_val;
-    lenOff *trash_lenoff = (lenOff*) &trash_val;
-    void *trash_any = (void*) &trash_val;
+    double trash_val; // double so that this storage is aligned. char trash[8] would not be aligned.
+    void *trash = (void*)&trash_val;
 
     const char *colNamesAnchor = ch;
     colNames = calloc((size_t)ncol, sizeof(lenOff));
@@ -1076,10 +1074,10 @@ int freadMain(freadMainArgs _args) {
       const char *this = ++ch;
       // DTPRINT("Field %d <<%.*s>>\n", field, STRLIM(ch, 20), ch);
       skip_white(&ch);
-      if (allchar && !on_sep(&ch) && !StrtoD(&ch,trash_dbl)) allchar=false;  // don't stop early as we want to check all columns to eol here
+      if (allchar && !on_sep(&ch) && !StrtoD(&ch, (double *)trash)) allchar=false;  // don't stop early as we want to check all columns to eol here
       // considered looking for one isalpha present but we want 1E9 to be considered a value not a column name
       ch = this;  // rewind to the start of this field
-      Field(&ch,trash_lenoff);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
+      Field(&ch, (lenOff *)trash);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
       // countfields() above already validated the line so no need to check again now.
     }
     if (ch<eof && *ch!=eol)
@@ -1195,7 +1193,7 @@ int freadMain(freadMainArgs _args) {
             while (ch<eof && *ch!=eol && field<ncol) {
                 // DTPRINT("<<%.*s>>(%d)", STRLIM(ch,20,end), ch, quoteRule);
                 fieldStart=ch;
-                while (type[field]<=CT_STRING && fun[type[field]](&ch,trash_any)) {
+                while (type[field]<=CT_STRING && fun[type[field]](&ch, trash)) {
                   ch=fieldStart;
                   if (type[field]<CT_STRING) { type[field]++; bumped=true; }
                   else {
@@ -1408,7 +1406,7 @@ int freadMain(freadMainArgs _args) {
       size_t myNrow = 0; // the number of rows in my chunk
 
       // Allocate thread-private row-major myBuff
-      // Do not reuse &trash for myBuff0 as that might create write conflicts
+      // Do not reuse trash for myBuff0 as that might create write conflicts
       // between threads, causing slowdown of the process.
       size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
       void *myBuff8 = malloc(rowSize8 * myBuffRows);
