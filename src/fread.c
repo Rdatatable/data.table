@@ -1440,6 +1440,7 @@ int freadMain(freadMainArgs _args)
     if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
     _Bool allchar=true;
     ch = sof; // move back to start of line since countfields() moved to next
+    end = eof;
     if (sep==' ') while (*ch==' ') ch++;
     ch--;  // so we can ++ at the beginning inside loop.
     for (int field=0; field<tt; field++) {
@@ -1448,9 +1449,21 @@ int freadMain(freadMainArgs _args)
       skip_white(&ch);
       if (allchar && !on_sep(&ch) && !StrtoD(&ch, (double *)trash)) allchar=false;  // don't stop early as we want to check all columns to eol here
       // considered looking for one isalpha present but we want 1E9 to be considered a value not a column name
+      // StrtoD does not consume quoted fields according to the quote rule, so need to reparse using Field()
       ch = this;  // rewind to the start of this field
-      Field(&ch, (lenOff *)trash);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
-      // countfields() above already validated the line so no need to check again now.
+      int res = parse_string(&ch, (lenOff *)trash);
+      ASSERT(res != 1);
+      while (res == 2) {
+        line++;
+        if (ch == end) {
+          if (eoh && end != eoh) {
+            ch = soh;
+            end = eoh;
+          } else ASSERT(0);
+        }
+        res = parse_string_continue(&ch, (lenOff *)trash);
+      }
+
     }
     if (*ch!=eol)
       STOP("Read %d expected fields in the header row (fill=%d) but finished on <<%.*s>>'",tt,fill,STRLIM(ch,30,eof),ch);
@@ -1571,7 +1584,7 @@ int freadMain(freadMainArgs _args)
                       if (eoh && end != eoh) { ch = soh; end = eoh; }
                       else { res = 1; break; }
                     }
-                    res = parse_string_continue(&ch, trash_any);
+                    res = parse_string_continue(&ch, trash);
                   }
                   if (res == 0) break;
                   ch = fieldStart;
@@ -1597,7 +1610,7 @@ int freadMain(freadMainArgs _args)
                   break;
                 } else {
                   // skip over the field separator
-                  ASSER(*ch==sep);
+                  ASSERT(*ch==sep);
                   ch++;
                   field++;
                 }
