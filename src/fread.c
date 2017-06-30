@@ -1199,55 +1199,55 @@ int freadMain(freadMainArgs _args)
     int line = 1;
 
     if (args.skipString) {
-      // TODO: unsafe! there might be no \0 at the end of the file
-      ch = strstr(sof, args.skipString);
-      if (!ch) {
-        STOP("skip='%s' not found in input (it is case sensitive and literal; "
-             "i.e., no patterns, wildcards or regexps)", args.skipString);
-      }
-      // Move to beginning of line. We ignore complications arising from
-      // possibility to end up inside a quoted field. Presumably, if the user
-      // supplied explicit option `skipString` he knows what he is doing.
-      if (soh && ch >= eof) {
-        // The `skipString` was found within the last "hidden" line of the file.
-        // This means the entire first section of the file can be skipped, and
-        // only the "hidden" section remains. Thus we "unhide" it replacing the
-        // "main" section.
-        advance_sof_to(soh, &sof, &eof, &soh, &eoh);
-        if (verbose) {
-          DTPRINT("  Found skip='%s' on the last line of the input. Skipping all "
-                  "lines but the last", args.skipString);
+        // TODO: unsafe! there might be no \0 at the end of the file
+        ch = strstr(sof, args.skipString);
+        if (!ch) {
+          STOP("skip='%s' not found in input (it is case sensitive and literal; "
+               "i.e., no patterns, wildcards or regexps)", args.skipString);
         }
-      } else {
-        // Scan backwards to find the beginning of the current line
-        while (ch > sof && ch[-1] != eol2) ch--;
-        const char *start = ch;
-        ch = sof;
-        while (ch < start) {
-          line += (*ch++ == eol && (eolLen == 1 || *ch++ == eol2));
+        // Move to beginning of line. We ignore complications arising from
+        // possibility to end up inside a quoted field. Presumably, if the user
+        // supplied explicit option `skipString` he knows what he is doing.
+        if (soh && ch >= eof) {
+          // The `skipString` was found within the last "hidden" line of the file.
+          // This means the entire first section of the file can be skipped, and
+          // only the "hidden" section remains. Thus we "unhide" it replacing the
+          // "main" section.
+          advance_sof_to(soh, &sof, &eof, &soh, &eoh);
+          if (verbose) {
+            DTPRINT("  Found skip='%s' on the last line of the input. Skipping all "
+                    "lines but the last", args.skipString);
+          }
+        } else {
+          // Scan backwards to find the beginning of the current line
+          while (ch > sof && ch[-1] != eol2) ch--;
+          const char *start = ch;
+          ch = sof;
+          while (ch < start) {
+            line += (*ch++ == eol && (eolLen == 1 || *ch++ == eol2));
+          }
+          if (verbose) {
+            DTPRINT("  Found skip='%s' on line %d. The file will be scanned from "
+                    "that line onwards.\n", args.skipString, line);
+          }
+          advance_sof_to(start, &sof, &eof, &soh, &eoh);
         }
-        if (verbose) {
-          DTPRINT("  Found skip='%s' on line %d. The file will be scanned from "
-                  "that line onwards.\n", args.skipString, line);
-        }
-        advance_sof_to(start, &sof, &eof, &soh, &eoh);
-      }
     } else
 
     // Skip the first `skipNrow` lines of input.
     if (args.skipNrow) {
-      ch = sof; end = eof;
-      while ((ch < end || (soh && (end != eoh) && (ch = soh) && (end = eoh)))
-             && line <= args.skipNrow)
-      {
-        line += (*ch++ == eol && (eolLen == 1 || *ch++ == eol2));
-      }
-      if (line > args.skipNrow) {
-        advance_sof_to(ch, &sof, &eof, &soh, &eoh);
-        if (verbose) DTPRINT("  Skipped %d line(s) of input.\n", line);
-      } else {
-        STOP("skip=%d but the input has only %d line(s)\n", args.skipNrow, line-1);
-      }
+        ch = sof; end = eof;
+        while ((ch < end || (soh && (end != eoh) && (ch = soh) && (end = eoh)))
+               && line <= args.skipNrow)
+        {
+          line += (*ch++ == eol && (eolLen == 1 || *ch++ == eol2));
+        }
+        if (line > args.skipNrow) {
+          advance_sof_to(ch, &sof, &eof, &soh, &eoh);
+          if (verbose) DTPRINT("  Skipped %d line(s) of input.\n", line);
+        } else {
+          STOP("skip=%d but the input has only %d line(s)\n", args.skipNrow, line-1);
+        }
     }
 
     // Additionally, skip any blank lines at the start
@@ -1326,7 +1326,6 @@ int freadMain(freadMainArgs _args)
       whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));  // 0 means both ' ' and '\t' to be skipped
       for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
         // if (verbose) DTPRINT("  Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
-        // DTPRINT("  sof=%p, eof=%p, soh=%p, eoh=%p\n", sof, eof, soh, eoh);
         for (int i=0; i<=JUMPLINES; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
         int i=-1; // The slot we're counting the currently contiguous consistent ncol
         int thisLine=0, lastncol=-1;
@@ -1335,9 +1334,7 @@ int freadMain(freadMainArgs _args)
                && thisLine++ < JUMPLINES)
         {
           // Compute num columns and move `ch` to the start of next line
-          // DTPRINT("    ch=%p end=%p -> ", ch, end);
           int thisncol = countfields(&ch, &end, soh, eoh);
-          // DTPRINT("ncol=%d  (ch=%p, end=%p)\n", thisncol, ch, end);
           if (thisncol < 0) {
             // invalid file with this sep and quote rule; abort
             numFields[0] = -1;
@@ -1381,7 +1378,6 @@ int freadMain(freadMainArgs _args)
     size_t jump0size = (sof <= firstJumpEnd && firstJumpEnd <= eof)
                         ? (size_t)(firstJumpEnd - sof)
                         : (size_t)(eof - sof) + (size_t)(firstJumpEnd - soh);
-    // DTPRINT("sof=%p eof=%p soh=%p eoh=%p fjend=%p\n", sof, eof, soh, eoh, firstJumpEnd);
     ASSERT(jump0size >= 0 && jump0size <= fileSize + (size_t)eolLen);
     quoteRule = topQuoteRule;
     sep = topSep;
