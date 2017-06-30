@@ -212,19 +212,19 @@ static inline _Bool is_NAstring(const char *fieldStart) {
  * Returns the number of fields on the current line, or -1 if the line cannot
  * be parsed using current settings.
  */
-static int countfields(const char **this, const char **end, const char *soh, const char *eoh)
+static inline int countfields(const char **this, const char **end, const char *soh, const char *eoh)
 {
   static lenOff trash;  // target for writing out parsed fields
-  const char *ch = *this;
   const char *tend = *end;
+  const char *ch = *this;
   if (sep==' ') while (*ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
   skip_white(&ch);
 
+  int ncol = 0;
   if (*ch==eol) {
     *this = ch + eolLen;
     return 0;
   }
-  int ncol = 0;
   while (1) {
     int res = parse_string(&ch, &trash);
     if (res == 1) return -1;
