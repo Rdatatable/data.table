@@ -861,11 +861,13 @@ int freadMain(freadMainArgs _args)
       STOP("Internal error: Previous fread() session was not cleaned up properly");
     }
 
-    int nth = (args.nth <= 0 || args.nth > omp_get_max_threads())
-              ? omp_get_max_threads() : args.nth;
-    if (verbose) {
-      DTPRINT("  Num threads = %d %s\n", nth,
-              nth < args.nth? "" : "(limited by omp_get_max_threads())");
+    int nth = args.nth;
+    {
+      int maxth = omp_get_max_threads();
+      if (nth > maxth) nth = maxth;
+      if (nth <= 0) nth += maxth;
+      if (nth <= 0) nth = 1;
+      if (verbose) DTPRINT("  Num threads = %d (system allows up to %d threads)\n", nth, maxth);
     }
 
     uint64_t ui64 = NA_FLOAT64_I64;
@@ -2136,8 +2138,8 @@ int freadMain(freadMainArgs _args)
       }
       // reread from the beginning
       DTi = 0;
-      firstTime = false;
       prevJumpEnd = ch = sof;
+      firstTime = false;
       goto read;
     }
     if (verbose) {
