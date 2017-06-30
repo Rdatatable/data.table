@@ -2666,8 +2666,8 @@ test(945, DT[,b:=a+1], data.table(a=numeric(),b=numeric()))
 # fread blank column names get default names
 test(946, fread('A,B,,D\n1,3,foo,5\n2,4,bar,6\n'), data.table(A=1:2,B=3:4,c("foo","bar"),D=5:6))
 test(947, fread('0,2,,4\n1,3,foo,5\n2,4,bar,6\n'), data.table(0:2,2:4,c("","foo","bar"),4:6))
-test(948, fread('A,B,C\nD,E,F\n',header=TRUE), data.table(A="D",B="E",C=FALSE))
-test(949, fread('A,B,\nD,E,F\n',header=TRUE), data.table(A="D",B="E",V3=FALSE))
+test(948, fread('A,B,C\nD,E,F\n',header=TRUE), data.table(A="D",B="E",C="F"))
+test(949, fread('A,B,\nD,E,F\n',header=TRUE), data.table(A="D",B="E",V3="F"))
 
 # +/- with no numbers afterwards should read as character
 test(950, fread('A,B,C\n1,+,4\n2,-,5\n3,-,6\n'), data.table(A=1:3,B=c("+","-","-"),C=4:6))
@@ -3135,7 +3135,7 @@ b = rbind(a, data.table(z=2,x=1))
 test(1080, b$z, c(1,2,3,2))
 
 # mid row logical detection
-test(1081, fread("A,B,C\n1,T,2\n"), data.table(A=1L,B=TRUE,C=2L))
+test(1081, fread("A,B,C\n1,T,2\n"), data.table(A=1L,B="T",C=2L))
 
 # cartesian join answer's key should contain only the columns considered in binary search. Fixes #2677
 set.seed(45)
@@ -5110,8 +5110,9 @@ bla <- data.table(x=c(1,1,2,2), y=c(1,1,1,1))
 test(1342, unique(bla)[, bla := 2L], data.table(x=c(1,2),y=1,bla=2L))
 
 # blank and NA fields in logical columns
-test(1343, fread("A,B\n1,TRUE\n2,\n3,F"), data.table(A=1:3, B=c(TRUE,NA,FALSE)))
-test(1344, fread("A,B\n1,T\n2,NA\n3,"), data.table(A=1:3, B=c(TRUE,NA,NA)))
+test(1343.1, fread("A,B\n1,TRUE\n2,\n3,False"), data.table(A=1:3, B=c(TRUE,NA,FALSE)))
+test(1343.2, fread("A,B\n1,True\n2,\n3,false"), data.table(A=1:3, B=c(TRUE,NA,FALSE)))
+test(1344, fread("A,B\n1,true\n2,NA\n3,"), data.table(A=1:3, B=c(TRUE,NA,NA)))
 
 # .N now available in i
 DT = data.table(a=1:3,b=1:6)
@@ -9937,6 +9938,13 @@ test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17 00:00:00")
 # print(null.data.table()) should not output NULL as well, #1852
 # use capture.output() in this case rather than output= to ensure NULL is not output
 test(1766, capture.output(print(data.table(NULL))), "Null data.table (0 rows and 0 cols)")
+
+# Bug on subset of 1-row data.table when expr returns a named logical vector #2152
+op = options(datatable.auto.index=FALSE)
+dt = data.table(x=1, y="a")
+val = c(foo=1L)
+test(1767, dt[x == val], data.table(x=1, y="a"))
+options(op)
 
 ##########################
 

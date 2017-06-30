@@ -57,7 +57,6 @@ static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 #define JUMPLINES 100    // at each of the 100 jumps how many lines to guess column types (10,000 sample lines)
 
 // Private globals so they can be cleaned up both on error and on successful return
-static const char *fnam = NULL;
 static void *mmp = NULL;
 static size_t fileSize;
 static int8_t *type = NULL, *size = NULL;
@@ -136,7 +135,6 @@ void freadCleanup(void)
   skipEmptyLines = false;
   fill = false;
   // following are borrowed references: do not free
-  fnam = NULL;
   eof = NULL;
   NAstrings = NULL;
 }
@@ -572,16 +570,16 @@ static int StrtoB(const char **this, int8_t *target)
     if (quoted && *ch==quote) { ch++; if (on_sep(&ch)) {*this=ch; return 0;} else return 1; }  // empty quoted field ',"",'
     _Bool logical01 = false;  // expose to user and should default be true?
     if ( ((*ch=='0' || *ch=='1') && logical01) || (*ch=='N' && ch+1<eof && *(ch+1)=='A' && ch++)) {
-        *target = (*ch=='1' ? true : (*ch=='0' ? false : NA_BOOL8));
+        *target = (*ch=='1' ? 1 : (*ch=='0' ? 0 : NA_BOOL8));
         ch++;
-    } else if (*ch=='T') {
-        *target = true;
-        if (++ch+2<eof && ((*ch=='R' && *(ch+1)=='U' && *(ch+2)=='E') ||
-                           (*ch=='r' && *(ch+1)=='u' && *(ch+2)=='e'))) ch+=3;
-    } else if (*ch=='F') {
-        *target = false;
-        if (++ch+3<eof && ((*ch=='A' && *(ch+1)=='L' && *(ch+2)=='S' && *(ch+3)=='E') ||
-                           (*ch=='a' && *(ch+1)=='l' && *(ch+2)=='s' && *(ch+3)=='e'))) ch+=4;
+    } else if (*ch=='T' || *ch=='t') {
+        *target = 1;
+        if ((ch+3<eof && ch[1]=='R' && ch[2]=='U' && ch[3]=='E') ||
+            (ch+3<eof && ch[1]=='r' && ch[2]=='u' && ch[3]=='e')) ch += 4;
+    } else if (*ch=='F' || *ch=='f') {
+        *target = 0;
+        if ((ch+4<eof && ch[1] == 'A' && ch[2] == 'L' && ch[3] == 'S' && ch[4] == 'E') ||
+            (ch+4<eof && ch[1] == 'a' && ch[2] == 'l' && ch[3] == 's' && ch[4] == 'e')) ch += 5;
     }
     if (quoted) { if (ch>=eof || *ch!=quote) return 1; else ch++; }
     if (on_sep(&ch)) { *this=ch; return 0; }
@@ -622,7 +620,7 @@ int freadMain(freadMainArgs _args) {
     _Bool warningsAreErrors = args.warningsAreErrors;
     if (verbose) DTPRINT("[1] Check arguments\n");
 
-    if (fnam || mmp || colNames || oldType || type || size) {
+    if (mmp || colNames || oldType || type || size) {
       STOP("Internal error: Previous fread() session was not cleaned up properly");
     }
 
@@ -706,11 +704,9 @@ int freadMain(freadMainArgs _args) {
     //     (sof, eof, ch).
     //*********************************************************************************************
     if (verbose) DTPRINT("[2] Opening the file\n");
-    fnam = NULL;
     mmp = NULL;
     if (args.input) {
         if (verbose) DTPRINT("`input` argument is given, interpreting as raw text to read\n");
-        fnam = "<input>";
         sof = args.input;
         fileSize = strlen(sof);
         eof = sof+fileSize;
@@ -718,7 +714,7 @@ int freadMain(freadMainArgs _args) {
     } else
     if (args.filename) {
         if (verbose) DTPRINT("  Opening file %s\n", args.filename);
-        fnam = args.filename;
+        const char* fnam = args.filename;
 #ifndef WIN32
         int fd = open(fnam, O_RDONLY);
         if (fd==-1) STOP("file not found: %s",fnam);
