@@ -1454,7 +1454,6 @@ int freadMain(freadMainArgs _args)
       int res = parse_string(&ch, (lenOff *)trash);
       ASSERT(res != 1);
       while (res == 2) {
-        line++;
         if (ch == end) {
           if (eoh && end != eoh) {
             ch = soh;
@@ -1491,14 +1490,22 @@ int freadMain(freadMainArgs _args)
         if (verbose && args.header==NA_BOOL8) {
           DTPRINT("  All the fields on line %d are character fields. Treating as the column names.\n", line);
         }
-        ch = sof;
+        ch = sof; end = eof;
         line++;
         if (sep==' ') while (*ch==' ') ch++;
         ch--;
         for (int i=0; i<ncol; i++) {
-            // Use Field() here as it's already designed to handle quotes, leading space etc.
             const char *start = ++ch;
-            Field(&ch, colNames+i);  // stores the string length and offset as <uint,uint> in colnames[i]
+            int ret = parse_string(&ch, colNames + i);
+            ASSERT(ret != 1);
+            while (ret == 2) {
+              line++;
+              if (ch == eof) {
+                ASSERT(eoh);
+                ch = soh; end = eoh;
+              }
+              ret = parse_string_continue(&ch, colNames + i);
+            }
             colNames[i].off += (size_t)(start-colNamesAnchor);
             if (*ch==eol) break;   // already checked number of fields previously above
         }
