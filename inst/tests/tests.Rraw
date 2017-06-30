@@ -9946,6 +9946,12 @@ val = c(foo=1L)
 test(1767, dt[x == val], data.table(x=1, y="a"))
 options(op)
 
+# fread sampling overlap and reaching end early on small files with varying line lengths, #2157
+test(1768, fread("issue_2157_sampling_overlap.txt")[,c("X1","X2","X7","X8")],
+           output="X1 X2.*1: ABCD021917 NA.*678.0000.*2:.*1314: ABCD032617.*732.9818")
+test(1769, fread("issue_2157_sampling_reached_eof_early.txt")[,c("X1","X2","X10","X11")],
+           output="X1 X2.*1:.*6.00.*2: 2005-08-15.*1228: 2017-05-10  0 -112186.00 500")
+
 ##########################
 
 test(1800, fread("A\n6e55693457e549ecfce0\n"), data.table(A=c("6e55693457e549ecfce0")))

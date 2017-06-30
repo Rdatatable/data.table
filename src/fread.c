@@ -853,13 +853,13 @@ int freadMain(freadMainArgs _args) {
                 if (ch+1<eof && *(ch+1)=='\r')
                     STOP("Line ending is \\r\\r\\n. R's download.file() appears to add the extra \\r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.");
                     // NB: on Windows, download.file from file: seems to condense \r\r too. So
-                if (verbose) DTPRINT("Detected eol as \\r only (no \\n or \\r afterwards). An old Mac 9 standard, discontinued in 2002 according to Wikipedia.\n");
+                if (verbose) DTPRINT("  Detected eol as \\r only (no \\n or \\r afterwards). An old Mac 9 standard, discontinued in 2002 according to Wikipedia.\n");
             }
         } else if (eol=='\n') {
             if (ch+1<eof && *(ch+1)=='\r') {
                 DTWARN("Detected eol as \\n\\r, a highly unusual line ending. According to Wikipedia the Acorn BBC used this. If it is intended that the first column on the next row is a character column where the first character of the field value is \\r (why?) then the first column should start with a quote (i.e. 'protected'). Proceeding with attempt to read the file.\n");
                 eol2='\r'; eolLen=2;
-            } else if (verbose) DTPRINT("Detected eol as \\n only (no \\r afterwards), the UNIX and Mac standard.\n");
+            } else if (verbose) DTPRINT("  Detected eol as \\n only (no \\r afterwards), the UNIX and Mac standard.\n");
         } else
             STOP("Internal error: if no \\r or \\n found then ch should be eof");
     }
@@ -923,8 +923,8 @@ int freadMain(freadMainArgs _args) {
     }
     if (ch>=eof) STOP("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace.");
     if (verbose) {
-      if (lineStart>ch) DTPRINT("Moved forward to first non-blank line (%d)\n", line);
-      DTPRINT("Positioned on line %d starting: <<%.*s>>\n", line, STRLIM(lineStart, 30), lineStart);
+      if (lineStart>ch) DTPRINT("  Moved forward to first non-blank line (%d)\n", line);
+      DTPRINT("  Positioned on line %d starting: <<%.*s>>\n", line, STRLIM(lineStart, 30), lineStart);
     }
     ch = pos = lineStart;
 
@@ -1173,10 +1173,10 @@ int freadMain(freadMainArgs _args) {
         ch = (j == 0) ? pos :
              (j == nJumps-1) ? eof - (size_t)(0.5*jump0size) :
                                pos + (size_t)j*((size_t)(eof-pos)/(size_t)(nJumps-1));
+        if (ch<lastRowEnd) ch=lastRowEnd;  // Overlap when apx 1,200 lines (just over 11*100) with short lines at the beginning and longer lines near the end, #2157
+        if (ch>=eof) break;                // The 9th jump could reach the end in the same situation and that's ok. As long as the end is sampled is what we want.
         if (j>0 && !nextGoodLine(&ch, ncol))
           STOP("Could not find first good line start after jump point %d when sampling.", j);
-        if (ch<lastRowEnd) // otherwise an overlap would lead to double counting and a wrong estimate
-          STOP("Internal error: Sampling jump point %d is before the last jump ended", j);
         _Bool bumped = 0;  // did this jump find any different types; to reduce verbose output to relevant lines
         const char *thisStart = ch;
         int jline = 0;  // line from this jump point
