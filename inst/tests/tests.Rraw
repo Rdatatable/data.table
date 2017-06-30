@@ -5110,7 +5110,8 @@ bla <- data.table(x=c(1,1,2,2), y=c(1,1,1,1))
 test(1342, unique(bla)[, bla := 2L], data.table(x=c(1,2),y=1,bla=2L))
 
 # blank and NA fields in logical columns
-test(1343, fread("A,B\n1,TRUE\n2,\n3,False"), data.table(A=1:3, B=c(TRUE,NA,FALSE)))
+test(1343.1, fread("A,B\n1,TRUE\n2,\n3,False"), data.table(A=1:3, B=c(TRUE,NA,FALSE)))
+test(1343.2, fread("A,B\n1,True\n2,\n3,false"), data.table(A=1:3, B=c(TRUE,NA,FALSE)))
 test(1344, fread("A,B\n1,true\n2,NA\n3,"), data.table(A=1:3, B=c(TRUE,NA,NA)))
 
 # .N now available in i
