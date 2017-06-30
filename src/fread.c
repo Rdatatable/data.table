@@ -1097,41 +1097,41 @@ int freadMain(freadMainArgs _args)
 
     // No newlines were found
     if (ch == eof) {
-      if (verbose) {
-        DTPRINT("  Input ends before any \\r or \\n observed. It will be "
-                "treated as a single row and copied to temporary buffer.\n");
-      }
-      eol = eol2 = '\n';
-      eolLen = 1;
-      // Make copy of the input, so that it can have a proper eol character at the end.
-      size_t sz = (size_t)(eof - sof + eolLen);
-      lineCopy = (char*) malloc(sz);
-      if (!lineCopy) STOP("Unable to allocate %zd bytes for temporary copy of the input", sz);
-      memcpy(lineCopy, sof, sz - 1);
-      lineCopy[sz - 1] = '\n';
-      sof = lineCopy;
-      eof = lineCopy + sz;
+        if (verbose) {
+          DTPRINT("  Input ends before any \\r or \\n observed. It will be "
+                  "treated as a single row and copied to temporary buffer.\n");
+        }
+        eol = eol2 = '\n';
+        eolLen = 1;
+        // Make copy of the input, so that it can have a proper eol character at the end.
+        size_t sz = (size_t)(eof - sof + eolLen);
+        lineCopy = (char*) malloc(sz);
+        if (!lineCopy) STOP("Unable to allocate %zd bytes for temporary copy of the input", sz);
+        memcpy(lineCopy, sof, sz - 1);
+        lineCopy[sz - 1] = '\n';
+        sof = lineCopy;
+        eof = lineCopy + sz;
     }
     // Otherwise `ch` is pointing to the first newline character encountered
     else {
-      eol = eol2 = *ch;
-      eolLen = 1;
-      if (eol=='\r') {
-          if (ch+1<eof && *(ch+1)=='\n') {
-              if (verbose) DTPRINT("  Detected eol as \\r\\n (CRLF) in that order, the Windows standard.\n");
-              eol2='\n'; eolLen=2;
-          } else {
-              if (ch+1<eof && *(ch+1)=='\r')
-                  STOP("Line ending is \\r\\r\\n. R's download.file() appears to add the extra \\r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.");
-                  // NB: on Windows, download.file from file: seems to condense \r\r too. So
-              if (verbose) DTPRINT("Detected eol as \\r only (no \\n or \\r afterwards). An old Mac 9 standard, discontinued in 2002 according to Wikipedia.\n");
-          }
-      } else {
-          if (ch+1<eof && *(ch+1)=='\r') {
-              DTWARN("Detected eol as \\n\\r, a highly unusual line ending. According to Wikipedia the Acorn BBC used this. If it is intended that the first column on the next row is a character column where the first character of the field value is \\r (why?) then the first column should start with a quote (i.e. 'protected'). Proceeding with attempt to read the file.\n");
-              eol2='\r'; eolLen=2;
-          } else if (verbose) DTPRINT("  Detected eol as \\n only (no \\r afterwards), the UNIX and Mac standard.\n");
-      }
+        eol = eol2 = *ch;
+        eolLen = 1;
+        if (eol=='\r') {
+            if (ch+1<eof && *(ch+1)=='\n') {
+                if (verbose) DTPRINT("  Detected eol as \\r\\n (CRLF) in that order, the Windows standard.\n");
+                eol2='\n'; eolLen=2;
+            } else {
+                if (ch+1<eof && *(ch+1)=='\r')
+                    STOP("Line ending is \\r\\r\\n. R's download.file() appears to add the extra \\r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.");
+                    // NB: on Windows, download.file from file: seems to condense \r\r too. So
+                if (verbose) DTPRINT("Detected eol as \\r only (no \\n or \\r afterwards). An old Mac 9 standard, discontinued in 2002 according to Wikipedia.\n");
+            }
+        } else {
+            if (ch+1<eof && *(ch+1)=='\r') {
+                DTWARN("Detected eol as \\n\\r, a highly unusual line ending. According to Wikipedia the Acorn BBC used this. If it is intended that the first column on the next row is a character column where the first character of the field value is \\r (why?) then the first column should start with a quote (i.e. 'protected'). Proceeding with attempt to read the file.\n");
+                eol2='\r'; eolLen=2;
+            } else if (verbose) DTPRINT("  Detected eol as \\n only (no \\r afterwards), the UNIX and Mac standard.\n");
+        }
     }
 
 
