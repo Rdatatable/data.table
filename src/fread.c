@@ -29,6 +29,22 @@ static char sep, eol, eol2;
 static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static int eolLen;
 static char quote, dec;
+
+// Quote rule:
+//   0 = Fields may be quoted, any quote inside the field is doubled. This is
+//       the CSV standard. For example: <<...,"hello ""world""",...>>
+//   1 = Fields may be quoted, any quotes inside are escaped with a backslash.
+//       For example: <<...,"hello \"world\"",...>>
+//   2 = Fields may be quoted, but any quotes inside will appear verbatim and
+//       not escaped in any way. It is not always possible to parse the file
+//       unambiguously, but we give it a try anyways. A quote will be presumed
+//       to mark the end of the field iff it is followed by the field separator.
+//       Under this rule eol characters cannot appear inside the field.
+//       For example: <<...,"hello "world"",...>>
+//   3 = Fields are not quoted at all. Any quote characters appearing anywhere
+//       inside the field will be treated as any other regular characters.
+//       Example: <<...,hello "world",...>>
+//
 static int quoteRule;
 static const char* const* NAstrings;
 static _Bool any_number_like_NAstrings=false;
@@ -36,7 +52,6 @@ static _Bool blank_is_a_NAstring=false;
 static _Bool stripWhite=true;  // only applies to character columns; numeric fields always stripped
 static _Bool skipEmptyLines=false, fill=false;
 
-typedef _Bool (*reader_fun_t)(const char **, void *);
 static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 
 #define JUMPLINES 100    // at each of the 100 jumps how many lines to guess column types (10,000 sample lines)
@@ -57,6 +72,18 @@ int8_t     typeSize[NUMTYPE]     = { 0,      1,       4,       4,       8,      
 // NAN and INFINITY constants are float, so cast to double once up front.
 static const double NAND = (double)NAN;
 static const double INFD = (double)INFINITY;
+
+// Forward declarations
+static _Bool Field(const char **this, void *target);
+// static int parse_string(const char **ptr, lenOff *target);
+// static int parse_string_continue(const char **ptr, lenOff *target);
+
+
+//=================================================================================================
+//
+//   Utility functions
+//
+//=================================================================================================
 
 /**
  * Drops `const` qualifier from a `const char*` variable, equivalent of
@@ -185,6 +212,78 @@ static inline _Bool is_NAstring(const char *fieldStart) {
   return false;
 }
 
+/**
+ * Compute the number of fields on the current line (taking into account the
+ * global `sep`, `eol` and `quoteRule`), and move the parsing location to the
+ * beginning of the next line.
+ * Returns the number of fields on the current line, or -1 if the line cannot
+ * be parsed using current settings.
+ */
+static inline int countfields(const char **this)
+{
+  static char trash[8];  // see comment on other trash declaration
+  const char *ch = *this;
+  if (sep==' ') while (ch<eof && *ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
+  skip_white(&ch);
+  int ncol = 0;
+  if (ch<eof && *ch==eol) {
+    ch+=eolLen;
+  } else while (ch<eof) {
+    if (!Field(&ch,trash)) return -1;   // -1 means this line not valid for this sep and quote rule
+    // Field() leaves *ch resting on sep, eol or >=eof. Checked inside Field().
+    ncol++;
+    if (ch<eof && *ch==eol) { ch+=eolLen; break; }
+    ch++;  // move over sep (which will already be last ' ' if sep=' ').
+  }
+  *this = ch;
+  return ncol;
+}
+
+
+static inline _Bool nextGoodLine(const char **this, int ncol)
+{
+  const char *ch = *this;
+  // we may have landed inside quoted field containing embedded sep and/or embedded \n
+  // find next \n and see if 5 good lines follow. If not try next \n, and so on, until we find the real \n
+  // We don't know which line number this is, either, because we jumped straight to it. So return true/false for
+  // the line number and error message to be worked out up there.
+  int attempts=0;
+  while (ch<eof && attempts++<30) {
+    while (ch<eof && *ch!=eol) ch++;
+    if (ch<eof) ch+=eolLen;
+    int i = 0, thisNcol=0;
+    const char *ch2 = ch;
+    while (ch2<eof && i<5 && ( (thisNcol=countfields(&ch2))==ncol || (thisNcol==0 && (skipEmptyLines || fill)))) i++;
+    if (i==5 || ch2>=eof) break;
+  }
+  if (ch<eof && attempts<30) { *this = ch; return true; }
+  return false;
+}
+
+
+double wallclock(void)
+{
+    double ans = 0;
+#ifdef CLOCK_REALTIME
+    struct timespec tp;
+    if (0==clock_gettime(CLOCK_REALTIME, &tp))
+        ans = (double) tp.tv_sec + 1e-9 * (double) tp.tv_nsec;
+#else
+    struct timeval tv;
+    if (0==gettimeofday(&tv, NULL))
+        ans = (double) tv.tv_sec + 1e-6 * (double) tv.tv_usec;
+#endif
+    return ans;
+}
+
+
+
+//=================================================================================================
+//
+//   Field parsers
+//
+//=================================================================================================
+
 static _Bool Field(const char **this, void *target)
 {
   const char *ch = *this;
@@ -270,45 +369,6 @@ static _Bool Field(const char **this, void *target)
   return true;
 }
 
-static inline int countfields(const char **this)
-{
-  static char trash[8];  // see comment on other trash declaration
-  const char *ch = *this;
-  if (sep==' ') while (ch<eof && *ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
-  skip_white(&ch);
-  int ncol = 0;
-  if (ch<eof && *ch==eol) {
-    ch+=eolLen;
-  } else while (ch<eof) {
-    if (!Field(&ch,trash)) return -1;   // -1 means this line not valid for this sep and quote rule
-    // Field() leaves *ch resting on sep, eol or >=eof. Checked inside Field().
-    ncol++;
-    if (ch<eof && *ch==eol) { ch+=eolLen; break; }
-    ch++;  // move over sep (which will already be last ' ' if sep=' ').
-  }
-  *this = ch;
-  return ncol;
-}
-
-static inline _Bool nextGoodLine(const char **this, int ncol)
-{
-  const char *ch = *this;
-  // we may have landed inside quoted field containing embedded sep and/or embedded \n
-  // find next \n and see if 5 good lines follow. If not try next \n, and so on, until we find the real \n
-  // We don't know which line number this is, either, because we jumped straight to it. So return true/false for
-  // the line number and error message to be worked out up there.
-  int attempts=0;
-  while (ch<eof && attempts++<30) {
-    while (ch<eof && *ch!=eol) ch++;
-    if (ch<eof) ch+=eolLen;
-    int i = 0, thisNcol=0;
-    const char *ch2 = ch;
-    while (ch2<eof && i<5 && ( (thisNcol=countfields(&ch2))==ncol || (thisNcol==0 && (skipEmptyLines || fill)))) i++;
-    if (i==5 || ch2>=eof) break;
-  }
-  if (ch<eof && attempts<30) { *this = ch; return true; }
-  return false;
-}
 
 static _Bool StrtoI64(const char **this, void *target)
 {
@@ -531,30 +591,36 @@ static _Bool StrtoB(const char **this, void *target)
     return is_NAstring(start);
 }
 
-static reader_fun_t fun[NUMTYPE] = {&Field, &StrtoB, &StrtoI32_bare, &StrtoI32_full, &StrtoI64, &StrtoD, &Field};
-
-double wallclock(void)
-{
-    double ans = 0;
-#ifdef CLOCK_REALTIME
-    struct timespec tp;
-    if (0==clock_gettime(CLOCK_REALTIME, &tp))
-        ans = (double) tp.tv_sec + 1e-9 * (double) tp.tv_nsec;
-#else
-    struct timeval tv;
-    if (0==gettimeofday(&tv, NULL))
-        ans = (double) tv.tv_sec + 1e-6 * (double) tv.tv_usec;
-#endif
-    return ans;
-}
+typedef _Bool (*reader_fun_t)(const char **ptr, void *target);
+static reader_fun_t fun[NUMTYPE] = {
+  (reader_fun_t) &Field,
+  (reader_fun_t) &StrtoB,
+  (reader_fun_t) &StrtoI32_bare,
+  (reader_fun_t) &StrtoI32_full,
+  (reader_fun_t) &StrtoI64,
+  (reader_fun_t) &StrtoD,
+  (reader_fun_t) &Field
+};
 
 
 
-int freadMain(freadMainArgs __args) {
-    args = __args;  // assign to global for use by DTPRINT() in other functions
+//=================================================================================================
+//
+// Main fread() function that does all the job of reading a text/csv file.
+//
+// Returns 1 if it finishes successfully, and 0 otherwise.
+//
+//=================================================================================================
+int freadMain(freadMainArgs _args) {
+    args = _args;  // assign to global for use by DTPRINT() in other functions
     double t0 = wallclock();
+
+    //*********************************************************************************************
+    // [1] Extract the arguments and check their validity
+    //*********************************************************************************************
     _Bool verbose = args.verbose;
     _Bool warningsAreErrors = args.warningsAreErrors;
+    if (verbose) DTPRINT("[1] Check arguments\n");
 
     if (fnam || mmp || colNames || oldType || type || size) {
       STOP("Internal error: Previous fread() session was not cleaned up properly");
@@ -601,14 +667,16 @@ int freadMain(freadMainArgs __args) {
     }
     if (verbose) {
       if (*NAstrings == NULL) {
-        DTPRINT("No NAstrings provided.\n");
+        DTPRINT("  No NAstrings provided.\n");
       } else {
-        DTPRINT("NAstrings = [");
+        DTPRINT("  NAstrings = [");
         const char * const* s = NAstrings;
-        while (*s++) DTPRINT(*s? "<<%s>>, " : "<<%s>>", *(s-1));
+        while (*s++) DTPRINT(*s? "<<%s>>, " : "<<%s>>", s[-1]);
         DTPRINT("]\n");
-        DTPRINT("%s of the NAstrings are numeric (such as '-9999').\n",
-                any_number_like_NAstrings ? "One or more" : "None");
+        if (any_number_like_NAstrings)
+          DTPRINT("  One or more of the NAstrings looks like a number.\n");
+        else
+          DTPRINT("  None of the NAstrings look like numbers.\n");
       }
     }
 
@@ -617,34 +685,53 @@ int freadMain(freadMainArgs __args) {
     fill = args.fill;
     dec = args.dec;
     quote = args.quote;
+    if (args.sep == quote && quote!='\0') STOP("sep == quote ('%c') is not allowed", quote);
+    if (dec=='\0') STOP("dec='' not allowed. Should be '.' or ','");
+    if (args.sep == dec) STOP("sep == dec ('%c') is not allowed", dec);
+    if (quote == dec) STOP("quote == dec ('%c') is not allowed", dec);
 
-    // ********************************************************************************************
-    //   Point to text input if it contains \n, or open and mmap file if not
-    // ********************************************************************************************
-    const char *sof;  // start-of-file
-    const char *ch;
+    // File parsing context: pointer to the start of file, and to the end of
+    // the file. The `sof` pointer may be shifted in order to skip over
+    // "irrelevant" parts: the BOM mark, the banner, the headers, the skipped
+    // lines, etc. Similarly, `eof` may be adjusted to take out the footer of
+    // the file.
+    const char *sof = NULL;
+    // const char *eof = NULL;
+    // Convenience variable for iteration over the file.
+    const char *ch = NULL, *end = NULL;
+
+
+    //*********************************************************************************************
+    // [2] Open and memory-map the input file, setting up the parsing context
+    //     (sof, eof, ch).
+    //*********************************************************************************************
+    if (verbose) DTPRINT("[2] Opening the file\n");
     fnam = NULL;
     mmp = NULL;
-    if (args.input != NULL) {
+    if (args.input) {
         if (verbose) DTPRINT("`input` argument is given, interpreting as raw text to read\n");
         fnam = "<input>";
-        fileSize = strlen(args.input);
         sof = args.input;
+        fileSize = strlen(sof);
         eof = sof+fileSize;
         if (*eof!='\0') STOP("Internal error: last byte of character input isn't \\0");
-    } else if (args.filename != NULL) {
-        if (verbose) DTPRINT("`filename` argument given, attempting to open a file with such name\n");
+    } else
+    if (args.filename) {
+        if (verbose) DTPRINT("  Opening file %s\n", args.filename);
         fnam = args.filename;
 #ifndef WIN32
         int fd = open(fnam, O_RDONLY);
         if (fd==-1) STOP("file not found: %s",fnam);
         struct stat stat_buf;
-        if (fstat(fd,&stat_buf) == -1) {close(fd); STOP("Opened file ok but couldn't obtain file size: %s", fnam);}
+        if (fstat(fd, &stat_buf) == -1) {
+          close(fd);
+          STOP("Opened file ok but couldn't obtain its size: %s", fnam);
+        }
         fileSize = (size_t) stat_buf.st_size;
         if (fileSize == 0) {close(fd); STOP("File is empty: %s", fnam);}
         if (verbose) {
-            DTPRINT("File opened, size %.6f GB.\n", 1.0*fileSize/(1024*1024*1024));
-            DTPRINT("Memory mapping ... ");
+            DTPRINT("  File opened, size %.6f GB.\n", 1.0*fileSize/(1024*1024*1024));
+            DTPRINT("  Memory mapping ... ");
         }
 
         // No MAP_POPULATE for faster nrows=10 and to make possible earlier progress bar in row count stage
@@ -674,8 +761,8 @@ int freadMain(freadMainArgs __args) {
         fileSize = (size_t)liFileSize.QuadPart;
         if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
         if (verbose) {
-            DTPRINT("File opened, size %.6f GB.\n", (double)fileSize/(1024*1024*1024));
-            DTPRINT("Memory mapping ... ");
+            DTPRINT("  File opened, size %.6f GB.\n", (double)fileSize/(1024*1024*1024));
+            DTPRINT("  Memory mapping ... ");
         }
         DWORD hi = (fileSize) >> 32;            // tried very very hard again on 26 & 27th April 2017 to over-map file by 1 byte
         DWORD lo = (fileSize) & 0xFFFFFFFFull;  // on Windows for COW/FILE_MAP_COPY on read-only file, with no joy.
@@ -696,52 +783,73 @@ int freadMain(freadMainArgs __args) {
             }
         }
         sof = (const char*) mmp;
-        eof = sof+fileSize;  // byte after last byte of file.
         if (verbose) DTPRINT("ok\n");  // to end 'Memory mapping ... '
     } else {
         sof = NULL;
         STOP("Neither `input` nor `filename` are given, nothing to read.");
     }
+    eof = sof + fileSize;
     double tMap = wallclock();
 
-    // ********************************************************************************************
-    //   Check whether the file contains BOM (Byte Order Mark), and if yes strip it, modifying
-    //   `mmp`. Also, presence of BOM allows us to reliably detect the file's encoding.
-    //   See: https://en.wikipedia.org/wiki/Byte_order_mark
-    //   See: issues #1087 and #1465
-    // ********************************************************************************************
+
+    //*********************************************************************************************
+    // [3] Check whether the file contains BOM (Byte Order Mark), and if yes
+    //     strip it, modifying `sof`. Also, presence of BOM allows us to
+    //     sometimes detect file's encoding.
+    //     See: https://en.wikipedia.org/wiki/Byte_order_mark
+    //     See: issues #1087 and #1465
+    //*********************************************************************************************
+    if (verbose) DTPRINT("[3] Detect and skip BOM\n");
     if (fileSize >= 3 && memcmp(sof, "\xEF\xBB\xBF", 3) == 0) {
       sof += 3;
       // ienc = CE_UTF8;
-      if (args.verbose) DTPRINT("UTF-8 byte order mark EF BB BF found at the start of the file and skipped.\n");
+      if (args.verbose) DTPRINT("  UTF-8 byte order mark EF BB BF found at the start of the file and skipped.\n");
     }
     else if (fileSize >= 4 && memcmp(sof, "\x84\x31\x95\x33", 4) == 0) {
       sof += 4;
       // ienc = CE_GB18030;
-      if (args.verbose) DTPRINT("GB-18030 byte order mark 84 31 95 33 found at the start of the file and skipped.\n");
+      if (args.verbose) DTPRINT("  GB-18030 byte order mark 84 31 95 33 found at the start of the file and skipped.\n");
       DTWARN("GB-18030 encoding detected, however fread() is unable to decode it. Some character fields may be garbled.\n");
     }
     else if (fileSize >= 2 && sof[0] + sof[1] == '\xFE' + '\xFF') {  // either 0xFE 0xFF or 0xFF 0xFE
       STOP("File is encoded in UTF-16, this encoding is not supported by fread(). Please recode the file to UTF-8.");
     }
 
-    // ********************************************************************************************
-    //   Auto detect eol, first eol where there are two (i.e. CRLF)
-    // ********************************************************************************************
+
+    //*********************************************************************************************
+    // [4] Auto detect end-of-line character(s)
+    //
+    //     This section initializes variables `eol`, `eol2` and `eolLen`. If
+    //     `eolLen` is 1, then we set both `eol` and `eol2` to the same
+    //     character, otherwise `eolLen` is 2 and we set `eol` and `eol2` to the
+    //     first and the second line-separator characters respectively.
+    //*********************************************************************************************
+    if (verbose) DTPRINT("[4] Detect end-of-line character(s)\n");
+
+    // Scan the file until the first newline character is found. By the end of
+    // this loop `ch` will be pointing to such a character, or to eof if there
+    // are no newlines in the file.
     ch = sof;
     while (ch<eof && *ch!='\n' && *ch!='\r') {
         if (*ch==quote) while(++ch<eof && *ch!=quote) {}; // (TODO unbounded to fix) allows protection of \n and \r inside column names
         ch++;                                             // this 'if' needed in case opening protection is not closed before eof
     }
+
+    // No newlines were found
     if (ch>=eof) {
-        if (ch>eof) STOP("Internal error: ch>eof when detecting eol");
-        if (verbose) DTPRINT("Input ends before any \\r or \\n observed. Input will be treated as a single row.\n");
-        eol=eol2='\n'; eolLen=1;
-    } else {
+        if (verbose) {
+          DTPRINT("  Input ends before any \\r or \\n observed. Input will be "
+                  "treated as a single row and copied to a temporary buffer.\n");
+        }
+        eol = eol2 = '\n';
+        eolLen = 1;
+    }
+    // Otherwise `ch` is pointing to the first newline character encountered
+    else {
         eol=eol2=*ch; eolLen=1;
         if (eol=='\r') {
             if (ch+1<eof && *(ch+1)=='\n') {
-                if (verbose) DTPRINT("Detected eol as \\r\\n (CRLF) in that order, the Windows standard.\n");
+                if (verbose) DTPRINT("  Detected eol as \\r\\n (CRLF) in that order, the Windows standard.\n");
                 eol2='\n'; eolLen=2;
             } else {
                 if (ch+1<eof && *(ch+1)=='\r')
@@ -768,15 +876,29 @@ int freadMain(freadMainArgs __args) {
     // using Zw* lower level but I haven't yet managed to include headers correctly (I asked on r-package-devel on 28 Apr).
     *_const_cast(eof) = eol;
 
-    // ********************************************************************************************
-    //   Position to line skip+1 or line containing skip="string"
-    // ********************************************************************************************
+
+    //*********************************************************************************************
+    // [6] Position to line `skipNrow+1` or to line containing `skipString`.
+    //
+    //     This section moves the `sof` pointer passing over the lines that the
+    //     user requested to skip.
+    //
+    //     We also compute the `line` variable, which tracks the current line
+    //     number within the file (similar to __LINE__ macro). Note that `line`
+    //     variable is different from the logical row number: it doesn't attempt
+    //     to skip newlines within quoted fields. Thus this line is similar to
+    //     what text editors report, or bash commands like "wc -l", "head -n"
+    //     or "tail -n".
+    //*********************************************************************************************
+    if (verbose) DTPRINT("[6] Skipping initial rows if needed\n");
+
     int line = 1;
     // line is for error and warning messages so considers raw \n whether inside quoted fields or not, just
     // like wc -l, head -n and tail -n
     const char *pos = sof;
     ch = pos;
-    if (args.skipString!=NULL) {
+    if (args.skipString) {
+        // TODO: unsafe! there might be no \0 at the end of the file
         ch = strstr(sof, args.skipString);
         if (!ch) STOP("skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)",
                       args.skipString);
@@ -787,7 +909,9 @@ int freadMain(freadMainArgs __args) {
         if (verbose) DTPRINT("Found skip='%s' on line %d. Taking this to be header row or first row of data.\n",
                                   args.skipString, line);
         ch = pos;
-    } else if (args.skipNrow>0) {
+    } else
+    // Skip the first `skipNrow` lines of input.
+    if (args.skipNrow>0) {
         while (ch<eof && line<=args.skipNrow) line+=(*ch++==eol);
         if (ch>=eof) STOP("skip=%d but the input only has %d line%s", args.skipNrow, line, line>1?"s":"");
         ch += (eolLen-1); // move over eol2 on Windows to be on start of desired line
@@ -806,26 +930,30 @@ int freadMain(freadMainArgs __args) {
     }
     ch = pos = lineStart;
 
-    // *********************************************************************************************************
-    //   Auto detect separator, quoting rule, first line and ncol, simply, using jump 0 only
+
+    //*********************************************************************************************
+    // [7] Auto detect separator, quoting rule, first line and ncol, simply,
+    //     using jump 0 only.
     //
-    //   Always sample as if nrows= wasn't supplied. That's probably *why* user is setting nrow=0 to get the
-    //   column names and types, without actually reading the data yet. Most likely to check consistency across
-    //   a set of files.
-    // *********************************************************************************************************
+    //     Always sample as if nrows= wasn't supplied. That's probably *why*
+    //     user is setting nrow=0 to get the column names and types, without
+    //     actually reading the data yet. Most likely to check consistency
+    //     across a set of files.
+    //*********************************************************************************************
+    if (verbose) DTPRINT("[7] Detect separator, quoting rule, and ncolumns\n");
+
+    int nseps;
     char seps[]=",|;\t ";  // default seps in order of preference. See ?fread.
     // using seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
-    int nseps = (int) strlen(seps);
 
-    if (args.sep == quote && quote!='\0') STOP("sep == quote ('%c') is not allowed", quote);
-    if (dec=='\0') STOP("dec='' not allowed. Should be '.' or ','");
-    if (args.sep == dec) STOP("sep == dec ('%c') is not allowed", dec);
-    if (quote == dec) STOP("quote == dec ('%c') is not allowed", dec);
     if (args.sep == '\0') {  // default is '\0' meaning 'auto'
-      if (verbose) DTPRINT("Detecting sep ...\n");
+      if (verbose) DTPRINT("  Detecting sep ...\n");
+      nseps = (int) strlen(seps);
     } else {
-      seps[0]=args.sep; seps[1]='\0'; nseps=1;
-      if (verbose) DTPRINT("Using supplied sep '%s'\n", args.sep=='\t' ? "\\t" : seps);
+      seps[0] = args.sep;
+      seps[1] = '\0';
+      nseps = 1;
+      if (verbose) DTPRINT("  Using supplied sep '%s'\n", args.sep=='\t' ? "\\t" : seps);
     }
 
     int topNumLines=0;        // the most number of lines with the same number of fields, so far
@@ -843,8 +971,8 @@ int freadMain(freadMainArgs __args) {
     // have the same number of fields, we'll call them a "contiguous group of
     // lines". Arrays `numFields` and `numLines` contain information about each
     // contiguous group of lines encountered while scanning the first JUMPLINES
-    // + 1 lines: 'numFields` gives the number the count of fields in each
-    // group, and `numLines` has the number of lines in each group.
+    // + 1 lines: 'numFields` gives the count of fields in each group, and
+    // `numLines` has the number of lines in each group.
     int numFields[JUMPLINES+1];
     int numLines[JUMPLINES+1];
     for (int s=0; s<nseps; s++) {
@@ -852,7 +980,7 @@ int freadMain(freadMainArgs __args) {
       whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));  // 0 means both ' ' and '\t' to be skipped
       for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
         ch = pos;
-        // if (args.verbose) DTPRINT("Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
+        // if (verbose) DTPRINT("  Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
         for (int i=0; i<=JUMPLINES; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
         int i=-1; // The slot we're counting the currently contiguous consistent ncol
         int thisLine=0, lastncol=-1;
@@ -867,14 +995,19 @@ int freadMain(freadMainArgs __args) {
         _Bool updated=false;
         int nmax=0;
 
-        i=-1; while (numLines[++i]) {
+        i = -1;
+        while (numLines[++i]) {
           if (numFields[i] > nmax) nmax=numFields[i];  // for fill=true to know max number of columns
           //if (args.verbose) DTPRINT("numLines[i]=%d, topNumLines=%d, numFields[i]=%d, topNumFields=%d\n",
           //                           numLines[i], topNumLines, numFields[i], topNumFields);
           if (numFields[i]>1 &&
               ( numLines[i]>topNumLines ||   // most number of consistent ncol wins
                (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=' '))) {  // ties resolved by numFields
-            topNumLines=numLines[i]; topNumFields=numFields[i]; topSep=sep; topQuoteRule=quoteRule; topNmax=nmax;
+            topNumLines = numLines[i];
+            topNumFields = numFields[i];
+            topSep = sep;
+            topQuoteRule = quoteRule;
+            topNmax = nmax;
             firstJumpEnd = ch;  // So that after the header we know how many bytes jump point 0 is
             updated = true;
             // Two updates can happen for the same sep and quoteRule (e.g. issue_1113_fread.txt where sep=' ') so the
@@ -882,7 +1015,7 @@ int freadMain(freadMainArgs __args) {
           }
         }
         if (verbose && updated) {
-          DTPRINT("  sep=="); DTPRINT(sep=='\t' ? "'\\t'" : "'%c'(ascii %d)", sep, sep);
+          DTPRINT(sep<' '? "  sep=%#02x" : "  sep='%c'", sep);
           DTPRINT("  with %d lines of %d fields using quote rule %d\n", topNumLines, topNumFields, topQuoteRule);
         }
       }
@@ -914,15 +1047,25 @@ int freadMain(freadMainArgs __args) {
     ch = pos; // move back to start of line since countfields() moved to next
     if (!fill && tt!=ncol) STOP("Internal error: first line has field count %d but expecting %d", tt, ncol);
     if (verbose) {
-      DTPRINT("Detected %d columns on line %d. This line is either column names or first data row (first 30 chars): <<%.*s>>\n",
-               tt, line, STRLIM(pos, 30), pos);
-      if (fill) DTPRINT("fill=true and the most number of columns found is %d\n", ncol);
+      DTPRINT("  Detected %d columns on line %d. This line is either column "
+              "names or first data row. Line starts as: <<%.*s>>\n",
+              tt, line, STRLIM(pos, 30), pos);
+      DTPRINT("  Quote rule picked = %d\n", quoteRule);
+      if (fill) DTPRINT("  fill=true and the most number of columns found is %d\n", ncol);
     }
 
-    // ********************************************************************************************
-    //   Detect and assign column names (if present)
-    // ********************************************************************************************
-    char trash[8]; // throw-away storage for processors to write to in this preamble. Saves deep 'if (target)' inside processors.
+
+    //*********************************************************************************************
+    // [8] Detect and assign column names (if present)
+    //
+    //     This section also moves the `sof` pointer to point at the first row
+    //     of data ("removing" the column names).
+    //*********************************************************************************************
+    if (verbose) DTPRINT("[8] Determine column names\n");
+
+    // throw-away storage for processors to write to in this preamble.
+    // Saves deep 'if (target)' inside processors.
+    char trash[8];
     const char *colNamesAnchor = ch;
     colNames = calloc((size_t)ncol, sizeof(lenOff));
     if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
@@ -931,7 +1074,7 @@ int freadMain(freadMainArgs __args) {
     ch--;  // so we can ++ at the beginning inside loop.
     for (int field=0; field<tt; field++) {
       const char *this = ++ch;
-      //DTPRINT("Field %d <<%.*s>>\n", i, STRLIM(ch,20), ch);
+      // DTPRINT("Field %d <<%.*s>>\n", field, STRLIM(ch, 20), ch);
       skip_white(&ch);
       if (allchar && !on_sep(&ch) && StrtoD(&ch,trash)) allchar=false;  // don't stop early as we want to check all columns to eol here
       // considered looking for one isalpha present but we want 1E9 to be considered a value not a column name
@@ -943,9 +1086,9 @@ int freadMain(freadMainArgs __args) {
       STOP("Read %d expected fields in the header row (fill=%d) but finished on <<%.*s>>'",tt,fill,STRLIM(ch,30),ch);
     // already checked above that tt==ncol unless fill=TRUE
     // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
-    if (verbose && args.header!=NA_BOOL8) DTPRINT("'header' changed by user from 'auto' to %s\n", args.header?"true":"false");
+    if (verbose && args.header!=NA_BOOL8) DTPRINT("  'header' changed by user from 'auto' to %s\n", args.header?"true":"false");
     if (args.header==false || (args.header==NA_BOOL8 && !allchar)) {
-        if (verbose && args.header==NA_BOOL8) DTPRINT("Some fields on line %d are not type character. Treating as a data row and using default column names.\n", line);
+        if (verbose && args.header==NA_BOOL8) DTPRINT("  Some fields on line %d are not type character. Treating as a data row and using default column names.\n", line);
         // colNames was calloc'd so nothing to do; all len=off=0 already
         ch = pos;  // back to start of first row. Treat as first data row, no column names present.
         // now check previous line which is being discarded and give helpful msg to user ...
@@ -961,7 +1104,9 @@ int freadMain(freadMainArgs __args) {
         }
         if (ch!=pos) STOP("Internal error. ch!=pos after prevBlank check");
     } else {
-        if (verbose && args.header==NA_BOOL8) DTPRINT("All the fields on line %d are character fields. Treating as the column names.\n", line);
+        if (verbose && args.header==NA_BOOL8) {
+          DTPRINT("  All the fields on line %d are character fields. Treating as the column names.\n", line);
+        }
         ch = pos;
         line++;
         if (sep==' ') while (ch<eof && *ch==' ') ch++;
@@ -980,13 +1125,18 @@ int freadMain(freadMainArgs __args) {
     int row1Line = line;
     double tLayout = wallclock();
 
-    // *****************************************************************************************************************
-    //   Make best guess at column types using 100 rows at 100 points, including the very first, middle and very last row.
-    //   At the same time, calc mean and sd of row lengths in sample for very good nrow estimate.
-    // *****************************************************************************************************************
+
+    //*********************************************************************************************
+    // [9] Make best guess at column types using 100 rows at 100 points,
+    //     including the very first, middle and very last row.
+    //     At the same time, calc mean and sd of row lengths in sample for very
+    //     good nrow estimate.
+    //*********************************************************************************************
+    if (verbose) DTPRINT("[9] Detect column types\n");
     type = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
     size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
     if (!type || !size) STOP("Failed to allocate %d x 2 bytes for type/size: %s", ncol, strerror(errno));
+
     for (int j = 0; j < ncol; j++) {
       // initialize with the first (lowest) type, 1==CT_BOOL8 at the time of writing. If we add CT_BOOL1 or CT_BOOL2 in
       /// future, using 1 here means this line won't need to be changed. CT_DROP is 0 and 1 is the first type.
@@ -995,22 +1145,23 @@ int freadMain(freadMainArgs __args) {
     }
 
     size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
-    int nJumps = 0;
     // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
     // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
     // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
+    int nJumps = 0;
+    size_t sz = (size_t)(eof - pos);
     if (jump0size>0) {
-      if (jump0size*100*2 < (size_t)(eof-pos)) nJumps=100;  // 100 jumps * 100 lines = 10,000 line sample
-      else if (jump0size*10*2 < (size_t)(eof-pos)) nJumps=10;
+      if (jump0size*100*2 < sz) nJumps=100;  // 100 jumps * 100 lines = 10,000 line sample
+      else if (jump0size*10*2 < sz) nJumps=10;
       // *2 to get a good spacing. We don't want overlaps resulting in double counting.
       // nJumps==1 means the whole (small) file will be sampled with one thread
     }
     nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
     if (verbose) {
-      DTPRINT("Number of sampling jump points = %d because ",nJumps);
+      DTPRINT("  Number of sampling jump points = %d because ", nJumps);
       if (jump0size==0) DTPRINT("jump0size==0\n");
-      else DTPRINT("%zd bytes from row 1 to eof / (2 * %zd jump0size) == %zd\n",
-                   (size_t)(eof-pos), jump0size, (size_t)(eof-pos)/(2*jump0size));
+      else DTPRINT("(%zd bytes from row 1 to eof) / (2 * %zd jump0size) == %zd\n",
+                   sz, jump0size, sz/(2*jump0size));
     }
 
     size_t sampleLines=0;
@@ -1032,16 +1183,17 @@ int freadMain(freadMainArgs __args) {
         while(ch<eof && (jline<JUMPLINES || j==nJumps-1)) {  // nJumps==1 implies sample all of input to eof; last jump to eof too
             const char *jlineStart = ch;
             if (sep==' ') while (ch<eof && *ch==' ') ch++;  // multiple sep=' ' at the jlineStart does not mean sep(!)
-            skip_white(&ch);  // solely to detect blank lines, otherwise could leave to field processors
+            // detect blank lines
+            skip_white(&ch);
             if (ch>=eof || *ch==eol) {
               if (!skipEmptyLines && !fill) break;
               jlineStart = ch;  // to avoid 'Line finished early' below and get to the sampleLines++ block at the end of this while
             }
             jline++;
             int field=0;
-            const char *fieldStart=ch;  // Needed outside loop for error messages below
+            const char *fieldStart = ch;  // Needed outside loop for error messages below
             while (ch<eof && *ch!=eol && field<ncol) {
-                //DTPRINT("<<%.*s>>", STRLIM(ch,20), ch);
+                // DTPRINT("<<%.*s>>(%d)", STRLIM(ch,20,end), ch, quoteRule);
                 fieldStart=ch;
                 while (type[field]<=CT_STRING && !(*fun[type[field]])(&ch,trash)) {
                   ch=fieldStart;
@@ -1049,20 +1201,18 @@ int freadMain(freadMainArgs __args) {
                   else {
                     // the field could not be read with this quote rule, try again with next one
                     // Trying the next rule will only be successful if the number of fields is consistent with it
-                    if (quoteRule<3) {
-                      if (verbose)
-                        DTPRINT("Bumping quote rule from %d to %d due to field %d on line %d of sampling jump %d starting <<%.*s>>\n",
-                                 quoteRule, quoteRule+1, field+1, jline, j, STRLIM(fieldStart,200), fieldStart);
-                      quoteRule++;
-                      bumped=true;
-                      ch = jlineStart;  // Try whole line again, in case it's a hangover from previous field
-                      field=0;
-                      continue;
-                    }
-                    STOP("Even quoteRule 3 was insufficient!");
+                    if (quoteRule >= 3) STOP("Even quoteRule 3 was insufficient!");
+                    if (verbose)
+                      DTPRINT("Bumping quote rule from %d to %d due to field %d on line %d of sampling jump %d starting <<%.*s>>\n",
+                               quoteRule, quoteRule+1, field+1, jline, j, STRLIM(fieldStart,200), fieldStart);
+                    quoteRule++;
+                    bumped=true;
+                    ch = jlineStart;  // Try whole line again, in case it's a hangover from previous field
+                    field=0;
+                    continue;
                   }
                 }
-                //DTPRINT("%d", type[field]);
+                // DTPRINT("%d  (ch = %p)\n", type[field], ch);
                 if (ch<eof && *ch!=eol) {ch++; field++;}
             }
             if (field<ncol-1 && !fill) {
@@ -1093,9 +1243,10 @@ int freadMain(freadMainArgs __args) {
                           STRLIM(fieldStart, 200), fieldStart);
                 }
             }
+            // Two reasons:  1) to get the end of the very last good row before whitespace or footer before eof
+            //               2) to check sample jumps don't overlap, otherwise double count and bad estimate
+            lastRowEnd = ch;
             //DTPRINT("\n");
-            lastRowEnd = ch; // Two reasons:  1) to get the end of the very last good row before whitespace or footer before eof
-                             //               2) to check sample jumps don't overlap, otherwise double count and bad estimate
             int thisLineLen = (int)(ch-jlineStart);  // ch is now on start of next line so this includes eolLen already
             sampleLines++;
             sumLen += thisLineLen;
@@ -1105,7 +1256,7 @@ int freadMain(freadMainArgs __args) {
         }
         sampleBytes += (size_t)(ch-thisStart);
         if (verbose && (bumped || j==0 || j==nJumps-1)) {
-          DTPRINT("Type codes (jump %03d)    : ",j); printTypes(ncol);
+          DTPRINT("  Type codes (jump %03d)    : ",j); printTypes(ncol);
           DTPRINT("  Quote rule %d\n", quoteRule);
         }
     }
@@ -1128,35 +1279,38 @@ int freadMain(freadMainArgs __args) {
       // sd can be very close to 0.0 sometimes, so apply a +10% minimum
       // blank lines have length 1 so for fill=true apply a +100% maximum. It'll be grown if needed.
       if (verbose) {
-        DTPRINT("=====\n Sampled %zd rows (handled \\n inside quoted fields) at %d jump points including middle and very end\n", sampleLines, nJumps);
-        DTPRINT(" Bytes from first data row on line %d to the end of last row: %zd\n", row1Line, bytesRead);
-        DTPRINT(" Line length: mean=%.2f sd=%.2f min=%d max=%d\n", meanLineLen, sd, minLen, maxLen);
-        DTPRINT(" Estimated nrow: %zd / %.2f = %zd\n", bytesRead, meanLineLen, estnrow);
-        DTPRINT(" Initial alloc = %zd rows (%zd + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n",
+        DTPRINT("  =====\n");
+        DTPRINT("  Sampled %zd rows (handled \\n inside quoted fields) at %d jump points\n", sampleLines, nJumps);
+        DTPRINT("  Bytes from first data row on line %d to the end of last row: %zd\n", row1Line, bytesRead);
+        DTPRINT("  Line length: mean=%.2f sd=%.2f min=%d max=%d\n", meanLineLen, sd, minLen, maxLen);
+        DTPRINT("  Estimated number of rows: %zd / %.2f = %zd\n", bytesRead, meanLineLen, estnrow);
+        DTPRINT("  Initial alloc = %zd rows (%zd + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n",
                  allocnrow, estnrow, (int)(100.0*allocnrow/estnrow-100.0));
       }
       if (nJumps==1) {
-        if (verbose) DTPRINT(" All rows were sampled since file is small so we know nrow=%zd exactly\n", sampleLines);
+        if (verbose) DTPRINT("  All rows were sampled since file is small so we know nrow=%zd exactly\n", sampleLines);
         estnrow = allocnrow = sampleLines;
       } else {
         if (sampleLines > allocnrow) STOP("Internal error: sampleLines(%zd) > allocnrow(%zd)", sampleLines, allocnrow);
       }
       if (nrowLimit < allocnrow) {
-        if (verbose) DTPRINT(" Alloc limited to lower nrows=%zd passed in.\n", nrowLimit);
+        if (verbose) DTPRINT("  Alloc limited to lower nrows=%zd passed in.\n", nrowLimit);
         estnrow = allocnrow = nrowLimit;
       }
-      if (verbose) DTPRINT("=====\n");
+      if (verbose) DTPRINT("  =====\n");
     }
 
-    // ********************************************************************************************
-    //   Apply colClasses, select, drop and integer64
-    // ********************************************************************************************
+
+    //*********************************************************************************************
+    // [10] Apply colClasses, select, drop and integer64
+    //*********************************************************************************************
+    if (verbose) DTPRINT("[10] Apply user overrides on column types\n");
     ch = pos;
     oldType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
     if (!oldType) STOP("Unable to allocate %d bytes to check user overrides of column types", ncol);
     memcpy(oldType, type, ncol) ;
     if (!userOverride(type, colNames, colNamesAnchor, ncol)) { // colNames must not be changed but type[] can be
-      if (verbose) DTPRINT("Cancelled by user. userOverride() returned false.");
+      if (verbose) DTPRINT("  Cancelled by user: userOverride() returned false.");
       freadCleanup();
       return 1;
     }
@@ -1185,16 +1339,18 @@ int freadMain(freadMainArgs __args) {
     }
     double tColType = wallclock();
 
-    // ********************************************************************************************
-    //   Allocate the result columns
-    // ********************************************************************************************
-    if (verbose) DTPRINT("Allocating %d column slots (%d - %d dropped)\n", ncol-ndrop, ncol, ndrop);
+
+    //*********************************************************************************************
+    // [11] Allocate the result columns
+    //*********************************************************************************************
+    if (verbose) DTPRINT("[11] Allocate memory for the datatable\n");
+    if (verbose) {
+      DTPRINT("  Allocating %d column slots (%d - %d dropped) with %zd rows\n",
+              ncol-ndrop, ncol, ndrop, allocnrow);
+    }
     size_t DTbytes = allocateDT(type, size, ncol, ndrop, allocnrow);
     double tAlloc = wallclock();
 
-    // ********************************************************************************************
-    //   madvise sequential
-    // ********************************************************************************************
     // Read ahead and drop behind each point as they move through (assuming it's on a per thread basis).
     // Considered it but when processing string columns the buffers point to offsets in the mmp'd pages
     // which are revisited when writing the finished buffer to DT. So, it isn't sequential.
@@ -1204,9 +1360,11 @@ int freadMain(freadMainArgs __args) {
     //   #endif
     // }
 
-    // ********************************************************************************************
-    //   Read the data
-    // ********************************************************************************************
+
+    //*********************************************************************************************
+    // [12] Read the data
+    //*********************************************************************************************
+    if (verbose) DTPRINT("[12] Read the data\n");
     ch = pos;   // back to start of first data row
     int hasPrinted=0;  // the percentage last printed so it prints every 2% without many calls to wallclock()
     _Bool stopTeam=false, firstTime=true;  // _Bool for MT-safey (cannot ever read half written _Bool value)
@@ -1250,6 +1408,8 @@ int freadMain(freadMainArgs __args) {
       size_t myNrow = 0; // the number of rows in my chunk
 
       // Allocate thread-private row-major myBuff
+      // Do not reuse &trash for myBuff0 as that might create write conflicts
+      // between threads, causing slowdown of the process.
       size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
       void *myBuff8 = malloc(rowSize8 * myBuffRows);
       void *myBuff4 = malloc(rowSize4 * myBuffRows);
@@ -1361,7 +1521,7 @@ int freadMain(freadMainArgs __args) {
 
           int j = 0;
           while (j < ncol) {
-            // DTPRINT("Field %d: '%.10s' as type %d\n", j+1, tch, type[j]);
+            // DTPRINT("Field %d: '%.10s' as type %d  (tch=%p)\n", j+1, tch, type[j], tch);
             const char *fieldStart = tch;
             int8_t joldType = type[j];   // fetch shared type once. Cannot read half-written byte.
             int8_t thisType = joldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
