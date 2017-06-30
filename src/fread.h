@@ -102,7 +102,10 @@ typedef struct freadMainArgs
   // If True, then emit progress messages during the parsing.
   _Bool showProgress;
 
-  // Maximum number of threads (should be >= 1).
+  // Maximum number of threads. If 0, then fread will use the maximum possible
+  // number of threads, as determined by omp_get_max_threads(). If negative,
+  // then fread will use that many threads less than allowed maximum (but
+  // always at least 1).
   int32_t nth;
 
   // Emit extra debug-level information.

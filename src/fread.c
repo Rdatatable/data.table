@@ -625,10 +625,12 @@ int freadMain(freadMainArgs _args) {
     }
 
     int nth = args.nth;
-    if (nth <= 0) STOP("nThreads must be >= 1, received %d", nth);
-    if (nth > omp_get_max_threads()) {
-      nth = omp_get_max_threads();
-      DTPRINT("Limited nth=%d to omp_get_max_threads()=%d\n", args.nth, nth);
+    {
+      int maxth = omp_get_max_threads();
+      if (nth > maxth) nth = maxth;
+      if (nth <= 0) nth += maxth;
+      if (nth <= 0) nth = 1;
+      if (verbose) DTPRINT("  Num threads = %d (system allows up to %d threads)\n", nth, maxth);
     }
 
     uint64_t ui64 = NA_FLOAT64_I64;
