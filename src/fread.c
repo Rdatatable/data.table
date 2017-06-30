@@ -1004,7 +1004,7 @@ int freadMain(freadMainArgs _args)
                 if (ch+1<eof && *(ch+1)=='\r')
                     STOP("Line ending is \\r\\r\\n. R's download.file() appears to add the extra \\r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.");
                     // NB: on Windows, download.file from file: seems to condense \r\r too. So
-                if (verbose) DTPRINT("Detected eol as \\r only (no \\n or \\r afterwards). An old Mac 9 standard, discontinued in 2002 according to Wikipedia.\n");
+                if (verbose) DTPRINT("  Detected eol as \\r only (no \\n or \\r afterwards). An old Mac 9 standard, discontinued in 2002 according to Wikipedia.\n");
             }
         } else {
             if (ch+1<eof && *(ch+1)=='\r') {
@@ -1148,11 +1148,8 @@ int freadMain(freadMainArgs _args)
         STOP("Input is empty or contains only Whitespace.\n");
     }
     if (verbose) {
-      if (lineStart != sof) {
-        DTPRINT("  Moved forward to first non-blank line (%d)\n", line);
-      }
-      DTPRINT("  Positioned on line %d starting: <<%.*s>>\n",
-              line, STRLIM(lineStart, 30, eof), lineStart);
+      if (lineStart!=sof) DTPRINT("  Moved forward to first non-blank line (%d)\n", line);
+      DTPRINT("  Positioned on line %d starting: <<%.*s>>\n", line, STRLIM(lineStart, 30, eof), lineStart);
     }
     advance_sof_to(lineStart, &sof, &eof, &soh, &eoh);
 
@@ -1443,6 +1440,8 @@ int freadMain(freadMainArgs _args)
              (j == nJumps-1) ? eof - (size_t)(0.5*jump0size) :
                                sof + (size_t)j*(sz/(size_t)(nJumps-1));
         end = eof;
+        if (ch<lastRowEnd) ch=lastRowEnd;  // Overlap when apx 1,200 lines (just over 11*100) with short lines at the beginning and longer lines near the end, #2157
+        if (ch>=eof) break;                // The 9th jump could reach the end in the same situation and that's ok. As long as the end is sampled is what we want.
         if (j>0 && !nextGoodLine(&ch, ncol, end))
           STOP("Could not find first good line start after jump point %d when sampling.", j);
         _Bool bumped = 0;  // did this jump find any different types; to reduce verbose output to relevant lines
