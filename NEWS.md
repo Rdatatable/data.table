@@ -17,6 +17,8 @@
     * Many thanks to @yaakovfeldman, Guillermo Ponce, Arun Srinivasan, Hugh Parsonage, Mark Klik, Pasha Stetsenko, Mahyar K for testing before release to CRAN: [#2070](https://github.com/Rdatatable/data.table/issues/2070), [#2073](https://github.com/Rdatatable/data.table/issues/2073), [#2087](https://github.com/Rdatatable/data.table/issues/2087), [#2091](https://github.com/Rdatatable/data.table/issues/2091), [#2107](https://github.com/Rdatatable/data.table/issues/2107), [fst#50](https://github.com/fstpackage/fst/issues/50#issuecomment-294287846), [#2118](https://github.com/Rdatatable/data.table/issues/2118), [#2092](https://github.com/Rdatatable/data.table/issues/2092), [#1888](https://github.com/Rdatatable/data.table/issues/1888), [#2123](https://github.com/Rdatatable/data.table/issues/2123), [#2167](https://github.com/Rdatatable/data.table/issues/2167)
     * Now detects GB-18030 and UTF-16 encodings and in verbose mode prints a message about BOM detection.
 
+2. `fwrite` now always quotes empty strings (`,"",`) to distinguish them from `NA` which by default is still empty (`,,`) but can be changed using `na=` as before. If `na=` is provided and `quote=` is the default `'auto'` then `quote=` is set to `TRUE` so that if the `na=` value occurs in the data, it can be distinguished from `NA`. Thanks to Ethan Welty for the request [#2214](https://github.com/Rdatatable/data.table/issues/2214) and Pasha for the code change and tests, [#2215](https://github.com/Rdatatable/data.table/issues/2215).
+
 #### BUG FIXES
 
 1. The type pun fix (using union) in 1.10.4 resolved some CRAN flavors but still failed the new `fwrite` nanotime test with R-devel on MacOS using latest clang from latest Xcode 8.2. It seems that clang optimizations in Xcode 8 are particularly aggressive and require even stricter adherence to C standards. The type pun was already centralized and now uses `memcpy` which is ok by C standards and compilers apparently know to optimize to avoid call overhead.
@@ -49,6 +51,10 @@
 #### NOTES
 
 1. `?data.table` makes explicit the option of using a `logical` vector in `j` to select columns, [#1978](https://github.com/Rdatatable/data.table/issues/1978). Thanks @Henrik-P for the note and @MichaelChirico for filing.
+
+2. The `nanotime` v0.2.0 update on CRAN 22 June 2017 changed from `integer64` to `S4` and broke `fwrite` of `nanotime` columns. The onus is on package maintainers to check downstream packages before release to CRAN. `fwrite` updated to work with `nanotime` both before and after v0.2.0.
+
+3. Test 1675.1 updated to cope with a change in R-devel in June 2017 related to `factor()` and `NA` levels.
 
 ### Changes in v1.10.4  (on CRAN 01 Feb 2017)
 
