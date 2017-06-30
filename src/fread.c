@@ -73,7 +73,7 @@ static const double NAND = (double)NAN;
 static const double INFD = (double)INFINITY;
 
 // Forward declarations
-static int Field(const char **this, void *target);
+static int Field(const char **this, lenOff *target);
 static int parse_string(const char **ptr, lenOff *target);
 static int parse_string_continue(const char **ptr, lenOff *target);
 
@@ -263,12 +263,13 @@ static inline _Bool nextGoodLine(const char **this, int ncol, const char *eof)
   // the line number and error message to be worked out up there.
   int attempts=0;
   while (ch<eof && attempts++<30) {
-    while (*ch != eol) ch++;
+    while (*ch!=eol) ch++;
     ch += eolLen;
     int i = 0, thisNcol=0;
     const char *ch2 = ch;
     const char *end = eof;
-    while (ch2<eof && i<5 && ( (thisNcol=countfields(&ch2, &end, NULL, NULL))==ncol || (thisNcol==0 && (skipEmptyLines || fill)))) i++;
+    while (ch2<eof && i<5 && ( (thisNcol=countfields(&ch2, &end, NULL, NULL))==ncol ||
+                               (thisNcol==0 && (skipEmptyLines || fill)))) i++;
     if (i==5 || ch2>=eof) break;
   }
   if (ch<eof && attempts<30) { *this = ch; return true; }
@@ -293,7 +294,7 @@ double wallclock(void)
 
 
 static int advance_sof_to(const char *newsof, const char **sof,
-                           const char **eof, const char **soh, const char **eoh)
+                          const char **eof, const char **soh, const char **eoh)
 {
   intptr_t d = 0;
   if (*sof <= newsof && newsof < *eof) {
@@ -317,7 +318,7 @@ static int advance_sof_to(const char *newsof, const char **sof,
 
 
 static int retreat_eof_to(const char *neweof, const char **sof,
-                           const char **eof, const char **soh, const char **eoh)
+                          const char **eof, const char **soh, const char **eoh)
 {
   intptr_t d = 0;
   if (*soh < neweof && neweof <= *eoh) {
@@ -344,7 +345,7 @@ static int retreat_eof_to(const char *neweof, const char **sof,
 //
 //=================================================================================================
 
-static int Field(const char **this, void *target)
+static int Field(const char **this, lenOff *target)
 {
   const char *ch = *this;
   if (stripWhite) skip_white(&ch);  // before and after quoted field's quotes too (e.g. test 1609) but never inside quoted fields
@@ -352,7 +353,7 @@ static int Field(const char **this, void *target)
   _Bool quoted = false;
   if (*ch!=quote || quoteRule==3) {
     // unambiguously not quoted. simply search for sep|eol. If field contains sep|eol then it must be quoted instead.
-    while(*ch != sep && *ch != eol) ch++;
+    while(*ch!=sep && *ch!=eol) ch++;
   } else {
     // the field is quoted and quotes are correctly escaped (quoteRule 0 and 1)
     // or the field is quoted but quotes are not escaped (quoteRule 2)
@@ -368,18 +369,18 @@ static int Field(const char **this, void *target)
         // 100 prevents runaway opening fields by limiting eols. Otherwise the whole file would be read in the sep and
         // quote rule testing step.
         if (*ch==quote) {
-          if (ch[1] == quote) { ch++; continue; }
+          if (*(ch+1)==quote) { ch++; continue; }
           break;  // found undoubled closing quote
         }
       }
-      if (*ch != quote) return 1;
+      if (*ch!=quote) return 1;
       break;
     case 1:  // quoted with embedded quotes escaped; the final unescaped " must be followed by sep|eol
-      while (*(++ch) != quote && eolCount < 100) {
+      while (*(++ch)!=quote && eolCount<100) {
         eolCount += (*ch==eol);
         ch += (*ch=='\\');
       }
-      if (*ch != quote) return 1;
+      if (*ch!=quote) return 1;
       break;
     case 2:  // (i) quoted (perhaps because the source system knows sep is present) but any quotes were not escaped at all,
              // so look for ", to define the end.   (There might not be any quotes present to worry about, anyway).
@@ -389,15 +390,15 @@ static int Field(const char **this, void *target)
              // No eol may occur inside fields, under this rule.
       {
         const char *ch2 = ch;
-        while (*(++ch) != eol) {
-          if (*ch==quote && (ch[1] == sep || ch[1] == eol)) {ch2=ch; break;}   // (*1) regular ", ending
+        while (*(++ch)!=eol) {
+          if (*ch==quote && (*(ch+1)==sep || *(ch+1)==eol)) {ch2=ch; break;}   // (*1) regular ", ending
           if (*ch==sep) {
             // first sep in this field
             // if there is a ", afterwards but before the next \n, use that; the field was quoted and it's still case (i) above.
             // Otherwise break here at this first sep as it's case (ii) above (the data contains a quote at the start and no sep)
             ch2 = ch;
-            while (*(++ch2) != eol) {
-              if (*ch2==quote && (ch2[1] == sep || ch2[1] == eol)) {
+            while (*(++ch2)!=eol) {
+              if (*ch2==quote && (*(ch2+1)==sep || *(ch2+1)==eol)) {
                 ch = ch2; // (*2) move on to that first ", -- that's this field's ending
                 break;
               }
@@ -424,8 +425,8 @@ static int Field(const char **this, void *target)
   } else {
     if (is_NAstring(fieldStart)) fieldLen=INT32_MIN;
   }
-  ((lenOff *)target)->len = fieldLen;
-  ((lenOff *)target)->off = (uint32_t)(fieldStart-*this);  // agnostic & thread-safe
+  target->len = fieldLen;
+  target->off = (uint32_t)(fieldStart-*this);  // agnostic & thread-safe
   *this = ch; // Update caller's ch. This may be after fieldStart+fieldLen due to quotes and/or whitespace
   return 0;
 }
@@ -439,7 +440,7 @@ static int parse_string(const char **ptr, lenOff *target)
   _Bool quoted = false;
 
   // consume the field: this section will move the pointer after the last
-  // character within in the field. If the field was quoted then it will be the
+  // character within the field. If the field was quoted then it will be the
   // quote character; otherwise it should be the separator.
   switch (quoteRule) {
     case 0: {
