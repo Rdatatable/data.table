@@ -409,21 +409,22 @@ DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
 # datatable-help@lists.r-forge.r-project.org
 
 \dontrun{
-vignette("datatable-intro")
-vignette("datatable-reference-semantics")
-vignette("datatable-keys-fast-subset")
-vignette("datatable-secondary-indices-and-auto-indexing")
-vignette("datatable-reshape")
-vignette("datatable-faq")
+if (interactive()) {
+  vignette("datatable-intro")
+  vignette("datatable-reference-semantics")
+  vignette("datatable-keys-fast-subset")
+  vignette("datatable-secondary-indices-and-auto-indexing")
+  vignette("datatable-reshape")
+  vignette("datatable-faq")
 
 
-test.data.table()          # over 5700 low level tests
+  test.data.table()          # over 5700 low level tests
 
-# keep up to date with latest stable version on CRAN
-update.packages()
-# get the latest devel (needs Rtools for windows, xcode for mac)
-install.packages("data.table", repos = "https://Rdatatable.github.io/data.table", type = "source")
-
+  # keep up to date with latest stable version on CRAN
+  update.packages()
+  # get the latest devel (needs Rtools for windows, xcode for mac)
+  install.packages("data.table", repos = "https://Rdatatable.github.io/data.table", type = "source")
+}
 }}
 \keyword{ data }
 
