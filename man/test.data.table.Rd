@@ -20,8 +20,7 @@ When \code{silent} equals to TRUE it will return TRUE if all tests were successf
 }
 \seealso{ \code{\link{data.table}} }
 \examples{
-\dontrun{
-test.data.table()
-}}
+if (interactive()) test.data.table()
+}
 \keyword{ data }
 

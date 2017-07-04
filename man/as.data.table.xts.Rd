@@ -16,12 +16,12 @@
 }
 \seealso{ \code{\link{as.xts.data.table}} }
 \examples{
-\dontrun{
-data(sample_matrix, package = "xts")
-sample.xts <- xts::as.xts(sample_matrix) # xts might not be attached on search path
-# print head of xts
-print(head(sample.xts))
-# print dt
-print(as.data.table(sample.xts))
+if (requireNamespace("xts", quietly = TRUE)) {
+  data(sample_matrix, package = "xts")
+  sample.xts <- xts::as.xts(sample_matrix) # xts might not be attached on search path
+  # print head of xts
+  print(head(sample.xts))
+  # print dt
+  print(as.data.table(sample.xts))
 }
 }
