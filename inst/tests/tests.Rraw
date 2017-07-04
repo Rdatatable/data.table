@@ -9957,6 +9957,10 @@ test(1769, fread("issue_2157_sampling_reached_eof_early.txt")[,c("X1","X2","X10"
 test(1800, fread("A\n6e55693457e549ecfce0\n"), data.table(A=c("6e55693457e549ecfce0")))
 test(1800.1, fread("A\n1e55555555\n-1e+234056\n2e-59745"), data.table(A=c(Inf, -Inf, 0)))
 
+DT = data.table(A=seq(1, 1000000), B="x", C=TRUE)
+fwrite(DT, f<-tempfile())
+test(1815, fread(f, nrows=5), DT[1:5])
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
