@@ -1267,10 +1267,11 @@ int freadMain(freadMainArgs _args) {
 
     size_t estnrow=1, allocnrow=1;
     double meanLineLen=0;
+    size_t bytesRead = 0;
     if (sampleLines<=1) {
       // column names only are present; e.g. fread("A\n")
     } else {
-      size_t bytesRead = (size_t)(lastRowEnd - pos);
+      bytesRead = (size_t)(lastRowEnd - pos);
       meanLineLen = (double)sumLen/sampleLines;
       estnrow = CEIL(bytesRead/meanLineLen);  // only used for progress meter and verbose line below
       double sd = sqrt( (sumLenSq - (sumLen*sumLen)/sampleLines)/(sampleLines-1) );
