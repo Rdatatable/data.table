@@ -1267,12 +1267,10 @@ int freadMain(freadMainArgs _args) {
 
     size_t estnrow=1, allocnrow=1;
     double meanLineLen=0;
-    size_t bytesToRead = 0;
     if (sampleLines<=1) {
       // column names only are present; e.g. fread("A\n")
     } else {
       size_t bytesRead = (size_t)(lastRowEnd - pos);
-      bytesToRead = bytesRead;
       meanLineLen = (double)sumLen/sampleLines;
       estnrow = CEIL(bytesRead/meanLineLen);  // only used for progress meter and verbose line below
       double sd = sqrt( (sumLenSq - (sumLen*sumLen)/sampleLines)/(sampleLines-1) );
@@ -1297,7 +1295,6 @@ int freadMain(freadMainArgs _args) {
       }
       if (nrowLimit < allocnrow) {
         if (verbose) DTPRINT("  Alloc limited to lower nrows=%zd passed in.\n", nrowLimit);
-        bytesToRead = (size_t) (bytesRead * (1.0 * nrowLimit / allocnrow));
         estnrow = allocnrow = nrowLimit;
       }
       if (verbose) DTPRINT("  =====\n");
@@ -1389,10 +1386,10 @@ int freadMain(freadMainArgs _args) {
     if (nJumps/*from sampling*/>1) {
       // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
       // when nth==1 we still split by chunk for consistency (testing) and code sanity
-      nJumps = (int)(bytesToRead/chunkBytes);  // (int) rounds down
+      nJumps = (int)(bytesRead/chunkBytes);  // (int) rounds down
       if (nJumps==0) nJumps=1;
       else if (nJumps>nth) nJumps = nth*(1+(nJumps-1)/nth);
-      chunkBytes = bytesToRead / (size_t)nJumps;
+      chunkBytes = bytesRead / (size_t)nJumps;
     } else {
       nJumps = 1;
     }
