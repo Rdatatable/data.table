@@ -1749,8 +1749,10 @@ int freadMain(freadMainArgs _args) {
       DTPRINT("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers\n", thRead, 100.0*thRead/tTot);
       DTPRINT("   + %8.3fs (%3.0f%%) Transpose\n", thPush, 100.0*thPush/tTot);
       DTPRINT("   + %8.3fs (%3.0f%%) Waiting\n", thWaiting, 100.0*thWaiting/tTot);
-      DTPRINT("%8.3fs (%3.0f%%) Rereading %d columns due to out-of-sample type exceptions\n",
-        tReread-tRead, 100.0*(tReread-tRead)/tTot, nTypeBumpCols);
+      if (nTypeBumpCols) {
+        DTPRINT("%8.3fs (%3.0f%%) Rereading %d columns due to out-of-sample type exceptions\n",
+          tReread-tRead, 100.0*(tReread-tRead)/tTot, nTypeBumpCols);
+      }
       DTPRINT("%8.3fs        Total\n", tTot);
     }
     freadCleanup();
