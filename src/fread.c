@@ -816,7 +816,7 @@ int freadMain(freadMainArgs _args) {
     }
     if (eof[-1] == '\x1A') {
       eof--;
-      if (verbose) DTPRINT("  Last byte in file found to be 0x1A (Ctrl+Z) and skipped.\n");
+      if (verbose) DTPRINT("  Last byte of input found to be 0x1A (Ctrl+Z) and removed.\n");
     }
 
 
