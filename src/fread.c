@@ -1662,8 +1662,7 @@ int freadMain(freadMainArgs _args) {
       tTot = tRead-t0;
       if (hasPrinted || verbose) {
         DTPRINT("\rRead %zd rows x %d columns from %.3fGB file in ", DTi, ncol-ndrop, 1.0*fileSize/(1024*1024*1024));
-        DTPRINT("%02d:%06.3f ", (int)tTot/60, fmod(tTot,60.0));
-        DTPRINT("wall clock time (can be slowed down by any other open apps even if seemingly idle)\n");
+        DTPRINT("%02d:%06.3f wall clock time\n", (int)tTot/60, fmod(tTot,60.0));
         // since parallel, clock() cycles is parallel too: so wall clock will have to do
       }
       // not-bumped columns are assigned type -CT_STRING in the rerun, so we have to count types now
