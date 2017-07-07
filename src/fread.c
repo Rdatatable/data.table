@@ -292,8 +292,9 @@ double wallclock(void)
 char* filesize_to_str(size_t fsize)
 {
   #define NSUFFIXES 4
+  #define BUFFSIZE 100
   static char suffixes[NSUFFIXES] = {'T', 'G', 'M', 'K'};
-  static char output[100];
+  static char output[BUFFSIZE];
   for (int i = 0; i <= NSUFFIXES; i++) {
     int shift = (NSUFFIXES - i) * 10;
     if ((fsize >> shift) == 0) continue;
@@ -303,18 +304,18 @@ char* filesize_to_str(size_t fsize)
     }
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < NSUFFIXES) {
-        sprintf(output, "%zd%cB (%zd bytes)",
-                fsize >> shift, suffixes[i], fsize);
+        snprintf(output, BUFFSIZE, "%zd%cB (%zd bytes)",
+                 fsize >> shift, suffixes[i], fsize);
         return output;
       }
     } else {
-      sprintf(output, "%.*f%cB (%zd bytes)",
-              ndigits, (double)fsize / (1 << shift), suffixes[i], fsize);
+      snprintf(output, BUFFSIZE, "%.*f%cB (%zd bytes)",
+               ndigits, (double)fsize / (1 << shift), suffixes[i], fsize);
       return output;
     }
   }
   if (fsize == 1) return "1 byte";
-  sprintf(output, "%zd bytes", fsize);
+  snprintf(output, BUFFSIZE, "%zd bytes", fsize);
   return output;
 }
 
