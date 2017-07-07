@@ -797,7 +797,7 @@ int freadMain(freadMainArgs _args) {
     //
     //     Also, presence of BOM allows us to sometimes detect file's encoding.
     //     See: https://en.wikipedia.org/wiki/Byte_order_mark
-    //     See: issues #1087 and #1465
+    //     See: issues #1087, #1465 and #1612
     //*********************************************************************************************
     if (verbose) DTPRINT("[3] Detect and skip BOM\n");
     if (fileSize >= 3 && memcmp(sof, "\xEF\xBB\xBF", 3) == 0) {
