@@ -73,7 +73,9 @@ static const double NAND = (double)NAN;
 static const double INFD = (double)INFINITY;
 
 // Forward declarations
-static int Field(const char **this, lenOff *target);
+static int Field(const char **this, lenOff *target, const char **end,
+                 const char *soh, const char *eoh);
+static int parse_string(const char **this, lenOff *target);
 static int parse_string_continue(const char **ptr, lenOff *target);
 
 
@@ -225,22 +227,8 @@ static inline int countfields(const char **this, const char **end, const char *s
     return 0;
   }
   while (1) {
-    int res = Field(&ch, &trash);
+    int res = Field(&ch, &trash, &tend, soh, eoh);
     if (res == 1) return -1;
-    if (res == 2) {
-      int linesCount = 0;
-      while (res == 2 && linesCount++ < 100) {
-        if (ch == tend) {
-          if (eoh && tend != eoh) {
-            ch = soh;
-            tend = eoh;
-          } else {
-            return -1;
-          }
-        }
-        res = parse_string_continue(&ch, &trash);
-      }
-    }
     // Field() leaves *ch resting on sep or eol. Checked inside Field().
     ncol++;
     if (*ch==eol) { ch+=eolLen; break; }
@@ -250,7 +238,6 @@ static inline int countfields(const char **this, const char **end, const char *s
   *end = tend;
   return ncol;
 }
-
 
 
 static inline _Bool nextGoodLine(const char **this, int ncol, const char *eof)
@@ -344,7 +331,7 @@ static int retreat_eof_to(const char *neweof, const char **sof,
 //
 //=================================================================================================
 
-static int Field(const char **this, lenOff *target)
+static int parse_string(const char **this, lenOff *target)
 {
   const char *ch = *this;
   if (stripWhite) skip_white(&ch);  // before and after quoted field's quotes too (e.g. test 1609) but never inside quoted fields
@@ -482,6 +469,27 @@ static int parse_string_continue(const char **ptr, lenOff *target)
     *ptr = ch;
     return 0;
   }
+}
+
+
+static int Field(const char **ptr, lenOff *target, const char **end,
+                 const char *soh, const char *eoh)
+{
+  int res = parse_string(ptr, target);
+  if (res == 1) return 1;
+  int linesCount = 0;
+  while (res == 2 && linesCount++ < 100) {
+    if (*ptr == *end) {
+      if (eoh && *end != eoh) {
+        *ptr = soh;
+        *end = eoh;
+      } else {
+        return 1;
+      }
+    }
+    res = parse_string_continue(ptr, target);
+  }
+  return 0;  // success
 }
 
 
@@ -708,13 +716,13 @@ static int StrtoB(const char **this, int8_t *target)
 
 typedef int (*reader_fun_t)(const char **ptr, void *target);
 static reader_fun_t fun[NUMTYPE] = {
-  (reader_fun_t) &Field,   // CT_DROP
+  (reader_fun_t) &parse_string,   // CT_DROP
   (reader_fun_t) &StrtoB,
   (reader_fun_t) &StrtoI32_bare,
   (reader_fun_t) &StrtoI32_full,
   (reader_fun_t) &StrtoI64,
   (reader_fun_t) &StrtoD,
-  (reader_fun_t) &Field
+  (reader_fun_t) &parse_string
 };
 
 
@@ -1329,18 +1337,8 @@ int freadMain(freadMainArgs _args)
       // considered looking for one isalpha present but we want 1E9 to be considered a value not a column name
       // StrtoD does not consume quoted fields according to the quote rule, so need to reparse using Field()
       ch = this;  // rewind to the start of this field
-      int res = Field(&ch, (lenOff *)trash);
-      ASSERT(res != 1);
-      while (res == 2) {
-        if (ch == end) {
-          if (eoh && end != eoh) {
-            ch = soh;
-            end = eoh;
-          } else ASSERT(0);
-        }
-        res = parse_string_continue(&ch, (lenOff *)trash);
-      }
-
+      int res = Field(&ch, (lenOff *)trash, &end, soh, eoh);
+      ASSERT(res == 0);
     }
     if (*ch!=eol)
       STOP("Read %d expected fields in the header row (fill=%d) but finished on <<%.*s>>'",tt,fill,STRLIM(ch,30,eof),ch);
@@ -1374,16 +1372,8 @@ int freadMain(freadMainArgs _args)
         ch--;
         for (int i=0; i<ncol; i++) {
             const char *start = ++ch;
-            int ret = Field(&ch, colNames + i);
-            ASSERT(ret != 1);
-            while (ret == 2) {
-              line++;
-              if (ch == eof) {
-                ASSERT(eoh);
-                ch = soh; end = eoh;
-              }
-              ret = parse_string_continue(&ch, colNames + i);
-            }
+            int ret = Field(&ch, colNames + i, &end, soh, eoh);
+            ASSERT(ret == 0);
             colNames[i].off += (size_t)(start-colNamesAnchor);
             if (*ch==eol) break;   // already checked number of fields previously above
         }
