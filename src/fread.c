@@ -792,8 +792,10 @@ int freadMain(freadMainArgs _args) {
 
     //*********************************************************************************************
     // [3] Check whether the file contains BOM (Byte Order Mark), and if yes
-    //     strip it, modifying `sof`. Also, presence of BOM allows us to
-    //     sometimes detect file's encoding.
+    //     strip it, modifying `sof`. If the last byte in file is 0x1A (Ctrl+Z)
+    //     then skip it too, modifying `eof`.
+    //
+    //     Also, presence of BOM allows us to sometimes detect file's encoding.
     //     See: https://en.wikipedia.org/wiki/Byte_order_mark
     //     See: issues #1087 and #1465
     //*********************************************************************************************
@@ -801,16 +803,20 @@ int freadMain(freadMainArgs _args) {
     if (fileSize >= 3 && memcmp(sof, "\xEF\xBB\xBF", 3) == 0) {
       sof += 3;
       // ienc = CE_UTF8;
-      if (args.verbose) DTPRINT("  UTF-8 byte order mark EF BB BF found at the start of the file and skipped.\n");
+      if (verbose) DTPRINT("  UTF-8 byte order mark EF BB BF found at the start of the file and skipped.\n");
     }
     else if (fileSize >= 4 && memcmp(sof, "\x84\x31\x95\x33", 4) == 0) {
       sof += 4;
       // ienc = CE_GB18030;
-      if (args.verbose) DTPRINT("  GB-18030 byte order mark 84 31 95 33 found at the start of the file and skipped.\n");
+      if (verbose) DTPRINT("  GB-18030 byte order mark 84 31 95 33 found at the start of the file and skipped.\n");
       DTWARN("GB-18030 encoding detected, however fread() is unable to decode it. Some character fields may be garbled.\n");
     }
     else if (fileSize >= 2 && sof[0] + sof[1] == '\xFE' + '\xFF') {  // either 0xFE 0xFF or 0xFF 0xFE
       STOP("File is encoded in UTF-16, this encoding is not supported by fread(). Please recode the file to UTF-8.");
+    }
+    if (eof[-1] == '\x1A') {
+      eof--;
+      if (verbose) DTPRINT("  Last byte in file found to be 0x1A (Ctrl+Z) and skipped.\n");
     }
 
 
