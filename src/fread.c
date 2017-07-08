@@ -1595,11 +1595,9 @@ int freadMain(freadMainArgs _args)
     size_t estnrow=1, allocnrow=1;
     size_t bytesRead = (size_t)(eof - sof) + (size_t)(eoh? eoh - soh : 0);
     double meanLineLen=0;
-    size_t bytesRead = 0;
     if (sampleLines == 0) {
       if (verbose) DTPRINT("  sampleLines=0: only column names are present\n");
     } else {
-      bytesRead = (size_t)(lastRowEnd - pos);
       meanLineLen = (double)sumLen/sampleLines;
       estnrow = CEIL(bytesRead/meanLineLen);  // only used for progress meter and verbose line below
       double sd = sqrt( (sumLenSq - (sumLen*sumLen)/sampleLines)/(sampleLines-1) );
